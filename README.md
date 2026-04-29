@@ -102,6 +102,24 @@ Default compact brief:
 
 If live verification was not performed, the agent must say so.
 
+
+---
+
+## Relationship to global-think-tank-analyst
+
+Agenda-Intelligence.md is the lightweight, portable agenda-analysis protocol.
+It is for any AI agent that needs to stop summarizing news and start identifying signal, uncertainty, scenarios, and watch-next indicators.
+
+For full policy-risk memos, use [global-think-tank-analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst).
+That skill is the deeper OpenClaw/Codex analyst for geopolitical, sanctions, trade, regulatory, and strategic-risk memos.
+
+Use them together like this:
+
+```text
+Agenda-Intelligence.md = small universal protocol for agenda triage
+Global Think Tank Analyst = full memo skill for decision-ready policy risk analysis
+```
+
 ---
 
 ## Repository structure

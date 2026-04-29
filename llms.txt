@@ -13,3 +13,6 @@ Recommended use:
 - trade and regulatory risk briefs;
 - founder/investor operating-context notes;
 - red-team checks on confident narratives.
+
+Related full memo skill: https://github.com/vassiliylakhonin/global-think-tank-analyst
+Use Agenda-Intelligence.md for lightweight agenda triage; use global-think-tank-analyst for full policy-risk memos.
