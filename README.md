@@ -5,20 +5,48 @@
   <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/network/members"><img src="https://img.shields.io/github/forks/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Forks"></a>
   <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/issues"><img src="https://img.shields.io/github/issues/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Issues"></a>
   <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/commits/main"><img src="https://img.shields.io/github/last-commit/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Last Commit"></a>
+  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/tag/v0.2.0"><img src="https://img.shields.io/badge/release-v0.2.0-blue?style=for-the-badge" alt="Release v0.2.0"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License"></a>
 </p>
 
-**A markdown protocol for AI agents that need to analyze the public agenda instead of summarizing it badly.**
+**A drop-in markdown cognition layer for AI agents that need to analyze public agenda instead of summarizing it badly.**
 
-Most agent-written news analysis has the same problem: it tells you what happened, then adds a few polished paragraphs that do not change any decision.
+Most agent-written news analysis has the same problem: it tells you what happened, adds polished implications, and stops before the output changes any decision.
 
-Agenda-Intelligence.md is a small set of markdown files that gives agents a stricter workflow:
+Agenda-Intelligence.md gives agents a stricter workflow and an optional reasoning-memory layer called **AnalysisBank**:
 
 ```text
 Fact → Assessment → Assumption → Unknown → Scenario → Indicator to watch
 ```
 
 Use it when an agent needs to reason about policy, geopolitics, regulation, sanctions, trade, energy, elections, conflicts, or market-moving public agenda.
+
+---
+
+## What's new in v0.2.0
+
+v0.2.0 adds **AnalysisBank**, a ReasoningBank-inspired memory layer for agenda-analysis agents.
+
+Instead of only giving an agent a protocol, AnalysisBank lets the project store short reusable reasoning memories from successful and failed outputs:
+
+```text
+weak output → identify failure pattern → write memory card → retrieve next time
+strong output → extract reusable reasoning pattern → write memory card → retrieve next time
+```
+
+It also adds a lightweight eval harness:
+
+```bash
+python3 scripts/eval_before_after.py
+```
+
+Current test results:
+
+```text
+eu-ai-act.md:          before 3/16  → after 14/16
+red-sea-shipping.md:  before 1/16  → after 13/16
+sanctions-routing.md: before 2/16  → after 14/16
+```
 
 ---
 
@@ -47,6 +75,7 @@ skills/agenda-intelligence/references/analysis-protocol.md
 skills/agenda-intelligence/references/agenda-triage.md
 skills/agenda-intelligence/references/evidence-discipline.md
 skills/agenda-intelligence/references/output-patterns.md
+analysis-bank/README.md
 ```
 
 For repo-level agent instructions, link the base protocol from your `AGENTS.md`, system prompt, retrieval layer, or tool-specific skill wrapper.
@@ -206,29 +235,30 @@ The important part is conditional loading. Do not spend context on agenda analys
 
 ## AnalysisBank
 
-Agenda-Intelligence.md now includes an experimental ReasoningBank-inspired memory layer: [AnalysisBank](analysis-bank/README.md).
+[AnalysisBank](analysis-bank/README.md) is the ReasoningBank-inspired layer for Agenda-Intelligence.md.
 
-Instead of storing full transcripts, AnalysisBank stores short reasoning memories distilled from successful and failed agenda-analysis outputs.
+The base protocol tells an agent how to analyze public agenda. AnalysisBank helps it improve across tasks by storing compact reasoning memories from both good and bad outputs.
 
-Use it when an agent should improve across tasks:
-
-```text
-weak output → identify failure pattern → write memory card → retrieve next time
-strong output → extract reusable reasoning pattern → write memory card → retrieve next time
-```
-
-Current cards include:
+Current memory cards include:
 
 - vague monitoring → concrete indicators;
 - overconfident sanctions upgrades → evidence thresholds;
 - EU rhetoric treated as law → institutional-path check;
 - sanctions routing → mechanism-first signal classification.
 
-A lightweight eval script checks that before/after examples improve rubric scores:
+Memory format:
+
+```text
+Trigger → Pattern → Better reasoning → Apply when → Do not apply when → Watch indicators → Example rewrite
+```
+
+Eval harness:
 
 ```bash
 python3 scripts/eval_before_after.py
 ```
+
+The eval checks that after examples score higher than generic before examples on signal classification, actor specificity, uncertainty, falsifiability, watch-next indicators, and decision value.
 
 ---
 

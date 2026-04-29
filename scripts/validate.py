@@ -49,7 +49,7 @@ for token in ["name: agenda-intelligence", "description:", "references/analysis-
         raise SystemExit(f"SKILL.md missing token: {token}")
 
 readme = (root / "README.md").read_text()
-for token in ["A markdown protocol for AI agents", "How to use it", "How it relates to AGENTS.md", "10-second demo", "Before / after examples", "Sector lens packs", "AnalysisBank", "Fact → Assessment"]:
+for token in ["drop-in markdown cognition layer", "How to use it", "How it relates to AGENTS.md", "10-second demo", "Before / after examples", "Sector lens packs", "AnalysisBank", "Fact → Assessment"]:
     if token not in readme:
         raise SystemExit(f"README missing token: {token}")
 
