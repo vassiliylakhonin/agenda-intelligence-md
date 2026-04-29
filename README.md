@@ -201,6 +201,35 @@ Do not summarize by default. Classify the signal, identify what changed, separat
 
 The important part is conditional loading. Do not spend context on agenda analysis rules when the task is ordinary coding, writing, or personal assistance.
 
+
+---
+
+## AnalysisBank
+
+Agenda-Intelligence.md now includes an experimental ReasoningBank-inspired memory layer: [AnalysisBank](analysis-bank/README.md).
+
+Instead of storing full transcripts, AnalysisBank stores short reasoning memories distilled from successful and failed agenda-analysis outputs.
+
+Use it when an agent should improve across tasks:
+
+```text
+weak output → identify failure pattern → write memory card → retrieve next time
+strong output → extract reusable reasoning pattern → write memory card → retrieve next time
+```
+
+Current cards include:
+
+- vague monitoring → concrete indicators;
+- overconfident sanctions upgrades → evidence thresholds;
+- EU rhetoric treated as law → institutional-path check;
+- sanctions routing → mechanism-first signal classification.
+
+A lightweight eval script checks that before/after examples improve rubric scores:
+
+```bash
+python3 scripts/eval_before_after.py
+```
+
 ---
 
 ## Regional lens packs
@@ -251,6 +280,13 @@ global-think-tank-analyst = full memo skill for decision-ready policy risk analy
 
 ```text
 Agenda-Intelligence.md
+ADOPTION.md
+analysis-bank/
+  README.md
+  MEMORY_FORMAT.md
+  failures/
+  successes/
+  prompts/
 skills/agenda-intelligence/
   SKILL.md
   references/

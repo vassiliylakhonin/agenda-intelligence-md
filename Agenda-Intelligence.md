@@ -90,3 +90,17 @@ Do not summarize by default. Classify the signal, identify what changed, separat
 
 Load it conditionally. Do not add it to every task.
 ```
+
+
+## AnalysisBank memory layer
+
+For agents that should improve across tasks, use `analysis-bank/` to store short reasoning memories from successful and failed outputs.
+
+Before high-stakes or ambiguous analysis:
+
+1. Identify region and sector.
+2. Retrieve at most 3 relevant memory cards from `analysis-bank/`.
+3. Apply only if boundary conditions match.
+4. Prefer memories that prevent known failure modes.
+
+Do not store raw private transcripts, stale facts, secrets, or full chain-of-thought.

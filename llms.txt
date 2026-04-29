@@ -36,3 +36,7 @@ Adoption guide: ADOPTION.md
 
 Sector lens packs:
 - Sanctions: skills/agenda-intelligence/references/sector/sanctions.md
+
+AnalysisBank: analysis-bank/README.md
+Reasoning memory format: analysis-bank/MEMORY_FORMAT.md
+Eval script: scripts/eval_before_after.py
