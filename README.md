@@ -60,6 +60,27 @@ Do not summarize by default. Classify the signal, identify what changed, separat
 
 The repository also includes an OpenClaw-compatible skill wrapper, but the useful part is plain markdown and portable.
 
+
+---
+
+## Copy-paste setup
+
+Fastest path: copy [`Agenda-Intelligence.md`](Agenda-Intelligence.md) into your repo next to `AGENTS.md`.
+
+Then add this to your agent instructions:
+
+```md
+## Agenda analysis
+
+When analyzing public agenda, news, policy, regulation, sanctions, geopolitics, trade, elections, conflicts, markets, or strategic risk, follow `Agenda-Intelligence.md`.
+
+Do not summarize by default. Classify the signal, identify what changed, separate fact from assessment, name uncertainty, and end with watch-next indicators.
+
+Load it conditionally. Do not add it to every task.
+```
+
+For deeper setups, also copy the relevant reference files from `skills/agenda-intelligence/references/`.
+
 ---
 
 ## Default output shape
@@ -74,6 +95,31 @@ The repository also includes an OpenClaw-compatible skill wrapper, but the usefu
 **Scenarios:** ...
 **Watch next:** ...
 ```
+
+
+---
+
+## Before / after examples
+
+The repo includes concrete examples showing the failure mode this file is meant to fix.
+
+Without the protocol:
+
+```text
+recap → generic implications → “monitor developments”
+```
+
+With Agenda-Intelligence.md:
+
+```text
+signal classification → what changed → affected actors → uncertainty → scenarios → watch-next indicators
+```
+
+Examples:
+
+- [EU AI Act implementation signal](examples/before-after/eu-ai-act.md)
+- [Red Sea shipping disruption](examples/before-after/red-sea-shipping.md)
+- [Sanctions routing through Central Asia](examples/before-after/sanctions-routing.md)
 
 ---
 
@@ -189,6 +235,10 @@ examples/
   central-asia-caspian-brief.md
   middle-east-brief.md
   eu-brief.md
+  before-after/
+    eu-ai-act.md
+    red-sea-shipping.md
+    sanctions-routing.md
 llms.txt
 ```
 
