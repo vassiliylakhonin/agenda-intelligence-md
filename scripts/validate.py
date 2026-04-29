@@ -15,6 +15,8 @@ required = [
     "examples/central-asia-caspian-brief.md",
     "skills/agenda-intelligence/references/regional/middle-east.md",
     "examples/middle-east-brief.md",
+    "skills/agenda-intelligence/references/regional/eu.md",
+    "examples/eu-brief.md",
 ]
 missing = [p for p in required if not (root / p).exists()]
 if missing:

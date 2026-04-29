@@ -20,3 +20,4 @@ Use Agenda-Intelligence.md for lightweight agenda triage; use global-think-tank-
 Regional lens packs:
 - Central Asia + Caspian: skills/agenda-intelligence/references/regional/central-asia-caspian.md
 - Middle East: skills/agenda-intelligence/references/regional/middle-east.md
+- European Union: skills/agenda-intelligence/references/regional/eu.md

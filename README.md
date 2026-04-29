@@ -110,6 +110,7 @@ Available lens packs:
 
 - [Central Asia + Caspian](skills/agenda-intelligence/references/regional/central-asia-caspian.md) — sanctions routing, corridor politics, Caspian chokepoints, banking/payment exposure, state leverage, energy, minerals, and regional political economy.
 - [Middle East](skills/agenda-intelligence/references/regional/middle-east.md) — escalation risk, energy flows, maritime chokepoints, sovereign capital, sanctions exposure, normalization, and regional power competition.
+- [European Union](skills/agenda-intelligence/references/regional/eu.md) — regulation, sanctions, trade defense, digital rules, climate policy, market access, coalition politics, and enforcement risk.
 
 Use the base protocol first, then add the regional lens when the agenda item has a clear regional connection.
 
@@ -145,11 +146,13 @@ skills/agenda-intelligence/
     regional/
       central-asia-caspian.md
       middle-east.md
+      eu.md
 examples/
   compact-brief.md
   red-team-brief.md
   central-asia-caspian-brief.md
   middle-east-brief.md
+  eu-brief.md
 llms.txt
 ```
 
@@ -166,7 +169,8 @@ Keep the loaded context small.
 - `evidence-discipline.md` — how to handle uncertainty and sources;
 - `output-patterns.md` — ready-to-use brief formats;
 - `regional/central-asia-caspian.md` — regional lens for Central Asia + Caspian agenda analysis;
-- `regional/middle-east.md` — regional lens for Middle East agenda analysis.
+- `regional/middle-east.md` — regional lens for Middle East agenda analysis;
+- `regional/eu.md` — regional lens for European Union agenda analysis.
 
 ---
 
