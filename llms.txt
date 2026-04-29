@@ -1,0 +1,15 @@
+# Agenda Intelligence Layer for AI Agents
+
+A compact markdown protocol for turning public agenda into decision-ready risk analysis.
+
+Core rule: do not summarize the news. Identify what changed, who is affected, what incentives shifted, what remains unknown, and what to watch next.
+
+Repository: https://github.com/vassiliylakhonin/Agenda-Intelligence-Layer-For-ClawHub
+Skill path: skills/agenda-intelligence/SKILL.md
+
+Recommended use:
+- policy and geopolitical analysis;
+- sanctions and compliance monitoring;
+- trade and regulatory risk briefs;
+- founder/investor operating-context notes;
+- red-team checks on confident narratives.
