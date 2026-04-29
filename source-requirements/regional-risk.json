@@ -1,0 +1,9 @@
+{
+  "category": "regional-risk",
+  "must_check": ["official_government_source", "legal_or_policy_text", "budget_or_procurement", "local_regulator", "credible_local_reporting"],
+  "supporting_sources": ["multilateral", "think_tank", "company_behavior", "trade_data", "expert"],
+  "red_flags": ["capital-city rhetoric without implementation", "region treated as passive chessboard", "single local rumor", "external commentary without local mechanism"],
+  "do_not_claim_without": ["policy shift without local source", "implementation without budget/procurement", "elite split without corroboration", "regional spillover without mechanism"],
+  "freshness_rules": ["local official sources may be hard to extract; label access limits", "implementation evidence outranks speeches"],
+  "watch_indicators": ["legal text", "budget", "procurement", "regulator action", "bank behavior", "customs rule", "infrastructure milestone", "local business behavior"]
+}

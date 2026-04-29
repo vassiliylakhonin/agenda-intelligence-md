@@ -6,6 +6,19 @@ import json
 
 root = Path(__file__).resolve().parents[1]
 required = [
+    "source-requirements/regional-risk.json",
+    "source-requirements/technology-ai.json",
+    "source-requirements/financial-market.json",
+    "source-requirements/trade.json",
+    "source-requirements/energy.json",
+    "source-requirements/conflict-security.json",
+    "source-requirements/elections.json",
+    "source-requirements/regulation.json",
+    "source-requirements/sanctions.json",
+    "examples/source/evidence-pack.json",
+    "schemas/evidence-pack.schema.json",
+    "source-taxonomy.json",
+    "SOURCE_POLICY.md",
     "examples/agenda-brief.json",
     "scripts/agenda_intelligence.py",
     "schemas/signal-classification.schema.json",
@@ -58,14 +71,16 @@ for token in ["name: agenda-intelligence", "description:", "references/analysis-
         raise SystemExit(f"SKILL.md missing token: {token}")
 
 readme = (root / "README.md").read_text()
-for token in ["drop-in markdown cognition layer", "Built for agents", "How to use it", "How it relates to AGENTS.md", "10-second demo", "Before / after examples", "Sector lens packs", "AnalysisBank", "Fact → Assessment"]:
+for token in ["drop-in markdown cognition layer", "Built for agents", "Source Acquisition Layer", "How to use it", "How it relates to AGENTS.md", "10-second demo", "Before / after examples", "Sector lens packs", "AnalysisBank", "Fact → Assessment"]:
     if token not in readme:
         raise SystemExit(f"README missing token: {token}")
 
-for json_file in ["agent-manifest.json", "schemas/agenda-brief.schema.json", "schemas/memory-card.schema.json", "schemas/lens-manifest.schema.json", "schemas/signal-classification.schema.json", "examples/agenda-brief.json"]:
+for json_file in ["agent-manifest.json", "schemas/agenda-brief.schema.json", "schemas/memory-card.schema.json", "schemas/lens-manifest.schema.json", "schemas/signal-classification.schema.json", "examples/agenda-brief.json", "source-taxonomy.json", "schemas/evidence-pack.schema.json", "examples/source/evidence-pack.json"]:
     json.loads((root / json_file).read_text())
 
 subprocess.run([sys.executable, str(root / "scripts" / "eval_before_after.py")], check=True)
 subprocess.run([sys.executable, str(root / "scripts" / "agenda_intelligence.py"), "validate-brief", str(root / "examples" / "agenda-brief.json")], check=True)
+subprocess.run([sys.executable, str(root / "scripts" / "agenda_intelligence.py"), "validate-evidence", str(root / "examples" / "source" / "evidence-pack.json")], check=True)
+subprocess.run([sys.executable, str(root / "scripts" / "agenda_intelligence.py"), "source-plan", "technology-ai"], check=True, stdout=subprocess.DEVNULL)
 
 print("OK: agenda-intelligence repo files validated")

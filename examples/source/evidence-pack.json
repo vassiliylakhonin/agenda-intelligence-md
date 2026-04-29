@@ -1,0 +1,38 @@
+{
+  "topic": "technology-ai",
+  "evidence_mode": "mixed",
+  "claims": [
+    {
+      "claim": "A national AI policy signal becomes stronger when legal text, budget, procurement, infrastructure, and deployment evidence appear.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "SOURCE_POLICY.md",
+          "url": "SOURCE_POLICY.md",
+          "source_type": "user_provided",
+          "freshness": "current",
+          "supports": ["Defines required evidence for high-stakes agenda claims"],
+          "limits": ["Policy file is a reasoning contract, not an external factual source"]
+        },
+        {
+          "name": "technology-ai source requirements",
+          "url": "source-requirements/technology-ai.json",
+          "source_type": "user_provided",
+          "freshness": "current",
+          "supports": ["Lists AI policy implementation evidence requirements"],
+          "limits": ["Does not verify any specific country claim"]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Any country-specific AI implementation claim not backed by official strategy, legal text, budget, procurement, infrastructure, or deployment evidence"
+  ],
+  "source_plan": [
+    "Check official strategy and ministry sources",
+    "Check legal or regulatory text",
+    "Check budget/procurement evidence",
+    "Check infrastructure or compute evidence",
+    "Check deployment and benchmark evidence"
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "name": "Agenda-Intelligence.md",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Agent-first reasoning infrastructure for public-agenda analysis.",
   "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
   "entrypoint": "Agenda-Intelligence.md",
@@ -22,7 +22,8 @@
     "agenda_brief": "schemas/agenda-brief.schema.json",
     "memory_card": "schemas/memory-card.schema.json",
     "lens_manifest": "schemas/lens-manifest.schema.json",
-    "signal_classification": "schemas/signal-classification.schema.json"
+    "signal_classification": "schemas/signal-classification.schema.json",
+    "evidence_pack": "schemas/evidence-pack.schema.json"
   },
   "protocols": [
     "skills/agenda-intelligence/references/analysis-protocol.md",
@@ -42,5 +43,20 @@
   },
   "cli": "scripts/agenda_intelligence.py",
   "eval": "scripts/eval_before_after.py",
-  "mcp_sketch": "MCP.md"
+  "mcp_sketch": "MCP.md",
+  "source_acquisition": {
+    "policy": "SOURCE_POLICY.md",
+    "taxonomy": "source-taxonomy.json",
+    "requirements": {
+      "sanctions": "source-requirements/sanctions.json",
+      "regulation": "source-requirements/regulation.json",
+      "elections": "source-requirements/elections.json",
+      "conflict-security": "source-requirements/conflict-security.json",
+      "energy": "source-requirements/energy.json",
+      "trade": "source-requirements/trade.json",
+      "financial-market": "source-requirements/financial-market.json",
+      "technology-ai": "source-requirements/technology-ai.json",
+      "regional-risk": "source-requirements/regional-risk.json"
+    }
+  }
 }

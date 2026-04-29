@@ -69,3 +69,24 @@ Inputs:
 ## Design rule
 
 MCP should expose small stable contracts, not a large agent framework. The markdown files remain the source of truth.
+
+
+### `source_plan`
+
+Return required source types for an agenda category.
+
+Inputs:
+
+```json
+{ "category": "technology-ai" }
+```
+
+### `validate_evidence`
+
+Validate an evidence pack against `schemas/evidence-pack.schema.json`.
+
+Inputs:
+
+```json
+{ "path": "examples/source/evidence-pack.json" }
+```

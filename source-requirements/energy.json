@@ -1,0 +1,9 @@
+{
+  "category": "energy",
+  "must_check": ["production_data", "pipeline_or_port_status", "company_statement", "regulator_or_ministry", "market_price_data"],
+  "supporting_sources": ["shipping_data", "inventory_data", "OPEC_statement", "analyst_note", "trade_press"],
+  "red_flags": ["project announcement without financing", "disruption claim without throughput data", "price move attributed without market evidence"],
+  "do_not_claim_without": ["supply disruption without operational data", "investment certainty without FID/financing", "market impact without price or volume evidence"],
+  "freshness_rules": ["operational data and prices must be current", "project timelines should be checked against latest filings or ministry updates"],
+  "watch_indicators": ["production volume", "throughput", "maintenance notice", "shipping delay", "inventory change", "OPEC+ decision", "FID", "tariff or subsidy change"]
+}

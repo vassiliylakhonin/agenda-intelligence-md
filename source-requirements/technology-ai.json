@@ -1,0 +1,9 @@
+{
+  "category": "technology-ai",
+  "must_check": ["official_strategy", "legal_or_regulatory_text", "budget_or_procurement", "technical_standard", "infrastructure_or_compute_evidence"],
+  "supporting_sources": ["model_card", "benchmark", "company_deployment", "academic", "ecosystem_source", "media"],
+  "red_flags": ["AI strategy treated as implementation", "pilot treated as production deployment", "vendor announcement without procurement", "benchmark claim without method"],
+  "do_not_claim_without": ["binding AI rule without legal text", "national AI capability without infrastructure or deployment evidence", "productivity impact without adoption or output data"],
+  "freshness_rules": ["AI policy changes quickly; check current strategy/regulator pages", "benchmarks and model claims require date and method"],
+  "watch_indicators": ["AI law", "regulator guidance", "budget", "procurement", "compute partnership", "dataset release", "model card", "benchmark", "production deployment", "education pipeline"]
+}

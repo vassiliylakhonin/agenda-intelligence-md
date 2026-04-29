@@ -5,7 +5,7 @@
   <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/network/members"><img src="https://img.shields.io/github/forks/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Forks"></a>
   <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/issues"><img src="https://img.shields.io/github/issues/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Issues"></a>
   <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/commits/main"><img src="https://img.shields.io/github/last-commit/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Last Commit"></a>
-  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/tag/v0.3.0"><img src="https://img.shields.io/badge/release-v0.3.0-blue?style=for-the-badge" alt="Release v0.3.0"></a>
+  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/tag/v0.4.0"><img src="https://img.shields.io/badge/release-v0.4.0-blue?style=for-the-badge" alt="Release v0.4.0"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License"></a>
 </p>
 
@@ -21,6 +21,24 @@ Fact → Assessment → Assumption → Unknown → Scenario → Indicator to wat
 
 Use it when an agent needs to reason about policy, geopolitics, regulation, sanctions, trade, energy, elections, conflicts, or market-moving public agenda.
 
+
+
+---
+
+## What's new in v0.4.0
+
+v0.4.0 adds a general **Source Acquisition Layer**.
+
+Reasoning is not enough. Agents need to know which source types are required before making claims about sanctions, regulation, elections, conflict, energy, trade, financial markets, AI/technology, or regional risk.
+
+Added:
+
+- `SOURCE_POLICY.md` — source discipline rules;
+- `source-taxonomy.json` — machine-readable source types;
+- `source-requirements/*.json` — source plans by agenda category;
+- `schemas/evidence-pack.schema.json` — evidence pack contract;
+- `examples/source/evidence-pack.json` — valid example;
+- CLI commands: `source-types`, `list-source-packs`, `source-plan`, `validate-evidence`.
 
 ---
 
@@ -132,6 +150,9 @@ schemas/memory-card.schema.json
 schemas/lens-manifest.schema.json
 schemas/signal-classification.schema.json
 scripts/agenda_intelligence.py
+SOURCE_POLICY.md
+source-taxonomy.json
+source-requirements/*.json
 MCP.md
 ```
 
@@ -143,6 +164,8 @@ python3 scripts/agenda_intelligence.py list-lenses
 python3 scripts/agenda_intelligence.py get-lens regional eu
 python3 scripts/agenda_intelligence.py get-protocol entrypoint
 python3 scripts/agenda_intelligence.py validate-brief examples/agenda-brief.json
+python3 scripts/agenda_intelligence.py source-plan technology-ai
+python3 scripts/agenda_intelligence.py validate-evidence examples/source/evidence-pack.json
 python3 scripts/agenda_intelligence.py score
 ```
 
@@ -286,6 +309,42 @@ Do not summarize by default. Classify the signal, identify what changed, separat
 The important part is conditional loading. Do not spend context on agenda analysis rules when the task is ordinary coding, writing, or personal assistance.
 
 
+
+---
+
+## Source Acquisition Layer
+
+Agenda-Intelligence.md separates reasoning from evidence.
+
+Before writing a high-stakes or current brief, an agent should generate a source plan:
+
+```text
+Task → source requirement category → required evidence → unsupported claims → brief
+```
+
+Available source requirement categories:
+
+- sanctions
+- regulation
+- elections
+- conflict-security
+- energy
+- trade
+- financial-market
+- technology-ai
+- regional-risk
+
+CLI examples:
+
+```bash
+python3 scripts/agenda_intelligence.py source-types
+python3 scripts/agenda_intelligence.py list-source-packs
+python3 scripts/agenda_intelligence.py source-plan technology-ai
+python3 scripts/agenda_intelligence.py validate-evidence examples/source/evidence-pack.json
+```
+
+If live retrieval fails, the agent should say so and downgrade evidence mode instead of pretending the brief is source-backed.
+
 ---
 
 ## AnalysisBank
@@ -368,6 +427,18 @@ Agenda-Intelligence.md
 ADOPTION.md
 agent-manifest.json
 MCP.md
+SOURCE_POLICY.md
+source-taxonomy.json
+source-requirements/
+  sanctions.json
+  regulation.json
+  elections.json
+  conflict-security.json
+  energy.json
+  trade.json
+  financial-market.json
+  technology-ai.json
+  regional-risk.json
 analysis-bank/
   README.md
   MEMORY_FORMAT.md
@@ -404,6 +475,7 @@ schemas/
   memory-card.schema.json
   lens-manifest.schema.json
   signal-classification.schema.json
+  evidence-pack.schema.json
 scripts/
   agenda_intelligence.py
   validate.py

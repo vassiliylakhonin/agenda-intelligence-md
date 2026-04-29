@@ -1,0 +1,9 @@
+{
+  "category": "conflict-security",
+  "must_check": ["official_statement", "credible_incident_report", "geolocation_or_visual_evidence", "military_or_security_advisory"],
+  "supporting_sources": ["local_media", "humanitarian_report", "shipping_or_airspace_advisory", "expert", "satellite_or_osint"],
+  "red_flags": ["unverified casualty numbers", "anonymous battlefield claim", "old footage", "rhetoric treated as escalation"],
+  "do_not_claim_without": ["territorial change without corroboration", "state responsibility without evidence", "escalation trend without repeated operational indicators"],
+  "freshness_rules": ["timestamp all operational claims", "treat early casualty and damage reports as provisional"],
+  "watch_indicators": ["force movement", "strike pattern", "mobilization", "airspace closure", "shipping advisory", "ceasefire mechanism", "humanitarian access", "official denial or confirmation"]
+}

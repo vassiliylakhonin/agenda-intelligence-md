@@ -79,15 +79,40 @@ def minimal_validate(instance, schema):
     return []
 
 
-def cmd_validate_brief(args):
-    schema = json.loads((ROOT / "schemas" / "agenda-brief.schema.json").read_text())
-    data = json.loads(Path(args.path).read_text())
+def validate_json_file(path, schema_name, label):
+    schema = json.loads((ROOT / "schemas" / schema_name).read_text())
+    data = json.loads(Path(path).read_text())
     errors = minimal_validate(data, schema)
     if errors:
         for e in errors:
             print(f"ERROR: {e}", file=sys.stderr)
         raise SystemExit(1)
-    print("OK: agenda brief validates")
+    print(f"OK: {label} validates")
+
+
+def cmd_validate_brief(args):
+    validate_json_file(args.path, "agenda-brief.schema.json", "agenda brief")
+
+
+def cmd_source_types(args):
+    print(json.dumps(json.loads((ROOT / "source-taxonomy.json").read_text()), indent=2))
+
+
+def cmd_source_plan(args):
+    manifest = load_manifest()
+    requirements = manifest.get("source_acquisition", {}).get("requirements", {})
+    if args.category not in requirements:
+        raise SystemExit(f"Unknown source category: {args.category}")
+    print(json.dumps(json.loads((ROOT / requirements[args.category]).read_text()), indent=2))
+
+
+def cmd_list_source_packs(args):
+    manifest = load_manifest()
+    print(json.dumps(manifest.get("source_acquisition", {}).get("requirements", {}), indent=2))
+
+
+def cmd_validate_evidence(args):
+    validate_json_file(args.path, "evidence-pack.schema.json", "evidence pack")
 
 
 def cmd_score(args):
@@ -124,6 +149,20 @@ def main():
     p = sub.add_parser("validate-brief", help="Validate a JSON agenda brief")
     p.add_argument("path")
     p.set_defaults(func=cmd_validate_brief)
+
+    p = sub.add_parser("source-types", help="Print source taxonomy")
+    p.set_defaults(func=cmd_source_types)
+
+    p = sub.add_parser("list-source-packs", help="List source requirement packs")
+    p.set_defaults(func=cmd_list_source_packs)
+
+    p = sub.add_parser("source-plan", help="Print source requirements for a category")
+    p.add_argument("category")
+    p.set_defaults(func=cmd_source_plan)
+
+    p = sub.add_parser("validate-evidence", help="Validate an evidence pack JSON file")
+    p.add_argument("path")
+    p.set_defaults(func=cmd_validate_evidence)
 
     p = sub.add_parser("score", help="Run before/after eval harness")
     p.add_argument("path", nargs="?")

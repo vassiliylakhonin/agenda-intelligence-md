@@ -1,0 +1,9 @@
+{
+  "category": "trade",
+  "must_check": ["customs_data", "tariff_or_trade_measure", "trade_ministry", "WTO_or_treaty_text", "port_or_border_status"],
+  "supporting_sources": ["company_behavior", "freight_data", "industry_association", "local_media", "expert"],
+  "red_flags": ["trade route claim without data", "tariff rumor without legal instrument", "single company behavior treated as market trend"],
+  "do_not_claim_without": ["restriction without legal/customs source", "supply-chain shift without volume or route data", "trade war escalation without official measure"],
+  "freshness_rules": ["tariffs and customs rules need current legal text", "trade data may lag; label timing"],
+  "watch_indicators": ["tariff notice", "customs rule", "port delay", "freight rates", "HS-code shifts", "quota", "export license", "border inspection change"]
+}

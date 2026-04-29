@@ -1,0 +1,9 @@
+{
+  "official": ["government", "regulator", "central_bank", "court", "parliament", "presidency", "ministry", "agency"],
+  "legal": ["law", "draft_law", "decree", "regulation", "sanctions_list", "court_decision", "treaty", "license", "guidance"],
+  "market": ["filing", "exchange_notice", "company_report", "tender", "procurement", "price_data", "trade_data", "customs_data"],
+  "technical": ["standard", "specification", "api_docs", "model_card", "benchmark", "security_advisory", "audit_report"],
+  "media": ["wire", "local_media", "investigative", "trade_press", "specialist_media"],
+  "expert": ["think_tank", "academic", "consultancy", "analyst_note", "ngo_report", "observer_report"],
+  "behavioral": ["company_behavior", "bank_behavior", "shipping_behavior", "procurement_behavior", "consumer_behavior", "platform_behavior"]
+}

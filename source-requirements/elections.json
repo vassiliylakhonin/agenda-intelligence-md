@@ -1,0 +1,9 @@
+{
+  "category": "elections",
+  "must_check": ["official_results", "electoral_commission", "legal_framework", "court_challenge", "observer_report"],
+  "supporting_sources": ["polling", "party_statement", "local_media", "civil_society", "expert"],
+  "red_flags": ["exit poll treated as final result", "single poll overread", "fraud claim without evidence", "turnout claim without official data"],
+  "do_not_claim_without": ["winner without official count or credible projection", "legitimacy shift without observer/legal evidence", "coalition outcome without party statements or seat math"],
+  "freshness_rules": ["results evolve quickly; timestamp claims", "polling requires method/date/sample"],
+  "watch_indicators": ["official turnout", "certified results", "court filings", "observer statements", "coalition negotiations", "security incidents", "concession or contestation"]
+}
