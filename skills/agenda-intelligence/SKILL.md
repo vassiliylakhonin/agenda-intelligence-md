@@ -17,10 +17,12 @@ Read only the smallest needed subset:
 - `references/agenda-triage.md` — classify developments as noise, weak signal, signal, structural shift, or trigger event.
 - `references/evidence-discipline.md` — source handling, uncertainty labels, and live-verification limits.
 - `references/output-patterns.md` — compact brief, decision memo, red-team, and watchlist formats.
+- `references/regional/central-asia-caspian.md` — regional lens for Central Asia and Caspian agenda analysis.
 
 For normal agenda questions, read `analysis-protocol.md` and `agenda-triage.md`.
 For source-sensitive or current-event tasks, also read `evidence-discipline.md`.
 For a requested format, read `output-patterns.md`.
+For Central Asia, Caspian, sanctions-routing, corridor, banking, energy, minerals, or regional political-economy questions, also read `references/regional/central-asia-caspian.md`.
 
 ## Core rule
 

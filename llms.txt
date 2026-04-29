@@ -16,3 +16,6 @@ Recommended use:
 
 Related full memo skill: https://github.com/vassiliylakhonin/global-think-tank-analyst
 Use Agenda-Intelligence.md for lightweight agenda triage; use global-think-tank-analyst for full policy-risk memos.
+
+Regional lens packs:
+- Central Asia + Caspian: skills/agenda-intelligence/references/regional/central-asia-caspian.md

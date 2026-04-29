@@ -103,6 +103,19 @@ Default compact brief:
 If live verification was not performed, the agent must say so.
 
 
+
+---
+
+## Regional lens packs
+
+Agenda-Intelligence.md can be extended with lightweight regional thinking layers. These are not full specialist skills; they are portable checklists that help any agent reason better about a specific region.
+
+Available lens packs:
+
+- [Central Asia + Caspian](skills/agenda-intelligence/references/regional/central-asia-caspian.md) — sanctions routing, corridor politics, Caspian chokepoints, banking/payment exposure, state leverage, energy, minerals, and regional political economy.
+
+Use the base protocol first, then add the regional lens when the agenda item has a clear regional connection.
+
 ---
 
 ## Relationship to global-think-tank-analyst
@@ -132,9 +145,12 @@ skills/agenda-intelligence/
     agenda-triage.md
     evidence-discipline.md
     output-patterns.md
+    regional/
+      central-asia-caspian.md
 examples/
   compact-brief.md
   red-team-brief.md
+  central-asia-caspian-brief.md
 llms.txt
 ```
 
@@ -150,6 +166,7 @@ Keep the loaded context small.
 - `agenda-triage.md` — how to classify developments;
 - `evidence-discipline.md` — how to handle uncertainty and sources;
 - `output-patterns.md` — ready-to-use brief formats.
+- `regional/central-asia-caspian.md` — regional lens for Central Asia + Caspian agenda analysis.
 
 ---
 
