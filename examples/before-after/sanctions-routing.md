@@ -44,3 +44,15 @@ This could increase scrutiny from Western regulators and affect regional trade. 
 - **Overcorrection case:** legitimate trade suffers as banks and logistics providers reduce exposure.
 
 **Watch next:** sanctions designations, customs data by HS code, bank account closures, export-control advisories, named intermediaries, correspondent banking behavior, and changes in customs inspections.
+
+## Why the after is better
+
+| Criterion | Before | After |
+|---|---|---|
+| Signal classification | Missing | Present |
+| What changed | Vague | Specific delta identified |
+| Actor specificity | Generic | Segmented by exposed groups |
+| Uncertainty | Hidden or generic | Main uncertainty named |
+| Falsifiability | Missing | Watch indicators can confirm or weaken the view |
+| Watch-next | “Monitor developments” | Concrete indicators listed |
+

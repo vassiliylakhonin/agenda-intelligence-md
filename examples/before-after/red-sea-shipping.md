@@ -47,3 +47,15 @@ The situation also has geopolitical implications because several regional actors
 - **Escalation:** military response or broader regional retaliation increases uncertainty beyond shipping.
 
 **Watch next:** carrier route announcements, war-risk insurance rates, naval advisories, Suez traffic data, port delays, credible claims of responsibility, and government force-protection changes.
+
+## Why the after is better
+
+| Criterion | Before | After |
+|---|---|---|
+| Signal classification | Missing | Present |
+| What changed | Vague | Specific delta identified |
+| Actor specificity | Generic | Segmented by exposed groups |
+| Uncertainty | Hidden or generic | Main uncertainty named |
+| Falsifiability | Missing | Watch indicators can confirm or weaken the view |
+| Watch-next | “Monitor developments” | Concrete indicators listed |
+

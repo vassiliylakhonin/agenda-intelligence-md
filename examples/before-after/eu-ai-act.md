@@ -46,3 +46,15 @@ This guidance may affect providers and deployers of AI systems, especially those
 - **Lower-risk case:** guidance remains broad and does not materially change compliance programs.
 
 **Watch next:** implementing/delegated acts, harmonized standards, regulator statements, enforcement deadlines, first national authority actions, and product/vendor behavior by large EU-facing AI firms.
+
+## Why the after is better
+
+| Criterion | Before | After |
+|---|---|---|
+| Signal classification | Missing | Present |
+| What changed | Vague | Specific delta identified |
+| Actor specificity | Generic | Segmented by exposed groups |
+| Uncertainty | Hidden or generic | Main uncertainty named |
+| Falsifiability | Missing | Watch indicators can confirm or weaken the view |
+| Watch-next | “Monitor developments” | Concrete indicators listed |
+

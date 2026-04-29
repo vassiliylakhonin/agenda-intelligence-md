@@ -61,6 +61,25 @@ Do not summarize by default. Classify the signal, identify what changed, separat
 The repository also includes an OpenClaw-compatible skill wrapper, but the useful part is plain markdown and portable.
 
 
+
+---
+
+## 10-second demo
+
+Without Agenda-Intelligence.md:
+
+```text
+Companies should monitor developments and prepare for possible regulatory changes.
+```
+
+With Agenda-Intelligence.md:
+
+```text
+Watch for regulator guidance, first enforcement action, compliance deadline, and company product redesigns. Treat this as a signal until those indicators appear.
+```
+
+The difference is not style. It is decision value.
+
 ---
 
 ## Copy-paste setup
@@ -120,6 +139,7 @@ Examples:
 - [EU AI Act implementation signal](examples/before-after/eu-ai-act.md)
 - [Red Sea shipping disruption](examples/before-after/red-sea-shipping.md)
 - [Sanctions routing through Central Asia](examples/before-after/sanctions-routing.md)
+- [Evaluation rubric](examples/before-after/evaluation-rubric.md)
 
 ---
 
