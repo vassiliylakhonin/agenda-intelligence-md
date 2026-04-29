@@ -1,10 +1,10 @@
 # Agenda-Intelligence.md
 
 <p align="left">
-  <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-md/stargazers"><img src="https://img.shields.io/github/stars/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Stars"></a>
-  <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-md/network/members"><img src="https://img.shields.io/github/forks/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Forks"></a>
-  <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-md/issues"><img src="https://img.shields.io/github/issues/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Issues"></a>
-  <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-md/commits/main"><img src="https://img.shields.io/github/last-commit/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Last Commit"></a>
+  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/stargazers"><img src="https://img.shields.io/github/stars/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Stars"></a>
+  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/network/members"><img src="https://img.shields.io/github/forks/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Forks"></a>
+  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/issues"><img src="https://img.shields.io/github/issues/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Issues"></a>
+  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/commits/main"><img src="https://img.shields.io/github/last-commit/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Last Commit"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License"></a>
 </p>
 
@@ -100,6 +100,41 @@ The repository also includes an OpenClaw-compatible skill wrapper, but the usefu
 
 If live verification was not performed, the agent should say so.
 
+
+---
+
+## How it relates to AGENTS.md
+
+`AGENTS.md` tells an agent how to operate.
+`Agenda-Intelligence.md` tells an agent how to reason about public agenda.
+
+Use `AGENTS.md` globally. Use `Agenda-Intelligence.md` conditionally when the task involves news, policy, regulation, sanctions, geopolitics, trade, elections, conflicts, markets, or strategic risk.
+
+In practice, it can sit next to the usual agent files:
+
+```text
+AGENTS.md      = operating rules
+SOUL.md        = voice and stance
+TOOLS.md       = tool discipline
+IDENTITY.md    = agent identity
+USER.md        = user preferences
+HEARTBEAT.md   = proactive behavior
+MEMORY.md      = durable context
+Agenda-Intelligence.md = public-agenda reasoning protocol
+```
+
+Minimal `AGENTS.md` hook:
+
+```md
+## Agenda analysis
+
+When analyzing public agenda, policy, regulation, sanctions, geopolitics, trade, elections, conflicts, markets, or strategic risk, follow `Agenda-Intelligence.md`.
+
+Do not summarize by default. Classify the signal, identify what changed, separate fact from assessment, name uncertainty, and end with watch-next indicators.
+```
+
+The important part is conditional loading. Do not spend context on agenda analysis rules when the task is ordinary coding, writing, or personal assistance.
+
 ---
 
 ## Regional lens packs
@@ -136,6 +171,7 @@ global-think-tank-analyst = full memo skill for decision-ready policy risk analy
 ## Repository structure
 
 ```text
+Agenda-Intelligence.md
 skills/agenda-intelligence/
   SKILL.md
   references/

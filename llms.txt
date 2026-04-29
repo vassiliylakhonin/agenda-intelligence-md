@@ -21,3 +21,7 @@ Regional lens packs:
 - Central Asia + Caspian: skills/agenda-intelligence/references/regional/central-asia-caspian.md
 - Middle East: skills/agenda-intelligence/references/regional/middle-east.md
 - European Union: skills/agenda-intelligence/references/regional/eu.md
+
+Top-level protocol: Agenda-Intelligence.md
+Role: sits beside files such as AGENTS.md as a conditional public-agenda reasoning layer.
+Use it only for news, policy, regulation, sanctions, geopolitics, trade, markets, conflict, or strategic-risk analysis.
