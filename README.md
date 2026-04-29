@@ -1,17 +1,17 @@
-# Agenda Intelligence Layer for AI Agents
+# Agenda-Intelligence.md
 
 <p align="left">
-  <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-Layer-For-ClawHub/stargazers"><img src="https://img.shields.io/github/stars/vassiliylakhonin/Agenda-Intelligence-Layer-For-ClawHub?style=for-the-badge" alt="Stars"></a>
-  <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-Layer-For-ClawHub/network/members"><img src="https://img.shields.io/github/forks/vassiliylakhonin/Agenda-Intelligence-Layer-For-ClawHub?style=for-the-badge" alt="Forks"></a>
-  <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-Layer-For-ClawHub/issues"><img src="https://img.shields.io/github/issues/vassiliylakhonin/Agenda-Intelligence-Layer-For-ClawHub?style=for-the-badge" alt="Issues"></a>
-  <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-Layer-For-ClawHub/commits/main"><img src="https://img.shields.io/github/last-commit/vassiliylakhonin/Agenda-Intelligence-Layer-For-ClawHub?style=for-the-badge" alt="Last Commit"></a>
+  <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-md/stargazers"><img src="https://img.shields.io/github/stars/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Stars"></a>
+  <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-md/network/members"><img src="https://img.shields.io/github/forks/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Forks"></a>
+  <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-md/issues"><img src="https://img.shields.io/github/issues/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Issues"></a>
+  <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-md/commits/main"><img src="https://img.shields.io/github/last-commit/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Last Commit"></a>
   <a href="https://clawhub.ai/vassiliylakhonin/agenda-intelligence"><img src="https://img.shields.io/badge/ClawHub-install-blue?style=for-the-badge" alt="Install on ClawHub"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License"></a>
 </p>
 
 **Stop your AI agent from summarizing the news. Make it identify what changed, why it matters, what is uncertain, and what to watch next.**
 
-Agenda Intelligence is a compact markdown analysis layer for OpenClaw agents. It turns messy public agenda — policy moves, elections, sanctions, conflicts, regulation, trade disputes, institutional signals, diplomatic statements — into decision-ready briefs.
+Agenda-Intelligence.md is a compact markdown analysis layer for AI agents. It turns messy public agenda — policy moves, elections, sanctions, conflicts, regulation, trade disputes, institutional signals, diplomatic statements — into decision-ready briefs.
 
 ---
 
