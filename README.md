@@ -215,6 +215,19 @@ Available lens packs:
 
 Use the base protocol first, then add the regional lens when the agenda item has a clear regional connection.
 
+
+---
+
+## Sector lens packs
+
+Sector lenses add domain-specific checks for high-risk agenda areas. They are not legal, financial, or technical advice; they are reasoning checklists for agents.
+
+Available sector packs:
+
+- [Sanctions](skills/agenda-intelligence/references/sector/sanctions.md) — designations, enforcement, export controls, routing, ownership/control, financial channels, licenses, and compliance exposure.
+
+Use the base protocol first, then add the sector lens when the agenda item has a clear domain connection.
+
 ---
 
 ## Relationship to global-think-tank-analyst
@@ -249,12 +262,16 @@ skills/agenda-intelligence/
       central-asia-caspian.md
       middle-east.md
       eu.md
+    sector/
+      sanctions.md
 examples/
   compact-brief.md
   red-team-brief.md
   central-asia-caspian-brief.md
   middle-east-brief.md
   eu-brief.md
+  sector/
+    sanctions-brief.md
   before-after/
     eu-ai-act.md
     red-sea-shipping.md
@@ -276,7 +293,8 @@ Keep the loaded context small.
 - `output-patterns.md` — ready-to-use brief formats;
 - `regional/central-asia-caspian.md` — regional lens for Central Asia + Caspian agenda analysis;
 - `regional/middle-east.md` — regional lens for Middle East agenda analysis;
-- `regional/eu.md` — regional lens for European Union agenda analysis.
+- `regional/eu.md` — regional lens for European Union agenda analysis;
+- `sector/sanctions.md` — sector lens for sanctions and export-control agenda analysis.
 
 ---
 

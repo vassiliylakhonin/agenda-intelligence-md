@@ -20,6 +20,7 @@ Read only the smallest needed subset:
 - `references/regional/central-asia-caspian.md` — regional lens for Central Asia and Caspian agenda analysis.
 - `references/regional/middle-east.md` — regional lens for Middle East agenda analysis.
 - `references/regional/eu.md` — regional lens for European Union agenda analysis.
+- `references/sector/sanctions.md` — sector lens for sanctions and export-control agenda analysis.
 
 For normal agenda questions, read `analysis-protocol.md` and `agenda-triage.md`.
 For source-sensitive or current-event tasks, also read `evidence-discipline.md`.
@@ -27,6 +28,7 @@ For a requested format, read `output-patterns.md`.
 For Central Asia, Caspian, sanctions-routing, corridor, banking, energy, minerals, or regional political-economy questions, also read `references/regional/central-asia-caspian.md`.
 For Middle East, Gulf, Iran, Israel/Palestine, Red Sea, energy, maritime chokepoint, sovereign capital, sanctions, or escalation questions, also read `references/regional/middle-east.md`.
 For European Union, EU regulation, sanctions, trade defense, digital regulation, climate policy, enlargement, competition, market access, or enforcement questions, also read `references/regional/eu.md`.
+For sanctions, export controls, designations, delistings, enforcement, beneficial ownership, routing, financial restrictions, licenses, or compliance exposure, also read `references/sector/sanctions.md`.
 
 ## Core rule
 

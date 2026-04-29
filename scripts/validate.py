@@ -3,6 +3,9 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 required = [
+    "examples/sector/sanctions-brief.md",
+    "skills/agenda-intelligence/references/sector/sanctions.md",
+    "ADOPTION.md",
     "Agenda-Intelligence.md",
     "README.md",
     "LICENSE",
@@ -34,7 +37,7 @@ for token in ["name: agenda-intelligence", "description:", "references/analysis-
         raise SystemExit(f"SKILL.md missing token: {token}")
 
 readme = (root / "README.md").read_text()
-for token in ["A markdown protocol for AI agents", "How to use it", "How it relates to AGENTS.md", "10-second demo", "Before / after examples", "Fact → Assessment"]:
+for token in ["A markdown protocol for AI agents", "How to use it", "How it relates to AGENTS.md", "10-second demo", "Before / after examples", "Sector lens packs", "Fact → Assessment"]:
     if token not in readme:
         raise SystemExit(f"README missing token: {token}")
 

@@ -75,6 +75,10 @@ For regional agenda analysis, add the relevant lens:
 - `skills/agenda-intelligence/references/regional/middle-east.md`
 - `skills/agenda-intelligence/references/regional/eu.md`
 
+For sector-specific agenda analysis, add the relevant lens:
+
+- `skills/agenda-intelligence/references/sector/sanctions.md`
+
 ## AGENTS.md integration snippet
 
 ```md

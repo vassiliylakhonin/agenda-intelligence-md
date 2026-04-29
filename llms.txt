@@ -31,3 +31,8 @@ Before/after examples:
 - examples/before-after/red-sea-shipping.md
 - examples/before-after/sanctions-routing.md
 - examples/before-after/evaluation-rubric.md
+
+Adoption guide: ADOPTION.md
+
+Sector lens packs:
+- Sanctions: skills/agenda-intelligence/references/sector/sanctions.md
