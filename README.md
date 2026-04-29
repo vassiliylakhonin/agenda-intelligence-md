@@ -5,88 +5,86 @@
   <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-md/network/members"><img src="https://img.shields.io/github/forks/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Forks"></a>
   <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-md/issues"><img src="https://img.shields.io/github/issues/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Issues"></a>
   <a href="https://github.com/vassiliylakhonin/Agenda-Intelligence-md/commits/main"><img src="https://img.shields.io/github/last-commit/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Last Commit"></a>
-  <a href="https://clawhub.ai/vassiliylakhonin/agenda-intelligence"><img src="https://img.shields.io/badge/ClawHub-install-blue?style=for-the-badge" alt="Install on ClawHub"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License"></a>
 </p>
 
-**Stop your AI agent from summarizing the news. Make it identify what changed, why it matters, what is uncertain, and what to watch next.**
+**A markdown protocol for AI agents that need to analyze the public agenda instead of summarizing it badly.**
 
-Agenda-Intelligence.md is a compact markdown analysis layer for AI agents. It turns messy public agenda — policy moves, elections, sanctions, conflicts, regulation, trade disputes, institutional signals, diplomatic statements — into decision-ready briefs.
+Most agent-written news analysis has the same problem: it tells you what happened, then adds a few polished paragraphs that do not change any decision.
 
----
-
-## Why this exists
-
-Most AI news analysis is weak in the same ways:
-
-- it recaps events instead of explaining what changed;
-- it sounds confident while hiding uncertainty;
-- it treats all actors as equally important;
-- it produces polished paragraphs with no decision value;
-- it forecasts without indicators or falsification tests.
-
-This skill gives agents a stricter protocol:
+Agenda-Intelligence.md is a small set of markdown files that gives agents a stricter workflow:
 
 ```text
 Fact → Assessment → Assumption → Unknown → Scenario → Indicator to watch
 ```
 
-The result is shorter, cleaner, and more useful analysis.
+Use it when an agent needs to reason about policy, geopolitics, regulation, sanctions, trade, energy, elections, conflicts, or market-moving public agenda.
 
 ---
 
-## Install
+## What this does
 
-```bash
-clawhub install agenda-intelligence
-```
+It pushes an agent to answer better questions:
 
-Install pinned version:
+- Is this noise, weak signal, signal, structural shift, or trigger event?
+- What actually changed?
+- Who gains or loses leverage?
+- Which incentives shifted?
+- What is still unknown?
+- What would confirm or falsify this view?
+- What should be watched next?
 
-```bash
-clawhub install agenda-intelligence --version 0.1.0
-```
-
----
-
-## Typical use
-
-```text
-Use $agenda-intelligence to analyze today’s EU sanctions discussion. I need what changed, who is affected, main uncertainty, scenarios, and watch-next indicators.
-```
-
-```text
-Use $agenda-intelligence on this policy announcement. Do not summarize it; tell me whether it is signal, noise, weak signal, structural shift, or trigger event.
-```
-
-```text
-Use $agenda-intelligence to brief a founder on how this AI regulation news changes risk, timing, and optionality.
-```
+The goal is not longer analysis. The goal is less filler and more decision value.
 
 ---
 
-## Output highlights
+## How to use it
 
-Default compact brief:
+Copy or reference the markdown files in your agent setup:
 
-1. **Bottom line** — one direct judgment.
-2. **Signal classification** — noise / weak signal / signal / structural shift / trigger event.
-3. **What changed** — the delta, not the recap.
-4. **Who gains or loses leverage** — actors and incentives.
-5. **Decision implications** — risk, timing, optionality.
-6. **Competing interpretations** — where ambiguity matters.
-7. **Unknowns** — what could change the assessment.
-8. **Watch next** — concrete indicators.
+```text
+skills/agenda-intelligence/references/analysis-protocol.md
+skills/agenda-intelligence/references/agenda-triage.md
+skills/agenda-intelligence/references/evidence-discipline.md
+skills/agenda-intelligence/references/output-patterns.md
+```
+
+For repo-level agent instructions, link the base protocol from your `AGENTS.md`, system prompt, retrieval layer, or tool-specific skill wrapper.
+
+Example instruction:
+
+```text
+Before analyzing public agenda, use Agenda-Intelligence.md.
+Do not summarize by default. Classify the signal, identify what changed, separate fact from assessment, name the main uncertainty, and end with watch-next indicators.
+```
+
+The repository also includes an OpenClaw-compatible skill wrapper, but the useful part is plain markdown and portable.
+
+---
+
+## Default output shape
+
+```markdown
+**Bottom line:** ...
+**Signal classification:** noise / weak signal / signal / structural shift / trigger event
+**What changed:** ...
+**Why it matters:** ...
+**Who is affected:** ...
+**Main uncertainty:** ...
+**Scenarios:** ...
+**Watch next:** ...
+```
 
 ---
 
 ## What it is good for
 
+- research and news agents;
 - policy and geopolitical agenda tracking;
 - sanctions and compliance monitoring;
 - trade and regulatory risk briefs;
-- founder/investor risk notes;
-- NGO/donor operating-context briefs;
+- founder/investor operating-context notes;
+- NGO/donor context monitoring;
 - election and diplomatic signal analysis;
 - red-team checks on confident narratives.
 
@@ -100,9 +98,7 @@ Default compact brief:
 - not a news summarizer;
 - not a replacement for source verification.
 
-If live verification was not performed, the agent must say so.
-
-
+If live verification was not performed, the agent should say so.
 
 ---
 
@@ -125,13 +121,13 @@ Agenda-Intelligence.md is the lightweight, portable agenda-analysis protocol.
 It is for any AI agent that needs to stop summarizing news and start identifying signal, uncertainty, scenarios, and watch-next indicators.
 
 For full policy-risk memos, use [global-think-tank-analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst).
-That skill is the deeper OpenClaw/Codex analyst for geopolitical, sanctions, trade, regulatory, and strategic-risk memos.
+That repository is the deeper OpenClaw/Codex analyst for geopolitical, sanctions, trade, regulatory, and strategic-risk memos.
 
 Use them together like this:
 
 ```text
 Agenda-Intelligence.md = small universal protocol for agenda triage
-Global Think Tank Analyst = full memo skill for decision-ready policy risk analysis
+global-think-tank-analyst = full memo skill for decision-ready policy risk analysis
 ```
 
 ---
@@ -163,13 +159,13 @@ llms.txt
 
 Keep the loaded context small.
 
-`SKILL.md` is the router. The deeper markdown files are pulled only when needed:
+`SKILL.md` is only a wrapper. The deeper markdown files are pulled or copied only when needed:
 
 - `analysis-protocol.md` — how the agent should think;
 - `agenda-triage.md` — how to classify developments;
 - `evidence-discipline.md` — how to handle uncertainty and sources;
-- `output-patterns.md` — ready-to-use brief formats.
-- `regional/central-asia-caspian.md` — regional lens for Central Asia + Caspian agenda analysis.
+- `output-patterns.md` — ready-to-use brief formats;
+- `regional/central-asia-caspian.md` — regional lens for Central Asia + Caspian agenda analysis;
 - `regional/middle-east.md` — regional lens for Middle East agenda analysis.
 
 ---

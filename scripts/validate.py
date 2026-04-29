@@ -26,7 +26,7 @@ for token in ["name: agenda-intelligence", "description:", "references/analysis-
         raise SystemExit(f"SKILL.md missing token: {token}")
 
 readme = (root / "README.md").read_text()
-for token in ["Stop your AI agent from summarizing the news", "clawhub install agenda-intelligence", "Fact → Assessment"]:
+for token in ["A markdown protocol for AI agents", "How to use it", "Fact → Assessment"]:
     if token not in readme:
         raise SystemExit(f"README missing token: {token}")
 
