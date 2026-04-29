@@ -40,3 +40,12 @@ Sector lens packs:
 AnalysisBank: analysis-bank/README.md
 Reasoning memory format: analysis-bank/MEMORY_FORMAT.md
 Eval script: scripts/eval_before_after.py
+
+Agent manifest: agent-manifest.json
+Schemas:
+- schemas/agenda-brief.schema.json
+- schemas/memory-card.schema.json
+- schemas/lens-manifest.schema.json
+- schemas/signal-classification.schema.json
+CLI: scripts/agenda_intelligence.py
+MCP sketch: MCP.md

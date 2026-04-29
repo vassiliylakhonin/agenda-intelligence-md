@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+import argparse
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+MANIFEST = ROOT / "agent-manifest.json"
+
+
+def load_manifest():
+    return json.loads(MANIFEST.read_text())
+
+
+def read_path(rel):
+    path = ROOT / rel
+    if not path.exists():
+        raise SystemExit(f"Not found: {rel}")
+    return path.read_text()
+
+
+def cmd_manifest(args):
+    print(json.dumps(load_manifest(), indent=2))
+
+
+def cmd_list_lenses(args):
+    manifest = load_manifest()
+    lenses = manifest["lenses"]
+    if args.type:
+        lenses = {args.type: lenses.get(args.type, {})}
+    print(json.dumps(lenses, indent=2))
+
+
+def cmd_get_lens(args):
+    manifest = load_manifest()
+    try:
+        rel = manifest["lenses"][args.type][args.id]
+    except KeyError:
+        raise SystemExit(f"Unknown lens: {args.type}/{args.id}")
+    print(read_path(rel))
+
+
+def cmd_get_protocol(args):
+    manifest = load_manifest()
+    if args.name == "entrypoint":
+        print(read_path(manifest["entrypoint"]))
+        return
+    matches = [p for p in manifest["protocols"] if Path(p).stem == args.name or Path(p).name == args.name]
+    if not matches:
+        raise SystemExit(f"Unknown protocol: {args.name}")
+    print(read_path(matches[0]))
+
+
+def minimal_validate(instance, schema):
+    if schema.get("type") == "object":
+        if not isinstance(instance, dict):
+            return ["instance is not an object"]
+        errors = []
+        for key in schema.get("required", []):
+            if key not in instance:
+                errors.append(f"missing required key: {key}")
+        if schema.get("additionalProperties") is False:
+            allowed = set(schema.get("properties", {}).keys())
+            for key in instance:
+                if key not in allowed:
+                    errors.append(f"unexpected key: {key}")
+        for key, subschema in schema.get("properties", {}).items():
+            if key not in instance:
+                continue
+            value = instance[key]
+            typ = subschema.get("type")
+            if typ == "string" and not isinstance(value, str):
+                errors.append(f"{key} must be string")
+            if typ == "array" and not isinstance(value, list):
+                errors.append(f"{key} must be array")
+            if "enum" in subschema and value not in subschema["enum"]:
+                errors.append(f"{key} must be one of {subschema['enum']}")
+        return errors
+    return []
+
+
+def cmd_validate_brief(args):
+    schema = json.loads((ROOT / "schemas" / "agenda-brief.schema.json").read_text())
+    data = json.loads(Path(args.path).read_text())
+    errors = minimal_validate(data, schema)
+    if errors:
+        for e in errors:
+            print(f"ERROR: {e}", file=sys.stderr)
+        raise SystemExit(1)
+    print("OK: agenda brief validates")
+
+
+def cmd_score(args):
+    import subprocess
+    if args.path:
+        text = Path(args.path).read_text()
+        required = ["## Before: generic agent output", "## After: with Agenda-Intelligence.md"]
+        missing = [r for r in required if r not in text]
+        if missing:
+            raise SystemExit(f"Not a before/after example: missing {missing}")
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "eval_before_after.py")], check=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Agenda-Intelligence.md helper CLI")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p = sub.add_parser("manifest", help="Print agent-manifest.json")
+    p.set_defaults(func=cmd_manifest)
+
+    p = sub.add_parser("list-lenses", help="List available lenses")
+    p.add_argument("--type", choices=["regional", "sector"])
+    p.set_defaults(func=cmd_list_lenses)
+
+    p = sub.add_parser("get-lens", help="Print a lens by type/id")
+    p.add_argument("type", choices=["regional", "sector"])
+    p.add_argument("id")
+    p.set_defaults(func=cmd_get_lens)
+
+    p = sub.add_parser("get-protocol", help="Print entrypoint or base protocol")
+    p.add_argument("name", help="entrypoint, analysis-protocol, agenda-triage, evidence-discipline, or output-patterns")
+    p.set_defaults(func=cmd_get_protocol)
+
+    p = sub.add_parser("validate-brief", help="Validate a JSON agenda brief")
+    p.add_argument("path")
+    p.set_defaults(func=cmd_validate_brief)
+
+    p = sub.add_parser("score", help="Run before/after eval harness")
+    p.add_argument("path", nargs="?")
+    p.set_defaults(func=cmd_score)
+
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

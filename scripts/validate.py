@@ -2,9 +2,18 @@
 from pathlib import Path
 import subprocess
 import sys
+import json
 
 root = Path(__file__).resolve().parents[1]
 required = [
+    "examples/agenda-brief.json",
+    "scripts/agenda_intelligence.py",
+    "schemas/signal-classification.schema.json",
+    "schemas/lens-manifest.schema.json",
+    "schemas/memory-card.schema.json",
+    "schemas/agenda-brief.schema.json",
+    "MCP.md",
+    "agent-manifest.json",
     "scripts/eval_before_after.py",
     "analysis-bank/prompts/induce-contrast-memory.md",
     "analysis-bank/prompts/induce-failure-memory.md",
@@ -49,10 +58,14 @@ for token in ["name: agenda-intelligence", "description:", "references/analysis-
         raise SystemExit(f"SKILL.md missing token: {token}")
 
 readme = (root / "README.md").read_text()
-for token in ["drop-in markdown cognition layer", "How to use it", "How it relates to AGENTS.md", "10-second demo", "Before / after examples", "Sector lens packs", "AnalysisBank", "Fact → Assessment"]:
+for token in ["drop-in markdown cognition layer", "Built for agents", "How to use it", "How it relates to AGENTS.md", "10-second demo", "Before / after examples", "Sector lens packs", "AnalysisBank", "Fact → Assessment"]:
     if token not in readme:
         raise SystemExit(f"README missing token: {token}")
 
+for json_file in ["agent-manifest.json", "schemas/agenda-brief.schema.json", "schemas/memory-card.schema.json", "schemas/lens-manifest.schema.json", "schemas/signal-classification.schema.json", "examples/agenda-brief.json"]:
+    json.loads((root / json_file).read_text())
+
 subprocess.run([sys.executable, str(root / "scripts" / "eval_before_after.py")], check=True)
+subprocess.run([sys.executable, str(root / "scripts" / "agenda_intelligence.py"), "validate-brief", str(root / "examples" / "agenda-brief.json")], check=True)
 
 print("OK: agenda-intelligence repo files validated")

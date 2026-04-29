@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/signal-classification.schema.json",
+  "title": "SignalClassification",
+  "type": "string",
+  "enum": [
+    "noise",
+    "weak_signal",
+    "signal",
+    "structural_shift",
+    "trigger_event",
+    "compliance_relevant_development",
+    "enforcement_marker",
+    "escalation_marker"
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/agenda-brief.schema.json",
+  "title": "AgendaBrief",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bottom_line",
+    "signal_classification",
+    "what_changed",
+    "main_uncertainty",
+    "watch_next"
+  ],
+  "properties": {
+    "bottom_line": { "type": "string", "minLength": 1 },
+    "signal_classification": {
+      "type": "string",
+      "enum": ["noise", "weak_signal", "signal", "structural_shift", "trigger_event", "compliance_relevant_development", "enforcement_marker", "escalation_marker"]
+    },
+    "what_changed": { "type": "string", "minLength": 1 },
+    "why_it_matters": { "type": "string" },
+    "affected_actors": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "main_uncertainty": { "type": "string", "minLength": 1 },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "description"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "indicators": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "watch_next": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "evidence_mode": {
+      "type": "string",
+      "enum": ["live_source_backed", "user_provided", "reasoning_only", "mixed"]
+    },
+    "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+  }
+}

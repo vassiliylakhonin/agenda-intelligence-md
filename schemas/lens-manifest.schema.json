@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/lens-manifest.schema.json",
+  "title": "LensManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "path", "triggers", "purpose"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "type": { "type": "string", "enum": ["regional", "sector"] },
+    "path": { "type": "string", "minLength": 1 },
+    "triggers": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+    "purpose": { "type": "string", "minLength": 1 }
+  }
+}
