@@ -1,0 +1,2 @@
+[console_scripts]
+agenda-intelligence = agenda_intelligence.cli:main

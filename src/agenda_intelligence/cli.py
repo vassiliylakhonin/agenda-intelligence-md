@@ -114,16 +114,44 @@ def main():
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("manifest", help="Print agent-manifest.json").set_defaults(func=cmd_manifest)
-    sub.add_parser("list-lenses", help="List available lenses").add_argument("--type", choices=["regional", "sector"]).set_defaults(func=cmd_list_lenses)
-    sub.add_parser("get-lens", help="Print a lens by type/id").add_argument("type", choices=["regional", "sector"]).add_argument("id").set_defaults(func=cmd_get_lens)
-    sub.add_parser("get-protocol", help="Print entrypoint or base protocol").add_argument("name").set_defaults(func=cmd_get_protocol)
-    sub.add_parser("validate-brief", help="Validate a JSON agenda brief").add_argument("path").set_defaults(func=cmd_validate_brief)
-    sub.add_parser("validate-evidence", help="Validate an evidence pack JSON file").add_argument("path").set_defaults(func=cmd_validate_evidence)
-    sub.add_parser("validate-manifest", help="Validate manifest JSON").set_defaults(func=cmd_validate_manifest)
-    sub.add_parser("source-types", help="Print source taxonomy").set_defaults(func=cmd_source_types)
-    sub.add_parser("list-source-packs", help="List source requirement packs").set_defaults(func=cmd_list_source_packs)
-    sub.add_parser("source-plan", help="Print source requirements for a category").add_argument("category").set_defaults(func=cmd_source_plan)
-    sub.add_parser("score", help="Run before/after eval harness").add_argument("path", nargs="?").set_defaults(func=cmd_score)
+    # list-lenses
+    p = sub.add_parser("list-lenses", help="List available lenses")
+    p.add_argument("--type", choices=["regional", "sector"])
+    p.set_defaults(func=cmd_list_lenses)
+    # get-lens
+    p = sub.add_parser("get-lens", help="Print a lens by type/id")
+    p.add_argument("type", choices=["regional", "sector"])
+    p.add_argument("id")
+    p.set_defaults(func=cmd_get_lens)
+    # get-protocol
+    p = sub.add_parser("get-protocol", help="Print entrypoint or base protocol")
+    p.add_argument("name")
+    p.set_defaults(func=cmd_get_protocol)
+    # validate-brief
+    p = sub.add_parser("validate-brief", help="Validate a JSON agenda brief")
+    p.add_argument("path")
+    p.set_defaults(func=cmd_validate_brief)
+    # validate-evidence
+    p = sub.add_parser("validate-evidence", help="Validate an evidence pack JSON file")
+    p.add_argument("path")
+    p.set_defaults(func=cmd_validate_evidence)
+    # validate-manifest
+    p = sub.add_parser("validate-manifest", help="Validate manifest JSON")
+    p.set_defaults(func=cmd_validate_manifest)
+    # source-types
+    p = sub.add_parser("source-types", help="Print source taxonomy")
+    p.set_defaults(func=cmd_source_types)
+    # list-source-packs
+    p = sub.add_parser("list-source-packs", help="List source requirement packs")
+    p.set_defaults(func=cmd_list_source_packs)
+    # source-plan
+    p = sub.add_parser("source-plan", help="Print source requirements for a category")
+    p.add_argument("category")
+    p.set_defaults(func=cmd_source_plan)
+    # score
+    p = sub.add_parser("score", help="Run before/after eval harness")
+    p.add_argument("path", nargs="?")
+    p.set_defaults(func=cmd_score)
 
     args = parser.parse_args()
     args.func(args)

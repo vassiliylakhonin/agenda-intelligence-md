@@ -1,0 +1,6 @@
+jsonschema>=4.20
+referencing>=0.30
+
+[dev]
+pytest>=7.0
+pytest-cov
