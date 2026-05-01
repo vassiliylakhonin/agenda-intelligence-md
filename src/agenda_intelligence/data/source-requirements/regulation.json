@@ -1,0 +1,9 @@
+{
+  "category": "regulation",
+  "must_check": ["draft_law", "legal_text", "regulator_guidance", "implementation_deadline", "enforcement_authority"],
+  "supporting_sources": ["industry_response", "court_decision", "agency_guidance", "company_behavior", "expert"],
+  "red_flags": ["proposal treated as final rule", "speech treated as binding law", "missing implementation date", "unclear enforcement authority"],
+  "do_not_claim_without": ["binding obligation without legal text", "final rule from proposal", "enforcement risk without regulator or penalties", "market access impact without rule scope"],
+  "freshness_rules": ["legal stage matters more than news date", "guidance and deadlines should be checked against current regulator pages"],
+  "watch_indicators": ["legal text", "public consultation", "committee vote", "adoption", "guidance", "deadline", "first enforcement action", "court challenge"]
+}

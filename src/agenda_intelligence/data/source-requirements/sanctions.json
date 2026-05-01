@@ -1,0 +1,9 @@
+{
+  "category": "sanctions",
+  "must_check": ["sanctions_list", "legal_text", "regulator_guidance", "license_or_general_authorization"],
+  "supporting_sources": ["customs_data", "company_behavior", "bank_behavior", "shipping_behavior", "media", "expert"],
+  "red_flags": ["single-source allegation", "political rhetoric without legal instrument", "unnamed intermediaries", "unsupported illegality claim"],
+  "do_not_claim_without": ["designation without official list", "illegality without legal text", "enforcement trend without enforcement actions", "secondary sanctions risk without authority guidance"],
+  "freshness_rules": ["official lists and licenses must be current", "media reports should be treated as weak signal until official action appears"],
+  "watch_indicators": ["designation", "delisting", "penalty", "seizure", "customs detention", "regulator FAQ", "account closure", "insurance withdrawal", "named vessel", "named company"]
+}

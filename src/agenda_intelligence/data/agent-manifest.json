@@ -1,0 +1,62 @@
+{
+  "name": "Agenda-Intelligence.md",
+  "version": "0.4.0",
+  "description": "Agent-first reasoning infrastructure for public-agenda analysis.",
+  "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+  "entrypoint": "Agenda-Intelligence.md",
+  "adoption": "ADOPTION.md",
+  "llms": "llms.txt",
+  "analysis_bank": {
+    "readme": "analysis-bank/README.md",
+    "memory_format": "analysis-bank/MEMORY_FORMAT.md",
+    "failures": [
+      "analysis-bank/failures/vague-monitoring.md",
+      "analysis-bank/failures/overconfident-sanctions-upgrade.md",
+      "analysis-bank/failures/eu-rhetoric-treated-as-law.md"
+    ],
+    "successes": [
+      "analysis-bank/successes/sanctions-routing-signal-classification.md"
+    ]
+  },
+  "schemas": {
+    "agenda_brief": "schemas/agenda-brief.schema.json",
+    "memory_card": "schemas/memory-card.schema.json",
+    "lens_manifest": "schemas/lens-manifest.schema.json",
+    "signal_classification": "schemas/signal-classification.schema.json",
+    "evidence_pack": "schemas/evidence-pack.schema.json"
+  },
+  "protocols": [
+    "skills/agenda-intelligence/references/analysis-protocol.md",
+    "skills/agenda-intelligence/references/agenda-triage.md",
+    "skills/agenda-intelligence/references/evidence-discipline.md",
+    "skills/agenda-intelligence/references/output-patterns.md"
+  ],
+  "lenses": {
+    "regional": {
+      "central-asia-caspian": "skills/agenda-intelligence/references/regional/central-asia-caspian.md",
+      "middle-east": "skills/agenda-intelligence/references/regional/middle-east.md",
+      "eu": "skills/agenda-intelligence/references/regional/eu.md"
+    },
+    "sector": {
+      "sanctions": "skills/agenda-intelligence/references/sector/sanctions.md"
+    }
+  },
+  "cli": "scripts/agenda_intelligence.py",
+  "eval": "scripts/eval_before_after.py",
+  "mcp_sketch": "MCP.md",
+  "source_acquisition": {
+    "policy": "SOURCE_POLICY.md",
+    "taxonomy": "source-taxonomy.json",
+    "requirements": {
+      "sanctions": "source-requirements/sanctions.json",
+      "regulation": "source-requirements/regulation.json",
+      "elections": "source-requirements/elections.json",
+      "conflict-security": "source-requirements/conflict-security.json",
+      "energy": "source-requirements/energy.json",
+      "trade": "source-requirements/trade.json",
+      "financial-market": "source-requirements/financial-market.json",
+      "technology-ai": "source-requirements/technology-ai.json",
+      "regional-risk": "source-requirements/regional-risk.json"
+    }
+  }
+}

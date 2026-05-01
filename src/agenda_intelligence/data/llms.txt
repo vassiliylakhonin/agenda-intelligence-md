@@ -1,0 +1,58 @@
+# Agenda-Intelligence.md
+
+A compact markdown protocol for turning public agenda into decision-ready risk analysis.
+
+Core rule: do not summarize the news. Identify what changed, who is affected, what incentives shifted, what remains unknown, and what to watch next.
+
+Repository: https://github.com/vassiliylakhonin/Agenda-Intelligence-md
+Skill path: skills/agenda-intelligence/SKILL.md
+
+Recommended use:
+- policy and geopolitical analysis;
+- sanctions and compliance monitoring;
+- trade and regulatory risk briefs;
+- founder/investor operating-context notes;
+- red-team checks on confident narratives.
+
+Related full memo skill: https://github.com/vassiliylakhonin/global-think-tank-analyst
+Use Agenda-Intelligence.md for lightweight agenda triage; use global-think-tank-analyst for full policy-risk memos.
+
+Regional lens packs:
+- Central Asia + Caspian: skills/agenda-intelligence/references/regional/central-asia-caspian.md
+- Middle East: skills/agenda-intelligence/references/regional/middle-east.md
+- European Union: skills/agenda-intelligence/references/regional/eu.md
+
+Top-level protocol: Agenda-Intelligence.md
+Role: sits beside files such as AGENTS.md as a conditional public-agenda reasoning layer.
+Use it only for news, policy, regulation, sanctions, geopolitics, trade, markets, conflict, or strategic-risk analysis.
+
+Before/after examples:
+- examples/before-after/eu-ai-act.md
+- examples/before-after/red-sea-shipping.md
+- examples/before-after/sanctions-routing.md
+- examples/before-after/evaluation-rubric.md
+
+Adoption guide: ADOPTION.md
+
+Sector lens packs:
+- Sanctions: skills/agenda-intelligence/references/sector/sanctions.md
+
+AnalysisBank: analysis-bank/README.md
+Reasoning memory format: analysis-bank/MEMORY_FORMAT.md
+Eval script: scripts/eval_before_after.py
+
+Agent manifest: agent-manifest.json
+Schemas:
+- schemas/agenda-brief.schema.json
+- schemas/memory-card.schema.json
+- schemas/lens-manifest.schema.json
+- schemas/signal-classification.schema.json
+CLI: scripts/agenda_intelligence.py
+MCP sketch: MCP.md
+
+Source Acquisition Layer:
+- SOURCE_POLICY.md
+- source-taxonomy.json
+- source-requirements/*.json
+- schemas/evidence-pack.schema.json
+CLI source commands: source-types, source-plan, validate-evidence

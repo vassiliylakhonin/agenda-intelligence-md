@@ -1,6 +1,7 @@
 include README.md
 include LICENSE
 recursive-include src/agenda_intelligence *
+recursive-include src/agenda_intelligence/data *
 recursive-include */*.md
 recursive-include schemas *.json
 recursive-include source-* *.json

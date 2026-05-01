@@ -4,19 +4,28 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-MANIFEST = ROOT / "agent-manifest.json"
+# Resource handling – works both in editable mode and from an installed package.
+# All runtime assets are stored under ``agenda_intelligence/data``.
+# ``importlib.resources`` (Python 3.9+) provides a unified API.
 
+from importlib import resources
+
+PACKAGE_NAME = __package__ or "agenda_intelligence"
+ROOT = Path(__file__).resolve().parents[2]  # fallback for editable installs
+
+def _resource_path(*parts: str) -> Path:
+    """Return a Path object to a data file inside the package."""
+    return (resources.files(PACKAGE_NAME) / "data" / Path(*parts)).as_posix()
 
 def load_manifest():
-    return json.loads(MANIFEST.read_text())
+    path = resources.files(PACKAGE_NAME) / "data" / "agent-manifest.json"
+    return json.loads(path.read_text())
 
-
-def read_path(rel):
-    path = ROOT / rel
-    if not path.exists():
+def read_path(rel: str) -> str:
+    p = resources.files(PACKAGE_NAME) / "data" / rel
+    if not p.is_file():
         raise SystemExit(f"Not found: {rel}")
-    return path.read_text()
+    return p.read_text()
 
 
 def cmd_manifest(args):
@@ -63,13 +72,25 @@ def cmd_validate_evidence(args):
 
 
 def cmd_validate_manifest(args):
-    # simple check: load manifest and ensure required keys
-    load_manifest()
-    print("OK: manifest loads")
+    # Validate agent-manifest.json against its schema.
+    from jsonschema import validate, ValidationError
+    manifest = load_manifest()
+    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "agent-manifest.schema.json"
+    if not schema_path.is_file():
+        raise SystemExit("Manifest schema not found in package data")
+    schema = json.loads(schema_path.read_text())
+    try:
+        validate(manifest, schema)
+    except ValidationError as e:
+        print(f"ERROR: {e.message}", file=sys.stderr)
+        raise SystemExit(1)
+    print("OK: manifest validates")
 
 
 def cmd_source_types(args):
-    print(json.dumps(json.loads((ROOT / "source-taxonomy.json").read_text()), indent=2))
+    # source-taxonomy is packaged under data
+    p = resources.files(PACKAGE_NAME) / "data" / "source-taxonomy.json"
+    print(json.dumps(json.loads(p.read_text()), indent=2))
 
 
 def cmd_list_source_packs(args):
@@ -82,11 +103,20 @@ def cmd_source_plan(args):
     requirements = manifest.get("source_acquisition", {}).get("requirements", {})
     if args.category not in requirements:
         raise SystemExit(f"Unknown source category: {args.category}")
-    print(json.dumps(json.loads((ROOT / requirements[args.category]).read_text()), indent=2))
+    # The file path in the manifest points to a relative location inside data.
+    rel_path = requirements[args.category]
+    p = resources.files(PACKAGE_NAME) / "data" / rel_path
+    if not p.is_file():
+        raise SystemExit(f"Source requirements file not bundled: {rel_path}")
+    print(json.dumps(json.loads(p.read_text()), indent=2))
 
 
 def validate_json_file(path, schema_name, label):
-    schema = json.loads((ROOT / "schemas" / schema_name).read_text())
+    # Load schema from packaged data.
+    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / schema_name
+    if not schema_path.is_file():
+        raise SystemExit(f"Schema not found in package data: {schema_name}")
+    schema = json.loads(schema_path.read_text())
     data = json.loads(Path(path).read_text())
     try:
         validate(data, schema)
@@ -105,7 +135,13 @@ def cmd_score(args):
         missing = [r for r in required if r not in text]
         if missing:
             raise SystemExit(f"Not a before/after example: missing {missing}")
-    subprocess.run([sys.executable, str(ROOT / "scripts" / "eval_before_after.py")], check=True)
+    # ``eval_before_after.py`` lives in the source tree; when the package is installed
+    # we try to locate it relative to this file (editable install) via ``ROOT``.
+    script_path = ROOT / "scripts" / "eval_before_after.py"
+    if not script_path.is_file():
+        # In a wheel install the helper script is not bundled; skip the eval.
+        raise SystemExit("eval_before_after script not available in installed package")
+    subprocess.run([sys.executable, str(script_path)], check=True)
 
 
 

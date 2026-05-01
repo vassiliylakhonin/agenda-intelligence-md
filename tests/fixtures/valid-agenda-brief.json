@@ -1,0 +1,18 @@
+{
+  "bottom_line": "Treat this as a compliance-relevant signal until enforcement guidance or deadlines appear.",
+  "signal_classification": "compliance_relevant_development",
+  "what_changed": "The issue moved from broad policy discussion toward implementation detail.",
+  "why_it_matters": "Implementation detail can become the practical baseline for compliance programs before enforcement begins.",
+  "affected_actors": ["regulated companies", "compliance teams", "product teams"],
+  "main_uncertainty": "Whether guidance becomes the practical enforcement baseline.",
+  "scenarios": [
+    {
+      "name": "Base case",
+      "description": "Companies adjust documentation and governance ahead of deadlines.",
+      "indicators": ["agency guidance", "compliance deadline"]
+    }
+  ],
+  "watch_next": ["regulator guidance", "first enforcement action", "compliance deadline"],
+  "evidence_mode": "reasoning_only",
+  "confidence": "medium"
+}

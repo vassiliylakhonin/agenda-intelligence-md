@@ -1,0 +1,9 @@
+{
+  "category": "financial-market",
+  "must_check": ["market_price_data", "company_filing", "central_bank", "regulator", "exchange_notice"],
+  "supporting_sources": ["analyst_note", "company_statement", "media", "fund_flow_data", "rating_agency"],
+  "red_flags": ["price move explained without evidence", "rumor treated as material disclosure", "macro claim without data"],
+  "do_not_claim_without": ["investment implication without price/filing/data", "default risk without financial evidence", "policy impact without central bank or regulator source"],
+  "freshness_rules": ["prices and rates must be timestamped", "filings and regulator notices outrank media"],
+  "watch_indicators": ["filing", "guidance", "rate decision", "liquidity data", "rating action", "exchange halt", "bond spread", "earnings call"]
+}
