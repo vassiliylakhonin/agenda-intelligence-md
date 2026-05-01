@@ -11,9 +11,12 @@ from pathlib import Path
 # This allows the script to work both after ``pip install -e .`` and when
 # executed directly from a source checkout.
 _repo_root = Path(__file__).resolve().parents[1]
-if str(_repo_root) not in sys.path:
-    sys.path.insert(0, str(_repo_root))
+_src_path = _repo_root / "src"
+for _p in (_repo_root, _src_path):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
+print('sys.path in script:', sys.path[:5], file=sys.stderr)
 from agenda_intelligence.cli import main
 
 if __name__ == "__main__":

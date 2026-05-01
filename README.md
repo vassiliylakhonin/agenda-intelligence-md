@@ -1,20 +1,15 @@
-# Agenda-Intelligence.md
-
-<p align="left">
-  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/stargazers"><img src="https://img.shields.io/github/stars/vassiliylakhonin/agenda-intelligence-md?style=for-the-badge" alt="Stars"></a>
-  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/network/members"><img src="https://img.shields.io/github/forks/vassiliylakhonin/agenda-intelligence-md?style=for-the-badge" alt="Forks"></a>
-  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/issues"><img src="https://img.shields.io/github/issues/vassiliylakhonin/agenda-intelligence-md?style=for-the-badge" alt="Issues"></a>
-  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/commits/main"><img src="https://img.shields.io/github/last-commit/vassiliylakhonin/agenda-intelligence-md?style=for-the-badge" alt="Last Commit"></a>
-  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/tag/v0.4.1"><img src="https://img.shields.io/badge/release-v0.4.1-blue?style=for-the-badge" alt="Release v0.4.1"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License"></a>
-</p>
-
-**A drop‑in markdown cognition layer for AI agents that need to analyse public agenda instead of summarising it poorly.**
-
 ## Quick install
 ```bash
-pip install agenda-intelligence-md   # or `pip install -e .` for development
+# Clone the repository
+git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
+cd agenda-intelligence-md
+# Install editable with dev dependencies
+pip install -e ".[dev]"
 ```
+> **Note:** PyPI publication is planned; until then use editable install from the repository.
+
+
+---
 
 ## CLI usage (new console script)
 ```bash
@@ -36,12 +31,20 @@ The CLI now uses **jsonschema** for deep validation and supports additional comm
 - `get-protocol <name>`
 - `score [example.md]`
 
+
+
+---
+
 ## Documentation
 Detailed docs live in the `docs/` folder:
 - `docs/quickstart.md` – getting started guide.
 - `docs/integrations/` – adapters for Claude Code, OpenAI Codex, Cursor, and MCP.
 - `docs/evaluation.md` – how the heuristic scoring works.
 - `ROADMAP.md` – future plans.
+
+
+
+---
 
 ## Project structure (high‑level)
 ```
@@ -58,6 +61,10 @@ agenda-intelligence-md/
 └─ ...
 ```
 
+
+
+---
+
 ## Backwards compatibility
 The original `scripts/agenda_intelligence.py` is retained for legacy use, but the recommended entry point is the installed `agenda-intelligence` command.
 
@@ -65,12 +72,15 @@ The original `scripts/agenda_intelligence.py` is retained for legacy use, but th
 
 *The repository still contains the original markdown protocol files (e.g., `Agenda-Intelligence.md`, `SOURCE_POLICY.md`, lens packs). They remain the source of truth for agents.*
 
+
+---
+
 <p align="left">
   <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/stargazers"><img src="https://img.shields.io/github/stars/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Stars"></a>
   <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/network/members"><img src="https://img.shields.io/github/forks/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Forks"></a>
   <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/issues"><img src="https://img.shields.io/github/issues/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Issues"></a>
   <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/commits/main"><img src="https://img.shields.io/github/last-commit/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Last Commit"></a>
-  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/tag/v0.4.0"><img src="https://img.shields.io/badge/release-v0.4.0-blue?style=for-the-badge" alt="Release v0.4.0"></a>
+  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/tag/v0.4.1"><img src="https://img.shields.io/badge/release-v0.4.1-blue?style=for-the-badge" alt="Release v0.4.0"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License"></a>
 </p>
 
