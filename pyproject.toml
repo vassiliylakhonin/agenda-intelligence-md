@@ -17,6 +17,18 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+
+[project.urls]
+Homepage = "https://github.com/vassiliylakhonin/agenda-intelligence-md"
+Repository = "https://github.com/vassiliylakhonin/agenda-intelligence-md.git"
+Documentation = "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/docs"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+]
+
 dependencies = [
     "jsonschema>=4.20",
     "referencing>=0.30",
