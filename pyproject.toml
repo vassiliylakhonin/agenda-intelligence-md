@@ -3,7 +3,6 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-include-package-data = true
 name = "agenda-intelligence-md"
 version = "0.4.1"
 description = "A drop-in markdown cognition layer for AI agents that need to analyze public agenda"
@@ -22,6 +21,7 @@ dependencies = [
     "jsonschema>=4.20",
     "referencing>=0.30",
 ]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
@@ -30,6 +30,9 @@ dev = [
 
 [project.scripts]
 agenda-intelligence = "agenda_intelligence.cli:main"
+
+[tool.setuptools]
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
