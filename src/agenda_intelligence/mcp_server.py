@@ -9,6 +9,7 @@ Only the validation tools are implemented; the rest return an explicit
 import json
 from importlib import resources
 from pathlib import Path
+from typing import Optional
 
 PACKAGE_NAME = "agenda_intelligence"
 
@@ -74,7 +75,7 @@ def get_protocol(name: str) -> dict:
     }
 
 
-def list_lenses(lens_type: str | None = None) -> dict:
+def list_lenses(lens_type: Optional[str] = None) -> dict:
     """List available lenses (not implemented)."""
     return {
         "implemented": False,

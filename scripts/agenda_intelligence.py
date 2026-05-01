@@ -15,8 +15,12 @@ _src_path = _repo_root / "src"
 for _p in (_repo_root, _src_path):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
+# Remove the script's own directory from sys.path to avoid shadowing the package name.
+_script_dir = Path(__file__).resolve().parent
+if str(_script_dir) in sys.path:
+    sys.path.remove(str(_script_dir))
 
-print('sys.path in script:', sys.path[:5], file=sys.stderr)
+
 from agenda_intelligence.cli import main
 
 if __name__ == "__main__":
