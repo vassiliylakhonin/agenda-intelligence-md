@@ -46,6 +46,20 @@
       "type": "string",
       "enum": ["live_source_backed", "user_provided", "reasoning_only", "mixed"]
     },
-    "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+    "confidence": {
+      "anyOf": [
+        { "type": "string", "enum": ["high", "medium", "low"] },
+        {
+          "type": "object",
+          "properties": {
+            "level": { "type": "string", "enum": ["high", "medium", "low"] },
+            "score": { "type": "number", "minimum": 0, "maximum": 1 },
+            "reasoning": { "type": "string" }
+          },
+          "required": ["level", "score"],
+          "additionalProperties": false
+        }
+      ]
+    }
   }
 }

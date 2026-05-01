@@ -1,6 +1,6 @@
 {
   "category": "conflict-security",
-  "must_check": ["official_statement", "credible_incident_report", "geolocation_or_visual_evidence", "military_or_security_advisory"],
+  "must_check": ["official_statement", "credible_incident_report", "military_or_security_advisory"],
   "supporting_sources": ["local_media", "humanitarian_report", "shipping_or_airspace_advisory", "expert", "satellite_or_osint"],
   "red_flags": ["unverified casualty numbers", "anonymous battlefield claim", "old footage", "rhetoric treated as escalation"],
   "do_not_claim_without": ["territorial change without corroboration", "state responsibility without evidence", "escalation trend without repeated operational indicators"],

@@ -111,6 +111,36 @@ def cmd_source_plan(args):
     print(json.dumps(json.loads(p.read_text()), indent=2))
 
 
+def cmd_start(args):
+    """Guided start for a new agenda analysis.
+    Shows a trimmed source plan (top 3 must_check) and a brief JSON template.
+    """
+    manifest = load_manifest()
+    requirements = manifest.get("source_acquisition", {}).get("requirements", {})
+    if args.category not in requirements:
+        raise SystemExit(f"Unknown source category: {args.category}")
+    rel_path = requirements[args.category]
+    p = resources.files(PACKAGE_NAME) / "data" / rel_path
+    if not p.is_file():
+        raise SystemExit(f"Source requirements file not bundled: {rel_path}")
+    data = json.loads(p.read_text())
+    # Trim must_check to first 3 entries (now enforced in JSON, but keep safe)
+    must_check = data.get("must_check", [])[:3]
+    watch = data.get("watch_indicators", [])
+    print("=== Trimmed source plan ===")
+    print(json.dumps({"must_check": must_check, "watch_indicators": watch}, indent=2, ensure_ascii=False))
+    # Brief template
+    template = {
+        "bottom_line": "<summary>",
+        "signal_classification": "<noise|weak_signal|signal|structural_shift|trigger_event>",
+        "what_changed": "<what changed>",
+        "main_uncertainty": "<main uncertainty>",
+        "watch_next": ["<indicator 1>", "<indicator 2>"]
+    }
+    print("\n=== Brief template (fill in) ===")
+    print(json.dumps(template, indent=2, ensure_ascii=False))
+
+
 def validate_json_file(path, schema_name, label):
     # Load schema from packaged data.
     schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / schema_name
@@ -188,6 +218,10 @@ def main():
     p = sub.add_parser("score", help="Run before/after eval harness")
     p.add_argument("path", nargs="?")
     p.set_defaults(func=cmd_score)
+    # start – guided workflow for new analysis
+    p = sub.add_parser("start", help="Guided start for a new agenda analysis")
+    p.add_argument("category", help="Source category (e.g., conflict-security)")
+    p.set_defaults(func=cmd_start)
 
     args = parser.parse_args()
     args.func(args)

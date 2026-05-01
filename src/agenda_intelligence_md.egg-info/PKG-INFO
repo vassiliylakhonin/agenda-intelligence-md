@@ -1,21 +1,54 @@
 Metadata-Version: 2.4
 Name: agenda-intelligence-md
-Version: 0.4.1
+Version: 0.4.8
 Summary: A drop-in markdown cognition layer for AI agents that need to analyze public agenda
 Author: Vassiliy Lakhonin
 License: MIT
+Project-URL: Homepage, https://github.com/vassiliylakhonin/agenda-intelligence-md
+Project-URL: Repository, https://github.com/vassiliylakhonin/agenda-intelligence-md.git
+Project-URL: Documentation, https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/docs
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Topic :: Software Development :: Libraries :: Python Modules
 Requires-Python: >=3.9
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Requires-Dist: jsonschema>=4.20
-Requires-Dist: referencing>=0.30
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0; extra == "dev"
 Requires-Dist: pytest-cov; extra == "dev"
+Provides-Extra: dependencies
+Requires-Dist: jsonschema>=4.20; extra == "dependencies"
+Requires-Dist: referencing>=0.30; extra == "dependencies"
 Dynamic: license-file
+
+# Agenda Intelligence MD
+
+> A drop-in markdown cognition layer for AI agents that need to analyze public agenda instead of summarizing it badly.
+
+[![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI Status](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions)
+[![Last Commit](https://img.shields.io/github/last-commit/vassiliylakhonin/agenda-intelligence-md?style=flat-square)](https://github.com/vassiliylakhonin/agenda-intelligence-md/commits/main)
+[![Stars](https://img.shields.io/github/stars/vassiliylakhonin/agenda-intelligence-md?style=flat-square)](https://github.com/vassiliylakhonin/agenda-intelligence-md/stargazers)
+
+## Table of Contents
+- [Quick install](#quick-install)
+- [CLI usage](#cli-usage)
+- [Documentation](#documentation)
+- [Project structure](#project-structure)
+- [What's new](#whats-new)
+- [What this does](#what-this-does)
+- [How to use it](#how-to-use-it)
+- [Built for agents](#built-for-agents)
+- [10-second demo](#10-second-demo)
+- [Before / after examples](#before--after-examples)
+- [Source Acquisition Layer](#source-acquisition-layer)
+- [AnalysisBank](#analysisbank)
+- [Regional lens packs](#regional-lens-packs)
+- [Sector lens packs](#sector-lens-packs)
+- [Relationship to global-think-tank-analyst](#relationship-to-global-think-tank-analyst)
+- [Repository structure](#repository-structure)
+- [Contributing](#contributing)
 
 ## Quick install
 ```bash
@@ -593,6 +626,20 @@ Keep the loaded context small.
 - `regional/middle-east.md` — regional lens for Middle East agenda analysis;
 - `regional/eu.md` — regional lens for European Union agenda analysis;
 - `sector/sanctions.md` — sector lens for sanctions and export-control agenda analysis.
+
+---
+
+## Contributing
+
+Contributions are welcome! Please follow these guidelines:
+
+1. **Issues**: Open an issue to discuss changes before submitting a PR.
+2. **Branches**: Create a feature branch (`feat/...`, `fix/...`) from `main`.
+3. **Code style**: Follow PEP8, run `pytest` and ensure all tests pass.
+4. **Documentation**: Update relevant `docs/` and `README.md` if behavior changes.
+5. **Release process**: Maintainers bump version in `pyproject.toml`, update `CHANGELOG.md`, and publish to PyPI via CI.
+
+See `docs/quickstart.md` for development setup.
 
 ---
 
