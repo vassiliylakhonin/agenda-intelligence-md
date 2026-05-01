@@ -13,13 +13,16 @@ from importlib import resources
 PACKAGE_NAME = __package__ or "agenda_intelligence"
 ROOT = Path(__file__).resolve().parents[2]  # fallback for editable installs
 
+
 def _resource_path(*parts: str) -> Path:
     """Return a Path object to a data file inside the package."""
     return (resources.files(PACKAGE_NAME) / "data" / Path(*parts)).as_posix()
 
+
 def load_manifest():
     path = resources.files(PACKAGE_NAME) / "data" / "agent-manifest.json"
     return json.loads(path.read_text())
+
 
 def read_path(rel: str) -> str:
     p = resources.files(PACKAGE_NAME) / "data" / rel
@@ -59,8 +62,9 @@ def cmd_get_protocol(args):
         raise SystemExit(f"Unknown protocol: {args.name}")
     print(read_path(matches[0]))
 
+
 # JSON Schema validation using jsonschema
-from jsonschema import validate, ValidationError
+from jsonschema import validate, ValidationError  # noqa: E402
 
 
 def cmd_validate_brief(args):
@@ -74,6 +78,7 @@ def cmd_validate_evidence(args):
 def cmd_validate_manifest(args):
     # Validate agent-manifest.json against its schema.
     from jsonschema import validate, ValidationError
+
     manifest = load_manifest()
     schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "agent-manifest.schema.json"
     if not schema_path.is_file():
@@ -135,7 +140,7 @@ def cmd_start(args):
         "signal_classification": "<noise|weak_signal|signal|structural_shift|trigger_event>",
         "what_changed": "<what changed>",
         "main_uncertainty": "<main uncertainty>",
-        "watch_next": ["<indicator 1>", "<indicator 2>"]
+        "watch_next": ["<indicator 1>", "<indicator 2>"],
     }
     print("\n=== Brief template (fill in) ===")
     print(json.dumps(template, indent=2, ensure_ascii=False))
@@ -156,9 +161,9 @@ def validate_json_file(path, schema_name, label):
     print(f"OK: {label} validates")
 
 
-
 def cmd_score(args):
     import subprocess
+
     if args.path:
         text = Path(args.path).read_text()
         required = ["## Before: generic agent output", "## After: with Agenda-Intelligence.md"]
@@ -172,7 +177,6 @@ def cmd_score(args):
         # In a wheel install the helper script is not bundled; skip the eval.
         raise SystemExit("eval_before_after script not available in installed package")
     subprocess.run([sys.executable, str(script_path)], check=True)
-
 
 
 def main():

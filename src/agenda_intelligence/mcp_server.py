@@ -8,7 +8,7 @@ Only the validation tools are implemented; the rest return an explicit
 
 import json
 from importlib import resources
-from pathlib import Path
+from pathlib import Path  # noqa: F401
 from typing import Optional
 
 PACKAGE_NAME = "agenda_intelligence"
@@ -16,6 +16,7 @@ PACKAGE_NAME = "agenda_intelligence"
 # ---------------------------------------------------------------------------
 # Validation helpers (re‑use the same schema loading as the CLI)
 # ---------------------------------------------------------------------------
+
 
 def _load_schema(schema_name: str) -> dict:
     """Load a JSON schema from the package data."""
@@ -55,6 +56,7 @@ def _validate_json(data: dict, schema_name: str) -> dict:
 # ---------------------------------------------------------------------------
 # MCP tool functions
 # ---------------------------------------------------------------------------
+
 
 def validate_brief(brief_json: dict) -> dict:
     """Validate an agenda‑brief dict against agenda‑brief.schema.json."""

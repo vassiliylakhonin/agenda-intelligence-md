@@ -21,7 +21,7 @@ if str(_script_dir) in sys.path:
     sys.path.remove(str(_script_dir))
 
 
-from agenda_intelligence.cli import main
+from agenda_intelligence.cli import main  # noqa: E402
 
 if __name__ == "__main__":
     raise SystemExit(main())

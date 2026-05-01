@@ -7,9 +7,24 @@ ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "examples" / "before-after"
 
 CRITERIA = {
-    "signal_classification": ["signal classification", "weak signal", "trigger event", "compliance-relevant", "escalation marker"],
+    "signal_classification": [
+        "signal classification",
+        "weak signal",
+        "trigger event",
+        "compliance-relevant",
+        "escalation marker",
+    ],
     "what_changed": ["what changed", "moved from", "shift", "delta", "changed"],
-    "actor_specificity": ["who is affected", "providers", "deployers", "banks", "logistics", "insurers", "exporters", "firms"],
+    "actor_specificity": [
+        "who is affected",
+        "providers",
+        "deployers",
+        "banks",
+        "logistics",
+        "insurers",
+        "exporters",
+        "firms",
+    ],
     "mechanism": ["mechanism", "through", "via", "because", "depends on", "channel", "exposure"],
     "uncertainty": ["main uncertainty", "uncertainty", "whether"],
     "falsifiability": ["confirm", "falsify", "weaken", "upgrade", "downgrade", "until supported"],
@@ -17,12 +32,18 @@ CRITERIA = {
     "decision_value": ["treat this as", "base case", "higher-risk", "contained", "operational", "compliance impact"],
 }
 
+
 def section(text: str, start: str, end: Optional[str] = None) -> str:
-    pattern = rf"## {re.escape(start)}[^\n]*\n\n(.*?)(?=\n## {re.escape(end)}[^\n]*\n\n|\Z)" if end else rf"## {re.escape(start)}[^\n]*\n\n(.*)"
+    pattern = (
+        rf"## {re.escape(start)}[^\n]*\n\n(.*?)(?=\n## {re.escape(end)}[^\n]*\n\n|\Z)"
+        if end
+        else rf"## {re.escape(start)}[^\n]*\n\n(.*)"
+    )
     m = re.search(pattern, text, flags=re.S)
     if not m:
         raise AssertionError(f"Missing section: {start}")
     return m.group(1).strip().lower()
+
 
 def score(text: str) -> tuple[int, dict[str, int]]:
     scores = {}
@@ -30,6 +51,7 @@ def score(text: str) -> tuple[int, dict[str, int]]:
         hits = sum(1 for t in tokens if t in text)
         scores[name] = min(2, hits)
     return sum(scores.values()), scores
+
 
 def main() -> None:
     failures = []
@@ -49,12 +71,17 @@ def main() -> None:
             failures.append(f"{p.name}: after score below decision-useful threshold: {after_score}")
         if delta < 6:
             failures.append(f"{p.name}: improvement delta too small: {delta}")
-        if after_detail["watch_next"] < 1 or after_detail["uncertainty"] < 1 or after_detail["signal_classification"] < 1:
+        if (
+            after_detail["watch_next"] < 1
+            or after_detail["uncertainty"] < 1
+            or after_detail["signal_classification"] < 1
+        ):
             failures.append(f"{p.name}: after missing core signal/uncertainty/watch-next criteria")
 
     if failures:
         raise SystemExit("\n".join(failures))
     print("OK: before/after examples improve rubric scores")
+
 
 if __name__ == "__main__":
     main()
