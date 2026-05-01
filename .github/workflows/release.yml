@@ -8,9 +8,6 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write   # for trusted publishing (if used)
     steps:
       - uses: actions/checkout@v4
 
