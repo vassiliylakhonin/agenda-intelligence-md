@@ -38,6 +38,14 @@
       }
     },
     "unsupported_claims": { "type": "array", "items": { "type": "string" } },
-    "source_plan": { "type": "array", "items": { "type": "string" } }
+    "source_plan": { "type": "array", "items": { "type": "string" } },
+    "retrieved_at": { "type": "string", "format": "date-time" },
+    "jurisdiction": { "type": "string" },
+    "claim_importance": { "type": "string", "enum": ["high", "medium", "low"] },
+    "source_date": { "type": "string" },
+    "quote_or_excerpt": { "type": "string" },
+    "confidence_reason": { "type": "string" },
+    "contradicting_sources": { "type": "array", "items": { "type": "string" } },
+    "required_but_missing_sources": { "type": "array", "items": { "type": "string" } }
   }
 }
