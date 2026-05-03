@@ -226,6 +226,16 @@ def main():
     p = sub.add_parser("start", help="Guided start for a new agenda analysis")
     p.add_argument("category", help="Source category (e.g., conflict-security)")
     p.set_defaults(func=cmd_start)
+    # memory search – fuzzy search in analysis‑bank
+    p = sub.add_parser("memory-search", help="Search compact descriptors in analysis‑bank")
+    p.add_argument("query", help="Search query string")
+    p.set_defaults(func=cmd_memory_search)
+    # fetch – basic source fetcher, persisting evidence‑pack.json
+    p = sub.add_parser("fetch", help="Fetch evidence pack for a brief or category")
+    p.add_argument("--category", help="Source category to fetch (e.g., technology-ai)")
+    p.add_argument("--brief", help="Short brief text to analyze")
+    p.set_defaults(func=cmd_fetch)
+
 
     args = parser.parse_args()
     args.func(args)

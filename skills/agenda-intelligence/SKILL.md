@@ -60,7 +60,7 @@ Use this compact shape unless the user requests otherwise:
 
 ## Quality bar
 
-A good answer is shorter than a news recap and more useful than a generic think-tank paragraph.
+A good answer is shorter than a news recap and more useful than a generic think‑tank paragraph.
 
 Cut:
 
@@ -69,3 +69,26 @@ Cut:
 - vague “complex landscape” phrasing;
 - unsupported forecasts;
 - moral commentary unless it affects risk, legitimacy, compliance, reputation, or operations.
+
+## How to use with OpenClaw
+
+Add the skill to your workspace (e.g. `clawhub install agenda-intelligence`). Then invoke it from a prompt:
+
+```
+[skill:agenda-intelligence]
+
+Analyze the latest EU regulation on AI‑risk assessments. Identify what changed, who gains leverage, remaining uncertainties, and watch‑next indicators.
+```
+
+OpenClaw will load the referenced markdown files, run the CLI `agenda-intelligence` under the hood, and return a compact brief in the standard `**Bottom line:**` format.
+
+You can also pass a brief directly:
+
+```
+[skill:agenda-intelligence]
+
+Brief: "EU AI Act amendment 2026 – new high‑risk AI categories and tighter reporting thresholds."
+```
+
+The skill will fetch sources, validate the brief, and produce the decision‑ready output.
+

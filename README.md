@@ -1,5 +1,18 @@
 # Agenda Intelligence MD
 
+## OpenClaw Integration
+
+* Add `skills/agenda-intelligence` to your OpenClaw workspace.
+* Use the `agenda-intelligence` skill via `[skill:agenda-intelligence]` prompt blocks.
+* The skill automatically runs `agenda-intelligence` CLI commands and returns a compact brief.
+* Example prompt:
+  ```
+  [skill:agenda-intelligence]
+  Brief: "EU AI Act amendment adds new high‑risk categories."
+  ```
+* See `skills/agenda-intelligence/SKILL.md` for full usage details.
+
+
 > A drop-in markdown cognition layer for AI agents that need to analyze public agenda instead of summarizing it badly.
 
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/)
