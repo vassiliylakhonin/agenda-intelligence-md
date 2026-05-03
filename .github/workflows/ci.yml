@@ -23,20 +23,20 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
-        run: python -m pip install --upgrade pip
+        run: python3 -m pip install --upgrade pip
 
       - name: Install package with dev extras
         run: pip install -e ".[dev]"
 
       - name: Compile Python files
-        run: python -m compileall src scripts tests
+        run: python3 -m compileall src scripts tests
 
       - name: Run unit tests
-        run: pytest --maxfail=1 --disable-warnings -q
+        run: python3 -m pytest --maxfail=1 --disable-warnings -q
 
       - name: Verify CLI commands
         run: |
-          agenda-intelligence --help
-          agenda-intelligence validate-manifest
-          agenda-intelligence validate-brief examples/agenda-brief.json
-          agenda-intelligence validate-evidence examples/source/evidence-pack.json
+          python3 -m agenda_intelligence.cli --help
+          python3 -m agenda_intelligence.cli validate-manifest
+          python3 -m agenda_intelligence.cli validate-brief examples/agenda-brief.json
+          python3 -m agenda_intelligence.cli validate-evidence examples/source/evidence-pack.json
