@@ -103,6 +103,8 @@ agenda-intelligence memory-search "sanctions routing"
 
 - **Protocol:** [`Agenda-Intelligence.md`](Agenda-Intelligence.md) – the core reasoning workflow.
 - **Quickstart:** [`docs/quickstart.md`](docs/quickstart.md)
+- **Real‑world example:** 
+  - [`examples/hormuz_strait_brief.md`](examples/hormuz_strait_brief.md) – Hormuz Strait shipping risk (2026).
 - **Integrations:** [`docs/integrations/`](docs/integrations/) – Claude Code, OpenAI Codex, Cursor, MCP.
 - **Evaluation:** [`docs/evaluation.md`](docs/evaluation.md) – how the scoring works.
 - **Roadmap:** [`ROADMAP.md`](ROADMAP.md)
