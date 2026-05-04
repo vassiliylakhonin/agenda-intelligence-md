@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: agenda-intelligence-md
-Version: 0.4.8
+Version: 0.5.1
 Summary: A drop-in markdown cognition layer for AI agents that need to analyze public agenda
 Author: Vassiliy Lakhonin
 License: MIT
@@ -16,6 +16,8 @@ License-File: LICENSE
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0; extra == "dev"
 Requires-Dist: pytest-cov; extra == "dev"
+Requires-Dist: mypy>=1.0; extra == "dev"
+Requires-Dist: ruff>=0.1; extra == "dev"
 Provides-Extra: dependencies
 Requires-Dist: jsonschema>=4.20; extra == "dependencies"
 Requires-Dist: referencing>=0.30; extra == "dependencies"
@@ -23,639 +25,152 @@ Dynamic: license-file
 
 # Agenda Intelligence MD
 
-## OpenClaw Integration
-
-* Add `skills/agenda-intelligence` to your OpenClaw workspace.
-* Use the `agenda-intelligence` skill via `[skill:agenda-intelligence]` prompt blocks.
-* The skill automatically runs `agenda-intelligence` CLI commands and returns a compact brief.
-* Example prompt:
-  ```
-  [skill:agenda-intelligence]
-  Brief: "EU AI Act amendment adds new high‑risk categories."
-  ```
-* See `skills/agenda-intelligence/SKILL.md` for full usage details.
-
-
-> A drop-in markdown cognition layer for AI agents that need to analyze public agenda instead of summarizing it badly.
-
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI Status](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions)
-[![Last Commit](https://img.shields.io/github/last-commit/vassiliylakhonin/agenda-intelligence-md?style=flat-square)](https://github.com/vassiliylakhonin/agenda-intelligence-md/commits/main)
-[![Stars](https://img.shields.io/github/stars/vassiliylakhonin/agenda-intelligence-md?style=flat-square)](https://github.com/vassiliylakhonin/agenda-intelligence-md/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/vassiliylakhonin/agenda-intelligence-md?style=flat-square)](https://github.com/vassiliylakhonin/agenda-intelligence-md/stargazers)
 
-## Table of Contents
-- [Quick install](#quick-install)
-- [CLI usage](#cli-usage)
-- [Documentation](#documentation)
-- [Project structure](#project-structure)
-- [What's new](#whats-new)
-- [What this does](#what-this-does)
-- [How to use it](#how-to-use-it)
-- [Built for agents](#built-for-agents)
-- [10-second demo](#10-second-demo)
-- [Before / after examples](#before--after-examples)
-- [Source Acquisition Layer](#source-acquisition-layer)
-- [AnalysisBank](#analysisbank)
-- [Regional lens packs](#regional-lens-packs)
-- [Sector lens packs](#sector-lens-packs)
-- [Relationship to global-think-tank-analyst](#relationship-to-global-think-tank-analyst)
-- [Repository structure](#repository-structure)
-- [Contributing](#contributing)
+**A drop‑in cognition layer for AI agents that stops them from just summarizing news and starts producing decision‑ready analysis.**
 
-## Quick install
+> **Bottom line:** agents using this protocol move from *“monitor developments”* to *“watch these 3 indicators; if X happens, decision Y becomes urgent.”*
+
+---
+
+## 🚀 Quick start (OpenClaw)
+
+1. **Install skill** (recommended):
+   ```bash
+   clawhub install agenda-intelligence
+   ```
+   Or copy `skills/agenda-intelligence/` into your workspace.
+
+2. **Use in a prompt**:
+   ```
+   [skill:agenda-intelligence]
+   Brief: "EU AI Act amendment adds new high‑risk categories."
+   ```
+   The agent will load the protocol, run the CLI, and return a compact brief.
+
+3. **Or use the CLI directly** (after `pip install agenda-intelligence-md`):
+   ```bash
+   agenda-intelligence validate-brief examples/agenda-brief.json
+   agenda-intelligence source-plan technology-ai
+   ```
+
+---
+
+## 🎯 What it does
+
+| Without Agenda‑Intelligence.md | With Agenda‑Intelligence.md |
+|--------------------------------|--------------------------------|
+| “Companies should monitor developments.” | “Watch for regulator guidance, first enforcement action, compliance deadline, and product redesigns. Treat as signal until those indicators appear.” |
+
+The protocol forces the agent to answer:
+- **Signal classification:** noise → weak signal → signal → structural shift → trigger event
+- **What changed?** (fact)
+- **Why it matters?** (incentives, leverage)
+- **Who is affected?**
+- **Main uncertainty?**
+- **Scenarios & watch‑next indicators**
+
+Result: shorter output, higher decision value.
+
+---
+
+## 🧠 Key features
+
+- **Source Acquisition Layer** – tells the agent *which* source types to check before making claims (sanctions, regulation, elections, conflict, etc.).
+- **AnalysisBank** – a memory layer that stores reusable reasoning patterns from good/bad outputs.
+- **Regional lenses** – Central Asia & Caspian, Middle East, EU.
+- **Sector lenses** – sanctions, export controls.
+- **JSON schemas** – validate briefs, evidence packs, memory cards.
+- **CLI & Python API** – `agenda-intelligence` command, `agent-manifest.json` for discovery.
+
+---
+
+## 📦 Installation
+
+### From PyPI (when published)
 ```bash
-# Clone the repository
+pip install agenda-intelligence-md
+```
+
+### From GitHub Release
+```bash
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.5.0/agenda_intelligence_md-0.5.0-py3-none-any.whl
+```
+
+### Editable install from source
+```bash
 git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
 cd agenda-intelligence-md
-# Install editable with dev dependencies
-pip install -e ".[dev]"
+pip install -e .
 ```
-> **Note:** PyPI publication is planned; until then use editable install from the repository.
-
 
 ---
 
-## CLI usage (new console script)
+## 🛠 CLI examples
+
 ```bash
 agenda-intelligence --help
-# Validate a brief
-agenda-intelligence validate-brief examples/agenda-brief.json
-# Validate an evidence pack
-agenda-intelligence validate-evidence examples/source/evidence-pack.json
-# List source categories
+agenda-intelligence manifest
+agenda-intelligence list-lenses
 agenda-intelligence source-types
-# Show a source plan for a category
-agenda-intelligence source-plan technology-ai
+agenda-intelligence source-plan sanctions
+agenda-intelligence validate-brief examples/agenda-brief.json
+agenda-intelligence validate-evidence examples/source/evidence-pack.json
+agenda-intelligence memory-search "sanctions routing"
 ```
 
-The CLI now uses **jsonschema** for deep validation and supports additional commands:
-- `validate-manifest`
-- `list-lenses` (optional `--type`)
-- `get-lens <type> <id>`
-- `get-protocol <name>`
-- `score [example.md]`
+---
 
+## 📚 Documentation
 
+- **Protocol:** [`Agenda-Intelligence.md`](Agenda-Intelligence.md) – the core reasoning workflow.
+- **Quickstart:** [`docs/quickstart.md`](docs/quickstart.md)
+- **Integrations:** [`docs/integrations/`](docs/integrations/) – Claude Code, OpenAI Codex, Cursor, MCP.
+- **Evaluation:** [`docs/evaluation.md`](docs/evaluation.md) – how the scoring works.
+- **Roadmap:** [`ROADMAP.md`](ROADMAP.md)
 
 ---
 
-## Documentation
-Detailed docs live in the `docs/` folder:
-- `docs/quickstart.md` – getting started guide.
-- `docs/integrations/` – adapters for Claude Code, OpenAI Codex, Cursor, and MCP.
-- `docs/evaluation.md` – how the heuristic scoring works.
-- `ROADMAP.md` – future plans.
+## 🏗 Repository structure
 
-
-
----
-
-## Project structure (high‑level)
 ```
 agenda-intelligence-md/
-├─ src/agenda_intelligence/        # Python package
-│   ├─ __init__.py
-│   ├─ cli.py                     # console entry point
-│   └─ mcp_server.py              # MCP skeleton (Phase 6)
-├─ schemas/                        # JSON schemas
-├─ examples/                       # sample JSON files
-├─ docs/                           # documentation
-├─ tests/                          # pytest suite
-├─ pyproject.toml                  # packaging
-└─ ...
-```
-
-
-
----
-
-## Backwards compatibility
-The original `scripts/agenda_intelligence.py` is retained for legacy use, but the recommended entry point is the installed `agenda-intelligence` command.
-
----
-
-*The repository still contains the original markdown protocol files (e.g., `Agenda-Intelligence.md`, `SOURCE_POLICY.md`, lens packs). They remain the source of truth for agents.*
-
-
----
-
-<p align="left">
-  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/stargazers"><img src="https://img.shields.io/github/stars/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Stars"></a>
-  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/network/members"><img src="https://img.shields.io/github/forks/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Forks"></a>
-  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/issues"><img src="https://img.shields.io/github/issues/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Issues"></a>
-  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/commits/main"><img src="https://img.shields.io/github/last-commit/vassiliylakhonin/Agenda-Intelligence-md?style=for-the-badge" alt="Last Commit"></a>
-  <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/tag/v0.4.1"><img src="https://img.shields.io/badge/release-v0.4.1-blue?style=for-the-badge" alt="Release v0.4.0"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License"></a>
-</p>
-
-**A drop-in markdown cognition layer for AI agents that need to analyze public agenda instead of summarizing it badly.**
-
-Most agent-written news analysis has the same problem: it tells you what happened, adds polished implications, and stops before the output changes any decision.
-
-Agenda-Intelligence.md gives agents a stricter workflow and an optional reasoning-memory layer called **AnalysisBank**:
-
-```text
-Fact → Assessment → Assumption → Unknown → Scenario → Indicator to watch
-```
-
-Use it when an agent needs to reason about policy, geopolitics, regulation, sanctions, trade, energy, elections, conflicts, or market-moving public agenda.
-
-
-
----
-
-## What's new in v0.4.0
-
-v0.4.0 adds a general **Source Acquisition Layer**.
-
-Reasoning is not enough. Agents need to know which source types are required before making claims about sanctions, regulation, elections, conflict, energy, trade, financial markets, AI/technology, or regional risk.
-
-Added:
-
-- `SOURCE_POLICY.md` — source discipline rules;
-- `source-taxonomy.json` — machine-readable source types;
-- `source-requirements/*.json` — source plans by agenda category;
-- `schemas/evidence-pack.schema.json` — evidence pack contract;
-- `examples/source/evidence-pack.json` — valid example;
-- CLI commands: `source-types`, `list-source-packs`, `source-plan`, `validate-evidence`.
-
----
-
-## What's new in v0.3.0
-
-v0.3.0 turns Agenda-Intelligence.md into a more agent-first package.
-
-Added:
-
-- `agent-manifest.json` for machine-readable discovery;
-- JSON schemas for agenda briefs, memory cards, lens manifests, and signal classifications;
-- `scripts/agenda_intelligence.py` CLI for agents and humans;
-- `MCP.md` sketch for future MCP tools;
-- `examples/agenda-brief.json` for schema validation.
-
----
-
-## What's new in v0.2.0
-
-v0.2.0 adds **AnalysisBank**, a ReasoningBank-inspired memory layer for agenda-analysis agents.
-
-Instead of only giving an agent a protocol, AnalysisBank lets the project store short reusable reasoning memories from successful and failed outputs:
-
-```text
-weak output → identify failure pattern → write memory card → retrieve next time
-strong output → extract reusable reasoning pattern → write memory card → retrieve next time
-```
-
-It also adds a lightweight eval harness:
-
-```bash
-python3 scripts/eval_before_after.py
-```
-
-Current test results:
-
-```text
-eu-ai-act.md:          before 3/16  → after 14/16
-red-sea-shipping.md:  before 1/16  → after 13/16
-sanctions-routing.md: before 2/16  → after 14/16
+├─ src/agenda_intelligence/   # Python package
+├─ schemas/                   # JSON schemas
+├─ examples/                  # sample briefs, evidence packs
+├─ analysis-bank/             # memory cards (failures & successes)
+├─ skills/agenda-intelligence/ # OpenClaw skill wrapper
+├─ docs/                      # guides & integration notes
+└─ tests/                     # pytest suite
 ```
 
 ---
 
-## What this does
+## 🤝 Contributing
 
-It pushes an agent to answer better questions:
+Pull requests are welcome! Please:
+1. Open an issue to discuss changes.
+2. Create a feature branch (`feat/...`, `fix/...`).
+3. Run `pytest` and ensure all tests pass.
+4. Update docs if behavior changes.
 
-- Is this noise, weak signal, signal, structural shift, or trigger event?
-- What actually changed?
-- Who gains or loses leverage?
-- Which incentives shifted?
-- What is still unknown?
-- What would confirm or falsify this view?
-- What should be watched next?
-
-The goal is not longer analysis. The goal is less filler and more decision value.
+See [`docs/quickstart.md`](docs/quickstart.md) for development setup.
 
 ---
 
-## How to use it
+## 📄 License
 
-Copy or reference the markdown files in your agent setup:
-
-```text
-skills/agenda-intelligence/references/analysis-protocol.md
-skills/agenda-intelligence/references/agenda-triage.md
-skills/agenda-intelligence/references/evidence-discipline.md
-skills/agenda-intelligence/references/output-patterns.md
-analysis-bank/README.md
-```
-
-For repo-level agent instructions, link the base protocol from your `AGENTS.md`, system prompt, retrieval layer, or tool-specific skill wrapper.
-
-Example instruction:
-
-```text
-Before analyzing public agenda, use Agenda-Intelligence.md.
-Do not summarize by default. Classify the signal, identify what changed, separate fact from assessment, name the main uncertainty, and end with watch-next indicators.
-```
-
-The repository also includes an OpenClaw-compatible skill wrapper, but the useful part is plain markdown and portable.
-
-
-
+MIT – free for any use.
 
 ---
 
-## Built for agents
+## 🔗 Related projects
 
-Agenda-Intelligence.md is designed to be consumed by agents, not just read by humans.
-
-Agents can:
-
-- discover the package through [`agent-manifest.json`](agent-manifest.json);
-- load the entrypoint file with a stable path;
-- select regional and sector lenses programmatically;
-- validate structured outputs against JSON schemas;
-- run a lightweight CLI;
-- score before/after examples with the eval harness;
-- store reusable reasoning memories in AnalysisBank.
-
-Agent-first files:
-
-```text
-agent-manifest.json
-schemas/agenda-brief.schema.json
-schemas/memory-card.schema.json
-schemas/lens-manifest.schema.json
-schemas/signal-classification.schema.json
-scripts/agenda_intelligence.py
-SOURCE_POLICY.md
-source-taxonomy.json
-source-requirements/*.json
-MCP.md
-```
-
-CLI examples:
-
-```bash
-python3 scripts/agenda_intelligence.py manifest
-python3 scripts/agenda_intelligence.py list-lenses
-python3 scripts/agenda_intelligence.py get-lens regional eu
-python3 scripts/agenda_intelligence.py get-protocol entrypoint
-python3 scripts/agenda_intelligence.py validate-brief examples/agenda-brief.json
-python3 scripts/agenda_intelligence.py source-plan technology-ai
-python3 scripts/agenda_intelligence.py validate-evidence examples/source/evidence-pack.json
-python3 scripts/agenda_intelligence.py score
-```
+- **[global-think-tank-analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst)** – deeper policy‑risk memos for OpenClaw.
 
 ---
 
-## 10-second demo
-
-Without Agenda-Intelligence.md:
-
-```text
-Companies should monitor developments and prepare for possible regulatory changes.
-```
-
-With Agenda-Intelligence.md:
-
-```text
-Watch for regulator guidance, first enforcement action, compliance deadline, and company product redesigns. Treat this as a signal until those indicators appear.
-```
-
-The difference is not style. It is decision value.
-
----
-
-## Copy-paste setup
-
-Fastest path: copy [`Agenda-Intelligence.md`](Agenda-Intelligence.md) into your repo next to `AGENTS.md`.
-
-Then add this to your agent instructions:
-
-```md
-## Agenda analysis
-
-When analyzing public agenda, news, policy, regulation, sanctions, geopolitics, trade, elections, conflicts, markets, or strategic risk, follow `Agenda-Intelligence.md`.
-
-Do not summarize by default. Classify the signal, identify what changed, separate fact from assessment, name uncertainty, and end with watch-next indicators.
-
-Load it conditionally. Do not add it to every task.
-```
-
-For deeper setups, also copy the relevant reference files from `skills/agenda-intelligence/references/`.
-
----
-
-## Default output shape
-
-```markdown
-**Bottom line:** ...
-**Signal classification:** noise / weak signal / signal / structural shift / trigger event
-**What changed:** ...
-**Why it matters:** ...
-**Who is affected:** ...
-**Main uncertainty:** ...
-**Scenarios:** ...
-**Watch next:** ...
-```
-
-
----
-
-## Before / after examples
-
-The repo includes concrete examples showing the failure mode this file is meant to fix.
-
-Without the protocol:
-
-```text
-recap → generic implications → “monitor developments”
-```
-
-With Agenda-Intelligence.md:
-
-```text
-signal classification → what changed → affected actors → uncertainty → scenarios → watch-next indicators
-```
-
-Examples:
-
-- [EU AI Act implementation signal](examples/before-after/eu-ai-act.md)
-- [Red Sea shipping disruption](examples/before-after/red-sea-shipping.md)
-- [Sanctions routing through Central Asia](examples/before-after/sanctions-routing.md)
-- [Evaluation rubric](examples/before-after/evaluation-rubric.md)
-
----
-
-## What it is good for
-
-- research and news agents;
-- policy and geopolitical agenda tracking;
-- sanctions and compliance monitoring;
-- trade and regulatory risk briefs;
-- founder/investor operating-context notes;
-- NGO/donor context monitoring;
-- election and diplomatic signal analysis;
-- red-team checks on confident narratives.
-
----
-
-## What it is not
-
-- not legal advice;
-- not investment advice;
-- not an intelligence-certainty machine;
-- not a news summarizer;
-- not a replacement for source verification.
-
-If live verification was not performed, the agent should say so.
-
-
----
-
-## How it relates to AGENTS.md
-
-`AGENTS.md` tells an agent how to operate.
-`Agenda-Intelligence.md` tells an agent how to reason about public agenda.
-
-Use `AGENTS.md` globally. Use `Agenda-Intelligence.md` conditionally when the task involves news, policy, regulation, sanctions, geopolitics, trade, elections, conflicts, markets, or strategic risk.
-
-In practice, it can sit next to the usual agent files:
-
-```text
-AGENTS.md      = operating rules
-SOUL.md        = voice and stance
-TOOLS.md       = tool discipline
-IDENTITY.md    = agent identity
-USER.md        = user preferences
-HEARTBEAT.md   = proactive behavior
-MEMORY.md      = durable context
-Agenda-Intelligence.md = public-agenda reasoning protocol
-```
-
-Minimal `AGENTS.md` hook:
-
-```md
-## Agenda analysis
-
-When analyzing public agenda, policy, regulation, sanctions, geopolitics, trade, elections, conflicts, markets, or strategic risk, follow `Agenda-Intelligence.md`.
-
-Do not summarize by default. Classify the signal, identify what changed, separate fact from assessment, name uncertainty, and end with watch-next indicators.
-```
-
-The important part is conditional loading. Do not spend context on agenda analysis rules when the task is ordinary coding, writing, or personal assistance.
-
-
-
----
-
-## Source Acquisition Layer
-
-Agenda-Intelligence.md separates reasoning from evidence.
-
-Before writing a high-stakes or current brief, an agent should generate a source plan:
-
-```text
-Task → source requirement category → required evidence → unsupported claims → brief
-```
-
-Available source requirement categories:
-
-- sanctions
-- regulation
-- elections
-- conflict-security
-- energy
-- trade
-- financial-market
-- technology-ai
-- regional-risk
-
-CLI examples:
-
-```bash
-python3 scripts/agenda_intelligence.py source-types
-python3 scripts/agenda_intelligence.py list-source-packs
-python3 scripts/agenda_intelligence.py source-plan technology-ai
-python3 scripts/agenda_intelligence.py validate-evidence examples/source/evidence-pack.json
-```
-
-If live retrieval fails, the agent should say so and downgrade evidence mode instead of pretending the brief is source-backed.
-
----
-
-## AnalysisBank
-
-[AnalysisBank](analysis-bank/README.md) is the ReasoningBank-inspired layer for Agenda-Intelligence.md.
-
-The base protocol tells an agent how to analyze public agenda. AnalysisBank helps it improve across tasks by storing compact reasoning memories from both good and bad outputs.
-
-Current memory cards include:
-
-- vague monitoring → concrete indicators;
-- overconfident sanctions upgrades → evidence thresholds;
-- EU rhetoric treated as law → institutional-path check;
-- sanctions routing → mechanism-first signal classification.
-
-Memory format:
-
-```text
-Trigger → Pattern → Better reasoning → Apply when → Do not apply when → Watch indicators → Example rewrite
-```
-
-Eval harness:
-
-```bash
-python3 scripts/eval_before_after.py
-```
-
-The eval checks that after examples score higher than generic before examples on signal classification, actor specificity, uncertainty, falsifiability, watch-next indicators, and decision value.
-
----
-
-## Regional lens packs
-
-Agenda-Intelligence.md can be extended with lightweight regional thinking layers. These are not full specialist skills; they are portable checklists that help any agent reason better about a specific region.
-
-Available lens packs:
-
-- [Central Asia + Caspian](skills/agenda-intelligence/references/regional/central-asia-caspian.md) — sanctions routing, corridor politics, Caspian chokepoints, banking/payment exposure, state leverage, energy, minerals, and regional political economy.
-- [Middle East](skills/agenda-intelligence/references/regional/middle-east.md) — escalation risk, energy flows, maritime chokepoints, sovereign capital, sanctions exposure, normalization, and regional power competition.
-- [European Union](skills/agenda-intelligence/references/regional/eu.md) — regulation, sanctions, trade defense, digital rules, climate policy, market access, coalition politics, and enforcement risk.
-
-Use the base protocol first, then add the regional lens when the agenda item has a clear regional connection.
-
-
----
-
-## Sector lens packs
-
-Sector lenses add domain-specific checks for high-risk agenda areas. They are not legal, financial, or technical advice; they are reasoning checklists for agents.
-
-Available sector packs:
-
-- [Sanctions](skills/agenda-intelligence/references/sector/sanctions.md) — designations, enforcement, export controls, routing, ownership/control, financial channels, licenses, and compliance exposure.
-
-Use the base protocol first, then add the sector lens when the agenda item has a clear domain connection.
-
----
-
-## Relationship to global-think-tank-analyst
-
-Agenda-Intelligence.md is the lightweight, portable agenda-analysis protocol.
-It is for any AI agent that needs to stop summarizing news and start identifying signal, uncertainty, scenarios, and watch-next indicators.
-
-For full policy-risk memos, use [global-think-tank-analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst).
-That repository is the deeper OpenClaw/Codex analyst for geopolitical, sanctions, trade, regulatory, and strategic-risk memos.
-
-Use them together like this:
-
-```text
-Agenda-Intelligence.md = small universal protocol for agenda triage
-global-think-tank-analyst = full memo skill for decision-ready policy risk analysis
-```
-
----
-
-## Repository structure
-
-```text
-Agenda-Intelligence.md
-ADOPTION.md
-agent-manifest.json
-MCP.md
-SOURCE_POLICY.md
-source-taxonomy.json
-source-requirements/
-  sanctions.json
-  regulation.json
-  elections.json
-  conflict-security.json
-  energy.json
-  trade.json
-  financial-market.json
-  technology-ai.json
-  regional-risk.json
-analysis-bank/
-  README.md
-  MEMORY_FORMAT.md
-  failures/
-  successes/
-  prompts/
-skills/agenda-intelligence/
-  SKILL.md
-  references/
-    analysis-protocol.md
-    agenda-triage.md
-    evidence-discipline.md
-    output-patterns.md
-    regional/
-      central-asia-caspian.md
-      middle-east.md
-      eu.md
-    sector/
-      sanctions.md
-examples/
-  compact-brief.md
-  red-team-brief.md
-  central-asia-caspian-brief.md
-  middle-east-brief.md
-  eu-brief.md
-  sector/
-    sanctions-brief.md
-  before-after/
-    eu-ai-act.md
-    red-sea-shipping.md
-    sanctions-routing.md
-schemas/
-  agenda-brief.schema.json
-  memory-card.schema.json
-  lens-manifest.schema.json
-  signal-classification.schema.json
-  evidence-pack.schema.json
-scripts/
-  agenda_intelligence.py
-  validate.py
-  eval_before_after.py
-llms.txt
-```
-
----
-
-## Design principle
-
-Keep the loaded context small.
-
-`SKILL.md` is only a wrapper. The deeper markdown files are pulled or copied only when needed:
-
-- `analysis-protocol.md` — how the agent should think;
-- `agenda-triage.md` — how to classify developments;
-- `evidence-discipline.md` — how to handle uncertainty and sources;
-- `output-patterns.md` — ready-to-use brief formats;
-- `regional/central-asia-caspian.md` — regional lens for Central Asia + Caspian agenda analysis;
-- `regional/middle-east.md` — regional lens for Middle East agenda analysis;
-- `regional/eu.md` — regional lens for European Union agenda analysis;
-- `sector/sanctions.md` — sector lens for sanctions and export-control agenda analysis.
-
----
-
-## Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-1. **Issues**: Open an issue to discuss changes before submitting a PR.
-2. **Branches**: Create a feature branch (`feat/...`, `fix/...`) from `main`.
-3. **Code style**: Follow PEP8, run `pytest` and ensure all tests pass.
-4. **Documentation**: Update relevant `docs/` and `README.md` if behavior changes.
-5. **Release process**: Maintainers bump version in `pyproject.toml`, update `CHANGELOG.md`, and publish to PyPI via CI.
-
-See `docs/quickstart.md` for development setup.
-
----
-
-## License
-
-MIT
+> **Why this exists:** Most agent‑written news analysis is a polished recap that doesn’t change any decision. This project gives agents a stricter workflow so their output actually helps someone decide, hedge, or act.

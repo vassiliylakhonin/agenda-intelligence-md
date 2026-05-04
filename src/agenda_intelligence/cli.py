@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]  # fallback for editable installs
 
 def _resource_path(*parts: str) -> Path:
     """Return a Path object to a data file inside the package."""
-    return (resources.files(PACKAGE_NAME) / "data" / Path(*parts)).as_posix()
+    return (resources.files(PACKAGE_NAME) / "data" / Path(*parts)).as_posix()  # type: ignore[operator]
 
 
 def load_manifest():
@@ -181,7 +181,6 @@ def cmd_score(args):
 
 def cmd_memory_search(args):
     """Search in AnalysisBank memory cards."""
-    import fnmatch
     query = args.query.lower()
     # Path to analysis-bank inside data
     bank_path = resources.files(PACKAGE_NAME) / "data" / "analysis-bank"

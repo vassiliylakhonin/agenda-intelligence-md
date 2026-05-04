@@ -2,6 +2,7 @@ LICENSE
 MANIFEST.in
 README.md
 pyproject.toml
+setup.cfg
 schemas/agenda-brief.schema.json
 schemas/evidence-pack.schema.json
 schemas/lens-manifest.schema.json
