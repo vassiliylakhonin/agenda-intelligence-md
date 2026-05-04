@@ -65,11 +65,18 @@ Result: shorter output, higher decision value.
 
 ## 📦 Installation
 
+### From PyPI (when published)
 ```bash
-# From PyPI (when published)
 pip install agenda-intelligence-md
+```
 
-# Or editable install from source
+### From GitHub Release
+```bash
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.5.0/agenda_intelligence_md-0.5.0-py3-none-any.whl
+```
+
+### Editable install from source
+```bash
 git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
 cd agenda-intelligence-md
 pip install -e .
