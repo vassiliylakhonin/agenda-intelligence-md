@@ -41,14 +41,14 @@
 | “Companies should monitor developments.” | “Watch for regulator guidance, first enforcement action, compliance deadline, and product redesigns. Treat as signal until those indicators appear.” |
 
 The protocol forces the agent to answer:
-- **Signal classification:** noise → weak signal → signal → structural shift → trigger event
-- **What changed?** (fact)
-- **Why it matters?** (incentives, leverage)
-- **Who is affected?**
-- **Main uncertainty?**
-- **Scenarios & watch‑next indicators**
+1. **Signal classification:** noise → weak signal → signal → structural shift → trigger event.
+2. **What changed?** (fact)
+3. **Why it matters?** (incentives, leverage)
+4. **Who is affected?**
+5. **Main uncertainty?**
+6. **Scenarios & watch‑next indicators**
 
-Result: shorter output, higher decision value.
+**Result:** shorter output, higher decision value. The protocol produces decision‑ready briefs in the format shown above.
 
 ---
 
