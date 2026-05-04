@@ -138,7 +138,6 @@ MIT – free for any use.
 ## 🔗 Related projects
 
 - **[global-think-tank-analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst)** – deeper policy‑risk memos for OpenClaw.
-- **[ReasoningBank](https://github.com/vassiliylakhonin/ReasoningBank)** – the inspiration for AnalysisBank.
 
 ---
 
