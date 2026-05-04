@@ -179,6 +179,51 @@ def cmd_score(args):
     subprocess.run([sys.executable, str(script_path)], check=True)
 
 
+def cmd_memory_search(args):
+    """Search in AnalysisBank memory cards."""
+    import fnmatch
+    query = args.query.lower()
+    # Path to analysis-bank inside data
+    bank_path = resources.files(PACKAGE_NAME) / "data" / "analysis-bank"
+    if not bank_path.is_dir():
+        raise SystemExit("AnalysisBank directory not found in package data")
+    results = []
+    # Walk through the directory (works with importlib.resources on Python 3.9+)
+    # Traverse using Path if possible, otherwise fallback to os.listdir
+    try:
+        base = Path(bank_path.as_posix())
+    except Exception:
+        base = Path(str(bank_path))
+    for md_file in base.rglob("*.md"):
+        text = md_file.read_text(encoding="utf-8")
+        if query in text.lower():
+            results.append({"file": md_file.name, "path": str(md_file.relative_to(base))})
+    if results:
+        print(json.dumps(results, indent=2, ensure_ascii=False))
+    else:
+        print(f"No results for query: {args.query}")
+
+
+def cmd_fetch(args):
+    """Fetch evidence pack for a brief or category (stub)."""
+    import json as _json
+    if args.category:
+        manifest = load_manifest()
+        requirements = manifest.get("source_acquisition", {}).get("requirements", {})
+        if args.category not in requirements:
+            raise SystemExit(f"Unknown source category: {args.category}")
+        rel_path = requirements[args.category]
+        p = resources.files(PACKAGE_NAME) / "data" / rel_path
+        if not p.is_file():
+            raise SystemExit(f"Source requirements file not bundled: {rel_path}")
+        data = _json.loads(p.read_text())
+        print(_json.dumps(data, indent=2, ensure_ascii=False))
+    elif args.brief:
+        print("Fetching evidence for brief is not yet implemented.")
+    else:
+        raise SystemExit("Provide --category or --brief")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Agenda-Intelligence.md helper CLI")
     sub = parser.add_subparsers(dest="cmd", required=True)
