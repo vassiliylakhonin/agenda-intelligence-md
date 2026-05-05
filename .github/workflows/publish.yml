@@ -1,12 +1,7 @@
 name: Publish to PyPI
 
 on:
-  workflow_dispatch:   # allow manual trigger
-  push:
-    tags: ['v*']       # any tag starting with v
-
-permissions:
-  id-token: write   # trusted publishing (optional, fallback to token)
+  workflow_dispatch:
 
 jobs:
   build-and-publish:
@@ -24,8 +19,11 @@ jobs:
       - name: Build package
         run: python3 -m build
 
+      - name: Check package metadata
+        run: python3 -m twine check dist/*
+
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: python3 -m twine upload dist/*
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: python3 -m twine upload --skip-existing dist/*
