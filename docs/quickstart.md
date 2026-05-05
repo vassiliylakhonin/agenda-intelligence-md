@@ -1,13 +1,14 @@
 # Quickstart — End‑to‑End “Aha” Moment
 
 This guide walks you through a **complete workflow** in about 10 minutes using the `technology‑ai` source plan.  
-You will go from a fresh install to a validated, scored brief — the moment the protocol “clicks”.
+You will go from a fresh install to a validated brief plus a scored before/after
+example — the moment the protocol “clicks”.
 
 ## Prerequisites
 
 * Python 3.9+ environment (virtualenv, conda, etc.)
 * `pip` (or `git` to clone the repo)
-* Internet access (to fetch source definitions)
+* Internet access only if you choose the PyPI or GitHub install path
 
 ---
 
@@ -92,13 +93,14 @@ A green check means the JSON conforms to the schema and all required fields are 
 
 ---
 
-## 5️⃣ Score the brief (quality check)
+## 5️⃣ Score a before/after example (quality check)
 
 ```bash
 agenda-intelligence score examples/before-after/eu-ai-act.md
 ```
 
-You’ll get the before/after evaluation harness output for that example.
+You’ll get the before/after evaluation harness output for that example. The
+current scorer does not score arbitrary `brief.json` files yet.
 
 ---
 

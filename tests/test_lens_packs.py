@@ -1,12 +1,13 @@
 import json
 import subprocess
+import sys
 
 CATEGORIES = ["energy", "cyber-threats", "esg", "supply-chain-resilience"]
 
 
 def run_cli(category):
     result = subprocess.run(
-        ["agenda-intelligence", "source-plan", category],
+        [sys.executable, "-m", "agenda_intelligence.cli", "source-plan", category],
         capture_output=True,
         text=True,
     )

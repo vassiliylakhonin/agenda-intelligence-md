@@ -80,7 +80,9 @@ Add the skill to your workspace (e.g. `clawhub install agenda-intelligence`). Th
 Analyze the latest EU regulation on AI‑risk assessments. Identify what changed, who gains leverage, remaining uncertainties, and watch‑next indicators.
 ```
 
-OpenClaw will load the referenced markdown files, run the CLI `agenda-intelligence` under the hood, and return a compact brief in the standard `**Bottom line:**` format.
+OpenClaw-style agents can load the referenced markdown files and use the CLI
+for validation, source plans, and before/after scoring. The exact runtime
+wrapper depends on the host agent environment.
 
 You can also pass a brief directly:
 
@@ -90,5 +92,6 @@ You can also pass a brief directly:
 Brief: "EU AI Act amendment 2026 – new high‑risk AI categories and tighter reporting thresholds."
 ```
 
-The skill will fetch sources, validate the brief, and produce the decision‑ready output.
-
+Use this as an analysis request plus source-plan trigger. Automated source
+fetching from a brief is not implemented yet; if live retrieval is unavailable,
+mark the evidence mode as `reasoning_only`, `user_provided`, or `mixed`.

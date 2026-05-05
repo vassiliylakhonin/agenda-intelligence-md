@@ -12,9 +12,11 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 - `start` command now the primary onboarding CLI entry‑point.
 
 ### Changed
-- Version drift eliminated: `pyproject.toml` (0.5.1), `agent‑manifest.json` (0.5.1), removed `setup.cfg`.
+- Version drift eliminated: `pyproject.toml` (0.5.2), `agent‑manifest.json` (0.5.2), packaged manifest data (0.5.2), removed `setup.cfg`.
+- Top-level and packaged agenda brief schemas are now kept in sync.
+- MCP read tools now return packaged protocol, lens, and source-plan data instead of stubs.
 - README cleaned: removed old release notes, consolidated into a single coherent document.
-- MCP integration marked as sketch with explicit adoption‑channel context.
+- MCP transport/server marked as planned while read-only Python tool functions are documented as implemented.
 
 ## [0.5.1] – 2026‑05‑05
 ### Fixed

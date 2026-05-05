@@ -102,9 +102,10 @@ agenda-intelligence score examples/before-after/eu-ai-act.md
 - **Source plans** – `source-plan`, `list-source-packs`, `source-types`.
 - **Guided start** – `start` command prints trimmed plan + brief template.
 - **Evaluation toolkit** – `evals/rubric.md`, `evals/llm_judge_prompt.txt`, `evals/human_checklist.md`, `evals/cases/*.json`.
+- **MCP read tools** – `validate_brief`, `validate_evidence`, `get_protocol`, `list_lenses`, `get_lens`, `source_plan`.
 
 ### 🧪 Experimental / Planned
-- **MCP integration** – the **primary adoption channel**, but still a sketch (`docs/integrations/mcp.md`). Full implementation is on the roadmap.
+- **MCP transport/server** – read-only tool functions exist, but a full HTTP/WebSocket server is still on the roadmap (`docs/integrations/mcp.md`).
 - **Fetch command** – stub in CLI, full evidence‑pack retrieval not implemented.
 - **Scorer / eval** – `score` command relies on `eval_before_after.py` (only in editable installs).
 - **Generate‑brief** – not yet exposed; use `start` + manual template fill.
@@ -154,8 +155,8 @@ agenda-intelligence-md/
 
 ## Roadmap (high‑level)
 
-- **v0.6** – Full MCP server exposing all tools via HTTP/WebSocket.
-- **v0.7** – Complete `get_protocol`, `list_lenses`, `get_lens`, `source_plan`, `score_output` in MCP.
+- **v0.6** – Full MCP server exposing current Python tool functions via HTTP/WebSocket.
+- **v0.7** – Promote `score_output` to rubric-based quality scoring and wire it into MCP.
 - **v0.8** – Automated CI quality gate using the evaluation toolkit.
 - **v1.0** – Stable API, broader adoption‑channel support, production‑grade MCP.
 
