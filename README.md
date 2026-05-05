@@ -9,6 +9,23 @@
 
 > **Bottom line:** agents using this protocol move from *“monitor developments”* to *“watch these 3 indicators; if X happens, decision Y becomes urgent.”*
 
+## 📊 Status
+
+### ✅ Stable today
+- **Markdown protocol** (`Agenda-Intelligence.md`) – core reasoning workflow.
+- **JSON schemas** – validation for briefs, evidence packs, memory cards.
+- **CLI validation** – `validate-brief`, `validate-evidence`, `validate-manifest`.
+- **Source plans** – `source-plan`, `list-source-packs`, `source-types`.
+- **Guided start** – `start` command prints trimmed plan + brief template.
+
+### 🧪 Experimental / Planned
+- **MCP integration** – `MCP.md` sketch, not yet functional.
+- **Fetch command** – stub in CLI, full evidence‑pack retrieval not implemented.
+- **Scorer / eval** – `score` command relies on `eval_before_after.py` (only in editable installs).
+- **Generate‑brief** – not yet exposed; use `start` + manual template fill.
+
+> **Note:** The project is young. Stable parts are ready for production use; experimental bits are usable for testing but may change.
+
 ---
 
 ## 🚀 Quick start (OpenClaw)
