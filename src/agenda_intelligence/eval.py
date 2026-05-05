@@ -121,6 +121,7 @@ def _score_evidence_support(
     evidence_pack: dict[str, Any] | None,
 ) -> DimensionScore:
     evidence_mode = brief.get("evidence_mode")
+    evidence_mode_key = evidence_mode if isinstance(evidence_mode, str) else None
     confidence = brief.get("confidence")
     if evidence_pack is not None:
         return _score_evidence_pack(evidence_mode, confidence, evidence_pack)
@@ -131,7 +132,7 @@ def _score_evidence_support(
         "user_provided": 12,
         "reasoning_only": 8,
     }
-    score = score_by_mode.get(evidence_mode, 5)
+    score = score_by_mode[evidence_mode_key] if evidence_mode_key in score_by_mode else 5
     feedback = [f"evidence_mode={evidence_mode or 'missing'}; no evidence pack provided"]
     if isinstance(confidence, dict) and confidence.get("reasoning"):
         score += 5
@@ -142,7 +143,7 @@ def _score_evidence_support(
     else:
         feedback.append("add confidence level or rationale")
 
-    if evidence_mode in {"live_source_backed", "mixed", "user_provided"}:
+    if evidence_mode_key in {"live_source_backed", "mixed", "user_provided"}:
         score += 2
     else:
         feedback.append("source-backed evidence would raise this score")
@@ -246,7 +247,7 @@ def _score_actionability(brief: dict[str, Any]) -> DimensionScore:
     watch_next = brief.get("watch_next")
     scenarios = brief.get("scenarios")
     score = 0
-    if _non_empty_list(watch_next):
+    if isinstance(watch_next, list) and watch_next:
         score += 6
         score += min(len(watch_next), 3)
     if _non_empty_text(brief.get("main_uncertainty")):

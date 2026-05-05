@@ -3,6 +3,8 @@
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## [Unreleased]
+
+## [0.5.3] – 2026-05-05
 ### Added
 - Evaluation toolkit: rubric, LLM judge prompt, human checklist, sample cases.
 - Heuristic 0-100 JSON brief scoring via `agenda-intelligence score brief.json`.
@@ -14,7 +16,7 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 - `start` command now the primary onboarding CLI entry‑point.
 
 ### Changed
-- Version drift eliminated: `pyproject.toml` (0.5.2), `agent‑manifest.json` (0.5.2), packaged manifest data (0.5.2), removed `setup.cfg`.
+- Version drift eliminated: `pyproject.toml` (0.5.3), `agent‑manifest.json` (0.5.3), packaged manifest data (0.5.3), removed `setup.cfg`.
 - Top-level and packaged agenda brief schemas are now kept in sync.
 - MCP read tools now return packaged protocol, lens, and source-plan data instead of stubs.
 - README cleaned: removed old release notes, consolidated into a single coherent document.

@@ -4,19 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agenda-intelligence-md"
-version = "0.5.2"
+version = "0.5.3"
 description = "A drop-in markdown cognition layer for AI agents that need to analyze public agenda"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Vassiliy Lakhonin"}
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+
+license-files = ["LICENSE"]
 
 dependencies = [
     "jsonschema>=4.20",

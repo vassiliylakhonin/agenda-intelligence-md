@@ -2,3 +2,7 @@
 *.skill
 node_modules/
 .env
+__pycache__/
+.pytest_cache/
+.pycache-tmp/
+build/
