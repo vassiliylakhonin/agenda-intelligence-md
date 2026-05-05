@@ -1,0 +1,9 @@
+{
+  "category": "supply-chain-resilience",
+  "must_check": ["shipping_data", "customs_guidance", "supplier_list", "inventory_report", "port_authority_notice"],
+  "supporting_sources": ["media", "expert", "industry_report", "government"],
+  "red_flags": ["single‑country dependency claim without data", "speculative lead‑time forecast", "unnamed supplier"],
+  "do_not_claim_without": ["official trade statistics", "customs advisory", "supplier filing"],
+  "freshness_rules": ["shipping and inventory data older than 14 days should be treated as weak signal"],
+  "watch_indicators": ["port congestion", "blanked sailing", "supplier bankruptcy", "new trade agreement", "tariff change", "inventory spike"]
+}

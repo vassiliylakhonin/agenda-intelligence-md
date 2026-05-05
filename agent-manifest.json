@@ -48,15 +48,18 @@
     "policy": "SOURCE_POLICY.md",
     "taxonomy": "source-taxonomy.json",
     "requirements": {
-      "sanctions": "source-requirements/sanctions.json",
-      "regulation": "source-requirements/regulation.json",
-      "elections": "source-requirements/elections.json",
       "conflict-security": "source-requirements/conflict-security.json",
+      "cyber-threats": "source-requirements/cyber-threats.json",
+      "elections": "source-requirements/elections.json",
       "energy": "source-requirements/energy.json",
-      "trade": "source-requirements/trade.json",
+      "esg": "source-requirements/esg.json",
       "financial-market": "source-requirements/financial-market.json",
+      "regional-risk": "source-requirements/regional-risk.json",
+      "regulation": "source-requirements/regulation.json",
+      "sanctions": "source-requirements/sanctions.json",
+      "supply-chain-resilience": "source-requirements/supply-chain-resilience.json",
       "technology-ai": "source-requirements/technology-ai.json",
-      "regional-risk": "source-requirements/regional-risk.json"
+      "trade": "source-requirements/trade.json"
     }
   }
 }

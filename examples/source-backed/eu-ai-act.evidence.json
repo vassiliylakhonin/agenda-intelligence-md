@@ -1,44 +1,58 @@
 {
   "topic": "EU AI Act",
-  "evidence_mode": "source-backed",
+  "evidence_mode": "live_source_backed",
+  "retrieved_at": "2026-05-05T12:00:00Z",
+  "jurisdiction": "European Union",
   "claims": [
     {
-      "claim": "EU AI Act introduces stricter obligations for high‑risk AI systems",
+      "claim": "The EU AI Act introduces stricter obligations for high-risk AI systems.",
       "support_status": "supported",
       "sources": [
         {
-          "name": "EU Commission AI Act proposal",
-          "url": "https://example.com/ai-act-proposal",
-          "source_type": "official_document",
+          "name": "Regulation (EU) 2024/1689 (Artificial Intelligence Act)",
+          "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689",
+          "source_type": "legal",
           "freshness": "current",
-          "supports": ["Legal text defining high‑risk categories and compliance duties"],
-          "limits": ["Does not specify enforcement timeline"]
+          "supports": [
+            "Sets risk-tiered obligations, including requirements for high-risk AI systems."
+          ],
+          "limits": [
+            "Legal text alone does not prove implementation quality by regulated firms."
+          ]
         },
         {
-          "name": "European Parliament budget allocation 2025",
-          "url": "https://example.com/eu-budget-2025",
-          "source_type": "official_document",
+          "name": "European Commission AI Act policy page",
+          "url": "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai",
+          "source_type": "official",
           "freshness": "current",
-          "supports": ["Shows funding for AI compliance monitoring"],
-          "limits": ["Budget covers only 2025"]
+          "supports": [
+            "Summarizes the EU regulatory framework and implementation approach for the AI Act."
+          ],
+          "limits": [
+            "Overview page may lag detailed implementing acts and guidance."
+          ]
         },
         {
-          "name": "Industry procurement notices",
-          "url": "https://example.com/ai-procurement",
-          "source_type": "news",
+          "name": "European Commission AI Act Service Desk announcement",
+          "url": "https://digital-strategy.ec.europa.eu/en/news/commission-launches-ai-act-service-desk-support-businesses",
+          "source_type": "official",
           "freshness": "current",
-          "supports": ["Indicates adoption of compliance processes in enterprises"],
-          "limits": ["Limited to a few companies"]
+          "supports": [
+            "Shows official support activity for businesses preparing for AI Act compliance."
+          ],
+          "limits": [
+            "Support service activity is not direct evidence of enterprise compliance maturity."
+          ]
         }
       ]
     }
   ],
   "unsupported_claims": [
-    "Exact enforcement dates for each sector (not yet published)"
+    "Exact sector-by-sector enforcement outcomes cannot be inferred from the legal text alone."
   ],
   "source_plan": [
-    "Check official EU AI Act proposal text",
-    "Check EU budget and procurement data",
-    "Check industry compliance announcements"
+    "Check final EU AI Act legal text on EUR-Lex",
+    "Check European Commission implementation and guidance pages",
+    "Check official business-support and procurement/compliance signals"
   ]
 }

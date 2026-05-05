@@ -18,6 +18,11 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
+dependencies = [
+    "jsonschema>=4.20",
+    "referencing>=0.30",
+]
+
 [project.urls]
 Homepage = "https://github.com/vassiliylakhonin/agenda-intelligence-md"
 Repository = "https://github.com/vassiliylakhonin/agenda-intelligence-md.git"
@@ -29,11 +34,6 @@ dev = [
     "pytest-cov",
     "mypy>=1.0",
     "ruff>=0.1",
-]
-
-dependencies = [
-    "jsonschema>=4.20",
-    "referencing>=0.30",
 ]
 
 [project.scripts]

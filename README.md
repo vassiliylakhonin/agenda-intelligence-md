@@ -5,7 +5,7 @@
 [![CI Status](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions)
 [![GitHub stars](https://img.shields.io/github/stars/vassiliylakhonin/agenda-intelligence-md?style=flat-square)](https://github.com/vassiliylakhonin/agenda-intelligence-md/stargazers)
 
-**A drop‑in cognition layer that turns news scanning into decision‑ready analysis.**
+**A drop-in markdown cognition layer that turns news scanning into decision-ready analysis.**
 
 > **Bottom line:** agents using this protocol move from *“monitor developments”* to *“watch these 3 indicators; if X happens, decision Y becomes urgent.”*
 
@@ -52,11 +52,11 @@ agenda-intelligence start technology-ai
 
 # Output: trimmed source plan + brief template + next commands
 
-# 2. Fill the template and validate
-agenda-intelligence validate-brief brief.json
+# 2. Validate a bundled example brief
+agenda-intelligence validate-brief examples/agenda-brief.json
 
-# 3. Score the brief (quality check)
-agenda-intelligence score brief.json
+# 3. Score a before/after example (quality check)
+agenda-intelligence score examples/before-after/eu-ai-act.md
 ```
 
 **Demo output** (what you see after `start`):

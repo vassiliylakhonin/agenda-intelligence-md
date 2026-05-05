@@ -2,21 +2,16 @@
 import argparse
 import json
 import sys
+from importlib import resources
 from pathlib import Path
 
 # Resource handling – works both in editable mode and from an installed package.
 # All runtime assets are stored under ``agenda_intelligence/data``.
 # ``importlib.resources`` (Python 3.9+) provides a unified API.
 
-from importlib import resources
 
 PACKAGE_NAME = __package__ or "agenda_intelligence"
 ROOT = Path(__file__).resolve().parents[2]  # fallback for editable installs
-
-
-def _resource_path(*parts: str) -> Path:
-    """Return a Path object to a data file inside the package."""
-    return (resources.files(PACKAGE_NAME) / "data" / Path(*parts)).as_posix()  # type: ignore[operator]
 
 
 def load_manifest():
@@ -64,7 +59,7 @@ def cmd_get_protocol(args):
 
 
 # JSON Schema validation using jsonschema
-from jsonschema import validate, ValidationError  # noqa: E402
+from jsonschema import ValidationError, validate  # noqa: E402
 
 
 def cmd_validate_brief(args):
@@ -77,7 +72,7 @@ def cmd_validate_evidence(args):
 
 def cmd_validate_manifest(args):
     # Validate agent-manifest.json against its schema.
-    from jsonschema import validate, ValidationError
+    from jsonschema import ValidationError, validate
 
     manifest = load_manifest()
     schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "agent-manifest.schema.json"
@@ -206,6 +201,7 @@ def cmd_memory_search(args):
 def cmd_fetch(args):
     """Fetch evidence pack for a brief or category (stub)."""
     import json as _json
+
     if args.category:
         manifest = load_manifest()
         requirements = manifest.get("source_acquisition", {}).get("requirements", {})
@@ -279,7 +275,6 @@ def main():
     p.add_argument("--category", help="Source category to fetch (e.g., technology-ai)")
     p.add_argument("--brief", help="Short brief text to analyze")
     p.set_defaults(func=cmd_fetch)
-
 
     args = parser.parse_args()
     args.func(args)

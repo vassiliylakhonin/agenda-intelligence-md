@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-from pathlib import Path
+import json
 import subprocess
 import sys
-import json
+from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 required = [
@@ -11,11 +11,18 @@ required = [
     "source-requirements/financial-market.json",
     "source-requirements/trade.json",
     "source-requirements/energy.json",
+    "source-requirements/cyber-threats.json",
+    "source-requirements/esg.json",
+    "source-requirements/supply-chain-resilience.json",
     "source-requirements/conflict-security.json",
     "source-requirements/elections.json",
     "source-requirements/regulation.json",
     "source-requirements/sanctions.json",
     "examples/source/evidence-pack.json",
+    "examples/source-backed/eu-ai-act.evidence.json",
+    "examples/source-backed/red-sea-shipping.evidence.json",
+    "examples/source-backed/sanctions-routing.evidence.json",
+    "scripts/validate_public_examples.py",
     "schemas/evidence-pack.schema.json",
     "source-taxonomy.json",
     "SOURCE_POLICY.md",
@@ -73,15 +80,15 @@ for token in ["name: agenda-intelligence", "description:", "references/analysis-
 readme = (root / "README.md").read_text()
 for token in [
     "drop-in markdown cognition layer",
-    "Built for agents",
+    "Quick install",
+    "CLI happy path",
     "Source Acquisition Layer",
-    "How to use it",
-    "How it relates to AGENTS.md",
-    "10-second demo",
-    "Before / after examples",
-    "Sector lens packs",
+    "Examples",
+    "source-backed/eu-ai-act.md",
+    "Before/after",
     "AnalysisBank",
-    "Fact → Assessment",
+    "Documentation",
+    "Roadmap",
 ]:
     if token not in readme:
         raise SystemExit(f"README missing token: {token}")
@@ -98,6 +105,9 @@ for json_file in [
     "examples/source/evidence-pack.json",
 ]:
     json.loads((root / json_file).read_text())
+
+for json_file in sorted((root / "examples").glob("**/*.json")):
+    json.loads(json_file.read_text())
 
 subprocess.run([sys.executable, str(root / "scripts" / "eval_before_after.py")], check=True)
 subprocess.run(
@@ -118,6 +128,7 @@ subprocess.run(
     ],
     check=True,
 )
+subprocess.run([sys.executable, str(root / "scripts" / "validate_public_examples.py")], check=True)
 subprocess.run(
     [sys.executable, str(root / "scripts" / "agenda_intelligence.py"), "source-plan", "technology-ai"],
     check=True,

@@ -1,0 +1,9 @@
+{
+  "category": "cyber-threats",
+  "must_check": ["threat_intel", "vendor_advisories", "incident_reports"],
+  "supporting_sources": ["media", "expert", "government"],
+  "red_flags": ["unverified rumors", "anonymous tweet"],
+  "do_not_claim_without": ["official advisory", "CERT report"],
+  "freshness_rules": ["intel older than 7 days should be considered stale"],
+  "watch_indicators": ["malware outbreak", "zero-day exploit", "state-sponsored campaign", "patch release"]
+}

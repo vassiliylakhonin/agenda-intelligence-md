@@ -36,33 +36,17 @@ agenda-intelligence source-plan technology-ai
 
 The output lists all the `*definition.json` files that will be fed into the evidence pack.
 
-> **Tip:** You can view the plan definition in `source-requirements/technology‑ai.json`.
+> **Tip:** You can view the plan definition in `source-requirements/technology-ai.json`.
 
 ## 3. Build a minimal evidence pack
 
-Create a temporary directory and copy the required source files:
+For a copy-pasteable run, start from the bundled evidence-pack example:
 
 ```bash
-mkdir my‑evidence
-cp -r source-requirements/technology-ai/* my‑evidence/
+cp examples/source/evidence-pack.json evidence-pack.json
 ```
 
-Now produce a minimal `evidence-pack.json` that references the first source file (replace `<index>` with an actual file name, e.g., `tech‑release.json`):
-
-```json
-{
-  "documents": [
-    {
-      "file": "my-evidence/<index>.json",
-      "maturity": 0.3,
-      "history": [],
-      "source": "source-requirements"
-    }
-  ]
-}
-```
-
-Save this as `evidence-pack.json` in your working directory.
+That file follows `schemas/evidence-pack.schema.json`: it contains a `topic`, `evidence_mode`, claim-level `sources`, `unsupported_claims`, and a `source_plan`. For your own analysis, keep the same structure and replace the claim/source content with your actual evidence.
 
 ## 4. Validate the evidence pack
 
@@ -99,20 +83,20 @@ Copy‑paste that into a file your own name, e.g., `brief.json`, fill the fields
 ## 6. Validate the brief
 
 ```bash
-agenda-intelligence validate-brief brief.json
+agenda-intelligence validate-brief examples/agenda-brief.json
 ```
 
-A green check means the JSON conforms to the schema.
+A green check means the JSON conforms to the schema. Replace the example path with your own `brief.json` after you fill the template.
 
 ## 7. Score the brief
 
 For a quick quality check, run the **score** step:
 
 ```bash
-agenda-intelligence score --brief brief.json --evidence evidence-pack.json
+agenda-intelligence score examples/before-after/eu-ai-act.md
 ```
 
-Output is a short numeric value (`0‑100`) and a short commentary on what could be improved.
+The command runs the before/after evaluation harness for that example.
 
 ---
 
@@ -128,16 +112,16 @@ All of this took under **10 minutes**—it shows how the protocol moves you fr
 
 ## Want a ready‑made demo? 🚀
 
-Check the `examples` folder in the repo, or pull a pre‑assembled evidence pack from the `sample‑data` directory:
+Check the `examples/before-after/` folder in the repo and run another pre-assembled example:
 
 ```bash
-cp -r example-data/technology-ai/ compiled-pack/  # includes evidence, plan, and brief
+agenda-intelligence score examples/before-after/sanctions-routing.md
 ```
 
-Then run:
+You can also run:
 
 ```bash
-agenda-intelligence score --brief compiled-pack/brief.json --evidence compiled-pack/evidence-pack.json
+agenda-intelligence score examples/before-after/red-sea-shipping.md
 ```
 
 Enjoy the instant feedback loop!

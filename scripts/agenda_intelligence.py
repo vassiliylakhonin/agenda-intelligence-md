@@ -4,6 +4,7 @@
 This script delegates all functionality to the installed console entry
 point, ensuring a single source of truth for command behaviour.
 """
+
 import sys
 from pathlib import Path
 

@@ -1,5 +1,3 @@
-
-[dependencies]
 jsonschema>=4.20
 referencing>=0.30
 

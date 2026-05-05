@@ -13,14 +13,13 @@ Classifier: Topic :: Software Development :: Libraries :: Python Modules
 Requires-Python: >=3.9
 Description-Content-Type: text/markdown
 License-File: LICENSE
+Requires-Dist: jsonschema>=4.20
+Requires-Dist: referencing>=0.30
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0; extra == "dev"
 Requires-Dist: pytest-cov; extra == "dev"
 Requires-Dist: mypy>=1.0; extra == "dev"
 Requires-Dist: ruff>=0.1; extra == "dev"
-Provides-Extra: dependencies
-Requires-Dist: jsonschema>=4.20; extra == "dependencies"
-Requires-Dist: referencing>=0.30; extra == "dependencies"
 Dynamic: license-file
 
 # Agenda Intelligence MD
@@ -30,74 +29,32 @@ Dynamic: license-file
 [![CI Status](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions)
 [![GitHub stars](https://img.shields.io/github/stars/vassiliylakhonin/agenda-intelligence-md?style=flat-square)](https://github.com/vassiliylakhonin/agenda-intelligence-md/stargazers)
 
-**A drop‑in cognition layer for AI agents that stops them from just summarizing news and starts producing decision‑ready analysis.**
+**A drop-in markdown cognition layer that turns news scanning into decision-ready analysis.**
 
 > **Bottom line:** agents using this protocol move from *“monitor developments”* to *“watch these 3 indicators; if X happens, decision Y becomes urgent.”*
 
 ---
 
-## 🚀 Quick start (OpenClaw)
+## Who it is for
 
-1. **Install skill** (recommended):
-   ```bash
-   clawhub install agenda-intelligence
-   ```
-   Or copy `skills/agenda-intelligence/` into your workspace.
-
-2. **Use in a prompt**:
-   ```
-   [skill:agenda-intelligence]
-   Brief: "EU AI Act amendment adds new high‑risk categories."
-   ```
-   The agent will load the protocol, run the CLI, and return a compact brief.
-
-3. **Or use the CLI directly** (after `pip install agenda-intelligence-md`):
-   ```bash
-   agenda-intelligence validate-brief examples/agenda-brief.json
-   agenda-intelligence source-plan technology-ai
-   ```
+- **Policy analysts & think‑tanks** – structured monitoring of regulatory and geopolitical signals.
+- **Sanctions & compliance teams** – evidence‑backed briefs that satisfy audit requirements.
+- **Market‑risk analysts** – concise impact snapshots for faster investment decisions.
+- **Founders & operators** – external chaos turned into clear strategic inputs.
+- **AI agents** – any LLM‑based system that needs to analyze public agenda without drifting into generic summaries.
 
 ---
 
-## 🎯 What it does
+## Quick install
 
-| Without Agenda‑Intelligence.md | With Agenda‑Intelligence.md |
-|--------------------------------|--------------------------------|
-| “Companies should monitor developments.” | “Watch for regulator guidance, first enforcement action, compliance deadline, and product redesigns. Treat as signal until those indicators appear.” |
-
-The protocol forces the agent to answer:
-- **Signal classification:** noise → weak signal → signal → structural shift → trigger event
-- **What changed?** (fact)
-- **Why it matters?** (incentives, leverage)
-- **Who is affected?**
-- **Main uncertainty?**
-- **Scenarios & watch‑next indicators**
-
-Result: shorter output, higher decision value.
-
----
-
-## 🧠 Key features
-
-- **Source Acquisition Layer** – tells the agent *which* source types to check before making claims (sanctions, regulation, elections, conflict, etc.).
-- **AnalysisBank** – a memory layer that stores reusable reasoning patterns from good/bad outputs.
-- **Regional lenses** – Central Asia & Caspian, Middle East, EU.
-- **Sector lenses** – sanctions, export controls.
-- **JSON schemas** – validate briefs, evidence packs, memory cards.
-- **CLI & Python API** – `agenda-intelligence` command, `agent-manifest.json` for discovery.
-
----
-
-## 📦 Installation
-
-### From PyPI (when published)
+### From PyPI
 ```bash
 pip install agenda-intelligence-md
 ```
 
-### From GitHub Release
+### From GitHub Release (v0.5.1)
 ```bash
-pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.5.0/agenda_intelligence_md-0.5.0-py3-none-any.whl
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.5.1/agenda_intelligence_md-0.5.1-py3-none-any.whl
 ```
 
 ### Editable install from source
@@ -109,47 +66,124 @@ pip install -e .
 
 ---
 
-## 🛠 CLI examples
+## CLI happy path (aha‑moment in 5‑10 min)
+
+The **`start`** command is the primary onboarding entry‑point. It prints a trimmed source plan, a brief template, and next commands.
 
 ```bash
-agenda-intelligence --help
-agenda-intelligence manifest
-agenda-intelligence list-lenses
-agenda-intelligence source-types
-agenda-intelligence source-plan sanctions
+# 1. Onboard with a source category
+agenda-intelligence start technology-ai
+
+# Output: trimmed source plan + brief template + next commands
+
+# 2. Validate a bundled example brief
 agenda-intelligence validate-brief examples/agenda-brief.json
-agenda-intelligence validate-evidence examples/source/evidence-pack.json
-agenda-intelligence memory-search "sanctions routing"
+
+# 3. Score a before/after example (quality check)
+agenda-intelligence score examples/before-after/eu-ai-act.md
+```
+
+**Demo output** (what you see after `start`):
+```text
+=== Trimmed source plan ===
+{
+  "must_check": ["tech‑release", "policy‑update", "market‑data"],
+  "watch_indicators": ["regulation draft", "enforcement action"]
+}
+
+=== Brief template (fill in) ===
+{
+  "bottom_line": "<summary>",
+  "signal_classification": "<signal>",
+  "what_changed": "<what changed>",
+  "main_uncertainty": "<main uncertainty>",
+  "watch_next": ["<indicator 1>", "<indicator 2>"]
+}
 ```
 
 ---
 
-## 📚 Documentation
+## Protocol · Source Policy · Schemas
 
-- **Protocol:** [`Agenda-Intelligence.md`](Agenda-Intelligence.md) – the core reasoning workflow.
-- **Quickstart:** [`docs/quickstart.md`](docs/quickstart.md)
-- **Integrations:** [`docs/integrations/`](docs/integrations/) – Claude Code, OpenAI Codex, Cursor, MCP.
-- **Evaluation:** [`docs/evaluation.md`](docs/evaluation.md) – how the scoring works.
-- **Roadmap:** [`ROADMAP.md`](ROADMAP.md)
+| Layer | Purpose | Status |
+|-------|----------|--------|
+| **Markdown protocol** (`Agenda-Intelligence.md`) | Core reasoning workflow (signal classification, watch‑next, etc.) | ✅ Stable |
+| **Source Acquisition Layer** | Tells the agent *which* source types to check before making claims (sanctions, regulation, elections, conflict, etc.) | ✅ Stable |
+| **JSON schemas** | Validate briefs, evidence packs, memory cards | ✅ Stable |
+| **AnalysisBank** | Memory layer that stores reusable reasoning patterns from good/bad outputs | ✅ Stable |
+| **Regional & Sector lenses** | Central Asia & Caspian, Middle East, EU; sanctions, export controls | ✅ Stable |
 
 ---
 
-## 🏗 Repository structure
+## Stable today vs Experimental
+
+### ✅ Stable today
+- **Markdown protocol** (`Agenda-Intelligence.md`) – core reasoning workflow.
+- **JSON schemas** – validation for briefs, evidence packs, memory cards.
+- **CLI validation** – `validate-brief`, `validate-evidence`, `validate-manifest`.
+- **Source plans** – `source-plan`, `list-source-packs`, `source-types`.
+- **Guided start** – `start` command prints trimmed plan + brief template.
+- **Evaluation toolkit** – `evals/rubric.md`, `evals/llm_judge_prompt.txt`, `evals/human_checklist.md`, `evals/cases/*.json`.
+
+### 🧪 Experimental / Planned
+- **MCP integration** – the **primary adoption channel**, but still a sketch (`docs/integrations/mcp.md`). Full implementation is on the roadmap.
+- **Fetch command** – stub in CLI, full evidence‑pack retrieval not implemented.
+- **Scorer / eval** – `score` command relies on `eval_before_after.py` (only in editable installs).
+- **Generate‑brief** – not yet exposed; use `start` + manual template fill.
+
+> **Note:** The project is young. Stable parts are ready for production use; experimental bits are usable for testing but may change.
+
+---
+
+## Examples
+
+- **Source‑backed briefs** (with evidence mode & source plans):  
+  `examples/source-backed/eu-ai-act.md`, `sanctions-routing.md`, `red-sea-shipping.md`
+- **Classic examples:** `examples/hormuz_strait_brief.md`, `eu-brief.md`, `central-asia-caspian-brief.md`
+- **Before/after:** `examples/before-after/` – shows the delta when the protocol is applied.
+
+---
+
+## Documentation
+
+| Resource | Link |
+|----------|------|
+| **Quickstart** | [`docs/quickstart.md`](docs/quickstart.md) |
+| **End‑to‑end tutorial** | [`docs/tutorial.md`](docs/tutorial.md) |
+| **Evaluation assets** | [`evals/`](evals/) – rubric, LLM judge prompt, human checklist, sample cases |
+| **Use‑cases** | [`docs/use-cases/`](docs/use-cases/) – policy monitoring, sanctions compliance, market risk, founder context |
+| **Integrations** | [`docs/integrations/`](docs/integrations/) – Claude Code, OpenAI Codex, Cursor, MCP |
+| **Roadmap** | [`ROADMAP.md`](ROADMAP.md) |
+| **Changelog** | [`CHANGELOG.md`](CHANGELOG.md) |
+
+---
+
+## Repository structure
 
 ```
 agenda-intelligence-md/
 ├─ src/agenda_intelligence/   # Python package
 ├─ schemas/                   # JSON schemas
-├─ examples/                  # sample briefs, evidence packs
+├─ examples/                  # sample briefs, evidence packs, source‑backed examples
 ├─ analysis-bank/             # memory cards (failures & successes)
+├─ evals/                     # evaluation rubric, LLM judge, human checklist, cases
+├─ docs/                      # guides, tutorials, use‑cases, integrations
 ├─ skills/agenda-intelligence/ # OpenClaw skill wrapper
-├─ docs/                      # guides & integration notes
 └─ tests/                     # pytest suite
 ```
 
 ---
 
-## 🤝 Contributing
+## Roadmap (high‑level)
+
+- **v0.6** – Full MCP server exposing all tools via HTTP/WebSocket.
+- **v0.7** – Complete `get_protocol`, `list_lenses`, `get_lens`, `source_plan`, `score_output` in MCP.
+- **v0.8** – Automated CI quality gate using the evaluation toolkit.
+- **v1.0** – Stable API, broader adoption‑channel support, production‑grade MCP.
+
+---
+
+## Contributing
 
 Pull requests are welcome! Please:
 1. Open an issue to discuss changes.
@@ -157,20 +191,14 @@ Pull requests are welcome! Please:
 3. Run `pytest` and ensure all tests pass.
 4. Update docs if behavior changes.
 
-See [`docs/quickstart.md`](docs/quickstart.md) for development setup.
-
 ---
 
-## 📄 License
+## License
 
 MIT – free for any use.
 
 ---
 
-## 🔗 Related projects
+## Why this exists
 
-- **[global-think-tank-analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst)** – deeper policy‑risk memos for OpenClaw.
-
----
-
-> **Why this exists:** Most agent‑written news analysis is a polished recap that doesn’t change any decision. This project gives agents a stricter workflow so their output actually helps someone decide, hedge, or act.
+Most agent‑written news analysis is a polished recap that doesn’t change any decision. This project gives agents a stricter workflow so their output actually helps someone decide, hedge, or act.
