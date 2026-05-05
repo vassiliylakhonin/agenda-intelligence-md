@@ -1,0 +1,14 @@
+{
+  "id": "eu-ai-act-example",
+  "brief_path": "examples/source-backed/eu-ai-act.md",
+  "evidence_path": "source-requirements/technology-ai.json",
+  "source_plan": "technology-ai",
+  "expected_score": {
+    "relevance": 90,
+    "evidence_support": 85,
+    "completeness": 80,
+    "actionability": 75,
+    "clarity": 90
+  },
+  "notes": "Demonstrates evidence mode and source plan usage; some unsupported claims may be flagged."
+}
