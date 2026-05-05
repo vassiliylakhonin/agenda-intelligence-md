@@ -19,7 +19,8 @@
 - **Guided start** – `start` command prints trimmed plan + brief template.
 
 ### 🧪 Experimental / Planned
-- **MCP integration** – `MCP.md` sketch, not yet functional.
+- **MCP integration** – `MCP.md` sketch, not yet functional.\n\n## MCP – Primary Adoption Channel (Sketch)
+\nThe Multi‑Channel Protocol (MCP) is a **critical adoption path** that allows the Agenda‑Intelligence logic to be embedded directly into existing policy‑review workflows.  It is still in a **sketch stage**, but the skeleton is available in `docs/integrations/mcp.md`.  When complete, MCP will let users plug the protocol into a broader system with minimal friction, making it the most attractive route for enterprise adoption.
 - **Fetch command** – stub in CLI, full evidence‑pack retrieval not implemented.
 - **Scorer / eval** – `score` command relies on `eval_before_after.py` (only in editable installs).
 - **Generate‑brief** – not yet exposed; use `start` + manual template fill.
