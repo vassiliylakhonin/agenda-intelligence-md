@@ -121,7 +121,7 @@ You’ll get the before/after evaluation harness output for that example.
 
 - Explore more source plans: `agenda-intelligence source-plan sanctions`, `agenda-intelligence source-plan conflict-security`, etc.
 - Read the full [tutorial](tutorial.md) for a deeper dive.
-- Check [example briefs](examples/) to see the protocol in action.
-- See the [evaluation rubric](evals/rubric.md) to understand how quality is scored.
+- Check [example briefs](../examples/) to see the protocol in action.
+- See the [evaluation rubric](../evals/rubric.md) to understand how quality is scored.
 
 > **Bottom line:** The protocol forces the agent (or you) to answer *what changed, why it matters, who is affected, and which three indicators to watch*. That’s the “aha” moment.

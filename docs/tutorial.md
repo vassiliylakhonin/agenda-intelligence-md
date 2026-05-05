@@ -105,7 +105,7 @@ The command runs the before/after evaluation harness for that example.
 - You started from a *no‑code* point (just a Python install)
 - Ran a **single CLI command** to list the source plan
 - Sketched an evidence pack by hand
-- Generated a **complete JSON brief** in one command
+- Generated a **brief template** in one command, then filled and validated it
 - Got instant **validation** and **quality scoring**.
 
 All of this took under **10 minutes**—it shows how the protocol moves you from data collection straight to a decision‑ready artifact.
