@@ -51,6 +51,19 @@
 
 ---
 
+## 📐 Evaluation Assets
+
+The project ships a **generic evaluation toolkit** to assess the *quality* of generated briefs:
+
+- `evals/rubric.md` – Scoring rubric (relevance, evidence, completeness, actionability, clarity).
+- `evals/llm_judge_prompt.txt` – Optional prompt for an LLM judge.
+- `evals/human_checklist.md` - Structured checklist for manual review.
+- `evals/cases/*.json` – Sample evaluation cases with expected scores.
+
+These assets can be used for automated unit‑tests or for continuous‑integration quality gates.
+
+---
+
 ## 🎯 What it does
 
 | Without Agenda‑Intelligence.md | With Agenda‑Intelligence.md |
