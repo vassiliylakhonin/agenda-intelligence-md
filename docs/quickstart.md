@@ -1,8 +1,8 @@
 # Quickstart — End‑to‑End “Aha” Moment
 
 This guide walks you through a **complete workflow** in about 10 minutes using the `technology‑ai` source plan.  
-You will go from a fresh install to a validated brief plus a scored before/after
-example — the moment the protocol “clicks”.
+You will go from a fresh install to a validated, scored brief plus a scored
+before/after example — the moment the protocol “clicks”.
 
 ## Prerequisites
 
@@ -93,14 +93,26 @@ A green check means the JSON conforms to the schema and all required fields are 
 
 ---
 
-## 5️⃣ Score a before/after example (quality check)
+## 5️⃣ Score the brief (quality check)
+
+```bash
+agenda-intelligence score examples/agenda-brief.json
+```
+
+You’ll get a heuristic 0‑100 structural quality score with dimension feedback.
+It does not verify factual truthfulness.
+
+---
+
+## 6️⃣ Score a before/after example
 
 ```bash
 agenda-intelligence score examples/before-after/eu-ai-act.md
 ```
 
 You’ll get the before/after evaluation harness output for that example. The
-current scorer does not score arbitrary `brief.json` files yet.
+before/after scorer checks protocol markers such as signal classification,
+uncertainty, falsifiability, and watch-next indicators.
 
 ---
 

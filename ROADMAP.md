@@ -13,7 +13,7 @@
 - Demo examples with live source plans (now include source‑backed evidence)
 - Evaluation documentation expanded (new `evals/` assets, rubric, LLM judge prompt, human checklist)
 - Benchmark set (`evals/benchmark_set.json`) for reproducible quality tracking
-- Rubric-based `score_output` beyond the current before/after heuristic harness
+- Source-backed truthfulness checks beyond the current structural scorer
 
 ## In progress
 - Keep top-level and packaged manifests/schemas in sync through CI tests

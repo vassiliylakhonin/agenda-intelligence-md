@@ -5,6 +5,7 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 ## [Unreleased]
 ### Added
 - Evaluation toolkit: rubric, LLM judge prompt, human checklist, sample cases.
+- Heuristic 0-100 JSON brief scoring via `agenda-intelligence score brief.json`.
 - Source‑backed examples (EU AI Act, sanctions routing, Red Sea shipping).
 - Use‑case docs for policy monitoring, sanctions compliance, market risk, founder operating context.
 - Tutorial for end‑to‑end quickstart (5‑10 min “aha” moment).

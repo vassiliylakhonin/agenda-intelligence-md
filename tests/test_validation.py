@@ -45,3 +45,18 @@ def test_validate_manifest_valid():
     res = run_cli(["validate-manifest"])
     assert res.returncode == 0
     assert "OK" in res.stdout
+
+
+def test_score_json_brief():
+    path = FIXTURES / "valid-agenda-brief.json"
+    res = run_cli(["score", str(path)])
+    assert res.returncode == 0
+    assert "score:" in res.stdout
+    assert "evidence_support:" in res.stdout
+
+
+def test_score_rejects_non_before_after_markdown():
+    path = ROOT.parent / "examples" / "compact-brief.md"
+    res = run_cli(["score", str(path)])
+    assert res.returncode != 0
+    assert "Not a before/after example" in res.stderr

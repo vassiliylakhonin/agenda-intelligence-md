@@ -12,6 +12,9 @@ from pathlib import Path
 
 PACKAGE_NAME = __package__ or "agenda_intelligence"
 ROOT = Path(__file__).resolve().parents[2]  # fallback for editable installs
+SRC_ROOT = Path(__file__).resolve().parents[1]
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
 
 
 def load_manifest():
@@ -160,7 +163,16 @@ def cmd_score(args):
     import subprocess
 
     if args.path:
-        text = Path(args.path).read_text()
+        path = Path(args.path)
+        if path.suffix == ".json":
+            from agenda_intelligence.eval import format_score, score_brief
+
+            data = json.loads(path.read_text())
+            if not isinstance(data, dict):
+                raise SystemExit("Brief score expects a JSON object")
+            print(format_score(score_brief(data)))
+            return
+        text = path.read_text()
         required = ["## Before: generic agent output", "## After: with Agenda-Intelligence.md"]
         missing = [r for r in required if r not in text]
         if missing:
@@ -259,7 +271,7 @@ def main():
     p.add_argument("category")
     p.set_defaults(func=cmd_source_plan)
     # score
-    p = sub.add_parser("score", help="Run before/after eval harness")
+    p = sub.add_parser("score", help="Score a JSON brief or run the before/after eval harness")
     p.add_argument("path", nargs="?")
     p.set_defaults(func=cmd_score)
     # start – guided workflow for new analysis
