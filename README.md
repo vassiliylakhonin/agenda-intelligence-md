@@ -53,7 +53,51 @@
    # Then continue with validation etc.:
    agenda-intelligence validate-brief examples/agenda-brief.json
    agenda-intelligence source-plan technology-ai
-   ```
+```
+
+## Demo Output
+
+When you run:
+
+```bash
+agenda-intelligence start technology-ai
+```
+
+You’ll see something like:
+
+```text
+=== Trimmed source plan ===
+{
+  "must_check": ["tech‑release", "policy‑update", "market‑data"]
+}
+
+=== Brief template (fill in) ===
+{
+  "bottom_line": "<summary>",
+  "signal_classification": "<signal>",
+  "what_changed": "<what changed>",
+  "main_uncertainty": "<main uncertainty>",
+  "watch_next": ["<indicator 1>", "<indicator 2>"]
+}
+```
+
+Then after you fill the template, validate and score:
+
+```bash
+agenda-intelligence validate-brief brief.json
+agenda-intelligence score brief.json
+```
+
+Output example (score):
+
+```
+Score: 78/100
+- Relevance: 80
+- Evidence Support: 75
+- Completeness: 85
+- Actionability: 70
+- Clarity: 80
+```
 
 ---
 
