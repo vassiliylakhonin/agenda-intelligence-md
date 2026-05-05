@@ -170,8 +170,15 @@ def cmd_score(args):
             data = json.loads(path.read_text())
             if not isinstance(data, dict):
                 raise SystemExit("Brief score expects a JSON object")
-            print(format_score(score_brief(data)))
+            evidence_pack = None
+            if args.evidence:
+                evidence_pack = json.loads(Path(args.evidence).read_text())
+                if not isinstance(evidence_pack, dict):
+                    raise SystemExit("Evidence score expects a JSON object")
+            print(format_score(score_brief(data, evidence_pack=evidence_pack)))
             return
+        if args.evidence:
+            raise SystemExit("--evidence can only be used when scoring a JSON brief")
         text = path.read_text()
         required = ["## Before: generic agent output", "## After: with Agenda-Intelligence.md"]
         missing = [r for r in required if r not in text]
@@ -273,6 +280,7 @@ def main():
     # score
     p = sub.add_parser("score", help="Score a JSON brief or run the before/after eval harness")
     p.add_argument("path", nargs="?")
+    p.add_argument("--evidence", help="Optional evidence-pack JSON for brief scoring")
     p.set_defaults(func=cmd_score)
     # start – guided workflow for new analysis
     p = sub.add_parser("start", help="Guided start for a new agenda analysis")

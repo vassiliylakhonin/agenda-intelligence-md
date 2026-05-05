@@ -55,6 +55,22 @@ def test_score_json_brief():
     assert "evidence_support:" in res.stdout
 
 
+def test_score_json_brief_with_evidence_pack():
+    path = FIXTURES / "valid-agenda-brief.json"
+    evidence_path = FIXTURES / "valid-evidence-pack.json"
+    res = run_cli(["score", str(path), "--evidence", str(evidence_path)])
+    assert res.returncode == 0
+    assert "claims supported:" in res.stdout
+
+
+def test_score_rejects_evidence_for_markdown():
+    path = ROOT.parent / "examples" / "before-after" / "eu-ai-act.md"
+    evidence_path = FIXTURES / "valid-evidence-pack.json"
+    res = run_cli(["score", str(path), "--evidence", str(evidence_path)])
+    assert res.returncode != 0
+    assert "--evidence can only be used" in res.stderr
+
+
 def test_score_rejects_non_before_after_markdown():
     path = ROOT.parent / "examples" / "compact-brief.md"
     res = run_cli(["score", str(path)])

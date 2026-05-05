@@ -104,7 +104,18 @@ It does not verify factual truthfulness.
 
 ---
 
-## 6️⃣ Score a before/after example
+## 6️⃣ Add evidence-pack scoring
+
+```bash
+agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
+```
+
+This adds claim-level evidence feedback: supported claims, unsupported claims,
+missing sources, contradicting sources, and source-backed mode hygiene.
+
+---
+
+## 7️⃣ Score a before/after example
 
 ```bash
 agenda-intelligence score examples/before-after/eu-ai-act.md

@@ -58,12 +58,16 @@ agenda-intelligence validate-brief examples/agenda-brief.json
 # 3. Score a JSON brief (structural quality check)
 agenda-intelligence score examples/agenda-brief.json
 
-# 4. Or score a before/after markdown example
+# 4. Add an evidence pack for claim-level evidence discipline
+agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
+
+# 5. Or score a before/after markdown example
 agenda-intelligence score examples/before-after/eu-ai-act.md
 ```
 
 > **Scorer status:** the `score` command now scores JSON briefs with a
-> heuristic 0-100 structural rubric and still supports before/after markdown
+> heuristic 0-100 structural rubric, can include an evidence pack for
+> claim-level support feedback, and still supports before/after markdown
 > examples. It does not verify factual truthfulness.
 
 **Demo output** (what you see after `start`):
@@ -106,7 +110,7 @@ agenda-intelligence score examples/before-after/eu-ai-act.md
 - **CLI validation** – `validate-brief`, `validate-evidence`, `validate-manifest`.
 - **Source plans** – `source-plan`, `list-source-packs`, `source-types`.
 - **Guided start** – `start` command prints trimmed plan + brief template.
-- **Brief scoring** – `score examples/agenda-brief.json` returns a heuristic 0-100 structural quality score.
+- **Brief scoring** – `score examples/agenda-brief.json` returns a heuristic 0-100 structural quality score; add `--evidence` for claim-level evidence feedback.
 - **Evaluation toolkit** – `evals/rubric.md`, `evals/llm_judge_prompt.txt`, `evals/human_checklist.md`, `evals/cases/*.json`.
 - **MCP read tools** – `validate_brief`, `validate_evidence`, `get_protocol`, `list_lenses`, `get_lens`, `source_plan`.
 

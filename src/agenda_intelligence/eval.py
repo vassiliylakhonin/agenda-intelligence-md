@@ -50,11 +50,14 @@ class DimensionScore:
     feedback: str
 
 
-def score_brief(brief: dict[str, Any]) -> dict[str, Any]:
+def score_brief(
+    brief: dict[str, Any],
+    evidence_pack: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Score a JSON agenda brief on the public 0-100 rubric shape."""
     dimensions = {
         "relevance": _score_relevance(brief),
-        "evidence_support": _score_evidence_support(brief),
+        "evidence_support": _score_evidence_support(brief, evidence_pack),
         "completeness": _score_completeness(brief),
         "actionability": _score_actionability(brief),
         "clarity": _score_clarity(brief),
@@ -71,7 +74,10 @@ def score_brief(brief: dict[str, Any]) -> dict[str, Any]:
             }
             for name, item in dimensions.items()
         },
-        "note": "Heuristic structural score; does not verify factual truthfulness.",
+        "note": (
+            "Heuristic structural/evidence-discipline score; "
+            "does not verify factual truthfulness."
+        ),
     }
 
 
@@ -110,18 +116,23 @@ def _score_relevance(brief: dict[str, Any]) -> DimensionScore:
     )
 
 
-def _score_evidence_support(brief: dict[str, Any]) -> DimensionScore:
+def _score_evidence_support(
+    brief: dict[str, Any],
+    evidence_pack: dict[str, Any] | None,
+) -> DimensionScore:
     evidence_mode = brief.get("evidence_mode")
     confidence = brief.get("confidence")
-    score_by_mode = {
-        "live_source_backed": 18,
-        "mixed": 15,
-        "user_provided": 13,
-        "reasoning_only": 9,
-    }
-    score = score_by_mode.get(evidence_mode, 6)
-    feedback = [f"evidence_mode={evidence_mode or 'missing'}"]
+    if evidence_pack is not None:
+        return _score_evidence_pack(evidence_mode, confidence, evidence_pack)
 
+    score_by_mode = {
+        "live_source_backed": 16,
+        "mixed": 14,
+        "user_provided": 12,
+        "reasoning_only": 8,
+    }
+    score = score_by_mode.get(evidence_mode, 5)
+    feedback = [f"evidence_mode={evidence_mode or 'missing'}; no evidence pack provided"]
     if isinstance(confidence, dict) and confidence.get("reasoning"):
         score += 5
         feedback.append("confidence reasoning provided")
@@ -138,6 +149,72 @@ def _score_evidence_support(brief: dict[str, Any]) -> DimensionScore:
 
     return DimensionScore(
         score=min(score, WEIGHTS["evidence_support"]),
+        max_score=25,
+        feedback="; ".join(feedback),
+    )
+
+
+def _score_evidence_pack(
+    brief_evidence_mode: Any,
+    confidence: Any,
+    evidence_pack: dict[str, Any],
+) -> DimensionScore:
+    pack_mode = evidence_pack.get("evidence_mode")
+    claims = evidence_pack.get("claims")
+    unsupported_claims = evidence_pack.get("unsupported_claims") or []
+    missing_sources = evidence_pack.get("required_but_missing_sources") or []
+    contradicting_sources = evidence_pack.get("contradicting_sources") or []
+    claims = claims if isinstance(claims, list) else []
+
+    score = 4
+    feedback = [f"evidence_mode={brief_evidence_mode or 'missing'}"]
+    if pack_mode and pack_mode != brief_evidence_mode:
+        feedback.append(f"evidence pack mode differs: {pack_mode}")
+    elif pack_mode:
+        score += 2
+
+    supported = sum(1 for claim in claims if claim.get("support_status") == "supported")
+    partially_supported = sum(
+        1 for claim in claims if claim.get("support_status") == "partially_supported"
+    )
+    unsupported = sum(1 for claim in claims if claim.get("support_status") == "unsupported")
+    claims_with_sources = sum(1 for claim in claims if _non_empty_list(claim.get("sources")))
+
+    if claims:
+        score += round((supported / len(claims)) * 8)
+        score += round((partially_supported / len(claims)) * 4)
+        score += round((claims_with_sources / len(claims)) * 4)
+        feedback.append(
+            "claims supported: "
+            f"{supported}/{len(claims)} supported, "
+            f"{partially_supported}/{len(claims)} partially, "
+            f"{unsupported}/{len(claims)} unsupported"
+        )
+    else:
+        feedback.append("no evidence claims provided")
+
+    if unsupported_claims:
+        score -= min(5, len(unsupported_claims) * 2)
+        feedback.append(f"unsupported_claims={len(unsupported_claims)}")
+    if missing_sources:
+        score -= min(4, len(missing_sources) * 2)
+        feedback.append(f"required_but_missing_sources={len(missing_sources)}")
+    if contradicting_sources:
+        score -= min(4, len(contradicting_sources) * 2)
+        feedback.append(f"contradicting_sources={len(contradicting_sources)}")
+
+    if pack_mode == "live_source_backed":
+        if evidence_pack.get("retrieved_at"):
+            score += 2
+            feedback.append("retrieved_at present")
+        else:
+            score -= 3
+            feedback.append("live_source_backed without retrieved_at")
+    if confidence:
+        score += 2
+
+    return DimensionScore(
+        score=max(0, min(score, WEIGHTS["evidence_support"])),
         max_score=25,
         feedback="; ".join(feedback),
     )

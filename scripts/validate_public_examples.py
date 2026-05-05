@@ -26,6 +26,7 @@ MANUAL_DOC_COMMANDS = [
     "agenda-intelligence validate-evidence examples/source/evidence-pack.json",
     "agenda-intelligence source-plan technology-ai",
     "agenda-intelligence score examples/agenda-brief.json",
+    "agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json",
     "agenda-intelligence score examples/before-after/eu-ai-act.md",
     "agenda-intelligence score examples/before-after/sanctions-routing.md",
     "agenda-intelligence score examples/before-after/red-sea-shipping.md",

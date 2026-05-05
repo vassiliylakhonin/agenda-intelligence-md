@@ -10,6 +10,7 @@ Agenda‑Intelligence.md currently evaluates **form and structure**, not truthfu
 | **Schema validity** | JSON conforms to `schemas/agenda‑brief.schema.json` | ✅ CLI `validate‑brief` |
 | **Source coverage structure** | Evidence packs can record claim-level support status, sources, limits, unsupported claims, and missing sources | ✅ CLI `validate‑evidence` |
 | **Brief scoring** | Heuristic 0-100 structural score for JSON briefs across the public rubric dimensions | ✅ CLI `score` |
+| **Evidence-linked scoring** | Optional claim-level evidence-pack feedback for supported, partially supported, unsupported, missing, and contradicting sources | ✅ CLI `score --evidence` |
 | **Before/after scoring** | Marker-based before/after example harness | ✅ CLI `score` |
 
 ## New quality‑focused assets (v0.5.1+)
@@ -37,14 +38,21 @@ agenda-intelligence validate-evidence examples/source/evidence-pack.json
 
 agenda-intelligence score examples/agenda-brief.json
 
-# 4. Score a before/after markdown example with the current heuristic harness
+# 4. Score a JSON brief with an evidence pack
+
+agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
+
+# 5. Score a before/after markdown example with the current heuristic harness
 
 agenda-intelligence score examples/before-after/eu-ai-act.md
 ```
 
 The JSON brief scorer returns a 0‑100 structural quality score with dimension
 feedback for relevance, evidence support, completeness, actionability, and
-clarity. It does **not** verify factual truthfulness. Before/after markdown
+clarity. When `--evidence` is provided, evidence support also reflects
+claim-level support status, source presence, unsupported claims, missing
+sources, contradicting sources, and `retrieved_at` for `live_source_backed`
+packs. It does **not** verify factual truthfulness. Before/after markdown
 examples still use the older marker-based harness.
 
 ## Roadmap for “prove quality”
@@ -53,6 +61,7 @@ examples still use the older marker-based harness.
 |-----------|---------|--------|
 | Quality rubric + LLM judge + human checklist | v0.5.1 | ✅ Done |
 | Heuristic JSON brief scorer | v0.6 | ✅ Done |
+| Evidence-linked brief scoring | v0.6 | ✅ Done |
 | Benchmark set for reproducible quality checks | v0.7 | Planned (see `ROADMAP.md`) |
 | Automated CI quality gate using the evaluation toolkit | v0.8 | Planned |
 | Source-backed truthfulness evaluation | v0.7‑v1.0 | In progress |
