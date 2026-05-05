@@ -79,9 +79,11 @@ agenda-intelligence start technology-ai
 # 2. Validate a bundled example brief
 agenda-intelligence validate-brief examples/agenda-brief.json
 
-# 3. Score a before/after example (quality check)
+# 3. Score a before/after markdown example (quality check)
 agenda-intelligence score examples/before-after/eu-ai-act.md
 ```
+
+> **Scorer status:** the `score` command is currently a before/after evaluation harness. It works with markdown examples that contain `## Before: generic agent output` and `## After: with Agenda-Intelligence.md`, such as `examples/before-after/*.md`; it does not score arbitrary `brief.json` files yet.
 
 **Demo output** (what you see after `start`):
 ```text

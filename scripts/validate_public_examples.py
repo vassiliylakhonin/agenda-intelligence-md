@@ -19,6 +19,17 @@ DOCS_WITH_COMMANDS = [
     ROOT / "docs" / "tutorial.md",
 ]
 
+MANUAL_DOC_COMMANDS = [
+    "agenda-intelligence --help",
+    "agenda-intelligence start technology-ai",
+    "agenda-intelligence validate-brief examples/agenda-brief.json",
+    "agenda-intelligence validate-evidence examples/source/evidence-pack.json",
+    "agenda-intelligence source-plan technology-ai",
+    "agenda-intelligence score examples/before-after/eu-ai-act.md",
+    "agenda-intelligence score examples/before-after/sanctions-routing.md",
+    "agenda-intelligence score examples/before-after/red-sea-shipping.md",
+]
+
 
 def load_json(path: Path) -> object:
     try:
@@ -130,6 +141,10 @@ def smoke_markdown_commands() -> None:
         text = path.read_text(encoding="utf-8")
         for block in iter_shell_blocks(text):
             runnable.extend((path, cmd) for cmd in extract_runnable_commands(block))
+
+    for command in MANUAL_DOC_COMMANDS:
+        if command not in [cmd for _, cmd in runnable]:
+            runnable.append((ROOT / "<manual-doc-command>", command))
 
     if not runnable:
         raise SystemExit("No runnable agenda-intelligence commands found in docs")

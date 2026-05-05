@@ -47,6 +47,21 @@ jobs:
           python3 -m agenda_intelligence.cli validate-brief examples/agenda-brief.json
           python3 -m agenda_intelligence.cli validate-evidence examples/source/evidence-pack.json
 
+      - name: Validate source-backed evidence examples
+        run: |
+          for file in examples/source-backed/*.evidence.json; do
+            python3 -m agenda_intelligence.cli validate-evidence "$file"
+          done
+
+      - name: Smoke-check docs commands
+        run: |
+          python3 -m agenda_intelligence.cli --help
+          python3 -m agenda_intelligence.cli start technology-ai
+          python3 -m agenda_intelligence.cli validate-brief examples/agenda-brief.json
+          python3 -m agenda_intelligence.cli validate-evidence examples/source/evidence-pack.json
+          python3 -m agenda_intelligence.cli source-plan technology-ai
+          python3 -m agenda_intelligence.cli score examples/before-after/eu-ai-act.md
+
       - name: Validate public examples and docs commands
         run: |
           python3 scripts/validate.py
