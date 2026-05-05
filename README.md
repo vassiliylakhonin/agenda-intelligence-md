@@ -44,7 +44,13 @@
    The agent will load the protocol, run the CLI, and return a compact brief.
 
 3. **Or use the CLI directly** (after `pip install agenda-intelligence-md`):
+   Use `agenda-intelligence start <category>` as the primary onboarding command. It prints a trimmed source plan, a brief template, and next commands.
    ```bash
+   # Onboard with start command (recommended):
+   agenda-intelligence start technology-ai
+   # Output: trimmed source plan + brief template + next commands
+
+   # Then continue with validation etc.:
    agenda-intelligence validate-brief examples/agenda-brief.json
    agenda-intelligence source-plan technology-ai
    ```
