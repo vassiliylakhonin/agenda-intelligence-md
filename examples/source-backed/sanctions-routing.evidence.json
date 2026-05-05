@@ -1,44 +1,58 @@
 {
   "topic": "Sanctions Routing",
-  "evidence_mode": "source-backed",
+  "evidence_mode": "live_source_backed",
+  "retrieved_at": "2026-05-05T12:00:00Z",
+  "jurisdiction": "United States / Central Asia / Caspian region",
   "claims": [
     {
-      "claim": "Sanctions evasion routes are increasingly using Central‑Asia intermediaries",
-      "support_status": "supported",
+      "claim": "Sanctions evasion risk can shift toward intermediary routing through Central Asia and Caspian trade corridors.",
+      "support_status": "partially_supported",
       "sources": [
         {
-          "name": "OFAC Designations",
-          "url": "https://ofac.treasury.gov/sanctions",
-          "source_type": "official_list",
+          "name": "OFAC Sanctions Programs and Country Information",
+          "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information",
+          "source_type": "official",
           "freshness": "current",
-          "supports": ["Lists newly designated entities in Central‑Asia"],
-          "limits": ["Lists are static snapshots"]
+          "supports": [
+            "Provides official sanctions-program context and designation updates relevant to evasion-risk analysis."
+          ],
+          "limits": [
+            "OFAC pages identify sanctions targets, not full trade-routing volumes."
+          ]
         },
         {
-          "name": "Financial Action Task Force (FATF) Regional Report",
-          "url": "https://www.fatf-gafi.org/publications",
-          "source_type": "official_report",
+          "name": "FATF Publications",
+          "url": "https://www.fatf-gafi.org/en/publications.html",
+          "source_type": "official",
           "freshness": "current",
-          "supports": ["Analyzes AML enforcement gaps in the region"],
-          "limits": ["Broad regional overview, not case‑by‑case"]
+          "supports": [
+            "Provides official AML/CFT typologies and regional risk material useful for evasion-risk assessment."
+          ],
+          "limits": [
+            "Broad typology material may not prove a specific corridor shift."
+          ]
         },
         {
-          "name": "Trade‑flow data (Caspian ports)",
-          "url": "https://example.com/trade-data-caspian",
-          "source_type": "dataset",
-          "freshness": "monthly",
-          "supports": ["Shows increased volume of goods passing through ports"],
-          "limits": ["Aggregated data, no entity‑level detail"]
+          "name": "UN Comtrade database",
+          "url": "https://comtradeplus.un.org/",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Allows trade-flow checks for anomalies by product, partner, and route proxy."
+          ],
+          "limits": [
+            "Trade data is lagged and aggregate; it does not prove intent or beneficial ownership."
+          ]
         }
       ]
     }
   ],
   "unsupported_claims": [
-    "Exact proportion of sanctions‑evasion transactions routed through the region"
+    "Exact proportion of sanctions-evasion transactions routed through Central Asia or Caspian corridors."
   ],
   "source_plan": [
-    "Check OFAC designation lists",
-    "Review FATF regional AML reports",
-    "Analyse trade‑flow datasets for Central‑Asia ports"
+    "Check OFAC and EU designation records",
+    "Review FATF typologies and regional AML/CFT material",
+    "Analyze trade-flow anomalies with official trade databases"
   ]
 }

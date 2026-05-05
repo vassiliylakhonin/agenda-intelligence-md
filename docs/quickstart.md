@@ -44,7 +44,7 @@ agenda-intelligence start technology-ai
 ```text
 === Trimmed source plan ===
 {
-  "must_check": ["tech‑release", "policy‑update", "market‑data"],
+  "must_check": ["tech-release", "policy‑update", "market‑data"],
   "watch_indicators": ["regulation draft", "enforcement action"]
 }
 
@@ -60,38 +60,24 @@ agenda-intelligence start technology-ai
 
 Copy the template into a file, e.g. `brief.json`, and fill in the fields with your actual findings.
 
-> **Tip:** The source plan tells you exactly which files under `source‑requirements/technology‑ai/` you should consult before making claims.
+> **Tip:** The source plan tells you exactly which files under `source-requirements/technology-ai.json` you should consult before making claims.
 
 ---
 
-## 3️⃣ (Optional) Build an evidence pack
+## 3️⃣ (Optional) Validate an evidence pack
 
-If you want to validate that every claim is backed by a source, create a minimal evidence pack:
+If you want to validate that every claim is backed by a source, start from the bundled runnable example:
 
 ```bash
-mkdir my‑evidence
-cp -r source‑requirements/technology‑ai/* my‑evidence/
+cp examples/source/evidence-pack.json evidence-pack.json
 ```
 
-Then create `evidence‑pack.json`:
-
-```json
-{
-  "documents": [
-    {
-      "file": "my‑evidence/tech‑release.json",
-      "maturity": 0.3,
-      "history": [],
-      "source": "source‑requirements"
-    }
-  ]
-}
-```
+The example follows `schemas/evidence-pack.schema.json`: it has a `topic`, an `evidence_mode`, claim-level `sources`, `unsupported_claims`, and a `source_plan`.
 
 Validate it:
 
 ```bash
-agenda‑intelligence validate‑evidence evidence‑pack.json
+agenda-intelligence validate-evidence evidence-pack.json
 ```
 
 ---
@@ -99,20 +85,20 @@ agenda‑intelligence validate‑evidence evidence‑pack.json
 ## 4️⃣ Validate the brief
 
 ```bash
-agenda‑intelligence validate‑brief brief.json
+agenda-intelligence validate-brief examples/agenda-brief.json
 ```
 
-A green check means the JSON conforms to the schema and all required fields are present.
+A green check means the JSON conforms to the schema and all required fields are present. Replace the example path with your own `brief.json` after you fill the template.
 
 ---
 
 ## 5️⃣ Score the brief (quality check)
 
 ```bash
-agenda‑intelligence score --brief brief.json --evidence evidence‑pack.json
+agenda-intelligence score examples/before-after/eu-ai-act.md
 ```
 
-You’ll get a numeric score (0‑100) and a short comment on what could be improved.
+You’ll get the before/after evaluation harness output for that example.
 
 ---
 
@@ -133,7 +119,7 @@ You’ll get a numeric score (0‑100) and a short comment on what could be impr
 
 ## Next steps
 
-- Explore more source plans: `agenda‑intelligence source‑plan sanctions`, `source‑plan conflict‑security`, etc.
+- Explore more source plans: `agenda-intelligence source-plan sanctions`, `agenda-intelligence source-plan conflict-security`, etc.
 - Read the full [tutorial](tutorial.md) for a deeper dive.
 - Check [example briefs](examples/) to see the protocol in action.
 - See the [evaluation rubric](evals/rubric.md) to understand how quality is scored.

@@ -35,7 +35,7 @@ def _validate_json(data: dict, schema_name: str) -> dict:
         errors: list[str]   (empty when valid)
     """
     try:
-        from jsonschema import validate, ValidationError
+        from jsonschema import ValidationError, validate
     except ImportError:
         return {
             "implemented": False,

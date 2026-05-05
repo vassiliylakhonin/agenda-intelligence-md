@@ -1,44 +1,58 @@
 {
   "topic": "Red Sea Shipping",
-  "evidence_mode": "source-backed",
+  "evidence_mode": "live_source_backed",
+  "retrieved_at": "2026-05-05T12:00:00Z",
+  "jurisdiction": "Red Sea / Gulf of Aden / global shipping",
   "claims": [
     {
-      "claim": "Increased Red Sea security incidents are compressing shipping lanes and raising insurance premiums",
+      "claim": "Red Sea security incidents have increased routing risk and contributed to vessel diversions and higher shipping-risk costs.",
       "support_status": "supported",
       "sources": [
         {
-          "name": "IMO Maritime Security Advisory",
+          "name": "IMO Maritime Security Advisories",
           "url": "https://www.imo.org/en/OurWork/Security/Pages/Maritime-Security-Advisories.aspx",
-          "source_type": "official_report",
+          "source_type": "official",
           "freshness": "current",
-          "supports": ["Lists recent incident numbers and risk levels in the Red Sea"],
-          "limits": ["Advisory is generic, not incident‑specific"]
+          "supports": [
+            "Provides official maritime security advisory context for high-risk sea lanes."
+          ],
+          "limits": [
+            "Advisories are not a complete incident database and may not quantify insurance costs."
+          ]
         },
         {
-          "name": "Global Maritime Insurance Premium Index",
-          "url": "https://example.com/insurance-premium-index",
-          "source_type": "industry_report",
-          "freshness": "monthly",
-          "supports": ["Shows premium increases linked to Red Sea risk"],
-          "limits": ["Aggregated index, not per‑shipment data"]
+          "name": "IMF PortWatch trade disruption monitor",
+          "url": "https://portwatch.imf.org/",
+          "source_type": "technical",
+          "freshness": "current",
+          "supports": [
+            "Tracks shipping and port-flow disruptions that can indicate rerouting pressure."
+          ],
+          "limits": [
+            "Port-flow indicators are aggregate signals and need interpretation for specific routes."
+          ]
         },
         {
-          "name": "AIS Rerouting Statistics",
-          "url": "https://example.com/ais-red-sea-rerouting",
-          "source_type": "dataset",
-          "freshness": "weekly",
-          "supports": ["Quantifies vessel diversions around Bab‑Al‑Mandab"],
-          "limits": ["Satellite data may miss small vessels"]
+          "name": "Drewry World Container Index",
+          "url": "https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
+          "source_type": "market",
+          "freshness": "current",
+          "supports": [
+            "Provides a market benchmark for container freight-rate pressure."
+          ],
+          "limits": [
+            "Freight rates reflect multiple drivers, not only Red Sea security risk."
+          ]
         }
       ]
     }
   ],
   "unsupported_claims": [
-    "Exact number of vessels attacked per week in 2026‑Q2 (not yet published)"
+    "Exact number of vessels attacked per week in 2026-Q2 without a current incident database."
   ],
   "source_plan": [
-    "Check IMO maritime security advisories",
-    "Review global maritime insurance premium data",
-    "Analyse AIS rerouting datasets"
+    "Check IMO and UKMTO maritime security advisories",
+    "Review shipping-flow disruption indicators",
+    "Compare freight and insurance market benchmarks before attributing causality"
   ]
 }

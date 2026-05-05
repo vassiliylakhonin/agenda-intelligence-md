@@ -1,0 +1,9 @@
+{
+  "category": "esg",
+  "must_check": ["sustainability_reports", "regulatory_filing", "third_party_ratings"],
+  "supporting_sources": ["media", "expert", "NGO"],
+  "red_flags": ["green_washing claims"],
+  "do_not_claim_without": ["verified rating agency data"],
+  "freshness_rules": ["reports older than 1 year should be considered stale"],
+  "watch_indicators": ["new legislation", "rating downgrade", "controversy", "carbon_price change"]
+}

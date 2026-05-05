@@ -46,3 +46,8 @@ jobs:
           python3 -m agenda_intelligence.cli validate-manifest
           python3 -m agenda_intelligence.cli validate-brief examples/agenda-brief.json
           python3 -m agenda_intelligence.cli validate-evidence examples/source/evidence-pack.json
+
+      - name: Validate public examples and docs commands
+        run: |
+          python3 scripts/validate.py
+          python3 scripts/validate_public_examples.py

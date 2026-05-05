@@ -1,14 +1,18 @@
-import subprocess, json, pytest
+import json
+import subprocess
 
 CATEGORIES = ["energy", "cyber-threats", "esg", "supply-chain-resilience"]
+
 
 def run_cli(category):
     result = subprocess.run(
         ["agenda-intelligence", "source-plan", category],
-        capture_output=True, text=True
+        capture_output=True,
+        text=True,
     )
     assert result.returncode == 0, f"CLI returned {result.returncode}: {result.stderr}"
     return json.loads(result.stdout)
+
 
 def test_source_plan():
     for cat in CATEGORIES:
