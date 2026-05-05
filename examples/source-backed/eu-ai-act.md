@@ -1,23 +1,32 @@
-# Source-backed Example: EU AI Act
+# EU AI Act: Source‑backed Analysis
 
-**Bottom line:** EU AI Act amendment introduces higher‑risk categories, affecting developers, vendors, and users of AI systems. Compliance will depend on the specified risk tiers and mandatory risk‑management obligations.
+**Audience:** EU policy analysts, compliance managers.
 
-**Signal classification:** Signal / compliance‑relevant development.
+**Claim:** The upcoming EU AI Act will introduce stricter obligations for high‑risk AI systems.
 
-**What changed:** New high‑risk categories added; risk‑management and transparency obligations expanded for AI systems in key sectors.
-
-**Institutional path:** European Commission proposal → Council and Parliament approval → Delegated acts → National implementation.
-
-**Affected flows:** Software supply chain, data governance, certification, liability, and market access.
-
-**Regulatory `source_plan`:** Use `technology-ai` source plan to identify relevant data.
-
-**Evidence mode:** All supporting evidence is marked as **EVIDENCE** references. The source plan includes the following must‑check documents:
-
-- `technology‑ai/*.json` files in `source-requirements`.
-
-> **Unsupported claims:** The brief flags any claims that lack a direct source in the plan or are marked `EVIDENCE`‑incomplete.
+**Evidence similar to this brief:** See `eu-ai-act.evidence.json`.
 
 ---
 
-**Watch next:** Commission text, delegated acts, guidance, enforcement dates, and industry response.
+**Brief Template:**
+```json
+{
+  "bottom_line": "The EU AI Act will impose tighter controls on high‑risk AI, making compliance mandatory for sectors X, Y, Z.",
+  "signal_classification": "signal",
+  "what_changed": "New high‑risk categories and enforcement deadlines introduced.",
+  "main_uncertainty": "Timing of the enforcement roll‑out and specific sector exemptions.",
+  "watch_next": ["First mandatory audit by 2027", "Publication of sector‑specific guidance"]
+}
+```
+
+---
+
+**Source‑backed evidence:**
+- Official EU Commission proposal text (link). 
+- Industry‑wide budgetary commitments recorded in European Parliament.
+- Public procurement announcements calling for high‑risk AI safeguards.
+- Statements from leading AI companies on compliance plans.
+
+---
+
+*Note: The linked evidence JSON (`eu-ai-act.evidence.json`) provides the formal validation of each claim.*

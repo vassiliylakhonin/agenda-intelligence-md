@@ -1,0 +1,44 @@
+{
+  "topic": "Sanctions Routing",
+  "evidence_mode": "source-backed",
+  "claims": [
+    {
+      "claim": "Sanctions evasion routes are increasingly using Central‑Asia intermediaries",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "OFAC Designations",
+          "url": "https://ofac.treasury.gov/sanctions",
+          "source_type": "official_list",
+          "freshness": "current",
+          "supports": ["Lists newly designated entities in Central‑Asia"],
+          "limits": ["Lists are static snapshots"]
+        },
+        {
+          "name": "Financial Action Task Force (FATF) Regional Report",
+          "url": "https://www.fatf-gafi.org/publications",
+          "source_type": "official_report",
+          "freshness": "current",
+          "supports": ["Analyzes AML enforcement gaps in the region"],
+          "limits": ["Broad regional overview, not case‑by‑case"]
+        },
+        {
+          "name": "Trade‑flow data (Caspian ports)",
+          "url": "https://example.com/trade-data-caspian",
+          "source_type": "dataset",
+          "freshness": "monthly",
+          "supports": ["Shows increased volume of goods passing through ports"],
+          "limits": ["Aggregated data, no entity‑level detail"]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Exact proportion of sanctions‑evasion transactions routed through the region"
+  ],
+  "source_plan": [
+    "Check OFAC designation lists",
+    "Review FATF regional AML reports",
+    "Analyse trade‑flow datasets for Central‑Asia ports"
+  ]
+}

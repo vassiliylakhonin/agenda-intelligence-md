@@ -1,0 +1,44 @@
+{
+  "topic": "Red Sea Shipping",
+  "evidence_mode": "source-backed",
+  "claims": [
+    {
+      "claim": "Increased Red Sea security incidents are compressing shipping lanes and raising insurance premiums",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "IMO Maritime Security Advisory",
+          "url": "https://www.imo.org/en/OurWork/Security/Pages/Maritime-Security-Advisories.aspx",
+          "source_type": "official_report",
+          "freshness": "current",
+          "supports": ["Lists recent incident numbers and risk levels in the Red Sea"],
+          "limits": ["Advisory is generic, not incident‑specific"]
+        },
+        {
+          "name": "Global Maritime Insurance Premium Index",
+          "url": "https://example.com/insurance-premium-index",
+          "source_type": "industry_report",
+          "freshness": "monthly",
+          "supports": ["Shows premium increases linked to Red Sea risk"],
+          "limits": ["Aggregated index, not per‑shipment data"]
+        },
+        {
+          "name": "AIS Rerouting Statistics",
+          "url": "https://example.com/ais-red-sea-rerouting",
+          "source_type": "dataset",
+          "freshness": "weekly",
+          "supports": ["Quantifies vessel diversions around Bab‑Al‑Mandab"],
+          "limits": ["Satellite data may miss small vessels"]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Exact number of vessels attacked per week in 2026‑Q2 (not yet published)"
+  ],
+  "source_plan": [
+    "Check IMO maritime security advisories",
+    "Review global maritime insurance premium data",
+    "Analyse AIS rerouting datasets"
+  ]
+}

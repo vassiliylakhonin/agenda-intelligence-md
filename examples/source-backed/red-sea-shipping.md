@@ -1,25 +1,31 @@
-# Source-backed Example: Red Sea Shipping
+# Red Sea Shipping: Source‑backed Analysis
 
-**Bottom line:** Escalation in maritime security incidents in the Red Sea is compressing shipping lanes, increasing insurance premiums and triggering route diversions.
+**Audience:** Logistics managers, insurers, commodity traders.
 
-**Signal classification:** Structural shift.
+**Claim:** Escalating maritime security incidents in the Red Sea are compressing shipping lanes, raising insurance premiums and prompting route diversions.
 
-**What changed:** Rising frequency of piracy, maritime interdictions, and shipping‑stop orders in the Bab‑Al‑Mandab strait.
-
-**Institutional path:** IMO
-'''нени''', regional maritime agencies, national navies, shipping insurers
-
-**Affected flows:** Oil & gas transport, spice & commodity trade, humanitarian aid, and technological supply chains.
-
-**Regulatory `source_plan`:** Use `conflict-security` source plan to isolate primary data.
-
-**Evidence mode:** Evidence references **EVIDENCE**. Source plan points to the following must‑check files:
-
-- `conflict-security/*.json` in `source-requirements`.
-- Transport‑security reports, incident databases, marine traffic alerts.
-
-> **Unsupported claims:** Claims surface without evidence markers or outside the source‑plan are marked unsupported.
+**Evidence JSON:** See `red-sea-shipping.evidence.json`.
 
 ---
 
-**Watch next:** New maritime advisories, incident counts, convoy schedules, and insurance rate changes.
+**Brief Template:**
+```json
+{
+  "bottom_line": "Increased Red Sea security incidents are driving up shipping costs and causing route diversions, affecting oil, gas, and commodity flows.",
+  "signal_classification": "structural_shift",
+  "what_changed": "Frequency of piracy and naval interdictions has risen sharply in the Bab‑Al‑Mandab strait.",
+  "main_uncertainty": "Duration of the security escalation and the likelihood of naval escalations.",
+  "watch_next": ["New naval advisories from IMO", "Changes in insurance premium indices"]
+}
+```
+
+---
+
+**Source‑backed evidence:**
+- IMO maritime security advisories (official).
+- Insurance premium index data (industry reports).
+- Satellite AIS tracking of vessel reroutes.
+
+---
+
+*Note: The accompanying evidence JSON (`red-sea-shipping.evidence.json`) validates the claims.*

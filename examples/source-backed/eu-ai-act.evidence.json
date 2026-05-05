@@ -1,0 +1,44 @@
+{
+  "topic": "EU AI Act",
+  "evidence_mode": "source-backed",
+  "claims": [
+    {
+      "claim": "EU AI Act introduces stricter obligations for high‑risk AI systems",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "EU Commission AI Act proposal",
+          "url": "https://example.com/ai-act-proposal",
+          "source_type": "official_document",
+          "freshness": "current",
+          "supports": ["Legal text defining high‑risk categories and compliance duties"],
+          "limits": ["Does not specify enforcement timeline"]
+        },
+        {
+          "name": "European Parliament budget allocation 2025",
+          "url": "https://example.com/eu-budget-2025",
+          "source_type": "official_document",
+          "freshness": "current",
+          "supports": ["Shows funding for AI compliance monitoring"],
+          "limits": ["Budget covers only 2025"]
+        },
+        {
+          "name": "Industry procurement notices",
+          "url": "https://example.com/ai-procurement",
+          "source_type": "news",
+          "freshness": "current",
+          "supports": ["Indicates adoption of compliance processes in enterprises"],
+          "limits": ["Limited to a few companies"]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Exact enforcement dates for each sector (not yet published)"
+  ],
+  "source_plan": [
+    "Check official EU AI Act proposal text",
+    "Check EU budget and procurement data",
+    "Check industry compliance announcements"
+  ]
+}
