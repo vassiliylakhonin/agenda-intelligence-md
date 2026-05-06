@@ -1,4 +1,9 @@
-from agenda_intelligence.mcp_server import get_lens, get_protocol, list_lenses, source_plan
+from agenda_intelligence.mcp_server import (
+    get_lens,
+    get_protocol,
+    list_lenses,
+    source_plan,
+)
 
 
 def test_get_protocol_entrypoint_returns_markdown():
