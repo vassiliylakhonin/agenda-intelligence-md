@@ -4,6 +4,7 @@ from agenda_intelligence.mcp_server import (
     list_lenses,
     source_plan,
 )
+from agenda_intelligence.mcp_stdio import handle_message
 
 
 def test_get_protocol_entrypoint_returns_markdown():
@@ -48,3 +49,55 @@ def test_source_plan_unknown_category_returns_error():
     assert result["implemented"] is True
     assert result["plan"] is None
     assert "Unknown source category" in result["error"]
+
+
+def test_mcp_stdio_initialize_returns_tool_capability():
+    response = handle_message(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "test"}},
+        }
+    )
+
+    assert response["id"] == 1
+    assert response["result"]["protocolVersion"] == "2025-03-26"
+    assert "tools" in response["result"]["capabilities"]
+
+
+def test_mcp_stdio_tools_list_includes_protocol_tool():
+    response = handle_message({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+
+    tools = response["result"]["tools"]
+    assert {tool["name"] for tool in tools} >= {"get_protocol", "validate_brief", "source_plan"}
+
+
+def test_mcp_stdio_tools_call_returns_json_text_content():
+    response = handle_message(
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {"name": "source_plan", "arguments": {"category": "technology-ai"}},
+        }
+    )
+
+    result = response["result"]
+    assert result["isError"] is False
+    assert result["content"][0]["type"] == "text"
+    assert '"category": "technology-ai"' in result["content"][0]["text"]
+
+
+def test_mcp_stdio_tools_call_unknown_tool_is_tool_error():
+    response = handle_message(
+        {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {"name": "unknown", "arguments": {}},
+        }
+    )
+
+    assert response["result"]["isError"] is True
+    assert "Unknown tool" in response["result"]["content"][0]["text"]

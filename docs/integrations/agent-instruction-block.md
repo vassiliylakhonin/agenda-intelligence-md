@@ -27,3 +27,17 @@ agenda-intelligence validate-brief examples/agenda-brief.json
 agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
 ```
 
+## MCP
+
+For MCP-capable clients, expose the local server with:
+
+```json
+{
+  "mcpServers": {
+    "agenda-intelligence": {
+      "command": "agenda-intelligence-mcp"
+    }
+  }
+}
+```
+

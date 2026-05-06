@@ -14,8 +14,10 @@ analysis-bank/successes/sanctions-routing-signal-classification.md
 docs/DEMO.md
 docs/evaluation.md
 docs/quickstart.md
+docs/release.md
 docs/tutorial.md
 docs/integrations/README.md
+docs/integrations/agent-instruction-block.md
 docs/integrations/claude-code.md
 docs/integrations/codex.md
 docs/integrations/cursor.md
@@ -71,6 +73,7 @@ src/agenda_intelligence/__init__.py
 src/agenda_intelligence/cli.py
 src/agenda_intelligence/eval.py
 src/agenda_intelligence/mcp_server.py
+src/agenda_intelligence/mcp_stdio.py
 src/agenda_intelligence/data/Agenda-Intelligence.md
 src/agenda_intelligence/data/SOURCE_POLICY.md
 src/agenda_intelligence/data/agent-manifest.json

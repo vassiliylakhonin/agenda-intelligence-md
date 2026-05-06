@@ -92,7 +92,7 @@ See [`docs/integrations/agent-instruction-block.md`](docs/integrations/agent-ins
 
 ```bash
 # From GitHub Release
-pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.5.5/agenda_intelligence_md-0.5.5-py3-none-any.whl
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.6.0/agenda_intelligence_md-0.6.0-py3-none-any.whl
 
 # Editable install from source
 git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
@@ -172,10 +172,10 @@ agenda-intelligence score examples/before-after/eu-ai-act.md
 - **Guided start** – `start` command prints trimmed plan + brief template.
 - **Brief scoring** – `score examples/agenda-brief.json` returns a heuristic 0-100 structural quality score; add `--evidence` for claim-level evidence feedback.
 - **Evaluation toolkit** – `evals/rubric.md`, `evals/llm_judge_prompt.txt`, `evals/human_checklist.md`, `evals/cases/*.json`.
-- **MCP read tools** – `validate_brief`, `validate_evidence`, `get_protocol`, `list_lenses`, `get_lens`, `source_plan`.
+- **MCP stdio server** – `agenda-intelligence-mcp` exposes `validate_brief`, `validate_evidence`, `get_protocol`, `list_lenses`, `get_lens`, `source_plan`.
 
 ### 🧪 Experimental / Planned
-- **MCP transport/server** – read-only tool functions exist, but a full HTTP/WebSocket server is still on the roadmap (`docs/integrations/mcp.md`).
+- **MCP HTTP/WebSocket transport** – stdio is available; HTTP/WebSocket transport remains on the roadmap (`docs/integrations/mcp.md`).
 - **Fetch command** – stub in CLI, full evidence‑pack retrieval not implemented.
 - **Truthfulness evaluation** – not implemented; current scoring checks structure and protocol signals.
 - **Generate‑brief** – not yet exposed; use `start` + manual template fill.
@@ -226,7 +226,7 @@ agenda-intelligence-md/
 
 ## Roadmap (high‑level)
 
-- **v0.6** – Full MCP server exposing current Python tool functions via HTTP/WebSocket.
+- **v0.6** – MCP stdio server exposing current Python tool functions.
 - **v0.7** – Promote `score_output` to rubric-based quality scoring and wire it into MCP.
 - **v0.8** – Automated CI quality gate using the evaluation toolkit.
 - **v1.0** – Stable API, broader adoption‑channel support, production‑grade MCP.

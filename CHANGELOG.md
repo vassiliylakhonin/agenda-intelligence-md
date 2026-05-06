@@ -4,6 +4,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## [Unreleased]
 
+## [0.6.0] – 2026-05-06
+### Added
+- `agenda-intelligence-mcp` console command for a minimal stdio MCP server.
+- MCP JSON-RPC handlers for `initialize`, `ping`, `tools/list`, and `tools/call`.
+- MCP tool exposure for `validate_brief`, `validate_evidence`, `get_protocol`, `list_lenses`, `get_lens`, and `source_plan`.
+
 ## [0.5.5] – 2026-05-06
 ### Added
 - `agenda-intelligence --version` for direct CLI version checks.

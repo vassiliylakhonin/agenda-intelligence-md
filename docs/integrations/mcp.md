@@ -1,7 +1,30 @@
-# MCP (Model‑Control‑Protocol) Integration
+# MCP (Model Context Protocol) Integration
 
 This document describes the current state of the MCP tool surface for
 **agenda‑intelligence‑md**.
+
+## Stdio server
+
+Install the package and run:
+
+```bash
+agenda-intelligence-mcp
+```
+
+The server speaks JSON-RPC over stdio and exposes read-only tools for protocol,
+schema validation, lenses, and source plans.
+
+Example client configuration:
+
+```json
+{
+  "mcpServers": {
+    "agenda-intelligence": {
+      "command": "agenda-intelligence-mcp"
+    }
+  }
+}
+```
 
 ## What is implemented
 
@@ -14,6 +37,18 @@ This document describes the current state of the MCP tool surface for
 | `get_lens` | ✅ **Implemented** | Returns packaged lens markdown by type and id. |
 | `source_plan` | ✅ **Implemented** | Returns packaged source requirements for a category. |
 | `score_output` | ❌ Stub | Returns a clear *“not implemented”* JSON. |
+
+## JSON-RPC methods
+
+The stdio server handles:
+
+- `initialize`
+- `notifications/initialized`
+- `ping`
+- `tools/list`
+- `tools/call`
+
+Tool results are returned as JSON text content.
 
 ## How the implemented tools work
 
@@ -76,8 +111,9 @@ agenda-intelligence score examples/before-after/eu-ai-act.md
 
 | Target | Planned |
 |--------|----------|
-| v0.6 | Full MCP server that exposes all tools via HTTP/WebSocket. |
+| v0.6 | MCP stdio server exposing read-only tools. |
 | v0.7 | Promote `score_output` from stub to rubric-based quality scoring. |
+| v0.8 | Optional HTTP/WebSocket transport. |
 
 Until then, the scoring stub is *honest*: it never pretends to have evaluated
 quality when it has not.
