@@ -1,5 +1,8 @@
 import json
+import re
 from pathlib import Path
+
+import agenda_intelligence
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,6 +22,18 @@ def test_manifest_versions_match_package_version():
     assert top_level_manifest["version"] == package_version
     assert packaged_manifest["version"] == package_version
     assert packaged_manifest == top_level_manifest
+    assert agenda_intelligence.__version__ == package_version
+
+
+def test_release_download_snippet_matches_package_version():
+    pyproject = (ROOT / "pyproject.toml").read_text()
+    version_line = next(line for line in pyproject.splitlines() if line.startswith("version = "))
+    package_version = version_line.split('"')[1]
+    readme = (ROOT / "README.md").read_text()
+
+    expected = f"releases/download/v{package_version}/agenda_intelligence_md-{package_version}-py3-none-any.whl"
+    assert expected in readme
+    assert not re.search(r"releases/download/v(?!%s/)" % re.escape(package_version), readme)
 
 
 def test_packaged_schemas_match_top_level_schemas():

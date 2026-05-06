@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## [Unreleased]
 
+## [0.5.4] – 2026-05-06
+### Fixed
+- Package version drift: `agenda_intelligence.__version__`, package metadata, and both manifests now report the same release version.
+- README GitHub Release install snippet now tracks the current release artifact.
+
+### Added
+- Regression coverage for package/manifest/README version consistency.
+
 ## [0.5.3] – 2026-05-05
 ### Added
 - Evaluation toolkit: rubric, LLM judge prompt, human checklist, sample cases.

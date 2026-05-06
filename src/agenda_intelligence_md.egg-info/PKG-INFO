@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: agenda-intelligence-md
-Version: 0.5.3
+Version: 0.5.4
 Summary: A drop-in markdown cognition layer for AI agents that need to analyze public agenda
 Author: Vassiliy Lakhonin
 License-Expression: MIT
@@ -51,9 +51,9 @@ Dynamic: license-file
 pip install agenda-intelligence-md
 ```
 
-### From GitHub Release (v0.5.3)
+### From GitHub Release (v0.5.4)
 ```bash
-pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.5.3/agenda_intelligence_md-0.5.3-py3-none-any.whl
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.5.4/agenda_intelligence_md-0.5.4-py3-none-any.whl
 ```
 
 ### Editable install from source
