@@ -4,6 +4,13 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## [Unreleased]
 
+## [0.5.5] – 2026-05-06
+### Added
+- `agenda-intelligence --version` for direct CLI version checks.
+
+### Fixed
+- Release and manual publish workflows now clean `dist/` and `build/` before building, preventing old tracked artifacts from being rechecked or reuploaded.
+
 ## [0.5.4] – 2026-05-06
 ### Fixed
 - Package version drift: `agenda_intelligence.__version__`, package metadata, and both manifests now report the same release version.

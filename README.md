@@ -28,9 +28,9 @@
 pip install agenda-intelligence-md
 ```
 
-### From GitHub Release (v0.5.4)
+### From GitHub Release (v0.5.5)
 ```bash
-pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.5.4/agenda_intelligence_md-0.5.4-py3-none-any.whl
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.5.5/agenda_intelligence_md-0.5.5-py3-none-any.whl
 ```
 
 ### Editable install from source

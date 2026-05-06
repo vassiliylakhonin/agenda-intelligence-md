@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import agenda_intelligence
+
 ROOT = Path(__file__).resolve().parent
 FIXTURES = ROOT / "fixtures"
 CLI = ROOT.parent / "src" / "agenda_intelligence" / "cli.py"
@@ -11,6 +13,12 @@ CLI = ROOT.parent / "src" / "agenda_intelligence" / "cli.py"
 def run_cli(args):
     result = subprocess.run([sys.executable, str(CLI)] + args, capture_output=True, text=True)
     return result
+
+
+def test_version_flag():
+    res = run_cli(["--version"])
+    assert res.returncode == 0
+    assert res.stdout.strip() == f"agenda-intelligence {agenda_intelligence.__version__}"
 
 
 def test_validate_brief_valid():

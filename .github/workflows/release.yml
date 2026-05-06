@@ -18,6 +18,9 @@ jobs:
       - name: Install build tools
         run: python -m pip install build twine
 
+      - name: Clean build artifacts
+        run: rm -rf dist build
+
       - name: Build package
         run: python -m build
 

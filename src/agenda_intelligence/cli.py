@@ -16,6 +16,8 @@ SRC_ROOT = Path(__file__).resolve().parents[1]
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+from agenda_intelligence import __version__  # noqa: E402
+
 
 def load_manifest():
     path = resources.files(PACKAGE_NAME) / "data" / "agent-manifest.json"
@@ -239,7 +241,8 @@ def cmd_fetch(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Agenda-Intelligence.md helper CLI")
+    parser = argparse.ArgumentParser(prog="agenda-intelligence", description="Agenda-Intelligence.md helper CLI")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("manifest", help="Print agent-manifest.json").set_defaults(func=cmd_manifest)
