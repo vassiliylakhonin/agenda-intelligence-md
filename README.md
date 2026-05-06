@@ -207,6 +207,7 @@ agenda-intelligence score examples/before-after/eu-ai-act.md
 | **Evaluation assets** | [`evals/`](evals/) – rubric, LLM judge prompt, human checklist, sample cases |
 | **Use‑cases** | [`docs/use-cases/`](docs/use-cases/) – policy monitoring, sanctions compliance, market risk, founder context |
 | **Integrations** | [`docs/integrations/`](docs/integrations/) – Claude Code, OpenAI Codex, Cursor, MCP |
+| **Verified MCP setup** | [`docs/integrations/verified-mcp.md`](docs/integrations/verified-mcp.md) – smoke prompts and troubleshooting |
 | **Release maintenance** | [`docs/release.md`](docs/release.md) |
 | **Roadmap** | [`ROADMAP.md`](ROADMAP.md) |
 | **Changelog** | [`CHANGELOG.md`](CHANGELOG.md) |

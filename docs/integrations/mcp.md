@@ -150,6 +150,10 @@ The generic output intentionally keeps the older minimal shape:
 }
 ```
 
+After adding the config, use
+[`verified-mcp.md`](verified-mcp.md) to confirm that the client can see and call
+the tools.
+
 ## What is implemented
 
 | Tool | Status | Notes |
