@@ -240,6 +240,11 @@ def cmd_fetch(args):
         raise SystemExit("Provide --category or --brief")
 
 
+def cmd_mcp_config(args):
+    config = {"mcpServers": {"agenda-intelligence": {"command": "agenda-intelligence-mcp"}}}
+    print(json.dumps(config, indent=2))
+
+
 def main():
     parser = argparse.ArgumentParser(prog="agenda-intelligence", description="Agenda-Intelligence.md helper CLI")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -298,6 +303,9 @@ def main():
     p.add_argument("--category", help="Source category to fetch (e.g., technology-ai)")
     p.add_argument("--brief", help="Short brief text to analyze")
     p.set_defaults(func=cmd_fetch)
+    # mcp-config – print a copy-pasteable local MCP client config
+    p = sub.add_parser("mcp-config", help="Print MCP stdio client configuration")
+    p.set_defaults(func=cmd_mcp_config)
 
     args = parser.parse_args()
     args.func(args)

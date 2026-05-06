@@ -75,3 +75,17 @@ jobs:
           .smoke-venv/bin/agenda-intelligence validate-brief examples/agenda-brief.json
           .smoke-venv/bin/agenda-intelligence validate-evidence examples/source/evidence-pack.json
           .smoke-venv/bin/agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
+
+      - name: Verify MCP stdio server
+        shell: bash
+        run: |
+          .smoke-venv/bin/agenda-intelligence mcp-config
+          cat > /tmp/mcp-smoke.in <<'EOF'
+          {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"smoke","version":"1"}}}
+          {"jsonrpc":"2.0","method":"notifications/initialized"}
+          {"jsonrpc":"2.0","id":2,"method":"tools/list"}
+          {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"source_plan","arguments":{"category":"technology-ai"}}}
+          EOF
+          .smoke-venv/bin/agenda-intelligence-mcp < /tmp/mcp-smoke.in > /tmp/mcp-smoke.out
+          grep -q '"name": "source_plan"' /tmp/mcp-smoke.out
+          grep -q '"category": "technology-ai"' /tmp/mcp-smoke.out

@@ -1,6 +1,6 @@
 {
   "name": "Agenda-Intelligence.md",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Agent-first reasoning infrastructure for public-agenda analysis.",
   "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
   "entrypoint": "Agenda-Intelligence.md",

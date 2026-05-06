@@ -21,6 +21,13 @@ def test_version_flag():
     assert res.stdout.strip() == f"agenda-intelligence {agenda_intelligence.__version__}"
 
 
+def test_mcp_config_prints_stdio_server_config():
+    res = run_cli(["mcp-config"])
+    assert res.returncode == 0
+    data = json.loads(res.stdout)
+    assert data["mcpServers"]["agenda-intelligence"]["command"] == "agenda-intelligence-mcp"
+
+
 def test_validate_brief_valid():
     path = FIXTURES / "valid-agenda-brief.json"
     res = run_cli(["validate-brief", str(path)])

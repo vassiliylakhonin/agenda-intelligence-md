@@ -4,6 +4,11 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## [Unreleased]
 
+## [0.6.1] – 2026-05-06
+### Added
+- `agenda-intelligence mcp-config` for copy-pasteable MCP stdio client configuration.
+- Post-release smoke coverage for `agenda-intelligence-mcp`.
+
 ## [0.6.0] – 2026-05-06
 ### Added
 - `agenda-intelligence-mcp` console command for a minimal stdio MCP server.

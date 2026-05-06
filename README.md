@@ -56,6 +56,9 @@ agenda-intelligence start technology-ai
 # 3. Validate and score a source-aware brief
 agenda-intelligence validate-brief examples/agenda-brief.json
 agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
+
+# Optional: print local MCP client config
+agenda-intelligence mcp-config
 ```
 
 Expected scoring output:
@@ -92,7 +95,7 @@ See [`docs/integrations/agent-instruction-block.md`](docs/integrations/agent-ins
 
 ```bash
 # From GitHub Release
-pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.6.0/agenda_intelligence_md-0.6.0-py3-none-any.whl
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.6.1/agenda_intelligence_md-0.6.1-py3-none-any.whl
 
 # Editable install from source
 git clone https://github.com/vassiliylakhonin/agenda-intelligence-md

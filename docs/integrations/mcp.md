@@ -16,6 +16,12 @@ schema validation, lenses, and source plans.
 
 Example client configuration:
 
+```bash
+agenda-intelligence mcp-config
+```
+
+Output:
+
 ```json
 {
   "mcpServers": {

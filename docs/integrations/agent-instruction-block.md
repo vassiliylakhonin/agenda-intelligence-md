@@ -31,6 +31,12 @@ agenda-intelligence score examples/agenda-brief.json --evidence examples/source/
 
 For MCP-capable clients, expose the local server with:
 
+```bash
+agenda-intelligence mcp-config
+```
+
+Or copy the JSON directly:
+
 ```json
 {
   "mcpServers": {
@@ -40,4 +46,3 @@ For MCP-capable clients, expose the local server with:
   }
 }
 ```
-
