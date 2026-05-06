@@ -26,6 +26,35 @@ def test_mcp_config_prints_stdio_server_config():
     assert res.returncode == 0
     data = json.loads(res.stdout)
     assert data["mcpServers"]["agenda-intelligence"]["command"] == "agenda-intelligence-mcp"
+    assert "type" not in data["mcpServers"]["agenda-intelligence"]
+
+
+def test_mcp_config_prints_claude_desktop_config():
+    res = run_cli(["mcp-config", "--client", "claude-desktop"])
+    assert res.returncode == 0
+    data = json.loads(res.stdout)
+    server = data["mcpServers"]["agenda-intelligence"]
+    assert server["type"] == "stdio"
+    assert server["command"] == "agenda-intelligence-mcp"
+    assert server["args"] == []
+    assert server["env"] == {}
+
+
+def test_mcp_config_prints_cursor_config():
+    res = run_cli(["mcp-config", "--client", "cursor"])
+    assert res.returncode == 0
+    data = json.loads(res.stdout)
+    server = data["mcpServers"]["agenda-intelligence"]
+    assert server["type"] == "stdio"
+    assert server["command"] == "agenda-intelligence-mcp"
+
+
+def test_mcp_config_prints_codex_toml_config():
+    res = run_cli(["mcp-config", "--client", "codex"])
+    assert res.returncode == 0
+    assert "[mcp_servers.agenda-intelligence]" in res.stdout
+    assert 'command = "agenda-intelligence-mcp"' in res.stdout
+    assert "enabled = true" in res.stdout
 
 
 def test_validate_brief_valid():

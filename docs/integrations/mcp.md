@@ -14,10 +14,13 @@ agenda-intelligence-mcp
 The server speaks JSON-RPC over stdio and exposes tools for protocol lookup,
 schema validation, lenses, source plans, and heuristic before/after scoring.
 
-Print a minimal generic client configuration:
+Print a client configuration:
 
 ```bash
 agenda-intelligence mcp-config
+agenda-intelligence mcp-config --client claude-desktop
+agenda-intelligence mcp-config --client cursor
+agenda-intelligence mcp-config --client codex
 ```
 
 Output:
@@ -52,6 +55,10 @@ which agenda-intelligence-mcp
 Add this server to `claude_desktop_config.json`. On macOS the file is usually:
 `~/Library/Application Support/Claude/claude_desktop_config.json`.
 
+```bash
+agenda-intelligence mcp-config --client claude-desktop
+```
+
 ```json
 {
   "mcpServers": {
@@ -72,6 +79,10 @@ Restart Claude Desktop after editing the file.
 For a project-local setup, create `.cursor/mcp.json` in the project root. For a
 global setup, create `~/.cursor/mcp.json`.
 
+```bash
+agenda-intelligence mcp-config --client cursor
+```
+
 ```json
 {
   "mcpServers": {
@@ -91,6 +102,10 @@ Restart Cursor or reload the window after editing the file.
 
 Add this to `~/.codex/config.toml`:
 
+```bash
+agenda-intelligence mcp-config --client codex
+```
+
 ```toml
 [mcp_servers.agenda-intelligence]
 command = "agenda-intelligence-mcp"
@@ -106,6 +121,10 @@ surface and want Codex to call this server's tools concurrently.
 
 Use this shape for MCP clients that accept the common `mcpServers` JSON format:
 
+```bash
+agenda-intelligence mcp-config --client generic
+```
+
 ```json
 {
   "mcpServers": {
@@ -119,8 +138,7 @@ Use this shape for MCP clients that accept the common `mcpServers` JSON format:
 }
 ```
 
-For clients that expect the older minimal shape, `agenda-intelligence mcp-config`
-prints:
+The generic output intentionally keeps the older minimal shape:
 
 ```json
 {

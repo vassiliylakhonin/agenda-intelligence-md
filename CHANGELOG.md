@@ -4,6 +4,11 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## [Unreleased]
 
+## [0.7.1] – 2026-05-06
+### Added
+- `agenda-intelligence mcp-config --client` for generic, Claude Desktop, Cursor, and Codex local MCP config output.
+- Client-specific MCP setup blocks in the integration docs.
+
 ## [0.7.0] – 2026-05-06
 ### Added
 - MCP `score_output` tool for before/after protocol-marker quality scoring.

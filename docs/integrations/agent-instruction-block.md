@@ -33,6 +33,9 @@ For MCP-capable clients, expose the local server with:
 
 ```bash
 agenda-intelligence mcp-config
+agenda-intelligence mcp-config --client claude-desktop
+agenda-intelligence mcp-config --client cursor
+agenda-intelligence mcp-config --client codex
 ```
 
 For client-specific setup blocks, see

@@ -241,7 +241,30 @@ def cmd_fetch(args):
 
 
 def cmd_mcp_config(args):
-    config = {"mcpServers": {"agenda-intelligence": {"command": "agenda-intelligence-mcp"}}}
+    client = args.client
+    if client == "codex":
+        print(
+            "\n".join(
+                [
+                    "[mcp_servers.agenda-intelligence]",
+                    'command = "agenda-intelligence-mcp"',
+                    "enabled = true",
+                    "startup_timeout_sec = 10",
+                    "tool_timeout_sec = 30",
+                ]
+            )
+        )
+        return
+
+    server_config = {"command": "agenda-intelligence-mcp"}
+    if client in {"claude-desktop", "cursor"}:
+        server_config = {
+            "type": "stdio",
+            "command": "agenda-intelligence-mcp",
+            "args": [],
+            "env": {},
+        }
+    config = {"mcpServers": {"agenda-intelligence": server_config}}
     print(json.dumps(config, indent=2))
 
 
@@ -305,6 +328,12 @@ def main():
     p.set_defaults(func=cmd_fetch)
     # mcp-config – print a copy-pasteable local MCP client config
     p = sub.add_parser("mcp-config", help="Print MCP stdio client configuration")
+    p.add_argument(
+        "--client",
+        choices=["generic", "claude-desktop", "cursor", "codex"],
+        default="generic",
+        help="Client config format to print",
+    )
     p.set_defaults(func=cmd_mcp_config)
 
     args = parser.parse_args()
