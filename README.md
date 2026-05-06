@@ -74,6 +74,20 @@ Proof points in this repo:
 - `docs/evaluation.md` describes the evaluation rubric, judge prompt, and regression checks.
 - CI runs validation, scoring, schema checks, and public example smoke tests.
 
+## Agent instruction block
+
+Copy this into an agent system prompt, project instructions file, or tool-specific rule block:
+
+```md
+When the task involves news, policy, regulation, sanctions, geopolitics, trade, energy, elections, conflicts, markets, or strategic risk, use Agenda-Intelligence.md.
+
+Do not summarize by default. Classify the signal, identify what changed, separate fact from assessment, name assumptions and unknowns, explain who gains or loses leverage, and end with watch-next indicators.
+
+Use SOURCE_POLICY.md and source-requirements/<category>.json before making high-stakes claims. Never imply live verification unless live verification was performed. If evidence is missing, label the claim as unsupported or reasoning-only.
+```
+
+See [`docs/integrations/agent-instruction-block.md`](docs/integrations/agent-instruction-block.md) for a fuller copy-paste block.
+
 ### Other install modes
 
 ```bash
@@ -188,6 +202,7 @@ agenda-intelligence score examples/before-after/eu-ai-act.md
 | **Evaluation assets** | [`evals/`](evals/) – rubric, LLM judge prompt, human checklist, sample cases |
 | **Use‑cases** | [`docs/use-cases/`](docs/use-cases/) – policy monitoring, sanctions compliance, market risk, founder context |
 | **Integrations** | [`docs/integrations/`](docs/integrations/) – Claude Code, OpenAI Codex, Cursor, MCP |
+| **Release maintenance** | [`docs/release.md`](docs/release.md) |
 | **Roadmap** | [`ROADMAP.md`](ROADMAP.md) |
 | **Changelog** | [`CHANGELOG.md`](CHANGELOG.md) |
 

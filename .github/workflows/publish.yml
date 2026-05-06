@@ -6,6 +6,9 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -26,7 +29,6 @@ jobs:
         run: python3 -m twine check dist/*
 
       - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: python3 -m twine upload --skip-existing dist/*
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
