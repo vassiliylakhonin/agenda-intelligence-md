@@ -2,13 +2,14 @@
 MCP (Model‑Control‑Protocol) server skeleton for Agenda‑Intelligence.md.
 
 This module provides the tool functions that an MCP server would expose.
-Validation and read-only resource tools are implemented. Scoring remains an
-explicit stub until the quality evaluator is promoted beyond the CLI harness.
+Validation, read-only resource tools, and heuristic scoring are implemented.
 """
 
 import json
 from importlib import resources
 from typing import Optional
+
+from agenda_intelligence.eval import score_before_after
 
 PACKAGE_NAME = "agenda_intelligence"
 
@@ -179,9 +180,11 @@ def source_plan(category: str) -> dict:
 
 
 def score_output(before_text: str, after_text: str) -> dict:
-    """Score before/after output (not implemented)."""
-    return {
-        "implemented": False,
-        "score": None,
-        "error": "score_output is not implemented yet; use the CLI: agenda-intelligence score …",
-    }
+    """Score a before/after output pair with the same marker rubric used by examples."""
+    if not before_text.strip():
+        return {"implemented": True, "score": None, "error": "before_text must not be empty"}
+    if not after_text.strip():
+        return {"implemented": True, "score": None, "error": "after_text must not be empty"}
+    result = score_before_after(before_text, after_text)
+    result["error"] = None
+    return result

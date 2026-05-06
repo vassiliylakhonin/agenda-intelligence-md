@@ -2,6 +2,7 @@ from agenda_intelligence.mcp_server import (
     get_lens,
     get_protocol,
     list_lenses,
+    score_output,
     source_plan,
 )
 from agenda_intelligence.mcp_stdio import handle_message
@@ -51,6 +52,23 @@ def test_source_plan_unknown_category_returns_error():
     assert "Unknown source category" in result["error"]
 
 
+def test_score_output_scores_before_after_pair():
+    result = score_output(
+        "Generic update. Monitor developments.",
+        (
+            "Signal classification: compliance-relevant development. "
+            "What changed: guidance moved toward implementation. "
+            "Main uncertainty: whether enforcement follows. "
+            "Watch next: regulator guidance and compliance deadline."
+        ),
+    )
+
+    assert result["implemented"] is True
+    assert result["error"] is None
+    assert result["after_score"] > result["before_score"]
+    assert result["required_markers"]["watch_next"] is True
+
+
 def test_mcp_stdio_initialize_returns_tool_capability():
     response = handle_message(
         {
@@ -70,7 +88,7 @@ def test_mcp_stdio_tools_list_includes_protocol_tool():
     response = handle_message({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
 
     tools = response["result"]["tools"]
-    assert {tool["name"] for tool in tools} >= {"get_protocol", "validate_brief", "source_plan"}
+    assert {tool["name"] for tool in tools} >= {"get_protocol", "validate_brief", "source_plan", "score_output"}
 
 
 def test_mcp_stdio_tools_call_returns_json_text_content():
@@ -101,3 +119,29 @@ def test_mcp_stdio_tools_call_unknown_tool_is_tool_error():
 
     assert response["result"]["isError"] is True
     assert "Unknown tool" in response["result"]["content"][0]["text"]
+
+
+def test_mcp_stdio_tools_call_score_output_returns_score():
+    response = handle_message(
+        {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {
+                "name": "score_output",
+                "arguments": {
+                    "before_text": "Generic update. Monitor developments.",
+                    "after_text": (
+                        "Signal classification: compliance-relevant development. "
+                        "What changed: guidance moved toward implementation. "
+                        "Main uncertainty: whether enforcement follows. "
+                        "Watch next: regulator guidance and compliance deadline."
+                    ),
+                },
+            },
+        }
+    )
+
+    assert response["result"]["isError"] is False
+    assert '"implemented": true' in response["result"]["content"][0]["text"]
+    assert '"after_score"' in response["result"]["content"][0]["text"]

@@ -6,10 +6,11 @@
 - Tests and CI
 
 ## v0.6 – Agent integration / MCP
-- HTTP/WebSocket MCP transport around the existing Python tool functions
+- Stdio MCP transport around the existing Python tool functions
 - Integration examples for agent-speaking environments
 
 ## v0.7 – Quality proof / benchmark set
+- MCP `score_output` tool for before/after protocol-marker scoring
 - Demo examples with live source plans (now include source‑backed evidence)
 - Evaluation documentation expanded (new `evals/` assets, rubric, LLM judge prompt, human checklist)
 - Benchmark set (`evals/benchmark_set.json`) for reproducible quality tracking

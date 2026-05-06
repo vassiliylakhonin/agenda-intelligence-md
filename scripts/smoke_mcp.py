@@ -26,6 +26,23 @@ REQUESTS = [
         "method": "tools/call",
         "params": {"name": "source_plan", "arguments": {"category": "technology-ai"}},
     },
+    {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "method": "tools/call",
+        "params": {
+            "name": "score_output",
+            "arguments": {
+                "before_text": "Generic update. Monitor developments.",
+                "after_text": (
+                    "Signal classification: compliance-relevant development. "
+                    "What changed: guidance moved toward implementation. "
+                    "Main uncertainty: whether enforcement follows. "
+                    "Watch next: regulator guidance and compliance deadline."
+                ),
+            },
+        },
+    },
 ]
 
 
@@ -41,8 +58,8 @@ def run_server(command: list[str]) -> list[dict]:
 
 
 def assert_response_shape(responses: list[dict], expected_version: str | None) -> None:
-    if len(responses) != 3:
-        raise SystemExit(f"Expected 3 MCP responses, got {len(responses)}: {responses}")
+    if len(responses) != 4:
+        raise SystemExit(f"Expected 4 MCP responses, got {len(responses)}: {responses}")
 
     initialize = responses[0]["result"]
     server_info = initialize["serverInfo"]
@@ -59,6 +76,7 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
         "list_lenses",
         "get_lens",
         "source_plan",
+        "score_output",
     }
     missing = expected_tools - tools
     if missing:
@@ -72,6 +90,15 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
         raise SystemExit(f"Unexpected source_plan category: {payload}")
     if "must_check" not in payload["plan"]:
         raise SystemExit(f"source_plan payload missing must_check: {payload}")
+
+    score_result = responses[3]["result"]
+    if score_result.get("isError"):
+        raise SystemExit(f"MCP score_output returned tool error: {score_result}")
+    score_payload = json.loads(score_result["content"][0]["text"])
+    if not score_payload["implemented"]:
+        raise SystemExit(f"score_output is still a stub: {score_payload}")
+    if score_payload["after_score"] <= score_payload["before_score"]:
+        raise SystemExit(f"score_output did not improve after output: {score_payload}")
 
 
 def parse_args() -> argparse.Namespace:

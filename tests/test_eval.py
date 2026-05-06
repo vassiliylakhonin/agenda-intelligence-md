@@ -1,6 +1,6 @@
 import json
 
-from agenda_intelligence.eval import format_score, score_brief
+from agenda_intelligence.eval import format_score, score_before_after, score_brief
 
 
 def test_score_brief_returns_weighted_dimensions():
@@ -73,6 +73,29 @@ def test_score_result_is_json_serializable():
     )
 
     json.dumps(result)
+
+
+def test_score_before_after_marks_decision_useful_improvement():
+    result = score_before_after(
+        before_text="This is a complex landscape. Monitor developments.",
+        after_text=(
+            "Signal classification: compliance-relevant development. "
+            "What changed: the issue moved from debate to guidance. "
+            "Who is affected: providers and deployers. "
+            "Mechanism: through documentation duties. "
+            "Main uncertainty: whether enforcement follows. "
+            "Watch next: guidance, deadline, enforcement."
+        ),
+    )
+
+    assert result["implemented"] is True
+    assert result["after_score"] > result["before_score"]
+    assert result["decision_useful"] is True
+    assert result["required_markers"] == {
+        "signal_classification": True,
+        "uncertainty": True,
+        "watch_next": True,
+    }
 
 
 def test_evidence_pack_penalizes_unsupported_claims():

@@ -6,6 +6,7 @@ adherence signals, not factual truthfulness.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -40,6 +41,32 @@ VAGUE_PHRASES = [
     "stay tuned",
     "various stakeholders",
 ]
+
+BEFORE_AFTER_CRITERIA = {
+    "signal_classification": [
+        "signal classification",
+        "weak signal",
+        "trigger event",
+        "compliance-relevant",
+        "escalation marker",
+    ],
+    "what_changed": ["what changed", "moved from", "shift", "delta", "changed"],
+    "actor_specificity": [
+        "who is affected",
+        "providers",
+        "deployers",
+        "banks",
+        "logistics",
+        "insurers",
+        "exporters",
+        "firms",
+    ],
+    "mechanism": ["mechanism", "through", "via", "because", "depends on", "channel", "exposure"],
+    "uncertainty": ["main uncertainty", "uncertainty", "whether"],
+    "falsifiability": ["confirm", "falsify", "weaken", "upgrade", "downgrade", "until supported"],
+    "watch_next": ["watch next", "watch for", "indicators", "guidance", "deadline", "enforcement"],
+    "decision_value": ["treat this as", "base case", "higher-risk", "contained", "operational", "compliance impact"],
+}
 
 
 @dataclass(frozen=True)
@@ -86,6 +113,33 @@ def format_score(result: dict[str, Any]) -> str:
     for name, item in result["dimensions"].items():
         lines.append(f"{name}: {item['score']}/{item['max_score']} - {item['feedback']}")
     return "\n".join(lines)
+
+
+def score_before_after(before_text: str, after_text: str) -> dict[str, Any]:
+    """Score a before/after markdown pair against the public protocol markers."""
+    before_score, before_dimensions = _score_text_markers(before_text)
+    after_score, after_dimensions = _score_text_markers(after_text)
+    delta = after_score - before_score
+    required = {
+        "signal_classification": after_dimensions["signal_classification"] >= 1,
+        "uncertainty": after_dimensions["uncertainty"] >= 1,
+        "watch_next": after_dimensions["watch_next"] >= 1,
+    }
+    return {
+        "implemented": True,
+        "score": after_score,
+        "max_score": len(BEFORE_AFTER_CRITERIA) * 2,
+        "before_score": before_score,
+        "after_score": after_score,
+        "delta": delta,
+        "dimensions": {
+            "before": before_dimensions,
+            "after": after_dimensions,
+        },
+        "decision_useful": after_score >= 11 and delta >= 6 and all(required.values()),
+        "required_markers": required,
+        "note": "Heuristic marker score; does not verify factual truthfulness.",
+    }
 
 
 def _score_relevance(brief: dict[str, Any]) -> DimensionScore:
@@ -276,6 +330,16 @@ def _score_clarity(brief: dict[str, Any]) -> DimensionScore:
     elif long_fields:
         feedback = "some fields are long; tighten for brief readability"
     return DimensionScore(score=max(0, score), max_score=15, feedback=feedback)
+
+
+def _score_text_markers(text: str) -> tuple[int, dict[str, int]]:
+    normalized = text.lower()
+    normalized = re.sub(r"\s+", " ", normalized)
+    scores = {}
+    for name, tokens in BEFORE_AFTER_CRITERIA.items():
+        hits = sum(1 for token in tokens if token in normalized)
+        scores[name] = min(2, hits)
+    return sum(scores.values()), scores
 
 
 def _has_value(value: Any) -> bool:

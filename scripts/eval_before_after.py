@@ -1,36 +1,19 @@
 #!/usr/bin/env python3
 import re
+import sys
 from pathlib import Path
 from typing import Optional
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "examples" / "before-after"
+SRC = ROOT / "src"
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+if str(SCRIPT_DIR) in sys.path:
+    sys.path.remove(str(SCRIPT_DIR))
 
-CRITERIA = {
-    "signal_classification": [
-        "signal classification",
-        "weak signal",
-        "trigger event",
-        "compliance-relevant",
-        "escalation marker",
-    ],
-    "what_changed": ["what changed", "moved from", "shift", "delta", "changed"],
-    "actor_specificity": [
-        "who is affected",
-        "providers",
-        "deployers",
-        "banks",
-        "logistics",
-        "insurers",
-        "exporters",
-        "firms",
-    ],
-    "mechanism": ["mechanism", "through", "via", "because", "depends on", "channel", "exposure"],
-    "uncertainty": ["main uncertainty", "uncertainty", "whether"],
-    "falsifiability": ["confirm", "falsify", "weaken", "upgrade", "downgrade", "until supported"],
-    "watch_next": ["watch next", "watch for", "indicators", "guidance", "deadline", "enforcement"],
-    "decision_value": ["treat this as", "base case", "higher-risk", "contained", "operational", "compliance impact"],
-}
+from agenda_intelligence.eval import score_before_after  # noqa: E402
 
 
 def section(text: str, start: str, end: Optional[str] = None) -> str:
@@ -45,14 +28,6 @@ def section(text: str, start: str, end: Optional[str] = None) -> str:
     return m.group(1).strip().lower()
 
 
-def score(text: str) -> tuple[int, dict[str, int]]:
-    scores = {}
-    for name, tokens in CRITERIA.items():
-        hits = sum(1 for t in tokens if t in text)
-        scores[name] = min(2, hits)
-    return sum(scores.values()), scores
-
-
 def main() -> None:
     failures = []
     files = sorted(p for p in EXAMPLES.glob("*.md") if p.name not in {"README.md", "evaluation-rubric.md"})
@@ -63,9 +38,11 @@ def main() -> None:
         text = p.read_text()
         before = section(text, "Before: generic agent output", "What is wrong with the before version")
         after = section(text, "After: with Agenda-Intelligence.md", "Why the after is better")
-        before_score, before_detail = score(before)
-        after_score, after_detail = score(after)
-        delta = after_score - before_score
+        result = score_before_after(before, after)
+        before_score = result["before_score"]
+        after_score = result["after_score"]
+        delta = result["delta"]
+        after_detail = result["dimensions"]["after"]
         print(f"{p.name}: before={before_score}/16 after={after_score}/16 delta=+{delta}")
         if after_score < 11:
             failures.append(f"{p.name}: after score below decision-useful threshold: {after_score}")

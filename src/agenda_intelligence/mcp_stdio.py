@@ -57,6 +57,17 @@ TOOLS: dict[str, dict[str, Any]] = {
         "inputSchema": _schema({"category": {"type": "string"}}, ["category"]),
         "handler": lambda args: mcp_server.source_plan(args["category"]),
     },
+    "score_output": {
+        "description": "Score before/after agenda-analysis output with the protocol marker rubric.",
+        "inputSchema": _schema(
+            {
+                "before_text": {"type": "string"},
+                "after_text": {"type": "string"},
+            },
+            ["before_text", "after_text"],
+        ),
+        "handler": lambda args: mcp_server.score_output(args["before_text"], args["after_text"]),
+    },
 }
 
 

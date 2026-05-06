@@ -11,8 +11,8 @@ Install the package and run:
 agenda-intelligence-mcp
 ```
 
-The server speaks JSON-RPC over stdio and exposes read-only tools for protocol,
-schema validation, lenses, and source plans.
+The server speaks JSON-RPC over stdio and exposes tools for protocol lookup,
+schema validation, lenses, source plans, and heuristic before/after scoring.
 
 Example client configuration:
 
@@ -42,7 +42,7 @@ Output:
 | `list_lenses` | ✅ **Implemented** | Returns packaged regional and sector lens paths from the manifest. |
 | `get_lens` | ✅ **Implemented** | Returns packaged lens markdown by type and id. |
 | `source_plan` | ✅ **Implemented** | Returns packaged source requirements for a category. |
-| `score_output` | ❌ Stub | Returns a clear *“not implemented”* JSON. |
+| `score_output` | ✅ **Implemented** | Scores before/after output with the public protocol-marker rubric. |
 
 ## JSON-RPC methods
 
@@ -63,6 +63,7 @@ from agenda_intelligence.mcp_server import (
     get_lens,
     get_protocol,
     list_lenses,
+    score_output,
     source_plan,
     validate_brief,
     validate_evidence,
@@ -80,6 +81,7 @@ protocol = get_protocol("entrypoint")
 lenses = list_lenses("regional")
 eu_lens = get_lens("regional", "eu")
 ai_plan = source_plan("technology-ai")
+score = score_output(before_text, after_text)
 ```
 
 The validation functions load the corresponding schema from the package data
@@ -90,6 +92,10 @@ validation did not actually happen.
 The read-only functions load packaged manifest, protocol, lens, and source-plan
 files through `importlib.resources`, so they work from editable installs and
 wheels.
+
+`score_output` is heuristic: it checks protocol markers such as signal
+classification, what changed, uncertainty, falsifiability, watch-next
+indicators, and decision value. It does not verify factual truthfulness.
 
 ## CLI equivalents
 
@@ -120,6 +126,3 @@ agenda-intelligence score examples/before-after/eu-ai-act.md
 | v0.6 | MCP stdio server exposing read-only tools. |
 | v0.7 | Promote `score_output` from stub to rubric-based quality scoring. |
 | v0.8 | Optional HTTP/WebSocket transport. |
-
-Until then, the scoring stub is *honest*: it never pretends to have evaluated
-quality when it has not.

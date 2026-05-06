@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## [Unreleased]
 
+## [0.7.0] – 2026-05-06
+### Added
+- MCP `score_output` tool for before/after protocol-marker quality scoring.
+- Shared MCP smoke coverage now verifies `score_output` in addition to source-plan lookup.
+
+### Changed
+- The before/after evaluation script now uses the package scorer as its single source of rubric logic.
+
 ## [0.6.1] – 2026-05-06
 ### Added
 - `agenda-intelligence mcp-config` for copy-pasteable MCP stdio client configuration.
