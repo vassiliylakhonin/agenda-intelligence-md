@@ -95,8 +95,7 @@ def get_protocol(name: str) -> dict:
             matches = [
                 path
                 for path in manifest["protocols"]
-                if path.rsplit("/", 1)[-1] == name
-                or path.rsplit("/", 1)[-1].removesuffix(".md") == name
+                if path.rsplit("/", 1)[-1] == name or path.rsplit("/", 1)[-1].removesuffix(".md") == name
             ]
             if not matches:
                 return {
@@ -159,11 +158,7 @@ def get_lens(lens_type: str, lens_id: str) -> dict:
 def source_plan(category: str) -> dict:
     """Return source requirements for a category."""
     try:
-        requirements = (
-            _load_manifest()
-            .get("source_acquisition", {})
-            .get("requirements", {})
-        )
+        requirements = _load_manifest().get("source_acquisition", {}).get("requirements", {})
         if category not in requirements:
             return {
                 "implemented": True,

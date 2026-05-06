@@ -74,10 +74,7 @@ def score_brief(
             }
             for name, item in dimensions.items()
         },
-        "note": (
-            "Heuristic structural/evidence-discipline score; "
-            "does not verify factual truthfulness."
-        ),
+        "note": ("Heuristic structural/evidence-discipline score; " "does not verify factual truthfulness."),
     }
 
 
@@ -88,9 +85,7 @@ def format_score(result: dict[str, Any]) -> str:
         f"note: {result['note']}",
     ]
     for name, item in result["dimensions"].items():
-        lines.append(
-            f"{name}: {item['score']}/{item['max_score']} - {item['feedback']}"
-        )
+        lines.append(f"{name}: {item['score']}/{item['max_score']} - {item['feedback']}")
     return "\n".join(lines)
 
 
@@ -175,9 +170,7 @@ def _score_evidence_pack(
         score += 2
 
     supported = sum(1 for claim in claims if claim.get("support_status") == "supported")
-    partially_supported = sum(
-        1 for claim in claims if claim.get("support_status") == "partially_supported"
-    )
+    partially_supported = sum(1 for claim in claims if claim.get("support_status") == "partially_supported")
     unsupported = sum(1 for claim in claims if claim.get("support_status") == "unsupported")
     claims_with_sources = sum(1 for claim in claims if _non_empty_list(claim.get("sources")))
 
@@ -223,9 +216,7 @@ def _score_evidence_pack(
 
 def _score_completeness(brief: dict[str, Any]) -> DimensionScore:
     required_hits = sum(1 for field in REQUIRED_FIELDS if _has_value(brief.get(field)))
-    optional_hits = sum(
-        1 for field in OPTIONAL_PROTOCOL_FIELDS if _has_value(brief.get(field))
-    )
+    optional_hits = sum(1 for field in OPTIONAL_PROTOCOL_FIELDS if _has_value(brief.get(field)))
     score = round((required_hits / len(REQUIRED_FIELDS)) * 14)
     score += round((optional_hits / len(OPTIONAL_PROTOCOL_FIELDS)) * 6)
     missing = [field for field in REQUIRED_FIELDS if not _has_value(brief.get(field))]
@@ -233,8 +224,7 @@ def _score_completeness(brief: dict[str, Any]) -> DimensionScore:
         feedback = f"missing required fields: {', '.join(missing)}"
     else:
         feedback = (
-            "all required fields present; optional fields present: "
-            f"{optional_hits}/{len(OPTIONAL_PROTOCOL_FIELDS)}"
+            "all required fields present; optional fields present: " f"{optional_hits}/{len(OPTIONAL_PROTOCOL_FIELDS)}"
         )
     return DimensionScore(
         score=min(score, WEIGHTS["completeness"]),
@@ -254,9 +244,7 @@ def _score_actionability(brief: dict[str, Any]) -> DimensionScore:
         score += 2
     if isinstance(scenarios, list) and scenarios:
         scenario_with_indicators = any(
-            _non_empty_list(item.get("indicators"))
-            for item in scenarios
-            if isinstance(item, dict)
+            _non_empty_list(item.get("indicators")) for item in scenarios if isinstance(item, dict)
         )
         score += 3 if scenario_with_indicators else 2
     if score >= 12:
@@ -280,11 +268,7 @@ def _score_clarity(brief: dict[str, Any]) -> DimensionScore:
     long_fields = [part for part in text_parts if len(part.split()) > 60]
     if long_fields:
         score -= min(4, len(long_fields) * 2)
-    empty_strings = [
-        key
-        for key, value in brief.items()
-        if isinstance(value, str) and not value.strip()
-    ]
+    empty_strings = [key for key, value in brief.items() if isinstance(value, str) and not value.strip()]
     if empty_strings:
         score -= min(4, len(empty_strings) * 2)
     feedback = "concise and readable"
