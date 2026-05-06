@@ -80,19 +80,6 @@ jobs:
         shell: bash
         run: |
           .smoke-venv/bin/agenda-intelligence mcp-config
-          cat > /tmp/mcp-smoke.in <<'EOF'
-          {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"smoke","version":"1"}}}
-          {"jsonrpc":"2.0","method":"notifications/initialized"}
-          {"jsonrpc":"2.0","id":2,"method":"tools/list"}
-          {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"source_plan","arguments":{"category":"technology-ai"}}}
-          EOF
-          .smoke-venv/bin/agenda-intelligence-mcp < /tmp/mcp-smoke.in > /tmp/mcp-smoke.out
-          .smoke-venv/bin/python - <<'PY'
-          import json
-
-          responses = [json.loads(line) for line in open("/tmp/mcp-smoke.out") if line.strip()]
-          tools = {tool["name"] for tool in responses[1]["result"]["tools"]}
-          assert "source_plan" in tools, tools
-          payload = json.loads(responses[2]["result"]["content"][0]["text"])
-          assert payload["category"] == "technology-ai", payload
-          PY
+          .smoke-venv/bin/python scripts/smoke_mcp.py \
+            --command ".smoke-venv/bin/agenda-intelligence-mcp" \
+            --expected-version "${{ steps.version.outputs.version }}"
