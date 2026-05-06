@@ -79,8 +79,8 @@ for token in ["name: agenda-intelligence", "description:", "references/analysis-
 
 readme = (root / "README.md").read_text()
 for token in [
-    "drop-in markdown cognition layer",
-    "Quick install",
+    "machine-readable Markdown protocol",
+    "Quickstart",
     "CLI happy path",
     "Source Acquisition Layer",
     "Examples",

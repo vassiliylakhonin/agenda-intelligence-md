@@ -1,0 +1,77 @@
+name: Post-release smoke
+
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Published package version to smoke-test, for example 0.5.5"
+        required: true
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${{ github.event.workflow_run.head_branch }}"
+            version="${version#v}"
+          fi
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Unsupported version: $version" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install published package
+        shell: bash
+        run: |
+          python -m venv .smoke-venv
+          .smoke-venv/bin/python -m pip install --upgrade pip
+          for attempt in 1 2 3 4 5; do
+            if .smoke-venv/bin/python -m pip install "agenda-intelligence-md==${{ steps.version.outputs.version }}"; then
+              exit 0
+            fi
+            echo "Package not visible on PyPI yet; retrying in 20 seconds..."
+            sleep 20
+          done
+          exit 1
+
+      - name: Verify package version
+        run: |
+          .smoke-venv/bin/agenda-intelligence --version
+          test "$(.smoke-venv/bin/agenda-intelligence --version)" = "agenda-intelligence ${{ steps.version.outputs.version }}"
+
+      - name: Verify packaged manifest
+        run: |
+          .smoke-venv/bin/agenda-intelligence manifest > /tmp/agenda-manifest.json
+          .smoke-venv/bin/python - <<'PY'
+          import json
+          import os
+
+          expected = os.environ["EXPECTED_VERSION"]
+          data = json.load(open("/tmp/agenda-manifest.json"))
+          assert data["version"] == expected, data["version"]
+          PY
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.version }}
+
+      - name: Verify CLI validation and scoring
+        run: |
+          .smoke-venv/bin/agenda-intelligence validate-brief examples/agenda-brief.json
+          .smoke-venv/bin/agenda-intelligence validate-evidence examples/source/evidence-pack.json
+          .smoke-venv/bin/agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json

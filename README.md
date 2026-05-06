@@ -5,11 +5,17 @@
 [![CI Status](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions)
 [![GitHub stars](https://img.shields.io/github/stars/vassiliylakhonin/agenda-intelligence-md?style=flat-square)](https://github.com/vassiliylakhonin/agenda-intelligence-md/stargazers)
 
-**A drop-in markdown cognition layer that turns news scanning into decision-ready analysis.**
+**A machine-readable Markdown protocol and CLI toolkit that turns news scanning into decision-ready agenda analysis.**
 
 > **Bottom line:** agents using this protocol move from *“monitor developments”* to *“watch these 3 indicators; if X happens, decision Y becomes urgent.”*
 
 ---
+
+## Why this exists
+
+Most LLM news workflows summarize what happened. Agenda Intelligence asks the harder operational questions: what changed, whether it is noise or signal, who gains leverage, what evidence supports the claim, what remains uncertain, and what to watch next.
+
+It is useful when an agent needs to reason about public agenda rather than produce a generic brief: policy, sanctions, regulation, geopolitics, energy, elections, markets, and strategic risk.
 
 ## Who it is for
 
@@ -21,20 +27,60 @@
 
 ---
 
-## Quick install
+## Before / after
 
-### From PyPI
+```text
+Before: "The regulator announced new AI guidance. Companies should monitor developments."
+
+After:
+- Signal classification: compliance-relevant development
+- What changed: policy discussion moved toward implementation detail
+- Main uncertainty: whether guidance becomes the practical enforcement baseline
+- Watch next: regulator guidance, first enforcement action, compliance deadline
+- Evidence status: source-backed / reasoning-only / unsupported claims separated
+```
+
+See `examples/before-after/` and `examples/source-backed/` for full examples.
+
+---
+
+## Quickstart
+
 ```bash
+# 1. Install
 pip install agenda-intelligence-md
+
+# 2. Start with a source category
+agenda-intelligence start technology-ai
+
+# 3. Validate and score a source-aware brief
+agenda-intelligence validate-brief examples/agenda-brief.json
+agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
 ```
 
-### From GitHub Release (v0.5.5)
+Expected scoring output:
+
+```text
+score: 90/100
+note: Heuristic structural/evidence-discipline score; does not verify factual truthfulness.
+evidence_support: ... claims supported: 1/1 supported ...
+```
+
+Proof points in this repo:
+
+- `schemas/` validates agenda briefs, evidence packs, memory cards, lenses, and signal classification.
+- `SOURCE_POLICY.md` defines the evidence discipline and overclaiming guardrails.
+- `examples/source-backed/` shows evidence-mode-aware briefs.
+- `docs/evaluation.md` describes the evaluation rubric, judge prompt, and regression checks.
+- CI runs validation, scoring, schema checks, and public example smoke tests.
+
+### Other install modes
+
 ```bash
+# From GitHub Release
 pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.5.5/agenda_intelligence_md-0.5.5-py3-none-any.whl
-```
 
-### Editable install from source
-```bash
+# Editable install from source
 git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
 cd agenda-intelligence-md
 pip install -e .
