@@ -87,5 +87,12 @@ jobs:
           {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"source_plan","arguments":{"category":"technology-ai"}}}
           EOF
           .smoke-venv/bin/agenda-intelligence-mcp < /tmp/mcp-smoke.in > /tmp/mcp-smoke.out
-          grep -q '"name": "source_plan"' /tmp/mcp-smoke.out
-          grep -q '"category": "technology-ai"' /tmp/mcp-smoke.out
+          .smoke-venv/bin/python - <<'PY'
+          import json
+
+          responses = [json.loads(line) for line in open("/tmp/mcp-smoke.out") if line.strip()]
+          tools = {tool["name"] for tool in responses[1]["result"]["tools"]}
+          assert "source_plan" in tools, tools
+          payload = json.loads(responses[2]["result"]["content"][0]["text"])
+          assert payload["category"] == "technology-ai", payload
+          PY
