@@ -80,6 +80,8 @@ jobs:
         shell: bash
         run: |
           .smoke-venv/bin/agenda-intelligence mcp-config
+          .smoke-venv/bin/python scripts/smoke_mcp_config.py \
+            --command ".smoke-venv/bin/agenda-intelligence"
           .smoke-venv/bin/python scripts/smoke_mcp.py \
             --command ".smoke-venv/bin/agenda-intelligence-mcp" \
             --expected-version "${{ steps.version.outputs.version }}"

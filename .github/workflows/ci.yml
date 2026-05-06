@@ -61,6 +61,7 @@ jobs:
           python3 -m agenda_intelligence.cli validate-evidence examples/source/evidence-pack.json
           python3 -m agenda_intelligence.cli source-plan technology-ai
           python3 -m agenda_intelligence.cli score examples/before-after/eu-ai-act.md
+          python3 scripts/smoke_mcp_config.py --command "python3 -m agenda_intelligence.cli"
           python3 scripts/smoke_mcp.py --command "python3 -m agenda_intelligence.mcp_stdio"
 
       - name: Validate public examples and docs commands
