@@ -6,3 +6,5 @@ __pycache__/
 .pytest_cache/
 .pycache-tmp/
 build/
+.venv/
+uv.lock

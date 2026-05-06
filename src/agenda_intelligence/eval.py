@@ -9,7 +9,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-
 WEIGHTS = {
     "relevance": 25,
     "evidence_support": 25,
