@@ -1,8 +1,10 @@
 # Release Notes for Maintainers
 
-## PyPI Trusted Publishing
+## PyPI Publishing
 
-The release workflows are prepared for PyPI Trusted Publishing through GitHub OIDC.
+The release workflows currently publish with the GitHub secret `PYPI_API_TOKEN`.
+
+They are also prepared for PyPI Trusted Publishing through GitHub OIDC once the PyPI-side publisher is configured.
 
 Repository-side requirements are already configured:
 
@@ -10,6 +12,7 @@ Repository-side requirements are already configured:
 - `.github/workflows/publish.yml` grants `id-token: write`.
 - Both workflows use `pypa/gh-action-pypi-publish@release/v1`.
 - Both workflows clean `dist/` and `build/` before building.
+- Both workflows currently pass `password: ${{ secrets.PYPI_API_TOKEN }}` so releases continue working before PyPI Trusted Publishing is enabled.
 
 One-time PyPI setup is still required in the PyPI project settings:
 
@@ -22,7 +25,7 @@ One-time PyPI setup is still required in the PyPI project settings:
 
 If manual publishing should also use Trusted Publishing, add a second PyPI trusted publisher with workflow filename `publish.yml`.
 
-After setup, the `PYPI_API_TOKEN` secret is no longer required for these workflows.
+After setup, remove the `password: ${{ secrets.PYPI_API_TOKEN }}` input from the publish steps. Then the `PYPI_API_TOKEN` secret is no longer required for these workflows.
 
 ## Release Smoke
 
