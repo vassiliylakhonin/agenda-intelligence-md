@@ -35,7 +35,11 @@ For MCP-capable clients, expose the local server with:
 agenda-intelligence mcp-config
 ```
 
-Or copy the JSON directly:
+For client-specific setup blocks, see
+[`docs/integrations/mcp.md`](mcp.md): Claude Desktop, Cursor, Codex local MCP,
+and generic JSON.
+
+Generic JSON:
 
 ```json
 {

@@ -14,13 +14,113 @@ agenda-intelligence-mcp
 The server speaks JSON-RPC over stdio and exposes tools for protocol lookup,
 schema validation, lenses, source plans, and heuristic before/after scoring.
 
-Example client configuration:
+Print a minimal generic client configuration:
 
 ```bash
 agenda-intelligence mcp-config
 ```
 
 Output:
+
+```json
+{
+  "mcpServers": {
+    "agenda-intelligence": {
+      "command": "agenda-intelligence-mcp"
+    }
+  }
+}
+```
+
+## Client configuration
+
+Install the package first:
+
+```bash
+pip install agenda-intelligence-md
+```
+
+If `agenda-intelligence-mcp` is not on your client app's `PATH`, replace the
+command with the absolute path from:
+
+```bash
+which agenda-intelligence-mcp
+```
+
+### Claude Desktop
+
+Add this server to `claude_desktop_config.json`. On macOS the file is usually:
+`~/Library/Application Support/Claude/claude_desktop_config.json`.
+
+```json
+{
+  "mcpServers": {
+    "agenda-intelligence": {
+      "type": "stdio",
+      "command": "agenda-intelligence-mcp",
+      "args": [],
+      "env": {}
+    }
+  }
+}
+```
+
+Restart Claude Desktop after editing the file.
+
+### Cursor
+
+For a project-local setup, create `.cursor/mcp.json` in the project root. For a
+global setup, create `~/.cursor/mcp.json`.
+
+```json
+{
+  "mcpServers": {
+    "agenda-intelligence": {
+      "type": "stdio",
+      "command": "agenda-intelligence-mcp",
+      "args": [],
+      "env": {}
+    }
+  }
+}
+```
+
+Restart Cursor or reload the window after editing the file.
+
+### Codex local MCP
+
+Add this to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.agenda-intelligence]
+command = "agenda-intelligence-mcp"
+enabled = true
+startup_timeout_sec = 10
+tool_timeout_sec = 30
+```
+
+Keep `supports_parallel_tool_calls` disabled unless you have reviewed the tool
+surface and want Codex to call this server's tools concurrently.
+
+### Generic JSON
+
+Use this shape for MCP clients that accept the common `mcpServers` JSON format:
+
+```json
+{
+  "mcpServers": {
+    "agenda-intelligence": {
+      "type": "stdio",
+      "command": "agenda-intelligence-mcp",
+      "args": [],
+      "env": {}
+    }
+  }
+}
+```
+
+For clients that expect the older minimal shape, `agenda-intelligence mcp-config`
+prints:
 
 ```json
 {
