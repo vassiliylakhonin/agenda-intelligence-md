@@ -4,6 +4,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## [Unreleased]
 
+## [0.7.2] – 2026-05-07
+### Added
+- `agenda-intelligence doctor` for local package and MCP self-diagnosis.
+- `agenda-intelligence doctor --json` for machine-readable diagnostics.
+- CI and post-release smoke coverage for the doctor command.
+
 ## [0.7.1] – 2026-05-06
 ### Added
 - `agenda-intelligence mcp-config --client` for generic, Claude Desktop, Cursor, and Codex local MCP config output.

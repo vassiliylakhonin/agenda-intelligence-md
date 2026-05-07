@@ -23,6 +23,7 @@ docs/integrations/codex.md
 docs/integrations/cursor.md
 docs/integrations/mcp.md
 docs/integrations/trading.md
+docs/integrations/verified-mcp.md
 docs/use-cases/founder-operating-context.md
 docs/use-cases/market-risk.md
 docs/use-cases/policy-monitoring.md

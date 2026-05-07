@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: agenda-intelligence-md
-Version: 0.7.1
+Version: 0.7.2
 Summary: A drop-in markdown cognition layer for AI agents that need to analyze public agenda
 Author: Vassiliy Lakhonin
 License-Expression: MIT
@@ -84,6 +84,9 @@ agenda-intelligence score examples/agenda-brief.json --evidence examples/source/
 agenda-intelligence mcp-config
 agenda-intelligence mcp-config --client cursor
 agenda-intelligence mcp-config --client codex
+
+# Optional: diagnose the local install and MCP tool surface
+agenda-intelligence doctor
 ```
 
 Expected scoring output:
@@ -120,7 +123,7 @@ See [`docs/integrations/agent-instruction-block.md`](docs/integrations/agent-ins
 
 ```bash
 # From GitHub Release
-pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.7.1/agenda_intelligence_md-0.7.1-py3-none-any.whl
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.7.2/agenda_intelligence_md-0.7.2-py3-none-any.whl
 
 # Editable install from source
 git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
@@ -201,6 +204,7 @@ agenda-intelligence score examples/before-after/eu-ai-act.md
 - **Brief scoring** – `score examples/agenda-brief.json` returns a heuristic 0-100 structural quality score; add `--evidence` for claim-level evidence feedback.
 - **Evaluation toolkit** – `evals/rubric.md`, `evals/llm_judge_prompt.txt`, `evals/human_checklist.md`, `evals/cases/*.json`.
 - **MCP stdio server** – `agenda-intelligence-mcp` exposes `validate_brief`, `validate_evidence`, `get_protocol`, `list_lenses`, `get_lens`, `source_plan`, `score_output`.
+- **Self-diagnosis** – `doctor` checks local package assets, MCP config output, and MCP `tools/list`.
 
 ### 🧪 Experimental / Planned
 - **MCP HTTP/WebSocket transport** – stdio is available; HTTP/WebSocket transport remains on the roadmap (`docs/integrations/mcp.md`).
@@ -230,6 +234,7 @@ agenda-intelligence score examples/before-after/eu-ai-act.md
 | **Evaluation assets** | [`evals/`](evals/) – rubric, LLM judge prompt, human checklist, sample cases |
 | **Use‑cases** | [`docs/use-cases/`](docs/use-cases/) – policy monitoring, sanctions compliance, market risk, founder context |
 | **Integrations** | [`docs/integrations/`](docs/integrations/) – Claude Code, OpenAI Codex, Cursor, MCP |
+| **Verified MCP setup** | [`docs/integrations/verified-mcp.md`](docs/integrations/verified-mcp.md) – smoke prompts and troubleshooting |
 | **Release maintenance** | [`docs/release.md`](docs/release.md) |
 | **Roadmap** | [`ROADMAP.md`](ROADMAP.md) |
 | **Changelog** | [`CHANGELOG.md`](CHANGELOG.md) |

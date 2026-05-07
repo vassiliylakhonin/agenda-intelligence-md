@@ -28,6 +28,8 @@ agenda-intelligence mcp-config --client codex
 4. Run the local smoke tests:
 
 ```bash
+agenda-intelligence doctor
+agenda-intelligence doctor --json
 python3 scripts/smoke_mcp_config.py --command agenda-intelligence
 python3 scripts/smoke_mcp.py --command agenda-intelligence-mcp
 ```
@@ -126,6 +128,18 @@ Restart Codex after editing `config.toml`.
 
 Restart or reload the client, then ask it to list tools. If the list is still
 empty, run:
+
+```bash
+agenda-intelligence doctor
+```
+
+For machine-readable output:
+
+```bash
+agenda-intelligence doctor --json
+```
+
+You can also start the raw server:
 
 ```bash
 agenda-intelligence-mcp

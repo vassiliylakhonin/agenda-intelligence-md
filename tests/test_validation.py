@@ -57,6 +57,29 @@ def test_mcp_config_prints_codex_toml_config():
     assert "enabled = true" in res.stdout
 
 
+def test_doctor_json_reports_checks():
+    res = run_cli(["doctor", "--json", "--mcp-command", f"{sys.executable} -m agenda_intelligence.mcp_stdio"])
+    assert res.returncode == 0
+    data = json.loads(res.stdout)
+    assert data["version"] == agenda_intelligence.__version__
+    assert {check["name"] for check in data["checks"]} >= {
+        "package version",
+        "packaged manifest",
+        "mcp-config generic",
+        "mcp-config codex",
+        "mcp command",
+        "mcp tools/list",
+    }
+
+
+def test_doctor_human_output_includes_checklist():
+    res = run_cli(["doctor", "--mcp-command", f"{sys.executable} -m agenda_intelligence.mcp_stdio"])
+    assert res.returncode == 0
+    assert "Agenda Intelligence doctor:" in res.stdout
+    assert "package version" in res.stdout
+    assert "mcp tools/list" in res.stdout
+
+
 def test_validate_brief_valid():
     path = FIXTURES / "valid-agenda-brief.json"
     res = run_cli(["validate-brief", str(path)])

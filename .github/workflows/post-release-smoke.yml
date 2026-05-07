@@ -75,6 +75,7 @@ jobs:
           .smoke-venv/bin/agenda-intelligence validate-brief examples/agenda-brief.json
           .smoke-venv/bin/agenda-intelligence validate-evidence examples/source/evidence-pack.json
           .smoke-venv/bin/agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
+          .smoke-venv/bin/agenda-intelligence doctor --strict
 
       - name: Verify MCP stdio server
         shell: bash

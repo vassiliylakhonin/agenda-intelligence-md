@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import shlex
+import shutil
+import subprocess
 import sys
 from importlib import resources
 from pathlib import Path
@@ -240,23 +243,19 @@ def cmd_fetch(args):
         raise SystemExit("Provide --category or --brief")
 
 
-def cmd_mcp_config(args):
-    client = args.client
+def render_mcp_config(client: str) -> str:
     if client == "codex":
-        print(
-            "\n".join(
-                [
-                    "[mcp_servers.agenda-intelligence]",
-                    'command = "agenda-intelligence-mcp"',
-                    "enabled = true",
-                    "startup_timeout_sec = 10",
-                    "tool_timeout_sec = 30",
-                ]
-            )
+        return "\n".join(
+            [
+                "[mcp_servers.agenda-intelligence]",
+                'command = "agenda-intelligence-mcp"',
+                "enabled = true",
+                "startup_timeout_sec = 10",
+                "tool_timeout_sec = 30",
+            ]
         )
-        return
 
-    server_config = {"command": "agenda-intelligence-mcp"}
+    server_config: dict[str, object] = {"command": "agenda-intelligence-mcp"}
     if client in {"claude-desktop", "cursor"}:
         server_config = {
             "type": "stdio",
@@ -265,7 +264,118 @@ def cmd_mcp_config(args):
             "env": {},
         }
     config = {"mcpServers": {"agenda-intelligence": server_config}}
-    print(json.dumps(config, indent=2))
+    return json.dumps(config, indent=2)
+
+
+def cmd_mcp_config(args):
+    print(render_mcp_config(args.client))
+
+
+def _doctor_check(name, ok, detail):
+    return {"name": name, "ok": bool(ok), "detail": detail}
+
+
+def _doctor_manifest_check():
+    try:
+        manifest = load_manifest()
+        schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "agent-manifest.schema.json"
+        schema = json.loads(schema_path.read_text())
+        validate(manifest, schema)
+        return _doctor_check("packaged manifest", True, f"version={manifest.get('version')}")
+    except Exception as exc:
+        return _doctor_check("packaged manifest", False, str(exc))
+
+
+def _doctor_mcp_config_checks():
+    checks = []
+    for client in ["generic", "claude-desktop", "cursor", "codex"]:
+        try:
+            if client == "codex":
+                output = render_mcp_config(client)
+                ok = "[mcp_servers.agenda-intelligence]" in output and 'command = "agenda-intelligence-mcp"' in output
+            else:
+                data = json.loads(render_mcp_config(client))
+                ok = data["mcpServers"]["agenda-intelligence"]["command"] == "agenda-intelligence-mcp"
+            checks.append(_doctor_check(f"mcp-config {client}", ok, "prints expected config"))
+        except Exception as exc:
+            checks.append(_doctor_check(f"mcp-config {client}", False, str(exc)))
+    return checks
+
+
+def _doctor_command_check(command):
+    parts = shlex.split(command)
+    if not parts:
+        return _doctor_check("mcp command", False, "empty command")
+    executable = parts[0]
+    if shutil.which(executable) is None:
+        return _doctor_check("mcp command", False, f"{executable} not found on PATH")
+    return _doctor_check("mcp command", True, command)
+
+
+def _doctor_mcp_tools_check(command):
+    expected_tools = {
+        "validate_brief",
+        "validate_evidence",
+        "get_protocol",
+        "list_lenses",
+        "get_lens",
+        "source_plan",
+        "score_output",
+    }
+    requests = [
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "doctor"}},
+        },
+        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+    ]
+    stdin = "\n".join(json.dumps(request) for request in requests) + "\n"
+    try:
+        result = subprocess.run(
+            shlex.split(command),
+            input=stdin,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+    except Exception as exc:
+        return _doctor_check("mcp tools/list", False, str(exc))
+    if result.returncode != 0:
+        return _doctor_check("mcp tools/list", False, result.stderr.strip() or f"exit={result.returncode}")
+    try:
+        responses = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+        tools = {tool["name"] for tool in responses[-1]["result"]["tools"]}
+    except Exception as exc:
+        return _doctor_check("mcp tools/list", False, f"invalid MCP response: {exc}")
+    missing = sorted(expected_tools - tools)
+    if missing:
+        return _doctor_check("mcp tools/list", False, f"missing tools: {', '.join(missing)}")
+    return _doctor_check("mcp tools/list", True, f"{len(tools)} tools available")
+
+
+def cmd_doctor(args):
+    checks = [
+        _doctor_check("package version", True, __version__),
+        _doctor_manifest_check(),
+        *_doctor_mcp_config_checks(),
+        _doctor_command_check(args.mcp_command),
+        _doctor_mcp_tools_check(args.mcp_command),
+    ]
+    ok = all(check["ok"] for check in checks)
+    payload = {"ok": ok, "version": __version__, "checks": checks}
+    if args.json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"Agenda Intelligence doctor: {'OK' if ok else 'ISSUES FOUND'}")
+        for check in checks:
+            marker = "OK" if check["ok"] else "FAIL"
+            print(f"[{marker}] {check['name']}: {check['detail']}")
+    if not ok and args.strict:
+        raise SystemExit(1)
 
 
 def main():
@@ -335,6 +445,16 @@ def main():
         help="Client config format to print",
     )
     p.set_defaults(func=cmd_mcp_config)
+    # doctor – local install and MCP self-diagnosis
+    p = sub.add_parser("doctor", help="Check local package, MCP config, and MCP tool availability")
+    p.add_argument("--json", action="store_true", help="Print machine-readable JSON")
+    p.add_argument(
+        "--mcp-command",
+        default="agenda-intelligence-mcp",
+        help="MCP server command to test",
+    )
+    p.add_argument("--strict", action="store_true", help="Exit non-zero when any check fails")
+    p.set_defaults(func=cmd_doctor)
 
     args = parser.parse_args()
     args.func(args)
