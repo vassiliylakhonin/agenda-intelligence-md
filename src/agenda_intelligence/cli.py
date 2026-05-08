@@ -269,7 +269,7 @@ def cmd_verify_quotes(args):
         s = unicodedata.normalize("NFKC", s)
         return re.sub(r"\s+", " ", s).strip().lower()
 
-    results: list[dict[str, Any]] = []
+    results: list[dict] = []
     for source in sources:
         quote = source.get("quote")
         if not quote:
