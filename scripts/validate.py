@@ -79,14 +79,16 @@ for token in ["name: agenda-intelligence", "description:", "references/analysis-
 
 readme = (root / "README.md").read_text()
 for token in [
-    "machine-readable Markdown protocol",
+    "Evidence & eval layer for strategic intelligence agents",
+    "What this is",
+    "What this is not",
     "Quickstart",
-    "CLI happy path",
-    "Source Acquisition Layer",
-    "Examples",
     "source-backed/eu-ai-act.md",
-    "Before/after",
+    "Before / after",
     "AnalysisBank",
+    "MCP",
+    "Schemas",
+    "Status",
     "Documentation",
     "Roadmap",
 ]:

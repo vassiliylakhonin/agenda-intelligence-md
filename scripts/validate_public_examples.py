@@ -61,7 +61,7 @@ def validate_examples() -> None:
 
         if path.name.endswith(".evidence.json") or path.name == "evidence-pack.json":
             validate_with_schema(path, evidence_schema, "evidence-pack")
-        elif path.name == "agenda-brief.json":
+        elif path.name == "agenda-brief.json" or path.name.endswith(".brief.json"):
             validate_with_schema(path, brief_schema, "agenda-brief")
         else:
             raise SystemExit(f"No validation rule for public example JSON: {path.relative_to(ROOT)}")

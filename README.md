@@ -74,8 +74,7 @@ agenda-intelligence validate-brief examples/agenda-brief.json
 agenda-intelligence score examples/agenda-brief.json
 
 # 4. Score with evidence-linked feedback
-agenda-intelligence score examples/agenda-brief.json \
-  --evidence examples/source/evidence-pack.json
+agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
 
 # 5. Diagnose local install + MCP tool surface
 agenda-intelligence doctor
@@ -178,10 +177,9 @@ success, non-zero on failure, errors on stderr. Drop them into any CI
 pipeline that produces strategic briefs from agents:
 
 ```bash
-agent-pipeline emit --out brief.json
-agenda-intelligence validate-brief brief.json
-agenda-intelligence validate-evidence evidence.json
-agenda-intelligence score brief.json --evidence evidence.json
+agenda-intelligence validate-brief examples/agenda-brief.json
+agenda-intelligence validate-evidence examples/source/evidence-pack.json
+agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json --min-score 70
 ```
 
 ---
