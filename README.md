@@ -129,7 +129,8 @@ pack used to back each claim.
 agenda-intelligence start <category>            # source plan + brief template
 agenda-intelligence validate-brief <brief.json>
 agenda-intelligence validate-evidence <pack.json>
-agenda-intelligence score <brief.json> [--evidence <pack.json>]
+agenda-intelligence audit-claims <claims.json> [--format json]   # experimental, evidence-audit schema
+agenda-intelligence score <brief.json> [--evidence <pack.json>] [--format json] [--min-score N]
 agenda-intelligence score <before-after.md>
 agenda-intelligence source-plan <category>
 agenda-intelligence list-lenses [--type ...]
@@ -299,6 +300,8 @@ agenda-intelligence-md/
 | Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
 | End-to-end tutorial | [`docs/tutorial.md`](docs/tutorial.md) |
 | Evaluation | [`docs/evaluation.md`](docs/evaluation.md) |
+| Evidence audit (experimental) | [`docs/evidence-audit.md`](docs/evidence-audit.md) |
+| Agent integration sketch | [`docs/integrations/agent-loop.md`](docs/integrations/agent-loop.md) |
 | Use-cases | [`docs/use-cases/`](docs/use-cases/) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |
 | Roadmap | [`ROADMAP.md`](ROADMAP.md) |

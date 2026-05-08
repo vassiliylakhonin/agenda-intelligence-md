@@ -180,7 +180,18 @@ def cmd_score(args):
                 evidence_pack = json.loads(Path(args.evidence).read_text())
                 if not isinstance(evidence_pack, dict):
                     raise SystemExit("Evidence score expects a JSON object")
-            print(format_score(score_brief(data, evidence_pack=evidence_pack)))
+            result = score_brief(data, evidence_pack=evidence_pack)
+            if getattr(args, "format", "text") == "json":
+                print(json.dumps(result, indent=2, ensure_ascii=False))
+            else:
+                print(format_score(result))
+            min_score = getattr(args, "min_score", None)
+            if min_score is not None and result["score"] < min_score:
+                print(
+                    f"FAIL: score {result['score']}/{result['max_score']} below threshold {min_score}",
+                    file=sys.stderr,
+                )
+                raise SystemExit(2)
             return
         if args.evidence:
             raise SystemExit("--evidence can only be used when scoring a JSON brief")
@@ -220,6 +231,64 @@ def cmd_memory_search(args):
         print(json.dumps(results, indent=2, ensure_ascii=False))
     else:
         print(f"No results for query: {args.query}")
+
+
+def cmd_audit_claims(args):
+    """Validate a claim-level evidence-audit JSON file against
+    schemas/evidence-audit.schema.json (experimental) and emit a small
+    summary: support-level distribution, orphan claim_ids, and
+    unsupported_claims count.
+    """
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"Not found: {path}")
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Invalid JSON: {e}")
+
+    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "evidence-audit.schema.json"
+    if not schema_path.is_file():
+        raise SystemExit("evidence-audit schema not bundled")
+    schema = json.loads(schema_path.read_text())
+    try:
+        validate(data, schema)
+    except ValidationError as e:
+        print(f"ERROR: {e.message}", file=sys.stderr)
+        raise SystemExit(1)
+
+    claims = data.get("claims", [])
+    evidence = data.get("evidence", [])
+    evidence_ids = {e["evidence_id"] for e in evidence}
+    levels: dict[str, int] = {}
+    orphans: list[dict] = []
+    for c in claims:
+        levels[c["support_level"]] = levels.get(c["support_level"], 0) + 1
+        missing = [eid for eid in c.get("evidence_ids", []) if eid not in evidence_ids]
+        if missing:
+            orphans.append({"claim_id": c["claim_id"], "missing_evidence_ids": missing})
+
+    summary = {
+        "valid": True,
+        "claim_count": len(claims),
+        "evidence_count": len(evidence),
+        "support_levels": levels,
+        "orphan_evidence_refs": orphans,
+        "unsupported_claims_listed": len(data.get("unsupported_claims", [])),
+        "note": "Claim-level evidence audit is experimental. Schema-level only; does not verify factual truth.",
+    }
+    if args.format == "json":
+        print(json.dumps(summary, indent=2, ensure_ascii=False))
+    else:
+        print(f"OK: evidence audit validates ({len(claims)} claims, {len(evidence)} evidence items)")
+        for level, count in sorted(levels.items()):
+            print(f"  support_level={level}: {count}")
+        if orphans:
+            print(f"WARN: {len(orphans)} claim(s) reference missing evidence_ids:", file=sys.stderr)
+            for o in orphans:
+                print(f"  - {o['claim_id']} -> {o['missing_evidence_ids']}", file=sys.stderr)
+        if data.get("unsupported_claims"):
+            print(f"  unsupported_claims listed: {len(data['unsupported_claims'])}")
 
 
 def cmd_report(args):
@@ -501,7 +570,17 @@ def main():
     p = sub.add_parser("score", help="Score a JSON brief or run the before/after eval harness")
     p.add_argument("path", nargs="?")
     p.add_argument("--evidence", help="Optional evidence-pack JSON for brief scoring")
+    p.add_argument("--format", choices=["text", "json"], default="text", help="Output format for JSON-brief scoring")
+    p.add_argument("--min-score", type=int, help="Exit with code 2 if total score is below this threshold")
     p.set_defaults(func=cmd_score)
+    # audit-claims (experimental: claim-level evidence audit)
+    p = sub.add_parser(
+        "audit-claims",
+        help="Validate a claim-level evidence-audit JSON file (experimental)",
+    )
+    p.add_argument("path")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.set_defaults(func=cmd_audit_claims)
     # start – guided workflow for new analysis
     p = sub.add_parser("start", help="Guided start for a new agenda analysis")
     p.add_argument("category", help="Source category (e.g., conflict-security)")
