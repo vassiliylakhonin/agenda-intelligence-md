@@ -9,9 +9,23 @@
 ```bash
 git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
 cd agenda-intelligence-md
-pip install -e ".[dev]"
+make install                  # editable install + lint/type tooling
+bash scripts/install-hooks.sh # optional: pre-push hook running `make ci-fast`
 pytest
 ```
+
+## Pre-push gate
+`make ci-fast` mirrors the GitHub `Lint` and `CI` workflows:
+
+```bash
+make ci-fast   # flake8 + black --check + isort --check + ruff + mypy + pytest
+make ci        # full surface, also runs CLI smoke + scripts/validate*.py
+make format    # auto-fix black + isort
+```
+
+Run `make ci-fast` (or install the hook) before every push to avoid the
+staircase of fix-CI-fix-CI commits. Bypass the hook in emergencies with
+`git push --no-verify`.
 
 ## Validation Commands
 ```bash
