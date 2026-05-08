@@ -128,9 +128,11 @@ pack used to back each claim.
 agenda-intelligence start <category>            # source plan + brief template
 agenda-intelligence validate-brief <brief.json>
 agenda-intelligence validate-evidence <pack.json>
-agenda-intelligence audit-claims <claims.json> [--format json]   # experimental, evidence-audit schema
+agenda-intelligence audit-claims <claims.json> [--format json] [--strict]   # experimental, evidence-audit schema
 agenda-intelligence score <brief.json> [--evidence <pack.json>] [--format json] [--min-score N]
 agenda-intelligence score <before-after.md>
+agenda-intelligence bench <dir>                  # validate + audit + score across a case directory
+agenda-intelligence verify-quotes <pack.json>    # experimental, local-text mode
 agenda-intelligence source-plan <category>
 agenda-intelligence list-lenses [--type ...]
 agenda-intelligence get-lens <type> <id>

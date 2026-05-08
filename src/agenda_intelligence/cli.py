@@ -233,6 +233,134 @@ def cmd_memory_search(args):
         print(f"No results for query: {args.query}")
 
 
+def cmd_verify_quotes(args):
+    """Verify that quoted fragments cited in an evidence pack are actually
+    present in the corresponding local source text.
+
+    Scope: this command answers *only* "is the cited quote present in the
+    source text?" — not "is the claim true?" and not "is the source
+    reputable?". Network fetching is intentionally not implemented yet.
+
+    Input: an evidence pack JSON file. Each source may carry a `quote`
+    field. If `quote` is missing for a source, that source is skipped.
+
+    Source text lookup, in order:
+    - --texts-dir <dir>/<evidence_id>.txt (preferred)
+    - --texts-dir <dir>/<source name slugified>.txt
+    """
+    import re
+    import unicodedata
+
+    pack_path = Path(args.path)
+    if not pack_path.is_file():
+        raise SystemExit(f"Not found: {pack_path}")
+    pack = json.loads(pack_path.read_text())
+    sources = pack.get("sources") or pack.get("evidence") or []
+    if not sources:
+        raise SystemExit("No 'sources' or 'evidence' array found in pack")
+
+    texts_dir = Path(args.texts_dir) if args.texts_dir else pack_path.parent / "evidence_text"
+
+    def _slugify(name: str) -> str:
+        s = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+        return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
+
+    def _normalize(s: str) -> str:
+        s = unicodedata.normalize("NFKC", s)
+        return re.sub(r"\s+", " ", s).strip().lower()
+
+    results: list[dict[str, Any]] = []
+    for source in sources:
+        quote = source.get("quote")
+        if not quote:
+            continue
+        ident = source.get("evidence_id") or _slugify(source.get("name", "source"))
+        candidates = [texts_dir / f"{ident}.txt"]
+        if "name" in source:
+            candidates.append(texts_dir / f"{_slugify(source['name'])}.txt")
+        text_path = next((p for p in candidates if p.is_file()), None)
+        if text_path is None:
+            results.append({
+                "id": ident,
+                "status": "missing_source_text",
+                "looked_in": [str(p) for p in candidates],
+            })
+            continue
+        text = _normalize(text_path.read_text(encoding="utf-8"))
+        match = _normalize(quote) in text
+        results.append({
+            "id": ident,
+            "status": "present" if match else "absent",
+            "source_text": str(text_path),
+        })
+
+    summary = {
+        "total_quotes": len(results),
+        "present": sum(1 for r in results if r["status"] == "present"),
+        "absent": sum(1 for r in results if r["status"] == "absent"),
+        "missing_source_text": sum(1 for r in results if r["status"] == "missing_source_text"),
+        "note": "Local-text-mode only. Verifies presence of cited fragment in source text. Does not verify factual truth.",
+    }
+    if args.format == "json":
+        print(json.dumps({"summary": summary, "results": results}, indent=2, ensure_ascii=False))
+    else:
+        print(f"quotes checked: {summary['total_quotes']}")
+        print(f"  present: {summary['present']}")
+        print(f"  absent: {summary['absent']}")
+        print(f"  missing source text: {summary['missing_source_text']}")
+        for r in results:
+            print(f"  - {r['id']}: {r['status']}")
+        print(f"note: {summary['note']}")
+    if args.strict and (summary["absent"] or summary["missing_source_text"]):
+        raise SystemExit(1)
+
+
+def cmd_bench(args):
+    """Run schema validation, evidence audit, and heuristic scoring across
+    a directory of cases. Each case is a `<name>.brief.json` with optional
+    sibling `<name>.evidence.json` and `<name>.audit.json`.
+
+    Output: Markdown report (default) or JSON with --format json.
+    No LLM calls; deterministic given the input files.
+    """
+    from agenda_intelligence.bench import (
+        discover_cases,
+        render_markdown,
+        run_case,
+        summarize,
+        to_json,
+    )
+
+    root = Path(args.path)
+    if not root.is_dir():
+        raise SystemExit(f"Not a directory: {root}")
+    cases = discover_cases(root)
+    if not cases:
+        raise SystemExit(f"No *.brief.json files found under {root}")
+
+    results = [run_case(c["brief"], c["evidence"], c["audit"]) for c in cases]
+    summary = summarize(results)
+
+    if args.format == "json":
+        print(json.dumps(to_json(results, summary), indent=2, ensure_ascii=False))
+    else:
+        print(render_markdown(results, summary))
+
+    if args.min_score is not None and summary.get("mean_score") is not None:
+        if summary["mean_score"] < args.min_score:
+            print(
+                f"FAIL: mean score {summary['mean_score']} below threshold {args.min_score}",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
+    if args.strict and summary.get("audit_orphan_total"):
+        print(
+            f"FAIL: {summary['audit_orphan_total']} orphan evidence_id ref(s) in claim-level audits",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+
 def cmd_audit_claims(args):
     """Validate a claim-level evidence-audit JSON file against
     schemas/evidence-audit.schema.json (experimental) and emit a small
@@ -289,6 +417,8 @@ def cmd_audit_claims(args):
                 print(f"  - {o['claim_id']} -> {o['missing_evidence_ids']}", file=sys.stderr)
         if data.get("unsupported_claims"):
             print(f"  unsupported_claims listed: {len(data['unsupported_claims'])}")
+    if args.strict and orphans:
+        raise SystemExit(1)
 
 
 def cmd_report(args):
@@ -580,7 +710,28 @@ def main():
     )
     p.add_argument("path")
     p.add_argument("--format", choices=["text", "json"], default="text")
+    p.add_argument("--strict", action="store_true", help="Exit 1 on orphan evidence_id refs")
     p.set_defaults(func=cmd_audit_claims)
+    # bench
+    p = sub.add_parser(
+        "bench",
+        help="Run validate + audit + score across a directory of *.brief.json cases",
+    )
+    p.add_argument("path", help="Directory containing <name>.brief.json [+ .evidence.json, .audit.json]")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.add_argument("--min-score", type=int, help="Exit 2 if mean score below this threshold")
+    p.add_argument("--strict", action="store_true", help="Exit 1 on any audit orphan ref")
+    p.set_defaults(func=cmd_bench)
+    # verify-quotes (experimental, local-text mode)
+    p = sub.add_parser(
+        "verify-quotes",
+        help="Verify cited quotes in an evidence pack against local source texts (experimental)",
+    )
+    p.add_argument("path", help="Evidence pack JSON file with optional 'quote' fields per source")
+    p.add_argument("--texts-dir", help="Directory with <evidence_id>.txt source texts (default: <pack_dir>/evidence_text)")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.add_argument("--strict", action="store_true", help="Exit 1 on any absent or missing source text")
+    p.set_defaults(func=cmd_verify_quotes)
     # start – guided workflow for new analysis
     p = sub.add_parser("start", help="Guided start for a new agenda analysis")
     p.add_argument("category", help="Source category (e.g., conflict-security)")
