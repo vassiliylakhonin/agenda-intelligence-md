@@ -121,11 +121,21 @@ def run_case(brief: Path, evidence: Path | None, audit: Path | None) -> CaseResu
         score = result["score"]
         breakdown = {k: v["score"] for k, v in result["dimensions"].items()}
 
+    cwd = Path.cwd()
+
+    def _rel(p: Path | None) -> str | None:
+        if p is None:
+            return None
+        try:
+            return str(p.resolve().relative_to(cwd))
+        except ValueError:
+            return str(p)
+
     return CaseResult(
         case=brief.stem.replace(".brief", ""),
-        brief_path=str(brief),
-        evidence_path=str(evidence) if evidence else None,
-        audit_path=str(audit) if audit else None,
+        brief_path=_rel(brief) or str(brief),
+        evidence_path=_rel(evidence),
+        audit_path=_rel(audit),
         schema_valid=schema_valid,
         schema_error=schema_err,
         evidence_valid=evidence_valid,

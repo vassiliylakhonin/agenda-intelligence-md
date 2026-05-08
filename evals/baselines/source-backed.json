@@ -13,9 +13,9 @@
   "cases": [
     {
       "case": "eu-ai-act",
-      "brief_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/eu-ai-act.brief.json",
-      "evidence_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/eu-ai-act.evidence.json",
-      "audit_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/eu-ai-act.audit.json",
+      "brief_path": "examples/source-backed/eu-ai-act.brief.json",
+      "evidence_path": "examples/source-backed/eu-ai-act.evidence.json",
+      "audit_path": "examples/source-backed/eu-ai-act.audit.json",
       "schema_valid": true,
       "schema_error": null,
       "evidence_valid": true,
@@ -34,9 +34,9 @@
     },
     {
       "case": "red-sea-shipping",
-      "brief_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/red-sea-shipping.brief.json",
-      "evidence_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/red-sea-shipping.evidence.json",
-      "audit_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/red-sea-shipping.audit.json",
+      "brief_path": "examples/source-backed/red-sea-shipping.brief.json",
+      "evidence_path": "examples/source-backed/red-sea-shipping.evidence.json",
+      "audit_path": "examples/source-backed/red-sea-shipping.audit.json",
       "schema_valid": true,
       "schema_error": null,
       "evidence_valid": true,
@@ -55,9 +55,9 @@
     },
     {
       "case": "sanctions-routing",
-      "brief_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/sanctions-routing.brief.json",
-      "evidence_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/sanctions-routing.evidence.json",
-      "audit_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/sanctions-routing.audit.json",
+      "brief_path": "examples/source-backed/sanctions-routing.brief.json",
+      "evidence_path": "examples/source-backed/sanctions-routing.evidence.json",
+      "audit_path": "examples/source-backed/sanctions-routing.audit.json",
       "schema_valid": true,
       "schema_error": null,
       "evidence_valid": true,
