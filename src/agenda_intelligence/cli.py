@@ -299,7 +299,10 @@ def cmd_verify_quotes(args):
         "present": sum(1 for r in results if r["status"] == "present"),
         "absent": sum(1 for r in results if r["status"] == "absent"),
         "missing_source_text": sum(1 for r in results if r["status"] == "missing_source_text"),
-        "note": "Local-text-mode only. Verifies presence of cited fragment in source text. Does not verify factual truth.",
+        "note": (
+            "Local-text-mode only. Verifies presence of cited fragment in source text. "
+            "Does not verify factual truth."
+        ),
     }
     if args.format == "json":
         print(json.dumps({"summary": summary, "results": results}, indent=2, ensure_ascii=False))
@@ -728,7 +731,10 @@ def main():
         help="Verify cited quotes in an evidence pack against local source texts (experimental)",
     )
     p.add_argument("path", help="Evidence pack JSON file with optional 'quote' fields per source")
-    p.add_argument("--texts-dir", help="Directory with <evidence_id>.txt source texts (default: <pack_dir>/evidence_text)")
+    p.add_argument(
+        "--texts-dir",
+        help="Directory with <evidence_id>.txt source texts (default: <pack_dir>/evidence_text)",
+    )
     p.add_argument("--format", choices=["text", "json"], default="text")
     p.add_argument("--strict", action="store_true", help="Exit 1 on any absent or missing source text")
     p.set_defaults(func=cmd_verify_quotes)
