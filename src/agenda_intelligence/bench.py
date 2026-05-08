@@ -74,9 +74,9 @@ def _audit_orphans(audit: dict) -> int:
     return count
 
 
-def discover_cases(root: Path) -> list[dict[str, Path]]:
+def discover_cases(root: Path) -> list[dict[str, Any]]:
     """Find brief.json files and pair them with sibling evidence/audit files."""
-    cases: list[dict[str, Path]] = []
+    cases: list[dict[str, Any]] = []
     for brief in sorted(root.rglob("*.brief.json")):
         stem = brief.name[: -len(".brief.json")]
         parent = brief.parent
