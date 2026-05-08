@@ -37,6 +37,6 @@ def test_every_top_level_schema_is_packaged():
 def test_schema_byte_equal(name: str):
     top = _read(TOP_LEVEL / name)
     pkg = _read(PACKAGED / name)
-    assert json.loads(top) == json.loads(pkg), (
-        f"schemas/{name} and src/agenda_intelligence/data/schemas/{name} diverged"
-    )
+    assert json.loads(top) == json.loads(
+        pkg
+    ), f"schemas/{name} and src/agenda_intelligence/data/schemas/{name} diverged"

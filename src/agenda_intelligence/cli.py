@@ -280,19 +280,23 @@ def cmd_verify_quotes(args):
             candidates.append(texts_dir / f"{_slugify(source['name'])}.txt")
         text_path = next((p for p in candidates if p.is_file()), None)
         if text_path is None:
-            results.append({
-                "id": ident,
-                "status": "missing_source_text",
-                "looked_in": [str(p) for p in candidates],
-            })
+            results.append(
+                {
+                    "id": ident,
+                    "status": "missing_source_text",
+                    "looked_in": [str(p) for p in candidates],
+                }
+            )
             continue
         text = _normalize(text_path.read_text(encoding="utf-8"))
         match = _normalize(quote) in text
-        results.append({
-            "id": ident,
-            "status": "present" if match else "absent",
-            "source_text": str(text_path),
-        })
+        results.append(
+            {
+                "id": ident,
+                "status": "present" if match else "absent",
+                "source_text": str(text_path),
+            }
+        )
 
     summary = {
         "total_quotes": len(results),

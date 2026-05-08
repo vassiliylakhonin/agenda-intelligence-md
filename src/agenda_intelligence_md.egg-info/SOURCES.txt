@@ -13,11 +13,13 @@ analysis-bank/prompts/induce-success-memory.md
 analysis-bank/successes/sanctions-routing-signal-classification.md
 docs/DEMO.md
 docs/evaluation.md
+docs/evidence-audit.md
 docs/quickstart.md
 docs/release.md
 docs/tutorial.md
 docs/integrations/README.md
 docs/integrations/agent-instruction-block.md
+docs/integrations/agent-loop.md
 docs/integrations/claude-code.md
 docs/integrations/codex.md
 docs/integrations/cursor.md
@@ -45,6 +47,7 @@ examples/source-backed/eu-ai-act.md
 examples/source-backed/red-sea-shipping.md
 examples/source-backed/sanctions-routing.md
 schemas/agenda-brief.schema.json
+schemas/evidence-audit.schema.json
 schemas/evidence-pack.schema.json
 schemas/lens-manifest.schema.json
 schemas/memory-card.schema.json
@@ -71,10 +74,16 @@ source-requirements/supply-chain-resilience.json
 source-requirements/technology-ai.json
 source-requirements/trade.json
 src/agenda_intelligence/__init__.py
+src/agenda_intelligence/bench.py
 src/agenda_intelligence/cli.py
 src/agenda_intelligence/eval.py
 src/agenda_intelligence/mcp_server.py
 src/agenda_intelligence/mcp_stdio.py
+src/agenda_intelligence/__pycache__/__init__.cpython-314.pyc
+src/agenda_intelligence/__pycache__/cli.cpython-314.pyc
+src/agenda_intelligence/__pycache__/eval.cpython-314.pyc
+src/agenda_intelligence/__pycache__/mcp_server.cpython-314.pyc
+src/agenda_intelligence/__pycache__/mcp_stdio.cpython-314.pyc
 src/agenda_intelligence/data/Agenda-Intelligence.md
 src/agenda_intelligence/data/SOURCE_POLICY.md
 src/agenda_intelligence/data/agent-manifest.json
@@ -82,6 +91,7 @@ src/agenda_intelligence/data/llms.txt
 src/agenda_intelligence/data/source-taxonomy.json
 src/agenda_intelligence/data/schemas/agenda-brief.schema.json
 src/agenda_intelligence/data/schemas/agent-manifest.schema.json
+src/agenda_intelligence/data/schemas/evidence-audit.schema.json
 src/agenda_intelligence/data/schemas/evidence-pack.schema.json
 src/agenda_intelligence/data/schemas/lens-manifest.schema.json
 src/agenda_intelligence/data/schemas/memory-card.schema.json
@@ -118,4 +128,5 @@ tests/test_legacy_wrapper.py
 tests/test_lens_packs.py
 tests/test_mcp_server.py
 tests/test_package_consistency.py
+tests/test_schema_sync.py
 tests/test_validation.py

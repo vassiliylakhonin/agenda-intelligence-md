@@ -23,70 +23,87 @@ Dynamic: license-file
 
 # Agenda Intelligence MD
 
+**Evidence & eval layer for strategic intelligence agents.**
+
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI Status](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions)
-[![GitHub stars](https://img.shields.io/github/stars/vassiliylakhonin/agenda-intelligence-md?style=flat-square)](https://github.com/vassiliylakhonin/agenda-intelligence-md/stargazers)
 
-**A machine-readable Markdown protocol and CLI toolkit that turns news scanning into decision-ready agenda analysis.**
+A protocol, JSON-schema set, CLI, and MCP-compatible toolkit that helps AI agents
+move from unsupported summaries to **auditable strategic-risk briefs**:
 
-> **Bottom line:** agents using this protocol move from *“monitor developments”* to *“watch these 3 indicators; if X happens, decision Y becomes urgent.”*
+- what changed
+- why it matters
+- what is evidence-backed
+- what is uncertain
+- who gains or loses leverage
+- what scenarios are plausible
+- what to watch next
 
----
-
-## Why this exists
-
-Most LLM news workflows summarize what happened. Agenda Intelligence asks the harder operational questions: what changed, whether it is noise or signal, who gains leverage, what evidence supports the claim, what remains uncertain, and what to watch next.
-
-It is useful when an agent needs to reason about public agenda rather than produce a generic brief: policy, sanctions, regulation, geopolitics, energy, elections, markets, and strategic risk.
-
-## Who it is for
-
-- **Policy analysts & think‑tanks** – structured monitoring of regulatory and geopolitical signals.
-- **Sanctions & compliance teams** – evidence‑backed briefs that satisfy audit requirements.
-- **Market‑risk analysts** – concise impact snapshots for faster investment decisions.
-- **Founders & operators** – external chaos turned into clear strategic inputs.
-- **AI agents** – any LLM‑based system that needs to analyze public agenda without drifting into generic summaries.
+It is built for engineers shipping policy, sanctions, regulation,
+geopolitical-risk, market-risk, and strategic-intelligence agents — where the
+output has to survive review by an analyst, not just sound plausible.
 
 ---
 
-## Before / after
+## What this is
 
-```text
-Before: "The regulator announced new AI guidance. Companies should monitor developments."
+- **Markdown protocol** (`Agenda-Intelligence.md`) — a structured reasoning
+  workflow agents can follow.
+- **JSON schemas** — validate brief structure, evidence packs, memory cards,
+  lens manifests.
+- **CLI checks** — `validate-brief`, `validate-evidence`, `score`, `doctor`
+  for CI-style validation of agent output.
+- **MCP server** — a real stdio MCP server (`agenda-intelligence-mcp`)
+  exposing the validation, read, and scoring tools.
+- **Eval starter kit** — rubric, LLM-judge prompt, human checklist, sample
+  cases, benchmark seed.
+- **Source / evidence policy** — explicit rules for claim-level discipline.
+- **Regional & sector lenses** — compact reference packs inside the protocol
+  (Central Asia & Caspian, Middle East, EU; sanctions, export controls). For
+  deep regional analysis, see the dedicated [vertical specialist skill](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill).
 
-After:
-- Signal classification: compliance-relevant development
-- What changed: policy discussion moved toward implementation detail
-- Main uncertainty: whether guidance becomes the practical enforcement baseline
-- Watch next: regulator guidance, first enforcement action, compliance deadline
-- Evidence status: source-backed / reasoning-only / unsupported claims separated
-```
+## What this is not
 
-See `examples/before-after/` and `examples/source-backed/` for full examples.
+- **Not a factuality verifier.** It does not check whether claims are *true*.
+  It checks whether they are *structurally sound, evidence-labeled, and
+  decision-shaped*.
+- **Not an autonomous news agent.** It does not crawl, retrieve, or rank
+  sources by itself.
+- **Not a source retriever.** Live retrieval is not implemented.
+- **Not a replacement for analyst judgment.** Pass/fail signals tell you
+  *form*, not *substance*.
+- **Not a guarantee of correctness.** It surfaces missing evidence and
+  uncertainty hooks; it does not guarantee them.
+- **Not a mature benchmark suite yet.** The benchmark seed in
+  `evals/benchmark_set.json` is a starting point, not validated results.
 
 ---
 
-## Quickstart
+## 60-second quickstart
 
 ```bash
-# 1. Install
+# From PyPI
 pip install agenda-intelligence-md
+# Or pinned wheel:
+# pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.7.2/agenda_intelligence_md-0.7.2-py3-none-any.whl
 
-# 2. Start with a source category
+# 1. Get a source plan for a domain
 agenda-intelligence start technology-ai
 
-# 3. Validate and score a source-aware brief
+# 2. Validate an agent-produced brief against the schema
 agenda-intelligence validate-brief examples/agenda-brief.json
+
+# 3. Score the brief (heuristic 0-100 structural rubric)
+agenda-intelligence score examples/agenda-brief.json
+
+# 4. Score with evidence-linked feedback
 agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
 
-# Optional: print local MCP client config
-agenda-intelligence mcp-config
-agenda-intelligence mcp-config --client cursor
-agenda-intelligence mcp-config --client codex
-
-# Optional: diagnose the local install and MCP tool surface
+# 5. Diagnose local install + MCP tool surface
 agenda-intelligence doctor
+
+# 6. Print local MCP client config
+agenda-intelligence mcp-config --client cursor
 ```
 
 Expected scoring output:
@@ -97,191 +114,220 @@ note: Heuristic structural/evidence-discipline score; does not verify factual tr
 evidence_support: ... claims supported: 1/1 supported ...
 ```
 
-Proof points in this repo:
+---
 
-- `schemas/` validates agenda briefs, evidence packs, memory cards, lenses, and signal classification.
-- `SOURCE_POLICY.md` defines the evidence discipline and overclaiming guardrails.
-- `examples/source-backed/` shows evidence-mode-aware briefs.
-- `docs/evaluation.md` describes the evaluation rubric, judge prompt, and regression checks.
-- CI runs validation, scoring, schema checks, and public example smoke tests.
+## Flagship example: EU AI Act
 
-## Agent instruction block
+A weak baseline summary vs. an Agenda-Intelligence-MD brief, plus the evidence
+pack used to back each claim.
 
-Copy this into an agent system prompt, project instructions file, or tool-specific rule block:
+- Brief: [`examples/source-backed/eu-ai-act.md`](examples/source-backed/eu-ai-act.md)
+- Schema-valid JSON brief: [`examples/source-backed/eu-ai-act.brief.json`](examples/source-backed/eu-ai-act.brief.json)
+- Evidence pack (illustrative — placeholder URLs, not live citations):
+  [`examples/source-backed/eu-ai-act.evidence.json`](examples/source-backed/eu-ai-act.evidence.json)
+- Before/after pair: [`examples/before-after/`](examples/before-after/)
 
-```md
-When the task involves news, policy, regulation, sanctions, geopolitics, trade, energy, elections, conflicts, markets, or strategic risk, use Agenda-Intelligence.md.
+> The evidence URLs in flagship examples are **illustrative placeholders**.
+> The point is the *shape* of evidence-backed reasoning, not live citations.
 
-Do not summarize by default. Classify the signal, identify what changed, separate fact from assessment, name assumptions and unknowns, explain who gains or loses leverage, and end with watch-next indicators.
+### Before / after (sketch)
 
-Use SOURCE_POLICY.md and source-requirements/<category>.json before making high-stakes claims. Never imply live verification unless live verification was performed. If evidence is missing, label the claim as unsupported or reasoning-only.
-```
-
-See [`docs/integrations/agent-instruction-block.md`](docs/integrations/agent-instruction-block.md) for a fuller copy-paste block.
-
-### Other install modes
-
-```bash
-# From GitHub Release
-pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.7.2/agenda_intelligence_md-0.7.2-py3-none-any.whl
-
-# Editable install from source
-git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
-cd agenda-intelligence-md
-pip install -e .
-```
+| | Baseline LLM | Agenda-Intelligence-MD |
+|---|---|---|
+| Output shape | Free-text summary | Schema-valid brief |
+| Claims | Implicit | Explicit, classified |
+| Evidence | Mixed in / absent | Separate evidence pack |
+| Uncertainty | Often missing | Required field |
+| Watch-next | Often missing | Required, ≥1 indicator |
+| Schema validation | N/A | `validate-brief` pass/fail |
+| Evidence audit | N/A | `validate-evidence` pass/fail |
+| Heuristic score | N/A | `score` 0–100 |
 
 ---
 
-## CLI happy path (aha‑moment in 5‑10 min)
+## CLI
 
-The **`start`** command is the primary onboarding entry‑point. It prints a trimmed source plan, a brief template, and next commands.
-
-```bash
-# 1. Onboard with a source category
-agenda-intelligence start technology-ai
-
-# Output: trimmed source plan + brief template + next commands
-
-# 2. Validate a bundled example brief
-agenda-intelligence validate-brief examples/agenda-brief.json
-
-# 3. Score a JSON brief (structural quality check)
-agenda-intelligence score examples/agenda-brief.json
-
-# 4. Add an evidence pack for claim-level evidence discipline
-agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
-
-# 5. Or score a before/after markdown example
-agenda-intelligence score examples/before-after/eu-ai-act.md
-```
-
-> **Scorer status:** the `score` command now scores JSON briefs with a
-> heuristic 0-100 structural rubric, can include an evidence pack for
-> claim-level support feedback, and still supports before/after markdown
-> examples. It does not verify factual truthfulness.
-
-**Demo output** (what you see after `start`):
 ```text
-=== Trimmed source plan ===
-{
-  "must_check": ["tech‑release", "policy‑update", "market‑data"],
-  "watch_indicators": ["regulation draft", "enforcement action"]
-}
+agenda-intelligence start <category>            # source plan + brief template
+agenda-intelligence validate-brief <brief.json>
+agenda-intelligence validate-evidence <pack.json>
+agenda-intelligence audit-claims <claims.json> [--format json]   # experimental, evidence-audit schema
+agenda-intelligence score <brief.json> [--evidence <pack.json>] [--format json] [--min-score N]
+agenda-intelligence score <before-after.md>
+agenda-intelligence source-plan <category>
+agenda-intelligence list-lenses [--type ...]
+agenda-intelligence get-lens <type> <id>
+agenda-intelligence get-protocol <name>
+agenda-intelligence validate-manifest
+agenda-intelligence memory-search <query>
+agenda-intelligence mcp-config [--client cursor|codex|claude-desktop]
+agenda-intelligence doctor [--json]
+agenda-intelligence --version
+```
 
-=== Brief template (fill in) ===
-{
-  "bottom_line": "<summary>",
-  "signal_classification": "<signal>",
-  "what_changed": "<what changed>",
-  "main_uncertainty": "<main uncertainty>",
-  "watch_next": ["<indicator 1>", "<indicator 2>"]
-}
+## MCP
+
+The package ships a real stdio MCP server, `agenda-intelligence-mcp`, plus
+small Python tool functions in `agenda_intelligence.mcp_server`. See
+[`MCP.md`](MCP.md) and [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
+
+Implemented MCP tools:
+- `validate_brief(brief_json)` — schema check
+- `validate_evidence(evidence_json)` — schema check
+- `get_protocol(name)` — return packaged protocol markdown
+- `list_lenses(lens_type=None)` — read from manifest
+- `get_lens(lens_type, lens_id)` — return packaged lens markdown
+- `source_plan(category)` — return source requirements
+- `score_output(...)` — heuristic structure / decision-readiness score
+
+Live source retrieval is **not implemented**.
+
+### Example agent flow
+
+1. Agent receives a policy/risk update.
+2. Agent calls `source_plan` for the relevant category.
+3. Agent drafts a brief in the protocol shape.
+4. Agent calls `validate_brief` and `validate_evidence`.
+5. Agent calls `score_output` for a decision-readiness signal.
+6. Agent returns the brief, with explicit uncertainty and watch-next.
+
+---
+
+## CI / checking concept
+
+`validate-brief` and `validate-evidence` behave like linters: zero exit on
+success, non-zero on failure, errors on stderr. Drop them into any CI
+pipeline that produces strategic briefs from agents:
+
+```bash
+agenda-intelligence validate-brief examples/agenda-brief.json
+agenda-intelligence validate-evidence examples/source/evidence-pack.json
+agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json --min-score 70
 ```
 
 ---
 
-## Protocol · Source Policy · Schemas
+## Architecture
 
-| Layer | Purpose | Status |
-|-------|----------|--------|
-| **Markdown protocol** (`Agenda-Intelligence.md`) | Core reasoning workflow (signal classification, watch‑next, etc.) | ✅ Stable |
-| **Source Acquisition Layer** | Tells the agent *which* source types to check before making claims (sanctions, regulation, elections, conflict, etc.) | ✅ Stable |
-| **JSON schemas** | Validate briefs, evidence packs, memory cards | ✅ Stable |
-| **AnalysisBank** | Memory layer that stores reusable reasoning patterns from good/bad outputs | ✅ Stable |
-| **Regional & Sector lenses** | Central Asia & Caspian, Middle East, EU; sanctions, export controls | ✅ Stable |
-
----
-
-## Stable today vs Experimental
-
-### ✅ Stable today
-- **Markdown protocol** (`Agenda-Intelligence.md`) – core reasoning workflow.
-- **JSON schemas** – validation for briefs, evidence packs, memory cards.
-- **CLI validation** – `validate-brief`, `validate-evidence`, `validate-manifest`.
-- **Source plans** – `source-plan`, `list-source-packs`, `source-types`.
-- **Guided start** – `start` command prints trimmed plan + brief template.
-- **Brief scoring** – `score examples/agenda-brief.json` returns a heuristic 0-100 structural quality score; add `--evidence` for claim-level evidence feedback.
-- **Evaluation toolkit** – `evals/rubric.md`, `evals/llm_judge_prompt.txt`, `evals/human_checklist.md`, `evals/cases/*.json`.
-- **MCP stdio server** – `agenda-intelligence-mcp` exposes `validate_brief`, `validate_evidence`, `get_protocol`, `list_lenses`, `get_lens`, `source_plan`, `score_output`.
-- **Self-diagnosis** – `doctor` checks local package assets, MCP config output, and MCP `tools/list`.
-
-### 🧪 Experimental / Planned
-- **MCP HTTP/WebSocket transport** – stdio is available; HTTP/WebSocket transport remains on the roadmap (`docs/integrations/mcp.md`).
-- **Fetch command** – stub in CLI, full evidence‑pack retrieval not implemented.
-- **Truthfulness evaluation** – not implemented; current scoring checks structure and protocol signals.
-- **Generate‑brief** – not yet exposed; use `start` + manual template fill.
-
-> **Note:** The project is young. Stable parts are ready for production use; experimental bits are usable for testing but may change.
+```mermaid
+flowchart LR
+  Agent[Strategic-intelligence agent] -->|drafts| Brief[Agenda brief JSON]
+  Agent -->|cites| Evidence[Evidence pack JSON]
+  Brief --> Check[validate-brief]
+  Evidence --> Audit[validate-evidence]
+  Brief --> Score[score]
+  Evidence --> Score
+  P[Agenda-Intelligence.md] -.guides.-> Agent
+  L[regional/sector lenses] -.guides.-> Agent
+  S[source requirements] -.guides.-> Agent
+```
 
 ---
 
-## Examples
+## Schemas
 
-- **Source‑backed briefs** (with evidence mode & source plans):  
-  `examples/source-backed/eu-ai-act.md`, `sanctions-routing.md`, `red-sea-shipping.md`
-- **Classic examples:** `examples/hormuz_strait_brief.md`, `eu-brief.md`, `central-asia-caspian-brief.md`
-- **Before/after:** `examples/before-after/` – shows the delta when the protocol is applied.
+| Schema | Purpose |
+|---|---|
+| [`agenda-brief.schema.json`](schemas/agenda-brief.schema.json) | Brief structure |
+| [`evidence-pack.schema.json`](schemas/evidence-pack.schema.json) | Evidence pack structure |
+| [`signal-classification.schema.json`](schemas/signal-classification.schema.json) | Signal taxonomy |
+| [`memory-card.schema.json`](schemas/memory-card.schema.json) | AnalysisBank cards |
+| [`lens-manifest.schema.json`](schemas/lens-manifest.schema.json) | Lens manifest |
+| [`evidence-audit.schema.json`](schemas/evidence-audit.schema.json) | **Experimental** — claim-level evidence audit |
+
+### Evidence audit (experimental)
+
+Each important claim should be traceable:
+
+```json
+{
+  "claim_id": "c1",
+  "claim": "EU AI Act tightens obligations on high-risk systems.",
+  "claim_type": "regulatory_change",
+  "evidence_ids": ["e1", "e2"],
+  "support_level": "direct",
+  "uncertainty": "Enforcement timeline per sector unclear.",
+  "risk_if_wrong": "Compliance plans miss deadline."
+}
+```
+
+`support_level` is one of `direct | partial | weak | unsupported`.
+This schema is **experimental**; not yet wired into `validate-evidence` by default.
 
 ---
+
+## Evals
+
+See [`docs/evaluation.md`](docs/evaluation.md) for the full layer breakdown.
+
+Key honesty rule:
+
+> Current scoring does not verify factual truth. It evaluates structure,
+> completeness, evidence labeling, and decision-readiness signals.
+
+Benchmark numbers are not published yet — do not cite them.
+
+---
+
+## Status
+
+| Component | Status |
+|---|---|
+| Markdown protocol | Stable |
+| JSON schemas (brief, evidence, lens, memory, signal) | Stable |
+| CLI: validate-*, score, start, source-plan, doctor, mcp-config | Stable |
+| Lenses (Central Asia, Middle East, EU; sanctions, export controls) | Stable |
+| MCP stdio server (`agenda-intelligence-mcp`) | Stable |
+| MCP tool functions (validate / read / score) | Stable |
+| Evidence-audit schema (claim-level) | Experimental |
+| Live source retrieval | Not implemented |
+| Benchmark suite results | Not produced yet |
+| Factual-truth verification | Not in scope today |
+
+## Limitations
+
+- No factual verification. The toolkit checks form, not truth.
+- No live source retrieval. Evidence packs are user- or agent-supplied.
+- Scoring is heuristic. The rubric is documented; an LLM-judge prompt is
+  provided; results are not benchmarked yet.
+- Lens coverage is intentionally narrow.
+
+## Contributing eval cases
+
+The most valuable contribution is a *case*: a real public event with a
+baseline agent output, a target brief, and a human checklist. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) and [`evals/cases/`](evals/cases/).
+
+---
+
+## Repository layout
+
+```
+agenda-intelligence-md/
+├─ src/agenda_intelligence/   # Python package (CLI + MCP server + tools)
+├─ schemas/                   # JSON schemas
+├─ examples/                  # briefs, evidence packs, before/after
+├─ analysis-bank/             # reusable reasoning patterns (memory cards)
+├─ evals/                     # rubric, judge prompt, checklist, cases
+├─ docs/                      # guides, integrations, use-cases
+├─ skills/agenda-intelligence/# OpenClaw skill wrapper
+└─ tests/                     # pytest suite
+```
 
 ## Documentation
 
 | Resource | Link |
-|----------|------|
-| **Quickstart** | [`docs/quickstart.md`](docs/quickstart.md) |
-| **End‑to‑end tutorial** | [`docs/tutorial.md`](docs/tutorial.md) |
-| **Evaluation assets** | [`evals/`](evals/) – rubric, LLM judge prompt, human checklist, sample cases |
-| **Use‑cases** | [`docs/use-cases/`](docs/use-cases/) – policy monitoring, sanctions compliance, market risk, founder context |
-| **Integrations** | [`docs/integrations/`](docs/integrations/) – Claude Code, OpenAI Codex, Cursor, MCP |
-| **Verified MCP setup** | [`docs/integrations/verified-mcp.md`](docs/integrations/verified-mcp.md) – smoke prompts and troubleshooting |
-| **Release maintenance** | [`docs/release.md`](docs/release.md) |
-| **Roadmap** | [`ROADMAP.md`](ROADMAP.md) |
-| **Changelog** | [`CHANGELOG.md`](CHANGELOG.md) |
-
----
-
-## Repository structure
-
-```
-agenda-intelligence-md/
-├─ src/agenda_intelligence/   # Python package
-├─ schemas/                   # JSON schemas
-├─ examples/                  # sample briefs, evidence packs, source‑backed examples
-├─ analysis-bank/             # memory cards (failures & successes)
-├─ evals/                     # evaluation rubric, LLM judge, human checklist, cases
-├─ docs/                      # guides, tutorials, use‑cases, integrations
-├─ skills/agenda-intelligence/ # OpenClaw skill wrapper
-└─ tests/                     # pytest suite
-```
-
----
-
-## Roadmap (high‑level)
-
-- **v0.6** – MCP stdio server exposing current Python tool functions.
-- **v0.7** – MCP `score_output` with rubric-based before/after quality scoring.
-- **v0.8** – Automated CI quality gate using the evaluation toolkit.
-- **v1.0** – Stable API, broader adoption‑channel support, production‑grade MCP.
-
----
-
-## Contributing
-
-Pull requests are welcome! Please:
-1. Open an issue to discuss changes.
-2. Create a feature branch (`feat/...`, `fix/...`).
-3. Run `pytest` and ensure all tests pass.
-4. Update docs if behavior changes.
-
----
+|---|---|
+| Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
+| End-to-end tutorial | [`docs/tutorial.md`](docs/tutorial.md) |
+| Evaluation | [`docs/evaluation.md`](docs/evaluation.md) |
+| Evidence audit (experimental) | [`docs/evidence-audit.md`](docs/evidence-audit.md) |
+| Agent integration sketch | [`docs/integrations/agent-loop.md`](docs/integrations/agent-loop.md) |
+| Use-cases | [`docs/use-cases/`](docs/use-cases/) |
+| Integrations | [`docs/integrations/`](docs/integrations/) |
+| Roadmap | [`ROADMAP.md`](ROADMAP.md) |
+| Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
 
 ## License
 
-MIT – free for any use.
-
----
-
-## Why this exists
-
-Most agent‑written news analysis is a polished recap that doesn’t change any decision. This project gives agents a stricter workflow so their output actually helps someone decide, hedge, or act.
+MIT.
