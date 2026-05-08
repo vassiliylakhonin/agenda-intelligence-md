@@ -1,0 +1,51 @@
+name: Bench
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Runs the deterministic, LLM-free bench harness against the bundled
+# examples and fails if structural metrics regress. Designed as a guard
+# against silent rubric / example drift; not a benchmark of agent
+# output.
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run bench (strict + min-score gate)
+        # If the rubric or examples regress so the mean score drops below
+        # 80 across the bundled cases, the CI fails. Adjust the threshold
+        # deliberately and update evals/baselines/ in the same commit.
+        run: |
+          python -m agenda_intelligence.cli bench examples/source-backed \
+            --strict --min-score 80
+
+      - name: Regenerate baseline report (drift check)
+        run: |
+          python evals/run_benchmark.py \
+            --md /tmp/source-backed.md \
+            --out /tmp/source-backed.json
+          diff -u evals/baselines/source-backed.md /tmp/source-backed.md
+          diff -u evals/baselines/source-backed.json /tmp/source-backed.json
+
+      - name: Upload bench artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-report
+          path: |
+            /tmp/source-backed.md
+            /tmp/source-backed.json
+          if-no-files-found: ignore

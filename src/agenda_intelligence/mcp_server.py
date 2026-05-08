@@ -1,8 +1,21 @@
 """
-MCP (Model‑Control‑Protocol) server skeleton for Agenda‑Intelligence.md.
+MCP-compatible tool functions for Agenda-Intelligence.md.
 
-This module provides the tool functions that an MCP server would expose.
-Validation, read-only resource tools, and heuristic scoring are implemented.
+This module exposes pure Python functions over the packaged data and
+schemas. The stdio server in :mod:`agenda_intelligence.mcp_stdio` registers
+these as MCP tools.
+
+Implemented (return ``implemented=True``):
+
+- ``validate_brief`` / ``validate_evidence`` / ``audit_claims``: schema
+  checks against the bundled JSON schemas. ``audit_claims`` additionally
+  reports support-level distribution and orphan ``evidence_id`` refs.
+- ``get_protocol`` / ``list_lenses`` / ``get_lens`` / ``source_plan``:
+  read-only access to packaged protocol, lens, and source-plan data.
+- ``score_output``: heuristic before/after marker rubric.
+
+Honest scope: schema-level only. None of these tools verify factual
+truth.
 """
 
 import json

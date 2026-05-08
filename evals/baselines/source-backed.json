@@ -1,11 +1,11 @@
 {
   "summary": {
-    "cases": 1,
+    "cases": 3,
     "schema_valid_pct": 100.0,
     "with_evidence_pct": 100.0,
     "with_audit_pct": 100.0,
-    "mean_score": 89.0,
-    "min_score": 89,
+    "mean_score": 87.7,
+    "min_score": 85,
     "max_score": 89,
     "audit_orphan_total": 0,
     "note": "Heuristic structural / evidence-discipline metrics. Does not verify factual truth."
@@ -27,6 +27,48 @@
       "score_breakdown": {
         "relevance": 25,
         "evidence_support": 16,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "red-sea-shipping",
+      "brief_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/red-sea-shipping.brief.json",
+      "evidence_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/red-sea-shipping.evidence.json",
+      "audit_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/red-sea-shipping.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 89,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 16,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "sanctions-routing",
+      "brief_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/sanctions-routing.brief.json",
+      "evidence_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/sanctions-routing.evidence.json",
+      "audit_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/sanctions-routing.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 85,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 12,
         "completeness": 19,
         "actionability": 14,
         "clarity": 15

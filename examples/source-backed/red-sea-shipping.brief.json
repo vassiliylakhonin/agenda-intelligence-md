@@ -1,0 +1,32 @@
+{
+  "bottom_line": "Increased Red Sea security incidents are driving up shipping costs and causing route diversions, affecting oil, gas, and commodity flows.",
+  "signal_classification": "structural_shift",
+  "what_changed": "Frequency of security incidents along the Bab al-Mandab corridor has risen, with measurable disruption signals in port-flow and freight benchmarks.",
+  "why_it_matters": "Operators routing through the Red Sea face higher insurance premiums and longer transit options around the Cape of Good Hope, with knock-on effects on commodity availability and lead times.",
+  "affected_actors": [
+    "container shipping operators",
+    "tanker operators",
+    "marine insurers",
+    "Red Sea littoral states",
+    "energy and bulk-commodity importers in Europe and Asia"
+  ],
+  "main_uncertainty": "Duration of the security escalation and the speed of any naval-coalition response.",
+  "scenarios": [
+    {
+      "name": "Sustained disruption",
+      "description": "Incidents persist, diversions become routine, premiums stay elevated.",
+      "indicators": ["IMO advisories renewed", "premium indices remain above pre-crisis levels"]
+    },
+    {
+      "name": "De-escalation",
+      "description": "Naval response and diplomatic channels reduce incident frequency.",
+      "indicators": ["incident count trends down for several weeks", "premium indices ease"]
+    }
+  ],
+  "watch_next": [
+    "New IMO maritime security advisories",
+    "Drewry / freight-rate index movement",
+    "Insurance premium quotes for Red Sea transits"
+  ],
+  "evidence_mode": "user_provided"
+}

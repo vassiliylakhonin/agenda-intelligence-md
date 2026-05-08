@@ -1,0 +1,75 @@
+{
+  "topic": "Red Sea Shipping",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "Red Sea security incidents have increased routing risk and contributed to vessel diversions.",
+      "claim_type": "geopolitical_event",
+      "evidence_ids": ["e1", "e2"],
+      "support_level": "direct",
+      "uncertainty": "Attribution between security incidents and specific routing decisions is not always public.",
+      "risk_if_wrong": "Insurance and freight-cost models mis-priced; client briefings overstate causality."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "Higher shipping-risk costs are visible in market benchmarks.",
+      "claim_type": "market_event",
+      "evidence_ids": ["e3"],
+      "support_level": "partial",
+      "uncertainty": "Container index reflects multiple drivers; isolating the Red Sea effect requires decomposition.",
+      "risk_if_wrong": "Operators attribute price moves entirely to security risk and miss other drivers."
+    },
+    {
+      "claim_id": "c3",
+      "claim": "Per-week incident counts for 2026-Q2 are reliable.",
+      "claim_type": "geopolitical_event",
+      "support_level": "unsupported",
+      "uncertainty": "No public current incident database aggregates this at weekly cadence.",
+      "risk_if_wrong": "Quantitative claims in client deliverables cite numbers no source actually supports."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "IMO Maritime Security Advisories",
+      "url": "https://www.imo.org/en/OurWork/Security/Pages/Maritime-Security-Advisories.aspx",
+      "source_type": "official_document",
+      "freshness": "current",
+      "supports": [
+        "Official advisory framing for high-risk sea lanes"
+      ],
+      "limits": [
+        "Not a complete incident database; does not quantify insurance costs"
+      ]
+    },
+    {
+      "evidence_id": "e2",
+      "name": "IMF PortWatch trade disruption monitor",
+      "url": "https://portwatch.imf.org/",
+      "source_type": "primary_data",
+      "freshness": "current",
+      "supports": [
+        "Aggregate shipping and port-flow disruption signal"
+      ],
+      "limits": [
+        "Aggregate; does not isolate specific routes"
+      ]
+    },
+    {
+      "evidence_id": "e3",
+      "name": "Drewry World Container Index",
+      "url": "https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
+      "source_type": "primary_data",
+      "freshness": "current",
+      "supports": [
+        "Market benchmark for container freight-rate pressure"
+      ],
+      "limits": [
+        "Reflects multiple drivers, not only Red Sea security risk"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Exact number of vessels attacked per week in 2026-Q2"
+  ]
+}

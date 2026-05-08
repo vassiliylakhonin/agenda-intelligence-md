@@ -1,0 +1,75 @@
+{
+  "topic": "Sanctions Routing",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "Sanctions-evasion risk can shift toward intermediary routing through Central Asia and Caspian trade corridors.",
+      "claim_type": "sanctions_event",
+      "evidence_ids": ["e1", "e2", "e3"],
+      "support_level": "partial",
+      "uncertainty": "Trade data is aggregate and lagged; corridor-level attribution requires additional analysis.",
+      "risk_if_wrong": "Compliance teams over-tag corridors and miss other higher-risk routing channels."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "OFAC and FATF materials provide official context for evasion-risk analysis.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": ["e1", "e2"],
+      "support_level": "direct",
+      "uncertainty": "Designation lists do not by themselves quantify routing volumes.",
+      "risk_if_wrong": "Briefings imply more granular official guidance than actually exists."
+    },
+    {
+      "claim_id": "c3",
+      "claim": "An exact share of evasion transactions routed through Caspian corridors is known.",
+      "claim_type": "sanctions_event",
+      "support_level": "unsupported",
+      "uncertainty": "No public dataset aggregates beneficial ownership at corridor level.",
+      "risk_if_wrong": "Numeric claims in deliverables cite a precision no source supports."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "OFAC Sanctions Programs and Country Information",
+      "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information",
+      "source_type": "official_document",
+      "freshness": "current",
+      "supports": [
+        "Official sanctions-program context and designation updates"
+      ],
+      "limits": [
+        "Identifies targets, not full trade-routing volumes"
+      ]
+    },
+    {
+      "evidence_id": "e2",
+      "name": "FATF Publications",
+      "url": "https://www.fatf-gafi.org/en/publications.html",
+      "source_type": "official_document",
+      "freshness": "current",
+      "supports": [
+        "Official AML/CFT typologies and regional risk material"
+      ],
+      "limits": [
+        "Broad typology material may not prove a specific corridor shift"
+      ]
+    },
+    {
+      "evidence_id": "e3",
+      "name": "UN Comtrade database",
+      "url": "https://comtradeplus.un.org/",
+      "source_type": "primary_data",
+      "freshness": "current",
+      "supports": [
+        "Trade-flow checks for anomalies by product, partner, and route proxy"
+      ],
+      "limits": [
+        "Lagged and aggregate; does not prove intent or beneficial ownership"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Exact proportion of sanctions-evasion transactions routed through Central Asia or Caspian corridors"
+  ]
+}
