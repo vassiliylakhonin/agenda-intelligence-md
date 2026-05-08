@@ -166,7 +166,7 @@ agenda-intelligence score examples/before-after/eu-ai-act.md
 | **Source Acquisition Layer** | Tells the agent *which* source types to check before making claims (sanctions, regulation, elections, conflict, etc.) | ✅ Stable |
 | **JSON schemas** | Validate briefs, evidence packs, memory cards | ✅ Stable |
 | **AnalysisBank** | Memory layer that stores reusable reasoning patterns from good/bad outputs | ✅ Stable |
-| **Regional & Sector lenses** | Central Asia & Caspian, Middle East, EU; sanctions, export controls | ✅ Stable |
+| **Regional & Sector lenses** | Compact regional/sector reference packs inside the protocol (Central Asia & Caspian, Middle East, EU; sanctions, export controls). For deep regional analysis, use the dedicated [vertical specialist skill](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill). | ✅ Stable |
 
 ---
 
