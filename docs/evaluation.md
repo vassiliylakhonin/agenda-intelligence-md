@@ -1,69 +1,61 @@
 # Evaluation
 
-Agenda‑Intelligence.md currently evaluates **form and structure**, not truthfulness. The evaluation toolkit is being expanded to cover **quality**.
+Agenda-Intelligence-MD is an **eval layer**, not a fact-checker. The toolkit
+explicitly distinguishes evaluation layers and is honest about which ones it
+implements today.
 
-## Current evaluation layers
+## Layers
 
-| Layer | What it checks | Status |
-|-------|------------------|--------|
-| **Protocol adherence** | Required sections (bottom‑line, signal, watch‑next, etc.) | ✅ CLI `validate‑brief` |
-| **Schema validity** | JSON conforms to `schemas/agenda‑brief.schema.json` | ✅ CLI `validate‑brief` |
-| **Source coverage structure** | Evidence packs can record claim-level support status, sources, limits, unsupported claims, and missing sources | ✅ CLI `validate‑evidence` |
-| **Brief scoring** | Heuristic 0-100 structural score for JSON briefs across the public rubric dimensions | ✅ CLI `score` |
-| **Evidence-linked scoring** | Optional claim-level evidence-pack feedback for supported, partially supported, unsupported, missing, and contradicting sources | ✅ CLI `score --evidence` |
-| **Before/after scoring** | Marker-based before/after example harness | ✅ CLI `score` |
+| Layer | What it answers | Status |
+|---|---|---|
+| Structural validation | Does the brief conform to the schema? | Implemented (`validate-brief`) |
+| Evidence discipline (schema) | Does the evidence pack conform? | Implemented (`validate-evidence`) |
+| Evidence discipline (claim-level) | Is each important claim traceable with a support level? | Experimental — see [`schemas/evidence-audit.schema.json`](../schemas/evidence-audit.schema.json) |
+| Brief scoring (heuristic) | How structurally complete is a JSON brief? | Implemented (`score brief.json`, 0-100) |
+| Evidence-linked scoring | Are claims actually supported by the evidence pack? | Implemented (`score brief.json --evidence pack.json`) |
+| Before/after scoring | Marker-based before/after example harness | Implemented (`score path.md`) |
+| Factual truthfulness | Are the claims true in the world? | **Not implemented.** Out of scope today. |
 
-## New quality‑focused assets (v0.5.1+)
+> Current scoring does **not** verify factual truth. It evaluates structure,
+> completeness, evidence labeling, and decision-readiness signals.
+
+## Assets
 
 | Asset | Location | Purpose |
-|-------|----------|--------|
-| **Scoring rubric** | `evals/rubric.md` | 5‑dimension quality rubric (relevance, evidence support, completeness, actionability, clarity) |
-| **LLM judge prompt** | `evals/llm_judge_prompt.txt` | Optional prompt to let an LLM grade a brief |
-| **Human review checklist** | `evals/human_checklist.md` | Structured checklist for manual review |
-| **Sample cases** | `evals/cases/*.json` | Baseline cases with expected scores |
-| **Benchmark set** | `evals/benchmark_set.json` | Baseline benchmark for tracking progress toward v0.7 |
+|---|---|---|
+| Scoring rubric | `evals/rubric.md` | 5-dimension quality rubric |
+| LLM judge prompt | `evals/llm_judge_prompt.txt` | Optional LLM grader prompt |
+| Human review checklist | `evals/human_checklist.md` | Manual review aid |
+| Sample cases | `evals/cases/*.json` | Baseline cases |
+| Benchmark seed | `evals/benchmark_set.json` | Starting point — not validated results |
 
-## How to run the current checks
+## Running checks
 
 ```bash
-# 1. Validate structure
-
-agenda-intelligence validate-brief examples/agenda-brief.json
-
-# 2. Validate evidence-pack structure
-
-agenda-intelligence validate-evidence examples/source/evidence-pack.json
-
-# 3. Score a JSON brief
-
-agenda-intelligence score examples/agenda-brief.json
-
-# 4. Score a JSON brief with an evidence pack
-
-agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
-
-# 5. Score a before/after markdown example with the current heuristic harness
-
-agenda-intelligence score examples/before-after/eu-ai-act.md
+agenda-intelligence validate-brief brief.json                       # structural validation
+agenda-intelligence validate-evidence evidence.json                 # evidence-pack schema check
+agenda-intelligence score brief.json                                # heuristic 0-100 brief score
+agenda-intelligence score brief.json --evidence evidence.json       # evidence-linked scoring
+agenda-intelligence score before-after.md                           # before/after harness
 ```
 
-The JSON brief scorer returns a 0‑100 structural quality score with dimension
-feedback for relevance, evidence support, completeness, actionability, and
-clarity. When `--evidence` is provided, evidence support also reflects
-claim-level support status, source presence, unsupported claims, missing
-sources, contradicting sources, and `retrieved_at` for `live_source_backed`
-packs. It does **not** verify factual truthfulness. Before/after markdown
-examples still use the older marker-based harness.
+The Python module `agenda_intelligence.mcp_server.score_output(brief)`
+exposes the same heuristic score for agent workflows.
 
-## Roadmap for “prove quality”
+## Benchmark roadmap (target, not a results claim)
 
-| Milestone | Version | Status |
-|-----------|---------|--------|
-| Quality rubric + LLM judge + human checklist | v0.5.1 | ✅ Done |
-| Heuristic JSON brief scorer | v0.6 | ✅ Done |
-| Evidence-linked brief scoring | v0.6 | ✅ Done |
-| Benchmark set for reproducible quality checks | v0.7 | Planned (see `ROADMAP.md`) |
-| Automated CI quality gate using the evaluation toolkit | v0.8 | Planned |
-| Source-backed truthfulness evaluation | v0.7‑v1.0 | In progress |
+| Item | Target |
+|---|---|
+| Public cases | 10–30 |
+| Per case | baseline LLM output, structured-prompt output, Agenda-Intelligence-MD output, human checklist |
+| Metrics | unsupported-claim count, missing-uncertainty count, watch-next quality |
 
-> **Note:** The project does **not** yet evaluate factual truthfulness. It focuses on *structural quality* and *source discipline* — the foundation for any truth‑checking layer that may be added later.
+Contributions of new cases are the most valuable contribution. See
+[`evals/cases/`](../evals/cases/).
+
+## Honest limits
+
+- No factuality verification.
+- Heuristic score is intentionally simple; do not treat the number as authoritative.
+- LLM-judge prompt is provided; LLM-judge results are not benchmarked.
+- No benchmark numbers are published yet. Do not cite them.

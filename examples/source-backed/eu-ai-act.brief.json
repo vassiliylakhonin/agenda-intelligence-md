@@ -1,0 +1,31 @@
+{
+  "bottom_line": "EU AI Act tightens obligations on high-risk AI systems with a phased enforcement schedule; affected operators need a compliance roadmap aligned to phase dates.",
+  "signal_classification": "compliance_relevant_development",
+  "what_changed": "New high-risk categories defined and enforcement deadlines published.",
+  "why_it_matters": "Operators of high-risk AI must demonstrate conformity (risk mgmt, data governance, human oversight) before phase-in dates or face penalties and market-access risk.",
+  "affected_actors": [
+    "high-risk AI system providers",
+    "deployers in regulated sectors",
+    "EU notified bodies",
+    "non-EU vendors selling into the EU market"
+  ],
+  "main_uncertainty": "Sector-specific guidance and the exact enforcement posture of national competent authorities are not yet public.",
+  "scenarios": [
+    {
+      "name": "Strict enforcement",
+      "description": "Authorities pursue early, visible enforcement actions to set precedent.",
+      "indicators": ["first published sanctions decisions", "test cases against major providers"]
+    },
+    {
+      "name": "Soft start",
+      "description": "Authorities prioritize guidance and audits over penalties for the first phase.",
+      "indicators": ["public guidance documents", "voluntary audit programs"]
+    }
+  ],
+  "watch_next": [
+    "Publication of sector-specific implementing guidance",
+    "First mandatory conformity assessments for high-risk providers",
+    "First public enforcement action by a national competent authority"
+  ],
+  "evidence_mode": "user_provided"
+}

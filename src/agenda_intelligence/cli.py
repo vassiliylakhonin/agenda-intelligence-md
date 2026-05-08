@@ -222,6 +222,69 @@ def cmd_memory_search(args):
         print(f"No results for query: {args.query}")
 
 
+def cmd_report(args):
+    """Generate a concise Markdown report combining schema check + heuristic
+    structure scoring for an agenda brief JSON file.
+
+    The report does not verify factual truth — it summarizes form, evidence
+    labeling, and decision-readiness signals, in line with the project's
+    eval-layer positioning.
+    """
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"Not found: {path}")
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Invalid JSON: {e}")
+
+    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "agenda-brief.schema.json"
+    schema = json.loads(schema_path.read_text())
+    structure_ok = True
+    structure_error = ""
+    try:
+        validate(data, schema)
+    except ValidationError as e:
+        structure_ok = False
+        structure_error = e.message
+
+    required_signals = ["bottom_line", "what_changed", "main_uncertainty", "watch_next"]
+    present = [k for k in required_signals if data.get(k)]
+    decision_signals = {
+        "has_uncertainty": bool(data.get("main_uncertainty")),
+        "has_watch_next": bool(data.get("watch_next")),
+        "has_scenarios": bool(data.get("scenarios")),
+        "has_affected_actors": bool(data.get("affected_actors")),
+        "evidence_mode": data.get("evidence_mode") or "unspecified",
+    }
+
+    lines = [
+        f"# Report: {path.name}",
+        "",
+        "## Structural validation",
+        f"- schema: {'PASS' if structure_ok else 'FAIL'}",
+    ]
+    if not structure_ok:
+        lines.append(f"- error: {structure_error}")
+    lines += [
+        "",
+        "## Decision-readiness signals (heuristic)",
+        f"- required fields present: {len(present)}/{len(required_signals)}",
+        f"- evidence_mode: {decision_signals['evidence_mode']}",
+        f"- has main_uncertainty: {decision_signals['has_uncertainty']}",
+        f"- has watch_next: {decision_signals['has_watch_next']}",
+        f"- has scenarios: {decision_signals['has_scenarios']}",
+        f"- has affected_actors: {decision_signals['has_affected_actors']}",
+        "",
+        "## Notes",
+        "- This report does not verify factual truth.",
+        "- It summarizes structure, evidence labeling, and decision-readiness signals only.",
+    ]
+    print("\n".join(lines))
+    if not structure_ok:
+        raise SystemExit(1)
+
+
 def cmd_fetch(args):
     """Fetch evidence pack for a brief or category (stub)."""
     import json as _json
@@ -384,6 +447,22 @@ def main():
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("manifest", help="Print agent-manifest.json").set_defaults(func=cmd_manifest)
+    # check (alias of validate-brief)
+    p = sub.add_parser("check", help="Validate a brief (alias of validate-brief)")
+    p.add_argument("path")
+    p.set_defaults(func=cmd_validate_brief)
+    # audit (alias of validate-evidence)
+    p = sub.add_parser("audit", help="Audit an evidence pack (alias of validate-evidence)")
+    p.add_argument("path")
+    p.set_defaults(func=cmd_validate_evidence)
+    # report
+    p = sub.add_parser("report", help="Generate a Markdown report from a brief")
+    p.add_argument("path")
+    p.set_defaults(func=cmd_report)
+    # eval (alias of score)
+    p = sub.add_parser("eval", help="Run the eval/scoring rubric (alias of score)")
+    p.add_argument("path", nargs="?")
+    p.set_defaults(func=cmd_score)
     # list-lenses
     p = sub.add_parser("list-lenses", help="List available lenses")
     p.add_argument("--type", choices=["regional", "sector"])

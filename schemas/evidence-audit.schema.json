@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/evidence-audit.schema.json",
+  "title": "EvidenceAudit",
+  "description": "EXPERIMENTAL. Claim-level evidence audit. Each important claim should be traceable to specific evidence with an explicit support level, uncertainty hook, and risk-if-wrong note. This schema is not yet wired into the CLI `audit` command by default; it is published so agents and downstream tooling can adopt the contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["claims", "evidence"],
+  "properties": {
+    "topic": { "type": "string" },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/claim" }
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evidence_item" }
+    },
+    "unsupported_claims": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Important claims the analyst could not back with evidence."
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claim_id", "claim", "support_level"],
+      "properties": {
+        "claim_id": { "type": "string", "minLength": 1 },
+        "claim": { "type": "string", "minLength": 1 },
+        "claim_type": {
+          "type": "string",
+          "description": "Free-form taxonomy label (e.g. regulatory_change, sanctions_event, market_event, geopolitical_event, capability_claim)."
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "support_level": {
+          "type": "string",
+          "enum": ["direct", "partial", "weak", "unsupported"]
+        },
+        "uncertainty": {
+          "type": "string",
+          "description": "What the analyst is unsure about, even if the claim is supported."
+        },
+        "risk_if_wrong": {
+          "type": "string",
+          "description": "Decision-level cost if this claim turns out to be wrong."
+        }
+      }
+    },
+    "evidence_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_id", "source_type"],
+      "properties": {
+        "evidence_id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "source_type": {
+          "type": "string",
+          "description": "e.g. official_document, regulator_announcement, news, analyst_report, primary_data, illustrative_placeholder."
+        },
+        "freshness": { "type": "string" },
+        "supports": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "limits": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

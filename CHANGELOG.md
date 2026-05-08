@@ -3,6 +3,20 @@
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## [Unreleased]
+### Repositioned
+- Project repositioning toward **evidence & eval layer for strategic
+  intelligence agents**: README rewritten with explicit
+  "What this is / What this is not", 60-second quickstart, status,
+  limitations, roadmap, and a Mermaid architecture diagram.
+- `docs/evaluation.md` rewritten around four explicit eval layers;
+  factual truthfulness marked **not implemented**.
+
+### Added
+- Experimental `schemas/evidence-audit.schema.json` for claim-level
+  evidence audit (`support_level`, `uncertainty`, `risk_if_wrong`).
+- Reworked flagship example `examples/source-backed/eu-ai-act.md` and
+  schema-valid `eu-ai-act.brief.json`. Evidence is explicitly labeled
+  illustrative — not live citations.
 
 ## [0.7.2] – 2026-05-07
 ### Added

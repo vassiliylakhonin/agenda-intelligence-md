@@ -1,32 +1,129 @@
-# EU AI Act: Source‑backed Analysis
+# EU AI Act — Flagship Example
 
-**Audience:** EU policy analysts, compliance managers.
+**Audience:** AI engineers building policy / compliance / risk-monitoring agents.
 
-**Claim:** The upcoming EU AI Act will introduce stricter obligations for high‑risk AI systems.
-
-**Evidence similar to this brief:** See `eu-ai-act.evidence.json`.
+**Disclaimer:** the URLs in `eu-ai-act.evidence.json` are **illustrative
+placeholders**, not live citations. The point of this example is the *shape*
+of evidence-backed reasoning, not factual reporting on the EU AI Act.
 
 ---
 
-**Brief Template:**
+## 1. Input event
+
+A regulator publishes new obligations for high-risk AI systems, with a
+phased enforcement schedule.
+
+## 2. Baseline weak summary (what most agents emit by default)
+
+> The EU is finalizing the AI Act. It will impose new rules on high-risk AI.
+> Companies should prepare. The act includes obligations around transparency,
+> data governance, and human oversight. This will likely affect many
+> industries and require investment in compliance.
+
+Problems:
+- no signal classification
+- no separation of evidence-backed claims and inferences
+- no main uncertainty
+- no watch-next indicators
+- no decision implication
+
+## 3. Agenda-Intelligence-MD brief
+
 ```json
 {
-  "bottom_line": "The EU AI Act will impose tighter controls on high‑risk AI, making compliance mandatory for sectors X, Y, Z.",
-  "signal_classification": "signal",
-  "what_changed": "New high‑risk categories and enforcement deadlines introduced.",
-  "main_uncertainty": "Timing of the enforcement roll‑out and specific sector exemptions.",
-  "watch_next": ["First mandatory audit by 2027", "Publication of sector‑specific guidance"]
+  "bottom_line": "EU AI Act tightens obligations on high-risk AI systems with a phased enforcement schedule; affected operators need a compliance roadmap aligned to phase dates.",
+  "signal_classification": "compliance_relevant_development",
+  "what_changed": "New high-risk categories defined and enforcement deadlines published.",
+  "why_it_matters": "Operators of high-risk AI must demonstrate conformity (risk mgmt, data governance, human oversight) before phase-in dates or face penalties and market-access risk.",
+  "affected_actors": [
+    "high-risk AI system providers",
+    "deployers in regulated sectors",
+    "EU notified bodies",
+    "non-EU vendors selling into the EU market"
+  ],
+  "main_uncertainty": "Sector-specific guidance and the exact enforcement posture of national competent authorities are not yet public.",
+  "scenarios": [
+    {
+      "name": "Strict enforcement",
+      "description": "Authorities pursue early, visible enforcement actions to set precedent.",
+      "indicators": ["first published sanctions decisions", "test cases against major providers"]
+    },
+    {
+      "name": "Soft start",
+      "description": "Authorities prioritize guidance and audits over penalties for the first phase.",
+      "indicators": ["public guidance documents", "voluntary audit programs"]
+    }
+  ],
+  "watch_next": [
+    "Publication of sector-specific implementing guidance",
+    "First mandatory conformity assessments for high-risk providers",
+    "First public enforcement action by a national competent authority"
+  ],
+  "evidence_mode": "user_provided"
 }
 ```
 
----
+## 4. Evidence pack
 
-**Source‑backed evidence:**
-- Official EU Commission proposal text (link). 
-- Industry‑wide budgetary commitments recorded in European Parliament.
-- Public procurement announcements calling for high‑risk AI safeguards.
-- Statements from leading AI companies on compliance plans.
+See [`eu-ai-act.evidence.json`](eu-ai-act.evidence.json).
+URLs are placeholders; sources are illustrative.
 
----
+## 5. Claim-level evidence audit (experimental)
 
-*Note: The linked evidence JSON (`eu-ai-act.evidence.json`) provides the formal validation of each claim.*
+```json
+{
+  "topic": "EU AI Act",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "EU AI Act tightens obligations on high-risk AI systems.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": ["e1"],
+      "support_level": "direct",
+      "uncertainty": "Final text vs. trilogue compromise wording.",
+      "risk_if_wrong": "Compliance program scope mis-sized."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "Enforcement is phased.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": ["e1"],
+      "support_level": "partial",
+      "uncertainty": "Per-sector phase dates may differ from headline schedule.",
+      "risk_if_wrong": "Deadline slippage in compliance roadmap."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "EU Commission AI Act proposal (illustrative)",
+      "url": "https://example.com/ai-act-proposal",
+      "source_type": "illustrative_placeholder",
+      "supports": ["High-risk obligations", "Phased enforcement"],
+      "limits": ["Placeholder URL; not a live citation"]
+    }
+  ],
+  "unsupported_claims": [
+    "Exact per-sector enforcement dates"
+  ]
+}
+```
+
+## 6. Validation / scoring
+
+```bash
+agenda-intelligence check  examples/source-backed/eu-ai-act.brief.json
+agenda-intelligence audit  examples/source-backed/eu-ai-act.evidence.json
+agenda-intelligence report examples/source-backed/eu-ai-act.brief.json
+```
+
+The `report` output summarizes structural validity and decision-readiness
+signals — *not* factual truth.
+
+## 7. What this example demonstrates
+
+- Schema-valid brief shape
+- Explicit uncertainty and watch-next
+- Separate evidence pack
+- Experimental claim-level audit with `support_level` and `risk_if_wrong`
+- CLI workflow that drops cleanly into CI
