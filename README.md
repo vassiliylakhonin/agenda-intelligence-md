@@ -218,6 +218,22 @@ agenda-intelligence score examples/before-after/eu-ai-act.md
 
 ---
 
+## Portfolio: how this project composes
+
+Agenda Intelligence MD is the **infrastructure / validation** layer of a three-repo portfolio. The other two repos are domain skills — they teach an agent how to reason; this repo validates and scores what they produce.
+
+| Layer | Repo | Role |
+|---|---|---|
+| **Horizontal domain skill** | [Global Think Tank Analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) | Reasoning method and memo modes for policy-risk, sanctions, regulatory, geopolitical, trade, and strategic-risk memos. Region- and topic-agnostic. |
+| **Vertical specialists** | [central-asia-caspian-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) | Region-deep skills that ride on top of a horizontal method (Central Asia & Caspian: sanctions, AML, corridors, banking, logistics, energy, geopolitical risk). |
+| **Infrastructure / validation** | **Agenda Intelligence MD** *(this repo)* | Machine-readable Markdown protocol, schemas, validation, scoring, evidence audit, CLI / MCP. |
+
+> Use a domain skill (horizontal or vertical) to draft the brief or memo. Use Agenda Intelligence MD to validate, score, and audit the output.
+
+This repo does not duplicate domain reasoning that lives in the skill repos. The skill repos do not duplicate validation, schemas, scoring, or MCP tooling that live here.
+
+---
+
 ## Repository structure
 
 ```
