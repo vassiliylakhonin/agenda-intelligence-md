@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "cases": 1,
+    "schema_valid_pct": 100.0,
+    "with_evidence_pct": 100.0,
+    "with_audit_pct": 100.0,
+    "mean_score": 89.0,
+    "min_score": 89,
+    "max_score": 89,
+    "audit_orphan_total": 0,
+    "note": "Heuristic structural / evidence-discipline metrics. Does not verify factual truth."
+  },
+  "cases": [
+    {
+      "case": "eu-ai-act",
+      "brief_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/eu-ai-act.brief.json",
+      "evidence_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/eu-ai-act.evidence.json",
+      "audit_path": "/Users/vassiliylakhonin/.openclaw/workspace/agenda-intelligence-md/examples/source-backed/eu-ai-act.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 89,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 16,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    }
+  ]
+}

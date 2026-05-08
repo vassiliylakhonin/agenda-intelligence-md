@@ -31,6 +31,16 @@ TOOLS: dict[str, dict[str, Any]] = {
         "inputSchema": _schema({"evidence_json": {"type": "object"}}, ["evidence_json"]),
         "handler": lambda args: mcp_server.validate_evidence(args["evidence_json"]),
     },
+    "audit_claims": {
+        "description": (
+            "Validate a claim-level evidence-audit JSON object (experimental) against "
+            "evidence-audit.schema.json and return a small summary: support-level "
+            "distribution, orphan evidence_id refs, and unsupported_claims count. "
+            "Schema-level only; does not verify factual truth."
+        ),
+        "inputSchema": _schema({"audit_json": {"type": "object"}}, ["audit_json"]),
+        "handler": lambda args: mcp_server.audit_claims(args["audit_json"]),
+    },
     "get_protocol": {
         "description": "Return packaged protocol markdown by name, or use 'entrypoint'.",
         "inputSchema": _schema({"name": {"type": "string"}}, ["name"]),

@@ -1,0 +1,225 @@
+"""Tests for the eval-layer commands added in the repositioning:
+audit-claims, bench, verify-quotes, report. Plus the MCP audit_claims tool."""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+CLI = [sys.executable, "-m", "agenda_intelligence.cli"]
+FLAGSHIP_BRIEF = ROOT / "examples" / "source-backed" / "eu-ai-act.brief.json"
+FLAGSHIP_AUDIT = ROOT / "examples" / "source-backed" / "eu-ai-act.audit.json"
+SOURCE_BACKED_DIR = ROOT / "examples" / "source-backed"
+
+
+def run(*args: str, expect_zero: bool = True) -> subprocess.CompletedProcess[str]:
+    res = subprocess.run(CLI + list(args), capture_output=True, text=True, cwd=ROOT)
+    if expect_zero:
+        assert res.returncode == 0, f"cmd failed ({res.returncode}): {res.stderr}\n{res.stdout}"
+    return res
+
+
+# ---------- audit-claims ----------
+
+
+def test_audit_claims_text(tmp_path: Path):
+    res = run("audit-claims", str(FLAGSHIP_AUDIT))
+    assert "OK: evidence audit validates" in res.stdout
+    assert "support_level=direct" in res.stdout
+
+
+def test_audit_claims_json(tmp_path: Path):
+    res = run("audit-claims", str(FLAGSHIP_AUDIT), "--format", "json")
+    payload = json.loads(res.stdout)
+    assert payload["valid"] is True
+    assert payload["claim_count"] == 3
+    assert payload["support_levels"] == {"direct": 1, "partial": 1, "weak": 1}
+    assert payload["orphan_evidence_refs"] == []
+
+
+def test_audit_claims_strict_orphan(tmp_path: Path):
+    bad = {
+        "topic": "x",
+        "claims": [
+            {
+                "claim_id": "c1",
+                "claim": "test",
+                "evidence_ids": ["missing"],
+                "support_level": "direct",
+            }
+        ],
+        "evidence": [],
+    }
+    p = tmp_path / "bad.json"
+    p.write_text(json.dumps(bad))
+    # Without --strict: orphan is a warning, exit 0
+    run("audit-claims", str(p))
+    # With --strict: exit 1
+    res = run("audit-claims", str(p), "--strict", expect_zero=False)
+    assert res.returncode == 1
+
+
+# ---------- bench ----------
+
+
+def test_bench_markdown_on_flagship():
+    res = run("bench", str(SOURCE_BACKED_DIR))
+    assert "# Bench report" in res.stdout
+    assert "eu-ai-act" in res.stdout
+    assert "with claim-level audit: 100.0%" in res.stdout
+
+
+def test_bench_json_on_flagship():
+    res = run("bench", str(SOURCE_BACKED_DIR), "--format", "json")
+    payload = json.loads(res.stdout)
+    assert payload["summary"]["cases"] >= 1
+    assert payload["summary"]["schema_valid_pct"] == 100.0
+    assert payload["summary"]["audit_orphan_total"] == 0
+
+
+def test_bench_min_score_gate():
+    res = run(
+        "bench",
+        str(SOURCE_BACKED_DIR),
+        "--min-score",
+        "9999",
+        expect_zero=False,
+    )
+    assert res.returncode == 2
+
+
+# ---------- verify-quotes ----------
+
+
+def test_verify_quotes_local_text(tmp_path: Path):
+    texts = tmp_path / "evidence_text"
+    texts.mkdir()
+    (texts / "e1.txt").write_text("Article 19. High-risk AI systems shall undergo conformity assessment.")
+    pack = tmp_path / "pack.json"
+    pack.write_text(
+        json.dumps(
+            {
+                "topic": "x",
+                "evidence_mode": "user_provided",
+                "sources": [
+                    {
+                        "evidence_id": "e1",
+                        "name": "Doc",
+                        "url": "https://example.com/x",
+                        "source_type": "official_document",
+                        "quote": "high-risk AI systems shall undergo conformity assessment",
+                    },
+                    {
+                        "evidence_id": "e2",
+                        "name": "Other",
+                        "url": "https://example.com/y",
+                        "source_type": "news",
+                        "quote": "this fragment definitely does not appear",
+                    },
+                ],
+            }
+        )
+    )
+    res = run("verify-quotes", str(pack), "--texts-dir", str(texts), "--format", "json")
+    payload = json.loads(res.stdout)
+    assert payload["summary"]["present"] == 1
+    assert payload["summary"]["missing_source_text"] == 1
+
+
+def test_verify_quotes_strict(tmp_path: Path):
+    texts = tmp_path / "evidence_text"
+    texts.mkdir()
+    pack = tmp_path / "pack.json"
+    pack.write_text(
+        json.dumps(
+            {
+                "topic": "x",
+                "evidence_mode": "user_provided",
+                "sources": [
+                    {
+                        "evidence_id": "e1",
+                        "name": "Doc",
+                        "url": "https://example.com/x",
+                        "source_type": "official_document",
+                        "quote": "anything",
+                    }
+                ],
+            }
+        )
+    )
+    res = run(
+        "verify-quotes",
+        str(pack),
+        "--texts-dir",
+        str(texts),
+        "--strict",
+        expect_zero=False,
+    )
+    assert res.returncode == 1
+
+
+# ---------- report ----------
+
+
+def test_report_on_flagship():
+    res = run("report", str(FLAGSHIP_BRIEF))
+    assert "# Report:" in res.stdout
+    assert "schema: PASS" in res.stdout
+    assert "does not verify factual truth" in res.stdout
+
+
+# ---------- MCP audit_claims tool ----------
+
+
+def test_mcp_audit_claims_tool_valid():
+    from agenda_intelligence.mcp_server import audit_claims
+
+    audit = json.loads(FLAGSHIP_AUDIT.read_text())
+    res = audit_claims(audit)
+    assert res["implemented"] is True
+    assert res["valid"] is True
+    assert res["summary"]["claim_count"] == 3
+    assert res["summary"]["support_levels"] == {"direct": 1, "partial": 1, "weak": 1}
+
+
+def test_mcp_audit_claims_tool_invalid_schema():
+    from agenda_intelligence.mcp_server import audit_claims
+
+    res = audit_claims({"claims": [], "evidence": []})  # empty claims violates minItems
+    assert res["valid"] is False
+    assert res["errors"]
+
+
+def test_mcp_audit_claims_tool_orphan_ref():
+    from agenda_intelligence.mcp_server import audit_claims
+
+    res = audit_claims(
+        {
+            "topic": "x",
+            "claims": [
+                {
+                    "claim_id": "c1",
+                    "claim": "test",
+                    "evidence_ids": ["missing"],
+                    "support_level": "direct",
+                }
+            ],
+            "evidence": [],
+        }
+    )
+    assert res["valid"] is True
+    assert res["summary"]["orphan_evidence_refs"] == [{"claim_id": "c1", "missing_evidence_ids": ["missing"]}]
+
+
+# ---------- MCP stdio: audit_claims registered ----------
+
+
+def test_stdio_tools_list_includes_audit_claims():
+    from agenda_intelligence.mcp_stdio import TOOLS
+
+    assert "audit_claims" in TOOLS
+    spec = TOOLS["audit_claims"]
+    assert "audit_json" in spec["inputSchema"]["properties"]

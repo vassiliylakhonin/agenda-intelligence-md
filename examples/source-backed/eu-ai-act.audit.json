@@ -1,0 +1,51 @@
+{
+  "topic": "EU AI Act",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "EU AI Act tightens obligations on high-risk AI systems.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": ["e1"],
+      "support_level": "direct",
+      "uncertainty": "Final text wording vs. trilogue compromise may shift specific obligations.",
+      "risk_if_wrong": "Compliance program scope mis-sized."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "Enforcement is phased.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": ["e1"],
+      "support_level": "partial",
+      "uncertainty": "Per-sector phase dates may differ from headline schedule.",
+      "risk_if_wrong": "Deadline slippage in compliance roadmap."
+    },
+    {
+      "claim_id": "c3",
+      "claim": "Member-state competent authorities will publish enforcement guidance before phase-in.",
+      "claim_type": "regulatory_change",
+      "support_level": "weak",
+      "uncertainty": "No public commitment from most national authorities yet.",
+      "risk_if_wrong": "Operators plan against phantom guidance and miss real deadlines."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "EU Commission AI Act proposal (illustrative)",
+      "url": "https://example.com/ai-act-proposal",
+      "source_type": "illustrative_placeholder",
+      "supports": [
+        "High-risk obligations are defined",
+        "A phased enforcement schedule is described"
+      ],
+      "limits": [
+        "Placeholder URL; not a live citation",
+        "Does not specify per-sector enforcement posture"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Exact per-sector enforcement dates",
+    "Specific national-authority enforcement priorities"
+  ]
+}

@@ -18,6 +18,14 @@ if ! command -v make >/dev/null 2>&1; then
   exit 0
 fi
 
+# If there's a project venv, put it on PATH so make targets find
+# flake8/black/isort/ruff/mypy/pytest installed there.
+if [ -d ".venv/bin" ]; then
+  export PATH="$(pwd)/.venv/bin:$PATH"
+elif [ -d "venv/bin" ]; then
+  export PATH="$(pwd)/venv/bin:$PATH"
+fi
+
 echo "pre-push: running 'make ci-fast' (lint + typecheck + tests)..."
 make ci-fast
 HOOK_EOF

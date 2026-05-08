@@ -86,6 +86,50 @@ def validate_evidence(evidence_json: dict) -> dict:
     return _validate_json(evidence_json, "evidence-pack.schema.json")
 
 
+def audit_claims(audit_json: dict) -> dict:
+    """Validate a claim-level evidence-audit dict against
+    evidence-audit.schema.json (experimental) and report a small summary:
+    distribution of `support_level`, orphan evidence_id refs, and the
+    count of explicitly listed `unsupported_claims`.
+
+    Honest scope: schema-level only. Does not verify factual truth.
+    """
+    base = _validate_json(audit_json, "evidence-audit.schema.json")
+    if not base.get("valid"):
+        return {
+            "implemented": True,
+            "valid": False,
+            "errors": base.get("errors", []),
+            "summary": None,
+        }
+
+    claims = audit_json.get("claims", []) or []
+    evidence = audit_json.get("evidence", []) or []
+    evidence_ids = {e.get("evidence_id") for e in evidence}
+
+    levels: dict = {}
+    orphans: list = []
+    for c in claims:
+        levels[c["support_level"]] = levels.get(c["support_level"], 0) + 1
+        missing = [eid for eid in c.get("evidence_ids", []) if eid not in evidence_ids]
+        if missing:
+            orphans.append({"claim_id": c["claim_id"], "missing_evidence_ids": missing})
+
+    return {
+        "implemented": True,
+        "valid": True,
+        "errors": [],
+        "summary": {
+            "claim_count": len(claims),
+            "evidence_count": len(evidence),
+            "support_levels": levels,
+            "orphan_evidence_refs": orphans,
+            "unsupported_claims_listed": len(audit_json.get("unsupported_claims", []) or []),
+        },
+        "note": "Claim-level evidence audit is experimental. Schema-level only; does not verify factual truth.",
+    }
+
+
 def get_protocol(name: str) -> dict:
     """Return the requested protocol markdown."""
     try:
