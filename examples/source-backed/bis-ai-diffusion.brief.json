@@ -1,0 +1,42 @@
+{
+  "bottom_line": "The Biden-era BIS AI Diffusion Rule — a global three-tier export control regime for advanced AI chips and model weights — was rescinded by the Trump administration two days before its enforcement deadline (May 13 vs. May 15, 2025). A replacement rule is pending; compliance posture for Tier 2 countries (India, UAE, Singapore, Israel and ~140 others) remains undefined.",
+  "signal_classification": "compliance_relevant_development",
+  "what_changed": "BIS published an Interim Final Rule on January 15, 2025 establishing tiered global licensing requirements for exports of advanced AI chips (3A090.a threshold: H100-class and above) and closed-weight AI model weights trained above 10^26 FLOP. Countries were divided into Tier 1 (18 allies, unrestricted), Tier 2 (~140 countries, compute caps and datacenter authorization requirements), and Tier 3 (China, Russia, Iran and embargoed states, effective ban). The rule never reached its May 15, 2025 enforcement date: on May 13, 2025, BIS announced rescission and promised a replacement within 4-6 weeks.",
+  "why_it_matters": "Export compliance functions, cloud providers, chip manufacturers, and data center operators had begun structuring operations around the tier framework. Rescission does not restore the pre-rule baseline — it creates a gap in which the prior China-specific controls remain in force but the global tier architecture is undefined. Companies that built Tier 2 expansion plans now face regulatory uncertainty until a replacement rule is published.",
+  "affected_actors": [
+    "advanced AI chip exporters (NVIDIA, AMD, Intel)",
+    "cloud providers with global data center footprints",
+    "Tier 2 country customers and data center operators (India, UAE, Singapore, Israel, Saudi Arabia)",
+    "export compliance and trade counsel at technology companies",
+    "investors in AI infrastructure in Tier 2 markets"
+  ],
+  "main_uncertainty": "Scope and timeline of the replacement rule: whether it will replicate the global tier architecture, revert to China-specific controls only, or introduce a new structure. BIS gave a 4-6 week estimate in May 2025; no replacement has been published as of the analysis date.",
+  "scenarios": [
+    {
+      "name": "China-specific revert",
+      "description": "Replacement rule narrows scope back to China, Macau, and embargoed states. Tier 2 countries regain unrestricted access. Industry lobbying (SIA) and administration's stated competitiveness rationale make this plausible.",
+      "indicators": [
+        "Federal Register IFR limiting ECCN 3A090.a controls to EAR Country Group D:5",
+        "BIS statements removing per-country compute caps for non-D:5 countries",
+        "SIA endorsement of replacement rule language"
+      ]
+    },
+    {
+      "name": "Modified global tier structure",
+      "description": "Replacement rule retains a tiered global architecture but with higher compute thresholds, larger country caps, or expanded Tier 1 list. Compliance burden reduced but not eliminated for Tier 2.",
+      "indicators": [
+        "Federal Register IFR retaining per-country cap language with revised thresholds",
+        "BIS datacenter authorization program maintained with lighter requirements",
+        "Tier 1 expansion to include UAE, Saudi Arabia, or India"
+      ]
+    }
+  ],
+  "watch_next": [
+    "Federal Register for BIS replacement IFR on advanced AI chip exports",
+    "BIS Under Secretary Kessler statements on replacement rule scope",
+    "SIA and ITI formal responses to replacement rule",
+    "NVIDIA and AMD investor disclosures referencing new export control regime",
+    "Datacenter investment announcements in Tier 2 markets (India, UAE, Saudi Arabia) as proxy for regulatory clarity"
+  ],
+  "evidence_mode": "live_source_backed"
+}

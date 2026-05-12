@@ -1,0 +1,92 @@
+{
+  "topic": "BIS AI Diffusion Rule — rescission and replacement uncertainty",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "BIS published an IFR on January 15, 2025 creating a global three-tier export control regime for advanced AI chips and model weights, with a May 15, 2025 compliance deadline.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": ["e1", "e2"],
+      "support_level": "direct",
+      "uncertainty": "IFR status (not yet a final rule) meant the tier structure could have been modified after the public comment period even absent rescission.",
+      "risk_if_wrong": "Low — existence and content of the IFR is documented in Federal Register."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "NVIDIA assessed the rule would not materially affect its China operations or sales.",
+      "claim_type": "corporate_disclosure",
+      "evidence_ids": ["e3"],
+      "support_level": "direct",
+      "uncertainty": "Assessment was made at IFR publication; did not account for potential rule modifications or enforcement guidance issued before rescission.",
+      "risk_if_wrong": "If wrong, investors would have mispriced China revenue exposure in Q1 2025. SEC filing language limits legal exposure."
+    },
+    {
+      "claim_id": "c3",
+      "claim": "SIA formally opposed the rule as rushed, under-consulted, and competitively damaging to US firms.",
+      "claim_type": "industry_response",
+      "evidence_ids": ["e4", "e5"],
+      "support_level": "direct",
+      "uncertainty": "SIA represents manufacturers; other industry segments (cloud providers, software) may have had different positions.",
+      "risk_if_wrong": "Low — SIA statements are public and unambiguous."
+    },
+    {
+      "claim_id": "c4",
+      "claim": "The Trump administration rescinded the rule on May 13, 2025, two days before the enforcement deadline, citing competitiveness concerns.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": ["e6"],
+      "support_level": "direct",
+      "uncertainty": "None on the fact of rescission. Stated rationale (competitiveness) is from BIS press release — the actual driving factor may include lobbying pressure not documented in public sources.",
+      "risk_if_wrong": "Rescission is a matter of public record."
+    },
+    {
+      "claim_id": "c5",
+      "claim": "No replacement rule had been published as of the analysis date (May 12, 2026), leaving Tier 2 country compliance posture undefined.",
+      "claim_type": "regulatory_gap",
+      "evidence_ids": ["e6"],
+      "support_level": "partial",
+      "uncertainty": "A replacement rule may have been published between rescission (May 13, 2025) and this analysis date (May 12, 2026). The BIS press release committed only to 'coming weeks'. Live monitoring of the Federal Register is required to confirm current status.",
+      "risk_if_wrong": "If wrong — replacement rule exists — then the brief's watch-next and uncertainty framing would need updating. Material for compliance planning."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "Federal Register: Framework for Artificial Intelligence Diffusion (IFR, Docket 2025-00636)",
+      "url": "https://www.federalregister.gov/documents/2025/01/15/2025-00636/framework-for-artificial-intelligence-diffusion",
+      "source_type": "regulatory"
+    },
+    {
+      "evidence_id": "e2",
+      "name": "BIS Press Release: Biden-Harris Administration Announces Regulatory Framework for Responsible Diffusion of Advanced AI",
+      "url": "https://www.bis.gov/press-release/biden-harris-administration-announces-regulatory-framework-responsible-diffusion-advanced-artificial",
+      "source_type": "official_document"
+    },
+    {
+      "evidence_id": "e3",
+      "name": "NVIDIA 8-K Current Report (SEC EDGAR, January 13, 2025)",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000007/nvda-20250113.htm",
+      "source_type": "primary_data"
+    },
+    {
+      "evidence_id": "e4",
+      "name": "SIA Statement on Biden Administration AI Diffusion Plan",
+      "url": "https://www.semiconductors.org/sia-statement-on-biden-administrations-plan-to-publish-export-control-framework-for-artificial-intelligence-diffusion/",
+      "source_type": "industry"
+    },
+    {
+      "evidence_id": "e5",
+      "name": "SIA Formal Comments on AI Diffusion IFR (April 15, 2025)",
+      "url": "https://www.semiconductors.org/wp-content/uploads/2025/04/SIA-Comments-on-AI-Diffusion-IFR_April-15-2025.pdf",
+      "source_type": "industry"
+    },
+    {
+      "evidence_id": "e6",
+      "name": "BIS Press Release: Department of Commerce Announces Rescission of Biden-Era AI Diffusion Rule",
+      "url": "https://www.bis.gov/press-release/department-commerce-announces-rescission-biden-era-artificial-intelligence-diffusion-rule-strengthens",
+      "source_type": "official_document"
+    }
+  ],
+  "unsupported_claims": [
+    "Scope of replacement rule cannot be inferred from available sources.",
+    "Compliance cost incurred by industry before rescission is not quantified in public filings."
+  ]
+}

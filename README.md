@@ -24,7 +24,8 @@ output has to survive review by an analyst, not just sound plausible.
 
 | metric | value |
 |---|---|
-| mean score | 87.7 / 100 |
+| mean score | 86.8 / 100 |
+| cases | 4 (EU AI Act, Red Sea shipping, sanctions routing, BIS AI Diffusion) |
 | schema-valid | 100% |
 | with evidence pack | 100% |
 | with claim-level audit | 100% |
@@ -270,7 +271,7 @@ Key honesty rule:
 > Current scoring does not verify factual truth. It evaluates structure,
 > completeness, evidence labeling, and decision-readiness signals.
 
-Bundled-example baseline: mean 87.7/100, 3 cases, 100% schema-valid, 0 orphan refs.
+Bundled-example baseline: mean 86.8/100, 4 cases, 100% schema-valid, 0 orphan refs.
 Reproduce with `python evals/run_benchmark.py`. Human-judge benchmarking is not done yet.
 
 ---

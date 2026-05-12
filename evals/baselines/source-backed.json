@@ -1,16 +1,37 @@
 {
   "summary": {
-    "cases": 3,
+    "cases": 4,
     "schema_valid_pct": 100.0,
     "with_evidence_pct": 100.0,
     "with_audit_pct": 100.0,
-    "mean_score": 87.7,
-    "min_score": 85,
+    "mean_score": 86.8,
+    "min_score": 84,
     "max_score": 89,
     "audit_orphan_total": 0,
     "note": "Heuristic structural / evidence-discipline metrics. Does not verify factual truth."
   },
   "cases": [
+    {
+      "case": "bis-ai-diffusion",
+      "brief_path": "examples/source-backed/bis-ai-diffusion.brief.json",
+      "evidence_path": "examples/source-backed/bis-ai-diffusion.evidence.json",
+      "audit_path": "examples/source-backed/bis-ai-diffusion.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 84,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 15,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 11
+      }
+    },
     {
       "case": "eu-ai-act",
       "brief_path": "examples/source-backed/eu-ai-act.brief.json",
