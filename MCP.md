@@ -1,88 +1,167 @@
-# MCP.md
+# MCP
 
-This file describes the current MCP-shaped Python tool surface and the future
-transport/server direction for Agenda-Intelligence.md.
+`agenda-intelligence-mcp` is a real stdio MCP server shipping with the package.
+It exposes 8 tool functions implemented in `agenda_intelligence.mcp_server`.
 
-The repository is currently plain markdown + schemas + CLI plus read-only
-functions in `agenda_intelligence.mcp_server`. A full HTTP/WebSocket MCP server
-is still planned.
+**Verification status**: tool function correctness verified by `scripts/smoke_mcp.py`.
+End-to-end client protocol verification (JSON-RPC initialize / tools/list / tools/call) is pending.
 
-## Implemented Python tool functions
+Live source retrieval is **not implemented**.
+
+---
+
+## Running the server
+
+```bash
+agenda-intelligence-mcp
+```
+
+Or add it to your MCP client config:
+
+```bash
+agenda-intelligence mcp-config --client cursor
+agenda-intelligence mcp-config --client claude-desktop
+```
+
+---
+
+## Implemented tools
+
+### `validate_brief`
+
+Validate an agenda-brief dict against `agenda-brief.schema.json`.
+
+```json
+{ "brief_json": { "bottom_line": "...", "signal_classification": "structural_shift", "what_changed": "...", "why_it_matters": "...", "main_uncertainty": "...", "watch_next": ["..."] } }
+```
+
+Returns `{ "implemented": true, "valid": true|false, "errors": [...] }`.
+
+---
+
+### `validate_evidence`
+
+Validate an evidence-pack dict against `evidence-pack.schema.json`.
+
+```json
+{ "evidence_json": { "evidence": [ { "evidence_id": "e1", "source_type": "primary", ... } ] } }
+```
+
+Returns `{ "implemented": true, "valid": true|false, "errors": [...] }`.
+
+---
+
+### `audit_claims`
+
+**Experimental.** Validate a claim-level evidence-audit dict against `evidence-audit.schema.json` and report:
+
+- `support_level` distribution across claims (`direct | partial | weak | unsupported`)
+- orphan `evidence_id` references (evidence_ids in claims not present in the evidence list)
+- count of explicitly listed `unsupported_claims`
+
+```json
+{
+  "audit_json": {
+    "brief_id": "eu-ai-act-2024-08",
+    "claims": [
+      {
+        "claim_id": "c1",
+        "claim": "EU AI Act tightens obligations on high-risk systems.",
+        "claim_type": "regulatory_change",
+        "evidence_ids": ["e1"],
+        "support_level": "direct",
+        "uncertainty": "Enforcement timeline per sector unclear.",
+        "risk_if_wrong": "Compliance plans miss deadline."
+      }
+    ],
+    "evidence": [ { "evidence_id": "e1", "title": "...", "url": "..." } ],
+    "unsupported_claims": []
+  }
+}
+```
+
+Returns:
+
+```json
+{
+  "implemented": true,
+  "valid": true,
+  "errors": [],
+  "summary": {
+    "claim_count": 5,
+    "evidence_count": 4,
+    "support_levels": { "direct": 3, "partial": 1, "weak": 1 },
+    "orphan_evidence_refs": [],
+    "unsupported_claims_listed": 0
+  },
+  "note": "Claim-level evidence audit is experimental. Schema-level only; does not verify factual truth."
+}
+```
+
+Honest scope: schema-level only. Does not verify factual truth.
+
+---
 
 ### `get_protocol`
 
-Return the top-level protocol or one base reference file from packaged data.
-
-Inputs:
+Return packaged protocol markdown by name.
 
 ```json
-{ "name": "Agenda-Intelligence.md" }
+{ "name": "entrypoint" }
 ```
+
+Returns `{ "implemented": true, "name": "...", "path": "...", "protocol": "<markdown text>", "error": null }`.
+
+---
 
 ### `list_lenses`
 
-Return available regional and sector lenses from packaged `agent-manifest.json`.
-
-Inputs:
+List available regional and sector lenses from the packaged `agent-manifest.json`.
 
 ```json
-{ "type": "regional" }
+{ "lens_type": "regional" }
 ```
+
+Pass `null` / omit `lens_type` to list all. Returns `{ "implemented": true, "lenses": { ... }, "error": null }`.
+
+---
 
 ### `get_lens`
 
 Return packaged lens markdown by type and id.
 
-Inputs:
-
 ```json
-{ "type": "sector", "id": "sanctions" }
+{ "lens_type": "sector", "lens_id": "sanctions" }
 ```
 
-### `validate_brief`
+Returns `{ "implemented": true, "type": "...", "id": "...", "path": "...", "lens": "<markdown text>", "error": null }`.
 
-Validate a JSON agenda brief against `schemas/agenda-brief.schema.json`.
-
-Inputs:
-
-```json
-{ "brief": { "bottom_line": "...", "signal_classification": "signal", "what_changed": "...", "main_uncertainty": "...", "watch_next": ["..."] } }
-```
-
-## Design rule
-
-MCP should expose small stable contracts, not a large agent framework. The markdown files remain the source of truth.
-
+---
 
 ### `source_plan`
 
-Return required source types for an agenda category from packaged data.
-
-Inputs:
+Return source requirements for an agenda category.
 
 ```json
 { "category": "technology-ai" }
 ```
 
-### `validate_evidence`
+Returns `{ "implemented": true, "category": "...", "path": "...", "plan": { ... }, "error": null }`.
 
-Validate an evidence pack against `schemas/evidence-pack.schema.json`.
-
-Inputs:
-
-```json
-{ "path": "examples/source/evidence-pack.json" }
-```
-
-## Stubs / planned
+---
 
 ### `score_output`
 
-Currently returns an explicit `implemented: false` response. It should become a
-rubric-based quality scorer after the evaluator moves beyond the before/after
-CLI harness.
+Score a before/after output pair with the marker rubric used in evals.
 
-### `write_memory_card`
+```json
+{ "before_text": "...", "after_text": "..." }
+```
 
-Planned. It should create or propose an AnalysisBank memory card after a
-success or failure, but it is not implemented yet.
+Returns `{ "implemented": true, "score": 72, "dimensions": { ... }, "error": null }`.
+
+---
+
+## Design rule
+
+Small stable contracts, not a large agent framework. The markdown files remain the source of truth.

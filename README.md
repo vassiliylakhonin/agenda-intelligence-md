@@ -20,6 +20,16 @@ It is built for engineers shipping policy, sanctions, regulation,
 geopolitical-risk, market-risk, and strategic-intelligence agents — where the
 output has to survive review by an analyst, not just sound plausible.
 
+**Bundled-example baseline** (3 cases, reproduced with `python evals/run_benchmark.py`):
+
+| metric | value |
+|---|---|
+| mean score | 87.7 / 100 |
+| schema-valid | 100% |
+| with evidence pack | 100% |
+| with claim-level audit | 100% |
+| orphan evidence refs | 0 |
+
 ---
 
 ## What this is
@@ -76,10 +86,13 @@ agenda-intelligence score examples/agenda-brief.json
 # 4. Score with evidence-linked feedback
 agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
 
-# 5. Diagnose local install + MCP tool surface
+# 5. Run the structural bench across all bundled examples
+agenda-intelligence bench examples/source-backed --strict --min-score 80
+
+# 6. Diagnose local install + MCP tool surface
 agenda-intelligence doctor
 
-# 6. Print local MCP client config
+# 7. Print local MCP client config
 agenda-intelligence mcp-config --client cursor
 ```
 
@@ -102,10 +115,20 @@ pack used to back each claim.
 - Schema-valid JSON brief: [`examples/source-backed/eu-ai-act.brief.json`](examples/source-backed/eu-ai-act.brief.json)
 - Evidence pack (illustrative — placeholder URLs, not live citations):
   [`examples/source-backed/eu-ai-act.evidence.json`](examples/source-backed/eu-ai-act.evidence.json)
+- Claim-level audit: [`examples/source-backed/eu-ai-act.audit.json`](examples/source-backed/eu-ai-act.audit.json)
 - Before/after pair: [`examples/before-after/`](examples/before-after/)
 
 > The evidence URLs in flagship examples are **illustrative placeholders**.
 > The point is the *shape* of evidence-backed reasoning, not live citations.
+
+Run the full pipeline on this example:
+
+```bash
+agenda-intelligence validate-brief examples/source-backed/eu-ai-act.brief.json
+agenda-intelligence validate-evidence examples/source-backed/eu-ai-act.evidence.json
+agenda-intelligence audit-claims examples/source-backed/eu-ai-act.audit.json --strict
+agenda-intelligence score examples/source-backed/eu-ai-act.brief.json --evidence examples/source-backed/eu-ai-act.evidence.json --min-score 80
+```
 
 ### Before / after (sketch)
 
@@ -150,14 +173,18 @@ The package ships a real stdio MCP server, `agenda-intelligence-mcp`, plus
 small Python tool functions in `agenda_intelligence.mcp_server`. See
 [`MCP.md`](MCP.md) and [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
 
-Implemented MCP tools:
+Implemented MCP tools (all verified by `scripts/smoke_mcp.py`):
 - `validate_brief(brief_json)` — schema check
 - `validate_evidence(evidence_json)` — schema check
+- `audit_claims(audit_json)` — claim-level evidence audit (experimental)
 - `get_protocol(name)` — return packaged protocol markdown
 - `list_lenses(lens_type=None)` — read from manifest
 - `get_lens(lens_type, lens_id)` — return packaged lens markdown
 - `source_plan(category)` — return source requirements
-- `score_output(...)` — heuristic structure / decision-readiness score
+- `score_output(before_text, after_text)` — heuristic structure / decision-readiness score
+
+**MCP verification status**: tool function correctness verified by `scripts/smoke_mcp.py`.
+End-to-end client protocol verification (JSON-RPC initialize/tools/call) is pending — see [`MCP.md`](MCP.md).
 
 Live source retrieval is **not implemented**.
 
