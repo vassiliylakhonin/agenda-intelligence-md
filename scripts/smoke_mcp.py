@@ -43,6 +43,39 @@ REQUESTS = [
             },
         },
     },
+    {
+        "jsonrpc": "2.0",
+        "id": 5,
+        "method": "tools/call",
+        "params": {
+            "name": "audit_claims",
+            "arguments": {
+                "audit_json": {
+                    "topic": "smoke-test",
+                    "claims": [
+                        {
+                            "claim_id": "c1",
+                            "claim": "Test claim.",
+                            "claim_type": "regulatory_change",
+                            "evidence_ids": ["e1"],
+                            "support_level": "direct",
+                            "uncertainty": "None.",
+                            "risk_if_wrong": "Low.",
+                        }
+                    ],
+                    "evidence": [
+                        {
+                            "evidence_id": "e1",
+                            "name": "Test source",
+                            "url": "https://example.com",
+                            "source_type": "official_document",
+                        }
+                    ],
+                    "unsupported_claims": [],
+                }
+            },
+        },
+    },
 ]
 
 
@@ -58,8 +91,8 @@ def run_server(command: list[str]) -> list[dict]:
 
 
 def assert_response_shape(responses: list[dict], expected_version: str | None) -> None:
-    if len(responses) != 4:
-        raise SystemExit(f"Expected 4 MCP responses, got {len(responses)}: {responses}")
+    if len(responses) != 5:
+        raise SystemExit(f"Expected 5 MCP responses, got {len(responses)}: {responses}")
 
     initialize = responses[0]["result"]
     server_info = initialize["serverInfo"]
@@ -72,6 +105,7 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
     expected_tools = {
         "validate_brief",
         "validate_evidence",
+        "audit_claims",
         "get_protocol",
         "list_lenses",
         "get_lens",
@@ -99,6 +133,20 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
         raise SystemExit(f"score_output is still a stub: {score_payload}")
     if score_payload["after_score"] <= score_payload["before_score"]:
         raise SystemExit(f"score_output did not improve after output: {score_payload}")
+
+    audit_result = responses[4]["result"]
+    if audit_result.get("isError"):
+        raise SystemExit(f"MCP audit_claims returned tool error: {audit_result}")
+    audit_payload = json.loads(audit_result["content"][0]["text"])
+    if not audit_payload.get("implemented"):
+        raise SystemExit(f"audit_claims not implemented: {audit_payload}")
+    if not audit_payload.get("valid"):
+        raise SystemExit(f"audit_claims reported invalid for well-formed input: {audit_payload}")
+    summary = audit_payload.get("summary", {})
+    if summary.get("claim_count") != 1 or summary.get("evidence_count") != 1:
+        raise SystemExit(f"audit_claims summary unexpected: {summary}")
+    if summary.get("orphan_evidence_refs"):
+        raise SystemExit(f"audit_claims found unexpected orphans: {summary}")
 
 
 def parse_args() -> argparse.Namespace:

@@ -3,8 +3,7 @@
 `agenda-intelligence-mcp` is a real stdio MCP server shipping with the package.
 It exposes 8 tool functions implemented in `agenda_intelligence.mcp_server`.
 
-**Verification status**: tool function correctness verified by `scripts/smoke_mcp.py`.
-End-to-end client protocol verification (JSON-RPC initialize / tools/list / tools/call) is pending.
+**Verification status**: wire-protocol verified — `scripts/smoke_mcp.py` exercises the full JSON-RPC cycle (initialize → tools/list → tools/call) against the running stdio server, including `audit_claims`.
 
 Live source retrieval is **not implemented**.
 

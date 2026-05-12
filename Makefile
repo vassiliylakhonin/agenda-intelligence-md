@@ -33,6 +33,7 @@ ci: lint typecheck test
 	python3 -m agenda_intelligence.cli validate-evidence examples/source/evidence-pack.json >/dev/null
 	python3 scripts/validate.py
 	python3 scripts/validate_public_examples.py
+	python3 scripts/smoke_mcp.py --command "python3 -m agenda_intelligence.mcp_stdio"
 
 # Subset for tight inner loop (lint + tests, no CLI smoke).
 ci-fast: lint typecheck test

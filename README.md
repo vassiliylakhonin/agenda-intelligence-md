@@ -183,8 +183,7 @@ Implemented MCP tools (all verified by `scripts/smoke_mcp.py`):
 - `source_plan(category)` — return source requirements
 - `score_output(before_text, after_text)` — heuristic structure / decision-readiness score
 
-**MCP verification status**: tool function correctness verified by `scripts/smoke_mcp.py`.
-End-to-end client protocol verification (JSON-RPC initialize/tools/call) is pending — see [`MCP.md`](MCP.md).
+**MCP verification status**: wire-protocol verified — `scripts/smoke_mcp.py` exercises the full JSON-RPC cycle (initialize → tools/list → tools/call) against the running stdio server. See [`MCP.md`](MCP.md).
 
 Live source retrieval is **not implemented**.
 
@@ -271,7 +270,8 @@ Key honesty rule:
 > Current scoring does not verify factual truth. It evaluates structure,
 > completeness, evidence labeling, and decision-readiness signals.
 
-Benchmark numbers are not published yet — do not cite them.
+Bundled-example baseline: mean 87.7/100, 3 cases, 100% schema-valid, 0 orphan refs.
+Reproduce with `python evals/run_benchmark.py`. Human-judge benchmarking is not done yet.
 
 ---
 
@@ -284,10 +284,11 @@ Benchmark numbers are not published yet — do not cite them.
 | CLI: validate-*, score, start, source-plan, doctor, mcp-config | Stable |
 | Lenses (Central Asia, Middle East, EU; sanctions, export controls) | Stable |
 | MCP stdio server (`agenda-intelligence-mcp`) | Stable |
-| MCP tool functions (validate / read / score) | Stable |
+| MCP tool functions (validate / read / score / audit_claims) | Stable |
 | Evidence-audit schema (claim-level) | Experimental |
 | Live source retrieval | Not implemented |
-| Benchmark suite results | Not produced yet |
+| Heuristic benchmark baseline (3 bundled cases) | Produced — mean 87.7/100 |
+| Human-judge benchmark results | Not produced yet |
 | Factual-truth verification | Not in scope today |
 
 ## Limitations
