@@ -48,7 +48,9 @@ output has to survive review by an analyst, not just sound plausible.
 - **Source / evidence policy** — explicit rules for claim-level discipline.
 - **Regional & sector lenses** — compact reference packs inside the protocol
   (Central Asia & Caspian, Middle East, EU; sanctions, export controls). For
-  deep regional analysis, see the dedicated [vertical specialist skill](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill).
+  deep regional analysis, use the dedicated vertical specialist skills:
+  [Central Asia + Caspian](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill)
+  or [Gulf + Middle East](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill).
 
 ## What this is not
 
