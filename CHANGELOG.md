@@ -2,27 +2,55 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
-## [Unreleased]
+## [0.7.2] – 2026-05-12
+
 ### Repositioned
-- Project repositioning toward **evidence & eval layer for strategic
-  intelligence agents**: README rewritten with explicit
-  "What this is / What this is not", 60-second quickstart, status,
-  limitations, roadmap, and a Mermaid architecture diagram.
+- Project repositioned as **evidence & eval layer for strategic intelligence agents**.
+  README rewritten: "What this is / What this is not", 60-second quickstart,
+  status table, limitations, Mermaid architecture diagram.
 - `docs/evaluation.md` rewritten around four explicit eval layers;
   factual truthfulness marked **not implemented**.
 
-### Added
-- Experimental `schemas/evidence-audit.schema.json` for claim-level
-  evidence audit (`support_level`, `uncertainty`, `risk_if_wrong`).
-- Reworked flagship example `examples/source-backed/eu-ai-act.md` and
-  schema-valid `eu-ai-act.brief.json`. Evidence is explicitly labeled
-  illustrative — not live citations.
+### Added — CLI
+- `agenda-intelligence check` / `audit` / `report` / `eval` aliases for common workflows.
+- `agenda-intelligence audit-claims <audit.json> [--strict] [--format json]` —
+  validates claim-level evidence-audit JSON; `--strict` exits non-zero on orphan refs.
+- `agenda-intelligence bench <dir> [--strict] [--min-score N] [--format json]` —
+  discovers `*.brief.json` with sibling `.evidence.json`/`.audit.json`, runs
+  validate + audit + score across all cases, emits Markdown or JSON report.
+- `agenda-intelligence verify-quotes <pack.json> [--strict] [--texts-dir DIR]` —
+  experimental local-text quote verification.
+- `agenda-intelligence score` gains `--format json` and `--min-score N` flags.
 
-## [0.7.2] – 2026-05-07
-### Added
+### Added — Schemas & Examples
+- Experimental `schemas/evidence-audit.schema.json` for claim-level evidence audit
+  (`claim_id`, `claim_type`, `evidence_ids`, `support_level`, `uncertainty`, `risk_if_wrong`).
+- Three flagship source-backed example sets with brief + evidence + claim-level audit:
+  `eu-ai-act`, `red-sea-shipping`, `sanctions-routing`.
+
+### Added — MCP
+- `audit_claims` MCP tool (8th tool): validates claim-level audit JSON via wire protocol.
+- `scripts/smoke_mcp.py` now exercises all 8 tools including `audit_claims` via full
+  JSON-RPC cycle (initialize → tools/list → 3× tools/call).
+- MCP wire-protocol verification added to `make ci`.
+
+### Added — Evals & CI
+- `agenda_intelligence.bench` module: `discover_cases`, `run_case`, `summarize`,
+  `render_markdown`, `to_json` — deterministic, LLM-free structural harness.
+- `evals/run_benchmark.py` script and committed baselines:
+  `evals/baselines/source-backed.{md,json}`.
+- `.github/workflows/bench.yml` — CI bench gate (`--strict --min-score 80`)
+  with baseline drift check.
+- 13 new pytest tests covering all new commands and MCP tool.
+- `make ci` extended: MCP smoke + bench; `make ci-fast` for inner loop.
+- `scripts/install-hooks.sh` pre-push hook (runs `make ci-fast` before every push).
+
+### Added — Doctor & Config (from 0.7.2 base)
 - `agenda-intelligence doctor` for local package and MCP self-diagnosis.
 - `agenda-intelligence doctor --json` for machine-readable diagnostics.
-- CI and post-release smoke coverage for the doctor command.
+
+### Bundled baseline
+- 3 cases, mean 87.7/100, 100% schema-valid, 100% with evidence, 100% with audit, 0 orphan refs.
 
 ## [0.7.1] – 2026-05-06
 ### Added
