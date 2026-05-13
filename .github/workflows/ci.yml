@@ -25,6 +25,9 @@ jobs:
       - name: Upgrade pip
         run: python3 -m pip install --upgrade pip
 
+      - name: Install package build tools
+        run: python3 -m pip install build twine
+
       - name: Install package with dev extras
         run: pip install -e ".[dev]"
 
@@ -70,3 +73,18 @@ jobs:
         run: |
           python3 scripts/validate.py
           python3 scripts/validate_public_examples.py
+
+      - name: Build package artifacts
+        run: python3 -m build
+
+      - name: Check package metadata
+        run: python3 -m twine check dist/*
+
+      - name: Smoke-install built wheel
+        shell: bash
+        run: |
+          python3 -m venv .wheel-smoke-venv
+          .wheel-smoke-venv/bin/python -m pip install --upgrade pip
+          .wheel-smoke-venv/bin/python -m pip install dist/*.whl
+          .wheel-smoke-venv/bin/agenda-intelligence --version
+          .wheel-smoke-venv/bin/agenda-intelligence validate-manifest
