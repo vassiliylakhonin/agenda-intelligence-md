@@ -44,3 +44,38 @@ def test_packaged_schemas_match_top_level_schemas():
         packaged_schema_path = packaged_schema_dir / schema_path.name
         assert packaged_schema_path.exists(), f"Missing packaged schema: {schema_path.name}"
         assert load_json(packaged_schema_path) == load_json(schema_path)
+
+
+def assert_packaged_copy_matches_top_level(relative_path):
+    top_level = ROOT / relative_path
+    packaged = ROOT / "src/agenda_intelligence/data" / relative_path
+
+    assert top_level.exists(), f"Missing top-level asset: {relative_path}"
+    assert packaged.exists(), f"Missing packaged asset: {relative_path}"
+    assert packaged.read_bytes() == top_level.read_bytes(), f"Packaged asset drifted: {relative_path}"
+
+
+def test_packaged_text_assets_match_top_level_assets():
+    for relative_path in [
+        "Agenda-Intelligence.md",
+        "SOURCE_POLICY.md",
+        "llms.txt",
+    ]:
+        assert_packaged_copy_matches_top_level(relative_path)
+
+
+def test_packaged_json_assets_match_top_level_assets():
+    for relative_path in [
+        "agent-manifest.json",
+        "source-taxonomy.json",
+    ]:
+        assert_packaged_copy_matches_top_level(relative_path)
+
+    for relative_path in sorted(Path("source-requirements").glob("*.json")):
+        assert_packaged_copy_matches_top_level(relative_path)
+
+
+def test_packaged_skill_assets_match_top_level_assets():
+    for relative_path in sorted(Path("skills/agenda-intelligence").rglob("*")):
+        if relative_path.is_file():
+            assert_packaged_copy_matches_top_level(relative_path)
