@@ -1,3 +1,0 @@
-[console_scripts]
-agenda-intelligence = agenda_intelligence.cli:main
-agenda-intelligence-mcp = agenda_intelligence.mcp_stdio:main
