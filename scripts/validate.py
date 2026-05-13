@@ -95,6 +95,32 @@ for token in [
     if token not in readme:
         raise SystemExit(f"README missing token: {token}")
 
+for stale_token in [
+    "Bundled-example baseline** (3 cases",
+    "Heuristic benchmark baseline (3 bundled cases)",
+    "mean 87.7/100",
+]:
+    if stale_token in readme:
+        raise SystemExit(f"README contains stale benchmark claim: {stale_token}")
+
+llms = (root / "llms.txt").read_text()
+for token in [
+    "Packaged CLI: agenda-intelligence",
+    "MCP server: agenda-intelligence-mcp",
+    "schemas/evidence-audit.schema.json",
+    "audit-claims",
+    "mcp-config",
+]:
+    if token not in llms:
+        raise SystemExit(f"llms.txt missing token: {token}")
+
+for stale_token in [
+    "MCP sketch",
+    "CLI source commands: source-types",
+]:
+    if stale_token in llms:
+        raise SystemExit(f"llms.txt contains stale token: {stale_token}")
+
 for json_file in [
     "agent-manifest.json",
     "schemas/agenda-brief.schema.json",

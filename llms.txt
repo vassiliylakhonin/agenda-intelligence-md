@@ -44,15 +44,18 @@ Eval script: scripts/eval_before_after.py
 Agent manifest: agent-manifest.json
 Schemas:
 - schemas/agenda-brief.schema.json
+- schemas/evidence-pack.schema.json
+- schemas/evidence-audit.schema.json
 - schemas/memory-card.schema.json
 - schemas/lens-manifest.schema.json
 - schemas/signal-classification.schema.json
-CLI: scripts/agenda_intelligence.py
-MCP sketch: MCP.md
+Packaged CLI: agenda-intelligence
+Legacy script wrapper: scripts/agenda_intelligence.py
+MCP server: agenda-intelligence-mcp
+MCP docs: MCP.md and docs/integrations/mcp.md
 
 Source Acquisition Layer:
 - SOURCE_POLICY.md
 - source-taxonomy.json
 - source-requirements/*.json
-- schemas/evidence-pack.schema.json
-CLI source commands: source-types, source-plan, validate-evidence
+CLI source commands: start, source-plan, validate-evidence, audit-claims, score, bench, doctor, mcp-config
