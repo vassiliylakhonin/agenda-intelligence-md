@@ -20,7 +20,7 @@ It is built for engineers shipping policy, sanctions, regulation,
 geopolitical-risk, market-risk, and strategic-intelligence agents — where the
 output has to survive review by an analyst, not just sound plausible.
 
-**Bundled-example baseline** (3 cases, reproduced with `python evals/run_benchmark.py`):
+**Bundled-example baseline** (4 cases, reproduced with `python3 evals/run_benchmark.py`):
 
 | metric | value |
 |---|---|
@@ -290,7 +290,7 @@ Reproduce with `python evals/run_benchmark.py`. Human-judge benchmarking is not 
 | MCP tool functions (validate / read / score / audit_claims) | Stable |
 | Evidence-audit schema (claim-level) | Experimental |
 | Live source retrieval | Not implemented |
-| Heuristic benchmark baseline (3 bundled cases) | Produced — mean 87.7/100 |
+| Heuristic benchmark baseline (4 bundled cases) | Produced — mean 86.8/100 |
 | Human-judge benchmark results | Not produced yet |
 | Factual-truth verification | Not in scope today |
 
