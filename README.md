@@ -76,7 +76,7 @@ output has to survive review by an analyst, not just sound plausible.
 # From PyPI
 pip install agenda-intelligence-md
 # Or pinned wheel:
-# pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.7.2/agenda_intelligence_md-0.7.2-py3-none-any.whl
+# pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.7.3/agenda_intelligence_md-0.7.3-py3-none-any.whl
 
 # 1. Get a source plan for a domain
 agenda-intelligence start technology-ai
