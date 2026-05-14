@@ -35,6 +35,18 @@ MCP `score_output` tool, post-release smoke.
 - `agent-manifest.json` schemas section now includes `evidence_audit`.
 - All "experimental" labels removed from CLI help, MCP descriptions, and server module.
 
+### v0.7.3 — signal lifecycle, provenance tags, domain expansion
+- `signal-tracker.schema.json` (7th schema): signal lifecycle tracker — status, evidence mode, actor, trigger, confidence, expiry, cross-references.
+- `skills/agenda-intelligence/references/signal-lifecycle.md`: signal lifecycle reference for agents.
+- Per-claim inline provenance tags in markdown output: `[primary]`, `[secondary]`, `[user-provided]`, `[inference]`, `[analyst-judgment]` + `[verify]` / `[stale-risk: YYYY-MM]` action flags.
+- Trust-layer eval parameters added to human review checklist.
+- `AGENTS.md`: project-level agent instructions and working rules.
+- Gulf + Middle East added as second vertical specialist in Regional lenses (alongside Central Asia + Caspian).
+- BIS AI Diffusion Rule live-source-backed case study (`examples/bis-ai-diffusion-rule/`).
+- `agent-manifest.json` and `llms.txt` updated: signal-tracker schema and signal-lifecycle protocol registered.
+- Packaged data assets (`src/agenda_intelligence/data/`) synced to top-level sources.
+- CI: generated artifacts no longer tracked; package build smoke-test added.
+
 ## v0.8 — benchmark depth
 
 - Expand benchmark to 5–10 source-backed cases (currently 4).
