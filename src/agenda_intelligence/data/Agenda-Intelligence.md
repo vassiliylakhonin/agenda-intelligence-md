@@ -47,6 +47,8 @@ Always separate:
 Never make speculation sound like fact.
 Never imply live verification if no live verification was performed.
 
+Tag factual claims inline: `[primary]` `[secondary]` `[user-provided]` `[inference]` `[analyst-judgment]` — plus optional `[verify]` or `[stale-risk: YYYY-MM]`. See `references/evidence-discipline.md` for full system.
+
 ## Default output
 
 ```markdown
@@ -59,6 +61,14 @@ Never imply live verification if no live verification was performed.
 **Scenarios:** ...
 **Watch next:** ...
 ```
+
+## Signal lifecycle
+
+For signals classified as `signal`, `structural_shift`, or `trigger_event` that require monitoring across sessions, open a tracker using `skills/agenda-intelligence/references/signal-lifecycle.md`.
+
+Stages: `detected → developing → escalated → stable → resolved → archived`.
+
+Store tracker files as `{signal_id}.json` validated against `schemas/signal-tracker.schema.json`. When a signal resolves, distill a memory card into `analysis-bank/`.
 
 ## Use with deeper references
 

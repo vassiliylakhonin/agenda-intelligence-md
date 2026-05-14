@@ -37,6 +37,12 @@ For every important claim, identify:
 - whether the claim is supported, partially supported, or unsupported;
 - what evidence would confirm, weaken, or falsify it.
 
+Tag claims inline in markdown output using the provenance system from `references/evidence-discipline.md`:
+- Axis A (one per claim): `[primary]` `[secondary]` `[user-provided]` `[inference]` `[analyst-judgment]`
+- Axis B (optional): `[verify]` `[stale-risk: YYYY-MM]`
+
+Tags are additive to document-level evidence mode. Use both.
+
 ## Do not claim without evidence
 
 - Binding legal obligation without legal text or regulator guidance.
