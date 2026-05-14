@@ -1,10 +1,10 @@
 {
   "summary": {
-    "cases": 4,
+    "cases": 5,
     "schema_valid_pct": 100.0,
     "with_evidence_pct": 100.0,
     "with_audit_pct": 100.0,
-    "mean_score": 86.8,
+    "mean_score": 87.0,
     "min_score": 84,
     "max_score": 89,
     "audit_orphan_total": 0,
@@ -48,6 +48,27 @@
       "score_breakdown": {
         "relevance": 25,
         "evidence_support": 16,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "eu-cbam",
+      "brief_path": "examples/source-backed/eu-cbam/eu-cbam.brief.json",
+      "evidence_path": "examples/source-backed/eu-cbam/eu-cbam.evidence.json",
+      "audit_path": "examples/source-backed/eu-cbam/eu-cbam.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 88,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 15,
         "completeness": 19,
         "actionability": 14,
         "clarity": 15

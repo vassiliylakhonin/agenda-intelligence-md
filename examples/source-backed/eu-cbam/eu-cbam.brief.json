@@ -1,0 +1,40 @@
+{
+  "bottom_line": "EU CBAM (Reg. 2023/956) imposes embedded-carbon reporting now and certificate-purchase obligations from 2026; non-EU exporters without verified carbon data face direct cost uplift and potential market-access risk.",
+  "signal_classification": "compliance_relevant_development",
+  "what_changed": "CBAM transitional phase (Oct 2023 – Dec 2025) requires quarterly embedded-carbon reporting; definitive phase from Jan 2026 requires CBAM certificates priced at EU ETS carbon price.",
+  "why_it_matters": "Non-EU exporters in covered sectors must quantify and verify embedded carbon or face import barriers; EU importers bear certificate-purchase cost and reporting liability.",
+  "affected_actors": [
+    "non-EU steel exporters",
+    "non-EU aluminium exporters",
+    "non-EU cement and fertiliser producers",
+    "EU importers of covered goods",
+    "carbon-intensive manufacturers in countries without carbon pricing"
+  ],
+  "main_uncertainty": "CBAM certificate price volatility (linked to EU ETS price) and enforcement strictness during the early definitive phase.",
+  "scenarios": [
+    {
+      "name": "Smooth transition",
+      "description": "Non-EU exporters build verified carbon accounting systems; CBAM cost is manageable and absorbed into pricing.",
+      "indicators": [
+        "high CBAM registry registration rates by Q3 2025",
+        "EU ETS price stabilises below EUR 70/tCO2"
+      ]
+    },
+    {
+      "name": "Enforcement crackdown",
+      "description": "EU customs and national authorities pursue penalties for under-reporting; non-EU exporters without verified data lose EU market access.",
+      "indicators": [
+        "first penalty decisions published by national authorities",
+        "EU Commission issues infringement notices",
+        "sharp drop in imports from non-CBAM-compliant exporters"
+      ]
+    }
+  ],
+  "watch_next": [
+    "EU Commission CBAM registry launch and registration volumes (Q4 2025)",
+    "EU ETS carbon price trajectory into 2026",
+    "First enforcement actions or penalty decisions by national competent authorities",
+    "Trading partner responses: bilateral agreements or WTO challenges"
+  ],
+  "evidence_mode": "live_source_backed"
+}

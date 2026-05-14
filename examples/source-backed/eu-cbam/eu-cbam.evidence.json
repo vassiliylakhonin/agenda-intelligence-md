@@ -1,0 +1,132 @@
+{
+  "topic": "EU Carbon Border Adjustment Mechanism (CBAM)",
+  "evidence_mode": "live_source_backed",
+  "retrieved_at": "2026-05-14T00:00:00Z",
+  "jurisdiction": "European Union",
+  "claims": [
+    {
+      "claim": "EU Regulation 2023/956 establishes the CBAM, covering steel, aluminium, cement, fertilisers, hydrogen, and electricity.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "EU Regulation 2023/956 establishing CBAM",
+          "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023R0956",
+          "source_type": "legal",
+          "freshness": "current",
+          "supports": [
+            "Establishes CBAM legal basis, covered goods, and certificate obligation."
+          ],
+          "limits": [
+            "Legal text defines the framework; actual enforcement depends on national implementation."
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "The CBAM transitional phase requires EU importers to submit quarterly embedded-carbon reports from Q4 2023 through end of 2025.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "EU Implementing Regulation 2023/1773 (CBAM transitional reporting)",
+          "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023R1773",
+          "source_type": "legal",
+          "freshness": "current",
+          "supports": [
+            "Specifies transitional-period reporting obligations, format, and quarterly deadlines."
+          ],
+          "limits": [
+            "Covers transitional phase only; definitive-phase certificate mechanics are in Reg. 2023/956."
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "From 1 January 2026, EU importers must surrender CBAM certificates equal to the embedded carbon in covered imports, priced at the EU ETS carbon price.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "EU Regulation 2023/956 establishing CBAM",
+          "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023R0956",
+          "source_type": "legal",
+          "freshness": "current",
+          "supports": [
+            "Article 22 and related provisions define the certificate-purchase obligation and ETS-price linkage."
+          ],
+          "limits": [
+            "ETS price is variable; actual certificate cost cannot be predicted from the regulation alone."
+          ]
+        },
+        {
+          "name": "European Commission CBAM guidance",
+          "url": "https://taxation-customs.ec.europa.eu/carbon-border-adjustment-mechanism_en",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Confirms 2026 definitive phase start and certificate mechanism."
+          ],
+          "limits": [
+            "Guidance may lag regulatory amendments; check for updates."
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "Non-EU exporters without verified carbon pricing data in their home jurisdiction face higher effective CBAM certificate costs.",
+      "support_status": "partially_supported",
+      "sources": [
+        {
+          "name": "European Commission CBAM guidance",
+          "url": "https://taxation-customs.ec.europa.eu/carbon-border-adjustment-mechanism_en",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Explains deduction mechanism: importers may offset carbon prices already paid in country of origin."
+          ],
+          "limits": [
+            "Does not quantify cost differential for specific non-EU jurisdictions; requires case-by-case assessment."
+          ]
+        },
+        {
+          "name": "European Parliament CBAM briefing",
+          "url": "https://www.europarl.europa.eu/thinktank/en/document/EPRS_BRI(2022)698889",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Explains competitive-impact rationale and differential effect on exporters with no home carbon price."
+          ],
+          "limits": [
+            "Briefing predates final Regulation text; some details may differ from enacted version."
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "Exact CBAM certificate prices for 2026 and beyond cannot be determined in advance.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "EU Regulation 2023/956 establishing CBAM",
+          "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023R0956",
+          "source_type": "legal",
+          "freshness": "current",
+          "supports": [
+            "Certificate price is defined as the weekly average EU ETS auction price, which fluctuates."
+          ],
+          "limits": [
+            "ETS price forecasting is outside the scope of the regulation."
+          ]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Specific CBAM certificate price levels for 2026–2030 (depends on EU ETS market).",
+    "Per-country compliance rate or registration volumes in the CBAM registry."
+  ],
+  "source_plan": [
+    "Check EUR-Lex for Regulation 2023/956 and any amendments",
+    "Check EU Implementing Regulation 2023/1773 for transitional reporting details",
+    "Check European Commission CBAM guidance page for registry and procedure updates",
+    "Check European Parliament briefings for competitive-impact analysis"
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "topic": "EU Carbon Border Adjustment Mechanism (CBAM)",
+  "claims": [
+    {
+      "claim_id": "cbam-001",
+      "claim": "EU Regulation 2023/956 establishes the CBAM, covering steel, aluminium, cement, fertilisers, hydrogen, and electricity.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": ["eu-cbam-reg"],
+      "support_level": "direct",
+      "uncertainty": "Covered goods list may expand in future reviews; current text is definitive for initial phase.",
+      "risk_if_wrong": "Compliance programs scoped to wrong product categories; exporters unprepared for inclusion."
+    },
+    {
+      "claim_id": "cbam-002",
+      "claim": "The CBAM transitional phase requires EU importers to submit quarterly embedded-carbon reports from Q4 2023 through end of 2025.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": ["eu-impl-reg"],
+      "support_level": "direct",
+      "uncertainty": "Transitional reporting methodology may be updated by the Commission before 2026.",
+      "risk_if_wrong": "Importers miss filing deadlines or use incorrect methodology, triggering penalties."
+    },
+    {
+      "claim_id": "cbam-003",
+      "claim": "From 1 January 2026, EU importers must surrender CBAM certificates equal to the embedded carbon in covered imports, priced at the EU ETS carbon price.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": ["eu-cbam-reg", "ec-cbam-guidance"],
+      "support_level": "direct",
+      "uncertainty": "Implementing acts for the definitive phase may refine certificate surrender procedures.",
+      "risk_if_wrong": "Importers budget incorrectly for certificate cost; financial exposure mis-estimated."
+    },
+    {
+      "claim_id": "cbam-004",
+      "claim": "Non-EU exporters without verified carbon pricing data in their home jurisdiction face higher effective CBAM certificate costs.",
+      "claim_type": "industry_response",
+      "evidence_ids": ["ec-cbam-guidance", "ep-cbam-briefing"],
+      "support_level": "partial",
+      "uncertainty": "Offset deduction mechanism depends on bilateral recognition agreements not yet all in place.",
+      "risk_if_wrong": "Exporters from countries with partial carbon pricing over- or under-estimate their net CBAM exposure."
+    },
+    {
+      "claim_id": "cbam-005",
+      "claim": "Exact CBAM certificate prices for 2026 and beyond cannot be determined in advance.",
+      "claim_type": "market_event",
+      "evidence_ids": ["eu-cbam-reg"],
+      "support_level": "direct",
+      "uncertainty": "EU ETS price is inherently volatile; any forward estimate carries wide uncertainty.",
+      "risk_if_wrong": "Exporters and importers under- or over-hedge their carbon cost exposure."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "eu-cbam-reg",
+      "name": "EU Regulation 2023/956 establishing CBAM",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023R0956",
+      "source_type": "official_document",
+      "freshness": "current",
+      "supports": ["cbam-001", "cbam-003", "cbam-005"],
+      "limits": [
+        "Legal text defines framework; enforcement depends on national competent authority implementation.",
+        "Certificate price is ETS-linked and cannot be read from the regulation itself."
+      ]
+    },
+    {
+      "evidence_id": "eu-impl-reg",
+      "name": "EU Implementing Regulation 2023/1773 (CBAM transitional reporting)",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023R1773",
+      "source_type": "official_document",
+      "freshness": "current",
+      "supports": ["cbam-002"],
+      "limits": [
+        "Covers transitional phase reporting only; definitive-phase mechanics are in Reg. 2023/956.",
+        "Methodology may be updated before 2026 definitive phase."
+      ]
+    },
+    {
+      "evidence_id": "ec-cbam-guidance",
+      "name": "European Commission CBAM guidance",
+      "url": "https://taxation-customs.ec.europa.eu/carbon-border-adjustment-mechanism_en",
+      "source_type": "official_document",
+      "freshness": "current",
+      "supports": ["cbam-003", "cbam-004"],
+      "limits": [
+        "Guidance may lag regulatory amendments and implementing acts.",
+        "Does not provide quantified cost-impact estimates for specific exporters."
+      ]
+    },
+    {
+      "evidence_id": "ep-cbam-briefing",
+      "name": "European Parliament CBAM briefing",
+      "url": "https://www.europarl.europa.eu/thinktank/en/document/EPRS_BRI(2022)698889",
+      "source_type": "official_document",
+      "freshness": "current",
+      "supports": ["cbam-004"],
+      "limits": [
+        "Briefing predates final Regulation text; some details may differ from enacted version.",
+        "Secondary analysis; not the authoritative legal source."
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Specific CBAM certificate price levels for 2026–2030.",
+    "Per-country compliance registration rates in the CBAM registry."
+  ]
+}

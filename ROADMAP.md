@@ -49,7 +49,7 @@ MCP `score_output` tool, post-release smoke.
 
 ## v0.8 — benchmark depth
 
-- Expand benchmark to 5–10 source-backed cases (currently 4).
+- Expand benchmark to 5–10 source-backed cases (currently 5).
 - First public benchmark numbers in `docs/evaluation.md` — real scores, not promises.
 - Stabilize `claim_type` taxonomy from real case patterns.
 
