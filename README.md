@@ -334,7 +334,7 @@ agenda-intelligence-md/
 | Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
 | End-to-end tutorial | [`docs/tutorial.md`](docs/tutorial.md) |
 | Evaluation | [`docs/evaluation.md`](docs/evaluation.md) |
-| Evidence audit (experimental) | [`docs/evidence-audit.md`](docs/evidence-audit.md) |
+| Evidence audit | [`docs/evidence-audit.md`](docs/evidence-audit.md) |
 | Agent integration sketch | [`docs/integrations/agent-loop.md`](docs/integrations/agent-loop.md) |
 | Use-cases | [`docs/use-cases/`](docs/use-cases/) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |
