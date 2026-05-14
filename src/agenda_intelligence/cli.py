@@ -328,7 +328,8 @@ def cmd_verify_quotes(args):
             try:
                 raw_text = _fetch_url_text(source["url"])
                 match = _normalize(quote) in _normalize(raw_text)
-                results.append({"id": ident, "status": "present" if match else "absent", "mode": "fetched", "url": source["url"]})
+                status = "present" if match else "absent"
+                results.append({"id": ident, "status": status, "mode": "fetched", "url": source["url"]})
             except Exception as exc:
                 results.append({"id": ident, "status": "fetch_error", "url": source.get("url"), "error": str(exc)})
             continue
