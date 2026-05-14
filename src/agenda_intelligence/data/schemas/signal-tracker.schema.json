@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/signal-tracker.schema.json",
+  "title": "SignalTracker",
+  "description": "Tracks the lifecycle of a monitored signal from detection through resolution.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "signal_id",
+    "title",
+    "classification",
+    "status",
+    "first_detected",
+    "last_updated",
+    "summary",
+    "watch_indicators"
+  ],
+  "properties": {
+    "signal_id": {
+      "type": "string",
+      "description": "Unique identifier for this signal, e.g. 'eu-ai-act-enforcement-2025'.",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "description": "Short human-readable title for the signal.",
+      "minLength": 1
+    },
+    "classification": {
+      "$ref": "signal-classification.schema.json",
+      "description": "Current signal classification."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["detected", "developing", "escalated", "stable", "resolved", "archived"],
+      "description": "Current lifecycle stage of the signal."
+    },
+    "region": {
+      "type": "string",
+      "description": "Primary region or geography, if applicable."
+    },
+    "sector": {
+      "type": "string",
+      "description": "Primary sector or domain, e.g. sanctions, trade, energy, regulation, AI."
+    },
+    "first_detected": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the signal was first identified (YYYY-MM-DD)."
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the most recent update to this tracker entry (YYYY-MM-DD)."
+    },
+    "next_review": {
+      "type": "string",
+      "format": "date",
+      "description": "Suggested date to re-check this signal (YYYY-MM-DD). Omit if no fixed horizon."
+    },
+    "summary": {
+      "type": "string",
+      "description": "Current state of the signal in 2-4 sentences. Updated with each development.",
+      "minLength": 1
+    },
+    "developments": {
+      "type": "array",
+      "description": "Chronological log of material updates to this signal.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["date", "what_changed", "evidence_mode"],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "what_changed": {
+            "type": "string",
+            "description": "What materially changed since the previous entry.",
+            "minLength": 1
+          },
+          "evidence_mode": {
+            "type": "string",
+            "enum": ["live_source_backed", "user_provided", "reasoning_only", "mixed"]
+          },
+          "source_note": {
+            "type": "string",
+            "description": "Key sources behind this update, if source-backed."
+          },
+          "status_change": {
+            "type": "string",
+            "enum": ["detected", "developing", "escalated", "stable", "resolved", "archived"],
+            "description": "New lifecycle status if it changed with this update."
+          }
+        }
+      }
+    },
+    "watch_indicators": {
+      "type": "array",
+      "description": "Concrete, observable signals that would trigger a status change or escalation.",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "resolution_note": {
+      "type": "string",
+      "description": "Required when status is 'resolved' or 'archived'. What concluded or why archiving."
+    }
+  },
+  "if": {
+    "properties": { "status": { "enum": ["resolved", "archived"] } }
+  },
+  "then": {
+    "required": ["resolution_note"]
+  }
+}

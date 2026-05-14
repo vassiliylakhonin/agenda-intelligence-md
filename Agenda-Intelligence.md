@@ -62,6 +62,14 @@ Tag factual claims inline: `[primary]` `[secondary]` `[user-provided]` `[inferen
 **Watch next:** ...
 ```
 
+## Signal lifecycle
+
+For signals classified as `signal`, `structural_shift`, or `trigger_event` that require monitoring across sessions, open a tracker using `skills/agenda-intelligence/references/signal-lifecycle.md`.
+
+Stages: `detected → developing → escalated → stable → resolved → archived`.
+
+Store tracker files as `{signal_id}.json` validated against `schemas/signal-tracker.schema.json`. When a signal resolves, distill a memory card into `analysis-bank/`.
+
 ## Use with deeper references
 
 For more detailed behavior, load only the smallest needed subset:
