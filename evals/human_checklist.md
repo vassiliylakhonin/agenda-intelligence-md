@@ -10,6 +10,9 @@ Use this checklist when manually evaluating a brief. Each item should be marked 
 - [ ] Every factual claim is linked to an **EVIDENCE** reference.
 - [ ] The evidence references come from the specified source plan (e.g., `technology‑ai/*.json`).
 - [ ] Unsupported claims are explicitly flagged (e.g., “unsupported claim” note).
+- [ ] Factual claims carry inline provenance tags: `[primary]`, `[secondary]`, `[user-provided]`, `[inference]`, or `[analyst-judgment]`.
+- [ ] Time-sensitive claims carry `[stale-risk: YYYY-MM]` where applicable.
+- [ ] Claims the reader should verify carry `[verify]`.
 
 ## 3. Completeness
 - [ ] Bottom line is present and concise.

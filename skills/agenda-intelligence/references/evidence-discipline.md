@@ -24,6 +24,29 @@ Use clear labels when relevant:
 - **Scenario** — contingent pathway, not prediction.
 - **Indicator** — observable evidence that would confirm, weaken, or falsify an assessment.
 
+## Per-claim provenance tags
+
+Tag factual claims inline in markdown output. Two axes — use one from Axis A and optionally one or more from Axis B.
+
+**Axis A — source type (exactly one per claim):**
+- `[primary]` — official source directly read: legal text, regulator statement, sanctions list, court record, company filing
+- `[secondary]` — media, think-tank, analyst commentary, reputable reporting
+- `[user-provided]` — provided by the user in this session, not independently verified
+- `[inference]` — derived from other facts in this analysis
+- `[analyst-judgment]` — evaluative judgment, not a factual claim
+
+**Axis B — action flags (optional):**
+- `[verify]` — reader should confirm against original source before acting
+- `[stale-risk: YYYY-MM]` — last confirmed at that date; may be outdated
+
+Examples:
+- "The regulation entered into force on 1 January 2024 [primary][verify]."
+- "Market participants widely expect further tightening [secondary]."
+- "The political cost of reversal is high [analyst-judgment]."
+- "This pattern suggests coordinated routing [inference]."
+
+Tags are additive to document-level evidence mode — they do not replace it. Use both.
+
 ## Source discipline
 
 Do not invent sources.

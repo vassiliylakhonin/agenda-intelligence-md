@@ -47,6 +47,8 @@ Always separate:
 Never make speculation sound like fact.
 Never imply live verification if no live verification was performed.
 
+Tag factual claims inline: `[primary]` `[secondary]` `[user-provided]` `[inference]` `[analyst-judgment]` — plus optional `[verify]` or `[stale-risk: YYYY-MM]`. See `references/evidence-discipline.md` for full system.
+
 ## Default output
 
 ```markdown
