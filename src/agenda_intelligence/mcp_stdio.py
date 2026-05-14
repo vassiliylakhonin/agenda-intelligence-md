@@ -33,7 +33,7 @@ TOOLS: dict[str, dict[str, Any]] = {
     },
     "audit_claims": {
         "description": (
-            "Validate a claim-level evidence-audit JSON object (experimental) against "
+            "Validate a claim-level evidence-audit JSON object against "
             "evidence-audit.schema.json and return a small summary: support-level "
             "distribution, orphan evidence_id refs, and unsupported_claims count. "
             "Schema-level only; does not verify factual truth."
@@ -77,6 +77,23 @@ TOOLS: dict[str, dict[str, Any]] = {
             ["before_text", "after_text"],
         ),
         "handler": lambda args: mcp_server.score_output(args["before_text"], args["after_text"]),
+    },
+    "verify_quotes": {
+        "description": (
+            "Verify that quoted fragments in an evidence pack are present in the provided "
+            "source texts. Pass `texts` as a dict mapping evidence_id → plain text. "
+            "Sources without a matching texts entry are reported as missing_source_text. "
+            "Local-text only; does not make outbound network requests. "
+            "Does not verify factual truth."
+        ),
+        "inputSchema": _schema(
+            {
+                "pack_json": {"type": "object"},
+                "texts": {"type": "object"},
+            },
+            ["pack_json"],
+        ),
+        "handler": lambda args: mcp_server.verify_quotes(args["pack_json"], args.get("texts")),
     },
 }
 

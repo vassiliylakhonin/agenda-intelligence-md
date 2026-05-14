@@ -13,9 +13,10 @@ Implemented (return ``implemented=True``):
 - ``get_protocol`` / ``list_lenses`` / ``get_lens`` / ``source_plan``:
   read-only access to packaged protocol, lens, and source-plan data.
 - ``score_output``: heuristic before/after marker rubric.
+- ``verify_quotes``: checks that cited quote fragments appear in caller-supplied
+  source texts. Local-text only; does not make outbound network requests.
 
-Honest scope: schema-level only. None of these tools verify factual
-truth.
+Honest scope: schema-level only. None of these tools verify factual truth.
 """
 
 import json
@@ -139,7 +140,7 @@ def audit_claims(audit_json: dict) -> dict:
             "orphan_evidence_refs": orphans,
             "unsupported_claims_listed": len(audit_json.get("unsupported_claims", []) or []),
         },
-        "note": "Claim-level evidence audit is experimental. Schema-level only; does not verify factual truth.",
+        "note": "Schema-level only. Does not verify factual truth.",
     }
 
 
@@ -234,6 +235,48 @@ def source_plan(category: str) -> dict:
         }
     except Exception as e:
         return {"implemented": True, "category": category, "plan": None, "error": str(e)}
+
+
+def verify_quotes(pack_json: dict, texts: Optional[dict] = None) -> dict:
+    """Verify that quoted fragments in an evidence pack are present in the provided source texts.
+
+    ``texts`` is an optional dict mapping ``evidence_id`` → plain text content.
+    Sources without a matching entry in ``texts`` are reported as ``missing_source_text``.
+
+    Scope: local-text only. Does not make outbound network requests. Does not
+    verify factual truth.
+    """
+    import re
+    import unicodedata
+
+    def _normalize(s: str) -> str:
+        s = unicodedata.normalize("NFKC", s)
+        return re.sub(r"\s+", " ", s).strip().lower()
+
+    sources = pack_json.get("sources") or pack_json.get("evidence") or []
+    resolved_texts: dict = texts or {}
+    results: list[dict] = []
+
+    for source in sources:
+        quote = source.get("quote") or source.get("quote_or_excerpt")
+        if not quote:
+            continue
+        ident = source.get("evidence_id") or source.get("name", "source")
+        source_text = resolved_texts.get(ident)
+        if source_text is None:
+            results.append({"id": ident, "status": "missing_source_text"})
+            continue
+        match = _normalize(quote) in _normalize(source_text)
+        results.append({"id": ident, "status": "present" if match else "absent"})
+
+    summary = {
+        "total_quotes": len(results),
+        "present": sum(1 for r in results if r["status"] == "present"),
+        "absent": sum(1 for r in results if r["status"] == "absent"),
+        "missing_source_text": sum(1 for r in results if r["status"] == "missing_source_text"),
+        "note": "Local-text mode only. Does not fetch URLs. Does not verify factual truth.",
+    }
+    return {"implemented": True, "summary": summary, "results": results}
 
 
 def score_output(before_text: str, after_text: str) -> dict:

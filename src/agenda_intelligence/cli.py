@@ -233,20 +233,59 @@ def cmd_memory_search(args):
         print(f"No results for query: {args.query}")
 
 
+def _fetch_url_text(url: str, timeout: int = 10) -> str:
+    """Fetch URL and return plain text (HTML stripped, stdlib only)."""
+    import html.parser
+    import urllib.request
+
+    class _StripHTML(html.parser.HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self._buf: list[str] = []
+            self._skip = False
+
+        def handle_starttag(self, tag, attrs):
+            if tag in ("script", "style"):
+                self._skip = True
+
+        def handle_endtag(self, tag):
+            if tag in ("script", "style"):
+                self._skip = False
+
+        def handle_data(self, data):
+            if not self._skip:
+                self._buf.append(data)
+
+        def get_text(self) -> str:
+            return " ".join(self._buf)
+
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "agenda-intelligence/1 (+https://github.com/vassiliylakhonin/agenda-intelligence-md)"},
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        raw = resp.read(1_000_000)
+        charset = resp.headers.get_content_charset() or "utf-8"
+    text = raw.decode(charset, errors="replace")
+    if "<html" in text.lower()[:1000] or "<!doctype" in text.lower()[:100]:
+        parser = _StripHTML()
+        parser.feed(text)
+        text = parser.get_text()
+    return text
+
+
 def cmd_verify_quotes(args):
-    """Verify that quoted fragments cited in an evidence pack are actually
-    present in the corresponding local source text.
+    """Verify that quoted fragments cited in an evidence pack are present in source texts.
 
-    Scope: this command answers *only* "is the cited quote present in the
-    source text?" — not "is the claim true?" and not "is the source
-    reputable?". Network fetching is intentionally not implemented yet.
+    Scope: answers only "is the cited quote present in the source text?" — not
+    "is the claim true?" and not "is the source reputable?".
 
-    Input: an evidence pack JSON file. Each source may carry a `quote`
-    field. If `quote` is missing for a source, that source is skipped.
-
-    Source text lookup, in order:
+    Source text lookup order (local mode):
     - --texts-dir <dir>/<evidence_id>.txt (preferred)
     - --texts-dir <dir>/<source name slugified>.txt
+
+    With --fetch: sources that have a `url` and no local text file are fetched
+    over HTTP. Fetched text is not cached.
     """
     import re
     import unicodedata
@@ -260,6 +299,7 @@ def cmd_verify_quotes(args):
         raise SystemExit("No 'sources' or 'evidence' array found in pack")
 
     texts_dir = Path(args.texts_dir) if args.texts_dir else pack_path.parent / "evidence_text"
+    do_fetch = getattr(args, "fetch", False)
 
     def _slugify(name: str) -> str:
         s = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
@@ -271,7 +311,7 @@ def cmd_verify_quotes(args):
 
     results: list[dict] = []
     for source in sources:
-        quote = source.get("quote")
+        quote = source.get("quote") or source.get("quote_or_excerpt")
         if not quote:
             continue
         ident = source.get("evidence_id") or _slugify(source.get("name", "source"))
@@ -279,34 +319,31 @@ def cmd_verify_quotes(args):
         if "name" in source:
             candidates.append(texts_dir / f"{_slugify(source['name'])}.txt")
         text_path = next((p for p in candidates if p.is_file()), None)
-        if text_path is None:
-            results.append(
-                {
-                    "id": ident,
-                    "status": "missing_source_text",
-                    "looked_in": [str(p) for p in candidates],
-                }
-            )
+        if text_path is not None:
+            text = _normalize(text_path.read_text(encoding="utf-8"))
+            match = _normalize(quote) in text
+            results.append({"id": ident, "status": "present" if match else "absent", "source_text": str(text_path)})
             continue
-        text = _normalize(text_path.read_text(encoding="utf-8"))
-        match = _normalize(quote) in text
-        results.append(
-            {
-                "id": ident,
-                "status": "present" if match else "absent",
-                "source_text": str(text_path),
-            }
-        )
+        if do_fetch and source.get("url"):
+            try:
+                raw_text = _fetch_url_text(source["url"])
+                match = _normalize(quote) in _normalize(raw_text)
+                results.append({"id": ident, "status": "present" if match else "absent", "mode": "fetched", "url": source["url"]})
+            except Exception as exc:
+                results.append({"id": ident, "status": "fetch_error", "url": source.get("url"), "error": str(exc)})
+            continue
+        results.append({"id": ident, "status": "missing_source_text", "looked_in": [str(p) for p in candidates]})
 
+    note = "Verifies presence of cited fragment in source text. Does not verify factual truth."
+    if do_fetch:
+        note = "Local-text + network fetch mode. " + note
     summary = {
         "total_quotes": len(results),
         "present": sum(1 for r in results if r["status"] == "present"),
         "absent": sum(1 for r in results if r["status"] == "absent"),
         "missing_source_text": sum(1 for r in results if r["status"] == "missing_source_text"),
-        "note": (
-            "Local-text-mode only. Verifies presence of cited fragment in source text. "
-            "Does not verify factual truth."
-        ),
+        "fetch_error": sum(1 for r in results if r["status"] == "fetch_error"),
+        "note": note,
     }
     if args.format == "json":
         print(json.dumps({"summary": summary, "results": results}, indent=2, ensure_ascii=False))
@@ -318,7 +355,7 @@ def cmd_verify_quotes(args):
         for r in results:
             print(f"  - {r['id']}: {r['status']}")
         print(f"note: {summary['note']}")
-    if args.strict and (summary["absent"] or summary["missing_source_text"]):
+    if args.strict and (summary["absent"] or summary["missing_source_text"] or summary["fetch_error"]):
         raise SystemExit(1)
 
 
@@ -729,18 +766,27 @@ def main():
     p.add_argument("--min-score", type=int, help="Exit 2 if mean score below this threshold")
     p.add_argument("--strict", action="store_true", help="Exit 1 on any audit orphan ref")
     p.set_defaults(func=cmd_bench)
-    # verify-quotes (experimental, local-text mode)
+    # verify-quotes
     p = sub.add_parser(
         "verify-quotes",
-        help="Verify cited quotes in an evidence pack against local source texts (experimental)",
+        help="Verify cited quotes in an evidence pack against local source texts or fetched URLs",
     )
     p.add_argument("path", help="Evidence pack JSON file with optional 'quote' fields per source")
     p.add_argument(
         "--texts-dir",
         help="Directory with <evidence_id>.txt source texts (default: <pack_dir>/evidence_text)",
     )
+    p.add_argument(
+        "--fetch",
+        action="store_true",
+        help="Fetch source URLs for quotes without a local text file (makes outbound HTTP requests)",
+    )
     p.add_argument("--format", choices=["text", "json"], default="text")
-    p.add_argument("--strict", action="store_true", help="Exit 1 on any absent or missing source text")
+    p.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit 1 on any absent, missing source text, or fetch error",
+    )
     p.set_defaults(func=cmd_verify_quotes)
     # start – guided workflow for new analysis
     p = sub.add_parser("start", help="Guided start for a new agenda analysis")

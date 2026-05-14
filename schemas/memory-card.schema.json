@@ -2,24 +2,68 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/memory-card.schema.json",
   "title": "AnalysisBankMemoryCard",
+  "x-schema-version": "1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["title", "trigger", "pattern", "better_reasoning", "apply_when", "do_not_apply_when", "watch_indicators", "example_rewrite"],
+  "required": [
+    "title",
+    "trigger",
+    "pattern",
+    "better_reasoning",
+    "apply_when",
+    "do_not_apply_when",
+    "watch_indicators",
+    "example_rewrite"
+  ],
   "properties": {
-    "title": { "type": "string", "minLength": 1 },
-    "trigger": { "type": "string", "minLength": 1 },
-    "pattern": { "type": "string", "minLength": 1 },
-    "better_reasoning": { "type": "string", "minLength": 1 },
-    "apply_when": { "type": "string", "minLength": 1 },
-    "do_not_apply_when": { "type": "string", "minLength": 1 },
-    "watch_indicators": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "trigger": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pattern": {
+      "type": "string",
+      "minLength": 1
+    },
+    "better_reasoning": {
+      "type": "string",
+      "minLength": 1
+    },
+    "apply_when": {
+      "type": "string",
+      "minLength": 1
+    },
+    "do_not_apply_when": {
+      "type": "string",
+      "minLength": 1
+    },
+    "watch_indicators": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "example_rewrite": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["before", "after"],
+      "required": [
+        "before",
+        "after"
+      ],
       "properties": {
-        "before": { "type": "string", "minLength": 1 },
-        "after": { "type": "string", "minLength": 1 }
+        "before": {
+          "type": "string",
+          "minLength": 1
+        },
+        "after": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     }
   }

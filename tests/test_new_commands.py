@@ -223,3 +223,74 @@ def test_stdio_tools_list_includes_audit_claims():
     assert "audit_claims" in TOOLS
     spec = TOOLS["audit_claims"]
     assert "audit_json" in spec["inputSchema"]["properties"]
+
+
+# ---------- MCP verify_quotes tool ----------
+
+
+def test_mcp_verify_quotes_present():
+    from agenda_intelligence.mcp_server import verify_quotes
+
+    pack = {
+        "topic": "test",
+        "evidence_mode": "user_provided",
+        "sources": [
+            {
+                "evidence_id": "e1",
+                "name": "Doc",
+                "url": "https://example.com",
+                "source_type": "official",
+                "quote": "conformity assessment",
+            }
+        ],
+    }
+    res = verify_quotes(pack, texts={"e1": "Article 19. High-risk AI systems shall undergo conformity assessment."})
+    assert res["implemented"] is True
+    assert res["summary"]["present"] == 1
+    assert res["summary"]["total_quotes"] == 1
+
+
+def test_mcp_verify_quotes_absent():
+    from agenda_intelligence.mcp_server import verify_quotes
+
+    pack = {
+        "topic": "test",
+        "evidence_mode": "user_provided",
+        "sources": [{"evidence_id": "e1", "name": "Doc", "source_type": "official", "quote": "not in text"}],
+    }
+    res = verify_quotes(pack, texts={"e1": "Something completely different."})
+    assert res["summary"]["absent"] == 1
+    assert res["summary"]["present"] == 0
+
+
+def test_mcp_verify_quotes_missing_text():
+    from agenda_intelligence.mcp_server import verify_quotes
+
+    pack = {
+        "topic": "test",
+        "evidence_mode": "user_provided",
+        "sources": [{"evidence_id": "e1", "name": "Doc", "source_type": "official", "quote": "anything"}],
+    }
+    res = verify_quotes(pack, texts={})
+    assert res["summary"]["missing_source_text"] == 1
+
+
+def test_mcp_verify_quotes_skips_sources_without_quote():
+    from agenda_intelligence.mcp_server import verify_quotes
+
+    pack = {
+        "topic": "test",
+        "evidence_mode": "user_provided",
+        "sources": [{"evidence_id": "e1", "name": "Doc", "source_type": "official"}],
+    }
+    res = verify_quotes(pack, texts={"e1": "some text"})
+    assert res["summary"]["total_quotes"] == 0
+
+
+def test_stdio_tools_list_includes_verify_quotes():
+    from agenda_intelligence.mcp_stdio import TOOLS
+
+    assert "verify_quotes" in TOOLS
+    spec = TOOLS["verify_quotes"]
+    assert "pack_json" in spec["inputSchema"]["properties"]
+    assert "pack_json" in spec["inputSchema"]["required"]

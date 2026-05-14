@@ -29,6 +29,21 @@ Use this checklist when manually evaluating a brief. Each item should be marked 
 - [ ] No unnecessary jargon or overly long sentences.
 - [ ] Consistent formatting with other examples.
 
+## 6. Delegation and accountability
+
+- [ ] The brief is positioned as **analytical support for a human decision**, not as the decision itself.
+- [ ] Recommendations are framed as options or next steps, not directives.
+- [ ] The human reviewer remains the decision-maker; the brief does not present itself as a ratifier of a conclusion already reached.
+- [ ] The boundary between analysis and advice is explicit — no claims of legal, compliance, sanctions, or investment authority.
+- [ ] It is clear what would trigger escalation to a primary source or specialist.
+
+## 7. Trust surface
+
+- [ ] If external tools (search, MCP, file reads) were used to produce the brief: the source is noted and tagged.
+- [ ] If no live verification was performed: this is stated, not implied.
+- [ ] Time-sensitive claims (policy dates, enforcement posture, regulatory thresholds) carry a recency note or `[stale-risk: YYYY-MM]` flag.
+- [ ] The brief does not claim permissions or access it did not use.
+
 ## Overall Score (0‑100)
 (Use the weighted rubric from `rubric.md` to calculate.)
 

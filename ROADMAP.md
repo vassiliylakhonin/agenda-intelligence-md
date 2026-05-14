@@ -1,57 +1,62 @@
 # Roadmap
 
-Concrete next milestones, grounded in what's already shipped at v0.7.2.
+Concrete milestones, grounded in what is actually shipped. Status is verified against the codebase, not the original plan.
 
 ## Shipped
 
-- v0.5.x: schemas, validation CLI, source acquisition layer, lenses, AnalysisBank.
-- v0.6.x: stdio MCP server (`agenda-intelligence-mcp`), MCP client configs.
-- v0.7.x: brief scoring (heuristic 0–100), evidence-linked scoring,
-  `doctor` command, MCP `score_output` tool, post-release smoke.
-- v0.7.2 + repositioning: README rewritten as evidence/eval layer,
-  experimental `evidence-audit.schema.json`, claim-level `audit-claims`
-  CLI, `score --format json`, `score --min-score`, schema-sync test.
+### v0.5.x
+Schemas, validation CLI, source acquisition layer, lenses, AnalysisBank.
 
-## v0.7.3 — eval-layer ergonomics
+### v0.6.x
+stdio MCP server (`agenda-intelligence-mcp`), MCP client configs.
 
-- `bench` command: run validate + audit + score across a directory
-  of briefs, emit a Markdown / JSON report. No LLM dependency.
-- `audit-claims --strict` (orphan refs → exit 1).
-- `evals/run_benchmark.py` harness producing a reproducible
-  self-contained baseline on bundled examples.
-- Document a CI snippet that fails the build on schema drift,
-  audit-claims warnings, or `score < threshold`.
+### v0.7.x
+Brief scoring (heuristic 0–100), evidence-linked scoring, `doctor` command,
+MCP `score_output` tool, post-release smoke.
 
-## v0.8 — claim-level audit graduates from experimental
+### v0.7.2 — evidence & eval layer
+- Project repositioned as evidence and eval layer for strategic intelligence agents.
+- `audit-claims` CLI: validates claim-level evidence-audit JSON; `--strict` exits non-zero on orphan refs.
+- `bench` CLI: runs validate + audit + score across a directory of cases, emits Markdown or JSON report. No LLM dependency.
+- `verify-quotes` CLI: local-text mode — verifies presence of cited fragments in source text files.
+- `score --format json` and `score --min-score N`.
+- `evidence-audit.schema.json`: claim-level evidence audit (`claim_id`, `claim_type`, `evidence_ids`, `support_level`, `uncertainty`, `risk_if_wrong`).
+- `audit_claims` MCP tool (9th tool): validates claim-level audit JSON via wire protocol.
+- `evals/run_benchmark.py` + committed baseline (`evals/baselines/source-backed.{md,json}`).
+- `.github/workflows/bench.yml` CI bench gate (`--strict --min-score 80`) with baseline drift check.
+- Three flagship source-backed example sets: `eu-ai-act`, `red-sea-shipping`, `sanctions-routing`.
 
-- Wire `evidence-audit.schema.json` into `validate-evidence` (opt-in
-  via `--audit-claims` first; default behavior in a later step).
-- MCP tool `audit_claims(claims_json)` alongside `validate_*`.
-- Stabilize `claim_type` taxonomy based on real cases.
-- First public benchmark run on 5–10 cases (see `docs/evaluation.md`).
-  Numbers, not promises.
+### v0.7.2 patch — verify-quotes stable + schema versioning
+- `verify-quotes --fetch`: sources without a local text file are fetched over HTTP (stdlib only, 1 MB cap, 10 s timeout, HTML stripped). `--strict` now also exits non-zero on `fetch_error`.
+- `verify-quotes` also checks `quote_or_excerpt` field as fallback for `quote`.
+- `verify_quotes` MCP tool (10th tool): caller-supplied `texts` dict, no outbound requests from MCP layer.
+- `x-schema-version: "1"` added to all six schemas (stable contract marker).
+- `evidence-audit.schema.json`: removed "EXPERIMENTAL" label; schema is now stable.
+- `agent-manifest.json` schemas section now includes `evidence_audit`.
+- All "experimental" labels removed from CLI help, MCP descriptions, and server module.
 
-## v0.9 — verify-quotes (honest factuality slice)
+## v0.8 — benchmark depth
 
-- `evidence-pack` learns optional `quote` per source.
-- `verify-quotes` command: local-text mode first (read text from
-  `evidence_text/<id>.txt`, normalize, substring / embedding match),
-  network mode behind an explicit `--fetch` flag.
-- Honest scope: answers *"is the cited quote present in the source?"* —
-  not *"is the claim true?"*.
-- MCP tool `verify_quotes(...)`.
+- Expand benchmark to 5–10 source-backed cases (currently 4).
+- First public benchmark numbers in `docs/evaluation.md` — real scores, not promises.
+- Stabilize `claim_type` taxonomy from real case patterns.
+
+## v0.9 — verify-quotes: network mode improvements
+
+- Smarter HTML-to-text extraction (currently basic `html.parser` strip).
+- Respect `robots.txt` / add configurable rate limiting for multi-source packs.
+- `verify-quotes` result caching: skip re-fetch when text file already present.
 
 ## v1.0 — stable contract
 
-- Frozen JSON-schema versions for brief, evidence pack, evidence audit.
-- Stable MCP tool names and signatures.
-- `agent-manifest.json` documented as single source of truth for
-  protocol, lenses, schemas, and source requirements.
+- Bump schema `$id` URLs to include version path (`/v1/agenda-brief.schema.json`).
+- Freeze MCP tool names and signatures; add deprecation notice policy.
+- `agent-manifest.json` documented as single source of truth for protocol, lenses, schemas, and source requirements.
 - Benchmark suite with reproducible numbers across at least 20 cases.
 
 ## Explicit non-goals (today and likely v1.0)
 
-- Live source crawling / news aggregation.
+- Live source crawling or news aggregation.
 - Open-domain factuality verification.
 - A monolithic agent framework. The package stays a small contract layer.
 - Replacing analyst judgment.

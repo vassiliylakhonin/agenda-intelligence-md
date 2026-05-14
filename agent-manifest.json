@@ -23,7 +23,8 @@
     "memory_card": "schemas/memory-card.schema.json",
     "lens_manifest": "schemas/lens-manifest.schema.json",
     "signal_classification": "schemas/signal-classification.schema.json",
-    "evidence_pack": "schemas/evidence-pack.schema.json"
+    "evidence_pack": "schemas/evidence-pack.schema.json",
+    "evidence_audit": "schemas/evidence-audit.schema.json"
   },
   "protocols": [
     "skills/agenda-intelligence/references/analysis-protocol.md",

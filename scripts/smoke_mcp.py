@@ -45,6 +45,30 @@ REQUESTS = [
     },
     {
         "jsonrpc": "2.0",
+        "id": 6,
+        "method": "tools/call",
+        "params": {
+            "name": "verify_quotes",
+            "arguments": {
+                "pack_json": {
+                    "topic": "smoke-test",
+                    "evidence_mode": "user_provided",
+                    "sources": [
+                        {
+                            "evidence_id": "e1",
+                            "name": "Test source",
+                            "url": "https://example.com",
+                            "source_type": "official",
+                            "quote": "hello world",
+                        }
+                    ],
+                },
+                "texts": {"e1": "This document says hello world clearly."},
+            },
+        },
+    },
+    {
+        "jsonrpc": "2.0",
         "id": 5,
         "method": "tools/call",
         "params": {
@@ -91,8 +115,8 @@ def run_server(command: list[str]) -> list[dict]:
 
 
 def assert_response_shape(responses: list[dict], expected_version: str | None) -> None:
-    if len(responses) != 5:
-        raise SystemExit(f"Expected 5 MCP responses, got {len(responses)}: {responses}")
+    if len(responses) != 6:
+        raise SystemExit(f"Expected 6 MCP responses, got {len(responses)}: {responses}")
 
     initialize = responses[0]["result"]
     server_info = initialize["serverInfo"]
@@ -111,6 +135,7 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
         "get_lens",
         "source_plan",
         "score_output",
+        "verify_quotes",
     }
     missing = expected_tools - tools
     if missing:
@@ -134,7 +159,17 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
     if score_payload["after_score"] <= score_payload["before_score"]:
         raise SystemExit(f"score_output did not improve after output: {score_payload}")
 
-    audit_result = responses[4]["result"]
+    vq_result = responses[4]["result"]
+    if vq_result.get("isError"):
+        raise SystemExit(f"MCP verify_quotes returned tool error: {vq_result}")
+    vq_payload = json.loads(vq_result["content"][0]["text"])
+    if not vq_payload.get("implemented"):
+        raise SystemExit(f"verify_quotes not implemented: {vq_payload}")
+    vq_summary = vq_payload.get("summary", {})
+    if vq_summary.get("present") != 1 or vq_summary.get("total_quotes") != 1:
+        raise SystemExit(f"verify_quotes summary unexpected: {vq_summary}")
+
+    audit_result = responses[5]["result"]
     if audit_result.get("isError"):
         raise SystemExit(f"MCP audit_claims returned tool error: {audit_result}")
     audit_payload = json.loads(audit_result["content"][0]["text"])
