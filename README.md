@@ -45,7 +45,8 @@ output has to survive review by an analyst, not just sound plausible.
   exposing the validation, read, and scoring tools.
 - **Eval starter kit** — rubric, LLM-judge prompt, human checklist, sample
   cases, benchmark seed.
-- **Source / evidence policy** — explicit rules for claim-level discipline.
+- **Source / evidence policy** — explicit rules for claim-level discipline, including per-claim provenance tags (Axis A: `[primary]` `[secondary]` `[user-provided]` `[inference]` `[analyst-judgment]`; Axis B: `[verify]` `[stale-risk: YYYY-MM]`). See [`skills/agenda-intelligence/references/evidence-discipline.md`](skills/agenda-intelligence/references/evidence-discipline.md).
+- **Signal lifecycle tracker** — markdown + JSON schema for tracking signals across sessions (detected → developing → escalated → stable → resolved → archived). See [`skills/agenda-intelligence/references/signal-lifecycle.md`](skills/agenda-intelligence/references/signal-lifecycle.md) and [`schemas/signal-tracker.schema.json`](schemas/signal-tracker.schema.json).
 - **Regional & sector lenses** — compact reference packs inside the protocol
   (Central Asia & Caspian, Middle East, EU; sanctions, export controls). For
   deep regional analysis, use the dedicated vertical specialist skills:
@@ -154,11 +155,11 @@ agenda-intelligence score examples/source-backed/eu-ai-act.brief.json --evidence
 agenda-intelligence start <category>            # source plan + brief template
 agenda-intelligence validate-brief <brief.json>
 agenda-intelligence validate-evidence <pack.json>
-agenda-intelligence audit-claims <claims.json> [--format json] [--strict]   # experimental, evidence-audit schema
+agenda-intelligence audit-claims <claims.json> [--format json] [--strict]
 agenda-intelligence score <brief.json> [--evidence <pack.json>] [--format json] [--min-score N]
 agenda-intelligence score <before-after.md>
 agenda-intelligence bench <dir>                  # validate + audit + score across a case directory
-agenda-intelligence verify-quotes <pack.json>    # experimental, local-text mode
+agenda-intelligence verify-quotes <pack.json>
 agenda-intelligence source-plan <category>
 agenda-intelligence list-lenses [--type ...]
 agenda-intelligence get-lens <type> <id>
@@ -179,7 +180,7 @@ small Python tool functions in `agenda_intelligence.mcp_server`. See
 Implemented MCP tools (all verified by `scripts/smoke_mcp.py`):
 - `validate_brief(brief_json)` — schema check
 - `validate_evidence(evidence_json)` — schema check
-- `audit_claims(audit_json)` — claim-level evidence audit (experimental)
+- `audit_claims(audit_json)` — claim-level evidence audit
 - `get_protocol(name)` — return packaged protocol markdown
 - `list_lenses(lens_type=None)` — read from manifest
 - `get_lens(lens_type, lens_id)` — return packaged lens markdown
@@ -241,9 +242,10 @@ flowchart LR
 | [`signal-classification.schema.json`](schemas/signal-classification.schema.json) | Signal taxonomy |
 | [`memory-card.schema.json`](schemas/memory-card.schema.json) | AnalysisBank cards |
 | [`lens-manifest.schema.json`](schemas/lens-manifest.schema.json) | Lens manifest |
-| [`evidence-audit.schema.json`](schemas/evidence-audit.schema.json) | **Experimental** — claim-level evidence audit |
+| [`evidence-audit.schema.json`](schemas/evidence-audit.schema.json) | Claim-level evidence audit |
+| [`signal-tracker.schema.json`](schemas/signal-tracker.schema.json) | Signal lifecycle tracker |
 
-### Evidence audit (experimental)
+### Evidence audit
 
 Each important claim should be traceable:
 
@@ -260,7 +262,7 @@ Each important claim should be traceable:
 ```
 
 `support_level` is one of `direct | partial | weak | unsupported`.
-This schema is **experimental**; not yet wired into `validate-evidence` by default.
+This schema is not wired into `validate-evidence` by default; use `audit-claims` directly.
 
 ---
 
@@ -288,7 +290,8 @@ Reproduce with `python evals/run_benchmark.py`. Human-judge benchmarking is not 
 | Lenses (Central Asia, Middle East, EU; sanctions, export controls) | Stable |
 | MCP stdio server (`agenda-intelligence-mcp`) | Stable |
 | MCP tool functions (validate / read / score / audit_claims) | Stable |
-| Evidence-audit schema (claim-level) | Experimental |
+| Evidence-audit schema (claim-level) | Stable |
+| Signal-tracker schema (lifecycle) | Stable |
 | Live source retrieval | Not implemented |
 | Heuristic benchmark baseline (4 bundled cases) | Produced — mean 86.8/100 |
 | Human-judge benchmark results | Not produced yet |

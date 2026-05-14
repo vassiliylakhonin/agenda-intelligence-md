@@ -37,6 +37,11 @@ Adoption guide: ADOPTION.md
 Sector lens packs:
 - Sanctions: skills/agenda-intelligence/references/sector/sanctions.md
 
+Signal lifecycle tracker:
+- Protocol: skills/agenda-intelligence/references/signal-lifecycle.md
+- Schema: schemas/signal-tracker.schema.json
+- Stages: detected → developing → escalated → stable → resolved → archived
+
 AnalysisBank: analysis-bank/README.md
 Reasoning memory format: analysis-bank/MEMORY_FORMAT.md
 Eval script: scripts/eval_before_after.py
@@ -49,6 +54,7 @@ Schemas:
 - schemas/memory-card.schema.json
 - schemas/lens-manifest.schema.json
 - schemas/signal-classification.schema.json
+- schemas/signal-tracker.schema.json
 Packaged CLI: agenda-intelligence
 Legacy script wrapper: scripts/agenda_intelligence.py
 MCP server: agenda-intelligence-mcp

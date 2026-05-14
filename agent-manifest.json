@@ -24,13 +24,15 @@
     "lens_manifest": "schemas/lens-manifest.schema.json",
     "signal_classification": "schemas/signal-classification.schema.json",
     "evidence_pack": "schemas/evidence-pack.schema.json",
-    "evidence_audit": "schemas/evidence-audit.schema.json"
+    "evidence_audit": "schemas/evidence-audit.schema.json",
+    "signal_tracker": "schemas/signal-tracker.schema.json"
   },
   "protocols": [
     "skills/agenda-intelligence/references/analysis-protocol.md",
     "skills/agenda-intelligence/references/agenda-triage.md",
     "skills/agenda-intelligence/references/evidence-discipline.md",
-    "skills/agenda-intelligence/references/output-patterns.md"
+    "skills/agenda-intelligence/references/output-patterns.md",
+    "skills/agenda-intelligence/references/signal-lifecycle.md"
   ],
   "lenses": {
     "regional": {
