@@ -324,6 +324,7 @@ agenda-intelligence-md/
 ├─ evals/                     # rubric, judge prompt, checklist, cases
 ├─ docs/                      # guides, integrations, use-cases
 ├─ skills/agenda-intelligence/# OpenClaw skill wrapper
+├─ skills/source-ingest/      # Source normalization skill (PDF/DOCX/URL → structured source record)
 └─ tests/                     # pytest suite
 ```
 

@@ -22,6 +22,18 @@ Do not skip this step when the user provides an external document that will be u
 - Reasoning-only analysis where no source is being ingested.
 - You are writing or editing a memo that is already sourced.
 
+## Live retrieval limitations
+
+Many authoritative sources (OFAC/Treasury, FATF, Reuters, major think-tanks) block automated retrieval in CLI and agent environments. If a URL fetch fails:
+
+1. Do not fabricate the document content.
+2. Mark the source as `[primary][verify]` or `[secondary][verify]` based on what it would be if accessed.
+3. Note the retrieval failure explicitly in the source record under "Source limitations."
+4. Downgrade the downstream memo's evidence mode to `mixed` or `reasoning-only` as appropriate.
+5. Include a `[verify]` flag on every claim derived from that source.
+
+The memo's limitation note must reflect which sources were not accessed.
+
 ## Output format
 
 Produce a source record in this shape:
