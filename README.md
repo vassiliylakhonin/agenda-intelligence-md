@@ -20,12 +20,12 @@ It is built for engineers shipping policy, sanctions, regulation,
 geopolitical-risk, market-risk, and strategic-intelligence agents — where the
 output has to survive review by an analyst, not just sound plausible.
 
-**Bundled-example baseline** (4 cases, reproduced with `python3 evals/run_benchmark.py`):
+**Bundled-example baseline** (5 cases, reproduced with `python3 evals/run_benchmark.py`):
 
 | metric | value |
 |---|---|
-| mean score | 86.8 / 100 |
-| cases | 4 (EU AI Act, Red Sea shipping, sanctions routing, BIS AI Diffusion) |
+| mean score | 87.0 / 100 |
+| cases | 5 (EU AI Act, EU CBAM, Red Sea shipping, sanctions routing, BIS AI Diffusion) |
 | schema-valid | 100% |
 | with evidence pack | 100% |
 | with claim-level audit | 100% |
@@ -275,7 +275,7 @@ Key honesty rule:
 > Current scoring does not verify factual truth. It evaluates structure,
 > completeness, evidence labeling, and decision-readiness signals.
 
-Bundled-example baseline: mean 86.8/100, 4 cases, 100% schema-valid, 0 orphan refs.
+Bundled-example baseline: mean 87.0/100, 5 cases, 100% schema-valid, 0 orphan refs.
 Reproduce with `python evals/run_benchmark.py`. Human-judge benchmarking is not done yet.
 
 ---
@@ -293,7 +293,7 @@ Reproduce with `python evals/run_benchmark.py`. Human-judge benchmarking is not 
 | Evidence-audit schema (claim-level) | Stable |
 | Signal-tracker schema (lifecycle) | Stable |
 | Live source retrieval | Not implemented |
-| Heuristic benchmark baseline (4 bundled cases) | Produced — mean 86.8/100 |
+| Heuristic benchmark baseline (5 bundled cases) | Produced — mean 87.0/100 |
 | Human-judge benchmark results | Not produced yet |
 | Factual-truth verification | Not in scope today |
 

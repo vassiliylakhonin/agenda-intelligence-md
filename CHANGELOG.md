@@ -50,7 +50,7 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 - `agenda-intelligence doctor --json` for machine-readable diagnostics.
 
 ### Bundled baseline
-- 3 cases, mean 87.7/100, 100% schema-valid, 100% with evidence, 100% with audit, 0 orphan refs.
+- 5 cases (eu-ai-act, eu-cbam, red-sea-shipping, sanctions-routing, bis-ai-diffusion), mean 87.0/100, 100% schema-valid, 100% with evidence, 100% with audit, 0 orphan refs.
 
 ## [0.7.1] – 2026-05-06
 ### Added
