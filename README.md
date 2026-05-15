@@ -1,5 +1,7 @@
 # Agenda Intelligence MD
 
+> **EVIDENCE & EVAL INFRASTRUCTURE FOR STRATEGIC-RISK AGENTS** — protocol, JSON schemas, CLI and MCP server for validating, scoring and auditing the structure of strategic-risk agent output. Companion to the Global Think Tank Analyst skill. Open-source.
+
 **Evidence & eval layer for strategic intelligence agents.**
 
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/)
