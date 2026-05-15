@@ -89,9 +89,12 @@ State what this source does and does not establish:
 
 Based on the document's topic, suggest which source-requirements pack and skill references to load next:
 
-- **Source-requirements:** [e.g., source-requirements/sanctions.json, source-requirements/energy.json]
-- **Skill reference:** [e.g., references/sector/sanctions.md, references/regional/central-asia-caspian.md]
-- **Suggested evidence mode for downstream memo:** [live-source-backed | user-provided | illustrative source packet | reasoning-only]
+- **Source-requirements (Agenda Intelligence MD):** [e.g., source-requirements/sanctions.json, source-requirements/energy.json]
+- **Skill reference (Agenda Intelligence MD):** [e.g., references/sector/sanctions.md, references/regional/central-asia-caspian.md]
+- **Vertical source guide:** If the document relates to a specific region, load the relevant vertical skill's source guide for source tiering, freshness horizons, and authoritative URL pointers:
+  - Central Asia / Caspian: `docs/source-guide.md` in [central-asia-caspian-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill)
+  - Gulf / Middle East: `docs/source-guide.md` in [gulf-middle-east-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill)
+- **Suggested evidence mode for downstream memo:** [live-source-backed | user-provided | illustrative source packet | reasoning-only | mixed]
 ```
 
 ## Source type decision rules
