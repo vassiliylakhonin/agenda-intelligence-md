@@ -2,7 +2,14 @@
 
 This repository is Agenda Intelligence MD.
 
-It should remain a practical agenda-intelligence / meeting-intelligence / structured decision-support repository, focused on turning agendas, discussions, notes, decisions, risks, and follow-ups into clear, useful, auditable markdown-based intelligence.
+It is the evidence and eval infrastructure layer for strategic intelligence agents: validation, JSON schemas, evidence audit, scoring, and CLI / MCP / CI tooling.
+
+It is NOT:
+- a domain-reasoning skill (that is Global Think Tank Analyst);
+- a vertical specialist skill (that is Central Asia & Caspian, Gulf & Middle East, and similar repos);
+- a live source-retrieval engine, agenda/meeting summarizer, or compliance product.
+
+Treat AGENTS.md as the canonical source of truth for project identity and rules.
 
 ## How to work in this repo
 
@@ -53,9 +60,10 @@ When editing docs, examples, prompts, templates, or markdown workflows:
 - avoid hype and unsupported claims;
 - keep language practical, conservative, and decision-useful.
 
-If this repo connects to or supports other strategic-analysis skills, keep the boundary clear:
-- this repo handles agenda / meeting / decision intelligence;
-- domain-specific geopolitical or hybrid-risk analysis belongs in the relevant skill repository unless explicitly integrated here.
+Keep the boundary clear:
+- this repo handles validation, schemas, evidence audit, scoring, and CLI / MCP / CI tooling for strategic-intelligence agent outputs;
+- domain reasoning belongs in Global Think Tank Analyst;
+- vertical specialist depth belongs in the relevant skill repository (Central Asia & Caspian, Gulf & Middle East, etc.).
 
 ## Definition of done
 
