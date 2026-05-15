@@ -1,6 +1,6 @@
 # Agenda Intelligence MD
 
-> **EVIDENCE & EVAL INFRASTRUCTURE FOR STRATEGIC-RISK AGENTS** — protocol, JSON schemas, CLI and MCP server for validating, scoring and auditing the structure of strategic-risk agent output. Companion to the Global Think Tank Analyst skill. Open-source.
+> **CI / MCP / EVIDENCE-AUDIT LAYER FOR STRATEGIC INTELLIGENCE AGENTS** — protocol, JSON schemas, CLI and MCP server for validating, scoring and auditing the structure of strategic-risk agent output. The evidence-discipline surface for markdown-first reasoning skills (Global Think Tank Analyst, Central Asia + Caspian, Gulf + Middle East). Open-source.
 
 **Evidence & eval layer for strategic intelligence agents.**
 
@@ -54,6 +54,18 @@ output has to survive review by an analyst, not just sound plausible.
   deep regional analysis, use the dedicated vertical specialist skills:
   [Central Asia + Caspian](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill)
   or [Gulf + Middle East](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill).
+
+**Where this sits in the production AI stack**
+
+Reasoning skills (markdown-first reasoning contracts for agents):
+- [Global Think Tank Analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) — horizontal: policy, sanctions, regulatory, geopolitical, trade memos
+- [Central Asia + Caspian Hybrid Intelligence Skill](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) — vertical: sanctions, AML, banking, corridor risk in Central Asia / Caspian
+- [Gulf + Middle East Hybrid Intelligence Skill](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) — vertical: Iran sanctions, GCC banking, sovereign wealth, maritime chokepoint risk
+
+Evidence & audit layer (CI / MCP / schemas):
+- **→ Agenda Intelligence MD (this repo)** — validate, score and audit strategic-risk agent output structure
+
+The skills define how agents *reason*. Agenda Intelligence MD defines how the output is *audited*. Together they let agents produce auditable strategic-intelligence — not just plausible-sounding summaries.
 
 ## What this is not
 
@@ -174,6 +186,8 @@ agenda-intelligence --version
 ```
 
 ## MCP
+
+**MCP as distribution surface.** MCP turns the validation, audit and scoring tools into agent-consumable functions, not just CLI commands. Any MCP-compatible host (Claude Desktop, Cursor, Codex, custom agents) can call them as tools inside the agent loop — no separate CI step, no copy-paste between systems. The markdown-first reasoning skills define how memos are reasoned; this layer is where their output gets validated and audited *without leaving the agent*.
 
 The package ships a real stdio MCP server, `agenda-intelligence-mcp`, plus
 small Python tool functions in `agenda_intelligence.mcp_server`. See
