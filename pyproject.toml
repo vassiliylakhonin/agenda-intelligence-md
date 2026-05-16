@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agenda-intelligence-md"
 version = "0.7.3"
-description = "A drop-in markdown cognition layer for AI agents that need to analyze public agenda"
+description = "CLI, MCP server, and JSON schemas for validating and auditing strategic-risk AI agent output"
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"

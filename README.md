@@ -49,6 +49,7 @@ output has to survive review by an analyst, not just sound plausible.
   cases, benchmark seed.
 - **Source / evidence policy** — explicit rules for claim-level discipline, including per-claim provenance tags (Axis A: `[primary]` `[secondary]` `[user-provided]` `[inference]` `[analyst-judgment]`; Axis B: `[verify]` `[stale-risk: YYYY-MM]`). See [`skills/agenda-intelligence/references/evidence-discipline.md`](skills/agenda-intelligence/references/evidence-discipline.md).
 - **Signal lifecycle tracker** — markdown + JSON schema for tracking signals across sessions (detected → developing → escalated → stable → resolved → archived). See [`skills/agenda-intelligence/references/signal-lifecycle.md`](skills/agenda-intelligence/references/signal-lifecycle.md) and [`schemas/signal-tracker.schema.json`](schemas/signal-tracker.schema.json).
+- **Source normalization skill** (`skills/source-ingest/`) — normalize documents (PDF, DOCX, URL) into structured source records for evidence packs.
 - **Regional & sector lenses** — compact reference packs inside the protocol
   (Central Asia & Caspian, Middle East, EU; sanctions, export controls). For
   deep regional analysis, use the dedicated vertical specialist skills:

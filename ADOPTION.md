@@ -1,6 +1,12 @@
 # ADOPTION.md
 
-How to use Agenda-Intelligence.md in agent projects.
+How to use Agenda Intelligence MD in agent projects.
+
+This repo is two things:
+1. **A markdown protocol** (`Agenda-Intelligence.md`) — drop this file into any agent repo to improve agenda reasoning.
+2. **A CLI + MCP server + JSON schemas** (`pip install agenda-intelligence-md`) — use these to validate, score, and audit agent output in CI pipelines or agent loops.
+
+The sections below cover both. Start with whichever fits your setup.
 
 ## Fastest setup
 
@@ -108,6 +114,44 @@ Better output says:
 ```text
 Treat this as a compliance-relevant signal until enforcement guidance, deadlines, or first regulator actions appear. Watch for delegated acts, agency guidance, compliance deadlines, and product redesigns.
 ```
+
+## Use in CI pipelines
+
+Install the package and drop validation into any pipeline that produces agent briefs:
+
+```bash
+pip install agenda-intelligence-md
+
+# Validate brief structure
+agenda-intelligence validate-brief path/to/brief.json
+
+# Validate evidence pack
+agenda-intelligence validate-evidence path/to/evidence.json
+
+# Score with minimum threshold (exits non-zero if below)
+agenda-intelligence score path/to/brief.json --evidence path/to/evidence.json --min-score 70
+
+# Run full validation + audit + score across a directory of cases
+agenda-intelligence bench examples/source-backed --strict --min-score 80
+```
+
+`validate-brief` and `validate-evidence` behave like linters: zero exit on success, non-zero on failure. Wire them into GitHub Actions, pre-commit, or any CI step that gates agent output.
+
+## Use via MCP
+
+The package ships a stdio MCP server. Any MCP-compatible host (Claude Desktop, Cursor, Codex) can call validation, audit, and scoring tools directly inside the agent loop.
+
+```bash
+# Print MCP client config for your host
+agenda-intelligence mcp-config --client cursor
+agenda-intelligence mcp-config --client claude-desktop
+agenda-intelligence mcp-config --client codex
+
+# Verify MCP server is working
+agenda-intelligence doctor
+```
+
+Available MCP tools: `validate_brief`, `validate_evidence`, `audit_claims`, `score_output`, `get_protocol`, `list_lenses`, `get_lens`, `source_plan`, `verify_quotes`. See [`MCP.md`](MCP.md) for details.
 
 ## Evaluation
 

@@ -1,7 +1,7 @@
 {
-  "name": "Agenda-Intelligence.md",
+  "name": "Agenda Intelligence MD",
   "version": "0.7.3",
-  "description": "Agent-first reasoning infrastructure for public-agenda analysis.",
+  "description": "CLI, MCP server, and JSON schemas for validating and auditing strategic-risk AI agent output. Evidence and eval infrastructure layer for reasoning skills.",
   "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
   "entrypoint": "Agenda-Intelligence.md",
   "adoption": "ADOPTION.md",

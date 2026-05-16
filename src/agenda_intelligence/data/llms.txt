@@ -1,6 +1,6 @@
-# Agenda-Intelligence.md
+# Agenda Intelligence MD
 
-A compact markdown protocol for turning public agenda into decision-ready risk analysis.
+CLI, MCP server, JSON schemas, and markdown protocol for validating and auditing strategic-risk AI agent output. Evidence and eval infrastructure layer for reasoning skills (Global Think Tank Analyst, Central Asia + Caspian, Gulf + Middle East).
 
 Core rule: do not summarize the news. Identify what changed, who is affected, what incentives shifted, what remains unknown, and what to watch next.
 
@@ -45,6 +45,10 @@ Signal lifecycle tracker:
 AnalysisBank: analysis-bank/README.md
 Reasoning memory format: analysis-bank/MEMORY_FORMAT.md
 Eval script: scripts/eval_before_after.py
+
+Skills:
+- skills/agenda-intelligence/SKILL.md — OpenClaw skill wrapper for agenda analysis
+- skills/source-ingest/SKILL.md — normalize documents (PDF/DOCX/URL) into structured source records
 
 Agent manifest: agent-manifest.json
 Schemas:
