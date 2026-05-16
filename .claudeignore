@@ -1,0 +1,17 @@
+# Build, cache, and virtualenv artifacts
+.venv/
+.pytest_cache/
+__pycache__/
+.pycache-tmp/
+.wheel-smoke-venv/
+build/
+dist/
+*.egg-info/
+uv.lock
+
+# OS / editor noise
+.DS_Store
+*.skill
+
+# Historical release notes — CHANGELOG.md is canonical
+RELEASE_NOTES_v*.md
