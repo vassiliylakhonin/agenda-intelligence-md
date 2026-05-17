@@ -2,6 +2,44 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
+## [0.7.3] – 2026-05-14
+
+### Added — Signal lifecycle
+- Signal lifecycle tracker: schema, reference, and workflow for tracking
+  observability signals across runs (`docs/signal-lifecycle.md`,
+  `schemas/signal-tracker.schema.json`).
+
+### Added — Provenance tags
+- Per-claim inline provenance tags rendered in Markdown output, surfacing
+  Axis-A source type and Axis-B action flags directly in generated reports.
+
+### Added — Cases & lenses
+- BIS AI Diffusion Rule flagship case study (`cases/bis-ai-diffusion`)
+  with primary-source evidence.
+- Gulf + Middle East added as the second vertical specialist in the
+  Regional lenses set, alongside Central Asia + Caspian.
+
+### Added — Evals
+- Trust-layer evaluation parameters added to the human review checklist.
+
+### Added — Docs & policy
+- `AGENTS.md` and Claude Code working rules formalised.
+- Release-artifact process documented.
+
+### CI & packaging
+- CI smoke-tests built package artifacts post-build.
+- CI guard prevents tracked generated artifacts from re-entering the tree.
+- `audit_claims` added to MCP smoke run (full 8-tool wire-protocol coverage).
+- Packaged data assets kept in sync with top-level sources via test gate.
+
+### Fixed
+- README status block: stale MCP wording corrected.
+- `cli.py`: flake8 E501 lint violation.
+
+### Removed / cleaned
+- Stale `experimental` labels removed from README docs table.
+- Generated package artifacts no longer tracked in the repo.
+
 ## [0.7.2] – 2026-05-12
 
 ### Repositioned
