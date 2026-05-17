@@ -1,0 +1,9 @@
+{
+  "bottom_line": "TBD",
+  "signal_classification": "weak_signal",
+  "what_changed": "Something changed.",
+  "why_it_matters": "It might matter.",
+  "main_uncertainty": "Many things are uncertain.",
+  "watch_next": ["various developments"],
+  "evidence_mode": "reasoning_only"
+}

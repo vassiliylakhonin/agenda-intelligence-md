@@ -119,6 +119,16 @@ A passing brief is a brief that has passed a structural bar. It is not a brief t
 
 ---
 
+## Adversarial fixtures in the test suite
+
+Selected gaps from this document are now codified as adversarial fixtures and tests in [`tests/test_validation.py`](../tests/test_validation.py):
+
+- `test_adversarial_prompt_injection_in_watch_next_passes_structural_validation` — gap #7 (prompt-injection in processed content). Fixture: [`adversarial-prompt-injection-in-watch-next.json`](../tests/fixtures/adversarial-prompt-injection-in-watch-next.json).
+- `test_adversarial_score_gaming_empty_fields_passes_structural_validation` — gaps #5 (score gaming via empty content) and #2 (semantic provenance correctness). Fixture: [`adversarial-score-gaming-empty-fields.json`](../tests/fixtures/adversarial-score-gaming-empty-fields.json).
+- `test_adversarial_injection_in_evidence_source_passes_structural_validation` — gap #7 (prompt-injection in evidence pack source fields). Fixture: [`adversarial-injection-in-evidence-source.json`](../tests/fixtures/adversarial-injection-in-evidence-source.json).
+
+Each test asserts the **current** validator behavior — that these inputs pass structural validation despite being untrustworthy. If detection is added later, the tests will need to be updated alongside the code. This is intentional: it makes the gap visible in CI rather than only in prose.
+
 ## Status
 
 This is a description of the current toolkit, not a roadmap. Items in "Known gaps" are observations, not commitments. The Anti-criteria in `AGENTS.md` Definition of Done still apply: do not turn this document into adoption-style language.

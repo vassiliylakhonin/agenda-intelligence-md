@@ -143,3 +143,52 @@ def test_score_rejects_non_before_after_markdown():
     res = run_cli(["score", str(path)])
     assert res.returncode != 0
     assert "Not a before/after example" in res.stderr
+
+
+# ---------------------------------------------------------------------------
+# Adversarial fixtures — document threat-model gaps in pytest.
+#
+# Each fixture below is well-formed against the schema but contains content
+# that a downstream reader should not trust. The validators correctly pass
+# these inputs because structural validation does not assess content quality;
+# the tests assert this behavior so the gap is visible and any future change
+# (e.g., adding detection) will require updating the test alongside the code.
+#
+# See docs/threat-model.md for the full mapping. Each test cites the gap
+# class it documents.
+# ---------------------------------------------------------------------------
+
+
+def test_adversarial_prompt_injection_in_watch_next_passes_structural_validation():
+    """Documents threat-model gap #7: prompt-injection inside processed
+    content is not detected by structural validation. The brief is
+    well-formed; the injection lives inside a watch_next item."""
+    path = FIXTURES / "adversarial-prompt-injection-in-watch-next.json"
+    res = run_cli(["validate-brief", str(path)])
+    assert res.returncode == 0
+    assert "OK" in res.stdout
+
+
+def test_adversarial_score_gaming_empty_fields_passes_structural_validation():
+    """Documents threat-model gaps #5 (score gaming via stripped /
+    semantically-empty content) and #2 (semantic provenance correctness):
+    required fields are present at the minimum length the schema demands
+    but carry no analytical content. validate-brief passes; score returns
+    a number; neither catches the emptiness."""
+    path = FIXTURES / "adversarial-score-gaming-empty-fields.json"
+    res = run_cli(["validate-brief", str(path)])
+    assert res.returncode == 0
+    assert "OK" in res.stdout
+    res_score = run_cli(["score", str(path)])
+    assert res_score.returncode == 0
+    assert "score:" in res_score.stdout
+
+
+def test_adversarial_injection_in_evidence_source_passes_structural_validation():
+    """Documents threat-model gap #7: prompt-injection inside an
+    evidence pack's `sources[].supports[]` string is not detected.
+    The pack validates; the injection text travels with the source."""
+    path = FIXTURES / "adversarial-injection-in-evidence-source.json"
+    res = run_cli(["validate-evidence", str(path)])
+    assert res.returncode == 0
+    assert "OK" in res.stdout
