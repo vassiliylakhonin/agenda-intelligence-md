@@ -2,6 +2,29 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
+## [0.7.4] – 2026-05-17
+
+### Added — Source Ingest skill
+- New source-ingest skill: normalizes user-supplied documents (PDF, DOCX, XLSX, URL, article, transcript) into a structured source record with metadata, Axis A/B provenance tags, key-claims table, excerpts, and limitations.
+- Live retrieval failure handling: fallback path when a URL fetch fails.
+- Source-ingest routing references vertical source guides (Central Asia + Caspian, Gulf + Middle East) instead of duplicating regional source tier content.
+
+### Added — Threat model
+- `docs/threat-model.md` — explicit statement of what the validator catches and what it does not.
+- Adversarial fixtures + pytest suite codifying the documented threat-model gaps.
+
+### Added — Bench
+- EU-CBAM case added to bundled bench; baseline now covers 5 source-backed cases (was 3).
+
+### Docs
+- Stack positioning synced across `pyproject.toml`, `llms.txt`, `agent-manifest.json`, and `ADOPTION.md`.
+- `CLAUDE.md` scope tightened to evidence/eval infrastructure framing.
+- `README.md`: stack-role tag, audience-first first screen, stack-context block, MCP framed as distribution surface.
+- Bench baseline counts in docs aligned with committed benchmark output.
+
+### Chore
+- `.claudeignore` added with build, OS, and historical release-notes exclusions.
+
 ## [0.7.3] – 2026-05-14
 
 ### Added — Signal lifecycle
