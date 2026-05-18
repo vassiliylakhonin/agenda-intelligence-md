@@ -359,6 +359,19 @@ agenda-intelligence-md/
 | Roadmap | [`ROADMAP.md`](ROADMAP.md) |
 | Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
 
+## Contact
+
+Author: **Vassiliy Lakhonin** — Almaty, Kazakhstan (UTC+5).
+
+- Portfolio: [vassiliylakhonin.github.io](https://vassiliylakhonin.github.io/)
+- Analyst / integrator entry route: [vassiliylakhonin.github.io/for-analysts.html](https://vassiliylakhonin.github.io/for-analysts.html)
+- Email: [vassiliy.lakhonin@gmail.com](mailto:vassiliy.lakhonin@gmail.com)
+- LinkedIn: [linkedin.com/in/vassiliy-lakhonin](https://www.linkedin.com/in/vassiliy-lakhonin/)
+- GitHub: [github.com/vassiliylakhonin](https://github.com/vassiliylakhonin)
+- Issues, PRs and eval-case contributions on this repo are welcome.
+
+For integrating Agenda Intelligence MD into your agent stack (CLI, MCP server, schemas, evidence audit) or for review collaboration on the bundled examples, email with your use case.
+
 ## License
 
 MIT.
