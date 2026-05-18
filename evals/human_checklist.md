@@ -13,6 +13,8 @@ Use this checklist when manually evaluating a brief. Each item should be marked 
 - [ ] Factual claims carry inline provenance tags: `[primary]`, `[secondary]`, `[user-provided]`, `[inference]`, or `[analyst-judgment]`.
 - [ ] Time-sensitive claims carry `[stale-risk: YYYY-MM]` where applicable.
 - [ ] Claims the reader should verify carry `[verify]`.
+- [ ] Linguistic decisiveness matches provenance: claims tagged `[analyst-judgment]` / `[inference]` use hedges ("likely", "appears to", "suggests"); confident framing ("clearly", "will", "is") is reserved for `[primary]` / verified claims.
+- [ ] Where sources disagree, both positions are surfaced with their provenance; the brief states which is preferred and why, or applies "flag-but-don't-use". Agreement between sources is treated as evidence only if the sources are independent.
 
 ## 3. Completeness
 - [ ] Bottom line is present and concise.
