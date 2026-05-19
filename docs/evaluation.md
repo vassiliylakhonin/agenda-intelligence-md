@@ -40,6 +40,22 @@ Full baseline: [`evals/baselines/source-backed.md`](../evals/baselines/source-ba
 
 These are structural/evidence-discipline metrics. They do not measure factual accuracy, and illustrative source cases are not live-source-backed factual benchmarks.
 
+## Signal classification and markers
+
+Use `signal_classification` for signal strength:
+
+```json
+{
+  "signal_classification": "signal",
+  "signal_markers": ["compliance_relevant_development"]
+}
+```
+
+`signal_markers` is optional and additive. Existing marker values remain valid
+in `signal_classification` for compatibility, but new examples should separate
+strength from practical markers. A future major version may remove marker
+values from `signal_classification` after a deprecation path.
+
 ## Running checks
 
 ```bash
@@ -110,5 +126,5 @@ The `evidence-audit.schema.json` enforces a stable `claim_type` enum derived fro
 - Heuristic score is intentionally simple; do not treat the number as authoritative.
 - LLM-judge prompt is provided; LLM-judge results are not benchmarked.
 - `verify-quotes --fetch` reports presence of a text fragment at a URL, not whether the source is reputable or the claim is true.
-- Benchmark numbers above cover 4 cases. Meaningful coverage requires 20+.
+- Benchmark numbers above cover 5 cases. Meaningful coverage requires 20+.
 - Heuristic score weights (25, 25, 20, 15, 15) are hand-tuned and not calibrated against expert judgment. Do not treat scores as authoritative quality ratings.

@@ -62,6 +62,21 @@ agenda-intelligence start technology-ai
 
 Copy the template into a file, e.g. `brief.json`, and fill in the fields with your actual findings.
 
+Use `signal_classification` for signal strength and `signal_markers` for
+practical qualifiers:
+
+```json
+{
+  "signal_classification": "signal",
+  "signal_markers": ["compliance_relevant_development"]
+}
+```
+
+Marker values such as `compliance_relevant_development`,
+`enforcement_marker`, and `escalation_marker` remain valid in
+`signal_classification` for backward compatibility, but new examples should use
+`signal_markers`.
+
 > **Tip:** The source plan tells you exactly which files under `source-requirements/technology-ai.json` you should consult before making claims.
 
 ---
