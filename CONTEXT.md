@@ -112,6 +112,10 @@ _Avoid_: Error, validation failure, hidden assumption
 A future claim-assessment result that may distinguish verified, contradicted, partially supported, unresolved, and not verifiable.
 _Avoid_: Current schema field, truth, factual score
 
+**Factual Verification Layer**:
+A future post-v1 layer that may produce Claim Verdicts by checking claims against authoritative sources, source conflicts, scope, dates, aliases, and jurisdiction-specific rules.
+_Avoid_: Current eval layer, quote verification, heuristic score
+
 **Claim Type**:
 A stable minimum taxonomy label for the kind of claim being audited.
 _Avoid_: Exhaustive ontology, ad hoc tag, sector lens
@@ -191,6 +195,7 @@ _Avoid_: Refactor, cleanup, terminology fix
 - A **Claim Support Level** records evidence strength inside an **Evidence Audit**.
 - An **Unsupported Claim** may appear in an **Evidence Pack** as a source-coverage gap or in an **Evidence Audit** as a load-bearing claim gap.
 - A **Claim Verdict** is a future layer and should not replace shipped **Claim Support Status** or **Claim Support Level** enums before v1.0.
+- A **Factual Verification Layer** may produce **Claim Verdicts** after v1.0, but it should not change the meaning of current validation, scoring, evidence, or quote-verification fields.
 - A **Claim Type** classifies audited claims without trying to model every strategic-risk domain exhaustively.
 - A **Signal** has one **Signal Classification** at a time.
 - A **Signal Marker** may express compliance, enforcement, or escalation relevance through the optional `signal_markers` field.
@@ -223,6 +228,7 @@ _Avoid_: Refactor, cleanup, terminology fix
 - A **Lens** is a portable reasoning layer, not a **Source Plan**, schema contract, or output template; default output blocks are examples, not the reason the lens exists.
 - Choose **Lenses** by reasoning need and **Source Plans** by evidence need; one task may use regional plus sector lenses and one primary source plan with optional secondary plans.
 - A claim should not be reduced to binary true/false; if stronger assessment is added after v1.0, model it as **Claim Verdict** rather than overloading current schema fields.
+- Real-world checks for sanctions, legal status, market facts, geopolitical events, and company claims belong to a future **Factual Verification Layer**, not to the shipped v1.0 evidence/eval contract.
 - Top-level protocol, schema, skill, source-policy, and manifest files are the **Authoring Source**; files under `src/agenda_intelligence/data` are **Packaged Mirrors** for runtime access.
 - `noise`, `weak_signal`, `signal`, `structural_shift`, and `trigger_event` are base **Signal Classification** values; `compliance_relevant_development`, `enforcement_marker`, and `escalation_marker` are **Signal Marker** values.
 - The optional `signal_markers` field is the preferred home for **Signal Marker** values; marker values remain valid in `signal_classification` as a compatibility path until a future major version can remove them.

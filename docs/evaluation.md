@@ -17,10 +17,11 @@ implements today.
 | Batch evaluation | Validate + audit + score across a directory of cases | Implemented (`bench <dir>`) |
 | Quote verification (local) | Is the cited fragment present in the source text file? | Implemented (`verify-quotes`, `verify_quotes` MCP) |
 | Quote verification (network) | Is the cited fragment present at the source URL? | Implemented (`verify-quotes --fetch`) |
-| Factual truthfulness | Are the claims true in the world? | **Not implemented.** Out of scope. |
+| Factual truthfulness | Are the claims true in the world? | **Not implemented.** Post-v1 layer only. |
 
 > Scoring and validation do **not** verify factual truth. They evaluate structure,
 > completeness, evidence labeling, claim traceability, and decision-readiness signals.
+> See [`factual-verification.md`](factual-verification.md) for the boundary.
 
 ## Benchmark — current numbers
 
