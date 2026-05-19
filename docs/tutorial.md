@@ -1,6 +1,6 @@
 # Quick‑start Tutorial
 
-The goal of this guide is to walk you through an entire *end‑to‑end* workflow that demonstrates the real‑world power of the Agenda Intelligence protocol in just 5‑10 minutes. By the end you will have produced a **decision‑ready brief** from scratch, validated it, and run a quick quality score.
+The goal of this guide is to walk you through an entire *end‑to‑end* workflow that demonstrates the Agenda Intelligence protocol in just 5‑10 minutes. By the end you will have produced a **decision‑ready brief** from scratch, validated it, and run a quick heuristic protocol score.
 
 ## Prerequisites
 
@@ -90,7 +90,7 @@ A green check means the JSON conforms to the schema. Replace the example path wi
 
 ## 7. Score the brief
 
-For a quick quality check, run the **score** step:
+For a quick heuristic protocol check, run the **score** step:
 
 ```bash
 agenda-intelligence score examples/before-after/eu-ai-act.md
@@ -106,7 +106,7 @@ The command runs the before/after evaluation harness for that example.
 - Ran a **single CLI command** to list the source plan
 - Sketched an evidence pack by hand
 - Generated a **brief template** in one command, then filled and validated it
-- Got instant **validation** and **quality scoring**.
+- Got instant **validation** and **heuristic scoring**.
 
 All of this took under **10 minutes**—it shows how the protocol moves you from data collection straight to a decision‑ready artifact.
 

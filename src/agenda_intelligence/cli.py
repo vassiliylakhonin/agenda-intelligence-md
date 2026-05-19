@@ -408,7 +408,7 @@ def cmd_bench(args):
 
 def cmd_audit_claims(args):
     """Validate a claim-level evidence-audit JSON file against
-    schemas/evidence-audit.schema.json (experimental) and emit a small
+    schemas/evidence-audit.schema.json and emit a small
     summary: support-level distribution, orphan claim_ids, and
     unsupported_claims count.
     """
@@ -448,7 +448,7 @@ def cmd_audit_claims(args):
         "support_levels": levels,
         "orphan_evidence_refs": orphans,
         "unsupported_claims_listed": len(data.get("unsupported_claims", [])),
-        "note": "Claim-level evidence audit is experimental. Schema-level only; does not verify factual truth.",
+        "note": "Claim-level evidence audit is schema-level only; does not verify factual truth.",
     }
     if args.format == "json":
         print(json.dumps(summary, indent=2, ensure_ascii=False))
@@ -530,7 +530,7 @@ def cmd_report(args):
 
 
 def cmd_fetch(args):
-    """Fetch evidence pack for a brief or category (stub)."""
+    """Legacy source-plan alias; brief evidence fetching is not implemented."""
     import json as _json
 
     if args.category:
@@ -748,10 +748,10 @@ def main():
     p.add_argument("--format", choices=["text", "json"], default="text", help="Output format for JSON-brief scoring")
     p.add_argument("--min-score", type=int, help="Exit with code 2 if total score is below this threshold")
     p.set_defaults(func=cmd_score)
-    # audit-claims (experimental: claim-level evidence audit)
+    # audit-claims: claim-level evidence audit
     p = sub.add_parser(
         "audit-claims",
-        help="Validate a claim-level evidence-audit JSON file (experimental)",
+        help="Validate a claim-level evidence-audit JSON file",
     )
     p.add_argument("path")
     p.add_argument("--format", choices=["text", "json"], default="text")
@@ -797,9 +797,9 @@ def main():
     p = sub.add_parser("memory-search", help="Search compact descriptors in analysis‑bank")
     p.add_argument("query", help="Search query string")
     p.set_defaults(func=cmd_memory_search)
-    # fetch – basic source fetcher, persisting evidence‑pack.json
-    p = sub.add_parser("fetch", help="Fetch evidence pack for a brief or category")
-    p.add_argument("--category", help="Source category to fetch (e.g., technology-ai)")
+    # fetch – legacy alias for source-plan; brief evidence fetching is not implemented.
+    p = sub.add_parser("fetch", help="Print source plan for a category; brief evidence fetching is not implemented")
+    p.add_argument("--category", help="Source category to print (e.g., technology-ai)")
     p.add_argument("--brief", help="Short brief text to analyze")
     p.set_defaults(func=cmd_fetch)
     # mcp-config – print a copy-pasteable local MCP client config

@@ -28,5 +28,5 @@
     "FATF publications on regional AML/CFT typologies",
     "UN Comtrade flow anomalies for the corridor"
   ],
-  "evidence_mode": "user_provided"
+  "evidence_mode": "live_source_backed"
 }

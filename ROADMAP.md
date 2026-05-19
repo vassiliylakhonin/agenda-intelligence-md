@@ -5,7 +5,7 @@ Concrete milestones, grounded in what is actually shipped. Status is verified ag
 ## Shipped
 
 ### v0.5.x
-Schemas, validation CLI, source acquisition layer, lenses, AnalysisBank.
+Schemas, validation CLI, source planning layer, lenses, AnalysisBank.
 
 ### v0.6.x
 stdio MCP server (`agenda-intelligence-mcp`), MCP client configs.

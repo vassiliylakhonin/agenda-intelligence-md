@@ -4,7 +4,7 @@
 
 Label the evidence mode:
 
-- **Live-source-backed** — current sources were checked during the answer.
+- **Live-source-backed** — current sources were checked during the analysis workflow, not necessarily by this package.
 - **User-provided** — analysis relies on sources or facts provided by the user.
 - **Reasoning-only** — no live verification; analysis is based on general knowledge and stated assumptions.
 - **Mixed** — combination of the above.

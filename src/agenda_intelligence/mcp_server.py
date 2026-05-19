@@ -102,7 +102,7 @@ def validate_evidence(evidence_json: dict) -> dict:
 
 def audit_claims(audit_json: dict) -> dict:
     """Validate a claim-level evidence-audit dict against
-    evidence-audit.schema.json (experimental) and report a small summary:
+    evidence-audit.schema.json and report a small summary:
     distribution of `support_level`, orphan evidence_id refs, and the
     count of explicitly listed `unsupported_claims`.
 

@@ -12,7 +12,7 @@ If live retrieval fails or is not available, say so and downgrade evidence mode.
 
 ## Evidence modes
 
-- **live_source_backed** — current sources were checked during the task.
+- **live_source_backed** — current sources were checked during the analysis workflow, not necessarily by this package.
 - **user_provided** — analysis relies on sources/facts supplied by the user.
 - **reasoning_only** — no live verification; answer is based on general knowledge and stated assumptions.
 - **mixed** — combination of the above.

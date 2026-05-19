@@ -1,0 +1,3 @@
+# Evidence mode describes the analysis workflow
+
+`evidence_mode` describes how evidence was available during the analysis workflow, not which component performed source retrieval. `live_source_backed` means current sources were checked somewhere upstream; illustrative or placeholder sources must use `user_provided` or `mixed`, and brief/evidence-pack mode mismatches are warnings rather than schema failures. This keeps examples semantically honest while preserving deterministic scoring: simple source-backed cases should align modes, but illustrative cases should not claim live source support just to improve a score.

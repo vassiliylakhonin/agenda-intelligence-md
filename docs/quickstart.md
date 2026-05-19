@@ -93,13 +93,13 @@ A green check means the JSON conforms to the schema and all required fields are 
 
 ---
 
-## 5️⃣ Score the brief (quality check)
+## 5️⃣ Score the brief (heuristic protocol check)
 
 ```bash
 agenda-intelligence score examples/agenda-brief.json
 ```
 
-You’ll get a heuristic 0‑100 structural quality score with dimension feedback.
+You’ll get a heuristic 0‑100 protocol score with dimension feedback for structure, evidence discipline, and decision-readiness signals.
 It does not verify factual truthfulness.
 
 ---
@@ -135,7 +135,7 @@ uncertainty, falsifiability, and watch-next indicators.
 | 2 | Ran `start technology‑ai` | Got a trimmed source plan + ready‑to‑fill brief template |
 | 3 | (Optional) Built an evidence pack | Ensures every claim is source‑backed |
 | 4 | Validated the brief | Confirms structural correctness |
-| 5 | Scored the brief | Measures decision‑ready quality |
+| 5 | Scored the brief | Checks decision-readiness signals |
 
 **Total time:** < 10 minutes.  
 **Result:** You’ve turned raw source requirements into a **decision‑ready brief** that explicitly lists watch‑next indicators — no generic “monitor developments” fluff.
@@ -147,6 +147,6 @@ uncertainty, falsifiability, and watch-next indicators.
 - Explore more source plans: `agenda-intelligence source-plan sanctions`, `agenda-intelligence source-plan conflict-security`, etc.
 - Read the full [tutorial](tutorial.md) for a deeper dive.
 - Check [example briefs](../examples/) to see the protocol in action.
-- See the [evaluation rubric](../evals/rubric.md) to understand how quality is scored.
+- See the [evaluation rubric](../evals/rubric.md) to understand how the heuristic score is computed.
 
 > **Bottom line:** The protocol forces the agent (or you) to answer *what changed, why it matters, who is affected, and which three indicators to watch*. That’s the “aha” moment.
