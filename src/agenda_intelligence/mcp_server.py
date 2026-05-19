@@ -314,6 +314,11 @@ def _term_matches_text(term: str, text: str) -> bool:
     return bool(tokens) and all(token in text for token in tokens)
 
 
+def _source_match_terms(required_source: str, source_text: str) -> list[str]:
+    terms = [required_source] + SOURCE_COVERAGE_ALIASES.get(required_source, [])
+    return [term for term in terms if _term_matches_text(term, source_text)]
+
+
 def _source_text(source: dict) -> str:
     parts: list[str] = []
     for key in ["name", "url", "source_type", "freshness"]:
@@ -323,6 +328,16 @@ def _source_text(source: dict) -> str:
     if isinstance(supports, list):
         parts.extend(str(value) for value in supports)
     return _normalize_source_term(" ".join(parts))
+
+
+def _source_ref(source: dict, source_index: int) -> dict:
+    return {
+        "source_index": source_index,
+        "evidence_id": source.get("evidence_id"),
+        "name": source.get("name"),
+        "url": source.get("url"),
+        "source_type": source.get("source_type"),
+    }
 
 
 def _evidence_sources(evidence_json: dict) -> list[dict]:
@@ -361,18 +376,31 @@ def source_coverage(evidence_json: dict, category: str) -> dict:
 
     covered_required: list[str] = []
     missing_required: list[str] = []
+    required_source_details: list[dict] = []
     for required_source in required:
         aliases = SOURCE_COVERAGE_ALIASES.get(required_source, [])
         is_explicitly_missing = _term_matches_text(required_source, explicit_missing_text) or any(
             _term_matches_text(alias, explicit_missing_text) for alias in aliases
         )
-        is_covered = _term_matches_text(required_source, combined_text) or any(
-            _term_matches_text(alias, combined_text) for alias in aliases
-        )
+        matched_sources = []
+        for source_index, source in enumerate(sources):
+            matched_terms = _source_match_terms(required_source, _source_text(source))
+            if matched_terms:
+                matched_sources.append({**_source_ref(source, source_index), "matched_terms": matched_terms})
+        is_covered = bool(matched_sources)
         if is_covered and not is_explicitly_missing:
             covered_required.append(required_source)
+            status = "covered"
         else:
             missing_required.append(required_source)
+            status = "explicitly_missing" if is_explicitly_missing else "missing"
+        required_source_details.append(
+            {
+                "required_source": required_source,
+                "status": status,
+                "matched_sources": matched_sources,
+            }
+        )
 
     covered_supporting = [
         source
@@ -389,6 +417,7 @@ def source_coverage(evidence_json: dict, category: str) -> dict:
         "required_sources": required,
         "covered_required_sources": covered_required,
         "missing_required_sources": missing_required,
+        "required_source_details": required_source_details,
         "supporting_sources_present": covered_supporting,
         "coverage_pct": coverage_pct,
         "source_count": len(sources),

@@ -95,7 +95,78 @@ def test_source_coverage_reports_missing_sources():
     assert result["implemented"] is True
     assert result["valid_category"] is True
     assert "sanctions_list" in result["missing_required_sources"]
+    sanctions_detail = next(
+        item for item in result["required_source_details"] if item["required_source"] == "sanctions_list"
+    )
+    assert sanctions_detail["status"] == "missing"
+    assert sanctions_detail["matched_sources"] == []
     assert result["strict_gate_passed"] is False
+
+
+def test_source_coverage_reports_matched_source_details():
+    result = source_coverage(
+        {
+            "topic": "sanctions claim",
+            "evidence_mode": "live_source_backed",
+            "claims": [
+                {
+                    "claim": "Company X appears on the OFAC list.",
+                    "support_status": "supported",
+                    "sources": [
+                        {
+                            "evidence_id": "e1",
+                            "name": "OFAC SDN list entry",
+                            "source_type": "official",
+                            "freshness": "current",
+                            "supports": ["Official sanctions list designation."],
+                        }
+                    ],
+                }
+            ],
+            "unsupported_claims": [],
+        },
+        "sanctions",
+    )
+
+    sanctions_detail = next(
+        item for item in result["required_source_details"] if item["required_source"] == "sanctions_list"
+    )
+    assert sanctions_detail["status"] == "covered"
+    assert sanctions_detail["matched_sources"][0]["evidence_id"] == "e1"
+    assert "ofac" in sanctions_detail["matched_sources"][0]["matched_terms"]
+
+
+def test_source_coverage_explicit_missing_overrides_matched_source():
+    result = source_coverage(
+        {
+            "topic": "sanctions claim",
+            "evidence_mode": "mixed",
+            "claims": [
+                {
+                    "claim": "Company X appears on a sanctions list.",
+                    "support_status": "partially_supported",
+                    "sources": [
+                        {
+                            "name": "OFAC SDN list mention",
+                            "source_type": "official",
+                            "freshness": "current",
+                            "supports": ["Official sanctions list designation."],
+                        }
+                    ],
+                }
+            ],
+            "required_but_missing_sources": ["sanctions_list"],
+            "unsupported_claims": ["Sanctions list coverage is incomplete."],
+        },
+        "sanctions",
+    )
+
+    sanctions_detail = next(
+        item for item in result["required_source_details"] if item["required_source"] == "sanctions_list"
+    )
+    assert "sanctions_list" in result["missing_required_sources"]
+    assert sanctions_detail["status"] == "explicitly_missing"
+    assert sanctions_detail["matched_sources"]
 
 
 def test_source_coverage_unknown_category_returns_error():

@@ -166,6 +166,13 @@ def cmd_source_coverage(args):
             print("  covered:")
             for source in result["covered_required_sources"]:
                 print(f"    - {source}")
+                detail = next(item for item in result["required_source_details"] if item["required_source"] == source)
+                matches = [
+                    match.get("name") or match.get("evidence_id") or f"source_index={match['source_index']}"
+                    for match in detail["matched_sources"]
+                ]
+                if matches:
+                    print(f"      matched by: {', '.join(str(match) for match in matches)}")
         if result["missing_required_sources"]:
             print("  missing:")
             for source in result["missing_required_sources"]:
