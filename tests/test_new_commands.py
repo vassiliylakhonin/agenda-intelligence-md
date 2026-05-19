@@ -211,6 +211,41 @@ def test_source_coverage_detects_sanctions_sources(tmp_path: Path):
     payload = json.loads(res.stdout)
     assert payload["missing_required_sources"] == []
     assert payload["strict_gate_passed"] is True
+    sanctions_detail = next(
+        item for item in payload["required_source_details"] if item["required_source"] == "sanctions_list"
+    )
+    assert sanctions_detail["status"] == "covered"
+    assert sanctions_detail["matched_sources"][0]["name"] == "OFAC SDN list entry"
+    assert "ofac" in sanctions_detail["matched_sources"][0]["matched_terms"]
+
+
+def test_source_coverage_text_includes_matched_source_names(tmp_path: Path):
+    pack = tmp_path / "pack.json"
+    pack.write_text(
+        json.dumps(
+            {
+                "topic": "sanctions claim",
+                "evidence_mode": "live_source_backed",
+                "claims": [
+                    {
+                        "claim": "Company X is designated in one sanctions jurisdiction.",
+                        "support_status": "partially_supported",
+                        "sources": [
+                            {
+                                "name": "OFAC SDN list entry",
+                                "source_type": "official",
+                                "freshness": "current",
+                                "supports": ["Official sanctions list designation."],
+                            }
+                        ],
+                    }
+                ],
+                "unsupported_claims": [],
+            }
+        )
+    )
+    res = run("source-coverage", str(pack), "--category", "sanctions")
+    assert "matched by: OFAC SDN list entry" in res.stdout
 
 
 # ---------- verify-quotes ----------

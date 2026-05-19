@@ -104,7 +104,7 @@ agenda-intelligence verify-quotes pack.json --fetch
 | `validate_evidence` | Schema check on an evidence pack |
 | `audit_claims` | Validates claim-level audit; returns support-level distribution and orphan refs |
 | `list_source_categories` | Lists packaged source requirement categories before source planning |
-| `source_coverage` | Reports covered and missing source-plan `must_check` source types |
+| `source_coverage` | Reports covered/missing source-plan `must_check` types with matched source details |
 | `verify_quotes` | Checks cited quote fragments against caller-supplied source texts |
 | `score_output` | Heuristic before/after marker rubric |
 

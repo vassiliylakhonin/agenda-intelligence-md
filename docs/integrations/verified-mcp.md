@@ -84,6 +84,7 @@ Expected result:
 - `source_plan` returns category `technology-ai`
 - `source_plan.plan.must_check` is present
 - `source_coverage` returns `missing_required_sources`
+- `source_coverage.required_source_details` explains matched source entries
 - `score_output` returns `implemented: true`
 - `score_output.after_score` is higher than `before_score`
 

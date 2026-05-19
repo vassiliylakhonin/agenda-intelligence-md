@@ -12,6 +12,7 @@ Implemented today:
 - MCP `list_source_categories` returns the same category discovery list.
 - `source-coverage <evidence.json> --category <category>` reports covered and missing required source types.
 - MCP `source_coverage` returns the same diagnostic structure.
+- Coverage output includes `required_source_details`, which shows matched source entries and matched terms for each required source type.
 - Evidence packs may list `source_plan` notes and unsupported claims.
 - Scoring and review can surface weak evidence discipline.
 
@@ -42,6 +43,8 @@ agenda-intelligence source-coverage evidence.json --category sanctions --strict
 ```
 
 Without `--strict`, missing coverage exits 0. With `--strict`, missing required source coverage exits 1 so teams can opt into a CI gate.
+
+The JSON output is intentionally explainable: each required source type has a status (`covered`, `missing`, or `explicitly_missing`) and the source entries that matched it. These matches explain why the diagnostic counted a source type as present; they do not prove the cited source is correct or sufficient.
 
 ## Sanctions Claim Example
 
