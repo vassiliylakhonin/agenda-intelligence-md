@@ -1,75 +1,65 @@
+@AGENTS.md
+
 # Claude Code working rules
 
-This repository is Agenda Intelligence MD.
+AGENTS.md is the canonical project contract: identity, scope, boundaries, honesty rules, relationship to Global Think Tank Analyst and vertical specialists, retrieved-content trust. Follow it. Do not re-derive or restate those rules — apply them.
 
-It is the evidence and eval infrastructure layer for strategic intelligence agents: validation, JSON schemas, evidence audit, scoring, and CLI / MCP / CI tooling.
+Runtime skill contracts live in [skills/agenda-intelligence/SKILL.md](skills/agenda-intelligence/SKILL.md) and [skills/source-ingest/SKILL.md](skills/source-ingest/SKILL.md).
 
-It is NOT:
-- a domain-reasoning skill (that is Global Think Tank Analyst);
-- a vertical specialist skill (that is Central Asia & Caspian, Gulf & Middle East, and similar repos);
-- a live source-retrieval engine, agenda/meeting summarizer, or compliance product.
+This file (CLAUDE.md) contains only Claude-Code-specific working rules for this repo, on top of the global ~/.claude/CLAUDE.md.
 
-Treat AGENTS.md as the canonical source of truth for project identity and rules.
+## Project-specific paths to inspect
 
-## How to work in this repo
-
-Before editing, inspect relevant project files when present:
-- README.md
-- CLAUDE.md
-- AGENTS.md
-- SKILL.md
-- llms.txt
-- package.json
+In addition to the global pre-edit checklist:
 - pyproject.toml
-- requirements.txt
 - Makefile
-- justfile
+- scripts/
+- schemas/
 - examples/
-- docs/
+- evals/
 - tests/
+- skills/
+- src/agenda_intelligence/
+- source-requirements/
 - .github/workflows/
 
-Prefer small, safe, reviewable changes.
+## Critical invariant: dual-copy data/ sync
 
-Do not rewrite the project unless explicitly asked.
+The repo keeps two copies of several files — top-level AND under `src/agenda_intelligence/data/`. These MUST stay in sync or CI breaks (enforced by `tests/test_package_consistency.py`):
 
-Follow existing project patterns instead of inventing new architecture.
+- `Agenda-Intelligence.md` ↔ `src/agenda_intelligence/data/Agenda-Intelligence.md`
+- `SOURCE_POLICY.md` ↔ `src/agenda_intelligence/data/SOURCE_POLICY.md`
+- `llms.txt` ↔ `src/agenda_intelligence/data/llms.txt`
+- `agent-manifest.json` ↔ `src/agenda_intelligence/data/agent-manifest.json`
+- `schemas/*.json` ↔ `src/agenda_intelligence/data/schemas/*.json`
+- `skills/**` ↔ `src/agenda_intelligence/data/skills/**`
+- `source-requirements/*` ↔ `src/agenda_intelligence/data/source-requirements/*`
 
-## Preserve project boundaries
+When changing any of these, change the paired copy in the same commit. Version bumps in particular must propagate to packaged copies or release CI fails.
 
-Do not add or imply:
-- production-grade guarantees;
-- legal, compliance, financial, or security advice;
-- autonomous decision-making;
-- fake benchmarks or unsupported evaluation claims;
-- live source retrieval unless already implemented;
-- enterprise deployment guarantees;
-- privacy/security guarantees that are not supported by the code.
+## Validators before push
 
-Do not add new frameworks, services, dependencies, MCP servers, schemas, validators, CLIs, CI pipelines, or deployment infrastructure unless:
-- this repository already clearly points in that direction;
-- I explicitly ask for it;
-- or you first explain the trade-off and get approval.
+Mirror the CI checks locally before pushing:
 
-## Documentation rules
+```
+make ci
+python3 -m agenda_intelligence.cli validate-manifest
+python3 -m agenda_intelligence.cli validate-brief examples/agenda-brief.json
+python3 -m agenda_intelligence.cli validate-evidence examples/source/evidence-pack.json
+python3 scripts/validate.py
+python3 scripts/validate_public_examples.py
+```
 
-When editing docs, examples, prompts, templates, or markdown workflows:
-- separate facts, decisions, assumptions, risks, open questions, owners, and next actions;
-- preserve traceability from source notes to outputs when relevant;
-- make outputs useful for both humans and AI agents;
-- avoid hype and unsupported claims;
-- keep language practical, conservative, and decision-useful.
+For MCP smoke check:
 
-Keep the boundary clear:
-- this repo handles validation, schemas, evidence audit, scoring, and CLI / MCP / CI tooling for strategic-intelligence agent outputs;
-- domain reasoning belongs in Global Think Tank Analyst;
-- vertical specialist depth belongs in the relevant skill repository (Central Asia & Caspian, Gulf & Middle East, etc.).
+```
+python3 -m agenda_intelligence.cli doctor --mcp-command "python3 -m agenda_intelligence.mcp_stdio" --strict
+```
 
-## Definition of done
+## Working style in this repo
 
-Before finishing, report:
-1. what changed;
-2. why it matters;
-3. what was not changed;
-4. how I can verify it;
-5. risks or follow-ups.
+Small, reviewable changes. Do not rewrite the project unless I explicitly ask.
+
+Follow existing schema, CLI, and MCP patterns instead of inventing new ones. New schemas, validators, MCP tools, CLI subcommands, or workflow files require explicit approval — see AGENTS.md "Honesty rules" and the global "Code and repository changes" rule.
+
+If a change touches release artifacts (version, packaged data, wheels) or any of the dual-copy paths above, verify the invariant before committing.
