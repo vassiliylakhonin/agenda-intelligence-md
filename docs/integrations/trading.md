@@ -179,5 +179,9 @@ You should see a nicely formatted brief in your Slack channel, ready for a trade
 
 ---
 
-**Why this matters:**  
-Raw news is noisy. Agenda‑Intelligence strips the noise, keeps the signal, and delivers a decision‑ready brief in < 30 seconds. That’s the edge a trading‑desk or energy‑risk team needs. 🚀
+**Why this matters:**
+Raw news is noisy. Agenda-Intelligence strips the noise, keeps the signal, and delivers a decision-ready brief in seconds.
+
+---
+
+**Disclaimer.** This document is for informational and educational purposes only. It does not constitute investment, financial, legal, or trading advice. Agenda Intelligence MD is an open-source structural validation toolkit — it does not verify factual truth, predict market outcomes, or recommend trades. Any trading or investment decisions are solely the responsibility of the user. Use at your own risk.
