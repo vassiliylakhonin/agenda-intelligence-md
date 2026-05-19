@@ -81,7 +81,9 @@ Required fields: `signal_id`, `title`, `classification`, `status`, `first_detect
 
 ## Storage
 
-Store tracker files in `analysis-bank/` alongside memory cards, or in a dedicated `signal-tracker/` directory if the volume warrants separation. Use the `signal_id` as the filename: `{signal_id}.json`.
+Store tracker files in `signal-trackers/` using the `signal_id` as the filename: `signal-trackers/{signal_id}.json`.
+
+Do not store active trackers in `analysis-bank/`. AnalysisBank stores reusable reasoning memories; signal trackers store dated state about specific monitored situations. When a signal resolves, distill the transferable reasoning lesson into a separate memory card under `analysis-bank/`.
 
 ## Example
 

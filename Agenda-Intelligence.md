@@ -68,7 +68,7 @@ For signals classified as `signal`, `structural_shift`, or `trigger_event` that 
 
 Stages: `detected → developing → escalated → stable → resolved → archived`.
 
-Store tracker files as `{signal_id}.json` validated against `schemas/signal-tracker.schema.json`. When a signal resolves, distill a memory card into `analysis-bank/`.
+Store tracker files as `signal-trackers/{signal_id}.json` validated against `schemas/signal-tracker.schema.json`. When a signal resolves, distill a reasoning memory card into `analysis-bank/`.
 
 ## Use with deeper references
 

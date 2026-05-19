@@ -72,8 +72,8 @@ See [`eu-cbam.audit.json`](eu-cbam.audit.json).
 ## 6. Validation
 
 ```bash
-agenda-intelligence check  examples/source-backed/eu-cbam/eu-cbam.brief.json
-agenda-intelligence audit  examples/source-backed/eu-cbam/eu-cbam.evidence.json
+agenda-intelligence validate-brief examples/source-backed/eu-cbam/eu-cbam.brief.json
+agenda-intelligence validate-evidence examples/source-backed/eu-cbam/eu-cbam.evidence.json
 agenda-intelligence report examples/source-backed/eu-cbam/eu-cbam.brief.json
 ```
 

@@ -7,7 +7,7 @@
 **How Agenda‑Intelligence helps:**
 - Leverages the **policy‑monitoring** source plan to fetch the latest regulatory documents and news.
 - Generates concise, decision‑ready briefs that indicate the regulatory change, its implications, affected stakeholders, and which indicators to track next.
-- Validation ensures every claim is backed by an official source, and the evaluation rubric guarantees high‑quality content.
+- Validation checks structure, while scoring gives a heuristic view of evidence discipline and decision-readiness signals.
 
 ---
 

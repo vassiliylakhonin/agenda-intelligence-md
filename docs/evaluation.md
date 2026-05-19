@@ -24,21 +24,21 @@ implements today.
 
 ## Benchmark — current numbers
 
-Run against 4 source-backed cases (`examples/source-backed/`). Deterministic; no LLM.
+Run against source-structured cases in `examples/source-backed/`. Deterministic; no LLM.
 
 | Metric | Value |
 |---|---|
-| Cases | 4 |
+| Cases | 5 |
 | Schema valid | 100% |
 | With evidence pack | 100% |
 | With claim-level audit | 100% |
-| Mean score | 86.8 / 100 |
-| Score range | 84–89 |
+| Mean score | 87.8 / 100 |
+| Score range | 84–91 |
 | Audit orphan refs | 0 |
 
 Full baseline: [`evals/baselines/source-backed.md`](../evals/baselines/source-backed.md)
 
-These are structural/evidence-discipline metrics. They do not measure factual accuracy.
+These are structural/evidence-discipline metrics. They do not measure factual accuracy, and illustrative source cases are not live-source-backed factual benchmarks.
 
 ## Running checks
 

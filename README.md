@@ -39,11 +39,11 @@ agenda-intelligence mcp-config --client cursor
 
 ## Benchmark baseline
 
-5 source-backed cases, reproduced with `python3 evals/run_benchmark.py`:
+5 source-structured cases, reproduced with `python3 evals/run_benchmark.py`:
 
 | Metric | Value |
 |---|---|
-| Mean score | 87.0 / 100 |
+| Mean score | 87.8 / 100 |
 | Schema-valid | 100% |
 | With evidence pack | 100% |
 | With claim-level audit | 100% |
@@ -51,7 +51,7 @@ agenda-intelligence mcp-config --client cursor
 
 Heuristic scores are uncalibrated and not validated against expert judgment. They evaluate structure, evidence labeling, and decision-readiness — not factual truth.
 
-Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed/eu-ai-act.md) — brief + evidence pack + claim-level audit. Before / after pairs: [`examples/before-after/`](examples/before-after/).
+Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed/eu-ai-act.md) — brief + evidence pack + claim-level audit using illustrative sources. Before / after pairs: [`examples/before-after/`](examples/before-after/).
 
 ## Schemas
 

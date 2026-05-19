@@ -4,9 +4,9 @@
     "schema_valid_pct": 100.0,
     "with_evidence_pct": 100.0,
     "with_audit_pct": 100.0,
-    "mean_score": 87.0,
+    "mean_score": 87.8,
     "min_score": 84,
-    "max_score": 89,
+    "max_score": 91,
     "audit_orphan_total": 0,
     "note": "Heuristic structural / evidence-discipline metrics. Does not verify factual truth."
   },
@@ -86,10 +86,10 @@
       "audit_valid": true,
       "audit_error": null,
       "audit_orphans": 0,
-      "score": 89,
+      "score": 91,
       "score_breakdown": {
         "relevance": 25,
-        "evidence_support": 16,
+        "evidence_support": 18,
         "completeness": 19,
         "actionability": 14,
         "clarity": 15
@@ -107,10 +107,10 @@
       "audit_valid": true,
       "audit_error": null,
       "audit_orphans": 0,
-      "score": 85,
+      "score": 87,
       "score_breakdown": {
         "relevance": 25,
-        "evidence_support": 12,
+        "evidence_support": 14,
         "completeness": 19,
         "actionability": 14,
         "clarity": 15

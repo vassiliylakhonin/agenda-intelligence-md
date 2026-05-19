@@ -7,7 +7,7 @@ measurable agent workflow.
 
 - JSON brief scoring:
   - `agenda-intelligence score brief.json`
-  - returns a heuristic 0-100 structural quality score
+  - returns a heuristic 0-100 protocol score
   - reports relevance, evidence support, completeness, actionability, and clarity
 - Evidence-linked scoring:
   - `agenda-intelligence score brief.json --evidence evidence-pack.json`

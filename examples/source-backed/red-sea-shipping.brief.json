@@ -28,5 +28,5 @@
     "Drewry / freight-rate index movement",
     "Insurance premium quotes for Red Sea transits"
   ],
-  "evidence_mode": "user_provided"
+  "evidence_mode": "live_source_backed"
 }

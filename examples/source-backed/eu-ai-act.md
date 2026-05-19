@@ -112,8 +112,8 @@ URLs are placeholders; sources are illustrative.
 ## 6. Validation / scoring
 
 ```bash
-agenda-intelligence check  examples/source-backed/eu-ai-act.brief.json
-agenda-intelligence audit  examples/source-backed/eu-ai-act.evidence.json
+agenda-intelligence validate-brief examples/source-backed/eu-ai-act.brief.json
+agenda-intelligence validate-evidence examples/source-backed/eu-ai-act.evidence.json
 agenda-intelligence report examples/source-backed/eu-ai-act.brief.json
 ```
 

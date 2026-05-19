@@ -1,6 +1,6 @@
-# Claim-level evidence audit (experimental)
+# Claim-level evidence audit
 
-Status: **experimental**. Schema lives at
+Status: **stable schema contract**. Schema lives at
 [`schemas/evidence-audit.schema.json`](../schemas/evidence-audit.schema.json),
 validated by `agenda-intelligence audit-claims <path>`.
 
@@ -83,9 +83,8 @@ mechanically.
 
 ## Honest limits
 
-This is experimental for two reasons:
-
-1. The taxonomy of `claim_type` is intentionally open-ended. We expect
-   it to stabilize after several real cases.
-2. The schema is not yet wired into `validate-evidence` by default.
-   `evidence-pack.schema.json` remains the primary contract for now.
+The schema contract is stable, but it is still a traceability layer. It does
+not verify factual truth, source reputation, or whether a claimed
+`support_level` is semantically justified. `evidence-pack.schema.json` remains
+the primary evidence-pack contract; `evidence-audit.schema.json` adds
+claim-level traceability when that granularity is needed.

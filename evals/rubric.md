@@ -1,6 +1,6 @@
-# Evaluation Rubric for Agenda‑Intelligence Briefs
+# Heuristic Scoring Rubric for Agenda‑Intelligence Briefs
 
-The rubric focuses on **quality** rather than only structural conformity. Each brief is scored on a 0‑100 scale by aggregating the following dimensions (each weighted equally, unless otherwise noted).
+The rubric produces a deterministic heuristic score for structure, evidence discipline, and decision-readiness signals. It does not measure factual truthfulness or expert analytical correctness. Each brief is scored on a 0‑100 scale by aggregating the following dimensions.
 
 | Dimension | Description | Weight |
 |-----------|-------------|--------|
@@ -13,7 +13,7 @@ The rubric focuses on **quality** rather than only structural conformity. Each b
 ## Scoring Method
 1. Each dimension receives a raw score from 0‑100.
 2. Multiply by its weight and sum the results.
-3. Round to the nearest integer → final quality score.
+3. Round to the nearest integer → final heuristic score.
 
 ### Example Calculation
 - Relevance: 90 → 22.5
@@ -23,4 +23,4 @@ The rubric focuses on **quality** rather than only structural conformity. Each b
 - Clarity: 95 → 14.25
 - **Total = 83**
 
-The rubric is used by the **LLM judge** (optional) and by a **human reviewer** (checklist below). Both should aim for the same final score.
+The deterministic CLI scorer, optional LLM judge, and human reviewer can use the same dimensions, but their results should be reported separately.

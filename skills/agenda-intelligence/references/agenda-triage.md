@@ -10,7 +10,8 @@ Use one primary label:
 - **Structural shift** — durable change in incentives, constraints, rules, or power.
 - **Trigger event** — development that starts or accelerates a concrete risk pathway.
 - **Compliance-relevant development** — changes sanctions, export controls, legal/regulatory exposure, or enforcement risk.
-- **Reputational-risk development** — changes legitimacy, public scrutiny, partner risk, or stakeholder expectations.
+
+Treat reputational risk as an exposure dimension, not as the primary machine-readable classification. If legitimacy, public scrutiny, partner risk, or stakeholder expectations are the main impact, choose the closest primary label above and describe reputational exposure separately.
 
 ## Triage questions
 
