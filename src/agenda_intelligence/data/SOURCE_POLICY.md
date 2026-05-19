@@ -60,8 +60,11 @@ Tags are additive to document-level evidence mode. Use both.
 2. Load the matching source requirement pack from `source-requirements/`.
 3. Identify must-check source types.
 4. Check primary sources first when available.
-5. Mark unsupported claims explicitly.
-6. Then write the brief using `Agenda-Intelligence.md`.
+5. Mark missing `must_check` source types as evidence gaps.
+6. Mark unsupported claims explicitly.
+7. Then write the brief using `Agenda-Intelligence.md`.
+
+Missing `must_check` coverage is diagnostic before v1.0. It should weaken or block a claim when the missing source is load-bearing, but it is not a base schema-validation failure unless a future strict source-plan gate is explicitly used.
 
 ## Failure handling
 

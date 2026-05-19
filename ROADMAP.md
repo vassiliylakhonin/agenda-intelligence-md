@@ -66,6 +66,13 @@ MCP `score_output` tool, post-release smoke.
 - `agent-manifest.json` documented as single source of truth for protocol, lenses, schemas, and source requirements.
 - Benchmark suite with reproducible numbers across at least 20 cases.
 - Keep factual verification outside v1.0; document it as a future layer rather than changing current evidence/eval semantics.
+- Keep missing source-plan coverage diagnostic before v1.0; do not redefine `validate-evidence` as category completeness.
+
+## Post-v1 — source-plan coverage gate
+
+- Consider a `--strict-source-plan` gate that checks whether evidence packs cover category-specific `must_check` source types.
+- Keep source-plan coverage separate from base schema validity and factual verification.
+- Preserve explicit Missing Required Source diagnostics so analysts can see which source type is absent.
 
 ## Post-v1 — factual verification layer
 

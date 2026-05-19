@@ -56,6 +56,10 @@ _Avoid_: Source retrieval, source fetching, citation formatting
 A source type from a Source Plan that was required or expected but was not available in the evidence pack.
 _Avoid_: Schema error, hidden gap, validation failure
 
+**Source Plan Coverage**:
+The diagnostic assessment of whether an Evidence Pack covers the `must_check` and supporting source types expected by a Source Plan.
+_Avoid_: Schema validity, factual verification, source discovery
+
 **Legacy Fetch Command**:
 The pre-v1 CLI command that prints a source plan for `--category` and does not implement brief evidence fetching.
 _Avoid_: Retrieval engine, evidence fetcher, crawler
@@ -183,6 +187,7 @@ _Avoid_: Refactor, cleanup, terminology fix
 - `source_acquisition` is a **Legacy Manifest Key** whose domain meaning is **Source Planning Layer**.
 - **Source Discipline** governs when a claim is supported enough to state, weaken, or flag as unsupported.
 - A **Missing Required Source** should be disclosed in the evidence pack and reflected in scoring or review.
+- **Source Plan Coverage** may identify **Missing Required Sources**, but it is separate from base schema validation and factual verification.
 - The **Legacy Fetch Command** may print a **Source Plan**, but it does not fetch evidence for a brief.
 - An **Evidence Audit** traces important claims in an **Agenda Brief** to evidence items.
 - A **Benchmark** evaluates whether cases conform to the shipped protocol and evidence expectations.
@@ -234,6 +239,7 @@ _Avoid_: Refactor, cleanup, terminology fix
 - The optional `signal_markers` field is the preferred home for **Signal Marker** values; marker values remain valid in `signal_classification` as a compatibility path until a future major version can remove them.
 - Reputational risk is an **Exposure Dimension**, not a shipped `signal_classification` enum value before v1.0.
 - `source-requirements` files define **Source Plans**; they specify required source types but do not make Agenda Intelligence MD a retrieval engine before v1.0.
+- **Source Plan Coverage** is diagnostic before v1.0; a future strict source-plan gate should not redefine what `validate-evidence` means.
 - Use **Source Planning Layer**, not "source acquisition layer", for the shipped source-plan capability before v1.0.
 - Do not rename the `source_acquisition` manifest key before v1.0; treat it as a compatibility wire name.
 - **AnalysisBank** must not store stale-prone world facts such as claims about a specific company, route, or enforcement state; store those in source-backed examples, evidence packs, or signal trackers instead.

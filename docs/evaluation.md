@@ -10,6 +10,7 @@ implements today.
 |---|---|---|
 | Structural validation | Does the brief conform to the schema? | Implemented (`validate-brief`) |
 | Evidence discipline (schema) | Does the evidence pack conform? | Implemented (`validate-evidence`) |
+| Source plan coverage | Does the evidence pack cover category-specific `must_check` source types? | Diagnostic only before v1.0 |
 | Claim-level audit | Is each important claim traceable with a support level? | Implemented (`audit-claims`, `audit_claims` MCP) |
 | Brief scoring (heuristic) | How structurally complete is a JSON brief? | Implemented (`score brief.json`, 0–100) |
 | Evidence-linked scoring | Are claims actually supported by the evidence pack? | Implemented (`score brief.json --evidence pack.json`) |
@@ -22,6 +23,7 @@ implements today.
 > Scoring and validation do **not** verify factual truth. They evaluate structure,
 > completeness, evidence labeling, claim traceability, and decision-readiness signals.
 > See [`factual-verification.md`](factual-verification.md) for the boundary.
+> See [`source-plan-coverage.md`](source-plan-coverage.md) for why missing source-plan coverage is diagnostic before v1.0.
 
 ## Benchmark — current numbers
 
@@ -130,6 +132,7 @@ The `evidence-audit.schema.json` enforces a stable `claim_type` enum derived fro
 ## Honest limits
 
 - No factuality verification.
+- No strict source-plan coverage gate before v1.0.
 - Heuristic score is intentionally simple; do not treat the number as authoritative.
 - LLM-judge prompt is provided; LLM-judge results are not benchmarked.
 - `verify-quotes --fetch` reports presence of a text fragment at a URL, not whether the source is reputable or the claim is true.
