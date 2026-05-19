@@ -97,6 +97,7 @@ Stdio MCP server with 8+ tools. See [`MCP.md`](MCP.md) for tool docs and wire-pr
 | Tutorial | [`docs/tutorial.md`](docs/tutorial.md) |
 | Evaluation layers | [`docs/evaluation.md`](docs/evaluation.md) |
 | Factual verification boundary | [`docs/factual-verification.md`](docs/factual-verification.md) |
+| Source plan coverage boundary | [`docs/source-plan-coverage.md`](docs/source-plan-coverage.md) |
 | Evidence audit | [`docs/evidence-audit.md`](docs/evidence-audit.md) |
 | Threat model | [`docs/threat-model.md`](docs/threat-model.md) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |

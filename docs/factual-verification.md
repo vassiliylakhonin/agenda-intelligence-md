@@ -17,6 +17,8 @@ Implemented layers:
 
 These tools can say that an evidence contract is present, incomplete, internally inconsistent, or missing required support. They cannot say that the underlying claim is true in the world.
 
+Source-plan coverage is one step below factual verification. It can identify missing required source types for a category, but it still does not decide whether the claim is true. See [`source-plan-coverage.md`](source-plan-coverage.md).
+
 ## What Is Not Implemented
 
 Agenda Intelligence MD does not currently:
