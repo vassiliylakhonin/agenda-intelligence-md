@@ -20,6 +20,7 @@ Protocol, JSON schemas, CLI, and MCP server for validating, scoring, and auditin
 
 - Not a factuality verifier — checks structure, not truth
 - Not an autonomous news agent or source retriever
+- Not a source reputation scorer or live news gatherer
 - Not a replacement for analyst judgment
 - Not a compliance, legal, or financial advisory product
 
@@ -44,8 +45,8 @@ agenda-intelligence mcp-config --client cursor
 | Metric | Value |
 |---|---|
 | Cases | 20 |
-| Mean score | 84.2 / 100 |
-| Min / max | 82 / 89 |
+| Mean score | 87.6 / 100 |
+| Min / max | 84 / 91 |
 | Schema-valid | 100% |
 | With evidence pack | 100% |
 | With claim-level audit | 100% |
@@ -54,6 +55,10 @@ agenda-intelligence mcp-config --client cursor
 Heuristic scores are uncalibrated and not validated against expert judgment. They evaluate structure, evidence labeling, and decision-readiness — not factual truth.
 
 Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed/eu-ai-act.md) — brief + evidence pack + claim-level audit using illustrative sources. Before / after pairs: [`examples/before-after/`](examples/before-after/).
+
+## Verification Contract
+
+`verify-quotes` checks whether a cited quote or excerpt appears in supplied local text, or in text fetched from an already-specified URL when `--fetch` is used. It does not discover sources, score source reputation, gather live news, or decide whether a claim is true in the world.
 
 ## Schemas
 
