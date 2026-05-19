@@ -150,6 +150,48 @@ def test_source_coverage_reports_missing_required_sources(tmp_path: Path):
     assert "Does not validate factual truth" in payload["note"]
 
 
+def test_source_coverage_uses_evidence_source_category_when_category_omitted(tmp_path: Path):
+    pack = tmp_path / "pack.json"
+    pack.write_text(
+        json.dumps(
+            {
+                "topic": "sanctions claim",
+                "evidence_mode": "user_provided",
+                "source_category": "sanctions",
+                "claims": [
+                    {
+                        "claim": "Company X is sanctioned worldwide.",
+                        "support_status": "partially_supported",
+                        "sources": [],
+                    }
+                ],
+                "unsupported_claims": ["Official source coverage is missing."],
+            }
+        )
+    )
+    res = run("source-coverage", str(pack), "--format", "json")
+    payload = json.loads(res.stdout)
+    assert payload["category"] == "sanctions"
+    assert "sanctions_list" in payload["missing_required_sources"]
+
+
+def test_source_coverage_errors_without_category_or_evidence_source_category(tmp_path: Path):
+    pack = tmp_path / "pack.json"
+    pack.write_text(
+        json.dumps(
+            {
+                "topic": "uncategorized claim",
+                "evidence_mode": "user_provided",
+                "claims": [{"claim": "Test claim.", "support_status": "unsupported", "sources": []}],
+                "unsupported_claims": ["No source category."],
+            }
+        )
+    )
+    res = run("source-coverage", str(pack), expect_zero=False)
+    assert res.returncode == 1
+    assert "Missing source category" in res.stderr
+
+
 def test_source_coverage_strict_exits_nonzero_on_missing_sources(tmp_path: Path):
     pack = tmp_path / "pack.json"
     pack.write_text(

@@ -823,7 +823,7 @@ def main():
         help="Diagnose evidence-pack coverage against category source requirements",
     )
     p.add_argument("path", help="Evidence pack JSON file")
-    p.add_argument("--category", required=True, help="Source category, e.g. sanctions")
+    p.add_argument("--category", help="Source category, e.g. sanctions. Defaults to evidence_json.source_category")
     p.add_argument("--format", choices=["text", "json"], default="text")
     p.add_argument("--strict", action="store_true", help="Exit 1 when required source coverage is missing")
     p.set_defaults(func=cmd_source_coverage)

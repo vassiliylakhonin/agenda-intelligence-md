@@ -78,6 +78,7 @@ TOOLS: dict[str, dict[str, Any]] = {
     "source_coverage": {
         "description": (
             "Diagnose whether an evidence pack covers category-specific must_check source types. "
+            "If category is omitted, evidence_json.source_category is used. "
             "Diagnostic only; does not discover sources, verify factual truth, or change "
             "validate-evidence schema semantics."
         ),
@@ -86,9 +87,9 @@ TOOLS: dict[str, dict[str, Any]] = {
                 "evidence_json": {"type": "object"},
                 "category": {"type": "string"},
             },
-            ["evidence_json", "category"],
+            ["evidence_json"],
         ),
-        "handler": lambda args: mcp_server.source_coverage(args["evidence_json"], args["category"]),
+        "handler": lambda args: mcp_server.source_coverage(args["evidence_json"], args.get("category")),
     },
     "score_output": {
         "description": "Score before/after agenda-analysis output with the protocol marker rubric.",

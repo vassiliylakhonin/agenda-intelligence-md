@@ -1,6 +1,7 @@
 {
   "topic": "Cyber attack on critical infrastructure",
   "evidence_mode": "live_source_backed",
+  "source_category": "cyber-threats",
   "claims": [
     {
       "claim": "CISA confirmed state-linked intrusion into US energy utility OT networks.",

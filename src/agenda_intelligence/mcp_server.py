@@ -349,13 +349,22 @@ def _evidence_sources(evidence_json: dict) -> list[dict]:
     return sources
 
 
-def source_coverage(evidence_json: dict, category: str) -> dict:
+def source_coverage(evidence_json: dict, category: Optional[str] = None) -> dict:
     """Diagnose whether an evidence pack covers a category's source plan.
 
     This is a source-plan coverage diagnostic, not schema validation and not
     factual verification. Missing source types are reported as gaps; callers may
     choose whether to treat gaps as a strict gate.
     """
+    category = category or evidence_json.get("source_category")
+    if not category:
+        return {
+            "implemented": True,
+            "category": None,
+            "valid_category": False,
+            "error": "Missing source category: pass category or set evidence_json.source_category",
+        }
+
     plan_result = source_plan(category)
     if plan_result.get("error"):
         return {

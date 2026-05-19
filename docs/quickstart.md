@@ -89,7 +89,7 @@ If you want to validate that every claim is backed by a source, start from the b
 cp examples/source/evidence-pack.json evidence-pack.json
 ```
 
-The example follows `schemas/evidence-pack.schema.json`: it has a `topic`, an `evidence_mode`, claim-level `sources`, `unsupported_claims`, and a `source_plan`.
+The example follows `schemas/evidence-pack.schema.json`: it has a `topic`, an `evidence_mode`, optional `source_category`, claim-level `sources`, `unsupported_claims`, and a `source_plan`.
 
 Validate it:
 

@@ -1,6 +1,7 @@
 {
   "topic": "OPEC+ production cut",
   "evidence_mode": "live_source_backed",
+  "source_category": "energy",
   "claims": [
     {
       "claim": "OPEC+ agreed to deepen cuts by 1.2 Mb/d.",

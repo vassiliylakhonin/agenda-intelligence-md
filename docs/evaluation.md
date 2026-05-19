@@ -78,7 +78,7 @@ agenda-intelligence audit-claims audit.json --strict        # exit 1 on orphan r
 
 # Diagnose source-plan coverage
 agenda-intelligence source-categories --format json
-agenda-intelligence source-coverage examples/source/evidence-pack.json --category technology-ai
+agenda-intelligence source-coverage examples/source/evidence-pack.json
 
 # Score
 agenda-intelligence score brief.json                        # heuristic 0-100

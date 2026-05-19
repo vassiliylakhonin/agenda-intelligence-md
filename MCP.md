@@ -171,6 +171,8 @@ Diagnose whether an evidence pack covers category-specific `must_check` source t
 { "evidence_json": { "topic": "...", "claims": [] }, "category": "sanctions" }
 ```
 
+If `category` is omitted, the tool uses `evidence_json.source_category`.
+
 Returns covered and missing required source types plus `required_source_details`, which identifies the source entries and matched terms used for coverage. It does not discover sources or verify factual truth. This is a diagnostic gate, not base schema validation.
 
 ---
