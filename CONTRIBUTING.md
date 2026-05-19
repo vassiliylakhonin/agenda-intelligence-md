@@ -10,7 +10,8 @@
 git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
 cd agenda-intelligence-md
 make install                  # editable install + lint/type tooling
-bash scripts/install-hooks.sh # optional: pre-push hook running `make ci-fast`
+bash scripts/install-hooks.sh # strongly recommended: pre-push hook running `make ci-fast`
+                              # skipping this leads to fix-CI-fix-CI commit chains
 pytest
 ```
 
@@ -33,6 +34,20 @@ agenda-intelligence validate-manifest
 agenda-intelligence validate-brief examples/agenda-brief.json
 agenda-intelligence validate-evidence examples/source/evidence-pack.json
 ```
+
+## Dual-copy sync rule
+
+The repo keeps two copies of several files — top-level AND under `src/agenda_intelligence/data/`. Both copies must stay in sync or CI fails (enforced by `tests/test_package_consistency.py`):
+
+- `Agenda-Intelligence.md` ↔ `src/agenda_intelligence/data/Agenda-Intelligence.md`
+- `SOURCE_POLICY.md` ↔ `src/agenda_intelligence/data/SOURCE_POLICY.md`
+- `llms.txt` ↔ `src/agenda_intelligence/data/llms.txt`
+- `agent-manifest.json` ↔ `src/agenda_intelligence/data/agent-manifest.json`
+- `schemas/*.json` ↔ `src/agenda_intelligence/data/schemas/*.json`
+- `skills/**` ↔ `src/agenda_intelligence/data/skills/**`
+- `source-requirements/*` ↔ `src/agenda_intelligence/data/source-requirements/*`
+
+When editing any of these, update the paired copy in the same commit. Version bumps must propagate to packaged copies or release CI fails.
 
 ## Adding Schemas
 - Preserve backward‑compatibility where possible.

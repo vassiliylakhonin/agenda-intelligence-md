@@ -74,7 +74,18 @@ Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed
 
 ## MCP
 
-Stdio MCP server with 8+ tools. See [`MCP.md`](MCP.md) for tool docs and wire-protocol verification. Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
+Stdio MCP server with 8 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
+
+| Tool | What it does |
+|---|---|
+| `validate_brief` | Validate a brief dict against `agenda-brief.schema.json` |
+| `validate_evidence` | Validate an evidence-pack dict against `evidence-pack.schema.json` |
+| `audit_claims` | Check claim-level audit: support distribution, orphan refs, unsupported claims |
+| `score_output` | Heuristic score for structure, evidence labeling, decision-readiness |
+| `get_protocol` | Return the full Agenda-Intelligence.md reasoning protocol |
+| `source_plan` | Generate a source plan for a given topic |
+| `list_lenses` | List available lens packs |
+| `get_lens` | Return a specific lens pack by name |
 
 ## Status
 
@@ -102,6 +113,7 @@ Stdio MCP server with 8+ tools. See [`MCP.md`](MCP.md) for tool docs and wire-pr
 | Threat model | [`docs/threat-model.md`](docs/threat-model.md) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |
 | Use-cases | [`docs/use-cases/`](docs/use-cases/) |
+| Agent contract | [`AGENTS.md`](AGENTS.md) |
 | Adoption guide | [`ADOPTION.md`](ADOPTION.md) |
 | Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
 | Roadmap | [`ROADMAP.md`](ROADMAP.md) |
@@ -115,7 +127,7 @@ agenda-intelligence-md/
 ├─ examples/                  # briefs, evidence packs, before/after
 ├─ skills/                    # OpenClaw skill wrappers
 ├─ evals/                     # rubric, judge prompt, benchmark
-├─ analysis-bank/             # reasoning patterns (memory cards)
+├─ analysis-bank/             # agent persistent memory (memory-card schema, see schemas/memory-card.schema.json)
 ├─ docs/                      # guides, integrations, use-cases
 ├─ scripts/                   # dev and CI helpers
 └─ tests/                     # pytest suite
