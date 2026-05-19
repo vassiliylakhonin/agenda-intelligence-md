@@ -68,6 +68,7 @@ This closes the loop: the tracker records what happened; the memory card capture
 When producing a brief for a tracked signal:
 - reference the `signal_id` in the brief;
 - align the brief's `signal_classification` with the tracker's current `classification`;
+- align the brief's `signal_markers` with the tracker's `signal_markers` when markers are present;
 - use the tracker's `watch_indicators` as the basis for the brief's `watch_next` section;
 - after the brief, update the tracker's `developments` array and `last_updated`.
 
@@ -92,6 +93,7 @@ Do not store active trackers in `analysis-bank/`. AnalysisBank stores reusable r
   "signal_id": "eu-ai-act-enforcement-2025",
   "title": "EU AI Act enforcement — high-risk system compliance deadline",
   "classification": "structural_shift",
+  "signal_markers": ["compliance_relevant_development", "enforcement_marker"],
   "status": "developing",
   "region": "EU",
   "sector": "AI regulation",

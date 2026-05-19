@@ -1,6 +1,7 @@
 {
   "bottom_line": "Sanctions-evasion risk is shifting toward intermediary routing through Central Asia and Caspian trade corridors, with partial but actionable evidence; quantitative attribution remains weak.",
-  "signal_classification": "compliance_relevant_development",
+  "signal_classification": "signal",
+  "signal_markers": ["compliance_relevant_development"],
   "what_changed": "Trade-flow anomalies and AML/CFT typology updates point to growing use of corridor intermediaries; OFAC and FATF materials provide official context but not corridor-level volumes.",
   "why_it_matters": "Compliance and sanctions teams need to update screening, beneficial-ownership checks, and counterparty risk models to cover routing layers that previously were not primary risk areas.",
   "affected_actors": [

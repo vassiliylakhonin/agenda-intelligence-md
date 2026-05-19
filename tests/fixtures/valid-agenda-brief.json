@@ -1,6 +1,7 @@
 {
   "bottom_line": "Treat this as a compliance-relevant signal until enforcement guidance or deadlines appear.",
-  "signal_classification": "compliance_relevant_development",
+  "signal_classification": "signal",
+  "signal_markers": ["compliance_relevant_development"],
   "what_changed": "The issue moved from broad policy discussion toward implementation detail.",
   "why_it_matters": "Implementation detail can become the practical baseline for compliance programs before enforcement begins.",
   "affected_actors": ["regulated companies", "compliance teams", "product teams"],

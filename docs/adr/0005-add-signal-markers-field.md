@@ -1,0 +1,3 @@
+# Add signal_markers as a compatibility path
+
+Agenda briefs and signal trackers now support an optional `signal_markers` field so the primary `signal_classification` can carry signal strength while markers such as `compliance_relevant_development`, `enforcement_marker`, and `escalation_marker` qualify the signal separately. Existing marker values remain valid in `signal_classification` for backward compatibility; documentation and new examples should prefer `signal_classification` for strength plus `signal_markers` for practical markers until a future major version can remove the legacy mixed enum shape.

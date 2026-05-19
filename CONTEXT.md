@@ -193,7 +193,7 @@ _Avoid_: Refactor, cleanup, terminology fix
 - A **Claim Verdict** is a future layer and should not replace shipped **Claim Support Status** or **Claim Support Level** enums before v1.0.
 - A **Claim Type** classifies audited claims without trying to model every strategic-risk domain exhaustively.
 - A **Signal** has one **Signal Classification** at a time.
-- A **Signal Marker** may express compliance, enforcement, or escalation relevance while temporarily sharing the shipped `signal_classification` schema field.
+- A **Signal Marker** may express compliance, enforcement, or escalation relevance through the optional `signal_markers` field.
 - An **Exposure Dimension** describes where impact concentrates without becoming the primary **Signal Classification**.
 - A **Signal Tracker** records the current state and dated developments of a monitored **Signal**.
 - A **Signal** is monitored through one or more **Watch Indicators**.
@@ -224,8 +224,8 @@ _Avoid_: Refactor, cleanup, terminology fix
 - Choose **Lenses** by reasoning need and **Source Plans** by evidence need; one task may use regional plus sector lenses and one primary source plan with optional secondary plans.
 - A claim should not be reduced to binary true/false; if stronger assessment is added after v1.0, model it as **Claim Verdict** rather than overloading current schema fields.
 - Top-level protocol, schema, skill, source-policy, and manifest files are the **Authoring Source**; files under `src/agenda_intelligence/data` are **Packaged Mirrors** for runtime access.
-- `noise`, `weak_signal`, `signal`, `structural_shift`, and `trigger_event` are base **Signal Classification** values; `compliance_relevant_development`, `enforcement_marker`, and `escalation_marker` are **Signal Marker** values that remain in the same enum for v1.0 compatibility.
-- When a **Signal Marker** value is used in the shipped `signal_classification` field, the base signal-strength classification is implicit or must be stated in prose; preserve this compatibility trade-off before v1.0.
+- `noise`, `weak_signal`, `signal`, `structural_shift`, and `trigger_event` are base **Signal Classification** values; `compliance_relevant_development`, `enforcement_marker`, and `escalation_marker` are **Signal Marker** values.
+- The optional `signal_markers` field is the preferred home for **Signal Marker** values; marker values remain valid in `signal_classification` as a compatibility path until a future major version can remove them.
 - Reputational risk is an **Exposure Dimension**, not a shipped `signal_classification` enum value before v1.0.
 - `source-requirements` files define **Source Plans**; they specify required source types but do not make Agenda Intelligence MD a retrieval engine before v1.0.
 - Use **Source Planning Layer**, not "source acquisition layer", for the shipped source-plan capability before v1.0.
