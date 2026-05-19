@@ -60,7 +60,7 @@ Problems:
     "First mandatory conformity assessments for high-risk providers",
     "First public enforcement action by a national competent authority"
   ],
-  "evidence_mode": "user_provided"
+  "evidence_mode": "mixed"
 }
 ```
 
