@@ -49,9 +49,9 @@ MCP `score_output` tool, post-release smoke.
 
 ## v0.8 — benchmark depth
 
-- Expand benchmark to 5–10 source-backed cases (currently 5).
-- First public benchmark numbers in `docs/evaluation.md` — real scores, not promises.
-- Stabilize `claim_type` taxonomy from real case patterns.
+- Expand benchmark beyond the current 20 source-structured cases with more domains and adversarial cases.
+- Keep public benchmark numbers in `docs/evaluation.md` aligned with committed baselines.
+- Continue stabilizing `claim_type` taxonomy from real case patterns.
 
 ## v0.9 — verify-quotes: network mode improvements
 
@@ -65,6 +65,13 @@ MCP `score_output` tool, post-release smoke.
 - Freeze MCP tool names and signatures; add deprecation notice policy.
 - `agent-manifest.json` documented as single source of truth for protocol, lenses, schemas, and source requirements.
 - Benchmark suite with reproducible numbers across at least 20 cases.
+- Keep factual verification outside v1.0; document it as a future layer rather than changing current evidence/eval semantics.
+
+## Post-v1 — factual verification layer
+
+- Define a separate Claim Verdict contract for real-world claim assessment.
+- Preserve existing `support_status`, `support_level`, `score`, `bench`, `verify-quotes`, and `evidence_mode` semantics.
+- Treat sanctions, legal, market, geopolitical, and company fact checks as authoritative-source workflows, not schema validation.
 
 ## Explicit non-goals (today and likely v1.0)
 
