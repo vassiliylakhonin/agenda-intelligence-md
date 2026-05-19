@@ -1,0 +1,45 @@
+{
+  "topic": "Cyber attack on critical infrastructure",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "CISA confirmed state-linked intrusion into US energy utility OT networks.",
+      "claim_type": "geopolitical_event",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Attribution confidence level not publicly specified.",
+      "risk_if_wrong": "Under-investment in OT security if attribution questioned."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "Emergency directive mandates network segmentation and incident reporting.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Compliance timeline feasibility for smaller utilities unclear.",
+      "risk_if_wrong": "Non-compliance penalties for utilities that cannot meet deadlines."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "CISA Emergency Directive",
+      "url": "https://www.cisa.gov/emergency-directives",
+      "source_type": "official",
+      "supports": [
+        "Threat assessment, required actions, compliance deadlines"
+      ],
+      "limits": [
+        "Technical details classified; does not name specific attacker"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Specific state actor identity",
+    "Full scope of compromised systems"
+  ]
+}

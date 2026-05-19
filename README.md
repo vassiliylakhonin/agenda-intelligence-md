@@ -39,11 +39,13 @@ agenda-intelligence mcp-config --client cursor
 
 ## Benchmark baseline
 
-5 source-structured cases, reproduced with `python3 evals/run_benchmark.py`:
+20 source-backed cases, reproduced with `agenda-intelligence bench examples/source-backed/`:
 
 | Metric | Value |
 |---|---|
-| Mean score | 87.8 / 100 |
+| Cases | 20 |
+| Mean score | 84.2 / 100 |
+| Min / max | 82 / 89 |
 | Schema-valid | 100% |
 | With evidence pack | 100% |
 | With claim-level audit | 100% |

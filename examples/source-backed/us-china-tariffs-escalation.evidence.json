@@ -1,0 +1,47 @@
+{
+  "topic": "US-China tariff escalation",
+  "evidence_mode": "live_source_backed",
+  "claims": [
+    {
+      "claim": "US published final tariff schedule with 25-100% rates on Chinese industrial and tech goods.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "USTR Federal Register notice",
+          "url": "https://ustr.gov/issue-areas/enforcement/section-301-investigations",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Tariff rates and covered products"
+          ],
+          "limits": [
+            "Does not cover exemption decisions"
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "Trade re-routing through ASEAN is already observable.",
+      "support_status": "partially_supported",
+      "sources": [
+        {
+          "name": "UN Comtrade bilateral trade data",
+          "url": "https://comtrade.un.org/",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Trade flow shifts between China, ASEAN, US"
+          ],
+          "limits": [
+            "Data lags by 2-3 months"
+          ]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Exact retaliation timeline",
+    "Net welfare impact estimates"
+  ],
+  "retrieved_at": "2026-05-19T12:00:00Z"
+}

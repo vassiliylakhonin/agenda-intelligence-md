@@ -1,0 +1,37 @@
+{
+  "bottom_line": "First DSA enforcement actions by the European Commission set precedent for platform obligations; non-EU platforms with EU users must comply.",
+  "signal_classification": "compliance_relevant_development",
+  "what_changed": "European Commission opened formal proceedings against major platforms for alleged non-compliance with DSA transparency and risk-assessment obligations.",
+  "why_it_matters": "Platforms face fines up to 6% of global turnover; compliance teams need operational processes for risk assessments and content moderation transparency.",
+  "affected_actors": [
+    "European Commission",
+    "very large online platforms",
+    "digital advertisers",
+    "content moderation vendors"
+  ],
+  "main_uncertainty": "Outcome of proceedings will define the practical enforcement standard; appeal timeline may delay precedent effect.",
+  "scenarios": [
+    {
+      "name": "Precedent-setting fine",
+      "description": "Commission issues substantial fine, clarifying compliance bar.",
+      "indicators": [
+        "Fine decision published",
+        "other platforms update compliance programs"
+      ]
+    },
+    {
+      "name": "Negotiated compliance",
+      "description": "Platform agrees to remedial measures without fine.",
+      "indicators": [
+        "Commitment decision",
+        "voluntary audit program announced"
+      ]
+    }
+  ],
+  "watch_next": [
+    "Commission preliminary findings publication",
+    "Platform compliance plan submissions",
+    "First fine decisions under DSA"
+  ],
+  "evidence_mode": "live_source_backed"
+}

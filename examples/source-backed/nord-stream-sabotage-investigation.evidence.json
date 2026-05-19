@@ -1,0 +1,47 @@
+{
+  "topic": "Nord Stream sabotage investigation",
+  "evidence_mode": "live_source_backed",
+  "claims": [
+    {
+      "claim": "German prosecutor issued arrest warrant for Nord Stream sabotage suspect.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "German Federal Prosecutor press statement",
+          "url": "https://www.generalbundesanwalt.de/",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Arrest warrant issued, suspect description"
+          ],
+          "limits": [
+            "Investigation ongoing; does not disclose full evidence base"
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "Suspect linked to Ukrainian military.",
+      "support_status": "partially_supported",
+      "sources": [
+        {
+          "name": "German Federal Prosecutor press statement",
+          "url": "https://www.generalbundesanwalt.de/",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Arrest warrant issued, suspect description"
+          ],
+          "limits": [
+            "Investigation ongoing; does not disclose full evidence base"
+          ]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "State-level authorization",
+    "Full chain of command"
+  ],
+  "retrieved_at": "2026-05-19T12:00:00Z"
+}

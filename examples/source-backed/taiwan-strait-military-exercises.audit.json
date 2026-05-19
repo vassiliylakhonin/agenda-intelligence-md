@@ -1,0 +1,57 @@
+{
+  "topic": "Taiwan Strait military exercises",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "PLA announced military exercises with exclusion zones overlapping Taiwan Strait shipping lanes.",
+      "claim_type": "geopolitical_event",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Enforcement against commercial vessels uncertain.",
+      "risk_if_wrong": "Supply chain disruption if exercises extended."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "Taiwan Strait handles approximately 50% of global container traffic.",
+      "claim_type": "market_event",
+      "evidence_ids": [
+        "e2"
+      ],
+      "support_level": "partial",
+      "uncertainty": "Percentage varies by measurement method and season.",
+      "risk_if_wrong": "Risk assessment calibrated to wrong baseline."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "PLA Eastern Theater Command announcement",
+      "url": "https://example.com/pla-announcement",
+      "source_type": "official",
+      "supports": [
+        "Exercise dates, exclusion zone coordinates"
+      ],
+      "limits": [
+        "Illustrative placeholder URL"
+      ]
+    },
+    {
+      "evidence_id": "e2",
+      "name": "UNCTAD Review of Maritime Transport",
+      "url": "https://unctad.org/topic/transport-and-trade-logistics/review-of-maritime-transport",
+      "source_type": "official",
+      "supports": [
+        "Global shipping route traffic data"
+      ],
+      "limits": [
+        "Annual publication; may not reflect recent shifts"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "PLA intent beyond signaling",
+    "Actual enforcement plans for exclusion zones"
+  ]
+}

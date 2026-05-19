@@ -1,0 +1,37 @@
+{
+  "bottom_line": "OPEC+ announces deeper production cuts to support oil prices, tightening supply outlook for energy-importing economies.",
+  "signal_classification": "trigger_event",
+  "what_changed": "OPEC+ agreed to extend and deepen voluntary production cuts by an additional 1.2 million barrels per day through Q2.",
+  "why_it_matters": "Tighter supply directly affects crude benchmarks, refining margins, and downstream energy costs for industrial buyers and transport sectors.",
+  "affected_actors": [
+    "OPEC+ member states",
+    "oil-importing economies",
+    "refining companies",
+    "energy-intensive manufacturers"
+  ],
+  "main_uncertainty": "Compliance varies widely among members; actual production cuts may fall short of announced targets.",
+  "scenarios": [
+    {
+      "name": "Full compliance",
+      "description": "Members adhere to cuts; Brent rises above $90.",
+      "indicators": [
+        "OPEC secondary source data confirms cuts",
+        "inventory drawdowns in OECD"
+      ]
+    },
+    {
+      "name": "Quota cheating",
+      "description": "Key members exceed quotas; price support erodes within weeks.",
+      "indicators": [
+        "Tanker tracking shows excess loadings",
+        "public disputes at OPEC meetings"
+      ]
+    }
+  ],
+  "watch_next": [
+    "Monthly OPEC production data vs. quota",
+    "Brent-WTI spread reaction",
+    "IEA monthly oil market report revision"
+  ],
+  "evidence_mode": "live_source_backed"
+}

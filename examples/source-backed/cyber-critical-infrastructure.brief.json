@@ -1,0 +1,38 @@
+{
+  "bottom_line": "State-linked cyber intrusion into energy grid control systems triggers mandatory incident reporting and infrastructure hardening requirements.",
+  "signal_classification": "trigger_event",
+  "what_changed": "CISA issued emergency directive after confirming state-linked intrusion into operational technology networks at multiple US energy utilities.",
+  "why_it_matters": "Shifts cyber risk from IT to OT domain; utilities face compliance deadlines for network segmentation and incident reporting.",
+  "affected_actors": [
+    "CISA",
+    "affected utilities",
+    "OT security vendors",
+    "energy regulators",
+    "insurance underwriters"
+  ],
+  "main_uncertainty": "Full scope of compromise unknown; attribution to specific state actor is assessed with moderate confidence.",
+  "scenarios": [
+    {
+      "name": "Contained incident",
+      "description": "Intrusion isolated to reconnaissance; no operational impact.",
+      "indicators": [
+        "CISA downgrades alert level",
+        "no service disruptions reported"
+      ]
+    },
+    {
+      "name": "Operational disruption",
+      "description": "Attacker deploys destructive payload; grid segment offline.",
+      "indicators": [
+        "NERC reliability event report",
+        "emergency generation dispatch"
+      ]
+    }
+  ],
+  "watch_next": [
+    "CISA technical advisory updates",
+    "NERC CIP compliance enforcement actions",
+    "Cyber insurance premium adjustments for energy sector"
+  ],
+  "evidence_mode": "live_source_backed"
+}

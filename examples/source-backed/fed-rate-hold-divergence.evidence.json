@@ -1,0 +1,47 @@
+{
+  "topic": "Federal Reserve rate hold amid ECB cuts",
+  "evidence_mode": "live_source_backed",
+  "claims": [
+    {
+      "claim": "FOMC held the federal funds rate unchanged.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "FOMC statement and press conference",
+          "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Rate decision, forward guidance language"
+          ],
+          "limits": [
+            "Forward guidance is conditional, not a commitment"
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "ECB cut rates by 25bp at its latest meeting.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "ECB monetary policy decision",
+          "url": "https://www.ecb.europa.eu/mopo/decisions/html/index.en.html",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Rate decision, rationale"
+          ],
+          "limits": [
+            "Does not commit to future path"
+          ]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Next rate decision direction",
+    "EUR/USD target levels"
+  ],
+  "retrieved_at": "2026-05-19T12:00:00Z"
+}

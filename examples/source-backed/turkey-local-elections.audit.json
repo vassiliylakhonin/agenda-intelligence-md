@@ -1,0 +1,43 @@
+{
+  "topic": "Turkey local election results",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "Opposition won mayoralties in Istanbul and Ankara.",
+      "claim_type": "geopolitical_event",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Final certified results may differ slightly from preliminary count.",
+      "risk_if_wrong": "Analysis based on uncertified results."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "Local results may signal broader political trajectory shift.",
+      "claim_type": "geopolitical_event",
+      "evidence_ids": [],
+      "support_level": "weak",
+      "uncertainty": "Local and national dynamics differ; historical precedent mixed.",
+      "risk_if_wrong": "Over-extrapolation from local to national policy."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "Turkey Supreme Election Council results",
+      "url": "https://www.ysk.gov.tr/",
+      "source_type": "official",
+      "supports": [
+        "Official election results by city"
+      ],
+      "limits": [
+        "Preliminary; final certification follows challenge period"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "National policy implications",
+    "Foreign investor reaction magnitude"
+  ]
+}

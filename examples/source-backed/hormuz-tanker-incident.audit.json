@@ -1,0 +1,68 @@
+{
+  "topic": "Hormuz Strait tanker incident",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "IRGC Navy seized a commercial tanker in the Strait of Hormuz.",
+      "claim_type": "geopolitical_event",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Details of seizure circumstances disputed by parties.",
+      "risk_if_wrong": "Routing decisions based on incomplete incident picture."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "Hormuz handles approximately 20% of global oil trade.",
+      "claim_type": "market_event",
+      "evidence_ids": [
+        "e2"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Percentage varies with OPEC+ production levels.",
+      "risk_if_wrong": "Risk assessment calibrated to wrong baseline."
+    },
+    {
+      "claim_id": "c3",
+      "claim": "War-risk premiums likely to increase.",
+      "claim_type": "market_event",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "partial",
+      "uncertainty": "Premium response depends on insurer assessment of pattern vs. isolated incident.",
+      "risk_if_wrong": "Shipping cost projections based on assumed premium level."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "UKMTO advisory and flag state statement",
+      "url": "https://www.ukmto.org/",
+      "source_type": "official",
+      "supports": [
+        "Incident confirmation, vessel details, location"
+      ],
+      "limits": [
+        "Does not assess pattern probability"
+      ]
+    },
+    {
+      "evidence_id": "e2",
+      "name": "EIA Hormuz Strait chokepoint analysis",
+      "url": "https://www.eia.gov/international/analysis/regions-of-interest/Strait_of_Hormuz",
+      "source_type": "official",
+      "supports": [
+        "Oil flow volume data"
+      ],
+      "limits": [
+        "Data may lag current quarter"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "IRGC strategic intent",
+    "Resolution timeline"
+  ]
+}

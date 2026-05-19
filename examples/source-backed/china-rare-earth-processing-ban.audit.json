@@ -1,0 +1,57 @@
+{
+  "topic": "China rare earth processing technology ban",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "China added rare earth processing technologies to the prohibited export catalog.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Catalog updates may be phased or amended.",
+      "risk_if_wrong": "Technology licensing assumed available when prohibited."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "NdFeB magnets are essential for EV motors and wind turbines.",
+      "claim_type": "capability_claim",
+      "evidence_ids": [
+        "e2"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Alternative motor designs exist but are less efficient.",
+      "risk_if_wrong": "Overstating criticality if alternatives are viable."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "China MOFCOM Prohibited Export Catalog update",
+      "url": "https://www.mofcom.gov.cn/",
+      "source_type": "official",
+      "supports": [
+        "Technologies added to prohibited list"
+      ],
+      "limits": [
+        "Enforcement details not specified"
+      ]
+    },
+    {
+      "evidence_id": "e2",
+      "name": "IEA Critical Minerals Market Review",
+      "url": "https://www.iea.org/reports/critical-minerals-market-review",
+      "source_type": "official",
+      "supports": [
+        "Demand projections and supply concentration data"
+      ],
+      "limits": [
+        "Projections, not actuals"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Enforcement effectiveness",
+    "Alternative technology timeline"
+  ]
+}

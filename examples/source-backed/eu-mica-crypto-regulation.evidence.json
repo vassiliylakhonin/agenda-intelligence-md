@@ -1,0 +1,47 @@
+{
+  "topic": "EU Markets in Crypto-Assets regulation",
+  "evidence_mode": "live_source_backed",
+  "claims": [
+    {
+      "claim": "Full MiCA provisions entered into force requiring CASP authorization.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "MiCA Regulation (EU) 2023/1114",
+          "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023R1114",
+          "source_type": "legal",
+          "freshness": "current",
+          "supports": [
+            "Authorization requirements, stablecoin rules, transitional provisions"
+          ],
+          "limits": [
+            "Level 2 technical standards still being published"
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "Stablecoin issuers face new reserve and redemption requirements.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "MiCA Regulation (EU) 2023/1114",
+          "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023R1114",
+          "source_type": "legal",
+          "freshness": "current",
+          "supports": [
+            "Authorization requirements, stablecoin rules, transitional provisions"
+          ],
+          "limits": [
+            "Level 2 technical standards still being published"
+          ]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "National transposition timelines",
+    "License approval rates"
+  ],
+  "retrieved_at": "2026-05-19T12:00:00Z"
+}

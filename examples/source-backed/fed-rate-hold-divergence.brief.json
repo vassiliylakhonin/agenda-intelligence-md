@@ -1,0 +1,39 @@
+{
+  "bottom_line": "Fed holds rates while ECB cuts, widening the transatlantic rate differential and strengthening the dollar against the euro.",
+  "signal_classification": "signal",
+  "what_changed": "FOMC held the federal funds rate unchanged at its latest meeting while the ECB proceeded with a 25bp cut.",
+  "why_it_matters": "Rate divergence affects EUR/USD, dollar-denominated debt servicing costs, and capital flows to emerging markets.",
+  "affected_actors": [
+    "Federal Reserve",
+    "ECB",
+    "EM central banks",
+    "FX-exposed corporates",
+    "dollar-denominated bond issuers"
+  ],
+  "main_uncertainty": "Fed forward guidance suggests data-dependent approach; next meeting could go either way.",
+  "scenarios": [
+    {
+      "name": "Convergence",
+      "description": "Fed cuts at next meeting, narrowing differential.",
+      "indicators": [
+        "Softer US inflation data",
+        "Fed governor speeches signaling pivot"
+      ]
+    },
+    {
+      "name": "Sustained divergence",
+      "description": "Fed holds through year-end; EUR/USD approaches parity.",
+      "indicators": [
+        "Sticky US inflation",
+        "strong labor market data"
+      ]
+    }
+  ],
+  "watch_next": [
+    "FOMC dot plot update",
+    "US CPI and employment data",
+    "EUR/USD exchange rate trajectory",
+    "EM capital flow data"
+  ],
+  "evidence_mode": "live_source_backed"
+}

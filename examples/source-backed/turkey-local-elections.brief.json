@@ -1,0 +1,38 @@
+{
+  "bottom_line": "Opposition gains in Turkey local elections signal potential policy shift risk for investors with Turkish exposure.",
+  "signal_classification": "weak_signal",
+  "what_changed": "Opposition party won mayoralties in major cities including Istanbul and Ankara, reversing years of ruling party dominance in urban centers.",
+  "why_it_matters": "Municipal control affects infrastructure procurement, local regulation, and signals broader political trajectory that investors and trade partners monitor.",
+  "affected_actors": [
+    "Turkish ruling party",
+    "opposition parties",
+    "foreign investors",
+    "Turkish corporates",
+    "EU accession stakeholders"
+  ],
+  "main_uncertainty": "Local election results do not directly translate to national policy changes; ruling party retains parliamentary majority.",
+  "scenarios": [
+    {
+      "name": "Policy continuity",
+      "description": "National policy unchanged; local elections treated as protest vote.",
+      "indicators": [
+        "No cabinet reshuffle",
+        "central bank policy unchanged"
+      ]
+    },
+    {
+      "name": "Reform signal",
+      "description": "Ruling party adjusts economic policy to regain urban support.",
+      "indicators": [
+        "Interest rate policy shift",
+        "new economic reform package"
+      ]
+    }
+  ],
+  "watch_next": [
+    "Municipal policy changes in opposition-held cities",
+    "Central bank independence signals",
+    "Foreign investor sentiment surveys"
+  ],
+  "evidence_mode": "live_source_backed"
+}

@@ -1,0 +1,57 @@
+{
+  "topic": "Federal Reserve rate hold amid ECB cuts",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "FOMC held the federal funds rate unchanged.",
+      "claim_type": "market_event",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Future meetings remain data-dependent.",
+      "risk_if_wrong": "Positioning based on assumed rate path."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "ECB cut rates by 25bp at its latest meeting.",
+      "claim_type": "market_event",
+      "evidence_ids": [
+        "e2"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Further ECB cuts depend on eurozone inflation trajectory.",
+      "risk_if_wrong": "Hedging assumptions based on continued divergence."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "FOMC statement and press conference",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "source_type": "official",
+      "supports": [
+        "Rate decision, forward guidance language"
+      ],
+      "limits": [
+        "Forward guidance is conditional, not a commitment"
+      ]
+    },
+    {
+      "evidence_id": "e2",
+      "name": "ECB monetary policy decision",
+      "url": "https://www.ecb.europa.eu/mopo/decisions/html/index.en.html",
+      "source_type": "official",
+      "supports": [
+        "Rate decision, rationale"
+      ],
+      "limits": [
+        "Does not commit to future path"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Next rate decision direction",
+    "EUR/USD target levels"
+  ]
+}

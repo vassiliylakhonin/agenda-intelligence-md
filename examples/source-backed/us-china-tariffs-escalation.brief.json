@@ -1,0 +1,37 @@
+{
+  "bottom_line": "New US tariffs on Chinese goods across technology and industrial sectors signal a structural shift in trade policy, not a negotiating tactic.",
+  "signal_classification": "structural_shift",
+  "what_changed": "US Trade Representative published final tariff schedule covering semiconductors, EVs, batteries, steel, and aluminum with rates of 25-100%.",
+  "why_it_matters": "Affects global supply chains, reshoring economics, and procurement strategies for any firm with China-dependent inputs.",
+  "affected_actors": [
+    "US importers",
+    "Chinese exporters",
+    "ASEAN manufacturers",
+    "European industrial buyers"
+  ],
+  "main_uncertainty": "China's retaliatory measures have been announced but not fully implemented; scope of exemptions remains unclear.",
+  "scenarios": [
+    {
+      "name": "Escalation spiral",
+      "description": "Tit-for-tat retaliation across additional sectors.",
+      "indicators": [
+        "China targets US agricultural exports",
+        "WTO dispute filings"
+      ]
+    },
+    {
+      "name": "Managed decoupling",
+      "description": "Both sides accept higher tariffs as new baseline; trade re-routes through third countries.",
+      "indicators": [
+        "Vietnam/Mexico import surge from China",
+        "no further retaliation rounds"
+      ]
+    }
+  ],
+  "watch_next": [
+    "China Ministry of Commerce retaliation list publication",
+    "US exemption petition filings",
+    "ASEAN FDI inflow data for tariff-circumvention reshoring"
+  ],
+  "evidence_mode": "live_source_backed"
+}

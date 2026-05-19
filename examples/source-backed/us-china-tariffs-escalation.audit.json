@@ -1,0 +1,66 @@
+{
+  "topic": "US-China tariff escalation",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "US published final tariff schedule with 25-100% rates on Chinese industrial and tech goods.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Exemption process may narrow effective scope.",
+      "risk_if_wrong": "Supply chain restructuring based on incomplete tariff picture."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "Trade re-routing through ASEAN is already observable.",
+      "claim_type": "market_event",
+      "evidence_ids": [
+        "e2"
+      ],
+      "support_level": "partial",
+      "uncertainty": "Some re-routing may be transshipment relabeling rather than genuine value-add.",
+      "risk_if_wrong": "Compliance exposure if origin rules tighten."
+    },
+    {
+      "claim_id": "c3",
+      "claim": "China's retaliation will target US agricultural exports.",
+      "claim_type": "geopolitical_event",
+      "evidence_ids": [],
+      "support_level": "weak",
+      "uncertainty": "Retaliation scope depends on bilateral negotiation dynamics.",
+      "risk_if_wrong": "Commodity hedging based on assumed retaliation that may not materialize."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "USTR Federal Register notice",
+      "url": "https://ustr.gov/issue-areas/enforcement/section-301-investigations",
+      "source_type": "official",
+      "supports": [
+        "Tariff rates and covered products"
+      ],
+      "limits": [
+        "Does not cover exemption decisions"
+      ]
+    },
+    {
+      "evidence_id": "e2",
+      "name": "UN Comtrade bilateral trade data",
+      "url": "https://comtrade.un.org/",
+      "source_type": "official",
+      "supports": [
+        "Trade flow shifts between China, ASEAN, US"
+      ],
+      "limits": [
+        "Data lags by 2-3 months"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Exact retaliation timeline",
+    "Net welfare impact estimates"
+  ]
+}

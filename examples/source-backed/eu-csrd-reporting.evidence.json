@@ -1,0 +1,47 @@
+{
+  "topic": "EU Corporate Sustainability Reporting Directive",
+  "evidence_mode": "live_source_backed",
+  "claims": [
+    {
+      "claim": "EFRAG published final European Sustainability Reporting Standards.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "EFRAG ESRS final standards",
+          "url": "https://www.efrag.org/lab6",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Standard content, reporting requirements, scope"
+          ],
+          "limits": [
+            "Sector-specific standards not yet final"
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "CSRD affects approximately 50,000 companies.",
+      "support_status": "partially_supported",
+      "sources": [
+        {
+          "name": "EFRAG ESRS final standards",
+          "url": "https://www.efrag.org/lab6",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Standard content, reporting requirements, scope"
+          ],
+          "limits": [
+            "Sector-specific standards not yet final"
+          ]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Actual compliance rates",
+    "Third-country equivalence outcomes"
+  ],
+  "retrieved_at": "2026-05-19T12:00:00Z"
+}

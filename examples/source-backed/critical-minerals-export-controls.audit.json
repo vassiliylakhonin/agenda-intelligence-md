@@ -1,0 +1,66 @@
+{
+  "topic": "Critical minerals export controls",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "China imposed export licensing on gallium, germanium, antimony, and processing technology.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Enforcement mechanism and approval criteria not public.",
+      "risk_if_wrong": "Procurement plans assume continued unrestricted access."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "China controls 60-90% of global processing capacity for these minerals.",
+      "claim_type": "market_event",
+      "evidence_ids": [
+        "e2"
+      ],
+      "support_level": "partial",
+      "uncertainty": "Exact market share varies by mineral and processing stage.",
+      "risk_if_wrong": "Under- or over-estimation of supply concentration."
+    },
+    {
+      "claim_id": "c3",
+      "claim": "Alternative supply development requires 3-7 years.",
+      "claim_type": "capability_claim",
+      "evidence_ids": [],
+      "support_level": "weak",
+      "uncertainty": "Timeline depends on permitting, financing, and technology maturity.",
+      "risk_if_wrong": "Investment decisions based on optimistic or pessimistic timeline estimates."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "China MOFCOM export control announcement",
+      "url": "https://www.mofcom.gov.cn/",
+      "source_type": "official",
+      "supports": [
+        "Controlled items list, licensing requirement effective date"
+      ],
+      "limits": [
+        "Does not disclose approval criteria or enforcement plan"
+      ]
+    },
+    {
+      "evidence_id": "e2",
+      "name": "USGS Mineral Commodity Summaries",
+      "url": "https://www.usgs.gov/centers/national-minerals-information-center/mineral-commodity-summaries",
+      "source_type": "official",
+      "supports": [
+        "Production and processing concentration data by country"
+      ],
+      "limits": [
+        "Annual publication; may not reflect recent capacity changes"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "License approval rates",
+    "Specific retaliation intent"
+  ]
+}

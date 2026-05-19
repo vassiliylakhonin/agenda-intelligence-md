@@ -1,0 +1,39 @@
+{
+  "bottom_line": "MiCA full application creates first comprehensive crypto regulatory framework in a major jurisdiction; non-EU exchanges must obtain authorization to serve EU clients.",
+  "signal_classification": "compliance_relevant_development",
+  "what_changed": "Full MiCA provisions entered into force, requiring all crypto-asset service providers operating in the EU to obtain authorization from a national competent authority.",
+  "why_it_matters": "Creates licensing barrier for non-EU exchanges; stablecoin issuers face reserve and redemption requirements; institutional adoption path clarified.",
+  "affected_actors": [
+    "ESMA",
+    "national financial regulators",
+    "crypto exchanges",
+    "stablecoin issuers",
+    "institutional investors",
+    "traditional banks entering crypto"
+  ],
+  "main_uncertainty": "National competent authority capacity to process applications varies; grandfathering provisions differ by member state.",
+  "scenarios": [
+    {
+      "name": "Orderly transition",
+      "description": "Major exchanges obtain licenses; market consolidates around compliant players.",
+      "indicators": [
+        "License approvals for major platforms",
+        "increased institutional trading volumes"
+      ]
+    },
+    {
+      "name": "Fragmentation",
+      "description": "Strict interpretation pushes activity to non-EU jurisdictions.",
+      "indicators": [
+        "License application rejections",
+        "volume migration to offshore platforms"
+      ]
+    }
+  ],
+  "watch_next": [
+    "First MiCA authorization decisions",
+    "ESMA technical standards publication",
+    "Stablecoin reserve audit results"
+  ],
+  "evidence_mode": "live_source_backed"
+}

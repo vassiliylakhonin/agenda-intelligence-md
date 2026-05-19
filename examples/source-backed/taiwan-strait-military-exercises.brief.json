@@ -1,0 +1,39 @@
+{
+  "bottom_line": "PLA military exercises near Taiwan increase shipping insurance costs and supply chain risk for semiconductor-dependent industries.",
+  "signal_classification": "escalation_marker",
+  "what_changed": "PLA announced large-scale military exercises in waters surrounding Taiwan, including live-fire drills in designated exclusion zones overlapping commercial shipping lanes.",
+  "why_it_matters": "Taiwan Strait handles ~50% of global container traffic; exclusion zones disrupt shipping schedules and raise war-risk premiums.",
+  "affected_actors": [
+    "PLA",
+    "Taiwan defense ministry",
+    "container shipping lines",
+    "semiconductor buyers",
+    "war-risk insurers"
+  ],
+  "main_uncertainty": "Exercise duration and whether exclusion zones will be enforced against commercial vessels remain unclear.",
+  "scenarios": [
+    {
+      "name": "Short exercise, no escalation",
+      "description": "Exercises end within announced period; shipping resumes normally.",
+      "indicators": [
+        "PLA withdraws from exclusion zones",
+        "war-risk premiums normalize"
+      ]
+    },
+    {
+      "name": "Extended presence",
+      "description": "PLA maintains naval presence beyond announced dates; shipping reroutes.",
+      "indicators": [
+        "Continued NOTAM/NOTMAR extensions",
+        "shipping line schedule changes",
+        "semiconductor lead time increases"
+      ]
+    }
+  ],
+  "watch_next": [
+    "Exercise end date announcement",
+    "War-risk premium changes from Lloyd's JWC",
+    "TSMC supply chain advisories"
+  ],
+  "evidence_mode": "mixed"
+}

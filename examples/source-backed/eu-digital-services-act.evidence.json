@@ -1,0 +1,47 @@
+{
+  "topic": "EU Digital Services Act enforcement",
+  "evidence_mode": "live_source_backed",
+  "claims": [
+    {
+      "claim": "Commission opened formal DSA proceedings against major platforms.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "European Commission DSA enforcement press release",
+          "url": "https://digital-strategy.ec.europa.eu/en/policies/digital-services-act-package",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Proceedings opened, legal basis, platforms named"
+          ],
+          "limits": [
+            "Does not indicate expected fine levels or timeline"
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "DSA fines can reach 6% of global annual turnover.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "European Commission DSA enforcement press release",
+          "url": "https://digital-strategy.ec.europa.eu/en/policies/digital-services-act-package",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Proceedings opened, legal basis, platforms named"
+          ],
+          "limits": [
+            "Does not indicate expected fine levels or timeline"
+          ]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Expected fine amounts",
+    "Platform-specific compliance gaps"
+  ],
+  "retrieved_at": "2026-05-19T12:00:00Z"
+}

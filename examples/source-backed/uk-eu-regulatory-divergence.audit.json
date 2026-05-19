@@ -1,0 +1,57 @@
+{
+  "topic": "UK-EU post-Brexit regulatory divergence",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "UK published AI regulatory framework diverging from EU AI Act approach.",
+      "claim_type": "regulatory_change",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Implementation depends on sector regulators who may align anyway.",
+      "risk_if_wrong": "Compliance programs designed for one framework may miss requirements of the other."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "Dual-compliance burden increases costs for cross-border firms.",
+      "claim_type": "industry_response",
+      "evidence_ids": [
+        "e2"
+      ],
+      "support_level": "partial",
+      "uncertainty": "Magnitude varies by sector and firm size.",
+      "risk_if_wrong": "Under-budgeting for compliance costs."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "UK DSIT AI regulation white paper",
+      "url": "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach",
+      "source_type": "official",
+      "supports": [
+        "UK regulatory approach and principles"
+      ],
+      "limits": [
+        "White paper, not legislation; implementation uncertain"
+      ]
+    },
+    {
+      "evidence_id": "e2",
+      "name": "CBI industry survey on regulatory divergence costs",
+      "url": "https://www.cbi.org.uk/",
+      "source_type": "official",
+      "supports": [
+        "Industry-reported compliance cost estimates"
+      ],
+      "limits": [
+        "Self-reported; may overstate costs for lobbying purposes"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Exact compliance cost differential",
+    "Mutual recognition negotiation timeline"
+  ]
+}

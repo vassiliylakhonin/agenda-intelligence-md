@@ -1,0 +1,66 @@
+{
+  "topic": "OPEC+ production cut",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "OPEC+ agreed to deepen cuts by 1.2 Mb/d.",
+      "claim_type": "market_event",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Final communique text may allow phased implementation.",
+      "risk_if_wrong": "Energy budget forecasts based on wrong supply assumption."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "Compliance among smaller producers has historically been uneven.",
+      "claim_type": "market_event",
+      "evidence_ids": [
+        "e2"
+      ],
+      "support_level": "partial",
+      "uncertainty": "Current geopolitical pressure may improve compliance vs. historical baseline.",
+      "risk_if_wrong": "Over-reliance on headline cut numbers."
+    },
+    {
+      "claim_id": "c3",
+      "claim": "Brent benchmark is expected to rise above $90 on full compliance.",
+      "claim_type": "market_event",
+      "evidence_ids": [],
+      "support_level": "weak",
+      "uncertainty": "Demand-side factors (China slowdown, recession risk) could offset supply tightening.",
+      "risk_if_wrong": "Procurement hedging decisions based on single-scenario price forecast."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "OPEC Secretariat press release",
+      "url": "https://www.opec.org/opec_web/en/press_room/",
+      "source_type": "official",
+      "supports": [
+        "Production cut agreement details and timeline"
+      ],
+      "limits": [
+        "Does not disclose enforcement mechanisms"
+      ]
+    },
+    {
+      "evidence_id": "e2",
+      "name": "IEA Oil Market Report",
+      "url": "https://www.iea.org/reports/oil-market-report",
+      "source_type": "official",
+      "supports": [
+        "Historical compliance data by member"
+      ],
+      "limits": [
+        "Published monthly; may lag latest developments"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Exact price impact magnitude",
+    "Individual member compliance intentions"
+  ]
+}

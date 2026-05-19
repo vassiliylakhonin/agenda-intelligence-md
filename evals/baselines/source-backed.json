@@ -1,10 +1,10 @@
 {
   "summary": {
-    "cases": 5,
+    "cases": 20,
     "schema_valid_pct": 100.0,
     "with_evidence_pct": 100.0,
     "with_audit_pct": 100.0,
-    "mean_score": 87.8,
+    "mean_score": 87.6,
     "min_score": 84,
     "max_score": 91,
     "audit_orphan_total": 0,
@@ -30,6 +30,69 @@
         "completeness": 19,
         "actionability": 14,
         "clarity": 11
+      }
+    },
+    {
+      "case": "china-rare-earth-processing-ban",
+      "brief_path": "examples/source-backed/china-rare-earth-processing-ban.brief.json",
+      "evidence_path": "examples/source-backed/china-rare-earth-processing-ban.evidence.json",
+      "audit_path": "examples/source-backed/china-rare-earth-processing-ban.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 89,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 16,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "critical-minerals-export-controls",
+      "brief_path": "examples/source-backed/critical-minerals-export-controls.brief.json",
+      "evidence_path": "examples/source-backed/critical-minerals-export-controls.evidence.json",
+      "audit_path": "examples/source-backed/critical-minerals-export-controls.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 87,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 14,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "cyber-critical-infrastructure",
+      "brief_path": "examples/source-backed/cyber-critical-infrastructure.brief.json",
+      "evidence_path": "examples/source-backed/cyber-critical-infrastructure.evidence.json",
+      "audit_path": "examples/source-backed/cyber-critical-infrastructure.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 89,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 16,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
       }
     },
     {
@@ -75,6 +138,174 @@
       }
     },
     {
+      "case": "eu-csrd-reporting",
+      "brief_path": "examples/source-backed/eu-csrd-reporting.brief.json",
+      "evidence_path": "examples/source-backed/eu-csrd-reporting.evidence.json",
+      "audit_path": "examples/source-backed/eu-csrd-reporting.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 87,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 14,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "eu-digital-services-act",
+      "brief_path": "examples/source-backed/eu-digital-services-act.brief.json",
+      "evidence_path": "examples/source-backed/eu-digital-services-act.evidence.json",
+      "audit_path": "examples/source-backed/eu-digital-services-act.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 89,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 16,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "eu-mica-crypto-regulation",
+      "brief_path": "examples/source-backed/eu-mica-crypto-regulation.brief.json",
+      "evidence_path": "examples/source-backed/eu-mica-crypto-regulation.evidence.json",
+      "audit_path": "examples/source-backed/eu-mica-crypto-regulation.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 89,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 16,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "fed-rate-hold-divergence",
+      "brief_path": "examples/source-backed/fed-rate-hold-divergence.brief.json",
+      "evidence_path": "examples/source-backed/fed-rate-hold-divergence.evidence.json",
+      "audit_path": "examples/source-backed/fed-rate-hold-divergence.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 89,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 16,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "hormuz-tanker-incident",
+      "brief_path": "examples/source-backed/hormuz-tanker-incident.brief.json",
+      "evidence_path": "examples/source-backed/hormuz-tanker-incident.evidence.json",
+      "audit_path": "examples/source-backed/hormuz-tanker-incident.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 87,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 14,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "iran-secondary-sanctions",
+      "brief_path": "examples/source-backed/iran-secondary-sanctions.brief.json",
+      "evidence_path": "examples/source-backed/iran-secondary-sanctions.evidence.json",
+      "audit_path": "examples/source-backed/iran-secondary-sanctions.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 87,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 14,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "nord-stream-sabotage-investigation",
+      "brief_path": "examples/source-backed/nord-stream-sabotage-investigation.brief.json",
+      "evidence_path": "examples/source-backed/nord-stream-sabotage-investigation.evidence.json",
+      "audit_path": "examples/source-backed/nord-stream-sabotage-investigation.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 87,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 14,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "opec-production-cut",
+      "brief_path": "examples/source-backed/opec-production-cut.brief.json",
+      "evidence_path": "examples/source-backed/opec-production-cut.evidence.json",
+      "audit_path": "examples/source-backed/opec-production-cut.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 87,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 14,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
       "case": "red-sea-shipping",
       "brief_path": "examples/source-backed/red-sea-shipping.brief.json",
       "evidence_path": "examples/source-backed/red-sea-shipping.evidence.json",
@@ -100,6 +331,90 @@
       "brief_path": "examples/source-backed/sanctions-routing.brief.json",
       "evidence_path": "examples/source-backed/sanctions-routing.evidence.json",
       "audit_path": "examples/source-backed/sanctions-routing.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 87,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 14,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "taiwan-strait-military-exercises",
+      "brief_path": "examples/source-backed/taiwan-strait-military-exercises.brief.json",
+      "evidence_path": "examples/source-backed/taiwan-strait-military-exercises.evidence.json",
+      "audit_path": "examples/source-backed/taiwan-strait-military-exercises.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 85,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 12,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "turkey-local-elections",
+      "brief_path": "examples/source-backed/turkey-local-elections.brief.json",
+      "evidence_path": "examples/source-backed/turkey-local-elections.evidence.json",
+      "audit_path": "examples/source-backed/turkey-local-elections.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 89,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 16,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "uk-eu-regulatory-divergence",
+      "brief_path": "examples/source-backed/uk-eu-regulatory-divergence.brief.json",
+      "evidence_path": "examples/source-backed/uk-eu-regulatory-divergence.evidence.json",
+      "audit_path": "examples/source-backed/uk-eu-regulatory-divergence.audit.json",
+      "schema_valid": true,
+      "schema_error": null,
+      "evidence_valid": true,
+      "evidence_error": null,
+      "audit_valid": true,
+      "audit_error": null,
+      "audit_orphans": 0,
+      "score": 85,
+      "score_breakdown": {
+        "relevance": 25,
+        "evidence_support": 12,
+        "completeness": 19,
+        "actionability": 14,
+        "clarity": 15
+      }
+    },
+    {
+      "case": "us-china-tariffs-escalation",
+      "brief_path": "examples/source-backed/us-china-tariffs-escalation.brief.json",
+      "evidence_path": "examples/source-backed/us-china-tariffs-escalation.evidence.json",
+      "audit_path": "examples/source-backed/us-china-tariffs-escalation.audit.json",
       "schema_valid": true,
       "schema_error": null,
       "evidence_valid": true,

@@ -1,0 +1,38 @@
+{
+  "bottom_line": "OFAC expands secondary sanctions targeting Iran's petrochemical and shipping networks, increasing compliance risk for intermediaries.",
+  "signal_classification": "enforcement_marker",
+  "what_changed": "New OFAC designations added 30+ entities to the SDN list, including shipping companies, port operators, and petrochemical traders facilitating Iranian exports.",
+  "why_it_matters": "Intermediaries in UAE, Turkey, and Southeast Asia face direct designation risk; banks processing related transactions face secondary sanctions exposure.",
+  "affected_actors": [
+    "OFAC",
+    "designated entities",
+    "UAE/Turkey commodity traders",
+    "correspondent banks",
+    "shipping insurers"
+  ],
+  "main_uncertainty": "Enforcement intensity against non-US intermediaries remains to be tested; some designated entities may reconstitute under new names.",
+  "scenarios": [
+    {
+      "name": "Aggressive enforcement",
+      "description": "OFAC pursues secondary sanctions cases against non-US banks within 6 months.",
+      "indicators": [
+        "Settlement announcements",
+        "compliance advisory updates"
+      ]
+    },
+    {
+      "name": "Designation without follow-through",
+      "description": "Designations serve as deterrent but enforcement resources focus elsewhere.",
+      "indicators": [
+        "No new enforcement actions within 12 months",
+        "designated entities continue operating"
+      ]
+    }
+  ],
+  "watch_next": [
+    "OFAC enforcement actions against non-US persons",
+    "De-listing petitions from designated entities",
+    "P&I club withdrawal notices for flagged vessels"
+  ],
+  "evidence_mode": "live_source_backed"
+}

@@ -1,0 +1,42 @@
+{
+  "bottom_line": "Iranian seizure of a commercial tanker in the Strait of Hormuz escalates maritime risk, raising war-risk premiums and oil supply disruption probability.",
+  "signal_classification": "escalation_marker",
+  "what_changed": "IRGC Navy seized a commercial tanker transiting the Strait of Hormuz; vessel flagged to a non-Iranian state; crew detained.",
+  "why_it_matters": "Hormuz handles ~20% of global oil trade; tanker seizure signals willingness to escalate, affecting insurance costs and routing decisions.",
+  "affected_actors": [
+    "IRGC Navy",
+    "flag state government",
+    "P&I clubs",
+    "oil traders",
+    "US Fifth Fleet",
+    "Lloyd's Joint War Committee"
+  ],
+  "main_uncertainty": "Whether seizure is isolated incident or start of a pattern; diplomatic resolution timeline unknown.",
+  "scenarios": [
+    {
+      "name": "Diplomatic resolution",
+      "description": "Vessel and crew released after negotiations; incident treated as isolated.",
+      "indicators": [
+        "Release confirmed",
+        "no JWC area change",
+        "premiums normalize"
+      ]
+    },
+    {
+      "name": "Pattern escalation",
+      "description": "Additional seizures or threats; Hormuz risk premium becomes structural.",
+      "indicators": [
+        "Second incident within 30 days",
+        "JWC expands listed area",
+        "shipping reroutes via Cape"
+      ]
+    }
+  ],
+  "watch_next": [
+    "Lloyd's JWC listed area revision",
+    "US naval deployment changes",
+    "Flag state diplomatic response",
+    "War-risk premium quotes"
+  ],
+  "evidence_mode": "live_source_backed"
+}

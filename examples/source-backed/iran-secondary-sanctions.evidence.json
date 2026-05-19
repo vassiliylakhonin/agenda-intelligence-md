@@ -1,0 +1,77 @@
+{
+  "topic": "Iran secondary sanctions expansion",
+  "evidence_mode": "live_source_backed",
+  "claims": [
+    {
+      "claim": "OFAC designated 30+ entities linked to Iran petrochemical and shipping networks.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "OFAC SDN list update and press release",
+          "url": "https://ofac.treasury.gov/recent-actions",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Designated entities, basis for designation"
+          ],
+          "limits": [
+            "Does not disclose enforcement priorities or thresholds"
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "UAE and Turkey-based intermediaries are primary conduits for Iranian petrochemical trade.",
+      "support_status": "partially_supported",
+      "sources": [
+        {
+          "name": "OFAC SDN list update and press release",
+          "url": "https://ofac.treasury.gov/recent-actions",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Designated entities, basis for designation"
+          ],
+          "limits": [
+            "Does not disclose enforcement priorities or thresholds"
+          ]
+        },
+        {
+          "name": "UN Comtrade Iran bilateral trade data",
+          "url": "https://comtrade.un.org/",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Trade flow patterns by partner country"
+          ],
+          "limits": [
+            "Iran self-reporting gaps; data lag"
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "Correspondent banks face secondary sanctions risk from processing related transactions.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "OFAC SDN list update and press release",
+          "url": "https://ofac.treasury.gov/recent-actions",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Designated entities, basis for designation"
+          ],
+          "limits": [
+            "Does not disclose enforcement priorities or thresholds"
+          ]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Enforcement timeline for secondary sanctions cases",
+    "Reconstitution identities of designated entities"
+  ],
+  "retrieved_at": "2026-05-19T12:00:00Z"
+}

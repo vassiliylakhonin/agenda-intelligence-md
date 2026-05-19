@@ -1,0 +1,47 @@
+{
+  "topic": "Critical minerals export controls",
+  "evidence_mode": "live_source_backed",
+  "claims": [
+    {
+      "claim": "China imposed export licensing on gallium, germanium, antimony, and processing technology.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "China MOFCOM export control announcement",
+          "url": "https://www.mofcom.gov.cn/",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Controlled items list, licensing requirement effective date"
+          ],
+          "limits": [
+            "Does not disclose approval criteria or enforcement plan"
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "China controls 60-90% of global processing capacity for these minerals.",
+      "support_status": "partially_supported",
+      "sources": [
+        {
+          "name": "USGS Mineral Commodity Summaries",
+          "url": "https://www.usgs.gov/centers/national-minerals-information-center/mineral-commodity-summaries",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Production and processing concentration data by country"
+          ],
+          "limits": [
+            "Annual publication; may not reflect recent capacity changes"
+          ]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "License approval rates",
+    "Specific retaliation intent"
+  ],
+  "retrieved_at": "2026-05-19T12:00:00Z"
+}

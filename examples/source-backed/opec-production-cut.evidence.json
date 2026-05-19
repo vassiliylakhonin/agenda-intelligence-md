@@ -1,0 +1,47 @@
+{
+  "topic": "OPEC+ production cut",
+  "evidence_mode": "live_source_backed",
+  "claims": [
+    {
+      "claim": "OPEC+ agreed to deepen cuts by 1.2 Mb/d.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "OPEC Secretariat press release",
+          "url": "https://www.opec.org/opec_web/en/press_room/",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Production cut agreement details and timeline"
+          ],
+          "limits": [
+            "Does not disclose enforcement mechanisms"
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "Compliance among smaller producers has historically been uneven.",
+      "support_status": "partially_supported",
+      "sources": [
+        {
+          "name": "IEA Oil Market Report",
+          "url": "https://www.iea.org/reports/oil-market-report",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Historical compliance data by member"
+          ],
+          "limits": [
+            "Published monthly; may lag latest developments"
+          ]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Exact price impact magnitude",
+    "Individual member compliance intentions"
+  ],
+  "retrieved_at": "2026-05-19T12:00:00Z"
+}

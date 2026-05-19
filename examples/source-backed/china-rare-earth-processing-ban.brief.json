@@ -1,0 +1,38 @@
+{
+  "bottom_line": "China bans export of rare earth magnet manufacturing technology, tightening control over the permanent magnet supply chain critical for EVs and wind turbines.",
+  "signal_classification": "escalation_marker",
+  "what_changed": "China added rare earth separation, smelting, and magnet manufacturing technologies to the prohibited export catalog.",
+  "why_it_matters": "Permanent magnets using NdFeB are essential for EV motors and wind turbines; technology ban prevents competitors from building independent processing capacity.",
+  "affected_actors": [
+    "China MOFCOM",
+    "EV manufacturers",
+    "wind turbine manufacturers",
+    "non-China rare earth miners",
+    "industrial policy agencies (US DOE, EU)"
+  ],
+  "main_uncertainty": "Enforcement against technology transfer via joint ventures and personnel movement is difficult; existing licensed facilities outside China unaffected.",
+  "scenarios": [
+    {
+      "name": "Effective bottleneck",
+      "description": "Technology ban delays non-China capacity by 5+ years.",
+      "indicators": [
+        "No new magnet plants announced outside China",
+        "price premium widens"
+      ]
+    },
+    {
+      "name": "Workaround proliferation",
+      "description": "Alternative technologies or licensed pre-ban facilities fill gap.",
+      "indicators": [
+        "New magnet plants break ground",
+        "ferrite or alternative motor designs gain adoption"
+      ]
+    }
+  ],
+  "watch_next": [
+    "Technology transfer enforcement cases",
+    "Non-China magnet production capacity announcements",
+    "EV/wind OEM supply diversification strategies"
+  ],
+  "evidence_mode": "live_source_backed"
+}

@@ -1,0 +1,38 @@
+{
+  "bottom_line": "UK diverges from EU on AI regulation and chemical safety standards, creating dual-compliance burden for firms operating in both markets.",
+  "signal_classification": "signal",
+  "what_changed": "UK government published its own AI regulatory framework rejecting the EU's risk-based approach in favor of sector-specific regulation.",
+  "why_it_matters": "Companies must maintain separate compliance programs for UK and EU markets; cost and complexity increase for cross-border operations.",
+  "affected_actors": [
+    "UK government",
+    "European Commission",
+    "cross-border tech firms",
+    "financial services firms",
+    "chemical manufacturers"
+  ],
+  "main_uncertainty": "UK framework is principles-based and largely unlegislated; actual compliance requirements depend on sector regulators.",
+  "scenarios": [
+    {
+      "name": "Pragmatic alignment",
+      "description": "UK regulators adopt requirements functionally similar to EU despite different framing.",
+      "indicators": [
+        "Cross-referencing of EU standards in UK guidance",
+        "mutual recognition agreements"
+      ]
+    },
+    {
+      "name": "Deepening divergence",
+      "description": "UK deliberately differentiates to attract investment; compliance arbitrage opportunities emerge.",
+      "indicators": [
+        "Lower UK compliance costs",
+        "UK-only product approvals"
+      ]
+    }
+  ],
+  "watch_next": [
+    "UK sector regulator AI guidance publications",
+    "Mutual recognition negotiations",
+    "Industry compliance cost surveys"
+  ],
+  "evidence_mode": "mixed"
+}

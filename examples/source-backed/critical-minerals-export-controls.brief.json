@@ -1,0 +1,38 @@
+{
+  "bottom_line": "China restricts export of gallium, germanium, and rare earth processing technology, creating structural supply risk for semiconductor and defense supply chains.",
+  "signal_classification": "structural_shift",
+  "what_changed": "China Ministry of Commerce announced export licensing requirements for gallium, germanium, antimony, and related processing technology.",
+  "why_it_matters": "China controls 60-90% of global processing for these minerals; licensing creates discretionary supply disruption tool.",
+  "affected_actors": [
+    "China MOFCOM",
+    "semiconductor manufacturers",
+    "defense contractors",
+    "mining companies outside China",
+    "Japan/EU/US industrial policy agencies"
+  ],
+  "main_uncertainty": "Licensing may be selectively enforced; alternative supply development timelines are 3-7 years.",
+  "scenarios": [
+    {
+      "name": "Selective restriction",
+      "description": "Licenses granted to allied countries, denied to others.",
+      "indicators": [
+        "Differentiated approval rates by destination country",
+        "diplomatic linkage to other trade disputes"
+      ]
+    },
+    {
+      "name": "Broad restriction",
+      "description": "Export volumes drop across all destinations.",
+      "indicators": [
+        "Global price spikes for gallium/germanium",
+        "emergency stockpile releases"
+      ]
+    }
+  ],
+  "watch_next": [
+    "Export license approval rates published by MOFCOM",
+    "Stockpile purchases by Japan/EU/US",
+    "Alternative processing facility investment announcements"
+  ],
+  "evidence_mode": "live_source_backed"
+}

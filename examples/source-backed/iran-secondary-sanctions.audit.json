@@ -1,0 +1,69 @@
+{
+  "topic": "Iran secondary sanctions expansion",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "OFAC designated 30+ entities linked to Iran petrochemical and shipping networks.",
+      "claim_type": "sanctions_event",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Some entities may have already ceased operations or reconstituted.",
+      "risk_if_wrong": "Screening lists not updated in time."
+    },
+    {
+      "claim_id": "c2",
+      "claim": "UAE and Turkey-based intermediaries are primary conduits for Iranian petrochemical trade.",
+      "claim_type": "sanctions_event",
+      "evidence_ids": [
+        "e1",
+        "e2"
+      ],
+      "support_level": "partial",
+      "uncertainty": "Trade routes shift; Southeast Asian intermediaries gaining share.",
+      "risk_if_wrong": "Geographic compliance focus too narrow."
+    },
+    {
+      "claim_id": "c3",
+      "claim": "Correspondent banks face secondary sanctions risk from processing related transactions.",
+      "claim_type": "sanctions_event",
+      "evidence_ids": [
+        "e1"
+      ],
+      "support_level": "direct",
+      "uncertainty": "Threshold for triggering secondary sanctions enforcement is not publicly defined.",
+      "risk_if_wrong": "Over- or under-reaction in de-risking."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "name": "OFAC SDN list update and press release",
+      "url": "https://ofac.treasury.gov/recent-actions",
+      "source_type": "official",
+      "supports": [
+        "Designated entities, basis for designation"
+      ],
+      "limits": [
+        "Does not disclose enforcement priorities or thresholds"
+      ]
+    },
+    {
+      "evidence_id": "e2",
+      "name": "UN Comtrade Iran bilateral trade data",
+      "url": "https://comtrade.un.org/",
+      "source_type": "official",
+      "supports": [
+        "Trade flow patterns by partner country"
+      ],
+      "limits": [
+        "Iran self-reporting gaps; data lag"
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Enforcement timeline for secondary sanctions cases",
+    "Reconstitution identities of designated entities"
+  ]
+}

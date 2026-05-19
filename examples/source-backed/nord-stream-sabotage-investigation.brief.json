@@ -1,0 +1,39 @@
+{
+  "bottom_line": "Arrest warrant in Nord Stream sabotage case raises attribution questions with implications for EU-Russia energy relations and infrastructure security.",
+  "signal_classification": "trigger_event",
+  "what_changed": "German federal prosecutor issued arrest warrant for a suspect in the Nord Stream pipeline sabotage; suspect linked to Ukrainian military.",
+  "why_it_matters": "Attribution outcome affects EU-Ukraine relations, subsea infrastructure security investment, and European energy security strategy.",
+  "affected_actors": [
+    "German federal prosecutor",
+    "Ukrainian government",
+    "EU member states",
+    "NATO",
+    "subsea infrastructure operators",
+    "energy companies"
+  ],
+  "main_uncertainty": "Single suspect does not establish state authorization; investigation ongoing across multiple jurisdictions.",
+  "scenarios": [
+    {
+      "name": "Limited attribution",
+      "description": "Investigation concludes with individual responsibility; no state-level consequences.",
+      "indicators": [
+        "No diplomatic sanctions",
+        "investigation closed"
+      ]
+    },
+    {
+      "name": "Escalation",
+      "description": "Evidence links operation to state command; diplomatic fallout.",
+      "indicators": [
+        "EU-level statements",
+        "review of military aid conditions"
+      ]
+    }
+  ],
+  "watch_next": [
+    "Suspect extradition proceedings",
+    "EU diplomatic response",
+    "NATO subsea infrastructure protection initiatives"
+  ],
+  "evidence_mode": "live_source_backed"
+}

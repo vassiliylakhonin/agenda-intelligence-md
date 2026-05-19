@@ -1,0 +1,38 @@
+{
+  "bottom_line": "CSRD mandates detailed ESG reporting for large EU and non-EU companies; first filings due in 2025 for FY2024, with phased extension to smaller firms.",
+  "signal_classification": "compliance_relevant_development",
+  "what_changed": "European Financial Reporting Advisory Group published final European Sustainability Reporting Standards; first wave of companies must comply.",
+  "why_it_matters": "Affects ~50,000 companies including non-EU firms with significant EU revenue; requires audited sustainability data, double materiality assessment.",
+  "affected_actors": [
+    "EFRAG",
+    "large EU companies",
+    "non-EU companies with EU revenue above threshold",
+    "audit firms",
+    "ESG data providers"
+  ],
+  "main_uncertainty": "Third-country equivalence for non-EU standards not yet decided; assurance standards for sustainability data still developing.",
+  "scenarios": [
+    {
+      "name": "Rapid convergence",
+      "description": "CSRD becomes de facto global standard via supply chain pressure.",
+      "indicators": [
+        "Non-EU jurisdictions adopt compatible frameworks",
+        "investor demand for CSRD-format data"
+      ]
+    },
+    {
+      "name": "Fragmented compliance",
+      "description": "Companies treat CSRD as box-ticking; data quality varies widely.",
+      "indicators": [
+        "High restatement rates",
+        "enforcement actions for misleading reporting"
+      ]
+    }
+  ],
+  "watch_next": [
+    "First CSRD filings quality and comparability",
+    "Third-country equivalence decisions",
+    "ESMA enforcement priorities for sustainability reporting"
+  ],
+  "evidence_mode": "live_source_backed"
+}

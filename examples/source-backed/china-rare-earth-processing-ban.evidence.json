@@ -1,0 +1,47 @@
+{
+  "topic": "China rare earth processing technology ban",
+  "evidence_mode": "live_source_backed",
+  "claims": [
+    {
+      "claim": "China added rare earth processing technologies to the prohibited export catalog.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "China MOFCOM Prohibited Export Catalog update",
+          "url": "https://www.mofcom.gov.cn/",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Technologies added to prohibited list"
+          ],
+          "limits": [
+            "Enforcement details not specified"
+          ]
+        }
+      ]
+    },
+    {
+      "claim": "NdFeB magnets are essential for EV motors and wind turbines.",
+      "support_status": "supported",
+      "sources": [
+        {
+          "name": "IEA Critical Minerals Market Review",
+          "url": "https://www.iea.org/reports/critical-minerals-market-review",
+          "source_type": "official",
+          "freshness": "current",
+          "supports": [
+            "Demand projections and supply concentration data"
+          ],
+          "limits": [
+            "Projections, not actuals"
+          ]
+        }
+      ]
+    }
+  ],
+  "unsupported_claims": [
+    "Enforcement effectiveness",
+    "Alternative technology timeline"
+  ],
+  "retrieved_at": "2026-05-19T12:00:00Z"
+}
