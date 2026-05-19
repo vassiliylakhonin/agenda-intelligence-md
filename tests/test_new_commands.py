@@ -96,6 +96,25 @@ def test_bench_min_score_gate():
 # ---------- source-coverage ----------
 
 
+def test_source_categories_json_lists_known_categories():
+    res = run("source-categories", "--format", "json")
+    payload = json.loads(res.stdout)
+
+    assert payload["implemented"] is True
+    assert payload["error"] is None
+    assert "sanctions" in payload["category_ids"]
+    assert "technology-ai" in payload["category_ids"]
+    sanctions = next(item for item in payload["categories"] if item["category"] == "sanctions")
+    assert sanctions["must_check_count"] >= 1
+
+
+def test_source_categories_text_lists_counts():
+    res = run("source-categories")
+
+    assert "sanctions: must_check=" in res.stdout
+    assert "technology-ai: must_check=" in res.stdout
+
+
 def test_source_coverage_reports_missing_required_sources(tmp_path: Path):
     pack = tmp_path / "pack.json"
     pack.write_text(

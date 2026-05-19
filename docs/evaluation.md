@@ -77,6 +77,7 @@ agenda-intelligence audit-claims audit.json
 agenda-intelligence audit-claims audit.json --strict        # exit 1 on orphan refs
 
 # Diagnose source-plan coverage
+agenda-intelligence source-categories --format json
 agenda-intelligence source-coverage examples/source/evidence-pack.json --category technology-ai
 
 # Score
@@ -102,6 +103,7 @@ agenda-intelligence verify-quotes pack.json --fetch
 | `validate_brief` | Schema check on a brief JSON object |
 | `validate_evidence` | Schema check on an evidence pack |
 | `audit_claims` | Validates claim-level audit; returns support-level distribution and orphan refs |
+| `list_source_categories` | Lists packaged source requirement categories before source planning |
 | `source_coverage` | Reports covered and missing source-plan `must_check` source types |
 | `verify_quotes` | Checks cited quote fragments against caller-supplied source texts |
 | `score_output` | Heuristic before/after marker rubric |

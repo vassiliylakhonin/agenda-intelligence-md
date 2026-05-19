@@ -11,7 +11,7 @@ Protocol, JSON schemas, CLI, and MCP server for validating, scoring, and auditin
 
 - **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
 - **JSON schemas** — validate briefs, evidence packs, audits, signals, memory cards, lenses
-- **CLI** — `validate-brief`, `validate-evidence`, `source-coverage`, `audit-claims`, `score`, `bench`, `doctor` (30+ commands)
+- **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `score`, `bench`, `doctor` (30+ commands)
 - **MCP server** — stdio server exposing validation, read, and scoring tools
 - **Eval kit** — rubric, LLM-judge prompt, human checklist, benchmark harness
 - **Source policy** — per-claim provenance tags (Axis A/B), source requirements for 12 categories
@@ -74,7 +74,7 @@ Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed
 
 ## MCP
 
-Stdio MCP server with 8 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
+Stdio MCP server with 11 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
 
 | Tool | What it does |
 |---|---|
@@ -83,7 +83,10 @@ Stdio MCP server with 8 tools. Full docs and wire-protocol verification: [`MCP.m
 | `audit_claims` | Check claim-level audit: support distribution, orphan refs, unsupported claims |
 | `score_output` | Heuristic score for structure, evidence labeling, decision-readiness |
 | `get_protocol` | Return the full Agenda-Intelligence.md reasoning protocol |
+| `list_source_categories` | List source requirement categories before calling `source_plan` |
 | `source_plan` | Generate a source plan for a given topic |
+| `source_coverage` | Diagnose evidence-pack coverage against category source requirements |
+| `verify_quotes` | Check cited quote fragments in caller-provided text |
 | `list_lenses` | List available lens packs |
 | `get_lens` | Return a specific lens pack by name |
 

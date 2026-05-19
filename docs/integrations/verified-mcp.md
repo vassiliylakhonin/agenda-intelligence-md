@@ -46,7 +46,9 @@ After restart or reload, the MCP client should expose these tools:
 - `get_protocol`
 - `list_lenses`
 - `get_lens`
+- `list_source_categories`
 - `source_plan`
+- `source_coverage`
 - `score_output`
 
 ## Sanity prompts
@@ -58,9 +60,10 @@ List the available Agenda Intelligence MCP tools.
 ```
 
 ```text
-Call the Agenda Intelligence source_plan tool for category technology-ai.
-Return the must_check source types. Then call source_coverage on an evidence pack
-for the same category and return any missing_required_sources.
+Call the Agenda Intelligence list_source_categories tool.
+Then call source_plan for category technology-ai and return the must_check source types.
+Then call source_coverage on an evidence pack for the same category and return any
+missing_required_sources.
 ```
 
 ```text
@@ -76,7 +79,8 @@ Watch next: regulator guidance and compliance deadline.
 
 Expected result:
 
-- tool list includes `source_plan` and `score_output`
+- tool list includes `list_source_categories`, `source_plan`, `source_coverage`, and `score_output`
+- `list_source_categories.category_ids` includes `technology-ai`
 - `source_plan` returns category `technology-ai`
 - `source_plan.plan.must_check` is present
 - `source_coverage` returns `missing_required_sources`

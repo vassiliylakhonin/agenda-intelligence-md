@@ -106,6 +106,23 @@ def cmd_list_source_packs(args):
     print(json.dumps(manifest.get("source_acquisition", {}).get("requirements", {}), indent=2))
 
 
+def cmd_source_categories(args):
+    from agenda_intelligence.mcp_server import list_source_categories
+
+    result = list_source_categories()
+    if result.get("error"):
+        print(f"ERROR: {result['error']}", file=sys.stderr)
+        raise SystemExit(1)
+    if args.format == "json":
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        for item in result["categories"]:
+            print(
+                f"{item['category']}: must_check={item['must_check_count']} "
+                f"supporting={item['supporting_sources_count']} watch={item['watch_indicators_count']}"
+            )
+
+
 def cmd_source_plan(args):
     manifest = load_manifest()
     requirements = manifest.get("source_acquisition", {}).get("requirements", {})
@@ -670,9 +687,12 @@ def _doctor_mcp_tools_check(command):
         "get_protocol",
         "list_lenses",
         "get_lens",
+        "list_source_categories",
         "source_plan",
         "source_coverage",
+        "audit_claims",
         "score_output",
+        "verify_quotes",
     }
     requests = [
         {
@@ -782,6 +802,10 @@ def main():
     # list-source-packs
     p = sub.add_parser("list-source-packs", help="List source requirement packs")
     p.set_defaults(func=cmd_list_source_packs)
+    # source-categories
+    p = sub.add_parser("source-categories", help="List source requirement categories")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.set_defaults(func=cmd_source_categories)
     # source-plan
     p = sub.add_parser("source-plan", help="Print source requirements for a category")
     p.add_argument("category")
