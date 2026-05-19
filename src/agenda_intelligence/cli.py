@@ -119,6 +119,46 @@ def cmd_source_plan(args):
     print(json.dumps(json.loads(p.read_text()), indent=2))
 
 
+def cmd_source_coverage(args):
+    """Diagnose source-plan coverage for an evidence pack and category."""
+    from agenda_intelligence.mcp_server import source_coverage
+
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"Not found: {path}")
+    try:
+        evidence_json = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Invalid JSON: {e}")
+    if not isinstance(evidence_json, dict):
+        raise SystemExit("Source coverage expects a JSON object")
+
+    result = source_coverage(evidence_json, args.category)
+    if result.get("error"):
+        print(f"ERROR: {result['error']}", file=sys.stderr)
+        raise SystemExit(1)
+
+    if args.format == "json":
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        print(f"source-plan coverage: {result['category']}")
+        print(f"  required sources: {len(result['required_sources'])}")
+        print(f"  covered required sources: {len(result['covered_required_sources'])}")
+        print(f"  missing required sources: {len(result['missing_required_sources'])}")
+        if result["covered_required_sources"]:
+            print("  covered:")
+            for source in result["covered_required_sources"]:
+                print(f"    - {source}")
+        if result["missing_required_sources"]:
+            print("  missing:")
+            for source in result["missing_required_sources"]:
+                print(f"    - {source}")
+        print(f"note: {result['note']}")
+
+    if args.strict and result["missing_required_sources"]:
+        raise SystemExit(1)
+
+
 def cmd_start(args):
     """Guided start for a new agenda analysis.
     Shows a trimmed source plan (top 3 must_check) and a brief JSON template.
@@ -631,6 +671,7 @@ def _doctor_mcp_tools_check(command):
         "list_lenses",
         "get_lens",
         "source_plan",
+        "source_coverage",
         "score_output",
     }
     requests = [
@@ -745,6 +786,16 @@ def main():
     p = sub.add_parser("source-plan", help="Print source requirements for a category")
     p.add_argument("category")
     p.set_defaults(func=cmd_source_plan)
+    # source-coverage
+    p = sub.add_parser(
+        "source-coverage",
+        help="Diagnose evidence-pack coverage against category source requirements",
+    )
+    p.add_argument("path", help="Evidence pack JSON file")
+    p.add_argument("--category", required=True, help="Source category, e.g. sanctions")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.add_argument("--strict", action="store_true", help="Exit 1 when required source coverage is missing")
+    p.set_defaults(func=cmd_source_coverage)
     # score
     p = sub.add_parser("score", help="Score a JSON brief or run the before/after eval harness")
     p.add_argument("path", nargs="?")

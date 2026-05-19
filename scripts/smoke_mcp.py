@@ -134,6 +134,7 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
         "list_lenses",
         "get_lens",
         "source_plan",
+        "source_coverage",
         "score_output",
         "verify_quotes",
     }

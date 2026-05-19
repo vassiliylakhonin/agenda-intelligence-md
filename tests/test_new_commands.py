@@ -93,6 +93,107 @@ def test_bench_min_score_gate():
     assert res.returncode == 2
 
 
+# ---------- source-coverage ----------
+
+
+def test_source_coverage_reports_missing_required_sources(tmp_path: Path):
+    pack = tmp_path / "pack.json"
+    pack.write_text(
+        json.dumps(
+            {
+                "topic": "sanctions claim",
+                "evidence_mode": "user_provided",
+                "claims": [
+                    {
+                        "claim": "Company X is sanctioned worldwide.",
+                        "support_status": "partially_supported",
+                        "sources": [
+                            {
+                                "name": "Media report about sanctions risk",
+                                "source_type": "media",
+                                "freshness": "current",
+                                "supports": ["Mentions sanctions risk."],
+                                "limits": ["Does not include official designation list or legal instrument."],
+                            }
+                        ],
+                    }
+                ],
+                "unsupported_claims": ["Worldwide sanctions status is not backed by official lists."],
+            }
+        )
+    )
+    res = run("source-coverage", str(pack), "--category", "sanctions", "--format", "json")
+    payload = json.loads(res.stdout)
+    assert payload["category"] == "sanctions"
+    assert "sanctions_list" in payload["missing_required_sources"]
+    assert "legal_text" in payload["missing_required_sources"]
+    assert payload["strict_gate_passed"] is False
+    assert "Does not validate factual truth" in payload["note"]
+
+
+def test_source_coverage_strict_exits_nonzero_on_missing_sources(tmp_path: Path):
+    pack = tmp_path / "pack.json"
+    pack.write_text(
+        json.dumps(
+            {
+                "topic": "sanctions claim",
+                "evidence_mode": "user_provided",
+                "claims": [],
+                "unsupported_claims": ["No source coverage."],
+            }
+        )
+    )
+    res = run("source-coverage", str(pack), "--category", "sanctions", "--strict", expect_zero=False)
+    assert res.returncode == 1
+    assert "missing required sources" in res.stdout
+
+
+def test_source_coverage_detects_sanctions_sources(tmp_path: Path):
+    pack = tmp_path / "pack.json"
+    pack.write_text(
+        json.dumps(
+            {
+                "topic": "sanctions claim",
+                "evidence_mode": "live_source_backed",
+                "claims": [
+                    {
+                        "claim": "Company X is designated in one sanctions jurisdiction.",
+                        "support_status": "supported",
+                        "sources": [
+                            {
+                                "name": "OFAC SDN list entry",
+                                "source_type": "official",
+                                "freshness": "current",
+                                "supports": ["Official sanctions list designation."],
+                                "limits": ["US scope only."],
+                            },
+                            {
+                                "name": "Sanctions legal text",
+                                "source_type": "legal",
+                                "freshness": "current",
+                                "supports": ["Legal instrument for designation."],
+                                "limits": [],
+                            },
+                            {
+                                "name": "Regulator FAQ and license guidance",
+                                "source_type": "official",
+                                "freshness": "current",
+                                "supports": ["Regulator guidance and general license details."],
+                                "limits": [],
+                            },
+                        ],
+                    }
+                ],
+                "unsupported_claims": [],
+            }
+        )
+    )
+    res = run("source-coverage", str(pack), "--category", "sanctions", "--format", "json")
+    payload = json.loads(res.stdout)
+    assert payload["missing_required_sources"] == []
+    assert payload["strict_gate_passed"] is True
+
+
 # ---------- verify-quotes ----------
 
 

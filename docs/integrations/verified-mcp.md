@@ -59,7 +59,8 @@ List the available Agenda Intelligence MCP tools.
 
 ```text
 Call the Agenda Intelligence source_plan tool for category technology-ai.
-Return the must_check source types.
+Return the must_check source types. Then call source_coverage on an evidence pack
+for the same category and return any missing_required_sources.
 ```
 
 ```text
@@ -78,6 +79,7 @@ Expected result:
 - tool list includes `source_plan` and `score_output`
 - `source_plan` returns category `technology-ai`
 - `source_plan.plan.must_check` is present
+- `source_coverage` returns `missing_required_sources`
 - `score_output` returns `implemented: true`
 - `score_output.after_score` is higher than `before_score`
 

@@ -3,6 +3,7 @@ from agenda_intelligence.mcp_server import (
     get_protocol,
     list_lenses,
     score_output,
+    source_coverage,
     source_plan,
 )
 from agenda_intelligence.mcp_stdio import handle_message
@@ -52,6 +53,45 @@ def test_source_plan_unknown_category_returns_error():
     assert "Unknown source category" in result["error"]
 
 
+def test_source_coverage_reports_missing_sources():
+    result = source_coverage(
+        {
+            "topic": "sanctions claim",
+            "evidence_mode": "user_provided",
+            "claims": [
+                {
+                    "claim": "Company X is sanctioned worldwide.",
+                    "support_status": "partially_supported",
+                    "sources": [
+                        {
+                            "name": "Media report",
+                            "source_type": "media",
+                            "freshness": "current",
+                            "supports": ["Mentions sanctions risk."],
+                            "limits": ["No official list."],
+                        }
+                    ],
+                }
+            ],
+            "unsupported_claims": ["Official list evidence missing."],
+        },
+        "sanctions",
+    )
+
+    assert result["implemented"] is True
+    assert result["valid_category"] is True
+    assert "sanctions_list" in result["missing_required_sources"]
+    assert result["strict_gate_passed"] is False
+
+
+def test_source_coverage_unknown_category_returns_error():
+    result = source_coverage({"claims": []}, "unknown")
+
+    assert result["implemented"] is True
+    assert result["valid_category"] is False
+    assert "Unknown source category" in result["error"]
+
+
 def test_score_output_scores_before_after_pair():
     result = score_output(
         "Generic update. Monitor developments.",
@@ -88,7 +128,13 @@ def test_mcp_stdio_tools_list_includes_protocol_tool():
     response = handle_message({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
 
     tools = response["result"]["tools"]
-    assert {tool["name"] for tool in tools} >= {"get_protocol", "validate_brief", "source_plan", "score_output"}
+    assert {tool["name"] for tool in tools} >= {
+        "get_protocol",
+        "validate_brief",
+        "source_plan",
+        "source_coverage",
+        "score_output",
+    }
 
 
 def test_mcp_stdio_tools_call_returns_json_text_content():
