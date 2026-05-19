@@ -28,17 +28,23 @@ Run against source-structured cases in `examples/source-backed/`. Deterministic;
 
 | Metric | Value |
 |---|---|
-| Cases | 5 |
+| Cases | 20 |
 | Schema valid | 100% |
 | With evidence pack | 100% |
 | With claim-level audit | 100% |
-| Mean score | 87.8 / 100 |
+| Mean score | 87.6 / 100 |
 | Score range | 84–91 |
 | Audit orphan refs | 0 |
 
 Full baseline: [`evals/baselines/source-backed.md`](../evals/baselines/source-backed.md)
 
 These are structural/evidence-discipline metrics. They do not measure factual accuracy, and illustrative source cases are not live-source-backed factual benchmarks.
+
+## Quote Verification Contract
+
+`verify-quotes` answers a narrow question: does the quoted or excerpted fragment appear in supplied source text? Local mode checks caller-provided text files. `--fetch` mode downloads already-specified source URLs and checks fragment presence in the fetched text.
+
+It does not discover missing sources, monitor live news, score source reputation, judge whether a source is authoritative, or decide whether the claim is true in the world. A quote can be present in a weak source; a claim can still be incomplete, misleading, stale, or unsupported by better evidence.
 
 ## Signal classification and markers
 
@@ -126,5 +132,5 @@ The `evidence-audit.schema.json` enforces a stable `claim_type` enum derived fro
 - Heuristic score is intentionally simple; do not treat the number as authoritative.
 - LLM-judge prompt is provided; LLM-judge results are not benchmarked.
 - `verify-quotes --fetch` reports presence of a text fragment at a URL, not whether the source is reputable or the claim is true.
-- Benchmark numbers above cover 5 cases. Meaningful coverage requires 20+.
+- Benchmark numbers above cover 20 cases. Broader coverage requires more domains and adversarial cases.
 - Heuristic score weights (25, 25, 20, 15, 15) are hand-tuned and not calibrated against expert judgment. Do not treat scores as authoritative quality ratings.

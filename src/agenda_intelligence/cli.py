@@ -336,7 +336,10 @@ def cmd_verify_quotes(args):
             continue
         results.append({"id": ident, "status": "missing_source_text", "looked_in": [str(p) for p in candidates]})
 
-    note = "Verifies presence of cited fragment in source text. Does not verify factual truth."
+    note = (
+        "Verifies presence of cited fragment in source text. Does not discover sources, "
+        "score source reputation, gather live news, or verify factual truth."
+    )
     if do_fetch:
         note = "Local-text + network fetch mode. " + note
     summary = {
@@ -771,7 +774,7 @@ def main():
     # verify-quotes
     p = sub.add_parser(
         "verify-quotes",
-        help="Verify cited quotes in an evidence pack against local source texts or fetched URLs",
+        help="Check cited quote presence in local or fetched text; does not verify factual truth",
     )
     p.add_argument("path", help="Evidence pack JSON file with optional 'quote' fields per source")
     p.add_argument(
@@ -781,7 +784,7 @@ def main():
     p.add_argument(
         "--fetch",
         action="store_true",
-        help="Fetch source URLs for quotes without a local text file (makes outbound HTTP requests)",
+        help="Fetch already-specified source URLs for quotes without local text (outbound HTTP; no source discovery)",
     )
     p.add_argument("--format", choices=["text", "json"], default="text")
     p.add_argument(

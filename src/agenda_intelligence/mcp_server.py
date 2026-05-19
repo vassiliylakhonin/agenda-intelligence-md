@@ -243,8 +243,8 @@ def verify_quotes(pack_json: dict, texts: Optional[dict] = None) -> dict:
     ``texts`` is an optional dict mapping ``evidence_id`` → plain text content.
     Sources without a matching entry in ``texts`` are reported as ``missing_source_text``.
 
-    Scope: local-text only. Does not make outbound network requests. Does not
-    verify factual truth.
+    Scope: local-text only. Does not make outbound network requests, discover
+    sources, score source reputation, gather live news, or verify factual truth.
     """
     import re
     import unicodedata
@@ -274,7 +274,10 @@ def verify_quotes(pack_json: dict, texts: Optional[dict] = None) -> dict:
         "present": sum(1 for r in results if r["status"] == "present"),
         "absent": sum(1 for r in results if r["status"] == "absent"),
         "missing_source_text": sum(1 for r in results if r["status"] == "missing_source_text"),
-        "note": "Local-text mode only. Does not fetch URLs. Does not verify factual truth.",
+        "note": (
+            "Local-text mode only. Does not fetch URLs, discover sources, score source reputation, "
+            "gather live news, or verify factual truth."
+        ),
     }
     return {"implemented": True, "summary": summary, "results": results}
 

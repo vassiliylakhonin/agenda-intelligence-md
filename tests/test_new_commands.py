@@ -161,6 +161,8 @@ def test_verify_quotes_strict(tmp_path: Path):
         expect_zero=False,
     )
     assert res.returncode == 1
+    assert "Does not discover sources" in res.stdout
+    assert "verify factual truth" in res.stdout
 
 
 # ---------- report ----------
@@ -250,6 +252,7 @@ def test_mcp_verify_quotes_present():
     assert res["implemented"] is True
     assert res["summary"]["present"] == 1
     assert res["summary"]["total_quotes"] == 1
+    assert "score source reputation" in res["summary"]["note"]
 
 
 def test_mcp_verify_quotes_absent():
@@ -294,5 +297,6 @@ def test_stdio_tools_list_includes_verify_quotes():
 
     assert "verify_quotes" in TOOLS
     spec = TOOLS["verify_quotes"]
+    assert "score source reputation" in spec["description"]
     assert "pack_json" in spec["inputSchema"]["properties"]
     assert "pack_json" in spec["inputSchema"]["required"]

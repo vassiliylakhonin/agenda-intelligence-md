@@ -84,7 +84,8 @@ TOOLS: dict[str, dict[str, Any]] = {
             "source texts. Pass `texts` as a dict mapping evidence_id → plain text. "
             "Sources without a matching texts entry are reported as missing_source_text. "
             "Local-text only; does not make outbound network requests. "
-            "Does not verify factual truth."
+            "Does not discover sources, score source reputation, gather live news, "
+            "or verify factual truth."
         ),
         "inputSchema": _schema(
             {
