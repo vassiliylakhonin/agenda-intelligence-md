@@ -22,6 +22,12 @@ REQUESTS = [
     {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
     {
         "jsonrpc": "2.0",
+        "id": 7,
+        "method": "tools/call",
+        "params": {"name": "list_source_categories", "arguments": {}},
+    },
+    {
+        "jsonrpc": "2.0",
         "id": 3,
         "method": "tools/call",
         "params": {"name": "source_plan", "arguments": {"category": "technology-ai"}},
@@ -115,8 +121,8 @@ def run_server(command: list[str]) -> list[dict]:
 
 
 def assert_response_shape(responses: list[dict], expected_version: str | None) -> None:
-    if len(responses) != 6:
-        raise SystemExit(f"Expected 6 MCP responses, got {len(responses)}: {responses}")
+    if len(responses) != 7:
+        raise SystemExit(f"Expected 7 MCP responses, got {len(responses)}: {responses}")
 
     initialize = responses[0]["result"]
     server_info = initialize["serverInfo"]
@@ -133,6 +139,7 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
         "get_protocol",
         "list_lenses",
         "get_lens",
+        "list_source_categories",
         "source_plan",
         "source_coverage",
         "score_output",
@@ -142,7 +149,14 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
     if missing:
         raise SystemExit(f"Missing MCP tools: {sorted(missing)}")
 
-    tool_result = responses[2]["result"]
+    categories_result = responses[2]["result"]
+    if categories_result.get("isError"):
+        raise SystemExit(f"MCP list_source_categories returned tool error: {categories_result}")
+    categories_payload = json.loads(categories_result["content"][0]["text"])
+    if "technology-ai" not in categories_payload.get("category_ids", []):
+        raise SystemExit(f"list_source_categories missing technology-ai: {categories_payload}")
+
+    tool_result = responses[3]["result"]
     if tool_result.get("isError"):
         raise SystemExit(f"MCP source_plan returned tool error: {tool_result}")
     payload = json.loads(tool_result["content"][0]["text"])
@@ -151,7 +165,7 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
     if "must_check" not in payload["plan"]:
         raise SystemExit(f"source_plan payload missing must_check: {payload}")
 
-    score_result = responses[3]["result"]
+    score_result = responses[4]["result"]
     if score_result.get("isError"):
         raise SystemExit(f"MCP score_output returned tool error: {score_result}")
     score_payload = json.loads(score_result["content"][0]["text"])
@@ -160,7 +174,7 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
     if score_payload["after_score"] <= score_payload["before_score"]:
         raise SystemExit(f"score_output did not improve after output: {score_payload}")
 
-    vq_result = responses[4]["result"]
+    vq_result = responses[5]["result"]
     if vq_result.get("isError"):
         raise SystemExit(f"MCP verify_quotes returned tool error: {vq_result}")
     vq_payload = json.loads(vq_result["content"][0]["text"])
@@ -170,7 +184,7 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
     if vq_summary.get("present") != 1 or vq_summary.get("total_quotes") != 1:
         raise SystemExit(f"verify_quotes summary unexpected: {vq_summary}")
 
-    audit_result = responses[5]["result"]
+    audit_result = responses[6]["result"]
     if audit_result.get("isError"):
         raise SystemExit(f"MCP audit_claims returned tool error: {audit_result}")
     audit_payload = json.loads(audit_result["content"][0]["text"])

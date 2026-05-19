@@ -2,6 +2,7 @@ from agenda_intelligence.mcp_server import (
     get_lens,
     get_protocol,
     list_lenses,
+    list_source_categories,
     score_output,
     source_coverage,
     source_plan,
@@ -43,6 +44,19 @@ def test_source_plan_returns_packaged_requirements():
     assert result["error"] is None
     assert result["plan"]["category"] == "technology-ai"
     assert "must_check" in result["plan"]
+
+
+def test_list_source_categories_returns_packaged_requirements_summary():
+    result = list_source_categories()
+
+    assert result["implemented"] is True
+    assert result["error"] is None
+    assert "sanctions" in result["category_ids"]
+    assert "technology-ai" in result["category_ids"]
+    sanctions = next(item for item in result["categories"] if item["category"] == "sanctions")
+    assert sanctions["path"].endswith("sanctions.json")
+    assert sanctions["must_check_count"] >= 1
+    assert "does not discover sources" in result["note"].lower()
 
 
 def test_source_plan_unknown_category_returns_error():
@@ -131,6 +145,7 @@ def test_mcp_stdio_tools_list_includes_protocol_tool():
     assert {tool["name"] for tool in tools} >= {
         "get_protocol",
         "validate_brief",
+        "list_source_categories",
         "source_plan",
         "source_coverage",
         "score_output",

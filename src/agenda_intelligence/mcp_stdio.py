@@ -67,6 +67,14 @@ TOOLS: dict[str, dict[str, Any]] = {
         "inputSchema": _schema({"category": {"type": "string"}}, ["category"]),
         "handler": lambda args: mcp_server.source_plan(args["category"]),
     },
+    "list_source_categories": {
+        "description": (
+            "List packaged source requirement categories and per-pack counts. "
+            "Discovery only; does not discover sources, validate coverage, or verify factual truth."
+        ),
+        "inputSchema": _schema({}),
+        "handler": lambda args: mcp_server.list_source_categories(),
+    },
     "source_coverage": {
         "description": (
             "Diagnose whether an evidence pack covers category-specific must_check source types. "

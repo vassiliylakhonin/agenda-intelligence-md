@@ -10,8 +10,8 @@ Implemented (return ``implemented=True``):
 - ``validate_brief`` / ``validate_evidence`` / ``audit_claims``: schema
   checks against the bundled JSON schemas. ``audit_claims`` additionally
   reports support-level distribution and orphan ``evidence_id`` refs.
-- ``get_protocol`` / ``list_lenses`` / ``get_lens`` / ``source_plan`` /
-  ``source_coverage``:
+- ``get_protocol`` / ``list_lenses`` / ``get_lens`` /
+  ``list_source_categories`` / ``source_plan`` / ``source_coverage``:
   read-only access to packaged protocol, lens, and source-plan data.
 - ``score_output``: heuristic before/after marker rubric.
 - ``verify_quotes``: checks that cited quote fragments appear in caller-supplied
@@ -236,6 +236,42 @@ def source_plan(category: str) -> dict:
         }
     except Exception as e:
         return {"implemented": True, "category": category, "plan": None, "error": str(e)}
+
+
+def list_source_categories() -> dict:
+    """List packaged source requirement categories.
+
+    This is category discovery for agents and CI configuration. It does not
+    fetch sources, evaluate evidence coverage, or verify factual truth.
+    """
+    try:
+        requirements = _load_manifest().get("source_acquisition", {}).get("requirements", {})
+        categories = []
+        for category in sorted(requirements):
+            relative_path = requirements[category]
+            plan = _load_data_json(relative_path)
+            categories.append(
+                {
+                    "category": category,
+                    "path": relative_path,
+                    "must_check_count": len(plan.get("must_check", []) or []),
+                    "supporting_sources_count": len(plan.get("supporting_sources", []) or []),
+                    "watch_indicators_count": len(plan.get("watch_indicators", []) or []),
+                }
+            )
+        return {
+            "implemented": True,
+            "category_ids": [item["category"] for item in categories],
+            "categories": categories,
+            "count": len(categories),
+            "note": (
+                "Source category discovery only. Does not discover sources, validate coverage, "
+                "or verify factual truth."
+            ),
+            "error": None,
+        }
+    except Exception as e:
+        return {"implemented": True, "category_ids": [], "categories": [], "count": 0, "error": str(e)}
 
 
 SOURCE_COVERAGE_ALIASES = {

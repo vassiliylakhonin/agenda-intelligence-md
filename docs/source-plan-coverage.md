@@ -7,7 +7,9 @@ Source Plans describe which source types should be checked before strengthening 
 Implemented today:
 
 - `source-plan <category>` prints required and recommended source types for an analysis category.
+- `source-categories` lists packaged category IDs before selecting a source plan.
 - MCP `source_plan` returns the same packaged source requirement pack.
+- MCP `list_source_categories` returns the same category discovery list.
 - `source-coverage <evidence.json> --category <category>` reports covered and missing required source types.
 - MCP `source_coverage` returns the same diagnostic structure.
 - Evidence packs may list `source_plan` notes and unsupported claims.
@@ -33,6 +35,7 @@ Before v1.0, this is a diagnostic gap, not a schema error. The right behavior is
 Run:
 
 ```bash
+agenda-intelligence source-categories --format json
 agenda-intelligence source-coverage evidence.json --category sanctions
 agenda-intelligence source-coverage evidence.json --category sanctions --format json
 agenda-intelligence source-coverage evidence.json --category sanctions --strict
