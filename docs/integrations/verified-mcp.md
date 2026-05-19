@@ -62,8 +62,8 @@ List the available Agenda Intelligence MCP tools.
 ```text
 Call the Agenda Intelligence list_source_categories tool.
 Then call source_plan for category technology-ai and return the must_check source types.
-Then call source_coverage on an evidence pack for the same category and return any
-missing_required_sources.
+Then call source_coverage on an evidence pack with source_category technology-ai
+and return any missing_required_sources.
 ```
 
 ```text

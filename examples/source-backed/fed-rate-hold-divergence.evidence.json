@@ -1,6 +1,7 @@
 {
   "topic": "Federal Reserve rate hold amid ECB cuts",
   "evidence_mode": "live_source_backed",
+  "source_category": "financial-market",
   "claims": [
     {
       "claim": "FOMC held the federal funds rate unchanged.",

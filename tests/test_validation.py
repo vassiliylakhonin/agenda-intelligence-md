@@ -126,6 +126,30 @@ def test_validate_evidence_valid():
     assert "OK" in res.stdout
 
 
+def test_validate_evidence_accepts_source_category(tmp_path):
+    data = json.loads((FIXTURES / "valid-evidence-pack.json").read_text())
+    data["source_category"] = "sanctions"
+    path = tmp_path / "evidence-with-source-category.json"
+    path.write_text(json.dumps(data))
+
+    res = run_cli(["validate-evidence", str(path)])
+
+    assert res.returncode == 0
+    assert "OK" in res.stdout
+
+
+def test_validate_evidence_rejects_unknown_source_category(tmp_path):
+    data = json.loads((FIXTURES / "valid-evidence-pack.json").read_text())
+    data["source_category"] = "open-web"
+    path = tmp_path / "evidence-with-invalid-source-category.json"
+    path.write_text(json.dumps(data))
+
+    res = run_cli(["validate-evidence", str(path)])
+
+    assert res.returncode != 0
+    assert "ERROR" in res.stderr
+
+
 def test_validate_evidence_invalid(tmp_path):
     p = FIXTURES / "invalid-evidence-pack.json"
     res = run_cli(["validate-evidence", str(p)])

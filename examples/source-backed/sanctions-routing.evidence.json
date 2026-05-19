@@ -1,6 +1,7 @@
 {
   "topic": "Sanctions Routing",
   "evidence_mode": "live_source_backed",
+  "source_category": "sanctions",
   "retrieved_at": "2026-05-05T12:00:00Z",
   "jurisdiction": "United States / Central Asia / Caspian region",
   "claims": [

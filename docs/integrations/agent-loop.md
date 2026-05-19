@@ -28,7 +28,7 @@ agenda-intelligence source-plan technology-ai > plan.json
 # ... agent drafts brief.json + evidence.json + (optional) claims.json ...
 agenda-intelligence validate-brief brief.json
 agenda-intelligence validate-evidence evidence.json
-agenda-intelligence source-coverage evidence.json --category technology-ai --format json > coverage.json
+agenda-intelligence source-coverage evidence.json --format json > coverage.json
 agenda-intelligence audit-claims claims.json --format json > audit.json
 agenda-intelligence score brief.json --evidence evidence.json \
     --format json --min-score 70 > score.json
@@ -47,6 +47,7 @@ categories = ai.list_source_categories()
 plan = ai.source_plan("technology-ai")
 brief = my_agent.draft_brief(event, plan["plan"])
 evidence = my_agent.draft_evidence(brief)
+evidence["source_category"] = "technology-ai"
 
 assert ai.validate_brief(brief)["valid"], "structural fix needed"
 assert ai.validate_evidence(evidence)["valid"], "evidence-pack fix needed"

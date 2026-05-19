@@ -25,6 +25,23 @@
         "mixed"
       ]
     },
+    "source_category": {
+      "type": "string",
+      "enum": [
+        "conflict-security",
+        "cyber-threats",
+        "elections",
+        "energy",
+        "esg",
+        "financial-market",
+        "regional-risk",
+        "regulation",
+        "sanctions",
+        "supply-chain-resilience",
+        "technology-ai",
+        "trade"
+      ]
+    },
     "claims": {
       "type": "array",
       "minItems": 1,

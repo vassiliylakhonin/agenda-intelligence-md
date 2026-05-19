@@ -11,6 +11,7 @@ Implemented today:
 - MCP `source_plan` returns the same packaged source requirement pack.
 - MCP `list_source_categories` returns the same category discovery list.
 - `source-coverage <evidence.json> --category <category>` reports covered and missing required source types.
+- Evidence packs may set optional `source_category` so `source-coverage <evidence.json>` can select the packaged source plan without a separate CLI/MCP category argument.
 - MCP `source_coverage` returns the same diagnostic structure.
 - Coverage output includes `required_source_details`, which shows matched source entries and matched terms for each required source type.
 - Evidence packs may list `source_plan` notes and unsupported claims.
@@ -38,6 +39,7 @@ Run:
 ```bash
 agenda-intelligence source-categories --format json
 agenda-intelligence source-coverage evidence.json --category sanctions
+agenda-intelligence source-coverage evidence.json
 agenda-intelligence source-coverage evidence.json --category sanctions --format json
 agenda-intelligence source-coverage evidence.json --category sanctions --strict
 ```

@@ -1,6 +1,7 @@
 {
   "topic": "US-China tariff escalation",
   "evidence_mode": "live_source_backed",
+  "source_category": "trade",
   "claims": [
     {
       "claim": "US published final tariff schedule with 25-100% rates on Chinese industrial and tech goods.",

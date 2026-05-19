@@ -1,6 +1,7 @@
 {
   "topic": "Turkey local election results",
   "evidence_mode": "live_source_backed",
+  "source_category": "elections",
   "claims": [
     {
       "claim": "Opposition won mayoralties in Istanbul and Ankara.",

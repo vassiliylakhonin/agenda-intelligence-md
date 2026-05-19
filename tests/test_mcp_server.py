@@ -103,6 +103,37 @@ def test_source_coverage_reports_missing_sources():
     assert result["strict_gate_passed"] is False
 
 
+def test_source_coverage_defaults_to_evidence_source_category():
+    result = source_coverage(
+        {
+            "topic": "sanctions claim",
+            "evidence_mode": "user_provided",
+            "source_category": "sanctions",
+            "claims": [
+                {
+                    "claim": "Company X is sanctioned worldwide.",
+                    "support_status": "partially_supported",
+                    "sources": [],
+                }
+            ],
+            "unsupported_claims": ["Official source coverage is missing."],
+        }
+    )
+
+    assert result["implemented"] is True
+    assert result["valid_category"] is True
+    assert result["category"] == "sanctions"
+    assert "sanctions_list" in result["missing_required_sources"]
+
+
+def test_source_coverage_requires_category_argument_or_evidence_field():
+    result = source_coverage({"claims": []})
+
+    assert result["implemented"] is True
+    assert result["valid_category"] is False
+    assert "Missing source category" in result["error"]
+
+
 def test_source_coverage_reports_matched_source_details():
     result = source_coverage(
         {
