@@ -67,6 +67,21 @@ TOOLS: dict[str, dict[str, Any]] = {
         "inputSchema": _schema({"category": {"type": "string"}}, ["category"]),
         "handler": lambda args: mcp_server.source_plan(args["category"]),
     },
+    "source_coverage": {
+        "description": (
+            "Diagnose whether an evidence pack covers category-specific must_check source types. "
+            "Diagnostic only; does not discover sources, verify factual truth, or change "
+            "validate-evidence schema semantics."
+        ),
+        "inputSchema": _schema(
+            {
+                "evidence_json": {"type": "object"},
+                "category": {"type": "string"},
+            },
+            ["evidence_json", "category"],
+        ),
+        "handler": lambda args: mcp_server.source_coverage(args["evidence_json"], args["category"]),
+    },
     "score_output": {
         "description": "Score before/after agenda-analysis output with the protocol marker rubric.",
         "inputSchema": _schema(

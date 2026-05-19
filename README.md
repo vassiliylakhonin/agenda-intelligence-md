@@ -11,7 +11,7 @@ Protocol, JSON schemas, CLI, and MCP server for validating, scoring, and auditin
 
 - **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
 - **JSON schemas** — validate briefs, evidence packs, audits, signals, memory cards, lenses
-- **CLI** — `validate-brief`, `validate-evidence`, `audit-claims`, `score`, `bench`, `doctor` (30+ commands)
+- **CLI** — `validate-brief`, `validate-evidence`, `source-coverage`, `audit-claims`, `score`, `bench`, `doctor` (30+ commands)
 - **MCP server** — stdio server exposing validation, read, and scoring tools
 - **Eval kit** — rubric, LLM-judge prompt, human checklist, benchmark harness
 - **Source policy** — per-claim provenance tags (Axis A/B), source requirements for 12 categories

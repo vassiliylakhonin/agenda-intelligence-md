@@ -10,7 +10,7 @@ implements today.
 |---|---|---|
 | Structural validation | Does the brief conform to the schema? | Implemented (`validate-brief`) |
 | Evidence discipline (schema) | Does the evidence pack conform? | Implemented (`validate-evidence`) |
-| Source plan coverage | Does the evidence pack cover category-specific `must_check` source types? | Diagnostic only before v1.0 |
+| Source plan coverage | Does the evidence pack cover category-specific `must_check` source types? | Implemented diagnostic (`source-coverage`, `source_coverage` MCP) |
 | Claim-level audit | Is each important claim traceable with a support level? | Implemented (`audit-claims`, `audit_claims` MCP) |
 | Brief scoring (heuristic) | How structurally complete is a JSON brief? | Implemented (`score brief.json`, 0–100) |
 | Evidence-linked scoring | Are claims actually supported by the evidence pack? | Implemented (`score brief.json --evidence pack.json`) |
@@ -76,6 +76,9 @@ agenda-intelligence validate-evidence evidence.json
 agenda-intelligence audit-claims audit.json
 agenda-intelligence audit-claims audit.json --strict        # exit 1 on orphan refs
 
+# Diagnose source-plan coverage
+agenda-intelligence source-coverage examples/source/evidence-pack.json --category technology-ai
+
 # Score
 agenda-intelligence score brief.json                        # heuristic 0-100
 agenda-intelligence score brief.json --evidence pack.json  # evidence-linked
@@ -99,6 +102,7 @@ agenda-intelligence verify-quotes pack.json --fetch
 | `validate_brief` | Schema check on a brief JSON object |
 | `validate_evidence` | Schema check on an evidence pack |
 | `audit_claims` | Validates claim-level audit; returns support-level distribution and orphan refs |
+| `source_coverage` | Reports covered and missing source-plan `must_check` source types |
 | `verify_quotes` | Checks cited quote fragments against caller-supplied source texts |
 | `score_output` | Heuristic before/after marker rubric |
 
@@ -132,7 +136,7 @@ The `evidence-audit.schema.json` enforces a stable `claim_type` enum derived fro
 ## Honest limits
 
 - No factuality verification.
-- No strict source-plan coverage gate before v1.0.
+- No default strict source-plan coverage gate before v1.0; `source-coverage --strict` is opt-in.
 - Heuristic score is intentionally simple; do not treat the number as authoritative.
 - LLM-judge prompt is provided; LLM-judge results are not benchmarked.
 - `verify-quotes --fetch` reports presence of a text fragment at a URL, not whether the source is reputable or the claim is true.

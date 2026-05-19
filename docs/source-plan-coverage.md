@@ -8,15 +8,15 @@ Implemented today:
 
 - `source-plan <category>` prints required and recommended source types for an analysis category.
 - MCP `source_plan` returns the same packaged source requirement pack.
+- `source-coverage <evidence.json> --category <category>` reports covered and missing required source types.
+- MCP `source_coverage` returns the same diagnostic structure.
 - Evidence packs may list `source_plan` notes and unsupported claims.
 - Scoring and review can surface weak evidence discipline.
 
 Not implemented today:
 
 - automatic source discovery;
-- automatic matching of every evidence item to a `must_check` source type;
-- schema failure when a `must_check` source type is absent;
-- a strict source-plan coverage gate.
+- schema failure when a `must_check` source type is absent.
 
 ## Missing Required Source
 
@@ -30,6 +30,16 @@ Before v1.0, this is a diagnostic gap, not a schema error. The right behavior is
 - use `mixed` when some claims are source-backed and others rely on user-provided or reasoning-only evidence;
 - route the case to analyst review when the missing source affects a decision.
 
+Run:
+
+```bash
+agenda-intelligence source-coverage evidence.json --category sanctions
+agenda-intelligence source-coverage evidence.json --category sanctions --format json
+agenda-intelligence source-coverage evidence.json --category sanctions --strict
+```
+
+Without `--strict`, missing coverage exits 0. With `--strict`, missing required source coverage exits 1 so teams can opt into a CI gate.
+
 ## Sanctions Claim Example
 
 For a sanctions claim such as "Company X is sanctioned worldwide," the sanctions Source Plan expects source types such as:
@@ -41,9 +51,9 @@ For a sanctions claim such as "Company X is sanctioned worldwide," the sanctions
 
 If an evidence pack cites media commentary but lacks official list evidence, that is a Missing Required Source. The toolkit should not say the claim is true or false in the world, and `validate-evidence` should not fail solely because the official list is missing. The brief should instead mark the sanctions claim as unsupported or partially supported, explain the missing source, and avoid the worldwide claim until jurisdiction scope, aliases, dates, and ownership/control evidence are checked.
 
-## Future Strict Gate
+## Strict Gate
 
-A future `--strict-source-plan` or equivalent gate may check whether evidence packs cover required source types for a selected category. That future gate should remain separate from base schema validation:
+`--strict` checks whether evidence packs cover required source types for a selected category. It remains separate from base schema validation:
 
 - `validate-evidence` answers whether the evidence pack shape is valid.
 - source-plan coverage answers whether category-specific source expectations were met.

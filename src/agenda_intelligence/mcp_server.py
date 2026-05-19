@@ -10,7 +10,8 @@ Implemented (return ``implemented=True``):
 - ``validate_brief`` / ``validate_evidence`` / ``audit_claims``: schema
   checks against the bundled JSON schemas. ``audit_claims`` additionally
   reports support-level distribution and orphan ``evidence_id`` refs.
-- ``get_protocol`` / ``list_lenses`` / ``get_lens`` / ``source_plan``:
+- ``get_protocol`` / ``list_lenses`` / ``get_lens`` / ``source_plan`` /
+  ``source_coverage``:
   read-only access to packaged protocol, lens, and source-plan data.
 - ``score_output``: heuristic before/after marker rubric.
 - ``verify_quotes``: checks that cited quote fragments appear in caller-supplied
@@ -235,6 +236,134 @@ def source_plan(category: str) -> dict:
         }
     except Exception as e:
         return {"implemented": True, "category": category, "plan": None, "error": str(e)}
+
+
+SOURCE_COVERAGE_ALIASES = {
+    "sanctions_list": [
+        "sanctions list",
+        "sdn list",
+        "ofac",
+        "eu consolidated list",
+        "consolidated list",
+        "designation list",
+    ],
+    "legal_text": ["legal", "legal text", "law", "regulation", "legal instrument"],
+    "legal_or_policy_text": ["legal", "policy text", "legal text", "law", "regulation"],
+    "legal_or_regulatory_text": ["legal", "regulatory text", "legal text", "law", "regulation"],
+    "regulator_guidance": ["regulator", "guidance", "faq"],
+    "license_or_general_authorization": ["license", "licence", "general authorization", "general licence"],
+    "official_government_source": ["official", "government", "ministry"],
+    "official_statement": ["official", "statement"],
+    "company_filing": ["filing", "company filing"],
+    "market_price_data": ["market", "price", "price data"],
+    "technical_standard": ["technical", "standard"],
+}
+
+
+def _normalize_source_term(value: object) -> str:
+    import re
+    import unicodedata
+
+    text = unicodedata.normalize("NFKC", str(value or "")).lower().replace("_", " ")
+    return re.sub(r"[^a-z0-9]+", " ", text).strip()
+
+
+def _term_matches_text(term: str, text: str) -> bool:
+    normalized = _normalize_source_term(term)
+    if not normalized:
+        return False
+    if normalized in text:
+        return True
+    tokens = [token for token in normalized.split() if token not in {"or", "and"}]
+    return bool(tokens) and all(token in text for token in tokens)
+
+
+def _source_text(source: dict) -> str:
+    parts: list[str] = []
+    for key in ["name", "url", "source_type", "freshness"]:
+        if source.get(key):
+            parts.append(str(source[key]))
+    supports = source.get("supports") or []
+    if isinstance(supports, list):
+        parts.extend(str(value) for value in supports)
+    return _normalize_source_term(" ".join(parts))
+
+
+def _evidence_sources(evidence_json: dict) -> list[dict]:
+    sources: list[dict] = []
+    for claim in evidence_json.get("claims", []) or []:
+        sources.extend(source for source in claim.get("sources", []) or [] if isinstance(source, dict))
+    for key in ["sources", "evidence"]:
+        sources.extend(source for source in evidence_json.get(key, []) or [] if isinstance(source, dict))
+    return sources
+
+
+def source_coverage(evidence_json: dict, category: str) -> dict:
+    """Diagnose whether an evidence pack covers a category's source plan.
+
+    This is a source-plan coverage diagnostic, not schema validation and not
+    factual verification. Missing source types are reported as gaps; callers may
+    choose whether to treat gaps as a strict gate.
+    """
+    plan_result = source_plan(category)
+    if plan_result.get("error"):
+        return {
+            "implemented": True,
+            "category": category,
+            "valid_category": False,
+            "error": plan_result["error"],
+        }
+
+    plan = plan_result["plan"]
+    required = plan.get("must_check", []) or []
+    supporting = plan.get("supporting_sources", []) or []
+    sources = _evidence_sources(evidence_json)
+    combined_text = " ".join(part for part in (_source_text(source) for source in sources) if part)
+
+    explicit_missing = evidence_json.get("required_but_missing_sources", []) or []
+    explicit_missing_text = " ".join(_normalize_source_term(item) for item in explicit_missing)
+
+    covered_required: list[str] = []
+    missing_required: list[str] = []
+    for required_source in required:
+        aliases = SOURCE_COVERAGE_ALIASES.get(required_source, [])
+        is_explicitly_missing = _term_matches_text(required_source, explicit_missing_text) or any(
+            _term_matches_text(alias, explicit_missing_text) for alias in aliases
+        )
+        is_covered = _term_matches_text(required_source, combined_text) or any(
+            _term_matches_text(alias, combined_text) for alias in aliases
+        )
+        if is_covered and not is_explicitly_missing:
+            covered_required.append(required_source)
+        else:
+            missing_required.append(required_source)
+
+    covered_supporting = [
+        source
+        for source in supporting
+        if _term_matches_text(source, combined_text)
+        or any(_term_matches_text(alias, combined_text) for alias in SOURCE_COVERAGE_ALIASES.get(source, []))
+    ]
+    coverage_pct = round((len(covered_required) / len(required)) * 100, 1) if required else 100.0
+
+    return {
+        "implemented": True,
+        "category": category,
+        "valid_category": True,
+        "required_sources": required,
+        "covered_required_sources": covered_required,
+        "missing_required_sources": missing_required,
+        "supporting_sources_present": covered_supporting,
+        "coverage_pct": coverage_pct,
+        "source_count": len(sources),
+        "explicit_missing_sources": explicit_missing,
+        "strict_gate_passed": not missing_required,
+        "note": (
+            "Source-plan coverage diagnostic only. Does not validate factual truth, "
+            "discover sources, or change base validate-evidence schema semantics."
+        ),
+        "error": None,
+    }
 
 
 def verify_quotes(pack_json: dict, texts: Optional[dict] = None) -> dict:

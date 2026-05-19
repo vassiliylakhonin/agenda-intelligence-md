@@ -1,7 +1,7 @@
 # MCP
 
 `agenda-intelligence-mcp` is a real stdio MCP server shipping with the package.
-It exposes 8 tool functions implemented in `agenda_intelligence.mcp_server`.
+It exposes 10 tool functions implemented in `agenda_intelligence.mcp_server`.
 
 **Verification status**: wire-protocol verified — `scripts/smoke_mcp.py` exercises the full JSON-RPC cycle (initialize → tools/list → tools/call) against the running stdio server, including `audit_claims`.
 
@@ -146,6 +146,18 @@ Return source requirements for an agenda category.
 ```
 
 Returns `{ "implemented": true, "category": "...", "path": "...", "plan": { ... }, "error": null }`.
+
+---
+
+### `source_coverage`
+
+Diagnose whether an evidence pack covers category-specific `must_check` source types.
+
+```json
+{ "evidence_json": { "topic": "...", "claims": [] }, "category": "sanctions" }
+```
+
+Returns missing required source types without discovering sources or verifying factual truth. This is a diagnostic gate, not base schema validation.
 
 ---
 
