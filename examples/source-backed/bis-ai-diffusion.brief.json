@@ -1,6 +1,7 @@
 {
   "bottom_line": "The Biden-era BIS AI Diffusion Rule — a global three-tier export control regime for advanced AI chips and model weights — was rescinded by the Trump administration two days before its enforcement deadline (May 13 vs. May 15, 2025). A replacement rule is pending; compliance posture for Tier 2 countries (India, UAE, Singapore, Israel and ~140 others) remains undefined.",
-  "signal_classification": "compliance_relevant_development",
+  "signal_classification": "signal",
+  "signal_markers": ["compliance_relevant_development"],
   "what_changed": "BIS published an Interim Final Rule on January 15, 2025 establishing tiered global licensing requirements for exports of advanced AI chips (3A090.a threshold: H100-class and above) and closed-weight AI model weights trained above 10^26 FLOP. Countries were divided into Tier 1 (18 allies, unrestricted), Tier 2 (~140 countries, compute caps and datacenter authorization requirements), and Tier 3 (China, Russia, Iran and embargoed states, effective ban). The rule never reached its May 15, 2025 enforcement date: on May 13, 2025, BIS announced rescission and promised a replacement within 4-6 weeks.",
   "why_it_matters": "Export compliance functions, cloud providers, chip manufacturers, and data center operators had begun structuring operations around the tier framework. Rescission does not restore the pre-rule baseline — it creates a gap in which the prior China-specific controls remain in force but the global tier architecture is undefined. Companies that built Tier 2 expansion plans now face regulatory uncertainty until a replacement rule is published.",
   "affected_actors": [

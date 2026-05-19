@@ -60,7 +60,8 @@ export control regime for advanced AI chips and model weights — was rescinded
 two days before its enforcement deadline. A replacement rule is pending;
 compliance posture for Tier 2 countries (~140 states) remains undefined.
 
-**Signal classification:** `compliance_relevant_development`
+**Signal classification:** `signal`
+**Signal markers:** `compliance_relevant_development`
 
 **What changed:** Global tiered licensing requirements for ECCN 3A090.a
 exports and model weights above 10²⁶ FLOP. Published January 15, rescinded

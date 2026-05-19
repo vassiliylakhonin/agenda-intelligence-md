@@ -28,7 +28,8 @@ Problems:
 ```json
 {
   "bottom_line": "EU CBAM (Reg. 2023/956) imposes embedded-carbon reporting now and certificate-purchase obligations from 2026; non-EU exporters without verified carbon data face direct cost uplift and potential market-access risk.",
-  "signal_classification": "compliance_relevant_development",
+  "signal_classification": "signal",
+  "signal_markers": ["compliance_relevant_development"],
   "what_changed": "CBAM transitional phase (Oct 2023 – Dec 2025) requires quarterly embedded-carbon reporting; definitive phase from Jan 2026 requires CBAM certificates priced at EU ETS carbon price.",
   "why_it_matters": "Non-EU exporters in covered sectors must quantify and verify embedded carbon or face import barriers; EU importers bear certificate-purchase cost and reporting liability.",
   "affected_actors": [

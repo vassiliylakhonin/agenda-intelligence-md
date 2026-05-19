@@ -32,7 +32,8 @@ Problems:
 ```json
 {
   "bottom_line": "EU AI Act tightens obligations on high-risk AI systems with a phased enforcement schedule; affected operators need a compliance roadmap aligned to phase dates.",
-  "signal_classification": "compliance_relevant_development",
+  "signal_classification": "signal",
+  "signal_markers": ["compliance_relevant_development"],
   "what_changed": "New high-risk categories defined and enforcement deadlines published.",
   "why_it_matters": "Operators of high-risk AI must demonstrate conformity (risk mgmt, data governance, human oversight) before phase-in dates or face penalties and market-access risk.",
   "affected_actors": [

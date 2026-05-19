@@ -53,6 +53,7 @@ agenda-intelligence start technology-ai
 {
   "bottom_line": "<summary>",
   "signal_classification": "<noise|weak_signal|signal|structural_shift|trigger_event>",
+  "signal_markers": ["<optional marker>"],
   "what_changed": "<what changed>",
   "main_uncertainty": "<main uncertainty>",
   "watch_next": ["<indicator 1>", "<indicator 2>"]

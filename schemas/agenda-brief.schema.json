@@ -30,6 +30,14 @@
         "escalation_marker"
       ]
     },
+    "signal_markers": {
+      "type": "array",
+      "description": "Optional practical markers that qualify the signal without replacing the primary signal classification.",
+      "items": {
+        "$ref": "#/$defs/signal_marker"
+      },
+      "uniqueItems": true
+    },
     "what_changed": {
       "type": "string",
       "minLength": 1
@@ -128,6 +136,16 @@
           ],
           "additionalProperties": false
         }
+      ]
+    }
+  },
+  "$defs": {
+    "signal_marker": {
+      "type": "string",
+      "enum": [
+        "compliance_relevant_development",
+        "enforcement_marker",
+        "escalation_marker"
       ]
     }
   }

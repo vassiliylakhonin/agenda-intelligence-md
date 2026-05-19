@@ -87,6 +87,31 @@ def test_validate_brief_valid():
     assert "OK" in res.stdout
 
 
+def test_validate_brief_accepts_signal_markers(tmp_path):
+    data = json.loads((FIXTURES / "valid-agenda-brief.json").read_text())
+    data["signal_classification"] = "signal"
+    data["signal_markers"] = ["compliance_relevant_development", "enforcement_marker"]
+    path = tmp_path / "brief-with-markers.json"
+    path.write_text(json.dumps(data))
+
+    res = run_cli(["validate-brief", str(path)])
+
+    assert res.returncode == 0
+    assert "OK" in res.stdout
+
+
+def test_validate_brief_rejects_unknown_signal_marker(tmp_path):
+    data = json.loads((FIXTURES / "valid-agenda-brief.json").read_text())
+    data["signal_markers"] = ["reputational_risk_development"]
+    path = tmp_path / "brief-with-invalid-marker.json"
+    path.write_text(json.dumps(data))
+
+    res = run_cli(["validate-brief", str(path)])
+
+    assert res.returncode != 0
+    assert "ERROR" in res.stderr
+
+
 def test_validate_brief_invalid(tmp_path):
     p = FIXTURES / "invalid-agenda-brief.json"
     res = run_cli(["validate-brief", str(p)])

@@ -67,7 +67,7 @@ Use Agenda Intelligence score_output to compare:
 
 Before: Generic update. Monitor developments.
 
-After: Signal classification: compliance-relevant development.
+After: Signal classification: signal. Signal markers: compliance-relevant development.
 What changed: guidance moved toward implementation.
 Main uncertainty: whether enforcement follows.
 Watch next: regulator guidance and compliance deadline.

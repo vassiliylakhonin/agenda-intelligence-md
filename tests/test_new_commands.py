@@ -4,19 +4,21 @@ audit-claims, bench, verify-quotes, report. Plus the MCP audit_claims tool."""
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CLI = [sys.executable, "-m", "agenda_intelligence.cli"]
+ENV = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
 FLAGSHIP_BRIEF = ROOT / "examples" / "source-backed" / "eu-ai-act.brief.json"
 FLAGSHIP_AUDIT = ROOT / "examples" / "source-backed" / "eu-ai-act.audit.json"
 SOURCE_BACKED_DIR = ROOT / "examples" / "source-backed"
 
 
 def run(*args: str, expect_zero: bool = True) -> subprocess.CompletedProcess[str]:
-    res = subprocess.run(CLI + list(args), capture_output=True, text=True, cwd=ROOT)
+    res = subprocess.run(CLI + list(args), capture_output=True, text=True, cwd=ROOT, env=ENV)
     if expect_zero:
         assert res.returncode == 0, f"cmd failed ({res.returncode}): {res.stderr}\n{res.stdout}"
     return res
