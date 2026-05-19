@@ -32,4 +32,3 @@
 | turkey-local-elections | pass | pass | pass | 0 | 89 |
 | uk-eu-regulatory-divergence | pass | pass | pass | 0 | 85 |
 | us-china-tariffs-escalation | pass | pass | pass | 0 | 87 |
-
