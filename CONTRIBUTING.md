@@ -67,10 +67,11 @@ When editing any of these, update the paired copy in the same commit. Version bu
 - Heuristic scoring measures adherence to the protocol, **not** truthfulness of the content.
 
 ## Pull Request Checklist
-- `python -m compileall .` passes.
-- `pytest` passes.
-- CLI validation commands succeed.
-- Documentation is updated when behavior changes.
-
----
-*File added via automated contribution assistance.*
+- [ ] `make ci-fast` passes locally (`flake8`, `black --check`, `isort --check`, `mypy`, `pytest`)
+- [ ] `make format` run if any Python files were touched
+- [ ] `python -m compileall .` passes
+- [ ] CLI validation commands succeed (`validate-manifest`, `validate-brief`, `validate-evidence`)
+- [ ] If any dual-copy file was edited: paired copy in `src/agenda_intelligence/data/` updated in the same commit
+- [ ] Version bump propagated to both top-level and `src/agenda_intelligence/data/` copies
+- [ ] `CHANGELOG.md` updated under `Unreleased` when behavior or schema changes
+- [ ] Documentation updated when behavior changes
