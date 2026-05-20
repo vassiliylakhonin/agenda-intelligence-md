@@ -29,7 +29,7 @@ Protocol, JSON schemas, CLI, and MCP server for validating, scoring, and auditin
 ```bash
 pip install agenda-intelligence-md
 # Or pinned wheel:
-# pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.7.4/agenda_intelligence_md-0.7.4-py3-none-any.whl
+# pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.7.5/agenda_intelligence_md-0.7.5-py3-none-any.whl
 
 agenda-intelligence validate-brief examples/agenda-brief.json
 agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
