@@ -52,6 +52,7 @@ Repository-side requirements are already configured:
 - Both workflows clean `dist/` and `build/` before building.
 - Both workflows build release artifacts from the checked-out source tree.
 - Both workflows currently pass `password: ${{ secrets.PYPI_API_TOKEN }}` so releases continue working before PyPI Trusted Publishing is enabled.
+- Both workflows set `attestations: false` while token publishing is active. PEP 740 attestations only work with PyPI Trusted Publishing.
 
 Release entry points:
 
@@ -70,7 +71,7 @@ One-time PyPI setup is still required in the PyPI project settings:
 
 If manual publishing should also use Trusted Publishing, add a second PyPI trusted publisher with workflow filename `publish.yml`.
 
-After setup, remove the `password: ${{ secrets.PYPI_API_TOKEN }}` input from the publish steps. Then the `PYPI_API_TOKEN` secret is no longer required for these workflows.
+After setup, remove the `password: ${{ secrets.PYPI_API_TOKEN }}` input from the publish steps and set `attestations: true`. Then the `PYPI_API_TOKEN` secret is no longer required for these workflows.
 
 ## Release Smoke
 
