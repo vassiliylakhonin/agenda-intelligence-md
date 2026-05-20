@@ -1,0 +1,101 @@
+Condition A — Baseline (no MCP). Sonnet 4.6 adaptive. 2026-05-20.
+
+Prompt verbatim:
+
+  Be concise and decision-useful. Avoid filler.
+
+  Question: We are a fintech operating between Kazakhstan and Uzbekistan,
+  with cross-border flows touching Caspian-connected trade routes (Aktau,
+  Baku, Middle Corridor). What are our sanctions, AML, banking and routing
+  risks over the next 6-12 months, and what should we do about them?
+
+  Decision: Whether to maintain, narrow, or restructure correspondent
+  banking access and counterparty exposure over the next two quarters.
+
+  Audience: Fintech compliance and BD leadership.
+
+  Time horizon: 6-12 months.
+
+  Evidence mode: reasoning-only (no live sources expected).
+
+  Produce a decision-useful response in whatever format you think serves
+  the question best.
+
+Response verbatim:
+
+# KZ-UZ Fintech: Sanctions, AML & Banking Risk Brief
+### 6-12 Month Horizon | Decision: Correspondent & Counterparty Structure
+
+## Threat Landscape at a Glance
+
+| Risk Domain | Severity | Direction |
+|---|---|---|
+| Russia sanctions leakage via KZ | High | Worsening |
+| UZ AML/CFT grey-listing pressure | Medium-High | Stable -> Watch |
+| Middle Corridor dual-use goods routing | High | Worsening |
+| Correspondent derisking (USD/EUR rails) | High | Worsening |
+| KZ tenge/UZS FX convertibility friction | Medium | Stable |
+| OFAC secondary sanctions exposure | High | Worsening |
+
+## 1. Sanctions Risk
+
+Core exposure: Kazakhstan is the highest-scrutiny transit jurisdiction globally right now. Western regulators and correspondent banks treat KZ as a presumptive Russia sanctions evasion vector. The Middle Corridor (Aktau -> Baku -> Turkey/EU) is explicitly on OFAC, EU, and UK watchlists as a re-export route for dual-use goods.
+
+What this means for you:
+- Any transaction touching a KZ counterparty that could plausibly involve goods (freight finance, trade finance, payments to logistics firms, fuel traders, port operators) will trigger enhanced due diligence at Western correspondents — and likely SARs.
+- Baku leg creates compounding exposure: Azerbaijani banks have their own Russia-connectivity scrutiny given SOCAR/state relationships and historical use as a transit hub.
+- OFAC's "knowledge standard" for secondary sanctions is broad. You don't need intent — facilitation of a sanctioned party's access to the financial system is sufficient.
+
+Specific tripwires:
+- Payments to or from entities on the SDN list (watch for newly designated Azerbaijani, Turkish, and KZ logistics intermediaries — designations have accelerated)
+- Transactions with Russian-owned or Russian-beneficial-ownership entities registered in KZ (common post-2022 relocation wave)
+- Any exposure to Aktau port operators, Caspian Shipping Company affiliates, or rail/road forwarders without thorough UBO verification
+
+## 2. AML Risk
+
+Kazakhstan: FATF-monitored but not grey-listed. NBK (National Bank of Kazakhstan) has increased AML enforcement domestically, partly under Western pressure. Risk: your KZ counterparties may themselves have inadequate controls, making you the de facto last line of defense that Western banks will scrutinize.
+
+Uzbekistan: Not grey-listed as of mid-2026, but has been under FATF review. The NBRU (National Bank of the Republic of Uzbekistan) has implemented reforms, but transaction monitoring maturity among UZ banks remains uneven. Cross-border UZ flows — especially remittances and trade settlements — carry elevated ML typology risk (structuring, layering through real estate/commodities).
+
+AML pressure points for your business:
+- Informal economy integration: both markets have significant cash/hawala-adjacent flows that enter formal channels through fintechs
+- Correspondent banks are applying "de-risking by geography" — KZ + UZ + Middle Corridor together in one entity's profile is a red flag combination regardless of your actual controls
+- Beneficial ownership verification of KZ corporate clients is structurally difficult (nominee structures, offshore holding layers remain common)
+
+## 3. Correspondent Banking Risk
+
+This is your most acute near-term operational risk.
+
+The derisking dynamic: Major USD and EUR clearing banks (JPMorgan, Citi, Deutsche, HSBC, ING) have been exiting or tightening relationships with Central Asian correspondents since 2022. This is accelerating, not slowing. Your correspondent chain — whatever it is — is likely 2-3 hops from a major clearer, and each hop adds opacity that the major clearer will eventually find unacceptable.
+
+Specific risks:
+- Your primary correspondent(s) may themselves be derisked by their upstream banks, severing your USD/EUR access without warning (30-90 day notice is typical, sometimes less)
+- Transaction-level monitoring by correspondents means even individual payments can trigger holds or relationship termination, not just account-level review
+- EUR rails are increasingly constrained for CIS-adjacent flows; SEPA is effectively closed for direct KZ/UZ entity access
+
+Routing fragility: If you're routing via Turkish intermediaries (common for this corridor), Turkish banks are under their own FATF-related pressure and CBT restrictions on correspondent relationships. This is not a stable long-term path.
+
+## 4. Decision Framework
+
+Option A: Maintain Current Structure. Viable only if: You have direct relationships with Tier-1 correspondents, have completed robust CDD/EDD on your full counterparty book, and have transaction monitoring that can produce audit-quality documentation on demand. Risk: You are likely one compliance incident or one correspondent derisking event away from operational disruption. The Middle Corridor exposure in your profile makes this increasingly untenable with Western banks.
+
+Option B: Narrow Exposure (Recommended near-term). Actions: Segment your book — separate trade-corridor-adjacent flows from pure payments/remittance flows. Apply different risk appetites and correspondent relationships to each. Exit or gate high-risk counterparty categories — logistics firms, freight forwarders, commodity traders, and any entity with Russian UBO without exceptional documentation. Reduce Aktau/Baku routing exposure — if these are pass-through rather than core business, eliminate them. Diversify correspondent access now, before you need to — establish relationships with 2-3 second-tier regional correspondents as backup rails. Build a sanctions compliance program that is externally auditable — not just policies, but documented screening records, SAR history, and EDD files.
+
+Option C: Restructure for a Defined Corridor. If Middle Corridor trade finance is strategically core, build a purpose-built compliance architecture for it rather than trying to manage it through a general-purpose fintech structure: Establish a separate legal entity or product line with its own correspondent relationships and compliance program. Seek engagement with OFAC (voluntary self-disclosure program; compliance commitment letters) if you have any past near-misses. Consider a UAE DIFC or Turkish entity as the trade-corridor-facing entity, keeping KZ/UZ entity focused on domestic/retail flows.
+
+## 5. Immediate Actions (Next 90 Days)
+
+| Action | Owner | Why Urgent |
+|---|---|---|
+| Map full correspondent chain to Tier-1 clearer for each currency | Compliance + Treasury | Identifies single points of failure |
+| Re-screen full counterparty book against current SDN, UK, EU lists (not just OFAC) | Compliance | Designations are accelerating; stale screening is a liability |
+| Obtain UBO documentation for all KZ corporate clients | Compliance | Correspondent will ask; better to have it |
+| Request explicit written confirmation from correspondents of continued relationship | BD + Compliance | Forces early warning vs. surprise termination |
+| Legal review of transaction docs for trade-corridor clients | Legal | Identify dual-use goods exposure before regulators do |
+| Establish at least one backup USD rail | Treasury | Operational resilience; 6-month lead time minimum |
+
+## Bottom Line
+
+The risk is not that you're doing anything wrong. The risk is that your geography looks wrong to automated screening systems and risk-averse compliance officers at Western banks. That distinction matters for your strategy: the goal is to be demonstrably low-risk, not just actually low-risk.
+
+Narrow before you're forced to. The correspondent derisking wave will reach deeper into Central Asia over the next 6-12 months. Build your backup rails now, segment your riskiest flows, and invest in compliance documentation that can survive external scrutiny. If Middle Corridor trade finance is genuinely strategic, give it its own structure — don't let it contaminate your core payments business.

@@ -1,0 +1,238 @@
+Condition B — Agenda Intelligence MCP attached. Sonnet 4.6 adaptive. 2026-05-20.
+
+Flow: `analyze` was called via Claude Code (same Sonnet 4.6 adaptive could not be wired through Claude Desktop's MCP panel in this session because Claude Desktop's UI overwrites the MCP config file while the app is running, and the app cannot be force-quit without terminating the very Claude Code session that needs to remain alive to write the case file). `analyze` returned a skeleton memo (`llm_invoked: false`; no `ANTHROPIC_API_KEY` configured in the MCP server's environment) plus the assembled `system_prompt`. The host model (Sonnet 4.6 adaptive in a fresh Claude Desktop chat without MCP — same model as Condition A) then completed the analysis by following that system_prompt. This is the documented "no API key" path: the MCP product shell assembles the framing; the host model produces the memo. Identical flow to the first agent-eval run (`gtta-global-policy.md`).
+
+---
+
+RAW JSON FROM analyze TOOL (modules_used + meta only — full system_prompt embedded below):
+
+{
+  "implemented": true,
+  "valid_request": true,
+  "errors": [],
+  "modules_used": [
+    {"module": "global-think-tank-analyst", "role": "reasoning_method"},
+    {"module": "central-asia-caspian", "role": "regional_specialist"},
+    {"module": "sanctions-sector", "role": "sector_specialist"}
+  ],
+  "llm_invoked": false,
+  "memo": {
+    "meta": {
+      "evidence_mode": "reasoning_only",
+      "geography": ["Kazakhstan", "Uzbekistan", "Caspian"],
+      "depth": "scenario",
+      "modules_used": [
+        {"module": "global-think-tank-analyst", "role": "reasoning_method"},
+        {"module": "central-asia-caspian", "role": "regional_specialist"},
+        {"module": "sanctions-sector", "role": "sector_specialist"}
+      ],
+      "timestamp": "2026-05-20T16:24:36Z",
+      "gtta_version": "0.9.0"
+    },
+    "risk_summary": {
+      "short": "Skeleton memo: no LLM was invoked; this payload is structure only.",
+      "detailed": "Agenda Intelligence assembled the system prompt and module set for this request, but did not call a model."
+    },
+    "audit": {
+      "validation_score": 0.0,
+      "validation_details": [{"check": "llm_invoked", "passed": false, "note": "skeleton-only response"}]
+    }
+  },
+  "memo_valid": false,
+  "memo_errors": ["skeleton memo: ANTHROPIC_API_KEY missing or anthropic SDK not installed"]
+}
+
+Sanity check: `modules_used` confirms THREE modules — GTTA reasoning method, central-asia-caspian regional specialist, and sanctions-sector sector specialist. This is the first eval to exercise multi-module composition; GTTA case was GTTA-only. EU lens correctly NOT routed (Kazakhstan/Uzbekistan/Caspian do not match EU_GEO_EXACT or EU_TERMS).
+
+---
+
+HOST-MODEL-COMPLETED MEMO (Sonnet 4.6 adaptive in Claude Desktop, no MCP attached, following the assembled system_prompt):
+
+{
+  "meta": {
+    "evidence_mode": "reasoning_only",
+    "depth": "scenario",
+    "modules_used": [
+      {"module": "global-think-tank-analyst", "role": "reasoning_method"},
+      {"module": "central-asia-caspian", "role": "regional_specialist"},
+      {"module": "sanctions-sector", "role": "sector_specialist"}
+    ],
+    "timestamp": "2026-05-20T00:00:00Z",
+    "geography": ["Kazakhstan", "Uzbekistan", "Caspian"],
+    "confidence": {
+      "level": "medium",
+      "score": 0.62,
+      "reasoning": "Analysis is reasoning-only with no live source retrieval. Regional regulatory postures, FATF standings, and corridor volume trends are well-grounded in public record through early 2026. Sanctions enforcement trajectory and correspondent banking decisions carry meaningful uncertainty over a 6-12 month forward window. Probability estimates are illustrative ranges, not actuarial values."
+    }
+  },
+
+  "risk_summary": {
+    "short": "A Kazakhstan-Uzbekistan fintech with Middle Corridor exposure faces escalating secondary-sanctions scrutiny, correspondent banking fragility, and AML typology pressure as Western regulators treat the Trans-Caspian route as a Russia-sanctions evasion vector—regardless of whether the firm itself touches Russian counterparties.",
+    "detailed": "The core exposure is not direct sanctions liability but secondary and reputational pressure: Western compliance teams at correspondent banks now flag Central Asian fintechs categorically, irrespective of individual transaction hygiene, because the Middle Corridor has become a documented channel for sanctioned-goods re-routing. Kazakhstan exited the FATF grey list in 2024, improving its baseline, but Uzbekistan's AML framework remains immature by FATF standards, creating asymmetric risk on the Uzbek-facing book. Aktau and Baku are chokepoints where cargo documentation and beneficial-ownership gaps concentrate. Over the next 6-12 months, the highest-probability adverse event is not a designation but a quiet correspondent withdrawal or enhanced-due-diligence uplift that constrains USD/EUR clearing capacity. A secondary risk is a targeted US or EU advisory or guidance note naming specific Central Asian institutions—potentially including the firm's banking partners—as elevated-risk nodes, forcing counterparty re-screening and possible relationship termination. Structural opportunities exist: Gulf-linked and Chinese payment rails are expanding in the region and offer partial substitutes, but they carry their own compliance optics with Western banks."
+  },
+
+  "decision_frame": {
+    "decision": "Whether to maintain, narrow, or restructure correspondent banking access and counterparty exposure over the next two quarters—specifically: which banking relationships to anchor, which payment corridors to keep open, and how much compliance infrastructure to build versus how much risk to transfer or exit.",
+    "stakeholders": [
+      "Fintech founders and board",
+      "Compliance and MLRO function",
+      "Current and prospective correspondent banks (USD/EUR clearing)",
+      "Uzbek and Kazakh regulatory counterparts (NBU, AFSA, ARDFM)",
+      "Institutional counterparties and business-banking clients in the trade corridor",
+      "Potential Gulf or Chinese alternative settlement partners"
+    ],
+    "constraints": [
+      "Firm is not itself a sanctioned entity, but operates in a geography under active Western compliance scrutiny",
+      "Correspondent banking relationships are asymmetric: banks can exit with short notice; the fintech cannot easily substitute USD/EUR clearing",
+      "FATF grey-list exit by Kazakhstan improves headline risk but does not eliminate transaction-level scrutiny",
+      "Uzbekistan's regulatory framework for cross-border fintech is still maturing; licensing and capital conditions can shift on short timelines",
+      "Middle Corridor growth is real but corridor capacity and documentation standards are uneven; insurance and title-chain gaps persist",
+      "Regulatory bandwidth in both countries is limited; enforcement is inconsistent but can be sudden"
+    ]
+  },
+
+  "analysis": {
+    "facts": [
+      "Kazakhstan and Uzbekistan are not subject to primary OFAC, EU, or UK sanctions programs as of the analysis date; both are permissible jurisdictions for USD/EUR cross-border transactions.",
+      "Kazakhstan exited the FATF grey list (enhanced monitoring) in October 2024 after completing its action plan; Uzbekistan is not currently on the FATF grey list but underwent a mutual evaluation cycle in 2023 with findings that included AML/CFT framework gaps.",
+      "The Trans-Caspian International Transport Route (TITR / Middle Corridor) has seen multi-year volume growth since 2022 Russia-Ukraine war and related sanctions, with Aktau (Kazakhstan) and Baku (Azerbaijan) as primary Caspian waypoints.",
+      "OFAC, the EU, and HM Treasury have all issued public guidance and advisories since 2022 specifically identifying Central Asian jurisdictions—including Kazakhstan—as elevated-risk nodes for Russia sanctions evasion via re-export and transshipment.",
+      "Several Russia-headquartered or Russia-affiliated banks maintain licensed subsidiaries or affiliates in Kazakhstan (including entities historically linked to Sberbank and VTB networks), creating counterparty contamination risk for firms using the same domestic banking infrastructure.",
+      "The US, EU, and UK have progressively expanded secondary-sanctions enforcement posture, including designating non-Russian third-country entities found to facilitate sanctions evasion for Russia.",
+      "Uzbekistan's National Bank and the Ministry of Finance have been expanding fintech licensing frameworks, but cross-border payment regulations remain in development and subject to periodic revision.",
+      "Kazakhstan's Astana International Financial Centre (AIFC) operates under an English-law common-law framework and has distinct AML/CFT rules from the main NBK-regulated sector, creating a dual-track compliance environment.",
+      "Caspian shipping and cargo insurance has faced capacity constraints since 2022, with some Lloyd's-market and European underwriters withdrawing or imposing exclusions on Caspian-routed cargo with CIS origin/destination.",
+      "China's UnionPay and cross-border RMB settlement infrastructure have expanded in both Kazakhstan and Uzbekistan, offering an alternative to Western correspondent rails but with distinct compliance optics."
+    ],
+    "assessments": [
+      "The primary near-term risk is not designation but correspondent bank de-risking: Western clearing banks are under internal compliance pressure to reduce Central Asian fintech exposure, and a single adverse advisory note or peer institution exit can trigger a cascade.",
+      "Kazakhstan's FATF exit reduces the headline red-flag risk for institutional compliance teams but does not reset transaction-level screening: volume and geographic patterns associated with Russia-adjacent trade will continue to generate Suspicious Activity Reviews regardless of FATF status.",
+      "Uzbekistan-side flows carry a higher AML typology risk than Kazakhstan-side flows due to weaker beneficial ownership registries, less mature banking supervision, and a trade sector with a large informal component.",
+      "The Middle Corridor's dual role—as both a legitimate trade route and a documented sanctions-evasion vector—means that corridor-associated transaction patterns (Aktau port, Caspian ferry, Baku transit) are now screening keywords at many Western compliance teams, irrespective of cargo or counterparty legality.",
+      "Firms with no direct Russia exposure can nonetheless be caught in secondary-sanctions enforcement if their counterparties, banking partners, or end-clients have undisclosed Russia linkages; the beneficial ownership chain on corridor-side clients is the highest-risk gap.",
+      "Gulf-based banking corridors (UAE, Saudi) offer partial substitution for USD clearing but are themselves under heightened OFAC scrutiny for Russia-evasion flows; routing through Gulf intermediaries does not cleanly resolve the compliance problem and may compound it.",
+      "Chinese RMB rails provide operational continuity but adopting them signals to Western correspondents a willingness to operate outside the dollar system, which can accelerate de-risking rather than prevent it.",
+      "Regulatory risk in Uzbekistan is asymmetric: the upside of early-mover licensing advantage is real, but the downside of a sudden regulatory re-interpretation or licensing condition change is also real, and Uzbek regulators have limited bandwidth for nuanced engagement with foreign fintechs.",
+      "The 6-12 month window coincides with continued US/EU enforcement cycles on Russia sanctions; the probability of at least one new advisory or designation touching Central Asian financial infrastructure is assessed as moderate-to-high."
+    ],
+    "assumptions": [
+      "The firm does not directly transact with OFAC/EU/UK-designated entities or sanctioned jurisdictions (Russia, Iran, North Korea); if this assumption is wrong, the risk profile escalates to a different order of magnitude.",
+      "The firm's correspondent banking relationships include at least one USD-clearing bank with Western regulatory oversight (US, EU, or UK); if clearing is entirely via local or CIS-system banks, the secondary-sanctions exposure is lower but the operational fragility is higher.",
+      "The firm's client base in the trade corridor includes some entities involved in goods transit or logistics, not purely domestic retail or SME payments; this drives the elevated corridor-pattern screening risk.",
+      "Kazakhstan's regulatory posture toward fintech and cross-border payments remains broadly stable over the horizon; no assumption of major regulatory reversal is made.",
+      "The analysis assumes no material change in the political relationship between Kazakhstan/Uzbekistan and the West that would trigger primary sanctions; this is considered a low-probability event over 6-12 months but not zero."
+    ],
+    "unknowns": [
+      "Whether the firm's current correspondent bank(s) have conducted or are conducting internal reviews of Central Asian fintech exposure, and at what stage those reviews are.",
+      "The actual beneficial ownership depth of the firm's corridor-side counterparties; whether any have undisclosed Russia, Iran, or other sanctioned-jurisdiction links.",
+      "The specific licensing category and capital/compliance conditions under which the firm operates in Uzbekistan, and whether those are stable or under review.",
+      "Whether any of the firm's banking partners in Kazakhstan are affiliates of Russia-linked banking groups currently under secondary-sanctions scrutiny.",
+      "The pace and scope of forthcoming US or EU enforcement actions specifically targeting Central Asian financial intermediaries; the timing and targets of such actions are not predictable from open-source reasoning alone.",
+      "How Uzbek financial regulators will handle cross-border fintech as the sector matures; there is no clear public timeline for comprehensive cross-border payment regulation.",
+      "The degree to which the firm's transaction monitoring and KYC infrastructure is calibrated to corridor-specific AML typologies versus generic frameworks."
+    ]
+  },
+
+  "scenarios": [
+    {
+      "name": "Stable Corridor with Managed Pressure",
+      "probability_range": {"low": 0.30, "high": 0.45},
+      "drivers": ["No new US/EU designations or advisories specifically targeting the firm's banking partners", "Kazakhstan FATF exit provides sufficient cover for correspondent bank compliance teams", "Corridor volumes continue growing, creating commercial incentive for banks to maintain relationships", "Firm invests in enhanced due diligence and transaction monitoring, satisfying correspondent bank requests"],
+      "implications": ["Correspondent relationships remain intact but subject to periodic enhanced-due-diligence requests and potential transaction-level blocks on specific patterns", "Compliance costs rise materially; operational bandwidth is consumed by documentation and screening uplift", "Business development in Uzbekistan continues but licensing ambiguity remains a background constraint", "The firm can continue operating without restructuring, but the compliance floor has permanently risen"]
+    },
+    {
+      "name": "Correspondent De-Risking Cascade",
+      "probability_range": {"low": 0.25, "high": 0.40},
+      "drivers": ["A peer institution or sector advisory triggers internal reviews at Western clearing banks", "A US or EU enforcement action against a Central Asian bank in the firm's network—even if unrelated to the firm—causes contagion", "The firm's transaction patterns trigger automated screening flags at correspondent level, prompting a relationship review", "Regulatory pressure on correspondent banks globally increases the cost of maintaining frontier-market fintech relationships"],
+      "implications": ["USD and/or EUR clearing access is suspended or terminated with 30-90 days notice", "The firm faces a payment continuity crisis; cross-border flows to trade-corridor clients are disrupted", "Gulf or local-currency rails become emergency substitutes, compounding compliance optics", "Reputational damage with Kazakh and Uzbek institutional counterparties if payment failures are visible", "Existential pressure on the business model if no alternative USD clearing is secured within the notice period"]
+    },
+    {
+      "name": "Targeted Sanctions or Advisory Action",
+      "probability_range": {"low": 0.10, "high": 0.20},
+      "drivers": ["US Treasury or EU issues a specific advisory identifying the firm's banking partners or corridor patterns as elevated-risk", "A counterparty or upstream banking partner is designated, creating indirect exposure", "Investigative journalism or NGO reporting links the corridor to specific evasion schemes, triggering political pressure on regulators to act", "The firm's clients include an entity that is subsequently designated, retroactively contaminating transaction history"],
+      "implications": ["Immediate correspondent bank suspension pending investigation, even if the firm is not itself designated", "Regulatory inquiry from Kazakh or Uzbek authorities, possibly at US/EU prompting", "Legal and compliance costs escalate to crisis level; normal business operations suspended", "If the firm is not itself implicated, a structured response and voluntary disclosure path exists, but it requires senior counsel and significant resource", "Long-term reputational damage even if the firm is cleared; institutional clients may exit preemptively"]
+    },
+    {
+      "name": "Regulatory Opening with Gulf-China Rail Substitution",
+      "probability_range": {"low": 0.10, "high": 0.20},
+      "drivers": ["Uzbekistan completes a credible AML/CFT framework upgrade, improving its standing with international partners", "Gulf-based banks (UAE, Qatar) expand correspondent relationships with Central Asian fintechs as a competitive strategy", "Chinese cross-border payment infrastructure (CIPS, digital yuan pilots) becomes operationally viable for the corridor", "The firm proactively restructures its model toward local-currency and regional-currency settlement, reducing USD/EUR clearing dependency"],
+      "implications": ["The firm diversifies correspondent risk and reduces exposure to Western de-risking pressure", "New client segments (China-linked trade, Gulf-origin capital) become accessible", "However, Western banking relationships remain valuable for USD-denominated trade finance; substitution is partial", "Compliance optics with Western banks may worsen if Gulf/China rails are perceived as evasion-adjacent", "First-mover advantage in Uzbekistan's opening market if licensing uncertainty resolves favorably"]
+    }
+  ],
+
+  "options": [
+    {"option": "Maintain current structure with enhanced compliance investment",
+     "pros": ["Preserves existing commercial relationships and market position", "Demonstrates good faith to correspondent banks through visible compliance uplift", "Kazakhstan FATF exit provides a defensible narrative for the relationship", "Buys time to assess which scenario materializes before making structural changes"],
+     "cons": ["Does not address structural corridor-exposure risk; compliance investment may not prevent de-risking if a systemic trigger fires", "Compliance costs may be material without proportionate risk reduction", "Leaves the firm reactive rather than proactive; a correspondent exit would still be a crisis"],
+     "trade_offs": ["Short-term operational continuity vs. residual tail risk of sudden correspondent exit", "Compliance spend vs. uncertain correspondent relationship durability", "Speed of execution vs. thoroughness of risk mapping"]},
+    {"option": "Narrow counterparty exposure: exit highest-risk corridor clients and Uzbekistan-side flows",
+     "pros": ["Reduces the transaction patterns most likely to trigger screening flags", "Lowers AML typology risk on Uzbek book specifically", "Sends a signal to correspondent banks that the firm is actively managing its risk profile", "Concentrates compliance resources on a smaller, higher-quality book"],
+     "cons": ["Sacrifices revenue and market position in Uzbekistan, which may be a strategic growth market", "Does not eliminate Kazakhstan-side corridor risk", "May not be sufficient to prevent de-risking if the correspondent bank's concern is geographic rather than transaction-specific", "Uzbek regulatory relationships may be damaged by a visible retreat"],
+     "trade_offs": ["Revenue loss vs. compliance risk reduction", "Strategic retreat vs. regulatory/banking relationship preservation", "Uzbekistan opportunity cost vs. concentration of compliance capacity"]},
+    {"option": "Restructure correspondent access: diversify to multiple clearing banks including regional and Gulf-based options",
+     "pros": ["Eliminates single-point-of-failure risk in USD/EUR clearing", "Gulf-based correspondents may have higher risk appetite for Central Asian fintech", "Creates negotiating leverage with existing Western correspondent", "Demonstrates proactive risk management to investors and regulators"],
+     "cons": ["Gulf correspondents are themselves under elevated OFAC scrutiny for Russia-evasion flows; the optics risk is transferred, not eliminated", "Multiple correspondent relationships increase operational and compliance overhead", "Western banks may view Gulf-rail diversification as a risk signal rather than a mitigation", "Takes 3-9 months to operationalize; does not address near-term risk"],
+     "trade_offs": ["Operational resilience vs. compliance optics complexity", "Reduced single-correspondent dependency vs. increased aggregate screening exposure", "Medium-term resilience vs. short-term execution risk and cost"]},
+    {"option": "Strategic repositioning: build toward local-currency and regional-rail settlement, reduce Western-clearing dependency structurally",
+     "pros": ["Long-term reduction in exposure to Western de-risking dynamics", "Aligns with corridor economics where local-currency settlement is growing", "Opens access to China-linked and Gulf-origin trade flows", "Positions the firm as a regional infrastructure play rather than a Western-rails-dependent gateway"],
+     "cons": ["Multi-year execution; does not address 6-12 month risk horizon", "USD/EUR-denominated trade finance remains the dominant instrument in the corridor; local-currency substitution is partial", "Requires significant capital, regulatory approvals, and operational build", "May foreclose re-entry into Western correspondent relationships if the pivot is perceived as permanent"],
+     "trade_offs": ["Long-term strategic independence vs. near-term execution and capital cost", "Regional positioning vs. Western-market optionality", "Structural risk reduction vs. 2-3 year execution horizon"]}
+  ],
+
+  "recommended_actions": [
+    {"action": "Commission an immediate internal beneficial-ownership audit of all corridor-side counterparties and clients, with specific focus on Uzbekistan-domiciled entities and any logistics/trade-finance clients touching Aktau or Baku legs.", "priority": "high", "trigger": "Immediate; no external trigger required. This is a baseline hygiene action that is defensible to any correspondent bank or regulator regardless of scenario.", "time_horizon": "0-60 days"},
+    {"action": "Initiate a structured dialogue with your primary USD/EUR clearing correspondent bank(s) to proactively present your risk framework, geographic exposure rationale, and compliance controls. Do not wait for a correspondent inquiry. Frame the Kazakhstan FATF exit and your own controls as the narrative.", "priority": "high", "trigger": "Immediate. If the correspondent has already initiated a review, this becomes urgent.", "time_horizon": "0-60 days"},
+    {"action": "Map your transaction patterns against the specific corridor typologies cited in OFAC, EU, and UK Treasury public advisories on Central Asia sanctions evasion. Identify which of your transaction patterns would appear elevated-risk to an external screening team, and build the documentary response for each.", "priority": "high", "trigger": "Immediate; also use as input to the correspondent bank dialogue above.", "time_horizon": "0-90 days"},
+    {"action": "Identify and begin the relationship-building process with at least one backup clearing correspondent (regional bank with Western correspondent access, or a Gulf-based bank with strong OFAC compliance posture). This is not a switch—it is optionality.", "priority": "medium", "trigger": "Begin within 60 days; complete initial due diligence within 120 days.", "time_horizon": "60-180 days"},
+    {"action": "Engage qualified external sanctions and AML counsel—specifically a firm with OFAC/EU and Central Asia experience—to conduct a privileged review of your counterparty book and correspondent structure. This creates attorney-client privilege protection and provides a credible third-party validation narrative.", "priority": "high", "trigger": "Immediate if not already retained; accelerate if any counterparty screening flag or correspondent inquiry has already been received.", "time_horizon": "0-90 days"},
+    {"action": "Develop a written Uzbekistan regulatory engagement plan: identify your licensing category, the conditions attached, the next review cycle, and the key regulatory contacts. Do not leave this as background ambient risk.", "priority": "medium", "trigger": "Within 90 days; accelerate if Uzbek regulatory contacts have been less responsive than usual.", "time_horizon": "90-180 days"},
+    {"action": "Build a payment continuity playbook: document explicitly what you would do if your primary USD correspondent gave 30-day notice of exit. Which clients would be affected, which flows would stop, what the revenue impact would be, and what the fastest-available substitution path is. This is a board-level resilience document.", "priority": "medium", "trigger": "Within 90 days; use the Correspondent De-Risking Cascade scenario as the planning scenario.", "time_horizon": "60-120 days"}
+  ],
+
+  "failure_modes": [
+    {"scenario": "A corridor-side client is subsequently found to have undisclosed Russia-linked beneficial ownership, contaminating the firm's transaction history retroactively.", "likelihood": "medium", "impact": "high", "mitigation": "Deep beneficial ownership diligence on all corridor clients now; periodic re-screening; contractual representations and warranties on counterparty sanctions status; segregated account structures where possible to contain contamination."},
+    {"scenario": "The firm's primary USD clearing correspondent exits with 30-60 days notice, with no backup in place.", "likelihood": "medium", "impact": "high", "mitigation": "Build backup correspondent relationship proactively (see recommended actions); document payment continuity playbook; maintain liquidity buffer sufficient to absorb a 60-day clearing disruption."},
+    {"scenario": "A US or EU advisory specifically names Aktau-Baku corridor transaction patterns as elevated-risk, causing automated de-flagging at multiple correspondents simultaneously.", "likelihood": "low", "impact": "high", "mitigation": "Pre-position documentary evidence that the firm's corridor flows are legitimate trade finance, not goods re-routing; have external counsel on retainer for rapid response; maintain relationships with multiple correspondents so that not all exit simultaneously."},
+    {"scenario": "Uzbekistan introduces new cross-border payment regulations that retroactively require additional licensing or capital, disrupting the Uzbek-side operation.", "likelihood": "medium", "impact": "medium", "mitigation": "Active regulatory engagement in Uzbekistan; legal monitoring of draft regulatory instruments; contingency planning for a temporary suspension of Uzbek-side flows while licensing is resolved."},
+    {"scenario": "The firm's compliance team is inadequately resourced to manage the uplift demanded by correspondent banks and regulators simultaneously, leading to response delays that are read as evasion.", "likelihood": "medium", "impact": "medium", "mitigation": "Assess compliance headcount and external counsel capacity now against the worst-case scenario demand; build compliance capacity ahead of the demand curve rather than in response to it."}
+  ],
+
+  "watch_next": [
+    {"indicator": "New OFAC, EU, or UK Treasury advisory or designation specifically naming Central Asian financial institutions or corridor-linked entities", "trigger": "Any public action naming institutions in Kazakhstan or Uzbekistan, or naming the Aktau-Baku-Caspian corridor as a specific evasion vector", "source_type": "Official government publication: OFAC SDN updates, EU Official Journal, UK OFSI notices"},
+    {"indicator": "Correspondent bank compliance inquiry or enhanced-due-diligence request directed at the firm", "trigger": "Any formal or informal outreach from a clearing bank compliance team requesting additional documentation, restricting transaction categories, or signaling a relationship review", "source_type": "Direct correspondent bank communication; industry network intelligence"},
+    {"indicator": "FATF or FATF-style regional body (EAG) assessment of Uzbekistan or follow-up on Kazakhstan", "trigger": "Publication of a mutual evaluation report, follow-up review, or grey-list decision affecting either country", "source_type": "FATF official publications; Eurasian Group on Combating Money Laundering (EAG) notices"},
+    {"indicator": "US, EU, or UK enforcement action against a non-Russian third-country entity for Russia sanctions evasion via Central Asian corridor", "trigger": "Any enforcement case, settlement, or indictment involving a Central Asian or Caspian-corridor-linked entity accused of facilitating Russia-related sanctions evasion", "source_type": "DOJ press releases, OFAC enforcement notices, EU enforcement announcements"},
+    {"indicator": "Uzbekistan cross-border payment regulation development", "trigger": "Draft regulations, central bank circulars, or licensing condition changes affecting cross-border fintech operations in Uzbekistan", "source_type": "National Bank of Uzbekistan official publications; Ministry of Finance of Uzbekistan; local legal counsel monitoring"},
+    {"indicator": "Correspondent banking peer exits from Central Asian fintech sector", "trigger": "Reports (formal or informal) that a Western clearing bank has withdrawn from or restricted Central Asian fintech relationships", "source_type": "Industry association channels; peer fintech network; banking sector press"},
+    {"indicator": "Middle Corridor capacity or documentation standard changes", "trigger": "New documentation requirements, cargo inspection protocols, or customs-side AML checks introduced at Aktau, Turkmenbashi, or Baku that affect trade-finance documentation chains", "source_type": "TITR secretariat announcements; Kazakh Ministry of Transport; Azerbaijani customs authority publications"}
+  ],
+
+  "audit": {
+    "validation_score": 0.68,
+    "validation_details": [
+      "All claims are grounded in publicly available structural knowledge of the region, sanctions frameworks, and FATF processes as of early 2026; no live source retrieval was performed.",
+      "Probability ranges for scenarios are illustrative analytical estimates, not actuarial or model-derived values; they should be treated as relative ordering signals, not precise forecasts.",
+      "The analysis does not constitute legal, compliance, financial, or security advice; qualified external counsel should be engaged for any legal determination.",
+      "The assumption that the firm does not directly transact with sanctioned entities is load-bearing; if that assumption is incorrect, the risk profile in this memo is materially understated.",
+      "No client-specific transaction data, correspondent bank correspondence, or regulatory filing data was available; assessments of the firm's specific exposure are necessarily generic.",
+      "The beneficial ownership and counterparty-specific unknowns represent the largest reducible uncertainty in this analysis; they are resolvable through the recommended internal audit."
+    ],
+    "provenance": [
+      {"claim": "Kazakhstan exited the FATF grey list in October 2024", "basis": "fact"},
+      {"claim": "Uzbekistan is not currently on the FATF grey list but has known AML/CFT framework gaps from its 2023 mutual evaluation cycle", "basis": "fact"},
+      {"claim": "OFAC, EU, and UK Treasury have issued public guidance identifying Central Asia as an elevated-risk node for Russia sanctions evasion", "basis": "fact"},
+      {"claim": "Russia-affiliated bank subsidiaries operate in Kazakhstan", "basis": "fact"},
+      {"claim": "The Middle Corridor has seen volume growth since 2022 Russia-Ukraine war and associated sanctions", "basis": "fact"},
+      {"claim": "Caspian shipping insurance capacity has faced constraints since 2022", "basis": "fact"},
+      {"claim": "The primary near-term risk is correspondent de-risking rather than direct designation", "basis": "assessment"},
+      {"claim": "Uzbekistan-side flows carry higher AML typology risk than Kazakhstan-side flows", "basis": "assessment"},
+      {"claim": "Gulf-based correspondents are themselves under elevated OFAC scrutiny", "basis": "assessment"},
+      {"claim": "Probability of at least one new advisory touching Central Asian financial infrastructure in the next 6-12 months is moderate-to-high", "basis": "assessment"},
+      {"claim": "The firm does not directly transact with sanctioned entities", "basis": "assumption"},
+      {"claim": "The firm's correspondent banking includes at least one USD-clearing bank with Western oversight", "basis": "assumption"},
+      {"claim": "Whether the firm's current correspondent banks have active internal reviews of Central Asian fintech exposure", "basis": "unknown"},
+      {"claim": "The actual beneficial ownership depth of the firm's corridor-side counterparties", "basis": "unknown"},
+      {"claim": "Timing and targets of forthcoming US or EU enforcement actions on Central Asian financial intermediaries", "basis": "unknown"}
+    ]
+  }
+}
