@@ -151,7 +151,12 @@ agenda-intelligence mcp-config --client codex
 agenda-intelligence doctor
 ```
 
-Available MCP tools: `validate_brief`, `validate_evidence`, `audit_claims`, `score_output`, `get_protocol`, `list_lenses`, `get_lens`, `list_source_categories`, `source_plan`, `source_coverage`, `verify_quotes`. See [`MCP.md`](MCP.md) for details.
+Available MCP tools split into two layers:
+
+- **Validation layer** (11 tools): `validate_brief`, `validate_evidence`, `audit_claims`, `score_output`, `get_protocol`, `list_lenses`, `get_lens`, `list_source_categories`, `source_plan`, `source_coverage`, `verify_quotes`.
+- **Product shell** (5 tools): `analyze` (structured agenda request, geography-routed, returns memo validated against `agenda-memo.schema.json`), `validate_memo`, `list_signals`, `get_signal`, `deep_dive`.
+
+The product shell wraps the validation layer with geography routing, system-prompt assembly, optional LLM invocation, and vendored signal access. It does not perform live source retrieval. See [`MCP.md`](MCP.md) for the full surface and [`schemas/agenda-request.schema.json`](schemas/agenda-request.schema.json) for the `analyze` request contract.
 
 ## Evaluation
 

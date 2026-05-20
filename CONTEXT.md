@@ -72,6 +72,14 @@ _Avoid_: Fact check, source pack
 A deterministic evaluation run that checks protocol conformance, evidence discipline, claim audit coverage, quote presence, and score thresholds across example cases.
 _Avoid_: Expert judgment, factual accuracy test, analytical truth benchmark
 
+**Agent-Eval Delta**:
+A per-case structural comparison of agent output with and without the Agenda Intelligence product shell wired in. It records what changed in the shape of the output — provenance tags applied, signal classification produced, watch-next indicators present, uncertainty disclosed, evidence mode declared — not whether claims are factually true. Used as the product-shell validation surface for agent integrators.
+_Avoid_: Factual benchmark, accuracy delta, model-quality comparison, aggregate score
+
+**Practitioner Review**:
+An optional, audience-gated human review of agent output by a domain practitioner, used for buying-side trust signaling. Separate from Agent-Eval Delta and from Benchmark.
+_Avoid_: Required gate, replacement for benchmark, factual accuracy authority
+
 **Source-Structured Example**:
 An example case that includes an agenda brief, evidence pack, and optionally a claim-level evidence audit.
 _Avoid_: Live-source-backed example, factual benchmark
@@ -250,6 +258,8 @@ _Avoid_: Refactor, cleanup, terminology fix
 - **AnalysisBank** must not store stale-prone world facts such as claims about a specific company, route, or enforcement state; store those in source-backed examples, evidence packs, or signal trackers instead.
 - **Signal Tracker** files belong in `signal-trackers/`; when a signal resolves, distill a separate **Reasoning Memory** into `analysis-bank/`.
 - **Benchmark** results must not be presented as proof of analytical correctness or factual truth; expert review and LLM-judge review are optional layers outside deterministic baseline numbers.
+- **Agent-Eval Delta** is a per-case structural check from the agent-integrator perspective; it is not factual verification, not aggregate accuracy, and not a model-quality comparison.
+- **Practitioner Review** is optional and audience-gated; it does not replace **Benchmark** or **Agent-Eval Delta** and is not required for product-shell validation.
 - The historical `examples/source-backed/` directory contains **Source-Structured Examples**; do not imply every case is live-source-backed unless its evidence was actually checked.
 - **Illustrative Source Examples** should not use `live_source_backed`; use `user_provided` or `mixed` unless current sources were actually checked during the analysis workflow.
 - The public CLI command remains `score` before v1.0, but product language should call the result a **Heuristic Score** or protocol score, not a quality score.

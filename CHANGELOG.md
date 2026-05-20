@@ -4,6 +4,18 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Changed — v0.9 scope: agent-eval delta and product-shell narrative alignment
+- ROADMAP `v0.9` rewritten from "verify-quotes network mode improvements" to "agent-eval delta and product-shell narrative alignment". Verify-quotes patches moved to a new `v0.9.x` deferred-patches section. v0.9 explicit non-goals: factual verification schema, source reputation scoring, live news gathering, crawler, `deep_dive` implementation, new MCP tools.
+- README headline rewritten: drops "trusted geopolitical intelligence layer" framing for "MCP product shell and evidence-discipline layer for strategic intelligence agents". States no live retrieval and no factual verification as explicit non-goals before v1.0.
+- ADOPTION MCP section now lists the product-shell tools (`analyze`, `validate_memo`, `list_signals`, `get_signal`, `deep_dive`) alongside the 11 validation tools, with a one-paragraph product-shell summary.
+- `llms.txt` and packaged copy: `Source Acquisition Layer` renamed to `Source Planning Layer` to match CONTEXT canon. The `source_acquisition` manifest key is unchanged (compatibility wire name).
+
+### Added — Agent-Eval Delta glossary and ADR 0008
+- `CONTEXT.md` adds glossary entries for **Agent-Eval Delta** (per-case structural delta from the agent-integrator perspective; not factual, not aggregate, not a model-quality comparison) and **Practitioner Review** (optional, audience-gated). Two new rules in Flagged ambiguities make the boundary explicit.
+- `docs/adr/0008-agent-eval-delta-is-structural-product-validation.md` records the validation-story decision for v0.9.
+- `docs/agent-eval-methodology.md` tightened: live-source-backed examples map to `user_provided` or `mixed` for `analyze`; `live_source_backed` is intentionally absent from `agenda-request.schema.json` because live retrieval is upstream of Agenda Intelligence.
+- `evals/agent-eval/` scaffolded with three case files (`gtta-global-policy.md` intended as the v0.9 full case; `ca-caspian-sanctions.md` and `gulf-me-hormuz-shipping.md` as stubs not to be cited until run).
+
 ### Added — Agent-eval case template
 - README and evaluation docs now link the agent-eval methodology as the agent-first structural delta method.
 - `evals/agent-eval/` now contains a README and reusable case template for skill-repo evals.

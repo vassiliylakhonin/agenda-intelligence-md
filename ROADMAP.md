@@ -53,7 +53,21 @@ MCP `score_output` tool, post-release smoke.
 - Keep public benchmark numbers in `docs/evaluation.md` aligned with committed baselines.
 - Continue stabilizing `claim_type` taxonomy from real case patterns.
 
-## v0.9 — verify-quotes: network mode improvements
+## v0.9 — agent-eval delta and product-shell narrative alignment
+
+Structural validation of the product shell from the agent-integrator perspective. No factual verification, no live retrieval, no new schemas.
+
+- **Agent-Eval Delta** introduced as a per-case structural check: how the agent's output shape changes when Agenda Intelligence is wired in versus baseline. Not factual accuracy. Not model-quality comparison. Not aggregate benchmark.
+- Three agent-eval cases scaffolded, one per important surface — global GTTA (one full case end-to-end), CA+Caspian + sanctions (stub), Gulf+ME (stub).
+- `docs/agent-eval-methodology.md` tightened: live-source-backed skill examples map to `user_provided` or `mixed` for `analyze`. Live retrieval is upstream of Agenda Intelligence, not a feature of it.
+- Narrative alignment across `README.md`, `ADOPTION.md`, `MCP.md`, `llms.txt`, `CONTEXT.md` around "MCP product shell over validation layer". Drop framings that imply live retrieval or factual benchmarking.
+- ADR `0008-agent-eval-delta-is-structural-product-validation.md` records the validation-story decision: agent-eval delta is the product-shell validation surface for agent integrators; practitioner review remains optional and audience-gated.
+
+Non-goals for v0.9: factual verification schema, source reputation scoring, live news gathering, crawler, `deep_dive` implementation, new MCP tools.
+
+## v0.9.x — deferred verify-quotes patches
+
+Previously planned as v0.9. Deferred because v0.9 narrative is product-shell validation, not retrieval. These remain optional patches on top of the existing `verify-quotes --fetch` network mode and do not change the v1.0 contract.
 
 - Smarter HTML-to-text extraction (currently basic `html.parser` strip).
 - Respect `robots.txt` / add configurable rate limiting for multi-source packs.

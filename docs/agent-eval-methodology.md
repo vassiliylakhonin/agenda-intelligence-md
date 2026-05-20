@@ -23,7 +23,7 @@ For each agent-eval case:
 
 - **Model.** Pick one model (Claude Sonnet 4.7, GPT-5, etc.) and use the same model in both conditions. Document the model and date.
 - **Question.** Pull from the skill's existing `examples/` folder, ideally a `live-source-backed` or `user-provided` case so the question is already framed.
-- **Evidence mode.** Match the source-evidence mode of the example to the eval's `evidence_mode` argument so comparison is honest.
+- **Evidence mode.** Map the source-evidence mode of the example to one of the three `evidence_mode` values that `agenda-request.schema.json` accepts: `reasoning_only`, `user_provided`, or `mixed`. **Live-source-backed examples** map to `user_provided` (when the upstream-checked sources are passed into the request) or `mixed` (when the agent also reasons from internal knowledge). `live_source_backed` is **intentionally absent** from the request schema because live retrieval is not implemented inside Agenda Intelligence; the live-source-backed framing applies upstream (in the skill repo's analysis workflow), not inside `analyze`. Record the mapping decision in the eval file under **Evidence mode** so the reader can see the upstream framing without expecting Agenda Intelligence to have fetched anything.
 
 ## Procedure
 

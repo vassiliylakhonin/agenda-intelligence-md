@@ -1,19 +1,21 @@
 # Agent-eval cases
 
-This folder stores agent-first evaluation cases for Agenda Intelligence.
+Per-case structural deltas of agent output with and without the Agenda Intelligence MCP product shell. Methodology: [`docs/agent-eval-methodology.md`](../../docs/agent-eval-methodology.md). Glossary: **Agent-Eval Delta** in [`CONTEXT.md`](../../CONTEXT.md) and [`docs/adr/0008-agent-eval-delta-is-structural-product-validation.md`](../../docs/adr/0008-agent-eval-delta-is-structural-product-validation.md).
 
-Agent-eval is for measuring whether attaching the Agenda Intelligence MCP layer
-changes an agent's output structure on the same question. It is not a factual
-truth benchmark, not a model-quality comparison, and not a substitute for domain
-review where buying-side trust requires expert attribution.
-
-Use the methodology in [`../../docs/agent-eval-methodology.md`](../../docs/agent-eval-methodology.md).
+These cases are **not a benchmark**, **not a factual verification**, and **not a model-quality comparison**. They are per-case structural snapshots of how the product shell changes output shape on a fixed question. Not a substitute for domain review where buying-side trust requires expert attribution.
 
 ## File pattern
 
-- `<case-id>.md` - scored case summary.
-- `<case-id>-A.txt` - optional full baseline output when too long for the summary.
-- `<case-id>-B.txt` - optional full MCP-attached output when too long for the summary.
+- `<case-id>.md` — scored case summary. Start from [`TEMPLATE.md`](TEMPLATE.md).
+- `<case-id>-A.txt` — optional full baseline output when too long for the summary.
+- `<case-id>-B.txt` — optional full MCP-attached output when too long for the summary.
 
-Start from [`TEMPLATE.md`](TEMPLATE.md).
+## Cases
 
+| ID | Surface | Skill under test | Status |
+|---|---|---|---|
+| [gtta-global-policy.md](gtta-global-policy.md) | GTTA / global | global-think-tank-analyst | scaffold (intended full) |
+| [ca-caspian-sanctions.md](ca-caspian-sanctions.md) | CA + Caspian + sanctions | central-asia-caspian-hybrid-intelligence-skill | stub |
+| [gulf-me-hormuz-shipping.md](gulf-me-hormuz-shipping.md) | Gulf + ME | gulf-middle-east-hybrid-intelligence-skill | stub |
+
+For v0.9: at least one case run end-to-end with both conditions recorded. The other two remain stubs and are not cited as evidence of product-shell behavior until run.

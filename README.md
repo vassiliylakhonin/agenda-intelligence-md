@@ -5,7 +5,7 @@ Product entry point and evidence-discipline layer for strategic intelligence age
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Agenda Intelligence** is a trusted geopolitical intelligence layer for agentic workflows. Auditable, structured, decision-grade risk memos with evidence discipline that generic LLMs lack. One MCP server. Structured input/output. Built-in validation.
+**Agenda Intelligence** is an MCP product shell and evidence-discipline layer for strategic intelligence agents. Structured request/memo contract, geography-routed reasoning, schema validation, evidence audit, and scoring. One MCP server. Structured input/output. No live retrieval, no factual verification — those are explicit non-goals before v1.0.
 
 This repository hosts the product entry point: JSON schemas defining the request/response contract, the stdio MCP server exposing `analyze`, `validate_memo`, `list_signals`, `get_signal`, and `deep_dive`, plus the original validation surface (briefs, evidence packs, audits, lenses, source plans). Reasoning content is bundled as in-repo references derived from sibling repositories: [Global Think Tank Analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) (method), [Central Asia + Caspian](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) and [Gulf + Middle East](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) (regional specialists routed by query geography).
 

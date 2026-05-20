@@ -64,7 +64,7 @@ Legacy script wrapper: scripts/agenda_intelligence.py
 MCP server: agenda-intelligence-mcp
 MCP docs: MCP.md and docs/integrations/mcp.md
 
-Source Acquisition Layer:
+Source Planning Layer:
 - SOURCE_POLICY.md
 - source-taxonomy.json
 - source-requirements/*.json
