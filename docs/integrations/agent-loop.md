@@ -8,7 +8,7 @@ toolkit gives you small contract checkpoints; the agent itself stays in your sta
 ```
 1. event in              -->  agent receives a policy/risk update
 2. list_source_categories --> agent selects a packaged source category
-3. source_plan(category) -->  agent fetches must_check + watch_indicators
+3. source_plan(category) -->  agent reads must_check + watch_indicators
 4. agent drafts brief    -->  conforms to agenda-brief.schema.json
 5. validate_brief        -->  schema check; agent fixes structural errors
 6. validate_evidence     -->  evidence-pack schema check
@@ -73,6 +73,7 @@ Exposed tools: `validate_brief`, `validate_evidence`, `get_protocol`,
 ## What the agent owns
 
 - Choosing `category` for `source_plan`, optionally using `list_source_categories`.
+- Fetching, collecting, or receiving source material outside Agenda Intelligence MD.
 - Drafting brief and evidence text.
 - Deciding `support_level` honestly.
 - Re-drafting on failure.
@@ -80,10 +81,11 @@ Exposed tools: `validate_brief`, `validate_evidence`, `get_protocol`,
 ## What the toolkit owns
 
 - Schema contracts.
+- Source-plan category discovery and coverage diagnostics.
 - A heuristic, transparent score.
 - A pass/fail signal a CI pipeline can trust.
 
 ## What neither owns
 
-- Factual truthfulness of claims. This stays with the analyst (or a future
-  truthfulness layer that retrieves and checks cited text).
+- Factual truthfulness of claims. This stays with the analyst or a future
+  factual verification layer.

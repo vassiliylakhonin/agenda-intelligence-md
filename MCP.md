@@ -52,7 +52,7 @@ Returns `{ "implemented": true, "valid": true|false, "errors": [...] }`.
 
 ### `audit_claims`
 
-**Experimental.** Validate a claim-level evidence-audit dict against `evidence-audit.schema.json` and report:
+Validate a claim-level evidence-audit dict against `evidence-audit.schema.json` and report:
 
 - `support_level` distribution across claims (`direct | partial | weak | unsupported`)
 - orphan `evidence_id` references (evidence_ids in claims not present in the evidence list)
@@ -93,7 +93,7 @@ Returns:
     "orphan_evidence_refs": [],
     "unsupported_claims_listed": 0
   },
-  "note": "Claim-level evidence audit is experimental. Schema-level only; does not verify factual truth."
+  "note": "Claim-level evidence audit is schema-level only; does not verify factual truth."
 }
 ```
 
@@ -174,6 +174,31 @@ Diagnose whether an evidence pack covers category-specific `must_check` source t
 If `category` is omitted, the tool uses `evidence_json.source_category`.
 
 Returns covered and missing required source types plus `required_source_details`, which identifies the source entries and matched terms used for coverage. It does not discover sources or verify factual truth. This is a diagnostic gate, not base schema validation.
+
+---
+
+### `verify_quotes`
+
+Check whether quoted fragments appear in caller-provided source text.
+
+```json
+{
+  "evidence_json": {
+    "evidence": [
+      {
+        "evidence_id": "e1",
+        "quote": "quoted fragment",
+        "url": "https://example.com/source"
+      }
+    ]
+  },
+  "texts": {
+    "https://example.com/source": "source text containing the quoted fragment"
+  }
+}
+```
+
+The MCP tool does not fetch URLs. It only checks quote presence against text supplied by the caller, and it does not verify factual truth.
 
 ---
 
