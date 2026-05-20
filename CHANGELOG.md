@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## [0.9.0] – 2026-05-20
+
 ### Changed — v0.9 scope: agent-eval delta and product-shell narrative alignment
 - ROADMAP `v0.9` rewritten from "verify-quotes network mode improvements" to "agent-eval delta and product-shell narrative alignment". Verify-quotes patches moved to a new `v0.9.x` deferred-patches section. v0.9 explicit non-goals: factual verification schema, source reputation scoring, live news gathering, crawler, `deep_dive` implementation, new MCP tools.
 - README headline rewritten: drops "trusted geopolitical intelligence layer" framing for "MCP product shell and evidence-discipline layer for strategic intelligence agents". States no live retrieval and no factual verification as explicit non-goals before v1.0.
