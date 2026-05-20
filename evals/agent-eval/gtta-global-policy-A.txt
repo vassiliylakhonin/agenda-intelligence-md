@@ -1,0 +1,170 @@
+Condition A — Baseline (no MCP attached). Sonnet 4.6 adaptive. 2026-05-20.
+
+Prompt verbatim:
+
+  Be concise and decision-useful. Avoid filler.
+
+  Question: How should a B2B AI provider with operations across the US,
+  EU, and exposure to China assess the regulatory-divergence risk over
+  the next 18-24 months, and what postures are available?
+
+  Decision: Product architecture, compliance investment allocation, and
+  market-entry sequencing across jurisdictions.
+
+  Audience: AI company leadership, product and compliance teams.
+
+  Time horizon: medium-term (18-24 months).
+
+  Evidence mode: reasoning-only (no live sources expected).
+
+  Produce a decision-useful response in whatever format you think serves
+  the question best.
+
+Response verbatim:
+
+# Regulatory Divergence Risk: B2B AI Provider (US / EU / China)
+### Assessment Framework for 18–24 Month Horizon
+
+---
+
+## I. The Core Risk in One Sentence
+
+The US, EU, and China are converging on AI *governance* but diverging on *values, enforcement mechanisms, and data-flow rules* — creating a compounding compliance burden that punishes unified-architecture companies and rewards those that modularize early.
+
+---
+
+## II. Jurisdiction-by-Jurisdiction Trajectory
+
+### United States
+**Direction:** Deregulatory federal posture, but sectoral and state-level patchwork accelerating.
+
+- Executive-level rollback of Biden-era AI oversight (2025 EO reversal) signals federal restraint.
+- However: HIPAA, FTC Act, FCRA, and EEOC guidance still create real liability in healthcare, finance, HR, and advertising verticals.
+- State divergence is the live risk: California (CPRA enforcement + pending AI bills), Colorado, Texas, Illinois (BIPA) are legislating independently. ~15+ states have active AI bills.
+- Export controls (BIS/Commerce) are the sharpest near-term constraint — EAR controls on AI models, chips, and training data with China exposure are tightening regardless of administration.
+- **18-24 month read:** Low federal compliance overhead, high state-level fragmentation, and export control risk that is *bipartisan and sticky*.
+
+### European Union
+**Direction:** Enforcement ramp-up on a framework already in law.
+
+- EU AI Act is in force. High-risk system obligations (conformity assessments, technical documentation, human oversight requirements) apply from ~mid-2026. GPAI model obligations (transparency, copyright, systemic-risk) apply sooner.
+- GDPR remains the baseline; AI systems that process personal data for profiling, automated decisions, or behavioral inference face compounding obligations.
+- B2B does *not* exempt you: if your downstream customers deploy your model in high-risk contexts (HR, credit, critical infrastructure), you are a "provider" under the Act and bear upstream obligations.
+- Enforcement will be uneven initially but NCA (national competent authority) infrastructure is being built now. Germany, France, and Ireland are likely early enforcement vectors.
+- **18-24 month read:** Compliance obligations are real and dated — this is not speculative risk. Non-compliance creates market-access, not just fine, risk.
+
+### China
+**Direction:** Prescriptive, operationally intrusive, and politically unpredictable.
+
+- Three overlapping frameworks: Generative AI Measures (2023), Algorithmic Recommendation Measures (2022), Deep Synthesis Measures (2022). More forthcoming.
+- Security assessments, content moderation obligations, and MLPS (cybersecurity) requirements create operational cost and data-sovereignty constraints that are difficult to satisfy from outside China.
+- Cross-border data transfer rules (PIPL + DSL + CAC regulations) make it legally precarious to train on or process Chinese user data outside China, and vice versa.
+- The political variable: US export controls on frontier AI chips and model weights create a reciprocity risk — Beijing may restrict or scrutinize US AI providers operating in China.
+- **18-24 month read:** Operational exposure to China is a binary architecture decision, not a compliance calibration. The question is whether you are *in* China (requires full data localization and content compliance stack) or *not* (requires clean separation to avoid export control blowback).
+
+---
+
+## III. Divergence Vectors That Drive Architecture Decisions
+
+| Vector | US | EU | China |
+|---|---|---|---|
+| Data residency | Minimal federal req; state-level emerging | Strong (GDPR + AI Act data governance) | Mandatory localization |
+| Model transparency/explainability | Voluntary/sectoral | Mandatory for high-risk | Mandatory + state-inspectable |
+| Prohibited use cases | Narrow (federal); broader in states | Explicit prohibited list in AI Act | Extensive, politically defined |
+| Third-party audit | Emerging | Required (high-risk + GPAI systemic) | CAC/security assessments |
+| Employee/HR AI use | EEOC guidance + state laws | High-risk category, heavy obligations | Regulated |
+| Export/flow of model weights | Increasingly restricted (China-out) | GDPR restricts personal data flows | Restricted inbound and outbound |
+
+---
+
+## IV. Strategic Postures
+
+These are not mutually exclusive — most companies will blend them — but they have different capex profiles and optionality implications.
+
+---
+
+### Posture A: Unified Core, Compliance Wrappers
+*"One model, jurisdiction-specific controls at the application layer"*
+
+**What it means:** Single training and inference infrastructure; compliance controls (consent flows, output filters, audit logs, data masking) implemented as modular layers per jurisdiction.
+
+**Works when:** Your core model doesn't itself constitute a "high-risk" AI system — i.e., the risk classification is driven by customer use case, not your underlying model. Common in horizontal infrastructure plays (embedding APIs, foundation model APIs).
+
+**Breaks when:** You have China data flows (data cannot pass through unified infrastructure cleanly), or your product is itself deployed in high-risk EU categories.
+
+**Compliance investment:** Medium. Focus on audit-log infrastructure, output moderation APIs, and documentation pipelines. ~1-2 dedicated compliance engineers per major jurisdiction.
+
+---
+
+### Posture B: Modular Architecture with Jurisdiction Isolation
+*"Separate deployment environments; shared IP, separate operations"*
+
+**What it means:** US, EU, and (if retained) China instances are operationally isolated — separate inference infrastructure, data stores, and potentially fine-tuned model variants. Shared R&D and model development pipeline, divergent deployment.
+
+**Works when:** You have meaningful EU enterprise revenue that requires GDPR-clean data processing, or any China operational presence.
+
+**Breaks when:** You lack the engineering maturity to maintain parallel deployment pipelines without diverging your product into de facto separate SKUs.
+
+**Compliance investment:** High upfront (infra isolation, separate DPAs, EU-based DPO), lower marginal cost per new requirement. Positions you well for DORA, NIS2, and sector-specific EU requirements coming downstream.
+
+---
+
+### Posture C: Jurisdiction Triage — Depth over Breadth
+*"Win US and EU; treat China as an export-control-free zone or exit"*
+
+**What it means:** Explicitly deprioritize China operational exposure. Focus compliance investment on EU AI Act readiness (which is the highest-cost, most-dated obligation) and US state-law monitoring. Use China absence as a clean export-control story for US government and enterprise customers.
+
+**Works when:** China revenue is <15% of ARR or pipeline, and US government / regulated-industry customers are strategic. The "no China exposure" narrative is increasingly a procurement criterion in US federal, defense-adjacent, and financial services verticals.
+
+**Breaks when:** China is a material growth market or your VC mandate requires it.
+
+**Compliance investment:** Concentrated. EU AI Act conformity pipeline + US state monitoring program + export control counsel. Avoids the disproportionate cost of China operational compliance.
+
+---
+
+### Posture D: Regulatory Arbitrage via Partner/Reseller Model
+*"Operate at arm's length in high-cost jurisdictions"*
+
+**What it means:** In China specifically — and potentially in heavily regulated EU verticals — operate through a licensed local partner who owns the compliance stack. You provide model IP/API access; they handle regulatory interface.
+
+**Works when:** You want market access without operational liability, and can negotiate IP protection terms that are enforceable.
+
+**Breaks when:** Partners replicate or resell your IP in ways you can't control, or when regulators pierce the structure (EU AI Act applies to providers placing systems on the EU market regardless of where they're incorporated).
+
+---
+
+## V. Decision Matrix: Key Inputs
+
+Before committing to a posture, answer these four questions:
+
+1. **What is your high-risk surface?** Map your product against EU AI Act Annex III. If you're a horizontal API provider whose customers self-classify, your posture differs from a vertical AI system in HR/credit/health.
+
+2. **What is your China exposure, exactly?** Training data sourced from China, employees in China, customers in China, and compute in China each carry different regulatory profiles. Conflating them leads to overbuilt or underbuilt responses.
+
+3. **Who are your US enterprise buyers, and what do they require?** Federal contractors, financial services, and healthcare buyers are already imposing contractual AI compliance requirements that exceed current law. Their procurement questionnaires are a leading indicator of where regulation is heading.
+
+4. **What is your 18-month revenue concentration?** If EU is >30% of revenue, Posture A is probably underfunded. If China is <10%, Posture C is likely dominant.
+
+---
+
+## VI. Compliance Investment Allocation (Directional)
+
+| Initiative | Priority | Timing | Rationale |
+|---|---|---|---|
+| EU AI Act classification & documentation | **High** | Now | Obligations dated; audit trail must be built retroactively otherwise |
+| Export control counsel (BIS/EAR) | **High** | Now | Bipartisan, accelerating, criminal exposure |
+| US state law monitoring program | **Medium** | Q3 2025 | 15+ active bills; need early-warning system, not reactive response |
+| Data residency architecture (EU) | **Medium-High** | 6-12 mo | Required for enterprise sales in EU; also prerequisite for public sector |
+| China architecture decision | **High** | Now | Binary — delay increases sunk cost of the wrong posture |
+| GPAI systemic risk assessment (if applicable) | **Medium** | 12-18 mo | Applies if model FLOP threshold is crossed; monitor |
+| Third-party audit readiness | **Low-Medium** | 12-18 mo | Build documentation now; formal audits come later |
+
+---
+
+## VII. The Meta-Risk
+
+The largest strategic risk is **architecture lock-in under regulatory uncertainty** — building a unified global stack optimized for today's rules, then facing a forced re-architecture when EU enforcement lands or China export controls tighten.
+
+The second-order risk is **compliance theater**: investing in documentation and legal review without building the underlying technical controls (audit logs, data lineage, output filtering, human-override mechanisms) that regulators will actually inspect.
+
+The hedge against both: invest in *compliance infrastructure* (modular, auditable, documented) rather than *compliance events* (one-time assessments). The companies that will handle this 18-24 month period well are building compliance as an engineering capability, not a legal function.
