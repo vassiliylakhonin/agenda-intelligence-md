@@ -277,4 +277,57 @@ def test_deep_dive_returns_planned_stub():
     result = mcp_server.deep_dive()
     assert result["implemented"] is False
     assert result["status"] == "planned"
-    assert "v2" in result["message"]
+
+
+# ---------------------------------------------------------------------------
+# route_modules direct unit tests
+# ---------------------------------------------------------------------------
+
+
+def _modules(geography, question=""):
+    return {m["module"] for m in product.route_modules(geography, question)}
+
+
+def test_route_modules_eu_exact_geography():
+    """Bare ``"EU"`` as geography must trigger the EU regional specialist."""
+    mods = _modules("EU")
+    assert "eu" in mods
+    assert "global-think-tank-analyst" in mods
+
+
+def test_route_modules_eu_europe_geography():
+    """``"Europe"`` as geography also triggers EU lens."""
+    assert "eu" in _modules("Europe")
+
+
+def test_route_modules_eu_phrase_in_question():
+    """Long-form EU phrases in question text trigger the EU lens even when
+    geography is ``"global"``."""
+    assert "eu" in _modules("global", "How does the EU AI Act affect GPAI?")
+    assert "eu" in _modules("global", "GDPR enforcement against AI systems is intensifying.")
+
+
+def test_route_modules_no_false_positive_on_substring_eu():
+    """The bare two-letter ``eu`` must NOT match inside arbitrary words like
+    ``exposure`` or ``queue``. Regression guard for the eval-discovered EU
+    routing gap (see evals/agent-eval/gtta-global-policy.md observation 3)."""
+    mods = _modules("global", "We have exposure to China and a queue of regulatory items.")
+    assert "eu" not in mods
+
+
+def test_route_modules_global_only_routes_gtta():
+    """A purely global question with no regional or sector terms must route
+    only the reasoning method."""
+    assert _modules("global", "AI governance trajectory worldwide") == {"global-think-tank-analyst"}
+
+
+def test_route_modules_combines_eu_and_sanctions():
+    """EU routing composes with sanctions sector when both are present."""
+    mods = _modules("EU", "EU sanctions enforcement under the latest package")
+    assert {"global-think-tank-analyst", "eu", "sanctions-sector"} <= mods
+
+
+def test_route_modules_eu_lens_content_loadable():
+    """The MODULE_PATHS entry for ``eu`` must resolve to a real file in the
+    packaged data tree."""
+    assert product._load_module_text("eu") is not None

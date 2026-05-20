@@ -4,6 +4,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Added — EU geography and term routing in `route_modules`
+- `src/agenda_intelligence/product.py` now routes geography `"EU"` / `"Europe"` (exact) and question text containing long-form EU terms (`european union`, `european commission`, `eu ai act`, `gdpr`, `cbam`, `cjeu`, `nis2`, `brussels`, `ecb`, `schrems`, etc.) to the `eu` regional specialist. The bare two-letter `"eu"` is matched only as an exact geography token to avoid false-positive substring hits inside words like `exposure` or `queue`.
+- `MODULE_PATHS["eu"]` resolves to the existing `skills/agenda-intelligence/references/regional/eu.md` (already shipped in v0.9.0 and present in the packaged data mirror); this commit makes the lens reachable from `analyze` rather than only via the GTTA SKILL's load-list.
+- `tests/test_product_shell.py` gains seven direct unit tests for `route_modules`, including a regression guard against substring false positives, an EU + sanctions composition case, and a module-content-loadable check. Test count: 111 -> 118.
+- Closes the gap surfaced by `evals/agent-eval/gtta-global-policy.md` observation 3: the GTTA SKILL listed EU as a loadable lens but `route_modules` had no EU branch, so `meta.modules_used` never recorded EU even when the question was EU-centric.
+
 ## [0.9.0] – 2026-05-20
 
 ### Changed — v0.9 scope: agent-eval delta and product-shell narrative alignment

@@ -100,6 +100,31 @@ SANCTIONS_TERMS = {
     "entity list",
 }
 
+# EU routing splits geography (exact match against the normalized geography
+# value) from text (substring match in the question). Bare two-letter "eu" is
+# only matched as an exact geography token to avoid false-positive substring
+# hits inside words like "exposure" or "queue"; long-form phrases match in
+# either geography or question text.
+EU_GEO_EXACT = {"eu", "europe"}
+
+EU_TERMS = {
+    "european union",
+    "european commission",
+    "european parliament",
+    "european council",
+    "ecb",
+    "european central bank",
+    "cjeu",
+    "eu ai act",
+    "eu regulation",
+    "eu enforcement",
+    "gdpr",
+    "cbam",
+    "nis2",
+    "brussels",
+    "schrems",
+}
+
 
 def _normalize_geography(geography: Any) -> list[str]:
     """Return a list of lowercased geography strings (possibly empty)."""
@@ -142,6 +167,8 @@ def route_modules(geography: Any, question: str = "") -> list[dict]:
         modules.append({"module": "central-asia-caspian", "role": "regional_specialist"})
     if _matches_any(search_space, GULF_ME_TERMS):
         modules.append({"module": "gulf-middle-east", "role": "regional_specialist"})
+    if any(g in EU_GEO_EXACT for g in geo_terms) or _matches_any(search_space, EU_TERMS):
+        modules.append({"module": "eu", "role": "regional_specialist"})
     if _matches_any(search_space, SANCTIONS_TERMS):
         modules.append({"module": "sanctions-sector", "role": "sector_specialist"})
 
@@ -167,6 +194,13 @@ MODULE_PATHS = {
         "references",
         "regional",
         "middle-east.md",
+    ],
+    "eu": [
+        "skills",
+        "agenda-intelligence",
+        "references",
+        "regional",
+        "eu.md",
     ],
     "sanctions-sector": [
         "skills",
