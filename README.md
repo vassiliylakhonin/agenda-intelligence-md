@@ -16,7 +16,7 @@ This repository hosts the product entry point: JSON schemas defining the request
 - **JSON schemas** — request/memo product contract plus validators for briefs, evidence packs, audits, signals, memory cards, lenses
 - **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `score`, `bench`, `doctor` (30+ commands)
 - **MCP server** — stdio server exposing 16 tools across the validation and product layers
-- **Eval kit** — rubric, LLM-judge prompt, human checklist, benchmark harness
+- **Eval kit** — rubric, LLM-judge prompt, human checklist, benchmark harness, agent-eval methodology
 - **Source policy** — per-claim provenance tags (Axis A/B), source requirements for 12 categories
 
 ## What this is not
@@ -127,6 +127,7 @@ Stdio MCP server with 16 tools. Full docs and wire-protocol verification: [`MCP.
 | Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
 | Tutorial | [`docs/tutorial.md`](docs/tutorial.md) |
 | Evaluation layers | [`docs/evaluation.md`](docs/evaluation.md) |
+| Agent-eval methodology | [`docs/agent-eval-methodology.md`](docs/agent-eval-methodology.md) |
 | Factual verification boundary | [`docs/factual-verification.md`](docs/factual-verification.md) |
 | Source plan coverage boundary | [`docs/source-plan-coverage.md`](docs/source-plan-coverage.md) |
 | Evidence audit | [`docs/evidence-audit.md`](docs/evidence-audit.md) |
