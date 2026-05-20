@@ -16,6 +16,7 @@ implements today.
 | Evidence-linked scoring | Are claims actually supported by the evidence pack? | Implemented (`score brief.json --evidence pack.json`) |
 | Before/after scoring | Marker-based before/after example harness | Implemented (`score path.md`) |
 | Batch evaluation | Validate + audit + source coverage diagnostic + score across a directory of cases | Implemented (`bench <dir>`) |
+| Agent-eval delta | Does attaching the MCP layer materially change an agent's output shape on the same question? | Methodology + case template |
 | Quote verification (local) | Is the cited fragment present in the source text file? | Implemented (`verify-quotes`, `verify_quotes` MCP) |
 | Quote verification (network) | Is the cited fragment present at the source URL? | Implemented (`verify-quotes --fetch`) |
 | Factual truthfulness | Are the claims true in the world? | **Not implemented.** Post-v1 layer only. |
@@ -24,6 +25,16 @@ implements today.
 > completeness, evidence labeling, claim traceability, and decision-readiness signals.
 > See [`factual-verification.md`](factual-verification.md) for the boundary.
 > See [`source-plan-coverage.md`](source-plan-coverage.md) for why missing source-plan coverage is diagnostic before v1.0.
+
+## Agent-eval methodology
+
+Use agent-eval when the consumer is an agent or agent integrator, not a human
+domain reviewer. It compares two outputs from the same model and same question:
+baseline agent response without MCP, then response with Agenda Intelligence MCP
+attached. The score is an 8-criterion structural delta, not an accuracy claim.
+
+Methodology: [`agent-eval-methodology.md`](agent-eval-methodology.md)
+Case folder and template: [`../evals/agent-eval/`](../evals/agent-eval/)
 
 ## Benchmark — current numbers
 
@@ -156,6 +167,8 @@ The `evidence-audit.schema.json` enforces a stable `claim_type` enum derived fro
 | Scoring rubric | `evals/rubric.md` | 5-dimension quality rubric |
 | LLM judge prompt | `evals/llm_judge_prompt.txt` | Optional LLM grader prompt |
 | Human review checklist | `evals/human_checklist.md` | Manual review aid |
+| Agent-eval methodology | `docs/agent-eval-methodology.md` | Agent-first structural delta method |
+| Agent-eval template | `evals/agent-eval/TEMPLATE.md` | Case file scaffold |
 | Benchmark script | `evals/run_benchmark.py` | Reproducible batch run |
 | Committed baseline | `evals/baselines/source-backed.{md,json}` | Reference numbers |
 
@@ -165,6 +178,7 @@ The `evidence-audit.schema.json` enforces a stable `claim_type` enum derived fro
 - No default strict source-plan coverage gate before v1.0; `source-coverage --strict` is opt-in.
 - Heuristic score is intentionally simple; do not treat the number as authoritative.
 - LLM-judge prompt is provided; LLM-judge results are not benchmarked.
+- Agent-eval cases measure structural delta from MCP attachment, not factual correctness or model quality.
 - `verify-quotes --fetch` reports presence of a text fragment at a URL, not whether the source is reputable or the claim is true.
 - Benchmark numbers above cover 20 cases. Broader coverage requires more domains and adversarial cases.
 - Heuristic score weights (25, 25, 20, 15, 15) are hand-tuned and not calibrated against expert judgment. Do not treat scores as authoritative quality ratings.

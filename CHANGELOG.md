@@ -4,6 +4,10 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Added — Agent-eval case template
+- README and evaluation docs now link the agent-eval methodology as the agent-first structural delta method.
+- `evals/agent-eval/` now contains a README and reusable case template for skill-repo evals.
+
 ### Added — Request-context prompt guardrails
 - `analyze` now injects a server-verified request context block into the system prompt, carrying question, decision context, audience, geography, time horizon, evidence mode, and depth.
 - The prompt now explicitly tells the model not to invent citations when `evidence_mode` is `user_provided` or `mixed` but no source material is present in the request.
