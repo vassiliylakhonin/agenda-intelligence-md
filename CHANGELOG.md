@@ -4,6 +4,11 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## [0.8.2] – 2026-05-20
+
+### Added — Official MCP Registry ownership marker
+- README footer adds `mcp-name: io.github.vassiliylakhonin/agenda-intelligence-md` so the official Model Context Protocol Registry (registry.modelcontextprotocol.io) accepts the published `server.json` against the PyPI package. No functional change.
+
 ## [0.8.1] – 2026-05-20
 
 ### Fixed — machine-verified audit replaces LLM self-grading
