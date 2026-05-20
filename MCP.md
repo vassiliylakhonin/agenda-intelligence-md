@@ -1,7 +1,16 @@
 # MCP
 
 `agenda-intelligence-mcp` is a real stdio MCP server shipping with the package.
-It exposes 11 tool functions implemented in `agenda_intelligence.mcp_server`.
+It exposes 16 tool functions implemented in `agenda_intelligence.mcp_server`.
+
+The tools split into two layers:
+
+- **Validation layer** (11 tools, this repo's original scope): schema checks,
+  evidence audit, lens and source-plan access, output scoring, quote verification.
+- **Product layer** (5 tools, Agenda Intelligence product shell): `analyze`,
+  `validate_memo`, `list_signals`, `get_signal`, `deep_dive`. These wrap the
+  validation layer with geography routing, system-prompt assembly, optional LLM
+  invocation, and vendored signal access.
 
 **Verification status**: wire-protocol verified — `scripts/smoke_mcp.py` exercises the full JSON-RPC cycle (initialize → tools/list → tools/call) against the running stdio server, including `list_source_categories` and `audit_claims`.
 
@@ -211,6 +220,131 @@ Score a before/after output pair with the marker rubric used in evals.
 ```
 
 Returns `{ "implemented": true, "score": 72, "dimensions": { ... }, "error": null }`.
+
+---
+
+---
+
+## Product layer tools
+
+The five tools below form the Agenda Intelligence product shell. They share the
+request/response contract defined by `schemas/agenda-request.schema.json` and
+`schemas/agenda-memo.schema.json`.
+
+### `analyze`
+
+Run the full product pipeline. Validates the request, routes geography to in-repo
+regional / sector references (Central Asia + Caspian, Gulf + Middle East,
+sanctions), assembles a system prompt from the bundled SKILL.md and reference
+files, and — when `ANTHROPIC_API_KEY` is set and the optional `anthropic` SDK is
+installed — calls the Anthropic API and validates the returned memo against
+`agenda-memo.schema.json`.
+
+```json
+{
+  "request": {
+    "question": "How exposed is a Kazakhstan-incorporated payments fintech to secondary US sanctions risk over the next 12 months?",
+    "decision_context": "Whether to open a USD correspondent banking relationship in Almaty in Q3.",
+    "audience": "founder",
+    "geography": "Kazakhstan",
+    "time_horizon": "12 months",
+    "evidence_mode": "reasoning_only",
+    "depth": "decision_pack"
+  }
+}
+```
+
+Returns:
+
+```json
+{
+  "implemented": true,
+  "valid_request": true,
+  "errors": [],
+  "modules_used": [
+    { "module": "global-think-tank-analyst", "role": "reasoning_method" },
+    { "module": "central-asia-caspian", "role": "regional_specialist" }
+  ],
+  "system_prompt": "...",
+  "llm_invoked": true,
+  "memo": { "meta": { ... }, "risk_summary": { ... }, "analysis": { ... }, ... },
+  "memo_valid": true,
+  "memo_errors": []
+}
+```
+
+Without an API key, `llm_invoked` is `false` and `memo` is a clearly-marked
+skeleton (`validation_score: 0`) so a host model (e.g. Claude Desktop) can
+complete the analysis from the returned `system_prompt`.
+
+Install the optional dependency for direct API calls:
+
+```bash
+pip install "agenda-intelligence-md[llm]"
+export ANTHROPIC_API_KEY=...
+```
+
+Honest scope: no live source retrieval. Evidence comes from caller-supplied
+material or model reasoning, as declared by `evidence_mode`.
+
+---
+
+### `validate_memo`
+
+Validate a memo dict against `agenda-memo.schema.json`. Useful for checking the
+output of an external analyst or another model before accepting it.
+
+```json
+{ "memo_json": { "meta": { ... }, "risk_summary": { ... }, "analysis": { ... }, "watch_next": [...], "audit": { ... } } }
+```
+
+Returns `{ "implemented": true, "valid": true|false, "errors": [...] }`.
+
+---
+
+### `list_signals`
+
+Return the vendored Global Think Tank Analyst signal index. Read-only mirror of
+the packaged `data/signals/index.json` snapshot.
+
+```json
+{}
+```
+
+Returns `{ "implemented": true, "index": { ... } }`.
+
+---
+
+### `get_signal`
+
+Return a vendored signal markdown file by id (filename without extension).
+
+```json
+{ "signal_id": "2026-05-09-hormuz" }
+```
+
+Returns `{ "implemented": true, "id": "...", "content": "<markdown text>" }`.
+
+---
+
+### `deep_dive`
+
+Reserved for Agenda Intelligence v2. Returns a planned-status message. For
+detailed analysis today, call `analyze` with `depth: scenario` or `red_team`.
+
+```json
+{ "aspect": "sanctions-clearing-risk" }
+```
+
+Returns:
+
+```json
+{
+  "implemented": false,
+  "status": "planned",
+  "message": "deep_dive will be available in Agenda Intelligence v2. Use analyze with depth: scenario or red_team for detailed analysis."
+}
+```
 
 ---
 

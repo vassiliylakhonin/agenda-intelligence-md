@@ -36,6 +36,9 @@ dev = [
     "mypy>=1.0",
     "ruff>=0.1",
 ]
+llm = [
+    "anthropic>=0.40",
+]
 
 [project.scripts]
 agenda-intelligence = "agenda_intelligence.cli:main"

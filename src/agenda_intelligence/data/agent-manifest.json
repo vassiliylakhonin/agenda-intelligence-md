@@ -25,7 +25,24 @@
     "signal_classification": "schemas/signal-classification.schema.json",
     "evidence_pack": "schemas/evidence-pack.schema.json",
     "evidence_audit": "schemas/evidence-audit.schema.json",
-    "signal_tracker": "schemas/signal-tracker.schema.json"
+    "signal_tracker": "schemas/signal-tracker.schema.json",
+    "agenda_request": "schemas/agenda-request.schema.json",
+    "agenda_memo": "schemas/agenda-memo.schema.json"
+  },
+  "product": {
+    "name": "Agenda Intelligence",
+    "description": "Product shell exposing the analyze pipeline over the validation and reasoning layers. Routes geography to regional and sector references, assembles a system prompt from bundled SKILL.md content, and validates output against the agenda-memo contract.",
+    "request_schema": "schemas/agenda-request.schema.json",
+    "response_schema": "schemas/agenda-memo.schema.json",
+    "mcp_tools": [
+      "analyze",
+      "validate_memo",
+      "list_signals",
+      "get_signal",
+      "deep_dive"
+    ],
+    "signals_source": "Global Think Tank Analyst (vendored snapshot under data/signals/)",
+    "live_source_retrieval": false
   },
   "protocols": [
     "skills/agenda-intelligence/references/analysis-protocol.md",
