@@ -2,6 +2,23 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
+## [Unreleased] – source-plan coverage diagnostic line
+
+### Added — Source-plan coverage diagnostics
+- `source-coverage` CLI command and MCP `source_coverage` tool report covered and missing category-specific `must_check` source types.
+- `source-categories` CLI command and MCP `list_source_categories` tool expose packaged source requirement categories for agents and CI.
+- `source_coverage.required_source_details` explains which evidence source entries matched each required source type and which terms or aliases matched.
+- Optional `source_category` field added to evidence packs so coverage diagnostics can select the packaged source plan without a separate category argument.
+- `bench` now includes source-plan coverage diagnostics in Markdown and JSON output when evidence packs include `source_category`.
+
+### Changed — Benchmark baseline
+- Bundled source-backed baseline remains 20 cases, with 100% schema-valid, 100% evidence packs, and 100% claim-level audit.
+- Baseline now also reports 100% source-category coverage, mean source-plan coverage of 14.8%, and 20 cases with diagnostic source-plan gaps.
+
+### Boundary
+- Source-plan coverage remains diagnostic before v1.0. It does not discover sources, score reputation, verify factual truth, replace analyst judgment, or redefine `validate-evidence` as category completeness.
+- `source-coverage --strict` is opt-in and separate from base schema validation.
+
 ## [0.7.4] – 2026-05-17
 
 ### Added — Source Ingest skill
