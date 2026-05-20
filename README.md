@@ -1,18 +1,21 @@
 # Agenda Intelligence MD
 
-Evidence & eval layer for strategic intelligence agents.
+Product entry point and evidence-discipline layer for strategic intelligence agents.
 
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Protocol, JSON schemas, CLI, and MCP server for validating, scoring, and auditing the structure of strategic-risk agent output. The evidence-discipline surface for markdown-first reasoning skills ([Global Think Tank Analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst), [Central Asia + Caspian](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill), [Gulf + Middle East](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill)).
+**Agenda Intelligence** is a trusted geopolitical intelligence layer for agentic workflows. Auditable, structured, decision-grade risk memos with evidence discipline that generic LLMs lack. One MCP server. Structured input/output. Built-in validation.
+
+This repository hosts the product entry point: JSON schemas defining the request/response contract, the stdio MCP server exposing `analyze`, `validate_memo`, `list_signals`, `get_signal`, and `deep_dive`, plus the original validation surface (briefs, evidence packs, audits, lenses, source plans). Reasoning content comes from sibling repositories: [Global Think Tank Analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) (method), [Central Asia + Caspian](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) and [Gulf + Middle East](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) (regional specialists, activated automatically when query geography matches).
 
 ## What this is
 
+- **MCP product shell** — `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography to the relevant regional specialist, assembles a system prompt, and returns a memo validated against `agenda-memo.schema.json`
 - **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
-- **JSON schemas** — validate briefs, evidence packs, audits, signals, memory cards, lenses
+- **JSON schemas** — request/memo product contract plus validators for briefs, evidence packs, audits, signals, memory cards, lenses
 - **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `score`, `bench`, `doctor` (30+ commands)
-- **MCP server** — stdio server exposing validation, read, and scoring tools
+- **MCP server** — stdio server exposing 16 tools across the validation and product layers
 - **Eval kit** — rubric, LLM-judge prompt, human checklist, benchmark harness
 - **Source policy** — per-claim provenance tags (Axis A/B), source requirements for 12 categories
 
