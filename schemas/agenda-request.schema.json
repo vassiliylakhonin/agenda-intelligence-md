@@ -28,7 +28,12 @@
         "policymaker",
         "investor"
       ],
-      "description": "Primary reader. Adjusts tone, depth, and which sections receive the most weight."
+      "description": "Primary reader prototype. Enum-bound so `analyze` can route prompt tone deterministically. For audience framings outside this enum, pick the closest prototype here and pass the original framing in `audience_detail`."
+    },
+    "audience_detail": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional freeform elaboration of the primary reader (e.g. `AI company leadership, product and compliance teams`). Descriptive only — `audience` is the prompt-routable signal. Rendered into the verified request-context block alongside `audience` so the host model sees both the prototype and the original framing. Per ADR 0009."
     },
     "geography": {
       "anyOf": [

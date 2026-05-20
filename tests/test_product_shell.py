@@ -331,3 +331,41 @@ def test_route_modules_eu_lens_content_loadable():
     """The MODULE_PATHS entry for ``eu`` must resolve to a real file in the
     packaged data tree."""
     assert product._load_module_text("eu") is not None
+
+
+# ---------------------------------------------------------------------------
+# audience_detail (ADR 0009)
+# ---------------------------------------------------------------------------
+
+
+def test_audience_detail_flows_into_request_context():
+    """Optional `audience_detail` is rendered alongside `audience` in the
+    verified request-context block so the host model sees both the
+    enum-bound prototype and the caller's original framing."""
+    result = mcp_server.analyze(
+        {
+            "question": "Q?",
+            "audience": "founder",
+            "audience_detail": "AI company leadership, product and compliance teams",
+        }
+    )
+    prompt = result["system_prompt"]
+    assert "audience" in prompt
+    assert "audience_detail" in prompt
+    assert "AI company leadership" in prompt
+
+
+def test_audience_detail_optional_and_omitted_cleanly():
+    """A request without `audience_detail` must validate and produce no
+    `audience_detail` line in the rendered context block."""
+    result = mcp_server.analyze({"question": "Q?", "audience": "analyst"})
+    assert result["valid_request"] is True
+    assert "audience_detail" not in result["system_prompt"]
+
+
+def test_audience_detail_rejects_empty_string():
+    """Schema sets `minLength: 1` on `audience_detail`; empty string must
+    fail validation rather than silently render an empty field."""
+    result = mcp_server.analyze({"question": "Q?", "audience": "analyst", "audience_detail": ""})
+    assert result["valid_request"] is False
+    assert result["errors"], "expected at least one schema error"

@@ -285,6 +285,7 @@ def _format_request_context(request: dict) -> str:
         ("question", request.get("question")),
         ("decision_context", request.get("decision_context")),
         ("audience", request.get("audience")),
+        ("audience_detail", request.get("audience_detail")),
         ("geography", request.get("geography")),
         ("time_horizon", request.get("time_horizon")),
         ("evidence_mode", request.get("evidence_mode", "reasoning_only")),

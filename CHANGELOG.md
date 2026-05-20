@@ -4,6 +4,13 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Added — `audience_detail` freeform field on agenda-request (ADR 0009)
+- `schemas/agenda-request.schema.json` (and packaged copy) gains an optional `audience_detail` string (`minLength: 1`). The existing enum-bound `audience` field stays as the prompt-routable signal; `audience_detail` carries the caller's original framing (e.g. `"AI company leadership, product and compliance teams"`) so it is not silently coerced to the closest prototype.
+- `_format_request_context` in `src/agenda_intelligence/product.py` renders `audience_detail` into the verified request-context block alongside `audience` when present.
+- Additive change per ADR 0003: existing requests remain valid; no migration required.
+- Closes the second observation from `evals/agent-eval/gtta-global-policy.md` about silent caller-intent loss at the `audience` boundary.
+- 3 new unit tests in `tests/test_product_shell.py`. Test count: 118 -> 121.
+
 ### Added — EU geography and term routing in `route_modules`
 - `src/agenda_intelligence/product.py` now routes geography `"EU"` / `"Europe"` (exact) and question text containing long-form EU terms (`european union`, `european commission`, `eu ai act`, `gdpr`, `cbam`, `cjeu`, `nis2`, `brussels`, `ecb`, `schrems`, etc.) to the `eu` regional specialist. The bare two-letter `"eu"` is matched only as an exact geography token to avoid false-positive substring hits inside words like `exposure` or `queue`.
 - `MODULE_PATHS["eu"]` resolves to the existing `skills/agenda-intelligence/references/regional/eu.md` (already shipped in v0.9.0 and present in the packaged data mirror); this commit makes the lens reachable from `analyze` rather than only via the GTTA SKILL's load-list.
