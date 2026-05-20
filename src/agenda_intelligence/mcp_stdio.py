@@ -120,6 +120,43 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "handler": lambda args: mcp_server.verify_quotes(args["pack_json"], args.get("texts")),
     },
+    "analyze": {
+        "description": (
+            "Run the Agenda Intelligence product-shell pipeline. Validates the request "
+            "against agenda-request.schema.json, routes geography to in-repo regional / "
+            "sector references, assembles a system prompt, and calls the Anthropic API "
+            "when ANTHROPIC_API_KEY is set. Returns a structured memo validated against "
+            "agenda-memo.schema.json. No live source retrieval."
+        ),
+        "inputSchema": _schema({"request": {"type": "object"}}, ["request"]),
+        "handler": lambda args: mcp_server.analyze(args["request"]),
+    },
+    "validate_memo": {
+        "description": "Validate a memo JSON object against agenda-memo.schema.json.",
+        "inputSchema": _schema({"memo_json": {"type": "object"}}, ["memo_json"]),
+        "handler": lambda args: mcp_server.validate_memo(args["memo_json"]),
+    },
+    "list_signals": {
+        "description": (
+            "List vendored Global Think Tank Analyst signals. Read-only mirror of the "
+            "packaged signals/index.json snapshot."
+        ),
+        "inputSchema": _schema({}),
+        "handler": lambda args: mcp_server.list_signals(),
+    },
+    "get_signal": {
+        "description": ("Return a vendored signal markdown file by id (filename without extension)."),
+        "inputSchema": _schema({"signal_id": {"type": "string"}}, ["signal_id"]),
+        "handler": lambda args: mcp_server.get_signal(args["signal_id"]),
+    },
+    "deep_dive": {
+        "description": (
+            "Reserved for Agenda Intelligence v2. Returns a planned-status message. "
+            "For detailed analysis today, call `analyze` with depth: scenario or red_team."
+        ),
+        "inputSchema": _schema({"aspect": {"type": "string"}}),
+        "handler": lambda args: mcp_server.deep_dive(args.get("aspect")),
+    },
 }
 
 

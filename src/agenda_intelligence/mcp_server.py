@@ -494,3 +494,43 @@ def score_output(before_text: str, after_text: str) -> dict:
     result = score_before_after(before_text, after_text)
     result["error"] = None
     return result
+
+
+# ---------------------------------------------------------------------------
+# Product-shell tools (Agenda Intelligence MCP product layer)
+# ---------------------------------------------------------------------------
+
+from agenda_intelligence import product as _product  # noqa: E402
+
+
+def analyze(request: dict) -> dict:
+    """Run the product-shell analyze pipeline.
+
+    Validates the request against agenda-request.schema.json, routes the
+    geography to in-repo regional / sector references, assembles a system
+    prompt, optionally calls the Anthropic API when ANTHROPIC_API_KEY is
+    set and the anthropic SDK is installed, then validates the returned
+    memo against agenda-memo.schema.json. No live source retrieval.
+    """
+    return _product.analyze(request)
+
+
+def validate_memo(memo_json: dict) -> dict:
+    """Validate a memo dict against agenda-memo.schema.json."""
+    result = _product.validate_memo(memo_json)
+    return {"implemented": True, **result}
+
+
+def list_signals() -> dict:
+    """List vendored GTTA signals from the packaged index.json."""
+    return _product.list_signals()
+
+
+def get_signal(signal_id: str) -> dict:
+    """Return a vendored signal markdown file by id."""
+    return _product.get_signal(signal_id)
+
+
+def deep_dive(aspect: Optional[str] = None) -> dict:
+    """Reserved for v2. Returns a planned-status message."""
+    return _product.deep_dive(aspect)
