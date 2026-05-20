@@ -245,13 +245,41 @@ returning the memo. Provenance entries are kept as you write them.
 """
 
 
-def assemble_system_prompt(modules: list[dict]) -> str:
+def _format_request_context(request: dict) -> str:
+    """Render request-level constraints as explicit prompt context."""
+    fields = [
+        ("question", request.get("question")),
+        ("decision_context", request.get("decision_context")),
+        ("audience", request.get("audience")),
+        ("geography", request.get("geography")),
+        ("time_horizon", request.get("time_horizon")),
+        ("evidence_mode", request.get("evidence_mode", "reasoning_only")),
+        ("depth", request.get("depth", "standard")),
+    ]
+    lines = ["\n\n===== REQUEST CONTEXT - SERVER VERIFIED =====\n"]
+    for key, value in fields:
+        if value is None:
+            continue
+        lines.append(f"- {key}: {json.dumps(value, ensure_ascii=False)}")
+    lines.extend(
+        [
+            "",
+            "Apply audience and depth as formatting and prioritization constraints, not as permission to change facts.",
+            "If evidence_mode is user_provided or mixed but no source material is present in the request, "
+            "disclose that limitation and do not invent citations.",
+            "Do not upgrade reasoning_only or mixed analysis into live-source-backed analysis.",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def assemble_system_prompt(modules: list[dict], request: Optional[dict] = None) -> str:
     """Concatenate the bundled SKILL.md / reference content into a system prompt.
 
-    Structure: preamble → each loaded module → strict output-format block with
-    JSON-only directive and a compact memo skeleton. The output-format block is
-    appended last so it remains visually adjacent to where the model starts to
-    plan its response.
+    Structure: preamble → request context → each loaded module → strict
+    output-format block with JSON-only directive and a compact memo skeleton.
+    The output-format block is appended last so it remains visually adjacent
+    to where the model starts to plan its response.
     """
     sections: list[str] = []
     sections.append(
@@ -263,6 +291,8 @@ def assemble_system_prompt(modules: list[dict]) -> str:
         "legal, compliance, financial, or security advice. Do not claim live source "
         "retrieval. Output must conform to the agenda-memo.schema.json contract."
     )
+    if request is not None:
+        sections.append(_format_request_context(request))
     for m in modules:
         text = _load_module_text(m["module"])
         if text is None:
@@ -582,7 +612,7 @@ def analyze(request: dict) -> dict:
         }
 
     modules = route_modules(request.get("geography"), request.get("question", ""))
-    system_prompt = assemble_system_prompt(modules)
+    system_prompt = assemble_system_prompt(modules, request)
     user_message = _build_user_message(request)
 
     llm_text = _call_anthropic(system_prompt, user_message)

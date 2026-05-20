@@ -4,6 +4,10 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Added — Request-context prompt guardrails
+- `analyze` now injects a server-verified request context block into the system prompt, carrying question, decision context, audience, geography, time horizon, evidence mode, and depth.
+- The prompt now explicitly tells the model not to invent citations when `evidence_mode` is `user_provided` or `mixed` but no source material is present in the request.
+
 ### Fixed — Product shell contract alignment
 - README now describes the full 16-tool MCP surface in both the overview and MCP table.
 - `analyze` now honors `output_format: markdown` by returning a server-rendered `rendered_memo` alongside the structured `memo`.

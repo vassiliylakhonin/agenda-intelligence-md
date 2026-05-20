@@ -124,6 +124,27 @@ def test_analyze_markdown_output_adds_rendered_memo():
     assert memo_validation["valid"] is True, memo_validation["errors"]
 
 
+def test_analyze_prompt_includes_server_verified_request_context():
+    request = {
+        "question": "Should we open a corridor-risk desk?",
+        "decision_context": "Whether to hire an analyst this quarter.",
+        "audience": "founder",
+        "geography": ["Kazakhstan", "Caspian"],
+        "time_horizon": "next 90 days",
+        "evidence_mode": "mixed",
+        "depth": "decision_pack",
+    }
+    result = mcp_server.analyze(request)
+
+    prompt = result["system_prompt"]
+    assert "===== REQUEST CONTEXT - SERVER VERIFIED =====" in prompt
+    assert '- audience: "founder"' in prompt
+    assert '- depth: "decision_pack"' in prompt
+    assert '- evidence_mode: "mixed"' in prompt
+    assert "do not invent citations" in prompt
+    assert "Do not upgrade reasoning_only or mixed analysis into live-source-backed analysis." in prompt
+
+
 # ---------------------------------------------------------------------------
 # Scenario 3: validate_memo on real and malformed memos
 # ---------------------------------------------------------------------------
