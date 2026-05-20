@@ -190,8 +190,69 @@ def _load_module_text(module_id: str) -> Optional[str]:
     return path.read_text(encoding="utf-8")
 
 
+_MEMO_SKELETON_HINT = """\
+
+===== OUTPUT FORMAT — STRICT =====
+
+Return ONLY a single JSON object that validates against agenda-memo.schema.json.
+No surrounding prose. No markdown fences. No commentary before or after the JSON.
+
+Required top-level keys: meta, risk_summary, analysis, watch_next, audit.
+
+Minimal compact skeleton (replace ALL values; do not echo placeholders):
+
+{
+  "meta": {
+    "evidence_mode": "reasoning_only",
+    "depth": "<echo request.depth>",
+    "modules_used": <echo of modules listed above as [{"module": "...", "role": "..."}]>,
+    "timestamp": "<ISO 8601 UTC>",
+    "geography": "<echo request.geography>",
+    "confidence": {"level": "low|medium|high", "score": 0.0, "reasoning": "..."}
+  },
+  "risk_summary": {"short": "<one sentence>", "detailed": "<one paragraph>"},
+  "decision_frame": {"decision": "...", "stakeholders": ["..."], "constraints": ["..."]},
+  "analysis": {
+    "facts": ["..."], "assessments": ["..."],
+    "assumptions": ["..."], "unknowns": ["..."]
+  },
+  "scenarios": [
+    {"name": "...", "probability_range": {"low": 0.0, "high": 0.0},
+     "drivers": ["..."], "implications": ["..."]}
+  ],
+  "options": [
+    {"option": "...", "pros": ["..."], "cons": ["..."], "trade_offs": ["..."]}
+  ],
+  "recommended_actions": [
+    {"action": "...", "priority": "high|medium|low",
+     "trigger": "...", "time_horizon": "..."}
+  ],
+  "failure_modes": [
+    {"scenario": "...", "likelihood": "high|medium|low",
+     "impact": "high|medium|low", "mitigation": "..."}
+  ],
+  "watch_next": [{"indicator": "...", "trigger": "...", "source_type": "..."}],
+  "audit": {
+    "validation_score": 0.0,
+    "validation_details": [],
+    "provenance": [{"claim": "...", "basis": "fact|assessment|assumption|unknown"}]
+  }
+}
+
+The `audit.validation_score` and `audit.validation_details` you write here are
+advisory; the server overwrites them with machine-verified values before
+returning the memo. Provenance entries are kept as you write them.
+"""
+
+
 def assemble_system_prompt(modules: list[dict]) -> str:
-    """Concatenate the bundled SKILL.md / reference content into a system prompt."""
+    """Concatenate the bundled SKILL.md / reference content into a system prompt.
+
+    Structure: preamble → each loaded module → strict output-format block with
+    JSON-only directive and a compact memo skeleton. The output-format block is
+    appended last so it remains visually adjacent to where the model starts to
+    plan its response.
+    """
     sections: list[str] = []
     sections.append(
         "You are Agenda Intelligence, a structured strategic-risk analysis layer. "
@@ -208,6 +269,7 @@ def assemble_system_prompt(modules: list[dict]) -> str:
             continue
         header = f"\n\n===== MODULE: {m['module']} (role: {m['role']}) =====\n\n"
         sections.append(header + text)
+    sections.append(_MEMO_SKELETON_HINT)
     return "".join(sections)
 
 
@@ -286,6 +348,87 @@ def _skeleton_memo(request: dict, modules: list[dict]) -> dict:
             "validation_details": [{"check": "llm_invoked", "passed": False, "note": "skeleton-only response"}],
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Machine audit (replaces LLM-supplied self-grading)
+# ---------------------------------------------------------------------------
+
+
+def _run_machine_audit(memo: dict, modules: list[dict], schema_valid: bool) -> dict:
+    """Compute the audit block from observable facts about the memo.
+
+    The LLM's own values for ``audit.validation_score`` and
+    ``audit.validation_details`` are not trustworthy (the model would grade its
+    own homework). ``analyze`` calls this function to overwrite both fields with
+    machine-verified results before returning the memo. The model's
+    ``audit.provenance`` is substantive content (per-claim basis labels) and is
+    preserved as-supplied.
+
+    Each check returns a boolean; ``validation_score`` is the share of checks
+    that passed. This is a structural score, not a factual one — it makes no
+    claim about whether the analysis is correct, only that it follows the
+    documented shape.
+    """
+    analysis = memo.get("analysis", {}) if isinstance(memo, dict) else {}
+    meta = memo.get("meta", {}) if isinstance(memo, dict) else {}
+    audit = memo.get("audit", {}) if isinstance(memo, dict) else {}
+
+    declared_modules = [m.get("module") for m in meta.get("modules_used", []) if isinstance(m, dict)]
+    routed_modules = [m.get("module") for m in modules]
+
+    checks: list[dict] = [
+        {
+            "check": "schema_valid",
+            "passed": bool(schema_valid),
+            "note": "Validated against agenda-memo.schema.json by the server.",
+        },
+        {
+            "check": "fact_assessment_separation",
+            "passed": (
+                isinstance(analysis.get("facts"), list)
+                and isinstance(analysis.get("assessments"), list)
+                and (len(analysis.get("facts", [])) + len(analysis.get("assessments", []))) > 0
+            ),
+            "note": "At least one of facts[] or assessments[] is non-empty.",
+        },
+        {
+            "check": "unknowns_acknowledged",
+            "passed": isinstance(analysis.get("unknowns"), list) and len(analysis.get("unknowns", [])) > 0,
+            "note": "Memo explicitly lists at least one unknown.",
+        },
+        {
+            "check": "modules_used_match_routing",
+            "passed": set(declared_modules) == set(routed_modules),
+            "note": "Memo's meta.modules_used matches the server-side routing decision.",
+        },
+        {
+            "check": "watch_next_present",
+            "passed": isinstance(memo.get("watch_next"), list) and len(memo.get("watch_next", [])) > 0,
+            "note": "At least one watch_next indicator.",
+        },
+        {
+            "check": "evidence_mode_within_contract",
+            "passed": meta.get("evidence_mode") in {"reasoning_only", "user_provided", "mixed"},
+            "note": "evidence_mode is one of the supported values (live_source_backed is intentionally absent).",
+        },
+    ]
+    passed = sum(1 for c in checks if c["passed"])
+    score = round(passed / len(checks), 4) if checks else 0.0
+
+    # Preserve LLM-supplied provenance (substantive content). Drop their
+    # validation_score and validation_details (self-graded, untrusted).
+    result: dict = {
+        "validation_score": score,
+        "validation_details": checks,
+        "machine_verified": True,
+    }
+    if isinstance(audit.get("provenance"), list):
+        result["provenance"] = audit["provenance"]
+    if isinstance(audit.get("validation_score"), (int, float)):
+        # Keep the LLM's self-score in a clearly-labeled field for transparency.
+        result["self_assessed_score"] = audit["validation_score"]
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -408,6 +551,17 @@ def analyze(request: dict) -> dict:
         }
 
     mv = validate_memo(parsed)
+    schema_valid = bool(mv.get("valid"))
+    # Overwrite the LLM-supplied audit block with machine-verified values.
+    # See _run_machine_audit docstring: LLMs cannot be trusted to self-grade
+    # validation_score / validation_details, but their provenance entries are
+    # substantive content and are preserved.
+    if isinstance(parsed, dict):
+        parsed["audit"] = _run_machine_audit(parsed, modules, schema_valid)
+        # Re-validate after the audit rewrite; the rewrite should not violate
+        # the schema, but a follow-up check is cheap insurance against drift.
+        mv = validate_memo(parsed)
+        schema_valid = bool(mv.get("valid"))
     return {
         "implemented": True,
         "valid_request": True,
@@ -416,7 +570,7 @@ def analyze(request: dict) -> dict:
         "system_prompt": system_prompt,
         "llm_invoked": True,
         "memo": parsed,
-        "memo_valid": bool(mv.get("valid")),
+        "memo_valid": schema_valid,
         "memo_errors": mv.get("errors", []),
     }
 

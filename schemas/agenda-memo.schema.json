@@ -420,7 +420,17 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1,
-          "description": "Self-validation score produced by Agenda Intelligence MD scoring."
+          "description": "Structural validation score. When `machine_verified` is true, this value is computed by the Agenda Intelligence server from observable checks (schema validity, fact/assessment separation, unknowns acknowledged, modules match routing, etc.) and is NOT the model's self-grade. Structural only — no claim about factual correctness."
+        },
+        "machine_verified": {
+          "type": "boolean",
+          "description": "True when validation_score and validation_details were written by the server, not by the model. The `analyze` tool sets this to true automatically before returning the memo."
+        },
+        "self_assessed_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Optional. The model's own self-graded validation_score, preserved here for transparency when the server overwrites validation_score with machine-verified value."
         },
         "validation_details": {
           "type": "array",

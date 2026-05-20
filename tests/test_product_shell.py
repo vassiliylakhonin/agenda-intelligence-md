@@ -149,6 +149,50 @@ def test_analyze_llm_invoked_branch_with_mock(monkeypatch):
     assert result["memo"]["risk_summary"]["short"].startswith("Secondary US sanctions")
 
 
+def test_analyze_overrides_self_graded_audit_score(monkeypatch):
+    """A model cannot pass itself off as fully validated by reporting score=0.99.
+
+    The server must overwrite ``audit.validation_score`` and
+    ``audit.validation_details`` with machine-verified values, while preserving
+    the model's self-grade in ``audit.self_assessed_score`` for transparency.
+    Provenance entries (substantive content) must survive.
+    """
+    fake_memo = {
+        "meta": {
+            "evidence_mode": "reasoning_only",
+            "depth": "standard",
+            "modules_used": [
+                {"module": "global-think-tank-analyst", "role": "reasoning_method"},
+                {"module": "central-asia-caspian", "role": "regional_specialist"},
+            ],
+            "timestamp": "2026-05-20T13:00:00Z",
+        },
+        "risk_summary": {"short": "x", "detailed": "x"},
+        # unknowns intentionally empty — a real failure mode the model may
+        # quietly skip; machine audit must catch it.
+        "analysis": {"facts": ["f"], "assessments": ["a"], "assumptions": ["u"], "unknowns": []},
+        "watch_next": [{"indicator": "i"}],
+        "audit": {
+            "validation_score": 0.99,  # the model grading itself
+            "validation_details": [{"check": "everything", "passed": True}],
+            "provenance": [{"claim": "real claim", "basis": "assessment"}],
+        },
+    }
+    monkeypatch.setattr(product, "_call_anthropic", lambda s, u: json.dumps(fake_memo))
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-used")
+    result = mcp_server.analyze({"question": "q", "geography": "Kazakhstan"})
+
+    audit = result["memo"]["audit"]
+    assert audit["machine_verified"] is True
+    assert audit["self_assessed_score"] == 0.99
+    assert audit["validation_score"] < 0.99, "machine score must not blindly accept the LLM self-grade"
+    failed = [c["check"] for c in audit["validation_details"] if not c["passed"]]
+    assert "unknowns_acknowledged" in failed
+    # Provenance is substantive content and must survive the rewrite.
+    assert audit["provenance"] == [{"claim": "real claim", "basis": "assessment"}]
+    assert result["memo_valid"] is True
+
+
 def test_analyze_llm_branch_handles_non_json_response(monkeypatch):
     monkeypatch.setattr(product, "_call_anthropic", lambda s, u: "I cannot produce JSON, sorry.")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-used")

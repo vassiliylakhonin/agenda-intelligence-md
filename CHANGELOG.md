@@ -4,6 +4,25 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## [0.8.1] – 2026-05-20
+
+### Fixed — machine-verified audit replaces LLM self-grading
+- `analyze` now overwrites `audit.validation_score` and `audit.validation_details` with values computed from six observable structural checks (schema valid, fact/assessment separation, unknowns acknowledged, modules match routing, watch_next present, evidence_mode within contract). The model can no longer self-assign a 0.99 audit score.
+- The model's self-grade is preserved as `audit.self_assessed_score` for transparency, and `audit.machine_verified: true` flags the rewrite explicitly.
+- `audit.provenance` (per-claim basis labels) is substantive content and is preserved as the model wrote it.
+
+### Changed — system prompt enforces output format
+- `assemble_system_prompt` appends a dedicated `===== OUTPUT FORMAT — STRICT =====` block that forbids markdown fences and surrounding prose, lists required keys, and provides a compact JSON skeleton. Improves first-pass parse rate for weaker host models.
+
+### Added — schema fields for machine-verified audit
+- `agenda-memo.schema.json`: optional `audit.machine_verified` (bool) and `audit.self_assessed_score` (number 0-1). Clarified that `validation_score` is structural only.
+
+### Added — README quickstart explains `[llm]` extra
+- Quickstart shows `pip install "agenda-intelligence-md[llm]"` + `ANTHROPIC_API_KEY` to enable direct API calls from `analyze`. Without it, `analyze` still returns the assembled `system_prompt` for the host model to complete.
+
+### Tests
+- `tests/test_product_shell.py::test_analyze_overrides_self_graded_audit_score` exercises the audit rewrite, the self-grade preservation, and the provenance pass-through.
+
 ## [0.8.0] – 2026-05-20
 
 ### Added — Agenda Intelligence product shell
