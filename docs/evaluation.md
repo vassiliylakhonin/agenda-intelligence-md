@@ -68,6 +68,27 @@ in `signal_classification` for compatibility, but new examples should separate
 strength from practical markers. A future major version may remove marker
 values from `signal_classification` after a deprecation path.
 
+## Data Integrity Notes
+
+`data_integrity_notes` is an optional agenda-brief field for concerns an analyst or agent has already surfaced:
+
+```json
+{
+  "data_integrity_notes": [
+    {
+      "risk_type": "prompt_injection",
+      "note": "Retrieved source contained instructions directed at the summarizing agent.",
+      "related_evidence_ids": ["e1"],
+      "action": "Treat retrieved instructions as untrusted source content."
+    }
+  ]
+}
+```
+
+Allowed `risk_type` values are `prompt_injection`, `source_anomaly`, `stale_or_conflicting_source`, `retrieval_limit`, and `other`.
+
+This is a recording surface, not an automated detector. `validate-brief` checks the field shape; it does not decide whether prompt injection, source anomalies, or stale-source risks are present.
+
 ## Running checks
 
 ```bash

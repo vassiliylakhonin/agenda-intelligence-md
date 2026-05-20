@@ -4,6 +4,10 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Added — Agenda brief data integrity notes
+- Optional `data_integrity_notes` field added to `agenda-brief.schema.json` for prompt-injection, source-anomaly, stale/conflicting-source, retrieval-limit, or other integrity concerns surfaced by an analyst or agent.
+- `data_integrity_notes` is a recording surface only: validators check field shape, but do not detect integrity risks or verify factual truth.
+
 ### CI & release
 - GitHub Actions workflow dependencies moved to Node 24-compatible `actions/checkout@v6` and `actions/setup-python@v6`.
 - PyPI publish steps now explicitly disable attestations while token-based publishing remains active, matching the documented Trusted Publishing migration path.

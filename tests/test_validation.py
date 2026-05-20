@@ -100,6 +100,42 @@ def test_validate_brief_accepts_signal_markers(tmp_path):
     assert "OK" in res.stdout
 
 
+def test_validate_brief_accepts_data_integrity_notes(tmp_path):
+    data = json.loads((FIXTURES / "valid-agenda-brief.json").read_text())
+    data["data_integrity_notes"] = [
+        {
+            "risk_type": "prompt_injection",
+            "note": "Retrieved source contained instructions directed at the summarizing agent.",
+            "related_evidence_ids": ["e1"],
+            "action": "Treat retrieved instructions as untrusted source content.",
+        }
+    ]
+    path = tmp_path / "brief-with-data-integrity-notes.json"
+    path.write_text(json.dumps(data))
+
+    res = run_cli(["validate-brief", str(path)])
+
+    assert res.returncode == 0
+    assert "OK" in res.stdout
+
+
+def test_validate_brief_rejects_unknown_data_integrity_risk_type(tmp_path):
+    data = json.loads((FIXTURES / "valid-agenda-brief.json").read_text())
+    data["data_integrity_notes"] = [
+        {
+            "risk_type": "truth_verdict",
+            "note": "This would overload data-integrity notes as a factual verification result.",
+        }
+    ]
+    path = tmp_path / "brief-with-invalid-data-integrity-risk.json"
+    path.write_text(json.dumps(data))
+
+    res = run_cli(["validate-brief", str(path)])
+
+    assert res.returncode != 0
+    assert "ERROR" in res.stderr
+
+
 def test_validate_brief_rejects_unknown_signal_marker(tmp_path):
     data = json.loads((FIXTURES / "valid-agenda-brief.json").read_text())
     data["signal_markers"] = ["reputational_risk_development"]

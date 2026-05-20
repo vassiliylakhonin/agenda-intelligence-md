@@ -112,6 +112,10 @@ _Avoid_: Truth, factual score, binary verdict
 A claim or intended claim that cannot be backed by the available evidence.
 _Avoid_: Error, validation failure, hidden assumption
 
+**Data Integrity Note**:
+A structured agenda-brief note for prompt-injection, source-anomaly, stale/conflicting-source, retrieval-limit, or other integrity concerns surfaced by an analyst or agent.
+_Avoid_: Automated detector, truth verdict, source reputation score
+
 **Claim Verdict**:
 A future claim-assessment result that may distinguish verified, contradicted, partially supported, unresolved, and not verifiable.
 _Avoid_: Current schema field, truth, factual score
@@ -229,6 +233,7 @@ _Avoid_: Refactor, cleanup, terminology fix
 - `support_status` and `support_level` are related but distinct shipped schema terms; do not collapse or rename them before v1.0.
 - `unsupported_claims` in **Evidence Pack** and **Evidence Audit** share the **Unsupported Claim** concept but may differ in granularity; keep them semantically aligned, not necessarily byte-identical.
 - **Evidence Audit** is a stable schema contract for claim traceability, not a factual truthfulness layer.
+- **Data Integrity Notes** record surfaced integrity concerns; they do not mean the validator detected prompt injection, source anomalies, or factual truth problems.
 - `claim_type` is a stable minimum taxonomy: add real case-derived enum values when needed, but do not remove or rename existing values before v1.0.
 - A **Lens** is a portable reasoning layer, not a **Source Plan**, schema contract, or output template; default output blocks are examples, not the reason the lens exists.
 - Choose **Lenses** by reasoning need and **Source Plans** by evidence need; one task may use regional plus sector lenses and one primary source plan with optional secondary plans.
