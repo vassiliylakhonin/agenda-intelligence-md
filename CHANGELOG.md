@@ -4,6 +4,35 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## [0.8.0] – 2026-05-20
+
+### Added — Agenda Intelligence product shell
+- Five new MCP tools turning this repository into the product entry point: `analyze`, `validate_memo`, `list_signals`, `get_signal`, `deep_dive`. MCP tool count: 11 → 16.
+- `analyze` validates the request against `agenda-request.schema.json`, routes geography to in-repo regional / sector references (Central Asia + Caspian, Gulf + Middle East, sanctions), assembles a system prompt from the bundled SKILL.md and reference files, and — when `ANTHROPIC_API_KEY` is set and the optional `anthropic` SDK is installed — calls the Anthropic API and validates the returned memo against `agenda-memo.schema.json`. Without an API key, returns a skeleton memo plus the assembled `system_prompt` so a host model can complete the analysis.
+- `validate_memo` schema-checks memos against `agenda-memo.schema.json`.
+- `list_signals` / `get_signal` expose a vendored snapshot of the Global Think Tank Analyst signal archive under `data/signals/`.
+- `deep_dive` is a v2 stub returning a planned-status message.
+
+### Added — Product request and memo schemas
+- `schemas/agenda-request.schema.json` defines the input contract (question, decision_context, audience, geography, time_horizon, evidence_mode, depth, output_format).
+- `schemas/agenda-memo.schema.json` defines the output contract (meta with modules_used and gtta_version, risk_summary, decision_frame, analysis with fact/assessment/assumption/unknown separation, scenarios with probability ranges, options, recommended_actions, failure_modes, watch_next, audit with validation_score and provenance).
+- Both schemas are draft 2020-12, strict (`additionalProperties: false`), and include validated examples.
+- `agent-manifest.json` gains a `product` block surfacing the request/response schemas, the five MCP tools, the signal source, and the explicit `live_source_retrieval: false` flag.
+
+### Added — Optional LLM dependency
+- `pip install agenda-intelligence-md[llm]` installs `anthropic>=0.40` so `analyze` can call the Anthropic API directly via `ANTHROPIC_API_KEY`. No new hard dependency.
+
+### Added — Vendored signal archive
+- `scripts/sync_signals.py` mirrors the GTTA `signals/` directory into `src/agenda_intelligence/data/signals/`, following the same dual-copy pattern as `schemas/` ↔ `data/schemas/`.
+- `tests/test_signal_sync.py` enforces parity when a local GTTA checkout is present.
+
+### Added — Product-shell integration tests
+- `tests/test_product_shell.py` covers geography routing (Kazakhstan → CA-Caspian, global → GTTA only), validate_memo happy and negative paths, the LLM-invocation branch with mocked Anthropic responses, and signals / deep_dive coverage. Tests do not require network or credentials.
+
+### Changed — Repository positioning
+- README now leads with the product framing (Agenda Intelligence — trusted geopolitical intelligence layer for agentic workflows). The "What this is" list opens with the MCP product shell. Companion READMEs (Global Think Tank Analyst, Central Asia + Caspian, Gulf + Middle East) name Agenda Intelligence and document automatic activation rules.
+- `MCP.md` documents the five new product-layer tools and updates the tool-count header (11 → 16).
+
 ### Added — Agenda brief data integrity notes
 - Optional `data_integrity_notes` field added to `agenda-brief.schema.json` for prompt-injection, source-anomaly, stale/conflicting-source, retrieval-limit, or other integrity concerns surfaced by an analyst or agent.
 - `data_integrity_notes` is a recording surface only: validators check field shape, but do not detect integrity risks or verify factual truth.
@@ -14,7 +43,7 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ### Docs
 - Use-case and integration docs now frame source plans as evidence expectations, not live retrieval or factual verification.
-- MCP and adoption docs now list the full 11-tool surface, including source category discovery, source coverage, and quote verification.
+- MCP and adoption docs now list the full 16-tool surface, including the product-shell layer.
 
 ## [0.7.5] – 2026-05-20
 
