@@ -1,0 +1,606 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/agenda-memo.schema.json",
+  "title": "AgendaMemo",
+  "description": "Output contract for the Agenda Intelligence MCP `analyze` tool. Structured strategic-risk memo with evidence discipline: facts, assessments, assumptions, and unknowns are separated; scenarios carry probability ranges; recommended actions carry triggers and time horizons; audit metadata records validation score, provenance, and which reasoning modules were loaded. Reasoning content comes from Global Think Tank Analyst (method) and any activated vertical specialist (regional depth).",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "meta",
+    "risk_summary",
+    "analysis",
+    "watch_next",
+    "audit"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_mode",
+        "depth",
+        "modules_used",
+        "timestamp"
+      ],
+      "properties": {
+        "evidence_mode": {
+          "type": "string",
+          "enum": [
+            "reasoning_only",
+            "user_provided",
+            "mixed"
+          ]
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "level",
+                "score"
+              ],
+              "properties": {
+                "level": {
+                  "type": "string",
+                  "enum": [
+                    "high",
+                    "medium",
+                    "low"
+                  ]
+                },
+                "score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "reasoning": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "geography": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          ]
+        },
+        "depth": {
+          "type": "string",
+          "enum": [
+            "quick_brief",
+            "standard",
+            "scenario",
+            "red_team",
+            "decision_pack"
+          ]
+        },
+        "modules_used": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "module",
+              "role"
+            ],
+            "properties": {
+              "module": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Identifier of the SKILL.md or method file loaded into the system prompt (e.g. `global-think-tank-analyst`, `central-asia-caspian`, `gulf-middle-east`)."
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "reasoning_method",
+                  "regional_specialist"
+                ]
+              },
+              "version": {
+                "type": "string",
+                "description": "Version or commit hash of the bundled module, if known."
+              }
+            }
+          }
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of memo generation."
+        },
+        "gtta_version": {
+          "type": "string",
+          "description": "Version of the Global Think Tank Analyst reasoning method used."
+        }
+      }
+    },
+    "risk_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "short",
+        "detailed"
+      ],
+      "properties": {
+        "short": {
+          "type": "string",
+          "minLength": 1,
+          "description": "One-sentence bottom line."
+        },
+        "detailed": {
+          "type": "string",
+          "minLength": 1,
+          "description": "One-paragraph elaboration."
+        }
+      }
+    },
+    "decision_frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "decision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stakeholders": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "facts",
+        "assessments",
+        "assumptions",
+        "unknowns"
+      ],
+      "properties": {
+        "facts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Established, reported, cited, or user-provided information."
+        },
+        "assessments": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Analyst inference from facts, explicitly labeled."
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Premises the analysis depends on, surfaced for the reader."
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "What the analyst cannot determine with the available context."
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "probability_range",
+          "drivers",
+          "implications"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "probability_range": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "low",
+              "high"
+            ],
+            "properties": {
+              "low": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "high": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          },
+          "drivers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "implications": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "option",
+          "pros",
+          "cons"
+        ],
+        "properties": {
+          "option": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pros": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "cons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "trade_offs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "recommended_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action",
+          "priority"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "minLength": 1
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "trigger": {
+            "type": "string",
+            "description": "Condition under which this action becomes appropriate."
+          },
+          "time_horizon": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "failure_modes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scenario",
+          "likelihood",
+          "impact"
+        ],
+        "properties": {
+          "scenario": {
+            "type": "string",
+            "minLength": 1
+          },
+          "likelihood": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "impact": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "mitigation": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "watch_next": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "indicator"
+        ],
+        "properties": {
+          "indicator": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trigger": {
+            "type": "string",
+            "description": "Threshold or event that would change the view."
+          },
+          "source_type": {
+            "type": "string",
+            "description": "Free-form descriptor of the kind of source to monitor (e.g. `regulator_announcement`, `central_bank_release`, `port_traffic_data`). Use the project source-taxonomy.json for canonical types where applicable."
+          }
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "validation_score"
+      ],
+      "properties": {
+        "validation_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Self-validation score produced by Agenda Intelligence MD scoring."
+        },
+        "validation_details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "check",
+              "passed"
+            ],
+            "properties": {
+              "check": {
+                "type": "string",
+                "minLength": 1
+              },
+              "passed": {
+                "type": "boolean"
+              },
+              "note": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "claim",
+              "basis"
+            ],
+            "properties": {
+              "claim": {
+                "type": "string",
+                "minLength": 1
+              },
+              "basis": {
+                "type": "string",
+                "enum": [
+                  "fact",
+                  "assessment",
+                  "assumption",
+                  "unknown"
+                ]
+              },
+              "source": {
+                "type": "string",
+                "description": "Free-form source reference if available; absent in reasoning_only mode."
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "meta": {
+        "evidence_mode": "reasoning_only",
+        "confidence": "medium",
+        "geography": "Kazakhstan",
+        "depth": "decision_pack",
+        "modules_used": [
+          {
+            "module": "global-think-tank-analyst",
+            "role": "reasoning_method"
+          },
+          {
+            "module": "central-asia-caspian",
+            "role": "regional_specialist"
+          }
+        ],
+        "timestamp": "2026-05-20T12:00:00Z",
+        "gtta_version": "0.x"
+      },
+      "risk_summary": {
+        "short": "Secondary US sanctions exposure for a Kazakhstan-incorporated payments fintech is material but manageable with explicit controls.",
+        "detailed": "Illustrative example. The structural risk centers on USD-clearing dependencies and counterparty exposure to Russian-nexus flows. Material drivers include OFAC enforcement posture, regional bank de-risking, and KZT/USD corridor stress. Mitigation requires explicit sanctions controls, conservative counterparty selection, and pre-cleared correspondent design."
+      },
+      "decision_frame": {
+        "decision": "Open USD correspondent banking relationship in Almaty in Q3.",
+        "stakeholders": [
+          "Founder",
+          "CFO",
+          "Compliance lead"
+        ],
+        "constraints": [
+          "No EU correspondent option available",
+          "Existing tenge-only operations"
+        ]
+      },
+      "analysis": {
+        "facts": [
+          "Illustrative fact: OFAC has issued multiple Central Asia-relevant secondary-sanctions advisories."
+        ],
+        "assessments": [
+          "Illustrative assessment: Local-bank de-risking is likely to continue through 2026."
+        ],
+        "assumptions": [
+          "No new in-region primary sanctions designation in the planning horizon."
+        ],
+        "unknowns": [
+          "Specific OFAC enforcement priorities for FY2026."
+        ]
+      },
+      "scenarios": [
+        {
+          "name": "Baseline",
+          "probability_range": {
+            "low": 0.5,
+            "high": 0.7
+          },
+          "drivers": [
+            "Status quo OFAC posture",
+            "No major regional escalation"
+          ],
+          "implications": [
+            "Correspondent relationship feasible with standard controls."
+          ]
+        }
+      ],
+      "options": [
+        {
+          "option": "Proceed with USD correspondent in Q3 under enhanced controls.",
+          "pros": [
+            "Unlocks USD settlement",
+            "Customer demand validated"
+          ],
+          "cons": [
+            "Sanctions surface area increases"
+          ],
+          "trade_offs": [
+            "Speed vs. compliance overhead"
+          ]
+        }
+      ],
+      "recommended_actions": [
+        {
+          "action": "Commission a dedicated sanctions controls review before correspondent onboarding.",
+          "priority": "high",
+          "trigger": "Decision to proceed",
+          "time_horizon": "Pre-Q3"
+        }
+      ],
+      "failure_modes": [
+        {
+          "scenario": "New OFAC secondary-sanctions designation affecting a Kazakh tier-1 bank.",
+          "likelihood": "low",
+          "impact": "high",
+          "mitigation": "Diversify correspondent candidates; maintain EUR fallback."
+        }
+      ],
+      "watch_next": [
+        {
+          "indicator": "OFAC Central Asia advisory cadence",
+          "trigger": "Any new advisory naming Kazakhstan banks",
+          "source_type": "regulator_announcement"
+        }
+      ],
+      "audit": {
+        "validation_score": 0.86,
+        "validation_details": [
+          {
+            "check": "fact-vs-assessment separation",
+            "passed": true
+          },
+          {
+            "check": "scenarios have probability ranges",
+            "passed": true
+          }
+        ],
+        "provenance": [
+          {
+            "claim": "Local-bank de-risking is likely to continue through 2026.",
+            "basis": "assessment"
+          }
+        ]
+      }
+    }
+  ]
+}

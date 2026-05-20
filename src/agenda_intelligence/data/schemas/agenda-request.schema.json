@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/agenda-request.schema.json",
+  "title": "AgendaRequest",
+  "description": "Input contract for the Agenda Intelligence MCP `analyze` tool. Describes an analytical question, the decision it informs, and constraints on depth, evidence, geography, and output format. Reasoning content is supplied by Global Think Tank Analyst (method) and the relevant vertical specialist skill (regional depth). This repository owns only the contract and validation.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "question"
+  ],
+  "properties": {
+    "question": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The analytical question to answer."
+    },
+    "decision_context": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What decision this analysis informs. Used to focus the memo and shape recommended actions."
+    },
+    "audience": {
+      "type": "string",
+      "enum": [
+        "founder",
+        "analyst",
+        "policymaker",
+        "investor"
+      ],
+      "description": "Primary reader. Adjusts tone, depth, and which sections receive the most weight."
+    },
+    "geography": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "description": "Country, region, corridor, chokepoint, or list thereof. Used by the analyze tool to route to vertical specialist modules. `global` or omitted means no regional specialist is loaded."
+    },
+    "time_horizon": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Free-form time horizon (e.g. `next 90 days`, `2026 Q4`, `12-18 months`)."
+    },
+    "evidence_mode": {
+      "type": "string",
+      "enum": [
+        "reasoning_only",
+        "user_provided",
+        "mixed"
+      ],
+      "default": "reasoning_only",
+      "description": "How evidence is sourced. `reasoning_only` means no external sources are cited; the model reasons from internal knowledge with explicit uncertainty disclosure. `user_provided` means the caller supplies source material. `mixed` combines both. `live_source_backed` is intentionally absent: live retrieval is not implemented."
+    },
+    "depth": {
+      "type": "string",
+      "enum": [
+        "quick_brief",
+        "standard",
+        "scenario",
+        "red_team",
+        "decision_pack"
+      ],
+      "default": "standard",
+      "description": "Analytical depth profile. `quick_brief`: bottom line + one paragraph + watch_next. `standard`: full memo. `scenario`: emphasis on scenario branching. `red_team`: emphasis on failure_modes and contrarian assessments. `decision_pack`: full memo plus options and recommended_actions weighted for a named decision."
+    },
+    "output_format": {
+      "type": "string",
+      "enum": [
+        "structured_json",
+        "markdown"
+      ],
+      "default": "structured_json",
+      "description": "Wire format of the response payload. `structured_json` validates against agenda-memo.schema.json. `markdown` returns the same content rendered as a memo document, with the structured JSON included under `audit.source_payload`."
+    }
+  },
+  "examples": [
+    {
+      "question": "How exposed is a Kazakhstan-incorporated payments fintech to secondary US sanctions risk over the next 12 months?",
+      "decision_context": "Whether to open a USD correspondent banking relationship in Almaty in Q3.",
+      "audience": "founder",
+      "geography": "Kazakhstan",
+      "time_horizon": "12 months",
+      "evidence_mode": "reasoning_only",
+      "depth": "decision_pack",
+      "output_format": "structured_json"
+    },
+    {
+      "question": "What is the structural risk that Hormuz traffic is disrupted in a way that materially affects spot LNG prices in 2026?",
+      "audience": "investor",
+      "geography": [
+        "Iran",
+        "UAE",
+        "Hormuz"
+      ],
+      "time_horizon": "2026",
+      "evidence_mode": "reasoning_only",
+      "depth": "scenario"
+    },
+    {
+      "question": "What second-order risks should an AI-policy team watch globally over the next 90 days?",
+      "audience": "policymaker",
+      "geography": "global",
+      "time_horizon": "next 90 days",
+      "depth": "quick_brief"
+    }
+  ]
+}
