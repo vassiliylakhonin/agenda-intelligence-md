@@ -50,9 +50,12 @@ agenda-intelligence mcp-config --client cursor
 | Schema-valid | 100% |
 | With evidence pack | 100% |
 | With claim-level audit | 100% |
+| With source category | 100% |
+| Mean source coverage | 14.8% |
+| Source coverage gap cases | 20 |
 | Orphan evidence refs | 0 |
 
-Heuristic scores are uncalibrated and not validated against expert judgment. They evaluate structure, evidence labeling, and decision-readiness — not factual truth.
+Heuristic scores are uncalibrated and not validated against expert judgment. They evaluate structure, evidence labeling, source-coverage diagnostics, and decision-readiness — not factual truth.
 
 Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed/eu-ai-act.md) — brief + evidence pack + claim-level audit using illustrative sources. Before / after pairs: [`examples/before-after/`](examples/before-after/).
 

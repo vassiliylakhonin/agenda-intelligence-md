@@ -15,7 +15,7 @@ implements today.
 | Brief scoring (heuristic) | How structurally complete is a JSON brief? | Implemented (`score brief.json`, 0–100) |
 | Evidence-linked scoring | Are claims actually supported by the evidence pack? | Implemented (`score brief.json --evidence pack.json`) |
 | Before/after scoring | Marker-based before/after example harness | Implemented (`score path.md`) |
-| Batch evaluation | Validate + audit + score across a directory of cases | Implemented (`bench <dir>`) |
+| Batch evaluation | Validate + audit + source coverage diagnostic + score across a directory of cases | Implemented (`bench <dir>`) |
 | Quote verification (local) | Is the cited fragment present in the source text file? | Implemented (`verify-quotes`, `verify_quotes` MCP) |
 | Quote verification (network) | Is the cited fragment present at the source URL? | Implemented (`verify-quotes --fetch`) |
 | Factual truthfulness | Are the claims true in the world? | **Not implemented.** Post-v1 layer only. |
@@ -35,13 +35,16 @@ Run against source-structured cases in `examples/source-backed/`. Deterministic;
 | Schema valid | 100% |
 | With evidence pack | 100% |
 | With claim-level audit | 100% |
+| With source category | 100% |
+| Mean source coverage | 14.8% |
+| Source coverage gap cases | 20 |
 | Mean score | 87.6 / 100 |
 | Score range | 84–91 |
 | Audit orphan refs | 0 |
 
 Full baseline: [`evals/baselines/source-backed.md`](../evals/baselines/source-backed.md)
 
-These are structural/evidence-discipline metrics. They do not measure factual accuracy, and illustrative source cases are not live-source-backed factual benchmarks.
+These are structural/evidence-discipline metrics. Source coverage reports category `must_check` coverage gaps; it does not measure factual accuracy, and illustrative source cases are not live-source-backed factual benchmarks.
 
 ## Quote Verification Contract
 

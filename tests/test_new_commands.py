@@ -72,6 +72,9 @@ def test_bench_markdown_on_flagship():
     assert "# Bench report" in res.stdout
     assert "eu-ai-act" in res.stdout
     assert "with claim-level audit: 100.0%" in res.stdout
+    assert "with source category: 100.0%" in res.stdout
+    assert "source coverage gap cases:" in res.stdout
+    assert "| case | schema | evidence | audit | source cat | source cov | gaps | orphans | score |" in res.stdout
 
 
 def test_bench_json_on_flagship():
@@ -80,6 +83,12 @@ def test_bench_json_on_flagship():
     assert payload["summary"]["cases"] >= 1
     assert payload["summary"]["schema_valid_pct"] == 100.0
     assert payload["summary"]["audit_orphan_total"] == 0
+    assert payload["summary"]["with_source_category_pct"] == 100.0
+    assert payload["summary"]["source_coverage_missing_total"] >= 0
+    case = next(item for item in payload["cases"] if item["case"] == "eu-ai-act")
+    assert case["source_category"] == "technology-ai"
+    assert case["source_coverage_pct"] is not None
+    assert case["source_coverage_missing"] is not None
 
 
 def test_bench_min_score_gate():
