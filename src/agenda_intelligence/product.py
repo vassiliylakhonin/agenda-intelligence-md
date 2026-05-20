@@ -143,7 +143,7 @@ def route_modules(geography: Any, question: str = "") -> list[dict]:
     if _matches_any(search_space, GULF_ME_TERMS):
         modules.append({"module": "gulf-middle-east", "role": "regional_specialist"})
     if _matches_any(search_space, SANCTIONS_TERMS):
-        modules.append({"module": "sanctions-sector", "role": "regional_specialist"})
+        modules.append({"module": "sanctions-sector", "role": "sector_specialist"})
 
     return modules
 
@@ -489,6 +489,70 @@ def _extract_json_object(text: str) -> Optional[dict]:
         return None
 
 
+def _markdown_list(items: Any) -> list[str]:
+    if not isinstance(items, list):
+        return []
+    return [str(item) for item in items if str(item).strip()]
+
+
+def _append_list(lines: list[str], title: str, items: Any) -> None:
+    values = _markdown_list(items)
+    if not values:
+        return
+    lines.extend(["", f"## {title}"])
+    lines.extend(f"- {value}" for value in values)
+
+
+def render_memo_markdown(memo: dict) -> str:
+    """Render a memo as Markdown while keeping JSON as the canonical contract."""
+    risk = memo.get("risk_summary", {}) if isinstance(memo, dict) else {}
+    analysis = memo.get("analysis", {}) if isinstance(memo, dict) else {}
+    audit = memo.get("audit", {}) if isinstance(memo, dict) else {}
+
+    short = str(risk.get("short") or "Agenda Intelligence memo")
+    lines = [f"# {short}"]
+
+    detailed = risk.get("detailed")
+    if detailed:
+        lines.extend(["", str(detailed)])
+
+    decision_frame = memo.get("decision_frame", {})
+    if isinstance(decision_frame, dict) and any(decision_frame.values()):
+        lines.extend(["", "## Decision Frame"])
+        if decision_frame.get("decision"):
+            lines.append(f"- Decision: {decision_frame['decision']}")
+        _append_list(lines, "Stakeholders", decision_frame.get("stakeholders"))
+        _append_list(lines, "Constraints", decision_frame.get("constraints"))
+
+    _append_list(lines, "Facts", analysis.get("facts"))
+    _append_list(lines, "Assessments", analysis.get("assessments"))
+    _append_list(lines, "Assumptions", analysis.get("assumptions"))
+    _append_list(lines, "Unknowns", analysis.get("unknowns"))
+
+    watch_next = memo.get("watch_next")
+    if isinstance(watch_next, list) and watch_next:
+        lines.extend(["", "## Watch Next"])
+        for item in watch_next:
+            if isinstance(item, dict):
+                indicator = item.get("indicator", "")
+                trigger = item.get("trigger")
+                source_type = item.get("source_type")
+                detail = str(indicator)
+                if trigger:
+                    detail += f" - trigger: {trigger}"
+                if source_type:
+                    detail += f" - source: {source_type}"
+                lines.append(f"- {detail}")
+            else:
+                lines.append(f"- {item}")
+
+    lines.extend(["", "## Audit", f"- Validation score: {audit.get('validation_score', 'n/a')}"])
+    if audit.get("machine_verified") is True:
+        lines.append("- Machine verified: true")
+
+    return "\n".join(lines).strip() + "\n"
+
+
 # ---------------------------------------------------------------------------
 # analyze (public)
 # ---------------------------------------------------------------------------
@@ -507,6 +571,7 @@ def analyze(request: dict) -> dict:
         memo: dict | None       (valid against agenda-memo.schema.json when llm_invoked)
         memo_valid: bool | None
         memo_errors: list[str]
+        rendered_memo: str | absent  (only when request.output_format == "markdown" and memo exists)
     """
     req_validation = validate_request(request)
     if not req_validation.get("valid"):
@@ -523,7 +588,7 @@ def analyze(request: dict) -> dict:
     llm_text = _call_anthropic(system_prompt, user_message)
     if llm_text is None:
         memo = _skeleton_memo(request, modules)
-        return {
+        response = {
             "implemented": True,
             "valid_request": True,
             "errors": [],
@@ -534,6 +599,9 @@ def analyze(request: dict) -> dict:
             "memo_valid": False,
             "memo_errors": ["skeleton memo: ANTHROPIC_API_KEY missing or anthropic SDK not installed"],
         }
+        if request.get("output_format") == "markdown":
+            response["rendered_memo"] = render_memo_markdown(memo)
+        return response
 
     parsed = _extract_json_object(llm_text)
     if parsed is None:
@@ -562,7 +630,7 @@ def analyze(request: dict) -> dict:
         # the schema, but a follow-up check is cheap insurance against drift.
         mv = validate_memo(parsed)
         schema_valid = bool(mv.get("valid"))
-    return {
+    response = {
         "implemented": True,
         "valid_request": True,
         "errors": [],
@@ -573,6 +641,9 @@ def analyze(request: dict) -> dict:
         "memo_valid": schema_valid,
         "memo_errors": mv.get("errors", []),
     }
+    if request.get("output_format") == "markdown" and parsed is not None:
+        response["rendered_memo"] = render_memo_markdown(parsed)
+    return response
 
 
 # ---------------------------------------------------------------------------

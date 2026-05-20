@@ -7,7 +7,7 @@ Product entry point and evidence-discipline layer for strategic intelligence age
 
 **Agenda Intelligence** is a trusted geopolitical intelligence layer for agentic workflows. Auditable, structured, decision-grade risk memos with evidence discipline that generic LLMs lack. One MCP server. Structured input/output. Built-in validation.
 
-This repository hosts the product entry point: JSON schemas defining the request/response contract, the stdio MCP server exposing `analyze`, `validate_memo`, `list_signals`, `get_signal`, and `deep_dive`, plus the original validation surface (briefs, evidence packs, audits, lenses, source plans). Reasoning content comes from sibling repositories: [Global Think Tank Analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) (method), [Central Asia + Caspian](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) and [Gulf + Middle East](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) (regional specialists, activated automatically when query geography matches).
+This repository hosts the product entry point: JSON schemas defining the request/response contract, the stdio MCP server exposing `analyze`, `validate_memo`, `list_signals`, `get_signal`, and `deep_dive`, plus the original validation surface (briefs, evidence packs, audits, lenses, source plans). Reasoning content is bundled as in-repo references derived from sibling repositories: [Global Think Tank Analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) (method), [Central Asia + Caspian](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) and [Gulf + Middle East](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) (regional specialists routed by query geography).
 
 ## What this is
 
@@ -86,7 +86,7 @@ Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed
 
 ## MCP
 
-Stdio MCP server with 11 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
+Stdio MCP server with 16 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
 
 | Tool | What it does |
 |---|---|
@@ -101,6 +101,11 @@ Stdio MCP server with 11 tools. Full docs and wire-protocol verification: [`MCP.
 | `verify_quotes` | Check cited quote fragments in caller-provided text |
 | `list_lenses` | List available lens packs |
 | `get_lens` | Return a specific lens pack by name |
+| `analyze` | Product-shell pipeline: validate request, route modules, assemble prompt, optionally call LLM, validate memo |
+| `validate_memo` | Validate an Agenda memo against `agenda-memo.schema.json` |
+| `list_signals` | List vendored signal archive entries |
+| `get_signal` | Return a vendored signal markdown file by id |
+| `deep_dive` | Planned v2 placeholder directing callers to `analyze` depth modes |
 
 ## Status
 

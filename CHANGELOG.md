@@ -4,6 +4,11 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Fixed — Product shell contract alignment
+- README now describes the full 16-tool MCP surface in both the overview and MCP table.
+- `analyze` now honors `output_format: markdown` by returning a server-rendered `rendered_memo` alongside the structured `memo`.
+- `sanctions-sector` now uses the `sector_specialist` module role, and `agenda-memo.schema.json` accepts that role.
+
 ## [0.8.1] – 2026-05-20
 
 ### Fixed — machine-verified audit replaces LLM self-grading

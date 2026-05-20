@@ -81,7 +81,7 @@
         "markdown"
       ],
       "default": "structured_json",
-      "description": "Wire format of the response payload. `structured_json` validates against agenda-memo.schema.json. `markdown` returns the same content rendered as a memo document, with the structured JSON included under `audit.source_payload`."
+      "description": "Wire format preference for the analyze response. `structured_json` returns the validated memo under the `memo` key. `markdown` still returns the structured memo under `memo` and additionally includes a server-rendered `rendered_memo` Markdown string. The model is still asked for JSON only; markdown is rendered by the server from the validated memo."
     }
   },
   "examples": [
