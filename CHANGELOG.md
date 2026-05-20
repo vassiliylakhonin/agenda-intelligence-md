@@ -2,7 +2,7 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
-## [Unreleased] – source-plan coverage diagnostic line
+## [0.7.5] – 2026-05-20
 
 ### Added — Source-plan coverage diagnostics
 - `source-coverage` CLI command and MCP `source_coverage` tool report covered and missing category-specific `must_check` source types.

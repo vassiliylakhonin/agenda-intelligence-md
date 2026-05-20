@@ -1,6 +1,6 @@
 # v0.7.5 — Source-plan coverage diagnostics
 
-Draft release notes for the next patch after v0.7.4. This release line adds source-plan coverage diagnostics while keeping factual verification outside the v1 contract.
+v0.7.5 adds source-plan coverage diagnostics while keeping factual verification outside the v1 contract.
 
 ## Added — Source category discovery
 
@@ -44,4 +44,3 @@ Draft release notes for the next patch after v0.7.4. This release line adds sour
 - It does not crawl the web, discover missing sources, score source reputation, or decide whether a claim is true in the world.
 - Missing `must_check` coverage is a diagnostic gap before v1.0.
 - `source-coverage --strict` is opt-in and separate from `validate-evidence`.
-
