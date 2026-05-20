@@ -2,6 +2,12 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
+## Unreleased
+
+### CI & release
+- GitHub Actions workflow dependencies moved to Node 24-compatible `actions/checkout@v6` and `actions/setup-python@v6`.
+- PyPI publish steps now explicitly disable attestations while token-based publishing remains active, matching the documented Trusted Publishing migration path.
+
 ## [0.7.5] – 2026-05-20
 
 ### Added — Source-plan coverage diagnostics

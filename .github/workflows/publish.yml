@@ -6,7 +6,7 @@ on:
 # TODO: switch to PyPI Trusted Publishers (OIDC) when PyPI access is available.
 # Setup: https://pypi.org/manage/project/agenda-intelligence-md/settings/publishing/
 # → Add publisher: GitHub / vassiliylakhonin / agenda-intelligence-md / publish.yml
-# After setup: remove the `password` line below.
+# After setup: remove the `password` line below and set `attestations: true`.
 
 jobs:
   build-and-publish:
@@ -15,9 +15,9 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -38,3 +38,4 @@ jobs:
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
           skip-existing: true
+          attestations: false
