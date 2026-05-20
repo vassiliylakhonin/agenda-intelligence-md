@@ -68,4 +68,9 @@ Source Acquisition Layer:
 - SOURCE_POLICY.md
 - source-taxonomy.json
 - source-requirements/*.json
-CLI source commands: start, source-plan, validate-evidence, audit-claims, score, bench, doctor, mcp-config
+CLI source/eval commands: start, source-categories, source-plan, source-coverage, validate-evidence, audit-claims, verify-quotes, score, bench, doctor, mcp-config
+
+Boundary:
+- Source-plan coverage is diagnostic before v1.0.
+- Missing `must_check` coverage should be disclosed as an evidence gap, not treated as factual truth.
+- These tools do not discover sources, score source reputation, or decide whether claims are true in the world.
