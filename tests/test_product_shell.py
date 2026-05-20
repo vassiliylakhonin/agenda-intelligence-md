@@ -93,6 +93,37 @@ def test_analyze_global_loads_only_gtta():
     assert "MODULE: gulf-middle-east" not in result["system_prompt"]
 
 
+def test_analyze_sanctions_routes_sector_specialist():
+    request = {
+        "question": "What secondary sanctions exposure should a payments fintech watch?",
+        "geography": "global",
+        "depth": "quick_brief",
+    }
+    result = mcp_server.analyze(request)
+
+    assert result["valid_request"] is True
+    assert {"module": "sanctions-sector", "role": "sector_specialist"} in result["modules_used"]
+    memo_validation = mcp_server.validate_memo(result["memo"])
+    assert memo_validation["valid"] is True, memo_validation["errors"]
+
+
+def test_analyze_markdown_output_adds_rendered_memo():
+    request = {
+        "question": "What second-order risks should an AI-policy team watch globally?",
+        "geography": "global",
+        "depth": "quick_brief",
+        "output_format": "markdown",
+    }
+    result = mcp_server.analyze(request)
+
+    assert result["valid_request"] is True
+    assert result["memo"] is not None
+    assert result["rendered_memo"].startswith("# Skeleton memo")
+    assert "## Watch Next" in result["rendered_memo"]
+    memo_validation = mcp_server.validate_memo(result["memo"])
+    assert memo_validation["valid"] is True, memo_validation["errors"]
+
+
 # ---------------------------------------------------------------------------
 # Scenario 3: validate_memo on real and malformed memos
 # ---------------------------------------------------------------------------
@@ -164,6 +195,7 @@ def test_analyze_overrides_self_graded_audit_score(monkeypatch):
             "modules_used": [
                 {"module": "global-think-tank-analyst", "role": "reasoning_method"},
                 {"module": "central-asia-caspian", "role": "regional_specialist"},
+                {"module": "sanctions-sector", "role": "sector_specialist"},
             ],
             "timestamp": "2026-05-20T13:00:00Z",
         },
@@ -180,7 +212,7 @@ def test_analyze_overrides_self_graded_audit_score(monkeypatch):
     }
     monkeypatch.setattr(product, "_call_anthropic", lambda s, u: json.dumps(fake_memo))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-used")
-    result = mcp_server.analyze({"question": "q", "geography": "Kazakhstan"})
+    result = mcp_server.analyze({"question": "sanctions q", "geography": "Kazakhstan"})
 
     audit = result["memo"]["audit"]
     assert audit["machine_verified"] is True

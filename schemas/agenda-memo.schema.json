@@ -114,7 +114,8 @@
                 "type": "string",
                 "enum": [
                   "reasoning_method",
-                  "regional_specialist"
+                  "regional_specialist",
+                  "sector_specialist"
                 ]
               },
               "version": {
