@@ -151,7 +151,7 @@ agenda-intelligence mcp-config --client codex
 agenda-intelligence doctor
 ```
 
-Available MCP tools: `validate_brief`, `validate_evidence`, `audit_claims`, `score_output`, `get_protocol`, `list_lenses`, `get_lens`, `source_plan`, `verify_quotes`. See [`MCP.md`](MCP.md) for details.
+Available MCP tools: `validate_brief`, `validate_evidence`, `audit_claims`, `score_output`, `get_protocol`, `list_lenses`, `get_lens`, `list_source_categories`, `source_plan`, `source_coverage`, `verify_quotes`. See [`MCP.md`](MCP.md) for details.
 
 ## Evaluation
 

@@ -5,14 +5,14 @@
 **Goal:** Identify emerging market‑level risks—such as supply‑chain disruptions, commodity price shocks, or regulatory changes—that could impact asset valuations.
 
 **How Agenda‑Intelligence helps:**
-- Leverages `technology‑ai`, `energy`, `trade`, and `regional‑risk` source plans to aggregate relevant signals.
+- Uses `technology‑ai`, `energy`, `trade`, and `regional‑risk` source plans to state which evidence types should be checked before analysts strengthen market-risk claims.
 - Generates concise briefs with clear impact assessment, affected sectors, and watch‑next indicators (e.g., price thresholds, policy triggers).
 - Scoring provides a heuristic protocol gate before briefs are reviewed for risk models or investment memos.
 
 **Typical workflow:**
-1. `agenda-intelligence start market-risk` (or pick a custom source‑plan).
-2. Populate the brief template with observed market developments.
-3. Validate with `validate‑brief`, then score.
+1. `agenda-intelligence start financial-market` (or pick another relevant source plan).
+2. Populate the brief template with observed market developments and the evidence available from your own data or retrieval stack.
+3. Validate with `validate‑brief`, diagnose evidence gaps with `source-coverage`, then score.
 4. Export the brief to a risk dashboard or investment committee.
 
 ---
