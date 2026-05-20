@@ -9,6 +9,11 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 - `analyze` now honors `output_format: markdown` by returning a server-rendered `rendered_memo` alongside the structured `memo`.
 - `sanctions-sector` now uses the `sector_specialist` module role, and `agenda-memo.schema.json` accepts that role.
 
+## [0.8.2] – 2026-05-20
+
+### Added — Official MCP Registry ownership marker
+- README footer adds `mcp-name: io.github.vassiliylakhonin/agenda-intelligence-md` so the official Model Context Protocol Registry (registry.modelcontextprotocol.io) accepts the published `server.json` against the PyPI package. No functional change.
+
 ## [0.8.1] – 2026-05-20
 
 ### Fixed — machine-verified audit replaces LLM self-grading

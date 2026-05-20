@@ -1,0 +1,41 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.vassiliylakhonin/agenda-intelligence-md",
+  "title": "Agenda Intelligence",
+  "description": "Auditable strategic-risk memos for AI agents: sanctions, regulatory, geopolitics, trade.",
+  "repository": {
+    "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+    "source": "github"
+  },
+  "version": "0.8.2",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "agenda-intelligence-md",
+      "version": "0.8.2",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "description": "Optional. When set together with the [llm] extra (pip install 'agenda-intelligence-md[llm]'), the `analyze` tool calls the Anthropic API directly and returns a schema-validated memo. Without this key, `analyze` returns the assembled system_prompt for the host model to complete.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "AGENDA_INTELLIGENCE_MODEL",
+          "description": "Optional. Anthropic model identifier used when ANTHROPIC_API_KEY is set. Defaults to a current Claude model.",
+          "isRequired": false
+        },
+        {
+          "name": "AGENDA_INTELLIGENCE_MAX_TOKENS",
+          "description": "Optional. Max tokens for the Anthropic call from `analyze`. Defaults to 4096.",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

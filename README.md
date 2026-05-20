@@ -38,7 +38,7 @@ pip install agenda-intelligence-md
 #   export ANTHROPIC_API_KEY=...
 #
 # Or pinned wheel:
-# pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.8.1/agenda_intelligence_md-0.8.1-py3-none-any.whl
+# pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.8.2/agenda_intelligence_md-0.8.2-py3-none-any.whl
 
 agenda-intelligence validate-brief examples/agenda-brief.json
 agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
@@ -172,3 +172,7 @@ MIT.
 ---
 
 **Disclaimer.** This toolkit is for informational and educational purposes only. It does not constitute investment, financial, legal, compliance, or trading advice. It does not verify factual truth, predict outcomes, or replace professional judgment. Use at your own risk.
+
+---
+
+mcp-name: io.github.vassiliylakhonin/agenda-intelligence-md
