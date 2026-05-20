@@ -5,6 +5,7 @@ matching `*.evidence.json`, `*.audit.json`), this module runs:
 
 - agenda-brief schema validation
 - evidence-pack schema validation (if present)
+- source-plan coverage diagnostic (if evidence has source_category)
 - evidence-audit schema validation + orphan-ref check (if present)
 - heuristic 0-100 brief scoring (with evidence pack if present)
 
@@ -27,6 +28,7 @@ from typing import Any
 from jsonschema import ValidationError, validate
 
 from agenda_intelligence.eval import score_brief
+from agenda_intelligence.mcp_server import source_coverage
 
 PACKAGE_NAME = "agenda_intelligence"
 
@@ -52,6 +54,10 @@ class CaseResult:
     audit_valid: bool | None
     audit_error: str | None
     audit_orphans: int
+    source_category: str | None
+    source_coverage_pct: float | None
+    source_coverage_missing: int | None
+    source_coverage_error: str | None
     score: int | None
     score_breakdown: dict[str, Any] = field(default_factory=dict)
 
@@ -107,6 +113,17 @@ def run_case(brief: Path, evidence: Path | None, audit: Path | None) -> CaseResu
     else:
         evidence_valid, evidence_err = None, None
 
+    source_category = evidence_data.get("source_category") if evidence_data else None
+    coverage_pct: float | None = None
+    coverage_missing: int | None = None
+    coverage_error: str | None = None
+    if evidence_data is not None and evidence_valid and source_category:
+        coverage = source_coverage(evidence_data)
+        coverage_error = coverage.get("error")
+        if not coverage_error:
+            coverage_pct = coverage.get("coverage_pct")
+            coverage_missing = len(coverage.get("missing_required_sources", []))
+
     audit_data = json.loads(audit.read_text()) if audit else None
     if audit_data is not None:
         audit_valid, audit_err = _validate(audit_data, audit_schema)
@@ -143,6 +160,10 @@ def run_case(brief: Path, evidence: Path | None, audit: Path | None) -> CaseResu
         audit_valid=audit_valid,
         audit_error=audit_err,
         audit_orphans=orphans,
+        source_category=source_category,
+        source_coverage_pct=coverage_pct,
+        source_coverage_missing=coverage_missing,
+        source_coverage_error=coverage_error,
         score=score,
         score_breakdown=breakdown,
     )
@@ -156,17 +177,32 @@ def summarize(results: list[CaseResult]) -> dict[str, Any]:
     with_evidence = sum(1 for r in results if r.evidence_path)
     with_audit = sum(1 for r in results if r.audit_path)
     audit_orphan_total = sum(r.audit_orphans for r in results)
+    with_source_category = sum(1 for r in results if r.source_category)
+    source_coverage_cases = [r for r in results if r.source_coverage_pct is not None]
+    source_coverage_missing_total = sum(r.source_coverage_missing or 0 for r in results)
+    source_coverage_gaps = sum(1 for r in results if (r.source_coverage_missing or 0) > 0)
     scores = [r.score for r in results if r.score is not None]
     return {
         "cases": n,
         "schema_valid_pct": round(100 * schema_valid / n, 1),
         "with_evidence_pct": round(100 * with_evidence / n, 1),
         "with_audit_pct": round(100 * with_audit / n, 1),
+        "with_source_category_pct": round(100 * with_source_category / n, 1),
+        "source_coverage_mean_pct": (
+            round(sum(r.source_coverage_pct or 0 for r in source_coverage_cases) / len(source_coverage_cases), 1)
+            if source_coverage_cases
+            else None
+        ),
+        "source_coverage_missing_total": source_coverage_missing_total,
+        "source_coverage_gap_cases": source_coverage_gaps,
         "mean_score": round(sum(scores) / len(scores), 1) if scores else None,
         "min_score": min(scores) if scores else None,
         "max_score": max(scores) if scores else None,
         "audit_orphan_total": audit_orphan_total,
-        "note": "Heuristic structural / evidence-discipline metrics. Does not verify factual truth.",
+        "note": (
+            "Heuristic structural / evidence-discipline metrics. Source coverage is diagnostic. "
+            "Does not verify factual truth."
+        ),
     }
 
 
@@ -178,14 +214,18 @@ def render_markdown(results: list[CaseResult], summary: dict[str, Any]) -> str:
         f"- schema-valid: {summary.get('schema_valid_pct')}%",
         f"- with evidence pack: {summary.get('with_evidence_pct')}%",
         f"- with claim-level audit: {summary.get('with_audit_pct')}%",
+        f"- with source category: {summary.get('with_source_category_pct')}%",
+        f"- mean source coverage: {summary.get('source_coverage_mean_pct')}%",
+        f"- source coverage gap cases: {summary.get('source_coverage_gap_cases')}",
+        f"- missing required source types: {summary.get('source_coverage_missing_total')}",
         f"- mean score: {summary.get('mean_score')}",
         f"- min / max score: {summary.get('min_score')} / {summary.get('max_score')}",
         f"- audit orphan refs: {summary.get('audit_orphan_total')}",
         "",
         "> " + summary.get("note", ""),
         "",
-        "| case | schema | evidence | audit | orphans | score |",
-        "|---|---|---|---|---|---|",
+        "| case | schema | evidence | audit | source cat | source cov | gaps | orphans | score |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in results:
         lines.append(
@@ -193,6 +233,9 @@ def render_markdown(results: list[CaseResult], summary: dict[str, Any]) -> str:
             f"{'pass' if r.schema_valid else 'FAIL'} | "
             f"{'pass' if r.evidence_valid else ('FAIL' if r.evidence_valid is False else '-')} | "
             f"{'pass' if r.audit_valid else ('FAIL' if r.audit_valid is False else '-')} | "
+            f"{r.source_category or '-'} | "
+            f"{r.source_coverage_pct if r.source_coverage_pct is not None else '-'} | "
+            f"{r.source_coverage_missing if r.source_coverage_missing is not None else '-'} | "
             f"{r.audit_orphans} | "
             f"{r.score if r.score is not None else '-'} |"
         )
