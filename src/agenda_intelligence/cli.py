@@ -207,6 +207,14 @@ def cmd_start(args):
         "signal_classification": "<noise|weak_signal|signal|structural_shift|trigger_event>",
         "signal_markers": ["<optional: compliance_relevant_development|enforcement_marker|escalation_marker>"],
         "what_changed": "<what changed>",
+        "data_integrity_notes": [
+            {
+                "risk_type": (
+                    "<optional: prompt_injection|source_anomaly|" "stale_or_conflicting_source|retrieval_limit|other>"
+                ),
+                "note": "<optional data-integrity concern surfaced by analyst or agent>",
+            }
+        ],
         "main_uncertainty": "<main uncertainty>",
         "watch_next": ["<indicator 1>", "<indicator 2>"],
     }

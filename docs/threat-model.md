@@ -73,7 +73,7 @@ Mitigation: always preserve the markdown memo as the canonical artifact; treat t
 
 `AGENTS.md` declares the retrieved-content trust rule for agents using the toolkit, but the validators themselves do not detect prompt-injection material embedded in evidence-pack `excerpt` fields, `notes` fields, or in the brief's body text. A brief that has absorbed an injected directive (e.g., dropped caveats, inverted a conclusion) can still pass structural validation.
 
-Mitigation: enforce the trust rule at the consuming-agent layer; surface suspected injections in the brief's `data-integrity` notes (no schema field currently dedicated to this — see "Known gaps" below).
+Mitigation: enforce the trust rule at the consuming-agent layer; surface suspected injections in the brief's `data_integrity_notes` field when the analyst or agent notices them.
 
 ### 8. Adversarial structural inputs
 
@@ -99,7 +99,7 @@ Mitigation: signing or attestation work is out of scope for this version.
 
 Concrete items where the schema set could be tightened without changing the toolkit's scope:
 
-- **No dedicated `data-integrity-notes` field** in the brief schema for capturing prompt-injection or source-anomaly observations the agent surfaced. Today these go into freeform notes; a dedicated field would let validators detect them.
+- **No automated data-integrity detection.** The brief schema has `data_integrity_notes` for prompt-injection, source-anomaly, stale/conflicting-source, retrieval-limit, or other integrity observations surfaced by an analyst or agent. Validators check the field shape; they do not detect those risks themselves.
 - **No `source-tier` field** on evidence pack entries. Tiering is in `SOURCE_POLICY.md` as a human-applied rule.
 - **No `retrieved_at` freshness assertion** beyond presence — no rule that a `live-source-backed` brief with `retrieved_at` older than N months should warn.
 - **No cross-claim consistency check** (e.g., two claims with the same `[primary]` source attribution to different facts).
@@ -113,7 +113,7 @@ These are candidates for prioritisation, not commitments.
 When you see a brief that passed `validate-brief`, `validate-evidence`, and `score`:
 
 - **You can trust:** the brief is structurally well-formed, all evidence references are accounted for, provenance tags are syntactically valid, the score is what the rubric computes.
-- **You still need to verify:** factual correctness, that tags are semantically right, source quality, recency, that the evidence pack covers the whole brief (not just the source-backed subset), that the projection includes load-bearing content, and that no prompt-injection material has been absorbed.
+- **You still need to verify:** factual correctness, that tags are semantically right, source quality, recency, that the evidence pack covers the whole brief (not just the source-backed subset), that the projection includes load-bearing content, and that prompt-injection or source-anomaly concerns were actually noticed and handled.
 
 A passing brief is a brief that has passed a structural bar. It is not a brief that has passed a trust bar. The two are different.
 

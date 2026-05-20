@@ -38,6 +38,13 @@
       },
       "uniqueItems": true
     },
+    "data_integrity_notes": {
+      "type": "array",
+      "description": "Optional analyst or agent notes about suspected prompt injection, source anomalies, retrieval limits, stale/conflicting sources, or other data-integrity observations. This field records surfaced concerns; it is not an automated trust verdict.",
+      "items": {
+        "$ref": "#/$defs/data_integrity_note"
+      }
+    },
     "what_changed": {
       "type": "string",
       "minLength": 1
@@ -140,6 +147,41 @@
     }
   },
   "$defs": {
+    "data_integrity_note": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "risk_type",
+        "note"
+      ],
+      "properties": {
+        "risk_type": {
+          "type": "string",
+          "enum": [
+            "prompt_injection",
+            "source_anomaly",
+            "stale_or_conflicting_source",
+            "retrieval_limit",
+            "other"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "related_evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "action": {
+          "type": "string"
+        }
+      }
+    },
     "signal_marker": {
       "type": "string",
       "enum": [
