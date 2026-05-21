@@ -106,13 +106,15 @@ One markdown file per case at `evals/agent-eval/<case-id>.md`, structured:
 
 ## Bar replacement language for skill-repo AGENTS.md
 
-The skill repos (CA-Caspian, Gulf+ME) replace the human-review B2.2 with an agent-eval criterion, decomposed into a methodology bar (≥1 case) and a breadth bar (≥3 cases across distinct sub-domains):
+The vertical skill repos (CA-Caspian, Gulf+ME) replace the human-review B2.2 with this agent-eval criterion, plus a sibling B2.3 that exercises the evidence-mode mapping through `analyze` and a B2.7 honesty-discipline rule:
 
-> **B2.2a — Agent-eval methodology demonstrated.** At least one agent-eval committed under `evals/agent-eval/` per this methodology, run on a question from this repo's `examples/`. The case shows the structural delta from attaching the Agenda Intelligence MCP server. Self-scored by the author; no aggregate claim. The case must include the model, date, full prompts, and a delta + observations section.
+> **B2.2 — Agent-eval delta documented.** At least three agent-evals committed under `evals/agent-eval/` per the methodology above. Each case runs the same model on the same question with and without the Agenda Intelligence MCP server or product shell loaded with the regional specialist, then scores both outputs against the structural rubric tied to `agenda-memo.schema.json`. Self-scored by the author; aggregate scores are not claimed. Cases must include the model, date, full prompts or enough prompt text to reproduce, both outputs or excerpts, and a delta + observations section.
 >
-> **B2.2b — Agent-eval breadth.** At least three agent-evals under `evals/agent-eval/` covering distinct sub-domains within the skill's scope. Breadth is what supports an external claim that the skill helps across the domain, not only on a single question.
+> **B2.3 — Evidence-mode mapping exercised.** At least one agent-eval demonstrates how source-backed specialist work is passed into Agenda Intelligence MD's `analyze` contract as `user_provided` or `mixed`, not as `live_source_backed`. This proves the specialist evidence vocabulary does not break the product-shell schema.
+>
+> **B2.7 — Agent-eval honesty discipline.** Agent-eval writeups explicitly state that deltas are structural, not factual verification, not model-quality comparisons, and not aggregate benchmarks.
 
-If the skill repo's intended audience also includes domain practitioners (compliance, sanctions desks), keep the original human-review criterion as a separate **B2.8 — Practitioner review (optional, audience-gated)**: at least one named domain practitioner has read at least one example and recorded "useful in their workflow" or "useful with these revisions" under `validated-cases/`.
+If the skill repo's intended audience also includes domain practitioners (compliance, sanctions desks), keep the human-review criterion as a separate **B2.8 — Practitioner review (optional, audience-gated)**: at least one named domain practitioner has read at least one example and recorded "useful in their workflow" or "useful with these revisions" under `validated-cases/`. B2.8 is a trust layer, not the hard Bar 2 gate when the downstream consumer is an agent integrator.
 
 ## Limitations of this methodology
 
