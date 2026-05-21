@@ -369,3 +369,54 @@ def test_audience_detail_rejects_empty_string():
     result = mcp_server.analyze({"question": "Q?", "audience": "analyst", "audience_detail": ""})
     assert result["valid_request"] is False
     assert result["errors"], "expected at least one schema error"
+
+
+# ---------------------------------------------------------------------------
+# Tripled-canon sync guard
+#
+# `route_modules` term sets exist in three places that MUST stay in sync,
+# otherwise agents loading AGENTS.md or llms.txt see routing terms that do
+# not match what `analyze` actually routes on. The authoritative source is
+# the Python constants; AGENTS.md and llms.txt are documentation mirrors.
+# This guard checks each authoritative term appears verbatim (lowercased,
+# substring match) in both AGENTS.md and llms.txt.
+#
+# When a routing term is intentionally documented under a longer phrase
+# (e.g. `tcitr` → "Middle Corridor / TCITR"), the membership check still
+# passes because we substring-match the canonical key. Add new exemptions
+# to TERM_EXEMPT_DOCS below only after updating the docs to mention the
+# canonical term.
+# ---------------------------------------------------------------------------
+
+TERM_EXEMPT_DOCS: set[str] = set()
+
+
+def _doc_mirrors() -> dict[str, str]:
+    return {
+        "AGENTS.md": (ROOT / "AGENTS.md").read_text(encoding="utf-8").lower(),
+        "llms.txt": (ROOT / "llms.txt").read_text(encoding="utf-8").lower(),
+    }
+
+
+@pytest.mark.parametrize(
+    "term_set_name",
+    ["CA_CASPIAN_TERMS", "GULF_ME_TERMS", "EU_TERMS", "SANCTIONS_TERMS"],
+)
+def test_routing_terms_documented_in_canon(term_set_name: str):
+    """Every term in the authoritative routing set must appear in both
+    AGENTS.md and llms.txt so the canon stays consistent with code."""
+    terms: set[str] = getattr(product, term_set_name)
+    docs = _doc_mirrors()
+    missing: list[str] = []
+    for term in sorted(terms):
+        if term in TERM_EXEMPT_DOCS:
+            continue
+        for doc_name, doc_text in docs.items():
+            if term not in doc_text:
+                missing.append(f"{term_set_name}:{term!r} missing from {doc_name}")
+    assert not missing, (
+        "Routing term set drifted from canon docs. Update AGENTS.md "
+        "Geography routing section and llms.txt Geography routing terms "
+        "to mention each term verbatim (or add to TERM_EXEMPT_DOCS with a "
+        "comment). Missing:\n  " + "\n  ".join(missing)
+    )
