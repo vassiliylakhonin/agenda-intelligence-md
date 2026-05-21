@@ -2,33 +2,48 @@
 
 ## Project identity
 
-Agenda Intelligence MD is the evidence and eval infrastructure layer for strategic intelligence agents.
+Agenda Intelligence MD is the product entry point and evidence-discipline layer for strategic intelligence agents.
 
-It provides: validation, schemas, evidence audit, scoring, CLI / MCP / CI tooling.
+It provides two surfaces in one repository:
+
+1. **Product shell** — an MCP server exposing `analyze`, `validate_memo`, `list_signals`, `get_signal`, and `deep_dive` (stub). `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography to the relevant regional reference, assembles a system prompt from the in-repo Global Think Tank Analyst method plus regional lenses, optionally calls the Anthropic API when `ANTHROPIC_API_KEY` is set, and returns a memo validated against `agenda-memo.schema.json`.
+2. **Validation infrastructure** — JSON schemas, evidence audit, scoring, CLI, and CI tooling for briefs, evidence packs, audits, lenses, source plans, and signals.
 
 It is NOT:
-- a domain-reasoning skill (that is Global Think Tank Analyst)
-- a vertical specialist skill (that is Central Asia & Caspian, Gulf & Middle East, etc.)
-- a live source retrieval engine
-- a compliance, legal, or sanctions screening product
+- a domain-reasoning skill — that method is Global Think Tank Analyst (separate repo). The product shell vendors a derived copy under `skills/agenda-intelligence/` for in-repo routing; the canonical source of the method lives in the GTTA repo.
+- a vertical specialist skill — those are Central Asia & Caspian and Gulf & Middle East (separate repos). The product shell vendors lighter regional references under `skills/agenda-intelligence/references/regional/` for `analyze` routing; the canonical depth lives in the specialist repos.
+- a live source retrieval engine — `evidence_mode` is one of `reasoning_only`, `user_provided`, `mixed`. No live retrieval, no RAG.
+- a factuality verifier — schemas enforce structure, not truth.
+- a compliance, legal, or sanctions screening product.
 
 ## Relationship to the broader stack
 
-Agenda Intelligence MD:
-- validates output structure from domain skills
-- provides JSON schemas
-- audits evidence and scores outputs where implemented
+Agenda Intelligence MD (this repo):
+- hosts the product MCP server and the request/memo contract
+- routes geography to vendored regional references
+- validates output structure, audits evidence, scores outputs where implemented
 - supplies CLI / MCP / CI tooling
 
 Global Think Tank Analyst:
-- defines how agents reason and produce policy-risk memos
-- references Agenda Intelligence MD for validation and scoring
+- canonical source of the reasoning method
+- usable directly via paste/attach, or loaded by the product shell as the default reasoning module
 
-Vertical specialists (Central Asia & Caspian, Gulf & Middle East, etc.):
-- compose on top of Global Think Tank Analyst
-- reference Agenda Intelligence MD for validation
+Vertical specialists (Central Asia & Caspian, Gulf & Middle East):
+- canonical source of regional depth
+- usable standalone, or activated automatically by the product shell when `analyze` sees a matching geography
 
-Do not duplicate domain reasoning or vertical-specialist depth inside this repo.
+Do not duplicate canonical domain reasoning or canonical vertical-specialist depth inside this repo. Vendored references under `skills/agenda-intelligence/` are derived copies kept intentionally lighter than the canonical specialist repos to avoid two sources of truth; they exist only to make the product shell self-contained at install time. When the method or regional depth needs to evolve, update the canonical repo first, then refresh the vendored copy here.
+
+## Geography routing
+
+`analyze` matches lowercased question/decision_context/geography text against fixed term sets in [src/agenda_intelligence/product.py](src/agenda_intelligence/product.py):
+
+- **Global Think Tank Analyst** module — always loaded as the core reasoning method.
+- **central-asia-caspian** module — activated by terms covering Central Asia, the Caspian, Kazakhstan, Uzbekistan, Turkmenistan, Kyrgyzstan, Tajikistan, Azerbaijan, Georgia, Middle Corridor / TCITR.
+- **gulf-middle-east** module — activated by terms covering Iran, UAE, Saudi Arabia, Qatar, Bahrain, Kuwait, Oman, Yemen, Iraq, Red Sea, Strait of Hormuz, Bab-el-Mandeb, GCC, Levant.
+- **EU** and **sanctions** modules — activated by their respective term sets.
+
+Modules union, not exclusive: a query can pull GTTA + multiple regional modules. `result.modules_used` records what loaded. When extending the term sets, keep them lowercased and update tests in [tests/test_product_shell.py](tests/test_product_shell.py).
 
 ## Runtime skill contracts
 
