@@ -1,6 +1,6 @@
 # Agent-eval methodology
 
-Validation framework for an agent-first product, replacing the older "domain practitioner reviews a memo" pattern (Bar 2.2 / B2.3 in the skill-repo Definitions of Done as originally written).
+Validation framework for an agent-first product, replacing the older "domain practitioner reviews a memo" pattern (Bar 2.2 / B2.3 in the skill-repo Definitions of Done as originally written; the human-review framing now lives in B2.8 — audience-gated practitioner review).
 
 ## Why this exists
 
@@ -106,9 +106,11 @@ One markdown file per case at `evals/agent-eval/<case-id>.md`, structured:
 
 ## Bar replacement language for skill-repo AGENTS.md
 
-The skill repos (GTTA, CA-Caspian, Gulf+ME) can replace the human-review B2.2 with this agent-eval criterion:
+The skill repos (CA-Caspian, Gulf+ME) replace the human-review B2.2 with an agent-eval criterion, decomposed into a methodology bar (≥1 case) and a breadth bar (≥3 cases across distinct sub-domains):
 
-> **B2.2 — Agent-eval delta documented.** At least three agent-evals committed under `evals/agent-eval/` per the methodology at https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/agent-eval-methodology.md, run on questions from this repo's `examples/`. Each case shows the structural delta from attaching the Agenda Intelligence MCP server. The methodology is self-scored by the author; aggregate scores are not claimed. Cases must include the model, date, and full prompts.
+> **B2.2a — Agent-eval methodology demonstrated.** At least one agent-eval committed under `evals/agent-eval/` per this methodology, run on a question from this repo's `examples/`. The case shows the structural delta from attaching the Agenda Intelligence MCP server. Self-scored by the author; no aggregate claim. The case must include the model, date, full prompts, and a delta + observations section.
+>
+> **B2.2b — Agent-eval breadth.** At least three agent-evals under `evals/agent-eval/` covering distinct sub-domains within the skill's scope. Breadth is what supports an external claim that the skill helps across the domain, not only on a single question.
 
 If the skill repo's intended audience also includes domain practitioners (compliance, sanctions desks), keep the original human-review criterion as a separate **B2.8 — Practitioner review (optional, audience-gated)**: at least one named domain practitioner has read at least one example and recorded "useful in their workflow" or "useful with these revisions" under `validated-cases/`.
 

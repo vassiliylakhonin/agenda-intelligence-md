@@ -47,6 +47,17 @@ Examples:
 
 Tags are additive to document-level evidence mode — they do not replace it. Use both.
 
+## Relationship to the `basis` field
+
+The `basis` enum in `agenda-memo.schema.json` (`fact` / `assessment` / `assumption` / `unknown`) and Axis A provenance tags are orthogonal and both required: `basis` is the epistemological status of the claim; Axis A is where the claim came from. Producing `basis` in structured output does not exempt the markdown body from Axis A inline tags. Typical crosswalk:
+
+- `basis=fact` → `[primary]`, `[secondary]`, or `[user-provided]`
+- `basis=assessment` → `[analyst-judgment]` or `[inference]`
+- `basis=assumption` → `[analyst-judgment]`
+- `basis=unknown` → no provenance tag (no claim is being made)
+
+See [docs/adr/0010-basis-and-provenance-tags-are-orthogonal.md](../../../docs/adr/0010-basis-and-provenance-tags-are-orthogonal.md).
+
 ## Source discipline
 
 Do not invent sources.
