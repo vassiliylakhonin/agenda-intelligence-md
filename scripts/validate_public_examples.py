@@ -52,6 +52,7 @@ def validate_examples() -> None:
     evidence_schema = load_json(ROOT / "schemas" / "evidence-pack.schema.json")
     brief_schema = load_json(ROOT / "schemas" / "agenda-brief.schema.json")
     audit_schema = load_json(ROOT / "schemas" / "evidence-audit.schema.json")
+    request_schema = load_json(ROOT / "schemas" / "agenda-request.schema.json")
 
     json_files = sorted((ROOT / "examples").glob("**/*.json"))
     if not json_files:
@@ -66,6 +67,8 @@ def validate_examples() -> None:
             validate_with_schema(path, brief_schema, "agenda-brief")
         elif path.name.endswith(".audit.json"):
             validate_with_schema(path, audit_schema, "evidence-audit")
+        elif path.name == "agenda-request.json" or path.name.endswith(".request.json"):
+            validate_with_schema(path, request_schema, "agenda-request")
         else:
             raise SystemExit(f"No validation rule for public example JSON: {path.relative_to(ROOT)}")
 

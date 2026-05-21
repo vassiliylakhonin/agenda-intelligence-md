@@ -4,6 +4,11 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Docs — canon alignment with product-shell role
+- `AGENTS.md` Project identity rewritten: this repo is the product entry point and evidence-discipline layer, not just an infrastructure layer. New section documents the four product MCP tools (`analyze`, `validate_memo`, `list_signals` / `get_signal`, `deep_dive` stub) and the geography routing term sets backing `analyze`. Vendored `skills/agenda-intelligence/**` now explicitly described as lighter derived copies; canonical reasoning and regional depth still live in the GTTA and vertical-specialist repos.
+- `llms.txt` (and packaged copy under `src/agenda_intelligence/data/`) rewritten to match: drops the legacy "evidence and eval infrastructure layer" framing, lists the four product MCP tools, and documents the geography routing term sets.
+- `examples/agenda-request.json` added — minimal AnalyzeRequest example for copy-paste integration; validated against `agenda-request.schema.json` by `scripts/validate_public_examples.py`, which gained a routing rule for `agenda-request.json` and `*.request.json` files.
+
 ## [0.9.1] – 2026-05-21
 
 ### Added — `audience_detail` freeform field on agenda-request (ADR 0009)
