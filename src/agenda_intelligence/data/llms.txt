@@ -1,6 +1,18 @@
 # Agenda Intelligence MD
 
-CLI, MCP server, JSON schemas, and markdown protocol for validating and auditing strategic-risk AI agent output. Evidence and eval infrastructure layer for reasoning skills (Global Think Tank Analyst, Central Asia + Caspian, Gulf + Middle East).
+Product entry point and evidence-discipline layer for strategic intelligence agents. One MCP server with structured request/memo contract, geography-routed reasoning, schema validation, evidence audit, and scoring. Reasoning content is bundled from sibling repos (Global Think Tank Analyst as the method; Central Asia + Caspian and Gulf + Middle East as regional specialists, activated automatically when query geography matches). No live retrieval, no factual verification — both are explicit non-goals before v1.0.
+
+Product MCP tools:
+- analyze — accepts an AgendaRequest (schemas/agenda-request.schema.json), routes geography to bundled regional references, assembles a system prompt from the Global Think Tank Analyst method plus matched regional lenses, optionally calls the Anthropic API when ANTHROPIC_API_KEY is set, and returns a memo validated against schemas/agenda-memo.schema.json.
+- validate_memo — validates a third-party memo against agenda-memo.schema.json and returns errors plus a score where implemented.
+- list_signals / get_signal — read access to the vendored Global Think Tank Analyst signal archive.
+- deep_dive — reserved stub; returns a v2 placeholder pointing callers at `analyze` with depth: scenario or red_team.
+
+Geography routing terms (lowercased match against question, decision_context, geography):
+- central-asia-caspian: central asia, caspian, kazakhstan, uzbekistan, turkmenistan, kyrgyzstan, tajikistan, azerbaijan, georgia, middle corridor, tcitr.
+- gulf-middle-east: iran, uae, saudi arabia, qatar, bahrain, kuwait, oman, yemen, iraq, red sea, hormuz, bab-el-mandeb, gcc, levant.
+- eu and sanctions: their respective term sets.
+- global-think-tank-analyst: always loaded as the core reasoning method.
 
 Core rule: do not summarize the news. Identify what changed, who is affected, what incentives shifted, what remains unknown, and what to watch next.
 
