@@ -38,7 +38,7 @@ pip install agenda-intelligence-md
 #   export ANTHROPIC_API_KEY=...
 #
 # Or pinned wheel:
-# pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.9.0/agenda_intelligence_md-0.9.0-py3-none-any.whl
+# pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.9.1/agenda_intelligence_md-0.9.1-py3-none-any.whl
 
 agenda-intelligence validate-brief examples/agenda-brief.json
 agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json

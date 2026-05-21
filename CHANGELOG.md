@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## [0.9.1] – 2026-05-21
+
 ### Added — `audience_detail` freeform field on agenda-request (ADR 0009)
 - `schemas/agenda-request.schema.json` (and packaged copy) gains an optional `audience_detail` string (`minLength: 1`). The existing enum-bound `audience` field stays as the prompt-routable signal; `audience_detail` carries the caller's original framing (e.g. `"AI company leadership, product and compliance teams"`) so it is not silently coerced to the closest prototype.
 - `_format_request_context` in `src/agenda_intelligence/product.py` renders `audience_detail` into the verified request-context block alongside `audience` when present.
