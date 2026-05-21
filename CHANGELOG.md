@@ -4,10 +4,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## [0.9.2] – 2026-05-21
+
 ### Docs — canon alignment with product-shell role
 - `AGENTS.md` Project identity rewritten: this repo is the product entry point and evidence-discipline layer, not just an infrastructure layer. New section documents the four product MCP tools (`analyze`, `validate_memo`, `list_signals` / `get_signal`, `deep_dive` stub) and the geography routing term sets backing `analyze`. Vendored `skills/agenda-intelligence/**` now explicitly described as lighter derived copies; canonical reasoning and regional depth still live in the GTTA and vertical-specialist repos.
-- `llms.txt` (and packaged copy under `src/agenda_intelligence/data/`) rewritten to match: drops the legacy "evidence and eval infrastructure layer" framing, lists the four product MCP tools, and documents the geography routing term sets.
-- `examples/agenda-request.json` added — minimal AnalyzeRequest example for copy-paste integration; validated against `agenda-request.schema.json` by `scripts/validate_public_examples.py`, which gained a routing rule for `agenda-request.json` and `*.request.json` files.
+- `llms.txt` (and packaged copy under `src/agenda_intelligence/data/`) rewritten to match: drops the legacy "evidence and eval infrastructure layer" framing, lists the four product MCP tools, and documents the geography routing term sets verbatim.
+
+### Added — AnalyzeRequest public example and routing-canon sync guard
+- `examples/agenda-request.json` — minimal AnalyzeRequest for copy-paste integration; validated against `agenda-request.schema.json` by `scripts/validate_public_examples.py`, which gained a routing rule for `agenda-request.json` and `*.request.json` files.
+- `tests/test_product_shell.py::test_routing_terms_documented_in_canon` — parametrised over `CA_CASPIAN_TERMS` / `GULF_ME_TERMS` / `EU_TERMS` / `SANCTIONS_TERMS`. Every term in the authoritative Python constants must appear verbatim in both `AGENTS.md` (Geography routing) and `llms.txt`. Test count: 121 → 125.
 
 ## [0.9.1] – 2026-05-21
 
