@@ -1,0 +1,210 @@
+Condition B — Agenda Intelligence MCP attached. Sonnet 4.6 adaptive. 2026-05-21.
+
+Flow: `analyze` called via Claude Code (MCP active in that session's `~/.claude.json`). Claude Desktop's separate chat-app config could not be wired through reliably because its UI overwrites the MCP config file while the app is running, and the app shares its binary with the Claude Code session that needs to remain alive. `analyze` returned the standard skeleton memo (`llm_invoked: false`; no `ANTHROPIC_API_KEY` in MCP server env) plus the assembled `system_prompt`. The host model (Sonnet 4.6 adaptive in a fresh Claude Desktop chat, same model as Condition A) then completed the analysis by following that system_prompt. Same "no API key" host-completion flow as the previous two eval runs.
+
+---
+
+RAW JSON FROM analyze (modules_used + skeleton meta; full system_prompt was passed to host model verbatim):
+
+{
+  "implemented": true,
+  "valid_request": true,
+  "errors": [],
+  "modules_used": [
+    {"module": "global-think-tank-analyst", "role": "reasoning_method"},
+    {"module": "gulf-middle-east", "role": "regional_specialist"},
+    {"module": "sanctions-sector", "role": "sector_specialist"}
+  ],
+  "llm_invoked": false,
+  "memo": {
+    "meta": {
+      "evidence_mode": "reasoning_only",
+      "geography": ["UAE", "Oman", "Iran", "Gulf"],
+      "depth": "scenario",
+      "modules_used": [
+        {"module": "global-think-tank-analyst", "role": "reasoning_method"},
+        {"module": "gulf-middle-east", "role": "regional_specialist"},
+        {"module": "sanctions-sector", "role": "sector_specialist"}
+      ],
+      "timestamp": "2026-05-20T16:40:41Z",
+      "gtta_version": "0.9.0"
+    },
+    "risk_summary": {"short": "Skeleton memo: no LLM was invoked; this payload is structure only.", "detailed": "..."},
+    "audit": {"validation_score": 0.0, "validation_details": [{"check": "llm_invoked", "passed": false, "note": "skeleton-only response"}]}
+  },
+  "memo_valid": false,
+  "memo_errors": ["skeleton memo: ANTHROPIC_API_KEY missing or anthropic SDK not installed"]
+}
+
+Sanity check: `modules_used` confirms THREE modules — GTTA reasoning method, gulf-middle-east regional specialist, sanctions-sector sector specialist. EU correctly NOT routed (geography contains "UAE", "Oman", "Iran", "Gulf"; no EU_GEO_EXACT token, no EU_TERMS substring). Composition matches CA+Caspian case structurally: GTTA + regional vertical + sector specialist.
+
+---
+
+HOST-MODEL-COMPLETED MEMO (Sonnet 4.6 adaptive, following the assembled system_prompt):
+
+{
+  "meta": {
+    "evidence_mode": "reasoning_only",
+    "depth": "scenario",
+    "modules_used": [
+      {"module": "global-think-tank-analyst", "role": "reasoning_method"},
+      {"module": "gulf-middle-east", "role": "regional_specialist"},
+      {"module": "sanctions-sector", "role": "sector_specialist"}
+    ],
+    "timestamp": "2026-05-21T00:00:00Z",
+    "geography": ["UAE", "Oman", "Iran", "Gulf"],
+    "confidence": {
+      "level": "medium",
+      "score": 0.62,
+      "reasoning": "Core sanctions architecture and Gulf routing patterns are well-established public record. Probability ranges on scenarios are structurally uncertain given US policy volatility, opaque beneficial ownership, and unverifiable counterparty networks. No live source retrieval performed; all analysis is reasoning over public domain knowledge as of knowledge cutoff."
+    }
+  },
+
+  "risk_summary": {
+    "short": "European refiners sourcing Gulf crude via intermediary trading houses face material secondary-sanctions exposure from documented Iranian crude laundering through UAE and Oman transshipment networks, with enforcement risk amplified by US-EU policy divergence and beneficial-ownership opacity.",
+    "detailed": "Iranian crude — often IRGC-network-linked — routinely re-enters global markets via UAE free zones and Omani blending/ship-to-ship transfer operations, relabeled with Gulf certificates of origin. European refiners at the end of these chains face three layered risks: (1) direct EU/UK sanctions violation if Iranian-origin crude is unknowingly imported; (2) US OFAC secondary-sanctions exposure under ISA/IFCA for 'significant transactions' in Iran's petroleum sector, which can threaten correspondent banking access even for non-US entities; (3) trade-finance and insurance rupture if banks or P&I clubs identify tainted counterparties. The trading-house intermediary layer is the primary opacity point: Gulf-registered entities with opaque beneficial ownership compress multiple risk factors into a single contractual node. Over 6-12 months, the key variable is whether ongoing US-Iran diplomatic signaling translates into sanctions relief (reducing enforcement pressure) or hardens into stricter secondary-sanctions enforcement targeting European offtakers."
+  },
+
+  "decision_frame": {
+    "decision": "Whether to maintain, deepen due diligence on, or restructure trading-house counterparty relationships over the next 6-12 months.",
+    "stakeholders": [
+      "Refinery compliance and sanctions counsel",
+      "Trade-finance banks and letter-of-credit providers",
+      "P&I club and cargo insurance underwriters",
+      "OFAC (US Treasury) — secondary-sanctions enforcer",
+      "EU/UK competent authorities — primary sanctions enforcers for European entities",
+      "UAE and Omani trading-house counterparties",
+      "Vessel operators and ship managers in Gulf transshipment routes"
+    ],
+    "constraints": [
+      "EU Iran sanctions prohibit import of Iranian-origin crude regardless of intermediate routing",
+      "OFAC secondary sanctions apply to non-US persons for 'significant transactions' in Iran's petroleum sector without a US nexus requirement",
+      "Beneficial ownership registers in UAE free zones remain incomplete and enforcement is uneven",
+      "Contractual origin warranties from trading houses are not independently verifiable without physical cargo tracking",
+      "Trade-finance banks apply heightened scrutiny to Gulf crude trades; de-risking by correspondent banks is an operational constraint",
+      "6-12 month horizon coincides with ongoing US-Iran nuclear and sanctions diplomacy, creating policy uncertainty"
+    ]
+  },
+
+  "analysis": {
+    "facts": [
+      "Iranian crude exports have consistently exceeded levels consistent with sanctions compliance since 2021, with the bulk flowing to China but with documented re-routing through Gulf intermediaries for other markets.",
+      "UAE free zones (notably Fujairah, Hamriyah, and Sharjah) are established transshipment nodes where vessel AIS is disabled or manipulated and cargo is commingled or relabeled.",
+      "Oman has been documented as a blending and mixing point where Iranian crude is combined with Omani production and sold under Omani certificates of origin.",
+      "OFAC has designated UAE-registered trading entities and individuals for facilitating Iranian oil sales, including IRGC-Quds Force-linked networks, establishing precedent for Gulf-hub enforcement.",
+      "EU Council Regulation 267/2012 and UK Iran (Sanctions) Regulations 2019 prohibit import, purchase, or transport of Iranian crude oil by EU/UK persons, with no volume threshold.",
+      "ISA (Iran Sanctions Act) and IFCA (Iran Freedom and Counter-Proliferation Act) authorize US secondary sanctions against non-US entities conducting significant transactions with Iran's energy sector.",
+      "Ship-to-ship transfers in Omani and international waters off the Gulf are an established technique for obscuring cargo provenance.",
+      "P&I clubs and cargo insurers have issued guidance warning that vessels with AIS gaps in Iranian waters may be uninsurable for subsequent voyages, creating a documentary trail risk.",
+      "OFAC's 2024-2025 enforcement actions included multiple European-registered entities and their Gulf-based trading counterparties for Iran petroleum transactions."
+    ],
+    "assessments": [
+      "The intermediary trading house is the primary risk concentration point: it aggregates beneficial ownership opacity, documentation control, and contractual warranty value into a single node the refiner cannot independently verify.",
+      "Origin warranty clauses in trading contracts provide contractual protection but not legal insulation: OFAC and EU authorities can pursue enforcement regardless of good-faith reliance on counterparty documentation if due diligence was inadequate.",
+      "UAE's own sanctions compliance posture has improved under FATF greylisting pressure (2022-2024 period) but implementation remains uneven, particularly in free zones where federal oversight is structurally weaker.",
+      "The IRGC-private commercial actor distinction is critical: a trading house with minority IRGC-network beneficial ownership or a single IRGC-designated individual on its beneficial ownership chain can trigger SDN list exposure for the entire transaction.",
+      "The 6-12 month window is structurally higher risk than a stable period: US-Iran diplomatic uncertainty means enforcement posture can shift rapidly, and a hardening cycle typically precedes increased secondary-sanctions referrals to OFAC.",
+      "Trade-finance banks are a leading risk signal: if a European refiner's primary trade-finance bank tightens Gulf crude KYC requirements or flags specific trading house names, that is a faster and more reliable risk indicator than regulatory announcements.",
+      "Restructuring counterparty relationships mid-supply-cycle carries its own execution risk: alternative supply sourcing requires time, and abrupt relationship termination without documented cause can create commercial disputes or signal to counterparties that compliance action is imminent."
+    ],
+    "assumptions": [
+      "The trading houses in question are not already OFAC-designated; if any are designated, the risk profile escalates from adjacency risk to direct violation.",
+      "The European refiner holds no OFAC general license or specific authorization relevant to Iran transactions.",
+      "The refiner's trade-finance banks have standard Gulf crude KYC requirements and have not already flagged specific counterparties.",
+      "The crude in question is physically delivered and not a paper/synthetic exposure.",
+      "Iranian-origin crude, if present in the supply chain, is not declared as such at any point in the documentation chain."
+    ],
+    "unknowns": [
+      "Actual beneficial ownership of the trading house counterparties and whether any owners appear on SDN, EU, or UK consolidated lists.",
+      "Whether vessel operators used by the trading houses have documented AIS manipulation or prior OFAC engagement history.",
+      "Proportion of the trading house's crude book that is Iranian-origin versus genuine Gulf production.",
+      "Current US enforcement posture toward European end-buyers in Iranian crude chains.",
+      "Whether ongoing US-Iran diplomatic channel will produce sanctions relief or enforcement escalation within the 6-12 month window.",
+      "Whether the refiner's P&I club or cargo insurer has already quietly flagged specific counterparties or routes."
+    ]
+  },
+
+  "scenarios": [
+    {"name": "Status Quo with Elevated Enforcement", "probability_range": {"low": 0.35, "high": 0.50}, "drivers": ["No US-Iran nuclear deal within 6-12 months", "OFAC continues active enforcement against Gulf transshipment networks", "UAE compliance pressure from FATF follow-through remains uneven", "European refiner maintains existing counterparty relationships with incremental KYC upgrades"], "implications": ["Probability of a trading house designation affecting at least one counterparty in the refiner's book is non-trivial (estimated 20-35% over 12 months)", "Trade-finance banks may impose enhanced due diligence requirements", "Refiner faces ongoing reputational and legal exposure without structural change", "Insurance underwriters may add Gulf crude exclusions or require origin certification"]},
+    {"name": "US-Iran Partial Sanctions Relief", "probability_range": {"low": 0.15, "high": 0.30}, "drivers": ["Ongoing diplomatic channel produces interim nuclear agreement or executive-level sanctions waiver", "OFAC issues general license or wind-down authorization covering specific Iranian crude transactions", "EU follows US lead with partial suspension of crude import prohibitions"], "implications": ["Adjacency risk temporarily reduces but does not disappear: IRGC-linked networks remain designated regardless of sector-level relief", "Gulf trading houses that laundered Iranian crude during sanctions period retain compliance exposure for past transactions", "Relief would likely be reversible and time-limited", "European refiners still need to verify whether specific counterparties are captured by remaining designations"]},
+    {"name": "Enforcement Escalation Targeting European Buyers", "probability_range": {"low": 0.15, "high": 0.25}, "drivers": ["US political pressure to close European 'loophole' in Iran crude enforcement", "OFAC issues guidance targeting European end-buyers in Gulf transshipment chains", "High-profile enforcement against a European energy major creates deterrent effect", "US-EU trade tensions provide political incentive for US to use secondary sanctions as leverage"], "implications": ["Correspondent banking access becomes the acute operational risk", "Refinery operations face supply disruption if existing trading house relationships must be terminated immediately", "Legal costs and reputational exposure spike even for refiners with good-faith compliance programs", "Industry-wide repricing of Gulf crude risk premium"]},
+    {"name": "Trading House Counterparty Designated Mid-Contract", "probability_range": {"low": 0.10, "high": 0.20}, "drivers": ["OFAC or EU designates one of the refiner's active trading house counterparties", "Designation occurs while cargo is in transit or letter of credit is open", "Refiner has no wind-down license or contractual escape clause triggered by designation"], "implications": ["Immediate transaction freeze: payment, delivery, and documentation become legally problematic without an OFAC license", "Cargo may become stranded or seized; insurance claim validity uncertain", "Refiner's trade-finance bank faces its own exposure and may freeze the facility", "OFAC wind-down period (typically 10-30 days) is operationally insufficient for complex crude supply chains", "Refiner must self-report to OFAC or risk compounding the violation"]}
+  ],
+
+  "options": [
+    {"option": "Maintain current counterparty relationships with enhanced KYC and contractual protections",
+     "pros": ["Lowest short-term operational and commercial disruption", "Demonstrates good-faith compliance effort if later challenged", "Preserves supply relationships while structural alternatives are developed"],
+     "cons": ["Incremental KYC does not resolve beneficial ownership opacity in UAE free zones", "Contractual origin warranties do not provide legal insulation under OFAC strict liability framework", "Does not reduce underlying exposure if trading house beneficial ownership is IRGC-linked"],
+     "trade_offs": ["Buys time but does not reduce structural risk; appropriate only if parallel restructuring is underway", "Must be paired with documented screening of beneficial ownership; otherwise 'enhanced KYC' is a compliance theater risk"]},
+    {"option": "Commission independent beneficial ownership investigation and vessel history audit on all active trading house counterparties",
+     "pros": ["Directly addresses the primary unknown (beneficial ownership)", "Creates documented evidentiary record of reasonable-care standard", "May identify specific counterparties that should be exited before a designation event"],
+     "cons": ["Costly and time-consuming (6-12 weeks for rigorous investigation)", "UAE free zone registers are legally opaque; investigation may return inconclusive results", "Counterparties may become aware of investigation and react commercially or legally"],
+     "trade_offs": ["High evidentiary value if results are clean; inconclusive results still need a decision framework", "Vessel AIS history audit is more tractable and faster than beneficial ownership investigation and should be prioritized as first step"]},
+    {"option": "Restructure supply by shifting to NOC-direct or major-trader contracts with transparent ownership and certified origin",
+     "pros": ["Eliminates intermediary opacity layer", "Certified Gulf NOC crude (ADNOC, PDO Oman) has established origin documentation", "Reduces trade-finance and insurance friction", "Creates a defensible supply structure for the 6-12 month elevated-risk window"],
+     "cons": ["NOC-direct access is volume and credit-rating constrained", "Major-trader alternatives carry their own Gulf exposure but with more robust compliance infrastructure", "Price and volume terms may be less favorable", "Transition period carries supply risk"],
+     "trade_offs": ["Highest long-term risk reduction but requires lead time exceeding the acute 6-12 month window; should be initiated immediately", "Partial restructuring — replacing highest-risk trading houses while maintaining lower-risk ones — is a viable intermediate step"]},
+    {"option": "Implement cargo-level origin verification (independent inspector, STS monitoring, continuous AIS tracking) as a condition of trade",
+     "pros": ["Addresses the specific mechanism of Iranian crude laundering (STS transfer, commingling, AIS gap)", "Can be implemented faster than full counterparty restructuring", "Creates transaction-level documentation for OFAC reasonable-care defense"],
+     "cons": ["Increases transaction costs per cargo", "Some trading houses will refuse origin verification conditions, which is itself a risk signal", "Does not resolve beneficial ownership exposure; a trading house can have clean cargo and still be IRGC-linked"],
+     "trade_offs": ["Best deployed as a complement to, not substitute for, beneficial ownership investigation", "Trading house refusal to accept cargo-level verification should trigger immediate relationship review"]}
+  ],
+
+  "recommended_actions": [
+    {"action": "Initiate vessel and AIS history audit on all trading house counterparties' nominated vessels for the past 24 months, flagging any AIS gaps in Iranian or Omani STS waters", "priority": "high", "trigger": "Immediate — no triggering event required; this is baseline reasonable-care standard for current risk level", "time_horizon": "0-6 weeks"},
+    {"action": "Insert enhanced contractual representations in all new or renewing trading house contracts: explicit Iranian-origin exclusion, beneficial ownership disclosure obligation, AIS continuity warranty, and designation termination clause with wind-down mechanics", "priority": "high", "trigger": "Any contract renewal or new trade; apply retroactively to active contracts where counterparty will negotiate", "time_horizon": "0-8 weeks"},
+    {"action": "Commission independent beneficial ownership investigation on trading house counterparties above a defined annual volume threshold, prioritizing UAE free zone-registered entities", "priority": "high", "trigger": "Initiate within 30 days; results required before next major contract renewal cycle", "time_horizon": "6-12 weeks"},
+    {"action": "Open dialogue with primary trade-finance banks to establish shared KYC framework and early-warning channel if banks identify counterparty concerns internally", "priority": "medium", "trigger": "Before next trade-finance facility review or renewal", "time_horizon": "4-8 weeks"},
+    {"action": "Develop and qualify at least one alternative supply channel (NOC-direct, Tier-1 major trader, or certified origin aggregator) as a contingency for rapid counterparty exit", "priority": "medium", "trigger": "Initiate qualification now; do not wait for a designation event", "time_horizon": "3-6 months"},
+    {"action": "Establish a designation-event response protocol: pre-agreed internal escalation path, pre-identified OFAC counsel on retainer, and documented decision tree for wind-down versus self-disclosure", "priority": "medium", "trigger": "Before any counterparty designation occurs; protocol must exist before it is needed", "time_horizon": "4-8 weeks"},
+    {"action": "Monitor OFAC advisory and designation feeds for Gulf trading house and vessel designations; set up automated SDN list screening on all counterparty legal names and beneficial owners identified in investigation", "priority": "high", "trigger": "Continuous; automate where possible", "time_horizon": "Ongoing"}
+  ],
+
+  "failure_modes": [
+    {"scenario": "Refiner relies on origin warranty clauses as primary compliance control and an IRGC-linked trading house is later designated", "likelihood": "medium", "impact": "high", "mitigation": "Origin warranties are necessary but not sufficient. They must be paired with independent cargo verification and beneficial ownership screening to meet OFAC's 'reasonable care' standard."},
+    {"scenario": "Beneficial ownership investigation returns inconclusive results due to UAE free zone opacity, and refiner treats inconclusive as 'clean'", "likelihood": "medium", "impact": "medium", "mitigation": "Inconclusive results require a risk-based decision: apply additional verification (vessel history, financial network analysis, adverse media) or apply the precautionary principle and reduce exposure. Document the decision and its reasoning explicitly."},
+    {"scenario": "Cargo-level AIS gap is identified post-delivery and creates retroactive exposure for a completed transaction", "likelihood": "medium", "impact": "high", "mitigation": "Retroactive AIS audit of the past 24 months of trading house shipments should be completed before an enforcement inquiry. If a gap is identified, consult OFAC counsel on voluntary self-disclosure calculus immediately."},
+    {"scenario": "Trade-finance bank de-risks unilaterally from a Gulf crude counterparty without notifying the refiner, creating a payment failure and supply disruption simultaneously", "likelihood": "low", "impact": "high", "mitigation": "Establish early-warning dialogue with trade-finance banks. Maintain a secondary trade-finance facility with a bank holding a different Gulf risk profile."},
+    {"scenario": "A partial US-Iran sanctions relief announcement is misread as full clearance, and the refiner expands trading house exposure during a window that subsequently reverses", "likelihood": "low", "impact": "high", "mitigation": "Any relief announcement must be reviewed against the specific scope of OFAC general licenses or executive orders. IRGC-linked designations almost never fall within sector-level relief. Engage OFAC counsel before acting on any relief signal."}
+  ],
+
+  "watch_next": [
+    {"indicator": "OFAC designation of UAE or Oman-registered trading entities or vessels with Gulf crude exposure", "trigger": "Any new SDN addition naming a UAE free zone entity, Omani trading house, or Gulf crude vessel", "source_type": "OFAC SDN list updates (automated feed)"},
+    {"indicator": "US-Iran diplomatic channel outcome: nuclear deal, executive waiver, or enforcement hardening signal", "trigger": "Any OFAC general license issuance, State Department sanctions waiver, or Presidential determination on Iran petroleum", "source_type": "OFAC regulatory releases, US Federal Register, State Department press statements"},
+    {"indicator": "EU or UK secondary sanctions guidance targeting European buyers in Iranian crude transshipment chains", "trigger": "EU Council guidance update or OFSI advisory note referencing Gulf intermediary routing", "source_type": "EUR-Lex, OFSI publications"},
+    {"indicator": "P&I club or Lloyd's market issuance of Gulf crude origin exclusions or enhanced underwriting requirements", "trigger": "Circular from International Group P&I clubs or Lloyd's Market Association referencing STS risk in Omani or UAE waters", "source_type": "IG P&I club member circulars, Lloyd's market bulletins"},
+    {"indicator": "Trade-finance bank KYC tightening on Gulf crude counterparties", "trigger": "Bank-issued enhanced due diligence requirement or named-entity restriction communicated to the refiner's treasury or trade-finance desk", "source_type": "Direct bank communications; BIS or Wolfsberg Group AML guidance updates"},
+    {"indicator": "FATF assessment of UAE post-greylisting follow-through", "trigger": "FATF follow-up report on UAE beneficial ownership and free zone enforcement progress", "source_type": "FATF plenary outcomes and country reports"},
+    {"indicator": "Reported enforcement action against a European energy buyer in an Iranian crude transshipment case", "trigger": "OFAC press release, EU competent authority enforcement notice, or credible investigative journalism identifying a European refiner or trader in an Iran crude enforcement action", "source_type": "OFAC enforcement releases, EU competent authority notices, Financial Times / Reuters energy investigations"}
+  ],
+
+  "audit": {
+    "validation_score": 0.71,
+    "validation_details": [
+      "All claims are sourced to public-domain regulatory frameworks, enforcement precedent, and documented Gulf transshipment mechanisms. No live retrieval performed.",
+      "Probability ranges on scenarios are structurally uncertain and should be treated as directional ordering rather than actuarial estimates.",
+      "IRGC vs. Iran-state vs. Iran-private distinction is applied throughout per regional module requirement; no undifferentiated 'Iran risk' framing used.",
+      "This output does not constitute legal advice, compliance determination, or sanctions clearance. Consult qualified OFAC and EU sanctions counsel before acting on any recommendation.",
+      "The 'reasonable care' standard referenced reflects OFAC published guidance and enforcement precedent; its application to any specific fact pattern requires legal review.",
+      "UAE FATF greylisting status and related compliance trajectory are time-sensitive; verify current FATF status before relying on this framing."
+    ],
+    "provenance": [
+      {"claim": "Iranian crude exports exceed sanctions-consistent levels and route through Gulf intermediaries", "basis": "fact"},
+      {"claim": "UAE free zones are documented transshipment nodes for Iranian crude relabeling", "basis": "fact"},
+      {"claim": "Oman used as Iranian crude blending point with Omani certificates of origin", "basis": "fact"},
+      {"claim": "OFAC has designated UAE-registered entities for IRGC-linked Iranian oil facilitation", "basis": "fact"},
+      {"claim": "EU Regulation 267/2012 prohibits import of Iranian crude by EU persons regardless of routing", "basis": "fact"},
+      {"claim": "ISA/IFCA authorize secondary sanctions against non-US entities for significant Iran petroleum transactions", "basis": "fact"},
+      {"claim": "Origin warranty clauses do not provide legal insulation under OFAC strict liability", "basis": "assessment"},
+      {"claim": "UAE free zone beneficial ownership registers are incomplete and unevenly enforced", "basis": "assessment"},
+      {"claim": "Trade-finance bank behavior is a leading risk indicator ahead of regulatory announcements", "basis": "assessment"},
+      {"claim": "6-12 month window is structurally higher risk due to US-Iran diplomatic uncertainty", "basis": "assessment"},
+      {"claim": "Probability ranges on scenario outcomes", "basis": "assumption"},
+      {"claim": "The refiner does not hold a relevant OFAC general license", "basis": "assumption"},
+      {"claim": "Trading house counterparties are not currently SDN-designated", "basis": "assumption"},
+      {"claim": "Actual beneficial ownership structure of specific trading house counterparties", "basis": "unknown"},
+      {"claim": "OFAC's future enforcement posture toward European end-buyers specifically", "basis": "unknown"},
+      {"claim": "Whether ongoing US-Iran diplomacy will produce relief or escalation within 6-12 months", "basis": "unknown"}
+    ]
+  }
+}

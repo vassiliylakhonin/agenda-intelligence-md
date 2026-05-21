@@ -1,0 +1,99 @@
+Condition A — Baseline (no MCP). Sonnet 4.6 adaptive. 2026-05-20.
+
+Prompt verbatim:
+
+  Be concise and decision-useful. Avoid filler. Do not call any tools or
+  MCP servers. Reason only from internal knowledge.
+
+  Question: What Iran sanctions adjacency risk does a European refiner
+  face when sourcing crude from Gulf trading hubs (UAE, Oman) via
+  intermediary trading houses?
+
+  Decision: Whether to maintain, deepen due diligence on, or restructure
+  trading-house counterparty relationships over the next 6-12 months.
+
+  Audience: Refinery sanctions compliance and trade-finance leadership.
+
+  Time horizon: 6-12 months.
+
+  Evidence mode: reasoning-only (no live sources expected).
+
+  Produce a decision-useful response in whatever format you think serves
+  the question best.
+
+Response verbatim:
+
+# Iran Sanctions Adjacency Risk: Gulf Hub Crude Sourcing via Trading Houses
+For: Sanctions Compliance & Trade Finance Leadership | Horizon: 6-12 months
+
+## The Core Risk Architecture
+
+Gulf trading hubs — particularly Fujairah, Sohar, and Duqm — are structurally dual-use. They serve as legitimate crude blending and storage centers and as the primary transshipment layer for Iranian crude evading OFAC/EU sanctions. A European refiner cannot cleanly separate these flows at the commodity level without active counterparty governance.
+
+The risk is not that you are buying Iranian crude knowingly. It is that your trading-house intermediary is, and your institution becomes the downstream nexus of a sanctions evasion chain.
+
+## Specific Exposure Vectors
+
+| Vector | Mechanism | Detectability |
+|---|---|---|
+| Origin blending | Iranian crude commingled with Iraqi, Basra, or Omani grades in storage; re-certificated as non-sanctioned origin | Low without independent cargo inspection |
+| AIS manipulation | Vessels carrying Iranian crude conduct ship-to-ship transfers in UAE/Oman waters, then appear in AIS as originating from legitimate ports | Medium — gaps in AIS history are a red flag |
+| Trading house layering | Entity A (clean) buys from Entity B (Iran-linked) which bought from Entity C (IRGC-affiliated); your contract is with A | Very low without UBO and network tracing |
+| Shell financing chains | Trade finance flows through correspondent banks touching OFAC-designated entities two or three hops removed | Low — surfaces only in bank compliance screening |
+| Document fraud | Forged certificates of origin, falsified cargo manifests, re-flagging | Medium — detectable via consistent cargo analytics |
+
+## Regulatory & Enforcement Environment: Next 6-12 Months
+
+Elevated risk, not diminished.
+
+- OFAC enforcement posture: Secondary sanctions pressure on non-US persons has intensified since 2018 and has not materially relaxed.
+- EU own-account sanctions: EU Regulation 267/2012 (Iran) binds European refiners directly, independent of OFAC.
+- Designation creep into UAE: OFAC has increasingly designated UAE-registered entities, front companies, and individuals.
+- Geopolitical volatility: Any escalation in US-Iran nuclear negotiations historically triggers a designation surge within 60-90 days.
+- UK OFSI alignment: Post-Brexit, OFSI has mirrored and in some cases accelerated Iran designations.
+
+## Decision Framework
+
+Maintain (acceptable if all of the following are true):
+- Trading house has audited, documented UBO structure with no Iran-linked shareholders or affiliates
+- Cargo-level STS transfer history and AIS continuity for all purchased parcels
+- Independent pre-load inspection on origin
+- Trading house has current, clean OFAC/EU screening
+- Trade finance bank has confirmed counterparty passes their own EDD
+- Contractual reps & warranties explicitly covering origin, no-Iran, no-STS, no-AIS-gap
+
+If any of these are absent, you are not in "maintain" — you are in unacknowledged risk.
+
+Deepen Due Diligence. Trigger this if:
+- Trading house is <3 years old, recently renamed, or has opaque ownership
+- Cargo history shows AIS gaps >12 hours in UAE/Oman/Gulf of Oman waters
+- Price is consistently at an anomalous discount vs comparable benchmarks
+- Trading house uses sub-agents or brokers you cannot independently verify
+- Banking counterparties include any entity on UAE's own AML/sanctions lists
+
+Specific enhanced DD steps:
+1. Third-party UBO and network mapping (Kroll, K2 Integrity, Sayari) — ~$15-25K
+2. Vessel history reports (MarineTraffic AIS + Windward or Pole Star analytics)
+3. Insert contractual audit rights with termination right if refused
+4. Escalate trade finance to bank with dedicated maritime/commodity sanctions desk
+
+Restructure or Exit. Required if:
+- Enhanced DD reveals Iran-linked ownership, affiliate, or recent designated-entity relationship
+- Counterparty resists DD requests
+- Trade finance bank downgrades or exits the relationship
+- Volume from this counterparty represents >15-20% of crude slate
+
+Restructuring options:
+- Source direct from NOCs (ADNOC, OmanOil) — premium may be justified
+- Introduce reputable major trading house (Vitol, Trafigura, Gunvor)
+- Insert independent inspection agents at origin
+
+## The Decision Most Likely Warranted
+
+For most European refiners with existing Gulf hub/trading house relationships established 2019-2022: structured deepening of due diligence, now, before the 6-month window closes.
+
+The cost of enhanced DD is low. The cost of a secondary sanctions designation or even an OFAC subpoena is existential for a refinery's crude procurement function. The absence of a confirmed violation in your current supply chain is not evidence of clean exposure; it is evidence that you have not yet looked hard enough.
+
+---
+
+This analysis is based on general knowledge of US/EU Iran sanctions architecture, documented enforcement patterns, and Gulf trading infrastructure. It does not constitute legal advice. Engage qualified sanctions counsel before making counterparty decisions.
