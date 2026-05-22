@@ -157,6 +157,65 @@ def main() -> None:
         ),
     )
 
+    # Extension to 5+5 — sanctions / vessel / regulatory determinative-claim
+    # discipline. Same post-hoc rule (basis=fact must carry source or
+    # [verify] in user_provided/mixed); these fixtures exercise the rule
+    # across the three domains explicitly named in ROADMAP v0.9 §4.
+    _write(
+        golden / "mixed-vessel-with-source.json",
+        _memo(
+            "mixed",
+            [
+                {
+                    "claim": "IMO 9123456 ASTRA STAR was added to OFAC SDN list in 2025.",
+                    "basis": "fact",
+                    "source": "OFAC SDN list update 2025-04-12 (caller-supplied)",
+                },
+                {"claim": "Dark-fleet activity around Hormuz remains elevated.", "basis": "assessment"},
+            ],
+        ),
+    )
+
+    _write(
+        golden / "user-provided-regulatory-with-verify.json",
+        _memo(
+            "user_provided",
+            [
+                {
+                    "claim": "EU CBAM definitive period transitional reporting deadline is 2026-01-31 [verify]",
+                    "basis": "fact",
+                },
+                {"claim": "Affected importers will face higher compliance load.", "basis": "assessment"},
+            ],
+        ),
+    )
+
+    _write(
+        failure / "user-provided-sanctions-bare.json",
+        _memo(
+            "user_provided",
+            [
+                {
+                    "claim": "OFAC added BANK ALPHA to the SDN list under Executive Order 14024 in March 2025.",
+                    "basis": "fact",
+                },
+            ],
+        ),
+    )
+
+    _write(
+        failure / "mixed-regulatory-bare.json",
+        _memo(
+            "mixed",
+            [
+                {
+                    "claim": "EU AI Act high-risk obligations enter into force on 2026-08-02.",
+                    "basis": "fact",
+                },
+            ],
+        ),
+    )
+
     print(f"Wrote fixtures under {HERE}")
 
 

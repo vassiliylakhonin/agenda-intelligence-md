@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "evidence_mode": "user_provided",
+    "confidence": "medium",
+    "geography": "Kazakhstan",
+    "depth": "decision_pack",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      },
+      {
+        "module": "central-asia-caspian",
+        "role": "regional_specialist"
+      }
+    ],
+    "timestamp": "2026-05-22T00:00:00Z",
+    "gtta_version": "0.9.x"
+  },
+  "risk_summary": {
+    "short": "Illustrative fixture memo for evidence-mode discipline tests.",
+    "detailed": "Illustrative content. This memo exists only to exercise the evidence-mode discipline check; no factual claim is asserted by the fixture set itself."
+  },
+  "analysis": {
+    "facts": [
+      "Illustrative fact entry."
+    ],
+    "assessments": [
+      "Illustrative assessment entry."
+    ],
+    "assumptions": [
+      "Illustrative assumption entry."
+    ],
+    "unknowns": [
+      "Illustrative unknown entry."
+    ]
+  },
+  "watch_next": [
+    {
+      "indicator": "Illustrative indicator."
+    }
+  ],
+  "audit": {
+    "validation_score": 0.5,
+    "provenance": [
+      {
+        "claim": "OFAC added BANK ALPHA to the SDN list under Executive Order 14024 in March 2025.",
+        "basis": "fact"
+      }
+    ]
+  }
+}
