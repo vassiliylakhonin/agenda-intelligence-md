@@ -13,7 +13,7 @@ agenda-intelligence validate-brief examples/agenda-brief.json
 agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
 ```
 
-`doctor` reports package and MCP-server status; `validate-brief` confirms a brief matches `agenda-brief.schema.json`; `score` returns a heuristic 0–100 number with a structure / evidence / decision-readiness breakdown. A full end-to-end analyze trace (request → routing → memo → validation → audit → score) lands as a v0.9 artifact (see [`ROADMAP.md`](ROADMAP.md)).
+`doctor` reports package and MCP-server status; `validate-brief` confirms a brief matches `agenda-brief.schema.json`; `score` returns a heuristic 0–100 number with a structure / evidence / decision-readiness breakdown. Full end-to-end analyze trace (request → routing → memo → validation → audit → score) with reproducibility script: [`examples/product-shell/full-analyze-trace/`](examples/product-shell/full-analyze-trace/).
 
 Optional, only if you want `analyze` to call the Anthropic API itself rather than letting your host model complete from the returned system prompt:
 

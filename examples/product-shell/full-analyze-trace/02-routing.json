@@ -1,0 +1,18 @@
+{
+  "valid_request": true,
+  "modules_used": [
+    {
+      "module": "global-think-tank-analyst",
+      "role": "reasoning_method"
+    },
+    {
+      "module": "central-asia-caspian",
+      "role": "regional_specialist"
+    },
+    {
+      "module": "sanctions-sector",
+      "role": "sector_specialist"
+    }
+  ],
+  "system_prompt_chars": 19472
+}

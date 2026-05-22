@@ -1,0 +1,10 @@
+{
+  "question": "How exposed is a Kazakhstan-incorporated payments fintech to secondary US sanctions risk over the next 12 months?",
+  "decision_context": "Whether to open a USD correspondent banking relationship in Almaty in Q3.",
+  "audience": "founder",
+  "geography": "Kazakhstan",
+  "time_horizon": "12 months",
+  "evidence_mode": "reasoning_only",
+  "depth": "decision_pack",
+  "output_format": "structured_json"
+}
