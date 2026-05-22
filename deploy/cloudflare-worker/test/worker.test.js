@@ -10,9 +10,16 @@ test("agent card uses request origin for live endpoints", () => {
 
   assert.equal(card.protocolVersion, "1.0");
   assert.equal(card.url, "https://agenda-intelligence-a2a.example.workers.dev/message/send");
+  assert.deepEqual(card.supportedInterfaces, [
+    {
+      url: "https://agenda-intelligence-a2a.example.workers.dev/message/send",
+      protocolBinding: "JSONRPC",
+      protocolVersion: "1.0"
+    }
+  ]);
   assert.equal(card.x_agenda_intelligence.hosted_wrapper, true);
   assert.equal(card.x_agenda_intelligence.mcp.server_command, "agenda-intelligence-mcp");
-  assert.equal(card.securitySchemes.noAuth.type, "none");
+  assert.equal(card.capabilities.extendedAgentCard, false);
 });
 
 test("message/send returns JSON-RPC result with routing metadata", () => {
@@ -37,8 +44,9 @@ test("message/send returns JSON-RPC result with routing metadata", () => {
 
   assert.equal(response.jsonrpc, "2.0");
   assert.equal(response.id, "probe-1");
-  assert.equal(response.result.status.state, "completed");
-  assert.deepEqual(response.result.metadata.modules_used, [
+  assert.equal(response.result.task.status.state, "TASK_STATE_COMPLETED");
+  assert.deepEqual(response.result.task.artifacts[0].parts[0].mediaType, "text/markdown");
+  assert.deepEqual(response.result.task.metadata.modules_used, [
     { module: "global-think-tank-analyst", role: "reasoning_method" },
     { module: "central-asia-caspian", role: "regional_specialist" },
     { module: "sanctions-sector", role: "sector_specialist" }

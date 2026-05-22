@@ -117,21 +117,20 @@ function agentCard(request) {
     },
     version: VERSION,
     documentationUrl: DOCS_URL,
+    supportedInterfaces: [
+      {
+        url: `${origin}/message/send`,
+        protocolBinding: "JSONRPC",
+        protocolVersion: "1.0"
+      }
+    ],
+    protocolVersions: ["1.0"],
     capabilities: {
       streaming: false,
       pushNotifications: false,
-      stateTransitionHistory: false
+      stateTransitionHistory: false,
+      extendedAgentCard: false
     },
-    authentication: {
-      schemes: ["none"]
-    },
-    securitySchemes: {
-      noAuth: {
-        type: "none",
-        description: "Public read-only discovery wrapper; no API key required."
-      }
-    },
-    security: [{ noAuth: [] }],
     defaultInputModes: ["application/json", "text/plain", "text/markdown"],
     defaultOutputModes: ["application/json", "text/markdown"],
     skills: [
@@ -250,7 +249,7 @@ function a2aResult(params, request) {
   return {
     id: crypto.randomUUID(),
     status: {
-      state: "completed",
+      state: "TASK_STATE_COMPLETED",
       timestamp: new Date().toISOString()
     },
     artifacts: [
@@ -259,8 +258,8 @@ function a2aResult(params, request) {
         name: "Agenda Intelligence routing note",
         parts: [
           {
-            kind: "text",
-            text: routingMarkdown(text, modules)
+            text: routingMarkdown(text, modules),
+            mediaType: "text/markdown"
           }
         ]
       }
@@ -293,15 +292,17 @@ function handleJsonRpc(payload, request) {
     return jsonRpcError(id, -32600, "Invalid Request");
   }
 
-  if (payload.method === "message/send" || payload.method === "tasks/send") {
+  if (payload.method === "message/send" || payload.method === "tasks/send" || payload.method === "SendMessage") {
     return {
       jsonrpc: "2.0",
       id,
-      result: a2aResult(payload.params ?? {}, request)
+      result: {
+        task: a2aResult(payload.params ?? {}, request)
+      }
     };
   }
 
-  if (payload.method === "agent/card" || payload.method === "agentCard") {
+  if (payload.method === "agent/card" || payload.method === "agentCard" || payload.method === "GetExtendedAgentCard") {
     return {
       jsonrpc: "2.0",
       id,
