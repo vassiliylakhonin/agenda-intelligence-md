@@ -1,0 +1,4 @@
+{
+  "applicable": false,
+  "reason": "score CLI evaluates briefs against evidence packs. The analyze skeleton memo is not a brief and carries no evidence pack. Scoring of analyze memos against the rubric is a v0.9.x item (see ROADMAP). For a runnable score example today see examples/source-backed/eu-ai-act.brief.json."
+}

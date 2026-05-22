@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "evidence_mode": "reasoning_only",
+    "geography": "Kazakhstan",
+    "depth": "decision_pack",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      },
+      {
+        "module": "central-asia-caspian",
+        "role": "regional_specialist"
+      },
+      {
+        "module": "sanctions-sector",
+        "role": "sector_specialist"
+      }
+    ],
+    "timestamp": "2026-05-22T10:49:38Z",
+    "gtta_version": "0.9.2"
+  },
+  "risk_summary": {
+    "short": "Skeleton memo: no LLM was invoked; this payload is structure only.",
+    "detailed": "Agenda Intelligence assembled the system prompt and module set for this request, but did not call a model. Either no ANTHROPIC_API_KEY was configured or the host is expected to complete the analysis from the returned system_prompt. Treat all fields below as placeholders."
+  },
+  "analysis": {
+    "facts": [],
+    "assessments": [],
+    "assumptions": [],
+    "unknowns": [
+      "Real analytical output requires an LLM call."
+    ]
+  },
+  "watch_next": [
+    {
+      "indicator": "Caller decides whether to invoke an LLM with the returned system_prompt."
+    }
+  ],
+  "audit": {
+    "validation_score": 0.0,
+    "validation_details": [
+      {
+        "check": "llm_invoked",
+        "passed": false,
+        "note": "skeleton-only response"
+      }
+    ]
+  }
+}

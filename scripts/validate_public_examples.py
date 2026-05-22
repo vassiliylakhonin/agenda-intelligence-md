@@ -58,10 +58,24 @@ def validate_examples() -> None:
     if not json_files:
         raise SystemExit("No examples/**/*.json files found")
 
+    trace_dir = ROOT / "examples" / "product-shell" / "full-analyze-trace"
+    trace_request_files = {trace_dir / "01-request.json"}
+    trace_doc_files = {
+        trace_dir / "02-routing.json",
+        trace_dir / "03-memo.json",
+        trace_dir / "04-validation.json",
+        trace_dir / "05-audit.json",
+        trace_dir / "06-score.json",
+    }
+
     for path in json_files:
         load_json(path)
 
-        if path.name.endswith(".evidence.json") or path.name == "evidence-pack.json":
+        if path in trace_request_files:
+            validate_with_schema(path, request_schema, "agenda-request")
+        elif path in trace_doc_files:
+            continue
+        elif path.name.endswith(".evidence.json") or path.name == "evidence-pack.json":
             validate_with_schema(path, evidence_schema, "evidence-pack")
         elif path.name == "agenda-brief.json" or path.name.endswith(".brief.json"):
             validate_with_schema(path, brief_schema, "agenda-brief")

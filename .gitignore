@@ -9,5 +9,6 @@ build/
 dist/
 *.egg-info/
 .venv/
+.venv-*/
 .wheel-smoke-venv/
 uv.lock

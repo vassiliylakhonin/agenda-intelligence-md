@@ -1,0 +1,14 @@
+{
+  "evidence_mode": "reasoning_only",
+  "memo_audit_block": {
+    "validation_score": 0.0,
+    "validation_details": [
+      {
+        "check": "llm_invoked",
+        "passed": false,
+        "note": "skeleton-only response"
+      }
+    ]
+  },
+  "note": "For evidence_mode=reasoning_only there is no caller-supplied evidence pack; claim-level audit (audit-claims CLI) applies to source_backed and mixed modes. The memo schema's own audit field is reproduced above as part of the trace."
+}
