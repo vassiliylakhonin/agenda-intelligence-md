@@ -43,6 +43,7 @@ Mirror the CI checks locally before pushing:
 
 ```
 black --check --line-length=120 src/ tests/ scripts/
+flake8 src/ tests/ scripts/ --max-line-length=120 --ignore=E203,W503
 make ci
 python3 -m agenda_intelligence.cli validate-manifest
 python3 -m agenda_intelligence.cli validate-brief examples/agenda-brief.json
@@ -52,6 +53,8 @@ python3 scripts/validate_public_examples.py
 ```
 
 `black --check` is the first line because CI's Lint job runs it as the very first step and fails the whole pipeline on any formatting drift. If `--check` fails, run `black --line-length=120 src/ tests/ scripts/` to auto-fix.
+
+`flake8` runs immediately after `black` in CI's Lint job and catches things `black` leaves alone — most often long string literals in dict/tuple positions where `black` cannot split. There is no auto-fixer; reformat the line by hand (parenthesized string concatenation, dedicated constant, etc.).
 
 For MCP smoke check:
 
