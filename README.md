@@ -9,6 +9,17 @@ Product entry point and evidence-discipline layer for strategic intelligence age
 
 This repository hosts the product entry point: JSON schemas defining the request/response contract, the stdio MCP server exposing `analyze`, `validate_memo`, `list_signals`, `get_signal`, and `deep_dive`, plus the original validation surface (briefs, evidence packs, audits, lenses, source plans). Reasoning content is bundled as in-repo references derived from sibling repositories: [Global Think Tank Analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) (method), [Central Asia + Caspian](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) and [Gulf + Middle East](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) (regional specialists routed by query geography).
 
+## Where this fits in the Agenda Intelligence stack
+
+| Layer | Repo | Role |
+|---|---|---|
+| **Product shell** (this repo) | **agenda-intelligence-md** | MCP server, request/memo schemas, geography routing, evidence audit, scoring |
+| Reasoning method | [global-think-tank-analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) | Strategic-risk reasoning contract; loaded by `analyze` as the default method |
+| Vertical specialist | [central-asia-caspian-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) | Central Asia / Caspian / Middle Corridor domain depth; routed by geography |
+| Vertical specialist | [gulf-middle-east-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) | Iran / GCC / maritime chokepoint domain depth; routed by geography |
+
+The product shell is the integration point: agents call `analyze`, geography routes to the relevant specialist, and the GTTA method frames the reasoning. Each repo is also usable standalone (paste/attach into any agent).
+
 ## What this is
 
 - **MCP product shell** — `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography to the relevant regional specialist, assembles a system prompt, and returns a memo validated against `agenda-memo.schema.json`
