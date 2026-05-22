@@ -28,6 +28,8 @@ If `make ci-fast` is green locally, your push will not red-CI on `main`.
 - [`examples/agenda-brief.json`](examples/agenda-brief.json) → [`schemas/agenda-brief.schema.json`](schemas/agenda-brief.schema.json) → run `agenda-intelligence validate-brief examples/agenda-brief.json`. This is the smallest complete loop the product shell exposes: a structured brief, the schema it conforms to, the validator that enforces it.
 - For the MCP product surface: skim [`AGENTS.md`](AGENTS.md) "Geography routing" and the four product tools (`analyze`, `validate_memo`, `list_signals` / `get_signal`, `deep_dive`).
 
+**Unfamiliar with a term in `AGENTS.md`?** See the [portfolio glossary](docs/glossary.md) — single source of truth for evidence modes, uncertainty labels (`Verified`/`Plausible`/`Judgment`/`Unknown`), table-cell discipline, Axis A/B provenance tags, three-value response logic, and the deliberate maturity-framework asymmetry across the four repos (Bar 1/2 ≠ Maturity framework ≠ ROADMAP versioning).
+
 **When something is unclear**, the lookup order is: this repo's [`AGENTS.md`](AGENTS.md) → portfolio canon ([global-think-tank-analyst/AGENTS.md](https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main/AGENTS.md), vertical-skill AGENTS.md files) → open an issue using the template under [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/).
 
 **Before your first PR**, the single most common reason CI breaks on `main` for new contributors is the **dual-copy invariant** — read the "Critical invariant: dual-copy sync" section below before editing any of the listed files.
