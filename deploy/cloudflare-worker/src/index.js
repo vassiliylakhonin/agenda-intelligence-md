@@ -369,58 +369,60 @@ function dateKeyFromRequest(request) {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
 }
 
-async function readCounter(kv, key) {
-  const value = await kv.get(key);
-  const parsed = Number.parseInt(value || "0", 10);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-async function incrementCounter(kv, key) {
-  const current = await readCounter(kv, key);
-  await kv.put(key, String(current + 1));
-}
-
-async function listCounterGroup(kv, prefix) {
-  const items = [];
-  let cursor;
-
-  do {
-    const result = await kv.list({ prefix, cursor });
-    const rows = await Promise.all(
-      result.keys.map(async (item) => ({
-        name: item.name.slice(prefix.length),
-        count: await readCounter(kv, item.name)
-      }))
-    );
-    items.push(...rows.filter((item) => item.count > 0));
-    cursor = result.cursor;
-    if (result.list_complete !== false) break;
-  } while (cursor);
-
-  return items.sort((left, right) => right.count - left.count || left.name.localeCompare(right.name));
-}
-
 async function recordUsageStats(env, event) {
   const kv = env?.AGENDA_USAGE;
   if (!kv || !event || event.event !== "agenda_intelligence_a2a_usage") return;
 
   const day = dateKeyFromTimestamp(event.timestamp);
-  const base = `usage:${day}`;
-  const country = event.cf?.country || "unknown";
-  const modules = Array.isArray(event.modules_used) ? event.modules_used : [];
-  const counters = [
-    `${base}:total`,
-    `${base}:${event.likely_probe ? "likely_probe" : "non_probe"}`,
-    `${base}:client:${event.client || "unknown"}`,
-    `${base}:country:${country}`,
-    `${base}:method:${event.jsonrpc_method || "unknown"}`
-  ];
+  const key = `usage-event:${day}:${event.timestamp}:${crypto.randomUUID()}`;
+  await kv.put(
+    key,
+    JSON.stringify({
+      timestamp: event.timestamp,
+      jsonrpc_method: event.jsonrpc_method || "unknown",
+      prompt_chars: event.prompt_chars || 0,
+      likely_probe: Boolean(event.likely_probe),
+      client: event.client || "unknown",
+      country: event.cf?.country || "unknown",
+      modules_used: Array.isArray(event.modules_used) ? event.modules_used : []
+    })
+  );
+}
 
-  for (const moduleName of modules) {
-    counters.push(`${base}:module:${moduleName}`);
-  }
+function incrementMap(map, key) {
+  const safeKey = key || "unknown";
+  map.set(safeKey, (map.get(safeKey) || 0) + 1);
+}
 
-  await Promise.all(counters.map((key) => incrementCounter(kv, key)));
+function sortedMap(map) {
+  return [...map.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name));
+}
+
+async function listUsageEvents(kv, date) {
+  const events = [];
+  let cursor;
+
+  do {
+    const result = await kv.list({ prefix: `usage-event:${date}:`, cursor });
+    const rows = await Promise.all(
+      result.keys.map(async (item) => {
+        const raw = await kv.get(item.name);
+        if (!raw) return null;
+        try {
+          return JSON.parse(raw);
+        } catch (_error) {
+          return null;
+        }
+      })
+    );
+    events.push(...rows.filter(Boolean));
+    cursor = result.cursor;
+    if (result.list_complete !== false) break;
+  } while (cursor);
+
+  return events;
 }
 
 async function usageStats(env, date) {
@@ -432,16 +434,27 @@ async function usageStats(env, date) {
     };
   }
 
-  const base = `usage:${date}`;
-  const [total, nonProbe, likelyProbe, clients, countries, methods, modules] = await Promise.all([
-    readCounter(kv, `${base}:total`),
-    readCounter(kv, `${base}:non_probe`),
-    readCounter(kv, `${base}:likely_probe`),
-    listCounterGroup(kv, `${base}:client:`),
-    listCounterGroup(kv, `${base}:country:`),
-    listCounterGroup(kv, `${base}:method:`),
-    listCounterGroup(kv, `${base}:module:`)
-  ]);
+  const events = await listUsageEvents(kv, date);
+  const clients = new Map();
+  const countries = new Map();
+  const methods = new Map();
+  const modules = new Map();
+  let likelyProbe = 0;
+  let promptChars = 0;
+
+  for (const event of events) {
+    if (event.likely_probe) likelyProbe += 1;
+    promptChars += Number.isFinite(event.prompt_chars) ? event.prompt_chars : 0;
+    incrementMap(clients, event.client);
+    incrementMap(countries, event.country);
+    incrementMap(methods, event.jsonrpc_method);
+    for (const moduleName of Array.isArray(event.modules_used) ? event.modules_used : []) {
+      incrementMap(modules, moduleName);
+    }
+  }
+
+  const total = events.length;
+  const nonProbe = total - likelyProbe;
 
   return {
     configured: true,
@@ -451,12 +464,14 @@ async function usageStats(env, date) {
     counters: {
       total,
       non_probe: nonProbe,
-      likely_probe: likelyProbe
+      likely_probe: likelyProbe,
+      prompt_chars_total: promptChars,
+      prompt_chars_avg: total > 0 ? Math.round(promptChars / total) : 0
     },
-    clients,
-    countries,
-    methods,
-    modules
+    clients: sortedMap(clients),
+    countries: sortedMap(countries),
+    methods: sortedMap(methods),
+    modules: sortedMap(modules)
   };
 }
 
