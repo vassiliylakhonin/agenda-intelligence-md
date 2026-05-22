@@ -32,6 +32,7 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, and ligh
 - Agent Card: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
 - JSON-RPC: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send>
 - Agenstry listing: <https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev>
+- Announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
 
 The hosted wrapper is intentionally limited: no payments, no wallets, no autonomous live retrieval, no factual-truth verification, and no legal/financial/compliance advice. Full product behavior remains in the installable stdio MCP server.
 
