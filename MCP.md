@@ -8,7 +8,7 @@ The tools split into two layers:
 - **Validation layer** (11 tools, this repo's original scope): schema checks,
   evidence audit, lens and source-plan access, output scoring, quote verification.
 - **Product layer** (5 tools, Agenda Intelligence product shell): `analyze`,
-  `validate_memo`, `list_signals`, `get_signal`, `deep_dive`. These wrap the
+  `validate_memo`, `list_signals`, `get_signal`, `deep_dive` (reserved/planned, returns a v2 placeholder). These wrap the
   validation layer with geography routing, system-prompt assembly, optional LLM
   invocation, and vendored signal access.
 
