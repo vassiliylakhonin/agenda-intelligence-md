@@ -1,14 +1,28 @@
 # Agenda Intelligence MD
 
-Product entry point and evidence-discipline layer for strategic intelligence agents.
+MCP product shell and evidence-discipline layer for strategic intelligence agents. Structured request/memo contract, geography-routed reasoning, schema validation, evidence audit, scoring. No live retrieval, no factual verification.
 
-[![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/)
-[![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Agenda Intelligence** is an MCP product shell and evidence-discipline layer for strategic intelligence agents. Structured request/memo contract, geography-routed reasoning, schema validation, evidence audit, and scoring. One MCP server. Structured input/output. No live retrieval, no factual verification — those are explicit non-goals before v1.0.
+## First run
 
-This repository hosts the product entry point: JSON schemas defining the request/response contract, the stdio MCP server exposing `analyze`, `validate_memo`, `list_signals`, `get_signal`, and `deep_dive`, plus the original validation surface (briefs, evidence packs, audits, lenses, source plans). Reasoning content is bundled as in-repo references derived from sibling repositories: [Global Think Tank Analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) (method), [Central Asia + Caspian](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) and [Gulf + Middle East](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) (regional specialists routed by query geography).
+```bash
+pip install agenda-intelligence-md
+agenda-intelligence doctor
+agenda-intelligence validate-brief examples/agenda-brief.json
+agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
+```
+
+`doctor` reports package and MCP-server status; `validate-brief` confirms a brief matches `agenda-brief.schema.json`; `score` returns a heuristic 0–100 number with a structure / evidence / decision-readiness breakdown. A full end-to-end analyze trace (request → routing → memo → validation → audit → score) lands as a v0.9 artifact (see [`ROADMAP.md`](ROADMAP.md)).
+
+Optional, only if you want `analyze` to call the Anthropic API itself rather than letting your host model complete from the returned system prompt:
+
+```bash
+pip install "agenda-intelligence-md[llm]"
+export ANTHROPIC_API_KEY=...
+```
+
+Longer guided tutorial: [`docs/quickstart.md`](docs/quickstart.md). MCP client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
 
 ## Where this fits in the Agenda Intelligence stack
 
@@ -39,24 +53,18 @@ The product shell is the integration point: agents call `analyze`, geography rou
 - Not a replacement for analyst judgment
 - Not a compliance, legal, or financial advisory product
 
-## Quickstart
+## More CLI examples
 
 ```bash
-pip install agenda-intelligence-md
-# Add the optional [llm] extra to let the MCP `analyze` tool call the
-# Anthropic API directly (otherwise the host model completes from the
-# returned system_prompt):
-#   pip install "agenda-intelligence-md[llm]"
-#   export ANTHROPIC_API_KEY=...
-#
-# Or pinned wheel:
-# pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.9.2/agenda_intelligence_md-0.9.2-py3-none-any.whl
-
-agenda-intelligence validate-brief examples/agenda-brief.json
-agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
 agenda-intelligence bench examples/source-backed --strict --min-score 80
-agenda-intelligence doctor
+agenda-intelligence audit-claims examples/source-backed/eu-ai-act.audit.json --strict
 agenda-intelligence mcp-config --client cursor
+```
+
+Pinned-wheel install (instead of PyPI):
+
+```bash
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.9.2/agenda_intelligence_md-0.9.2-py3-none-any.whl
 ```
 
 ## Benchmark baseline
