@@ -35,7 +35,11 @@ BASELINE = {
     },
     "risk_summary": {
         "short": "Illustrative fixture memo for evidence-mode discipline tests.",
-        "detailed": "Illustrative content. This memo exists only to exercise the evidence-mode discipline check; no factual claim is asserted by the fixture set itself.",
+        "detailed": (
+            "Illustrative content. This memo exists only to exercise the "
+            "evidence-mode discipline check; no factual claim is asserted "
+            "by the fixture set itself."
+        ),
     },
     "analysis": {
         "facts": ["Illustrative fact entry."],
