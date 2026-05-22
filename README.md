@@ -163,6 +163,7 @@ Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-con
 | Evidence audit | [`docs/evidence-audit.md`](docs/evidence-audit.md) |
 | Threat model | [`docs/threat-model.md`](docs/threat-model.md) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |
+| Agenstry discovery | [`docs/integrations/agenstry.md`](docs/integrations/agenstry.md) |
 | Use-cases | [`docs/use-cases/`](docs/use-cases/) |
 | Agent contract | [`AGENTS.md`](AGENTS.md) |
 | Adoption guide | [`ADOPTION.md`](ADOPTION.md) |

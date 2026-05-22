@@ -1,0 +1,202 @@
+{
+  "protocolVersion": "1.0",
+  "name": "Agenda Intelligence MD",
+  "description": "Evidence-discipline MCP layer for strategic-risk agents. Validates structured strategic-risk memos, audits claim/evidence linkage, diagnoses source-category coverage, routes geography-specific reasoning modules, and exposes packaged signal references. It does not perform live retrieval or factual-truth verification.",
+  "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+  "provider": {
+    "organization": "Vassiliy Lakhonin",
+    "url": "https://vassiliylakhonin.github.io/"
+  },
+  "version": "0.9.2",
+  "documentationUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/MCP.md",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "authentication": {
+    "schemes": [
+      "none"
+    ]
+  },
+  "defaultInputModes": [
+    "application/json",
+    "text/plain",
+    "text/markdown"
+  ],
+  "defaultOutputModes": [
+    "application/json",
+    "text/markdown"
+  ],
+  "skills": [
+    {
+      "id": "agenda-analyze",
+      "name": "Strategic-risk memo assembly",
+      "description": "Accepts a structured AgendaRequest, routes relevant geography and sector modules, assembles a system prompt, optionally calls a configured LLM, and validates the resulting memo against the Agenda memo schema.",
+      "tags": [
+        "strategic-risk",
+        "policy-analysis",
+        "geopolitics",
+        "memo",
+        "mcp"
+      ],
+      "examples": [
+        "Analyze how Red Sea shipping disruption changes risk for a Central Asia logistics corridor.",
+        "Prepare a structured sanctions-risk memo with uncertainties and watch-next signals."
+      ],
+      "inputModes": [
+        "application/json"
+      ],
+      "outputModes": [
+        "application/json",
+        "text/markdown"
+      ]
+    },
+    {
+      "id": "agenda-validate-memo",
+      "name": "Memo contract validation",
+      "description": "Validates an Agenda memo against the packaged agenda-memo JSON schema and returns validation errors where present.",
+      "tags": [
+        "schema-validation",
+        "memo-validation",
+        "quality-gate"
+      ],
+      "examples": [
+        "Validate this strategic-risk memo before it is sent to an analyst workflow."
+      ],
+      "inputModes": [
+        "application/json"
+      ],
+      "outputModes": [
+        "application/json"
+      ]
+    },
+    {
+      "id": "agenda-audit-claims",
+      "name": "Claim/evidence audit",
+      "description": "Checks claim-level evidence-audit structure, support-level distribution, orphan evidence references, and listed unsupported claims. This is a schema and linkage audit, not factual-truth verification.",
+      "tags": [
+        "evidence-audit",
+        "claim-support",
+        "provenance",
+        "quality-gate"
+      ],
+      "examples": [
+        "Audit whether each claim in this memo is linked to evidence ids and labelled by support level."
+      ],
+      "inputModes": [
+        "application/json"
+      ],
+      "outputModes": [
+        "application/json"
+      ]
+    },
+    {
+      "id": "agenda-source-coverage",
+      "name": "Source coverage diagnostics",
+      "description": "Diagnoses whether an evidence pack covers category-specific must-check source types for domains such as sanctions, trade, regulation, energy, conflict, cyber, ESG, and technology AI.",
+      "tags": [
+        "source-planning",
+        "evidence-coverage",
+        "sanctions",
+        "trade",
+        "regulation"
+      ],
+      "examples": [
+        "Check whether this sanctions evidence pack covers the required source categories."
+      ],
+      "inputModes": [
+        "application/json"
+      ],
+      "outputModes": [
+        "application/json"
+      ]
+    },
+    {
+      "id": "agenda-quote-verification",
+      "name": "Local quote presence check",
+      "description": "Checks whether cited quote fragments appear in caller-supplied source text. It does not discover sources or verify truth.",
+      "tags": [
+        "quote-checking",
+        "evidence-discipline",
+        "local-verification"
+      ],
+      "examples": [
+        "Confirm that each quoted excerpt appears in the provided source text."
+      ],
+      "inputModes": [
+        "application/json",
+        "text/plain"
+      ],
+      "outputModes": [
+        "application/json"
+      ]
+    },
+    {
+      "id": "agenda-signals",
+      "name": "Signal archive lookup",
+      "description": "Lists and returns packaged strategic-risk signal archive entries vendored from the Global Think Tank Analyst method snapshot.",
+      "tags": [
+        "signals",
+        "strategic-intelligence",
+        "archive",
+        "watch-next"
+      ],
+      "examples": [
+        "List available signal records relevant to a regional-risk workflow."
+      ],
+      "inputModes": [
+        "application/json"
+      ],
+      "outputModes": [
+        "application/json",
+        "text/markdown"
+      ]
+    }
+  ],
+  "x_agenda_intelligence": {
+    "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+    "package": "https://pypi.org/project/agenda-intelligence-md/",
+    "mcp": {
+      "transport": "stdio",
+      "server_command": "agenda-intelligence-mcp",
+      "tools": [
+        "validate_brief",
+        "validate_evidence",
+        "audit_claims",
+        "score_output",
+        "get_protocol",
+        "list_source_categories",
+        "source_plan",
+        "source_coverage",
+        "verify_quotes",
+        "list_lenses",
+        "get_lens",
+        "analyze",
+        "validate_memo",
+        "list_signals",
+        "get_signal",
+        "deep_dive"
+      ]
+    },
+    "boundaries": [
+      "No autonomous live source retrieval before v1.0.",
+      "No factual-truth verification; validates structure, provenance labels, quote presence, and evidence coverage diagnostics.",
+      "Not legal, financial, compliance, investment, or trading advice."
+    ],
+    "recommended_use": [
+      "policy and geopolitical analysis",
+      "sanctions and compliance monitoring support",
+      "trade and regulatory risk briefs",
+      "founder or investor operating-context notes",
+      "red-team checks on confident narratives"
+    ],
+    "schemas": {
+      "request": "schemas/agenda-request.schema.json",
+      "memo": "schemas/agenda-memo.schema.json",
+      "brief": "schemas/agenda-brief.schema.json",
+      "evidence_pack": "schemas/evidence-pack.schema.json",
+      "evidence_audit": "schemas/evidence-audit.schema.json"
+    }
+  }
+}
