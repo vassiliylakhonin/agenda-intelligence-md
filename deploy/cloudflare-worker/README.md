@@ -90,6 +90,47 @@ curl -X POST https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/messag
 
 Expected: HTTP 200 with a JSON-RPC 2.0 response and `status.state: "completed"`.
 
+## Usage analytics
+
+This Worker uses Cloudflare's built-in free observability path:
+
+- Cloudflare Workers Metrics show total requests, successful requests, errors, CPU time, and latency.
+- Workers Logs capture one structured `agenda_intelligence_a2a_usage` event for each JSON-RPC `message/send`, `tasks/send`, or `SendMessage` call.
+- Agenstry's public listing can show marketplace-side usage, but only for traffic Agenstry can observe.
+
+The custom usage event is privacy-safe by design. It does not log IP addresses, cookies, authorization headers, or full prompt text. It keeps only:
+
+- request method and path;
+- JSON-RPC method;
+- whether a JSON-RPC id was present;
+- prompt character count;
+- selected Agenda modules;
+- coarse client class, such as `agenstry`, `curl`, `browser`, or `automation`;
+- referrer hostname, when present;
+- Cloudflare colo and country, when Cloudflare provides them.
+
+View aggregate traffic in the Cloudflare dashboard:
+
+```text
+Workers & Pages -> agenda-intelligence-a2a -> Metrics
+```
+
+View live structured usage events:
+
+```bash
+cd deploy/cloudflare-worker
+npx --yes wrangler tail agenda-intelligence-a2a --format=json
+```
+
+Useful filters in Workers Logs:
+
+```text
+event = "agenda_intelligence_a2a_usage"
+jsonrpc_method = "message/send"
+client = "agenstry"
+likely_probe = false
+```
+
 ## Test locally
 
 ```bash

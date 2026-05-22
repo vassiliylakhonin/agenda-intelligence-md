@@ -304,6 +304,56 @@ function routeModules(text) {
   return modules;
 }
 
+function headerHost(request, headerName) {
+  const value = request.headers.get(headerName);
+  if (!value) return null;
+  try {
+    return new URL(value).host;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function classifyClient(request) {
+  const userAgent = (request.headers.get("user-agent") || "").toLowerCase();
+  if (userAgent.includes("agenstry")) return "agenstry";
+  if (userAgent.includes("curl")) return "curl";
+  if (userAgent.includes("wrangler")) return "wrangler";
+  if (userAgent.includes("bot") || userAgent.includes("crawler") || userAgent.includes("spider")) return "automation";
+  if (userAgent.includes("mozilla")) return "browser";
+  return "unknown";
+}
+
+function buildUsageEvent(request, details = {}) {
+  const url = new URL(request.url);
+  const cf = request.cf || {};
+  const promptChars = Number.isFinite(details.prompt_chars) ? details.prompt_chars : 0;
+
+  return {
+    event: "agenda_intelligence_a2a_usage",
+    event_version: 1,
+    timestamp: new Date().toISOString(),
+    source: "cloudflare_worker",
+    method: request.method,
+    path: url.pathname,
+    jsonrpc_method: details.jsonrpc_method || null,
+    jsonrpc_id_present: Boolean(details.jsonrpc_id_present),
+    prompt_chars: promptChars,
+    modules_used: Array.isArray(details.modules_used) ? details.modules_used.map((item) => item.module) : [],
+    client: classifyClient(request),
+    referrer_host: headerHost(request, "referer"),
+    cf: {
+      colo: cf.colo || null,
+      country: cf.country || null
+    },
+    likely_probe: Boolean(details.likely_probe)
+  };
+}
+
+function logUsageEvent(request, details) {
+  console.log(buildUsageEvent(request, details));
+}
+
 function routingMarkdown(text, modules) {
   const moduleList = modules.map((item) => `- ${item.module}: ${item.role}`).join("\n");
   const promptLine = text ? `\n\nReceived prompt excerpt:\n\n> ${text.slice(0, 500)}` : "";
@@ -375,10 +425,22 @@ function handleJsonRpc(payload, request) {
   }
 
   if (payload.method === "message/send" || payload.method === "tasks/send" || payload.method === "SendMessage") {
+    const params = payload.params ?? {};
+    const result = a2aResult(params, request);
+    const text = extractText(params);
+    const likelyProbe = classifyClient(request) === "agenstry" || text.length === 0;
+    logUsageEvent(request, {
+      jsonrpc_method: payload.method,
+      jsonrpc_id_present: payload.id !== undefined,
+      prompt_chars: text.length,
+      modules_used: result.metadata.modules_used,
+      likely_probe: likelyProbe
+    });
+
     return {
       jsonrpc: "2.0",
       id,
-      result: a2aResult(payload.params ?? {}, request)
+      result
     };
   }
 
@@ -446,4 +508,4 @@ export default {
   fetch: handleRequest
 };
 
-export { agentCard, handleJsonRpc, routeModules };
+export { agentCard, buildUsageEvent, handleJsonRpc, routeModules };
