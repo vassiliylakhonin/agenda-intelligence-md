@@ -4,7 +4,7 @@ Ten dimensions plus a six-point human review checklist. This rubric is the struc
 
 Use this file when:
 - writing or reviewing an `agenda-memo` for product-shell validation;
-- judging a candidate eval case for inclusion under `evals/golden/` or `evals/failure/`;
+- judging a candidate eval case for inclusion under `tests/fixtures/evidence_mode/golden/` or `tests/fixtures/evidence_mode/failure/`;
 - defining what an "agent-eval delta" actually measures (see [ADR 0008](adr/0008-agent-eval-delta-is-structural-product-validation.md)).
 
 **Not a CI gate in v0.9.** Scores from this rubric are logged as baseline only. Gating happens after calibration in v0.9.x+.

@@ -40,7 +40,7 @@ The rule that per-claim provenance tags (Axis A/B) must persist inside markdown 
 
 Common failure: a tag gets dropped or mutated under layout pressure ("`[primary]`" disappears from a cell because the column is narrow). This is treated as a regression, not a formatting choice. A bulk-attribution footnote ("all cells: `[analyst-judgment]`") is not a substitute. A dedicated "Provenance" column is acceptable if it improves readability.
 
-Authoritative reference: end of `## Per-claim provenance tags` in CA-Caspian and Gulf+ME `AGENTS.md`. Tracked as a known canon-failure mode in `evals/failure-modes.md`.
+Authoritative reference: end of `## Per-claim provenance tags` in CA-Caspian and Gulf+ME `AGENTS.md`. Tracked as a known canon-failure mode in [`evals/failure-modes.md`](https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main/evals/failure-modes.md) in the Global Think Tank Analyst repo.
 
 ## Terms that have their own `##` section — index
 

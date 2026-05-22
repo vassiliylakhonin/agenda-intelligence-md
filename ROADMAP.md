@@ -42,7 +42,7 @@ MCP `score_output` tool, post-release smoke.
 - Trust-layer eval parameters added to human review checklist.
 - `AGENTS.md`: project-level agent instructions and working rules.
 - Gulf + Middle East added as second vertical specialist in Regional lenses (alongside Central Asia + Caspian).
-- BIS AI Diffusion Rule live-source-backed case study (`examples/bis-ai-diffusion-rule/`).
+- BIS AI Diffusion Rule live-source-backed case study (`examples/source-backed/bis-ai-diffusion.md`).
 - `agent-manifest.json` and `llms.txt` updated: signal-tracker schema and signal-lifecycle protocol registered.
 - Packaged data assets (`src/agenda_intelligence/data/`) synced to top-level sources.
 - CI: generated artifacts no longer tracked; package build smoke-test added.
