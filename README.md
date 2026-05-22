@@ -24,6 +24,27 @@ export ANTHROPIC_API_KEY=...
 
 Longer guided tutorial: [`docs/quickstart.md`](docs/quickstart.md). MCP client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
 
+## Live A2A wrapper
+
+A free Cloudflare Workers wrapper is live for discovery, uptime checks, and lightweight A2A/JSON-RPC routing:
+
+- Live endpoint: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev>
+- Agent Card: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
+- JSON-RPC: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send>
+- Agenstry listing: <https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev>
+
+The hosted wrapper is intentionally limited: no payments, no wallets, no autonomous live retrieval, no factual-truth verification, and no legal/financial/compliance advice. Full product behavior remains in the installable stdio MCP server.
+
+Private usage stats for the wrapper are available from the Cloudflare Worker project:
+
+```bash
+cd deploy/cloudflare-worker
+npm run stats
+npm run stats -- 2026-05-22
+```
+
+The stats helper reads `STATS_TOKEN` from the local ignored `.env` file. Deployment and analytics notes: [`deploy/cloudflare-worker/README.md`](deploy/cloudflare-worker/README.md).
+
 ## Where this fits in the Agenda Intelligence stack
 
 | Layer | Repo | Role |
