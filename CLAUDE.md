@@ -42,6 +42,7 @@ When changing any of these, change the paired copy in the same commit. Version b
 Mirror the CI checks locally before pushing:
 
 ```
+black --check --line-length=120 src/ tests/ scripts/
 make ci
 python3 -m agenda_intelligence.cli validate-manifest
 python3 -m agenda_intelligence.cli validate-brief examples/agenda-brief.json
@@ -49,6 +50,8 @@ python3 -m agenda_intelligence.cli validate-evidence examples/source/evidence-pa
 python3 scripts/validate.py
 python3 scripts/validate_public_examples.py
 ```
+
+`black --check` is the first line because CI's Lint job runs it as the very first step and fails the whole pipeline on any formatting drift. If `--check` fails, run `black --line-length=120 src/ tests/ scripts/` to auto-fix.
 
 For MCP smoke check:
 
