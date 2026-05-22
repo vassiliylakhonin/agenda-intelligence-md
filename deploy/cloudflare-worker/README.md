@@ -134,16 +134,25 @@ client = "agenstry"
 likely_probe = false
 ```
 
+Set a stats token once:
+
+```bash
+cd deploy/cloudflare-worker
+npx --yes wrangler secret put STATS_TOKEN
+```
+
 View product-level daily counters:
 
 ```bash
-curl https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/stats
+curl https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/stats \
+  -H 'x-stats-token: <your-token>'
 ```
 
 For a specific UTC date:
 
 ```bash
-curl https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/stats?date=2026-05-22
+curl 'https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/stats?date=2026-05-22' \
+  -H 'x-stats-token: <your-token>'
 ```
 
 The `/stats` response includes approximate daily totals, likely probes, non-probe calls, prompt character counts, client classes, countries, JSON-RPC methods, and selected Agenda modules. The counters are intentionally coarse and are not a billing or audit ledger.

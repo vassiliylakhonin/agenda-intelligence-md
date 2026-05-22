@@ -369,6 +369,16 @@ function dateKeyFromRequest(request) {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
 }
 
+function statsTokenFromRequest(request) {
+  const url = new URL(request.url);
+  return request.headers.get("x-stats-token") || url.searchParams.get("token") || "";
+}
+
+function isStatsAuthorized(request, env) {
+  if (!env?.STATS_TOKEN) return false;
+  return statsTokenFromRequest(request) === env.STATS_TOKEN;
+}
+
 async function recordUsageStats(env, event) {
   const kv = env?.AGENDA_USAGE;
   if (!kv || !event || event.event !== "agenda_intelligence_a2a_usage") return;
@@ -595,6 +605,18 @@ async function handlePost(request, env, ctx) {
 }
 
 async function handleStats(request, env) {
+  if (!isStatsAuthorized(request, env)) {
+    return jsonResponse(
+      {
+        error: "Unauthorized"
+      },
+      401,
+      {
+        "cache-control": "no-store"
+      }
+    );
+  }
+
   const date = dateKeyFromRequest(request);
   if (!date) {
     return jsonResponse(
@@ -635,6 +657,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       agent_card: `${originFromRequest(request)}/.well-known/agent-card.json`,
       message_send: `${originFromRequest(request)}/message/send`,
       stats: `${originFromRequest(request)}/stats`,
+      stats_auth: "x-stats-token header or token query parameter",
       repository: REPOSITORY_URL,
       payments: false
     });
@@ -655,4 +678,12 @@ export default {
   fetch: handleRequest
 };
 
-export { agentCard, buildUsageEvent, handleJsonRpc, recordUsageStats, routeModules, usageStats };
+export {
+  agentCard,
+  buildUsageEvent,
+  handleJsonRpc,
+  isStatsAuthorized,
+  recordUsageStats,
+  routeModules,
+  usageStats
+};

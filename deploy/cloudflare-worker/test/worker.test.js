@@ -6,6 +6,7 @@ import {
   buildUsageEvent,
   handleJsonRpc,
   handleRequest,
+  isStatsAuthorized,
   recordUsageStats,
   routeModules,
   usageStats
@@ -201,8 +202,9 @@ test("usage stats aggregates daily counters from KV", async () => {
 
 test("stats endpoint returns JSON for requested date", async () => {
   const kv = new MemoryKv();
+  const env = { AGENDA_USAGE: kv, STATS_TOKEN: "test-token" };
   await recordUsageStats(
-    { AGENDA_USAGE: kv },
+    env,
     {
       event: "agenda_intelligence_a2a_usage",
       timestamp: "2026-05-22T12:00:00.000Z",
@@ -215,8 +217,8 @@ test("stats endpoint returns JSON for requested date", async () => {
   );
 
   const response = await handleRequest(
-    new Request("https://agenda-intelligence-a2a.example.workers.dev/stats?date=2026-05-22"),
-    { AGENDA_USAGE: kv }
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/stats?date=2026-05-22&token=test-token"),
+    env
   );
   const body = await response.json();
 
@@ -224,4 +226,41 @@ test("stats endpoint returns JSON for requested date", async () => {
   assert.equal(body.date, "2026-05-22");
   assert.equal(body.counters.total, 1);
   assert.deepEqual(body.clients, [{ name: "browser", count: 1 }]);
+});
+
+test("stats endpoint requires token", async () => {
+  const env = { AGENDA_USAGE: new MemoryKv(), STATS_TOKEN: "test-token" };
+
+  assert.equal(
+    isStatsAuthorized(new Request("https://agenda-intelligence-a2a.example.workers.dev/stats?token=test-token"), env),
+    true
+  );
+  assert.equal(
+    isStatsAuthorized(
+      new Request("https://agenda-intelligence-a2a.example.workers.dev/stats", {
+        headers: { "x-stats-token": "test-token" }
+      }),
+      env
+    ),
+    true
+  );
+  assert.equal(
+    isStatsAuthorized(new Request("https://agenda-intelligence-a2a.example.workers.dev/stats?token=wrong"), env),
+    false
+  );
+  assert.equal(
+    isStatsAuthorized(new Request("https://agenda-intelligence-a2a.example.workers.dev/stats?token=test-token"), {
+      AGENDA_USAGE: new MemoryKv()
+    }),
+    false
+  );
+
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/stats"),
+    env
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(body.error, "Unauthorized");
 });
