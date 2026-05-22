@@ -53,17 +53,49 @@ MCP `score_output` tool, post-release smoke.
 - Keep public benchmark numbers in `docs/evaluation.md` aligned with committed baselines.
 - Continue stabilizing `claim_type` taxonomy from real case patterns.
 
-## v0.9 — agent-eval delta and product-shell narrative alignment
+## v0.9 — agent-eval delta, trust infrastructure, and product-shell narrative alignment
 
-Structural validation of the product shell from the agent-integrator perspective. No factual verification, no live retrieval, no new schemas.
+Structural validation of the product shell from the agent-integrator perspective, plus the trust infrastructure that makes that validation reproducible end-to-end. No factual verification, no live retrieval, no new schemas, no new MCP tools.
+
+### Agent-Eval Delta (validation story)
 
 - **Agent-Eval Delta** introduced as a per-case structural check: how the agent's output shape changes when Agenda Intelligence is wired in versus baseline. Not factual accuracy. Not model-quality comparison. Not aggregate benchmark.
 - Three agent-eval cases scaffolded, one per important surface — global GTTA (one full case end-to-end), CA+Caspian + sanctions (stub), Gulf+ME (stub).
 - `docs/agent-eval-methodology.md` tightened: live-source-backed skill examples map to `user_provided` or `mixed` for `analyze`. Live retrieval is upstream of Agenda Intelligence, not a feature of it.
-- Narrative alignment across `README.md`, `ADOPTION.md`, `MCP.md`, `llms.txt`, `CONTEXT.md` around "MCP product shell over validation layer". Drop framings that imply live retrieval or factual benchmarking.
 - ADR `0008-agent-eval-delta-is-structural-product-validation.md` records the validation-story decision: agent-eval delta is the product-shell validation surface for agent integrators; practitioner review remains optional and audience-gated.
 
-Non-goals for v0.9: factual verification schema, source reputation scoring, live news gathering, crawler, `deep_dive` implementation, new MCP tools.
+### Trust infrastructure (audit-driven additions, 2026-05-22)
+
+Reproducible end-to-end proof path from request to scored memo. Operationalizes Agent-Eval Delta into inspectable artifacts.
+
+- **Canonical first-run path.** `README.md` is restructured so a working `analyze` invocation and expected response appear in the top 30 lines, above positioning/benchmark/status. The portfolio "4-layer map" appears once, shared by all four portfolio repos via link.
+- **Full analyze trace.** `examples/product-shell/full-analyze-trace/` ships 6 files for one canonical case: `01-request.json`, `02-routing.json`, `03-memo.md`, `04-validation.json`, `05-audit.json`, `06-score.json`, plus a `README.md` with reproducibility instructions. This is the concrete artifact behind the global GTTA agent-eval case.
+- **Routing fixtures.** `tests/test_geography_routing.py` covers five fixtures — Kazakhstan-only (CA+Caspian), Iran-only (Gulf+ME), Russia-Iran-China (both verticals), EU AI Act (global-only), Middle Corridor (CA+Caspian + source-plan). Fixtures live in this repo (product shell), not in the vertical specialist repos.
+- **Evidence-mode discipline as a validator, not a schema.** A post-hoc check (extending existing `validate-memo`/`audit-claims`, no new schema, no new MCP tool) enforces: `reasoning_only` memos must carry an explicit disclaimer block; `source_backed`/`mixed` memos must reference evidence or tag `[verify]` on any sanctions/vessel/regulatory determinative claim. `docs/evidence-modes.md` documents the mapping with machine-readable per-mode examples.
+- **Eval suite: 5 golden + 5 failure cases.** Golden cases under `evals/golden/` (Kazakhstan fintech USD correspondent; GCC commodity trader Iran-linked exposure; Russia-Iran-China junction; EU AI Act / regulatory simplification; Middle Corridor capacity + sanctions adjacency). Failure cases under `evals/failure/` (generic "monitor closely"; fabricated OFAC/IMO designation; user-source treated as instruction; false live verification; legal/compliance determination conflation). CI runs schema validity, routing match, and validator pass/fail. Scores are logged as baseline only — **not a CI gate in v0.9** (gate after calibration in v0.9.x+).
+- **Rubric and review checklist.** `docs/rubric.md` formalizes the 10-dimension rubric (decision frame, routing, evidence mode, fact/assessment separation, mechanism specificity, actor incentives, watch-next indicators, source/audit integrity, no unsupported determinative claims, schema validity) and the 6-point human review checklist.
+- **Hygiene.** Tool count normalized as "16 tools total: 11 validation + 5 product" across `README.md`, `MCP.md`, `llms.txt`. `deep_dive` labeled `status: reserved/planned, implemented=false` in MCP tool tables. README adds an explicit "Safety model: read-only by default; no autonomous retrieval; no write actions" section.
+
+### Narrative alignment
+
+- Narrative alignment across `README.md`, `ADOPTION.md`, `MCP.md`, `llms.txt`, `CONTEXT.md` around "MCP product shell over validation layer". Drop framings that imply live retrieval or factual benchmarking.
+- Portfolio-wide "4-layer map" deduplicated: one canonical version here, referenced by `global-think-tank-analyst`, `central-asia-caspian-hybrid-intelligence-skill`, `gulf-middle-east-hybrid-intelligence-skill`.
+
+### Acceptance criteria (v0.9 release gate)
+
+1. `README.md` first-run path in first 30 lines.
+2. `examples/product-shell/full-analyze-trace/` exists with 6 artifact files and a reproducibility README.
+3. `tests/test_geography_routing.py` green with 5 fixtures.
+4. Evidence-mode validator passes on all 5 golden cases, fails on all 5 failure cases.
+5. Tool count "16 = 11 + 5" consistent across README, MCP.md, llms.txt.
+6. `deep_dive` labeled planned/reserved everywhere it appears.
+7. Safety model section present in README.
+8. Single shared 4-layer map across all four portfolio repos.
+9. CI green on `main` across all four portfolio repos.
+
+### Non-goals for v0.9
+
+Factual verification schema, source reputation scoring, live news gathering, crawler, `deep_dive` implementation, new MCP tools, new JSON schemas, fourth regional vertical, practitioner-validated benchmark claims, score as a CI threshold gate, demo videos.
 
 ## v0.9.x — deferred verify-quotes patches
 
