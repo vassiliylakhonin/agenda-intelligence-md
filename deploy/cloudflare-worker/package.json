@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "stats": "node scripts/stats.js",
     "test": "node --test"
   }
 }

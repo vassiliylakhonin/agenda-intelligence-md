@@ -144,15 +144,20 @@ npx --yes wrangler secret put STATS_TOKEN
 View product-level daily counters:
 
 ```bash
-curl https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/stats \
-  -H 'x-stats-token: <your-token>'
+npm run stats
 ```
 
 For a specific UTC date:
 
 ```bash
+npm run stats -- 2026-05-22
+```
+
+The local `npm run stats` helper reads `STATS_TOKEN` from `deploy/cloudflare-worker/.env`, which is ignored by git. You can still call the endpoint directly:
+
+```bash
 curl 'https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/stats?date=2026-05-22' \
-  -H 'x-stats-token: <your-token>'
+  -H "x-stats-token: $STATS_TOKEN"
 ```
 
 The `/stats` response includes approximate daily totals, likely probes, non-probe calls, prompt character counts, client classes, countries, JSON-RPC methods, and selected Agenda modules. The counters are intentionally coarse and are not a billing or audit ledger.
