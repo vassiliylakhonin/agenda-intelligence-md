@@ -117,13 +117,7 @@ function agentCard(request) {
     },
     version: VERSION,
     documentationUrl: DOCS_URL,
-    supportedInterfaces: [
-      {
-        url: `${origin}/message/send`,
-        protocolBinding: "JSONRPC",
-        protocolVersion: "1.0"
-      }
-    ],
+    supportedInterfaces: ["JSONRPC"],
     protocolVersions: ["1.0"],
     capabilities: {
       streaming: false,
@@ -158,6 +152,7 @@ function agentCard(request) {
     x_agenda_intelligence: {
       hosted_wrapper: true,
       wrapper_scope: "A2A/JSON-RPC discovery and routing response only",
+      jsonrpc_endpoint: `${origin}/message/send`,
       repository: REPOSITORY_URL,
       package: PACKAGE_URL,
       mcp: {
