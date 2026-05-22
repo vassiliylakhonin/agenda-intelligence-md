@@ -7,6 +7,7 @@ criterion #3: Kazakhstan-only, Iran-only, Russia-Iran-China junction,
 EU AI Act, Middle Corridor. Adding or changing a fixture file is a
 contract change on routing behaviour.
 """
+
 from __future__ import annotations
 
 import json
@@ -38,7 +39,5 @@ def test_routing_matches_fixture(fixture_path: Path) -> None:
     actual = sorted(m["module"] for m in modules)
 
     assert actual == expected, (
-        f"{fixture_path.name}: routing diverged from fixture\n"
-        f"  expected: {expected}\n"
-        f"  actual:   {actual}"
+        f"{fixture_path.name}: routing diverged from fixture\n" f"  expected: {expected}\n" f"  actual:   {actual}"
     )
