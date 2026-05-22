@@ -1,0 +1,13 @@
+{
+  "name": "kazakhstan-only",
+  "description": "Geography Kazakhstan + question about local fintech market. Should route to GTTA reasoning + Central Asia / Caspian regional specialist only.",
+  "request": {
+    "question": "How fast is the Kazakhstan retail payments market consolidating and what does that imply for new entrants over 18 months?",
+    "geography": "Kazakhstan",
+    "audience": "founder",
+    "time_horizon": "18 months",
+    "evidence_mode": "reasoning_only",
+    "depth": "standard"
+  },
+  "expected_modules": ["global-think-tank-analyst", "central-asia-caspian"]
+}

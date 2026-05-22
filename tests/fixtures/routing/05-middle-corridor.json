@@ -1,0 +1,17 @@
+{
+  "name": "middle-corridor",
+  "description": "Middle Corridor (Trans-Caspian International Transport Route) capacity question with sanctions adjacency. Should route to GTTA reasoning + Central Asia / Caspian regional specialist + sanctions sector module.",
+  "request": {
+    "question": "How much additional throughput can the Middle Corridor absorb over 24 months given Caspian rail and port constraints and adjacent export controls exposure?",
+    "geography": "Central Asia",
+    "audience": "operator",
+    "time_horizon": "24 months",
+    "evidence_mode": "reasoning_only",
+    "depth": "decision_pack"
+  },
+  "expected_modules": [
+    "global-think-tank-analyst",
+    "central-asia-caspian",
+    "sanctions-sector"
+  ]
+}

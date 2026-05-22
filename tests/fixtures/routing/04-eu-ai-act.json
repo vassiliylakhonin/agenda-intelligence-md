@@ -1,0 +1,13 @@
+{
+  "name": "eu-ai-act",
+  "description": "EU AI Act regulatory question with EU geography. Should route to GTTA reasoning + EU regional specialist only. No CA+Caspian, no Gulf+ME, no sanctions sector. ROADMAP's earlier 'global-only' phrasing was imprecise — the EU vertical is itself a regional specialist; what 'global-only' means here is 'no Central Asia or Gulf specialist needed'.",
+  "request": {
+    "question": "How will the EU AI Act enforcement timeline shift for general-purpose models given the regulatory simplification push over 18 months?",
+    "geography": "EU",
+    "audience": "policy",
+    "time_horizon": "18 months",
+    "evidence_mode": "reasoning_only",
+    "depth": "standard"
+  },
+  "expected_modules": ["global-think-tank-analyst", "eu"]
+}

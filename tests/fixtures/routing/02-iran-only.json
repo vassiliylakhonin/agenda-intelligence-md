@@ -1,0 +1,13 @@
+{
+  "name": "iran-only",
+  "description": "Geography Iran + Hormuz / GCC maritime question. Should route to GTTA reasoning + Gulf / Middle East regional specialist only (no Central Asia, no sanctions sector unless explicitly mentioned).",
+  "request": {
+    "question": "How resilient is Iranian oil export logistics through the Strait of Hormuz to a credible naval interdiction scenario over 12 months?",
+    "geography": "Iran",
+    "audience": "analyst",
+    "time_horizon": "12 months",
+    "evidence_mode": "reasoning_only",
+    "depth": "scenario"
+  },
+  "expected_modules": ["global-think-tank-analyst", "gulf-middle-east"]
+}
