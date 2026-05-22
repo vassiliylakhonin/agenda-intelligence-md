@@ -42,11 +42,13 @@ These boundaries should stay visible in any public registry description. They ar
 
 ## Path to a higher registry score
 
-A higher Agenstry score would require a hosted service wrapper around the current MCP product shell:
+A higher Agenstry score requires a hosted service wrapper around the current MCP product shell:
 
 - expose a public Agent Card at `https://<domain>/.well-known/agent-card.json`;
 - expose a JSON-RPC A2A endpoint, typically `message/send`;
 - call the existing `analyze` and `validate_memo` product-layer functions behind that endpoint;
 - preserve the current source-retrieval and factual-verification boundaries.
 
-Until then, the current card should be treated as a discovery manifest for an installable MCP package.
+The first no-payment hosted option lives in [`deploy/cloudflare-worker/`](../../deploy/cloudflare-worker/). It is a free Cloudflare Workers wrapper for live A2A/JSON-RPC discovery and uptime probes. It does not replace the installable MCP server; full `analyze`, `validate_memo`, evidence audit, source coverage, and signal lookup remain in the stdio MCP package.
+
+Use the deployed Worker URL as an Agenstry `A2A agent URL` after deployment. Keep the GitHub repo listing as the installable MCP listing.

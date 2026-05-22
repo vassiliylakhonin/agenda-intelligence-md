@@ -8,7 +8,7 @@ This directory holds short integration adapters for popular AI tooling platforms
 - **MCP (Model Context Protocol) Server** – `docs/integrations/mcp.md`
   includes Claude Desktop, Cursor, Codex local MCP, and generic JSON config blocks.
 - **Agenstry discovery** – `docs/integrations/agenstry.md`
-  documents the public Agent Card and current installable-MCP positioning.
+  documents the public Agent Card, installable-MCP positioning, and optional free A2A Worker wrapper.
 - **Verified MCP setup** – `docs/integrations/verified-mcp.md`
   helps confirm that the configured client can list and call the tools.
 

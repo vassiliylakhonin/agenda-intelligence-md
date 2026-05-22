@@ -1,0 +1,8 @@
+{
+  "name": "agenda-intelligence-a2a-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
