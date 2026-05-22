@@ -42,9 +42,9 @@ test("message/send returns JSON-RPC result with routing metadata", () => {
 
   assert.equal(response.jsonrpc, "2.0");
   assert.equal(response.id, "probe-1");
-  assert.equal(response.result.task.status.state, "TASK_STATE_COMPLETED");
-  assert.deepEqual(response.result.task.artifacts[0].parts[0].mediaType, "text/markdown");
-  assert.deepEqual(response.result.task.metadata.modules_used, [
+  assert.equal(response.result.status.state, "completed");
+  assert.equal(response.result.artifacts[0].parts[0].kind, "text");
+  assert.deepEqual(response.result.metadata.modules_used, [
     { module: "global-think-tank-analyst", role: "reasoning_method" },
     { module: "central-asia-caspian", role: "regional_specialist" },
     { module: "sanctions-sector", role: "sector_specialist" }

@@ -244,7 +244,7 @@ function a2aResult(params, request) {
   return {
     id: crypto.randomUUID(),
     status: {
-      state: "TASK_STATE_COMPLETED",
+      state: "completed",
       timestamp: new Date().toISOString()
     },
     artifacts: [
@@ -253,8 +253,8 @@ function a2aResult(params, request) {
         name: "Agenda Intelligence routing note",
         parts: [
           {
-            text: routingMarkdown(text, modules),
-            mediaType: "text/markdown"
+            kind: "text",
+            text: routingMarkdown(text, modules)
           }
         ]
       }
@@ -291,9 +291,7 @@ function handleJsonRpc(payload, request) {
     return {
       jsonrpc: "2.0",
       id,
-      result: {
-        task: a2aResult(payload.params ?? {}, request)
-      }
+      result: a2aResult(payload.params ?? {}, request)
     };
   }
 
