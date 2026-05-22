@@ -35,7 +35,9 @@ agenda-intelligence validate-brief examples/agenda-brief.json
 agenda-intelligence validate-evidence examples/source/evidence-pack.json
 ```
 
-## Dual-copy sync rule
+## Critical invariant: dual-copy sync
+
+> **Read this before editing any of the files listed below.** Editing one copy without the other is the most common reason CI breaks on `main` for first-time contributors.
 
 The repo keeps two copies of several files — top-level AND under `src/agenda_intelligence/data/`. Both copies must stay in sync or CI fails (enforced by `tests/test_package_consistency.py`):
 
