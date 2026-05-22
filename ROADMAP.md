@@ -47,11 +47,11 @@ MCP `score_output` tool, post-release smoke.
 - Packaged data assets (`src/agenda_intelligence/data/`) synced to top-level sources.
 - CI: generated artifacts no longer tracked; package build smoke-test added.
 
-## v0.8 — benchmark depth
+### v0.8 — benchmark depth (shipped)
 
-- Expand benchmark beyond the current 20 source-structured cases with more domains and adversarial cases.
-- Keep public benchmark numbers in `docs/evaluation.md` aligned with committed baselines.
-- Continue stabilizing `claim_type` taxonomy from real case patterns.
+- 20 source-structured benchmark cases in `examples/source-backed/` with reproducible aggregate metrics in `docs/evaluation.md` (mean score 87.6, range 84–91, 0 orphan refs). Re-run via `python -m evals.run_benchmark`.
+- Adversarial coverage shipped as part of the v0.9 evidence-mode failure suite (`tests/fixtures/evidence_mode/failure/`).
+- `claim_type` taxonomy continues to stabilize from real case patterns; broader domain expansion folded into the v1.0 benchmark requirement.
 
 ## v0.9 — agent-eval delta, trust infrastructure, and product-shell narrative alignment
 
@@ -72,7 +72,7 @@ Reproducible end-to-end proof path from request to scored memo. Operationalizes 
 - **Full analyze trace.** `examples/product-shell/full-analyze-trace/` ships 6 files for one canonical case: `01-request.json`, `02-routing.json`, `03-memo.md`, `04-validation.json`, `05-audit.json`, `06-score.json`, plus a `README.md` with reproducibility instructions. This is the concrete artifact behind the global GTTA agent-eval case.
 - **Routing fixtures.** `tests/test_geography_routing.py` covers five fixtures — Kazakhstan-only (CA+Caspian), Iran-only (Gulf+ME), Russia-Iran-China (both verticals), EU AI Act (global-only), Middle Corridor (CA+Caspian + source-plan). Fixtures live in this repo (product shell), not in the vertical specialist repos.
 - **Evidence-mode discipline as a validator, not a schema.** A post-hoc check (extending existing `validate-memo`/`audit-claims`, no new schema, no new MCP tool) enforces: `reasoning_only` memos must carry an explicit disclaimer block; `source_backed`/`mixed` memos must reference evidence or tag `[verify]` on any sanctions/vessel/regulatory determinative claim. `docs/evidence-modes.md` documents the mapping with machine-readable per-mode examples.
-- **Eval suite: 5 golden + 5 failure cases.** Golden cases under `evals/golden/` (Kazakhstan fintech USD correspondent; GCC commodity trader Iran-linked exposure; Russia-Iran-China junction; EU AI Act / regulatory simplification; Middle Corridor capacity + sanctions adjacency). Failure cases under `evals/failure/` (generic "monitor closely"; fabricated OFAC/IMO designation; user-source treated as instruction; false live verification; legal/compliance determination conflation). CI runs schema validity, routing match, and validator pass/fail. Scores are logged as baseline only — **not a CI gate in v0.9** (gate after calibration in v0.9.x+).
+- **Eval suite: 5 golden + 5 failure cases.** Golden cases under `tests/fixtures/evidence_mode/golden/` (Kazakhstan fintech USD correspondent; GCC commodity trader Iran-linked exposure; Russia-Iran-China junction; EU AI Act / regulatory simplification; Middle Corridor capacity + sanctions adjacency). Failure cases under `tests/fixtures/evidence_mode/failure/` (generic "monitor closely"; fabricated OFAC/IMO designation; user-source treated as instruction; false live verification; legal/compliance determination conflation). CI runs schema validity, routing match, and validator pass/fail. Scores are logged as baseline only — **not a CI gate in v0.9** (gate after calibration in v0.9.x+).
 - **Rubric and review checklist.** `docs/rubric.md` formalizes the 10-dimension rubric (decision frame, routing, evidence mode, fact/assessment separation, mechanism specificity, actor incentives, watch-next indicators, source/audit integrity, no unsupported determinative claims, schema validity) and the 6-point human review checklist.
 - **Hygiene.** Tool count normalized as "16 tools total: 11 validation + 5 product" across `README.md`, `MCP.md`, `llms.txt`. `deep_dive` labeled `status: reserved/planned, implemented=false` in MCP tool tables. README adds an explicit "Safety model: read-only by default; no autonomous retrieval; no write actions" section.
 
