@@ -109,6 +109,8 @@ The custom usage event is privacy-safe by design. It does not log IP addresses, 
 - referrer hostname, when present;
 - Cloudflare colo and country, when Cloudflare provides them.
 
+Note: Cloudflare's raw `wrangler tail` envelope can include request headers and other platform metadata around the custom event. Treat raw tail output as operational logs and avoid sharing or exporting it unless you have reviewed what your Cloudflare account includes there. The `agenda_intelligence_a2a_usage` event itself keeps only the reduced fields listed above.
+
 View aggregate traffic in the Cloudflare dashboard:
 
 ```text
