@@ -3,6 +3,7 @@
 Product entry point and evidence-discipline layer for strategic intelligence agents.
 
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/)
+[![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **Agenda Intelligence** is an MCP product shell and evidence-discipline layer for strategic intelligence agents. Structured request/memo contract, geography-routed reasoning, schema validation, evidence audit, and scoring. One MCP server. Structured input/output. No live retrieval, no factual verification — those are explicit non-goals before v1.0.
@@ -149,6 +150,8 @@ Stdio MCP server with 16 tools. Full docs and wire-protocol verification: [`MCP.
 | Adoption guide | [`ADOPTION.md`](ADOPTION.md) |
 | Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
 | Roadmap | [`ROADMAP.md`](ROADMAP.md) |
+| Portfolio glossary (shared across 4 repos) | [`docs/glossary.md`](docs/glossary.md) |
+| Contributing guide | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 
 ## Repository layout
 
@@ -164,6 +167,12 @@ agenda-intelligence-md/
 ├─ scripts/                   # dev and CI helpers
 └─ tests/                     # pytest suite
 ```
+
+## Contributing
+
+New contributors: [`CONTRIBUTING.md`](CONTRIBUTING.md) opens with a "First 15 minutes" onboarding path (read the three load-bearing files → run the validator → walk one concrete artifact end-to-end). The portfolio glossary at [`docs/glossary.md`](docs/glossary.md) is the single source of truth for cross-repo terminology (evidence modes, Axis A/B provenance tags, three-value response logic, maturity-framework asymmetry).
+
+Before editing any of the dual-copy files — `Agenda-Intelligence.md`, `SOURCE_POLICY.md`, `llms.txt`, `agent-manifest.json`, `schemas/`, `skills/`, `source-requirements/` — read the "Critical invariant: dual-copy sync" section in [`CONTRIBUTING.md`](CONTRIBUTING.md#critical-invariant-dual-copy-sync). Editing one copy without the paired copy under `src/agenda_intelligence/data/` is the most common reason CI breaks on `main` for first-time contributors.
 
 ## Contact
 
