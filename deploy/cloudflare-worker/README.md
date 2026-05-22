@@ -96,6 +96,7 @@ This Worker uses Cloudflare's built-in free observability path:
 
 - Cloudflare Workers Metrics show total requests, successful requests, errors, CPU time, and latency.
 - Workers Logs capture one structured `agenda_intelligence_a2a_usage` event for each JSON-RPC `message/send`, `tasks/send`, or `SendMessage` call.
+- Cloudflare KV stores approximate daily counters for the public `/stats` endpoint.
 - Agenstry's public listing can show marketplace-side usage, but only for traffic Agenstry can observe.
 
 The custom usage event is privacy-safe by design. It does not log IP addresses, cookies, authorization headers, or full prompt text. It keeps only:
@@ -132,6 +133,20 @@ jsonrpc_method = "message/send"
 client = "agenstry"
 likely_probe = false
 ```
+
+View product-level daily counters:
+
+```bash
+curl https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/stats
+```
+
+For a specific UTC date:
+
+```bash
+curl https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/stats?date=2026-05-22
+```
+
+The `/stats` response includes approximate daily totals, likely probes, non-probe calls, client classes, countries, JSON-RPC methods, and selected Agenda modules. The counters are intentionally coarse and are not a billing or audit ledger.
 
 ## Test locally
 

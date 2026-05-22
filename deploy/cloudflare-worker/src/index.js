@@ -351,7 +351,113 @@ function buildUsageEvent(request, details = {}) {
 }
 
 function logUsageEvent(request, details) {
-  console.log(buildUsageEvent(request, details));
+  const event = buildUsageEvent(request, details);
+  console.log(event);
+  return event;
+}
+
+function dateKeyFromTimestamp(timestamp) {
+  if (typeof timestamp !== "string" || !/^\d{4}-\d{2}-\d{2}T/.test(timestamp)) {
+    return new Date().toISOString().slice(0, 10);
+  }
+  return timestamp.slice(0, 10);
+}
+
+function dateKeyFromRequest(request) {
+  const url = new URL(request.url);
+  const date = url.searchParams.get("date") || new Date().toISOString().slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
+}
+
+async function readCounter(kv, key) {
+  const value = await kv.get(key);
+  const parsed = Number.parseInt(value || "0", 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function incrementCounter(kv, key) {
+  const current = await readCounter(kv, key);
+  await kv.put(key, String(current + 1));
+}
+
+async function listCounterGroup(kv, prefix) {
+  const items = [];
+  let cursor;
+
+  do {
+    const result = await kv.list({ prefix, cursor });
+    const rows = await Promise.all(
+      result.keys.map(async (item) => ({
+        name: item.name.slice(prefix.length),
+        count: await readCounter(kv, item.name)
+      }))
+    );
+    items.push(...rows.filter((item) => item.count > 0));
+    cursor = result.cursor;
+    if (result.list_complete !== false) break;
+  } while (cursor);
+
+  return items.sort((left, right) => right.count - left.count || left.name.localeCompare(right.name));
+}
+
+async function recordUsageStats(env, event) {
+  const kv = env?.AGENDA_USAGE;
+  if (!kv || !event || event.event !== "agenda_intelligence_a2a_usage") return;
+
+  const day = dateKeyFromTimestamp(event.timestamp);
+  const base = `usage:${day}`;
+  const country = event.cf?.country || "unknown";
+  const modules = Array.isArray(event.modules_used) ? event.modules_used : [];
+  const counters = [
+    `${base}:total`,
+    `${base}:${event.likely_probe ? "likely_probe" : "non_probe"}`,
+    `${base}:client:${event.client || "unknown"}`,
+    `${base}:country:${country}`,
+    `${base}:method:${event.jsonrpc_method || "unknown"}`
+  ];
+
+  for (const moduleName of modules) {
+    counters.push(`${base}:module:${moduleName}`);
+  }
+
+  await Promise.all(counters.map((key) => incrementCounter(kv, key)));
+}
+
+async function usageStats(env, date) {
+  const kv = env?.AGENDA_USAGE;
+  if (!kv) {
+    return {
+      configured: false,
+      error: "AGENDA_USAGE KV binding is not configured"
+    };
+  }
+
+  const base = `usage:${date}`;
+  const [total, nonProbe, likelyProbe, clients, countries, methods, modules] = await Promise.all([
+    readCounter(kv, `${base}:total`),
+    readCounter(kv, `${base}:non_probe`),
+    readCounter(kv, `${base}:likely_probe`),
+    listCounterGroup(kv, `${base}:client:`),
+    listCounterGroup(kv, `${base}:country:`),
+    listCounterGroup(kv, `${base}:method:`),
+    listCounterGroup(kv, `${base}:module:`)
+  ]);
+
+  return {
+    configured: true,
+    date,
+    generated_at: new Date().toISOString(),
+    approximate: true,
+    counters: {
+      total,
+      non_probe: nonProbe,
+      likely_probe: likelyProbe
+    },
+    clients,
+    countries,
+    methods,
+    modules
+  };
 }
 
 function routingMarkdown(text, modules) {
@@ -414,7 +520,7 @@ function jsonRpcError(id, code, message, data) {
   return { jsonrpc: "2.0", id: id ?? null, error };
 }
 
-function handleJsonRpc(payload, request) {
+function handleJsonRpc(payload, request, env = {}, ctx = {}) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return jsonRpcError(null, -32600, "Invalid Request");
   }
@@ -429,13 +535,19 @@ function handleJsonRpc(payload, request) {
     const result = a2aResult(params, request);
     const text = extractText(params);
     const likelyProbe = classifyClient(request) === "agenstry" || text.length === 0;
-    logUsageEvent(request, {
+    const event = logUsageEvent(request, {
       jsonrpc_method: payload.method,
       jsonrpc_id_present: payload.id !== undefined,
       prompt_chars: text.length,
       modules_used: result.metadata.modules_used,
       likely_probe: likelyProbe
     });
+    const statsPromise = recordUsageStats(env, event).catch((error) => {
+      console.warn("usage stats write failed", error);
+    });
+    if (typeof ctx.waitUntil === "function") {
+      ctx.waitUntil(statsPromise);
+    }
 
     return {
       jsonrpc: "2.0",
@@ -457,17 +569,32 @@ function handleJsonRpc(payload, request) {
   });
 }
 
-async function handlePost(request) {
+async function handlePost(request, env, ctx) {
   let payload;
   try {
     payload = await request.json();
   } catch (_error) {
     return jsonResponse(jsonRpcError(null, -32700, "Parse error"), 200);
   }
-  return jsonResponse(handleJsonRpc(payload, request));
+  return jsonResponse(handleJsonRpc(payload, request, env, ctx));
 }
 
-export async function handleRequest(request) {
+async function handleStats(request, env) {
+  const date = dateKeyFromRequest(request);
+  if (!date) {
+    return jsonResponse(
+      {
+        error: "Invalid date. Use YYYY-MM-DD."
+      },
+      400
+    );
+  }
+
+  const stats = await usageStats(env, date);
+  return jsonResponse(stats, stats.configured ? 200 : 503);
+}
+
+export async function handleRequest(request, env = {}, ctx = {}) {
   const url = new URL(request.url);
 
   if (request.method === "OPTIONS") {
@@ -492,13 +619,18 @@ export async function handleRequest(request) {
       version: VERSION,
       agent_card: `${originFromRequest(request)}/.well-known/agent-card.json`,
       message_send: `${originFromRequest(request)}/message/send`,
+      stats: `${originFromRequest(request)}/stats`,
       repository: REPOSITORY_URL,
       payments: false
     });
   }
 
+  if (request.method === "GET" && url.pathname === "/stats") {
+    return handleStats(request, env);
+  }
+
   if (request.method === "POST" && (url.pathname === "/message/send" || url.pathname === "/")) {
-    return handlePost(request);
+    return handlePost(request, env, ctx);
   }
 
   return textResponse("Not found", 404);
@@ -508,4 +640,4 @@ export default {
   fetch: handleRequest
 };
 
-export { agentCard, buildUsageEvent, handleJsonRpc, routeModules };
+export { agentCard, buildUsageEvent, handleJsonRpc, recordUsageStats, routeModules, usageStats };

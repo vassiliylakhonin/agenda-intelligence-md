@@ -5,3 +5,7 @@ workers_dev = true
 
 [observability]
 enabled = true
+
+[[kv_namespaces]]
+binding = "AGENDA_USAGE"
+id = "d2228183999246ccbec8aa2d5f130bfc"

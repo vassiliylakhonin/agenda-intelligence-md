@@ -1,12 +1,44 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { agentCard, buildUsageEvent, handleJsonRpc, routeModules } from "../src/index.js";
+import {
+  agentCard,
+  buildUsageEvent,
+  handleJsonRpc,
+  handleRequest,
+  recordUsageStats,
+  routeModules,
+  usageStats
+} from "../src/index.js";
 
 const request = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
   method: "POST",
   headers: { "user-agent": "node:test" }
 });
+
+class MemoryKv {
+  constructor() {
+    this.store = new Map();
+  }
+
+  async get(key) {
+    return this.store.get(key) ?? null;
+  }
+
+  async put(key, value) {
+    this.store.set(key, value);
+  }
+
+  async list({ prefix }) {
+    return {
+      keys: [...this.store.keys()]
+        .filter((key) => key.startsWith(prefix))
+        .sort()
+        .map((name) => ({ name })),
+      list_complete: true
+    };
+  }
+}
 
 test("agent card uses request origin for live endpoints", () => {
   const card = agentCard(request);
@@ -128,4 +160,68 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   assert.equal(event.cookie, undefined);
   assert.equal(event.authorization, undefined);
   assert.equal(event.ip, undefined);
+});
+
+test("usage stats aggregates daily counters from KV", async () => {
+  const kv = new MemoryKv();
+  const env = { AGENDA_USAGE: kv };
+  const event = {
+    event: "agenda_intelligence_a2a_usage",
+    timestamp: "2026-05-22T16:23:44.481Z",
+    jsonrpc_method: "message/send",
+    likely_probe: false,
+    client: "curl",
+    cf: {
+      country: "KZ"
+    },
+    modules_used: ["global-think-tank-analyst", "eu", "sanctions-sector"]
+  };
+
+  await recordUsageStats(env, event);
+  await recordUsageStats(env, { ...event, likely_probe: true, client: "agenstry" });
+
+  const stats = await usageStats(env, "2026-05-22");
+
+  assert.equal(stats.configured, true);
+  assert.equal(stats.counters.total, 2);
+  assert.equal(stats.counters.non_probe, 1);
+  assert.equal(stats.counters.likely_probe, 1);
+  assert.deepEqual(stats.clients, [
+    { name: "agenstry", count: 1 },
+    { name: "curl", count: 1 }
+  ]);
+  assert.deepEqual(stats.countries, [{ name: "KZ", count: 2 }]);
+  assert.deepEqual(stats.methods, [{ name: "message/send", count: 2 }]);
+  assert.deepEqual(stats.modules, [
+    { name: "eu", count: 2 },
+    { name: "global-think-tank-analyst", count: 2 },
+    { name: "sanctions-sector", count: 2 }
+  ]);
+});
+
+test("stats endpoint returns JSON for requested date", async () => {
+  const kv = new MemoryKv();
+  await recordUsageStats(
+    { AGENDA_USAGE: kv },
+    {
+      event: "agenda_intelligence_a2a_usage",
+      timestamp: "2026-05-22T12:00:00.000Z",
+      jsonrpc_method: "message/send",
+      likely_probe: false,
+      client: "browser",
+      cf: { country: "US" },
+      modules_used: ["global-think-tank-analyst"]
+    }
+  );
+
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/stats?date=2026-05-22"),
+    { AGENDA_USAGE: kv }
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.date, "2026-05-22");
+  assert.equal(body.counters.total, 1);
+  assert.deepEqual(body.clients, [{ name: "browser", count: 1 }]);
 });
