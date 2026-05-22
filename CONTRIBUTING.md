@@ -1,5 +1,39 @@
 # Contributing to Agenda Intelligence
 
+## First 15 minutes
+
+If you've just landed in this repo and want to understand it before editing, do these in order. Each step is real-time-boxed at ~5 minutes.
+
+**1. Read these three files, in order:**
+
+1. [`README.md`](README.md) — what this is (product shell + evidence-discipline layer), the four-repo stack, and the non-goals (no live retrieval, no factual verification).
+2. [`AGENTS.md`](AGENTS.md) — canonical project rules: identity, geography routing terms, honesty rules, retrieved-content trust. Everything else in this file inherits from there.
+3. [`ROADMAP.md`](ROADMAP.md) — what's shipping vs explicitly deferred. The version targets here are how this repo signals maturity (this repo does **not** use the Bar 1 / Bar 2 framework — that belongs to the vertical specialists).
+
+**2. Get the validator running locally:**
+
+```bash
+git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
+cd agenda-intelligence-md
+make install                  # editable install + lint/type tooling
+bash scripts/install-hooks.sh # pre-push hook running `make ci-fast`
+pytest                        # full test suite
+make ci-fast                  # what CI will run on your push
+```
+
+If `make ci-fast` is green locally, your push will not red-CI on `main`.
+
+**3. Read one concrete artifact end-to-end:**
+
+- [`examples/agenda-brief.json`](examples/agenda-brief.json) → [`schemas/agenda-brief.schema.json`](schemas/agenda-brief.schema.json) → run `agenda-intelligence validate-brief examples/agenda-brief.json`. This is the smallest complete loop the product shell exposes: a structured brief, the schema it conforms to, the validator that enforces it.
+- For the MCP product surface: skim [`AGENTS.md`](AGENTS.md) "Geography routing" and the four product tools (`analyze`, `validate_memo`, `list_signals` / `get_signal`, `deep_dive`).
+
+**When something is unclear**, the lookup order is: this repo's [`AGENTS.md`](AGENTS.md) → portfolio canon ([global-think-tank-analyst/AGENTS.md](https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main/AGENTS.md), vertical-skill AGENTS.md files) → open an issue using the template under [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/).
+
+**Before your first PR**, the single most common reason CI breaks on `main` for new contributors is the **dual-copy invariant** — read the "Critical invariant: dual-copy sync" section below before editing any of the listed files.
+
+---
+
 ## Project Philosophy
 - **Markdown is the source of truth.** All documentation, specifications, and examples live in Markdown files.
 - **Python tooling** provides validation, generation, and integration. Keep the Python layer lightweight and focused on the protocol.
