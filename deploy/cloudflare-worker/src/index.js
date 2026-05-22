@@ -117,7 +117,13 @@ function agentCard(request) {
     },
     version: VERSION,
     documentationUrl: DOCS_URL,
-    supportedInterfaces: ["JSONRPC"],
+    supportedInterfaces: [
+      {
+        url: `${origin}/message/send`,
+        protocolBinding: "JSONRPC",
+        protocolVersion: "1.0"
+      }
+    ],
     protocolVersions: ["1.0"],
     capabilities: {
       streaming: false,

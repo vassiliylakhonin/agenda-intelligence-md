@@ -47,7 +47,13 @@ test("agent card uses request origin for live endpoints", () => {
   assert.equal(card.protocolVersion, "1.0");
   assert.equal(card.version, "0.9.3");
   assert.equal(card.url, "https://agenda-intelligence-a2a.example.workers.dev");
-  assert.deepEqual(card.supportedInterfaces, ["JSONRPC"]);
+  assert.deepEqual(card.supportedInterfaces, [
+    {
+      url: "https://agenda-intelligence-a2a.example.workers.dev/message/send",
+      protocolBinding: "JSONRPC",
+      protocolVersion: "1.0"
+    }
+  ]);
   assert.equal(
     card.x_agenda_intelligence.jsonrpc_endpoint,
     "https://agenda-intelligence-a2a.example.workers.dev/message/send"
