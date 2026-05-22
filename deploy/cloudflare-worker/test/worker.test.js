@@ -18,6 +18,17 @@ test("agent card uses request origin for live endpoints", () => {
   assert.equal(card.x_agenda_intelligence.hosted_wrapper, true);
   assert.equal(card.x_agenda_intelligence.mcp.server_command, "agenda-intelligence-mcp");
   assert.equal(card.capabilities.extendedAgentCard, false);
+  assert.deepEqual(
+    card.skills.map((skill) => skill.id),
+    [
+      "agenda-analyze",
+      "agenda-validate-memo",
+      "agenda-audit-claims",
+      "agenda-source-coverage",
+      "agenda-quote-verification",
+      "agenda-signals"
+    ]
+  );
 });
 
 test("message/send returns JSON-RPC result with routing metadata", () => {

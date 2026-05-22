@@ -129,21 +129,108 @@ function agentCard(request) {
     defaultOutputModes: ["application/json", "text/markdown"],
     skills: [
       {
-        id: "agenda-routing-note",
-        name: "Strategic-risk routing note",
+        id: "agenda-analyze",
+        name: "Strategic-risk memo assembly",
         description:
-          "Returns a routing note for strategic-risk questions and points callers to the installable MCP server for full analyze, validate_memo, audit_claims, source_coverage, and signal lookup tools.",
+          "Routes strategic-risk questions to the relevant geography and sector modules, then points callers to the installable MCP analyze tool for full memo assembly and schema validation.",
         tags: [
           "strategic-risk",
           "policy-analysis",
           "geopolitics",
-          "sanctions",
-          "mcp",
-          "a2a"
+          "memo",
+          "mcp"
         ],
         examples: [
-          "How should an agent use Agenda Intelligence for a sanctions-risk memo?",
-          "Route this Red Sea shipping question to the relevant Agenda Intelligence modules."
+          "Analyze how Red Sea shipping disruption changes risk for a Central Asia logistics corridor.",
+          "Prepare a structured sanctions-risk memo with uncertainties and watch-next signals."
+        ],
+        inputModes: ["application/json", "text/plain"],
+        outputModes: ["application/json", "text/markdown"]
+      },
+      {
+        id: "agenda-validate-memo",
+        name: "Memo contract validation",
+        description:
+          "Describes the packaged validate_memo MCP tool, which validates Agenda memos against the agenda-memo JSON schema and returns validation errors where present.",
+        tags: [
+          "schema-validation",
+          "memo-validation",
+          "quality-gate",
+          "strategic-risk"
+        ],
+        examples: [
+          "Validate this strategic-risk memo before it is sent to an analyst workflow."
+        ],
+        inputModes: ["application/json"],
+        outputModes: ["application/json"]
+      },
+      {
+        id: "agenda-audit-claims",
+        name: "Claim/evidence audit",
+        description:
+          "Describes the packaged audit_claims MCP tool, which checks claim-level evidence-audit structure, support-level distribution, orphan evidence references, and listed unsupported claims.",
+        tags: [
+          "evidence-audit",
+          "claim-support",
+          "provenance",
+          "quality-gate",
+          "strategic-risk"
+        ],
+        examples: [
+          "Audit whether each claim in this memo is linked to evidence ids and labelled by support level."
+        ],
+        inputModes: ["application/json"],
+        outputModes: ["application/json"]
+      },
+      {
+        id: "agenda-source-coverage",
+        name: "Source coverage diagnostics",
+        description:
+          "Describes the packaged source_coverage MCP tool, which diagnoses whether an evidence pack covers category-specific must-check source types for sanctions, trade, regulation, energy, conflict, cyber, ESG, and technology AI.",
+        tags: [
+          "source-planning",
+          "evidence-coverage",
+          "sanctions",
+          "trade",
+          "regulation"
+        ],
+        examples: [
+          "Check whether this sanctions evidence pack covers the required source categories."
+        ],
+        inputModes: ["application/json"],
+        outputModes: ["application/json"]
+      },
+      {
+        id: "agenda-quote-verification",
+        name: "Local quote presence check",
+        description:
+          "Describes the packaged verify_quotes MCP tool, which checks whether cited quote fragments appear in caller-supplied source text. It does not discover sources or verify factual truth.",
+        tags: [
+          "quote-checking",
+          "evidence-discipline",
+          "local-verification",
+          "provenance"
+        ],
+        examples: [
+          "Confirm that each quoted excerpt appears in the provided source text."
+        ],
+        inputModes: ["application/json", "text/plain"],
+        outputModes: ["application/json"]
+      },
+      {
+        id: "agenda-signals",
+        name: "Signal archive lookup",
+        description:
+          "Describes the packaged list_signals and get_signal MCP tools, which expose strategic-risk signal archive entries vendored from the Global Think Tank Analyst method snapshot.",
+        tags: [
+          "signals",
+          "strategic-intelligence",
+          "archive",
+          "watch-next",
+          "policy-analysis"
+        ],
+        examples: [
+          "List available signal records relevant to a regional-risk workflow."
         ],
         inputModes: ["application/json", "text/plain"],
         outputModes: ["application/json", "text/markdown"]
