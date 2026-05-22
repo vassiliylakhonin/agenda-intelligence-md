@@ -59,7 +59,7 @@ Mitigation: human reviewer; per-domain refresh discipline in the consuming skill
 
 A brief author can construct the evidence pack only from the claims that have sources, hiding analytical leaps elsewhere in the brief. The structural checks will then return `unsupported_claims=0` even though the brief contains assertions that should belong in that bucket. The score will look better, the brief will be less honest.
 
-This pattern is documented as a failure mode in the consuming Global Think Tank Analyst repo (`evals/failure-modes.md` #13).
+This pattern is documented as a failure mode in the consuming Global Think Tank Analyst repo ([`evals/failure-modes.md`](https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main/evals/failure-modes.md) #13).
 
 Mitigation: treat the evidence pack as an audit of the **whole** brief, not a curated subset; explicit reviewer pass on unsupported assertions.
 
