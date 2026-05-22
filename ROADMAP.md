@@ -92,7 +92,7 @@ Status as of 2026-05-22.
 5. ✅ Tool count "16 = 11 + 5" consistent across README, MCP.md, llms.txt.
 6. ✅ `deep_dive` labeled planned/reserved everywhere it appears. ([#36](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/36))
 7. ✅ Safety model section present in README. ([#36](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/36))
-8. ⬜ Single shared 4-layer map across all four portfolio repos. Map exists in this repo and links out from companion repos; not yet deduplicated through a single canonical reference.
+8. ✅ Single shared 4-layer map across all four portfolio repos. Map is canonical in this repo's `README.md`; the three skill repos drop their local 4-row table and link to the canonical anchor ([global-think-tank-analyst#10](https://github.com/vassiliylakhonin/global-think-tank-analyst/pull/10), [central-asia-caspian-hybrid-intelligence-skill#12](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill/pull/12), [gulf-middle-east-hybrid-intelligence-skill#11](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill/pull/11)).
 9. ✅ CI green on `main` across all four portfolio repos (verified 2026-05-22).
 
 ### Non-goals for v0.9
