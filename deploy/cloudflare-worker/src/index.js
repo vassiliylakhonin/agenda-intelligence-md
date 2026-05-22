@@ -110,7 +110,7 @@ function agentCard(request) {
     name: "Agenda Intelligence MD",
     description:
       "Live discovery wrapper for Agenda Intelligence MD, an evidence-discipline MCP layer for strategic-risk agents. The hosted wrapper supports A2A/JSON-RPC discovery and routing responses; full analysis, memo validation, evidence audit, and source-coverage diagnostics remain available through the installable stdio MCP package.",
-    url: `${origin}/message/send`,
+    url: origin,
     provider: {
       organization: "Vassiliy Lakhonin",
       url: "https://vassiliylakhonin.github.io/"
