@@ -64,7 +64,7 @@ agenda-intelligence mcp-config --client cursor
 Pinned-wheel install (instead of PyPI):
 
 ```bash
-pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.9.2/agenda_intelligence_md-0.9.2-py3-none-any.whl
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v0.9.3/agenda_intelligence_md-0.9.3-py3-none-any.whl
 ```
 
 ## Benchmark baseline

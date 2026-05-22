@@ -4,6 +4,25 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## [0.9.3] – 2026-05-22
+
+### Docs — v0.9 release gate closed (all 9/9 acceptance criteria ✅)
+
+Two final v0.9 acceptance items shipped in this release.
+
+#### Phase 4b — evidence-mode discipline extended to 5+5 with full docs ([#43](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/43))
+- `tests/fixtures/evidence_mode/` now ships 5 golden and 5 failure fixtures (was 3+3). Two new golden cases cover vessel SDN attribution with caller-supplied source and EU CBAM regulatory `[verify]`-marker; two new failure cases cover sanctions designations and EU AI Act effective-date claims stated as bare facts. Fixtures are generated deterministically by `tests/fixtures/evidence_mode/build.py` from one baseline memo. Test count: 131 → 142.
+- `docs/evidence-modes.md` — canonical reference for the three schema `evidence_mode` values (`reasoning_only`, `user_provided`, `mixed`), the post-hoc `check_evidence_mode_discipline` rule, and the full 5+5 fixture table. Clarifies relationship to the four-mode documentation labels in `docs/glossary.md`.
+- `docs/rubric.md` — 10-dimension product-shell rubric (decision frame, routing, evidence mode, fact/assessment separation, mechanism specificity, actor incentives, watch-next indicators, source/audit integrity, no unsupported determinative claims, schema validity) plus 6-point human review checklist. Complements (does not replace) the deterministic heuristic scorer in `evals/rubric.md` and the reviewer checklist in `evals/human_checklist.md`. Not a CI gate in v0.9.
+
+#### Phase 8 — 4-layer map deduplicated across the portfolio ([#44](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/44))
+- The "Where this fits in the Agenda Intelligence stack" 4-row table is now canonical in this repo's `README.md` only. The three skill repos drop their local duplicates and link to the canonical anchor: [global-think-tank-analyst#10](https://github.com/vassiliylakhonin/global-think-tank-analyst/pull/10), [central-asia-caspian-hybrid-intelligence-skill#12](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill/pull/12), [gulf-middle-east-hybrid-intelligence-skill#11](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill/pull/11).
+
+#### ROADMAP
+- All 9 v0.9 acceptance criteria now ✅. Sections marking criteria #4 (🟡 → ✅) and #8 (⬜ → ✅) updated with PR references.
+
+No schema, CLI, or MCP tool changes. No new dependencies.
+
 ## [0.9.2] – 2026-05-21
 
 ### Docs — canon alignment with product-shell role
