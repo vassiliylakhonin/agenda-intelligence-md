@@ -83,15 +83,17 @@ Reproducible end-to-end proof path from request to scored memo. Operationalizes 
 
 ### Acceptance criteria (v0.9 release gate)
 
-1. `README.md` first-run path in first 30 lines.
-2. `examples/product-shell/full-analyze-trace/` exists with 6 artifact files and a reproducibility README.
-3. `tests/test_geography_routing.py` green with 5 fixtures.
-4. Evidence-mode validator passes on all 5 golden cases, fails on all 5 failure cases.
-5. Tool count "16 = 11 + 5" consistent across README, MCP.md, llms.txt.
-6. `deep_dive` labeled planned/reserved everywhere it appears.
-7. Safety model section present in README.
-8. Single shared 4-layer map across all four portfolio repos.
-9. CI green on `main` across all four portfolio repos.
+Status as of 2026-05-22.
+
+1. ✅ `README.md` first-run path in first 30 lines. ([#37](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/37))
+2. ✅ `examples/product-shell/full-analyze-trace/` exists with reproducibility script and README. ([#38](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/38))
+3. ✅ `tests/test_geography_routing.py` green with 5 fixtures. ([#39](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/39))
+4. 🟡 Evidence-mode discipline rule shipped with 3 golden + 3 failure fixtures ([#41](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/41)); extension to 5+5 plus `docs/evidence-modes.md` and `docs/rubric.md` remains.
+5. ✅ Tool count "16 = 11 + 5" consistent across README, MCP.md, llms.txt.
+6. ✅ `deep_dive` labeled planned/reserved everywhere it appears. ([#36](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/36))
+7. ✅ Safety model section present in README. ([#36](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/36))
+8. ⬜ Single shared 4-layer map across all four portfolio repos. Map exists in this repo and links out from companion repos; not yet deduplicated through a single canonical reference.
+9. ✅ CI green on `main` across all four portfolio repos (verified 2026-05-22).
 
 ### Non-goals for v0.9
 
