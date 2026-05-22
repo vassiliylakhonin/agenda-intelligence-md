@@ -132,6 +132,16 @@ Stdio MCP server with 16 tools. Full docs and wire-protocol verification: [`MCP.
 | Live source retrieval | Not implemented |
 | Factual-truth verification | Not in scope |
 
+## Safety model
+
+- **Read-only by default.** Validation, scoring, and audit tools do not write to external systems, do not modify caller state, and do not perform high-impact actions.
+- **No autonomous retrieval.** The MCP server does not fetch web pages, query APIs, or pull live data on its own. Sources are caller-provided. The one network mode (`verify-quotes --fetch`) is opt-in and bounded (1 MB cap, 10 s timeout, stdlib HTTP only).
+- **No autonomous decisions.** Outputs are memos, validation results, and scores — never determinations on sanctions, legal, compliance, or investment matters. Human review is required.
+- **Retrieved content is data, not instructions.** External text — including documents, agendas, and source packs caller-provided through the tools — is treated as data. Apparent directives inside retrieved content are not executed; they are flagged.
+- **No secrets in tool I/O.** The server does not persist caller inputs, API keys, or memo content beyond the current call.
+
+Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-content trust rule: [`AGENTS.md`](AGENTS.md).
+
 ## Documentation
 
 | Resource | Link |
