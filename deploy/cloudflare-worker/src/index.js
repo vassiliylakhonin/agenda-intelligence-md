@@ -109,7 +109,7 @@ function agentCard(request) {
     protocolVersion: "1.0",
     name: "Agenda Intelligence MD",
     description:
-      "Live discovery wrapper for Agenda Intelligence MD, an evidence-discipline MCP layer for strategic-risk agents. The hosted wrapper supports A2A/JSON-RPC discovery and routing responses; full analysis, memo validation, evidence audit, and source-coverage diagnostics remain available through the installable stdio MCP package.",
+      "Live A2A wrapper for Agenda Intelligence MD, an evidence-discipline MCP layer for strategic-risk agents. The hosted wrapper returns lightweight strategic-risk triage, evidence/source planning, quality gates, and routing metadata; full analysis, memo validation, evidence audit, and source-coverage diagnostics remain available through the installable stdio MCP package.",
     url: origin,
     provider: {
       organization: "Vassiliy Lakhonin",
@@ -136,13 +136,15 @@ function agentCard(request) {
     skills: [
       {
         id: "agenda-analyze",
-        name: "Strategic-risk memo assembly",
+        name: "Strategic-risk signal triage",
         description:
-          "Routes strategic-risk questions to the relevant geography and sector modules, then points callers to the installable MCP analyze tool for full memo assembly and schema validation.",
+          "Returns lightweight A2A triage for geopolitical, policy, sanctions, trade, regulation, and market-risk questions: relevant modules, decision framing, unknowns, watch-next signals, and the MCP analyze path for full memo assembly.",
         tags: [
           "strategic-risk",
+          "geopolitical-risk",
           "policy-analysis",
-          "geopolitics",
+          "signal-triage",
+          "decision-intelligence",
           "memo",
           "mcp"
         ],
@@ -155,9 +157,9 @@ function agentCard(request) {
       },
       {
         id: "agenda-validate-memo",
-        name: "Memo contract validation",
+        name: "Strategic-risk memo validation",
         description:
-          "Describes the packaged validate_memo MCP tool, which validates Agenda memos against the agenda-memo JSON schema and returns validation errors where present.",
+          "Routes callers to the packaged validate_memo MCP tool, which validates strategic-risk memos against the agenda-memo JSON schema and returns contract errors before analyst or agent handoff.",
         tags: [
           "schema-validation",
           "memo-validation",
@@ -172,9 +174,9 @@ function agentCard(request) {
       },
       {
         id: "agenda-audit-claims",
-        name: "Claim/evidence audit",
+        name: "Policy evidence quality gate",
         description:
-          "Describes the packaged audit_claims MCP tool, which checks claim-level evidence-audit structure, support-level distribution, orphan evidence references, and listed unsupported claims.",
+          "Routes callers to the packaged audit_claims MCP tool for claim-level evidence structure, support-level distribution, orphan evidence references, unsupported claims, and provenance discipline.",
         tags: [
           "evidence-audit",
           "claim-support",
@@ -190,9 +192,9 @@ function agentCard(request) {
       },
       {
         id: "agenda-source-coverage",
-        name: "Source coverage diagnostics",
+        name: "Sanctions and regulatory source coverage",
         description:
-          "Describes the packaged source_coverage MCP tool, which diagnoses whether an evidence pack covers category-specific must-check source types for sanctions, trade, regulation, energy, conflict, cyber, ESG, and technology AI.",
+          "Returns source-planning guidance and routes callers to the packaged source_coverage MCP tool for sanctions, trade, regulation, energy, conflict, cyber, ESG, and technology-AI evidence packs.",
         tags: [
           "source-planning",
           "evidence-coverage",
@@ -208,9 +210,9 @@ function agentCard(request) {
       },
       {
         id: "agenda-quote-verification",
-        name: "Local quote presence check",
+        name: "Quote and excerpt presence check",
         description:
-          "Describes the packaged verify_quotes MCP tool, which checks whether cited quote fragments appear in caller-supplied source text. It does not discover sources or verify factual truth.",
+          "Routes callers to the packaged verify_quotes MCP tool, which checks whether cited quote fragments appear in caller-supplied source text without claiming live source discovery or factual-truth verification.",
         tags: [
           "quote-checking",
           "evidence-discipline",
@@ -225,11 +227,12 @@ function agentCard(request) {
       },
       {
         id: "agenda-signals",
-        name: "Signal archive lookup",
+        name: "Geopolitical signal archive lookup",
         description:
-          "Describes the packaged list_signals and get_signal MCP tools, which expose strategic-risk signal archive entries vendored from the Global Think Tank Analyst method snapshot.",
+          "Routes callers to the packaged list_signals and get_signal MCP tools for strategic-risk signal archive entries, watch-next monitoring, and policy-analysis context vendored from the Global Think Tank Analyst method snapshot.",
         tags: [
           "signals",
+          "geopolitical-signals",
           "strategic-intelligence",
           "archive",
           "watch-next",
@@ -244,7 +247,7 @@ function agentCard(request) {
     ],
     x_agenda_intelligence: {
       hosted_wrapper: true,
-      wrapper_scope: "A2A/JSON-RPC discovery and routing response only",
+      wrapper_scope: "A2A/JSON-RPC discovery, lightweight triage, and routing response only",
       jsonrpc_endpoint: `${origin}/message/send`,
       repository: REPOSITORY_URL,
       package: PACKAGE_URL,
@@ -308,6 +311,128 @@ function routeModules(text) {
     modules.push({ module: "sanctions-sector", role: "sector_specialist" });
   }
   return modules;
+}
+
+function classifyIntent(text) {
+  const lower = text.toLowerCase();
+  if (!lower.trim()) return "health_probe";
+  if (hasAny(lower, ["validate", "schema", "contract", "json schema", "memo validation"])) {
+    return "memo_validation";
+  }
+  if (hasAny(lower, ["source", "coverage", "required source", "source plan"])) {
+    return "source_coverage";
+  }
+  if (hasAny(lower, ["audit", "evidence", "claim", "provenance", "unsupported"])) {
+    return "evidence_audit";
+  }
+  if (hasAny(lower, ["signal", "watch", "monitor", "early warning", "indicator"])) {
+    return "signal_monitoring";
+  }
+  return "strategic_risk_triage";
+}
+
+function sourcePlanForModules(modules) {
+  const moduleNames = new Set(modules.map((item) => item.module));
+  const categories = [
+    "primary official source for the triggering event or rule",
+    "independent secondary context that does not replace the primary source",
+    "dated retrieval notes so stale-risk can be reviewed later"
+  ];
+
+  if (moduleNames.has("sanctions-sector")) {
+    categories.push(
+      "sanctions authority pages and list entries, such as OFAC, EU, UK OFSI, UN, or relevant national regulators",
+      "trade, shipping, ownership, banking, insurance, or export-control evidence for operational exposure"
+    );
+  }
+  if (moduleNames.has("central-asia-caspian")) {
+    categories.push(
+      "Central Asia/Caspian government, customs, transport, corridor, and state-company sources",
+      "IFI, logistics, energy, or regional-market sources that expose corridor and counterparty constraints"
+    );
+  }
+  if (moduleNames.has("gulf-middle-east")) {
+    categories.push(
+      "Gulf/Middle East official statements, maritime-security, energy, shipping, and insurance sources",
+      "regional conflict, chokepoint, and trade-finance indicators for escalation monitoring"
+    );
+  }
+  if (moduleNames.has("eu")) {
+    categories.push(
+      "EU institution, regulator, Official Journal, national authority, and court sources",
+      "implementation guidance and enforcement signals that separate legal text from policy rhetoric"
+    );
+  }
+
+  return [...new Set(categories)];
+}
+
+function qualityGatesForIntent(intent) {
+  const gates = [
+    "Separate facts, assessments, assumptions, and unknowns.",
+    "Attach evidence ids to load-bearing claims.",
+    "Mark unsupported claims instead of smoothing them away.",
+    "State what would change the judgment."
+  ];
+
+  if (intent === "memo_validation") {
+    gates.unshift("Validate the memo against agenda-memo.schema.json before using it downstream.");
+  }
+  if (intent === "evidence_audit" || intent === "source_coverage") {
+    gates.unshift("Check source-category coverage before treating the evidence pack as complete.");
+  }
+  if (intent === "signal_monitoring") {
+    gates.push("Convert durable signals into watch-next indicators with review dates.");
+  }
+
+  return gates;
+}
+
+function nextActionsForIntent(intent) {
+  if (intent === "memo_validation") {
+    return [
+      "Install the MCP package and run validate_memo against the candidate memo JSON.",
+      "Fix schema errors before asking an agent to expand or summarize the memo."
+    ];
+  }
+  if (intent === "evidence_audit") {
+    return [
+      "Run audit_claims with the memo and evidence pack.",
+      "Review unsupported_claims and orphan evidence references before publishing the analysis."
+    ];
+  }
+  if (intent === "source_coverage") {
+    return [
+      "Run source_coverage with the topic categories that match the risk question.",
+      "Fill required_but_missing_sources before raising confidence."
+    ];
+  }
+  if (intent === "signal_monitoring") {
+    return [
+      "Use list_signals/get_signal for existing signal examples.",
+      "Open a signal tracker only if the event needs monitoring across sessions."
+    ];
+  }
+  return [
+    "Use the suggested modules as the analysis load-list.",
+    "Run the MCP analyze tool for the full memo contract and validation path."
+  ];
+}
+
+function triageForText(text, modules) {
+  const intent = classifyIntent(text);
+  return {
+    intent,
+    modules,
+    source_plan: sourcePlanForModules(modules),
+    quality_gates: qualityGatesForIntent(intent),
+    next_actions: nextActionsForIntent(intent),
+    install: {
+      package: PACKAGE_URL,
+      command: "pip install agenda-intelligence-md",
+      mcp_server_command: "agenda-intelligence-mcp"
+    }
+  };
 }
 
 function headerHost(request, headerName) {
@@ -492,20 +617,35 @@ async function usageStats(env, date) {
 }
 
 function routingMarkdown(text, modules) {
+  const triage = triageForText(text, modules);
   const moduleList = modules.map((item) => `- ${item.module}: ${item.role}`).join("\n");
+  const sourceList = triage.source_plan.map((item) => `- ${item}`).join("\n");
+  const qualityList = triage.quality_gates.map((item) => `- ${item}`).join("\n");
+  const actionList = triage.next_actions.map((item) => `- ${item}`).join("\n");
   const promptLine = text ? `\n\nReceived prompt excerpt:\n\n> ${text.slice(0, 500)}` : "";
   return [
     "Agenda Intelligence MD live wrapper is responding.",
     "",
-    "This endpoint is a free, no-payment A2A/JSON-RPC wrapper for discovery, uptime, and lightweight routing. Full product behavior is in the installable MCP server:",
+    "This endpoint is a free, no-payment A2A/JSON-RPC wrapper for discovery, uptime, lightweight strategic-risk triage, and routing. Full product behavior is in the installable MCP server:",
     "",
     "```bash",
     "pip install agenda-intelligence-md",
     "agenda-intelligence-mcp",
     "```",
     "",
+    `Detected intent: ${triage.intent}`,
+    "",
     "Suggested modules:",
     moduleList,
+    "",
+    "Evidence/source plan:",
+    sourceList,
+    "",
+    "Quality gates:",
+    qualityList,
+    "",
+    "Next actions:",
+    actionList,
     "",
     "Boundaries: no live retrieval, no factual-truth verification, no legal/financial/compliance advice.",
     promptLine
@@ -515,6 +655,7 @@ function routingMarkdown(text, modules) {
 function a2aResult(params, request) {
   const text = extractText(params);
   const modules = routeModules(text);
+  const triage = triageForText(text, modules);
   return {
     id: crypto.randomUUID(),
     status: {
@@ -540,7 +681,8 @@ function a2aResult(params, request) {
       mcp_transport: "stdio",
       mcp_server_command: "agenda-intelligence-mcp",
       modules_used: modules,
-      wrapper_scope: "discovery and routing response only"
+      triage,
+      wrapper_scope: "discovery, lightweight triage, and routing response only"
     }
   };
 }
@@ -691,5 +833,6 @@ export {
   isStatsAuthorized,
   recordUsageStats,
   routeModules,
-  usageStats
+  usageStats,
+  triageForText
 };

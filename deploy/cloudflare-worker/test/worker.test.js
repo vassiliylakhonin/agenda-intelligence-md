@@ -9,6 +9,7 @@ import {
   isStatsAuthorized,
   recordUsageStats,
   routeModules,
+  triageForText,
   usageStats
 } from "../src/index.js";
 
@@ -72,6 +73,12 @@ test("agent card uses request origin for live endpoints", () => {
       "agenda-signals"
     ]
   );
+  assert.equal(card.skills[0].name, "Strategic-risk signal triage");
+  assert.ok(card.skills[0].tags.includes("geopolitical-risk"));
+  assert.equal(
+    card.x_agenda_intelligence.wrapper_scope,
+    "A2A/JSON-RPC discovery, lightweight triage, and routing response only"
+  );
 });
 
 test("message/send returns JSON-RPC result with routing metadata", () => {
@@ -101,14 +108,36 @@ test("message/send returns JSON-RPC result with routing metadata", () => {
     assert.equal(response.id, "probe-1");
     assert.equal(response.result.status.state, "completed");
     assert.equal(response.result.artifacts[0].parts[0].kind, "text");
+    assert.match(response.result.artifacts[0].parts[0].text, /Evidence\/source plan:/);
+    assert.match(response.result.artifacts[0].parts[0].text, /Quality gates:/);
+    assert.match(response.result.artifacts[0].parts[0].text, /Next actions:/);
     assert.deepEqual(response.result.metadata.modules_used, [
       { module: "global-think-tank-analyst", role: "reasoning_method" },
       { module: "central-asia-caspian", role: "regional_specialist" },
       { module: "sanctions-sector", role: "sector_specialist" }
     ]);
+    assert.equal(response.result.metadata.triage.intent, "strategic_risk_triage");
+    assert.ok(
+      response.result.metadata.triage.source_plan.includes(
+        "sanctions authority pages and list entries, such as OFAC, EU, UK OFSI, UN, or relevant national regulators"
+      )
+    );
   } finally {
     console.log = originalLog;
   }
+});
+
+test("triage classifies source coverage requests and returns quality gates", () => {
+  const triage = triageForText(
+    "Check source coverage for EU sanctions evidence around Red Sea shipping.",
+    routeModules("EU sanctions around Red Sea shipping")
+  );
+
+  assert.equal(triage.intent, "source_coverage");
+  assert.ok(triage.source_plan.some((item) => item.includes("EU institution")));
+  assert.ok(triage.source_plan.some((item) => item.includes("Gulf/Middle East")));
+  assert.ok(triage.quality_gates[0].includes("source-category coverage"));
+  assert.equal(triage.install.mcp_server_command, "agenda-intelligence-mcp");
 });
 
 test("unknown method returns method-not-found error", () => {

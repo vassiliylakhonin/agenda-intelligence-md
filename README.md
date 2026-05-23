@@ -26,7 +26,7 @@ Longer guided tutorial: [`docs/quickstart.md`](docs/quickstart.md). MCP client s
 
 ## Live A2A wrapper
 
-A free Cloudflare Workers wrapper is live for discovery, uptime checks, and lightweight A2A/JSON-RPC routing:
+A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightweight strategic-risk triage, and A2A/JSON-RPC routing:
 
 - Live endpoint: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev>
 - Agent Card: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
