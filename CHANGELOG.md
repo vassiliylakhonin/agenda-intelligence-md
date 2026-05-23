@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## [1.0.1] – 2026-05-23
+
+Metadata-only patch release for MCP directories and agent registries.
+
+- Expanded the 16 stdio MCP tool descriptions with clearer "when to use", input, output, and boundary guidance so directories such as Glama can present the server more accurately.
+- Added non-validation `description` annotations to MCP `inputSchema` properties and mirrored them in both agent-manifest copies.
+- No runtime behavior, schema validation semantics, CLI behavior, or tool names changed.
+
 ## [1.0.0] – 2026-05-23
 
 First v1.0 release. Locks the contract surface defined by ADRs 0011–0013 per ADR 0003: future breaking changes to schemas, MCP tools, or the manifest contract fields (`name`, `version`, `schemas`, `mcp`, `cli`) require a v2.0 bump.
