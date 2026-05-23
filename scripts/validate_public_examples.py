@@ -112,7 +112,13 @@ def extract_runnable_commands(block: str) -> list[str]:
         if not line or line.startswith("#"):
             continue
         if line.endswith("\\"):
-            raise SystemExit(f"Multiline shell command is not supported by doc smoke test: {line}")
+            # Multiline continuations are common in documentation examples
+            # (curl, pip with many flags). Only fail if the multiline command
+            # is one the smoke test would otherwise execute, since silent
+            # truncation of an agenda-intelligence command would mask coverage.
+            if line.startswith(("agenda-intelligence ", "mkdir ", "cp ")):
+                raise SystemExit(f"Multiline runnable command is not supported by doc smoke test: {line}")
+            continue
         if any(ch in line for ch in NON_ASCII_HYPHENS):
             raise SystemExit(f"Non-ASCII hyphen in shell command: {line}")
         if "source-requirements/technology-ai/" in line:
