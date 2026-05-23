@@ -40,10 +40,15 @@ def test_packaged_schemas_match_top_level_schemas():
     schema_dir = ROOT / "schemas" / "v1"
     packaged_schema_dir = ROOT / "src/agenda_intelligence/data/schemas/v1"
 
-    for schema_path in sorted(schema_dir.glob("*.schema.json")):
-        packaged_schema_path = packaged_schema_dir / schema_path.name
-        assert packaged_schema_path.exists(), f"Missing packaged schema: {schema_path.name}"
-        assert load_json(packaged_schema_path) == load_json(schema_path)
+    top_level_names = {p.name for p in schema_dir.glob("*.schema.json")}
+    packaged_names = {p.name for p in packaged_schema_dir.glob("*.schema.json")}
+    assert top_level_names == packaged_names, (
+        "schemas/v1 dual-copy diverged: "
+        f"top-level only={sorted(top_level_names - packaged_names)}, "
+        f"packaged only={sorted(packaged_names - top_level_names)}"
+    )
+    for name in sorted(top_level_names):
+        assert load_json(schema_dir / name) == load_json(packaged_schema_dir / name)
 
 
 def assert_packaged_copy_matches_top_level(relative_path):

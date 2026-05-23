@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentManifest",
+  "type": "object",
+  "required": ["entrypoint", "protocols", "lenses"],
+  "properties": {
+    "entrypoint": { "type": "string", "minLength": 1 },
+    "protocols": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "lenses": {
+      "type": "object",
+      "properties": {
+        "regional": { "type": "object" },
+        "sector": { "type": "object" }
+      }
+    }
+  }
+}
