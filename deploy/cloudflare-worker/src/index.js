@@ -1,4 +1,4 @@
-const VERSION = "0.9.3";
+const VERSION = "1.0.1";
 const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
 const DOCS_URL = `${REPOSITORY_URL}/blob/main/MCP.md`;
 const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";
@@ -113,7 +113,18 @@ function agentCard(request) {
     url: origin,
     provider: {
       organization: "Vassiliy Lakhonin",
-      url: "https://vassiliylakhonin.github.io/"
+      url: "https://vassiliylakhonin.github.io/",
+      legalEntity: {
+        type: "individual",
+        name: "Vassiliy Lakhonin",
+        url: "https://vassiliylakhonin.github.io/verification.json",
+        sameAs: [
+          "https://github.com/vassiliylakhonin",
+          "https://pypi.org/project/agenda-intelligence-md/",
+          "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md",
+          "https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev"
+        ]
+      }
     },
     version: VERSION,
     documentationUrl: DOCS_URL,
@@ -125,6 +136,18 @@ function agentCard(request) {
       }
     ],
     protocolVersions: ["1.0"],
+    securitySchemes: {
+      optionalClientId: {
+        apiKeySecurityScheme: {
+          location: "header",
+          name: "X-Client-Id",
+          description:
+            "Optional caller identifier for observability and abuse triage. The public lightweight triage endpoint does not require an access key."
+        }
+      }
+    },
+    securityRequirements: [],
+    security: [],
     capabilities: {
       streaming: false,
       pushNotifications: false,
@@ -573,6 +596,8 @@ function headerHost(request, headerName) {
 }
 
 function classifyClient(request) {
+  const clientId = request.headers.get("x-client-id");
+  if (clientId) return safeClientId(clientId);
   const userAgent = (request.headers.get("user-agent") || "").toLowerCase();
   if (userAgent.includes("agenstry")) return "agenstry";
   if (userAgent.includes("curl")) return "curl";
@@ -580,6 +605,11 @@ function classifyClient(request) {
   if (userAgent.includes("bot") || userAgent.includes("crawler") || userAgent.includes("spider")) return "automation";
   if (userAgent.includes("mozilla")) return "browser";
   return "unknown";
+}
+
+function safeClientId(value) {
+  const normalized = value.toLowerCase().trim().replace(/[^a-z0-9._:-]/g, "-");
+  return normalized.slice(0, 64) || "unknown";
 }
 
 function buildUsageEvent(request, details = {}) {

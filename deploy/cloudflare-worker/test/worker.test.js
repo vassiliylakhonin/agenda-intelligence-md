@@ -47,7 +47,7 @@ test("agent card uses request origin for live endpoints", () => {
   const card = agentCard(request);
 
   assert.equal(card.protocolVersion, "1.0");
-  assert.equal(card.version, "0.9.3");
+  assert.equal(card.version, "1.0.1");
   assert.equal(card.url, "https://agenda-intelligence-a2a.example.workers.dev");
   assert.deepEqual(card.supportedInterfaces, [
     {
@@ -63,6 +63,9 @@ test("agent card uses request origin for live endpoints", () => {
   assert.equal(card.x_agenda_intelligence.hosted_wrapper, true);
   assert.equal(card.x_agenda_intelligence.mcp.server_command, "agenda-intelligence-mcp");
   assert.equal(card.capabilities.extendedAgentCard, false);
+  assert.equal(card.provider.legalEntity.type, "individual");
+  assert.equal(card.securitySchemes.optionalClientId.apiKeySecurityScheme.name, "X-Client-Id");
+  assert.deepEqual(card.securityRequirements, []);
   assert.deepEqual(
     card.skills.map((skill) => skill.id),
     [
@@ -219,6 +222,24 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   assert.equal(event.cookie, undefined);
   assert.equal(event.authorization, undefined);
   assert.equal(event.ip, undefined);
+});
+
+test("usage analytics accepts a privacy-safe optional client id header", () => {
+  const analyticsRequest = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
+    method: "POST",
+    headers: {
+      "x-client-id": "Partner Console / Demo #1"
+    }
+  });
+
+  const event = buildUsageEvent(analyticsRequest, {
+    jsonrpc_method: "message/send",
+    jsonrpc_id_present: true,
+    prompt_chars: 21
+  });
+
+  assert.equal(event.client, "partner-console---demo--1");
+  assert.equal(event.authorization, undefined);
 });
 
 test("usage stats aggregates daily counters from KV", async () => {
