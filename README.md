@@ -142,13 +142,13 @@ Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed
 
 | Schema | Purpose |
 |---|---|
-| [`agenda-brief.schema.json`](schemas/agenda-brief.schema.json) | Brief structure |
-| [`evidence-pack.schema.json`](schemas/evidence-pack.schema.json) | Evidence pack |
-| [`evidence-audit.schema.json`](schemas/evidence-audit.schema.json) | Claim-level audit |
-| [`signal-tracker.schema.json`](schemas/signal-tracker.schema.json) | Signal lifecycle |
-| [`memory-card.schema.json`](schemas/memory-card.schema.json) | AnalysisBank cards |
-| [`lens-manifest.schema.json`](schemas/lens-manifest.schema.json) | Lens manifest |
-| [`signal-classification.schema.json`](schemas/signal-classification.schema.json) | Signal taxonomy |
+| [`agenda-brief.schema.json`](schemas/v1/agenda-brief.schema.json) | Brief structure |
+| [`evidence-pack.schema.json`](schemas/v1/evidence-pack.schema.json) | Evidence pack |
+| [`evidence-audit.schema.json`](schemas/v1/evidence-audit.schema.json) | Claim-level audit |
+| [`signal-tracker.schema.json`](schemas/v1/signal-tracker.schema.json) | Signal lifecycle |
+| [`memory-card.schema.json`](schemas/v1/memory-card.schema.json) | AnalysisBank cards |
+| [`lens-manifest.schema.json`](schemas/v1/lens-manifest.schema.json) | Lens manifest |
+| [`signal-classification.schema.json`](schemas/v1/signal-classification.schema.json) | Signal taxonomy |
 
 ## MCP
 
@@ -227,7 +227,7 @@ agenda-intelligence-md/
 ├─ examples/                  # briefs, evidence packs, before/after
 ├─ skills/                    # OpenClaw skill wrappers
 ├─ evals/                     # rubric, judge prompt, benchmark
-├─ analysis-bank/             # agent persistent memory (memory-card schema, see schemas/memory-card.schema.json)
+├─ analysis-bank/             # agent persistent memory (memory-card schema, see schemas/v1/memory-card.schema.json)
 ├─ docs/                      # guides, integrations, use-cases
 ├─ scripts/                   # dev and CI helpers
 └─ tests/                     # pytest suite

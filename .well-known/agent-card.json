@@ -192,11 +192,11 @@
       "red-team checks on confident narratives"
     ],
     "schemas": {
-      "request": "schemas/agenda-request.schema.json",
-      "memo": "schemas/agenda-memo.schema.json",
-      "brief": "schemas/agenda-brief.schema.json",
-      "evidence_pack": "schemas/evidence-pack.schema.json",
-      "evidence_audit": "schemas/evidence-audit.schema.json"
+      "request": "schemas/v1/agenda-request.schema.json",
+      "memo": "schemas/v1/agenda-memo.schema.json",
+      "brief": "schemas/v1/agenda-brief.schema.json",
+      "evidence_pack": "schemas/v1/evidence-pack.schema.json",
+      "evidence_audit": "schemas/v1/evidence-audit.schema.json"
     }
   }
 }

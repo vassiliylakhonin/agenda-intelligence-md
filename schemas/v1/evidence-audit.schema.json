@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/evidence-audit.schema.json",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/evidence-audit.schema.json",
   "title": "EvidenceAudit",
   "description": "Claim-level evidence audit. Each important claim should be traceable to specific evidence with an explicit support level, uncertainty hook, and risk-if-wrong note. Use the `audit-claims` CLI command or `audit_claims` MCP tool to validate.",
   "x-schema-version": "1",

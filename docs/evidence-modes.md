@@ -1,6 +1,6 @@
 # Evidence modes
 
-Every `agenda-memo` declares one of three `meta.evidence_mode` values. The enum is fixed by [`schemas/agenda-memo.schema.json`](../schemas/agenda-memo.schema.json); the post-hoc discipline rule documented here adds enforceable semantics on top of the schema.
+Every `agenda-memo` declares one of three `meta.evidence_mode` values. The enum is fixed by [`schemas/v1/agenda-memo.schema.json`](../schemas/v1/agenda-memo.schema.json); the post-hoc discipline rule documented here adds enforceable semantics on top of the schema.
 
 This file is the canonical reference for the product-shell memo contract. The portfolio glossary at [`docs/glossary.md`](glossary.md) describes a four-mode classification used to label *example* memos in the sibling skill repos (`live-source-backed`, `user-provided`, `illustrative`, `reasoning-only`); those are documentation labels, not the schema enum. For the schema, only the three values below are valid.
 

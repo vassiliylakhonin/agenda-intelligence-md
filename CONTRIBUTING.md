@@ -25,7 +25,7 @@ If `make ci-fast` is green locally, your push will not red-CI on `main`.
 
 **3. Read one concrete artifact end-to-end:**
 
-- [`examples/agenda-brief.json`](examples/agenda-brief.json) → [`schemas/agenda-brief.schema.json`](schemas/agenda-brief.schema.json) → run `agenda-intelligence validate-brief examples/agenda-brief.json`. This is the smallest complete loop the product shell exposes: a structured brief, the schema it conforms to, the validator that enforces it.
+- [`examples/agenda-brief.json`](examples/agenda-brief.json) → [`schemas/v1/agenda-brief.schema.json`](schemas/v1/agenda-brief.schema.json) → run `agenda-intelligence validate-brief examples/agenda-brief.json`. This is the smallest complete loop the product shell exposes: a structured brief, the schema it conforms to, the validator that enforces it.
 - For the MCP product surface: skim [`AGENTS.md`](AGENTS.md) "Geography routing" and the four product tools (`analyze`, `validate_memo`, `list_signals` / `get_signal`, `deep_dive`).
 
 **Unfamiliar with a term in `AGENTS.md`?** See the [portfolio glossary](docs/glossary.md) — single source of truth for evidence modes, uncertainty labels (`Verified`/`Plausible`/`Judgment`/`Unknown`), table-cell discipline, Axis A/B provenance tags, three-value response logic, and the deliberate maturity-framework asymmetry across the four repos (Bar 1/2 ≠ Maturity framework ≠ ROADMAP versioning).
@@ -81,7 +81,7 @@ The repo keeps two copies of several files — top-level AND under `src/agenda_i
 - `SOURCE_POLICY.md` ↔ `src/agenda_intelligence/data/SOURCE_POLICY.md`
 - `llms.txt` ↔ `src/agenda_intelligence/data/llms.txt`
 - `agent-manifest.json` ↔ `src/agenda_intelligence/data/agent-manifest.json`
-- `schemas/*.json` ↔ `src/agenda_intelligence/data/schemas/*.json`
+- `schemas/v1/*.json` ↔ `src/agenda_intelligence/data/schemas/v1/*.json`
 - `skills/**` ↔ `src/agenda_intelligence/data/skills/**`
 - `source-requirements/*` ↔ `src/agenda_intelligence/data/source-requirements/*`
 

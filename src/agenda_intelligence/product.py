@@ -344,7 +344,7 @@ def assemble_system_prompt(modules: list[dict], request: Optional[dict] = None) 
 
 
 def _load_schema(schema_name: str) -> dict:
-    path = resources.files(PACKAGE_NAME) / "data" / "schemas" / schema_name
+    path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "v1" / schema_name
     if not path.is_file():
         raise FileNotFoundError(f"Schema not found in package data: {schema_name}")
     return json.loads(path.read_text(encoding="utf-8"))

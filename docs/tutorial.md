@@ -46,7 +46,7 @@ For a copy-pasteable run, start from the bundled evidence-pack example:
 cp examples/source/evidence-pack.json evidence-pack.json
 ```
 
-That file follows `schemas/evidence-pack.schema.json`: it contains a `topic`, `evidence_mode`, optional `source_category`, claim-level `sources`, `unsupported_claims`, and a `source_plan`. For your own analysis, keep the same structure and replace the claim/source content with your actual evidence.
+That file follows `schemas/v1/evidence-pack.schema.json`: it contains a `topic`, `evidence_mode`, optional `source_category`, claim-level `sources`, `unsupported_claims`, and a `source_plan`. For your own analysis, keep the same structure and replace the claim/source content with your actual evidence.
 
 ## 4. Validate the evidence pack
 

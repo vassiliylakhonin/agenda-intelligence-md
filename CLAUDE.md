@@ -31,7 +31,7 @@ The repo keeps two copies of several files — top-level AND under `src/agenda_i
 - `SOURCE_POLICY.md` ↔ `src/agenda_intelligence/data/SOURCE_POLICY.md`
 - `llms.txt` ↔ `src/agenda_intelligence/data/llms.txt`
 - `agent-manifest.json` ↔ `src/agenda_intelligence/data/agent-manifest.json`
-- `schemas/*.json` ↔ `src/agenda_intelligence/data/schemas/*.json`
+- `schemas/v1/*.json` ↔ `src/agenda_intelligence/data/schemas/v1/*.json`
 - `skills/**` ↔ `src/agenda_intelligence/data/skills/**`
 - `source-requirements/*` ↔ `src/agenda_intelligence/data/source-requirements/*`
 

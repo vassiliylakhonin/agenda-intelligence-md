@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/lens-manifest.schema.json",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/lens-manifest.schema.json",
   "title": "LensManifest",
   "x-schema-version": "1",
   "type": "object",

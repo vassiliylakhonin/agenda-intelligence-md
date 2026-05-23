@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/memory-card.schema.json",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/memory-card.schema.json",
   "title": "AnalysisBankMemoryCard",
   "x-schema-version": "1",
   "type": "object",

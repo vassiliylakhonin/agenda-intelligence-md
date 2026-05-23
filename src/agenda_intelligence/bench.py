@@ -38,7 +38,7 @@ def _data(rel: str):
 
 
 def _load_schema(name: str) -> dict:
-    return json.loads(_data(f"schemas/{name}").read_text())
+    return json.loads(_data(f"schemas/v1/{name}").read_text())
 
 
 @dataclass

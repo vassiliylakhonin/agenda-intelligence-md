@@ -74,7 +74,7 @@ When producing a brief for a tracked signal:
 
 ## Schema
 
-The machine-readable format is `schemas/signal-tracker.schema.json`.
+The machine-readable format is `schemas/v1/signal-tracker.schema.json`.
 
 Required fields: `signal_id`, `title`, `classification`, `status`, `first_detected`, `last_updated`, `summary`, `watch_indicators`.
 

@@ -19,21 +19,21 @@
     ]
   },
   "schemas": {
-    "agenda_brief": "schemas/agenda-brief.schema.json",
-    "memory_card": "schemas/memory-card.schema.json",
-    "lens_manifest": "schemas/lens-manifest.schema.json",
-    "signal_classification": "schemas/signal-classification.schema.json",
-    "evidence_pack": "schemas/evidence-pack.schema.json",
-    "evidence_audit": "schemas/evidence-audit.schema.json",
-    "signal_tracker": "schemas/signal-tracker.schema.json",
-    "agenda_request": "schemas/agenda-request.schema.json",
-    "agenda_memo": "schemas/agenda-memo.schema.json"
+    "agenda_brief": "schemas/v1/agenda-brief.schema.json",
+    "memory_card": "schemas/v1/memory-card.schema.json",
+    "lens_manifest": "schemas/v1/lens-manifest.schema.json",
+    "signal_classification": "schemas/v1/signal-classification.schema.json",
+    "evidence_pack": "schemas/v1/evidence-pack.schema.json",
+    "evidence_audit": "schemas/v1/evidence-audit.schema.json",
+    "signal_tracker": "schemas/v1/signal-tracker.schema.json",
+    "agenda_request": "schemas/v1/agenda-request.schema.json",
+    "agenda_memo": "schemas/v1/agenda-memo.schema.json"
   },
   "product": {
     "name": "Agenda Intelligence",
     "description": "Product shell exposing the analyze pipeline over the validation and reasoning layers. Routes geography to regional and sector references, assembles a system prompt from bundled SKILL.md content, and validates output against the agenda-memo contract.",
-    "request_schema": "schemas/agenda-request.schema.json",
-    "response_schema": "schemas/agenda-memo.schema.json",
+    "request_schema": "schemas/v1/agenda-request.schema.json",
+    "response_schema": "schemas/v1/agenda-memo.schema.json",
     "mcp_tools": [
       "analyze",
       "validate_memo",
