@@ -6,7 +6,7 @@ This Worker is intentionally small:
 
 - serves a public Agent Card at `/.well-known/agent-card.json`;
 - responds to JSON-RPC `message/send` and `tasks/send`;
-- returns lightweight strategic-risk triage, source-planning guidance, quality gates, routing metadata, and install instructions for the stdio MCP server;
+- returns a sanctions/policy signal screen, source-planning guidance, quality gates, routing metadata, and install instructions for the stdio MCP server;
 - does not call paid APIs, payment rails, wallets, or live retrieval;
 - does not replace the installable MCP server.
 
@@ -80,7 +80,7 @@ curl -X POST https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/messag
         "parts": [
           {
             "kind": "text",
-            "text": "Route a sanctions question about Kazakhstan and the Middle Corridor."
+            "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure."
           }
         ]
       }
@@ -88,7 +88,7 @@ curl -X POST https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/messag
   }'
 ```
 
-Expected: HTTP 200 with a JSON-RPC 2.0 response, `status.state: "completed"`, and a routing note with suggested modules, source plan, quality gates, and next actions.
+Expected: HTTP 200 with a JSON-RPC 2.0 response, `status.state: "completed"`, and a routing note with `signal_screen`, suggested modules, source plan, quality gates, and next actions.
 
 ## Usage analytics
 

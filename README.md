@@ -50,7 +50,7 @@ curl -X POST https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/messa
         "parts": [
           {
             "kind": "text",
-            "text": "Check source coverage for EU sanctions evidence around Red Sea shipping and Kazakhstan transit risk."
+            "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure."
           }
         ]
       }
@@ -58,7 +58,7 @@ curl -X POST https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/messa
   }'
 ```
 
-Expected: JSON-RPC 2.0 with `status.state: "completed"`, suggested modules, source plan, quality gates, and next actions.
+Expected: JSON-RPC 2.0 with `status.state: "completed"`, `metadata.signal_screen.risk_signal`, affected regions, required source categories, evidence gaps, watch-next indicators, suggested modules, and next actions.
 
 Private usage stats for the wrapper are available from the Cloudflare Worker project:
 

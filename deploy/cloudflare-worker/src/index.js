@@ -135,6 +135,27 @@ function agentCard(request) {
     defaultOutputModes: ["application/json", "text/markdown"],
     skills: [
       {
+        id: "agenda-signal-screen",
+        name: "Sanctions and policy risk signal screen",
+        description:
+          "Returns a free live A2A signal screen for sanctions, policy, corridor, and regulatory-risk questions: risk signal, affected regions, required source categories, evidence gaps, watch-next indicators, and recommended MCP tool.",
+        tags: [
+          "sanctions",
+          "policy-risk",
+          "regulatory-risk",
+          "geopolitical-signals",
+          "source-coverage",
+          "watch-next",
+          "free"
+        ],
+        examples: [
+          "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure.",
+          "Find evidence gaps and watch-next indicators for EU sanctions around a Central Asia corridor."
+        ],
+        inputModes: ["application/json", "text/plain"],
+        outputModes: ["application/json", "text/markdown"]
+      },
+      {
         id: "agenda-analyze",
         name: "Strategic-risk signal triage",
         description:
@@ -322,6 +343,12 @@ function classifyIntent(text) {
   if (hasAny(lower, ["source", "coverage", "required source", "source plan"])) {
     return "source_coverage";
   }
+  if (
+    hasAny(lower, ["screen", "risk signal", "signal screen", "policy risk", "sanctions risk", "corridor risk"]) ||
+    (hasAny(lower, SANCTIONS_TERMS) && hasAny(lower, ["policy", "risk", "corridor", "regulation", "shipping"]))
+  ) {
+    return "sanctions_policy_signal_screen";
+  }
   if (hasAny(lower, ["audit", "evidence", "claim", "provenance", "unsupported"])) {
     return "evidence_audit";
   }
@@ -367,6 +394,96 @@ function sourcePlanForModules(modules) {
   return [...new Set(categories)];
 }
 
+function affectedRegionsForModules(modules) {
+  const moduleNames = new Set(modules.map((item) => item.module));
+  const regions = [];
+  if (moduleNames.has("central-asia-caspian")) regions.push("Central Asia/Caspian");
+  if (moduleNames.has("gulf-middle-east")) regions.push("Gulf/Middle East");
+  if (moduleNames.has("eu")) regions.push("European Union");
+  if (regions.length === 0) regions.push("Global/cross-border");
+  return regions;
+}
+
+function sourceCategoriesForModules(modules) {
+  const moduleNames = new Set(modules.map((item) => item.module));
+  const categories = ["primary official source", "independent context source", "dated retrieval note"];
+  if (moduleNames.has("sanctions-sector")) {
+    categories.push("sanctions authority", "trade finance", "ownership/counterparty", "shipping or logistics");
+  }
+  if (moduleNames.has("central-asia-caspian")) {
+    categories.push("corridor operator", "customs/transport authority", "state-company or IFI source");
+  }
+  if (moduleNames.has("gulf-middle-east")) {
+    categories.push("maritime security", "energy/shipping market", "regional official statement");
+  }
+  if (moduleNames.has("eu")) {
+    categories.push("EU institution", "national regulator", "Official Journal or court source");
+  }
+  return [...new Set(categories)];
+}
+
+function watchNextForModules(modules) {
+  const moduleNames = new Set(modules.map((item) => item.module));
+  const items = [
+    "new primary-source update that changes the triggering fact",
+    "contradictory official statement or implementation guidance"
+  ];
+  if (moduleNames.has("sanctions-sector")) {
+    items.push("new OFAC/EU/UK/UN designation, licence, FAQ, guidance, or enforcement notice");
+    items.push("banking, insurance, ownership, or export-control exposure change");
+  }
+  if (moduleNames.has("central-asia-caspian")) {
+    items.push("corridor disruption notice, customs rule change, tariff update, or state-company statement");
+  }
+  if (moduleNames.has("gulf-middle-east")) {
+    items.push("maritime incident, insurance premium movement, port restriction, or chokepoint security update");
+  }
+  if (moduleNames.has("eu")) {
+    items.push("EU Council/Commission update, Official Journal publication, regulator guidance, or court decision");
+  }
+  return [...new Set(items)];
+}
+
+function signalScreenForText(text, modules, intent) {
+  const moduleNames = new Set(modules.map((item) => item.module));
+  const lower = text.toLowerCase();
+  const isSanctions = moduleNames.has("sanctions-sector");
+  const isCorridor = moduleNames.has("central-asia-caspian") || hasAny(lower, ["corridor", "transit", "kazakhstan"]);
+  const isMaritime = moduleNames.has("gulf-middle-east") || hasAny(lower, ["red sea", "shipping", "hormuz", "maritime"]);
+
+  let riskSignal = "Strategic-risk question requires source-backed triage before raising confidence.";
+  if (isSanctions && isCorridor && isMaritime) {
+    riskSignal =
+      "Sanctions or maritime disruption may increase transit, insurance, counterparty, and trade-finance risk for corridor-linked flows.";
+  } else if (isSanctions && isCorridor) {
+    riskSignal =
+      "Sanctions exposure may affect corridor-linked counterparties, logistics providers, banks, or state-connected entities.";
+  } else if (isSanctions) {
+    riskSignal =
+      "Sanctions-policy movement may create counterparty, ownership, banking, export-control, or compliance-screening exposure.";
+  } else if (isMaritime) {
+    riskSignal =
+      "Maritime disruption may shift routing, insurance, logistics cost, and escalation assumptions for exposed trade flows.";
+  }
+
+  const sourceCategories = sourceCategoriesForModules(modules);
+  return {
+    intent,
+    risk_signal: riskSignal,
+    affected_regions: affectedRegionsForModules(modules),
+    source_categories_required: sourceCategories,
+    evidence_gaps: sourceCategories.slice(0, 5).map((category) => `No caller-supplied ${category} evidence in this live A2A request.`),
+    watch_next: watchNextForModules(modules),
+    recommended_mcp_tool:
+      intent === "source_coverage"
+        ? "source_coverage"
+        : intent === "evidence_audit"
+          ? "audit_claims"
+          : "analyze",
+    confidence: "triage_only_no_live_retrieval"
+  };
+}
+
 function qualityGatesForIntent(intent) {
   const gates = [
     "Separate facts, assessments, assumptions, and unknowns.",
@@ -377,6 +494,9 @@ function qualityGatesForIntent(intent) {
 
   if (intent === "memo_validation") {
     gates.unshift("Validate the memo against agenda-memo.schema.json before using it downstream.");
+  }
+  if (intent === "sanctions_policy_signal_screen") {
+    gates.unshift("Treat the signal screen as a lead, not a verified finding.");
   }
   if (intent === "evidence_audit" || intent === "source_coverage") {
     gates.unshift("Check source-category coverage before treating the evidence pack as complete.");
@@ -407,6 +527,12 @@ function nextActionsForIntent(intent) {
       "Fill required_but_missing_sources before raising confidence."
     ];
   }
+  if (intent === "sanctions_policy_signal_screen") {
+    return [
+      "Use the signal_screen object as the first-pass risk lead.",
+      "Attach primary sources, then run analyze or source_coverage in the MCP server for a full memo."
+    ];
+  }
   if (intent === "signal_monitoring") {
     return [
       "Use list_signals/get_signal for existing signal examples.",
@@ -424,6 +550,7 @@ function triageForText(text, modules) {
   return {
     intent,
     modules,
+    signal_screen: signalScreenForText(text, modules, intent),
     source_plan: sourcePlanForModules(modules),
     quality_gates: qualityGatesForIntent(intent),
     next_actions: nextActionsForIntent(intent),
@@ -619,9 +746,14 @@ async function usageStats(env, date) {
 function routingMarkdown(text, modules) {
   const triage = triageForText(text, modules);
   const moduleList = modules.map((item) => `- ${item.module}: ${item.role}`).join("\n");
+  const screen = triage.signal_screen;
   const sourceList = triage.source_plan.map((item) => `- ${item}`).join("\n");
   const qualityList = triage.quality_gates.map((item) => `- ${item}`).join("\n");
   const actionList = triage.next_actions.map((item) => `- ${item}`).join("\n");
+  const regionList = screen.affected_regions.map((item) => `- ${item}`).join("\n");
+  const requiredSourceList = screen.source_categories_required.map((item) => `- ${item}`).join("\n");
+  const gapList = screen.evidence_gaps.map((item) => `- ${item}`).join("\n");
+  const watchList = screen.watch_next.map((item) => `- ${item}`).join("\n");
   const promptLine = text ? `\n\nReceived prompt excerpt:\n\n> ${text.slice(0, 500)}` : "";
   return [
     "Agenda Intelligence MD live wrapper is responding.",
@@ -634,6 +766,23 @@ function routingMarkdown(text, modules) {
     "```",
     "",
     `Detected intent: ${triage.intent}`,
+    "",
+    "Signal screen:",
+    `Risk signal: ${screen.risk_signal}`,
+    "",
+    "Affected regions:",
+    regionList,
+    "",
+    "Required source categories:",
+    requiredSourceList,
+    "",
+    "Evidence gaps:",
+    gapList,
+    "",
+    "Watch next:",
+    watchList,
+    "",
+    `Recommended MCP tool: ${screen.recommended_mcp_tool}`,
     "",
     "Suggested modules:",
     moduleList,
@@ -682,6 +831,7 @@ function a2aResult(params, request) {
       mcp_server_command: "agenda-intelligence-mcp",
       modules_used: modules,
       triage,
+      signal_screen: triage.signal_screen,
       wrapper_scope: "discovery, lightweight triage, and routing response only"
     }
   };
@@ -834,5 +984,6 @@ export {
   recordUsageStats,
   routeModules,
   usageStats,
+  signalScreenForText,
   triageForText
 };

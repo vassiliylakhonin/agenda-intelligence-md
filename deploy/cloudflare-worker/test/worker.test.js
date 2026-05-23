@@ -9,6 +9,7 @@ import {
   isStatsAuthorized,
   recordUsageStats,
   routeModules,
+  signalScreenForText,
   triageForText,
   usageStats
 } from "../src/index.js";
@@ -65,6 +66,7 @@ test("agent card uses request origin for live endpoints", () => {
   assert.deepEqual(
     card.skills.map((skill) => skill.id),
     [
+      "agenda-signal-screen",
       "agenda-analyze",
       "agenda-validate-memo",
       "agenda-audit-claims",
@@ -73,8 +75,8 @@ test("agent card uses request origin for live endpoints", () => {
       "agenda-signals"
     ]
   );
-  assert.equal(card.skills[0].name, "Strategic-risk signal triage");
-  assert.ok(card.skills[0].tags.includes("geopolitical-risk"));
+  assert.equal(card.skills[0].name, "Sanctions and policy risk signal screen");
+  assert.ok(card.skills[0].tags.includes("policy-risk"));
   assert.equal(
     card.x_agenda_intelligence.wrapper_scope,
     "A2A/JSON-RPC discovery, lightweight triage, and routing response only"
@@ -108,6 +110,8 @@ test("message/send returns JSON-RPC result with routing metadata", () => {
     assert.equal(response.id, "probe-1");
     assert.equal(response.result.status.state, "completed");
     assert.equal(response.result.artifacts[0].parts[0].kind, "text");
+    assert.match(response.result.artifacts[0].parts[0].text, /Signal screen:/);
+    assert.match(response.result.artifacts[0].parts[0].text, /Risk signal:/);
     assert.match(response.result.artifacts[0].parts[0].text, /Evidence\/source plan:/);
     assert.match(response.result.artifacts[0].parts[0].text, /Quality gates:/);
     assert.match(response.result.artifacts[0].parts[0].text, /Next actions:/);
@@ -116,7 +120,9 @@ test("message/send returns JSON-RPC result with routing metadata", () => {
       { module: "central-asia-caspian", role: "regional_specialist" },
       { module: "sanctions-sector", role: "sector_specialist" }
     ]);
-    assert.equal(response.result.metadata.triage.intent, "strategic_risk_triage");
+    assert.equal(response.result.metadata.triage.intent, "sanctions_policy_signal_screen");
+    assert.equal(response.result.metadata.signal_screen.recommended_mcp_tool, "analyze");
+    assert.ok(response.result.metadata.signal_screen.affected_regions.includes("Central Asia/Caspian"));
     assert.ok(
       response.result.metadata.triage.source_plan.includes(
         "sanctions authority pages and list entries, such as OFAC, EU, UK OFSI, UN, or relevant national regulators"
@@ -138,6 +144,22 @@ test("triage classifies source coverage requests and returns quality gates", () 
   assert.ok(triage.source_plan.some((item) => item.includes("Gulf/Middle East")));
   assert.ok(triage.quality_gates[0].includes("source-category coverage"));
   assert.equal(triage.install.mcp_server_command, "agenda-intelligence-mcp");
+});
+
+test("signal screen productizes sanctions and policy risk prompts", () => {
+  const text = "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure.";
+  const modules = routeModules(text);
+  const triage = triageForText(text, modules);
+  const screen = signalScreenForText(text, modules, triage.intent);
+
+  assert.equal(triage.intent, "sanctions_policy_signal_screen");
+  assert.equal(screen.recommended_mcp_tool, "analyze");
+  assert.ok(screen.risk_signal.includes("transit"));
+  assert.deepEqual(screen.affected_regions, ["Central Asia/Caspian", "Gulf/Middle East"]);
+  assert.ok(screen.source_categories_required.includes("sanctions authority"));
+  assert.ok(screen.source_categories_required.includes("corridor operator"));
+  assert.ok(screen.watch_next.some((item) => item.includes("OFAC")));
+  assert.equal(screen.confidence, "triage_only_no_live_retrieval");
 });
 
 test("unknown method returns method-not-found error", () => {
