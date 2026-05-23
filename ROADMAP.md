@@ -53,7 +53,7 @@ MCP `score_output` tool, post-release smoke.
 - Adversarial coverage shipped as part of the v0.9 evidence-mode failure suite (`tests/fixtures/evidence_mode/failure/`).
 - `claim_type` taxonomy continues to stabilize from real case patterns; broader domain expansion folded into the v1.0 benchmark requirement.
 
-## v0.9 — agent-eval delta, trust infrastructure, and product-shell narrative alignment
+## v0.9 — agent-eval delta, trust infrastructure, and product-shell narrative alignment (shipped 2026-05-22 as v0.9.3)
 
 Structural validation of the product shell from the agent-integrator perspective, plus the trust infrastructure that makes that validation reproducible end-to-end. No factual verification, no live retrieval, no new schemas, no new MCP tools.
 
@@ -107,7 +107,9 @@ Previously planned as v0.9. Deferred because v0.9 narrative is product-shell val
 - Respect `robots.txt` / add configurable rate limiting for multi-source packs.
 - `verify-quotes` result caching: skip re-fetch when text file already present.
 
-## v1.0 — stable contract
+## v1.0 — stable contract (shipped 2026-05-23 as v1.0.0 / v1.0.1)
+
+Contract surface locked per ADR 0003 + ADRs 0011–0013. v1.0.1 was a metadata-only patch for MCP directory descriptions; no behavior change. See `CHANGELOG.md` for the per-release detail.
 
 - Bump schema `$id` URLs to include version path (`/v1/agenda-brief.schema.json`).
 - Freeze MCP tool names and signatures; add deprecation notice policy.
