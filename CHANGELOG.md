@@ -4,13 +4,22 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## [1.0.0] – 2026-05-23
+
+First v1.0 release. Locks the contract surface defined by ADRs 0011–0013 per ADR 0003: future breaking changes to schemas, MCP tools, or the manifest contract fields (`name`, `version`, `schemas`, `mcp`, `cli`) require a v2.0 bump.
+
+No new product behavior versus 1.0.0rc1; the RC was verified end-to-end via the post-release smoke workflow against the published PyPI wheel.
+
+### Also included
+- CI smoke regex relaxed to accept PEP 440 pre/post/dev versions ([#59](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/59)).
+
 ## [1.0.0rc1] – 2026-05-23
 
-First release candidate for the v1.0 contract-freeze line. No new product behavior; this RC packages the contract surface defined by ADRs 0011–0013 and the three follow-up fixes (#54, #55, #56) for end-to-end verification before the final v1.0.0.
+First release candidate for the v1.0 contract-freeze line. No new product behavior; this RC packaged the contract surface defined by ADRs 0011–0013 and the three follow-up fixes (#54, #55, #56) for end-to-end verification before the final v1.0.0.
 
-The contract surface is now: `name`, `version`, `schemas` (map of `{path, schema_version}` per ADR 0011), `mcp` (`{spec, tools[*]}` per ADR 0012), `cli`. See the manifest's `_contract_fields` and `_informational_fields` arrays for the authoritative split.
+The contract surface is: `name`, `version`, `schemas` (map of `{path, schema_version}` per ADR 0011), `mcp` (`{spec, tools[*]}` per ADR 0012), `cli`. See the manifest's `_contract_fields` and `_informational_fields` arrays for the authoritative split.
 
-Pre-release publication: `pip install agenda-intelligence-md==1.0.0rc1` (the default `pip install agenda-intelligence-md` will still resolve to the latest stable, currently 0.9.3).
+Pre-release publication: `pip install agenda-intelligence-md==1.0.0rc1` (default `pip install agenda-intelligence-md` still resolved to the latest stable, 0.9.3, at the time of release).
 
 ### Pre-v1.0 contract-freeze follow-ups
 
