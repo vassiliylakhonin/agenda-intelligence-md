@@ -13,8 +13,8 @@ Use the smallest relevant subset:
 - Agenda-Intelligence.md for the base reasoning contract.
 - SOURCE_POLICY.md when source quality, uncertainty, or evidence discipline matters.
 - source-requirements/<category>.json before making high-stakes claims.
-- schemas/agenda-brief.schema.json when producing machine-readable briefs.
-- schemas/evidence-pack.schema.json when claims need source support.
+- schemas/v1/agenda-brief.schema.json when producing machine-readable briefs.
+- schemas/v1/evidence-pack.schema.json when claims need source support.
 
 Never imply live verification unless live verification was performed. If evidence is missing, label the claim as unsupported or reasoning-only.
 ```

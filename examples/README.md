@@ -19,9 +19,9 @@ Most contributors want one of the four loops below. Skim them in order to see th
 
 | File | Schema | Try it |
 |---|---|---|
-| [`agenda-request.json`](agenda-request.json) | `schemas/agenda-request.schema.json` | `agenda-intelligence validate-manifest` (covers the request surface) |
-| [`agenda-brief.json`](agenda-brief.json) | `schemas/agenda-brief.schema.json` | `agenda-intelligence validate-brief examples/agenda-brief.json` |
-| [`source/evidence-pack.json`](source/evidence-pack.json) | `schemas/evidence-pack.schema.json` | `agenda-intelligence validate-evidence examples/source/evidence-pack.json` |
+| [`agenda-request.json`](agenda-request.json) | `schemas/v1/agenda-request.schema.json` | `agenda-intelligence validate-manifest` (covers the request surface) |
+| [`agenda-brief.json`](agenda-brief.json) | `schemas/v1/agenda-brief.schema.json` | `agenda-intelligence validate-brief examples/agenda-brief.json` |
+| [`source/evidence-pack.json`](source/evidence-pack.json) | `schemas/v1/evidence-pack.schema.json` | `agenda-intelligence validate-evidence examples/source/evidence-pack.json` |
 
 ### 2. Protocol value-prop (before / after)
 

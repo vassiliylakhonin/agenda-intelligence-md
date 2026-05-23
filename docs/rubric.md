@@ -24,7 +24,7 @@ Each dimension is binary at the case level (passes / does not pass). Aggregation
 | 7 | **Watch-next indicators** | `watch_next[]` contains concrete, observable indicators (filings, designations, prices, vessel movements, statutory deadlines). "Monitor closely" without an observable is the canonical failure. |
 | 8 | **Source / audit integrity** | Every `audit.provenance[]` `claim` matches a claim actually made in the memo body. Fabricated provenance entries, dangling references, or sourced cells that contradict the body all fail. |
 | 9 | **No unsupported determinative claims** | Determinative language on sanctions designations, vessel SDN status, court rulings, regulatory effective dates, or legal/compliance conclusions is either sourced or hedged. Confident phrasing on unverified determinatives fails this dimension. |
-| 10 | **Schema validity** | The memo validates against [`schemas/agenda-memo.schema.json`](../schemas/agenda-memo.schema.json) with no extra fields and no missing required fields. |
+| 10 | **Schema validity** | The memo validates against [`schemas/v1/agenda-memo.schema.json`](../schemas/v1/agenda-memo.schema.json) with no extra fields and no missing required fields. |
 
 ## Six-point human review checklist
 

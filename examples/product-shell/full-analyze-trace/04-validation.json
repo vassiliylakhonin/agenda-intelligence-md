@@ -3,5 +3,5 @@
   "memo_errors": [
     "skeleton memo: ANTHROPIC_API_KEY missing or anthropic SDK not installed"
   ],
-  "schema": "schemas/agenda-memo.schema.json"
+  "schema": "schemas/v1/agenda-memo.schema.json"
 }

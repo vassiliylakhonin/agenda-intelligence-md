@@ -23,15 +23,15 @@ required = [
     "examples/source-backed/red-sea-shipping.evidence.json",
     "examples/source-backed/sanctions-routing.evidence.json",
     "scripts/validate_public_examples.py",
-    "schemas/evidence-pack.schema.json",
+    "schemas/v1/evidence-pack.schema.json",
     "source-taxonomy.json",
     "SOURCE_POLICY.md",
     "examples/agenda-brief.json",
     "scripts/agenda_intelligence.py",
-    "schemas/signal-classification.schema.json",
-    "schemas/lens-manifest.schema.json",
-    "schemas/memory-card.schema.json",
-    "schemas/agenda-brief.schema.json",
+    "schemas/v1/signal-classification.schema.json",
+    "schemas/v1/lens-manifest.schema.json",
+    "schemas/v1/memory-card.schema.json",
+    "schemas/v1/agenda-brief.schema.json",
     "MCP.md",
     "agent-manifest.json",
     "scripts/eval_before_after.py",
@@ -107,7 +107,7 @@ llms = (root / "llms.txt").read_text()
 for token in [
     "Packaged CLI: agenda-intelligence",
     "MCP server: agenda-intelligence-mcp",
-    "schemas/evidence-audit.schema.json",
+    "schemas/v1/evidence-audit.schema.json",
     "audit-claims",
     "mcp-config",
 ]:
@@ -123,13 +123,13 @@ for stale_token in [
 
 for json_file in [
     "agent-manifest.json",
-    "schemas/agenda-brief.schema.json",
-    "schemas/memory-card.schema.json",
-    "schemas/lens-manifest.schema.json",
-    "schemas/signal-classification.schema.json",
+    "schemas/v1/agenda-brief.schema.json",
+    "schemas/v1/memory-card.schema.json",
+    "schemas/v1/lens-manifest.schema.json",
+    "schemas/v1/signal-classification.schema.json",
     "examples/agenda-brief.json",
     "source-taxonomy.json",
-    "schemas/evidence-pack.schema.json",
+    "schemas/v1/evidence-pack.schema.json",
     "examples/source/evidence-pack.json",
 ]:
     json.loads((root / json_file).read_text())

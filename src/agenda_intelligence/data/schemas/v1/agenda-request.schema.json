@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/agenda-request.schema.json",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/agenda-request.schema.json",
   "title": "AgendaRequest",
   "description": "Input contract for the Agenda Intelligence MCP `analyze` tool. Describes an analytical question, the decision it informs, and constraints on depth, evidence, geography, and output format. Reasoning content is supplied by Global Think Tank Analyst (method) and the relevant vertical specialist skill (regional depth). This repository owns only the contract and validation.",
   "x-schema-version": "1",

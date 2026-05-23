@@ -3,7 +3,7 @@
 Product entry point and evidence-discipline layer for strategic intelligence agents. One MCP server with structured request/memo contract, geography-routed reasoning, schema validation, evidence audit, and scoring. Reasoning content is bundled from sibling repos (Global Think Tank Analyst as the method; Central Asia + Caspian and Gulf + Middle East as regional specialists, activated automatically when query geography matches). No live retrieval, no factual verification — both are explicit non-goals before v1.0.
 
 Product MCP tools:
-- analyze — accepts an AgendaRequest (schemas/agenda-request.schema.json), routes geography to bundled regional references, assembles a system prompt from the Global Think Tank Analyst method plus matched regional lenses, optionally calls the Anthropic API when ANTHROPIC_API_KEY is set, and returns a memo validated against schemas/agenda-memo.schema.json.
+- analyze — accepts an AgendaRequest (schemas/v1/agenda-request.schema.json), routes geography to bundled regional references, assembles a system prompt from the Global Think Tank Analyst method plus matched regional lenses, optionally calls the Anthropic API when ANTHROPIC_API_KEY is set, and returns a memo validated against schemas/v1/agenda-memo.schema.json.
 - validate_memo — validates a third-party memo against agenda-memo.schema.json and returns errors plus a score where implemented.
 - list_signals / get_signal — read access to the vendored Global Think Tank Analyst signal archive.
 - deep_dive — reserved stub; returns a v2 placeholder pointing callers at `analyze` with depth: scenario or red_team.
@@ -61,7 +61,7 @@ Sector lens packs:
 
 Signal lifecycle tracker:
 - Protocol: skills/agenda-intelligence/references/signal-lifecycle.md
-- Schema: schemas/signal-tracker.schema.json
+- Schema: schemas/v1/signal-tracker.schema.json
 - Stages: detected → developing → escalated → stable → resolved → archived
 
 AnalysisBank: analysis-bank/README.md
@@ -74,13 +74,13 @@ Skills:
 
 Agent manifest: agent-manifest.json
 Schemas:
-- schemas/agenda-brief.schema.json
-- schemas/evidence-pack.schema.json
-- schemas/evidence-audit.schema.json
-- schemas/memory-card.schema.json
-- schemas/lens-manifest.schema.json
-- schemas/signal-classification.schema.json
-- schemas/signal-tracker.schema.json
+- schemas/v1/agenda-brief.schema.json
+- schemas/v1/evidence-pack.schema.json
+- schemas/v1/evidence-audit.schema.json
+- schemas/v1/memory-card.schema.json
+- schemas/v1/lens-manifest.schema.json
+- schemas/v1/signal-classification.schema.json
+- schemas/v1/signal-tracker.schema.json
 Packaged CLI: agenda-intelligence
 Legacy script wrapper: scripts/agenda_intelligence.py
 MCP server: agenda-intelligence-mcp

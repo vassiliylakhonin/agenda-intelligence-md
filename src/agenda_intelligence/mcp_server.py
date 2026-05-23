@@ -35,7 +35,7 @@ PACKAGE_NAME = "agenda_intelligence"
 
 def _load_schema(schema_name: str) -> dict:
     """Load a JSON schema from the package data."""
-    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / schema_name
+    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "v1" / schema_name
     if not schema_path.is_file():
         raise FileNotFoundError(f"Schema not found in package data: {schema_name}")
     return json.loads(schema_path.read_text())

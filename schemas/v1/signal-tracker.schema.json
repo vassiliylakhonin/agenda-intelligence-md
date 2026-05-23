@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/signal-tracker.schema.json",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/signal-tracker.schema.json",
   "title": "SignalTracker",
   "description": "Tracks the lifecycle of a monitored signal from detection through resolution.",
   "x-schema-version": "1",

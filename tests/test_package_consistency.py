@@ -37,8 +37,8 @@ def test_release_download_snippet_matches_package_version():
 
 
 def test_packaged_schemas_match_top_level_schemas():
-    schema_dir = ROOT / "schemas"
-    packaged_schema_dir = ROOT / "src/agenda_intelligence/data/schemas"
+    schema_dir = ROOT / "schemas" / "v1"
+    packaged_schema_dir = ROOT / "src/agenda_intelligence/data/schemas/v1"
 
     for schema_path in sorted(schema_dir.glob("*.schema.json")):
         packaged_schema_path = packaged_schema_dir / schema_path.name

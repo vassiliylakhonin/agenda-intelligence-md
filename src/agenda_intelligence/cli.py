@@ -83,7 +83,7 @@ def cmd_validate_manifest(args):
     from jsonschema import ValidationError, validate
 
     manifest = load_manifest()
-    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "agent-manifest.schema.json"
+    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "v1" / "agent-manifest.schema.json"
     if not schema_path.is_file():
         raise SystemExit("Manifest schema not found in package data")
     schema = json.loads(schema_path.read_text())
@@ -224,7 +224,7 @@ def cmd_start(args):
 
 def validate_json_file(path, schema_name, label):
     # Load schema from packaged data.
-    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / schema_name
+    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "v1" / schema_name
     if not schema_path.is_file():
         raise SystemExit(f"Schema not found in package data: {schema_name}")
     schema = json.loads(schema_path.read_text())
@@ -484,7 +484,7 @@ def cmd_bench(args):
 
 def cmd_audit_claims(args):
     """Validate a claim-level evidence-audit JSON file against
-    schemas/evidence-audit.schema.json and emit a small
+    schemas/v1/evidence-audit.schema.json and emit a small
     summary: support-level distribution, orphan claim_ids, and
     unsupported_claims count.
     """
@@ -496,7 +496,7 @@ def cmd_audit_claims(args):
     except json.JSONDecodeError as e:
         raise SystemExit(f"Invalid JSON: {e}")
 
-    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "evidence-audit.schema.json"
+    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "v1" / "evidence-audit.schema.json"
     if not schema_path.is_file():
         raise SystemExit("evidence-audit schema not bundled")
     schema = json.loads(schema_path.read_text())
@@ -558,7 +558,7 @@ def cmd_report(args):
     except json.JSONDecodeError as e:
         raise SystemExit(f"Invalid JSON: {e}")
 
-    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "agenda-brief.schema.json"
+    schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "v1" / "agenda-brief.schema.json"
     schema = json.loads(schema_path.read_text())
     structure_ok = True
     structure_error = ""
@@ -661,7 +661,7 @@ def _doctor_check(name, ok, detail):
 def _doctor_manifest_check():
     try:
         manifest = load_manifest()
-        schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "agent-manifest.schema.json"
+        schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "v1" / "agent-manifest.schema.json"
         schema = json.loads(schema_path.read_text())
         validate(manifest, schema)
         return _doctor_check("packaged manifest", True, f"version={manifest.get('version')}")

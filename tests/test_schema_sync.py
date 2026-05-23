@@ -1,8 +1,8 @@
-"""Guard that top-level schemas/ and the packaged data/schemas/ stay byte-equal.
+"""Guard that top-level schemas/v1/ and the packaged data/schemas/v1/ stay byte-equal.
 
-The package ships its schemas under src/agenda_intelligence/data/schemas/ so
+The package ships its schemas under src/agenda_intelligence/data/schemas/v1/ so
 they are available to wheel installs. The repo also keeps a top-level
-schemas/ directory for human discoverability and external tooling. These
+schemas/v1/ directory for human discoverability and external tooling. These
 must not drift; new schemas must land in both.
 """
 
@@ -14,8 +14,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-TOP_LEVEL = ROOT / "schemas"
-PACKAGED = ROOT / "src" / "agenda_intelligence" / "data" / "schemas"
+TOP_LEVEL = ROOT / "schemas" / "v1"
+PACKAGED = ROOT / "src" / "agenda_intelligence" / "data" / "schemas" / "v1"
 
 
 def _read(p: Path) -> str:
@@ -39,4 +39,4 @@ def test_schema_byte_equal(name: str):
     pkg = _read(PACKAGED / name)
     assert json.loads(top) == json.loads(
         pkg
-    ), f"schemas/{name} and src/agenda_intelligence/data/schemas/{name} diverged"
+    ), f"schemas/v1/{name} and src/agenda_intelligence/data/schemas/v1/{name} diverged"

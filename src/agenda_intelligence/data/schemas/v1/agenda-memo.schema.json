@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/agenda-memo.schema.json",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/agenda-memo.schema.json",
   "title": "AgendaMemo",
   "description": "Output contract for the Agenda Intelligence MCP `analyze` tool. Structured strategic-risk memo with evidence discipline: facts, assessments, assumptions, and unknowns are separated; scenarios carry probability ranges; recommended actions carry triggers and time horizons; audit metadata records validation score, provenance, and which reasoning modules were loaded. Reasoning content comes from Global Think Tank Analyst (method) and any activated vertical specialist (regional depth).",
   "x-schema-version": "1",

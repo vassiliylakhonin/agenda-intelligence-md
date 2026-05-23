@@ -15,11 +15,11 @@ file.
 
 | File | What it is |
 |---|---|
-| `01-request.json` | Structured `analyze` input (matches `schemas/agenda-request.schema.json`). |
+| `01-request.json` | Structured `analyze` input (matches `schemas/v1/agenda-request.schema.json`). |
 | `02-routing.json` | Which reasoning modules `analyze` loaded for this question, plus the assembled system-prompt size. Derived from `route_modules` in `agenda_intelligence.product`. |
 | `03-memo.json` | Memo returned by `analyze`. Because no LLM was called, this is the documented skeleton-memo path: a schema-shaped placeholder with explicit in-band disclaimers. |
 | `03-memo.md` | The same memo rendered to Markdown via `render_memo_markdown`. |
-| `04-validation.json` | Result of validating `03-memo.json` against `schemas/agenda-memo.schema.json`. The skeleton memo intentionally fails strict validation; `memo_errors` carries the honest reason. |
+| `04-validation.json` | Result of validating `03-memo.json` against `schemas/v1/agenda-memo.schema.json`. The skeleton memo intentionally fails strict validation; `memo_errors` carries the honest reason. |
 | `05-audit.json` | The memo schema's own `audit` block, plus a note on why claim-level `audit-claims` does not apply to `evidence_mode=reasoning_only`. |
 | `06-score.json` | Documented null result: the `score` CLI evaluates briefs against evidence packs, not analyze memos. Scoring of analyze memos against the rubric is a v0.9.x item. |
 | `run.py` | Reproducibility script that regenerates the six artifact files from `01-request.json`. |

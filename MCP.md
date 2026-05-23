@@ -228,8 +228,8 @@ Returns `{ "implemented": true, "score": 72, "dimensions": { ... }, "error": nul
 ## Product layer tools
 
 The five tools below form the Agenda Intelligence product shell. They share the
-request/response contract defined by `schemas/agenda-request.schema.json` and
-`schemas/agenda-memo.schema.json`.
+request/response contract defined by `schemas/v1/agenda-request.schema.json` and
+`schemas/v1/agenda-memo.schema.json`.
 
 ### `analyze`
 

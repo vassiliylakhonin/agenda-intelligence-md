@@ -49,7 +49,7 @@ def main() -> None:
             {
                 "memo_valid": result["memo_valid"],
                 "memo_errors": result["memo_errors"],
-                "schema": "schemas/agenda-memo.schema.json",
+                "schema": "schemas/v1/agenda-memo.schema.json",
             },
             indent=2,
         )

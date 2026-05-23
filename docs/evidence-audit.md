@@ -1,7 +1,7 @@
 # Claim-level evidence audit
 
 Status: **stable schema contract**. Schema lives at
-[`schemas/evidence-audit.schema.json`](../schemas/evidence-audit.schema.json),
+[`schemas/v1/evidence-audit.schema.json`](../schemas/v1/evidence-audit.schema.json),
 validated by `agenda-intelligence audit-claims <path>`.
 
 This contract is for agents that want to make their own claims auditable.

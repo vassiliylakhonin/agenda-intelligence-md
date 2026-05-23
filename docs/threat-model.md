@@ -16,7 +16,7 @@ Companion to:
 
 These are real, automated checks. If a brief passes, these properties hold:
 
-- **Structural validity.** The brief, evidence pack, memory card, lens manifest, and signal records conform to their JSON schemas (`schemas/*.schema.json`). Missing required fields, wrong types, and extraneous keys are caught.
+- **Structural validity.** The brief, evidence pack, memory card, lens manifest, and signal records conform to their JSON schemas (`schemas/v1/*.schema.json`). Missing required fields, wrong types, and extraneous keys are caught.
 - **Provenance-tag well-formedness.** Each tagged claim carries a syntactically valid Axis A tag (`[primary]` / `[secondary]` / `[user-provided]` / `[inference]` / `[analyst-judgment]`) and any Axis B tags (`[verify]`, `[stale-risk: YYYY-MM]`) are well-formed.
 - **Evidence-pack ↔ brief reference integrity.** Orphan evidence references (citations in the brief with no corresponding entry in the evidence pack) and unreferenced evidence entries are detected by `score` / `evidence-audit`.
 - **Mode/structure consistency.** Briefs declared `live-source-backed` are checked against the presence of an attached evidence pack; mode declarations are not silently downgraded.

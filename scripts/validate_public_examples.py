@@ -49,10 +49,10 @@ def validate_with_schema(path: Path, schema: object, label: str) -> None:
 
 
 def validate_examples() -> None:
-    evidence_schema = load_json(ROOT / "schemas" / "evidence-pack.schema.json")
-    brief_schema = load_json(ROOT / "schemas" / "agenda-brief.schema.json")
-    audit_schema = load_json(ROOT / "schemas" / "evidence-audit.schema.json")
-    request_schema = load_json(ROOT / "schemas" / "agenda-request.schema.json")
+    evidence_schema = load_json(ROOT / "schemas" / "v1" / "evidence-pack.schema.json")
+    brief_schema = load_json(ROOT / "schemas" / "v1" / "agenda-brief.schema.json")
+    audit_schema = load_json(ROOT / "schemas" / "v1" / "evidence-audit.schema.json")
+    request_schema = load_json(ROOT / "schemas" / "v1" / "agenda-request.schema.json")
 
     json_files = sorted((ROOT / "examples").glob("**/*.json"))
     if not json_files:

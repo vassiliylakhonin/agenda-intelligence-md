@@ -25,7 +25,7 @@ import pytest
 from agenda_intelligence import mcp_server, product
 
 ROOT = Path(__file__).resolve().parents[1]
-MEMO_SCHEMA = ROOT / "schemas" / "agenda-memo.schema.json"
+MEMO_SCHEMA = ROOT / "schemas" / "v1" / "agenda-memo.schema.json"
 
 
 @pytest.fixture(autouse=True)
