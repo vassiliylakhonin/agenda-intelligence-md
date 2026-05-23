@@ -101,7 +101,7 @@
       "sanctions": "skills/agenda-intelligence/references/sector/sanctions.md"
     }
   },
-  "cli": "scripts/agenda_intelligence.py",
+  "cli": "python3 -m agenda_intelligence.cli",
   "eval": "scripts/eval_before_after.py",
   "mcp": {
     "spec": "MCP.md",
