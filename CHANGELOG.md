@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## [1.0.0rc1] – 2026-05-23
+
+First release candidate for the v1.0 contract-freeze line. No new product behavior; this RC packages the contract surface defined by ADRs 0011–0013 and the three follow-up fixes (#54, #55, #56) for end-to-end verification before the final v1.0.0.
+
+The contract surface is now: `name`, `version`, `schemas` (map of `{path, schema_version}` per ADR 0011), `mcp` (`{spec, tools[*]}` per ADR 0012), `cli`. See the manifest's `_contract_fields` and `_informational_fields` arrays for the authoritative split.
+
+Pre-release publication: `pip install agenda-intelligence-md==1.0.0rc1` (the default `pip install agenda-intelligence-md` will still resolve to the latest stable, currently 0.9.3).
+
 ### Pre-v1.0 contract-freeze follow-ups
 
 Three small fixes closing gaps left after PRs #50–#53 (ADR 0011–0013 contract freeze). No behavior change for callers; all changes are to the manifest contract surface or its CI guards.
