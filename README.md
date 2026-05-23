@@ -36,6 +36,30 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightwei
 
 The hosted wrapper is intentionally limited: no payments, no wallets, no autonomous live retrieval, no factual-truth verification, and no legal/financial/compliance advice. Full product behavior remains in the installable stdio MCP server.
 
+Try the live wrapper:
+
+```bash
+curl -X POST https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send \
+  -H 'content-type: application/json' \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "demo-1",
+    "method": "message/send",
+    "params": {
+      "message": {
+        "parts": [
+          {
+            "kind": "text",
+            "text": "Check source coverage for EU sanctions evidence around Red Sea shipping and Kazakhstan transit risk."
+          }
+        ]
+      }
+    }
+  }'
+```
+
+Expected: JSON-RPC 2.0 with `status.state: "completed"`, suggested modules, source plan, quality gates, and next actions.
+
 Private usage stats for the wrapper are available from the Cloudflare Worker project:
 
 ```bash
