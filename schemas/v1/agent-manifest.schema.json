@@ -18,8 +18,8 @@
     "name": { "type": "string", "minLength": 1 },
     "version": {
       "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?$",
-      "description": "Semantic version. ADR 0003 governs compatibility-surface bumps."
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:(?:a|b|rc)\\d+|[-+][0-9A-Za-z.-]+)?(?:\\.post\\d+)?(?:\\.dev\\d+)?$",
+      "description": "PEP 440 release version (also accepts SemVer-style pre-release/build via -/+). ADR 0003 governs compatibility-surface bumps."
     },
     "_contract_fields": {
       "type": "array",

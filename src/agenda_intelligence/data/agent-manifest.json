@@ -1,6 +1,6 @@
 {
   "name": "Agenda Intelligence MD",
-  "version": "0.9.3",
+  "version": "1.0.0rc1",
   "_contract_fields": [
     "name",
     "version",
