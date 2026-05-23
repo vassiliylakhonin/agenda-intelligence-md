@@ -113,7 +113,8 @@
           "type": "object",
           "properties": {
             "brief_json": {
-              "type": "object"
+              "type": "object",
+              "description": "Parsed agenda brief JSON object to validate against the bundled schema."
             }
           },
           "required": [
@@ -129,7 +130,8 @@
           "type": "object",
           "properties": {
             "evidence_json": {
-              "type": "object"
+              "type": "object",
+              "description": "Parsed evidence-pack JSON object to validate against the bundled schema."
             }
           },
           "required": [
@@ -145,7 +147,8 @@
           "type": "object",
           "properties": {
             "audit_json": {
-              "type": "object"
+              "type": "object",
+              "description": "Parsed claim-level evidence-audit object to validate and summarize."
             }
           },
           "required": [
@@ -161,7 +164,8 @@
           "type": "object",
           "properties": {
             "name": {
-              "type": "string"
+              "type": "string",
+              "description": "Protocol document name. Use 'entrypoint' for the main Agenda-Intelligence.md."
             }
           },
           "required": [
@@ -181,7 +185,8 @@
               "enum": [
                 "regional",
                 "sector"
-              ]
+              ],
+              "description": "Optional filter. Use 'regional' for geography lenses or 'sector' for sector lenses."
             }
           },
           "required": [],
@@ -199,10 +204,12 @@
               "enum": [
                 "regional",
                 "sector"
-              ]
+              ],
+              "description": "Lens family from list_lenses: 'regional' or 'sector'."
             },
             "lens_id": {
-              "type": "string"
+              "type": "string",
+              "description": "Specific lens identifier returned by list_lenses."
             }
           },
           "required": [
@@ -219,7 +226,8 @@
           "type": "object",
           "properties": {
             "category": {
-              "type": "string"
+              "type": "string",
+              "description": "Source requirement category slug, for example sanctions, elections, or energy-markets."
             }
           },
           "required": [
@@ -245,10 +253,12 @@
           "type": "object",
           "properties": {
             "evidence_json": {
-              "type": "object"
+              "type": "object",
+              "description": "Parsed evidence pack to compare against source requirements."
             },
             "category": {
-              "type": "string"
+              "type": "string",
+              "description": "Optional source requirement category slug; overrides evidence_json.source_category."
             }
           },
           "required": [
@@ -264,10 +274,12 @@
           "type": "object",
           "properties": {
             "before_text": {
-              "type": "string"
+              "type": "string",
+              "description": "Original analysis text before Agenda Intelligence processing."
             },
             "after_text": {
-              "type": "string"
+              "type": "string",
+              "description": "Revised analysis text to score against the protocol rubric."
             }
           },
           "required": [
@@ -284,10 +296,12 @@
           "type": "object",
           "properties": {
             "pack_json": {
-              "type": "object"
+              "type": "object",
+              "description": "Evidence pack containing evidence IDs and quote fragments to check."
             },
             "texts": {
-              "type": "object"
+              "type": "object",
+              "description": "Optional mapping from evidence_id to caller-provided plain source text."
             }
           },
           "required": [
@@ -303,7 +317,8 @@
           "type": "object",
           "properties": {
             "request": {
-              "type": "object"
+              "type": "object",
+              "description": "Agenda request with question, geography, audience, depth, evidence mode, and output format."
             }
           },
           "required": [
@@ -319,7 +334,8 @@
           "type": "object",
           "properties": {
             "memo_json": {
-              "type": "object"
+              "type": "object",
+              "description": "Parsed Agenda memo JSON object to validate against the output schema."
             }
           },
           "required": [
@@ -345,7 +361,8 @@
           "type": "object",
           "properties": {
             "signal_id": {
-              "type": "string"
+              "type": "string",
+              "description": "Signal identifier returned by list_signals, without a file extension."
             }
           },
           "required": [
@@ -361,7 +378,8 @@
           "type": "object",
           "properties": {
             "aspect": {
-              "type": "string"
+              "type": "string",
+              "description": "Optional future deep-dive aspect. Currently ignored because the tool is reserved."
             }
           },
           "required": [],

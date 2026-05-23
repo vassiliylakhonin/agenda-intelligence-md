@@ -22,81 +22,195 @@ def _schema(properties: JsonDict, required: Optional[list[str]] = None) -> JsonD
 
 TOOLS: dict[str, dict[str, Any]] = {
     "validate_brief": {
-        "description": "Validate an agenda brief JSON object against agenda-brief.schema.json.",
-        "inputSchema": _schema({"brief_json": {"type": "object"}}, ["brief_json"]),
+        "description": (
+            "Validate a caller-provided agenda brief against agenda-brief.schema.json. "
+            "Use before running scoring, evidence audit, or publication steps to catch missing "
+            "sections and schema drift. Pass the parsed brief object as brief_json. "
+            "Returns validation status and schema errors only; it does not judge factual truth, "
+            "retrieve sources, or improve the brief."
+        ),
+        "inputSchema": _schema(
+            {
+                "brief_json": {
+                    "type": "object",
+                    "description": "Parsed agenda brief JSON object to validate against the bundled schema.",
+                }
+            },
+            ["brief_json"],
+        ),
         "handler": lambda args: mcp_server.validate_brief(args["brief_json"]),
     },
     "validate_evidence": {
-        "description": "Validate an evidence pack JSON object against evidence-pack.schema.json.",
-        "inputSchema": _schema({"evidence_json": {"type": "object"}}, ["evidence_json"]),
+        "description": (
+            "Validate a caller-provided evidence pack against evidence-pack.schema.json. "
+            "Use when you need to confirm that claims, evidence IDs, provenance fields, and "
+            "optional source_category metadata are structurally usable by Agenda Intelligence. "
+            "Pass the parsed evidence pack as evidence_json. Returns schema validity and errors; "
+            "it does not verify whether evidence is true, current, or sufficient."
+        ),
+        "inputSchema": _schema(
+            {
+                "evidence_json": {
+                    "type": "object",
+                    "description": "Parsed evidence-pack JSON object to validate against the bundled schema.",
+                }
+            },
+            ["evidence_json"],
+        ),
         "handler": lambda args: mcp_server.validate_evidence(args["evidence_json"]),
     },
     "audit_claims": {
         "description": (
-            "Validate a claim-level evidence-audit JSON object against "
-            "evidence-audit.schema.json and return a small summary: support-level "
-            "distribution, orphan evidence_id refs, and unsupported_claims count. "
-            "Schema-level only; does not verify factual truth."
+            "Validate a claim-level evidence audit and summarize support quality. "
+            "Use after drafting or receiving a memo to check whether important claims point "
+            "to evidence IDs with explicit support levels, uncertainty hooks, and risk-if-wrong "
+            "notes. Pass audit_json matching evidence-audit.schema.json. Returns validity, "
+            "support-level distribution, orphan evidence references, and unsupported-claim "
+            "counts. It does not verify factual truth or source reputation."
         ),
-        "inputSchema": _schema({"audit_json": {"type": "object"}}, ["audit_json"]),
+        "inputSchema": _schema(
+            {
+                "audit_json": {
+                    "type": "object",
+                    "description": "Parsed claim-level evidence-audit object to validate and summarize.",
+                }
+            },
+            ["audit_json"],
+        ),
         "handler": lambda args: mcp_server.audit_claims(args["audit_json"]),
     },
     "get_protocol": {
-        "description": "Return packaged protocol markdown by name, or use 'entrypoint'.",
-        "inputSchema": _schema({"name": {"type": "string"}}, ["name"]),
+        "description": (
+            "Return packaged Agenda Intelligence protocol markdown. Use when an agent needs "
+            "the reasoning contract, evidence-discipline rules, or operating instructions "
+            "before producing strategic-risk analysis. Pass name='entrypoint' for the main "
+            "protocol. Returns markdown text from the installed package; it does not analyze "
+            "a question or validate user data."
+        ),
+        "inputSchema": _schema(
+            {
+                "name": {
+                    "type": "string",
+                    "description": "Protocol document name. Use 'entrypoint' for the main Agenda-Intelligence.md.",
+                }
+            },
+            ["name"],
+        ),
         "handler": lambda args: mcp_server.get_protocol(args["name"]),
     },
     "list_lenses": {
-        "description": "List available regional and sector lenses.",
-        "inputSchema": _schema({"lens_type": {"type": "string", "enum": ["regional", "sector"]}}),
+        "description": (
+            "List packaged regional and sector lens IDs available to Agenda Intelligence. "
+            "Use before get_lens when an agent needs to discover which geography or sector "
+            "reference packs can be loaded. Optionally filter by lens_type='regional' or "
+            "'sector'. Returns metadata only; it does not return full lens markdown or run "
+            "analysis."
+        ),
+        "inputSchema": _schema(
+            {
+                "lens_type": {
+                    "type": "string",
+                    "enum": ["regional", "sector"],
+                    "description": "Optional filter. Use 'regional' for geography lenses or 'sector' for sector lenses.",
+                }
+            }
+        ),
         "handler": lambda args: mcp_server.list_lenses(args.get("lens_type")),
     },
     "get_lens": {
-        "description": "Return packaged lens markdown by type and id.",
+        "description": (
+            "Return the full markdown for one packaged regional or sector lens. Use after "
+            "list_lenses when an agent needs the actual specialist context, such as the "
+            "Central Asia/Caspian or sanctions lens, for a strategic-risk task. Pass lens_type "
+            "and lens_id exactly as listed. Returns static markdown; it does not retrieve live "
+            "events or decide which lens should be used."
+        ),
         "inputSchema": _schema(
             {
-                "lens_type": {"type": "string", "enum": ["regional", "sector"]},
-                "lens_id": {"type": "string"},
+                "lens_type": {
+                    "type": "string",
+                    "enum": ["regional", "sector"],
+                    "description": "Lens family from list_lenses: 'regional' or 'sector'.",
+                },
+                "lens_id": {
+                    "type": "string",
+                    "description": "Specific lens identifier returned by list_lenses.",
+                },
             },
             ["lens_type", "lens_id"],
         ),
         "handler": lambda args: mcp_server.get_lens(args["lens_type"], args["lens_id"]),
     },
     "source_plan": {
-        "description": "Return packaged source requirements for a source category.",
-        "inputSchema": _schema({"category": {"type": "string"}}, ["category"]),
+        "description": (
+            "Return required source categories for a strategic-risk evidence pack. Use before "
+            "collection or review to know which source types should be checked for a domain "
+            "such as sanctions, elections, conflict, cyber, or energy. Pass the source category "
+            "slug as category. Returns a checklist of must_check and optional source types; it "
+            "does not search the web, fetch documents, or validate an evidence pack."
+        ),
+        "inputSchema": _schema(
+            {
+                "category": {
+                    "type": "string",
+                    "description": "Source requirement category slug, for example sanctions, elections, or energy-markets.",
+                }
+            },
+            ["category"],
+        ),
         "handler": lambda args: mcp_server.source_plan(args["category"]),
     },
     "list_source_categories": {
         "description": (
-            "List packaged source requirement categories and per-pack counts. "
-            "Discovery only; does not discover sources, validate coverage, or verify factual truth."
+            "List source requirement category slugs packaged with Agenda Intelligence. "
+            "Use this first when you do not know which category to pass to source_plan or "
+            "source_coverage. Returns category IDs and per-pack counts. Discovery only: it does "
+            "not discover sources, validate coverage, or verify factual truth."
         ),
         "inputSchema": _schema({}),
         "handler": lambda args: mcp_server.list_source_categories(),
     },
     "source_coverage": {
         "description": (
-            "Diagnose whether an evidence pack covers category-specific must_check source types. "
-            "If category is omitted, evidence_json.source_category is used. "
-            "Diagnostic only; does not discover sources, verify factual truth, or change "
-            "validate-evidence schema semantics."
+            "Diagnose whether an evidence pack covers the must_check source types for a "
+            "category. Use after collecting evidence to find source gaps before relying on a "
+            "memo. Pass evidence_json and optionally category; if category is omitted, the tool "
+            "uses evidence_json.source_category. Returns matched and missing source types. It "
+            "does not discover new sources, verify truth, or change validate_evidence results."
         ),
         "inputSchema": _schema(
             {
-                "evidence_json": {"type": "object"},
-                "category": {"type": "string"},
+                "evidence_json": {
+                    "type": "object",
+                    "description": "Parsed evidence pack to compare against source requirements.",
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Optional source requirement category slug; overrides evidence_json.source_category.",
+                },
             },
             ["evidence_json"],
         ),
         "handler": lambda args: mcp_server.source_coverage(args["evidence_json"], args.get("category")),
     },
     "score_output": {
-        "description": "Score before/after agenda-analysis output with the protocol marker rubric.",
+        "description": (
+            "Score a before/after pair of agenda-analysis text with the bundled heuristic "
+            "rubric. Use in evals or demos to compare whether an Agenda Intelligence rewrite "
+            "improved structure, evidence labeling, uncertainty handling, and decision-readiness. "
+            "Pass before_text and after_text as plain strings. Returns a heuristic score and "
+            "breakdown; it is not a factuality, legal, compliance, or investment judgment."
+        ),
         "inputSchema": _schema(
             {
-                "before_text": {"type": "string"},
-                "after_text": {"type": "string"},
+                "before_text": {
+                    "type": "string",
+                    "description": "Original analysis text before Agenda Intelligence processing.",
+                },
+                "after_text": {
+                    "type": "string",
+                    "description": "Revised analysis text to score against the protocol rubric.",
+                },
             },
             ["before_text", "after_text"],
         ),
@@ -104,17 +218,23 @@ TOOLS: dict[str, dict[str, Any]] = {
     },
     "verify_quotes": {
         "description": (
-            "Verify that quoted fragments in an evidence pack are present in the provided "
-            "source texts. Pass `texts` as a dict mapping evidence_id → plain text. "
-            "Sources without a matching texts entry are reported as missing_source_text. "
-            "Local-text only; does not make outbound network requests. "
-            "Does not discover sources, score source reputation, gather live news, "
-            "or verify factual truth."
+            "Check whether quoted fragments from an evidence pack appear in caller-provided "
+            "source text. Use when you have local excerpts and need to catch citation drift or "
+            "misquoted snippets. Pass pack_json plus texts mapping evidence_id to plain text. "
+            "Returns present, absent, and missing_source_text results. Local-text only: it does "
+            "not make outbound requests, discover sources, score source reputation, gather news, or "
+            "verify factual truth."
         ),
         "inputSchema": _schema(
             {
-                "pack_json": {"type": "object"},
-                "texts": {"type": "object"},
+                "pack_json": {
+                    "type": "object",
+                    "description": "Evidence pack containing evidence IDs and quote fragments to check.",
+                },
+                "texts": {
+                    "type": "object",
+                    "description": "Optional mapping from evidence_id to caller-provided plain source text.",
+                },
             },
             ["pack_json"],
         ),
@@ -122,39 +242,87 @@ TOOLS: dict[str, dict[str, Any]] = {
     },
     "analyze": {
         "description": (
-            "Run the Agenda Intelligence product-shell pipeline. Validates the request "
-            "against agenda-request.schema.json, routes geography to in-repo regional / "
-            "sector references, assembles a system prompt, and calls the Anthropic API "
-            "when ANTHROPIC_API_KEY is set. Returns a structured memo validated against "
-            "agenda-memo.schema.json. No live source retrieval."
+            "Generate an auditable strategic-risk memo from a structured Agenda request. "
+            "Use for sanctions, regulatory, geopolitical, trade, corridor, or policy-risk "
+            "questions where the agent needs a memo with assumptions, scenarios, evidence "
+            "discipline, and regional routing. Pass request matching agenda-request.schema.json. "
+            "Returns a validated agenda-memo; when ANTHROPIC_API_KEY is unset it returns the "
+            "assembled system_prompt for the host model to complete. No live source retrieval "
+            "and no legal, compliance, financial, or investment advice."
         ),
-        "inputSchema": _schema({"request": {"type": "object"}}, ["request"]),
+        "inputSchema": _schema(
+            {
+                "request": {
+                    "type": "object",
+                    "description": "Agenda request with question, geography, audience, depth, evidence mode, and output format.",
+                }
+            },
+            ["request"],
+        ),
         "handler": lambda args: mcp_server.analyze(args["request"]),
     },
     "validate_memo": {
-        "description": "Validate a memo JSON object against agenda-memo.schema.json.",
-        "inputSchema": _schema({"memo_json": {"type": "object"}}, ["memo_json"]),
+        "description": (
+            "Validate an Agenda memo against agenda-memo.schema.json. Use after a host model "
+            "or external process drafts a memo and before treating it as an Agenda Intelligence "
+            "artifact. Pass the parsed memo as memo_json. Returns validity and schema errors; "
+            "it does not score truthfulness, retrieve sources, or rewrite the memo."
+        ),
+        "inputSchema": _schema(
+            {
+                "memo_json": {
+                    "type": "object",
+                    "description": "Parsed Agenda memo JSON object to validate against the output schema.",
+                }
+            },
+            ["memo_json"],
+        ),
         "handler": lambda args: mcp_server.validate_memo(args["memo_json"]),
     },
     "list_signals": {
         "description": (
-            "List vendored Global Think Tank Analyst signals. Read-only mirror of the "
-            "packaged signals/index.json snapshot."
+            "List packaged strategic-risk signal records vendored from Global Think Tank "
+            "Analyst. Use to discover available signal IDs before calling get_signal, or to "
+            "show a static archive index inside an agent workflow. Returns the packaged "
+            "signals/index.json snapshot. Read-only and offline: it does not fetch live news "
+            "or update the archive."
         ),
         "inputSchema": _schema({}),
         "handler": lambda args: mcp_server.list_signals(),
     },
     "get_signal": {
-        "description": ("Return a vendored signal markdown file by id (filename without extension)."),
-        "inputSchema": _schema({"signal_id": {"type": "string"}}, ["signal_id"]),
+        "description": (
+            "Return one packaged strategic-risk signal markdown file by ID. Use after "
+            "list_signals when an agent needs the full text of a specific archived signal for "
+            "context or examples. Pass signal_id without the .md extension. Returns static "
+            "markdown from the installed package; it does not fetch live updates."
+        ),
+        "inputSchema": _schema(
+            {
+                "signal_id": {
+                    "type": "string",
+                    "description": "Signal identifier returned by list_signals, without a file extension.",
+                }
+            },
+            ["signal_id"],
+        ),
         "handler": lambda args: mcp_server.get_signal(args["signal_id"]),
     },
     "deep_dive": {
         "description": (
-            "Reserved for Agenda Intelligence v2. Returns a planned-status message. "
-            "For detailed analysis today, call `analyze` with depth: scenario or red_team."
+            "Reserved placeholder for a future Agenda Intelligence v2 deep-dive workflow. "
+            "Do not use for current detailed analysis. For production work today, call analyze "
+            "with request.depth set to scenario or red_team. This tool only returns a planned "
+            "status message and performs no analysis."
         ),
-        "inputSchema": _schema({"aspect": {"type": "string"}}),
+        "inputSchema": _schema(
+            {
+                "aspect": {
+                    "type": "string",
+                    "description": "Optional future deep-dive aspect. Currently ignored because the tool is reserved.",
+                }
+            }
+        ),
         "handler": lambda args: mcp_server.deep_dive(args.get("aspect")),
     },
 }
