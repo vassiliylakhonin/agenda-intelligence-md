@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Pre-v1.0 contract-freeze follow-ups
+
+Three small fixes closing gaps left after PRs #50–#53 (ADR 0011–0013 contract freeze). No behavior change for callers; all changes are to the manifest contract surface or its CI guards.
+
+- **fix(manifest): correct stale `cli` entrypoint string ([#54](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/54))** — ADR 0013 flagged the manifest `cli` field as still pointing at the backward-compat shim `scripts/agenda_intelligence.py`; the correction was scheduled for the ADR 0013 impl PR (#53) but missed. Both dual-copy manifests now point at the real entrypoint (`python3 -m agenda_intelligence.cli`). Informational string correction per ADR 0013, not a contract change.
+- **fix(schemas): restore dual-copy parity for `agent-manifest.schema.json` ([#55](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/55))** — PR #52 added the schema only under `src/agenda_intelligence/data/schemas/v1/` without the paired top-level copy required by the dual-copy invariant in `CLAUDE.md`. Top-level copy restored and `test_packaged_schemas_match_top_level_schemas` is now bidirectional via set equality on filenames, so asymmetric adds fail CI in either direction.
+- **feat(schemas): align `agent-manifest.schema.json` with ADR 0013 contract ([#56](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/56))** — The manifest schema predated ADR 0013 and still required the legacy shape (`entrypoint, protocols, lenses`); `validate-manifest` passed by accident. Rewritten to require the ADR 0013 contract surface (`name, version, schemas`, `mcp`, `cli`) plus `_contract_fields` / `_informational_fields` arrays. Adds `$id` per ADR 0011 and `x-schema-version` per repo convention. New tests pin the canonical contract-field set and lift `validate-manifest` into pytest so a stale schema fails CI directly.
+
 ## [0.9.3] – 2026-05-22
 
 ### Docs — v0.9 release gate closed (all 9/9 acceptance criteria ✅)
