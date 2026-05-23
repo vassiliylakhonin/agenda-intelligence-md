@@ -112,8 +112,7 @@ TOOLS: dict[str, dict[str, Any]] = {
                     "type": "string",
                     "enum": ["regional", "sector"],
                     "description": (
-                        "Optional filter. Use 'regional' for geography lenses or "
-                        "'sector' for sector lenses."
+                        "Optional filter. Use 'regional' for geography lenses or " "'sector' for sector lenses."
                     ),
                 }
             }
@@ -157,8 +156,7 @@ TOOLS: dict[str, dict[str, Any]] = {
                 "category": {
                     "type": "string",
                     "description": (
-                        "Source requirement category slug, for example sanctions, "
-                        "elections, or energy-markets."
+                        "Source requirement category slug, for example sanctions, " "elections, or energy-markets."
                     ),
                 }
             },
@@ -193,8 +191,7 @@ TOOLS: dict[str, dict[str, Any]] = {
                 "category": {
                     "type": "string",
                     "description": (
-                        "Optional source requirement category slug; overrides "
-                        "evidence_json.source_category."
+                        "Optional source requirement category slug; overrides " "evidence_json.source_category."
                     ),
                 },
             },
@@ -264,8 +261,7 @@ TOOLS: dict[str, dict[str, Any]] = {
                 "request": {
                     "type": "object",
                     "description": (
-                        "Agenda request with question, geography, audience, depth, "
-                        "evidence mode, and output format."
+                        "Agenda request with question, geography, audience, depth, " "evidence mode, and output format."
                     ),
                 }
             },
