@@ -31,7 +31,11 @@ jobs:
             version="${{ github.event.workflow_run.head_branch }}"
             version="${version#v}"
           fi
-          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          # Accept PEP 440 release and pre/post/dev releases, plus SemVer-style
+          # pre-release/build segments via -/+. Bash =~ uses POSIX ERE, so plain
+          # groups (no ?:). Examples: 1.0.0, 1.0.0rc1, 1.0.0a2, 1.0.0.post1,
+          # 1.0.0.dev3, 1.0.0-rc.1.
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+|[-+][0-9A-Za-z.-]+)?(\.post[0-9]+)?(\.dev[0-9]+)?$ ]]; then
             echo "Unsupported version: $version" >&2
             exit 1
           fi
