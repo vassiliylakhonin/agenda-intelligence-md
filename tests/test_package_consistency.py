@@ -79,3 +79,72 @@ def test_packaged_skill_assets_match_top_level_assets():
     for relative_path in sorted(Path("skills/agenda-intelligence").rglob("*")):
         if relative_path.is_file():
             assert_packaged_copy_matches_top_level(relative_path)
+
+
+# ADR 0012 + ADR 0013: manifest is the authoritative MCP and schema registry.
+
+
+def test_manifest_mcp_tools_match_code():
+    """ADR 0012: manifest.mcp.tools must mirror the TOOLS dict in mcp_stdio.py.
+
+    Names, ordering, and input_schema content must match exactly.
+    """
+    from agenda_intelligence.mcp_stdio import TOOLS
+
+    manifest = load_json(ROOT / "agent-manifest.json")
+    mcp = manifest.get("mcp")
+    assert isinstance(mcp, dict), "manifest.mcp missing or wrong type"
+    tools = mcp.get("tools")
+    assert isinstance(tools, list), "manifest.mcp.tools missing or wrong type"
+
+    manifest_names = [t["name"] for t in tools]
+    code_names = list(TOOLS.keys())
+    assert manifest_names == code_names, (
+        f"manifest.mcp.tools name list diverged from TOOLS dict\n"
+        f"  manifest: {manifest_names}\n"
+        f"  code:     {code_names}"
+    )
+
+    for entry in tools:
+        name = entry["name"]
+        code_schema = TOOLS[name]["inputSchema"]
+        manifest_schema = entry.get("input_schema")
+        assert manifest_schema == code_schema, (
+            f"manifest.mcp.tools[{name}].input_schema diverged from " f"TOOLS[{name}]['inputSchema']"
+        )
+
+
+def test_manifest_schemas_paths_exist_and_match_schema_version():
+    """ADR 0013: every schemas entry must point at an existing v1 file."""
+    manifest = load_json(ROOT / "agent-manifest.json")
+    schemas = manifest.get("schemas")
+    assert isinstance(schemas, dict), "manifest.schemas missing"
+
+    for key, entry in schemas.items():
+        assert isinstance(entry, dict), f"schemas[{key}] must be object, got {type(entry).__name__}"
+        assert "path" in entry and "schema_version" in entry, f"schemas[{key}] missing path/schema_version"
+        path = ROOT / entry["path"]
+        assert path.is_file(), f"schemas[{key}].path does not exist: {entry['path']}"
+        # The /vN/ path segment must match the declared schema_version
+        assert (
+            f"/{entry['schema_version']}/" in entry["path"]
+        ), f"schemas[{key}] schema_version={entry['schema_version']!r} does not match path={entry['path']!r}"
+
+
+def test_manifest_contract_and_informational_fields_cover_top_level_keys():
+    """ADR 0013: _contract_fields and _informational_fields together must cover
+    every top-level manifest key except themselves.
+    """
+    manifest = load_json(ROOT / "agent-manifest.json")
+    contract = set(manifest.get("_contract_fields", []))
+    informational = set(manifest.get("_informational_fields", []))
+    declared = contract | informational
+    actual = set(manifest.keys()) - {"_contract_fields", "_informational_fields"}
+
+    missing = actual - declared
+    extra = declared - actual
+    assert not missing, f"manifest fields not declared as contract or informational: {sorted(missing)}"
+    assert not extra, f"declared fields not present in manifest: {sorted(extra)}"
+    assert not (
+        contract & informational
+    ), f"fields cannot be both contract and informational: {sorted(contract & informational)}"

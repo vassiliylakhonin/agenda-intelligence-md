@@ -1,6 +1,26 @@
 {
   "name": "Agenda Intelligence MD",
   "version": "0.9.3",
+  "_contract_fields": [
+    "name",
+    "version",
+    "schemas",
+    "mcp",
+    "cli"
+  ],
+  "_informational_fields": [
+    "description",
+    "repository",
+    "entrypoint",
+    "adoption",
+    "llms",
+    "analysis_bank",
+    "product",
+    "protocols",
+    "lenses",
+    "eval",
+    "source_acquisition"
+  ],
   "description": "CLI, MCP server, and JSON schemas for validating and auditing strategic-risk AI agent output. Evidence and eval infrastructure layer for reasoning skills.",
   "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
   "entrypoint": "Agenda-Intelligence.md",
@@ -19,28 +39,48 @@
     ]
   },
   "schemas": {
-    "agenda_brief": "schemas/v1/agenda-brief.schema.json",
-    "memory_card": "schemas/v1/memory-card.schema.json",
-    "lens_manifest": "schemas/v1/lens-manifest.schema.json",
-    "signal_classification": "schemas/v1/signal-classification.schema.json",
-    "evidence_pack": "schemas/v1/evidence-pack.schema.json",
-    "evidence_audit": "schemas/v1/evidence-audit.schema.json",
-    "signal_tracker": "schemas/v1/signal-tracker.schema.json",
-    "agenda_request": "schemas/v1/agenda-request.schema.json",
-    "agenda_memo": "schemas/v1/agenda-memo.schema.json"
+    "agenda_brief": {
+      "path": "schemas/v1/agenda-brief.schema.json",
+      "schema_version": "v1"
+    },
+    "memory_card": {
+      "path": "schemas/v1/memory-card.schema.json",
+      "schema_version": "v1"
+    },
+    "lens_manifest": {
+      "path": "schemas/v1/lens-manifest.schema.json",
+      "schema_version": "v1"
+    },
+    "signal_classification": {
+      "path": "schemas/v1/signal-classification.schema.json",
+      "schema_version": "v1"
+    },
+    "evidence_pack": {
+      "path": "schemas/v1/evidence-pack.schema.json",
+      "schema_version": "v1"
+    },
+    "evidence_audit": {
+      "path": "schemas/v1/evidence-audit.schema.json",
+      "schema_version": "v1"
+    },
+    "signal_tracker": {
+      "path": "schemas/v1/signal-tracker.schema.json",
+      "schema_version": "v1"
+    },
+    "agenda_request": {
+      "path": "schemas/v1/agenda-request.schema.json",
+      "schema_version": "v1"
+    },
+    "agenda_memo": {
+      "path": "schemas/v1/agenda-memo.schema.json",
+      "schema_version": "v1"
+    }
   },
   "product": {
     "name": "Agenda Intelligence",
     "description": "Product shell exposing the analyze pipeline over the validation and reasoning layers. Routes geography to regional and sector references, assembles a system prompt from bundled SKILL.md content, and validates output against the agenda-memo contract.",
-    "request_schema": "schemas/v1/agenda-request.schema.json",
-    "response_schema": "schemas/v1/agenda-memo.schema.json",
-    "mcp_tools": [
-      "analyze",
-      "validate_memo",
-      "list_signals",
-      "get_signal",
-      "deep_dive"
-    ],
+    "request_schema": "agenda_request",
+    "response_schema": "agenda_memo",
     "signals_source": "Global Think Tank Analyst (vendored snapshot under data/signals/)",
     "live_source_retrieval": false
   },
@@ -63,7 +103,274 @@
   },
   "cli": "scripts/agenda_intelligence.py",
   "eval": "scripts/eval_before_after.py",
-  "mcp_sketch": "MCP.md",
+  "mcp": {
+    "spec": "MCP.md",
+    "tools": [
+      {
+        "name": "validate_brief",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "brief_json": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "brief_json"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "validate_evidence",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "evidence_json": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "evidence_json"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "audit_claims",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "audit_json": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "audit_json"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "get_protocol",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "list_lenses",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "lens_type": {
+              "type": "string",
+              "enum": [
+                "regional",
+                "sector"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "get_lens",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "lens_type": {
+              "type": "string",
+              "enum": [
+                "regional",
+                "sector"
+              ]
+            },
+            "lens_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "lens_type",
+            "lens_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "source_plan",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "category"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "list_source_categories",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "source_coverage",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "evidence_json": {
+              "type": "object"
+            },
+            "category": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "evidence_json"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "score_output",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "before_text": {
+              "type": "string"
+            },
+            "after_text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "before_text",
+            "after_text"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "verify_quotes",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "pack_json": {
+              "type": "object"
+            },
+            "texts": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "pack_json"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "analyze",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "request": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "request"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "validate_memo",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "memo_json": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "memo_json"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "list_signals",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "get_signal",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "signal_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "signal_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "deep_dive",
+        "since": "v1.0",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "aspect": {
+              "type": "string"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "status": "reserved"
+      }
+    ]
+  },
   "source_acquisition": {
     "policy": "SOURCE_POLICY.md",
     "taxonomy": "source-taxonomy.json",
