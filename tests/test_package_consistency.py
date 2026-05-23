@@ -153,3 +153,31 @@ def test_manifest_contract_and_informational_fields_cover_top_level_keys():
     assert not (
         contract & informational
     ), f"fields cannot be both contract and informational: {sorted(contract & informational)}"
+
+
+# ADR 0013 canonical contract-field set. Adding to this set is a compatibility
+# surface change and requires a major version bump per ADR 0003.
+CANONICAL_CONTRACT_FIELDS = frozenset({"name", "version", "schemas", "mcp", "cli"})
+
+
+def test_manifest_contract_fields_match_canonical_set():
+    """ADR 0013: _contract_fields must equal the canonical set."""
+    manifest = load_json(ROOT / "agent-manifest.json")
+    contract = set(manifest.get("_contract_fields", []))
+    assert contract == CANONICAL_CONTRACT_FIELDS, (
+        f"manifest._contract_fields diverged from ADR 0013 canonical set\n"
+        f"  expected: {sorted(CANONICAL_CONTRACT_FIELDS)}\n"
+        f"  actual:   {sorted(contract)}"
+    )
+
+
+def test_manifest_validates_against_packaged_schema():
+    """The manifest must validate against its own JSON Schema. This is the same
+    check `agenda-intelligence validate-manifest` performs, lifted into pytest
+    so a stale schema fails CI directly.
+    """
+    from jsonschema import validate
+
+    manifest = load_json(ROOT / "agent-manifest.json")
+    schema = load_json(ROOT / "schemas" / "v1" / "agent-manifest.schema.json")
+    validate(manifest, schema)

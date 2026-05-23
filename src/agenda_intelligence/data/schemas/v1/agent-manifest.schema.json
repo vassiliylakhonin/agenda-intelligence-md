@@ -1,20 +1,80 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/agent-manifest.schema.json",
   "title": "AgentManifest",
+  "description": "Schema for agent-manifest.json. Encodes the v1.0 contract per ADR 0013: name, version, schemas, mcp, cli are contract fields; everything else is informational and intentionally loose.",
+  "x-schema-version": "1",
   "type": "object",
-  "required": ["entrypoint", "protocols", "lenses"],
+  "required": [
+    "name",
+    "version",
+    "_contract_fields",
+    "_informational_fields",
+    "schemas",
+    "mcp",
+    "cli"
+  ],
   "properties": {
-    "entrypoint": { "type": "string", "minLength": 1 },
-    "protocols": {
-      "type": "array",
-      "items": { "type": "string", "minLength": 1 }
+    "name": { "type": "string", "minLength": 1 },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?$",
+      "description": "Semantic version. ADR 0003 governs compatibility-surface bumps."
     },
-    "lenses": {
+    "_contract_fields": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "description": "Self-describing list of contract-surface field names. The canonical set per ADR 0013 (name, version, schemas, mcp, cli) is enforced by tests/test_package_consistency.py, not by this schema."
+    },
+    "_informational_fields": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "description": "Self-describing list of informational field names. Shape MAY change in any release; consumers MUST NOT rely on it for runtime decisions."
+    },
+    "schemas": {
       "type": "object",
-      "properties": {
-        "regional": { "type": "object" },
-        "sector": { "type": "object" }
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["path", "schema_version"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "schema_version": {
+            "type": "string",
+            "pattern": "^v\\d+$",
+            "description": "Major-version handle (v1, v2, ...) — must match the /vN/ segment in path per ADR 0011."
+          }
+        },
+        "additionalProperties": false
       }
-    }
-  }
+    },
+    "mcp": {
+      "type": "object",
+      "required": ["spec", "tools"],
+      "properties": {
+        "spec": { "type": "string", "minLength": 1 },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "since", "input_schema"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "since": { "type": "string", "minLength": 1 },
+              "input_schema": { "type": "object" },
+              "deprecated": { "type": "boolean" },
+              "removal_in": { "type": "string", "minLength": 1 },
+              "status": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "cli": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": true
 }
