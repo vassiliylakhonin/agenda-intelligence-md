@@ -781,6 +781,7 @@ function buildUsageEvent(request, details = {}) {
     path: url.pathname,
     jsonrpc_method: details.jsonrpc_method || null,
     jsonrpc_id_present: Boolean(details.jsonrpc_id_present),
+    agent_profile: details.agent_profile || agentProfile(request),
     prompt_chars: promptChars,
     modules_used: Array.isArray(details.modules_used) ? details.modules_used.map((item) => item.module) : [],
     client: classifyClient(request),
@@ -832,6 +833,7 @@ async function recordUsageStats(env, event) {
     key,
     JSON.stringify({
       timestamp: event.timestamp,
+      agent_profile: event.agent_profile || "unknown",
       jsonrpc_method: event.jsonrpc_method || "unknown",
       prompt_chars: event.prompt_chars || 0,
       likely_probe: Boolean(event.likely_probe),
@@ -892,12 +894,14 @@ async function usageStats(env, date) {
   const countries = new Map();
   const methods = new Map();
   const modules = new Map();
+  const agentProfiles = new Map();
   let likelyProbe = 0;
   let promptChars = 0;
 
   for (const event of events) {
     if (event.likely_probe) likelyProbe += 1;
     promptChars += Number.isFinite(event.prompt_chars) ? event.prompt_chars : 0;
+    incrementMap(agentProfiles, event.agent_profile);
     incrementMap(clients, event.client);
     incrementMap(countries, event.country);
     incrementMap(methods, event.jsonrpc_method);
@@ -922,6 +926,7 @@ async function usageStats(env, date) {
       prompt_chars_avg: total > 0 ? Math.round(promptChars / total) : 0
     },
     clients: sortedMap(clients),
+    agent_profiles: sortedMap(agentProfiles),
     countries: sortedMap(countries),
     methods: sortedMap(methods),
     modules: sortedMap(modules)
@@ -1067,6 +1072,7 @@ function handleJsonRpc(payload, request, env = {}, ctx = {}) {
     const event = logUsageEvent(request, {
       jsonrpc_method: payload.method,
       jsonrpc_id_present: payload.id !== undefined,
+      agent_profile: result.metadata.product_profile,
       prompt_chars: text.length,
       modules_used: result.metadata.modules_used,
       likely_probe: likelyProbe

@@ -269,6 +269,7 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   assert.equal(event.event, "agenda_intelligence_a2a_usage");
   assert.equal(event.path, "/message/send");
   assert.equal(event.jsonrpc_method, "message/send");
+  assert.equal(event.agent_profile, "agenda");
   assert.equal(event.prompt_chars, 68);
   assert.deepEqual(event.modules_used, [
     "global-think-tank-analyst",
@@ -299,7 +300,21 @@ test("usage analytics accepts a privacy-safe optional client id header", () => {
   });
 
   assert.equal(event.client, "partner-console---demo--1");
+  assert.equal(event.agent_profile, "agenda");
   assert.equal(event.authorization, undefined);
+});
+
+test("usage analytics labels the kazakhstan agent profile", () => {
+  const event = buildUsageEvent(
+    new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send"),
+    {
+      jsonrpc_method: "message/send",
+      jsonrpc_id_present: true,
+      prompt_chars: 42
+    }
+  );
+
+  assert.equal(event.agent_profile, "kazakhstan");
 });
 
 test("usage stats aggregates daily counters from KV", async () => {
@@ -309,6 +324,7 @@ test("usage stats aggregates daily counters from KV", async () => {
     event: "agenda_intelligence_a2a_usage",
     timestamp: "2026-05-22T16:23:44.481Z",
     jsonrpc_method: "message/send",
+    agent_profile: "agenda",
     likely_probe: false,
     client: "curl",
     cf: {
@@ -318,7 +334,7 @@ test("usage stats aggregates daily counters from KV", async () => {
   };
 
   await recordUsageStats(env, event);
-  await recordUsageStats(env, { ...event, likely_probe: true, client: "agenstry" });
+  await recordUsageStats(env, { ...event, agent_profile: "kazakhstan", likely_probe: true, client: "agenstry" });
 
   const stats = await usageStats(env, "2026-05-22");
 
@@ -329,6 +345,10 @@ test("usage stats aggregates daily counters from KV", async () => {
   assert.deepEqual(stats.clients, [
     { name: "agenstry", count: 1 },
     { name: "curl", count: 1 }
+  ]);
+  assert.deepEqual(stats.agent_profiles, [
+    { name: "agenda", count: 1 },
+    { name: "kazakhstan", count: 1 }
   ]);
   assert.deepEqual(stats.countries, [{ name: "KZ", count: 2 }]);
   assert.deepEqual(stats.methods, [{ name: "message/send", count: 2 }]);
@@ -348,6 +368,7 @@ test("stats endpoint returns JSON for requested date", async () => {
       event: "agenda_intelligence_a2a_usage",
       timestamp: "2026-05-22T12:00:00.000Z",
       jsonrpc_method: "message/send",
+      agent_profile: "kazakhstan",
       likely_probe: false,
       client: "browser",
       cf: { country: "US" },
@@ -365,6 +386,7 @@ test("stats endpoint returns JSON for requested date", async () => {
   assert.equal(body.date, "2026-05-22");
   assert.equal(body.counters.total, 1);
   assert.deepEqual(body.clients, [{ name: "browser", count: 1 }]);
+  assert.deepEqual(body.agent_profiles, [{ name: "kazakhstan", count: 1 }]);
 });
 
 test("stats endpoint requires token", async () => {

@@ -65,6 +65,7 @@ async function main() {
   console.log(`Non-probe: ${body.counters.non_probe}`);
   console.log(`Likely probe: ${body.counters.likely_probe}`);
   console.log(`Prompt chars: ${body.counters.prompt_chars_total} total, ${body.counters.prompt_chars_avg} avg`);
+  console.log(`Agent profiles: ${formatRows(body.agent_profiles)}`);
   console.log(`Clients: ${formatRows(body.clients)}`);
   console.log(`Countries: ${formatRows(body.countries)}`);
   console.log(`Methods: ${formatRows(body.methods)}`);
