@@ -44,16 +44,35 @@ cd deploy/cloudflare-worker
 wrangler deploy
 ```
 
+Deploy the Kazakhstan-focused profile as a separate A2A listing:
+
+```bash
+cd deploy/cloudflare-worker
+wrangler deploy -e kazakhstan
+```
+
 The deploy output will include a `workers.dev` URL, usually:
 
 ```text
 https://agenda-intelligence-a2a.<your-subdomain>.workers.dev
 ```
 
+The Kazakhstan profile deploys as:
+
+```text
+https://kazakhstan-corridor-risk-a2a.<your-subdomain>.workers.dev
+```
+
 Use this URL in Agenstry as an A2A agent URL:
 
 ```text
 https://agenda-intelligence-a2a.<your-subdomain>.workers.dev
+```
+
+For the Kazakhstan-focused listing, submit:
+
+```text
+https://kazakhstan-corridor-risk-a2a.<your-subdomain>.workers.dev
 ```
 
 The Agent Card URL will be:

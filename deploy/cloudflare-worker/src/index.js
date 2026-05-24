@@ -18,7 +18,17 @@ const CA_CASPIAN_TERMS = [
   "baku",
   "middle corridor",
   "tcita",
-  "tcitr"
+  "tcitr",
+  "trans-caspian",
+  "khorgos",
+  "aktau",
+  "kuryk",
+  "astana",
+  "kazakh",
+  "kazakhstani",
+  "russia transit",
+  "china-kazakhstan",
+  "belt and road"
 ];
 
 const GULF_ME_TERMS = [
@@ -82,7 +92,7 @@ function jsonResponse(body, status = 200, extraHeaders = {}) {
       "content-type": "application/json; charset=utf-8",
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET, POST, OPTIONS",
-      "access-control-allow-headers": "content-type",
+      "access-control-allow-headers": "content-type, x-client-id",
       ...extraHeaders
     }
   });
@@ -103,9 +113,17 @@ function originFromRequest(request) {
   return `${url.protocol}//${url.host}`;
 }
 
-function agentCard(request) {
+function agentProfile(request, env = {}) {
+  const host = new URL(request.url).host.toLowerCase();
+  if (env.AGENT_PROFILE === "kazakhstan" || host.includes("kazakhstan-corridor-risk-a2a")) {
+    return "kazakhstan";
+  }
+  return "agenda";
+}
+
+function agentCard(request, env = {}) {
   const origin = originFromRequest(request);
-  return {
+  const card = {
     protocolVersion: "1.0",
     name: "Agenda Intelligence MD",
     description:
@@ -308,6 +326,137 @@ function agentCard(request) {
       ]
     }
   };
+  return applyAgentProfile(card, request, env);
+}
+
+function applyAgentProfile(card, request, env = {}) {
+  if (agentProfile(request, env) !== "kazakhstan") return card;
+
+  const origin = originFromRequest(request);
+  card.name = "Kazakhstan Corridor Risk Agent";
+  card.description =
+    "Live no-payment A2A/JSON-RPC agent for Kazakhstan and Central Asia corridor-risk triage: sanctions exposure, Middle Corridor and Trans-Caspian logistics disruption, policy signals, source gaps, watch-next indicators, and routing into the installable Agenda Intelligence MD MCP server.";
+  card.provider.legalEntity.sameAs = [
+    "https://github.com/vassiliylakhonin",
+    "https://pypi.org/project/agenda-intelligence-md/",
+    "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md",
+    "https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev"
+  ];
+  card.skills = [
+    {
+      id: "kazakhstan-sanctions-exposure-screen",
+      name: "Kazakhstan sanctions exposure screen",
+      description:
+        "Returns first-pass triage for Kazakhstan-linked sanctions exposure: affected counterparties, corridor touchpoints, source categories required, evidence gaps, and watch-next indicators.",
+      tags: [
+        "kazakhstan",
+        "sanctions",
+        "secondary-sanctions",
+        "trade-compliance",
+        "central-asia",
+        "source-coverage",
+        "free"
+      ],
+      examples: [
+        "Screen sanctions exposure for a Kazakhstan logistics route with Russia-linked counterparties.",
+        "Find evidence gaps before writing a sanctions-risk note on Kazakhstan transit."
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    },
+    {
+      id: "middle-corridor-risk-triage",
+      name: "Middle Corridor risk triage",
+      description:
+        "Routes Middle Corridor and Trans-Caspian questions into structured risk triage covering bottlenecks, sanctions spillover, policy signals, logistics disruption, and required evidence categories.",
+      tags: [
+        "middle-corridor",
+        "trans-caspian",
+        "logistics-risk",
+        "corridor-risk",
+        "kazakhstan",
+        "caspian"
+      ],
+      examples: [
+        "Analyze how Caspian port disruption changes risk for a Kazakhstan-Europe logistics corridor.",
+        "Prepare a corridor-risk screen for Aktau, Kuryk, Baku, and Georgia transit dependencies."
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    },
+    {
+      id: "central-asia-policy-watch",
+      name: "Central Asia policy signal watch",
+      description:
+        "Identifies watch-next indicators for Central Asia policy, customs, export-control, energy, and transport developments without claiming live source retrieval.",
+      tags: [
+        "central-asia",
+        "policy-risk",
+        "customs",
+        "export-controls",
+        "energy",
+        "watch-next"
+      ],
+      examples: [
+        "List watch-next indicators for Kazakhstan export-control enforcement over the next quarter.",
+        "Frame a policy-risk monitoring plan for Central Asia corridor operations."
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    },
+    {
+      id: "corridor-source-coverage",
+      name: "Corridor source coverage checklist",
+      description:
+        "Returns source-planning guidance for Kazakhstan and Central Asia risk memos: primary official sources, sanctions lists, customs/logistics data, independent context, and dated retrieval notes.",
+      tags: [
+        "source-planning",
+        "evidence-coverage",
+        "official-sources",
+        "logistics",
+        "sanctions",
+        "kazakhstan"
+      ],
+      examples: [
+        "Check whether this Kazakhstan sanctions evidence pack has enough primary-source coverage.",
+        "What source categories are missing for a Middle Corridor policy-risk memo?"
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    },
+    {
+      id: "kazakhstan-memo-quality-gate",
+      name: "Kazakhstan risk memo quality gate",
+      description:
+        "Routes callers to Agenda Intelligence MCP quality gates for structured memo validation, evidence audit, unsupported-claim detection, and source-coverage diagnostics.",
+      tags: [
+        "memo-validation",
+        "evidence-audit",
+        "quality-gate",
+        "provenance",
+        "kazakhstan",
+        "strategic-risk"
+      ],
+      examples: [
+        "Audit this Kazakhstan corridor-risk memo for unsupported claims and missing source categories.",
+        "Validate this sanctions-risk memo before analyst handoff."
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    }
+  ];
+  card.x_agenda_intelligence.product_profile = "kazakhstan_corridor_risk";
+  card.x_agenda_intelligence.wrapper_scope =
+    "A2A/JSON-RPC discovery, Kazakhstan and Central Asia corridor-risk triage, and routing response only";
+  card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
+  card.x_agenda_intelligence.focus = [
+    "Kazakhstan sanctions exposure",
+    "Middle Corridor and Trans-Caspian logistics risk",
+    "Central Asia policy and customs signals",
+    "source coverage and evidence gaps",
+    "risk memo quality gates"
+  ];
+  return card;
 }
 
 function extractText(params) {
@@ -354,6 +503,12 @@ function routeModules(text) {
   if (hasAny(text, SANCTIONS_TERMS)) {
     modules.push({ module: "sanctions-sector", role: "sector_specialist" });
   }
+  return modules;
+}
+
+function routeModulesForProfile(text, profile) {
+  if (profile !== "kazakhstan") return routeModules(text);
+  const modules = routeModules(`${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`);
   return modules;
 }
 
@@ -773,8 +928,12 @@ async function usageStats(env, date) {
   };
 }
 
-function routingMarkdown(text, modules) {
-  const triage = triageForText(text, modules);
+function routingMarkdown(text, modules, profile = "agenda") {
+  const triageText =
+    profile === "kazakhstan"
+      ? `${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`
+      : text;
+  const triage = triageForText(triageText, modules);
   const moduleList = modules.map((item) => `- ${item.module}: ${item.role}`).join("\n");
   const screen = triage.signal_screen;
   const sourceList = triage.source_plan.map((item) => `- ${item}`).join("\n");
@@ -785,10 +944,18 @@ function routingMarkdown(text, modules) {
   const gapList = screen.evidence_gaps.map((item) => `- ${item}`).join("\n");
   const watchList = screen.watch_next.map((item) => `- ${item}`).join("\n");
   const promptLine = text ? `\n\nReceived prompt excerpt:\n\n> ${text.slice(0, 500)}` : "";
+  const title =
+    profile === "kazakhstan"
+      ? "Kazakhstan Corridor Risk Agent live wrapper is responding."
+      : "Agenda Intelligence MD live wrapper is responding.";
+  const scope =
+    profile === "kazakhstan"
+      ? "This endpoint is a free, no-payment A2A/JSON-RPC wrapper for Kazakhstan and Central Asia corridor-risk triage, sanctions exposure screening, source-gap planning, and routing. Full product behavior is in the installable MCP server:"
+      : "This endpoint is a free, no-payment A2A/JSON-RPC wrapper for discovery, uptime, lightweight strategic-risk triage, and routing. Full product behavior is in the installable MCP server:";
   return [
-    "Agenda Intelligence MD live wrapper is responding.",
+    title,
     "",
-    "This endpoint is a free, no-payment A2A/JSON-RPC wrapper for discovery, uptime, lightweight strategic-risk triage, and routing. Full product behavior is in the installable MCP server:",
+    scope,
     "",
     "```bash",
     "pip install agenda-intelligence-md",
@@ -831,10 +998,15 @@ function routingMarkdown(text, modules) {
   ].join("\n");
 }
 
-function a2aResult(params, request) {
+function a2aResult(params, request, env = {}) {
   const text = extractText(params);
-  const modules = routeModules(text);
-  const triage = triageForText(text, modules);
+  const profile = agentProfile(request, env);
+  const triageText =
+    profile === "kazakhstan"
+      ? `${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`
+      : text;
+  const modules = routeModulesForProfile(text, profile);
+  const triage = triageForText(triageText, modules);
   return {
     id: crypto.randomUUID(),
     status: {
@@ -848,7 +1020,7 @@ function a2aResult(params, request) {
         parts: [
           {
             kind: "text",
-            text: routingMarkdown(text, modules)
+            text: routingMarkdown(text, modules, profile)
           }
         ]
       }
@@ -862,7 +1034,11 @@ function a2aResult(params, request) {
       modules_used: modules,
       triage,
       signal_screen: triage.signal_screen,
-      wrapper_scope: "discovery, lightweight triage, and routing response only"
+      wrapper_scope:
+        profile === "kazakhstan"
+          ? "Kazakhstan and Central Asia corridor-risk triage, lightweight screening, and routing response only"
+          : "discovery, lightweight triage, and routing response only",
+      product_profile: profile
     }
   };
 }
@@ -885,7 +1061,7 @@ function handleJsonRpc(payload, request, env = {}, ctx = {}) {
 
   if (payload.method === "message/send" || payload.method === "tasks/send" || payload.method === "SendMessage") {
     const params = payload.params ?? {};
-    const result = a2aResult(params, request);
+    const result = a2aResult(params, request, env);
     const text = extractText(params);
     const likelyProbe = classifyClient(request) === "agenstry" || text.length === 0;
     const event = logUsageEvent(request, {
@@ -913,7 +1089,7 @@ function handleJsonRpc(payload, request, env = {}, ctx = {}) {
     return {
       jsonrpc: "2.0",
       id,
-      result: agentCard(request)
+      result: agentCard(request, env)
     };
   }
 
@@ -968,19 +1144,20 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       headers: {
         "access-control-allow-origin": "*",
         "access-control-allow-methods": "GET, POST, OPTIONS",
-        "access-control-allow-headers": "content-type"
+        "access-control-allow-headers": "content-type, x-client-id"
       }
     });
   }
 
   if (request.method === "GET" && url.pathname === "/.well-known/agent-card.json") {
-    return jsonResponse(agentCard(request));
+    return jsonResponse(agentCard(request, env));
   }
 
   if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/health")) {
+    const card = agentCard(request, env);
     return jsonResponse({
       ok: true,
-      name: "Agenda Intelligence MD A2A wrapper",
+      name: card.name,
       version: VERSION,
       agent_card: `${originFromRequest(request)}/.well-known/agent-card.json`,
       message_send: `${originFromRequest(request)}/message/send`,

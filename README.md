@@ -32,6 +32,8 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightwei
 - Agent Card: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
 - JSON-RPC: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send>
 - Agenstry listing: <https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev>
+- Kazakhstan Corridor Risk Agent: <https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev>
+- Kazakhstan Agenstry listing: <https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev>
 - Announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
 
 The hosted wrapper is intentionally limited: no payments, no wallets, no autonomous live retrieval, no factual-truth verification, and no legal/financial/compliance advice. Full product behavior remains in the installable stdio MCP server.
@@ -51,6 +53,28 @@ curl -X POST https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/messa
           {
             "kind": "text",
             "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure."
+          }
+        ]
+      }
+    }
+  }'
+```
+
+Kazakhstan-focused live triage:
+
+```bash
+curl -X POST https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/message/send \
+  -H 'content-type: application/json' \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "kazakhstan-demo-1",
+    "method": "message/send",
+    "params": {
+      "message": {
+        "parts": [
+          {
+            "kind": "text",
+            "text": "Screen Kazakhstan Middle Corridor sanctions exposure for a logistics route."
           }
         ]
       }

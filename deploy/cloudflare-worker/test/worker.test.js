@@ -86,6 +86,29 @@ test("agent card uses request origin for live endpoints", () => {
   );
 });
 
+test("kazakhstan profile exposes focused corridor-risk agent card", () => {
+  const kazakhstanRequest = new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send");
+  const card = agentCard(kazakhstanRequest, { AGENT_PROFILE: "kazakhstan" });
+
+  assert.equal(card.name, "Kazakhstan Corridor Risk Agent");
+  assert.equal(card.url, "https://kazakhstan-corridor-risk-a2a.example.workers.dev");
+  assert.equal(
+    card.x_agenda_intelligence.wrapper_scope,
+    "A2A/JSON-RPC discovery, Kazakhstan and Central Asia corridor-risk triage, and routing response only"
+  );
+  assert.equal(card.x_agenda_intelligence.product_profile, "kazakhstan_corridor_risk");
+  assert.deepEqual(
+    card.skills.map((skill) => skill.id),
+    [
+      "kazakhstan-sanctions-exposure-screen",
+      "middle-corridor-risk-triage",
+      "central-asia-policy-watch",
+      "corridor-source-coverage",
+      "kazakhstan-memo-quality-gate"
+    ]
+  );
+});
+
 test("message/send returns JSON-RPC result with routing metadata", () => {
   const originalLog = console.log;
   console.log = () => {};
@@ -131,6 +154,43 @@ test("message/send returns JSON-RPC result with routing metadata", () => {
         "sanctions authority pages and list entries, such as OFAC, EU, UK OFSI, UN, or relevant national regulators"
       )
     );
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("kazakhstan profile defaults routing to Central Asia and sanctions modules", () => {
+  const kazakhstanRequest = new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send");
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "kazakhstan-1",
+        method: "message/send",
+        params: {
+          message: {
+            parts: [
+              {
+                kind: "text",
+                text: "Screen a corridor disruption for a logistics team."
+              }
+            ]
+          }
+        }
+      },
+      kazakhstanRequest,
+      { AGENT_PROFILE: "kazakhstan" }
+    );
+
+    assert.equal(response.jsonrpc, "2.0");
+    assert.equal(response.result.metadata.product_profile, "kazakhstan");
+    assert.deepEqual(
+      response.result.metadata.modules_used.map((item) => item.module),
+      ["global-think-tank-analyst", "central-asia-caspian", "sanctions-sector"]
+    );
+    assert.match(response.result.artifacts[0].parts[0].text, /Kazakhstan Corridor Risk Agent/);
   } finally {
     console.log = originalLog;
   }

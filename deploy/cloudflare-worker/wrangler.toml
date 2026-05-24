@@ -9,3 +9,14 @@ enabled = true
 [[kv_namespaces]]
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
+
+[env.kazakhstan]
+name = "kazakhstan-corridor-risk-a2a"
+workers_dev = true
+
+[env.kazakhstan.vars]
+AGENT_PROFILE = "kazakhstan"
+
+[[env.kazakhstan.kv_namespaces]]
+binding = "AGENDA_USAGE"
+id = "d2228183999246ccbec8aa2d5f130bfc"
