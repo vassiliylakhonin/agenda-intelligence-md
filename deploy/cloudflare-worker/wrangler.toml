@@ -20,3 +20,14 @@ AGENT_PROFILE = "kazakhstan"
 [[env.kazakhstan.kv_namespaces]]
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
+
+[env.middle-corridor-deal-risk-gate]
+name = "middle-corridor-deal-risk-gate-a2a"
+workers_dev = true
+
+[env.middle-corridor-deal-risk-gate.vars]
+AGENT_PROFILE = "kazakhstan"
+
+[[env.middle-corridor-deal-risk-gate.kv_namespaces]]
+binding = "AGENDA_USAGE"
+id = "d2228183999246ccbec8aa2d5f130bfc"

@@ -226,6 +226,8 @@ test("kazakhstan deal risk gate returns decision-ready escalation block", () => 
     const gate = response.result.metadata.triage.deal_risk_gate;
     assert.equal(response.result.metadata.triage.intent, "deal_risk_gate");
     assert.equal(gate.triage_recommendation, "escalate_before_signature");
+    assert.equal(gate.route, "Altynkol -> Aktau/Kuryk -> Baku -> Poti");
+    assert.equal(gate.cargo, "industrial equipment");
     assert.equal(gate.value, "USD 2.4m");
     assert.ok(gate.supplied_sources.includes("port_operator_notice"));
     assert.ok(gate.supplied_sources.includes("sanctions_list_extract"));
@@ -233,6 +235,45 @@ test("kazakhstan deal risk gate returns decision-ready escalation block", () => 
     assert.ok(gate.minimum_sources_before_go.includes("beneficial_ownership_source"));
     assert.ok(gate.minimum_sources_before_go.includes("insurance_clause_or_underwriter_note"));
     assert.match(response.result.artifacts[0].parts[0].text, /Recommendation: escalate_before_signature/);
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("kazakhstan deal risk gate extracts free-form route cargo and value", () => {
+  const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "deal-gate-freeform",
+        method: "message/send",
+        params: {
+          message: {
+            parts: [
+              {
+                kind: "text",
+                text:
+                  "We are evaluating a USD 2.4m shipment of industrial equipment on route Altynkol -> Aktau/Kuryk -> Baku -> Poti. Counterparties: shipper, forwarder, consignee. Sources supplied: port operator notice dated 2026-05-20, OFAC/EU/UK sanctions list extract dated 2026-05-21 with no exact matches, carrier note dated 2026-05-22. Should this be escalated before contract signature?"
+              }
+            ]
+          }
+        }
+      },
+      kazakhstanRequest,
+      { AGENT_PROFILE: "kazakhstan" }
+    );
+
+    const gate = response.result.metadata.triage.deal_risk_gate;
+    const screen = response.result.metadata.signal_screen;
+    assert.equal(gate.route, "Altynkol -> Aktau/Kuryk -> Baku -> Poti");
+    assert.equal(gate.cargo, "industrial equipment");
+    assert.equal(gate.value, "USD 2.4m");
+    assert.equal(gate.counterparties, "shipper, forwarder, consignee");
+    assert.equal(screen.evidence_gaps.some((gap) => gap.includes("sanctions authority")), false);
+    assert.equal(screen.evidence_gaps.some((gap) => gap.includes("corridor operator")), false);
   } finally {
     console.log = originalLog;
   }

@@ -13,13 +13,13 @@ The examples are illustrative fixtures. They do not contain live retrieval, sanc
 Live A2A endpoint:
 
 ```text
-https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/message/send
+https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send
 ```
 
 Example curl:
 
 ```bash
-curl -X POST https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/message/send \
+curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send \
   -H 'content-type: application/json' \
   -d @01-request.json
 ```

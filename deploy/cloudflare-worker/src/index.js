@@ -115,7 +115,11 @@ function originFromRequest(request) {
 
 function agentProfile(request, env = {}) {
   const host = new URL(request.url).host.toLowerCase();
-  if (env.AGENT_PROFILE === "kazakhstan" || host.includes("kazakhstan-corridor-risk-a2a")) {
+  if (
+    env.AGENT_PROFILE === "kazakhstan" ||
+    host.includes("kazakhstan-corridor-risk-a2a") ||
+    host.includes("middle-corridor-deal-risk-gate-a2a")
+  ) {
     return "kazakhstan";
   }
   return "agenda";
@@ -340,7 +344,8 @@ function applyAgentProfile(card, request, env = {}) {
     "https://github.com/vassiliylakhonin",
     "https://pypi.org/project/agenda-intelligence-md/",
     "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md",
-    "https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev"
+    "https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev",
+    "https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev"
   ];
   card.skills = [
     {
@@ -571,6 +576,44 @@ function extractAfterLabel(text, labels) {
   return match ? match[1].trim().replace(/\.$/, "") : null;
 }
 
+function cleanExtractedDealField(value) {
+  return value
+    ? value
+        .trim()
+        .replace(/\s+/g, " ")
+        .replace(/[.;,\s]+$/, "")
+    : null;
+}
+
+function extractDealRoute(text) {
+  const labelled = extractAfterLabel(text, ["Route"]);
+  if (labelled) return labelled;
+
+  const match = text.match(
+    /\broute\s+(.+?)(?=(?:\.\s+(?:Counterparties|Sources|Dated sources|Should|Question)\b)|(?:\s+with\s+(?:cargo|counterparties)\b)|$)/is
+  );
+  return match ? cleanExtractedDealField(match[1]) : null;
+}
+
+function extractDealCargo(text) {
+  const labelled = extractAfterLabel(text, ["Cargo"]);
+  if (labelled) return labelled;
+
+  const shipmentMatch = text.match(/\bshipment of\s+(.+?)(?=(?:\s+on\s+route\b)|(?:\s+via\b)|[.;]|$)/is);
+  if (shipmentMatch) return cleanExtractedDealField(shipmentMatch[1]);
+
+  const cargoMatch = text.match(/\bcargo\s+(?:is|of|:)?\s*(.+?)(?=(?:\s+on\s+route\b)|[.;]|$)/is);
+  return cargoMatch ? cleanExtractedDealField(cargoMatch[1]) : null;
+}
+
+function extractDealValue(text) {
+  const labelled = extractAfterLabel(text, ["Value"]);
+  if (labelled) return labelled;
+
+  const match = text.match(/\b(?:USD|EUR|GBP|KZT|CNY)\s*[\d,.]+(?:\s?(?:m|mn|million|bn|billion))?\b/i);
+  return match ? cleanExtractedDealField(match[0]) : null;
+}
+
 function detectSuppliedSources(text) {
   const lower = text.toLowerCase();
   const sources = [];
@@ -616,9 +659,9 @@ function dealRiskGateForText(text) {
   const missingSources = requiredSources.filter(
     (source) => !suppliedSources.includes(source) || explicitlyMissing.includes(source)
   );
-  const route = extractAfterLabel(text, ["Route"]) || "not supplied";
-  const cargo = extractAfterLabel(text, ["Cargo"]) || "not supplied";
-  const value = extractAfterLabel(text, ["Value"]) || null;
+  const route = extractDealRoute(text) || "not supplied";
+  const cargo = extractDealCargo(text) || "not supplied";
+  const value = extractDealValue(text);
   const counterparties = extractAfterLabel(text, ["Counterparties", "Parties"]) || "not supplied";
   const triageRecommendation = missingSources.length > 0 ? "escalate_before_signature" : "proceed_with_human_review";
   const riskSignal =
@@ -723,6 +766,36 @@ function sourceCategoriesForModules(modules) {
   return [...new Set(categories)];
 }
 
+function hasSuppliedSourceForCategory(category, suppliedSources, text) {
+  const supplied = new Set(suppliedSources);
+  if (category === "primary official source") {
+    return [
+      "sanctions_list_extract",
+      "port_operator_notice",
+      "counterparty_registry_extract",
+      "customs_or_regulatory_source"
+    ].some((source) => supplied.has(source));
+  }
+  if (category === "dated retrieval note") {
+    return /\b(?:dated|checked at|retrieved)\s+\d{4}-\d{2}-\d{2}/i.test(text);
+  }
+  if (category === "sanctions authority") return supplied.has("sanctions_list_extract");
+  if (category === "ownership/counterparty") {
+    return supplied.has("counterparty_registry_extract") || supplied.has("beneficial_ownership_source");
+  }
+  if (category === "shipping or logistics") {
+    return supplied.has("carrier_note") || supplied.has("vessel_or_carrier_history");
+  }
+  if (category === "corridor operator") return supplied.has("port_operator_notice");
+  if (category === "customs/transport authority") {
+    return supplied.has("customs_or_regulatory_source") || supplied.has("port_operator_notice");
+  }
+  if (category === "trade finance") {
+    return supplied.has("insurance_clause_or_underwriter_note") || supplied.has("sanctions_list_extract");
+  }
+  return false;
+}
+
 function watchNextForModules(modules) {
   const moduleNames = new Set(modules.map((item) => item.module));
   const items = [
@@ -768,12 +841,19 @@ function signalScreenForText(text, modules, intent) {
   }
 
   const sourceCategories = sourceCategoriesForModules(modules);
+  const explicitlyMissingSources = detectExplicitlyMissingSources(text);
+  const suppliedSources = detectSuppliedSources(text).filter((source) => !explicitlyMissingSources.includes(source));
+  const missingSourceCategories = sourceCategories.filter(
+    (category) => !hasSuppliedSourceForCategory(category, suppliedSources, text)
+  );
   return {
     intent,
     risk_signal: riskSignal,
     affected_regions: affectedRegionsForModules(modules),
     source_categories_required: sourceCategories,
-    evidence_gaps: sourceCategories.slice(0, 5).map((category) => `No caller-supplied ${category} evidence in this live A2A request.`),
+    evidence_gaps: missingSourceCategories
+      .slice(0, 5)
+      .map((category) => `No caller-supplied ${category} evidence in this live A2A request.`),
     watch_next: watchNextForModules(modules),
     recommended_mcp_tool:
       intent === "source_coverage"
