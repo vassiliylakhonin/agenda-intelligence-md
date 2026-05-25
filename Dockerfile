@@ -1,22 +1,24 @@
-# Minimal container for the Agenda Intelligence stdio MCP server.
+# Minimal container for the Agenda Intelligence MD stdio MCP server.
 #
 # Used by Glama (https://glama.ai/mcp/servers) and any other MCP catalog
 # that introspects servers by spinning them up and reading `tools/list`
 # over JSON-RPC on stdio.
 #
-# The container only needs to start the server and respond to the
-# introspection request. No Anthropic API call is required for that, so
-# the optional `[llm]` extra is intentionally omitted from the default
-# image to keep the surface small. Hosts that want direct API calls
-# from `analyze` should install the `[llm]` extra and set
-# ANTHROPIC_API_KEY on top of this image.
+# This image starts `agenda-intelligence-mcp`. It is suitable for MCP
+# catalogs and container-based introspection. It is not the future hosted
+# HTTP API image.
+#
+# No Anthropic API call is required for MCP tool introspection, so the
+# optional `[llm]` extra is intentionally omitted from the default image.
+# No ANTHROPIC_API_KEY is required unless a derived image enables direct
+# model calls from `analyze`.
 
 FROM python:3.11-slim
 
 # Pin to the current published release so introspection is reproducible.
 # Bump in lockstep with pyproject.toml, agent-manifest.json, server.json
 # on every release — see the project release checklist.
-ARG AGENDA_INTELLIGENCE_VERSION=0.9.3
+ARG AGENDA_INTELLIGENCE_VERSION=1.0.1
 
 RUN pip install --no-cache-dir "agenda-intelligence-md==${AGENDA_INTELLIGENCE_VERSION}"
 
