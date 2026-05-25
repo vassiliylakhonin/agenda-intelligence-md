@@ -44,6 +44,7 @@ agenda-intelligence-http --host 0.0.0.0 --port 8080
 - `POST /v1/audit-claims`
 - `POST /v1/source-coverage`
 - `POST /v1/score`
+- `POST /v1/middle-corridor/deal-risk`
 
 ## Examples
 
@@ -69,6 +70,14 @@ Score:
 curl -sS http://127.0.0.1:8080/v1/score \
   -H 'content-type: application/json' \
   -d '{"before_text":"Generic update.","after_text":"Signal classification: policy risk. Watch next: regulator guidance."}'
+```
+
+Middle Corridor deal risk:
+
+```bash
+curl -sS http://127.0.0.1:8080/v1/middle-corridor/deal-risk \
+  -H 'content-type: application/json' \
+  -d @examples/kazakhstan-middle-corridor/contract/pre_signature_escalate.request.json
 ```
 
 ## Data handling

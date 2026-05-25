@@ -15,6 +15,22 @@ from agenda_intelligence.eval import score_before_after
 
 PACKAGE_NAME = "agenda_intelligence"
 
+MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO = [
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "sanctions_list_extract",
+    "customs_or_regulatory_source",
+    "insurance_clause_or_underwriter_note",
+    "vessel_or_carrier_history",
+]
+
+MIDDLE_CORRIDOR_READINESS_CONTEXT = ["port_operator_notice", "carrier_note"]
+
+NOT_ADVICE_NOTICE = (
+    "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, "
+    "insurance, or trading advice."
+)
+
 
 def _load_schema(schema_name: str) -> dict:
     schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "v1" / schema_name
@@ -298,3 +314,139 @@ def score_output(before_text: str, after_text: str) -> dict:
     result = score_before_after(before_text, after_text)
     result["error"] = None
     return result
+
+
+def _supplied_source_types(request_json: dict) -> list[str]:
+    return list(
+        dict.fromkeys(
+            source.get("source_type")
+            for source in request_json.get("dated_sources", [])
+            if isinstance(source, dict) and source.get("source_type")
+        )
+    )
+
+
+def _evidence_gap_for_source(source_type: str) -> str:
+    gaps = {
+        "counterparty_registry_extract": "No counterparty registry extract supplied.",
+        "beneficial_ownership_source": "No beneficial ownership source supplied.",
+        "sanctions_list_extract": "No sanctions list extract supplied.",
+        "customs_or_regulatory_source": "No customs or regulatory source supplied.",
+        "insurance_clause_or_underwriter_note": "No insurance clause or underwriter note supplied.",
+        "vessel_or_carrier_history": "No vessel or carrier history supplied.",
+    }
+    return gaps.get(source_type, f"No {source_type} supplied.")
+
+
+def _middle_corridor_triage_recommendation(request_json: dict, missing_sources: list[str]) -> str:
+    if not request_json.get("dated_sources"):
+        return "insufficient_information"
+    if not missing_sources:
+        return "ready_for_human_review"
+    if request_json.get("decision_stage") == "pre_signature":
+        return "escalate_before_signature"
+    if request_json.get("decision_stage") == "pre_shipment":
+        return "escalate_before_shipment"
+    return "not_decision_ready"
+
+
+def _middle_corridor_risk_signal(request_json: dict, missing_sources: list[str]) -> str:
+    if not request_json.get("dated_sources"):
+        return "unknown"
+    if len(missing_sources) >= 4:
+        return "medium_high"
+    if missing_sources:
+        return "medium"
+    return "low"
+
+
+def _middle_corridor_readiness(request_json: dict, supplied_sources: list[str]) -> tuple[int, str]:
+    if not request_json.get("dated_sources") or not supplied_sources:
+        return 0, "insufficient_information"
+
+    required_present = len(
+        [source_type for source_type in MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO if source_type in supplied_sources]
+    )
+    context_present = len(
+        [source_type for source_type in MIDDLE_CORRIDOR_READINESS_CONTEXT if source_type in supplied_sources]
+    )
+    score = min(
+        100,
+        round(
+            10
+            + (required_present / len(MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO)) * 70
+            + (context_present / len(MIDDLE_CORRIDOR_READINESS_CONTEXT)) * 20
+        ),
+    )
+    if score >= 85:
+        return score, "review_ready"
+    if score >= 50:
+        return score, "partial"
+    return score, "not_decision_ready"
+
+
+def _middle_corridor_top_risks(missing_sources: list[str]) -> list[str]:
+    risks = ["sanctions adjacency", "Caspian chokepoint dependency"]
+    if "customs_or_regulatory_source" in missing_sources:
+        risks.append("customs and documentation uncertainty")
+    if "insurance_clause_or_underwriter_note" in missing_sources:
+        risks.append("insurance exclusions or coverage limitations")
+    if "counterparty_registry_extract" in missing_sources or "beneficial_ownership_source" in missing_sources:
+        risks.append("counterparty and ownership uncertainty")
+    if "vessel_or_carrier_history" in missing_sources:
+        risks.append("carrier or vessel history gap")
+    return list(dict.fromkeys(risks))
+
+
+def middle_corridor_deal_risk(request_json: dict) -> dict:
+    """Build a structured Middle Corridor deal-risk response.
+
+    This is pre-compliance evidence triage only. It does not perform live
+    retrieval, factual-truth verification, or legal/compliance/sanctions advice.
+    """
+    request_validation = _validate_json(request_json, "middle-corridor-deal-risk-request.schema.json")
+    if not request_validation.get("valid"):
+        return {
+            "implemented": True,
+            "valid": False,
+            "errors": request_validation.get("errors", []),
+            "response": None,
+        }
+
+    supplied_sources = _supplied_source_types(request_json)
+    missing_sources = [
+        source_type for source_type in MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO if source_type not in supplied_sources
+    ]
+    readiness_score, readiness_label = _middle_corridor_readiness(request_json, supplied_sources)
+    response = {
+        "triage_recommendation": _middle_corridor_triage_recommendation(request_json, missing_sources),
+        "risk_signal": _middle_corridor_risk_signal(request_json, missing_sources),
+        "decision_readiness_score": readiness_score,
+        "decision_readiness_label": readiness_label,
+        "route": request_json["route"],
+        "cargo": request_json["cargo"],
+        "counterparties": request_json["counterparties"],
+        "supplied_sources": supplied_sources,
+        "minimum_sources_before_go": missing_sources,
+        "evidence_gaps": [_evidence_gap_for_source(source_type) for source_type in missing_sources],
+        "top_risks": _middle_corridor_top_risks(missing_sources),
+        "watch_next": [
+            "new sanctions designations",
+            "port delays or operator notices",
+            "customs rule or enforcement changes",
+            "carrier or vessel history updates",
+            "insurance term changes",
+        ],
+        "human_review_required": True,
+        "not_advice_notice": NOT_ADVICE_NOTICE,
+    }
+    if "shipment_value" in request_json:
+        response["shipment_value"] = request_json["shipment_value"]
+
+    response_validation = _validate_json(response, "middle-corridor-deal-risk-response.schema.json")
+    return {
+        "implemented": True,
+        "valid": bool(response_validation.get("valid")),
+        "errors": response_validation.get("errors", []),
+        "response": response,
+    }

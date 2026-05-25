@@ -47,7 +47,12 @@ def handle_get(path: str) -> tuple[int, dict]:
                 "ready": True,
                 "service": "agenda-intelligence-http",
                 "version": __version__,
-                "service_layer": ["audit_claims", "source_coverage", "score_output"],
+                "service_layer": [
+                    "audit_claims",
+                    "source_coverage",
+                    "score_output",
+                    "middle_corridor_deal_risk",
+                ],
                 "boundary": BOUNDARY_NOTICE,
             },
         )
@@ -77,6 +82,12 @@ def handle_post(path: str, payload: dict) -> tuple[int, dict]:
         if not isinstance(before_text, str) or not isinstance(after_text, str):
             return 400, {"ok": False, "error": "before_text and after_text must be strings"}
         return 200, services.score_output(before_text, after_text)
+
+    if path == "/v1/middle-corridor/deal-risk":
+        result = services.middle_corridor_deal_risk(payload)
+        if not result.get("valid"):
+            return 400, {"ok": False, "error": "Invalid Middle Corridor deal-risk request", "errors": result["errors"]}
+        return 200, result["response"]
 
     return 404, {"ok": False, "error": "Not found"}
 

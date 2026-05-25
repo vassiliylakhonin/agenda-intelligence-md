@@ -60,5 +60,6 @@ The separate [`HTTP API shell`](http-api.md) uses `Dockerfile.api` for the porta
 - `/v1/audit-claims`
 - `/v1/source-coverage`
 - `/v1/score`
+- `/v1/middle-corridor/deal-risk`
 
 The root `Dockerfile` remains the stdio MCP image.

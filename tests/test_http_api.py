@@ -84,8 +84,68 @@ def test_http_api_score_contract():
     assert body["after_score"] > body["before_score"]
 
 
+def test_http_api_middle_corridor_deal_risk_contract():
+    request = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "shipment_value": {
+            "amount": 2400000,
+            "currency": "USD",
+        },
+        "counterparties": [
+            {
+                "role": "forwarder",
+                "name": "Kazakhstan forwarder",
+                "jurisdiction": "Kazakhstan",
+            }
+        ],
+        "dated_sources": [
+            {
+                "id": "e1",
+                "source_type": "port_operator_notice",
+                "title": "Port operator notice",
+                "date": "2026-05-20",
+                "url": "https://example.com/port-notice",
+            },
+            {
+                "id": "e2",
+                "source_type": "sanctions_list_extract",
+                "title": "Sanctions list extract",
+                "date": "2026-05-21",
+                "url": "https://example.com/sanctions",
+            },
+            {
+                "id": "e3",
+                "source_type": "carrier_note",
+                "title": "Carrier note",
+                "date": "2026-05-22",
+                "url": "https://example.com/carrier",
+            },
+        ],
+        "risk_question": "Should this be escalated before contract signature?",
+        "decision_stage": "pre_signature",
+    }
+
+    status, body = handle_post("/v1/middle-corridor/deal-risk", request)
+
+    assert status == 200
+    assert body["triage_recommendation"] == "escalate_before_signature"
+    assert body["risk_signal"] == "medium_high"
+    assert body["decision_readiness_score"] == 42
+    assert body["decision_readiness_label"] == "not_decision_ready"
+
+
 def test_http_api_rejects_bad_request_shape():
     status, body = handle_post("/v1/score", {"before_text": "x"})
 
     assert status == 400
     assert body == {"ok": False, "error": "before_text and after_text must be strings"}
+
+
+def test_http_api_rejects_invalid_middle_corridor_request():
+    status, body = handle_post("/v1/middle-corridor/deal-risk", {"route": "Altynkol"})
+
+    assert status == 400
+    assert body["ok"] is False
+    assert body["error"] == "Invalid Middle Corridor deal-risk request"
+    assert body["errors"]
