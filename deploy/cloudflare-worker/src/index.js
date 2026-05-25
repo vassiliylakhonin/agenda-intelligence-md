@@ -514,10 +514,33 @@ function routeModulesForProfile(text, profile) {
   return modules;
 }
 
+function classifyIntentForProfile(text, profile) {
+  const lower = text.toLowerCase();
+  if (
+    profile === "kazakhstan" &&
+    hasAny(lower, [
+      "deal risk",
+      "deal-risk",
+      "deal desk",
+      "contract signature",
+      "before signature",
+      "escalated before contract",
+      "escalate before",
+      "go/no-go",
+      "proceed",
+      "pause",
+      "reject-for-now"
+    ])
+  ) {
+    return "deal_risk_gate";
+  }
+  return classifyIntent(text);
+}
+
 function classifyIntent(text) {
   const lower = text.toLowerCase();
   if (!lower.trim()) return "health_probe";
-  if (hasAny(lower, ["validate", "schema", "contract", "json schema", "memo validation"])) {
+  if (hasAny(lower, ["validate", "schema", "json schema", "memo validation"])) {
     return "memo_validation";
   }
   if (hasAny(lower, ["source", "coverage", "required source", "source plan"])) {
@@ -536,6 +559,104 @@ function classifyIntent(text) {
     return "signal_monitoring";
   }
   return "strategic_risk_triage";
+}
+
+function extractAfterLabel(text, labels) {
+  const escaped = labels.map((label) => label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const pattern = new RegExp(
+    `(?:${escaped})\\s*:\\s*(.*?)(?=(?:\\.\\s+[A-Z][A-Za-z /-]{1,40}:)|(?:\\n[A-Z][A-Za-z /-]{1,40}:)|$)`,
+    "is"
+  );
+  const match = text.match(pattern);
+  return match ? match[1].trim().replace(/\.$/, "") : null;
+}
+
+function detectSuppliedSources(text) {
+  const lower = text.toLowerCase();
+  const sources = [];
+  const checks = [
+    ["port_operator_notice", ["port operator notice", "port notice"]],
+    ["sanctions_list_extract", ["sanctions list extract", "sanctions extract"]],
+    ["carrier_note", ["carrier note", "carrier routing note"]],
+    ["counterparty_registry_extract", ["counterparty registry", "registry extract"]],
+    ["beneficial_ownership_source", ["beneficial ownership", "ubo"]],
+    ["insurance_clause_or_underwriter_note", ["insurance clause", "underwriter note", "insurance terms"]],
+    ["customs_or_regulatory_source", ["customs source", "regulatory source", "customs document"]],
+    ["vessel_or_carrier_history", ["vessel history", "ais", "carrier history"]]
+  ];
+  for (const [name, terms] of checks) {
+    if (terms.some((term) => lower.includes(term))) sources.push(name);
+  }
+  return [...new Set(sources)];
+}
+
+function detectExplicitlyMissingSources(text) {
+  const lower = text.toLowerCase();
+  const missing = [];
+  if (/(no|missing|without)\s+beneficial ownership/.test(lower)) missing.push("beneficial_ownership_source");
+  if (/(no|missing|without)\s+(counterparty registry|registry extract)/.test(lower)) missing.push("counterparty_registry_extract");
+  if (/(no|missing|without)\s+(insurance clause|underwriter note|insurance terms)/.test(lower)) missing.push("insurance_clause_or_underwriter_note");
+  if (/(no|missing|without)\s+(customs source|customs document|regulatory source)/.test(lower)) missing.push("customs_or_regulatory_source");
+  if (/(no|missing|without)\s+(vessel history|ais|carrier history)/.test(lower)) missing.push("vessel_or_carrier_history");
+  return [...new Set(missing)];
+}
+
+function dealRiskGateForText(text) {
+  const explicitlyMissing = detectExplicitlyMissingSources(text);
+  const suppliedSources = detectSuppliedSources(text).filter((source) => !explicitlyMissing.includes(source));
+  const requiredSources = [
+    "sanctions_list_extract",
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "port_operator_notice",
+    "customs_or_regulatory_source",
+    "insurance_clause_or_underwriter_note",
+    "vessel_or_carrier_history"
+  ];
+  const missingSources = requiredSources.filter(
+    (source) => !suppliedSources.includes(source) || explicitlyMissing.includes(source)
+  );
+  const route = extractAfterLabel(text, ["Route"]) || "not supplied";
+  const cargo = extractAfterLabel(text, ["Cargo"]) || "not supplied";
+  const value = extractAfterLabel(text, ["Value"]) || null;
+  const counterparties = extractAfterLabel(text, ["Counterparties", "Parties"]) || "not supplied";
+  const triageRecommendation = missingSources.length > 0 ? "escalate_before_signature" : "proceed_with_human_review";
+  const riskSignal =
+    missingSources.length >= 4
+      ? "medium-high"
+      : missingSources.length > 0
+        ? "medium"
+        : "triage_only_review_required";
+
+  return {
+    triage_recommendation: triageRecommendation,
+    risk_signal: riskSignal,
+    route,
+    cargo,
+    value,
+    counterparties,
+    supplied_sources: suppliedSources,
+    missing_sources: missingSources,
+    minimum_sources_before_go: missingSources,
+    reason:
+      missingSources.length > 0
+        ? "Evidence pack is not decision-ready for contract signature because required sanctions, counterparty, ownership, insurance, customs, or vessel/carrier evidence is missing."
+        : "Required source categories are present at the routing layer, but human review is still required before commercial reliance.",
+    commercial_impact: [
+      "Possible shipment delay or rerouting cost.",
+      "Potential insurer exclusion or documentation dispute.",
+      "Counterparty or ownership review may be required before signature.",
+      "Committee/client memo may need explicit unsupported-claim labels."
+    ],
+    watch_next: [
+      "new OFAC/EU/UK/UN designations, FAQs, licences, guidance, or enforcement notices",
+      "port/operator delay notices for Aktau, Kuryk, Baku, Poti, or linked rail corridors",
+      "customs rule or enforcement changes affecting transit documentation",
+      "carrier/vessel history updates or insurance terms that change the risk view"
+    ],
+    human_review_required: true,
+    not_legal_or_compliance_advice: true
+  };
 }
 
 function sourcePlanForModules(modules) {
@@ -675,6 +796,10 @@ function qualityGatesForIntent(intent) {
   if (intent === "memo_validation") {
     gates.unshift("Validate the memo against agenda-memo.schema.json before using it downstream.");
   }
+  if (intent === "deal_risk_gate") {
+    gates.unshift("Treat proceed/pause/escalate as routing guidance for human review, not approval advice.");
+    gates.unshift("Escalate before signature when required source categories are missing.");
+  }
   if (intent === "sanctions_policy_signal_screen") {
     gates.unshift("Treat the signal screen as a lead, not a verified finding.");
   }
@@ -693,6 +818,13 @@ function nextActionsForIntent(intent) {
     return [
       "Install the MCP package and run validate_memo against the candidate memo JSON.",
       "Fix schema errors before asking an agent to expand or summarize the memo."
+    ];
+  }
+  if (intent === "deal_risk_gate") {
+    return [
+      "Fill the minimum_sources_before_go list before contract signature or committee review.",
+      "Run source_coverage and audit_claims in the MCP server with the dated evidence pack.",
+      "Escalate unsupported sanctions, ownership, insurance, customs, or vessel-history claims to human review."
     ];
   }
   if (intent === "evidence_audit") {
@@ -725,12 +857,13 @@ function nextActionsForIntent(intent) {
   ];
 }
 
-function triageForText(text, modules) {
-  const intent = classifyIntent(text);
+function triageForText(text, modules, profile = "agenda") {
+  const intent = classifyIntentForProfile(text, profile);
   return {
     intent,
     modules,
     signal_screen: signalScreenForText(text, modules, intent),
+    deal_risk_gate: intent === "deal_risk_gate" ? dealRiskGateForText(text) : null,
     source_plan: sourcePlanForModules(modules),
     quality_gates: qualityGatesForIntent(intent),
     next_actions: nextActionsForIntent(intent),
@@ -857,6 +990,10 @@ function sortedMap(map) {
     .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name));
 }
 
+function listOrNone(items) {
+  return items.length ? items.map((item) => `- ${item}`).join("\n") : "- none detected";
+}
+
 async function listUsageEvents(kv, date) {
   const events = [];
   let cursor;
@@ -940,7 +1077,7 @@ function routingMarkdown(text, modules, profile = "agenda") {
     profile === "kazakhstan"
       ? `${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`
       : text;
-  const triage = triageForText(triageText, modules);
+  const triage = triageForText(triageText, modules, profile);
   const moduleList = modules.map((item) => `- ${item.module}: ${item.role}`).join("\n");
   const screen = triage.signal_screen;
   const sourceList = triage.source_plan.map((item) => `- ${item}`).join("\n");
@@ -950,6 +1087,35 @@ function routingMarkdown(text, modules, profile = "agenda") {
   const requiredSourceList = screen.source_categories_required.map((item) => `- ${item}`).join("\n");
   const gapList = screen.evidence_gaps.map((item) => `- ${item}`).join("\n");
   const watchList = screen.watch_next.map((item) => `- ${item}`).join("\n");
+  const dealGateBlock =
+    triage.deal_risk_gate && profile === "kazakhstan"
+      ? [
+          "Deal risk gate:",
+          `Recommendation: ${triage.deal_risk_gate.triage_recommendation}`,
+          `Risk signal: ${triage.deal_risk_gate.risk_signal}`,
+          `Route: ${triage.deal_risk_gate.route}`,
+          `Cargo: ${triage.deal_risk_gate.cargo}`,
+          triage.deal_risk_gate.value ? `Value: ${triage.deal_risk_gate.value}` : null,
+          `Counterparties: ${triage.deal_risk_gate.counterparties}`,
+          "",
+          "Supplied source types detected:",
+          listOrNone(triage.deal_risk_gate.supplied_sources),
+          "",
+          "Minimum sources before go:",
+          listOrNone(triage.deal_risk_gate.minimum_sources_before_go),
+          "",
+          `Reason: ${triage.deal_risk_gate.reason}`,
+          "",
+          "Commercial impact:",
+          triage.deal_risk_gate.commercial_impact.map((item) => `- ${item}`).join("\n"),
+          "",
+          "Human review required: true",
+          "Not legal/compliance advice: true",
+          ""
+        ]
+          .filter((item) => item !== null)
+          .join("\n")
+      : "";
   const promptLine = text ? `\n\nReceived prompt excerpt:\n\n> ${text.slice(0, 500)}` : "";
   const title =
     profile === "kazakhstan"
@@ -971,6 +1137,7 @@ function routingMarkdown(text, modules, profile = "agenda") {
     "",
     `Detected intent: ${triage.intent}`,
     "",
+    dealGateBlock,
     "Signal screen:",
     `Risk signal: ${screen.risk_signal}`,
     "",
@@ -1013,7 +1180,7 @@ function a2aResult(params, request, env = {}) {
       ? `${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`
       : text;
   const modules = routeModulesForProfile(text, profile);
-  const triage = triageForText(triageText, modules);
+  const triage = triageForText(triageText, modules, profile);
   return {
     id: crypto.randomUUID(),
     status: {

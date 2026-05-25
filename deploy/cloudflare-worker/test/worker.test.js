@@ -197,6 +197,47 @@ test("kazakhstan profile defaults routing to Central Asia and sanctions modules"
   }
 });
 
+test("kazakhstan deal risk gate returns decision-ready escalation block", () => {
+  const kazakhstanRequest = new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send");
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "deal-gate-1",
+        method: "message/send",
+        params: {
+          message: {
+            parts: [
+              {
+                kind: "text",
+                text:
+                  "Deal risk gate test. Route: Altynkol -> Aktau/Kuryk -> Baku -> Poti. Cargo: industrial equipment. Value: USD 2.4m. Counterparties: Kazakhstan forwarder, Azerbaijan port agent, Georgian consignee. Dated sources supplied: port operator notice dated 2026-05-20; sanctions list extract dated 2026-05-21 with no exact match; carrier note dated 2026-05-22. No beneficial ownership extract, no insurance clause, no customs source, no vessel history. Question: should this be escalated before contract signature?"
+              }
+            ]
+          }
+        }
+      },
+      kazakhstanRequest,
+      { AGENT_PROFILE: "kazakhstan" }
+    );
+
+    const gate = response.result.metadata.triage.deal_risk_gate;
+    assert.equal(response.result.metadata.triage.intent, "deal_risk_gate");
+    assert.equal(gate.triage_recommendation, "escalate_before_signature");
+    assert.equal(gate.value, "USD 2.4m");
+    assert.ok(gate.supplied_sources.includes("port_operator_notice"));
+    assert.ok(gate.supplied_sources.includes("sanctions_list_extract"));
+    assert.equal(gate.supplied_sources.includes("beneficial_ownership_source"), false);
+    assert.ok(gate.minimum_sources_before_go.includes("beneficial_ownership_source"));
+    assert.ok(gate.minimum_sources_before_go.includes("insurance_clause_or_underwriter_note"));
+    assert.match(response.result.artifacts[0].parts[0].text, /Recommendation: escalate_before_signature/);
+  } finally {
+    console.log = originalLog;
+  }
+});
+
 test("triage classifies source coverage requests and returns quality gates", () => {
   const triage = triageForText(
     "Check source coverage for EU sanctions evidence around Red Sea shipping.",
