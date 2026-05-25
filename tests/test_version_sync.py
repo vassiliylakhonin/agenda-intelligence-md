@@ -2,7 +2,6 @@ import json
 import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -49,7 +48,5 @@ def test_release_version_fields_match_pyproject():
     ]:
         discovered.extend(collect_json_versions(ROOT / relative_path))
 
-    mismatches = [
-        f"{name}={version!r} expected {expected!r}" for name, version in discovered if version != expected
-    ]
+    mismatches = [f"{name}={version!r} expected {expected!r}" for name, version in discovered if version != expected]
     assert not mismatches, "Version drift detected: " + "; ".join(mismatches)
