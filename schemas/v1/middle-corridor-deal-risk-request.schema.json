@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/middle-corridor-deal-risk-request.schema.json",
+  "title": "MiddleCorridorDealRiskRequest",
+  "description": "Product-grade structured request contract for Kazakhstan / Middle Corridor deal-risk evidence triage. This schema describes caller-supplied route, cargo, counterparty, dated-source, and decision-stage inputs. It does not enable live retrieval, factual-truth verification, legal advice, sanctions advice, compliance advice, financial advice, investment advice, insurance advice, or trading advice.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "route",
+    "cargo",
+    "counterparties",
+    "dated_sources",
+    "risk_question",
+    "decision_stage"
+  ],
+  "properties": {
+    "route": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Route, corridor, or transit path under review."
+    },
+    "cargo": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Cargo, commodity, goods, or shipment type under review."
+    },
+    "shipment_value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amount",
+        "currency"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "USD",
+            "EUR",
+            "GBP",
+            "KZT",
+            "CNY",
+            "TRY",
+            "AED",
+            "other"
+          ]
+        }
+      }
+    },
+    "counterparties": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/counterparty"
+      }
+    },
+    "dated_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dated_source"
+      }
+    },
+    "risk_question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_stage": {
+      "type": "string",
+      "enum": [
+        "pre_signature",
+        "pre_shipment",
+        "in_transit",
+        "post_incident",
+        "committee_review",
+        "other"
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requested_output": {
+      "type": "string",
+      "enum": [
+        "structured_json",
+        "markdown_summary",
+        "both"
+      ],
+      "default": "structured_json"
+    }
+  },
+  "$defs": {
+    "counterparty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "name"
+      ],
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": [
+            "shipper",
+            "forwarder",
+            "carrier",
+            "port_agent",
+            "consignee",
+            "bank",
+            "insurer",
+            "broker",
+            "customs_broker",
+            "unknown",
+            "other"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "dated_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_type",
+        "title",
+        "date"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "$ref": "#/$defs/source_type"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "port_operator_notice",
+        "sanctions_list_extract",
+        "carrier_note",
+        "counterparty_registry_extract",
+        "beneficial_ownership_source",
+        "customs_or_regulatory_source",
+        "insurance_clause_or_underwriter_note",
+        "vessel_or_carrier_history",
+        "rail_capacity_or_border_wait_source",
+        "contract_or_invoice_extract",
+        "user_provided_note",
+        "other"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+      "cargo": "industrial equipment",
+      "shipment_value": {
+        "amount": 2400000,
+        "currency": "USD"
+      },
+      "counterparties": [
+        {
+          "role": "forwarder",
+          "name": "Kazakhstan forwarder",
+          "jurisdiction": "Kazakhstan"
+        }
+      ],
+      "dated_sources": [
+        {
+          "id": "e1",
+          "source_type": "port_operator_notice",
+          "title": "Port operator notice",
+          "date": "2026-05-20",
+          "url": "https://example.com/port-notice"
+        }
+      ],
+      "risk_question": "Should this be escalated before contract signature?",
+      "decision_stage": "pre_signature",
+      "requested_output": "structured_json"
+    }
+  ]
+}

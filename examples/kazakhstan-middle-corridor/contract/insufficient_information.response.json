@@ -1,0 +1,46 @@
+{
+  "triage_recommendation": "insufficient_information",
+  "risk_signal": "unknown",
+  "route": "Kazakhstan -> Caspian -> Caucasus",
+  "cargo": "industrial goods",
+  "counterparties": [
+    {
+      "role": "unknown",
+      "name": "unnamed counterparties"
+    }
+  ],
+  "supplied_sources": [],
+  "minimum_sources_before_go": [
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "sanctions_list_extract",
+    "customs_or_regulatory_source",
+    "insurance_clause_or_underwriter_note",
+    "vessel_or_carrier_history"
+  ],
+  "evidence_gaps": [
+    "No named counterparties supplied.",
+    "No dated source material supplied.",
+    "No sanctions list extract supplied.",
+    "No counterparty registry extract supplied.",
+    "No beneficial ownership source supplied.",
+    "No customs or regulatory source supplied.",
+    "No insurance clause or underwriter note supplied.",
+    "No vessel or carrier history supplied."
+  ],
+  "top_risks": [
+    "unknown counterparty exposure",
+    "unknown documentation status",
+    "unknown sanctions adjacency",
+    "unknown insurance and carrier constraints"
+  ],
+  "watch_next": [
+    "counterparty identity and registry extracts",
+    "dated sanctions authority extracts",
+    "customs and transit documentation",
+    "insurance terms",
+    "carrier or vessel history"
+  ],
+  "human_review_required": true,
+  "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
+}

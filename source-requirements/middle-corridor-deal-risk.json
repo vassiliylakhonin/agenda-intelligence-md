@@ -1,0 +1,40 @@
+{
+  "category": "middle-corridor-deal-risk",
+  "required_before_go": [
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "sanctions_list_extract",
+    "customs_or_regulatory_source",
+    "insurance_clause_or_underwriter_note",
+    "vessel_or_carrier_history"
+  ],
+  "must_check": [
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "sanctions_list_extract",
+    "customs_or_regulatory_source",
+    "insurance_clause_or_underwriter_note",
+    "vessel_or_carrier_history"
+  ],
+  "helpful_context": [
+    "port_operator_notice",
+    "carrier_note",
+    "rail_capacity_or_border_wait_source",
+    "contract_or_invoice_extract"
+  ],
+  "supporting_sources": [
+    "port_operator_notice",
+    "carrier_note",
+    "rail_capacity_or_border_wait_source",
+    "contract_or_invoice_extract"
+  ],
+  "watch_indicators": [
+    "new sanctions designation",
+    "port operator notice",
+    "rail capacity or border wait update",
+    "customs rule change",
+    "insurance term change",
+    "carrier or vessel history update"
+  ],
+  "boundary": "This taxonomy supports pre-compliance evidence triage only. It does not provide legal, compliance, sanctions, insurance, financial, investment, trading, or shipment authorization advice."
+}

@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/middle-corridor-deal-risk-response.schema.json",
+  "title": "MiddleCorridorDealRiskResponse",
+  "description": "Product-grade structured response contract for Kazakhstan / Middle Corridor deal-risk evidence triage. This schema supports source-coverage gaps, escalation routing, watch-next indicators, and human-review requirements. It does not provide legal advice, sanctions advice, compliance advice, financial advice, investment advice, insurance advice, trading advice, live retrieval, or factual-truth verification.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "triage_recommendation",
+    "risk_signal",
+    "supplied_sources",
+    "minimum_sources_before_go",
+    "evidence_gaps",
+    "watch_next",
+    "human_review_required",
+    "not_advice_notice"
+  ],
+  "properties": {
+    "triage_recommendation": {
+      "type": "string",
+      "enum": [
+        "not_decision_ready",
+        "escalate_before_signature",
+        "escalate_before_shipment",
+        "ready_for_human_review",
+        "insufficient_information"
+      ]
+    },
+    "risk_signal": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "medium_high",
+        "high",
+        "unknown"
+      ]
+    },
+    "route": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cargo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "shipment_value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amount",
+        "currency"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number",
+          "minimum": 0
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "USD",
+            "EUR",
+            "GBP",
+            "KZT",
+            "CNY",
+            "TRY",
+            "AED",
+            "other"
+          ]
+        }
+      }
+    },
+    "counterparties": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/counterparty"
+      }
+    },
+    "supplied_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_type"
+      }
+    },
+    "minimum_sources_before_go": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_type"
+      }
+    },
+    "evidence_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "top_risks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "watch_next": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "human_review_required": {
+      "type": "boolean"
+    },
+    "not_advice_notice": {
+      "type": "string",
+      "minLength": 1
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "counterparty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "name"
+      ],
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": [
+            "shipper",
+            "forwarder",
+            "carrier",
+            "port_agent",
+            "consignee",
+            "bank",
+            "insurer",
+            "broker",
+            "customs_broker",
+            "unknown",
+            "other"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "port_operator_notice",
+        "sanctions_list_extract",
+        "carrier_note",
+        "counterparty_registry_extract",
+        "beneficial_ownership_source",
+        "customs_or_regulatory_source",
+        "insurance_clause_or_underwriter_note",
+        "vessel_or_carrier_history",
+        "rail_capacity_or_border_wait_source",
+        "contract_or_invoice_extract",
+        "user_provided_note",
+        "other"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "triage_recommendation": "escalate_before_signature",
+      "risk_signal": "medium_high",
+      "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+      "cargo": "industrial equipment",
+      "shipment_value": {
+        "amount": 2400000,
+        "currency": "USD"
+      },
+      "counterparties": [
+        {
+          "role": "forwarder",
+          "name": "Kazakhstan forwarder",
+          "jurisdiction": "Kazakhstan"
+        }
+      ],
+      "supplied_sources": [
+        "port_operator_notice",
+        "sanctions_list_extract",
+        "carrier_note"
+      ],
+      "minimum_sources_before_go": [
+        "counterparty_registry_extract",
+        "beneficial_ownership_source",
+        "customs_or_regulatory_source",
+        "insurance_clause_or_underwriter_note",
+        "vessel_or_carrier_history"
+      ],
+      "evidence_gaps": [
+        "No beneficial ownership extract supplied."
+      ],
+      "top_risks": [
+        "sanctions adjacency",
+        "Caspian chokepoint dependency"
+      ],
+      "watch_next": [
+        "new sanctions designations",
+        "port delays or operator notices"
+      ],
+      "human_review_required": true,
+      "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
+    }
+  ]
+}

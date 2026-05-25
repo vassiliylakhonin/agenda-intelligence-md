@@ -1,0 +1,61 @@
+{
+  "triage_recommendation": "escalate_before_signature",
+  "risk_signal": "medium_high",
+  "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+  "cargo": "industrial equipment",
+  "shipment_value": {
+    "amount": 2400000,
+    "currency": "USD"
+  },
+  "counterparties": [
+    {
+      "role": "forwarder",
+      "name": "Kazakhstan forwarder",
+      "jurisdiction": "Kazakhstan"
+    },
+    {
+      "role": "port_agent",
+      "name": "Azerbaijan port agent",
+      "jurisdiction": "Azerbaijan"
+    },
+    {
+      "role": "consignee",
+      "name": "Georgian consignee",
+      "jurisdiction": "Georgia"
+    }
+  ],
+  "supplied_sources": [
+    "port_operator_notice",
+    "sanctions_list_extract",
+    "carrier_note"
+  ],
+  "minimum_sources_before_go": [
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "customs_or_regulatory_source",
+    "insurance_clause_or_underwriter_note",
+    "vessel_or_carrier_history"
+  ],
+  "evidence_gaps": [
+    "No counterparty registry extract supplied.",
+    "No beneficial ownership source supplied.",
+    "No customs or regulatory source supplied.",
+    "No insurance clause or underwriter note supplied.",
+    "No vessel or carrier history supplied."
+  ],
+  "top_risks": [
+    "sanctions adjacency",
+    "Caspian chokepoint dependency",
+    "customs and documentation uncertainty",
+    "insurance exclusions or coverage limitations"
+  ],
+  "watch_next": [
+    "new sanctions designations",
+    "port delays or operator notices",
+    "customs rule or enforcement changes",
+    "carrier or vessel history updates",
+    "insurance term changes"
+  ],
+  "human_review_required": true,
+  "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
+}

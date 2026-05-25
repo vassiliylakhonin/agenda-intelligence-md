@@ -10,6 +10,8 @@ These examples show the intended commercial workflow for the Kazakhstan-focused 
 
 The examples are illustrative fixtures. They do not contain live retrieval, sanctions advice, compliance advice, or factual verification against external systems.
 
+The `contract/` directory contains the product-grade structured JSON request/response fixtures validated by the Middle Corridor deal-risk schemas. The free-text live A2A request remains a demo convenience, not the canonical enterprise interface.
+
 Live A2A endpoint:
 
 ```text

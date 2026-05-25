@@ -1,0 +1,15 @@
+{
+  "route": "Kazakhstan -> Caspian -> Caucasus",
+  "cargo": "industrial goods",
+  "counterparties": [
+    {
+      "role": "unknown",
+      "name": "unnamed counterparties"
+    }
+  ],
+  "dated_sources": [],
+  "risk_question": "Can this route be treated as ready for contract signature?",
+  "decision_stage": "pre_signature",
+  "notes": "Caller has not supplied dated source material, named counterparties, or documentation extracts.",
+  "requested_output": "structured_json"
+}

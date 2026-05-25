@@ -74,6 +74,14 @@
     "agenda_memo": {
       "path": "schemas/v1/agenda-memo.schema.json",
       "schema_version": "v1"
+    },
+    "middle_corridor_deal_risk_request": {
+      "path": "schemas/v1/middle-corridor-deal-risk-request.schema.json",
+      "schema_version": "v1"
+    },
+    "middle_corridor_deal_risk_response": {
+      "path": "schemas/v1/middle-corridor-deal-risk-response.schema.json",
+      "schema_version": "v1"
     }
   },
   "product": {
@@ -399,6 +407,7 @@
       "energy": "source-requirements/energy.json",
       "esg": "source-requirements/esg.json",
       "financial-market": "source-requirements/financial-market.json",
+      "middle-corridor-deal-risk": "source-requirements/middle-corridor-deal-risk.json",
       "regional-risk": "source-requirements/regional-risk.json",
       "regulation": "source-requirements/regulation.json",
       "sanctions": "source-requirements/sanctions.json",

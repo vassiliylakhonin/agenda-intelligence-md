@@ -70,6 +70,19 @@ This is not legal, compliance, investment, insurance, or sanctions advice. It is
 - Agenstry listing: <https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev>
 - Live test: [`../agenstry/kazakhstan-live-test.md`](../agenstry/kazakhstan-live-test.md)
 
+## Product contract
+
+The product-grade interface is structured JSON, not free-text prompting. Use the request and response schemas when integrating this workflow into deal desks, analyst QA, procurement reviews, trade-finance file checks, or insurance handoffs:
+
+- Request schema: [`../../schemas/v1/middle-corridor-deal-risk-request.schema.json`](../../schemas/v1/middle-corridor-deal-risk-request.schema.json)
+- Response schema: [`../../schemas/v1/middle-corridor-deal-risk-response.schema.json`](../../schemas/v1/middle-corridor-deal-risk-response.schema.json)
+- Source taxonomy: [`../../source-requirements/middle-corridor-deal-risk.json`](../../source-requirements/middle-corridor-deal-risk.json)
+- Contract examples: [`../../examples/kazakhstan-middle-corridor/contract/`](../../examples/kazakhstan-middle-corridor/contract/)
+
+The live A2A wrapper remains a demo and discovery convenience: it proves the route-risk framing, returns a useful first-pass triage, and helps directories such as Agenstry probe the public agent. It is not the canonical enterprise integration surface. The canonical contract is the structured request/response pair above, with explicit source categories, evidence gaps, human-review routing, and the non-advice notice carried in every response.
+
+The boundary is part of the contract: no legal, compliance, sanctions, financial, investment, insurance, or trading advice; no autonomous live retrieval; no factual-truth verification; no authorization decision.
+
 ## Commercial packaging
 
 Start with one flagship agent, not a wide catalog:

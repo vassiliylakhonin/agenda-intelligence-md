@@ -1,0 +1,86 @@
+{
+  "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+  "cargo": "industrial equipment",
+  "shipment_value": {
+    "amount": 2400000,
+    "currency": "USD"
+  },
+  "counterparties": [
+    {
+      "role": "forwarder",
+      "name": "Kazakhstan forwarder",
+      "jurisdiction": "Kazakhstan"
+    },
+    {
+      "role": "port_agent",
+      "name": "Azerbaijan port agent",
+      "jurisdiction": "Azerbaijan"
+    },
+    {
+      "role": "consignee",
+      "name": "Georgian consignee",
+      "jurisdiction": "Georgia"
+    }
+  ],
+  "dated_sources": [
+    {
+      "id": "e1",
+      "source_type": "port_operator_notice",
+      "title": "Port operator notice",
+      "date": "2026-05-20",
+      "url": "https://example.com/port-notice"
+    },
+    {
+      "id": "e2",
+      "source_type": "sanctions_list_extract",
+      "title": "OFAC/EU/UK sanctions list extract",
+      "date": "2026-05-21",
+      "url": "https://example.com/sanctions-extract"
+    },
+    {
+      "id": "e3",
+      "source_type": "carrier_note",
+      "title": "Carrier note",
+      "date": "2026-05-22",
+      "url": "https://example.com/carrier-note"
+    },
+    {
+      "id": "e4",
+      "source_type": "counterparty_registry_extract",
+      "title": "Counterparty registry extracts",
+      "date": "2026-05-22",
+      "url": "https://example.com/registry-extracts"
+    },
+    {
+      "id": "e5",
+      "source_type": "beneficial_ownership_source",
+      "title": "Beneficial ownership source bundle",
+      "date": "2026-05-22",
+      "url": "https://example.com/ownership"
+    },
+    {
+      "id": "e6",
+      "source_type": "customs_or_regulatory_source",
+      "title": "Customs and transit documentation source",
+      "date": "2026-05-22",
+      "url": "https://example.com/customs"
+    },
+    {
+      "id": "e7",
+      "source_type": "insurance_clause_or_underwriter_note",
+      "title": "Insurance clause and underwriter note",
+      "date": "2026-05-22",
+      "url": "https://example.com/insurance"
+    },
+    {
+      "id": "e8",
+      "source_type": "vessel_or_carrier_history",
+      "title": "Carrier history extract",
+      "date": "2026-05-22",
+      "url": "https://example.com/carrier-history"
+    }
+  ],
+  "risk_question": "Is the evidence pack ready for human review before shipment planning?",
+  "decision_stage": "pre_shipment",
+  "requested_output": "structured_json"
+}

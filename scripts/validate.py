@@ -18,6 +18,7 @@ required = [
     "source-requirements/elections.json",
     "source-requirements/regulation.json",
     "source-requirements/sanctions.json",
+    "source-requirements/middle-corridor-deal-risk.json",
     "examples/source/evidence-pack.json",
     "examples/source-backed/eu-ai-act.evidence.json",
     "examples/source-backed/red-sea-shipping.evidence.json",
@@ -32,6 +33,8 @@ required = [
     "schemas/v1/lens-manifest.schema.json",
     "schemas/v1/memory-card.schema.json",
     "schemas/v1/agenda-brief.schema.json",
+    "schemas/v1/middle-corridor-deal-risk-request.schema.json",
+    "schemas/v1/middle-corridor-deal-risk-response.schema.json",
     "MCP.md",
     "agent-manifest.json",
     "scripts/eval_before_after.py",
@@ -131,6 +134,9 @@ for json_file in [
     "source-taxonomy.json",
     "schemas/v1/evidence-pack.schema.json",
     "examples/source/evidence-pack.json",
+    "schemas/v1/middle-corridor-deal-risk-request.schema.json",
+    "schemas/v1/middle-corridor-deal-risk-response.schema.json",
+    "source-requirements/middle-corridor-deal-risk.json",
 ]:
     json.loads((root / json_file).read_text())
 

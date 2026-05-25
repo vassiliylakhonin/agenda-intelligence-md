@@ -1,0 +1,58 @@
+{
+  "triage_recommendation": "ready_for_human_review",
+  "risk_signal": "medium",
+  "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+  "cargo": "industrial equipment",
+  "shipment_value": {
+    "amount": 2400000,
+    "currency": "USD"
+  },
+  "counterparties": [
+    {
+      "role": "forwarder",
+      "name": "Kazakhstan forwarder",
+      "jurisdiction": "Kazakhstan"
+    },
+    {
+      "role": "port_agent",
+      "name": "Azerbaijan port agent",
+      "jurisdiction": "Azerbaijan"
+    },
+    {
+      "role": "consignee",
+      "name": "Georgian consignee",
+      "jurisdiction": "Georgia"
+    }
+  ],
+  "supplied_sources": [
+    "port_operator_notice",
+    "sanctions_list_extract",
+    "carrier_note",
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "customs_or_regulatory_source",
+    "insurance_clause_or_underwriter_note",
+    "vessel_or_carrier_history"
+  ],
+  "minimum_sources_before_go": [],
+  "evidence_gaps": [
+    "No independent regional context source supplied.",
+    "No rail capacity or border wait source supplied."
+  ],
+  "top_risks": [
+    "Caspian chokepoint dependency",
+    "documentation timing uncertainty",
+    "insurance term sensitivity"
+  ],
+  "watch_next": [
+    "port delays or operator notices",
+    "rail capacity or border wait updates",
+    "customs enforcement changes",
+    "insurance term changes"
+  ],
+  "human_review_required": true,
+  "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
+  "limitations": [
+    "The structured response is a decision-readiness gate for human review, not an authorization to proceed."
+  ]
+}
