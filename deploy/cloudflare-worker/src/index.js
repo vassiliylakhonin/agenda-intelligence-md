@@ -640,7 +640,9 @@ function detectExplicitlyMissingSources(text) {
   if (/(no|missing|without)\s+(counterparty registry|registry extract)/.test(lower)) missing.push("counterparty_registry_extract");
   if (/(no|missing|without)\s+(insurance clause|underwriter note|insurance terms)/.test(lower)) missing.push("insurance_clause_or_underwriter_note");
   if (/(no|missing|without)\s+(customs source|customs document|regulatory source)/.test(lower)) missing.push("customs_or_regulatory_source");
-  if (/(no|missing|without)\s+(vessel history|ais|carrier history)/.test(lower)) missing.push("vessel_or_carrier_history");
+  if (/(no|missing|without)\s+(vessel history|ais|carrier history|vessel or carrier history)/.test(lower)) {
+    missing.push("vessel_or_carrier_history");
+  }
   return [...new Set(missing)];
 }
 

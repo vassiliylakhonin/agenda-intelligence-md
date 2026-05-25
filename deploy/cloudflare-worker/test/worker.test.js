@@ -272,6 +272,8 @@ test("kazakhstan deal risk gate extracts free-form route cargo and value", () =>
     assert.equal(gate.cargo, "industrial equipment");
     assert.equal(gate.value, "USD 2.4m");
     assert.equal(gate.counterparties, "shipper, forwarder, consignee");
+    assert.equal(gate.supplied_sources.includes("vessel_or_carrier_history"), false);
+    assert.ok(gate.minimum_sources_before_go.includes("vessel_or_carrier_history"));
     assert.equal(screen.evidence_gaps.some((gap) => gap.includes("sanctions authority")), false);
     assert.equal(screen.evidence_gaps.some((gap) => gap.includes("corridor operator")), false);
   } finally {
