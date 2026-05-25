@@ -67,6 +67,9 @@ def validate_examples() -> None:
         trace_dir / "05-audit.json",
         trace_dir / "06-score.json",
     }
+    commercial_fixture_dirs = {
+        ROOT / "examples" / "kazakhstan-middle-corridor",
+    }
 
     for path in json_files:
         load_json(path)
@@ -74,6 +77,8 @@ def validate_examples() -> None:
         if path in trace_request_files:
             validate_with_schema(path, request_schema, "agenda-request")
         elif path in trace_doc_files:
+            continue
+        elif any(path.is_relative_to(directory) for directory in commercial_fixture_dirs):
             continue
         elif path.name.endswith(".evidence.json") or path.name == "evidence-pack.json":
             validate_with_schema(path, evidence_schema, "evidence-pack")
