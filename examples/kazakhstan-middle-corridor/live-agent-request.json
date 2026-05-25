@@ -1,0 +1,16 @@
+{
+  "jsonrpc": "2.0",
+  "id": "kazakhstan-live-demo-1",
+  "method": "message/send",
+  "params": {
+    "message": {
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Deal risk gate test for a logistics and trade-finance team. We are evaluating a USD 2.4m shipment of industrial equipment on route Altynkol -> Aktau/Kuryk -> Baku -> Poti. Counterparties: Kazakhstan forwarder, Azerbaijan port agent, Georgian consignee. Sources supplied: port operator notice dated 2026-05-20; OFAC/EU/UK sanctions list extract dated 2026-05-21 with no exact matches; carrier note dated 2026-05-22. Missing: no beneficial ownership extract, no counterparty registry extract, no insurance clause, no customs source, no vessel or carrier history. Question: should this be escalated before contract signature, and what minimum evidence is needed before go?"
+        }
+      ]
+    }
+  }
+}

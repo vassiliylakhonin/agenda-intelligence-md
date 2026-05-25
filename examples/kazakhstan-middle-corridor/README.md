@@ -23,3 +23,14 @@ curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.worker
   -H 'content-type: application/json' \
   -d @01-request.json
 ```
+
+Repeatable live agent test:
+
+```bash
+curl -X POST https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/message/send \
+  -H 'content-type: application/json' \
+  -H 'x-client-id: live-demo' \
+  -d @examples/kazakhstan-middle-corridor/live-agent-request.json
+```
+
+Expected result: `escalate_before_signature`, `medium-high` risk signal, route/cargo/value extraction, supplied source detection for port notice, sanctions extract, and carrier note, plus a minimum-source list that still requires counterparty registry, beneficial ownership, customs/regulatory, insurance, and vessel/carrier history evidence.

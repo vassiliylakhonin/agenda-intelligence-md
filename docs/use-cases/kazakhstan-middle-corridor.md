@@ -68,6 +68,7 @@ This is not legal, compliance, investment, insurance, or sanctions advice. It is
 - Live endpoint: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send>
 - Agent card: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
 - Agenstry listing: <https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev>
+- Live test: [`../agenstry/kazakhstan-live-test.md`](../agenstry/kazakhstan-live-test.md)
 
 ## Commercial packaging
 

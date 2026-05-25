@@ -51,8 +51,20 @@ Live A2A listing:
 - Agenstry: <https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev>
 - Use-case notes: [`docs/use-cases/kazakhstan-middle-corridor.md`](docs/use-cases/kazakhstan-middle-corridor.md)
 - Example pack: [`examples/kazakhstan-middle-corridor/`](examples/kazakhstan-middle-corridor/)
+- Repeatable live test: [`docs/agenstry/kazakhstan-live-test.md`](docs/agenstry/kazakhstan-live-test.md)
 
 This use case is a pre-compliance evidence and decision-readiness gate. It is not legal, compliance, sanctions, financial, investment, or insurance advice.
+
+Try the Kazakhstan agent:
+
+```bash
+curl -X POST https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/message/send \
+  -H 'content-type: application/json' \
+  -H 'x-client-id: live-demo' \
+  -d @examples/kazakhstan-middle-corridor/live-agent-request.json
+```
+
+Expected: JSON-RPC 2.0 with `triage_recommendation: "escalate_before_signature"`, route/cargo/value extraction, supplied-source detection, missing minimum evidence before go, commercial-impact notes, and human-review escalation.
 
 Try the live wrapper:
 
