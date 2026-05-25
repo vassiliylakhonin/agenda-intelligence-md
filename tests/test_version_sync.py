@@ -12,10 +12,10 @@ def parse_pyproject_version():
     return match.group(1)
 
 
-def parse_dockerfile_version():
-    text = (ROOT / "Dockerfile").read_text()
+def parse_dockerfile_version(relative_path):
+    text = (ROOT / relative_path).read_text()
     match = re.search(r"(?m)^ARG\s+AGENDA_INTELLIGENCE_VERSION=([^\s]+)", text)
-    assert match, "Dockerfile is missing ARG AGENDA_INTELLIGENCE_VERSION"
+    assert match, f"{relative_path} is missing ARG AGENDA_INTELLIGENCE_VERSION"
     return match.group(1).strip('"')
 
 
@@ -38,7 +38,8 @@ def collect_json_versions(path):
 def test_release_version_fields_match_pyproject():
     expected = parse_pyproject_version()
     discovered = [
-        ("Dockerfile:ARG AGENDA_INTELLIGENCE_VERSION", parse_dockerfile_version()),
+        ("Dockerfile:ARG AGENDA_INTELLIGENCE_VERSION", parse_dockerfile_version("Dockerfile")),
+        ("Dockerfile.api:ARG AGENDA_INTELLIGENCE_VERSION", parse_dockerfile_version("Dockerfile.api")),
     ]
 
     for relative_path in [

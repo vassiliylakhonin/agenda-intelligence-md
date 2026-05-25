@@ -1,0 +1,23 @@
+# Minimal container for the Agenda Intelligence MD portable HTTP API shell.
+#
+# This image starts `agenda-intelligence-http`. It is suitable for local
+# integration testing, adapter development, and deployment-package baselines.
+# It is not a hardened internet-facing production image.
+#
+# The default image does not install the optional `[llm]` extra and does not
+# require ANTHROPIC_API_KEY. The HTTP shell suppresses default request logging
+# and delegates to the shared service layer.
+
+FROM python:3.11-slim
+
+# Pin to the current published release so API behavior is reproducible.
+# Bump in lockstep with pyproject.toml, Dockerfile, agent-manifest.json,
+# and server.json on every release.
+ARG AGENDA_INTELLIGENCE_VERSION=1.0.1
+
+RUN pip install --no-cache-dir "agenda-intelligence-md==${AGENDA_INTELLIGENCE_VERSION}"
+
+EXPOSE 8080
+
+ENTRYPOINT ["agenda-intelligence-http"]
+CMD ["--host", "0.0.0.0", "--port", "8080"]

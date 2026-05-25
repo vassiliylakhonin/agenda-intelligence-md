@@ -17,6 +17,26 @@ Environment defaults:
 - `AGENDA_INTELLIGENCE_HTTP_HOST`
 - `AGENDA_INTELLIGENCE_HTTP_PORT`
 
+## Container
+
+Build:
+
+```bash
+docker build -f Dockerfile.api -t agenda-intelligence-md-api:1.0.1 .
+```
+
+Run:
+
+```bash
+docker run --rm -p 8080:8080 agenda-intelligence-md-api:1.0.1
+```
+
+The API image starts:
+
+```bash
+agenda-intelligence-http --host 0.0.0.0 --port 8080
+```
+
 ## Endpoints
 
 - `GET /healthz`
@@ -66,4 +86,4 @@ Downstream deployments should keep operational logs reduced to fields such as re
 
 ## Future work
 
-Future deployment work may add a dedicated `Dockerfile.api`, production runtime guidance, A2A adapter routing, and entitlement/metering abstractions. Those are intentionally separate from this portable shell.
+Future deployment work may add production runtime guidance, A2A adapter routing, and entitlement/metering abstractions. Those are intentionally separate from this portable shell.

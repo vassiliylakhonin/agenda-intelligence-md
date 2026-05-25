@@ -51,14 +51,14 @@ Do not log prompts, source excerpts, evidence packs, full memo content, or secre
 - No legal, compliance, sanctions, financial, investment, insurance, or trading advice.
 - Human review is required for high-stakes decisions.
 
-## Future API container
+## API container
 
-A future `Dockerfile.api` may expose HTTP endpoints such as:
+The separate [`HTTP API shell`](http-api.md) uses `Dockerfile.api` for the portable HTTP wrapper. It exposes:
 
 - `/healthz`
 - `/readyz`
-- `/v1/analyze`
 - `/v1/audit-claims`
 - `/v1/source-coverage`
+- `/v1/score`
 
-That is intentionally out of scope for this PR.
+The root `Dockerfile` remains the stdio MCP image.
