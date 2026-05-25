@@ -85,6 +85,18 @@ const SANCTIONS_TERMS = [
   "entity list"
 ];
 
+const MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO = [
+  "counterparty_registry_extract",
+  "beneficial_ownership_source",
+  "sanctions_list_extract",
+  "customs_or_regulatory_source",
+  "insurance_clause_or_underwriter_note",
+  "vessel_or_carrier_history"
+];
+
+const NOT_ADVICE_NOTICE =
+  "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.";
+
 function jsonResponse(body, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(body, null, 2), {
     status,
@@ -491,6 +503,76 @@ function extractText(params) {
   return "";
 }
 
+function tryParseJsonObject(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return null;
+  try {
+    const parsed = JSON.parse(trimmed);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function isMiddleCorridorDealRiskRequest(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    typeof value.route === "string" &&
+    typeof value.cargo === "string" &&
+    typeof value.risk_question === "string" &&
+    typeof value.decision_stage === "string" &&
+    Array.isArray(value.counterparties) &&
+    Array.isArray(value.dated_sources)
+  );
+}
+
+function structuredDealRiskRequestFromParams(params) {
+  if (!params || typeof params !== "object") return null;
+
+  const candidates = [params.request, params.middle_corridor_deal_risk_request, params.input, params];
+  const message = params.message;
+  if (message && typeof message === "object" && Array.isArray(message.parts)) {
+    for (const part of message.parts) {
+      if (!part || typeof part !== "object") continue;
+      candidates.push(part.data, part.json, part.content);
+      const parsedText = tryParseJsonObject(part.text);
+      if (parsedText) candidates.push(parsedText);
+    }
+  }
+
+  for (const candidate of candidates) {
+    if (isMiddleCorridorDealRiskRequest(candidate)) return candidate;
+  }
+  return null;
+}
+
+function textFromStructuredDealRiskRequest(request) {
+  const counterparties = request.counterparties
+    .map((party) => [party.role, party.name, party.jurisdiction].filter(Boolean).join(" "))
+    .filter(Boolean)
+    .join("; ");
+  const sources = request.dated_sources
+    .map((source) => [source.source_type, source.title, source.date].filter(Boolean).join(" "))
+    .filter(Boolean)
+    .join("; ");
+
+  return [
+    "Kazakhstan Middle Corridor deal risk gate structured request.",
+    `Route: ${request.route}.`,
+    `Cargo: ${request.cargo}.`,
+    `Decision stage: ${request.decision_stage}.`,
+    `Question: ${request.risk_question}.`,
+    counterparties ? `Counterparties: ${counterparties}.` : "",
+    sources ? `Dated sources: ${sources}.` : "",
+    "sanctions corridor risk source coverage evidence gate"
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 function hasAny(text, terms) {
   const lower = text.toLowerCase();
   return terms.some((term) => lower.includes(term));
@@ -704,6 +786,87 @@ function dealRiskGateForText(text) {
   };
 }
 
+function suppliedSourcesFromStructuredRequest(request) {
+  return [
+    ...new Set(
+      request.dated_sources
+        .map((source) => source?.source_type)
+        .filter((sourceType) => typeof sourceType === "string" && sourceType.trim())
+    )
+  ];
+}
+
+function evidenceGapForSource(sourceType) {
+  const gaps = {
+    counterparty_registry_extract: "No counterparty registry extract supplied.",
+    beneficial_ownership_source: "No beneficial ownership source supplied.",
+    sanctions_list_extract: "No sanctions list extract supplied.",
+    customs_or_regulatory_source: "No customs or regulatory source supplied.",
+    insurance_clause_or_underwriter_note: "No insurance clause or underwriter note supplied.",
+    vessel_or_carrier_history: "No vessel or carrier history supplied."
+  };
+  return gaps[sourceType] || `No ${sourceType} supplied.`;
+}
+
+function triageRecommendationForStructuredRequest(request, missingSources) {
+  if (request.dated_sources.length === 0) return "insufficient_information";
+  if (missingSources.length === 0) return "ready_for_human_review";
+  if (request.decision_stage === "pre_signature") return "escalate_before_signature";
+  if (request.decision_stage === "pre_shipment") return "escalate_before_shipment";
+  return "not_decision_ready";
+}
+
+function riskSignalForStructuredRequest(request, missingSources) {
+  if (request.dated_sources.length === 0) return "unknown";
+  if (missingSources.length >= 4) return "medium_high";
+  if (missingSources.length > 0) return "medium";
+  return "low";
+}
+
+function topRisksForStructuredRequest(missingSources) {
+  const risks = ["sanctions adjacency", "Caspian chokepoint dependency"];
+  if (missingSources.includes("customs_or_regulatory_source")) risks.push("customs/documentation uncertainty");
+  if (missingSources.includes("insurance_clause_or_underwriter_note")) risks.push("insurance exclusions");
+  if (
+    missingSources.includes("counterparty_registry_extract") ||
+    missingSources.includes("beneficial_ownership_source")
+  ) {
+    risks.push("counterparty and ownership uncertainty");
+  }
+  if (missingSources.includes("vessel_or_carrier_history")) risks.push("carrier or vessel history gap");
+  return [...new Set(risks)];
+}
+
+function dealRiskContractResponseForRequest(request) {
+  const suppliedSources = suppliedSourcesFromStructuredRequest(request);
+  const minimumSourcesBeforeGo = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.filter(
+    (sourceType) => !suppliedSources.includes(sourceType)
+  );
+  const response = {
+    triage_recommendation: triageRecommendationForStructuredRequest(request, minimumSourcesBeforeGo),
+    risk_signal: riskSignalForStructuredRequest(request, minimumSourcesBeforeGo),
+    route: request.route,
+    cargo: request.cargo,
+    counterparties: request.counterparties,
+    supplied_sources: suppliedSources,
+    minimum_sources_before_go: minimumSourcesBeforeGo,
+    evidence_gaps: minimumSourcesBeforeGo.map(evidenceGapForSource),
+    top_risks: topRisksForStructuredRequest(minimumSourcesBeforeGo),
+    watch_next: [
+      "new sanctions designations",
+      "port delays or operator notices",
+      "rail capacity constraints",
+      "customs enforcement changes",
+      "carrier or vessel history updates",
+      "insurance or underwriter terms changes"
+    ],
+    human_review_required: true,
+    not_advice_notice: NOT_ADVICE_NOTICE
+  };
+  if (request.shipment_value) response.shipment_value = request.shipment_value;
+  return response;
+}
+
 function sourcePlanForModules(modules) {
   const moduleNames = new Set(modules.map((item) => item.module));
   const categories = [
@@ -878,7 +1041,7 @@ function qualityGatesForIntent(intent) {
   if (intent === "memo_validation") {
     gates.unshift("Validate the memo against agenda-memo.schema.json before using it downstream.");
   }
-  if (intent === "deal_risk_gate") {
+  if (intent === "deal_risk_gate" || intent === "middle_corridor_deal_risk_contract") {
     gates.unshift("Treat proceed/pause/escalate as routing guidance for human review, not approval advice.");
     gates.unshift("Escalate before signature when required source categories are missing.");
   }
@@ -902,7 +1065,7 @@ function nextActionsForIntent(intent) {
       "Fix schema errors before asking an agent to expand or summarize the memo."
     ];
   }
-  if (intent === "deal_risk_gate") {
+  if (intent === "deal_risk_gate" || intent === "middle_corridor_deal_risk_contract") {
     return [
       "Fill the minimum_sources_before_go list before contract signature or committee review.",
       "Run source_coverage and audit_claims in the MCP server with the dated evidence pack.",
@@ -939,13 +1102,18 @@ function nextActionsForIntent(intent) {
   ];
 }
 
-function triageForText(text, modules, profile = "agenda") {
-  const intent = classifyIntentForProfile(text, profile);
+function triageForText(text, modules, profile = "agenda", structuredRequest = null) {
+  const intent =
+    profile === "kazakhstan" && structuredRequest
+      ? "middle_corridor_deal_risk_contract"
+      : classifyIntentForProfile(text, profile);
   return {
     intent,
     modules,
     signal_screen: signalScreenForText(text, modules, intent),
     deal_risk_gate: intent === "deal_risk_gate" ? dealRiskGateForText(text) : null,
+    deal_risk_contract:
+      intent === "middle_corridor_deal_risk_contract" ? dealRiskContractResponseForRequest(structuredRequest) : null,
     source_plan: sourcePlanForModules(modules),
     quality_gates: qualityGatesForIntent(intent),
     next_actions: nextActionsForIntent(intent),
@@ -1154,12 +1322,12 @@ async function usageStats(env, date) {
   };
 }
 
-function routingMarkdown(text, modules, profile = "agenda") {
+function routingMarkdown(text, modules, profile = "agenda", triageOverride = null) {
   const triageText =
     profile === "kazakhstan"
       ? `${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`
       : text;
-  const triage = triageForText(triageText, modules, profile);
+  const triage = triageOverride || triageForText(triageText, modules, profile);
   const moduleList = modules.map((item) => `- ${item.module}: ${item.role}`).join("\n");
   const screen = triage.signal_screen;
   const sourceList = triage.source_plan.map((item) => `- ${item}`).join("\n");
@@ -1198,6 +1366,31 @@ function routingMarkdown(text, modules, profile = "agenda") {
           .filter((item) => item !== null)
           .join("\n")
       : "";
+  const dealContractBlock =
+    triage.deal_risk_contract && profile === "kazakhstan"
+      ? [
+          "Middle Corridor deal-risk contract response:",
+          `Recommendation: ${triage.deal_risk_contract.triage_recommendation}`,
+          `Risk signal: ${triage.deal_risk_contract.risk_signal}`,
+          `Route: ${triage.deal_risk_contract.route}`,
+          `Cargo: ${triage.deal_risk_contract.cargo}`,
+          "",
+          "Supplied source types:",
+          listOrNone(triage.deal_risk_contract.supplied_sources),
+          "",
+          "Minimum sources before go:",
+          listOrNone(triage.deal_risk_contract.minimum_sources_before_go),
+          "",
+          "Evidence gaps:",
+          listOrNone(triage.deal_risk_contract.evidence_gaps),
+          "",
+          "Structured JSON:",
+          "```json",
+          JSON.stringify(triage.deal_risk_contract, null, 2),
+          "```",
+          ""
+        ].join("\n")
+      : "";
   const promptLine = text ? `\n\nReceived prompt excerpt:\n\n> ${text.slice(0, 500)}` : "";
   const title =
     profile === "kazakhstan"
@@ -1220,6 +1413,7 @@ function routingMarkdown(text, modules, profile = "agenda") {
     `Detected intent: ${triage.intent}`,
     "",
     dealGateBlock,
+    dealContractBlock,
     "Signal screen:",
     `Risk signal: ${screen.risk_signal}`,
     "",
@@ -1255,14 +1449,15 @@ function routingMarkdown(text, modules, profile = "agenda") {
 }
 
 function a2aResult(params, request, env = {}) {
-  const text = extractText(params);
+  const structuredRequest = structuredDealRiskRequestFromParams(params);
+  const text = structuredRequest ? textFromStructuredDealRiskRequest(structuredRequest) : extractText(params);
   const profile = agentProfile(request, env);
   const triageText =
     profile === "kazakhstan"
       ? `${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`
       : text;
   const modules = routeModulesForProfile(text, profile);
-  const triage = triageForText(triageText, modules, profile);
+  const triage = triageForText(triageText, modules, profile, structuredRequest);
   return {
     id: crypto.randomUUID(),
     status: {
@@ -1276,7 +1471,7 @@ function a2aResult(params, request, env = {}) {
         parts: [
           {
             kind: "text",
-            text: routingMarkdown(text, modules, profile)
+            text: routingMarkdown(text, modules, profile, triage)
           }
         ]
       }
@@ -1318,7 +1513,8 @@ function handleJsonRpc(payload, request, env = {}, ctx = {}) {
   if (payload.method === "message/send" || payload.method === "tasks/send" || payload.method === "SendMessage") {
     const params = payload.params ?? {};
     const result = a2aResult(params, request, env);
-    const text = extractText(params);
+    const structuredRequest = structuredDealRiskRequestFromParams(params);
+    const text = structuredRequest ? textFromStructuredDealRiskRequest(structuredRequest) : extractText(params);
     const likelyProbe = classifyClient(request) === "agenstry" || text.length === 0;
     const event = logUsageEvent(request, {
       jsonrpc_method: payload.method,

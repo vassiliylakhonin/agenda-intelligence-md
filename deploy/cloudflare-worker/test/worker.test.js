@@ -281,6 +281,108 @@ test("kazakhstan deal risk gate extracts free-form route cargo and value", () =>
   }
 });
 
+test("kazakhstan deal risk gate returns structured contract response from data part", () => {
+  const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "deal-risk-contract-1",
+        method: "message/send",
+        params: {
+          message: {
+            parts: [
+              {
+                kind: "data",
+                data: {
+                  route: "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+                  cargo: "industrial equipment",
+                  shipment_value: {
+                    amount: 2400000,
+                    currency: "USD"
+                  },
+                  counterparties: [
+                    {
+                      role: "forwarder",
+                      name: "Kazakhstan forwarder",
+                      jurisdiction: "Kazakhstan"
+                    },
+                    {
+                      role: "port_agent",
+                      name: "Azerbaijan port agent",
+                      jurisdiction: "Azerbaijan"
+                    },
+                    {
+                      role: "consignee",
+                      name: "Georgian consignee",
+                      jurisdiction: "Georgia"
+                    }
+                  ],
+                  dated_sources: [
+                    {
+                      id: "e1",
+                      source_type: "port_operator_notice",
+                      title: "Port operator notice",
+                      date: "2026-05-20",
+                      url: "https://example.com/port-notice"
+                    },
+                    {
+                      id: "e2",
+                      source_type: "sanctions_list_extract",
+                      title: "Sanctions list extract",
+                      date: "2026-05-21",
+                      url: "https://example.com/sanctions-list-extract"
+                    },
+                    {
+                      id: "e3",
+                      source_type: "carrier_note",
+                      title: "Carrier note",
+                      date: "2026-05-22",
+                      url: "https://example.com/carrier-note"
+                    }
+                  ],
+                  risk_question: "Should this be escalated before contract signature?",
+                  decision_stage: "pre_signature"
+                }
+              }
+            ]
+          }
+        }
+      },
+      kazakhstanRequest,
+      { AGENT_PROFILE: "kazakhstan" }
+    );
+
+    const contract = response.result.metadata.triage.deal_risk_contract;
+    assert.equal(response.result.metadata.triage.intent, "middle_corridor_deal_risk_contract");
+    assert.equal(contract.triage_recommendation, "escalate_before_signature");
+    assert.equal(contract.risk_signal, "medium_high");
+    assert.equal(contract.route, "Altynkol -> Aktau/Kuryk -> Baku -> Poti");
+    assert.equal(contract.cargo, "industrial equipment");
+    assert.equal(contract.shipment_value.amount, 2400000);
+    assert.deepEqual(contract.supplied_sources, [
+      "port_operator_notice",
+      "sanctions_list_extract",
+      "carrier_note"
+    ]);
+    assert.deepEqual(contract.minimum_sources_before_go, [
+      "counterparty_registry_extract",
+      "beneficial_ownership_source",
+      "customs_or_regulatory_source",
+      "insurance_clause_or_underwriter_note",
+      "vessel_or_carrier_history"
+    ]);
+    assert.equal(contract.minimum_sources_before_go.includes("sanctions_list_extract"), false);
+    assert.equal(contract.minimum_sources_before_go.includes("port_operator_notice"), false);
+    assert.match(contract.not_advice_notice, /Not legal/);
+    assert.match(response.result.artifacts[0].parts[0].text, /Middle Corridor deal-risk contract response/);
+  } finally {
+    console.log = originalLog;
+  }
+});
+
 test("triage classifies source coverage requests and returns quality gates", () => {
   const triage = triageForText(
     "Check source coverage for EU sanctions evidence around Red Sea shipping.",

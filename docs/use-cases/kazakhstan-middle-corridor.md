@@ -83,6 +83,18 @@ The live A2A wrapper remains a demo and discovery convenience: it proves the rou
 
 The boundary is part of the contract: no legal, compliance, sanctions, financial, investment, insurance, or trading advice; no autonomous live retrieval; no factual-truth verification; no authorization decision.
 
+### Live structured JSON test
+
+The hosted A2A wrapper accepts the product contract as JSON-RPC `params.request` and returns the contract response under `result.metadata.triage.deal_risk_contract`:
+
+```bash
+jq -n --slurpfile request examples/kazakhstan-middle-corridor/contract/pre_signature_escalate.request.json \
+  '{jsonrpc:"2.0", id:"middle-corridor-contract-test", method:"message/send", params:{request:$request[0]}}' |
+  curl -sS https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send \
+    -H 'content-type: application/json' \
+    --data @-
+```
+
 ## Commercial packaging
 
 Start with one flagship agent, not a wide catalog:
