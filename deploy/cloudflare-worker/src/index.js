@@ -333,9 +333,9 @@ function applyAgentProfile(card, request, env = {}) {
   if (agentProfile(request, env) !== "kazakhstan") return card;
 
   const origin = originFromRequest(request);
-  card.name = "Kazakhstan Corridor Risk Agent";
+  card.name = "Kazakhstan / Middle Corridor Deal Risk Gate";
   card.description =
-    "Live no-payment A2A/JSON-RPC agent for Kazakhstan and Central Asia corridor-risk triage: sanctions exposure, Middle Corridor and Trans-Caspian logistics disruption, policy signals, source gaps, watch-next indicators, and routing into the installable Agenda Intelligence MD MCP server.";
+    "Live no-payment A2A/JSON-RPC deal-risk gate for Kazakhstan and Middle Corridor exposure. Bring route, cargo, counterparties, and dated sources; get corridor-risk triage, sanctions-adjacency evidence gaps, source-coverage diagnostics, watch-next indicators, and human-review escalation routing into the installable Agenda Intelligence MD MCP server.";
   card.provider.legalEntity.sameAs = [
     "https://github.com/vassiliylakhonin",
     "https://pypi.org/project/agenda-intelligence-md/",
@@ -344,117 +344,119 @@ function applyAgentProfile(card, request, env = {}) {
   ];
   card.skills = [
     {
-      id: "kazakhstan-sanctions-exposure-screen",
-      name: "Kazakhstan sanctions exposure screen",
+      id: "middle-corridor-deal-desk-triage",
+      name: "Middle Corridor deal desk triage",
       description:
-        "Returns first-pass triage for Kazakhstan-linked sanctions exposure: affected counterparties, corridor touchpoints, source categories required, evidence gaps, and watch-next indicators.",
+        "Turns a route, cargo, counterparty, and dated-source bundle into a proceed/pause/escalate/reject-for-now triage recommendation with minimum sources required before signature or committee review.",
       tags: [
+        "deal-desk",
         "kazakhstan",
-        "sanctions",
-        "secondary-sanctions",
-        "trade-compliance",
-        "central-asia",
-        "source-coverage",
+        "middle-corridor",
+        "trade-risk",
+        "logistics-risk",
+        "human-review",
         "free"
       ],
       examples: [
-        "Screen sanctions exposure for a Kazakhstan logistics route with Russia-linked counterparties.",
-        "Find evidence gaps before writing a sanctions-risk note on Kazakhstan transit."
+        "Should this Altynkol-Aktau-Baku-Poti shipment be escalated before contract signature?",
+        "Generate deal-risk triage for Kazakhstan-Caspian transit with cargo, counterparties, and dated sources."
       ],
       inputModes: ["application/json", "text/plain"],
       outputModes: ["application/json", "text/markdown"]
     },
     {
-      id: "middle-corridor-risk-triage",
-      name: "Middle Corridor risk triage",
+      id: "middle-corridor-source-coverage-auditor",
+      name: "Middle Corridor source coverage auditor",
       description:
-        "Routes Middle Corridor and Trans-Caspian questions into structured risk triage covering bottlenecks, sanctions spillover, policy signals, logistics disruption, and required evidence categories.",
+        "Checks whether a Middle Corridor evidence pack has enough dated source coverage for a risk decision: sanctions lists, port/operator notices, customs or regulatory sources, counterparty registry extracts, and insurance or carrier notes.",
       tags: [
+        "source-coverage",
+        "evidence-pack",
         "middle-corridor",
         "trans-caspian",
-        "logistics-risk",
-        "corridor-risk",
-        "kazakhstan",
-        "caspian"
-      ],
-      examples: [
-        "Analyze how Caspian port disruption changes risk for a Kazakhstan-Europe logistics corridor.",
-        "Prepare a corridor-risk screen for Aktau, Kuryk, Baku, and Georgia transit dependencies."
-      ],
-      inputModes: ["application/json", "text/plain"],
-      outputModes: ["application/json", "text/markdown"]
-    },
-    {
-      id: "central-asia-policy-watch",
-      name: "Central Asia policy signal watch",
-      description:
-        "Identifies watch-next indicators for Central Asia policy, customs, export-control, energy, and transport developments without claiming live source retrieval.",
-      tags: [
-        "central-asia",
-        "policy-risk",
-        "customs",
-        "export-controls",
-        "energy",
-        "watch-next"
-      ],
-      examples: [
-        "List watch-next indicators for Kazakhstan export-control enforcement over the next quarter.",
-        "Frame a policy-risk monitoring plan for Central Asia corridor operations."
-      ],
-      inputModes: ["application/json", "text/plain"],
-      outputModes: ["application/json", "text/markdown"]
-    },
-    {
-      id: "corridor-source-coverage",
-      name: "Corridor source coverage checklist",
-      description:
-        "Returns source-planning guidance for Kazakhstan and Central Asia risk memos: primary official sources, sanctions lists, customs/logistics data, independent context, and dated retrieval notes.",
-      tags: [
-        "source-planning",
-        "evidence-coverage",
         "official-sources",
-        "logistics",
-        "sanctions",
+        "decision-readiness"
+      ],
+      examples: [
+        "Audit whether this Kazakhstan corridor evidence pack is sufficient before management review.",
+        "List missing required source types for a Middle Corridor sanctions and logistics-risk memo."
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    },
+    {
+      id: "sanctions-adjacency-evidence-gate",
+      name: "Sanctions adjacency evidence gate",
+      description:
+        "Provides a pre-compliance evidence gate for sanctions-adjacent Kazakhstan and Central Asia corridor exposure: source-backed claims, unsupported assertions, missing ownership/counterparty/vessel evidence, and human-review triggers. Not legal or compliance advice.",
+      tags: [
+        "sanctions-adjacency",
+        "pre-compliance",
+        "counterparty-risk",
+        "beneficial-ownership",
+        "trade-finance",
         "kazakhstan"
       ],
       examples: [
-        "Check whether this Kazakhstan sanctions evidence pack has enough primary-source coverage.",
-        "What source categories are missing for a Middle Corridor policy-risk memo?"
+        "Gate this Kazakhstan transit transaction for sanctions-adjacent evidence gaps before compliance review.",
+        "Identify unsupported sanctions claims in a route-risk note with supplied source extracts."
       ],
       inputModes: ["application/json", "text/plain"],
       outputModes: ["application/json", "text/markdown"]
     },
     {
-      id: "kazakhstan-memo-quality-gate",
-      name: "Kazakhstan risk memo quality gate",
+      id: "risk-memo-quality-gate",
+      name: "Risk memo quality gate",
       description:
-        "Routes callers to Agenda Intelligence MCP quality gates for structured memo validation, evidence audit, unsupported-claim detection, and source-coverage diagnostics.",
+        "Scores a corridor-risk memo for structure, evidence discipline, source coverage, decision-readiness, watch-next indicators, uncertainty handling, and required fixes before analyst or management handoff.",
       tags: [
         "memo-validation",
         "evidence-audit",
         "quality-gate",
-        "provenance",
-        "kazakhstan",
+        "decision-readiness",
+        "watch-next",
         "strategic-risk"
       ],
       examples: [
-        "Audit this Kazakhstan corridor-risk memo for unsupported claims and missing source categories.",
-        "Validate this sanctions-risk memo before analyst handoff."
+        "Quality-gate this Kazakhstan corridor-risk memo before it goes to a client or committee.",
+        "Return pass/fail reasons and required fixes for a Middle Corridor risk memo."
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    },
+    {
+      id: "a2a-evidence-pack-linter",
+      name: "A2A evidence pack linter",
+      description:
+        "Lints caller-supplied evidence packs before they enter an agent workflow: missing dates, unknown evidence ids, orphan references, unsupported claims, quote-fragment presence, and source-category gaps.",
+      tags: [
+        "evidence-linting",
+        "quote-checking",
+        "provenance",
+        "agent-workflows",
+        "schema-validation",
+        "source-coverage"
+      ],
+      examples: [
+        "Lint this evidence pack before running a Middle Corridor deal-risk memo.",
+        "Find orphan evidence references and missing dates in this sanctions evidence bundle."
       ],
       inputModes: ["application/json", "text/plain"],
       outputModes: ["application/json", "text/markdown"]
     }
   ];
-  card.x_agenda_intelligence.product_profile = "kazakhstan_corridor_risk";
+  card.x_agenda_intelligence.product_profile = "kazakhstan_deal_risk_gate";
   card.x_agenda_intelligence.wrapper_scope =
-    "A2A/JSON-RPC discovery, Kazakhstan and Central Asia corridor-risk triage, and routing response only";
+    "A2A/JSON-RPC discovery, Kazakhstan and Middle Corridor deal-risk triage, evidence gating, source coverage, and routing response only";
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
+  card.x_agenda_intelligence.commercial_positioning =
+    "Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation.";
   card.x_agenda_intelligence.focus = [
-    "Kazakhstan sanctions exposure",
-    "Middle Corridor and Trans-Caspian logistics risk",
-    "Central Asia policy and customs signals",
-    "source coverage and evidence gaps",
-    "risk memo quality gates"
+    "Kazakhstan and Middle Corridor deal-risk triage",
+    "sanctions-adjacent evidence gates",
+    "source coverage for dated evidence packs",
+    "risk memo quality gates",
+    "human-review escalation before signature, committee review, insurer handoff, or client delivery"
   ];
   return card;
 }
@@ -951,11 +953,11 @@ function routingMarkdown(text, modules, profile = "agenda") {
   const promptLine = text ? `\n\nReceived prompt excerpt:\n\n> ${text.slice(0, 500)}` : "";
   const title =
     profile === "kazakhstan"
-      ? "Kazakhstan Corridor Risk Agent live wrapper is responding."
+      ? "Kazakhstan / Middle Corridor Deal Risk Gate live wrapper is responding."
       : "Agenda Intelligence MD live wrapper is responding.";
   const scope =
     profile === "kazakhstan"
-      ? "This endpoint is a free, no-payment A2A/JSON-RPC wrapper for Kazakhstan and Central Asia corridor-risk triage, sanctions exposure screening, source-gap planning, and routing. Full product behavior is in the installable MCP server:"
+      ? "This endpoint is a free, no-payment A2A/JSON-RPC wrapper for Kazakhstan and Middle Corridor deal-risk triage, sanctions-adjacent evidence gating, source coverage, memo quality gates, and routing. Full product behavior is in the installable MCP server:"
       : "This endpoint is a free, no-payment A2A/JSON-RPC wrapper for discovery, uptime, lightweight strategic-risk triage, and routing. Full product behavior is in the installable MCP server:";
   return [
     title,
@@ -1041,7 +1043,7 @@ function a2aResult(params, request, env = {}) {
       signal_screen: triage.signal_screen,
       wrapper_scope:
         profile === "kazakhstan"
-          ? "Kazakhstan and Central Asia corridor-risk triage, lightweight screening, and routing response only"
+          ? "Kazakhstan and Middle Corridor deal-risk triage, evidence gating, and routing response only"
           : "discovery, lightweight triage, and routing response only",
       product_profile: profile
     }

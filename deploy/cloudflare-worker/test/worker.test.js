@@ -90,23 +90,24 @@ test("kazakhstan profile exposes focused corridor-risk agent card", () => {
   const kazakhstanRequest = new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send");
   const card = agentCard(kazakhstanRequest, { AGENT_PROFILE: "kazakhstan" });
 
-  assert.equal(card.name, "Kazakhstan Corridor Risk Agent");
+  assert.equal(card.name, "Kazakhstan / Middle Corridor Deal Risk Gate");
   assert.equal(card.url, "https://kazakhstan-corridor-risk-a2a.example.workers.dev");
   assert.equal(
     card.x_agenda_intelligence.wrapper_scope,
-    "A2A/JSON-RPC discovery, Kazakhstan and Central Asia corridor-risk triage, and routing response only"
+    "A2A/JSON-RPC discovery, Kazakhstan and Middle Corridor deal-risk triage, evidence gating, source coverage, and routing response only"
   );
-  assert.equal(card.x_agenda_intelligence.product_profile, "kazakhstan_corridor_risk");
+  assert.equal(card.x_agenda_intelligence.product_profile, "kazakhstan_deal_risk_gate");
   assert.deepEqual(
     card.skills.map((skill) => skill.id),
     [
-      "kazakhstan-sanctions-exposure-screen",
-      "middle-corridor-risk-triage",
-      "central-asia-policy-watch",
-      "corridor-source-coverage",
-      "kazakhstan-memo-quality-gate"
+      "middle-corridor-deal-desk-triage",
+      "middle-corridor-source-coverage-auditor",
+      "sanctions-adjacency-evidence-gate",
+      "risk-memo-quality-gate",
+      "a2a-evidence-pack-linter"
     ]
   );
+  assert.match(card.x_agenda_intelligence.commercial_positioning, /dated sources/);
 });
 
 test("message/send returns JSON-RPC result with routing metadata", () => {
@@ -190,7 +191,7 @@ test("kazakhstan profile defaults routing to Central Asia and sanctions modules"
       response.result.metadata.modules_used.map((item) => item.module),
       ["global-think-tank-analyst", "central-asia-caspian", "sanctions-sector"]
     );
-    assert.match(response.result.artifacts[0].parts[0].text, /Kazakhstan Corridor Risk Agent/);
+    assert.match(response.result.artifacts[0].parts[0].text, /Middle Corridor Deal Risk Gate/);
   } finally {
     console.log = originalLog;
   }

@@ -57,7 +57,7 @@ The deploy output will include a `workers.dev` URL, usually:
 https://agenda-intelligence-a2a.<your-subdomain>.workers.dev
 ```
 
-The Kazakhstan profile deploys as:
+The Kazakhstan / Middle Corridor Deal Risk Gate profile deploys as:
 
 ```text
 https://kazakhstan-corridor-risk-a2a.<your-subdomain>.workers.dev
@@ -69,7 +69,7 @@ Use this URL in Agenstry as an A2A agent URL:
 https://agenda-intelligence-a2a.<your-subdomain>.workers.dev
 ```
 
-For the Kazakhstan-focused listing, submit:
+For the Kazakhstan / Middle Corridor Deal Risk Gate listing, submit:
 
 ```text
 https://kazakhstan-corridor-risk-a2a.<your-subdomain>.workers.dev

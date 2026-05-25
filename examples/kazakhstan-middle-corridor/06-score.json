@@ -1,0 +1,20 @@
+{
+  "quality_gate": "fail",
+  "score": 68,
+  "reasons": [
+    "Sanctions-adjacent conclusion relies only on caller-supplied no-exact-match extract.",
+    "No beneficial ownership source supplied.",
+    "No counterparty registry extract supplied.",
+    "No insurance terms supplied.",
+    "No customs or regulatory source supplied."
+  ],
+  "required_fixes": [
+    "Add dated sanctions-list extracts for relevant authorities.",
+    "Add counterparty registry and beneficial ownership evidence.",
+    "Add port/operator and customs/regulatory sources.",
+    "Add insurance clause or underwriter note.",
+    "Separate facts, assessments, assumptions, and unknowns."
+  ],
+  "human_review_required": true,
+  "not_legal_or_compliance_advice": true
+}

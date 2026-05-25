@@ -1,0 +1,17 @@
+{
+  "coverage_status": "insufficient",
+  "decision_readiness": "do_not_escalate_to_committee_yet",
+  "covered_source_types": [
+    "port_operator_notice",
+    "sanctions_list_extract",
+    "carrier_note"
+  ],
+  "missing_required_sources": [
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "customs_or_regulatory_source",
+    "insurance_clause_or_underwriter_note",
+    "independent_vessel_or_carrier_history"
+  ],
+  "human_review_required": true
+}

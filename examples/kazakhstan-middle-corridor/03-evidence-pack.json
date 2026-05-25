@@ -1,0 +1,33 @@
+{
+  "topic": "Kazakhstan / Middle Corridor deal risk gate",
+  "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+  "cargo": "industrial equipment",
+  "counterparties": ["shipper", "forwarder", "consignee"],
+  "evidence": [
+    {
+      "id": "e1",
+      "source_type": "port_operator_notice",
+      "date": "2026-05-20",
+      "supports": ["c1"]
+    },
+    {
+      "id": "e2",
+      "source_type": "sanctions_list_extract",
+      "date": "2026-05-21",
+      "supports": ["c2"]
+    },
+    {
+      "id": "e3",
+      "source_type": "carrier_note",
+      "date": "2026-05-22",
+      "supports": ["c3"]
+    }
+  ],
+  "known_missing_sources": [
+    "counterparty registry extract",
+    "beneficial ownership source",
+    "insurance clause or underwriter note",
+    "customs or regulatory source",
+    "vessel or carrier history beyond caller note"
+  ]
+}

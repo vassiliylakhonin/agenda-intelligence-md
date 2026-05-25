@@ -1,0 +1,27 @@
+[
+  {
+    "id": "e1",
+    "source_type": "port_operator_notice",
+    "title": "Port operator notice",
+    "date": "2026-05-20",
+    "url": "https://example.com/port-notice",
+    "retrieved_at": "2026-05-24T09:00:00Z"
+  },
+  {
+    "id": "e2",
+    "source_type": "sanctions_list_extract",
+    "authority": "OFAC/EU/UK/UN",
+    "title": "Sanctions list extract",
+    "date": "2026-05-21",
+    "result": "no exact match supplied by caller",
+    "retrieved_at": "2026-05-24T09:10:00Z"
+  },
+  {
+    "id": "e3",
+    "source_type": "carrier_note",
+    "title": "Carrier routing note",
+    "date": "2026-05-22",
+    "url": "https://example.com/carrier-note",
+    "retrieved_at": "2026-05-24T09:20:00Z"
+  }
+]
