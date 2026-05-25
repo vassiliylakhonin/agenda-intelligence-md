@@ -19,6 +19,7 @@ Deployment packages
 ## Design rules
 
 - The core package must stay clean and vendor-neutral.
+- Shared service-layer functions should hold reusable behavior that adapters can call without depending on each other.
 - Marketplace billing, cloud SDKs, and vendor-specific integration code must not live in core.
 - The MCP server must remain simple, stable, and testable.
 - The future HTTP API should be a thin wrapper around existing core functions.
