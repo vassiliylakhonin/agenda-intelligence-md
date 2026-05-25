@@ -22,7 +22,7 @@ Deployment packages
 - Shared service-layer functions should hold reusable behavior that adapters can call without depending on each other.
 - Marketplace billing, cloud SDKs, and vendor-specific integration code must not live in core.
 - The MCP server must remain simple, stable, and testable.
-- The future HTTP API should be a thin wrapper around existing core functions.
+- The portable HTTP API shell should remain a thin wrapper around existing service functions.
 - The future A2A layer should be an adapter over the HTTP/service layer.
 - Deployment packages can be channel-specific, but channel concerns must not leak into core.
 

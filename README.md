@@ -265,6 +265,7 @@ Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-con
 | Evidence audit | [`docs/evidence-audit.md`](docs/evidence-audit.md) |
 | Threat model | [`docs/threat-model.md`](docs/threat-model.md) |
 | Container deployment | [`docs/deployment/container.md`](docs/deployment/container.md) |
+| HTTP API shell | [`docs/deployment/http-api.md`](docs/deployment/http-api.md) |
 | Deployable architecture | [`docs/product/deployable-architecture.md`](docs/product/deployable-architecture.md) |
 | Data handling | [`docs/trust/data-handling.md`](docs/trust/data-handling.md) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |

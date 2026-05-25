@@ -43,6 +43,7 @@ llm = [
 [project.scripts]
 agenda-intelligence = "agenda_intelligence.cli:main"
 agenda-intelligence-mcp = "agenda_intelligence.mcp_stdio:main"
+agenda-intelligence-http = "agenda_intelligence.http_api:main"
 
 [tool.setuptools]
 include-package-data = true
