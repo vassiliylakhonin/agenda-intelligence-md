@@ -88,6 +88,20 @@ def test_middle_corridor_response_fixtures_include_not_advice_notice():
         )
 
 
+def test_middle_corridor_response_fixtures_include_readiness_score():
+    allowed_labels = {
+        "insufficient_information",
+        "not_decision_ready",
+        "partial",
+        "review_ready",
+    }
+
+    for fixture_path in sorted(CONTRACT_DIR.glob("*.response.json")):
+        response = load_json(fixture_path)
+        assert 0 <= response["decision_readiness_score"] <= 100
+        assert response["decision_readiness_label"] in allowed_labels
+
+
 def test_middle_corridor_response_fixtures_do_not_imply_clearance():
     for fixture_path in sorted(CONTRACT_DIR.glob("*.response.json")):
         text = json.dumps(load_json(fixture_path), sort_keys=True)

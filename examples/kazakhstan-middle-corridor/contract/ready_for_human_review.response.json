@@ -1,6 +1,8 @@
 {
   "triage_recommendation": "ready_for_human_review",
   "risk_signal": "medium",
+  "decision_readiness_score": 100,
+  "decision_readiness_label": "review_ready",
   "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
   "cargo": "industrial equipment",
   "shipment_value": {

@@ -1,6 +1,8 @@
 {
   "triage_recommendation": "insufficient_information",
   "risk_signal": "unknown",
+  "decision_readiness_score": 0,
+  "decision_readiness_label": "insufficient_information",
   "route": "Kazakhstan -> Caspian -> Caucasus",
   "cargo": "industrial goods",
   "counterparties": [

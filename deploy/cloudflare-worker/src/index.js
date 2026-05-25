@@ -94,6 +94,8 @@ const MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO = [
   "vessel_or_carrier_history"
 ];
 
+const MIDDLE_CORRIDOR_HELPFUL_CONTEXT = ["port_operator_notice", "carrier_note"];
+
 const NOT_ADVICE_NOTICE =
   "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.";
 
@@ -837,14 +839,46 @@ function topRisksForStructuredRequest(missingSources) {
   return [...new Set(risks)];
 }
 
+function decisionReadinessForStructuredRequest(request, suppliedSources) {
+  if (request.dated_sources.length === 0 || suppliedSources.length === 0) {
+    return {
+      score: 0,
+      label: "insufficient_information"
+    };
+  }
+
+  const requiredPresent = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.filter((sourceType) =>
+    suppliedSources.includes(sourceType)
+  ).length;
+  const helpfulPresent = MIDDLE_CORRIDOR_HELPFUL_CONTEXT.filter((sourceType) =>
+    suppliedSources.includes(sourceType)
+  ).length;
+  const score = Math.min(
+    100,
+    Math.round(
+      10 +
+        (requiredPresent / MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.length) * 70 +
+        (helpfulPresent / MIDDLE_CORRIDOR_HELPFUL_CONTEXT.length) * 20
+    )
+  );
+
+  return {
+    score,
+    label: score >= 85 ? "review_ready" : score >= 50 ? "partial" : "not_decision_ready"
+  };
+}
+
 function dealRiskContractResponseForRequest(request) {
   const suppliedSources = suppliedSourcesFromStructuredRequest(request);
   const minimumSourcesBeforeGo = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.filter(
     (sourceType) => !suppliedSources.includes(sourceType)
   );
+  const decisionReadiness = decisionReadinessForStructuredRequest(request, suppliedSources);
   const response = {
     triage_recommendation: triageRecommendationForStructuredRequest(request, minimumSourcesBeforeGo),
     risk_signal: riskSignalForStructuredRequest(request, minimumSourcesBeforeGo),
+    decision_readiness_score: decisionReadiness.score,
+    decision_readiness_label: decisionReadiness.label,
     route: request.route,
     cargo: request.cargo,
     counterparties: request.counterparties,
@@ -1372,6 +1406,7 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
           "Middle Corridor deal-risk contract response:",
           `Recommendation: ${triage.deal_risk_contract.triage_recommendation}`,
           `Risk signal: ${triage.deal_risk_contract.risk_signal}`,
+          `Decision readiness: ${triage.deal_risk_contract.decision_readiness_score}/100 (${triage.deal_risk_contract.decision_readiness_label})`,
           `Route: ${triage.deal_risk_contract.route}`,
           `Cargo: ${triage.deal_risk_contract.cargo}`,
           "",

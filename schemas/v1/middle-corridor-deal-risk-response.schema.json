@@ -9,6 +9,8 @@
   "required": [
     "triage_recommendation",
     "risk_signal",
+    "decision_readiness_score",
+    "decision_readiness_label",
     "supplied_sources",
     "minimum_sources_before_go",
     "evidence_gaps",
@@ -35,6 +37,21 @@
         "medium_high",
         "high",
         "unknown"
+      ]
+    },
+    "decision_readiness_score": {
+      "description": "Heuristic 0-100 score for evidence-pack readiness for human review. This is not approval, clearance, legal advice, sanctions advice, compliance advice, financial advice, investment advice, insurance advice, or trading advice.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "decision_readiness_label": {
+      "type": "string",
+      "enum": [
+        "insufficient_information",
+        "not_decision_ready",
+        "partial",
+        "review_ready"
       ]
     },
     "route": {
@@ -187,6 +204,8 @@
     {
       "triage_recommendation": "escalate_before_signature",
       "risk_signal": "medium_high",
+      "decision_readiness_score": 42,
+      "decision_readiness_label": "not_decision_ready",
       "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
       "cargo": "industrial equipment",
       "shipment_value": {

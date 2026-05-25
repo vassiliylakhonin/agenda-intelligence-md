@@ -359,6 +359,8 @@ test("kazakhstan deal risk gate returns structured contract response from data p
     assert.equal(response.result.metadata.triage.intent, "middle_corridor_deal_risk_contract");
     assert.equal(contract.triage_recommendation, "escalate_before_signature");
     assert.equal(contract.risk_signal, "medium_high");
+    assert.equal(contract.decision_readiness_score, 42);
+    assert.equal(contract.decision_readiness_label, "not_decision_ready");
     assert.equal(contract.route, "Altynkol -> Aktau/Kuryk -> Baku -> Poti");
     assert.equal(contract.cargo, "industrial equipment");
     assert.equal(contract.shipment_value.amount, 2400000);
@@ -377,6 +379,7 @@ test("kazakhstan deal risk gate returns structured contract response from data p
     assert.equal(contract.minimum_sources_before_go.includes("sanctions_list_extract"), false);
     assert.equal(contract.minimum_sources_before_go.includes("port_operator_notice"), false);
     assert.match(contract.not_advice_notice, /Not legal/);
+    assert.match(response.result.artifacts[0].parts[0].text, /Decision readiness: 42\/100/);
     assert.match(response.result.artifacts[0].parts[0].text, /Middle Corridor deal-risk contract response/);
   } finally {
     console.log = originalLog;

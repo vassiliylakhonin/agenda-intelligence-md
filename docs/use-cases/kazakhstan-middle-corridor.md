@@ -40,7 +40,9 @@ This is not legal, compliance, investment, insurance, or sanctions advice. It is
 ```json
 {
   "triage_recommendation": "escalate_before_signature",
-  "risk_signal": "medium-high",
+  "risk_signal": "medium_high",
+  "decision_readiness_score": 42,
+  "decision_readiness_label": "not_decision_ready",
   "top_risks": [
     "sanctions adjacency",
     "Caspian chokepoint dependency",
@@ -81,7 +83,17 @@ The product-grade interface is structured JSON, not free-text prompting. Use the
 
 The live A2A wrapper remains a demo and discovery convenience: it proves the route-risk framing, returns a useful first-pass triage, and helps directories such as Agenstry probe the public agent. It is not the canonical enterprise integration surface. The canonical contract is the structured request/response pair above, with explicit source categories, evidence gaps, human-review routing, and the non-advice notice carried in every response.
 
+`decision_readiness_score` is a heuristic 0-100 evidence-pack readiness score for human review. It is not approval, clearance, compliance status, or advice. In buyer language: a low score means the file is not ready to send to a committee, insurer, client, or sign-off workflow because required source categories are missing.
+
 The boundary is part of the contract: no legal, compliance, sanctions, financial, investment, insurance, or trading advice; no autonomous live retrieval; no factual-truth verification; no authorization decision.
+
+### Buyer-facing scenarios
+
+| Scenario | What the user brings | What the agent returns |
+|---|---|---|
+| Pre-signature logistics deal | Route, cargo, counterparties, port notice, sanctions extract, carrier note | `42/100`, `escalate_before_signature`, missing registry, ownership, customs, insurance, vessel/carrier history |
+| Pre-shipment evidence check | Full evidence pack before goods move | Higher readiness score, remaining source gaps, watch-next indicators for delays, customs, insurance, and carrier history |
+| Committee review file readiness | Existing memo plus evidence pack | Human-review routing, missing source categories, evidence gaps, and a non-advice notice suitable for analyst QA |
 
 ### Live structured JSON test
 
