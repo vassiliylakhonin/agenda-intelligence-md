@@ -82,9 +82,10 @@ def test_middle_corridor_response_fixtures_include_not_advice_notice():
     for fixture_path in sorted(CONTRACT_DIR.glob("*.response.json")):
         response = load_json(fixture_path)
         assert response["not_advice_notice"]
-        assert "Not legal, sanctions, compliance, financial, investment, insurance, or trading advice." in response[
-            "not_advice_notice"
-        ]
+        assert (
+            "Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
+            in response["not_advice_notice"]
+        )
 
 
 def test_middle_corridor_response_fixtures_do_not_imply_clearance():
