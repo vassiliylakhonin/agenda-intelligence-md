@@ -26,6 +26,8 @@ Deployment packages
 - The future A2A layer should be an adapter over the HTTP/service layer.
 - Deployment packages can be channel-specific, but channel concerns must not leak into core.
 
+Adapter contract: [`a2a-adapter-plan.md`](a2a-adapter-plan.md).
+
 ## Roadmap
 
 - `1.0.x` - stable MCP/package contract.

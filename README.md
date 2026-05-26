@@ -267,6 +267,7 @@ Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-con
 | Container deployment | [`docs/deployment/container.md`](docs/deployment/container.md) |
 | HTTP API shell | [`docs/deployment/http-api.md`](docs/deployment/http-api.md) |
 | Deployable architecture | [`docs/product/deployable-architecture.md`](docs/product/deployable-architecture.md) |
+| A2A adapter plan | [`docs/product/a2a-adapter-plan.md`](docs/product/a2a-adapter-plan.md) |
 | Data handling | [`docs/trust/data-handling.md`](docs/trust/data-handling.md) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |
 | Agenstry discovery | [`docs/integrations/agenstry.md`](docs/integrations/agenstry.md) |
