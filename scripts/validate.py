@@ -82,7 +82,7 @@ for token in ["name: agenda-intelligence", "description:", "references/analysis-
 
 readme = (root / "README.md").read_text()
 for token in [
-    "MCP product shell and evidence-discipline layer for strategic intelligence agents",
+    "evidence-discipline layer for strategic intelligence agents",
     "What this is",
     "What this is not",
     "First run",
