@@ -31,3 +31,22 @@ AGENT_PROFILE = "kazakhstan"
 [[env.middle-corridor-deal-risk-gate.kv_namespaces]]
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
+
+# CIS Secondary-Sanctions Exposure — per ADR 0014, this profile opts in to
+# live retrieval against the OpenSanctions consolidated dataset (CC-BY 4.0).
+# Before deploying with `wrangler deploy --env cis-secondary-sanctions`:
+#   wrangler secret put OPENSANCTIONS_API_KEY --env cis-secondary-sanctions
+# (free key at https://www.opensanctions.org/api/).
+# Without the secret the profile responds gracefully with
+# live_retrieval_status: disabled and triage based on user-supplied
+# evidence only.
+[env.cis-secondary-sanctions]
+name = "cis-secondary-sanctions-a2a"
+workers_dev = true
+
+[env.cis-secondary-sanctions.vars]
+AGENT_PROFILE = "cis_secondary_sanctions"
+
+[[env.cis-secondary-sanctions.kv_namespaces]]
+binding = "AGENDA_USAGE"
+id = "d2228183999246ccbec8aa2d5f130bfc"
