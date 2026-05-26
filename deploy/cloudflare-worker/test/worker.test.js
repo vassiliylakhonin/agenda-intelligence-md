@@ -16,6 +16,7 @@ import {
   triageForText,
   usageStats
 } from "../src/index.js";
+import { validateAgentCard } from "../scripts/verify-agent-card.js";
 
 const request = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
   method: "POST",
@@ -86,6 +87,24 @@ test("agent card uses request origin for live endpoints", () => {
   assert.equal(
     card.x_agenda_intelligence.wrapper_scope,
     "A2A/JSON-RPC discovery, lightweight triage, and routing response only"
+  );
+});
+
+test("agent card verifier accepts local Agenda and Middle Corridor cards", () => {
+  const agendaCard = agentCard(request);
+  const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
+  const kazakhstanCard = agentCard(kazakhstanRequest, { AGENT_PROFILE: "kazakhstan" });
+
+  assert.deepEqual(
+    validateAgentCard(agendaCard, "https://agenda-intelligence-a2a.example.workers.dev/.well-known/agent-card.json"),
+    []
+  );
+  assert.deepEqual(
+    validateAgentCard(
+      kazakhstanCard,
+      "https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/.well-known/agent-card.json"
+    ),
+    []
   );
 });
 

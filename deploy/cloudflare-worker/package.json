@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "stats": "node scripts/stats.js",
-    "test": "node --test"
+    "test": "node --test",
+    "verify:agent-card": "node scripts/verify-agent-card.js"
   }
 }

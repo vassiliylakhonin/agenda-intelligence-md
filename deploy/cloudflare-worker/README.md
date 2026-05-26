@@ -122,6 +122,29 @@ curl -X POST https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/messag
 
 Expected: HTTP 200 with a JSON-RPC 2.0 response, `status.state: "completed"`, and a routing note with `signal_screen`, suggested modules, source plan, quality gates, and next actions.
 
+## Verify live Agent Cards
+
+After deploying, verify that Agenstry will see the expected product metadata:
+
+```bash
+cd deploy/cloudflare-worker
+npm run verify:agent-card
+```
+
+This checks the public Agenda Intelligence card plus both Kazakhstan / Middle Corridor aliases:
+
+- `agenda-intelligence-a2a`
+- `kazakhstan-corridor-risk-a2a`
+- `middle-corridor-deal-risk-gate-a2a`
+
+To verify a custom URL:
+
+```bash
+npm run verify:agent-card -- https://your-worker.example/.well-known/agent-card.json
+```
+
+For the Middle Corridor cards, the verifier checks `product_profile`, product-contract schema links, source taxonomy link, required-before-go source categories, non-advice notice, and no-approval boundary.
+
 ## Usage analytics
 
 This Worker uses Cloudflare's built-in free observability path:
