@@ -38,6 +38,44 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightwei
 
 The hosted wrapper is intentionally limited: no payments, no wallets, no autonomous live retrieval, no factual-truth verification, and no legal/financial/compliance advice. Full product behavior remains in the installable stdio MCP server.
 
+## Self-host via HTTP API (if your stack does not run MCP)
+
+If your environment cannot run an MCP / A2A server but can run a plain HTTP service, install the package and start the HTTP shell:
+
+```bash
+pip install agenda-intelligence-md
+agenda-intelligence-http --host 127.0.0.1 --port 8080
+```
+
+The HTTP API is a portable JSON wrapper over the same core service layer that the MCP, A2A, and Cloudflare Worker surfaces use — same `schemas/v1/` contract, same evidence audit, same source coverage logic, same Middle Corridor deal-risk gate. Switching surfaces does not change input/output shape.
+
+Endpoints:
+
+- `GET /healthz`, `GET /readyz` — liveness / readiness probes
+- `POST /v1/audit-claims` — claim-level evidence audit
+- `POST /v1/source-coverage` — evidence-pack diagnostics against category source requirements
+- `POST /v1/score` — heuristic before/after score
+- `POST /v1/middle-corridor/deal-risk` — Middle Corridor Deal Risk Gate (`middle-corridor-deal-risk-request.schema.json`)
+
+One-call probe:
+
+```bash
+curl -sS http://127.0.0.1:8080/v1/middle-corridor/deal-risk \
+  -H 'content-type: application/json' \
+  -d @examples/kazakhstan-middle-corridor/contract/pre_signature_escalate.request.json
+```
+
+Container build (`Dockerfile.api`):
+
+```bash
+docker build -f Dockerfile.api -t agenda-intelligence-md-api:1.0.1 .
+docker run --rm -p 8080:8080 agenda-intelligence-md-api:1.0.1
+```
+
+Full HTTP deployment guide, including environment defaults (`AGENDA_INTELLIGENCE_HTTP_HOST`, `AGENDA_INTELLIGENCE_HTTP_PORT`), logging discipline, and boundary statements: [`docs/deployment/http-api.md`](docs/deployment/http-api.md).
+
+The HTTP shell is portable but **not a hardened internet-facing server**. No built-in authentication, rate limiting, or TLS — front it with a reverse proxy (nginx, Caddy, Cloudflare Tunnel) and your existing auth layer before exposing it beyond localhost / private network.
+
 ## Flagship commercial use case
 
 **Kazakhstan / Middle Corridor Deal Risk Gate** is the focused commercial proposition for logistics, trade-finance, procurement, insurance, and compliance-adjacent workflows:
