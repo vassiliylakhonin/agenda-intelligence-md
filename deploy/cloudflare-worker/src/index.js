@@ -1,6 +1,11 @@
 const VERSION = "1.0.1";
 const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
 const DOCS_URL = `${REPOSITORY_URL}/blob/main/MCP.md`;
+const MIDDLE_CORRIDOR_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/kazakhstan-middle-corridor.md`;
+const MIDDLE_CORRIDOR_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/middle-corridor-deal-risk-request.schema.json`;
+const MIDDLE_CORRIDOR_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/middle-corridor-deal-risk-response.schema.json`;
+const MIDDLE_CORRIDOR_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/middle-corridor-deal-risk.json`;
+const A2A_EXAMPLES_URL = `${REPOSITORY_URL}/tree/main/examples/a2a`;
 const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";
 
 const CA_CASPIAN_TERMS = [
@@ -352,8 +357,9 @@ function applyAgentProfile(card, request, env = {}) {
 
   const origin = originFromRequest(request);
   card.name = "Kazakhstan / Middle Corridor Deal Risk Gate";
+  card.documentationUrl = MIDDLE_CORRIDOR_DOCS_URL;
   card.description =
-    "Live no-payment A2A/JSON-RPC deal-risk gate for Kazakhstan and Middle Corridor exposure. Bring route, cargo, counterparties, and dated sources; get corridor-risk triage, sanctions-adjacency evidence gaps, source-coverage diagnostics, watch-next indicators, and human-review escalation routing into the installable Agenda Intelligence MD MCP server.";
+    "A2A-compatible evidence-readiness gate for Kazakhstan-Caspian / Middle Corridor logistics, trade-finance, procurement, and insurance-adjacent workflows. Bring route, cargo, counterparties, and dated sources; get structured deal-risk triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, risk signal, and human-review routing.";
   card.provider.legalEntity.sameAs = [
     "https://github.com/vassiliylakhonin",
     "https://pypi.org/project/agenda-intelligence-md/",
@@ -364,9 +370,9 @@ function applyAgentProfile(card, request, env = {}) {
   card.skills = [
     {
       id: "middle-corridor-deal-desk-triage",
-      name: "Middle Corridor deal desk triage",
+      name: "Kazakhstan / Middle Corridor deal-risk gate",
       description:
-        "Turns a route, cargo, counterparty, and dated-source bundle into a proceed/pause/escalate/reject-for-now triage recommendation with minimum sources required before signature or committee review.",
+        "Turns a route, cargo, counterparty, and dated-source bundle into a structured deal-risk recommendation with risk signal, decision-readiness score, evidence gaps, and minimum source categories required before signature, shipment, insurer handoff, or committee review.",
       tags: [
         "deal-desk",
         "kazakhstan",
@@ -464,10 +470,33 @@ function applyAgentProfile(card, request, env = {}) {
       outputModes: ["application/json", "text/markdown"]
     }
   ];
-  card.x_agenda_intelligence.product_profile = "kazakhstan_deal_risk_gate";
+  card.x_agenda_intelligence.product_profile = "middle_corridor_deal_risk";
+  card.x_agenda_intelligence.canonical_product_name = "Kazakhstan / Middle Corridor Deal Risk Gate";
   card.x_agenda_intelligence.wrapper_scope =
     "A2A/JSON-RPC discovery, Kazakhstan and Middle Corridor deal-risk triage, evidence gating, source coverage, and routing response only";
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
+  card.x_agenda_intelligence.documentation = MIDDLE_CORRIDOR_DOCS_URL;
+  card.x_agenda_intelligence.product_contract = {
+    request_schema: MIDDLE_CORRIDOR_REQUEST_SCHEMA_URL,
+    response_schema: MIDDLE_CORRIDOR_RESPONSE_SCHEMA_URL,
+    source_taxonomy: MIDDLE_CORRIDOR_SOURCE_TAXONOMY_URL,
+    runnable_examples: A2A_EXAMPLES_URL,
+    canonical_input_mode: "structured_json",
+    demo_input_modes: ["structured_json", "text_prompt"]
+  };
+  card.x_agenda_intelligence.required_before_go = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO;
+  card.x_agenda_intelligence.helpful_context_sources = MIDDLE_CORRIDOR_HELPFUL_CONTEXT;
+  card.x_agenda_intelligence.supported_contracts = [
+    "middle_corridor_deal_risk_contract",
+    "lightweight_text_triage"
+  ];
+  card.x_agenda_intelligence.buyer_use_cases = [
+    "pre-signature logistics deal review",
+    "pre-shipment evidence completeness check",
+    "trade-finance or compliance-adjacent file readiness",
+    "insurance-adjacent source-pack handoff",
+    "management or client risk-memo quality gate"
+  ];
   card.x_agenda_intelligence.commercial_positioning =
     "Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation.";
   card.x_agenda_intelligence.focus = [
@@ -476,6 +505,15 @@ function applyAgentProfile(card, request, env = {}) {
     "source coverage for dated evidence packs",
     "risk memo quality gates",
     "human-review escalation before signature, committee review, insurer handoff, or client delivery"
+  ];
+  card.x_agenda_intelligence.not_advice_notice = NOT_ADVICE_NOTICE;
+  card.x_agenda_intelligence.boundaries = [
+    "Pre-compliance evidence triage only.",
+    "No autonomous live source retrieval.",
+    "No factual-truth verification.",
+    "No legal, compliance, sanctions, financial, investment, insurance, or trading advice.",
+    "No approval, clearance, authorization, or final decision.",
+    "Human review is required for high-stakes decisions."
   ];
   return card;
 }

@@ -93,10 +93,32 @@ test("kazakhstan profile exposes focused corridor-risk agent card", () => {
   assert.equal(card.name, "Kazakhstan / Middle Corridor Deal Risk Gate");
   assert.equal(card.url, "https://kazakhstan-corridor-risk-a2a.example.workers.dev");
   assert.equal(
+    card.documentationUrl,
+    "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/use-cases/kazakhstan-middle-corridor.md"
+  );
+  assert.equal(
     card.x_agenda_intelligence.wrapper_scope,
     "A2A/JSON-RPC discovery, Kazakhstan and Middle Corridor deal-risk triage, evidence gating, source coverage, and routing response only"
   );
-  assert.equal(card.x_agenda_intelligence.product_profile, "kazakhstan_deal_risk_gate");
+  assert.equal(card.x_agenda_intelligence.product_profile, "middle_corridor_deal_risk");
+  assert.equal(card.x_agenda_intelligence.canonical_product_name, "Kazakhstan / Middle Corridor Deal Risk Gate");
+  assert.equal(
+    card.x_agenda_intelligence.product_contract.request_schema,
+    "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/middle-corridor-deal-risk-request.schema.json"
+  );
+  assert.equal(
+    card.x_agenda_intelligence.product_contract.source_taxonomy,
+    "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/source-requirements/middle-corridor-deal-risk.json"
+  );
+  assert.equal(card.x_agenda_intelligence.product_contract.canonical_input_mode, "structured_json");
+  assert.deepEqual(card.x_agenda_intelligence.supported_contracts, [
+    "middle_corridor_deal_risk_contract",
+    "lightweight_text_triage"
+  ]);
+  assert.ok(card.x_agenda_intelligence.required_before_go.includes("beneficial_ownership_source"));
+  assert.ok(card.x_agenda_intelligence.buyer_use_cases.includes("pre-signature logistics deal review"));
+  assert.match(card.x_agenda_intelligence.not_advice_notice, /Not legal/);
+  assert.ok(card.x_agenda_intelligence.boundaries.includes("No approval, clearance, authorization, or final decision."));
   assert.deepEqual(
     card.skills.map((skill) => skill.id),
     [
@@ -107,6 +129,7 @@ test("kazakhstan profile exposes focused corridor-risk agent card", () => {
       "a2a-evidence-pack-linter"
     ]
   );
+  assert.equal(card.skills[0].name, "Kazakhstan / Middle Corridor deal-risk gate");
   assert.match(card.x_agenda_intelligence.commercial_positioning, /dated sources/);
 });
 
