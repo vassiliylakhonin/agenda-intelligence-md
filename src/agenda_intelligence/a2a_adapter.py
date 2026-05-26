@@ -7,6 +7,8 @@ perform live retrieval, persist caller payloads, or change MCP behavior.
 from __future__ import annotations
 
 import json
+import os
+import sys
 from typing import Any
 
 from agenda_intelligence import __version__, services
@@ -220,3 +222,28 @@ def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> di
         return {"jsonrpc": "2.0", "id": id_value, "result": a2a_result_for_middle_corridor(request_json)}
 
     return jsonrpc_error(id_value, -32601, "Method not found", {"supported_methods": ["message/send", "agent/card"]})
+
+
+def handle_stdin_jsonrpc(raw_input: str, base_url: str = "http://localhost:8080") -> dict:
+    """Handle one JSON-RPC object read from stdin."""
+    if not raw_input.strip():
+        return jsonrpc_error(None, -32700, "Parse error", {"detail": "stdin is empty"})
+    try:
+        payload = json.loads(raw_input)
+    except json.JSONDecodeError as error:
+        return jsonrpc_error(None, -32700, "Parse error", {"detail": error.msg})
+    if not isinstance(payload, dict):
+        return jsonrpc_error(None, -32600, "Invalid Request")
+    return handle_jsonrpc(payload, base_url)
+
+
+def main() -> None:
+    """Run the A2A JSON-RPC stdio shell."""
+    base_url = os.environ.get("AGENDA_INTELLIGENCE_A2A_BASE_URL", "http://localhost:8080")
+    response = handle_stdin_jsonrpc(sys.stdin.read(), base_url)
+    json.dump(response, sys.stdout, indent=2, sort_keys=True)
+    sys.stdout.write("\n")
+
+
+if __name__ == "__main__":
+    main()

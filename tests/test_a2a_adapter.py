@@ -123,3 +123,68 @@ def test_jsonrpc_unknown_method_returns_method_not_found():
     response = a2a_adapter.handle_jsonrpc({"jsonrpc": "2.0", "id": "x", "method": "unknown"})
 
     assert response["error"]["code"] == -32601
+
+
+def test_stdin_jsonrpc_shell_handles_message_send():
+    response = a2a_adapter.handle_stdin_jsonrpc("""
+        {
+          "jsonrpc": "2.0",
+          "id": "stdin-1",
+          "method": "message/send",
+          "params": {
+            "request": {
+              "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+              "cargo": "industrial equipment",
+              "counterparties": [
+                {
+                  "role": "forwarder",
+                  "name": "Kazakhstan forwarder",
+                  "jurisdiction": "Kazakhstan"
+                }
+              ],
+              "dated_sources": [
+                {
+                  "id": "e1",
+                  "source_type": "port_operator_notice",
+                  "title": "Port operator notice",
+                  "date": "2026-05-20",
+                  "url": "https://example.com/port-notice"
+                },
+                {
+                  "id": "e2",
+                  "source_type": "sanctions_list_extract",
+                  "title": "Sanctions list extract",
+                  "date": "2026-05-21",
+                  "url": "https://example.com/sanctions"
+                },
+                {
+                  "id": "e3",
+                  "source_type": "carrier_note",
+                  "title": "Carrier note",
+                  "date": "2026-05-22",
+                  "url": "https://example.com/carrier"
+                }
+              ],
+              "risk_question": "Should this be escalated before contract signature?",
+              "decision_stage": "pre_signature"
+            }
+          }
+        }
+        """)
+
+    assert response["id"] == "stdin-1"
+    assert response["result"]["metadata"]["response"]["decision_readiness_score"] == 42
+
+
+def test_stdin_jsonrpc_shell_handles_invalid_json():
+    response = a2a_adapter.handle_stdin_jsonrpc("{")
+
+    assert response["error"]["code"] == -32700
+    assert response["error"]["message"] == "Parse error"
+
+
+def test_stdin_jsonrpc_shell_handles_empty_input():
+    response = a2a_adapter.handle_stdin_jsonrpc("")
+
+    assert response["error"]["code"] == -32700
+    assert response["error"]["data"]["detail"] == "stdin is empty"

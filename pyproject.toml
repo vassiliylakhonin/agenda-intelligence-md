@@ -44,6 +44,7 @@ llm = [
 agenda-intelligence = "agenda_intelligence.cli:main"
 agenda-intelligence-mcp = "agenda_intelligence.mcp_stdio:main"
 agenda-intelligence-http = "agenda_intelligence.http_api:main"
+agenda-intelligence-a2a = "agenda_intelligence.a2a_adapter:main"
 
 [tool.setuptools]
 include-package-data = true
