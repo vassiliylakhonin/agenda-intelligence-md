@@ -317,13 +317,14 @@ def score_output(before_text: str, after_text: str) -> dict:
 
 
 def _supplied_source_types(request_json: dict) -> list[str]:
-    return list(
-        dict.fromkeys(
-            source.get("source_type")
-            for source in request_json.get("dated_sources", [])
-            if isinstance(source, dict) and source.get("source_type")
-        )
-    )
+    source_types: list[str] = []
+    for source in request_json.get("dated_sources", []):
+        if not isinstance(source, dict):
+            continue
+        source_type = source.get("source_type")
+        if isinstance(source_type, str):
+            source_types.append(source_type)
+    return list(dict.fromkeys(source_types))
 
 
 def _evidence_gap_for_source(source_type: str) -> str:
