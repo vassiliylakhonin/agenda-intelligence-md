@@ -1,0 +1,33 @@
+{
+  "jsonrpc": "2.0",
+  "id": "a2a-source-coverage-demo",
+  "method": "message/send",
+  "params": {
+    "capability": "source_coverage",
+    "category": "sanctions",
+    "evidence_json": {
+      "topic": "Sanctions-adjacent shipment memo",
+      "claims": [
+        {
+          "claim": "A sanctions list extract was supplied.",
+          "sources": [
+            {
+              "evidence_id": "e1",
+              "name": "OFAC SDN list extract",
+              "url": "https://example.com/ofac-extract",
+              "source_type": "sanctions_list",
+              "freshness": "dated",
+              "supports": [
+                "Official sanctions list extract supplied by the caller."
+              ]
+            }
+          ]
+        }
+      ],
+      "required_but_missing_sources": [
+        "legal_or_policy_text",
+        "regulator_guidance"
+      ]
+    }
+  }
+}

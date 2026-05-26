@@ -1,4 +1,10 @@
+import json
+from pathlib import Path
+
 from agenda_intelligence import a2a_adapter
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+A2A_EXAMPLES = REPO_ROOT / "examples" / "a2a"
 
 
 def middle_corridor_request():
@@ -331,3 +337,41 @@ def test_stdin_jsonrpc_shell_handles_empty_input():
 
     assert response["error"]["code"] == -32700
     assert response["error"]["data"]["detail"] == "stdin is empty"
+
+
+def test_a2a_example_requests_are_valid_jsonrpc_objects():
+    for path in A2A_EXAMPLES.glob("*.request.json"):
+        payload = json.loads(path.read_text())
+
+        assert payload["jsonrpc"] == "2.0", path
+        assert isinstance(payload["id"], str), path
+        assert payload["method"] in {"agent/card", "message/send"}, path
+
+
+def test_a2a_example_requests_run_through_stdin_shell():
+    expected_profiles = {
+        "middle-corridor-deal-risk.request.json": "middle_corridor_deal_risk",
+        "audit-claims.request.json": "audit_claims",
+        "source-coverage.request.json": "source_coverage",
+        "score-output.request.json": "score_output",
+    }
+
+    for filename, expected_profile in expected_profiles.items():
+        response = a2a_adapter.handle_stdin_jsonrpc((A2A_EXAMPLES / filename).read_text())
+
+        assert "error" not in response, filename
+        result = response["result"]
+        assert result["status"]["state"] == "completed", filename
+        assert result["metadata"]["product_profile"] == expected_profile, filename
+
+
+def test_a2a_agent_card_example_runs_through_stdin_shell():
+    response = a2a_adapter.handle_stdin_jsonrpc((A2A_EXAMPLES / "agent-card.request.json").read_text())
+
+    assert "error" not in response
+    assert response["result"]["x_agenda_intelligence"]["supported_capabilities"] == [
+        "middle_corridor_deal_risk",
+        "audit_claims",
+        "source_coverage",
+        "score_output",
+    ]

@@ -1,0 +1,58 @@
+{
+  "jsonrpc": "2.0",
+  "id": "a2a-middle-corridor-demo",
+  "method": "message/send",
+  "params": {
+    "capability": "middle_corridor_deal_risk",
+    "request": {
+      "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+      "cargo": "industrial equipment",
+      "shipment_value": {
+        "amount": 2400000,
+        "currency": "USD"
+      },
+      "counterparties": [
+        {
+          "role": "forwarder",
+          "name": "Kazakhstan forwarder",
+          "jurisdiction": "Kazakhstan"
+        },
+        {
+          "role": "port_agent",
+          "name": "Azerbaijan port agent",
+          "jurisdiction": "Azerbaijan"
+        },
+        {
+          "role": "consignee",
+          "name": "Georgian consignee",
+          "jurisdiction": "Georgia"
+        }
+      ],
+      "dated_sources": [
+        {
+          "id": "e1",
+          "source_type": "port_operator_notice",
+          "title": "Port operator notice",
+          "date": "2026-05-20",
+          "url": "https://example.com/port-notice"
+        },
+        {
+          "id": "e2",
+          "source_type": "sanctions_list_extract",
+          "title": "Sanctions list extract",
+          "date": "2026-05-21",
+          "url": "https://example.com/sanctions"
+        },
+        {
+          "id": "e3",
+          "source_type": "carrier_note",
+          "title": "Carrier note",
+          "date": "2026-05-22",
+          "url": "https://example.com/carrier"
+        }
+      ],
+      "risk_question": "Should this be escalated before contract signature?",
+      "decision_stage": "pre_signature"
+    }
+  }
+}

@@ -48,6 +48,20 @@ def validate_with_schema(path: Path, schema: object, label: str) -> None:
         raise SystemExit(f"{path.relative_to(ROOT)} failed {label} schema at {where}: {exc.message}") from exc
 
 
+def validate_a2a_jsonrpc_example(path: Path) -> None:
+    data = load_json(path)
+    if not isinstance(data, dict):
+        raise SystemExit(f"{path.relative_to(ROOT)} is not a JSON object")
+    if data.get("jsonrpc") != "2.0":
+        raise SystemExit(f"{path.relative_to(ROOT)} must set jsonrpc to 2.0")
+    if not isinstance(data.get("id"), str):
+        raise SystemExit(f"{path.relative_to(ROOT)} must include a string id")
+    if data.get("method") not in {"agent/card", "message/send"}:
+        raise SystemExit(f"{path.relative_to(ROOT)} must use a supported A2A example method")
+    if data.get("method") == "message/send" and not isinstance(data.get("params"), dict):
+        raise SystemExit(f"{path.relative_to(ROOT)} message/send example must include params")
+
+
 def validate_examples() -> None:
     evidence_schema = load_json(ROOT / "schemas" / "v1" / "evidence-pack.schema.json")
     brief_schema = load_json(ROOT / "schemas" / "v1" / "agenda-brief.schema.json")
@@ -70,6 +84,7 @@ def validate_examples() -> None:
     commercial_fixture_dirs = {
         ROOT / "examples" / "kazakhstan-middle-corridor",
     }
+    a2a_fixture_dir = ROOT / "examples" / "a2a"
 
     for path in json_files:
         load_json(path)
@@ -78,6 +93,8 @@ def validate_examples() -> None:
             validate_with_schema(path, request_schema, "agenda-request")
         elif path in trace_doc_files:
             continue
+        elif path.is_relative_to(a2a_fixture_dir):
+            validate_a2a_jsonrpc_example(path)
         elif any(path.is_relative_to(directory) for directory in commercial_fixture_dirs):
             continue
         elif path.name.endswith(".evidence.json") or path.name == "evidence-pack.json":

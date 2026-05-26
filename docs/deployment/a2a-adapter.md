@@ -103,10 +103,18 @@ They do not add live retrieval, factual verification, or advice/clearance behavi
 
 ## Examples
 
+Runnable JSON-RPC examples are in `examples/a2a/`.
+
 ```bash
 jq -n --slurpfile request examples/kazakhstan-middle-corridor/contract/pre_signature_escalate.request.json \
   '{jsonrpc:"2.0", id:"a2a-demo", method:"message/send", params:{request:$request[0]}}' |
   agenda-intelligence-a2a
+```
+
+The same Middle Corridor example is also available as a ready-to-run file:
+
+```bash
+agenda-intelligence-a2a < examples/a2a/middle-corridor-deal-risk.request.json
 ```
 
 Expected response metadata:

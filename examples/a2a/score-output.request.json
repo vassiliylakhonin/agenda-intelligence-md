@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": "a2a-score-demo",
+  "method": "message/send",
+  "params": {
+    "capability": "score_output",
+    "input": {
+      "before_text": "Generic update. Monitor developments.",
+      "after_text": "Signal classification: compliance-relevant development. What changed: guidance moved toward implementation. Main uncertainty: whether enforcement follows. Watch next: regulator guidance and compliance deadline."
+    }
+  }
+}

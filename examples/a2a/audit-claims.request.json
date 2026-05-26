@@ -1,0 +1,40 @@
+{
+  "jsonrpc": "2.0",
+  "id": "a2a-audit-demo",
+  "method": "message/send",
+  "params": {
+    "capability": "audit_claims",
+    "audit_json": {
+      "topic": "Middle Corridor shipment memo",
+      "claims": [
+        {
+          "claim_id": "c1",
+          "claim": "The supplied port notice is dated and tied to the corridor route.",
+          "claim_type": "capability_claim",
+          "evidence_ids": [
+            "e1"
+          ],
+          "support_level": "direct",
+          "uncertainty": "The example notice is illustrative and not a live operator source.",
+          "risk_if_wrong": "The memo may overstate route readiness."
+        }
+      ],
+      "evidence": [
+        {
+          "evidence_id": "e1",
+          "name": "Port operator notice",
+          "url": "https://example.com/port-notice",
+          "source_type": "port_operator_notice",
+          "freshness": "dated",
+          "supports": [
+            "A dated port notice was supplied by the caller."
+          ],
+          "limits": [
+            "Example source only; not independently retrieved."
+          ]
+        }
+      ],
+      "unsupported_claims": []
+    }
+  }
+}
