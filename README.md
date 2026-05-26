@@ -272,6 +272,7 @@ Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-con
 | Data handling | [`docs/trust/data-handling.md`](docs/trust/data-handling.md) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |
 | Agenstry discovery | [`docs/integrations/agenstry.md`](docs/integrations/agenstry.md) |
+| Agenstry agent card copy | [`docs/agenstry/agent-card-copy.md`](docs/agenstry/agent-card-copy.md) |
 | Use-cases | [`docs/use-cases/`](docs/use-cases/) |
 | Agent contract | [`AGENTS.md`](AGENTS.md) |
 | Adoption guide | [`ADOPTION.md`](ADOPTION.md) |
