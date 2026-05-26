@@ -1,3 +1,11 @@
+import {
+  OPENSANCTIONS_ATTRIBUTION,
+  OPENSANCTIONS_HOMEPAGE,
+  OPENSANCTIONS_LICENSE,
+  attributionBlock as openSanctionsAttributionBlock,
+  matchCounterparty as matchCounterpartyAgainstOpenSanctions
+} from "./upstream_opensanctions.js";
+
 const VERSION = "1.0.1";
 const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
 const DOCS_URL = `${REPOSITORY_URL}/blob/main/MCP.md`;
@@ -5,6 +13,11 @@ const MIDDLE_CORRIDOR_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/kaz
 const MIDDLE_CORRIDOR_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/middle-corridor-deal-risk-request.schema.json`;
 const MIDDLE_CORRIDOR_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/middle-corridor-deal-risk-response.schema.json`;
 const MIDDLE_CORRIDOR_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/middle-corridor-deal-risk.json`;
+const CIS_SECONDARY_SANCTIONS_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/cis-secondary-sanctions.md`;
+const CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/cis-secondary-sanctions-request.schema.json`;
+const CIS_SECONDARY_SANCTIONS_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/cis-secondary-sanctions-response.schema.json`;
+const CIS_SECONDARY_SANCTIONS_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/cis-secondary-sanctions.json`;
+const CIS_SECONDARY_SANCTIONS_ADR_URL = `${REPOSITORY_URL}/blob/main/docs/adr/0014-per-profile-live-retrieval.md`;
 const A2A_EXAMPLES_URL = `${REPOSITORY_URL}/tree/main/examples/a2a`;
 const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";
 
@@ -101,6 +114,32 @@ const MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO = [
 
 const MIDDLE_CORRIDOR_HELPFUL_CONTEXT = ["port_operator_notice", "carrier_note"];
 
+const CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW = [
+  "ofac_sdn_extract",
+  "eu_consolidated_extract",
+  "ownership_chain_evidence",
+  "bank_correspondent_evidence",
+  "transit_or_invoice_evidence"
+];
+
+const CIS_SECONDARY_SANCTIONS_HELPFUL_CONTEXT = [
+  "uk_ofsi_extract",
+  "dual_use_export_evidence",
+  "adverse_media_evidence",
+  "typology_reference",
+  "customs_data_evidence"
+];
+
+const PROFILE_LIVE_RETRIEVAL = {
+  agenda: { live_retrieval: false, upstreams: [], license: null },
+  kazakhstan: { live_retrieval: false, upstreams: [], license: null },
+  cis_secondary_sanctions: {
+    live_retrieval: true,
+    upstreams: ["OpenSanctions"],
+    license: OPENSANCTIONS_LICENSE
+  }
+};
+
 const NOT_ADVICE_NOTICE =
   "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.";
 
@@ -159,6 +198,12 @@ function originFromRequest(request) {
 
 function agentProfile(request, env = {}) {
   const host = new URL(request.url).host.toLowerCase();
+  if (
+    env.AGENT_PROFILE === "cis_secondary_sanctions" ||
+    host.includes("cis-secondary-sanctions-a2a")
+  ) {
+    return "cis_secondary_sanctions";
+  }
   if (
     env.AGENT_PROFILE === "kazakhstan" ||
     host.includes("kazakhstan-corridor-risk-a2a") ||
@@ -378,7 +423,9 @@ function agentCard(request, env = {}) {
 }
 
 function applyAgentProfile(card, request, env = {}) {
-  if (agentProfile(request, env) !== "kazakhstan") return card;
+  const profile = agentProfile(request, env);
+  if (profile === "cis_secondary_sanctions") return applyCisSecondarySanctionsProfile(card, request, env);
+  if (profile !== "kazakhstan") return card;
 
   const origin = originFromRequest(request);
   card.name = "Kazakhstan / Middle Corridor Deal Risk Gate";
@@ -543,6 +590,106 @@ function applyAgentProfile(card, request, env = {}) {
   return card;
 }
 
+function applyCisSecondarySanctionsProfile(card, request, env = {}) {
+  const origin = originFromRequest(request);
+  card.name = "CIS Secondary-Sanctions Exposure";
+  card.documentationUrl = CIS_SECONDARY_SANCTIONS_DOCS_URL;
+  card.description =
+    "A2A-compatible secondary-sanctions exposure evidence triage for CIS-domiciled counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Bring counterparty, exposure facets, and dated source extracts; get auto-fetched OpenSanctions name matches (CC-BY 4.0), structured triage, evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review routing. Targets enhanced due diligence in EU / UK / UAE / Singapore institutions screening counterparties against OFAC EO 14114, EU 14th sanctions package, UK OFSI, and FATF / EAG typologies.";
+  card.provider.legalEntity.sameAs = [
+    "https://github.com/vassiliylakhonin",
+    "https://pypi.org/project/agenda-intelligence-md/",
+    "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
+  ];
+  card.skills = [
+    {
+      id: "cis-secondary-sanctions-exposure",
+      name: "CIS secondary-sanctions exposure triage",
+      description:
+        "Turns a CIS counterparty + exposure facets + dated source extracts into a structured secondary-sanctions exposure triage with OpenSanctions name matches, evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review escalation.",
+      tags: [
+        "cis",
+        "kazakhstan",
+        "uzbekistan",
+        "georgia",
+        "secondary-sanctions",
+        "ofac",
+        "eu-14th-package",
+        "uk-ofsi",
+        "evidence-readiness",
+        "live-retrieval"
+      ],
+      examples: [
+        "Does the disclosed ownership chain create indirect exposure under OFAC EO 14114?",
+        "Triage a Kazakhstani trading-house counterparty against the EU 14th sanctions package."
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    }
+  ];
+  card.x_agenda_intelligence.product_profile = "cis_secondary_sanctions";
+  card.x_agenda_intelligence.canonical_product_name = "CIS Secondary-Sanctions Exposure";
+  card.x_agenda_intelligence.wrapper_scope =
+    "A2A/JSON-RPC discovery, CIS secondary-sanctions exposure triage, OpenSanctions live retrieval, and routing response only";
+  card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
+  card.x_agenda_intelligence.documentation = CIS_SECONDARY_SANCTIONS_DOCS_URL;
+  card.x_agenda_intelligence.product_contract = {
+    request_schema: CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL,
+    response_schema: CIS_SECONDARY_SANCTIONS_RESPONSE_SCHEMA_URL,
+    source_taxonomy: CIS_SECONDARY_SANCTIONS_SOURCE_TAXONOMY_URL,
+    runnable_examples: `${REPOSITORY_URL}/tree/main/examples/cis-secondary-sanctions`,
+    canonical_input_mode: "structured_json",
+    demo_input_modes: ["structured_json"]
+  };
+  card.x_agenda_intelligence.required_before_review = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW;
+  card.x_agenda_intelligence.helpful_context_sources = CIS_SECONDARY_SANCTIONS_HELPFUL_CONTEXT;
+  card.x_agenda_intelligence.live_retrieval = {
+    enabled: true,
+    upstreams: [
+      {
+        name: "OpenSanctions",
+        homepage: OPENSANCTIONS_HOMEPAGE,
+        license: OPENSANCTIONS_LICENSE,
+        attribution_notice: OPENSANCTIONS_ATTRIBUTION
+      }
+    ],
+    adr: CIS_SECONDARY_SANCTIONS_ADR_URL,
+    api_key_env: "OPENSANCTIONS_API_KEY",
+    disable_flag_env: "OPENSANCTIONS_DISABLED",
+    graceful_degrade: true
+  };
+  card.x_agenda_intelligence.supported_contracts = ["cis_secondary_sanctions_exposure_contract"];
+  card.x_agenda_intelligence.buyer_use_cases = [
+    "EU / UK / UAE / Singapore enhanced due diligence on CIS counterparties",
+    "OFAC EO 14114 secondary-sanctions exposure screening",
+    "EU 14th sanctions package transit / re-export risk triage",
+    "UK OFSI alignment for CIS-facing trade-finance files",
+    "FATF / EAG typology mapping for CIS-domiciled entities"
+  ];
+  card.x_agenda_intelligence.commercial_positioning =
+    "CIS counterparty + exposure facets + dated source extracts -> auditable secondary-sanctions exposure triage with OpenSanctions matches, evidence gaps, decision-readiness score, and mandatory human-review escalation.";
+  card.x_agenda_intelligence.focus = [
+    "CIS counterparty secondary-sanctions exposure triage",
+    "OpenSanctions consolidated dataset name matching",
+    "ownership / transit / correspondent-banking exposure dimensions",
+    "FATF / EAG typology references",
+    "graceful degrade to user-supplied evidence on upstream failure"
+  ];
+  card.x_agenda_intelligence.not_advice_notice = NOT_ADVICE_NOTICE;
+  card.x_agenda_intelligence.boundaries = [
+    "Pre-compliance evidence triage only.",
+    "Live retrieval is enabled for this profile against OpenSanctions only (CC-BY 4.0).",
+    "No factual-truth verification. A name match against a sanctions list is not legal-entity identity verification.",
+    "No legal, compliance, sanctions, financial, investment, insurance, or trading advice.",
+    "No approval, clearance, authorization, or final decision.",
+    "Human review is required for high-stakes decisions."
+  ];
+  card.x_agenda_intelligence.boundaries.push(
+    "On any upstream failure or missing OPENSANCTIONS_API_KEY, the response degrades to user-supplied evidence only with live_retrieval_status: degraded / disabled."
+  );
+  return card;
+}
+
 function extractText(params) {
   if (!params || typeof params !== "object") return "";
   if (typeof params.text === "string") return params.text;
@@ -578,6 +725,269 @@ function tryParseJsonObject(value) {
   } catch (_error) {
     return null;
   }
+}
+
+function isCisSecondarySanctionsRequest(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    value.counterparty &&
+    typeof value.counterparty === "object" &&
+    typeof value.counterparty.name === "string" &&
+    typeof value.counterparty.jurisdiction === "string" &&
+    Array.isArray(value.exposure_facets) &&
+    Array.isArray(value.dated_sources) &&
+    typeof value.risk_question === "string" &&
+    typeof value.decision_stage === "string"
+  );
+}
+
+function structuredCisSecondarySanctionsRequestFromParams(params) {
+  if (!params || typeof params !== "object") return null;
+  const candidates = [
+    params.request,
+    params.cis_secondary_sanctions_request,
+    params.cis_secondary_sanctions_exposure_request,
+    params.input,
+    params
+  ];
+  const message = params.message;
+  if (message && typeof message === "object") {
+    if (message.data && typeof message.data === "object") candidates.push(message.data);
+    if (Array.isArray(message.parts)) {
+      for (const part of message.parts) {
+        if (!part || typeof part !== "object") continue;
+        candidates.push(part.data, part.json, part.content);
+        const parsed = tryParseJsonObject(part.text);
+        if (parsed) candidates.push(parsed);
+      }
+    }
+  }
+  for (const candidate of candidates) {
+    if (isCisSecondarySanctionsRequest(candidate)) return candidate;
+    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
+    if (parsed && isCisSecondarySanctionsRequest(parsed)) return parsed;
+  }
+  return null;
+}
+
+function cisEvidenceGapForSource(sourceType) {
+  const gaps = {
+    ofac_sdn_extract: "No OFAC SDN list extract supplied.",
+    eu_consolidated_extract: "No EU consolidated sanctions list extract supplied.",
+    uk_ofsi_extract: "No UK OFSI sanctions list extract supplied.",
+    un_security_council_extract: "No UN Security Council sanctions extract supplied.",
+    ownership_chain_evidence: "No ownership chain evidence supplied.",
+    bank_correspondent_evidence: "No bank correspondent evidence supplied.",
+    transit_or_invoice_evidence: "No transit or invoice evidence supplied.",
+    dual_use_export_evidence: "No dual-use export evidence supplied.",
+    customs_data_evidence: "No customs data evidence supplied.",
+    adverse_media_evidence: "No adverse media evidence supplied.",
+    typology_reference: "No typology reference supplied."
+  };
+  return gaps[sourceType] || `No ${sourceType} supplied.`;
+}
+
+function cisTriageRecommendation(request, missing, exposureSignal) {
+  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0) {
+    return "insufficient_information";
+  }
+  if (missing.length === 0 && exposureSignal === "low") return "ready_for_human_review";
+  if (request.decision_stage === "onboarding") return "escalate_before_onboarding";
+  if (request.decision_stage === "pre_transaction") return "escalate_before_transaction";
+  return "not_decision_ready";
+}
+
+function cisExposureSignal(request, missing, openSanctionsMatchCount) {
+  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0) return "unknown";
+  if (openSanctionsMatchCount >= 1) return "high";
+  if (missing.length >= 4) return "medium_high";
+  if (missing.length > 0) return "medium";
+  return "low";
+}
+
+function cisDecisionReadiness(request, supplied) {
+  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0 || supplied.length === 0) {
+    return [0, "insufficient_information"];
+  }
+  const requiredPresent = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW.filter((s) => supplied.includes(s)).length;
+  const contextPresent = CIS_SECONDARY_SANCTIONS_HELPFUL_CONTEXT.filter((s) => supplied.includes(s)).length;
+  const score = Math.min(
+    100,
+    Math.round(
+      10 +
+        (requiredPresent / CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW.length) * 70 +
+        (contextPresent / CIS_SECONDARY_SANCTIONS_HELPFUL_CONTEXT.length) * 20
+    )
+  );
+  if (score >= 85) return [score, "review_ready"];
+  if (score >= 50) return [score, "partial"];
+  return [score, "not_decision_ready"];
+}
+
+function cisTopExposureDimensions(facets, missing, openSanctionsMatchCount) {
+  const dims = [];
+  if (openSanctionsMatchCount > 0) {
+    dims.push("direct or near-direct match in OpenSanctions consolidated dataset");
+  }
+  if (facets.includes("ownership_or_control")) dims.push("indirect ownership or control exposure");
+  if (facets.includes("transit_or_re_export")) {
+    dims.push("transit or re-export exposure under EU 14th package / OFAC EO 14114");
+  }
+  if (facets.includes("ict_or_dual_use_goods")) dims.push("ICT or dual-use goods diversion exposure");
+  if (facets.includes("correspondent_banking")) dims.push("correspondent banking exposure");
+  if (facets.includes("shell_or_layered_structure")) dims.push("shell or layered structure exposure");
+  if (facets.includes("professional_enablers")) dims.push("professional-enabler exposure");
+  if (missing.includes("ownership_chain_evidence")) dims.push("ownership chain not yet documented");
+  return Array.from(new Set(dims));
+}
+
+function suppliedSourceTypes(request) {
+  const types = [];
+  for (const source of request.dated_sources || []) {
+    if (!source || typeof source !== "object") continue;
+    if (typeof source.source_type === "string") types.push(source.source_type);
+  }
+  return Array.from(new Set(types));
+}
+
+async function cisSecondarySanctionsResult(request, env) {
+  const supplied = suppliedSourceTypes(request);
+  const counterparty = request.counterparty || {};
+  const osResult = await matchCounterpartyAgainstOpenSanctions(env, {
+    name: counterparty.name,
+    jurisdiction: counterparty.jurisdiction
+  });
+  const autoFetched = [];
+  for (const match of osResult.matches || []) {
+    const sourceType = match.source_type || "user_provided_note";
+    if (!supplied.includes(sourceType)) supplied.push(sourceType);
+    autoFetched.push({
+      source_type: sourceType,
+      title: match.name || "OpenSanctions match",
+      datasets: match.datasets || [],
+      opensanctions_id: match.opensanctions_id,
+      score: match.score,
+      topics: match.topics || [],
+      jurisdictions: match.jurisdictions || [],
+      notes: "Auto-fetched from OpenSanctions; CC-BY 4.0 attribution required."
+    });
+  }
+
+  const missing = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW.filter((s) => !supplied.includes(s));
+  const [score, label] = cisDecisionReadiness(request, supplied);
+  const exposureSignal = cisExposureSignal(request, missing, autoFetched.length);
+  const triage = cisTriageRecommendation(request, missing, exposureSignal);
+  const facets = Array.isArray(request.exposure_facets) ? request.exposure_facets : [];
+
+  const limitations = [];
+  if (osResult.attribution) limitations.push(osResult.attribution.notice);
+  if (osResult.degrade_reason) limitations.push(`OpenSanctions live retrieval degraded: ${osResult.degrade_reason}`);
+  limitations.push(
+    "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
+  );
+
+  const response = {
+    triage_recommendation: triage,
+    secondary_exposure_signal: exposureSignal,
+    decision_readiness_score: score,
+    decision_readiness_label: label,
+    counterparty: request.counterparty,
+    exposure_facets: facets,
+    supplied_sources: supplied,
+    minimum_sources_before_review: missing,
+    evidence_gaps: missing.map(cisEvidenceGapForSource),
+    top_exposure_dimensions: cisTopExposureDimensions(facets, missing, autoFetched.length),
+    watch_next: [
+      "new OFAC SDN designations",
+      "new EU sanctions package",
+      "new UK OFSI listing",
+      "new EAG typology report",
+      "FATF grey-list or black-list update",
+      "national regulator enforcement update"
+    ],
+    human_review_required: true,
+    not_advice_notice: NOT_ADVICE_NOTICE,
+    limitations
+  };
+
+  return {
+    response,
+    live_retrieval_status: osResult.status,
+    auto_fetched_sources: autoFetched,
+    upstream_attribution: osResult.attribution
+  };
+}
+
+function cisArtifactText(response, liveRetrievalStatus) {
+  const missing = response.minimum_sources_before_review || [];
+  const missingText = missing.length ? missing.map((s) => `- ${s}`).join("\n") : "- none";
+  const dims = response.top_exposure_dimensions || [];
+  const dimsText = dims.length ? dims.map((s) => `- ${s}`).join("\n") : "- none";
+  return [
+    "CIS secondary-sanctions exposure response",
+    "",
+    `Recommendation: ${response.triage_recommendation}`,
+    `Exposure signal: ${response.secondary_exposure_signal}`,
+    `Decision readiness: ${response.decision_readiness_score}/100 (${response.decision_readiness_label})`,
+    `Live retrieval status: ${liveRetrievalStatus}`,
+    `Human review required: ${String(response.human_review_required)}`,
+    "",
+    "Top exposure dimensions:",
+    dimsText,
+    "",
+    "Minimum sources before review:",
+    missingText,
+    "",
+    response.not_advice_notice
+  ].join("\n");
+}
+
+async function a2aResultForCisSecondarySanctions(params, request, env) {
+  const structured = structuredCisSecondarySanctionsRequestFromParams(params);
+  if (!structured) {
+    return {
+      id: crypto.randomUUID(),
+      status: { state: "failed", timestamp: new Date().toISOString() },
+      artifacts: [],
+      metadata: {
+        product_profile: "cis_secondary_sanctions",
+        canonical_http_endpoint: "/v1/cis-secondary-sanctions/exposure",
+        schema: "schemas/v1/cis-secondary-sanctions-request.schema.json",
+        valid: false,
+        errors: ["Missing structured CIS secondary-sanctions exposure request"]
+      }
+    };
+  }
+  const result = await cisSecondarySanctionsResult(structured, env);
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "completed", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "cis-secondary-sanctions-exposure-response",
+        name: "CIS secondary-sanctions exposure response",
+        parts: [
+          {
+            kind: "text",
+            text: cisArtifactText(result.response, result.live_retrieval_status)
+          }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "cis_secondary_sanctions",
+      canonical_http_endpoint: "/v1/cis-secondary-sanctions/exposure",
+      schema: "schemas/v1/cis-secondary-sanctions-request.schema.json",
+      live_retrieval_status: result.live_retrieval_status,
+      auto_fetched_sources: result.auto_fetched_sources,
+      upstream_attribution: result.upstream_attribution,
+      human_review_required: result.response.human_review_required,
+      not_advice_notice: result.response.not_advice_notice,
+      response: result.response
+    }
+  };
 }
 
 function isMiddleCorridorDealRiskRequest(value) {
@@ -1598,7 +2008,7 @@ function jsonRpcError(id, code, message, data) {
   return { jsonrpc: "2.0", id: id ?? null, error };
 }
 
-function handleJsonRpc(payload, request, env = {}, ctx = {}) {
+async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return jsonRpcError(null, -32600, "Invalid Request");
   }
@@ -1610,16 +2020,29 @@ function handleJsonRpc(payload, request, env = {}, ctx = {}) {
 
   if (payload.method === "message/send" || payload.method === "tasks/send" || payload.method === "SendMessage") {
     const params = payload.params ?? {};
-    const result = a2aResult(params, request, env);
-    const structuredRequest = structuredDealRiskRequestFromParams(params);
-    const text = structuredRequest ? textFromStructuredDealRiskRequest(structuredRequest) : extractText(params);
-    const likelyProbe = classifyClient(request) === "agenstry" || text.length === 0;
+    const profile = agentProfile(request, env);
+    let result;
+    let promptChars;
+    let modulesUsed;
+    if (profile === "cis_secondary_sanctions") {
+      result = await a2aResultForCisSecondarySanctions(params, request, env);
+      const structured = structuredCisSecondarySanctionsRequestFromParams(params);
+      promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
+      modulesUsed = ["cis_secondary_sanctions"];
+    } else {
+      result = a2aResult(params, request, env);
+      const structuredRequest = structuredDealRiskRequestFromParams(params);
+      const text = structuredRequest ? textFromStructuredDealRiskRequest(structuredRequest) : extractText(params);
+      promptChars = text.length;
+      modulesUsed = result.metadata.modules_used;
+    }
+    const likelyProbe = classifyClient(request) === "agenstry" || promptChars === 0;
     const event = logUsageEvent(request, {
       jsonrpc_method: payload.method,
       jsonrpc_id_present: payload.id !== undefined,
       agent_profile: result.metadata.product_profile,
-      prompt_chars: text.length,
-      modules_used: result.metadata.modules_used,
+      prompt_chars: promptChars,
+      modules_used: modulesUsed,
       likely_probe: likelyProbe
     });
     const statsPromise = recordUsageStats(env, event).catch((error) => {
@@ -1656,7 +2079,7 @@ async function handlePost(request, env, ctx) {
   } catch (_error) {
     return jsonResponse(jsonRpcError(null, -32700, "Parse error"), 200);
   }
-  return jsonResponse(handleJsonRpc(payload, request, env, ctx));
+  return jsonResponse(await handleJsonRpc(payload, request, env, ctx));
 }
 
 async function handleStats(request, env) {
@@ -1708,7 +2131,8 @@ function statusInfo(request, env) {
   const origin = originFromRequest(request);
   const profile = agentProfile(request, env);
   const card = agentCard(request, env);
-  return {
+  const liveRetrievalMeta = PROFILE_LIVE_RETRIEVAL[profile] || PROFILE_LIVE_RETRIEVAL.agenda;
+  const status = {
     status: "ok",
     name: card.name,
     version: VERSION,
@@ -1720,11 +2144,20 @@ function statusInfo(request, env) {
     package: PACKAGE_URL,
     boundaries: {
       not_advice: true,
-      live_retrieval: false,
+      live_retrieval: liveRetrievalMeta.live_retrieval,
       factual_verification: false,
-      human_review_required: profile === "kazakhstan"
+      human_review_required: profile === "kazakhstan" || profile === "cis_secondary_sanctions"
     }
   };
+  if (liveRetrievalMeta.live_retrieval) {
+    status.live_retrieval = {
+      enabled: true,
+      upstreams: liveRetrievalMeta.upstreams,
+      license: liveRetrievalMeta.license,
+      adr: CIS_SECONDARY_SANCTIONS_ADR_URL
+    };
+  }
+  return status;
 }
 
 function landingHtml(request, env) {

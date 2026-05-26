@@ -155,11 +155,11 @@ test("kazakhstan profile exposes focused corridor-risk agent card", () => {
   assert.match(card.x_agenda_intelligence.commercial_positioning, /dated sources/);
 });
 
-test("message/send returns JSON-RPC result with routing metadata", () => {
+test("message/send returns JSON-RPC result with routing metadata", async () => {
   const originalLog = console.log;
   console.log = () => {};
   try {
-    const response = handleJsonRpc(
+    const response = await handleJsonRpc(
       {
         jsonrpc: "2.0",
         id: "probe-1",
@@ -205,12 +205,12 @@ test("message/send returns JSON-RPC result with routing metadata", () => {
   }
 });
 
-test("kazakhstan profile defaults routing to Central Asia and sanctions modules", () => {
+test("kazakhstan profile defaults routing to Central Asia and sanctions modules", async () => {
   const kazakhstanRequest = new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send");
   const originalLog = console.log;
   console.log = () => {};
   try {
-    const response = handleJsonRpc(
+    const response = await handleJsonRpc(
       {
         jsonrpc: "2.0",
         id: "kazakhstan-1",
@@ -242,12 +242,12 @@ test("kazakhstan profile defaults routing to Central Asia and sanctions modules"
   }
 });
 
-test("kazakhstan deal risk gate returns decision-ready escalation block", () => {
+test("kazakhstan deal risk gate returns decision-ready escalation block", async () => {
   const kazakhstanRequest = new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send");
   const originalLog = console.log;
   console.log = () => {};
   try {
-    const response = handleJsonRpc(
+    const response = await handleJsonRpc(
       {
         jsonrpc: "2.0",
         id: "deal-gate-1",
@@ -285,12 +285,12 @@ test("kazakhstan deal risk gate returns decision-ready escalation block", () => 
   }
 });
 
-test("kazakhstan deal risk gate extracts free-form route cargo and value", () => {
+test("kazakhstan deal risk gate extracts free-form route cargo and value", async () => {
   const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
   const originalLog = console.log;
   console.log = () => {};
   try {
-    const response = handleJsonRpc(
+    const response = await handleJsonRpc(
       {
         jsonrpc: "2.0",
         id: "deal-gate-freeform",
@@ -326,12 +326,12 @@ test("kazakhstan deal risk gate extracts free-form route cargo and value", () =>
   }
 });
 
-test("kazakhstan deal risk gate returns structured contract response from data part", () => {
+test("kazakhstan deal risk gate returns structured contract response from data part", async () => {
   const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
   const originalLog = console.log;
   console.log = () => {};
   try {
-    const response = handleJsonRpc(
+    const response = await handleJsonRpc(
       {
         jsonrpc: "2.0",
         id: "deal-risk-contract-1",
@@ -460,8 +460,8 @@ test("signal screen productizes sanctions and policy risk prompts", () => {
   assert.equal(screen.confidence, "triage_only_no_live_retrieval");
 });
 
-test("unknown method returns method-not-found error", () => {
-  const response = handleJsonRpc(
+test("unknown method returns method-not-found error", async () => {
+  const response = await handleJsonRpc(
     {
       jsonrpc: "2.0",
       id: 2,
@@ -753,4 +753,116 @@ test("healthInfo exposes status URL alongside agent_card and message_send", () =
   assert.ok(info.agent_card.endsWith("/.well-known/agent-card.json"));
   assert.ok(info.message_send.endsWith("/message/send"));
   assert.ok(info.status.endsWith("/status"));
+});
+
+// ---------------------------------------------------------------------------
+// cis_secondary_sanctions profile (per ADR 0014)
+// ---------------------------------------------------------------------------
+
+const cisRequest = new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/message/send", {
+  method: "POST",
+  headers: { "user-agent": "node:test" }
+});
+
+const cisSampleStructuredRequest = {
+  counterparty: {
+    name: "Example KZ Trading LLP",
+    jurisdiction: "Kazakhstan",
+    sector: "trading_house"
+  },
+  exposure_facets: ["ownership_or_control", "transit_or_re_export"],
+  dated_sources: [
+    { id: "s1", source_type: "ofac_sdn_extract", title: "OFAC SDN", date: "2026-05-20" },
+    { id: "s2", source_type: "ownership_chain_evidence", title: "Ownership chain", date: "2026-05-21" }
+  ],
+  risk_question: "Does the disclosed ownership chain create indirect exposure under OFAC EO 14114?",
+  decision_stage: "onboarding"
+};
+
+test("cis_secondary_sanctions profile is detected from host and env", () => {
+  const card = agentCard(cisRequest, {});
+  assert.equal(card.x_agenda_intelligence.product_profile, "cis_secondary_sanctions");
+  assert.equal(card.name, "CIS Secondary-Sanctions Exposure");
+  assert.ok(Array.isArray(card.skills) && card.skills.length === 1);
+  assert.equal(card.skills[0].id, "cis-secondary-sanctions-exposure");
+  assert.equal(card.x_agenda_intelligence.live_retrieval.enabled, true);
+  assert.equal(card.x_agenda_intelligence.live_retrieval.upstreams[0].name, "OpenSanctions");
+  assert.equal(card.x_agenda_intelligence.live_retrieval.upstreams[0].license, "CC-BY-4.0");
+});
+
+test("statusInfo exposes per-profile live_retrieval for cis_secondary_sanctions", () => {
+  const status = statusInfo(cisRequest, {});
+  assert.equal(status.profile, "cis_secondary_sanctions");
+  assert.equal(status.boundaries.live_retrieval, true);
+  assert.equal(status.boundaries.factual_verification, false);
+  assert.equal(status.boundaries.human_review_required, true);
+  assert.equal(status.live_retrieval.enabled, true);
+  assert.equal(status.live_retrieval.upstreams[0], "OpenSanctions");
+});
+
+test("statusInfo keeps live_retrieval false for default agenda profile", () => {
+  const status = statusInfo(request, {});
+  assert.equal(status.boundaries.live_retrieval, false);
+  assert.equal(status.live_retrieval, undefined);
+});
+
+test("statusInfo keeps live_retrieval false for kazakhstan profile", () => {
+  const kazRequest = new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/status");
+  const status = statusInfo(kazRequest, {});
+  assert.equal(status.profile, "kazakhstan");
+  assert.equal(status.boundaries.live_retrieval, false);
+});
+
+test("cis_secondary_sanctions message/send dispatches to structured triage", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "cis-1",
+        method: "message/send",
+        params: {
+          message: { data: cisSampleStructuredRequest }
+        }
+      },
+      cisRequest,
+      { OPENSANCTIONS_DISABLED: "1" }
+    );
+
+    assert.equal(response.jsonrpc, "2.0");
+    assert.equal(response.id, "cis-1");
+    const result = response.result;
+    assert.equal(result.status.state, "completed");
+    assert.equal(result.metadata.product_profile, "cis_secondary_sanctions");
+    assert.equal(result.metadata.live_retrieval_status, "disabled");
+    assert.equal(result.metadata.human_review_required, true);
+    const resp = result.metadata.response;
+    assert.equal(resp.triage_recommendation, "escalate_before_onboarding");
+    assert.ok(Array.isArray(resp.minimum_sources_before_review));
+    assert.ok(resp.limitations.some((line) => line.includes("OpenSanctions")));
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("cis_secondary_sanctions message/send fails on missing structured request", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "cis-bad",
+        method: "message/send",
+        params: { message: { parts: [{ kind: "text", text: "hello" }] } }
+      },
+      cisRequest,
+      { OPENSANCTIONS_DISABLED: "1" }
+    );
+    assert.equal(response.result.status.state, "failed");
+    assert.equal(response.result.metadata.valid, false);
+  } finally {
+    console.log = originalLog;
+  }
 });
