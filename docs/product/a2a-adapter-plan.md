@@ -88,7 +88,7 @@ Full-payload logging, if ever added by an operator, must be explicit opt-in and 
 
 ## First implementation slice
 
-The first A2A adapter PR should implement only:
+The first A2A adapter slice implements only:
 
 - agent card generation;
 - JSON-RPC `message/send`;
@@ -98,3 +98,5 @@ The first A2A adapter PR should implement only:
 - tests for structured request mapping and invalid request handling.
 
 Generic `audit_claims`, `source_coverage`, and `score_output` A2A routing can follow after the flagship path is stable.
+
+Implementation module: [`../../src/agenda_intelligence/a2a_adapter.py`](../../src/agenda_intelligence/a2a_adapter.py).
