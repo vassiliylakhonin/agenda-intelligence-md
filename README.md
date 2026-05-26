@@ -1,6 +1,6 @@
 # Agenda Intelligence MD
 
-Product runtime and evidence-discipline layer for strategic intelligence agents. One core service layer behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — plus structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Ships with one live commercial vertical worker: Middle Corridor Deal Risk Gate. No live retrieval, no factual verification.
+Product runtime and evidence-discipline layer for strategic intelligence agents. One core service layer behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — plus structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Ships with two vertical workers: Middle Corridor Deal Risk Gate (`live_retrieval: false`) and CIS Secondary-Sanctions Exposure (`live_retrieval: true` against OpenSanctions, per [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md)). No factual-truth verification.
 
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![Agenstry A2A](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/protocol.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![Agenstry uptime](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/uptime.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -36,7 +36,7 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightwei
 - Kazakhstan Agenstry listing: <https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev>
 - Announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
 
-The hosted wrapper is intentionally limited: no payments, no wallets, no autonomous live retrieval, no factual-truth verification, and no legal/financial/compliance advice. Full product behavior remains in the installable stdio MCP server.
+The hosted wrapper is intentionally limited: no payments, no wallets, no factual-truth verification, and no legal/financial/compliance advice. Live retrieval is off by default and opt-in per vertical-worker profile only (currently `cis_secondary_sanctions` against OpenSanctions, CC-BY 4.0; see [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) and [SOURCE_POLICY.md](SOURCE_POLICY.md)). Full product behavior remains in the installable stdio MCP server.
 
 ## Self-host via HTTP API (if your stack does not run MCP)
 
@@ -56,6 +56,7 @@ Endpoints:
 - `POST /v1/source-coverage` — evidence-pack diagnostics against category source requirements
 - `POST /v1/score` — heuristic before/after score
 - `POST /v1/middle-corridor/deal-risk` — Middle Corridor Deal Risk Gate (`middle-corridor-deal-risk-request.schema.json`)
+- `POST /v1/cis-secondary-sanctions/exposure` — CIS Secondary-Sanctions Exposure triage (`cis-secondary-sanctions-request.schema.json`); set `OPENSANCTIONS_API_KEY` to enable live retrieval, otherwise the profile degrades gracefully to user-supplied evidence only
 
 One-call probe:
 
@@ -94,6 +95,21 @@ Live A2A listing:
 This use case is a pre-compliance evidence and decision-readiness gate. It is not legal, compliance, sanctions, financial, investment, or insurance advice.
 
 The product-grade structured JSON contract is documented in [`docs/use-cases/kazakhstan-middle-corridor.md`](docs/use-cases/kazakhstan-middle-corridor.md#product-contract), with schemas and fixtures under [`examples/kazakhstan-middle-corridor/contract/`](examples/kazakhstan-middle-corridor/contract/).
+
+## Second vertical worker: CIS secondary-sanctions exposure
+
+For EU / UK / UAE / Singapore enhanced due diligence on CIS-domiciled counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Structured secondary-sanctions exposure evidence triage against OFAC EO 14114, EU 14th sanctions package, UK OFSI, UN, and FATF / EAG typologies.
+
+This profile opts in to **per-profile live retrieval** against the [OpenSanctions](https://www.opensanctions.org) consolidated dataset (CC-BY 4.0) per [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md). Set `OPENSANCTIONS_API_KEY` (free tier at https://www.opensanctions.org/api/) to enable. Without the key — or on any upstream failure — the service degrades gracefully and triage is based on user-supplied evidence only.
+
+- HTTP: `POST /v1/cis-secondary-sanctions/exposure`
+- Schemas: [request](schemas/v1/cis-secondary-sanctions-request.schema.json) + [response](schemas/v1/cis-secondary-sanctions-response.schema.json)
+- A2A profile: `cis_secondary_sanctions`; capability `cis_secondary_sanctions_exposure`
+- Use-case notes: [`docs/use-cases/cis-secondary-sanctions.md`](docs/use-cases/cis-secondary-sanctions.md)
+- Example pack: [`examples/cis-secondary-sanctions/`](examples/cis-secondary-sanctions/)
+- Source-requirements taxonomy: [`source-requirements/cis-secondary-sanctions.json`](source-requirements/cis-secondary-sanctions.json)
+
+Honest traction: zero paying customers, zero named pilots. Shipped as a portfolio-grade vertical worker for technical evaluators and as a contract real practitioners can inspect, not as a claim of production traction. Boundaries unchanged from the rest of the runtime: `not_advice: true`, `factual_verification: false`, `human_review_required: true` always.
 
 The structured response includes a `decision_readiness_score` from 0-100, so a buyer can see whether the evidence pack is ready for human review or still missing required source categories.
 

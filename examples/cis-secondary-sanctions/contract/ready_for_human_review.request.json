@@ -1,0 +1,65 @@
+{
+  "counterparty": {
+    "name": "Example UZ Logistics LLC",
+    "jurisdiction": "Uzbekistan",
+    "sector": "logistics_forwarder",
+    "ownership_layers": [
+      "Owner A (UZ)"
+    ]
+  },
+  "exposure_facets": [
+    "transit_or_re_export",
+    "correspondent_banking"
+  ],
+  "jurisdiction_review_scope": [
+    "ofac",
+    "eu",
+    "uk_ofsi"
+  ],
+  "dated_sources": [
+    {
+      "id": "s1",
+      "source_type": "ofac_sdn_extract",
+      "title": "OFAC SDN list extract",
+      "date": "2026-05-20"
+    },
+    {
+      "id": "s2",
+      "source_type": "eu_consolidated_extract",
+      "title": "EU consolidated sanctions list extract",
+      "date": "2026-05-20"
+    },
+    {
+      "id": "s3",
+      "source_type": "ownership_chain_evidence",
+      "title": "Counterparty disclosed ownership chain",
+      "date": "2026-05-21"
+    },
+    {
+      "id": "s4",
+      "source_type": "bank_correspondent_evidence",
+      "title": "Correspondent banking chain confirmation",
+      "date": "2026-05-21"
+    },
+    {
+      "id": "s5",
+      "source_type": "transit_or_invoice_evidence",
+      "title": "Recent invoice and transit documents",
+      "date": "2026-05-22"
+    },
+    {
+      "id": "s6",
+      "source_type": "uk_ofsi_extract",
+      "title": "UK OFSI consolidated list",
+      "date": "2026-05-20"
+    },
+    {
+      "id": "s7",
+      "source_type": "customs_data_evidence",
+      "title": "Customs declarations for the last 12 months",
+      "date": "2026-05-22"
+    }
+  ],
+  "risk_question": "Does the counterparty's transit and correspondent banking footprint create exposure under EU 14th package?",
+  "decision_stage": "periodic_review"
+}

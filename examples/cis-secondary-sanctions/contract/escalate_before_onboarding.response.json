@@ -1,0 +1,52 @@
+{
+  "triage_recommendation": "escalate_before_onboarding",
+  "secondary_exposure_signal": "medium",
+  "decision_readiness_score": 38,
+  "decision_readiness_label": "not_decision_ready",
+  "counterparty": {
+    "name": "Example KZ Trading LLP",
+    "jurisdiction": "Kazakhstan",
+    "sector": "trading_house",
+    "ownership_layers": [
+      "Holding A (KZ)",
+      "Holding B (UAE)"
+    ]
+  },
+  "exposure_facets": [
+    "ownership_or_control",
+    "ict_or_dual_use_goods",
+    "transit_or_re_export"
+  ],
+  "supplied_sources": [
+    "ofac_sdn_extract",
+    "ownership_chain_evidence"
+  ],
+  "minimum_sources_before_review": [
+    "eu_consolidated_extract",
+    "bank_correspondent_evidence",
+    "transit_or_invoice_evidence"
+  ],
+  "evidence_gaps": [
+    "No EU consolidated sanctions list extract supplied.",
+    "No bank correspondent evidence supplied.",
+    "No transit or invoice evidence supplied."
+  ],
+  "top_exposure_dimensions": [
+    "indirect ownership or control exposure",
+    "transit or re-export exposure under EU 14th package / OFAC EO 14114",
+    "ICT or dual-use goods diversion exposure"
+  ],
+  "watch_next": [
+    "new OFAC SDN designations",
+    "new EU sanctions package",
+    "new UK OFSI listing",
+    "new EAG typology report",
+    "FATF grey-list or black-list update",
+    "national regulator enforcement update"
+  ],
+  "human_review_required": true,
+  "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
+  "limitations": [
+    "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
+  ]
+}

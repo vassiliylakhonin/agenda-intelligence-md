@@ -1,0 +1,45 @@
+{
+  "category": "cis-secondary-sanctions",
+  "required_before_go": [
+    "ofac_sdn_extract",
+    "eu_consolidated_extract",
+    "ownership_chain_evidence",
+    "bank_correspondent_evidence",
+    "transit_or_invoice_evidence"
+  ],
+  "must_check": [
+    "ofac_sdn_extract",
+    "eu_consolidated_extract",
+    "ownership_chain_evidence",
+    "bank_correspondent_evidence",
+    "transit_or_invoice_evidence"
+  ],
+  "helpful_context": [
+    "uk_ofsi_extract",
+    "un_security_council_extract",
+    "dual_use_export_evidence",
+    "adverse_media_evidence",
+    "typology_reference",
+    "customs_data_evidence",
+    "national_regulator_filing"
+  ],
+  "supporting_sources": [
+    "uk_ofsi_extract",
+    "un_security_council_extract",
+    "dual_use_export_evidence",
+    "adverse_media_evidence",
+    "typology_reference",
+    "customs_data_evidence",
+    "national_regulator_filing"
+  ],
+  "watch_indicators": [
+    "new OFAC SDN designation",
+    "new EU sanctions package",
+    "new UK OFSI listing",
+    "new EAG typology report",
+    "FATF grey-list or black-list update",
+    "national regulator enforcement update",
+    "adverse media on disclosed ownership chain"
+  ],
+  "boundary": "This taxonomy supports pre-compliance evidence triage of secondary-sanctions exposure for CIS-domiciled counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). It does not provide legal, compliance, sanctions, financial, investment, insurance, or trading advice."
+}

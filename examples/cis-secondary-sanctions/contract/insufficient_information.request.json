@@ -1,0 +1,13 @@
+{
+  "counterparty": {
+    "name": "Example KZ Holding LLP",
+    "jurisdiction": "Kazakhstan",
+    "sector": "holding_or_spv"
+  },
+  "exposure_facets": [
+    "ownership_or_control"
+  ],
+  "dated_sources": [],
+  "risk_question": "Does the disclosed ownership chain create indirect exposure under OFAC EO 14114?",
+  "decision_stage": "onboarding"
+}

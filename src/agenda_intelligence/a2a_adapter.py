@@ -16,12 +16,15 @@ from agenda_intelligence import __version__, services
 REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md"
 MIDDLE_CORRIDOR_SCHEMA = "schemas/v1/middle-corridor-deal-risk-request.schema.json"
 MIDDLE_CORRIDOR_ENDPOINT = "/v1/middle-corridor/deal-risk"
+CIS_SECONDARY_SANCTIONS_SCHEMA = "schemas/v1/cis-secondary-sanctions-request.schema.json"
+CIS_SECONDARY_SANCTIONS_ENDPOINT = "/v1/cis-secondary-sanctions/exposure"
 AUDIT_CLAIMS_ENDPOINT = "/v1/audit-claims"
 SOURCE_COVERAGE_ENDPOINT = "/v1/source-coverage"
 SCORE_OUTPUT_ENDPOINT = "/v1/score"
 
 SUPPORTED_CAPABILITIES = [
     "middle_corridor_deal_risk",
+    "cis_secondary_sanctions_exposure",
     "audit_claims",
     "source_coverage",
     "score_output",
@@ -33,6 +36,12 @@ CAPABILITY_ALIASES = {
     "middle_corridor": "middle_corridor_deal_risk",
     "middle-corridor-deal-risk": "middle_corridor_deal_risk",
     "middle-corridor-deal-risk-gate": "middle_corridor_deal_risk",
+    "cis_secondary_sanctions": "cis_secondary_sanctions_exposure",
+    "cis_secondary_sanctions_exposure": "cis_secondary_sanctions_exposure",
+    "cis-secondary-sanctions": "cis_secondary_sanctions_exposure",
+    "cis-secondary-sanctions-exposure": "cis_secondary_sanctions_exposure",
+    "secondary_sanctions": "cis_secondary_sanctions_exposure",
+    "secondary-sanctions": "cis_secondary_sanctions_exposure",
     "audit_claims": "audit_claims",
     "audit-claims": "audit_claims",
     "audit": "audit_claims",
@@ -42,6 +51,14 @@ CAPABILITY_ALIASES = {
     "score_output": "score_output",
     "score-output": "score_output",
     "score": "score_output",
+}
+
+# Profiles that opt in to per-profile live retrieval per ADR 0014.
+LIVE_RETRIEVAL_PROFILES = {
+    "cis_secondary_sanctions": {
+        "upstreams": ["OpenSanctions"],
+        "license": "CC-BY-4.0",
+    },
 }
 
 
@@ -79,6 +96,30 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "outputModes": ["application/json", "text/markdown"],
             },
             {
+                "id": "cis-secondary-sanctions-exposure",
+                "name": "CIS secondary-sanctions exposure",
+                "description": (
+                    "Structured secondary-sanctions exposure evidence triage for CIS-domiciled "
+                    "counterparties. Consults the OpenSanctions consolidated dataset (CC-BY 4.0) "
+                    "for direct name matches and merges them with caller-supplied evidence. Returns "
+                    "an auditable triage response with evidence gaps, exposure dimensions, and "
+                    "mandatory human-review routing."
+                ),
+                "tags": [
+                    "cis",
+                    "kazakhstan",
+                    "uzbekistan",
+                    "georgia",
+                    "secondary-sanctions",
+                    "ofac",
+                    "eu-14th-package",
+                    "uk-ofsi",
+                    "evidence-readiness",
+                ],
+                "inputModes": ["application/json"],
+                "outputModes": ["application/json", "text/markdown"],
+            },
+            {
                 "id": "audit-claims",
                 "name": "Audit claims",
                 "description": "Validates and summarizes claim-level evidence support without checking factual truth.",
@@ -109,12 +150,24 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
             "canonical_http_endpoint": MIDDLE_CORRIDOR_ENDPOINT,
             "schema": MIDDLE_CORRIDOR_SCHEMA,
             "supported_capabilities": SUPPORTED_CAPABILITIES,
+            "per_profile_live_retrieval": {
+                profile: {
+                    "live_retrieval": True,
+                    "upstreams": meta["upstreams"],
+                    "license": meta["license"],
+                }
+                for profile, meta in LIVE_RETRIEVAL_PROFILES.items()
+            },
             "boundaries": [
-                "No autonomous live source retrieval.",
+                (
+                    "Live source retrieval is off by default. Per-profile opt-in is allowed for "
+                    "named vertical-worker profiles (see per_profile_live_retrieval and ADR 0014)."
+                ),
                 "No factual-truth verification.",
                 "No legal, compliance, sanctions, financial, investment, insurance, or trading advice.",
                 "Human review is required for high-stakes decisions.",
             ],
+            "adr_references": ["docs/adr/0014-per-profile-live-retrieval.md"],
         },
     }
 
@@ -203,6 +256,34 @@ def middle_corridor_request_from_params(params: dict) -> dict | None:
 
     for candidate in candidates:
         if _looks_like_middle_corridor_request(candidate):
+            return candidate
+    return None
+
+
+def _looks_like_cis_secondary_sanctions_request(value: Any) -> bool:
+    return (
+        isinstance(value, dict)
+        and isinstance(value.get("counterparty"), dict)
+        and isinstance(value.get("exposure_facets"), list)
+        and isinstance(value.get("dated_sources"), list)
+        and isinstance(value.get("risk_question"), str)
+        and isinstance(value.get("decision_stage"), str)
+    )
+
+
+def cis_secondary_sanctions_request_from_params(params: dict) -> dict | None:
+    """Extract a structured CIS secondary-sanctions exposure request from A2A/JSON-RPC params."""
+    candidates = _candidate_objects_from_params(params)
+    candidates.extend(
+        candidate
+        for candidate in [
+            _try_parse_json_object(params.get("cis_secondary_sanctions_request")),
+            _try_parse_json_object(params.get("cis_secondary_sanctions_exposure_request")),
+        ]
+        if candidate is not None
+    )
+    for candidate in candidates:
+        if _looks_like_cis_secondary_sanctions_request(candidate):
             return candidate
     return None
 
@@ -296,6 +377,74 @@ def a2a_result_for_middle_corridor(request_json: dict) -> dict:
             "product_profile": "middle_corridor_deal_risk",
             "canonical_http_endpoint": MIDDLE_CORRIDOR_ENDPOINT,
             "schema": MIDDLE_CORRIDOR_SCHEMA,
+            "human_review_required": response["human_review_required"],
+            "not_advice_notice": response["not_advice_notice"],
+            "response": response,
+        },
+    }
+
+
+def _cis_artifact_text(response: dict, live_retrieval_status: str) -> str:
+    missing = response.get("minimum_sources_before_review", [])
+    missing_text = "\n".join(f"- {item}" for item in missing) if missing else "- none"
+    dims = response.get("top_exposure_dimensions", [])
+    dims_text = "\n".join(f"- {item}" for item in dims) if dims else "- none"
+    return "\n".join(
+        [
+            "CIS secondary-sanctions exposure response",
+            "",
+            f"Recommendation: {response['triage_recommendation']}",
+            f"Exposure signal: {response['secondary_exposure_signal']}",
+            f"Decision readiness: {response['decision_readiness_score']}/100 ({response['decision_readiness_label']})",
+            f"Live retrieval status: {live_retrieval_status}",
+            f"Human review required: {str(response['human_review_required']).lower()}",
+            "",
+            "Top exposure dimensions:",
+            dims_text,
+            "",
+            "Minimum sources before review:",
+            missing_text,
+            "",
+            response["not_advice_notice"],
+        ]
+    )
+
+
+def a2a_result_for_cis_secondary_sanctions(request_json: dict) -> dict:
+    result = services.cis_secondary_sanctions_exposure(request_json)
+    if not result.get("valid"):
+        return {
+            "id": "agenda-intelligence-a2a-result",
+            "status": {"state": "failed"},
+            "artifacts": [],
+            "metadata": {
+                "product_profile": "cis_secondary_sanctions",
+                "canonical_http_endpoint": CIS_SECONDARY_SANCTIONS_ENDPOINT,
+                "schema": CIS_SECONDARY_SANCTIONS_SCHEMA,
+                "valid": False,
+                "errors": result.get("errors", []),
+            },
+        }
+
+    response = result["response"]
+    live_retrieval_status = result.get("live_retrieval_status", "not_attempted")
+    return {
+        "id": "agenda-intelligence-a2a-result",
+        "status": {"state": "completed"},
+        "artifacts": [
+            {
+                "artifactId": "cis-secondary-sanctions-exposure-response",
+                "name": "CIS secondary-sanctions exposure response",
+                "parts": [{"kind": "text", "text": _cis_artifact_text(response, live_retrieval_status)}],
+            }
+        ],
+        "metadata": {
+            "product_profile": "cis_secondary_sanctions",
+            "canonical_http_endpoint": CIS_SECONDARY_SANCTIONS_ENDPOINT,
+            "schema": CIS_SECONDARY_SANCTIONS_SCHEMA,
+            "live_retrieval_status": live_retrieval_status,
+            "auto_fetched_sources": result.get("auto_fetched_sources", []),
+            "upstream_attribution": result.get("upstream_attribution"),
             "human_review_required": response["human_review_required"],
             "not_advice_notice": response["not_advice_notice"],
             "response": response,
@@ -401,6 +550,30 @@ def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> di
                 "Unsupported capability",
                 {"supported_capabilities": SUPPORTED_CAPABILITIES},
             )
+
+        if capability == "cis_secondary_sanctions_exposure":
+            request_json = cis_secondary_sanctions_request_from_params(params)
+            if request_json is None:
+                return jsonrpc_error(
+                    id_value,
+                    -32602,
+                    "Missing structured CIS secondary-sanctions exposure request",
+                    {
+                        "required_shape": {
+                            "counterparty": "object",
+                            "exposure_facets": "array",
+                            "dated_sources": "array",
+                            "risk_question": "string",
+                            "decision_stage": "string",
+                        },
+                        "schema": CIS_SECONDARY_SANCTIONS_SCHEMA,
+                    },
+                )
+            return {
+                "jsonrpc": "2.0",
+                "id": id_value,
+                "result": a2a_result_for_cis_secondary_sanctions(request_json),
+            }
 
         if capability in {None, "middle_corridor_deal_risk"}:
             request_json = middle_corridor_request_from_params(params)

@@ -59,6 +59,7 @@ def test_agent_card_exposes_middle_corridor_skill():
     assert card["skills"][0]["id"] == "middle-corridor-deal-risk-gate"
     assert card["x_agenda_intelligence"]["supported_capabilities"] == [
         "middle_corridor_deal_risk",
+        "cis_secondary_sanctions_exposure",
         "audit_claims",
         "source_coverage",
         "score_output",
@@ -248,6 +249,7 @@ def test_jsonrpc_message_send_rejects_unknown_capability():
     assert response["error"]["message"] == "Unsupported capability"
     assert response["error"]["data"]["supported_capabilities"] == [
         "middle_corridor_deal_risk",
+        "cis_secondary_sanctions_exposure",
         "audit_claims",
         "source_coverage",
         "score_output",
@@ -371,6 +373,7 @@ def test_a2a_agent_card_example_runs_through_stdin_shell():
     assert "error" not in response
     assert response["result"]["x_agenda_intelligence"]["supported_capabilities"] == [
         "middle_corridor_deal_risk",
+        "cis_secondary_sanctions_exposure",
         "audit_claims",
         "source_coverage",
         "score_output",

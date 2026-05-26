@@ -1,0 +1,37 @@
+{
+  "counterparty": {
+    "name": "Example KZ Trading LLP",
+    "jurisdiction": "Kazakhstan",
+    "sector": "trading_house",
+    "ownership_layers": [
+      "Holding A (KZ)",
+      "Holding B (UAE)"
+    ]
+  },
+  "exposure_facets": [
+    "ownership_or_control",
+    "ict_or_dual_use_goods",
+    "transit_or_re_export"
+  ],
+  "jurisdiction_review_scope": [
+    "ofac",
+    "eu",
+    "uk_ofsi"
+  ],
+  "dated_sources": [
+    {
+      "id": "s1",
+      "source_type": "ofac_sdn_extract",
+      "title": "OFAC SDN list extract — 2026-05-20",
+      "date": "2026-05-20"
+    },
+    {
+      "id": "s2",
+      "source_type": "ownership_chain_evidence",
+      "title": "Counterparty disclosed ownership chain",
+      "date": "2026-05-21"
+    }
+  ],
+  "risk_question": "Does the disclosed ownership chain create indirect exposure under OFAC EO 14114 or EU 14th package?",
+  "decision_stage": "onboarding"
+}
