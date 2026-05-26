@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The A2A adapter shell is a JSON-RPC stdio entrypoint over the structured Middle Corridor deal-risk adapter.
+The A2A adapter shell is a JSON-RPC stdio entrypoint over selected Agenda Intelligence service-layer functions.
 
 It is intended for adapter development, local protocol testing, and future deployment packaging. It is not a marketplace integration, billing layer, hosted server, or replacement for the stdio MCP server.
 
@@ -50,9 +50,24 @@ Aliases accepted by the adapter:
 - `tasks/send`
 - `SendMessage`
 
+## Capabilities
+
+`message/send` accepts structured JSON for these capabilities:
+
+- `middle_corridor_deal_risk`
+- `audit_claims`
+- `source_coverage`
+- `score_output`
+
+The capability can be supplied as `params.capability`, `params.tool`, `params.skill`, or `params.message.metadata.capability`.
+
+If no capability is supplied, the adapter keeps the original default behavior and expects a structured Middle Corridor deal-risk request.
+
+Unknown capabilities are rejected. Free text without the structured payload is rejected so the adapter does not invent missing evidence.
+
 ## Middle Corridor request
 
-The first adapter slice supports only structured Middle Corridor deal-risk requests. The canonical input is `schemas/v1/middle-corridor-deal-risk-request.schema.json`.
+The canonical input is `schemas/v1/middle-corridor-deal-risk-request.schema.json`.
 
 The adapter accepts the structured request in:
 
@@ -63,9 +78,30 @@ The adapter accepts the structured request in:
 - A2A `message.parts[].json`
 - JSON object text in `message.parts[].text`
 
-Free text without the structured request is rejected so the adapter does not invent missing evidence.
+## Generic service requests
 
-## Example
+`audit_claims` accepts an evidence-audit JSON object directly, or as `params.audit_json`.
+
+`source_coverage` accepts an evidence/source object directly, or as `params.evidence_json`. The source category can be supplied as `params.category` or inside the request object as `category`.
+
+`score_output` accepts:
+
+```json
+{
+  "before_text": "Generic update. Monitor developments.",
+  "after_text": "Signal classification: ... Watch next: ..."
+}
+```
+
+These generic routes expose the same service-layer behavior as the HTTP shell:
+
+- `audit_claims` -> `/v1/audit-claims`
+- `source_coverage` -> `/v1/source-coverage`
+- `score_output` -> `/v1/score`
+
+They do not add live retrieval, factual verification, or advice/clearance behavior.
+
+## Examples
 
 ```bash
 jq -n --slurpfile request examples/kazakhstan-middle-corridor/contract/pre_signature_escalate.request.json \
@@ -80,6 +116,37 @@ Expected response metadata:
 - `human_review_required`: `true`
 - `not_advice_notice`: present
 - `response.decision_readiness_score`: `42` for the bundled escalation fixture
+
+Audit claims:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "audit-demo",
+  "method": "message/send",
+  "params": {
+    "capability": "audit_claims",
+    "audit_json": {
+      "topic": "shipment memo",
+      "claims": [
+        {
+          "claim_id": "c1",
+          "claim": "The supplied port notice is dated.",
+          "evidence_ids": ["e1"],
+          "support_level": "direct"
+        }
+      ],
+      "evidence": [
+        {
+          "evidence_id": "e1",
+          "name": "Port notice",
+          "source_type": "port_operator_notice"
+        }
+      ]
+    }
+  }
+}
+```
 
 ## Data handling
 
@@ -97,4 +164,4 @@ Downstream wrappers should log only reduced operational fields such as request i
 
 ## Future work
 
-Generic A2A routing for `audit_claims`, `source_coverage`, and `score_output` should be added only after the Middle Corridor structured path is stable.
+Production A2A hosting, auth, metering, streaming, push notifications, and channel-specific marketplace packaging remain out of scope for this shell.

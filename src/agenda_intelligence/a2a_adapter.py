@@ -16,6 +16,33 @@ from agenda_intelligence import __version__, services
 REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md"
 MIDDLE_CORRIDOR_SCHEMA = "schemas/v1/middle-corridor-deal-risk-request.schema.json"
 MIDDLE_CORRIDOR_ENDPOINT = "/v1/middle-corridor/deal-risk"
+AUDIT_CLAIMS_ENDPOINT = "/v1/audit-claims"
+SOURCE_COVERAGE_ENDPOINT = "/v1/source-coverage"
+SCORE_OUTPUT_ENDPOINT = "/v1/score"
+
+SUPPORTED_CAPABILITIES = [
+    "middle_corridor_deal_risk",
+    "audit_claims",
+    "source_coverage",
+    "score_output",
+]
+
+CAPABILITY_ALIASES = {
+    "middle_corridor_deal_risk": "middle_corridor_deal_risk",
+    "middle_corridor_deal_risk_gate": "middle_corridor_deal_risk",
+    "middle_corridor": "middle_corridor_deal_risk",
+    "middle-corridor-deal-risk": "middle_corridor_deal_risk",
+    "middle-corridor-deal-risk-gate": "middle_corridor_deal_risk",
+    "audit_claims": "audit_claims",
+    "audit-claims": "audit_claims",
+    "audit": "audit_claims",
+    "source_coverage": "source_coverage",
+    "source-coverage": "source_coverage",
+    "coverage": "source_coverage",
+    "score_output": "score_output",
+    "score-output": "score_output",
+    "score": "score_output",
+}
 
 
 def agent_card(base_url: str = "http://localhost:8080") -> dict:
@@ -50,13 +77,38 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "tags": ["kazakhstan", "middle-corridor", "deal-risk", "evidence-readiness"],
                 "inputModes": ["application/json"],
                 "outputModes": ["application/json", "text/markdown"],
-            }
+            },
+            {
+                "id": "audit-claims",
+                "name": "Audit claims",
+                "description": "Validates and summarizes claim-level evidence support without checking factual truth.",
+                "tags": ["evidence", "claims", "audit"],
+                "inputModes": ["application/json"],
+                "outputModes": ["application/json", "text/markdown"],
+            },
+            {
+                "id": "source-coverage",
+                "name": "Source coverage",
+                "description": "Diagnoses whether an evidence pack covers a configured source-requirement plan.",
+                "tags": ["evidence", "sources", "coverage"],
+                "inputModes": ["application/json"],
+                "outputModes": ["application/json", "text/markdown"],
+            },
+            {
+                "id": "score-output",
+                "name": "Score output",
+                "description": "Scores a before/after output pair with the Agenda Intelligence rubric.",
+                "tags": ["evaluation", "quality", "scoring"],
+                "inputModes": ["application/json"],
+                "outputModes": ["application/json", "text/markdown"],
+            },
         ],
         "x_agenda_intelligence": {
             "repository": REPOSITORY_URL,
             "product_profile": "middle_corridor_deal_risk",
             "canonical_http_endpoint": MIDDLE_CORRIDOR_ENDPOINT,
             "schema": MIDDLE_CORRIDOR_SCHEMA,
+            "supported_capabilities": SUPPORTED_CAPABILITIES,
             "boundaries": [
                 "No autonomous live source retrieval.",
                 "No factual-truth verification.",
@@ -82,23 +134,9 @@ def _try_parse_json_object(value: Any) -> dict | None:
     return parsed if isinstance(parsed, dict) else None
 
 
-def _looks_like_middle_corridor_request(value: Any) -> bool:
-    return (
-        isinstance(value, dict)
-        and isinstance(value.get("route"), str)
-        and isinstance(value.get("cargo"), str)
-        and isinstance(value.get("counterparties"), list)
-        and isinstance(value.get("dated_sources"), list)
-        and isinstance(value.get("risk_question"), str)
-        and isinstance(value.get("decision_stage"), str)
-    )
-
-
-def middle_corridor_request_from_params(params: dict) -> dict | None:
-    """Extract a structured Middle Corridor request from A2A/JSON-RPC params."""
+def _candidate_objects_from_params(params: dict) -> list[dict]:
     candidates: list[Any] = [
         params.get("request"),
-        params.get("middle_corridor_deal_risk_request"),
         params.get("input"),
         params,
     ]
@@ -115,10 +153,95 @@ def middle_corridor_request_from_params(params: dict) -> dict | None:
             if parsed_text is not None:
                 candidates.append(parsed_text)
 
+    parsed_candidates: list[dict] = []
     for candidate in candidates:
         parsed = _try_parse_json_object(candidate)
-        if _looks_like_middle_corridor_request(parsed):
-            return parsed
+        if parsed is not None:
+            parsed_candidates.append(parsed)
+    return parsed_candidates
+
+
+def _capability_from_params(params: dict) -> str | None:
+    for key in ["capability", "tool", "skill"]:
+        value = params.get(key)
+        if isinstance(value, str):
+            return CAPABILITY_ALIASES.get(value.strip().lower().replace(" ", "_"))
+
+    message = params.get("message")
+    if isinstance(message, dict):
+        metadata = message.get("metadata")
+        if isinstance(metadata, dict):
+            value = metadata.get("capability")
+            if isinstance(value, str):
+                return CAPABILITY_ALIASES.get(value.strip().lower().replace(" ", "_"))
+    return None
+
+
+def _looks_like_middle_corridor_request(value: Any) -> bool:
+    return (
+        isinstance(value, dict)
+        and isinstance(value.get("route"), str)
+        and isinstance(value.get("cargo"), str)
+        and isinstance(value.get("counterparties"), list)
+        and isinstance(value.get("dated_sources"), list)
+        and isinstance(value.get("risk_question"), str)
+        and isinstance(value.get("decision_stage"), str)
+    )
+
+
+def middle_corridor_request_from_params(params: dict) -> dict | None:
+    """Extract a structured Middle Corridor request from A2A/JSON-RPC params."""
+    candidates = _candidate_objects_from_params(params)
+    candidates.extend(
+        candidate
+        for candidate in [
+            _try_parse_json_object(params.get("middle_corridor_deal_risk_request")),
+            _try_parse_json_object(params.get("middle_corridor_request")),
+        ]
+        if candidate is not None
+    )
+
+    for candidate in candidates:
+        if _looks_like_middle_corridor_request(candidate):
+            return candidate
+    return None
+
+
+def audit_claims_request_from_params(params: dict) -> dict | None:
+    """Extract a structured audit_claims request without interpreting free text."""
+    candidates = _candidate_objects_from_params(params)
+    for candidate in candidates:
+        audit_json = candidate.get("audit_json")
+        if isinstance(audit_json, dict):
+            return audit_json
+        if isinstance(candidate.get("claims"), list) and isinstance(candidate.get("evidence"), list):
+            return candidate
+    return None
+
+
+def source_coverage_request_from_params(params: dict) -> tuple[dict, str | None] | None:
+    """Extract a structured source_coverage request without live retrieval."""
+    candidates = _candidate_objects_from_params(params)
+    default_category = params.get("category") if isinstance(params.get("category"), str) else None
+
+    for candidate in candidates:
+        category = candidate.get("category") if isinstance(candidate.get("category"), str) else default_category
+        evidence_json = candidate.get("evidence_json")
+        if isinstance(evidence_json, dict):
+            return evidence_json, category
+        if any(isinstance(candidate.get(key), list) for key in ["claims", "sources", "evidence"]):
+            return candidate, category
+    return None
+
+
+def score_output_request_from_params(params: dict) -> tuple[str, str] | None:
+    """Extract a structured score_output request."""
+    candidates = _candidate_objects_from_params(params)
+    for candidate in candidates:
+        before_text = candidate.get("before_text")
+        after_text = candidate.get("after_text")
+        if isinstance(before_text, str) and isinstance(after_text, str):
+            return before_text, after_text
     return None
 
 
@@ -180,6 +303,75 @@ def a2a_result_for_middle_corridor(request_json: dict) -> dict:
     }
 
 
+def _service_artifact_text(title: str, result: dict) -> str:
+    return "\n".join([title, "", "```json", json.dumps(result, indent=2, sort_keys=True), "```"])
+
+
+def a2a_result_for_audit_claims(audit_json: dict) -> dict:
+    result = services.audit_claims(audit_json)
+    state = "completed" if result.get("valid") else "failed"
+    return {
+        "id": "agenda-intelligence-a2a-result",
+        "status": {"state": state},
+        "artifacts": [
+            {
+                "artifactId": "audit-claims-response",
+                "name": "Audit claims response",
+                "parts": [{"kind": "text", "text": _service_artifact_text("Audit claims response", result)}],
+            }
+        ],
+        "metadata": {
+            "product_profile": "audit_claims",
+            "canonical_http_endpoint": AUDIT_CLAIMS_ENDPOINT,
+            "valid": result.get("valid"),
+            "response": result,
+        },
+    }
+
+
+def a2a_result_for_source_coverage(evidence_json: dict, category: str | None) -> dict:
+    result = services.source_coverage(evidence_json, category)
+    state = "completed" if result.get("valid_category") else "failed"
+    return {
+        "id": "agenda-intelligence-a2a-result",
+        "status": {"state": state},
+        "artifacts": [
+            {
+                "artifactId": "source-coverage-response",
+                "name": "Source coverage response",
+                "parts": [{"kind": "text", "text": _service_artifact_text("Source coverage response", result)}],
+            }
+        ],
+        "metadata": {
+            "product_profile": "source_coverage",
+            "canonical_http_endpoint": SOURCE_COVERAGE_ENDPOINT,
+            "valid_category": result.get("valid_category"),
+            "response": result,
+        },
+    }
+
+
+def a2a_result_for_score_output(before_text: str, after_text: str) -> dict:
+    result = services.score_output(before_text, after_text)
+    state = "completed" if result.get("error") is None else "failed"
+    return {
+        "id": "agenda-intelligence-a2a-result",
+        "status": {"state": state},
+        "artifacts": [
+            {
+                "artifactId": "score-output-response",
+                "name": "Score output response",
+                "parts": [{"kind": "text", "text": _service_artifact_text("Score output response", result)}],
+            }
+        ],
+        "metadata": {
+            "product_profile": "score_output",
+            "canonical_http_endpoint": SCORE_OUTPUT_ENDPOINT,
+            "response": result,
+        },
+    }
+
+
 def jsonrpc_error(id_value: Any, code: int, message: str, data: dict | None = None) -> dict:
     error: dict[str, Any] = {"code": code, "message": message}
     if data is not None:
@@ -201,25 +393,55 @@ def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> di
         params = payload.get("params") or {}
         if not isinstance(params, dict):
             return jsonrpc_error(id_value, -32602, "Invalid params")
-        request_json = middle_corridor_request_from_params(params)
-        if request_json is None:
+        capability = _capability_from_params(params)
+        if capability is None and any(key in params for key in ["capability", "tool", "skill"]):
             return jsonrpc_error(
                 id_value,
                 -32602,
-                "Missing structured Middle Corridor deal-risk request",
-                {
-                    "required_shape": {
-                        "route": "string",
-                        "cargo": "string",
-                        "counterparties": "array",
-                        "dated_sources": "array",
-                        "risk_question": "string",
-                        "decision_stage": "string",
-                    },
-                    "schema": MIDDLE_CORRIDOR_SCHEMA,
-                },
+                "Unsupported capability",
+                {"supported_capabilities": SUPPORTED_CAPABILITIES},
             )
-        return {"jsonrpc": "2.0", "id": id_value, "result": a2a_result_for_middle_corridor(request_json)}
+
+        if capability in {None, "middle_corridor_deal_risk"}:
+            request_json = middle_corridor_request_from_params(params)
+            if request_json is None:
+                return jsonrpc_error(
+                    id_value,
+                    -32602,
+                    "Missing structured Middle Corridor deal-risk request",
+                    {
+                        "required_shape": {
+                            "route": "string",
+                            "cargo": "string",
+                            "counterparties": "array",
+                            "dated_sources": "array",
+                            "risk_question": "string",
+                            "decision_stage": "string",
+                        },
+                        "schema": MIDDLE_CORRIDOR_SCHEMA,
+                    },
+                )
+            return {"jsonrpc": "2.0", "id": id_value, "result": a2a_result_for_middle_corridor(request_json)}
+
+        if capability == "audit_claims":
+            audit_json = audit_claims_request_from_params(params)
+            if audit_json is None:
+                return jsonrpc_error(id_value, -32602, "Missing structured audit_claims request")
+            return {"jsonrpc": "2.0", "id": id_value, "result": a2a_result_for_audit_claims(audit_json)}
+
+        if capability == "source_coverage":
+            source_request = source_coverage_request_from_params(params)
+            if source_request is None:
+                return jsonrpc_error(id_value, -32602, "Missing structured source_coverage request")
+            evidence_json, category = source_request
+            return {"jsonrpc": "2.0", "id": id_value, "result": a2a_result_for_source_coverage(evidence_json, category)}
+
+        if capability == "score_output":
+            score_request = score_output_request_from_params(params)
+            if score_request is None:
+                return jsonrpc_error(id_value, -32602, "Missing structured score_output request")
+            before_text, after_text = score_request
+            return {"jsonrpc": "2.0", "id": id_value, "result": a2a_result_for_score_output(before_text, after_text)}
 
     return jsonrpc_error(id_value, -32601, "Method not found", {"supported_methods": ["message/send", "agent/card"]})
 
