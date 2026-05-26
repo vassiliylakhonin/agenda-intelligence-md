@@ -75,3 +75,36 @@ Evidence access limited: live retrieval failed or was unavailable. Treat this as
 ```
 
 Then provide a source plan and the safest useful assessment.
+
+## Per-profile live retrieval (vertical workers)
+
+The product runtime defaults to `live_retrieval: false`. Specific vertical-worker profiles may opt in to live retrieval against a named upstream from the whitelist below, per ADR 0014.
+
+### Upstream whitelist
+
+| Upstream | License | Used by profile | Purpose |
+|---|---|---|---|
+| OpenSanctions consolidated dataset (`api.opensanctions.org`) | CC-BY 4.0 | `cis_secondary_sanctions` | Counterparty name → matched SDN / EU consolidated / UK OFSI / UN entries |
+
+Adding a new upstream requires a CHANGELOG entry and a row in this table. A new ADR is required only when the new upstream changes the license model, attribution model, or rate-limit shape materially.
+
+### Requirements for live-retrieval-enabled profiles
+
+1. **Declare**: `live_retrieval: true` in agent card, `/status`, `/health`, and agent-manifest. Name the upstream(s) consulted. No opaque retrieval.
+2. **Cache**: Cache responses with TTL appropriate to the upstream's update cadence (daily for OpenSanctions). Honor `Cache-Control` headers when present.
+3. **Attribute**: Surface the upstream's license attribution in every response that incorporates upstream data. For CC-BY 4.0 this MUST include the upstream's name, a link to the upstream, and the license identifier.
+4. **Degrade gracefully**: On upstream failure (network error, 429, 5xx, timeout), the profile MUST NOT fail the request. It MUST return its normal triage shape with `live_retrieval_status: degraded` and a note that the response is based on user-supplied evidence only.
+5. **Stay in scope**: Only retrieve data within the published, openly-licensed scope of the named upstream. Do not retrieve PII, do not bypass rate limits, do not store retrieved content beyond the cache TTL.
+
+### Boundaries that remain unchanged for live-retrieval-enabled profiles
+
+- `factual_verification: false` — name match against a sanctions list is not legal-entity identity verification.
+- `not_advice: true` — no legal / compliance / sanctions / financial / investment / insurance / trading advice.
+- `human_review_required: true` for the response.
+
+### Live retrieval status values
+
+- `not_attempted` — profile does not use live retrieval; baseline for `live_retrieval: false` profiles.
+- `success` — upstream returned a usable response; results merged into evidence.
+- `degraded` — upstream returned an error, timeout, or no match; response based on user-supplied evidence only.
+- `disabled` — profile supports live retrieval but the caller or operator disabled it for this call (e.g., via header or env flag).

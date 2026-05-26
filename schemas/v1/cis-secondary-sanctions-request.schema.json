@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/cis-secondary-sanctions-request.schema.json",
+  "title": "CISSecondarySanctionsExposureRequest",
+  "description": "Product-grade structured request contract for secondary-sanctions exposure evidence triage of a CIS-domiciled counterparty (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Designed for enhanced due diligence in EU / UK / UAE / Singapore institutions screening counterparties against OFAC EO 14114, EU 14th sanctions package, UK OFSI, and FATF / EAG typologies for Russia-related re-export and circumvention risk. This schema describes caller-supplied counterparty, ownership, financial-flow, transit, and dated-source inputs. It does not enable live retrieval, factual-truth verification, legal advice, sanctions advice, compliance advice, financial advice, investment advice, insurance advice, or trading advice.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "counterparty",
+    "exposure_facets",
+    "dated_sources",
+    "risk_question",
+    "decision_stage"
+  ],
+  "properties": {
+    "counterparty": {
+      "$ref": "#/$defs/counterparty"
+    },
+    "exposure_facets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/exposure_facet"
+      }
+    },
+    "jurisdiction_review_scope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "ofac",
+          "eu",
+          "uk_ofsi",
+          "un",
+          "fatf",
+          "eag",
+          "national_regulator",
+          "other"
+        ]
+      }
+    },
+    "dated_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dated_source"
+      }
+    },
+    "risk_question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_stage": {
+      "type": "string",
+      "enum": [
+        "onboarding",
+        "periodic_review",
+        "pre_transaction",
+        "post_alert",
+        "committee_review",
+        "other"
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requested_output": {
+      "type": "string",
+      "enum": [
+        "structured_json",
+        "markdown_summary",
+        "both"
+      ],
+      "default": "structured_json"
+    }
+  },
+  "$defs": {
+    "counterparty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "jurisdiction"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Primary CIS jurisdiction of the counterparty (e.g., Kazakhstan, Uzbekistan, Georgia)."
+        },
+        "sector": {
+          "type": "string",
+          "enum": [
+            "trading_house",
+            "logistics_forwarder",
+            "bank",
+            "fintech",
+            "broker_dealer",
+            "manufacturer",
+            "ict_or_electronics",
+            "metals_or_mining",
+            "energy_or_petrochem",
+            "agribusiness_or_grain",
+            "construction",
+            "professional_services",
+            "holding_or_spv",
+            "unknown",
+            "other"
+          ]
+        },
+        "ownership_layers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Free-text ordered chain of disclosed ownership layers, from immediate parent to ultimate beneficial owner where known."
+        },
+        "registered_identifiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "scheme",
+              "value"
+            ],
+            "properties": {
+              "scheme": {
+                "type": "string",
+                "enum": [
+                  "lei",
+                  "national_bin",
+                  "national_tin",
+                  "isin",
+                  "other"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "exposure_facet": {
+      "type": "string",
+      "enum": [
+        "ownership_or_control",
+        "financial_flows",
+        "ict_or_dual_use_goods",
+        "metals_or_mining",
+        "energy_or_petrochem",
+        "agribusiness_or_grain",
+        "transit_or_re_export",
+        "correspondent_banking",
+        "professional_enablers",
+        "shell_or_layered_structure",
+        "other"
+      ]
+    },
+    "dated_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_type",
+        "title",
+        "date"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "$ref": "#/$defs/source_type"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "ofac_sdn_extract",
+        "eu_consolidated_extract",
+        "uk_ofsi_extract",
+        "un_security_council_extract",
+        "ownership_chain_evidence",
+        "beneficial_ownership_source",
+        "bank_correspondent_evidence",
+        "transit_or_invoice_evidence",
+        "dual_use_export_evidence",
+        "customs_data_evidence",
+        "adverse_media_evidence",
+        "typology_reference",
+        "national_regulator_filing",
+        "user_provided_note",
+        "other"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "counterparty": {
+        "name": "Example Kazakhstan Trading LLP",
+        "jurisdiction": "Kazakhstan",
+        "sector": "trading_house",
+        "ownership_layers": [
+          "Holding A (KZ)",
+          "Holding B (UAE)"
+        ]
+      },
+      "exposure_facets": [
+        "ownership_or_control",
+        "ict_or_dual_use_goods",
+        "transit_or_re_export"
+      ],
+      "jurisdiction_review_scope": [
+        "ofac",
+        "eu",
+        "uk_ofsi"
+      ],
+      "dated_sources": [
+        {
+          "id": "s1",
+          "source_type": "ofac_sdn_extract",
+          "title": "OFAC SDN list excerpt",
+          "date": "2026-05-20"
+        }
+      ],
+      "risk_question": "Does the disclosed ownership chain create indirect exposure under OFAC EO 14114 or EU 14th package?",
+      "decision_stage": "onboarding"
+    }
+  ]
+}

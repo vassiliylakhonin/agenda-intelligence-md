@@ -1,0 +1,46 @@
+{
+  "triage_recommendation": "ready_for_human_review",
+  "secondary_exposure_signal": "low",
+  "decision_readiness_score": 88,
+  "decision_readiness_label": "review_ready",
+  "counterparty": {
+    "name": "Example UZ Logistics LLC",
+    "jurisdiction": "Uzbekistan",
+    "sector": "logistics_forwarder",
+    "ownership_layers": [
+      "Owner A (UZ)"
+    ]
+  },
+  "exposure_facets": [
+    "transit_or_re_export",
+    "correspondent_banking"
+  ],
+  "supplied_sources": [
+    "ofac_sdn_extract",
+    "eu_consolidated_extract",
+    "ownership_chain_evidence",
+    "bank_correspondent_evidence",
+    "transit_or_invoice_evidence",
+    "uk_ofsi_extract",
+    "customs_data_evidence"
+  ],
+  "minimum_sources_before_review": [],
+  "evidence_gaps": [],
+  "top_exposure_dimensions": [
+    "transit or re-export exposure under EU 14th package / OFAC EO 14114",
+    "correspondent banking exposure"
+  ],
+  "watch_next": [
+    "new OFAC SDN designations",
+    "new EU sanctions package",
+    "new UK OFSI listing",
+    "new EAG typology report",
+    "FATF grey-list or black-list update",
+    "national regulator enforcement update"
+  ],
+  "human_review_required": true,
+  "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
+  "limitations": [
+    "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
+  ]
+}

@@ -11,6 +11,7 @@ import json
 from importlib import resources
 from typing import Optional
 
+from agenda_intelligence import upstream_opensanctions
 from agenda_intelligence.eval import score_before_after
 
 PACKAGE_NAME = "agenda_intelligence"
@@ -25,6 +26,22 @@ MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO = [
 ]
 
 MIDDLE_CORRIDOR_READINESS_CONTEXT = ["port_operator_notice", "carrier_note"]
+
+CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW = [
+    "ofac_sdn_extract",
+    "eu_consolidated_extract",
+    "ownership_chain_evidence",
+    "bank_correspondent_evidence",
+    "transit_or_invoice_evidence",
+]
+
+CIS_SECONDARY_SANCTIONS_READINESS_CONTEXT = [
+    "uk_ofsi_extract",
+    "dual_use_export_evidence",
+    "adverse_media_evidence",
+    "typology_reference",
+    "customs_data_evidence",
+]
 
 NOT_ADVICE_NOTICE = (
     "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, "
@@ -450,4 +467,201 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         "valid": bool(response_validation.get("valid")),
         "errors": response_validation.get("errors", []),
         "response": response,
+    }
+
+
+# ---------------------------------------------------------------------------
+# CIS secondary-sanctions exposure (vertical worker)
+# ---------------------------------------------------------------------------
+
+
+def _cis_evidence_gap_for_source(source_type: str) -> str:
+    gaps = {
+        "ofac_sdn_extract": "No OFAC SDN list extract supplied.",
+        "eu_consolidated_extract": "No EU consolidated sanctions list extract supplied.",
+        "uk_ofsi_extract": "No UK OFSI sanctions list extract supplied.",
+        "un_security_council_extract": "No UN Security Council sanctions extract supplied.",
+        "ownership_chain_evidence": "No ownership chain evidence supplied.",
+        "bank_correspondent_evidence": "No bank correspondent evidence supplied.",
+        "transit_or_invoice_evidence": "No transit or invoice evidence supplied.",
+        "dual_use_export_evidence": "No dual-use export evidence supplied.",
+        "customs_data_evidence": "No customs data evidence supplied.",
+        "adverse_media_evidence": "No adverse media evidence supplied.",
+        "typology_reference": "No typology reference supplied.",
+    }
+    return gaps.get(source_type, f"No {source_type} supplied.")
+
+
+def _cis_triage_recommendation(request_json: dict, missing_sources: list[str], exposure_signal: str) -> str:
+    if not request_json.get("dated_sources"):
+        return "insufficient_information"
+    if not missing_sources and exposure_signal in {"low"}:
+        return "ready_for_human_review"
+    decision_stage = request_json.get("decision_stage")
+    if decision_stage == "onboarding":
+        return "escalate_before_onboarding"
+    if decision_stage == "pre_transaction":
+        return "escalate_before_transaction"
+    return "not_decision_ready"
+
+
+def _cis_exposure_signal(request_json: dict, missing_sources: list[str], opensanctions_matches: int) -> str:
+    if not request_json.get("dated_sources"):
+        return "unknown"
+    if opensanctions_matches >= 1:
+        return "high"
+    if len(missing_sources) >= 4:
+        return "medium_high"
+    if missing_sources:
+        return "medium"
+    return "low"
+
+
+def _cis_readiness(request_json: dict, supplied_sources: list[str]) -> tuple[int, str]:
+    if not request_json.get("dated_sources") or not supplied_sources:
+        return 0, "insufficient_information"
+
+    required_present = len([s for s in CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW if s in supplied_sources])
+    context_present = len([s for s in CIS_SECONDARY_SANCTIONS_READINESS_CONTEXT if s in supplied_sources])
+    score = min(
+        100,
+        round(
+            10
+            + (required_present / len(CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW)) * 70
+            + (context_present / len(CIS_SECONDARY_SANCTIONS_READINESS_CONTEXT)) * 20
+        ),
+    )
+    if score >= 85:
+        return score, "review_ready"
+    if score >= 50:
+        return score, "partial"
+    return score, "not_decision_ready"
+
+
+def _cis_top_exposure_dimensions(
+    facets: list[str], missing_sources: list[str], opensanctions_matches: list[dict]
+) -> list[str]:
+    dims: list[str] = []
+    if opensanctions_matches:
+        dims.append("direct or near-direct match in OpenSanctions consolidated dataset")
+    if "ownership_or_control" in facets:
+        dims.append("indirect ownership or control exposure")
+    if "transit_or_re_export" in facets:
+        dims.append("transit or re-export exposure under EU 14th package / OFAC EO 14114")
+    if "ict_or_dual_use_goods" in facets:
+        dims.append("ICT or dual-use goods diversion exposure")
+    if "correspondent_banking" in facets:
+        dims.append("correspondent banking exposure")
+    if "shell_or_layered_structure" in facets:
+        dims.append("shell or layered structure exposure")
+    if "professional_enablers" in facets:
+        dims.append("professional-enabler exposure")
+    if "ownership_chain_evidence" in missing_sources:
+        dims.append("ownership chain not yet documented")
+    return list(dict.fromkeys(dims))
+
+
+def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval: bool = True) -> dict:
+    """Build a structured CIS secondary-sanctions exposure response.
+
+    This is pre-compliance evidence triage only. It does not perform factual-truth
+    verification or provide legal / compliance / sanctions / financial /
+    investment / insurance / trading advice.
+
+    When ``allow_live_retrieval`` is True (default), the service queries the
+    OpenSanctions consolidated dataset for the supplied counterparty name and
+    merges matches into the evidence pack as auto-fetched dated sources.
+    Upstream failures degrade gracefully: the response is returned with
+    ``live_retrieval_status: degraded`` and triage is based on user-supplied
+    evidence only.
+    """
+    request_validation = _validate_json(request_json, "cis-secondary-sanctions-request.schema.json")
+    if not request_validation.get("valid"):
+        return {
+            "implemented": True,
+            "valid": False,
+            "errors": request_validation.get("errors", []),
+            "response": None,
+        }
+
+    supplied_sources = _supplied_source_types(request_json)
+    auto_fetched_sources: list[dict] = []
+    live_retrieval_status = "not_attempted"
+    degrade_reason: str | None = None
+    upstream_attribution: dict | None = None
+
+    if allow_live_retrieval:
+        counterparty = request_json.get("counterparty", {}) or {}
+        name = counterparty.get("name", "")
+        jurisdiction = counterparty.get("jurisdiction")
+        os_result = upstream_opensanctions.match_counterparty(name=name, jurisdiction=jurisdiction)
+        live_retrieval_status = os_result["status"]
+        degrade_reason = os_result.get("degrade_reason")
+        upstream_attribution = os_result.get("attribution")
+        for match in os_result.get("matches", []):
+            mapped_type = match.get("source_type") or "user_provided_note"
+            if mapped_type not in supplied_sources:
+                supplied_sources.append(mapped_type)
+            auto_fetched_sources.append(
+                {
+                    "source_type": mapped_type,
+                    "title": match.get("name") or "OpenSanctions match",
+                    "datasets": match.get("datasets", []),
+                    "opensanctions_id": match.get("opensanctions_id"),
+                    "score": match.get("score"),
+                    "topics": match.get("topics", []),
+                    "jurisdictions": match.get("jurisdictions", []),
+                    "notes": "Auto-fetched from OpenSanctions; CC-BY 4.0 attribution required.",
+                }
+            )
+
+    missing_sources = [s for s in CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW if s not in supplied_sources]
+    readiness_score, readiness_label = _cis_readiness(request_json, supplied_sources)
+    exposure_signal = _cis_exposure_signal(request_json, missing_sources, len(auto_fetched_sources))
+    triage = _cis_triage_recommendation(request_json, missing_sources, exposure_signal)
+
+    limitations: list[str] = []
+    if upstream_attribution is not None:
+        limitations.append(upstream_attribution["notice"])
+    if degrade_reason:
+        limitations.append(f"OpenSanctions live retrieval degraded: {degrade_reason}")
+    limitations.append(
+        "Name match against a sanctions list is not legal-entity identity verification. " "Human review is required."
+    )
+
+    response = {
+        "triage_recommendation": triage,
+        "secondary_exposure_signal": exposure_signal,
+        "decision_readiness_score": readiness_score,
+        "decision_readiness_label": readiness_label,
+        "counterparty": request_json["counterparty"],
+        "exposure_facets": list(request_json.get("exposure_facets", [])),
+        "supplied_sources": list(dict.fromkeys(supplied_sources)),
+        "minimum_sources_before_review": missing_sources,
+        "evidence_gaps": [_cis_evidence_gap_for_source(s) for s in missing_sources],
+        "top_exposure_dimensions": _cis_top_exposure_dimensions(
+            list(request_json.get("exposure_facets", [])), missing_sources, auto_fetched_sources
+        ),
+        "watch_next": [
+            "new OFAC SDN designations",
+            "new EU sanctions package",
+            "new UK OFSI listing",
+            "new EAG typology report",
+            "FATF grey-list or black-list update",
+            "national regulator enforcement update",
+        ],
+        "human_review_required": True,
+        "not_advice_notice": NOT_ADVICE_NOTICE,
+        "limitations": limitations,
+    }
+
+    response_validation = _validate_json(response, "cis-secondary-sanctions-response.schema.json")
+    return {
+        "implemented": True,
+        "valid": bool(response_validation.get("valid")),
+        "errors": response_validation.get("errors", []),
+        "response": response,
+        "live_retrieval_status": live_retrieval_status,
+        "auto_fetched_sources": auto_fetched_sources,
+        "upstream_attribution": upstream_attribution,
     }

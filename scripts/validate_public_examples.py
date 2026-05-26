@@ -83,6 +83,7 @@ def validate_examples() -> None:
     }
     commercial_fixture_dirs = {
         ROOT / "examples" / "kazakhstan-middle-corridor",
+        ROOT / "examples" / "cis-secondary-sanctions",
     }
     a2a_fixture_dir = ROOT / "examples" / "a2a"
 

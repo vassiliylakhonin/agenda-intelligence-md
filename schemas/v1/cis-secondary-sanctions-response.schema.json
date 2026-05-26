@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/cis-secondary-sanctions-response.schema.json",
+  "title": "CISSecondarySanctionsExposureResponse",
+  "description": "Product-grade structured response contract for CIS counterparty secondary-sanctions exposure evidence triage. Supports source-coverage gaps, exposure-dimension routing, FATF / EAG typology references, watch-next indicators, and human-review requirements. It does not provide legal advice, sanctions advice, compliance advice, financial advice, investment advice, insurance advice, trading advice, live retrieval, or factual-truth verification.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "triage_recommendation",
+    "secondary_exposure_signal",
+    "decision_readiness_score",
+    "decision_readiness_label",
+    "counterparty",
+    "supplied_sources",
+    "minimum_sources_before_review",
+    "evidence_gaps",
+    "watch_next",
+    "human_review_required",
+    "not_advice_notice"
+  ],
+  "properties": {
+    "triage_recommendation": {
+      "type": "string",
+      "enum": [
+        "not_decision_ready",
+        "escalate_before_onboarding",
+        "escalate_before_transaction",
+        "ready_for_human_review",
+        "insufficient_information"
+      ]
+    },
+    "secondary_exposure_signal": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "medium_high",
+        "high",
+        "unknown"
+      ]
+    },
+    "decision_readiness_score": {
+      "description": "Heuristic 0-100 score for evidence-pack readiness for human review. This is not approval, clearance, legal advice, sanctions advice, compliance advice, financial advice, investment advice, insurance advice, or trading advice.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "decision_readiness_label": {
+      "type": "string",
+      "enum": [
+        "insufficient_information",
+        "not_decision_ready",
+        "partial",
+        "review_ready"
+      ]
+    },
+    "counterparty": {
+      "type": "object"
+    },
+    "exposure_facets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "supplied_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_type"
+      }
+    },
+    "minimum_sources_before_review": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_type"
+      }
+    },
+    "evidence_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "top_exposure_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "typology_refs": {
+      "description": "Optional mapping to publicly published FATF / EAG / OFAC / EU typology categories the supplied evidence touches. Reference only, not a finding.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "framework",
+          "label"
+        ],
+        "properties": {
+          "framework": {
+            "type": "string",
+            "enum": [
+              "fatf",
+              "eag",
+              "ofac",
+              "eu",
+              "uk_ofsi",
+              "national",
+              "other"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_index": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "watch_next": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "human_review_required": {
+      "type": "boolean"
+    },
+    "not_advice_notice": {
+      "type": "string",
+      "minLength": 1
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "ofac_sdn_extract",
+        "eu_consolidated_extract",
+        "uk_ofsi_extract",
+        "un_security_council_extract",
+        "ownership_chain_evidence",
+        "beneficial_ownership_source",
+        "bank_correspondent_evidence",
+        "transit_or_invoice_evidence",
+        "dual_use_export_evidence",
+        "customs_data_evidence",
+        "adverse_media_evidence",
+        "typology_reference",
+        "national_regulator_filing",
+        "user_provided_note",
+        "other"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "triage_recommendation": "escalate_before_onboarding",
+      "secondary_exposure_signal": "medium_high",
+      "decision_readiness_score": 42,
+      "decision_readiness_label": "not_decision_ready",
+      "counterparty": {
+        "name": "Example Kazakhstan Trading LLP",
+        "jurisdiction": "Kazakhstan",
+        "sector": "trading_house"
+      },
+      "exposure_facets": [
+        "ownership_or_control",
+        "transit_or_re_export"
+      ],
+      "supplied_sources": [
+        "ofac_sdn_extract",
+        "ownership_chain_evidence"
+      ],
+      "minimum_sources_before_review": [
+        "eu_consolidated_extract",
+        "bank_correspondent_evidence",
+        "transit_or_invoice_evidence"
+      ],
+      "evidence_gaps": [
+        "No EU consolidated sanctions list extract supplied.",
+        "No bank correspondent evidence supplied."
+      ],
+      "top_exposure_dimensions": [
+        "indirect ownership exposure under OFAC EO 14114",
+        "transit / re-export risk under EU 14th package"
+      ],
+      "typology_refs": [
+        {
+          "framework": "fatf",
+          "label": "Trade-based money laundering — third-party intermediation"
+        }
+      ],
+      "watch_next": [
+        "new OFAC SDN designations",
+        "new EU sanctions package",
+        "new UK OFSI listing",
+        "new EAG typology report",
+        "national regulator enforcement update"
+      ],
+      "human_review_required": true,
+      "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
+    }
+  ]
+}

@@ -134,6 +134,14 @@ Out-of-repo operational changes shipped same session:
 - Agenstry agent cards verified live across all three Cloudflare Workers via `deploy/cloudflare-worker/scripts/verify-agent-card.js`.
 - Bi-weekly Agenstry "State of the Agent Economy" tracker added as a Claude Code routine (1st and 15th of each month, 09:00 Asia/Almaty). Not a CI workflow — runs in the Claude Code routine infrastructure, separate from this repo.
 
+## Post v1.0.1 — second vertical worker + per-profile live retrieval (shipped 2026-05-26)
+
+Additive change under the AGENTS.md "`< 3` vertical workers in this repo" rule. No change to the v1 request/memo contract surface; new schemas are additive per ADR 0003.
+
+- **CIS secondary-sanctions exposure** vertical worker. Structured secondary-sanctions exposure evidence triage for CIS-domiciled counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Targets enhanced due diligence in EU / UK / UAE / Singapore institutions. New schemas under `schemas/v1/cis-secondary-sanctions-{request,response}.schema.json`, source-requirements taxonomy, service function `cis_secondary_sanctions_exposure`, HTTP route `POST /v1/cis-secondary-sanctions/exposure`, A2A capability `cis_secondary_sanctions_exposure` with the `cis_secondary_sanctions` product profile, three contract fixtures, use-case doc, and 8 contract tests. Honest traction: zero paying customers, zero named pilots — shipped as a portfolio-grade vertical worker.
+- **ADR 0014 — per-profile live retrieval** ([docs/adr/0014-per-profile-live-retrieval.md](docs/adr/0014-per-profile-live-retrieval.md)). Runtime default remains `live_retrieval: false`. The `cis_secondary_sanctions` profile opts in to live retrieval against the OpenSanctions consolidated dataset (CC-BY 4.0); matches are merged into the evidence pack as auto-fetched `dated_source` entries with attribution. Graceful degrade on any upstream failure or missing `OPENSANCTIONS_API_KEY`. New module `src/agenda_intelligence/upstream_opensanctions.py` (urllib client, in-process TTL cache). Agent cards now expose per-profile `live_retrieval` metadata via `x_agenda_intelligence.per_profile_live_retrieval`; the `agenda` and `kazakhstan` profile claims are unchanged. SOURCE_POLICY.md gains a "Per-profile live retrieval" section with the upstream whitelist and the success/degraded/disabled status taxonomy.
+- **Out of scope for this slice:** live retrieval inside the Cloudflare Worker JS runtime (the Python service layer ships first; worker-side live retrieval is a follow-up requiring a JS HTTP client + KV cache in `deploy/cloudflare-worker/src/index.js`).
+
 ## Post-v1 — factual verification layer
 
 - Define a separate Claim Verdict contract for real-world claim assessment.

@@ -1,0 +1,46 @@
+{
+  "triage_recommendation": "insufficient_information",
+  "secondary_exposure_signal": "unknown",
+  "decision_readiness_score": 0,
+  "decision_readiness_label": "insufficient_information",
+  "counterparty": {
+    "name": "Example KZ Holding LLP",
+    "jurisdiction": "Kazakhstan",
+    "sector": "holding_or_spv"
+  },
+  "exposure_facets": [
+    "ownership_or_control"
+  ],
+  "supplied_sources": [],
+  "minimum_sources_before_review": [
+    "ofac_sdn_extract",
+    "eu_consolidated_extract",
+    "ownership_chain_evidence",
+    "bank_correspondent_evidence",
+    "transit_or_invoice_evidence"
+  ],
+  "evidence_gaps": [
+    "No OFAC SDN list extract supplied.",
+    "No EU consolidated sanctions list extract supplied.",
+    "No ownership chain evidence supplied.",
+    "No bank correspondent evidence supplied.",
+    "No transit or invoice evidence supplied."
+  ],
+  "top_exposure_dimensions": [
+    "indirect ownership or control exposure",
+    "ownership chain not yet documented"
+  ],
+  "watch_next": [
+    "new OFAC SDN designations",
+    "new EU sanctions package",
+    "new UK OFSI listing",
+    "new EAG typology report",
+    "FATF grey-list or black-list update",
+    "national regulator enforcement update"
+  ],
+  "human_review_required": true,
+  "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
+  "limitations": [
+    "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
+  ]
+}
