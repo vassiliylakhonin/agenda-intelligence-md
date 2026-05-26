@@ -1,6 +1,6 @@
 # Agenda Intelligence MD
 
-MCP product shell and evidence-discipline layer for strategic intelligence agents. Structured request/memo contract, geography-routed reasoning, schema validation, evidence audit, scoring. No live retrieval, no factual verification.
+Product runtime and evidence-discipline layer for strategic intelligence agents. One core service layer behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — plus structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Ships with one live commercial vertical worker: Middle Corridor Deal Risk Gate. No live retrieval, no factual verification.
 
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![Agenstry A2A](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/protocol.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![Agenstry uptime](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/uptime.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -130,20 +130,24 @@ The stats helper reads `STATS_TOKEN` from the local ignored `.env` file. Deploym
 
 | Layer | Repo | Role |
 |---|---|---|
-| **Product shell** (this repo) | **agenda-intelligence-md** | MCP server, request/memo schemas, geography routing, evidence audit, scoring |
+| **Product runtime** (this repo) | **agenda-intelligence-md** | Core service layer + MCP / HTTP / A2A surfaces, request/memo schemas, geography routing, evidence audit, scoring, vertical workers |
 | Reasoning method | [global-think-tank-analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) | Strategic-risk reasoning contract; loaded by `analyze` as the default method |
 | Vertical specialist | [central-asia-caspian-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) | Central Asia / Caspian / Middle Corridor domain depth; routed by geography |
 | Vertical specialist | [gulf-middle-east-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) | Iran / GCC / maritime chokepoint domain depth; routed by geography |
 
-The product shell is the integration point: agents call `analyze`, geography routes to the relevant specialist, and the GTTA method frames the reasoning. Each repo is also usable standalone (paste/attach into any agent).
+The product runtime is the integration point: agents call `analyze` via any surface (MCP, HTTP, A2A), geography routes to the relevant specialist, and the GTTA method frames the reasoning. Each canonical repo (GTTA, vertical specialists) is also usable standalone (paste/attach into any agent). Vertical workers (currently: Middle Corridor Deal Risk Gate) live inside this runtime as productized service functions with their own schemas, A2A profiles, and deployable workers — see [`AGENTS.md`](AGENTS.md#vertical-workers-inside-this-repo) for the spin-off rule.
 
 ## What this is
 
-- **MCP product shell** — `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography to the relevant regional specialist, assembles a system prompt, and returns a memo validated against `agenda-memo.schema.json`
+- **Core service layer** — pure Python functions (`audit_claims`, `source_coverage`, `score_output`, `middle_corridor_deal_risk`, etc.) vendor-neutral, no transport, no marketplace
+- **MCP server** — stdio server exposing 16 tools across the validation and product layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
+- **HTTP API shell** — thin transport over the service layer; self-host with `docs/deployment/http-api.md`
+- **A2A adapter** — agent-card + JSON-RPC `message/send` over the HTTP/service layer; contract in `docs/product/a2a-adapter-plan.md`
+- **Cloudflare Worker baseline** — production deployment under `deploy/cloudflare-worker/`; two live workers (general triage + Middle Corridor Deal Risk Gate)
+- **Vertical workers** — productized service functions with their own schemas + A2A profiles + Cloudflare deployments. Currently shipped: Middle Corridor Deal Risk Gate
 - **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
-- **JSON schemas** — request/memo product contract plus validators for briefs, evidence packs, audits, signals, memory cards, lenses
+- **JSON schemas** — request/memo product contract + per-product contracts (e.g. `middle-corridor-deal-risk-*`) + validators for briefs, evidence packs, audits, signals, memory cards, lenses
 - **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `score`, `bench`, `doctor` (30+ commands)
-- **MCP server** — stdio server exposing 16 tools across the validation and product layers
 - **Eval kit** — rubric, LLM-judge prompt, human checklist, benchmark harness, agent-eval methodology
 - **Source policy** — per-claim provenance tags (Axis A/B), source requirements for 12 categories
 
@@ -236,6 +240,10 @@ Stdio MCP server with 16 tools. Full docs and wire-protocol verification: [`MCP.
 | Markdown protocol, JSON schemas | Stable |
 | CLI (validate, score, bench, audit, doctor) | Stable |
 | MCP stdio server | Stable |
+| HTTP API shell | Shipped (self-host); contract early — see `docs/deployment/http-api.md` |
+| A2A adapter | Shipped (Cloudflare Worker baseline); contract in `docs/product/a2a-adapter-plan.md` |
+| Cloudflare Worker deployment | Live (2 workers: general triage + Middle Corridor Deal Risk Gate) |
+| Middle Corridor Deal Risk Gate (vertical worker) | Live, no paying customers yet — illustrative usage only |
 | Evidence-audit schema (claim-level) | Stable |
 | Signal-tracker schema (lifecycle) | Stable |
 | Heuristic scoring | Stable (uncalibrated) |
