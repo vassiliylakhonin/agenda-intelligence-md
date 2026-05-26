@@ -6,10 +6,13 @@ import {
   buildUsageEvent,
   handleJsonRpc,
   handleRequest,
+  healthInfo,
   isStatsAuthorized,
+  landingHtml,
   recordUsageStats,
   routeModules,
   signalScreenForText,
+  statusInfo,
   triageForText,
   usageStats
 } from "../src/index.js";
@@ -637,4 +640,98 @@ test("stats endpoint requires token", async () => {
 
   assert.equal(response.status, 401);
   assert.equal(body.error, "Unauthorized");
+});
+
+test("GET / returns HTML landing when Accept includes text/html", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/", {
+      method: "GET",
+      headers: { accept: "text/html,application/xhtml+xml" }
+    }),
+    {}
+  );
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") || "", /text\/html/);
+  const body = await response.text();
+  assert.match(body, /<!doctype html>/i);
+  assert.match(body, /Agenda Intelligence/);
+  assert.match(body, /badge-live/);
+  assert.match(body, /\/.well-known\/agent-card.json/);
+  assert.match(body, /\/message\/send/);
+  assert.match(body, /Not.*advice/i);
+});
+
+test("GET / returns JSON health for non-HTML clients", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/", {
+      method: "GET"
+    }),
+    {}
+  );
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") || "", /application\/json/);
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.ok(body.agent_card);
+  assert.ok(body.status);
+  assert.equal(body.profile, "agenda");
+});
+
+test("GET /health always returns JSON regardless of Accept header", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/health", {
+      method: "GET",
+      headers: { accept: "text/html" }
+    }),
+    {}
+  );
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") || "", /application\/json/);
+  const body = await response.json();
+  assert.equal(body.ok, true);
+});
+
+test("GET /status returns JSON status with boundaries and links", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/status"),
+    {}
+  );
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") || "", /application\/json/);
+  const body = await response.json();
+  assert.equal(body.status, "ok");
+  assert.equal(body.profile, "agenda");
+  assert.ok(body.version);
+  assert.ok(body.agent_card_url);
+  assert.ok(body.message_send_url);
+  assert.equal(body.boundaries.not_advice, true);
+  assert.equal(body.boundaries.live_retrieval, false);
+  assert.equal(body.boundaries.factual_verification, false);
+  assert.equal(body.boundaries.human_review_required, false);
+});
+
+test("/status flips human_review_required to true for kazakhstan profile", () => {
+  const kazakhstanRequest = new Request(
+    "https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/status"
+  );
+  const info = statusInfo(kazakhstanRequest, {});
+  assert.equal(info.profile, "kazakhstan");
+  assert.equal(info.boundaries.human_review_required, true);
+});
+
+test("landingHtml is profile-aware for kazakhstan worker", () => {
+  const kazakhstanRequest = new Request(
+    "https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/"
+  );
+  const html = landingHtml(kazakhstanRequest, {});
+  assert.match(html, /Kazakhstan/);
+  assert.match(html, /Middle Corridor/);
+  assert.match(html, /Profile: kazakhstan/);
+});
+
+test("healthInfo exposes status URL alongside agent_card and message_send", () => {
+  const info = healthInfo(request, {});
+  assert.ok(info.agent_card.endsWith("/.well-known/agent-card.json"));
+  assert.ok(info.message_send.endsWith("/message/send"));
+  assert.ok(info.status.endsWith("/status"));
 });

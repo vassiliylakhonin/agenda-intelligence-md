@@ -7,8 +7,21 @@ This Worker is intentionally small:
 - serves a public Agent Card at `/.well-known/agent-card.json`;
 - responds to JSON-RPC `message/send` and `tasks/send`;
 - returns a sanctions/policy signal screen, source-planning guidance, quality gates, routing metadata, and install instructions for the stdio MCP server;
+- serves a human-readable HTML landing page at `GET /` for browser visitors (clients with `Accept: text/html`), JSON for everything else;
+- exposes a public JSON status endpoint at `GET /status` suitable for uptime monitoring (UptimeRobot, Better Stack, etc.) — includes version, profile, A2A protocol version, boundary flags;
 - does not call paid APIs, payment rails, wallets, or live retrieval;
 - does not replace the installable MCP server.
+
+## Public endpoints
+
+| Method | Path | Content negotiation | Purpose |
+|---|---|---|---|
+| GET | `/` | `text/html` -> HTML landing; otherwise JSON health | Discovery entry point |
+| GET | `/health` | Always JSON | Backward-compatible health check for scripts |
+| GET | `/status` | Always JSON | Status info for uptime monitors; includes version + boundary flags |
+| GET | `/.well-known/agent-card.json` | Always JSON | A2A agent card |
+| GET | `/stats` | JSON (requires `x-stats-token`) | Private usage analytics |
+| POST | `/message/send`, `/` | JSON-RPC 2.0 | A2A `message/send` |
 
 The full product layer remains:
 

@@ -127,6 +127,31 @@ function textResponse(body, status = 200) {
   });
 }
 
+function htmlResponse(body, status = 200) {
+  return new Response(body, {
+    status,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "public, max-age=60",
+      "access-control-allow-origin": "*"
+    }
+  });
+}
+
+function acceptsHtml(request) {
+  const accept = request.headers.get("accept") || "";
+  return accept.includes("text/html");
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function originFromRequest(request) {
   const url = new URL(request.url);
   return `${url.protocol}//${url.host}`;
@@ -1661,6 +1686,180 @@ async function handleStats(request, env) {
   return jsonResponse(stats, stats.configured ? 200 : 503);
 }
 
+function healthInfo(request, env) {
+  const card = agentCard(request, env);
+  const origin = originFromRequest(request);
+  return {
+    ok: true,
+    name: card.name,
+    version: VERSION,
+    profile: agentProfile(request, env),
+    agent_card: `${origin}/.well-known/agent-card.json`,
+    message_send: `${origin}/message/send`,
+    status: `${origin}/status`,
+    stats: `${origin}/stats`,
+    stats_auth: "x-stats-token header or token query parameter",
+    repository: REPOSITORY_URL,
+    payments: false
+  };
+}
+
+function statusInfo(request, env) {
+  const origin = originFromRequest(request);
+  const profile = agentProfile(request, env);
+  const card = agentCard(request, env);
+  return {
+    status: "ok",
+    name: card.name,
+    version: VERSION,
+    profile,
+    a2a_protocol_version: card.protocolVersion,
+    agent_card_url: `${origin}/.well-known/agent-card.json`,
+    message_send_url: `${origin}/message/send`,
+    repository: REPOSITORY_URL,
+    package: PACKAGE_URL,
+    boundaries: {
+      not_advice: true,
+      live_retrieval: false,
+      factual_verification: false,
+      human_review_required: profile === "kazakhstan"
+    }
+  };
+}
+
+function landingHtml(request, env) {
+  const origin = originFromRequest(request);
+  const profile = agentProfile(request, env);
+  const card = agentCard(request, env);
+  const isKazakhstan = profile === "kazakhstan";
+
+  const title = escapeHtml(card.name);
+  const tagline = isKazakhstan
+    ? "Pre-compliance evidence triage for Kazakhstan / Middle Corridor deal flow — route, cargo, counterparties, dated sources → auditable risk gate."
+    : "Evidence-discipline layer for strategic intelligence agents — geography-routed structured risk triage with explicit source provenance.";
+
+  const tryItCurl = isKazakhstan
+    ? `curl -X POST ${origin}/message/send \\
+  -H 'content-type: application/json' \\
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "demo-1",
+    "method": "message/send",
+    "params": {
+      "message": {
+        "parts": [
+          { "kind": "text", "text": "Screen Kazakhstan Middle Corridor sanctions exposure for a logistics route." }
+        ]
+      }
+    }
+  }'`
+    : `curl -X POST ${origin}/message/send \\
+  -H 'content-type: application/json' \\
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "demo-1",
+    "method": "message/send",
+    "params": {
+      "message": {
+        "parts": [
+          { "kind": "text", "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure." }
+        ]
+      }
+    }
+  }'`;
+
+  const flagshipBlock = isKazakhstan
+    ? `<p>This worker is the live Kazakhstan / Middle Corridor Deal Risk Gate — the flagship commercial use case of the Agenda Intelligence runtime. It accepts route + cargo + counterparties + dated sources and returns an auditable triage with evidence gaps, missing source categories, decision-readiness score, and a three-value recommendation (insufficient_information, pre_signature_escalate, ready_for_human_review). Human review is required before any commercial action.</p>`
+    : `<p>This worker is the general Agenda Intelligence A2A wrapper — discovery, uptime checks, lightweight strategic-risk triage, and JSON-RPC routing across geography-aware modules. For deeper Kazakhstan / Middle Corridor deal-risk screening, use the dedicated <a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">deal-risk-gate worker</a>.</p>`;
+
+  const agenstryListing = isKazakhstan
+    ? "https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev"
+    : "https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev";
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${title}</title>
+<meta name="description" content="${escapeHtml(tagline)}">
+<style>
+  :root {
+    --fg: #1a1a1a; --muted: #4a4a4a; --line: #d8d8d8;
+    --bg: #fafafa; --card: #ffffff; --accent: #1e5b8c;
+    --good: #1f7a3a; --warn: #8c5a1e;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: var(--sans); color: var(--fg); background: var(--bg); margin: 0; line-height: 1.55; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  h2 { font-size: 16px; margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  p { margin: 0 0 12px; }
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(30,91,140,0.3); }
+  a:hover { border-bottom-color: var(--accent); }
+  .tagline { color: var(--muted); font-size: 17px; margin: 0 0 24px; }
+  .status-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 0 0 8px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-family: var(--mono); border: 1px solid var(--line); background: var(--card); }
+  .badge-live { color: var(--good); }
+  .badge-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); display: inline-block; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; margin: 0 0 16px; }
+  pre { background: #1a1a1a; color: #f0f0f0; padding: 16px; border-radius: 6px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.5; margin: 0; }
+  code { font-family: var(--mono); font-size: 13px; background: rgba(0,0,0,0.05); padding: 1px 5px; border-radius: 3px; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  .endpoints { font-family: var(--mono); font-size: 13px; }
+  .endpoints li { margin: 6px 0; }
+  .endpoints .label { color: var(--muted); display: inline-block; min-width: 130px; }
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+  footer p { margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>${title}</h1>
+  <p class="tagline">${escapeHtml(tagline)}</p>
+
+  <div class="status-row">
+    <span class="badge badge-live">Live</span>
+    <span class="badge">v${escapeHtml(VERSION)}</span>
+    <span class="badge">A2A ${escapeHtml(card.protocolVersion)}</span>
+    <span class="badge">Profile: ${escapeHtml(profile)}</span>
+  </div>
+
+  <h2>What this is</h2>
+  ${flagshipBlock}
+  <p><strong>Not</strong> legal, compliance, sanctions, financial, investment, or insurance advice. <strong>Not</strong> a factuality verifier — schemas enforce structure, not truth. <strong>No</strong> autonomous live source retrieval.</p>
+
+  <h2>Try it (curl)</h2>
+  <pre>${escapeHtml(tryItCurl)}</pre>
+
+  <h2>Endpoints</h2>
+  <ul class="endpoints">
+    <li><span class="label">Agent card:</span> <a href="${origin}/.well-known/agent-card.json">/.well-known/agent-card.json</a></li>
+    <li><span class="label">JSON-RPC:</span> <code>POST ${origin}/message/send</code></li>
+    <li><span class="label">Status:</span> <a href="${origin}/status">/status</a></li>
+    <li><span class="label">Health (JSON):</span> <a href="${origin}/health">/health</a></li>
+  </ul>
+
+  <h2>Where the code lives</h2>
+  <ul>
+    <li>Source: <a href="${REPOSITORY_URL}">${REPOSITORY_URL.replace("https://", "")}</a></li>
+    <li>Install: <a href="${PACKAGE_URL}">PyPI — agenda-intelligence-md</a></li>
+    <li>Agenstry listing: <a href="${agenstryListing}">${agenstryListing.replace("https://", "")}</a></li>
+    <li>${isKazakhstan ? `Use case: <a href="${MIDDLE_CORRIDOR_DOCS_URL}">Kazakhstan / Middle Corridor</a>` : `Docs: <a href="${DOCS_URL}">MCP integration</a>`}</li>
+  </ul>
+
+  <footer>
+    <p>Hosted on Cloudflare Workers. No payments, no wallets, no autonomous live retrieval, no factual-truth verification. Human review required before any commercial action.</p>
+    <p>This live wrapper is intentionally limited. Full product behavior remains in the installable stdio MCP server (<code>pip install agenda-intelligence-md</code>).</p>
+  </footer>
+</main>
+</body>
+</html>`;
+}
+
 export async function handleRequest(request, env = {}, ctx = {}) {
   const url = new URL(request.url);
 
@@ -1679,19 +1878,19 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return jsonResponse(agentCard(request, env));
   }
 
-  if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/health")) {
-    const card = agentCard(request, env);
-    return jsonResponse({
-      ok: true,
-      name: card.name,
-      version: VERSION,
-      agent_card: `${originFromRequest(request)}/.well-known/agent-card.json`,
-      message_send: `${originFromRequest(request)}/message/send`,
-      stats: `${originFromRequest(request)}/stats`,
-      stats_auth: "x-stats-token header or token query parameter",
-      repository: REPOSITORY_URL,
-      payments: false
-    });
+  if (request.method === "GET" && url.pathname === "/") {
+    if (acceptsHtml(request)) {
+      return htmlResponse(landingHtml(request, env));
+    }
+    return jsonResponse(healthInfo(request, env));
+  }
+
+  if (request.method === "GET" && url.pathname === "/health") {
+    return jsonResponse(healthInfo(request, env));
+  }
+
+  if (request.method === "GET" && url.pathname === "/status") {
+    return jsonResponse(statusInfo(request, env));
   }
 
   if (request.method === "GET" && url.pathname === "/stats") {
@@ -1713,10 +1912,13 @@ export {
   agentCard,
   buildUsageEvent,
   handleJsonRpc,
+  healthInfo,
   isStatsAuthorized,
+  landingHtml,
   recordUsageStats,
   routeModules,
-  usageStats,
   signalScreenForText,
-  triageForText
+  statusInfo,
+  triageForText,
+  usageStats
 };
