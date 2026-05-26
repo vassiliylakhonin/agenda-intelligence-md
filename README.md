@@ -32,7 +32,8 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightwei
 - Agent Card: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
 - JSON-RPC: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send>
 - Agenstry listing: <https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev>
-- Kazakhstan / Middle Corridor Deal Risk Gate: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
+- Kazakhstan / Middle Corridor Deal Risk Gate: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev> (canonical)
+- Mirror alias for backward compatibility: <https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev> (identical behavior; the Agenstry listing currently points here)
 - Kazakhstan Agenstry listing: <https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev>
 - Announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
 
@@ -116,7 +117,7 @@ The structured response includes a `decision_readiness_score` from 0-100, so a b
 Try the Kazakhstan agent:
 
 ```bash
-curl -X POST https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/message/send \
+curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send \
   -H 'content-type: application/json' \
   -H 'x-client-id: live-demo' \
   -d @examples/kazakhstan-middle-corridor/live-agent-request.json
@@ -149,7 +150,7 @@ curl -X POST https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/messa
 Kazakhstan-focused live triage:
 
 ```bash
-curl -X POST https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/message/send \
+curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send \
   -H 'content-type: application/json' \
   -d '{
     "jsonrpc": "2.0",
