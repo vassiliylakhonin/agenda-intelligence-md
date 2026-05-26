@@ -118,6 +118,22 @@ Contract surface locked per ADR 0003 + ADRs 0011–0013. v1.0.1 was a metadata-o
 - Keep factual verification outside v1.0; document it as a future layer rather than changing current evidence/eval semantics.
 - Keep source-plan coverage diagnostic before v1.0; `source-coverage --strict` is an opt-in gate and does not redefine `validate-evidence` as category completeness.
 
+## Post v1.0.1 — multi-surface presentation + deployment automation (shipped 2026-05-26)
+
+No behavior change to MCP, HTTP API, A2A adapter, or schemas. Improves presentation, observability, and release automation around the existing v1.0 contract.
+
+- **Cloudflare Worker HTML landing + `/status`** ([#66](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/66)). Browser visitors to `/` get a clean inline-styled landing page with badges, disclaimers, profile-specific curl examples, and source / PyPI / Agenstry links. API clients still get JSON. `GET /health` stays JSON-only (uptime probes unchanged). New public `GET /status` returns version, profile, A2A version, agent-card / message-send URLs, repository / package links, and the four boundary flags — designed for UptimeRobot / Better Stack and for presales discovery without burning KV reads. Profile-aware: general triage worker vs Middle Corridor Deal Risk Gate.
+- **AGENTS.md rewrite for multi-surface architecture** ([#63](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/63)). Identity reframed from "MCP server + validation infrastructure" to "Product runtime + four surfaces". New **Vertical workers inside this repo** section legalizes the Middle Corridor Deal Risk Gate, sets a `< 3` rule for when the next vertical worker triggers a spin-off decision, and lists the artifacts every new worker must ship with (schema under `schemas/v1/`, source-requirements file, service function, HTTP route, A2A profile, contract tests, use-case doc). The blanket "no additions without approval" clause is replaced with a proportionate **Change discipline** rule: additive changes are allowed if they ship behind a v1 schema + contract test + CHANGELOG entry + dual-copy parity. Breaking changes to v1 still require an ADR + version bump.
+- **README aligned with multi-surface framing** ([#64](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/64), [#68](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/68)). Hero, fit-in-stack table, "What this is" list, and Status table all reflect MCP + HTTP + A2A + Cloudflare Worker as four delivery surfaces over one core service layer. New **Self-host via HTTP API** section gives the no-MCP fallback: six endpoints listed, one curl probe against the Middle Corridor contract fixture, container build, and an honest "not a hardened internet-facing server" boundary statement.
+- **MCP registry auto-publish on tag push** ([#67](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/67)). `.github/workflows/publish-mcp-registry.yml` triggers on `v*` tag push, syncs `server.json` version to the tag via `jq` (defensive), authenticates via GitHub OIDC (no PAT), and runs `mcp-publisher publish`. `workflow_dispatch` available for manual catch-up. The v1.0.1 entry was published manually via local `mcp-publisher` on 2026-05-26 to close the v0.8.2 → v1.0.1 drift before the automation went live.
+- **README token hardening** ([#65](https://github.com/vassiliylakhonin/agenda-intelligence-md/pull/65)). `scripts/validate.py` no longer asserts the full pre-multi-surface hero string; it asserts the durable substring `evidence-discipline layer for strategic intelligence agents` so future hero polish does not break CI.
+
+Out-of-repo operational changes shipped same session:
+
+- Branch protection + `allow_auto_merge` enabled on `main` across all four portfolio repos. `gh pr merge --auto --squash --delete-branch` now waits for required CI rather than fast-pathing to immediate merge.
+- Agenstry agent cards verified live across all three Cloudflare Workers via `deploy/cloudflare-worker/scripts/verify-agent-card.js`.
+- Bi-weekly Agenstry "State of the Agent Economy" tracker added as a Claude Code routine (1st and 15th of each month, 09:00 Asia/Almaty). Not a CI workflow — runs in the Claude Code routine infrastructure, separate from this repo.
+
 ## Post-v1 — factual verification layer
 
 - Define a separate Claim Verdict contract for real-world claim assessment.
