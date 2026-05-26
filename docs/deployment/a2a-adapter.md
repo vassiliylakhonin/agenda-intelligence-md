@@ -18,6 +18,26 @@ Optional environment variable:
 
 - `AGENDA_INTELLIGENCE_A2A_BASE_URL` - URL placed in the returned agent card. Defaults to `http://localhost:8080`.
 
+## Container
+
+Build:
+
+```bash
+docker build -f Dockerfile.a2a -t agenda-intelligence-md-a2a:1.0.1 .
+```
+
+Run:
+
+```bash
+docker run --rm -i agenda-intelligence-md-a2a:1.0.1 < request.json
+```
+
+The A2A image starts:
+
+```bash
+agenda-intelligence-a2a
+```
+
 ## Supported methods
 
 - `agent/card`

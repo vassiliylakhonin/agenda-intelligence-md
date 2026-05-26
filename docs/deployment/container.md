@@ -63,3 +63,11 @@ The separate [`HTTP API shell`](http-api.md) uses `Dockerfile.api` for the porta
 - `/v1/middle-corridor/deal-risk`
 
 The root `Dockerfile` remains the stdio MCP image.
+
+## A2A container
+
+The separate [`A2A adapter shell`](a2a-adapter.md) uses `Dockerfile.a2a` for the JSON-RPC stdio wrapper. It starts:
+
+```bash
+agenda-intelligence-a2a
+```

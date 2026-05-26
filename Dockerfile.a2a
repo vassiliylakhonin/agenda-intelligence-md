@@ -1,0 +1,20 @@
+# Minimal container for the Agenda Intelligence MD A2A JSON-RPC stdio shell.
+#
+# This image starts `agenda-intelligence-a2a`. It is suitable for local
+# protocol testing, adapter development, and deployment-package baselines.
+# It is not a hosted server, marketplace integration, or billing layer.
+#
+# The default image does not install the optional `[llm]` extra and does not
+# require ANTHROPIC_API_KEY. The A2A shell reads one JSON-RPC object from stdin
+# and writes one JSON-RPC response to stdout.
+
+FROM python:3.11-slim
+
+# Pin to the current published release so adapter behavior is reproducible.
+# Bump in lockstep with pyproject.toml, Dockerfile, Dockerfile.api,
+# agent-manifest.json, and server.json on every release.
+ARG AGENDA_INTELLIGENCE_VERSION=1.0.1
+
+RUN pip install --no-cache-dir "agenda-intelligence-md==${AGENDA_INTELLIGENCE_VERSION}"
+
+ENTRYPOINT ["agenda-intelligence-a2a"]

@@ -40,6 +40,7 @@ def test_release_version_fields_match_pyproject():
     discovered = [
         ("Dockerfile:ARG AGENDA_INTELLIGENCE_VERSION", parse_dockerfile_version("Dockerfile")),
         ("Dockerfile.api:ARG AGENDA_INTELLIGENCE_VERSION", parse_dockerfile_version("Dockerfile.api")),
+        ("Dockerfile.a2a:ARG AGENDA_INTELLIGENCE_VERSION", parse_dockerfile_version("Dockerfile.a2a")),
     ]
 
     for relative_path in [
