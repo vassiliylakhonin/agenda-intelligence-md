@@ -63,31 +63,88 @@ CAPABILITY_ALIASES = {
 # `live_retrieval_active: false` until `OPENSANCTIONS_API_KEY` is configured.
 LIVE_RETRIEVAL_PROFILES: dict[str, dict[str, Any]] = {
     "cis_secondary_sanctions": {
-        "upstreams": ["OpenSanctions"],
-        "license": "CC-BY-4.0",
+        # `upstreams` kept for backward compatibility (consumers that only need a
+        # human-readable list of upstream names). `upstream_options` is the
+        # authoritative shape and matches the JS worker per ADR 0014 update
+        # 2026-05-27 — multiple upstreams can be declared per profile; the
+        # dispatcher picks the first active one (free options before paid).
+        "upstreams": ["Watchman", "OpenSanctions"],
+        "license": "Apache-2.0 (Watchman) or CC-BY-4.0 (OpenSanctions)",
+        "upstream_options": [
+            {
+                "name": "Watchman",
+                "license": "Apache-2.0",
+                "homepage": "https://github.com/moov-io/watchman",
+                "activation_env_var": "WATCHMAN_URL",
+                "disable_env_var": "WATCHMAN_DISABLED",
+                "cost_model": "self-hosted (Apache-2.0); $0/month on free-tier container",
+            },
+            {
+                "name": "OpenSanctions",
+                "license": "CC-BY-4.0",
+                "homepage": "https://www.opensanctions.org",
+                "activation_env_var": "OPENSANCTIONS_API_KEY",
+                "disable_env_var": "OPENSANCTIONS_DISABLED",
+                "cost_model": "paid €0.10/call (30-day business-email trial)",
+            },
+        ],
+        # Backward-compatibility shims for the prior single-upstream shape.
         "activation_env_var": "OPENSANCTIONS_API_KEY",
         "disable_env_var": "OPENSANCTIONS_DISABLED",
     },
 }
 
 
-def is_live_retrieval_active(profile: str) -> bool:
-    """Return True iff the profile's live retrieval is actually wired in this env.
-
-    The capability declaration in `LIVE_RETRIEVAL_PROFILES` is honored only when:
-      1. the activation env var (e.g. `OPENSANCTIONS_API_KEY`) is set and non-empty, and
-      2. the disable env var (e.g. `OPENSANCTIONS_DISABLED`) is not set to a truthy value.
-    """
-    meta = LIVE_RETRIEVAL_PROFILES.get(profile)
-    if not meta:
-        return False
-    activation = (os.environ.get(meta["activation_env_var"], "") or "").strip()
+def _is_upstream_option_active(option: dict[str, Any]) -> bool:
+    activation = (os.environ.get(option["activation_env_var"], "") or "").strip()
     if not activation:
         return False
-    disabled = (os.environ.get(meta["disable_env_var"], "") or "").strip().lower()
+    disabled = (os.environ.get(option["disable_env_var"], "") or "").strip().lower()
     if disabled in {"1", "true", "yes"}:
         return False
     return True
+
+
+def active_upstream_option(profile: str) -> dict[str, Any] | None:
+    """Return the first active upstream option for the profile, or None."""
+    meta = LIVE_RETRIEVAL_PROFILES.get(profile)
+    if not meta:
+        return None
+    for option in meta.get("upstream_options", []):
+        if _is_upstream_option_active(option):
+            return option
+    return None
+
+
+def is_live_retrieval_active(profile: str) -> bool:
+    """Return True iff at least one upstream option for the profile is active in this env."""
+    return active_upstream_option(profile) is not None
+
+
+def _build_per_profile_live_retrieval_block() -> dict[str, Any]:
+    block: dict[str, Any] = {}
+    for profile, meta in LIVE_RETRIEVAL_PROFILES.items():
+        active = active_upstream_option(profile)
+        block[profile] = {
+            "capability_declared": True,
+            "active": active is not None,
+            "active_upstream": active["name"] if active else None,
+            "upstreams": meta["upstreams"],
+            "license": meta["license"],
+            "upstream_options": [
+                {
+                    "name": option["name"],
+                    "license": option["license"],
+                    "homepage": option["homepage"],
+                    "activation_env_var": option["activation_env_var"],
+                    "disable_env_var": option["disable_env_var"],
+                    "cost_model": option["cost_model"],
+                    "active": _is_upstream_option_active(option),
+                }
+                for option in meta.get("upstream_options", [])
+            ],
+        }
+    return block
 
 
 def agent_card(base_url: str = "http://localhost:8080") -> dict:
@@ -178,17 +235,7 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
             "canonical_http_endpoint": MIDDLE_CORRIDOR_ENDPOINT,
             "schema": MIDDLE_CORRIDOR_SCHEMA,
             "supported_capabilities": SUPPORTED_CAPABILITIES,
-            "per_profile_live_retrieval": {
-                profile: {
-                    "capability_declared": True,
-                    "active": is_live_retrieval_active(profile),
-                    "upstreams": meta["upstreams"],
-                    "license": meta["license"],
-                    "activation_env_var": meta["activation_env_var"],
-                    "disable_env_var": meta["disable_env_var"],
-                }
-                for profile, meta in LIVE_RETRIEVAL_PROFILES.items()
-            },
+            "per_profile_live_retrieval": _build_per_profile_live_retrieval_block(),
             "boundaries": [
                 (
                     "Live source retrieval is off by default. Per-profile capability is declared for "

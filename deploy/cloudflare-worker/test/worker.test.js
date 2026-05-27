@@ -786,34 +786,57 @@ test("cis_secondary_sanctions profile is detected from host and env", () => {
   assert.ok(Array.isArray(card.skills) && card.skills.length === 1);
   assert.equal(card.skills[0].id, "cis-secondary-sanctions-exposure");
   assert.equal(card.x_agenda_intelligence.live_retrieval.capability_declared, true);
-  // Without OPENSANCTIONS_API_KEY in env, activation is deferred per ADR 0014 2026-05-27 update.
+  // Without either WATCHMAN_URL or OPENSANCTIONS_API_KEY in env, activation is
+  // deferred per ADR 0014 2026-05-27 update.
   assert.equal(card.x_agenda_intelligence.live_retrieval.active, false);
-  assert.equal(card.x_agenda_intelligence.live_retrieval.upstreams[0].name, "OpenSanctions");
-  assert.equal(card.x_agenda_intelligence.live_retrieval.upstreams[0].license, "CC-BY-4.0");
+  assert.equal(card.x_agenda_intelligence.live_retrieval.active_upstream, null);
+  const options = card.x_agenda_intelligence.live_retrieval.upstream_options;
+  assert.ok(Array.isArray(options) && options.length === 2);
+  // Watchman (free self-host) is listed first, OpenSanctions (paid) second.
+  assert.equal(options[0].name, "Watchman");
+  assert.equal(options[0].license, "Apache-2.0");
+  assert.equal(options[1].name, "OpenSanctions");
+  assert.equal(options[1].license, "CC-BY-4.0");
 });
 
-test("agent card live_retrieval flips active=true when OPENSANCTIONS_API_KEY is set", () => {
-  const card = agentCard(cisRequest, { OPENSANCTIONS_API_KEY: "test-key" });
-  assert.equal(card.x_agenda_intelligence.live_retrieval.capability_declared, true);
+test("agent card live_retrieval flips active=true with Watchman when WATCHMAN_URL is set", () => {
+  const card = agentCard(cisRequest, { WATCHMAN_URL: "https://watchman.example.com" });
   assert.equal(card.x_agenda_intelligence.live_retrieval.active, true);
+  assert.equal(card.x_agenda_intelligence.live_retrieval.active_upstream, "Watchman");
+});
+
+test("agent card live_retrieval flips active=true with OpenSanctions when OPENSANCTIONS_API_KEY is set", () => {
+  const card = agentCard(cisRequest, { OPENSANCTIONS_API_KEY: "test-key" });
+  assert.equal(card.x_agenda_intelligence.live_retrieval.active, true);
+  assert.equal(card.x_agenda_intelligence.live_retrieval.active_upstream, "OpenSanctions");
+});
+
+test("agent card live_retrieval prefers Watchman over OpenSanctions when both are set", () => {
+  const card = agentCard(cisRequest, {
+    WATCHMAN_URL: "https://watchman.example.com",
+    OPENSANCTIONS_API_KEY: "test-key"
+  });
+  assert.equal(card.x_agenda_intelligence.live_retrieval.active_upstream, "Watchman");
 });
 
 test("agent card live_retrieval stays active=false when OPENSANCTIONS_DISABLED is set", () => {
   const card = agentCard(cisRequest, { OPENSANCTIONS_API_KEY: "test-key", OPENSANCTIONS_DISABLED: "1" });
-  assert.equal(card.x_agenda_intelligence.live_retrieval.capability_declared, true);
   assert.equal(card.x_agenda_intelligence.live_retrieval.active, false);
 });
 
 test("statusInfo exposes per-profile live_retrieval capability for cis_secondary_sanctions (deferred)", () => {
   const status = statusInfo(cisRequest, {});
   assert.equal(status.profile, "cis_secondary_sanctions");
-  // Capability is declared but activation is deferred until OPENSANCTIONS_API_KEY is set.
+  // Capability is declared but activation is deferred until an upstream env var is set.
   assert.equal(status.boundaries.live_retrieval, false);
   assert.equal(status.boundaries.factual_verification, false);
   assert.equal(status.boundaries.human_review_required, true);
   assert.equal(status.live_retrieval.capability_declared, true);
   assert.equal(status.live_retrieval.active, false);
-  assert.equal(status.live_retrieval.upstreams[0], "OpenSanctions");
+  assert.equal(status.live_retrieval.active_upstream, null);
+  assert.equal(status.live_retrieval.upstream_options[0].name, "Watchman");
+  assert.equal(status.live_retrieval.upstream_options[0].active, false);
+  assert.equal(status.live_retrieval.upstream_options[1].name, "OpenSanctions");
   assert.ok(typeof status.live_retrieval.deferral_note === "string");
 });
 
@@ -821,7 +844,15 @@ test("statusInfo flips live_retrieval boundary to true when OPENSANCTIONS_API_KE
   const status = statusInfo(cisRequest, { OPENSANCTIONS_API_KEY: "test-key" });
   assert.equal(status.boundaries.live_retrieval, true);
   assert.equal(status.live_retrieval.active, true);
+  assert.equal(status.live_retrieval.active_upstream, "OpenSanctions");
   assert.equal(status.live_retrieval.deferral_note, undefined);
+});
+
+test("statusInfo flips live_retrieval boundary to true with Watchman when WATCHMAN_URL is set", () => {
+  const status = statusInfo(cisRequest, { WATCHMAN_URL: "https://watchman.example.com" });
+  assert.equal(status.boundaries.live_retrieval, true);
+  assert.equal(status.live_retrieval.active, true);
+  assert.equal(status.live_retrieval.active_upstream, "Watchman");
 });
 
 test("statusInfo keeps live_retrieval false for default agenda profile", () => {
