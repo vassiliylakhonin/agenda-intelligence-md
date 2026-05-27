@@ -114,48 +114,64 @@ def test_cis_a2a_adapter_capability_registered():
     assert "cis_secondary_sanctions_exposure" in SUPPORTED_CAPABILITIES
     assert "cis_secondary_sanctions" in LIVE_RETRIEVAL_PROFILES
     profile = LIVE_RETRIEVAL_PROFILES["cis_secondary_sanctions"]
-    assert "OpenSanctions" in profile["upstreams"]
-    assert profile["license"].startswith("CC-BY")
-    # Per the 2026-05-27 update to ADR 0014, activation requires an env var.
-    assert profile["activation_env_var"] == "OPENSANCTIONS_API_KEY"
-    assert profile["disable_env_var"] == "OPENSANCTIONS_DISABLED"
+    # Per the 2026-05-27 update to ADR 0014, the profile declares multiple
+    # upstream options (free options first, paid options second).
+    options = profile["upstream_options"]
+    assert [o["name"] for o in options] == ["Watchman", "OpenSanctions"]
+    assert options[0]["license"] == "Apache-2.0"
+    assert options[0]["activation_env_var"] == "WATCHMAN_URL"
+    assert options[1]["license"] == "CC-BY-4.0"
+    assert options[1]["activation_env_var"] == "OPENSANCTIONS_API_KEY"
 
 
-def test_is_live_retrieval_active_requires_api_key(monkeypatch):
-    from agenda_intelligence.a2a_adapter import is_live_retrieval_active
+def test_is_live_retrieval_active_requires_an_upstream(monkeypatch):
+    from agenda_intelligence.a2a_adapter import (
+        active_upstream_option,
+        is_live_retrieval_active,
+    )
 
-    monkeypatch.delenv("OPENSANCTIONS_API_KEY", raising=False)
-    monkeypatch.delenv("OPENSANCTIONS_DISABLED", raising=False)
+    for var in ["WATCHMAN_URL", "WATCHMAN_DISABLED", "OPENSANCTIONS_API_KEY", "OPENSANCTIONS_DISABLED"]:
+        monkeypatch.delenv(var, raising=False)
     assert is_live_retrieval_active("cis_secondary_sanctions") is False
+    assert active_upstream_option("cis_secondary_sanctions") is None
 
     monkeypatch.setenv("OPENSANCTIONS_API_KEY", "test-key")
     assert is_live_retrieval_active("cis_secondary_sanctions") is True
+    active = active_upstream_option("cis_secondary_sanctions")
+    assert active is not None and active["name"] == "OpenSanctions"
 
-    monkeypatch.setenv("OPENSANCTIONS_DISABLED", "1")
-    assert is_live_retrieval_active("cis_secondary_sanctions") is False
+    # Watchman is preferred over OpenSanctions when both are set (free first).
+    monkeypatch.setenv("WATCHMAN_URL", "https://watchman.example.com")
+    active = active_upstream_option("cis_secondary_sanctions")
+    assert active is not None and active["name"] == "Watchman"
+
+    # Disabling Watchman falls back to OpenSanctions.
+    monkeypatch.setenv("WATCHMAN_DISABLED", "1")
+    active = active_upstream_option("cis_secondary_sanctions")
+    assert active is not None and active["name"] == "OpenSanctions"
 
     # Unknown profile is always False.
-    monkeypatch.setenv("OPENSANCTIONS_API_KEY", "test-key")
-    monkeypatch.delenv("OPENSANCTIONS_DISABLED", raising=False)
     assert is_live_retrieval_active("agenda") is False
 
 
 def test_agent_card_per_profile_live_retrieval_reports_capability_and_active(monkeypatch):
     from agenda_intelligence.a2a_adapter import agent_card
 
-    monkeypatch.delenv("OPENSANCTIONS_API_KEY", raising=False)
-    monkeypatch.delenv("OPENSANCTIONS_DISABLED", raising=False)
+    for var in ["WATCHMAN_URL", "WATCHMAN_DISABLED", "OPENSANCTIONS_API_KEY", "OPENSANCTIONS_DISABLED"]:
+        monkeypatch.delenv(var, raising=False)
     card = agent_card()
     block = card["x_agenda_intelligence"]["per_profile_live_retrieval"]["cis_secondary_sanctions"]
     assert block["capability_declared"] is True
     assert block["active"] is False
-    assert block["upstreams"] == ["OpenSanctions"]
-    assert block["activation_env_var"] == "OPENSANCTIONS_API_KEY"
+    assert block["active_upstream"] is None
+    assert [o["name"] for o in block["upstream_options"]] == ["Watchman", "OpenSanctions"]
+    assert block["upstream_options"][0]["active"] is False
 
-    monkeypatch.setenv("OPENSANCTIONS_API_KEY", "test-key")
+    monkeypatch.setenv("WATCHMAN_URL", "https://watchman.example.com")
     card = agent_card()
     block = card["x_agenda_intelligence"]["per_profile_live_retrieval"]["cis_secondary_sanctions"]
     assert block["active"] is True
+    assert block["active_upstream"] == "Watchman"
 
 
 def test_cis_a2a_result_shape(monkeypatch):

@@ -101,3 +101,51 @@ If those conditions are not met, leave the capability deferred. A `live_retrieva
 
 - **Self-host bulk OpenSanctions data (CC-BY 4.0).** Architecturally sound for zero ongoing cost, but rejected for now: (a) much weaker matching engine than Yente; (b) compliance buyers distrust homebrew matching as a class; (c) sunk-cost risk — once built, hard to abandon even without buyers. Kept on the roadmap as an option if and when a concrete buyer materializes who is willing to validate the matching quality is "good enough" for their use case.
 - **Pay €0.10/call from day one against trial allowance.** Rejected: 30 days of trial gives illustrative matches but no buyer-validation signal; after trial we'd either keep paying or revert anyway.
+
+## Update 2026-05-27 — second free upstream (Watchman) added to whitelist
+
+Discovered via [github.com/topics/sanctions](https://github.com/topics/sanctions) that [`moov-io/watchman`](https://github.com/moov-io/watchman) is a mature open-source (Apache-2.0) self-hosted OFAC / EU / UK OFSI / UN consolidated sanctions search engine, production-used by Moov Financial. This **invalidates one of the arguments** in the prior deferral rationale: self-host does NOT mean "homebrew toy-grade matching" if we use watchman — it is a real compliance tool with a real matching engine. And it costs **$0/month** when hosted on free-tier container infra (Fly.io, Railway, Render, ~256 MB).
+
+### Decision
+
+Add Watchman to the `cis_secondary_sanctions` upstream whitelist **as the preferred free option** alongside OpenSanctions (kept as the fallback paid option). The per-profile capability declaration now lists multiple upstream options; the runtime dispatcher picks the **first active** one (free options before paid ones). Specifically:
+
+```
+PROFILE_LIVE_RETRIEVAL.cis_secondary_sanctions.upstream_options = [
+  { name: "Watchman",      activation_env_var: "WATCHMAN_URL",         license: "Apache-2.0" },
+  { name: "OpenSanctions", activation_env_var: "OPENSANCTIONS_API_KEY", license: "CC-BY-4.0"  }
+]
+```
+
+If both env vars are set, Watchman wins. If only `WATCHMAN_URL` is set, the runtime uses Watchman. If only `OPENSANCTIONS_API_KEY` is set, the runtime uses OpenSanctions. If neither is set, the profile degrades to user-supplied evidence only — exactly the same behavior as before. The `boundaries.live_retrieval` flag in `/status` and in agent cards continues to be env-derived and honest: `true` only when at least one upstream is actually configured.
+
+### Implementation
+
+- New JS module `deploy/cloudflare-worker/src/upstream_watchman.js` — thin client over watchman's `/v2/search?name=...&type=...&limit=...&minMatch=...`, with KV cache (`watchman:` prefix on `AGENDA_USAGE`), AbortSignal-based timeout, graceful degrade on any failure, attribution per Apache-2.0.
+- Dispatcher `matchAgainstActiveUpstream(env, counterparty)` in `index.js` picks Watchman or OpenSanctions based on env vars and returns the canonical `{status, matches, attribution, ...}` shape.
+- Python `a2a_adapter.LIVE_RETRIEVAL_PROFILES` mirrors the JS shape (`upstream_options` array). New helpers `active_upstream_option(profile)` and `_is_upstream_option_active(option)`. Agent card `per_profile_live_retrieval` block now exposes `active_upstream` + `upstream_options[*].active` so callers can introspect which upstream is currently wired.
+- Worker `/status.live_retrieval` now lists both options with per-option `active` flags and a `cost_model` description, plus a single `active_upstream` field.
+
+### Activation path
+
+Cheapest defensible activation: self-host watchman on free-tier container, set `WATCHMAN_URL`, done. Estimated effort: ~30 minutes (Docker image already published on Docker Hub as `moov/watchman`).
+
+```
+# Example, Fly.io free tier:
+fly launch --image moov/watchman:latest --no-deploy
+fly secrets set DOWNLOAD_AT_BOOT=true
+fly deploy
+# Then in this repo:
+cd deploy/cloudflare-worker
+npx wrangler secret put WATCHMAN_URL --env cis-secondary-sanctions
+# (paste https://<your-fly-app>.fly.dev)
+```
+
+No code change, no redeploy of agenda-intelligence-md, no schema change. Agent card and `/status` will flip `active: true` automatically on next request.
+
+### What is still not changed
+
+- Schemas under `schemas/v1/cis-secondary-sanctions-*`.
+- The product runtime's "no factual-truth verification" boundary (name match is not legal-entity verification).
+- The "human review required" requirement.
+- The "no commitment to paid OpenSanctions API" stance — that upstream stays in the whitelist as a fallback option for callers who already have a key, but the project does not pay for it.

@@ -6,6 +6,15 @@ import {
   matchCounterparty as matchCounterpartyAgainstOpenSanctions
 } from "./upstream_opensanctions.js";
 
+import {
+  WATCHMAN_ATTRIBUTION,
+  WATCHMAN_LICENSE,
+  WATCHMAN_PROJECT_URL,
+  attributionBlock as watchmanAttributionBlock,
+  baseUrl as watchmanBaseUrl,
+  matchCounterparty as matchCounterpartyAgainstWatchman
+} from "./upstream_watchman.js";
+
 const VERSION = "1.0.1";
 const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
 const DOCS_URL = `${REPOSITORY_URL}/blob/main/MCP.md`;
@@ -132,29 +141,61 @@ const CIS_SECONDARY_SANCTIONS_HELPFUL_CONTEXT = [
 
 // Per-profile live retrieval CAPABILITY declarations. Actual runtime
 // activation is env-derived via isLiveRetrievalActive(profile, env). Per the
-// 2026-05-27 update to ADR 0014, OpenSanctions live retrieval is currently
-// deferred (the hosted API is paid €0.10/call and no commitment has been
-// made); callers see active=false until OPENSANCTIONS_API_KEY is configured.
+// 2026-05-27 update to ADR 0014, multiple upstreams can be configured per
+// profile and the dispatcher picks the first active one (free options before
+// paid). For `cis_secondary_sanctions` the order is:
+//   1. Watchman self-host (Apache-2.0, $0 if hosted on a free-tier container)
+//      — active when WATCHMAN_URL is set
+//   2. OpenSanctions hosted API (paid €0.10/call) — active when
+//      OPENSANCTIONS_API_KEY is set
+// If neither is configured, the profile degrades to user-supplied evidence
+// only and emits `live_retrieval_status: disabled` with a deferral_note.
 const PROFILE_LIVE_RETRIEVAL = {
-  agenda: { capability_declared: false, upstreams: [], license: null },
-  kazakhstan: { capability_declared: false, upstreams: [], license: null },
+  agenda: { capability_declared: false, upstream_options: [] },
+  kazakhstan: { capability_declared: false, upstream_options: [] },
   cis_secondary_sanctions: {
     capability_declared: true,
-    upstreams: ["OpenSanctions"],
-    license: OPENSANCTIONS_LICENSE,
-    activation_env_var: "OPENSANCTIONS_API_KEY",
-    disable_env_var: "OPENSANCTIONS_DISABLED"
+    upstream_options: [
+      {
+        name: "Watchman",
+        license: WATCHMAN_LICENSE,
+        homepage: WATCHMAN_PROJECT_URL,
+        activation_env_var: "WATCHMAN_URL",
+        disable_env_var: "WATCHMAN_DISABLED",
+        cost_model: "self-hosted (Apache-2.0); $0/month on free-tier container"
+      },
+      {
+        name: "OpenSanctions",
+        license: OPENSANCTIONS_LICENSE,
+        homepage: OPENSANCTIONS_HOMEPAGE,
+        activation_env_var: "OPENSANCTIONS_API_KEY",
+        disable_env_var: "OPENSANCTIONS_DISABLED",
+        cost_model: "paid €0.10/call (30-day business-email trial)"
+      }
+    ]
   }
 };
 
-function isLiveRetrievalActive(profile, env = {}) {
-  const meta = PROFILE_LIVE_RETRIEVAL[profile];
-  if (!meta || !meta.capability_declared) return false;
-  const activation = ((env[meta.activation_env_var] || "") + "").trim();
+function isUpstreamOptionActive(option, env = {}) {
+  if (!option) return false;
+  const activation = ((env[option.activation_env_var] || "") + "").trim();
   if (!activation) return false;
-  const disabled = ((env[meta.disable_env_var] || "") + "").trim().toLowerCase();
+  const disabled = ((env[option.disable_env_var] || "") + "").trim().toLowerCase();
   if (disabled === "1" || disabled === "true" || disabled === "yes") return false;
   return true;
+}
+
+function activeUpstreamOption(profile, env = {}) {
+  const meta = PROFILE_LIVE_RETRIEVAL[profile];
+  if (!meta || !meta.capability_declared) return null;
+  for (const option of meta.upstream_options) {
+    if (isUpstreamOptionActive(option, env)) return option;
+  }
+  return null;
+}
+
+function isLiveRetrievalActive(profile, env = {}) {
+  return activeUpstreamOption(profile, env) !== null;
 }
 
 const NOT_ADVICE_NOTICE =
@@ -660,23 +701,36 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
   };
   card.x_agenda_intelligence.required_before_review = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW;
   card.x_agenda_intelligence.helpful_context_sources = CIS_SECONDARY_SANCTIONS_HELPFUL_CONTEXT;
+  const activeOption = activeUpstreamOption("cis_secondary_sanctions", env);
   card.x_agenda_intelligence.live_retrieval = {
     capability_declared: true,
-    active: isLiveRetrievalActive("cis_secondary_sanctions", env),
-    upstreams: [
+    active: activeOption !== null,
+    active_upstream: activeOption ? activeOption.name : null,
+    upstream_options: [
+      {
+        name: "Watchman",
+        homepage: WATCHMAN_PROJECT_URL,
+        license: WATCHMAN_LICENSE,
+        attribution_notice: WATCHMAN_ATTRIBUTION,
+        activation_env_var: "WATCHMAN_URL",
+        disable_env_var: "WATCHMAN_DISABLED",
+        cost_model: "self-hosted (Apache-2.0); $0/month on free-tier container"
+      },
       {
         name: "OpenSanctions",
         homepage: OPENSANCTIONS_HOMEPAGE,
         license: OPENSANCTIONS_LICENSE,
-        attribution_notice: OPENSANCTIONS_ATTRIBUTION
+        attribution_notice: OPENSANCTIONS_ATTRIBUTION,
+        activation_env_var: "OPENSANCTIONS_API_KEY",
+        disable_env_var: "OPENSANCTIONS_DISABLED",
+        cost_model: "paid €0.10/call (30-day business-email trial)"
       }
     ],
     adr: CIS_SECONDARY_SANCTIONS_ADR_URL,
-    api_key_env: "OPENSANCTIONS_API_KEY",
-    disable_flag_env: "OPENSANCTIONS_DISABLED",
     graceful_degrade: true,
-    deferral_note:
-      "Per the 2026-05-27 update to ADR 0014, OpenSanctions live retrieval is currently deferred (paid API, no commitment made). Profile operates on user-supplied evidence only until OPENSANCTIONS_API_KEY is configured."
+    deferral_note: activeOption
+      ? undefined
+      : "Per the 2026-05-27 update to ADR 0014, live retrieval upstreams are declared but not activated. Set WATCHMAN_URL (free self-host) or OPENSANCTIONS_API_KEY (paid) to activate. Profile currently operates on user-supplied evidence only."
   };
   card.x_agenda_intelligence.supported_contracts = ["cis_secondary_sanctions_exposure_contract"];
   card.x_agenda_intelligence.buyer_use_cases = [
@@ -872,26 +926,58 @@ function suppliedSourceTypes(request) {
   return Array.from(new Set(types));
 }
 
+async function matchAgainstActiveUpstream(env, counterparty) {
+  const active = activeUpstreamOption("cis_secondary_sanctions", env);
+  if (!active) {
+    // No upstream configured. Return a degraded shape with OpenSanctions
+    // attribution as the canonical fallback (matches the prior behavior so
+    // existing callers / tests see a consistent shape).
+    return {
+      upstream_name: null,
+      result: await matchCounterpartyAgainstOpenSanctions(env, {
+        name: counterparty.name,
+        jurisdiction: counterparty.jurisdiction
+      })
+    };
+  }
+  if (active.name === "Watchman") {
+    return {
+      upstream_name: "Watchman",
+      result: await matchCounterpartyAgainstWatchman(env, {
+        name: counterparty.name,
+        jurisdiction: counterparty.jurisdiction
+      })
+    };
+  }
+  return {
+    upstream_name: "OpenSanctions",
+    result: await matchCounterpartyAgainstOpenSanctions(env, {
+      name: counterparty.name,
+      jurisdiction: counterparty.jurisdiction
+    })
+  };
+}
+
 async function cisSecondarySanctionsResult(request, env) {
   const supplied = suppliedSourceTypes(request);
   const counterparty = request.counterparty || {};
-  const osResult = await matchCounterpartyAgainstOpenSanctions(env, {
-    name: counterparty.name,
-    jurisdiction: counterparty.jurisdiction
-  });
+  const { upstream_name, result: upstreamResult } = await matchAgainstActiveUpstream(env, counterparty);
   const autoFetched = [];
-  for (const match of osResult.matches || []) {
+  for (const match of upstreamResult.matches || []) {
     const sourceType = match.source_type || "user_provided_note";
     if (!supplied.includes(sourceType)) supplied.push(sourceType);
     autoFetched.push({
       source_type: sourceType,
-      title: match.name || "OpenSanctions match",
+      title: match.name || `${upstream_name || "upstream"} match`,
       datasets: match.datasets || [],
       opensanctions_id: match.opensanctions_id,
+      watchman_source_id: match.watchman_source_id || null,
       score: match.score,
       topics: match.topics || [],
       jurisdictions: match.jurisdictions || [],
-      notes: "Auto-fetched from OpenSanctions; CC-BY 4.0 attribution required."
+      notes: upstream_name
+        ? `Auto-fetched from ${upstream_name}; attribution required (see upstream license).`
+        : "Auto-fetched (upstream attribution required)."
     });
   }
 
@@ -902,8 +988,11 @@ async function cisSecondarySanctionsResult(request, env) {
   const facets = Array.isArray(request.exposure_facets) ? request.exposure_facets : [];
 
   const limitations = [];
-  if (osResult.attribution) limitations.push(osResult.attribution.notice);
-  if (osResult.degrade_reason) limitations.push(`OpenSanctions live retrieval degraded: ${osResult.degrade_reason}`);
+  if (upstreamResult.attribution) limitations.push(upstreamResult.attribution.notice);
+  if (upstreamResult.degrade_reason) {
+    const label = upstream_name || "upstream";
+    limitations.push(`${label} live retrieval degraded: ${upstreamResult.degrade_reason}`);
+  }
   limitations.push(
     "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
   );
@@ -934,9 +1023,10 @@ async function cisSecondarySanctionsResult(request, env) {
 
   return {
     response,
-    live_retrieval_status: osResult.status,
+    live_retrieval_status: upstreamResult.status,
+    live_retrieval_upstream: upstream_name,
     auto_fetched_sources: autoFetched,
-    upstream_attribution: osResult.attribution
+    upstream_attribution: upstreamResult.attribution
   };
 }
 
@@ -1001,6 +1091,7 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
       canonical_http_endpoint: "/v1/cis-secondary-sanctions/exposure",
       schema: "schemas/v1/cis-secondary-sanctions-request.schema.json",
       live_retrieval_status: result.live_retrieval_status,
+      live_retrieval_upstream: result.live_retrieval_upstream,
       auto_fetched_sources: result.auto_fetched_sources,
       upstream_attribution: result.upstream_attribution,
       human_review_required: result.response.human_review_required,
@@ -2171,16 +2262,25 @@ function statusInfo(request, env) {
     }
   };
   if (liveRetrievalMeta.capability_declared) {
+    const active = activeUpstreamOption(profile, env);
     status.live_retrieval = {
       capability_declared: true,
       active: liveRetrievalActive,
-      upstreams: liveRetrievalMeta.upstreams,
-      license: liveRetrievalMeta.license,
+      active_upstream: active ? active.name : null,
+      upstream_options: liveRetrievalMeta.upstream_options.map((option) => ({
+        name: option.name,
+        license: option.license,
+        homepage: option.homepage,
+        activation_env_var: option.activation_env_var,
+        disable_env_var: option.disable_env_var,
+        cost_model: option.cost_model,
+        active: isUpstreamOptionActive(option, env)
+      })),
       adr: CIS_SECONDARY_SANCTIONS_ADR_URL
     };
     if (!liveRetrievalActive) {
       status.live_retrieval.deferral_note =
-        "Per the 2026-05-27 update to ADR 0014, OpenSanctions live retrieval is currently deferred (paid API, no commitment made). Profile operates on user-supplied evidence only until OPENSANCTIONS_API_KEY is configured.";
+        "Per the 2026-05-27 update to ADR 0014, live retrieval upstreams are declared but not activated. Set WATCHMAN_URL (free self-host of moov-io/watchman) or OPENSANCTIONS_API_KEY (paid €0.10/call) to activate. Profile currently operates on user-supplied evidence only.";
     }
   }
   return status;
