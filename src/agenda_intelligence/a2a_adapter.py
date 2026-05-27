@@ -54,12 +54,40 @@ CAPABILITY_ALIASES = {
 }
 
 # Profiles that opt in to per-profile live retrieval per ADR 0014.
+#
+# This declares the *capability* — what the profile can do if the operator
+# wires the relevant credentials. The actual runtime activation is env-derived
+# (see `is_live_retrieval_active`). Per the 2026-05-27 update to ADR 0014,
+# OpenSanctions live retrieval is currently deferred (the hosted API is paid
+# €0.10/call and no commitment has been made), so callers see
+# `live_retrieval_active: false` until `OPENSANCTIONS_API_KEY` is configured.
 LIVE_RETRIEVAL_PROFILES = {
     "cis_secondary_sanctions": {
         "upstreams": ["OpenSanctions"],
         "license": "CC-BY-4.0",
+        "activation_env_var": "OPENSANCTIONS_API_KEY",
+        "disable_env_var": "OPENSANCTIONS_DISABLED",
     },
 }
+
+
+def is_live_retrieval_active(profile: str) -> bool:
+    """Return True iff the profile's live retrieval is actually wired in this env.
+
+    The capability declaration in `LIVE_RETRIEVAL_PROFILES` is honored only when:
+      1. the activation env var (e.g. `OPENSANCTIONS_API_KEY`) is set and non-empty, and
+      2. the disable env var (e.g. `OPENSANCTIONS_DISABLED`) is not set to a truthy value.
+    """
+    meta = LIVE_RETRIEVAL_PROFILES.get(profile)
+    if not meta:
+        return False
+    activation = (os.environ.get(meta["activation_env_var"], "") or "").strip()
+    if not activation:
+        return False
+    disabled = (os.environ.get(meta["disable_env_var"], "") or "").strip().lower()
+    if disabled in {"1", "true", "yes"}:
+        return False
+    return True
 
 
 def agent_card(base_url: str = "http://localhost:8080") -> dict:
@@ -152,16 +180,22 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
             "supported_capabilities": SUPPORTED_CAPABILITIES,
             "per_profile_live_retrieval": {
                 profile: {
-                    "live_retrieval": True,
+                    "capability_declared": True,
+                    "active": is_live_retrieval_active(profile),
                     "upstreams": meta["upstreams"],
                     "license": meta["license"],
+                    "activation_env_var": meta["activation_env_var"],
+                    "disable_env_var": meta["disable_env_var"],
                 }
                 for profile, meta in LIVE_RETRIEVAL_PROFILES.items()
             },
             "boundaries": [
                 (
-                    "Live source retrieval is off by default. Per-profile opt-in is allowed for "
-                    "named vertical-worker profiles (see per_profile_live_retrieval and ADR 0014)."
+                    "Live source retrieval is off by default. Per-profile capability is declared for "
+                    "named vertical-worker profiles (see per_profile_live_retrieval and ADR 0014), "
+                    "but activation requires the operator to configure the relevant credential env "
+                    "var. When credentials are absent, the profile degrades to user-supplied "
+                    "evidence only with live_retrieval_status: disabled."
                 ),
                 "No factual-truth verification.",
                 "No legal, compliance, sanctions, financial, investment, insurance, or trading advice.",

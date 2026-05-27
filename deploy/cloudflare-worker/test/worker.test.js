@@ -785,19 +785,43 @@ test("cis_secondary_sanctions profile is detected from host and env", () => {
   assert.equal(card.name, "CIS Secondary-Sanctions Exposure");
   assert.ok(Array.isArray(card.skills) && card.skills.length === 1);
   assert.equal(card.skills[0].id, "cis-secondary-sanctions-exposure");
-  assert.equal(card.x_agenda_intelligence.live_retrieval.enabled, true);
+  assert.equal(card.x_agenda_intelligence.live_retrieval.capability_declared, true);
+  // Without OPENSANCTIONS_API_KEY in env, activation is deferred per ADR 0014 2026-05-27 update.
+  assert.equal(card.x_agenda_intelligence.live_retrieval.active, false);
   assert.equal(card.x_agenda_intelligence.live_retrieval.upstreams[0].name, "OpenSanctions");
   assert.equal(card.x_agenda_intelligence.live_retrieval.upstreams[0].license, "CC-BY-4.0");
 });
 
-test("statusInfo exposes per-profile live_retrieval for cis_secondary_sanctions", () => {
+test("agent card live_retrieval flips active=true when OPENSANCTIONS_API_KEY is set", () => {
+  const card = agentCard(cisRequest, { OPENSANCTIONS_API_KEY: "test-key" });
+  assert.equal(card.x_agenda_intelligence.live_retrieval.capability_declared, true);
+  assert.equal(card.x_agenda_intelligence.live_retrieval.active, true);
+});
+
+test("agent card live_retrieval stays active=false when OPENSANCTIONS_DISABLED is set", () => {
+  const card = agentCard(cisRequest, { OPENSANCTIONS_API_KEY: "test-key", OPENSANCTIONS_DISABLED: "1" });
+  assert.equal(card.x_agenda_intelligence.live_retrieval.capability_declared, true);
+  assert.equal(card.x_agenda_intelligence.live_retrieval.active, false);
+});
+
+test("statusInfo exposes per-profile live_retrieval capability for cis_secondary_sanctions (deferred)", () => {
   const status = statusInfo(cisRequest, {});
   assert.equal(status.profile, "cis_secondary_sanctions");
-  assert.equal(status.boundaries.live_retrieval, true);
+  // Capability is declared but activation is deferred until OPENSANCTIONS_API_KEY is set.
+  assert.equal(status.boundaries.live_retrieval, false);
   assert.equal(status.boundaries.factual_verification, false);
   assert.equal(status.boundaries.human_review_required, true);
-  assert.equal(status.live_retrieval.enabled, true);
+  assert.equal(status.live_retrieval.capability_declared, true);
+  assert.equal(status.live_retrieval.active, false);
   assert.equal(status.live_retrieval.upstreams[0], "OpenSanctions");
+  assert.ok(typeof status.live_retrieval.deferral_note === "string");
+});
+
+test("statusInfo flips live_retrieval boundary to true when OPENSANCTIONS_API_KEY is set", () => {
+  const status = statusInfo(cisRequest, { OPENSANCTIONS_API_KEY: "test-key" });
+  assert.equal(status.boundaries.live_retrieval, true);
+  assert.equal(status.live_retrieval.active, true);
+  assert.equal(status.live_retrieval.deferral_note, undefined);
 });
 
 test("statusInfo keeps live_retrieval false for default agenda profile", () => {

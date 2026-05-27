@@ -82,11 +82,13 @@ The product runtime defaults to `live_retrieval: false`. Specific vertical-worke
 
 ### Upstream whitelist
 
-| Upstream | License | Used by profile | Purpose |
-|---|---|---|---|
-| OpenSanctions consolidated dataset (`api.opensanctions.org`) | CC-BY 4.0 | `cis_secondary_sanctions` | Counterparty name → matched SDN / EU consolidated / UK OFSI / UN entries |
+| Upstream | License | Used by profile | Activation status | Purpose |
+|---|---|---|---|---|
+| OpenSanctions consolidated dataset (`api.opensanctions.org`) | CC-BY 4.0 (data); hosted API is paid €0.10/call | `cis_secondary_sanctions` | **Deferred** (per 2026-05-27 ADR 0014 update) | Counterparty name → matched SDN / EU consolidated / UK OFSI / UN entries |
 
 Adding a new upstream requires a CHANGELOG entry and a row in this table. A new ADR is required only when the new upstream changes the license model, attribution model, or rate-limit shape materially.
+
+**Activation status** indicates whether the runtime actually consults the upstream. `Deferred` means the capability is wired in code and declared in the agent card, but the operator has not configured the relevant credential env var (e.g. `OPENSANCTIONS_API_KEY`). In that state the profile responds with `live_retrieval_status: disabled` and triage falls back to user-supplied evidence only — exactly as specified in the graceful-degrade requirements below.
 
 ### Requirements for live-retrieval-enabled profiles
 
