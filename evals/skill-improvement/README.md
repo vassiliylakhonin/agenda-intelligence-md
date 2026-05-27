@@ -41,3 +41,29 @@ python3 evals/skill-improvement/tools/validate_cases.py \
   evals/skill-improvement/cases/agenda-intelligence.jsonl
 ```
 
+## Structural Anchor Gate (automated)
+
+Manual rubric scoring catches semantic regressions but not structural ones. The most common silent drift in LLM-driven skill editing is **removing the discipline anchors the rubric depends on** — e.g. dropping `Never imply live verification` or collapsing the signal-classification enum. When the anchor disappears, the rubric score predictably drops on the linked dimension.
+
+The structural gate hard-rejects an edit when a critical anchor is missing, **before** any LLM-judge or human review runs. Pair it with manual rubric scoring for soft-dimension judgment.
+
+```bash
+python3 evals/skill-improvement/tools/eval_gate.py \
+  --anchors evals/skill-improvement/anchors/agenda-intelligence.json
+```
+
+Exit codes: `0` accept, `1` reject (critical anchor missing), `2` config / I/O error.
+
+Anchors are declared in [`anchors/agenda-intelligence.json`](anchors/agenda-intelligence.json) with fields `id`, `severity` (`critical` / `soft`), `any_of` / `all_of` regex patterns, `rubric_dimensions`, and `rationale`. Add an anchor when you tighten the rubric; remove one only when you remove the corresponding rubric dimension. The current anchor set maps onto the 7 rubric dimensions in [`rubric.md`](rubric.md).
+
+**Where the gate fits in the loop:**
+
+1. Add / update cases.
+2. Score the current skill behavior on `val` cases (manual rubric).
+3. Make the smallest useful edit to `skills/agenda-intelligence/SKILL.md`.
+4. **Run the structural anchor gate. If it rejects → revert and try a different edit.**
+5. Re-score the same `val` cases.
+6. Accept the edit only if the validation score improves and no critical boundary regresses.
+
+CI runs the gate via `tests/test_skill_anchors_gate.py` — drifts that slip past local iteration are blocked at merge time.
+

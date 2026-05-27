@@ -1,0 +1,116 @@
+{
+  "skill_path": "skills/agenda-intelligence/SKILL.md",
+  "description": "Discipline anchors for skills/agenda-intelligence/SKILL.md. Each anchor is a phrase or pattern the skill text MUST contain because a rubric dimension depends on it. If the skill drops an anchor, the rubric will predictably regress on the linked dimensions — so the gate hard-rejects the edit before any LLM-judge or human review.",
+  "anchors": [
+    {
+      "id": "delta-orientation",
+      "severity": "critical",
+      "rubric_dimensions": ["D1 Delta Orientation"],
+      "any_of": ["what changed", "delta", "what.{0,5}gained"],
+      "rationale": "Skill must instruct the model to identify the delta vs producing a news summary."
+    },
+    {
+      "id": "evidence-separation-labels",
+      "severity": "critical",
+      "rubric_dimensions": ["D2 Evidence Discipline"],
+      "all_of": ["Fact", "Assessment", "Assumption", "Unknown", "Scenario"],
+      "rationale": "The six evidence-separation labels are the operationalization of evidence discipline. Missing any one collapses the dimension."
+    },
+    {
+      "id": "no-implied-live-verification",
+      "severity": "critical",
+      "rubric_dimensions": ["D2 Evidence Discipline", "D6 Boundary Honesty"],
+      "any_of": [
+        "Never imply live verification",
+        "no live (source )?retrieval",
+        "live retrieval (is )?(unavailable|off|disabled)",
+        "if live retrieval is unavailable"
+      ],
+      "rationale": "Skill must explicitly forbid implying live verification when none was performed. Removal of this anchor is the single highest-risk drift mode."
+    },
+    {
+      "id": "no-speculation-as-fact",
+      "severity": "critical",
+      "rubric_dimensions": ["D2 Evidence Discipline"],
+      "any_of": [
+        "speculation .{0,30}sound like fact",
+        "do not (silently )?(choose|imply|present)",
+        "do not (give|provide) advice"
+      ],
+      "rationale": "Negative-discipline anchor: must explicitly call out the most common drift behaviors."
+    },
+    {
+      "id": "signal-classification-enum",
+      "severity": "critical",
+      "rubric_dimensions": ["D3 Signal Semantics"],
+      "all_of": [
+        "signal classification",
+        "noise",
+        "weak signal",
+        "structural shift",
+        "trigger event"
+      ],
+      "rationale": "Signal classification is a fixed enum. If any value disappears the model will silently invent variants."
+    },
+    {
+      "id": "signal-markers-distinct-from-classification",
+      "severity": "critical",
+      "rubric_dimensions": ["D3 Signal Semantics"],
+      "all_of": ["signal markers", "Do not collapse"],
+      "rationale": "Most common silent drift: model collapses signal-marker into signal-strength. Skill must explicitly prohibit this."
+    },
+    {
+      "id": "lens-loading-discipline",
+      "severity": "soft",
+      "rubric_dimensions": ["D4 Lens Selection"],
+      "any_of": [
+        "Read only the smallest needed subset",
+        "smallest relevant",
+        "Load (only )?(the )?(smallest|minimal|relevant)",
+        "When a case crosses regional and sector"
+      ],
+      "rationale": "Skill should guide minimal lens loading + composition. Soft because some skills may not need this if lens set is small."
+    },
+    {
+      "id": "watch-next-required",
+      "severity": "critical",
+      "rubric_dimensions": ["D5 Decision Usefulness"],
+      "any_of": ["Watch next", "Indicator to watch", "watch-next", "what.{0,5}user should watch"],
+      "rationale": "If skill drops the watch-next requirement, decision-usefulness collapses."
+    },
+    {
+      "id": "boundary-no-advice",
+      "severity": "critical",
+      "rubric_dimensions": ["D6 Boundary Honesty"],
+      "any_of": [
+        "Do not give advice",
+        "not (a )?(legal|compliance|financial|sanctions|insurance|investment) advice",
+        "strategic-risk analysis only",
+        "not a professional determination"
+      ],
+      "rationale": "Skill must explicitly forbid legal/compliance/financial/etc. advice."
+    },
+    {
+      "id": "communication-cuts",
+      "severity": "soft",
+      "rubric_dimensions": ["D7 Communication"],
+      "any_of": ["Cut:", "shorter than a news recap", "Quality bar"],
+      "rationale": "Communication-discipline anchor (brevity / cuts). Soft because format may vary."
+    },
+    {
+      "id": "default-output-shape",
+      "severity": "critical",
+      "rubric_dimensions": ["D5 Decision Usefulness", "D7 Communication"],
+      "all_of": [
+        "Bottom line",
+        "Signal classification",
+        "Signal markers",
+        "What changed",
+        "Why it matters",
+        "Main uncertainty",
+        "Watch next"
+      ],
+      "rationale": "The default output template encodes the rubric expectations. Dropping fields predictably regresses multiple dimensions."
+    }
+  ]
+}
