@@ -61,7 +61,7 @@ CAPABILITY_ALIASES = {
 # OpenSanctions live retrieval is currently deferred (the hosted API is paid
 # €0.10/call and no commitment has been made), so callers see
 # `live_retrieval_active: false` until `OPENSANCTIONS_API_KEY` is configured.
-LIVE_RETRIEVAL_PROFILES = {
+LIVE_RETRIEVAL_PROFILES: dict[str, dict[str, Any]] = {
     "cis_secondary_sanctions": {
         "upstreams": ["OpenSanctions"],
         "license": "CC-BY-4.0",
