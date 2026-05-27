@@ -17,6 +17,7 @@ implements today.
 | Before/after scoring | Marker-based before/after example harness | Implemented (`score path.md`) |
 | Batch evaluation | Validate + audit + source coverage diagnostic + score across a directory of cases | Implemented (`bench <dir>`) |
 | Agent-eval delta | Does attaching the MCP layer materially change an agent's output shape on the same question? | Methodology + case template |
+| Skill-improvement eval | Does a proposed edit to a packaged `SKILL.md` improve validation cases without boundary regressions? | Methodology + cases |
 | Quote verification (local) | Is the cited fragment present in the source text file? | Implemented (`verify-quotes`, `verify_quotes` MCP) |
 | Quote verification (network) | Is the cited fragment present at the source URL? | Implemented (`verify-quotes --fetch`) |
 | Factual truthfulness | Are the claims true in the world? | **Not implemented.** Post-v1 layer only. |
@@ -35,6 +36,21 @@ attached. The score is an 8-criterion structural delta, not an accuracy claim.
 
 Methodology: [`agent-eval-methodology.md`](agent-eval-methodology.md)
 Case folder and template: [`../evals/agent-eval/`](../evals/agent-eval/)
+
+## Skill-improvement methodology
+
+Use skill-improvement evals when changing packaged runtime skills such as
+`skills/agenda-intelligence/SKILL.md`. This layer is a lightweight
+SkillOpt-style gate: write or update validation cases, score the current skill,
+make a small skill edit, then accept the edit only if the validation score
+improves without boundary regressions.
+
+This is not a factual benchmark and not a claim about model quality. It checks
+whether the skill instructions preserve Agenda Intelligence boundaries:
+evidence-mode honesty, source discipline, signal semantics, lens selection,
+decision usefulness, and no advice / no live-retrieval / no factuality claims.
+
+Case folder and baseline: [`../evals/skill-improvement/`](../evals/skill-improvement/)
 
 ## Benchmark — current numbers
 
@@ -169,6 +185,7 @@ The `evidence-audit.schema.json` enforces a stable `claim_type` enum derived fro
 | Human review checklist | `evals/human_checklist.md` | Manual review aid |
 | Agent-eval methodology | `docs/agent-eval-methodology.md` | Agent-first structural delta method |
 | Agent-eval template | `evals/agent-eval/TEMPLATE.md` | Case file scaffold |
+| Skill-improvement evals | `evals/skill-improvement/` | Validation-gated runtime skill edits |
 | Benchmark script | `evals/run_benchmark.py` | Reproducible batch run |
 | Committed baseline | `evals/baselines/source-backed.{md,json}` | Reference numbers |
 
