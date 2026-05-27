@@ -130,15 +130,32 @@ const CIS_SECONDARY_SANCTIONS_HELPFUL_CONTEXT = [
   "customs_data_evidence"
 ];
 
+// Per-profile live retrieval CAPABILITY declarations. Actual runtime
+// activation is env-derived via isLiveRetrievalActive(profile, env). Per the
+// 2026-05-27 update to ADR 0014, OpenSanctions live retrieval is currently
+// deferred (the hosted API is paid €0.10/call and no commitment has been
+// made); callers see active=false until OPENSANCTIONS_API_KEY is configured.
 const PROFILE_LIVE_RETRIEVAL = {
-  agenda: { live_retrieval: false, upstreams: [], license: null },
-  kazakhstan: { live_retrieval: false, upstreams: [], license: null },
+  agenda: { capability_declared: false, upstreams: [], license: null },
+  kazakhstan: { capability_declared: false, upstreams: [], license: null },
   cis_secondary_sanctions: {
-    live_retrieval: true,
+    capability_declared: true,
     upstreams: ["OpenSanctions"],
-    license: OPENSANCTIONS_LICENSE
+    license: OPENSANCTIONS_LICENSE,
+    activation_env_var: "OPENSANCTIONS_API_KEY",
+    disable_env_var: "OPENSANCTIONS_DISABLED"
   }
 };
+
+function isLiveRetrievalActive(profile, env = {}) {
+  const meta = PROFILE_LIVE_RETRIEVAL[profile];
+  if (!meta || !meta.capability_declared) return false;
+  const activation = ((env[meta.activation_env_var] || "") + "").trim();
+  if (!activation) return false;
+  const disabled = ((env[meta.disable_env_var] || "") + "").trim().toLowerCase();
+  if (disabled === "1" || disabled === "true" || disabled === "yes") return false;
+  return true;
+}
 
 const NOT_ADVICE_NOTICE =
   "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.";
@@ -644,7 +661,8 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
   card.x_agenda_intelligence.required_before_review = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW;
   card.x_agenda_intelligence.helpful_context_sources = CIS_SECONDARY_SANCTIONS_HELPFUL_CONTEXT;
   card.x_agenda_intelligence.live_retrieval = {
-    enabled: true,
+    capability_declared: true,
+    active: isLiveRetrievalActive("cis_secondary_sanctions", env),
     upstreams: [
       {
         name: "OpenSanctions",
@@ -656,7 +674,9 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
     adr: CIS_SECONDARY_SANCTIONS_ADR_URL,
     api_key_env: "OPENSANCTIONS_API_KEY",
     disable_flag_env: "OPENSANCTIONS_DISABLED",
-    graceful_degrade: true
+    graceful_degrade: true,
+    deferral_note:
+      "Per the 2026-05-27 update to ADR 0014, OpenSanctions live retrieval is currently deferred (paid API, no commitment made). Profile operates on user-supplied evidence only until OPENSANCTIONS_API_KEY is configured."
   };
   card.x_agenda_intelligence.supported_contracts = ["cis_secondary_sanctions_exposure_contract"];
   card.x_agenda_intelligence.buyer_use_cases = [
@@ -2132,6 +2152,7 @@ function statusInfo(request, env) {
   const profile = agentProfile(request, env);
   const card = agentCard(request, env);
   const liveRetrievalMeta = PROFILE_LIVE_RETRIEVAL[profile] || PROFILE_LIVE_RETRIEVAL.agenda;
+  const liveRetrievalActive = isLiveRetrievalActive(profile, env);
   const status = {
     status: "ok",
     name: card.name,
@@ -2144,18 +2165,23 @@ function statusInfo(request, env) {
     package: PACKAGE_URL,
     boundaries: {
       not_advice: true,
-      live_retrieval: liveRetrievalMeta.live_retrieval,
+      live_retrieval: liveRetrievalActive,
       factual_verification: false,
       human_review_required: profile === "kazakhstan" || profile === "cis_secondary_sanctions"
     }
   };
-  if (liveRetrievalMeta.live_retrieval) {
+  if (liveRetrievalMeta.capability_declared) {
     status.live_retrieval = {
-      enabled: true,
+      capability_declared: true,
+      active: liveRetrievalActive,
       upstreams: liveRetrievalMeta.upstreams,
       license: liveRetrievalMeta.license,
       adr: CIS_SECONDARY_SANCTIONS_ADR_URL
     };
+    if (!liveRetrievalActive) {
+      status.live_retrieval.deferral_note =
+        "Per the 2026-05-27 update to ADR 0014, OpenSanctions live retrieval is currently deferred (paid API, no commitment made). Profile operates on user-supplied evidence only until OPENSANCTIONS_API_KEY is configured.";
+    }
   }
   return status;
 }

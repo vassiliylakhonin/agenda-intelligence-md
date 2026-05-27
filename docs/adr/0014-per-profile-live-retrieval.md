@@ -63,3 +63,41 @@ The first profile under this decision is `cis_secondary_sanctions`, which querie
 - [AGENTS.md](../../AGENTS.md) — "Honesty rules" section continues to forbid claims of live retrieval beyond what is actually implemented; this ADR documents the implementation.
 - OpenSanctions API: https://api.opensanctions.org
 - OpenSanctions data license: CC-BY 4.0 (https://www.opensanctions.org/licensing/).
+
+## Update 2026-05-27 — runtime activation deferred (capability remains)
+
+The architectural pattern in this ADR (per-profile capability declaration, env-derived runtime activation, graceful degrade) stays in force. **Runtime activation of OpenSanctions live retrieval is deferred indefinitely** for the following reasons surfaced after the original ADR shipped:
+
+1. **The OpenSanctions hosted API is paid (€0.10/call, pay-as-you-go).** The earlier assumption that the public match API was free was wrong. A 30-day business-email trial exists, but ongoing use is metered.
+2. **Cost-per-probe is meaningful.** Agenstry uptime probes from BE hit the existing workers ~24 times/week per worker (observed in `/stats`). Activating live retrieval without a cost-guard would burn ~€10/month per worker on probes alone, against zero confirmed buyers.
+3. **Self-host of bulk OpenSanctions CC-BY data is real engineering work** (~3-6 hours) and gives meaningfully worse matching than Yente (no transliteration / fuzzy match / cross-list dedupe / scoring). Compliance practitioners specifically distrust homebrew matching engines — that's exactly what they pay vendors like Refinitiv / Dow Jones / Castellum / Sayari for. Self-host would undermine the positioning we're trying to build.
+4. **There is no confirmed buyer for `cis_secondary_sanctions` today.** `/stats` shows zero external non-probe traffic for the seven days since the profile shipped. Paying a per-call vendor fee for a product with no demand is the classic sunk-cost trap that AGENTS.md "Honesty rules" and the global CFO discipline tell us to refuse.
+
+### What changes in code
+
+- `LIVE_RETRIEVAL_PROFILES` in both `src/agenda_intelligence/a2a_adapter.py` and `deploy/cloudflare-worker/src/index.js` now declares **capability** rather than activation. Two new fields: `activation_env_var` and `disable_env_var`.
+- New helper `is_live_retrieval_active(profile)` (Python) / `isLiveRetrievalActive(profile, env)` (JS) returns `True` iff the activation env var is set and the disable env var is not. Currently always returns `False` since `OPENSANCTIONS_API_KEY` is unset on all deployed workers.
+- Agent card `x_agenda_intelligence.per_profile_live_retrieval` and `x_agenda_intelligence.live_retrieval` blocks now expose `{capability_declared, active, ...}` instead of `{live_retrieval: True, ...}`. Active is env-derived.
+- `/status` `boundaries.live_retrieval` reflects actual activation (`false` until a key is wired). When deferred, `/status` includes a `live_retrieval.deferral_note` explaining why.
+
+### What does NOT change
+
+- The schemas under `schemas/v1/cis-secondary-sanctions-*.schema.json` — additive contract preserved.
+- The service function `services.cis_secondary_sanctions_exposure` — still works on user-supplied evidence, still graceful-degrades on missing key (just always degrades now).
+- The `cis_secondary_sanctions` A2A profile and the deployed `cis-secondary-sanctions-a2a` Cloudflare Worker — both still live, still accept structured requests, still return auditable triage.
+- The SOURCE_POLICY whitelist — OpenSanctions remains the named upstream for this profile when activation eventually happens.
+
+### Path to re-activation
+
+Re-activate by configuring `OPENSANCTIONS_API_KEY` (either as an env var for the Python service or via `wrangler secret put OPENSANCTIONS_API_KEY --env cis-secondary-sanctions` for the Worker). No redeploy or new ADR needed. Before doing so, the operator SHOULD have:
+
+1. A defensible answer to "who will use this and what does it cost per month at our expected call volume?"
+2. A cost-guard that skips OpenSanctions fetch on `likely_probe === true` requests (not implemented yet; trivial follow-up).
+3. A monthly spend cap (Cloudflare-side via tail-log monitoring, or a daily-counter KV gate, or simply by relying on OpenSanctions's billing cap).
+
+If those conditions are not met, leave the capability deferred. A `live_retrieval: false` claim that is true is worth more than a `live_retrieval: true` claim backed by a paid API the project can't afford to keep running.
+
+### Alternatives reconsidered
+
+- **Self-host bulk OpenSanctions data (CC-BY 4.0).** Architecturally sound for zero ongoing cost, but rejected for now: (a) much weaker matching engine than Yente; (b) compliance buyers distrust homebrew matching as a class; (c) sunk-cost risk — once built, hard to abandon even without buyers. Kept on the roadmap as an option if and when a concrete buyer materializes who is willing to validate the matching quality is "good enough" for their use case.
+- **Pay €0.10/call from day one against trial allowance.** Rejected: 30 days of trial gives illustrative matches but no buyer-validation signal; after trial we'd either keep paying or revert anyway.

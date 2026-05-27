@@ -116,6 +116,46 @@ def test_cis_a2a_adapter_capability_registered():
     profile = LIVE_RETRIEVAL_PROFILES["cis_secondary_sanctions"]
     assert "OpenSanctions" in profile["upstreams"]
     assert profile["license"].startswith("CC-BY")
+    # Per the 2026-05-27 update to ADR 0014, activation requires an env var.
+    assert profile["activation_env_var"] == "OPENSANCTIONS_API_KEY"
+    assert profile["disable_env_var"] == "OPENSANCTIONS_DISABLED"
+
+
+def test_is_live_retrieval_active_requires_api_key(monkeypatch):
+    from agenda_intelligence.a2a_adapter import is_live_retrieval_active
+
+    monkeypatch.delenv("OPENSANCTIONS_API_KEY", raising=False)
+    monkeypatch.delenv("OPENSANCTIONS_DISABLED", raising=False)
+    assert is_live_retrieval_active("cis_secondary_sanctions") is False
+
+    monkeypatch.setenv("OPENSANCTIONS_API_KEY", "test-key")
+    assert is_live_retrieval_active("cis_secondary_sanctions") is True
+
+    monkeypatch.setenv("OPENSANCTIONS_DISABLED", "1")
+    assert is_live_retrieval_active("cis_secondary_sanctions") is False
+
+    # Unknown profile is always False.
+    monkeypatch.setenv("OPENSANCTIONS_API_KEY", "test-key")
+    monkeypatch.delenv("OPENSANCTIONS_DISABLED", raising=False)
+    assert is_live_retrieval_active("agenda") is False
+
+
+def test_agent_card_per_profile_live_retrieval_reports_capability_and_active(monkeypatch):
+    from agenda_intelligence.a2a_adapter import agent_card
+
+    monkeypatch.delenv("OPENSANCTIONS_API_KEY", raising=False)
+    monkeypatch.delenv("OPENSANCTIONS_DISABLED", raising=False)
+    card = agent_card()
+    block = card["x_agenda_intelligence"]["per_profile_live_retrieval"]["cis_secondary_sanctions"]
+    assert block["capability_declared"] is True
+    assert block["active"] is False
+    assert block["upstreams"] == ["OpenSanctions"]
+    assert block["activation_env_var"] == "OPENSANCTIONS_API_KEY"
+
+    monkeypatch.setenv("OPENSANCTIONS_API_KEY", "test-key")
+    card = agent_card()
+    block = card["x_agenda_intelligence"]["per_profile_live_retrieval"]["cis_secondary_sanctions"]
+    assert block["active"] is True
 
 
 def test_cis_a2a_result_shape(monkeypatch):
