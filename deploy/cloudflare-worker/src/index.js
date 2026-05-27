@@ -15,6 +15,12 @@ import {
   matchCounterparty as matchCounterpartyAgainstWatchman
 } from "./upstream_watchman.js";
 
+import { buildJwks, maybeSignCard } from "./jws.js";
+
+const SUPPORT_CONTACT_EMAIL = "vassiliy.lakhonin@gmail.com";
+const SUPPORT_HOURS_LOCAL = "Mon–Fri 09:00–18:00 Asia/Almaty (UTC+5)";
+const SUPPORT_TIMEZONE = "Asia/Almaty";
+
 const VERSION = "1.0.1";
 const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
 const DOCS_URL = `${REPOSITORY_URL}/blob/main/MCP.md`;
@@ -458,6 +464,14 @@ function agentCard(request, env = {}) {
         outputModes: ["application/json", "text/markdown"]
       }
     ],
+    support: {
+      email: SUPPORT_CONTACT_EMAIL,
+      documentationUrl: DOCS_URL,
+      hours_local: SUPPORT_HOURS_LOCAL,
+      timezone: SUPPORT_TIMEZONE,
+      response_sla:
+        "Best-effort response within 2 business days. Solo maintainer (not a company); not a paid support channel."
+    },
     x_agenda_intelligence: {
       hosted_wrapper: true,
       wrapper_scope: "A2A/JSON-RPC discovery, lightweight triage, and routing response only",
@@ -2434,7 +2448,15 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   }
 
   if (request.method === "GET" && url.pathname === "/.well-known/agent-card.json") {
-    return jsonResponse(agentCard(request, env));
+    const card = agentCard(request, env);
+    const signed = await maybeSignCard(card, env);
+    return jsonResponse(signed);
+  }
+
+  if (request.method === "GET" && url.pathname === "/.well-known/jwks.json") {
+    return jsonResponse(buildJwks(env.AGENT_CARD_SIGNING_KEY || env.AGENT_CARD_PRIVATE_JWK), 200, {
+      "cache-control": "public, max-age=3600"
+    });
   }
 
   if (request.method === "GET" && url.pathname === "/") {

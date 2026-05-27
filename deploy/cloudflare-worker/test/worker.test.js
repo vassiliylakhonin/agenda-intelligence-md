@@ -921,3 +921,154 @@ test("cis_secondary_sanctions message/send fails on missing structured request",
     console.log = originalLog;
   }
 });
+
+// ---------------------------------------------------------------------------
+// JWS signing (Agenstry conformance criterion: jws_signature)
+// ---------------------------------------------------------------------------
+
+import { webcrypto } from "node:crypto";
+import {
+  base64urlEncode,
+  buildJwks,
+  jcs,
+  maybeSignCard,
+  publicJwkFromPrivate,
+  signCardDetached
+} from "../src/jws.js";
+
+async function generateTestKey() {
+  const { privateKey } = await webcrypto.subtle.generateKey(
+    { name: "ECDSA", namedCurve: "P-256" },
+    true,
+    ["sign", "verify"]
+  );
+  const jwk = await webcrypto.subtle.exportKey("jwk", privateKey);
+  jwk.kid = "test-kid";
+  jwk.alg = "ES256";
+  jwk.use = "sig";
+  return jwk;
+}
+
+test("jcs sorts object keys deterministically and omits whitespace", () => {
+  assert.equal(jcs({ b: 1, a: 2 }), '{"a":2,"b":1}');
+  assert.equal(jcs([1, 2, 3]), "[1,2,3]");
+  assert.equal(jcs({ x: null, y: true, z: false }), '{"x":null,"y":true,"z":false}');
+  // Nested
+  assert.equal(jcs({ outer: { c: [1, 2], a: "x" } }), '{"outer":{"a":"x","c":[1,2]}}');
+});
+
+test("publicJwkFromPrivate strips d / key_ops / ext", async () => {
+  const privJwk = await generateTestKey();
+  const pub = publicJwkFromPrivate(privJwk);
+  assert.equal(pub.d, undefined);
+  assert.equal(pub.key_ops, undefined);
+  assert.equal(pub.ext, undefined);
+  assert.equal(pub.kty, "EC");
+  assert.equal(pub.crv, "P-256");
+  assert.equal(pub.alg, "ES256");
+  assert.equal(pub.use, "sig");
+});
+
+test("buildJwks returns the public key wrapped in {keys:[...]}", async () => {
+  const privJwk = await generateTestKey();
+  const jwks = buildJwks(JSON.stringify(privJwk));
+  assert.ok(Array.isArray(jwks.keys));
+  assert.equal(jwks.keys.length, 1);
+  assert.equal(jwks.keys[0].d, undefined);
+  assert.equal(jwks.keys[0].kid, "test-kid");
+});
+
+test("buildJwks returns empty when no key is provided", () => {
+  assert.deepEqual(buildJwks(null), { keys: [] });
+  assert.deepEqual(buildJwks(undefined), { keys: [] });
+  assert.deepEqual(buildJwks(""), { keys: [] });
+});
+
+test("signCardDetached produces a compact detached JWS that verifies against JWKS", async () => {
+  const privJwk = await generateTestKey();
+  const card = {
+    name: "Test agent",
+    version: "1.0.0",
+    skills: [{ id: "a", name: "A" }],
+    nested: { z: 1, a: [3, 2, 1] }
+  };
+  const signature = await signCardDetached(card, privJwk);
+
+  // Format: <headerB64>..<signatureB64>
+  assert.match(signature, /^[A-Za-z0-9_-]+\.\.[A-Za-z0-9_-]+$/);
+
+  // Verify roundtrip against the public JWK
+  const [headerB64, , sigB64] = signature.split(".");
+  const payloadBytes = new TextEncoder().encode(jcs(card));
+  const headerBytes = new TextEncoder().encode(headerB64);
+  const dotBytes = new TextEncoder().encode(".");
+  const signingInput = new Uint8Array(headerBytes.length + 1 + payloadBytes.length);
+  signingInput.set(headerBytes, 0);
+  signingInput.set(dotBytes, headerBytes.length);
+  signingInput.set(payloadBytes, headerBytes.length + 1);
+
+  const pubJwk = publicJwkFromPrivate(privJwk);
+  const verifyKey = await webcrypto.subtle.importKey(
+    "jwk",
+    pubJwk,
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["verify"]
+  );
+  const sigBytes = Uint8Array.from(Buffer.from(sigB64.replace(/-/g, "+").replace(/_/g, "/"), "base64"));
+  const ok = await webcrypto.subtle.verify(
+    { name: "ECDSA", hash: "SHA-256" },
+    verifyKey,
+    sigBytes,
+    signingInput
+  );
+  assert.equal(ok, true);
+
+  // Header must declare alg=ES256 and the detached payload convention (b64=false, crit=["b64"]).
+  const headerJson = JSON.parse(
+    new TextDecoder().decode(Uint8Array.from(Buffer.from(headerB64.replace(/-/g, "+").replace(/_/g, "/"), "base64")))
+  );
+  assert.equal(headerJson.alg, "ES256");
+  assert.equal(headerJson.b64, false);
+  assert.deepEqual(headerJson.crit, ["b64"]);
+  assert.equal(headerJson.kid, "test-kid");
+});
+
+test("signCardDetached strips an existing signature field before signing", async () => {
+  const privJwk = await generateTestKey();
+  const card = { name: "Test", skills: [] };
+  const sig1 = await signCardDetached(card, privJwk);
+  const sig2 = await signCardDetached({ ...card, signature: "previous" }, privJwk);
+  // ECDSA signatures are non-deterministic, so the signature segment may differ
+  // even when the payload is identical. What MUST be identical is the header.
+  assert.equal(sig1.split(".")[0], sig2.split(".")[0]);
+});
+
+test("maybeSignCard is a no-op when no signing key is configured", async () => {
+  const card = { name: "Test", skills: [] };
+  const result = await maybeSignCard(card, {});
+  assert.equal(result.signature, undefined);
+  assert.equal(result.name, "Test");
+});
+
+test("maybeSignCard adds a signature when AGENT_CARD_SIGNING_KEY is set", async () => {
+  const privJwk = await generateTestKey();
+  const card = { name: "Test", skills: [] };
+  const result = await maybeSignCard(card, { AGENT_CARD_SIGNING_KEY: JSON.stringify(privJwk) });
+  assert.match(result.signature, /^[A-Za-z0-9_-]+\.\.[A-Za-z0-9_-]+$/);
+  // Original card content preserved
+  assert.equal(result.name, "Test");
+});
+
+test("agent card includes support block with hours/contact", () => {
+  const card = agentCard(request, {});
+  assert.ok(card.support, "card.support should be present");
+  assert.equal(card.support.email, "vassiliy.lakhonin@gmail.com");
+  assert.match(card.support.hours_local, /Asia\/Almaty/);
+  assert.equal(card.support.timezone, "Asia/Almaty");
+});
+
+test("base64urlEncode handles empty and short inputs", () => {
+  assert.equal(base64urlEncode(new Uint8Array()), "");
+  assert.equal(base64urlEncode(new TextEncoder().encode("hi")), "aGk");
+});

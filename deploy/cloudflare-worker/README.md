@@ -222,3 +222,54 @@ The `/stats` response includes approximate daily totals, likely probes, non-prob
 ```bash
 npm test
 ```
+
+## JWS-signed agent cards (Agenstry conformance criterion `jws_signature`)
+
+The worker can serve agent cards with an ES256 detached JWS signature
+(per Agenstry's 9-criterion conformance scoring at
+<https://agenstry.com/api/schemas/conformance.json>). The public key is
+exposed at `/.well-known/jwks.json` so any verifier can fetch it without
+out-of-band coordination.
+
+### One-time setup (operator hands)
+
+```bash
+cd deploy/cloudflare-worker
+
+# 1. Generate a new ES256 keypair (prints the private JWK + kid).
+node scripts/generate-signing-key.js
+
+# 2. For each env that should serve signed cards, set the private JWK as a secret.
+#    Paste the PRIVATE JWK from step 1 when prompted.
+npx wrangler secret put AGENT_CARD_SIGNING_KEY
+npx wrangler secret put AGENT_CARD_SIGNING_KEY --env kazakhstan
+npx wrangler secret put AGENT_CARD_SIGNING_KEY --env middle-corridor-deal-risk-gate
+npx wrangler secret put AGENT_CARD_SIGNING_KEY --env cis-secondary-sanctions
+
+# 3. Redeploy each env so the new env reads the secret.
+npx wrangler deploy
+npx wrangler deploy --env kazakhstan
+npx wrangler deploy --env middle-corridor-deal-risk-gate
+npx wrangler deploy --env cis-secondary-sanctions
+
+# 4. Verify.
+curl https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/jwks.json
+curl https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json | jq .signature
+```
+
+### What the verifier does
+
+1. `GET /.well-known/agent-card.json` → reads the `signature` field
+   (compact detached JWS: `<headerB64>..<signatureB64>`).
+2. Strip `signature` from the card, JCS-canonicalise (RFC 8785) the
+   rest → raw payload bytes.
+3. Reconstruct signing input = `base64url(header) + "." + payloadBytes`.
+4. `GET /.well-known/jwks.json` → fetch the public JWK whose `kid`
+   matches the header.
+5. ECDSA P-256 + SHA-256 verify the signature.
+
+### Rotation
+
+Re-run `node scripts/generate-signing-key.js` and re-set
+`AGENT_CARD_SIGNING_KEY`. The new `kid` shows up in
+`/.well-known/jwks.json` automatically on next request. No code change.
