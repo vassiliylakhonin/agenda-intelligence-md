@@ -125,7 +125,10 @@ def test_cis_a2a_adapter_capability_registered():
 
 
 def test_is_live_retrieval_active_requires_an_upstream(monkeypatch):
-    from agenda_intelligence.a2a_adapter import active_upstream_option, is_live_retrieval_active
+    from agenda_intelligence.a2a_adapter import (
+        active_upstream_option,
+        is_live_retrieval_active,
+    )
 
     for var in ["WATCHMAN_URL", "WATCHMAN_DISABLED", "OPENSANCTIONS_API_KEY", "OPENSANCTIONS_DISABLED"]:
         monkeypatch.delenv(var, raising=False)
