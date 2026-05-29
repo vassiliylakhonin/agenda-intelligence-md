@@ -185,3 +185,61 @@ def test_cis_a2a_result_shape(monkeypatch):
     assert metadata["schema"] == CIS_SECONDARY_SANCTIONS_SCHEMA
     assert metadata["live_retrieval_status"] in {"disabled", "degraded"}
     assert metadata["human_review_required"] is True
+
+
+def test_cis_undisclosed_ubo_flagged(monkeypatch):
+    """Undisclosed/unverified UBO in ownership_layers must surface as an explicit
+    exposure dimension + limitation. Dogfood finding 2026-05-28."""
+    monkeypatch.setenv("OPENSANCTIONS_DISABLED", "1")
+    req = {
+        "counterparty": {
+            "name": "Example Caspian Metals Trading LLP",
+            "jurisdiction": "Kazakhstan",
+            "sector": "metals_or_mining",
+            "ownership_layers": ["Holding A (KZ)", "Aurora Resources FZE (UAE)", "undisclosed UBO"],
+        },
+        "exposure_facets": ["ownership_or_control", "shell_or_layered_structure"],
+        "dated_sources": [
+            {"id": "s1", "source_type": "ofac_sdn_extract", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "q",
+        "decision_stage": "onboarding",
+    }
+    resp = services.cis_secondary_sanctions_exposure(req)["response"]
+    assert "undisclosed or unverified ultimate beneficial owner" in resp["top_exposure_dimensions"]
+    assert any("undisclosed or unverified" in line and "UBO" in line for line in resp["limitations"])
+
+
+def test_cis_clean_ownership_does_not_flag_ubo(monkeypatch):
+    """Negative control: a fully disclosed ownership chain must NOT trigger the UBO flag."""
+    monkeypatch.setenv("OPENSANCTIONS_DISABLED", "1")
+    req = {
+        "counterparty": {
+            "name": "Example Clean Trading LLP",
+            "jurisdiction": "Kazakhstan",
+            "ownership_layers": ["Holding A (KZ)", "Owner B (KZ)"],
+        },
+        "exposure_facets": ["ownership_or_control"],
+        "dated_sources": [
+            {"id": "s1", "source_type": "ofac_sdn_extract", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "q",
+        "decision_stage": "onboarding",
+    }
+    resp = services.cis_secondary_sanctions_exposure(req)["response"]
+    assert "undisclosed or unverified ultimate beneficial owner" not in resp["top_exposure_dimensions"]
+    assert not any("undisclosed or unverified" in line for line in resp["limitations"])
+
+
+def test_cis_limitations_do_not_leak_env_var_names(monkeypatch):
+    """The user-facing limitations array must not echo internal env-var names
+    (OPENSANCTIONS_DISABLED / OPENSANCTIONS_API_KEY / WATCHMAN_URL). Dogfood
+    finding 2026-05-28."""
+    monkeypatch.setenv("OPENSANCTIONS_DISABLED", "1")
+    request_json = load_json(CONTRACT_DIR / "escalate_before_onboarding.request.json")
+    resp = services.cis_secondary_sanctions_exposure(request_json)["response"]
+    joined = " ".join(resp["limitations"])
+    for leak in ("OPENSANCTIONS_DISABLED", "OPENSANCTIONS_API_KEY", "WATCHMAN_URL", "env flag", "env var"):
+        assert leak not in joined, f"limitations leaked internal token: {leak}"
+    # But the degrade is still communicated in user-safe language
+    assert any("not currently enabled" in line or "was unavailable" in line for line in resp["limitations"])

@@ -538,12 +538,49 @@ def _cis_readiness(request_json: dict, supplied_sources: list[str]) -> tuple[int
     return score, "not_decision_ready"
 
 
+_UNDISCLOSED_UBO_TOKENS = (
+    "undisclosed",
+    "unknown",
+    "not disclosed",
+    "undetermined",
+    "unverified",
+    "unidentified",
+    "tbd",
+    "to be determined",
+    "nominee",
+)
+
+
+def _cis_has_undisclosed_ubo(request_json: dict) -> bool:
+    """Detect an undisclosed / unverified ultimate beneficial owner in the
+    declared ownership chain.
+
+    Stays within the pre-compliance triage boundary: this flags an evidence
+    gap (the UBO cannot be confirmed from the supplied chain), it does not
+    analyze or attribute ownership. Scans the free-text ``ownership_layers``
+    entries for tokens that signal the chain terminates in an unresolved owner.
+    """
+    counterparty = request_json.get("counterparty", {}) or {}
+    layers = counterparty.get("ownership_layers")
+    if not isinstance(layers, list):
+        return False
+    for layer in layers:
+        if not isinstance(layer, str):
+            continue
+        lowered = layer.lower()
+        if any(token in lowered for token in _UNDISCLOSED_UBO_TOKENS):
+            return True
+    return False
+
+
 def _cis_top_exposure_dimensions(
-    facets: list[str], missing_sources: list[str], opensanctions_matches: list[dict]
+    facets: list[str], missing_sources: list[str], opensanctions_matches: list[dict], undisclosed_ubo: bool = False
 ) -> list[str]:
     dims: list[str] = []
     if opensanctions_matches:
         dims.append("direct or near-direct match in OpenSanctions consolidated dataset")
+    if undisclosed_ubo:
+        dims.append("undisclosed or unverified ultimate beneficial owner")
     if "ownership_or_control" in facets:
         dims.append("indirect ownership or control exposure")
     if "transit_or_re_export" in facets:
@@ -587,7 +624,6 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
     supplied_sources = _supplied_source_types(request_json)
     auto_fetched_sources: list[dict] = []
     live_retrieval_status = "not_attempted"
-    degrade_reason: str | None = None
     upstream_attribution: dict | None = None
 
     if allow_live_retrieval:
@@ -596,7 +632,6 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
         jurisdiction = counterparty.get("jurisdiction")
         os_result = upstream_opensanctions.match_counterparty(name=name, jurisdiction=jurisdiction)
         live_retrieval_status = os_result["status"]
-        degrade_reason = os_result.get("degrade_reason")
         upstream_attribution = os_result.get("attribution")
         for match in os_result.get("matches", []):
             mapped_type = match.get("source_type") or "user_provided_note"
@@ -616,6 +651,7 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
             )
 
     missing_sources = [s for s in CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW if s not in supplied_sources]
+    undisclosed_ubo = _cis_has_undisclosed_ubo(request_json)
     readiness_score, readiness_label = _cis_readiness(request_json, supplied_sources)
     exposure_signal = _cis_exposure_signal(request_json, missing_sources, len(auto_fetched_sources))
     triage = _cis_triage_recommendation(request_json, missing_sources, exposure_signal)
@@ -623,8 +659,22 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
     limitations: list[str] = []
     if upstream_attribution is not None:
         limitations.append(upstream_attribution["notice"])
-    if degrade_reason:
-        limitations.append(f"OpenSanctions live retrieval degraded: {degrade_reason}")
+    # User-facing degrade note: derive from status, never echo internal env-var
+    # names or stack details (degrade_reason is kept on live_retrieval_status
+    # for operators, not surfaced verbatim to callers).
+    if live_retrieval_status == "disabled":
+        limitations.append(
+            "Live sanctions-list retrieval is not currently enabled; triage is based on user-supplied evidence only."
+        )
+    elif live_retrieval_status == "degraded":
+        limitations.append(
+            "Live sanctions-list retrieval was unavailable; triage is based on user-supplied evidence only."
+        )
+    if undisclosed_ubo:
+        limitations.append(
+            "Ultimate beneficial owner is undisclosed or unverified in the supplied ownership chain; "
+            "the counterparty cannot be fully screened until the UBO is resolved."
+        )
     limitations.append(
         "Name match against a sanctions list is not legal-entity identity verification. " "Human review is required."
     )
@@ -640,7 +690,7 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
         "minimum_sources_before_review": missing_sources,
         "evidence_gaps": [_cis_evidence_gap_for_source(s) for s in missing_sources],
         "top_exposure_dimensions": _cis_top_exposure_dimensions(
-            list(request_json.get("exposure_facets", [])), missing_sources, auto_fetched_sources
+            list(request_json.get("exposure_facets", [])), missing_sources, auto_fetched_sources, undisclosed_ubo
         ),
         "watch_next": [
             "new OFAC SDN designations",
