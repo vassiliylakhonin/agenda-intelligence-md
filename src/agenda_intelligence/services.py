@@ -519,9 +519,7 @@ def _agentic_trust_readiness(request_json: dict, supplied_sources: list[str]) ->
     if not request_json.get("dated_sources") or not supplied_sources:
         return 0, "insufficient_information"
 
-    required_present = len(
-        [s for s in AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION if s in supplied_sources]
-    )
+    required_present = len([s for s in AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION if s in supplied_sources])
     context_present = len([s for s in AGENTIC_INTERACTION_TRUST_READINESS_CONTEXT if s in supplied_sources])
     score = min(
         100,
@@ -573,7 +571,9 @@ def _agentic_triage_recommendation(request_json: dict, supplied_sources: list[st
     return "escalate_to_human_review"
 
 
-def _agentic_top_risk_dimensions(request_json: dict, supplied_sources: list[str], missing_sources: list[str]) -> list[str]:
+def _agentic_top_risk_dimensions(
+    request_json: dict, supplied_sources: list[str], missing_sources: list[str]
+) -> list[str]:
     dims: list[str] = []
     target_surface = request_json.get("target_surface")
     if "operator_or_principal_authorization" in missing_sources:

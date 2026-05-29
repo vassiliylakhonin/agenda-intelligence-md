@@ -49,14 +49,14 @@ def handle_get(path: str) -> tuple[int, dict]:
                 "version": __version__,
                 "service_layer": [
                     "audit_claims",
-                "source_coverage",
-                "score_output",
-                "middle_corridor_deal_risk",
-                "agentic_interaction_trust",
-                "cis_secondary_sanctions_exposure",
-            ],
-            "boundary": BOUNDARY_NOTICE,
-        },
+                    "source_coverage",
+                    "score_output",
+                    "middle_corridor_deal_risk",
+                    "agentic_interaction_trust",
+                    "cis_secondary_sanctions_exposure",
+                ],
+                "boundary": BOUNDARY_NOTICE,
+            },
         )
 
     return 404, {"ok": False, "error": "Not found"}
