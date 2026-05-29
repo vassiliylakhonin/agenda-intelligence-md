@@ -16,6 +16,8 @@ from agenda_intelligence import __version__, services
 REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md"
 MIDDLE_CORRIDOR_SCHEMA = "schemas/v1/middle-corridor-deal-risk-request.schema.json"
 MIDDLE_CORRIDOR_ENDPOINT = "/v1/middle-corridor/deal-risk"
+AGENTIC_INTERACTION_TRUST_SCHEMA = "schemas/v1/agentic-interaction-trust-request.schema.json"
+AGENTIC_INTERACTION_TRUST_ENDPOINT = "/v1/agentic-interaction/trust"
 CIS_SECONDARY_SANCTIONS_SCHEMA = "schemas/v1/cis-secondary-sanctions-request.schema.json"
 CIS_SECONDARY_SANCTIONS_ENDPOINT = "/v1/cis-secondary-sanctions/exposure"
 AUDIT_CLAIMS_ENDPOINT = "/v1/audit-claims"
@@ -24,6 +26,7 @@ SCORE_OUTPUT_ENDPOINT = "/v1/score"
 
 SUPPORTED_CAPABILITIES = [
     "middle_corridor_deal_risk",
+    "agentic_interaction_trust",
     "cis_secondary_sanctions_exposure",
     "audit_claims",
     "source_coverage",
@@ -36,6 +39,12 @@ CAPABILITY_ALIASES = {
     "middle_corridor": "middle_corridor_deal_risk",
     "middle-corridor-deal-risk": "middle_corridor_deal_risk",
     "middle-corridor-deal-risk-gate": "middle_corridor_deal_risk",
+    "agentic_interaction_trust": "agentic_interaction_trust",
+    "agentic-interaction-trust": "agentic_interaction_trust",
+    "agentic_interaction_trust_gate": "agentic_interaction_trust",
+    "agentic-interaction-trust-gate": "agentic_interaction_trust",
+    "agentic_trust": "agentic_interaction_trust",
+    "agentic-trust": "agentic_interaction_trust",
     "cis_secondary_sanctions": "cis_secondary_sanctions_exposure",
     "cis_secondary_sanctions_exposure": "cis_secondary_sanctions_exposure",
     "cis-secondary-sanctions": "cis_secondary_sanctions_exposure",
@@ -205,6 +214,25 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "outputModes": ["application/json", "text/markdown"],
             },
             {
+                "id": "agentic-interaction-trust-gate",
+                "name": "Agentic interaction trust gate",
+                "description": (
+                    "Structured evidence triage for agent-mediated actions across checkout, account, "
+                    "API, MCP tool, and A2A endpoint surfaces. Returns trust-routing readiness, "
+                    "evidence gaps, watch-next indicators, and mandatory human-review routing."
+                ),
+                "tags": [
+                    "agentic-ai",
+                    "a2a",
+                    "mcp",
+                    "trust-and-safety",
+                    "fraud-risk",
+                    "evidence-readiness",
+                ],
+                "inputModes": ["application/json"],
+                "outputModes": ["application/json", "text/markdown"],
+            },
+            {
                 "id": "audit-claims",
                 "name": "Audit claims",
                 "description": "Validates and summarizes claim-level evidence support without checking factual truth.",
@@ -234,6 +262,11 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
             "product_profile": "middle_corridor_deal_risk",
             "canonical_http_endpoint": MIDDLE_CORRIDOR_ENDPOINT,
             "schema": MIDDLE_CORRIDOR_SCHEMA,
+            "supported_contracts": [
+                "middle_corridor_deal_risk_contract",
+                "agentic_interaction_trust_contract",
+                "cis_secondary_sanctions_exposure_contract",
+            ],
             "supported_capabilities": SUPPORTED_CAPABILITIES,
             "per_profile_live_retrieval": _build_per_profile_live_retrieval_block(),
             "boundaries": [
@@ -365,6 +398,35 @@ def cis_secondary_sanctions_request_from_params(params: dict) -> dict | None:
     )
     for candidate in candidates:
         if _looks_like_cis_secondary_sanctions_request(candidate):
+            return candidate
+    return None
+
+
+def _looks_like_agentic_interaction_trust_request(value: Any) -> bool:
+    return (
+        isinstance(value, dict)
+        and isinstance(value.get("actor"), dict)
+        and isinstance(value.get("target_surface"), str)
+        and isinstance(value.get("requested_action"), str)
+        and isinstance(value.get("dated_sources"), list)
+        and isinstance(value.get("risk_question"), str)
+        and isinstance(value.get("decision_stage"), str)
+    )
+
+
+def agentic_interaction_trust_request_from_params(params: dict) -> dict | None:
+    """Extract a structured agentic interaction trust request from A2A/JSON-RPC params."""
+    candidates = _candidate_objects_from_params(params)
+    candidates.extend(
+        candidate
+        for candidate in [
+            _try_parse_json_object(params.get("agentic_interaction_trust_request")),
+            _try_parse_json_object(params.get("agentic_trust_request")),
+        ]
+        if candidate is not None
+    )
+    for candidate in candidates:
+        if _looks_like_agentic_interaction_trust_request(candidate):
             return candidate
     return None
 
@@ -533,6 +595,70 @@ def a2a_result_for_cis_secondary_sanctions(request_json: dict) -> dict:
     }
 
 
+def _agentic_artifact_text(response: dict) -> str:
+    missing = response.get("minimum_sources_before_action", [])
+    missing_text = "\n".join(f"- {item}" for item in missing) if missing else "- none"
+    dims = response.get("top_risk_dimensions", [])
+    dims_text = "\n".join(f"- {item}" for item in dims) if dims else "- none"
+    return "\n".join(
+        [
+            "Agentic interaction trust gate response",
+            "",
+            f"Recommendation: {response['triage_recommendation']}",
+            f"Trust signal: {response['trust_signal']}",
+            f"Decision readiness: {response['decision_readiness_score']}/100 ({response['decision_readiness_label']})",
+            f"Target surface: {response['target_surface']}",
+            f"Human review required: {str(response['human_review_required']).lower()}",
+            "",
+            "Top risk dimensions:",
+            dims_text,
+            "",
+            "Minimum sources before action:",
+            missing_text,
+            "",
+            response["not_advice_notice"],
+        ]
+    )
+
+
+def a2a_result_for_agentic_interaction_trust(request_json: dict) -> dict:
+    result = services.agentic_interaction_trust(request_json)
+    if not result.get("valid"):
+        return {
+            "id": "agenda-intelligence-a2a-result",
+            "status": {"state": "failed"},
+            "artifacts": [],
+            "metadata": {
+                "product_profile": "agentic_interaction_trust",
+                "canonical_http_endpoint": AGENTIC_INTERACTION_TRUST_ENDPOINT,
+                "schema": AGENTIC_INTERACTION_TRUST_SCHEMA,
+                "valid": False,
+                "errors": result.get("errors", []),
+            },
+        }
+
+    response = result["response"]
+    return {
+        "id": "agenda-intelligence-a2a-result",
+        "status": {"state": "completed"},
+        "artifacts": [
+            {
+                "artifactId": "agentic-interaction-trust-response",
+                "name": "Agentic interaction trust response",
+                "parts": [{"kind": "text", "text": _agentic_artifact_text(response)}],
+            }
+        ],
+        "metadata": {
+            "product_profile": "agentic_interaction_trust",
+            "canonical_http_endpoint": AGENTIC_INTERACTION_TRUST_ENDPOINT,
+            "schema": AGENTIC_INTERACTION_TRUST_SCHEMA,
+            "human_review_required": response["human_review_required"],
+            "not_advice_notice": response["not_advice_notice"],
+            "response": response,
+        },
+    }
+
+
 def _service_artifact_text(title: str, result: dict) -> str:
     return "\n".join([title, "", "```json", json.dumps(result, indent=2, sort_keys=True), "```"])
 
@@ -654,6 +780,31 @@ def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> di
                 "jsonrpc": "2.0",
                 "id": id_value,
                 "result": a2a_result_for_cis_secondary_sanctions(request_json),
+            }
+
+        if capability == "agentic_interaction_trust":
+            request_json = agentic_interaction_trust_request_from_params(params)
+            if request_json is None:
+                return jsonrpc_error(
+                    id_value,
+                    -32602,
+                    "Missing structured agentic interaction trust request",
+                    {
+                        "required_shape": {
+                            "actor": "object",
+                            "target_surface": "string",
+                            "requested_action": "string",
+                            "dated_sources": "array",
+                            "risk_question": "string",
+                            "decision_stage": "string",
+                        },
+                        "schema": AGENTIC_INTERACTION_TRUST_SCHEMA,
+                    },
+                )
+            return {
+                "jsonrpc": "2.0",
+                "id": id_value,
+                "result": a2a_result_for_agentic_interaction_trust(request_json),
             }
 
         if capability in {None, "middle_corridor_deal_risk"}:

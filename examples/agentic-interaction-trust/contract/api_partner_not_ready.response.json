@@ -1,16 +1,16 @@
 {
   "triage_recommendation": "not_decision_ready",
   "trust_signal": "unknown",
-  "decision_readiness_score": 39,
+  "decision_readiness_score": 32,
   "decision_readiness_label": "not_decision_ready",
   "actor": {
     "declared_type": "api_client",
     "declared_name": "Partner Export Client",
-    "operator": "Example Partner Ltd"
+    "operator": "Example Partner Ltd",
+    "authentication_context": "api_key"
   },
   "target_surface": "api",
   "requested_action": "export recent account activity for delegated analytics",
-  "asset_or_resource": "accounts/activity/export",
   "supplied_sources": [
     "session_authentication_evidence",
     "transaction_or_target_action_evidence",
@@ -19,30 +19,38 @@
   "minimum_sources_before_action": [
     "agent_identity_claim",
     "operator_or_principal_authorization",
+    "agent_card_or_manifest",
     "tool_scope_or_permission_evidence",
-    "action_intent_evidence",
-    "provider_policy_or_allowlist"
+    "action_intent_evidence"
   ],
   "evidence_gaps": [
-    "No current partner allowlist or policy record supplied.",
-    "No operator or principal authorization supplied for delegated analytics export.",
-    "No permission evidence supplied for the requested export endpoint.",
-    "No action-intent evidence supplied for the data-export purpose."
+    "No agent identity claim supplied.",
+    "No operator or principal authorization supplied.",
+    "No agent card or signed manifest supplied.",
+    "No tool-scope or permission evidence supplied.",
+    "No action-intent evidence supplied."
   ],
   "top_risk_dimensions": [
-    "data-export scope exceeds evidence supplied",
-    "prior low-volume API history does not establish delegated authority",
-    "API key authentication is not enough to prove policy entitlement"
+    "delegated action authority is not evidenced",
+    "agent identity is declared but not independently anchored",
+    "requested tool or action scope is not evidenced",
+    "action intent is not evidenced"
   ],
   "watch_next": [
+    "agent identity spoofing pattern",
     "unexpected tool-scope expansion",
+    "checkout or transaction anomaly",
+    "account takeover signal",
+    "rate-limit or scraping burst",
     "provider allowlist or policy change",
-    "account takeover signal"
+    "mcp or a2a endpoint metadata change",
+    "credential leakage or secret exposure report"
   ],
   "human_review_required": true,
   "not_advice_notice": "Agentic interaction evidence triage only. Not cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice.",
   "limitations": [
-    "This response does not verify partner identity.",
-    "This response does not authorize access to account activity exports."
-  ]
+    "This response does not verify the identity of the actor, operator, or principal.",
+    "This response does not authorize, approve, deny, or block the requested action."
+  ],
+  "asset_or_resource": "accounts/activity/export"
 }

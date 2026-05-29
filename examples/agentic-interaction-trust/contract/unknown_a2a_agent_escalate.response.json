@@ -1,16 +1,17 @@
 {
   "triage_recommendation": "escalate_to_human_review",
   "trust_signal": "unknown",
-  "decision_readiness_score": 33,
+  "decision_readiness_score": 25,
   "decision_readiness_label": "not_decision_ready",
   "actor": {
     "declared_type": "ai_agent",
     "declared_name": "Unknown Procurement Agent",
-    "operator": "Unknown"
+    "operator": "Unknown",
+    "declared_agent_id": "agent-unknown-7",
+    "authentication_context": "api_key"
   },
   "target_surface": "a2a_endpoint",
   "requested_action": "invoke counterparty exposure triage capability",
-  "asset_or_resource": "cis_secondary_sanctions_exposure",
   "supplied_sources": [
     "agent_identity_claim",
     "mcp_or_a2a_endpoint_metadata",
@@ -26,25 +27,35 @@
   ],
   "evidence_gaps": [
     "No operator or principal authorization supplied.",
-    "No signed agent card or manifest supplied.",
-    "No permission evidence supplied for the requested A2A capability.",
+    "No agent card or signed manifest supplied.",
+    "No tool-scope or permission evidence supplied.",
+    "No session authentication evidence supplied.",
     "No action-intent evidence supplied.",
-    "API-key context is supplied, but session authentication evidence is not sufficient to identify the principal."
+    "No transaction or target-action evidence supplied."
   ],
   "top_risk_dimensions": [
-    "unknown principal behind agent claim",
-    "requested capability touches sanctions-adjacent workflow",
-    "burst invocation pattern requires review before continued access"
+    "delegated action authority is not evidenced",
+    "agent identity is declared but not independently anchored",
+    "requested tool or action scope is not evidenced",
+    "action intent is not evidenced",
+    "agent endpoint invocation requires capability-scope review",
+    "abuse or burst pattern requires review before continued access"
   ],
   "watch_next": [
+    "agent identity spoofing pattern",
+    "unexpected tool-scope expansion",
+    "checkout or transaction anomaly",
+    "account takeover signal",
     "rate-limit or scraping burst",
+    "provider allowlist or policy change",
     "mcp or a2a endpoint metadata change",
     "credential leakage or secret exposure report"
   ],
   "human_review_required": true,
   "not_advice_notice": "Agentic interaction evidence triage only. Not cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice.",
   "limitations": [
-    "This response does not verify whether the caller is controlled by the declared operator.",
-    "This response does not make an autonomous access-control decision."
-  ]
+    "This response does not verify the identity of the actor, operator, or principal.",
+    "This response does not authorize, approve, deny, or block the requested action."
+  ],
+  "asset_or_resource": "cis_secondary_sanctions_exposure"
 }

@@ -161,7 +161,7 @@
     {
       "triage_recommendation": "require_step_up",
       "trust_signal": "medium",
-      "decision_readiness_score": 46,
+      "decision_readiness_score": 40,
       "decision_readiness_label": "not_decision_ready",
       "actor": {
         "declared_type": "ai_agent",
@@ -185,7 +185,7 @@
       "evidence_gaps": [
         "No operator or principal authorization supplied.",
         "No agent card or signed manifest supplied.",
-        "No tool-scope evidence supplied for checkout completion."
+        "No tool-scope or permission evidence supplied."
       ],
       "top_risk_dimensions": [
         "delegated purchase authority is not evidenced",

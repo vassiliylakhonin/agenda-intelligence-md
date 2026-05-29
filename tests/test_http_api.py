@@ -11,6 +11,7 @@ def test_http_api_health_and_ready_contracts():
     assert ready_status == 200
     assert ready["ready"] is True
     assert "source_coverage" in ready["service_layer"]
+    assert "agentic_interaction_trust" in ready["service_layer"]
     assert "No autonomous live source retrieval" in ready["boundary"]
 
 
@@ -135,6 +136,50 @@ def test_http_api_middle_corridor_deal_risk_contract():
     assert body["decision_readiness_label"] == "not_decision_ready"
 
 
+def test_http_api_agentic_interaction_trust_contract():
+    request = {
+        "actor": {
+            "declared_type": "ai_agent",
+            "declared_name": "Example Shopping Agent",
+            "operator": "Example Consumer",
+            "authentication_context": "session_cookie",
+        },
+        "target_surface": "checkout",
+        "requested_action": "complete purchase of two restricted-delivery items",
+        "asset_or_resource": "order-123",
+        "decision_stage": "pre_execution",
+        "dated_sources": [
+            {
+                "id": "ait-checkout-1",
+                "source_type": "agent_identity_claim",
+                "title": "Declared agent identity header",
+                "date": "2026-05-28",
+            },
+            {
+                "id": "ait-checkout-2",
+                "source_type": "session_authentication_evidence",
+                "title": "Authenticated checkout session",
+                "date": "2026-05-28",
+            },
+            {
+                "id": "ait-checkout-3",
+                "source_type": "transaction_or_target_action_evidence",
+                "title": "Order and delivery restriction summary",
+                "date": "2026-05-28",
+            },
+        ],
+        "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?",
+    }
+
+    status, body = handle_post("/v1/agentic-interaction/trust", request)
+
+    assert status == 200
+    assert body["triage_recommendation"] == "require_step_up"
+    assert body["trust_signal"] == "medium"
+    assert body["decision_readiness_score"] == 40
+    assert body["decision_readiness_label"] == "not_decision_ready"
+
+
 def test_http_api_rejects_bad_request_shape():
     status, body = handle_post("/v1/score", {"before_text": "x"})
 
@@ -148,4 +193,13 @@ def test_http_api_rejects_invalid_middle_corridor_request():
     assert status == 400
     assert body["ok"] is False
     assert body["error"] == "Invalid Middle Corridor deal-risk request"
+    assert body["errors"]
+
+
+def test_http_api_rejects_invalid_agentic_interaction_trust_request():
+    status, body = handle_post("/v1/agentic-interaction/trust", {"actor": {}})
+
+    assert status == 400
+    assert body["ok"] is False
+    assert body["error"] == "Invalid agentic interaction trust request"
     assert body["errors"]

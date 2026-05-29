@@ -45,6 +45,8 @@ agenda-intelligence-http --host 0.0.0.0 --port 8080
 - `POST /v1/source-coverage`
 - `POST /v1/score`
 - `POST /v1/middle-corridor/deal-risk`
+- `POST /v1/agentic-interaction/trust`
+- `POST /v1/cis-secondary-sanctions/exposure`
 
 ## Examples
 
@@ -78,6 +80,14 @@ Middle Corridor deal risk:
 curl -sS http://127.0.0.1:8080/v1/middle-corridor/deal-risk \
   -H 'content-type: application/json' \
   -d @examples/kazakhstan-middle-corridor/contract/pre_signature_escalate.request.json
+```
+
+Agentic interaction trust:
+
+```bash
+curl -sS http://127.0.0.1:8080/v1/agentic-interaction/trust \
+  -H 'content-type: application/json' \
+  -d @examples/agentic-interaction-trust/contract/checkout_step_up.request.json
 ```
 
 ## Data handling

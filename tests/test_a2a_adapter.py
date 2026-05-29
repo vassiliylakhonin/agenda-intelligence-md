@@ -50,6 +50,42 @@ def middle_corridor_request():
     }
 
 
+def agentic_interaction_trust_request():
+    return {
+        "actor": {
+            "declared_type": "ai_agent",
+            "declared_name": "Example Shopping Agent",
+            "operator": "Example Consumer",
+            "authentication_context": "session_cookie",
+        },
+        "target_surface": "checkout",
+        "requested_action": "complete purchase of two restricted-delivery items",
+        "asset_or_resource": "order-123",
+        "decision_stage": "pre_execution",
+        "dated_sources": [
+            {
+                "id": "ait-checkout-1",
+                "source_type": "agent_identity_claim",
+                "title": "Declared agent identity header",
+                "date": "2026-05-28",
+            },
+            {
+                "id": "ait-checkout-2",
+                "source_type": "session_authentication_evidence",
+                "title": "Authenticated checkout session",
+                "date": "2026-05-28",
+            },
+            {
+                "id": "ait-checkout-3",
+                "source_type": "transaction_or_target_action_evidence",
+                "title": "Order and delivery restriction summary",
+                "date": "2026-05-28",
+            },
+        ],
+        "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?",
+    }
+
+
 def test_agent_card_exposes_middle_corridor_skill():
     card = a2a_adapter.agent_card("https://example.com")
 
@@ -59,11 +95,13 @@ def test_agent_card_exposes_middle_corridor_skill():
     assert card["skills"][0]["id"] == "middle-corridor-deal-risk-gate"
     assert card["x_agenda_intelligence"]["supported_capabilities"] == [
         "middle_corridor_deal_risk",
+        "agentic_interaction_trust",
         "cis_secondary_sanctions_exposure",
         "audit_claims",
         "source_coverage",
         "score_output",
     ]
+    assert any(skill["id"] == "agentic-interaction-trust-gate" for skill in card["skills"])
 
 
 def test_jsonrpc_agent_card_method():
@@ -116,6 +154,30 @@ def test_jsonrpc_message_send_routes_structured_request_from_data_part():
     )
 
     assert response["result"]["metadata"]["response"]["decision_readiness_label"] == "not_decision_ready"
+
+
+def test_jsonrpc_message_send_routes_agentic_interaction_trust_capability():
+    response = a2a_adapter.handle_jsonrpc(
+        {
+            "jsonrpc": "2.0",
+            "id": "agentic-1",
+            "method": "message/send",
+            "params": {
+                "capability": "agentic_interaction_trust",
+                "request": agentic_interaction_trust_request(),
+            },
+        }
+    )
+
+    result = response["result"]
+    contract = result["metadata"]["response"]
+    assert result["status"]["state"] == "completed"
+    assert result["metadata"]["product_profile"] == "agentic_interaction_trust"
+    assert result["metadata"]["canonical_http_endpoint"] == "/v1/agentic-interaction/trust"
+    assert contract["triage_recommendation"] == "require_step_up"
+    assert contract["trust_signal"] == "medium"
+    assert contract["decision_readiness_score"] == 40
+    assert "Agentic interaction trust gate response" in result["artifacts"][0]["parts"][0]["text"]
 
 
 def test_jsonrpc_message_send_rejects_free_text_without_structured_request():
@@ -249,6 +311,7 @@ def test_jsonrpc_message_send_rejects_unknown_capability():
     assert response["error"]["message"] == "Unsupported capability"
     assert response["error"]["data"]["supported_capabilities"] == [
         "middle_corridor_deal_risk",
+        "agentic_interaction_trust",
         "cis_secondary_sanctions_exposure",
         "audit_claims",
         "source_coverage",
@@ -373,6 +436,7 @@ def test_a2a_agent_card_example_runs_through_stdin_shell():
     assert "error" not in response
     assert response["result"]["x_agenda_intelligence"]["supported_capabilities"] == [
         "middle_corridor_deal_risk",
+        "agentic_interaction_trust",
         "cis_secondary_sanctions_exposure",
         "audit_claims",
         "source_coverage",

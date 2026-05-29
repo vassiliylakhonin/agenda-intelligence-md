@@ -49,12 +49,14 @@ def handle_get(path: str) -> tuple[int, dict]:
                 "version": __version__,
                 "service_layer": [
                     "audit_claims",
-                    "source_coverage",
-                    "score_output",
-                    "middle_corridor_deal_risk",
-                ],
-                "boundary": BOUNDARY_NOTICE,
-            },
+                "source_coverage",
+                "score_output",
+                "middle_corridor_deal_risk",
+                "agentic_interaction_trust",
+                "cis_secondary_sanctions_exposure",
+            ],
+            "boundary": BOUNDARY_NOTICE,
+        },
         )
 
     return 404, {"ok": False, "error": "Not found"}
@@ -87,6 +89,22 @@ def handle_post(path: str, payload: dict) -> tuple[int, dict]:
         result = services.middle_corridor_deal_risk(payload)
         if not result.get("valid"):
             return 400, {"ok": False, "error": "Invalid Middle Corridor deal-risk request", "errors": result["errors"]}
+        return 200, result["response"]
+
+    if path == "/v1/agentic-interaction/trust":
+        result = services.agentic_interaction_trust(payload)
+        if not result.get("valid"):
+            return 400, {"ok": False, "error": "Invalid agentic interaction trust request", "errors": result["errors"]}
+        return 200, result["response"]
+
+    if path == "/v1/cis-secondary-sanctions/exposure":
+        result = services.cis_secondary_sanctions_exposure(payload)
+        if not result.get("valid"):
+            return 400, {
+                "ok": False,
+                "error": "Invalid CIS secondary-sanctions exposure request",
+                "errors": result["errors"],
+            }
         return 200, result["response"]
 
     return 404, {"ok": False, "error": "Not found"}

@@ -31,6 +31,7 @@ Core package
 | Source coverage | `POST /v1/source-coverage` | `source_coverage` | `evidence_json` plus optional `category` |
 | Before/after score | `POST /v1/score` | `score_output` | `before_text`, `after_text` |
 | Middle Corridor deal-risk gate | `POST /v1/middle-corridor/deal-risk` | `middle_corridor_deal_risk` | `middle-corridor-deal-risk-request.schema.json` |
+| Agentic Interaction Trust Gate | `POST /v1/agentic-interaction/trust` | `agentic_interaction_trust` | `agentic-interaction-trust-request.schema.json` |
 
 ## Middle Corridor A2A contract
 

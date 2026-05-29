@@ -113,3 +113,57 @@ def test_services_middle_corridor_deal_risk_builds_contract_response():
         "insurance_clause_or_underwriter_note",
         "vessel_or_carrier_history",
     ]
+
+
+def test_services_agentic_interaction_trust_builds_contract_response():
+    request = {
+        "actor": {
+            "declared_type": "ai_agent",
+            "declared_name": "Example Shopping Agent",
+            "operator": "Example Consumer",
+            "declared_user_agent": "ExampleShoppingAgent/1.0",
+            "authentication_context": "session_cookie",
+        },
+        "target_surface": "checkout",
+        "requested_action": "complete purchase of two restricted-delivery items",
+        "asset_or_resource": "order-123",
+        "decision_stage": "pre_execution",
+        "dated_sources": [
+            {
+                "id": "ait-checkout-1",
+                "source_type": "agent_identity_claim",
+                "title": "Declared agent identity header",
+                "date": "2026-05-28",
+            },
+            {
+                "id": "ait-checkout-2",
+                "source_type": "session_authentication_evidence",
+                "title": "Authenticated checkout session",
+                "date": "2026-05-28",
+            },
+            {
+                "id": "ait-checkout-3",
+                "source_type": "transaction_or_target_action_evidence",
+                "title": "Order and delivery restriction summary",
+                "date": "2026-05-28",
+            },
+        ],
+        "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?",
+    }
+
+    result = services.agentic_interaction_trust(request)
+
+    assert result["valid"] is True
+    assert result["errors"] == []
+    response = result["response"]
+    assert response["triage_recommendation"] == "require_step_up"
+    assert response["trust_signal"] == "medium"
+    assert response["decision_readiness_score"] == 40
+    assert response["decision_readiness_label"] == "not_decision_ready"
+    assert response["minimum_sources_before_action"] == [
+        "operator_or_principal_authorization",
+        "agent_card_or_manifest",
+        "tool_scope_or_permission_evidence",
+        "action_intent_evidence",
+    ]
+    assert response["human_review_required"] is True

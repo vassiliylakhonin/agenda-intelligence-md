@@ -1,6 +1,6 @@
 # Agentic Interaction Trust Gate
 
-Status: exploratory product contract. Not a shipped runtime worker.
+Status: shipped 2026-05-29. Vertical worker service function `agentic_interaction_trust`. Schema family v1, additive (non-breaking under [ADR 0003](../adr/0003-v1-compatibility-policy.md)). No live retrieval.
 
 ## Proposition
 
@@ -65,7 +65,7 @@ That matches the existing Agenda Intelligence pattern:
 {
   "triage_recommendation": "require_step_up",
   "trust_signal": "medium",
-  "decision_readiness_score": 46,
+  "decision_readiness_score": 40,
   "decision_readiness_label": "not_decision_ready",
   "supplied_sources": [
     "agent_identity_claim",
@@ -81,7 +81,7 @@ That matches the existing Agenda Intelligence pattern:
   "evidence_gaps": [
     "No operator or principal authorization supplied.",
     "No agent card or signed manifest supplied.",
-    "No tool-scope evidence supplied for checkout completion."
+    "No tool-scope or permission evidence supplied."
   ],
   "watch_next": [
     "checkout or transaction anomaly",
@@ -100,6 +100,8 @@ The canonical interface is structured JSON, not free-text prompting.
 - Response schema: [`../../schemas/v1/agentic-interaction-trust-response.schema.json`](../../schemas/v1/agentic-interaction-trust-response.schema.json)
 - Source taxonomy: [`../../source-requirements/agentic-interaction-trust.json`](../../source-requirements/agentic-interaction-trust.json)
 - Contract examples: [`../../examples/agentic-interaction-trust/contract/`](../../examples/agentic-interaction-trust/contract/)
+- HTTP: `POST /v1/agentic-interaction/trust`
+- A2A capability: `agentic_interaction_trust`
 
 `decision_readiness_score` is a heuristic 0-100 evidence-pack readiness score for a human trust-routing decision. It is not approval, clearance, fraud adjudication, identity verification, cybersecurity monitoring, or transaction authorization.
 

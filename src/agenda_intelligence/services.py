@@ -43,9 +43,35 @@ CIS_SECONDARY_SANCTIONS_READINESS_CONTEXT = [
     "customs_data_evidence",
 ]
 
+AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION = [
+    "agent_identity_claim",
+    "operator_or_principal_authorization",
+    "agent_card_or_manifest",
+    "tool_scope_or_permission_evidence",
+    "session_authentication_evidence",
+    "action_intent_evidence",
+    "transaction_or_target_action_evidence",
+]
+
+AGENTIC_INTERACTION_TRUST_READINESS_CONTEXT = [
+    "mcp_or_a2a_endpoint_metadata",
+    "rate_limit_or_abuse_signal",
+    "fraud_or_account_takeover_signal",
+    "device_or_infrastructure_evidence",
+    "provider_policy_or_allowlist",
+    "prior_interaction_history",
+    "incident_report_or_threat_intel",
+    "human_review_note",
+]
+
 NOT_ADVICE_NOTICE = (
     "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, "
     "insurance, or trading advice."
+)
+
+AGENTIC_TRUST_NOT_ADVICE_NOTICE = (
+    "Agentic interaction evidence triage only. Not cybersecurity monitoring, fraud adjudication, "
+    "identity verification, transaction authorization, legal advice, compliance advice, or financial advice."
 )
 
 
@@ -462,6 +488,170 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         response["shipment_value"] = request_json["shipment_value"]
 
     response_validation = _validate_json(response, "middle-corridor-deal-risk-response.schema.json")
+    return {
+        "implemented": True,
+        "valid": bool(response_validation.get("valid")),
+        "errors": response_validation.get("errors", []),
+        "response": response,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Agentic interaction trust (vertical worker)
+# ---------------------------------------------------------------------------
+
+
+def _agentic_evidence_gap_for_source(source_type: str) -> str:
+    gaps = {
+        "agent_identity_claim": "No agent identity claim supplied.",
+        "operator_or_principal_authorization": "No operator or principal authorization supplied.",
+        "agent_card_or_manifest": "No agent card or signed manifest supplied.",
+        "tool_scope_or_permission_evidence": "No tool-scope or permission evidence supplied.",
+        "session_authentication_evidence": "No session authentication evidence supplied.",
+        "action_intent_evidence": "No action-intent evidence supplied.",
+        "transaction_or_target_action_evidence": "No transaction or target-action evidence supplied.",
+        "provider_policy_or_allowlist": "No provider policy or allowlist record supplied.",
+    }
+    return gaps.get(source_type, f"No {source_type} supplied.")
+
+
+def _agentic_trust_readiness(request_json: dict, supplied_sources: list[str]) -> tuple[int, str]:
+    if not request_json.get("dated_sources") or not supplied_sources:
+        return 0, "insufficient_information"
+
+    required_present = len(
+        [s for s in AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION if s in supplied_sources]
+    )
+    context_present = len([s for s in AGENTIC_INTERACTION_TRUST_READINESS_CONTEXT if s in supplied_sources])
+    score = min(
+        100,
+        round(
+            10
+            + (required_present / len(AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION)) * 70
+            + (context_present / len(AGENTIC_INTERACTION_TRUST_READINESS_CONTEXT)) * 20
+        ),
+    )
+    if score >= 85:
+        return score, "review_ready"
+    if score >= 50:
+        return score, "partial"
+    return score, "not_decision_ready"
+
+
+def _agentic_trust_signal(request_json: dict, supplied_sources: list[str], missing_sources: list[str]) -> str:
+    if not request_json.get("dated_sources"):
+        return "unknown"
+    if "fraud_or_account_takeover_signal" in supplied_sources:
+        return "low"
+    if "rate_limit_or_abuse_signal" in supplied_sources and len(missing_sources) >= 4:
+        return "unknown"
+    if len(missing_sources) >= 5:
+        return "unknown"
+    if len(missing_sources) >= 3:
+        return "medium"
+    if missing_sources:
+        return "medium_high"
+    return "high"
+
+
+def _agentic_triage_recommendation(request_json: dict, supplied_sources: list[str], missing_sources: list[str]) -> str:
+    if not request_json.get("dated_sources"):
+        return "insufficient_information"
+    if "fraud_or_account_takeover_signal" in supplied_sources:
+        return "block_until_verified"
+
+    target_surface = request_json.get("target_surface")
+    decision_stage = request_json.get("decision_stage")
+    if not missing_sources:
+        return "allow_low_risk"
+    if target_surface in {"checkout", "auth_flow", "account"} and len(missing_sources) <= 4:
+        return "require_step_up"
+    if target_surface in {"a2a_endpoint", "mcp_tool"} or "rate_limit_or_abuse_signal" in supplied_sources:
+        return "escalate_to_human_review"
+    if decision_stage in {"policy_review", "committee_review"}:
+        return "not_decision_ready"
+    return "escalate_to_human_review"
+
+
+def _agentic_top_risk_dimensions(request_json: dict, supplied_sources: list[str], missing_sources: list[str]) -> list[str]:
+    dims: list[str] = []
+    target_surface = request_json.get("target_surface")
+    if "operator_or_principal_authorization" in missing_sources:
+        dims.append("delegated action authority is not evidenced")
+    if "agent_card_or_manifest" in missing_sources:
+        dims.append("agent identity is declared but not independently anchored")
+    if "tool_scope_or_permission_evidence" in missing_sources:
+        dims.append("requested tool or action scope is not evidenced")
+    if "action_intent_evidence" in missing_sources:
+        dims.append("action intent is not evidenced")
+    if target_surface == "checkout":
+        dims.append("checkout action may need step-up before completion")
+    if target_surface in {"a2a_endpoint", "mcp_tool"}:
+        dims.append("agent endpoint invocation requires capability-scope review")
+    if "rate_limit_or_abuse_signal" in supplied_sources:
+        dims.append("abuse or burst pattern requires review before continued access")
+    if "fraud_or_account_takeover_signal" in supplied_sources:
+        dims.append("fraud or account-takeover signal requires verification before action")
+    return list(dict.fromkeys(dims))
+
+
+def agentic_interaction_trust(request_json: dict) -> dict:
+    """Build a structured agentic interaction trust response.
+
+    This is evidence-readiness triage for agent-mediated actions. It does not
+    perform live retrieval, identity verification, fraud adjudication,
+    cybersecurity monitoring, transaction authorization, or autonomous
+    allow/block decisions.
+    """
+    request_validation = _validate_json(request_json, "agentic-interaction-trust-request.schema.json")
+    if not request_validation.get("valid"):
+        return {
+            "implemented": True,
+            "valid": False,
+            "errors": request_validation.get("errors", []),
+            "response": None,
+        }
+
+    supplied_sources = _supplied_source_types(request_json)
+    missing_sources = [
+        source_type
+        for source_type in AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION
+        if source_type not in supplied_sources
+    ]
+    readiness_score, readiness_label = _agentic_trust_readiness(request_json, supplied_sources)
+    response = {
+        "triage_recommendation": _agentic_triage_recommendation(request_json, supplied_sources, missing_sources),
+        "trust_signal": _agentic_trust_signal(request_json, supplied_sources, missing_sources),
+        "decision_readiness_score": readiness_score,
+        "decision_readiness_label": readiness_label,
+        "actor": request_json["actor"],
+        "target_surface": request_json["target_surface"],
+        "requested_action": request_json["requested_action"],
+        "supplied_sources": supplied_sources,
+        "minimum_sources_before_action": missing_sources,
+        "evidence_gaps": [_agentic_evidence_gap_for_source(source_type) for source_type in missing_sources],
+        "top_risk_dimensions": _agentic_top_risk_dimensions(request_json, supplied_sources, missing_sources),
+        "watch_next": [
+            "agent identity spoofing pattern",
+            "unexpected tool-scope expansion",
+            "checkout or transaction anomaly",
+            "account takeover signal",
+            "rate-limit or scraping burst",
+            "provider allowlist or policy change",
+            "mcp or a2a endpoint metadata change",
+            "credential leakage or secret exposure report",
+        ],
+        "human_review_required": True,
+        "not_advice_notice": AGENTIC_TRUST_NOT_ADVICE_NOTICE,
+        "limitations": [
+            "This response does not verify the identity of the actor, operator, or principal.",
+            "This response does not authorize, approve, deny, or block the requested action.",
+        ],
+    }
+    if "asset_or_resource" in request_json:
+        response["asset_or_resource"] = request_json["asset_or_resource"]
+
+    response_validation = _validate_json(response, "agentic-interaction-trust-response.schema.json")
     return {
         "implemented": True,
         "valid": bool(response_validation.get("valid")),

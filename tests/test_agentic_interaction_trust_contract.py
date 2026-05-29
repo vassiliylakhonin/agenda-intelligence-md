@@ -4,6 +4,7 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
+from agenda_intelligence import services
 from agenda_intelligence.mcp_server import source_plan
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -93,3 +94,13 @@ def test_agentic_interaction_trust_response_fixtures_do_not_imply_authorization(
         text = json.dumps(load_json(fixture_path), sort_keys=True)
         for pattern in FORBIDDEN_AUTHORIZATION_WORDING:
             assert not pattern.search(text), f"{fixture_path.name} contains forbidden wording: {pattern.pattern}"
+
+
+def test_agentic_interaction_trust_response_fixtures_match_service_output():
+    for request_path in sorted(CONTRACT_DIR.glob("*.request.json")):
+        expected_response = load_json(request_path.with_suffix("").with_suffix(".response.json"))
+
+        result = services.agentic_interaction_trust(load_json(request_path))
+
+        assert result["valid"] is True
+        assert result["response"] == expected_response
