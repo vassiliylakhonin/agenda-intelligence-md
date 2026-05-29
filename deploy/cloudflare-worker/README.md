@@ -64,6 +64,13 @@ cd deploy/cloudflare-worker
 wrangler deploy -e kazakhstan
 ```
 
+Deploy the Agentic Interaction Trust profile as a separate A2A listing:
+
+```bash
+cd deploy/cloudflare-worker
+wrangler deploy -e agentic-interaction-trust
+```
+
 The deploy output will include a `workers.dev` URL, usually:
 
 ```text
@@ -76,6 +83,12 @@ The Kazakhstan / Middle Corridor Deal Risk Gate profile deploys as:
 https://kazakhstan-corridor-risk-a2a.<your-subdomain>.workers.dev
 ```
 
+The Agentic Interaction Trust Gate profile deploys as:
+
+```text
+https://agentic-interaction-trust-a2a.<your-subdomain>.workers.dev
+```
+
 Use this URL in Agenstry as an A2A agent URL:
 
 ```text
@@ -86,6 +99,12 @@ For the Kazakhstan / Middle Corridor Deal Risk Gate listing, submit:
 
 ```text
 https://kazakhstan-corridor-risk-a2a.<your-subdomain>.workers.dev
+```
+
+For the Agentic Interaction Trust Gate listing, submit:
+
+```text
+https://agentic-interaction-trust-a2a.<your-subdomain>.workers.dev
 ```
 
 The Agent Card URL will be:
@@ -136,6 +155,7 @@ This checks the public Agenda Intelligence card plus both Kazakhstan / Middle Co
 - `agenda-intelligence-a2a`
 - `kazakhstan-corridor-risk-a2a`
 - `middle-corridor-deal-risk-gate-a2a`
+- `agentic-interaction-trust-a2a`
 
 To verify a custom URL:
 
@@ -245,12 +265,14 @@ npx wrangler secret put AGENT_CARD_SIGNING_KEY
 npx wrangler secret put AGENT_CARD_SIGNING_KEY --env kazakhstan
 npx wrangler secret put AGENT_CARD_SIGNING_KEY --env middle-corridor-deal-risk-gate
 npx wrangler secret put AGENT_CARD_SIGNING_KEY --env cis-secondary-sanctions
+npx wrangler secret put AGENT_CARD_SIGNING_KEY --env agentic-interaction-trust
 
 # 3. Redeploy each env so the new env reads the secret.
 npx wrangler deploy
 npx wrangler deploy --env kazakhstan
 npx wrangler deploy --env middle-corridor-deal-risk-gate
 npx wrangler deploy --env cis-secondary-sanctions
+npx wrangler deploy --env agentic-interaction-trust
 
 # 4. Verify.
 curl https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/jwks.json

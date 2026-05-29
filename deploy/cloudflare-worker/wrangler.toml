@@ -50,3 +50,14 @@ AGENT_PROFILE = "cis_secondary_sanctions"
 [[env.cis-secondary-sanctions.kv_namespaces]]
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
+
+[env.agentic-interaction-trust]
+name = "agentic-interaction-trust-a2a"
+workers_dev = true
+
+[env.agentic-interaction-trust.vars]
+AGENT_PROFILE = "agentic_interaction_trust"
+
+[[env.agentic-interaction-trust.kv_namespaces]]
+binding = "AGENDA_USAGE"
+id = "d2228183999246ccbec8aa2d5f130bfc"

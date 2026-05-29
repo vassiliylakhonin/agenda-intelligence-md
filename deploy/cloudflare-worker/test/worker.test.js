@@ -94,6 +94,8 @@ test("agent card verifier accepts local Agenda and Middle Corridor cards", () =>
   const agendaCard = agentCard(request);
   const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
   const kazakhstanCard = agentCard(kazakhstanRequest, { AGENT_PROFILE: "kazakhstan" });
+  const agenticRequest = new Request("https://agentic-interaction-trust-a2a.example.workers.dev/message/send");
+  const agenticCard = agentCard(agenticRequest, { AGENT_PROFILE: "agentic_interaction_trust" });
 
   assert.deepEqual(
     validateAgentCard(agendaCard, "https://agenda-intelligence-a2a.example.workers.dev/.well-known/agent-card.json"),
@@ -103,6 +105,13 @@ test("agent card verifier accepts local Agenda and Middle Corridor cards", () =>
     validateAgentCard(
       kazakhstanCard,
       "https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/.well-known/agent-card.json"
+    ),
+    []
+  );
+  assert.deepEqual(
+    validateAgentCard(
+      agenticCard,
+      "https://agentic-interaction-trust-a2a.example.workers.dev/.well-known/agent-card.json"
     ),
     []
   );
@@ -866,6 +875,120 @@ test("statusInfo keeps live_retrieval false for kazakhstan profile", () => {
   const status = statusInfo(kazRequest, {});
   assert.equal(status.profile, "kazakhstan");
   assert.equal(status.boundaries.live_retrieval, false);
+});
+
+// ---------------------------------------------------------------------------
+// Agentic Interaction Trust Gate profile
+// ---------------------------------------------------------------------------
+
+const agenticRequest = new Request("https://agentic-interaction-trust-a2a.example.workers.dev/message/send", {
+  method: "POST",
+  headers: { "user-agent": "node:test" }
+});
+
+const agenticSampleStructuredRequest = {
+  actor: {
+    declared_type: "ai_agent",
+    declared_name: "Example Shopping Agent",
+    operator: "Example Consumer",
+    declared_user_agent: "ExampleShoppingAgent/1.0",
+    authentication_context: "session_cookie"
+  },
+  target_surface: "checkout",
+  requested_action: "complete purchase of two restricted-delivery items",
+  asset_or_resource: "order-123",
+  decision_stage: "pre_execution",
+  dated_sources: [
+    { id: "ait-1", source_type: "agent_identity_claim", title: "Declared agent identity header", date: "2026-05-28" },
+    { id: "ait-2", source_type: "session_authentication_evidence", title: "Authenticated checkout session", date: "2026-05-28" },
+    { id: "ait-3", source_type: "transaction_or_target_action_evidence", title: "Order summary", date: "2026-05-28" }
+  ],
+  risk_question: "Is this agent-mediated checkout ready to allow, step up, or route to human review?"
+};
+
+test("agentic_interaction_trust profile is detected from host and env", () => {
+  const card = agentCard(agenticRequest, {});
+  assert.equal(card.x_agenda_intelligence.product_profile, "agentic_interaction_trust");
+  assert.equal(card.name, "Agentic Interaction Trust Gate");
+  assert.equal(card.skills.length, 1);
+  assert.equal(card.skills[0].id, "agentic-interaction-trust-gate");
+  assert.equal(card.x_agenda_intelligence.product_contract.canonical_input_mode, "structured_json");
+  assert.equal(
+    card.x_agenda_intelligence.product_contract.request_schema,
+    "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/agentic-interaction-trust-request.schema.json"
+  );
+  assert.ok(card.x_agenda_intelligence.required_before_action.includes("agent_card_or_manifest"));
+  assert.ok(card.x_agenda_intelligence.boundaries.includes("No autonomous live source retrieval."));
+  assert.match(card.x_agenda_intelligence.not_advice_notice, /Not cybersecurity monitoring/);
+});
+
+test("statusInfo exposes agentic_interaction_trust boundaries", () => {
+  const status = statusInfo(agenticRequest, {});
+  assert.equal(status.profile, "agentic_interaction_trust");
+  assert.equal(status.boundaries.live_retrieval, false);
+  assert.equal(status.boundaries.factual_verification, false);
+  assert.equal(status.boundaries.human_review_required, true);
+  assert.equal(status.live_retrieval, undefined);
+});
+
+test("agentic_interaction_trust message/send dispatches to structured triage", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "agentic-1",
+        method: "message/send",
+        params: { request: agenticSampleStructuredRequest }
+      },
+      agenticRequest,
+      {}
+    );
+
+    assert.equal(response.jsonrpc, "2.0");
+    assert.equal(response.id, "agentic-1");
+    const result = response.result;
+    assert.equal(result.status.state, "completed");
+    assert.equal(result.metadata.product_profile, "agentic_interaction_trust");
+    assert.equal(result.metadata.canonical_http_endpoint, "/v1/agentic-interaction/trust");
+    assert.equal(result.metadata.human_review_required, true);
+    const resp = result.metadata.response;
+    assert.equal(resp.triage_recommendation, "require_step_up");
+    assert.equal(resp.trust_signal, "medium");
+    assert.equal(resp.decision_readiness_score, 40);
+    assert.deepEqual(resp.minimum_sources_before_action, [
+      "operator_or_principal_authorization",
+      "agent_card_or_manifest",
+      "tool_scope_or_permission_evidence",
+      "action_intent_evidence"
+    ]);
+    assert.match(result.artifacts[0].parts[0].text, /Agentic interaction trust gate response/);
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("agentic_interaction_trust message/send fails on missing structured request", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "agentic-bad",
+        method: "message/send",
+        params: { message: { parts: [{ kind: "text", text: "hello" }] } }
+      },
+      agenticRequest,
+      {}
+    );
+    assert.equal(response.result.status.state, "failed");
+    assert.equal(response.result.metadata.valid, false);
+    assert.equal(response.result.metadata.product_profile, "agentic_interaction_trust");
+  } finally {
+    console.log = originalLog;
+  }
 });
 
 test("cis_secondary_sanctions message/send dispatches to structured triage", async () => {

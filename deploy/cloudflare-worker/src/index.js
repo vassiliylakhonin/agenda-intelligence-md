@@ -33,6 +33,10 @@ const CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/
 const CIS_SECONDARY_SANCTIONS_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/cis-secondary-sanctions-response.schema.json`;
 const CIS_SECONDARY_SANCTIONS_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/cis-secondary-sanctions.json`;
 const CIS_SECONDARY_SANCTIONS_ADR_URL = `${REPOSITORY_URL}/blob/main/docs/adr/0014-per-profile-live-retrieval.md`;
+const AGENTIC_INTERACTION_TRUST_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/agentic-interaction-trust.md`;
+const AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agentic-interaction-trust-request.schema.json`;
+const AGENTIC_INTERACTION_TRUST_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agentic-interaction-trust-response.schema.json`;
+const AGENTIC_INTERACTION_TRUST_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/agentic-interaction-trust.json`;
 const A2A_EXAMPLES_URL = `${REPOSITORY_URL}/tree/main/examples/a2a`;
 const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";
 
@@ -145,6 +149,27 @@ const CIS_SECONDARY_SANCTIONS_HELPFUL_CONTEXT = [
   "customs_data_evidence"
 ];
 
+const AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION = [
+  "agent_identity_claim",
+  "operator_or_principal_authorization",
+  "agent_card_or_manifest",
+  "tool_scope_or_permission_evidence",
+  "session_authentication_evidence",
+  "action_intent_evidence",
+  "transaction_or_target_action_evidence"
+];
+
+const AGENTIC_INTERACTION_TRUST_HELPFUL_CONTEXT = [
+  "mcp_or_a2a_endpoint_metadata",
+  "rate_limit_or_abuse_signal",
+  "fraud_or_account_takeover_signal",
+  "device_or_infrastructure_evidence",
+  "provider_policy_or_allowlist",
+  "prior_interaction_history",
+  "incident_report_or_threat_intel",
+  "human_review_note"
+];
+
 // Per-profile live retrieval CAPABILITY declarations. Actual runtime
 // activation is env-derived via isLiveRetrievalActive(profile, env). Per the
 // 2026-05-27 update to ADR 0014, multiple upstreams can be configured per
@@ -159,6 +184,7 @@ const CIS_SECONDARY_SANCTIONS_HELPFUL_CONTEXT = [
 const PROFILE_LIVE_RETRIEVAL = {
   agenda: { capability_declared: false, upstream_options: [] },
   kazakhstan: { capability_declared: false, upstream_options: [] },
+  agentic_interaction_trust: { capability_declared: false, upstream_options: [] },
   cis_secondary_sanctions: {
     capability_declared: true,
     upstream_options: [
@@ -206,6 +232,9 @@ function isLiveRetrievalActive(profile, env = {}) {
 
 const NOT_ADVICE_NOTICE =
   "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.";
+
+const AGENTIC_TRUST_NOT_ADVICE_NOTICE =
+  "Agentic interaction evidence triage only. Not cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice.";
 
 function jsonResponse(body, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(body, null, 2), {
@@ -267,6 +296,13 @@ function agentProfile(request, env = {}) {
     host.includes("cis-secondary-sanctions-a2a")
   ) {
     return "cis_secondary_sanctions";
+  }
+  if (
+    env.AGENT_PROFILE === "agentic_interaction_trust" ||
+    host.includes("agentic-interaction-trust-a2a") ||
+    host.includes("agentic-trust-gate-a2a")
+  ) {
+    return "agentic_interaction_trust";
   }
   if (
     env.AGENT_PROFILE === "kazakhstan" ||
@@ -497,6 +533,7 @@ function agentCard(request, env = {}) {
 function applyAgentProfile(card, request, env = {}) {
   const profile = agentProfile(request, env);
   if (profile === "cis_secondary_sanctions") return applyCisSecondarySanctionsProfile(card, request, env);
+  if (profile === "agentic_interaction_trust") return applyAgenticInteractionTrustProfile(card, request);
   if (profile !== "kazakhstan") return card;
 
   const origin = originFromRequest(request);
@@ -658,6 +695,87 @@ function applyAgentProfile(card, request, env = {}) {
     "No legal, compliance, sanctions, financial, investment, insurance, or trading advice.",
     "No approval, clearance, authorization, or final decision.",
     "Human review is required for high-stakes decisions."
+  ];
+  return card;
+}
+
+function applyAgenticInteractionTrustProfile(card, request) {
+  const origin = originFromRequest(request);
+  card.name = "Agentic Interaction Trust Gate";
+  card.documentationUrl = AGENTIC_INTERACTION_TRUST_DOCS_URL;
+  card.description =
+    "A2A-compatible evidence-readiness gate for agent-mediated actions across checkout, account, API, MCP tool, and A2A endpoint surfaces. Bring actor identity claims, target surface, requested action, and dated evidence; get trust-routing triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, trust signal, and human-review routing.";
+  card.provider.legalEntity.sameAs = [
+    "https://github.com/vassiliylakhonin",
+    "https://pypi.org/project/agenda-intelligence-md/",
+    "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
+  ];
+  card.skills = [
+    {
+      id: "agentic-interaction-trust-gate",
+      name: "Agentic interaction trust gate",
+      description:
+        "Turns an agent-mediated action, target surface, actor claim, and dated evidence into a structured trust-routing recommendation with decision-readiness score, evidence gaps, and mandatory human-review routing.",
+      tags: [
+        "agentic-ai",
+        "trust-and-safety",
+        "fraud-risk",
+        "mcp",
+        "a2a",
+        "evidence-readiness",
+        "human-review",
+        "free"
+      ],
+      examples: [
+        "Should this AI shopping agent checkout be allowed, stepped up, or escalated to human review?",
+        "Triage an unknown A2A caller requesting a sanctions-adjacent capability."
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    }
+  ];
+  card.x_agenda_intelligence.product_profile = "agentic_interaction_trust";
+  card.x_agenda_intelligence.canonical_product_name = "Agentic Interaction Trust Gate";
+  card.x_agenda_intelligence.wrapper_scope =
+    "A2A/JSON-RPC discovery, agentic interaction trust triage, evidence gating, and routing response only";
+  card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
+  card.x_agenda_intelligence.documentation = AGENTIC_INTERACTION_TRUST_DOCS_URL;
+  card.x_agenda_intelligence.product_contract = {
+    request_schema: AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL,
+    response_schema: AGENTIC_INTERACTION_TRUST_RESPONSE_SCHEMA_URL,
+    source_taxonomy: AGENTIC_INTERACTION_TRUST_SOURCE_TAXONOMY_URL,
+    runnable_examples: `${REPOSITORY_URL}/tree/main/examples/agentic-interaction-trust`,
+    canonical_input_mode: "structured_json",
+    demo_input_modes: ["structured_json"]
+  };
+  card.x_agenda_intelligence.required_before_action = AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION;
+  card.x_agenda_intelligence.helpful_context_sources = AGENTIC_INTERACTION_TRUST_HELPFUL_CONTEXT;
+  card.x_agenda_intelligence.supported_contracts = ["agentic_interaction_trust_contract"];
+  card.x_agenda_intelligence.buyer_use_cases = [
+    "AI shopping-agent checkout step-up review",
+    "unknown A2A caller capability invocation review",
+    "MCP tool-scope and permission evidence triage",
+    "API partner delegated-action evidence readiness",
+    "trust-and-safety human-review queue preparation"
+  ];
+  card.x_agenda_intelligence.commercial_positioning =
+    "Actor + target surface + requested action + dated evidence -> auditable trust-routing triage with evidence gaps, decision-readiness score, watch-next indicators, and human-review escalation.";
+  card.x_agenda_intelligence.focus = [
+    "agent-mediated checkout and account action triage",
+    "A2A and MCP endpoint invocation evidence gates",
+    "delegated-action authority and permission evidence",
+    "trust-and-safety review readiness",
+    "human-review escalation for consequential agentic actions"
+  ];
+  card.x_agenda_intelligence.not_advice_notice = AGENTIC_TRUST_NOT_ADVICE_NOTICE;
+  card.x_agenda_intelligence.boundaries = [
+    "Agentic interaction evidence triage only.",
+    "No autonomous live source retrieval.",
+    "No factual-truth verification.",
+    "No cybersecurity monitoring, fraud adjudication, identity verification, or transaction authorization.",
+    "No legal, compliance, financial, investment, insurance, or trading advice.",
+    "No approval, clearance, authorization, denial, blocking, or final decision.",
+    "Human review is required for consequential decisions."
   ];
   return card;
 }
@@ -938,6 +1056,237 @@ function suppliedSourceTypes(request) {
     if (typeof source.source_type === "string") types.push(source.source_type);
   }
   return Array.from(new Set(types));
+}
+
+function isAgenticInteractionTrustRequest(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    value.actor &&
+    typeof value.actor === "object" &&
+    typeof value.actor.declared_type === "string" &&
+    typeof value.actor.declared_name === "string" &&
+    typeof value.target_surface === "string" &&
+    typeof value.requested_action === "string" &&
+    Array.isArray(value.dated_sources) &&
+    typeof value.risk_question === "string" &&
+    typeof value.decision_stage === "string"
+  );
+}
+
+function structuredAgenticInteractionTrustRequestFromParams(params) {
+  if (!params || typeof params !== "object") return null;
+  const candidates = [
+    params.request,
+    params.agentic_interaction_trust_request,
+    params.agentic_trust_request,
+    params.input,
+    params
+  ];
+  const message = params.message;
+  if (message && typeof message === "object") {
+    if (message.data && typeof message.data === "object") candidates.push(message.data);
+    if (Array.isArray(message.parts)) {
+      for (const part of message.parts) {
+        if (!part || typeof part !== "object") continue;
+        candidates.push(part.data, part.json, part.content);
+        const parsed = tryParseJsonObject(part.text);
+        if (parsed) candidates.push(parsed);
+      }
+    }
+  }
+  for (const candidate of candidates) {
+    if (isAgenticInteractionTrustRequest(candidate)) return candidate;
+    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
+    if (parsed && isAgenticInteractionTrustRequest(parsed)) return parsed;
+  }
+  return null;
+}
+
+function agenticEvidenceGapForSource(sourceType) {
+  const gaps = {
+    agent_identity_claim: "No agent identity claim supplied.",
+    operator_or_principal_authorization: "No operator or principal authorization supplied.",
+    agent_card_or_manifest: "No agent card or signed manifest supplied.",
+    tool_scope_or_permission_evidence: "No tool-scope or permission evidence supplied.",
+    session_authentication_evidence: "No session authentication evidence supplied.",
+    action_intent_evidence: "No action-intent evidence supplied.",
+    transaction_or_target_action_evidence: "No transaction or target-action evidence supplied.",
+    provider_policy_or_allowlist: "No provider policy or allowlist record supplied."
+  };
+  return gaps[sourceType] || `No ${sourceType} supplied.`;
+}
+
+function agenticDecisionReadiness(request, supplied) {
+  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0 || supplied.length === 0) {
+    return [0, "insufficient_information"];
+  }
+  const requiredPresent = AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION.filter((s) => supplied.includes(s)).length;
+  const contextPresent = AGENTIC_INTERACTION_TRUST_HELPFUL_CONTEXT.filter((s) => supplied.includes(s)).length;
+  const score = Math.min(
+    100,
+    Math.round(
+      10 +
+        (requiredPresent / AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION.length) * 70 +
+        (contextPresent / AGENTIC_INTERACTION_TRUST_HELPFUL_CONTEXT.length) * 20
+    )
+  );
+  if (score >= 85) return [score, "review_ready"];
+  if (score >= 50) return [score, "partial"];
+  return [score, "not_decision_ready"];
+}
+
+function agenticTrustSignal(request, supplied, missing) {
+  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0) return "unknown";
+  if (supplied.includes("fraud_or_account_takeover_signal")) return "low";
+  if (supplied.includes("rate_limit_or_abuse_signal") && missing.length >= 4) return "unknown";
+  if (missing.length >= 5) return "unknown";
+  if (missing.length >= 3) return "medium";
+  if (missing.length > 0) return "medium_high";
+  return "high";
+}
+
+function agenticTriageRecommendation(request, supplied, missing) {
+  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0) return "insufficient_information";
+  if (supplied.includes("fraud_or_account_takeover_signal")) return "block_until_verified";
+  if (missing.length === 0) return "allow_low_risk";
+  if (["checkout", "auth_flow", "account"].includes(request.target_surface) && missing.length <= 4) {
+    return "require_step_up";
+  }
+  if (
+    ["a2a_endpoint", "mcp_tool"].includes(request.target_surface) ||
+    supplied.includes("rate_limit_or_abuse_signal")
+  ) {
+    return "escalate_to_human_review";
+  }
+  if (["policy_review", "committee_review"].includes(request.decision_stage)) return "not_decision_ready";
+  return "escalate_to_human_review";
+}
+
+function agenticTopRiskDimensions(request, supplied, missing) {
+  const dims = [];
+  if (missing.includes("operator_or_principal_authorization")) {
+    dims.push("delegated action authority is not evidenced");
+  }
+  if (missing.includes("agent_card_or_manifest")) dims.push("agent identity is declared but not independently anchored");
+  if (missing.includes("tool_scope_or_permission_evidence")) dims.push("requested tool or action scope is not evidenced");
+  if (missing.includes("action_intent_evidence")) dims.push("action intent is not evidenced");
+  if (request.target_surface === "checkout") dims.push("checkout action may need step-up before completion");
+  if (["a2a_endpoint", "mcp_tool"].includes(request.target_surface)) {
+    dims.push("agent endpoint invocation requires capability-scope review");
+  }
+  if (supplied.includes("rate_limit_or_abuse_signal")) {
+    dims.push("abuse or burst pattern requires review before continued access");
+  }
+  if (supplied.includes("fraud_or_account_takeover_signal")) {
+    dims.push("fraud or account-takeover signal requires verification before action");
+  }
+  return Array.from(new Set(dims));
+}
+
+function agenticInteractionTrustResult(request) {
+  const supplied = suppliedSourceTypes(request);
+  const missing = AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION.filter((s) => !supplied.includes(s));
+  const [score, label] = agenticDecisionReadiness(request, supplied);
+  const response = {
+    triage_recommendation: agenticTriageRecommendation(request, supplied, missing),
+    trust_signal: agenticTrustSignal(request, supplied, missing),
+    decision_readiness_score: score,
+    decision_readiness_label: label,
+    actor: request.actor,
+    target_surface: request.target_surface,
+    requested_action: request.requested_action,
+    supplied_sources: supplied,
+    minimum_sources_before_action: missing,
+    evidence_gaps: missing.map(agenticEvidenceGapForSource),
+    top_risk_dimensions: agenticTopRiskDimensions(request, supplied, missing),
+    watch_next: [
+      "agent identity spoofing pattern",
+      "unexpected tool-scope expansion",
+      "checkout or transaction anomaly",
+      "account takeover signal",
+      "rate-limit or scraping burst",
+      "provider allowlist or policy change",
+      "mcp or a2a endpoint metadata change",
+      "credential leakage or secret exposure report"
+    ],
+    human_review_required: true,
+    not_advice_notice: AGENTIC_TRUST_NOT_ADVICE_NOTICE,
+    limitations: [
+      "This response does not verify the identity of the actor, operator, or principal.",
+      "This response does not authorize, approve, deny, or block the requested action."
+    ]
+  };
+  if (request.asset_or_resource) response.asset_or_resource = request.asset_or_resource;
+  return { response };
+}
+
+function agenticArtifactText(response) {
+  const missing = response.minimum_sources_before_action || [];
+  const missingText = missing.length ? missing.map((s) => `- ${s}`).join("\n") : "- none";
+  const dims = response.top_risk_dimensions || [];
+  const dimsText = dims.length ? dims.map((s) => `- ${s}`).join("\n") : "- none";
+  return [
+    "Agentic interaction trust gate response",
+    "",
+    `Recommendation: ${response.triage_recommendation}`,
+    `Trust signal: ${response.trust_signal}`,
+    `Decision readiness: ${response.decision_readiness_score}/100 (${response.decision_readiness_label})`,
+    `Target surface: ${response.target_surface}`,
+    `Human review required: ${String(response.human_review_required)}`,
+    "",
+    "Top risk dimensions:",
+    dimsText,
+    "",
+    "Minimum sources before action:",
+    missingText,
+    "",
+    response.not_advice_notice
+  ].join("\n");
+}
+
+function a2aResultForAgenticInteractionTrust(params) {
+  const structured = structuredAgenticInteractionTrustRequestFromParams(params);
+  if (!structured) {
+    return {
+      id: crypto.randomUUID(),
+      status: { state: "failed", timestamp: new Date().toISOString() },
+      artifacts: [],
+      metadata: {
+        product_profile: "agentic_interaction_trust",
+        canonical_http_endpoint: "/v1/agentic-interaction/trust",
+        schema: "schemas/v1/agentic-interaction-trust-request.schema.json",
+        valid: false,
+        errors: ["Missing structured agentic interaction trust request"]
+      }
+    };
+  }
+  const result = agenticInteractionTrustResult(structured);
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "completed", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "agentic-interaction-trust-response",
+        name: "Agentic interaction trust response",
+        parts: [
+          {
+            kind: "text",
+            text: agenticArtifactText(result.response)
+          }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "agentic_interaction_trust",
+      canonical_http_endpoint: "/v1/agentic-interaction/trust",
+      schema: "schemas/v1/agentic-interaction-trust-request.schema.json",
+      human_review_required: result.response.human_review_required,
+      not_advice_notice: result.response.not_advice_notice,
+      response: result.response
+    }
+  };
 }
 
 async function matchAgainstActiveUpstream(env, counterparty) {
@@ -2154,6 +2503,11 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
       const structured = structuredCisSecondarySanctionsRequestFromParams(params);
       promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
       modulesUsed = ["cis_secondary_sanctions"];
+    } else if (profile === "agentic_interaction_trust") {
+      result = a2aResultForAgenticInteractionTrust(params);
+      const structured = structuredAgenticInteractionTrustRequestFromParams(params);
+      promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
+      modulesUsed = ["agentic_interaction_trust"];
     } else {
       result = a2aResult(params, request, env);
       const structuredRequest = structuredDealRiskRequestFromParams(params);
@@ -2272,7 +2626,10 @@ function statusInfo(request, env) {
       not_advice: true,
       live_retrieval: liveRetrievalActive,
       factual_verification: false,
-      human_review_required: profile === "kazakhstan" || profile === "cis_secondary_sanctions"
+      human_review_required:
+        profile === "kazakhstan" ||
+        profile === "cis_secondary_sanctions" ||
+        profile === "agentic_interaction_trust"
     }
   };
   if (liveRetrievalMeta.capability_declared) {
@@ -2305,11 +2662,14 @@ function landingHtml(request, env) {
   const profile = agentProfile(request, env);
   const card = agentCard(request, env);
   const isKazakhstan = profile === "kazakhstan";
+  const isAgentic = profile === "agentic_interaction_trust";
 
   const title = escapeHtml(card.name);
   const tagline = isKazakhstan
     ? "Pre-compliance evidence triage for Kazakhstan / Middle Corridor deal flow — route, cargo, counterparties, dated sources → auditable risk gate."
-    : "Evidence-discipline layer for strategic intelligence agents — geography-routed structured risk triage with explicit source provenance.";
+    : isAgentic
+      ? "Evidence-readiness gate for agent-mediated actions — actor, target surface, requested action, dated evidence → auditable trust-routing triage."
+      : "Evidence-discipline layer for strategic intelligence agents — geography-routed structured risk triage with explicit source provenance.";
 
   const tryItCurl = isKazakhstan
     ? `curl -X POST ${origin}/message/send \\
@@ -2323,6 +2683,29 @@ function landingHtml(request, env) {
         "parts": [
           { "kind": "text", "text": "Screen Kazakhstan Middle Corridor sanctions exposure for a logistics route." }
         ]
+      }
+    }
+  }'`
+    : isAgentic
+      ? `curl -X POST ${origin}/message/send \\
+  -H 'content-type: application/json' \\
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "agentic-demo-1",
+    "method": "message/send",
+    "params": {
+      "request": {
+        "actor": {"declared_type": "ai_agent", "declared_name": "Example Shopping Agent", "operator": "Example Consumer", "authentication_context": "session_cookie"},
+        "target_surface": "checkout",
+        "requested_action": "complete purchase of two restricted-delivery items",
+        "asset_or_resource": "order-123",
+        "decision_stage": "pre_execution",
+        "dated_sources": [
+          {"id": "ait-1", "source_type": "agent_identity_claim", "title": "Declared agent identity header", "date": "2026-05-28"},
+          {"id": "ait-2", "source_type": "session_authentication_evidence", "title": "Authenticated checkout session", "date": "2026-05-28"},
+          {"id": "ait-3", "source_type": "transaction_or_target_action_evidence", "title": "Order summary", "date": "2026-05-28"}
+        ],
+        "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?"
       }
     }
   }'`
@@ -2343,6 +2726,8 @@ function landingHtml(request, env) {
 
   const flagshipBlock = isKazakhstan
     ? `<p>This worker is the live Kazakhstan / Middle Corridor Deal Risk Gate — the flagship commercial use case of the Agenda Intelligence runtime. It accepts route + cargo + counterparties + dated sources and returns an auditable triage with evidence gaps, missing source categories, decision-readiness score, and a three-value recommendation (insufficient_information, pre_signature_escalate, ready_for_human_review). Human review is required before any commercial action.</p>`
+    : isAgentic
+      ? `<p>This worker is the live Agentic Interaction Trust Gate. It accepts actor + target surface + requested action + dated evidence and returns an auditable trust-routing triage with evidence gaps, missing source categories, decision-readiness score, trust signal, and mandatory human-review routing. It is not a detection engine and does not authorize, deny, or block actions.</p>`
     : `<p>This worker is the general Agenda Intelligence A2A wrapper — discovery, uptime checks, lightweight strategic-risk triage, and JSON-RPC routing across geography-aware modules. For deeper Kazakhstan / Middle Corridor deal-risk screening, use the dedicated <a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">deal-risk-gate worker</a>.</p>`;
 
   const agenstryListing = isKazakhstan

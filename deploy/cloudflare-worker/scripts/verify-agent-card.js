@@ -4,7 +4,8 @@ import { pathToFileURL } from "node:url";
 const DEFAULT_AGENT_CARD_URLS = [
   "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
   "https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
-  "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json"
+  "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+  "https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json"
 ];
 
 function agentCardUrl(value) {
@@ -77,6 +78,49 @@ function validateMiddleCorridorCard(card) {
   return errors;
 }
 
+function validateAgenticInteractionTrustCard(card) {
+  const errors = [];
+  if (card.name !== "Agentic Interaction Trust Gate") {
+    errors.push(`expected Agentic Interaction Trust Gate name, got ${JSON.stringify(card.name)}`);
+  }
+  if (card?.x_agenda_intelligence?.product_profile !== "agentic_interaction_trust") {
+    errors.push("expected x_agenda_intelligence.product_profile=agentic_interaction_trust");
+  }
+  if (card?.x_agenda_intelligence?.canonical_product_name !== "Agentic Interaction Trust Gate") {
+    errors.push("expected canonical product name");
+  }
+  const contract = card?.x_agenda_intelligence?.product_contract;
+  if (contract?.canonical_input_mode !== "structured_json") {
+    errors.push("expected product_contract.canonical_input_mode=structured_json");
+  }
+  if (!String(contract?.request_schema || "").includes("agentic-interaction-trust-request.schema.json")) {
+    errors.push("expected Agentic Interaction Trust request schema URL");
+  }
+  if (!String(contract?.response_schema || "").includes("agentic-interaction-trust-response.schema.json")) {
+    errors.push("expected Agentic Interaction Trust response schema URL");
+  }
+  if (!String(contract?.source_taxonomy || "").includes("agentic-interaction-trust.json")) {
+    errors.push("expected Agentic Interaction Trust source taxonomy URL");
+  }
+  const requiredBeforeAction = card?.x_agenda_intelligence?.required_before_action;
+  if (
+    !Array.isArray(requiredBeforeAction) ||
+    !requiredBeforeAction.includes("operator_or_principal_authorization")
+  ) {
+    errors.push("expected operator_or_principal_authorization in required_before_action");
+  }
+  if (!String(card?.x_agenda_intelligence?.not_advice_notice || "").includes("Not cybersecurity monitoring")) {
+    errors.push("expected non-advice notice");
+  }
+  if (!hasBoundary(card, "No approval, clearance, authorization, denial, blocking, or final decision.")) {
+    errors.push("expected no-authorization boundary");
+  }
+  if (!Array.isArray(card.skills) || !card.skills.some((skill) => skill.id === "agentic-interaction-trust-gate")) {
+    errors.push("expected agentic-interaction-trust-gate skill");
+  }
+  return errors;
+}
+
 export function validateAgentCard(card, sourceUrl = "") {
   if (!card || typeof card !== "object") return ["agent card is not a JSON object"];
   const errors = [];
@@ -90,7 +134,15 @@ export function validateAgentCard(card, sourceUrl = "") {
     card.name === "Kazakhstan / Middle Corridor Deal Risk Gate" ||
     sourceUrl.includes("kazakhstan-corridor-risk-a2a") ||
     sourceUrl.includes("middle-corridor-deal-risk-gate-a2a");
-  errors.push(...(isMiddleCorridor ? validateMiddleCorridorCard(card) : validateAgendaCard(card)));
+  const isAgenticInteractionTrust =
+    card.name === "Agentic Interaction Trust Gate" || sourceUrl.includes("agentic-interaction-trust-a2a");
+  if (isMiddleCorridor) {
+    errors.push(...validateMiddleCorridorCard(card));
+  } else if (isAgenticInteractionTrust) {
+    errors.push(...validateAgenticInteractionTrustCard(card));
+  } else {
+    errors.push(...validateAgendaCard(card));
+  }
   return errors;
 }
 
