@@ -429,8 +429,58 @@ def _middle_corridor_readiness(request_json: dict, supplied_sources: list[str]) 
     return score, "not_decision_ready"
 
 
-def _middle_corridor_top_risks(missing_sources: list[str]) -> list[str]:
+# Sanctions-relevant / high-risk jurisdictions for presence-flagging per ADR 0015.
+# This is an escalation flag (route to human review), NOT a designation or legal
+# conclusion. Comprehensively or sectorally sanctioned jurisdictions whose presence
+# in a Middle Corridor counterparty set is a near-automatic human-review trigger.
+# Lowercased; matched as substring against the counterparty jurisdiction field.
+HIGH_RISK_JURISDICTIONS = {
+    "russia": "Russia",
+    "russian federation": "Russia",
+    "belarus": "Belarus",
+    "iran": "Iran",
+    "north korea": "North Korea",
+    "dprk": "North Korea",
+    "syria": "Syria",
+    "crimea": "Crimea",
+    "donetsk": "Donetsk (non-government-controlled)",
+    "luhansk": "Luhansk (non-government-controlled)",
+}
+
+
+def _high_risk_jurisdiction_counterparties(request_json: dict) -> list[dict]:
+    """Flag counterparties domiciled in a sanctions-relevant / high-risk jurisdiction.
+
+    Per ADR 0015 this is presence-flagging, not adjudication: it surfaces that a
+    counterparty's declared jurisdiction matches a known high-risk list and routes
+    to human review. It does not determine that a sanction applies.
+    """
+    flagged: list[dict] = []
+    for cp in request_json.get("counterparties", []) or []:
+        if not isinstance(cp, dict):
+            continue
+        jurisdiction = cp.get("jurisdiction")
+        if not isinstance(jurisdiction, str):
+            continue
+        lowered = jurisdiction.lower()
+        for token, label in HIGH_RISK_JURISDICTIONS.items():
+            if token in lowered:
+                flagged.append(
+                    {
+                        "name": cp.get("name", "unnamed counterparty"),
+                        "role": cp.get("role", "unknown"),
+                        "jurisdiction": jurisdiction,
+                        "matched": label,
+                    }
+                )
+                break
+    return flagged
+
+
+def _middle_corridor_top_risks(missing_sources: list[str], high_risk_jurisdictions: bool = False) -> list[str]:
     risks = ["sanctions adjacency", "Caspian chokepoint dependency"]
+    if high_risk_jurisdictions:
+        risks.insert(0, "counterparty in a sanctions-relevant / high-risk jurisdiction")
     if "customs_or_regulatory_source" in missing_sources:
         risks.append("customs and documentation uncertainty")
     if "insurance_clause_or_underwriter_note" in missing_sources:
@@ -461,6 +511,7 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
     missing_sources = [
         source_type for source_type in MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO if source_type not in supplied_sources
     ]
+    flagged_jurisdictions = _high_risk_jurisdiction_counterparties(request_json)
     readiness_score, readiness_label = _middle_corridor_readiness(request_json, supplied_sources)
     response = {
         "triage_recommendation": _middle_corridor_triage_recommendation(request_json, missing_sources),
@@ -473,7 +524,7 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         "supplied_sources": supplied_sources,
         "minimum_sources_before_go": missing_sources,
         "evidence_gaps": [_evidence_gap_for_source(source_type) for source_type in missing_sources],
-        "top_risks": _middle_corridor_top_risks(missing_sources),
+        "top_risks": _middle_corridor_top_risks(missing_sources, bool(flagged_jurisdictions)),
         "watch_next": [
             "new sanctions designations",
             "port delays or operator notices",
@@ -484,6 +535,15 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         "human_review_required": True,
         "not_advice_notice": NOT_ADVICE_NOTICE,
     }
+    if flagged_jurisdictions:
+        named = ", ".join(f"{c['name']} ({c['role']}, {c['jurisdiction']})" for c in flagged_jurisdictions)
+        response["limitations"] = [
+            (
+                "One or more counterparties are domiciled in a sanctions-relevant / high-risk jurisdiction "
+                f"({named}); this is an escalation flag for human review, not a sanctions determination. "
+                "Confirm end-use, ownership, and applicable restrictions before any commercial action."
+            )
+        ]
     if "shipment_value" in request_json:
         response["shipment_value"] = request_json["shipment_value"]
 

@@ -107,3 +107,51 @@ def test_middle_corridor_response_fixtures_do_not_imply_clearance():
         text = json.dumps(load_json(fixture_path), sort_keys=True)
         for pattern in FORBIDDEN_CLEARANCE_WORDING:
             assert not pattern.search(text), f"{fixture_path.name} contains forbidden wording: {pattern.pattern}"
+
+
+def test_middle_corridor_flags_high_risk_jurisdiction():
+    """Counterparty in a sanctions-relevant jurisdiction must be flagged (ADR 0015)."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau -> Baku -> Poti -> EU",
+        "cargo": "dual-use machine tools",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+            {"role": "consignee", "name": "RU Buyer", "jurisdiction": "Russia"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+    resp = services.middle_corridor_deal_risk(req)["response"]
+    assert "counterparty in a sanctions-relevant / high-risk jurisdiction" in resp["top_risks"]
+    assert "limitations" in resp
+    assert any("escalation flag for human review" in line for line in resp["limitations"])
+    # Boundary: must NOT phrase it as a determination.
+    joined = " ".join(resp["limitations"])
+    assert "not a sanctions determination" in joined
+
+
+def test_middle_corridor_clean_jurisdiction_not_flagged():
+    """Negative control: an all-Kazakhstan counterparty set must not trigger the flag,
+    and the structural score path is unchanged."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate?",
+        "decision_stage": "pre_signature",
+    }
+    resp = services.middle_corridor_deal_risk(req)["response"]
+    assert "counterparty in a sanctions-relevant / high-risk jurisdiction" not in resp["top_risks"]
+    assert "limitations" not in resp
