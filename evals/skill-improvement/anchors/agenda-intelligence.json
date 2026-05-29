@@ -40,6 +40,17 @@
       "rationale": "Negative-discipline anchor: must explicitly call out the most common drift behaviors."
     },
     {
+      "id": "temporal-premise-check",
+      "severity": "soft",
+      "rubric_dimensions": ["D2 Evidence Discipline"],
+      "any_of": [
+        "temporal premise",
+        "re-anchor the analysis to the actual timeline",
+        "verify it against the current date"
+      ],
+      "rationale": "Skill should instruct the model to check the question's temporal premise (asserted elapsed time / effective date) before analyzing, rather than silently adopting the caller's date. Surfaced during dogfooding 2026-05-28: a question said '12-month effect' when ~23 months had elapsed. Soft because a smaller skill may handle this implicitly."
+    },
+    {
       "id": "signal-classification-enum",
       "severity": "critical",
       "rubric_dimensions": ["D3 Signal Semantics"],
