@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/agentic-interaction-trust-response.schema.json",
+  "title": "AgenticInteractionTrustResponse",
+  "description": "Product-grade structured response contract for evidence triage of agent-mediated interactions. Supports trust-signal routing, evidence gaps, source coverage, watch-next indicators, and human-review requirements. It does not provide cybersecurity monitoring, fraud adjudication, legal advice, compliance advice, financial advice, identity verification, transaction authorization, autonomous blocking, live retrieval, or factual-truth verification.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "triage_recommendation",
+    "trust_signal",
+    "decision_readiness_score",
+    "decision_readiness_label",
+    "target_surface",
+    "requested_action",
+    "supplied_sources",
+    "minimum_sources_before_action",
+    "evidence_gaps",
+    "watch_next",
+    "human_review_required",
+    "not_advice_notice"
+  ],
+  "properties": {
+    "triage_recommendation": {
+      "type": "string",
+      "enum": [
+        "allow_low_risk",
+        "require_step_up",
+        "escalate_to_human_review",
+        "block_until_verified",
+        "not_decision_ready",
+        "insufficient_information"
+      ]
+    },
+    "trust_signal": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "medium_high",
+        "high",
+        "unknown"
+      ]
+    },
+    "decision_readiness_score": {
+      "description": "Heuristic 0-100 score for evidence-pack readiness for a human trust-routing decision. This is not approval, clearance, fraud adjudication, cybersecurity monitoring, identity verification, legal advice, compliance advice, financial advice, or transaction authorization.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "decision_readiness_label": {
+      "type": "string",
+      "enum": [
+        "insufficient_information",
+        "not_decision_ready",
+        "partial",
+        "review_ready"
+      ]
+    },
+    "actor": {
+      "type": "object"
+    },
+    "target_surface": {
+      "$ref": "#/$defs/target_surface"
+    },
+    "requested_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "asset_or_resource": {
+      "type": "string",
+      "minLength": 1
+    },
+    "supplied_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_type"
+      }
+    },
+    "minimum_sources_before_action": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_type"
+      }
+    },
+    "evidence_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "top_risk_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "watch_next": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "human_review_required": {
+      "type": "boolean"
+    },
+    "not_advice_notice": {
+      "type": "string",
+      "minLength": 1
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "target_surface": {
+      "type": "string",
+      "enum": [
+        "checkout",
+        "account",
+        "api",
+        "mcp_tool",
+        "a2a_endpoint",
+        "content_or_catalog",
+        "auth_flow",
+        "support_or_messaging",
+        "other"
+      ]
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "agent_identity_claim",
+        "operator_or_principal_authorization",
+        "agent_card_or_manifest",
+        "mcp_or_a2a_endpoint_metadata",
+        "tool_scope_or_permission_evidence",
+        "session_authentication_evidence",
+        "action_intent_evidence",
+        "transaction_or_target_action_evidence",
+        "rate_limit_or_abuse_signal",
+        "fraud_or_account_takeover_signal",
+        "device_or_infrastructure_evidence",
+        "provider_policy_or_allowlist",
+        "prior_interaction_history",
+        "incident_report_or_threat_intel",
+        "human_review_note",
+        "user_provided_note",
+        "other"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "triage_recommendation": "require_step_up",
+      "trust_signal": "medium",
+      "decision_readiness_score": 46,
+      "decision_readiness_label": "not_decision_ready",
+      "actor": {
+        "declared_type": "ai_agent",
+        "declared_name": "Example Shopping Agent",
+        "operator": "Example Consumer"
+      },
+      "target_surface": "checkout",
+      "requested_action": "complete purchase of two restricted-delivery items",
+      "asset_or_resource": "order-123",
+      "supplied_sources": [
+        "agent_identity_claim",
+        "session_authentication_evidence",
+        "transaction_or_target_action_evidence"
+      ],
+      "minimum_sources_before_action": [
+        "operator_or_principal_authorization",
+        "agent_card_or_manifest",
+        "tool_scope_or_permission_evidence",
+        "action_intent_evidence"
+      ],
+      "evidence_gaps": [
+        "No operator or principal authorization supplied.",
+        "No agent card or signed manifest supplied.",
+        "No tool-scope evidence supplied for checkout completion."
+      ],
+      "top_risk_dimensions": [
+        "delegated purchase authority is not evidenced",
+        "agent identity is declared but not independently anchored"
+      ],
+      "watch_next": [
+        "checkout or transaction anomaly",
+        "agent identity spoofing pattern",
+        "provider allowlist or policy change"
+      ],
+      "human_review_required": true,
+      "not_advice_notice": "Agentic interaction evidence triage only. Not cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice."
+    }
+  ]
+}

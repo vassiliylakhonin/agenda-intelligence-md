@@ -1,0 +1,52 @@
+{
+  "category": "agentic-interaction-trust",
+  "required_before_go": [
+    "agent_identity_claim",
+    "operator_or_principal_authorization",
+    "agent_card_or_manifest",
+    "tool_scope_or_permission_evidence",
+    "session_authentication_evidence",
+    "action_intent_evidence",
+    "transaction_or_target_action_evidence"
+  ],
+  "must_check": [
+    "agent_identity_claim",
+    "operator_or_principal_authorization",
+    "agent_card_or_manifest",
+    "tool_scope_or_permission_evidence",
+    "session_authentication_evidence",
+    "action_intent_evidence",
+    "transaction_or_target_action_evidence"
+  ],
+  "helpful_context": [
+    "mcp_or_a2a_endpoint_metadata",
+    "rate_limit_or_abuse_signal",
+    "fraud_or_account_takeover_signal",
+    "device_or_infrastructure_evidence",
+    "provider_policy_or_allowlist",
+    "prior_interaction_history",
+    "incident_report_or_threat_intel",
+    "human_review_note"
+  ],
+  "supporting_sources": [
+    "mcp_or_a2a_endpoint_metadata",
+    "rate_limit_or_abuse_signal",
+    "fraud_or_account_takeover_signal",
+    "device_or_infrastructure_evidence",
+    "provider_policy_or_allowlist",
+    "prior_interaction_history",
+    "incident_report_or_threat_intel",
+    "human_review_note"
+  ],
+  "watch_indicators": [
+    "agent identity spoofing pattern",
+    "unexpected tool-scope expansion",
+    "checkout or transaction anomaly",
+    "account takeover signal",
+    "rate-limit or scraping burst",
+    "new provider allowlist or policy change",
+    "mcp or a2a endpoint metadata change",
+    "credential leakage or secret exposure report"
+  ],
+  "boundary": "This taxonomy supports evidence triage for agent-mediated interaction trust decisions only. It does not provide cybersecurity monitoring, fraud adjudication, legal advice, compliance advice, financial advice, transaction authorization, identity verification, or autonomous blocking decisions."
+}

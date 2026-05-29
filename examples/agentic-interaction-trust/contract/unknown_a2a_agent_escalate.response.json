@@ -1,0 +1,50 @@
+{
+  "triage_recommendation": "escalate_to_human_review",
+  "trust_signal": "unknown",
+  "decision_readiness_score": 33,
+  "decision_readiness_label": "not_decision_ready",
+  "actor": {
+    "declared_type": "ai_agent",
+    "declared_name": "Unknown Procurement Agent",
+    "operator": "Unknown"
+  },
+  "target_surface": "a2a_endpoint",
+  "requested_action": "invoke counterparty exposure triage capability",
+  "asset_or_resource": "cis_secondary_sanctions_exposure",
+  "supplied_sources": [
+    "agent_identity_claim",
+    "mcp_or_a2a_endpoint_metadata",
+    "rate_limit_or_abuse_signal"
+  ],
+  "minimum_sources_before_action": [
+    "operator_or_principal_authorization",
+    "agent_card_or_manifest",
+    "tool_scope_or_permission_evidence",
+    "session_authentication_evidence",
+    "action_intent_evidence",
+    "transaction_or_target_action_evidence"
+  ],
+  "evidence_gaps": [
+    "No operator or principal authorization supplied.",
+    "No signed agent card or manifest supplied.",
+    "No permission evidence supplied for the requested A2A capability.",
+    "No action-intent evidence supplied.",
+    "API-key context is supplied, but session authentication evidence is not sufficient to identify the principal."
+  ],
+  "top_risk_dimensions": [
+    "unknown principal behind agent claim",
+    "requested capability touches sanctions-adjacent workflow",
+    "burst invocation pattern requires review before continued access"
+  ],
+  "watch_next": [
+    "rate-limit or scraping burst",
+    "mcp or a2a endpoint metadata change",
+    "credential leakage or secret exposure report"
+  ],
+  "human_review_required": true,
+  "not_advice_notice": "Agentic interaction evidence triage only. Not cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice.",
+  "limitations": [
+    "This response does not verify whether the caller is controlled by the declared operator.",
+    "This response does not make an autonomous access-control decision."
+  ]
+}

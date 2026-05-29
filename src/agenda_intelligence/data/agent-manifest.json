@@ -82,6 +82,14 @@
     "middle_corridor_deal_risk_response": {
       "path": "schemas/v1/middle-corridor-deal-risk-response.schema.json",
       "schema_version": "v1"
+    },
+    "agentic_interaction_trust_request": {
+      "path": "schemas/v1/agentic-interaction-trust-request.schema.json",
+      "schema_version": "v1"
+    },
+    "agentic_interaction_trust_response": {
+      "path": "schemas/v1/agentic-interaction-trust-response.schema.json",
+      "schema_version": "v1"
     }
   },
   "product": {
@@ -401,6 +409,7 @@
     "policy": "SOURCE_POLICY.md",
     "taxonomy": "source-taxonomy.json",
     "requirements": {
+      "agentic-interaction-trust": "source-requirements/agentic-interaction-trust.json",
       "conflict-security": "source-requirements/conflict-security.json",
       "cyber-threats": "source-requirements/cyber-threats.json",
       "elections": "source-requirements/elections.json",

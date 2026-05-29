@@ -1,0 +1,34 @@
+{
+  "actor": {
+    "declared_type": "api_client",
+    "declared_name": "Partner Export Client",
+    "operator": "Example Partner Ltd",
+    "authentication_context": "api_key"
+  },
+  "target_surface": "api",
+  "requested_action": "export recent account activity for delegated analytics",
+  "asset_or_resource": "accounts/activity/export",
+  "decision_stage": "policy_review",
+  "dated_sources": [
+    {
+      "id": "ait-api-1",
+      "source_type": "session_authentication_evidence",
+      "title": "API key authentication event",
+      "date": "2026-05-28"
+    },
+    {
+      "id": "ait-api-2",
+      "source_type": "transaction_or_target_action_evidence",
+      "title": "Requested export endpoint and parameter summary",
+      "date": "2026-05-28"
+    },
+    {
+      "id": "ait-api-3",
+      "source_type": "prior_interaction_history",
+      "title": "Prior successful low-volume API calls",
+      "date": "2026-05-20"
+    }
+  ],
+  "risk_question": "Is this partner API client ready for data-export access or is the evidence pack still missing required authority and scope records?",
+  "requested_output": "structured_json"
+}

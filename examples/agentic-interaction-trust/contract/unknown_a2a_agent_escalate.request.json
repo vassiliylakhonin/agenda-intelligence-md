@@ -1,0 +1,35 @@
+{
+  "actor": {
+    "declared_type": "ai_agent",
+    "declared_name": "Unknown Procurement Agent",
+    "operator": "Unknown",
+    "declared_agent_id": "agent-unknown-7",
+    "authentication_context": "api_key"
+  },
+  "target_surface": "a2a_endpoint",
+  "requested_action": "invoke counterparty exposure triage capability",
+  "asset_or_resource": "cis_secondary_sanctions_exposure",
+  "decision_stage": "in_session",
+  "dated_sources": [
+    {
+      "id": "ait-a2a-1",
+      "source_type": "agent_identity_claim",
+      "title": "Caller supplied agent name and id",
+      "date": "2026-05-28"
+    },
+    {
+      "id": "ait-a2a-2",
+      "source_type": "mcp_or_a2a_endpoint_metadata",
+      "title": "A2A endpoint and requested capability metadata",
+      "date": "2026-05-28"
+    },
+    {
+      "id": "ait-a2a-3",
+      "source_type": "rate_limit_or_abuse_signal",
+      "title": "Burst of repeated capability invocations from same API key",
+      "date": "2026-05-28"
+    }
+  ],
+  "risk_question": "Is this unknown A2A caller ready for capability invocation or should it be escalated before access continues?",
+  "requested_output": "structured_json"
+}

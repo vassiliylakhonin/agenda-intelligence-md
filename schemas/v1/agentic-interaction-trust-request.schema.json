@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/agentic-interaction-trust-request.schema.json",
+  "title": "AgenticInteractionTrustRequest",
+  "description": "Product-grade structured request contract for evidence triage of agent-mediated interactions across checkout, account, API, MCP tool, and A2A endpoint surfaces. The contract asks whether the supplied evidence is sufficient for allow, step-up, human-review, or block-until-verified routing. It does not provide cybersecurity monitoring, fraud adjudication, legal advice, compliance advice, financial advice, identity verification, transaction authorization, autonomous blocking, live retrieval, or factual-truth verification.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "actor",
+    "target_surface",
+    "requested_action",
+    "decision_stage",
+    "dated_sources",
+    "risk_question"
+  ],
+  "properties": {
+    "actor": {
+      "$ref": "#/$defs/actor"
+    },
+    "target_surface": {
+      "$ref": "#/$defs/target_surface"
+    },
+    "requested_action": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The concrete action the agent, automated client, or delegated actor is trying to perform."
+    },
+    "asset_or_resource": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional account, endpoint, order, transaction, MCP tool, A2A capability, or other resource under review."
+    },
+    "decision_stage": {
+      "type": "string",
+      "enum": [
+        "pre_execution",
+        "in_session",
+        "post_alert",
+        "policy_review",
+        "committee_review",
+        "other"
+      ]
+    },
+    "dated_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dated_source"
+      }
+    },
+    "risk_question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requested_output": {
+      "type": "string",
+      "enum": [
+        "structured_json",
+        "markdown_summary",
+        "both"
+      ],
+      "default": "structured_json"
+    }
+  },
+  "$defs": {
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "declared_type",
+        "declared_name"
+      ],
+      "properties": {
+        "declared_type": {
+          "type": "string",
+          "enum": [
+            "ai_agent",
+            "automation_script",
+            "api_client",
+            "browser_bot",
+            "human_delegated_agent",
+            "unknown",
+            "other"
+          ]
+        },
+        "declared_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operator": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Declared operator, principal, organization, or user on whose behalf the actor claims to act."
+        },
+        "declared_agent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "declared_user_agent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authentication_context": {
+          "type": "string",
+          "enum": [
+            "anonymous",
+            "session_cookie",
+            "api_key",
+            "oauth",
+            "mTLS",
+            "signed_agent_manifest",
+            "unknown",
+            "other"
+          ]
+        }
+      }
+    },
+    "target_surface": {
+      "type": "string",
+      "enum": [
+        "checkout",
+        "account",
+        "api",
+        "mcp_tool",
+        "a2a_endpoint",
+        "content_or_catalog",
+        "auth_flow",
+        "support_or_messaging",
+        "other"
+      ]
+    },
+    "dated_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_type",
+        "title",
+        "date"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "$ref": "#/$defs/source_type"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "agent_identity_claim",
+        "operator_or_principal_authorization",
+        "agent_card_or_manifest",
+        "mcp_or_a2a_endpoint_metadata",
+        "tool_scope_or_permission_evidence",
+        "session_authentication_evidence",
+        "action_intent_evidence",
+        "transaction_or_target_action_evidence",
+        "rate_limit_or_abuse_signal",
+        "fraud_or_account_takeover_signal",
+        "device_or_infrastructure_evidence",
+        "provider_policy_or_allowlist",
+        "prior_interaction_history",
+        "incident_report_or_threat_intel",
+        "human_review_note",
+        "user_provided_note",
+        "other"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "actor": {
+        "declared_type": "ai_agent",
+        "declared_name": "Example Shopping Agent",
+        "operator": "Example Consumer",
+        "declared_user_agent": "ExampleShoppingAgent/1.0",
+        "authentication_context": "session_cookie"
+      },
+      "target_surface": "checkout",
+      "requested_action": "complete purchase of two restricted-delivery items",
+      "asset_or_resource": "order-123",
+      "decision_stage": "pre_execution",
+      "dated_sources": [
+        {
+          "id": "ait-1",
+          "source_type": "agent_identity_claim",
+          "title": "Declared agent identity header",
+          "date": "2026-05-28"
+        }
+      ],
+      "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?",
+      "requested_output": "structured_json"
+    }
+  ]
+}
