@@ -243,7 +243,7 @@
           "properties": {
             "category": {
               "type": "string",
-              "description": "Source requirement category slug, for example sanctions, elections, or energy-markets."
+              "description": "Source requirement category slug, for example sanctions, elections, or energy. Call list_source_categories for the full set."
             }
           },
           "required": [

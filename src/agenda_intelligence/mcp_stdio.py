@@ -1,5 +1,6 @@
 """Minimal stdio MCP transport for Agenda Intelligence tools."""
 
+import copy
 import json
 import sys
 from typing import Any, Callable, Optional
@@ -156,7 +157,8 @@ TOOLS: dict[str, dict[str, Any]] = {
                 "category": {
                     "type": "string",
                     "description": (
-                        "Source requirement category slug, for example sanctions, " "elections, or energy-markets."
+                        "Source requirement category slug, for example sanctions, "
+                        "elections, or energy. Call list_source_categories for the full set."
                     ),
                 }
             },
@@ -410,14 +412,39 @@ TOOLS: dict[str, dict[str, Any]] = {
 }
 
 
+def _source_category_enum() -> list[str]:
+    """Packaged source-requirement category slugs, or [] if unavailable.
+
+    Computed from the same data source as list_source_categories so the
+    constraint never drifts from the source-requirements/ files — no hardcoded
+    list to keep in sync.
+    """
+    try:
+        cats = mcp_server.list_source_categories()
+        ids = cats.get("category_ids") if isinstance(cats, dict) else None
+        return sorted(ids) if isinstance(ids, list) and ids else []
+    except Exception:
+        return []
+
+
 def _tool_definitions() -> list[JsonDict]:
+    category_enum = _source_category_enum()
     tools = []
     for name, spec in TOOLS.items():
+        schema = spec["inputSchema"]
+        # Constrain any free-form `category` slug to the packaged set so the
+        # model cannot pass a hallucinated category. Injected on a copy at the
+        # live surface only; the static TOOLS dict (mirrored into
+        # agent-manifest.json under the ADR 0012 parity invariant) stays a
+        # lighter catalog without the data-derived enum.
+        if category_enum and isinstance(schema.get("properties"), dict) and "category" in schema["properties"]:
+            schema = copy.deepcopy(schema)
+            schema["properties"]["category"]["enum"] = category_enum
         tools.append(
             {
                 "name": name,
                 "description": spec["description"],
-                "inputSchema": spec["inputSchema"],
+                "inputSchema": schema,
             }
         )
     return tools
