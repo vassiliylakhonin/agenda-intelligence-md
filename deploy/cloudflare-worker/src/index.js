@@ -1272,6 +1272,10 @@ function a2aResultForAgenticInteractionTrust(params) {
           {
             kind: "text",
             text: agenticArtifactText(result.response)
+          },
+          {
+            kind: "data",
+            data: result.response
           }
         ]
       }
@@ -1443,6 +1447,10 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
           {
             kind: "text",
             text: cisArtifactText(result.response, result.live_retrieval_status)
+          },
+          {
+            kind: "data",
+            data: result.response
           }
         ]
       }
@@ -2464,6 +2472,10 @@ function a2aResult(params, request, env = {}) {
           {
             kind: "text",
             text: routingMarkdown(text, modules, profile, triage)
+          },
+          {
+            kind: "data",
+            data: triage
           }
         ]
       }

@@ -1080,6 +1080,14 @@ test("cis_secondary_sanctions message/send dispatches to structured triage", asy
     assert.equal(resp.triage_recommendation, "escalate_before_onboarding");
     assert.ok(Array.isArray(resp.minimum_sources_before_review));
     assert.ok(resp.limitations.some((line) => line.includes("OpenSanctions")));
+
+    // Machine-readable DataPart mirrors the structured response alongside the text part.
+    const parts = result.artifacts[0].parts;
+    assert.equal(parts[0].kind, "text");
+    const dataPart = parts.find((part) => part.kind === "data");
+    assert.ok(dataPart, "expected a data part in the artifact");
+    assert.equal(dataPart.data.triage_recommendation, "escalate_before_onboarding");
+    assert.equal(dataPart.data.human_review_required, true);
   } finally {
     console.log = originalLog;
   }
