@@ -253,12 +253,12 @@ pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/
 
 ## Benchmark baseline
 
-20 source-backed cases, reproduced with `agenda-intelligence bench examples/source-backed/`:
+20 source-backed cases, reproduced with `agenda-intelligence bench examples/source-backed/`. The score below measures **structural completeness** — schema validity, evidence labeling, source-coverage diagnostics, and decision-readiness — **not factual accuracy**. A high score means a brief is well-formed and audit-ready, not that its claims are true in the world.
 
 | Metric | Value |
 |---|---|
 | Cases | 20 |
-| Mean score | 87.6 / 100 |
+| Mean structural-completeness score | 87.6 / 100 |
 | Min / max | 84 / 91 |
 | Schema-valid | 100% |
 | With evidence pack | 100% |
