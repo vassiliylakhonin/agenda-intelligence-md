@@ -856,6 +856,60 @@ const cisSampleStructuredRequest = {
   decision_stage: "onboarding"
 };
 
+test("cis worker flags an undisclosed UBO in the ownership chain (parity with Python service)", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const req = {
+      ...cisSampleStructuredRequest,
+      counterparty: {
+        ...cisSampleStructuredRequest.counterparty,
+        ownership_layers: ["Operating co (KZ)", "Holding (UAE free zone)", "undisclosed ultimate beneficial owner"]
+      }
+    };
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "cis-ubo", method: "message/send", params: { message: { data: req } } },
+      cisRequest,
+      { OPENSANCTIONS_DISABLED: "1" }
+    );
+    const resp = response.result.metadata.response;
+    assert.ok(
+      resp.top_exposure_dimensions.includes("undisclosed or unverified ultimate beneficial owner"),
+      "expected undisclosed-UBO exposure dimension"
+    );
+    assert.ok(
+      resp.limitations.some((line) => line.includes("cannot be fully screened until the UBO is resolved")),
+      "expected undisclosed-UBO limitation line"
+    );
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("cis worker does not flag a UBO when the ownership chain is fully disclosed (negative control)", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const req = {
+      ...cisSampleStructuredRequest,
+      counterparty: {
+        ...cisSampleStructuredRequest.counterparty,
+        ownership_layers: ["Operating co (KZ)", "Holding (UAE free zone)", "Named individual owner"]
+      }
+    };
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "cis-ubo-neg", method: "message/send", params: { message: { data: req } } },
+      cisRequest,
+      { OPENSANCTIONS_DISABLED: "1" }
+    );
+    const resp = response.result.metadata.response;
+    assert.ok(!resp.top_exposure_dimensions.includes("undisclosed or unverified ultimate beneficial owner"));
+    assert.ok(!resp.limitations.some((line) => line.includes("UBO is resolved")));
+  } finally {
+    console.log = originalLog;
+  }
+});
+
 test("cis_secondary_sanctions profile is detected from host and env", () => {
   const card = agentCard(cisRequest, {});
   assert.equal(card.x_agenda_intelligence.product_profile, "cis_secondary_sanctions");

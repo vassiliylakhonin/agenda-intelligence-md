@@ -1030,11 +1030,38 @@ function cisDecisionReadiness(request, supplied) {
   return [score, "not_decision_ready"];
 }
 
-function cisTopExposureDimensions(facets, missing, openSanctionsMatchCount) {
+// Mirrors services._UNDISCLOSED_UBO_TOKENS / _cis_has_undisclosed_ubo so the
+// A2A worker flags an undisclosed/unverified ultimate beneficial owner exactly
+// like the canonical Python service. Flags an evidence gap from the declared
+// ownership chain; does not analyze or attribute ownership.
+const UNDISCLOSED_UBO_TOKENS = [
+  "undisclosed",
+  "unknown",
+  "not disclosed",
+  "undetermined",
+  "unverified",
+  "unidentified",
+  "tbd",
+  "to be determined",
+  "nominee"
+];
+
+function cisHasUndisclosedUbo(request) {
+  const counterparty = (request && request.counterparty) || {};
+  const layers = counterparty.ownership_layers;
+  if (!Array.isArray(layers)) return false;
+  return layers.some(
+    (layer) =>
+      typeof layer === "string" && UNDISCLOSED_UBO_TOKENS.some((token) => layer.toLowerCase().includes(token))
+  );
+}
+
+function cisTopExposureDimensions(facets, missing, openSanctionsMatchCount, undisclosedUbo = false) {
   const dims = [];
   if (openSanctionsMatchCount > 0) {
     dims.push("direct or near-direct match in OpenSanctions consolidated dataset");
   }
+  if (undisclosedUbo) dims.push("undisclosed or unverified ultimate beneficial owner");
   if (facets.includes("ownership_or_control")) dims.push("indirect ownership or control exposure");
   if (facets.includes("transit_or_re_export")) {
     dims.push("transit or re-export exposure under EU 14th package / OFAC EO 14114");
@@ -1351,12 +1378,19 @@ async function cisSecondarySanctionsResult(request, env) {
   const exposureSignal = cisExposureSignal(request, missing, autoFetched.length);
   const triage = cisTriageRecommendation(request, missing, exposureSignal);
   const facets = Array.isArray(request.exposure_facets) ? request.exposure_facets : [];
+  const undisclosedUbo = cisHasUndisclosedUbo(request);
 
   const limitations = [];
   if (upstreamResult.attribution) limitations.push(upstreamResult.attribution.notice);
   if (upstreamResult.degrade_reason) {
     const label = upstream_name || "upstream";
     limitations.push(`${label} live retrieval degraded: ${upstreamResult.degrade_reason}`);
+  }
+  if (undisclosedUbo) {
+    limitations.push(
+      "Ultimate beneficial owner is undisclosed or unverified in the supplied ownership chain; " +
+        "the counterparty cannot be fully screened until the UBO is resolved."
+    );
   }
   limitations.push(
     "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
@@ -1372,7 +1406,7 @@ async function cisSecondarySanctionsResult(request, env) {
     supplied_sources: supplied,
     minimum_sources_before_review: missing,
     evidence_gaps: missing.map(cisEvidenceGapForSource),
-    top_exposure_dimensions: cisTopExposureDimensions(facets, missing, autoFetched.length),
+    top_exposure_dimensions: cisTopExposureDimensions(facets, missing, autoFetched.length, undisclosedUbo),
     watch_next: [
       "new OFAC SDN designations",
       "new EU sanctions package",
