@@ -235,7 +235,9 @@ curl 'https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/stats?date=20
   -H "x-stats-token: $STATS_TOKEN"
 ```
 
-The `/stats` response includes approximate daily totals, likely probes, non-probe calls, prompt character counts, client classes, countries, JSON-RPC methods, and selected Agenda modules. The counters are intentionally coarse and are not a billing or audit ledger.
+The `/stats` response includes approximate daily totals, likely probes, non-probe calls, prompt character counts, client classes, per-host counts (`hosts` — every published worker shares one KV namespace, so this is the only way to attribute calls to a specific worker), countries, JSON-RPC methods, and selected Agenda modules. The counters are intentionally coarse and are not a billing or audit ledger.
+
+A `message/send` call is counted as a likely probe when the client is `agenstry` or the prompt payload is shorter than `PROBE_PROMPT_CHAR_THRESHOLD` (24 characters) — this filters untagged uptime pings from monitor colos that do not announce themselves in the user-agent. Inspect `non_probe` for genuine usage.
 
 ## Test locally
 
