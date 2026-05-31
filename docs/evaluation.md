@@ -65,7 +65,7 @@ Run against source-structured cases in `examples/source-backed/`. Deterministic;
 | With source category | 100% |
 | Mean source coverage | 14.8% |
 | Source coverage gap cases | 20 |
-| Mean score | 87.6 / 100 |
+| Mean structural-completeness score | 87.6 / 100 |
 | Score range | 84–91 |
 | Audit orphan refs | 0 |
 
