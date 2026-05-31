@@ -333,6 +333,80 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "handler": lambda args: mcp_server.deep_dive(args.get("aspect")),
     },
+    "middle_corridor_deal_risk": {
+        "description": (
+            "Screen a Kazakhstan / Middle Corridor (Trans-Caspian) trade deal for sanctions-adjacent and "
+            "corridor risk before signature, shipment, insurer handoff, or committee review. Pass a structured "
+            "deal_risk_request (route, cargo, counterparties, dated_sources, risk_question, decision_stage) "
+            "matching middle-corridor-deal-risk-request.schema.json. Returns a triage recommendation, risk "
+            "signal, decision-readiness score, supplied vs. minimum-required source categories, evidence gaps, "
+            "and a high-risk-jurisdiction presence flag. Pre-compliance evidence triage only: no live retrieval, "
+            "no factual-truth verification, no legal or sanctions advice; human review is required."
+        ),
+        "inputSchema": _schema(
+            {
+                "deal_risk_request": {
+                    "type": "object",
+                    "description": (
+                        "Structured Middle Corridor deal-risk request matching "
+                        "middle-corridor-deal-risk-request.schema.json."
+                    ),
+                }
+            },
+            ["deal_risk_request"],
+        ),
+        "handler": lambda args: mcp_server.middle_corridor_deal_risk(args["deal_risk_request"]),
+    },
+    "cis_secondary_sanctions_exposure": {
+        "description": (
+            "Triage secondary-sanctions exposure for a CIS-domiciled counterparty (Kazakhstan, Uzbekistan, "
+            "Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova) for EU / UK / UAE / "
+            "Singapore enhanced due diligence against OFAC EO 14114, the EU 14th sanctions package, UK OFSI, and "
+            "FATF / EAG typologies. Pass a structured exposure_request (counterparty, exposure_facets, "
+            "jurisdiction_review_scope, dated_sources, risk_question, decision_stage) matching "
+            "cis-secondary-sanctions-request.schema.json. Returns a triage recommendation, decision-readiness "
+            "score, exposure dimensions, evidence gaps, and minimum sources before review. Local stdio runs on "
+            "user-supplied evidence only (no live retrieval); a name match is not identity verification; human "
+            "review is required."
+        ),
+        "inputSchema": _schema(
+            {
+                "exposure_request": {
+                    "type": "object",
+                    "description": (
+                        "Structured CIS secondary-sanctions exposure request matching "
+                        "cis-secondary-sanctions-request.schema.json."
+                    ),
+                }
+            },
+            ["exposure_request"],
+        ),
+        "handler": lambda args: mcp_server.cis_secondary_sanctions_exposure(args["exposure_request"]),
+    },
+    "agentic_interaction_trust": {
+        "description": (
+            "Triage the trust evidence for an agent-mediated interaction (identity, operator or principal "
+            "authorization, tool scope, session authentication, action intent) before a high-stakes action "
+            "executes. Pass a structured trust_request (actor, target_surface, requested_action, dated_sources, "
+            "risk_question, decision_stage) matching agentic-interaction-trust-request.schema.json. Returns a "
+            "triage recommendation, trust signal, decision-readiness score, and the specific missing trust "
+            "evidence. Evidence triage only: not cybersecurity monitoring, identity verification, or "
+            "authorization; human review is required."
+        ),
+        "inputSchema": _schema(
+            {
+                "trust_request": {
+                    "type": "object",
+                    "description": (
+                        "Structured agentic interaction trust request matching "
+                        "agentic-interaction-trust-request.schema.json."
+                    ),
+                }
+            },
+            ["trust_request"],
+        ),
+        "handler": lambda args: mcp_server.agentic_interaction_trust(args["trust_request"]),
+    },
 }
 
 
