@@ -9,6 +9,7 @@ import {
   healthInfo,
   isStatsAuthorized,
   landingHtml,
+  PROBE_PROMPT_CHAR_THRESHOLD,
   recordUsageStats,
   routeModules,
   signalScreenForText,
@@ -601,6 +602,66 @@ test("usage stats aggregates daily counters from KV", async () => {
     { name: "global-think-tank-analyst", count: 2 },
     { name: "sanctions-sector", count: 2 }
   ]);
+});
+
+test("usage event records the worker host and stats break down per host", async () => {
+  const kv = new MemoryKv();
+  const env = { AGENDA_USAGE: kv };
+
+  const aliasEvent = buildUsageEvent(
+    new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send"),
+    { jsonrpc_method: "message/send", jsonrpc_id_present: true, prompt_chars: 200, likely_probe: false }
+  );
+  const canonicalEvent = buildUsageEvent(
+    new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send"),
+    { jsonrpc_method: "message/send", jsonrpc_id_present: true, prompt_chars: 200, likely_probe: false }
+  );
+
+  assert.equal(aliasEvent.host, "kazakhstan-corridor-risk-a2a.example.workers.dev");
+
+  await recordUsageStats(env, aliasEvent);
+  await recordUsageStats(env, canonicalEvent);
+  await recordUsageStats(env, canonicalEvent);
+
+  const stats = await usageStats(env, aliasEvent.timestamp.slice(0, 10));
+
+  assert.deepEqual(stats.hosts, [
+    { name: "middle-corridor-deal-risk-gate-a2a.example.workers.dev", count: 2 },
+    { name: "kazakhstan-corridor-risk-a2a.example.workers.dev", count: 1 }
+  ]);
+});
+
+test("small message/send payloads are classified as probes regardless of client", async () => {
+  const kv = new MemoryKv();
+  const env = { AGENDA_USAGE: kv };
+
+  // 9-char payload from an untagged client (matches the observed monitor noise).
+  await recordUsageStats(env, {
+    event: "agenda_intelligence_a2a_usage",
+    timestamp: "2026-05-27T10:00:00.000Z",
+    jsonrpc_method: "message/send",
+    agent_profile: "agenda",
+    prompt_chars: 9,
+    likely_probe: 9 < PROBE_PROMPT_CHAR_THRESHOLD,
+    client: "unknown",
+    cf: { country: "BE" }
+  });
+  // A real triage request stays non-probe.
+  await recordUsageStats(env, {
+    event: "agenda_intelligence_a2a_usage",
+    timestamp: "2026-05-27T11:00:00.000Z",
+    jsonrpc_method: "message/send",
+    agent_profile: "kazakhstan",
+    prompt_chars: 529,
+    likely_probe: 529 < PROBE_PROMPT_CHAR_THRESHOLD,
+    client: "curl",
+    cf: { country: "KZ" }
+  });
+
+  const stats = await usageStats(env, "2026-05-27");
+  assert.equal(stats.counters.total, 2);
+  assert.equal(stats.counters.likely_probe, 1);
+  assert.equal(stats.counters.non_probe, 1);
 });
 
 test("stats endpoint returns JSON for requested date", async () => {

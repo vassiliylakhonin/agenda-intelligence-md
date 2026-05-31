@@ -2116,6 +2116,13 @@ function headerHost(request, headerName) {
   }
 }
 
+// message/send payloads below this many prompt characters are treated as
+// health probes. Real triage requests carry hundreds of characters; the
+// known monitors (Agenstry, uptime pingers) send near-empty payloads. This
+// catches small-payload probes that do not announce themselves as "agenstry"
+// in the user-agent (e.g. untagged uptime checks from monitor colos).
+const PROBE_PROMPT_CHAR_THRESHOLD = 24;
+
 function classifyClient(request) {
   const clientId = request.headers.get("x-client-id");
   if (clientId) return safeClientId(clientId);
@@ -2145,6 +2152,7 @@ function buildUsageEvent(request, details = {}) {
     source: "cloudflare_worker",
     method: request.method,
     path: url.pathname,
+    host: url.hostname,
     jsonrpc_method: details.jsonrpc_method || null,
     jsonrpc_id_present: Boolean(details.jsonrpc_id_present),
     agent_profile: details.agent_profile || agentProfile(request),
@@ -2200,6 +2208,7 @@ async function recordUsageStats(env, event) {
     JSON.stringify({
       timestamp: event.timestamp,
       agent_profile: event.agent_profile || "unknown",
+      host: event.host || "unknown",
       jsonrpc_method: event.jsonrpc_method || "unknown",
       prompt_chars: event.prompt_chars || 0,
       likely_probe: Boolean(event.likely_probe),
@@ -2265,6 +2274,7 @@ async function usageStats(env, date) {
   const methods = new Map();
   const modules = new Map();
   const agentProfiles = new Map();
+  const hosts = new Map();
   let likelyProbe = 0;
   let promptChars = 0;
 
@@ -2272,6 +2282,7 @@ async function usageStats(env, date) {
     if (event.likely_probe) likelyProbe += 1;
     promptChars += Number.isFinite(event.prompt_chars) ? event.prompt_chars : 0;
     incrementMap(agentProfiles, event.agent_profile);
+    incrementMap(hosts, event.host);
     incrementMap(clients, event.client);
     incrementMap(countries, event.country);
     incrementMap(methods, event.jsonrpc_method);
@@ -2297,6 +2308,7 @@ async function usageStats(env, date) {
     },
     clients: sortedMap(clients),
     agent_profiles: sortedMap(agentProfiles),
+    hosts: sortedMap(hosts),
     countries: sortedMap(countries),
     methods: sortedMap(methods),
     modules: sortedMap(modules)
@@ -2515,7 +2527,8 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
       promptChars = text.length;
       modulesUsed = result.metadata.modules_used;
     }
-    const likelyProbe = classifyClient(request) === "agenstry" || promptChars === 0;
+    const likelyProbe =
+      classifyClient(request) === "agenstry" || promptChars < PROBE_PROMPT_CHAR_THRESHOLD;
     const event = logUsageEvent(request, {
       jsonrpc_method: payload.method,
       jsonrpc_id_present: payload.id !== undefined,
@@ -2879,6 +2892,7 @@ export {
   buildUsageEvent,
   handleJsonRpc,
   healthInfo,
+  PROBE_PROMPT_CHAR_THRESHOLD,
   isStatsAuthorized,
   landingHtml,
   recordUsageStats,
