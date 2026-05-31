@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## [1.0.2] – 2026-05-31
+
 Multi-surface presentation + deployment automation, plus a new vertical worker (`cis_secondary_sanctions`) and per-profile live retrieval (ADR 0014, with runtime activation deferred per the 2026-05-27 update). The v1.0 request/memo contract surface is unchanged; new schemas under `schemas/v1/` are additive per ADR 0003.
 
 - **feat(mcp): expose the three vertical workers as MCP tools.** `middle_corridor_deal_risk`, `cis_secondary_sanctions_exposure`, and `agentic_interaction_trust` were callable over HTTP and A2A but not via the stdio MCP server, which exposed only the 11 validation + 5 product tools. They are now MCP tools (19 total), each taking a structured request matching its `schemas/v1/` contract and returning the same triage recommendation, decision-readiness score, evidence gaps, and mandatory human-review flag as the other surfaces. The local stdio transport runs the CIS worker with `allow_live_retrieval=False` (user-supplied evidence only). `agent-manifest.json` `mcp.tools` mirrors the new `TOOLS` entries (ADR 0012 invariant); dual-copied to packaged data; `llms.txt` tool list updated. 5 new contract tests (golden per worker + missing-argument tool error + tools/list coverage). No schema or request/memo contract change.

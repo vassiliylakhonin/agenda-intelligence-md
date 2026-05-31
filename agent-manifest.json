@@ -1,6 +1,6 @@
 {
   "name": "Agenda Intelligence MD",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "_contract_fields": [
     "name",
     "version",
@@ -405,7 +405,7 @@
       },
       {
         "name": "middle_corridor_deal_risk",
-        "since": "v1.0.1",
+        "since": "v1.0.2",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -422,7 +422,7 @@
       },
       {
         "name": "cis_secondary_sanctions_exposure",
-        "since": "v1.0.1",
+        "since": "v1.0.2",
         "input_schema": {
           "type": "object",
           "properties": {
@@ -439,7 +439,7 @@
       },
       {
         "name": "agentic_interaction_trust",
-        "since": "v1.0.1",
+        "since": "v1.0.2",
         "input_schema": {
           "type": "object",
           "properties": {

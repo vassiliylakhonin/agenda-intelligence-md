@@ -18,7 +18,7 @@ FROM python:3.11-slim
 # Pin to the current published release so introspection is reproducible.
 # Bump in lockstep with pyproject.toml, agent-manifest.json, server.json
 # on every release — see the project release checklist.
-ARG AGENDA_INTELLIGENCE_VERSION=1.0.1
+ARG AGENDA_INTELLIGENCE_VERSION=1.0.2
 
 RUN pip install --no-cache-dir "agenda-intelligence-md==${AGENDA_INTELLIGENCE_VERSION}"
 
