@@ -2474,8 +2474,12 @@ function a2aResult(params, request, env = {}) {
             text: routingMarkdown(text, modules, profile, triage)
           },
           {
+            // Expose the product-level structured response as the primary
+            // machine-readable payload when present (deal-risk contract for a
+            // structured request, deal-risk gate for freeform text); fall back
+            // to the full routing triage for the general agenda profile.
             kind: "data",
-            data: triage
+            data: triage.deal_risk_contract || triage.deal_risk_gate || triage
           }
         ]
       }

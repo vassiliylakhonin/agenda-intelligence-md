@@ -436,6 +436,13 @@ test("kazakhstan deal risk gate returns structured contract response from data p
     assert.match(contract.not_advice_notice, /Not legal/);
     assert.match(response.result.artifacts[0].parts[0].text, /Decision readiness: 42\/100/);
     assert.match(response.result.artifacts[0].parts[0].text, /Middle Corridor deal-risk contract response/);
+
+    // The DataPart surfaces the deal-risk contract itself, not the full routing triage.
+    const dataPart = response.result.artifacts[0].parts.find((part) => part.kind === "data");
+    assert.ok(dataPart, "expected a data part in the artifact");
+    assert.equal(dataPart.data.triage_recommendation, "escalate_before_signature");
+    assert.equal(dataPart.data.decision_readiness_score, 42);
+    assert.equal(dataPart.data.signal_screen, undefined);
   } finally {
     console.log = originalLog;
   }
