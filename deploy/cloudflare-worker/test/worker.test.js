@@ -910,6 +910,45 @@ test("cis worker does not flag a UBO when the ownership chain is fully disclosed
   }
 });
 
+test("cis worker rejects an off-enum field like the canonical schema (validation parity)", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const req = {
+      ...cisSampleStructuredRequest,
+      counterparty: { ...cisSampleStructuredRequest.counterparty, sector: "metals_trading" } // not in enum
+    };
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "cis-bad-enum", method: "message/send", params: { message: { data: req } } },
+      cisRequest,
+      { OPENSANCTIONS_DISABLED: "1" }
+    );
+    assert.equal(response.result.status.state, "failed");
+    assert.equal(response.result.metadata.valid, false);
+    assert.ok(response.result.metadata.errors.some((e) => e.includes("counterparty.sector")));
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("cis worker degrade note is user-safe and does not leak env-var names", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "cis-degrade", method: "message/send", params: { message: { data: cisSampleStructuredRequest } } },
+      cisRequest,
+      { OPENSANCTIONS_DISABLED: "1" }
+    );
+    const lim = response.result.metadata.response.limitations;
+    assert.ok(lim.some((l) => l.includes("not currently enabled")), "expected status-derived degrade note");
+    assert.ok(!lim.some((l) => l.includes("OPENSANCTIONS_API_KEY")), "must not leak env-var name");
+    assert.ok(!lim.some((l) => l.includes("degraded:")), "must not echo raw degrade reason");
+  } finally {
+    console.log = originalLog;
+  }
+});
+
 test("cis_secondary_sanctions profile is detected from host and env", () => {
   const card = agentCard(cisRequest, {});
   assert.equal(card.x_agenda_intelligence.product_profile, "cis_secondary_sanctions");
