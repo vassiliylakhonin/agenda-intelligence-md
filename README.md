@@ -217,7 +217,7 @@ The product runtime is the integration point: agents call `analyze` via any surf
 ## What this is
 
 - **Core service layer** — pure Python functions (`audit_claims`, `source_coverage`, `score_output`, `middle_corridor_deal_risk`, `agentic_interaction_trust`, etc.) vendor-neutral, no transport, no marketplace
-- **MCP server** — stdio server exposing 16 tools across the validation and product layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
+- **MCP server** — stdio server exposing 19 tools across the validation, product, and vertical worker layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
 - **HTTP API shell** — thin transport over the service layer; self-host with `docs/deployment/http-api.md`
 - **A2A adapter** — agent-card + JSON-RPC `message/send` over the HTTP/service layer; contract in `docs/product/a2a-adapter-plan.md`
 - **Cloudflare Worker baseline** — production deployment under `deploy/cloudflare-worker/`; two live workers (general triage + Middle Corridor Deal Risk Gate)
@@ -289,7 +289,7 @@ Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed
 
 ## MCP
 
-Stdio MCP server with 16 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
+Stdio MCP server with 19 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
 
 | Tool | What it does |
 |---|---|
@@ -309,6 +309,9 @@ Stdio MCP server with 16 tools. Full docs and wire-protocol verification: [`MCP.
 | `list_signals` | List vendored signal archive entries |
 | `get_signal` | Return a vendored signal markdown file by id |
 | `deep_dive` | Planned v2 placeholder directing callers to `analyze` depth modes |
+| `middle_corridor_deal_risk` | Kazakhstan / Middle Corridor deal-risk gate: structured request → triage, decision-readiness, evidence gaps, human-review flag |
+| `cis_secondary_sanctions_exposure` | CIS counterparty secondary-sanctions exposure triage for EU/UK/UAE/Singapore EDD; local stdio runs on user-supplied evidence only |
+| `agentic_interaction_trust` | Trust-evidence triage for an agent-mediated interaction before a high-stakes action |
 
 ## Status
 

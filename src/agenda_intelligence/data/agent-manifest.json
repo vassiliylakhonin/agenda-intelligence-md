@@ -402,6 +402,57 @@
           "additionalProperties": false
         },
         "status": "reserved"
+      },
+      {
+        "name": "middle_corridor_deal_risk",
+        "since": "v1.0.1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "deal_risk_request": {
+              "type": "object",
+              "description": "Structured Middle Corridor deal-risk request matching middle-corridor-deal-risk-request.schema.json."
+            }
+          },
+          "required": [
+            "deal_risk_request"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "cis_secondary_sanctions_exposure",
+        "since": "v1.0.1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "exposure_request": {
+              "type": "object",
+              "description": "Structured CIS secondary-sanctions exposure request matching cis-secondary-sanctions-request.schema.json."
+            }
+          },
+          "required": [
+            "exposure_request"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "agentic_interaction_trust",
+        "since": "v1.0.1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "trust_request": {
+              "type": "object",
+              "description": "Structured agentic interaction trust request matching agentic-interaction-trust-request.schema.json."
+            }
+          },
+          "required": [
+            "trust_request"
+          ],
+          "additionalProperties": false
+        }
       }
     ]
   },

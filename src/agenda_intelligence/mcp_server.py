@@ -339,3 +339,31 @@ def get_signal(signal_id: str) -> dict:
 def deep_dive(aspect: Optional[str] = None) -> dict:
     """Reserved for v2. Returns a planned-status message."""
     return _product.deep_dive(aspect)
+
+
+def middle_corridor_deal_risk(request_json: dict) -> dict:
+    """Run the Middle Corridor deal-risk gate on a structured request.
+
+    Pre-compliance evidence triage only: no live retrieval, no factual-truth
+    verification, no legal/compliance/sanctions advice. Human review required.
+    """
+    return _services.middle_corridor_deal_risk(request_json)
+
+
+def cis_secondary_sanctions_exposure(request_json: dict) -> dict:
+    """Run the CIS secondary-sanctions exposure triage on a structured request.
+
+    Local stdio MCP does not wire live retrieval, so this operates on
+    user-supplied evidence only. A name match is not identity verification.
+    Pre-compliance evidence triage; human review required.
+    """
+    return _services.cis_secondary_sanctions_exposure(request_json, allow_live_retrieval=False)
+
+
+def agentic_interaction_trust(request_json: dict) -> dict:
+    """Run the agentic interaction trust gate on a structured request.
+
+    Evidence triage for agent-mediated interactions only; not identity
+    verification or authorization. Human review required.
+    """
+    return _services.agentic_interaction_trust(request_json)

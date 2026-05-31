@@ -1,9 +1,9 @@
 # MCP
 
 `agenda-intelligence-mcp` is a real stdio MCP server shipping with the package.
-It exposes 16 tool functions implemented in `agenda_intelligence.mcp_server`.
+It exposes 19 tool functions implemented in `agenda_intelligence.mcp_server`.
 
-The tools split into two layers:
+The tools split into three layers:
 
 - **Validation layer** (11 tools, this repo's original scope): schema checks,
   evidence audit, lens and source-plan access, output scoring, quote verification.
@@ -11,6 +11,13 @@ The tools split into two layers:
   `validate_memo`, `list_signals`, `get_signal`, `deep_dive` (reserved/planned, returns a v2 placeholder). These wrap the
   validation layer with geography routing, system-prompt assembly, optional LLM
   invocation, and vendored signal access.
+- **Vertical worker layer** (3 tools): `middle_corridor_deal_risk`,
+  `cis_secondary_sanctions_exposure`, `agentic_interaction_trust` — the productized
+  service functions (also exposed over HTTP and A2A) as MCP tools. Each takes a
+  structured request matching its `schemas/v1/` contract and returns a triage
+  recommendation, decision-readiness score, evidence gaps, and a mandatory
+  human-review flag. Pre-compliance evidence triage only: no live retrieval in the
+  local stdio transport, no factual-truth verification, no advice.
 
 **Verification status**: wire-protocol verified — `scripts/smoke_mcp.py` exercises the full JSON-RPC cycle (initialize → tools/list → tools/call) against the running stdio server, including `list_source_categories` and `audit_claims`.
 

@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from agenda_intelligence.mcp_server import (
     get_lens,
     get_protocol,
@@ -308,3 +311,64 @@ def test_mcp_stdio_tools_call_score_output_returns_score():
     assert response["result"]["isError"] is False
     assert '"implemented": true' in response["result"]["content"][0]["text"]
     assert '"after_score"' in response["result"]["content"][0]["text"]
+
+
+_EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
+
+
+def _call_tool(name, arguments):
+    response = handle_message(
+        {"jsonrpc": "2.0", "id": 99, "method": "tools/call", "params": {"name": name, "arguments": arguments}}
+    )
+    result = response["result"]
+    payload = json.loads(result["content"][0]["text"])
+    return result, payload
+
+
+def test_mcp_stdio_tools_list_includes_vertical_workers():
+    response = handle_message({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+    names = {tool["name"] for tool in response["result"]["tools"]}
+    assert {
+        "middle_corridor_deal_risk",
+        "cis_secondary_sanctions_exposure",
+        "agentic_interaction_trust",
+    } <= names
+
+
+def test_mcp_tool_middle_corridor_deal_risk_golden():
+    req = json.loads(
+        (_EXAMPLES / "kazakhstan-middle-corridor/contract/ready_for_human_review.request.json").read_text()
+    )
+    result, payload = _call_tool("middle_corridor_deal_risk", {"deal_risk_request": req})
+    assert result["isError"] is False
+    assert payload["valid"] is True
+    assert payload["response"]["human_review_required"] is True
+    assert payload["response"]["triage_recommendation"] == "ready_for_human_review"
+
+
+def test_mcp_tool_cis_secondary_sanctions_exposure_golden_local_no_live_retrieval():
+    req = json.loads(
+        (_EXAMPLES / "cis-secondary-sanctions/contract/escalate_before_onboarding.request.json").read_text()
+    )
+    result, payload = _call_tool("cis_secondary_sanctions_exposure", {"exposure_request": req})
+    assert result["isError"] is False
+    assert payload["valid"] is True
+    assert payload["response"]["human_review_required"] is True
+    # local stdio must not perform live retrieval
+    assert payload["live_retrieval_status"] in {"disabled", "degraded", "not_attempted"}
+
+
+def test_mcp_tool_agentic_interaction_trust_golden():
+    req = json.loads(
+        (_EXAMPLES / "agentic-interaction-trust/contract/unknown_a2a_agent_escalate.request.json").read_text()
+    )
+    result, payload = _call_tool("agentic_interaction_trust", {"trust_request": req})
+    assert result["isError"] is False
+    assert payload["valid"] is True
+    assert payload["response"]["human_review_required"] is True
+
+
+def test_mcp_tool_vertical_worker_missing_argument_is_tool_error():
+    result, payload = _call_tool("middle_corridor_deal_risk", {})
+    assert result["isError"] is True
+    assert "Missing required argument" in result["content"][0]["text"]
