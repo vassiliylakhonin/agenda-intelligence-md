@@ -931,6 +931,132 @@ function tryParseJsonObject(value) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Enum validation — parity with the schemas/v1 request contracts. The worker
+// previously accepted off-enum values (e.g. an unknown counterparty sector) the
+// canonical Python service / JSON Schema rejects, then triaged as if valid.
+// These mirror the schema enums; a string value outside the set (the "other"
+// escape hatch is always included) is reported and the request rejected, like
+// the Python _validate_json path. Update alongside schemas/v1/*-request.schema.json.
+// ---------------------------------------------------------------------------
+const REQUESTED_OUTPUTS = ["structured_json", "markdown_summary", "both"];
+
+const MC_DECISION_STAGES = ["pre_signature", "pre_shipment", "in_transit", "post_incident", "committee_review", "other"];
+const MC_CURRENCIES = ["USD", "EUR", "GBP", "KZT", "CNY", "TRY", "AED", "other"];
+const MC_COUNTERPARTY_ROLES = [
+  "shipper", "forwarder", "carrier", "port_agent", "consignee", "bank", "insurer", "broker", "customs_broker", "unknown", "other"
+];
+const MC_SOURCE_TYPES = [
+  "port_operator_notice", "sanctions_list_extract", "carrier_note", "counterparty_registry_extract",
+  "beneficial_ownership_source", "customs_or_regulatory_source", "insurance_clause_or_underwriter_note",
+  "vessel_or_carrier_history", "rail_capacity_or_border_wait_source", "contract_or_invoice_extract",
+  "user_provided_note", "other"
+];
+
+const CIS_SECTORS = [
+  "trading_house", "logistics_forwarder", "bank", "fintech", "broker_dealer", "manufacturer", "ict_or_electronics",
+  "metals_or_mining", "energy_or_petrochem", "agribusiness_or_grain", "construction", "professional_services",
+  "holding_or_spv", "unknown", "other"
+];
+const CIS_REVIEW_SCOPES = ["ofac", "eu", "uk_ofsi", "un", "fatf", "eag", "national_regulator", "other"];
+const CIS_DECISION_STAGES = ["onboarding", "periodic_review", "pre_transaction", "post_alert", "committee_review", "other"];
+const CIS_EXPOSURE_FACETS = [
+  "ownership_or_control", "financial_flows", "ict_or_dual_use_goods", "metals_or_mining", "energy_or_petrochem",
+  "agribusiness_or_grain", "transit_or_re_export", "correspondent_banking", "professional_enablers",
+  "shell_or_layered_structure", "other"
+];
+const CIS_ID_SCHEMES = ["lei", "national_bin", "national_tin", "isin", "other"];
+const CIS_SOURCE_TYPES = [
+  "ofac_sdn_extract", "eu_consolidated_extract", "uk_ofsi_extract", "un_security_council_extract",
+  "ownership_chain_evidence", "beneficial_ownership_source", "bank_correspondent_evidence",
+  "transit_or_invoice_evidence", "dual_use_export_evidence", "customs_data_evidence", "adverse_media_evidence",
+  "typology_reference", "national_regulator_filing", "user_provided_note", "other"
+];
+
+const AIT_DECISION_STAGES = ["pre_execution", "in_session", "post_alert", "policy_review", "committee_review", "other"];
+const AIT_DECLARED_TYPES = [
+  "ai_agent", "automation_script", "api_client", "browser_bot", "human_delegated_agent", "unknown", "other"
+];
+const AIT_AUTH_CONTEXTS = [
+  "anonymous", "session_cookie", "api_key", "oauth", "mTLS", "signed_agent_manifest", "unknown", "other"
+];
+const AIT_TARGET_SURFACES = [
+  "checkout", "account", "api", "mcp_tool", "a2a_endpoint", "content_or_catalog", "auth_flow", "support_or_messaging", "other"
+];
+const AIT_SOURCE_TYPES = [
+  "agent_identity_claim", "operator_or_principal_authorization", "agent_card_or_manifest",
+  "mcp_or_a2a_endpoint_metadata", "tool_scope_or_permission_evidence", "session_authentication_evidence",
+  "action_intent_evidence", "transaction_or_target_action_evidence", "rate_limit_or_abuse_signal",
+  "fraud_or_account_takeover_signal", "device_or_infrastructure_evidence", "provider_policy_or_allowlist",
+  "prior_interaction_history", "incident_report_or_threat_intel", "human_review_note", "user_provided_note", "other"
+];
+
+function offEnum(label, value, allowed, errors) {
+  if (value === undefined || value === null) return;
+  const values = Array.isArray(value) ? value : [value];
+  for (const v of values) {
+    if (typeof v === "string" && !allowed.includes(v)) {
+      errors.push(`${label}: '${v}' is not a permitted value`);
+    }
+  }
+}
+
+function middleCorridorEnumErrors(r) {
+  const errors = [];
+  offEnum("decision_stage", r.decision_stage, MC_DECISION_STAGES, errors);
+  offEnum("requested_output", r.requested_output, REQUESTED_OUTPUTS, errors);
+  if (r.shipment_value && typeof r.shipment_value === "object") {
+    offEnum("shipment_value.currency", r.shipment_value.currency, MC_CURRENCIES, errors);
+  }
+  for (const cp of Array.isArray(r.counterparties) ? r.counterparties : []) {
+    if (cp && typeof cp === "object") offEnum("counterparties[].role", cp.role, MC_COUNTERPARTY_ROLES, errors);
+  }
+  for (const s of Array.isArray(r.dated_sources) ? r.dated_sources : []) {
+    if (s && typeof s === "object") offEnum("dated_sources[].source_type", s.source_type, MC_SOURCE_TYPES, errors);
+  }
+  return errors;
+}
+
+function cisEnumErrors(r) {
+  const errors = [];
+  const cp = r.counterparty && typeof r.counterparty === "object" ? r.counterparty : {};
+  offEnum("counterparty.sector", cp.sector, CIS_SECTORS, errors);
+  for (const id of Array.isArray(cp.registered_identifiers) ? cp.registered_identifiers : []) {
+    if (id && typeof id === "object") offEnum("registered_identifiers[].scheme", id.scheme, CIS_ID_SCHEMES, errors);
+  }
+  offEnum("exposure_facets", r.exposure_facets, CIS_EXPOSURE_FACETS, errors);
+  offEnum("jurisdiction_review_scope", r.jurisdiction_review_scope, CIS_REVIEW_SCOPES, errors);
+  offEnum("decision_stage", r.decision_stage, CIS_DECISION_STAGES, errors);
+  offEnum("requested_output", r.requested_output, REQUESTED_OUTPUTS, errors);
+  for (const s of Array.isArray(r.dated_sources) ? r.dated_sources : []) {
+    if (s && typeof s === "object") offEnum("dated_sources[].source_type", s.source_type, CIS_SOURCE_TYPES, errors);
+  }
+  return errors;
+}
+
+function agenticEnumErrors(r) {
+  const errors = [];
+  const actor = r.actor && typeof r.actor === "object" ? r.actor : {};
+  offEnum("actor.declared_type", actor.declared_type, AIT_DECLARED_TYPES, errors);
+  offEnum("actor.authentication_context", actor.authentication_context, AIT_AUTH_CONTEXTS, errors);
+  offEnum("target_surface", r.target_surface, AIT_TARGET_SURFACES, errors);
+  offEnum("decision_stage", r.decision_stage, AIT_DECISION_STAGES, errors);
+  offEnum("requested_output", r.requested_output, REQUESTED_OUTPUTS, errors);
+  for (const s of Array.isArray(r.dated_sources) ? r.dated_sources : []) {
+    if (s && typeof s === "object") offEnum("dated_sources[].source_type", s.source_type, AIT_SOURCE_TYPES, errors);
+  }
+  return errors;
+}
+
+function invalidRequestResult(profile, endpoint, schema, errors) {
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "failed", timestamp: new Date().toISOString() },
+    artifacts: [],
+    metadata: { product_profile: profile, canonical_http_endpoint: endpoint, schema, valid: false, errors }
+  };
+}
+
 function isCisSecondarySanctionsRequest(value) {
   return (
     value &&
@@ -1287,6 +1413,15 @@ function a2aResultForAgenticInteractionTrust(params) {
       }
     };
   }
+  const enumErrors = agenticEnumErrors(structured);
+  if (enumErrors.length) {
+    return invalidRequestResult(
+      "agentic_interaction_trust",
+      "/v1/agentic-interaction/trust",
+      "schemas/v1/agentic-interaction-trust-request.schema.json",
+      enumErrors
+    );
+  }
   const result = agenticInteractionTrustResult(structured);
   return {
     id: crypto.randomUUID(),
@@ -1382,9 +1517,17 @@ async function cisSecondarySanctionsResult(request, env) {
 
   const limitations = [];
   if (upstreamResult.attribution) limitations.push(upstreamResult.attribution.notice);
-  if (upstreamResult.degrade_reason) {
-    const label = upstream_name || "upstream";
-    limitations.push(`${label} live retrieval degraded: ${upstreamResult.degrade_reason}`);
+  // User-facing degrade note derived from status only — never echo internal
+  // env-var names or upstream stack details (parity with the Python service;
+  // degrade_reason is kept on live_retrieval_status for operators).
+  if (upstreamResult.status === "disabled") {
+    limitations.push(
+      "Live sanctions-list retrieval is not currently enabled; triage is based on user-supplied evidence only."
+    );
+  } else if (upstreamResult.status === "degraded") {
+    limitations.push(
+      "Live sanctions-list retrieval was unavailable; triage is based on user-supplied evidence only."
+    );
   }
   if (undisclosedUbo) {
     limitations.push(
@@ -1468,6 +1611,15 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
         errors: ["Missing structured CIS secondary-sanctions exposure request"]
       }
     };
+  }
+  const enumErrors = cisEnumErrors(structured);
+  if (enumErrors.length) {
+    return invalidRequestResult(
+      "cis_secondary_sanctions",
+      "/v1/cis-secondary-sanctions/exposure",
+      "schemas/v1/cis-secondary-sanctions-request.schema.json",
+      enumErrors
+    );
   }
   const result = await cisSecondarySanctionsResult(structured, env);
   return {
@@ -2484,6 +2636,17 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
 
 function a2aResult(params, request, env = {}) {
   const structuredRequest = structuredDealRiskRequestFromParams(params);
+  if (structuredRequest) {
+    const enumErrors = middleCorridorEnumErrors(structuredRequest);
+    if (enumErrors.length) {
+      return invalidRequestResult(
+        "kazakhstan",
+        "/v1/middle-corridor/deal-risk",
+        "schemas/v1/middle-corridor-deal-risk-request.schema.json",
+        enumErrors
+      );
+    }
+  }
   const text = structuredRequest ? textFromStructuredDealRiskRequest(structuredRequest) : extractText(params);
   const profile = agentProfile(request, env);
   const triageText =
