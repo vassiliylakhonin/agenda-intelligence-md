@@ -611,6 +611,53 @@ test("usage stats aggregates daily counters from KV", async () => {
   ]);
 });
 
+test("usage stats accounts billable upstream cost and budget thresholds", async () => {
+  const kv = new MemoryKv();
+  const base = {
+    event: "agenda_intelligence_a2a_usage",
+    timestamp: "2026-05-30T10:00:00.000Z",
+    jsonrpc_method: "message/send",
+    agent_profile: "cis_secondary_sanctions",
+    likely_probe: false,
+    client: "curl",
+    cf: { country: "KZ" },
+    modules_used: ["cis_secondary_sanctions"]
+  };
+
+  // 6 billable OpenSanctions calls (success) + 1 degraded (failed, not billed)
+  // + 1 disabled (no key, no call). Only the 6 successes cost money.
+  const billable = { status: "success", upstream: "OpenSanctions", billable: true, cost_eur: 0.1 };
+  for (let i = 0; i < 6; i += 1) {
+    await recordUsageStats({ AGENDA_USAGE: kv }, { ...base, timestamp: `2026-05-30T10:0${i}:00.000Z`, live_retrieval: billable });
+  }
+  await recordUsageStats(
+    { AGENDA_USAGE: kv },
+    { ...base, timestamp: "2026-05-30T10:07:00.000Z", live_retrieval: { status: "degraded", upstream: "OpenSanctions", billable: false, cost_eur: 0 } }
+  );
+  await recordUsageStats(
+    { AGENDA_USAGE: kv },
+    { ...base, timestamp: "2026-05-30T10:08:00.000Z", live_retrieval: { status: "disabled", upstream: null, billable: false, cost_eur: 0 } }
+  );
+
+  // No budget cap configured: cost reported, no alert.
+  const noCap = await usageStats({ AGENDA_USAGE: kv }, "2026-05-30");
+  assert.equal(noCap.counters.billable_calls, 6);
+  assert.equal(noCap.cost.estimated_cost_eur, 0.6);
+  assert.deepEqual(noCap.cost.billable_upstreams, [{ name: "OpenSanctions", count: 6 }]);
+  assert.equal(noCap.cost.budget.configured, false);
+  assert.equal(noCap.cost.budget.alert_level, "none");
+
+  // €1.00/day cap → €0.60 spent = 60% → "50" alert tier.
+  const capped = await usageStats({ AGENDA_USAGE: kv, USAGE_BUDGET_EUR_PER_DAY: "1.00" }, "2026-05-30");
+  assert.equal(capped.cost.budget.configured, true);
+  assert.equal(capped.cost.budget.pct_of_budget, 60);
+  assert.equal(capped.cost.budget.alert_level, "50");
+
+  // €0.65/day cap → ~92% → "90" alert tier.
+  const tight = await usageStats({ AGENDA_USAGE: kv, USAGE_BUDGET_EUR_PER_DAY: "0.65" }, "2026-05-30");
+  assert.equal(tight.cost.budget.alert_level, "90");
+});
+
 test("usage event records the worker host and stats break down per host", async () => {
   const kv = new MemoryKv();
   const env = { AGENDA_USAGE: kv };

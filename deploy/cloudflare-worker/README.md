@@ -238,6 +238,14 @@ The `/stats` response includes approximate daily totals, likely probes, non-prob
 
 A `message/send` call is counted as a likely probe when the client is `agenstry` or the prompt payload is shorter than `PROBE_PROMPT_CHAR_THRESHOLD` (24 characters) — this filters untagged uptime pings from monitor colos that do not announce themselves in the user-agent. Inspect `non_probe` for genuine usage.
 
+### Cost accounting
+
+The `/stats` response also includes a `cost` block. No LLM is called on the Worker path, so the only real per-request spend is paid live-retrieval upstreams. Per [ADR 0014](../../docs/adr/0014-per-profile-live-retrieval.md) the OpenSanctions hosted API (€0.10/call) is the only billable upstream; Watchman self-host and the deterministic triage path cost €0. A call is counted as billable only when a paid upstream actually returned data (`live_retrieval_status: success`) — `degraded` (failed call) and `disabled` (no key) are not billed.
+
+- `counters.billable_calls` — number of billable upstream calls that day.
+- `cost.estimated_cost_eur` — `billable_calls × unit price`, rounded to cents. An estimate, not an invoice.
+- `cost.budget` — daily spend vs an optional cap. Set the **plaintext** var `USAGE_BUDGET_EUR_PER_DAY` (e.g. `wrangler deploy --var USAGE_BUDGET_EUR_PER_DAY:5` or in `wrangler.toml [vars]`) to get `pct_of_budget` and an `alert_level` of `none`/`50`/`75`/`90`. The Worker never blocks on budget — it only reports. When unset, `budget.configured` is `false`.
+
 ## Test locally
 
 ```bash
