@@ -257,6 +257,20 @@ def test_mcp_stdio_tools_list_includes_protocol_tool():
     }
 
 
+def test_mcp_stdio_category_fields_constrained_to_packaged_enum():
+    """source_plan / source_coverage category slugs are constrained to the
+    packaged set on the live tools/list surface (computed, not hardcoded)."""
+    response = handle_message({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+    tools = {tool["name"]: tool for tool in response["result"]["tools"]}
+
+    expected = set(list_source_categories()["category_ids"])
+    assert expected, "no packaged source categories found"
+
+    for name in ("source_plan", "source_coverage"):
+        category = tools[name]["inputSchema"]["properties"]["category"]
+        assert set(category["enum"]) == expected, f"{name}.category enum diverged from packaged slugs"
+
+
 def test_mcp_stdio_tools_call_returns_json_text_content():
     response = handle_message(
         {
