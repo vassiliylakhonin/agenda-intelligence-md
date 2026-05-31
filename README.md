@@ -34,9 +34,8 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightwei
 - Agent Card: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
 - JSON-RPC: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send>
 - Agenstry listing: <https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev>
-- Kazakhstan / Middle Corridor Deal Risk Gate: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev> (canonical)
-- Mirror alias for backward compatibility: <https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev> (identical behavior; the Agenstry listing currently points here)
-- Kazakhstan Agenstry listing: <https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev>
+- Kazakhstan / Middle Corridor Deal Risk Gate: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
+- Kazakhstan Agenstry listing: <https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
 - Announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
 
 The hosted wrapper is intentionally limited: no payments, no wallets, no factual-truth verification, and no legal/financial/compliance advice. Live retrieval is off by default and opt-in per vertical-worker profile only (currently `cis_secondary_sanctions` against OpenSanctions, CC-BY 4.0; see [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) and [SOURCE_POLICY.md](SOURCE_POLICY.md)). Full product behavior remains in the installable stdio MCP server.
@@ -91,7 +90,7 @@ Live A2A listing:
 
 - Endpoint: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send>
 - Agent card: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
-- Agenstry: <https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev>
+- Agenstry: <https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
 - Use-case notes: [`docs/use-cases/kazakhstan-middle-corridor.md`](docs/use-cases/kazakhstan-middle-corridor.md)
 - Example pack: [`examples/kazakhstan-middle-corridor/`](examples/kazakhstan-middle-corridor/)
 - Repeatable live test: [`docs/agenstry/kazakhstan-live-test.md`](docs/agenstry/kazakhstan-live-test.md)

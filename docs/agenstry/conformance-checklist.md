@@ -8,7 +8,6 @@ Workers (all on `*.vassiliy-lakhonin.workers.dev`):
 |---|---|---|
 | General triage | `agenda-intelligence-a2a` | `agenda` |
 | Middle Corridor Deal Risk Gate | `middle-corridor-deal-risk-gate-a2a` | `kazakhstan` |
-| (legacy alias) | `kazakhstan-corridor-risk-a2a` | `kazakhstan` |
 | CIS Secondary-Sanctions Exposure | `cis-secondary-sanctions-a2a` | `cis_secondary_sanctions` |
 | Agentic Interaction Trust Gate | `agentic-interaction-trust-a2a` | `agentic_interaction_trust` |
 
