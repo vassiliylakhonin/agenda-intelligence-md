@@ -2332,6 +2332,32 @@ function safeClientId(value) {
   return normalized.slice(0, 64) || "unknown";
 }
 
+// Billable upstreams (per ADR 0014). OpenSanctions hosted API is the only
+// paid live-retrieval upstream (€0.10/call); Watchman self-host and the
+// deterministic triage path cost €0. Used for per-task cost accounting in
+// usageStats — no LLM is called on the Worker path, so upstream calls are
+// the only real per-request spend.
+const BILLABLE_UPSTREAM_EUR = { OpenSanctions: 0.1 };
+
+function round2(value) {
+  return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+// Extract per-request billable cost from a result's live-retrieval metadata.
+// A call is billed only when a paid upstream actually returned data
+// (status "success"). "disabled" = no call made; "degraded" = the call
+// failed, treated as non-billable (providers typically do not bill failed
+// lookups) — conservative on the side of not over-reporting spend.
+function billableUpstreamCost(result) {
+  const status = result?.metadata?.live_retrieval_status ?? null;
+  const upstream = result?.metadata?.live_retrieval_upstream ?? null;
+  const unit = upstream ? BILLABLE_UPSTREAM_EUR[upstream] : undefined;
+  if (status !== "success" || !unit) {
+    return { status, upstream, billable: false, cost_eur: 0 };
+  }
+  return { status, upstream, billable: true, cost_eur: unit };
+}
+
 function buildUsageEvent(request, details = {}) {
   const url = new URL(request.url);
   const cf = request.cf || {};
@@ -2350,6 +2376,7 @@ function buildUsageEvent(request, details = {}) {
     agent_profile: details.agent_profile || agentProfile(request),
     prompt_chars: promptChars,
     modules_used: Array.isArray(details.modules_used) ? details.modules_used.map((item) => item.module) : [],
+    live_retrieval: details.live_retrieval || { status: null, upstream: null, billable: false, cost_eur: 0 },
     client: classifyClient(request),
     referrer_host: headerHost(request, "referer"),
     cf: {
@@ -2406,7 +2433,8 @@ async function recordUsageStats(env, event) {
       likely_probe: Boolean(event.likely_probe),
       client: event.client || "unknown",
       country: event.cf?.country || "unknown",
-      modules_used: Array.isArray(event.modules_used) ? event.modules_used : []
+      modules_used: Array.isArray(event.modules_used) ? event.modules_used : [],
+      live_retrieval: event.live_retrieval || { status: null, upstream: null, billable: false, cost_eur: 0 }
     })
   );
 }
@@ -2467,12 +2495,21 @@ async function usageStats(env, date) {
   const modules = new Map();
   const agentProfiles = new Map();
   const hosts = new Map();
+  const upstreams = new Map();
   let likelyProbe = 0;
   let promptChars = 0;
+  let billableCalls = 0;
+  let estimatedCostEur = 0;
 
   for (const event of events) {
     if (event.likely_probe) likelyProbe += 1;
     promptChars += Number.isFinite(event.prompt_chars) ? event.prompt_chars : 0;
+    const lr = event.live_retrieval;
+    if (lr && lr.billable) {
+      billableCalls += 1;
+      estimatedCostEur += Number.isFinite(lr.cost_eur) ? lr.cost_eur : 0;
+      incrementMap(upstreams, lr.upstream || "unknown");
+    }
     incrementMap(agentProfiles, event.agent_profile);
     incrementMap(hosts, event.host);
     incrementMap(clients, event.client);
@@ -2496,7 +2533,13 @@ async function usageStats(env, date) {
       non_probe: nonProbe,
       likely_probe: likelyProbe,
       prompt_chars_total: promptChars,
-      prompt_chars_avg: total > 0 ? Math.round(promptChars / total) : 0
+      prompt_chars_avg: total > 0 ? Math.round(promptChars / total) : 0,
+      billable_calls: billableCalls
+    },
+    cost: {
+      estimated_cost_eur: round2(estimatedCostEur),
+      billable_upstreams: sortedMap(upstreams),
+      budget: budgetStatus(env, estimatedCostEur)
     },
     clients: sortedMap(clients),
     agent_profiles: sortedMap(agentProfiles),
@@ -2504,6 +2547,29 @@ async function usageStats(env, date) {
     countries: sortedMap(countries),
     methods: sortedMap(methods),
     modules: sortedMap(modules)
+  };
+}
+
+// Daily spend vs an optional configurable cap (USAGE_BUDGET_EUR_PER_DAY).
+// Emits a 50/75/90 alert level so the /stats surface and operators can see
+// budget pressure. When no cap is configured, reports configured:false and
+// no alert — the Worker never blocks on budget, it only reports.
+function budgetStatus(env, estimatedCostEur) {
+  const cap = Number(env?.USAGE_BUDGET_EUR_PER_DAY);
+  if (!Number.isFinite(cap) || cap <= 0) {
+    return { configured: false, alert_level: "none" };
+  }
+  const pct = Math.round((estimatedCostEur / cap) * 100);
+  let alert_level = "none";
+  if (pct >= 90) alert_level = "90";
+  else if (pct >= 75) alert_level = "75";
+  else if (pct >= 50) alert_level = "50";
+  return {
+    configured: true,
+    cap_eur_per_day: cap,
+    spent_eur: round2(estimatedCostEur),
+    pct_of_budget: pct,
+    alert_level
   };
 }
 
@@ -2746,6 +2812,7 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
       agent_profile: result.metadata.product_profile,
       prompt_chars: promptChars,
       modules_used: modulesUsed,
+      live_retrieval: billableUpstreamCost(result),
       likely_probe: likelyProbe
     });
     const statsPromise = recordUsageStats(env, event).catch((error) => {
