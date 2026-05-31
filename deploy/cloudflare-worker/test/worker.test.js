@@ -119,11 +119,11 @@ test("agent card verifier accepts local Agenda and Middle Corridor cards", () =>
 });
 
 test("kazakhstan profile exposes focused corridor-risk agent card", () => {
-  const kazakhstanRequest = new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send");
+  const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
   const card = agentCard(kazakhstanRequest, { AGENT_PROFILE: "kazakhstan" });
 
   assert.equal(card.name, "Kazakhstan / Middle Corridor Deal Risk Gate");
-  assert.equal(card.url, "https://kazakhstan-corridor-risk-a2a.example.workers.dev");
+  assert.equal(card.url, "https://middle-corridor-deal-risk-gate-a2a.example.workers.dev");
   assert.equal(
     card.documentationUrl,
     "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/use-cases/kazakhstan-middle-corridor.md"
@@ -216,7 +216,7 @@ test("message/send returns JSON-RPC result with routing metadata", async () => {
 });
 
 test("kazakhstan profile defaults routing to Central Asia and sanctions modules", async () => {
-  const kazakhstanRequest = new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send");
+  const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
   const originalLog = console.log;
   console.log = () => {};
   try {
@@ -253,7 +253,7 @@ test("kazakhstan profile defaults routing to Central Asia and sanctions modules"
 });
 
 test("kazakhstan deal risk gate returns decision-ready escalation block", async () => {
-  const kazakhstanRequest = new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send");
+  const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
   const originalLog = console.log;
   console.log = () => {};
   try {
@@ -551,7 +551,7 @@ test("usage analytics accepts a privacy-safe optional client id header", () => {
 
 test("usage analytics labels the kazakhstan agent profile", () => {
   const event = buildUsageEvent(
-    new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send"),
+    new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send"),
     {
       jsonrpc_method: "message/send",
       jsonrpc_id_present: true,
@@ -608,8 +608,8 @@ test("usage event records the worker host and stats break down per host", async 
   const kv = new MemoryKv();
   const env = { AGENDA_USAGE: kv };
 
-  const aliasEvent = buildUsageEvent(
-    new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/message/send"),
+  const agendaEvent = buildUsageEvent(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send"),
     { jsonrpc_method: "message/send", jsonrpc_id_present: true, prompt_chars: 200, likely_probe: false }
   );
   const canonicalEvent = buildUsageEvent(
@@ -617,17 +617,17 @@ test("usage event records the worker host and stats break down per host", async 
     { jsonrpc_method: "message/send", jsonrpc_id_present: true, prompt_chars: 200, likely_probe: false }
   );
 
-  assert.equal(aliasEvent.host, "kazakhstan-corridor-risk-a2a.example.workers.dev");
+  assert.equal(agendaEvent.host, "agenda-intelligence-a2a.example.workers.dev");
 
-  await recordUsageStats(env, aliasEvent);
+  await recordUsageStats(env, agendaEvent);
   await recordUsageStats(env, canonicalEvent);
   await recordUsageStats(env, canonicalEvent);
 
-  const stats = await usageStats(env, aliasEvent.timestamp.slice(0, 10));
+  const stats = await usageStats(env, agendaEvent.timestamp.slice(0, 10));
 
   assert.deepEqual(stats.hosts, [
     { name: "middle-corridor-deal-risk-gate-a2a.example.workers.dev", count: 2 },
-    { name: "kazakhstan-corridor-risk-a2a.example.workers.dev", count: 1 }
+    { name: "agenda-intelligence-a2a.example.workers.dev", count: 1 }
   ]);
 });
 
@@ -801,7 +801,7 @@ test("GET /status returns JSON status with boundaries and links", async () => {
 
 test("/status flips human_review_required to true for kazakhstan profile", () => {
   const kazakhstanRequest = new Request(
-    "https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/status"
+    "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/status"
   );
   const info = statusInfo(kazakhstanRequest, {});
   assert.equal(info.profile, "kazakhstan");
@@ -810,7 +810,7 @@ test("/status flips human_review_required to true for kazakhstan profile", () =>
 
 test("landingHtml is profile-aware for kazakhstan worker", () => {
   const kazakhstanRequest = new Request(
-    "https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/"
+    "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/"
   );
   const html = landingHtml(kazakhstanRequest, {});
   assert.match(html, /Kazakhstan/);
@@ -932,7 +932,7 @@ test("statusInfo keeps live_retrieval false for default agenda profile", () => {
 });
 
 test("statusInfo keeps live_retrieval false for kazakhstan profile", () => {
-  const kazRequest = new Request("https://kazakhstan-corridor-risk-a2a.example.workers.dev/status");
+  const kazRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/status");
   const status = statusInfo(kazRequest, {});
   assert.equal(status.profile, "kazakhstan");
   assert.equal(status.boundaries.live_retrieval, false);

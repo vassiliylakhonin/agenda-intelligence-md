@@ -3,7 +3,6 @@ import { pathToFileURL } from "node:url";
 
 const DEFAULT_AGENT_CARD_URLS = [
   "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
-  "https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
   "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
   "https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json"
 ];
@@ -132,7 +131,6 @@ export function validateAgentCard(card, sourceUrl = "") {
 
   const isMiddleCorridor =
     card.name === "Kazakhstan / Middle Corridor Deal Risk Gate" ||
-    sourceUrl.includes("kazakhstan-corridor-risk-a2a") ||
     sourceUrl.includes("middle-corridor-deal-risk-gate-a2a");
   const isAgenticInteractionTrust =
     card.name === "Agentic Interaction Trust Gate" || sourceUrl.includes("agentic-interaction-trust-a2a");

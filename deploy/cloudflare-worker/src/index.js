@@ -306,7 +306,6 @@ function agentProfile(request, env = {}) {
   }
   if (
     env.AGENT_PROFILE === "kazakhstan" ||
-    host.includes("kazakhstan-corridor-risk-a2a") ||
     host.includes("middle-corridor-deal-risk-gate-a2a")
   ) {
     return "kazakhstan";
@@ -545,7 +544,6 @@ function applyAgentProfile(card, request, env = {}) {
     "https://github.com/vassiliylakhonin",
     "https://pypi.org/project/agenda-intelligence-md/",
     "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md",
-    "https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev",
     "https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev"
   ];
   card.skills = [
@@ -2744,7 +2742,7 @@ function landingHtml(request, env) {
     : `<p>This worker is the general Agenda Intelligence A2A wrapper — discovery, uptime checks, lightweight strategic-risk triage, and JSON-RPC routing across geography-aware modules. For deeper Kazakhstan / Middle Corridor deal-risk screening, use the dedicated <a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">deal-risk-gate worker</a>.</p>`;
 
   const agenstryListing = isKazakhstan
-    ? "https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev"
+    ? "https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev"
     : "https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev";
 
   return `<!doctype html>

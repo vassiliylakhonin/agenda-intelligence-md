@@ -6,7 +6,7 @@ Ready-to-paste copy for Agenstry listings and A2A discovery profiles.
 
 Use this for the focused Kazakhstan / Middle Corridor A2A agent:
 
-- Listing URL: <https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev>
+- Listing URL: <https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
 - Live endpoint: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
 - Agent card: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
 - Product contract: [`../use-cases/kazakhstan-middle-corridor.md`](../use-cases/kazakhstan-middle-corridor.md)

@@ -4,16 +4,8 @@ This is the repeatable live test for the public Kazakhstan / Middle Corridor Dea
 
 ## Endpoint
 
-Canonical (use this for new integrations and demos):
-
 - Agent card: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
 - JSON-RPC endpoint: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send>
-
-Mirror alias for backward compatibility (identical behavior; the Agenstry listing currently points here):
-
-- Agenstry listing: <https://agenstry.com/agents/kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev>
-- Agent card: <https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
-- JSON-RPC endpoint: <https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev/message/send>
 
 ## Test command
 
