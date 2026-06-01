@@ -171,6 +171,14 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
             "url": "https://vassiliylakhonin.github.io/",
         },
         "version": __version__,
+        "supportedInterfaces": [
+            {
+                "url": f"{base_url}/message/send",
+                "protocolBinding": "JSONRPC",
+                "protocolVersion": "1.0",
+            }
+        ],
+        "protocolVersions": ["1.0"],
         "capabilities": {
             "streaming": False,
             "pushNotifications": False,
@@ -494,7 +502,7 @@ def a2a_result_for_middle_corridor(request_json: dict) -> dict:
     if not result.get("valid"):
         return {
             "id": "agenda-intelligence-a2a-result",
-            "status": {"state": "failed"},
+            "status": {"state": "TASK_STATE_FAILED"},
             "artifacts": [],
             "metadata": {
                 "product_profile": "middle_corridor_deal_risk",
@@ -508,12 +516,12 @@ def a2a_result_for_middle_corridor(request_json: dict) -> dict:
     response = result["response"]
     return {
         "id": "agenda-intelligence-a2a-result",
-        "status": {"state": "completed"},
+        "status": {"state": "TASK_STATE_COMPLETED"},
         "artifacts": [
             {
                 "artifactId": "middle-corridor-deal-risk-response",
                 "name": "Middle Corridor deal-risk response",
-                "parts": [{"kind": "text", "text": _artifact_text(response)}],
+                "parts": [{"text": _artifact_text(response), "mediaType": "text/markdown"}],
             }
         ],
         "metadata": {
@@ -558,7 +566,7 @@ def a2a_result_for_cis_secondary_sanctions(request_json: dict) -> dict:
     if not result.get("valid"):
         return {
             "id": "agenda-intelligence-a2a-result",
-            "status": {"state": "failed"},
+            "status": {"state": "TASK_STATE_FAILED"},
             "artifacts": [],
             "metadata": {
                 "product_profile": "cis_secondary_sanctions",
@@ -573,12 +581,12 @@ def a2a_result_for_cis_secondary_sanctions(request_json: dict) -> dict:
     live_retrieval_status = result.get("live_retrieval_status", "not_attempted")
     return {
         "id": "agenda-intelligence-a2a-result",
-        "status": {"state": "completed"},
+        "status": {"state": "TASK_STATE_COMPLETED"},
         "artifacts": [
             {
                 "artifactId": "cis-secondary-sanctions-exposure-response",
                 "name": "CIS secondary-sanctions exposure response",
-                "parts": [{"kind": "text", "text": _cis_artifact_text(response, live_retrieval_status)}],
+                "parts": [{"text": _cis_artifact_text(response, live_retrieval_status), "mediaType": "text/markdown"}],
             }
         ],
         "metadata": {
@@ -626,7 +634,7 @@ def a2a_result_for_agentic_interaction_trust(request_json: dict) -> dict:
     if not result.get("valid"):
         return {
             "id": "agenda-intelligence-a2a-result",
-            "status": {"state": "failed"},
+            "status": {"state": "TASK_STATE_FAILED"},
             "artifacts": [],
             "metadata": {
                 "product_profile": "agentic_interaction_trust",
@@ -640,12 +648,12 @@ def a2a_result_for_agentic_interaction_trust(request_json: dict) -> dict:
     response = result["response"]
     return {
         "id": "agenda-intelligence-a2a-result",
-        "status": {"state": "completed"},
+        "status": {"state": "TASK_STATE_COMPLETED"},
         "artifacts": [
             {
                 "artifactId": "agentic-interaction-trust-response",
                 "name": "Agentic interaction trust response",
-                "parts": [{"kind": "text", "text": _agentic_artifact_text(response)}],
+                "parts": [{"text": _agentic_artifact_text(response), "mediaType": "text/markdown"}],
             }
         ],
         "metadata": {
@@ -665,7 +673,7 @@ def _service_artifact_text(title: str, result: dict) -> str:
 
 def a2a_result_for_audit_claims(audit_json: dict) -> dict:
     result = services.audit_claims(audit_json)
-    state = "completed" if result.get("valid") else "failed"
+    state = "TASK_STATE_COMPLETED" if result.get("valid") else "TASK_STATE_FAILED"
     return {
         "id": "agenda-intelligence-a2a-result",
         "status": {"state": state},
@@ -673,7 +681,9 @@ def a2a_result_for_audit_claims(audit_json: dict) -> dict:
             {
                 "artifactId": "audit-claims-response",
                 "name": "Audit claims response",
-                "parts": [{"kind": "text", "text": _service_artifact_text("Audit claims response", result)}],
+                "parts": [
+                    {"text": _service_artifact_text("Audit claims response", result), "mediaType": "text/markdown"}
+                ],
             }
         ],
         "metadata": {
@@ -687,7 +697,7 @@ def a2a_result_for_audit_claims(audit_json: dict) -> dict:
 
 def a2a_result_for_source_coverage(evidence_json: dict, category: str | None) -> dict:
     result = services.source_coverage(evidence_json, category)
-    state = "completed" if result.get("valid_category") else "failed"
+    state = "TASK_STATE_COMPLETED" if result.get("valid_category") else "TASK_STATE_FAILED"
     return {
         "id": "agenda-intelligence-a2a-result",
         "status": {"state": state},
@@ -695,7 +705,9 @@ def a2a_result_for_source_coverage(evidence_json: dict, category: str | None) ->
             {
                 "artifactId": "source-coverage-response",
                 "name": "Source coverage response",
-                "parts": [{"kind": "text", "text": _service_artifact_text("Source coverage response", result)}],
+                "parts": [
+                    {"text": _service_artifact_text("Source coverage response", result), "mediaType": "text/markdown"}
+                ],
             }
         ],
         "metadata": {
@@ -709,7 +721,7 @@ def a2a_result_for_source_coverage(evidence_json: dict, category: str | None) ->
 
 def a2a_result_for_score_output(before_text: str, after_text: str) -> dict:
     result = services.score_output(before_text, after_text)
-    state = "completed" if result.get("error") is None else "failed"
+    state = "TASK_STATE_COMPLETED" if result.get("error") is None else "TASK_STATE_FAILED"
     return {
         "id": "agenda-intelligence-a2a-result",
         "status": {"state": state},
@@ -717,7 +729,9 @@ def a2a_result_for_score_output(before_text: str, after_text: str) -> dict:
             {
                 "artifactId": "score-output-response",
                 "name": "Score output response",
-                "parts": [{"kind": "text", "text": _service_artifact_text("Score output response", result)}],
+                "parts": [
+                    {"text": _service_artifact_text("Score output response", result), "mediaType": "text/markdown"}
+                ],
             }
         ],
         "metadata": {
@@ -848,7 +862,12 @@ def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> di
             before_text, after_text = score_request
             return {"jsonrpc": "2.0", "id": id_value, "result": a2a_result_for_score_output(before_text, after_text)}
 
-    return jsonrpc_error(id_value, -32601, "Method not found", {"supported_methods": ["message/send", "agent/card"]})
+    return jsonrpc_error(
+        id_value,
+        -32601,
+        "Method not found",
+        {"supported_methods": ["message/send", "SendMessage", "agent/card"]},
+    )
 
 
 def handle_stdin_jsonrpc(raw_input: str, base_url: str = "http://localhost:8080") -> dict:

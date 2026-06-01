@@ -45,8 +45,8 @@ curl -X POST https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/messa
       "message": {
         "parts": [
           {
-            "kind": "text",
-            "text": "Route a sanctions question about Kazakhstan and the Middle Corridor."
+            "text": "Route a sanctions question about Kazakhstan and the Middle Corridor.",
+            "mediaType": "text/plain"
           }
         ]
       }
@@ -54,7 +54,7 @@ curl -X POST https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/messa
   }'
 ```
 
-Expected result: a JSON-RPC 2.0 response with `status.state` set to `completed`, a short routing note, and `metadata.modules_used`.
+Expected result: a JSON-RPC 2.0 response with `status.state` set to `TASK_STATE_COMPLETED`, a short routing note, and `metadata.modules_used`.
 
 ## Current status
 

@@ -162,8 +162,8 @@ curl -X POST https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/messa
       "message": {
         "parts": [
           {
-            "kind": "text",
-            "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure."
+            "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure.",
+            "mediaType": "text/plain"
           }
         ]
       }
@@ -184,8 +184,8 @@ curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.worker
       "message": {
         "parts": [
           {
-            "kind": "text",
-            "text": "Screen Kazakhstan Middle Corridor sanctions exposure for a logistics route."
+            "text": "Screen Kazakhstan Middle Corridor sanctions exposure for a logistics route.",
+            "mediaType": "text/plain"
           }
         ]
       }
@@ -193,7 +193,7 @@ curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.worker
   }'
 ```
 
-Expected: JSON-RPC 2.0 with `status.state: "completed"`, `metadata.signal_screen.risk_signal`, affected regions, required source categories, evidence gaps, watch-next indicators, suggested modules, and next actions.
+Expected: JSON-RPC 2.0 with `status.state: "TASK_STATE_COMPLETED"`, `metadata.signal_screen.risk_signal`, affected regions, required source categories, evidence gaps, watch-next indicators, suggested modules, and next actions.
 
 Private usage stats for the wrapper are available from the Cloudflare Worker project:
 
@@ -249,7 +249,7 @@ agenda-intelligence mcp-config --client cursor
 Pinned-wheel install (instead of PyPI):
 
 ```bash
-pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v1.0.2/agenda_intelligence_md-1.0.2-py3-none-any.whl
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v1.1.0/agenda_intelligence_md-1.1.0-py3-none-any.whl
 ```
 
 ## Benchmark baseline

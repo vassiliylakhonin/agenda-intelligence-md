@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agenda-intelligence-md"
-version = "1.0.2"
+version = "1.1.0"
 description = "CLI, MCP server, and JSON schemas for validating and auditing strategic-risk AI agent output"
 readme = "README.md"
 requires-python = ">=3.9"

@@ -53,7 +53,7 @@ test("agent card uses request origin for live endpoints", () => {
   const card = agentCard(request);
 
   assert.equal(card.protocolVersion, "1.0");
-  assert.equal(card.version, "1.0.1");
+  assert.equal(card.version, "1.1.0");
   assert.equal(card.url, "https://agenda-intelligence-a2a.example.workers.dev");
   assert.deepEqual(card.supportedInterfaces, [
     {
@@ -191,8 +191,9 @@ test("message/send returns JSON-RPC result with routing metadata", async () => {
 
     assert.equal(response.jsonrpc, "2.0");
     assert.equal(response.id, "probe-1");
-    assert.equal(response.result.status.state, "completed");
-    assert.equal(response.result.artifacts[0].parts[0].kind, "text");
+    assert.equal(response.result.status.state, "TASK_STATE_COMPLETED");
+    assert.equal(response.result.artifacts[0].parts[0].mediaType, "text/markdown");
+    assert.ok("text" in response.result.artifacts[0].parts[0]);
     assert.match(response.result.artifacts[0].parts[0].text, /Signal screen:/);
     assert.match(response.result.artifacts[0].parts[0].text, /Risk signal:/);
     assert.match(response.result.artifacts[0].parts[0].text, /Evidence\/source plan:/);
@@ -498,8 +499,9 @@ test("kazakhstan deal risk gate returns structured contract response from data p
     assert.match(response.result.artifacts[0].parts[0].text, /Middle Corridor deal-risk contract response/);
 
     // The DataPart surfaces the deal-risk contract itself, not the full routing triage.
-    const dataPart = response.result.artifacts[0].parts.find((part) => part.kind === "data");
+    const dataPart = response.result.artifacts[0].parts.find((part) => "data" in part);
     assert.ok(dataPart, "expected a data part in the artifact");
+    assert.equal(dataPart.mediaType, "application/json");
     assert.equal(dataPart.data.triage_recommendation, "escalate_before_signature");
     assert.equal(dataPart.data.decision_readiness_score, 42);
     assert.equal(dataPart.data.signal_screen, undefined);
@@ -1030,7 +1032,7 @@ test("cis worker rejects an off-enum field like the canonical schema (validation
       cisRequest,
       { OPENSANCTIONS_DISABLED: "1" }
     );
-    assert.equal(response.result.status.state, "failed");
+    assert.equal(response.result.status.state, "TASK_STATE_FAILED");
     assert.equal(response.result.metadata.valid, false);
     assert.ok(response.result.metadata.errors.some((e) => e.includes("counterparty.sector")));
   } finally {
@@ -1217,7 +1219,7 @@ test("agentic_interaction_trust message/send dispatches to structured triage", a
     assert.equal(response.jsonrpc, "2.0");
     assert.equal(response.id, "agentic-1");
     const result = response.result;
-    assert.equal(result.status.state, "completed");
+    assert.equal(result.status.state, "TASK_STATE_COMPLETED");
     assert.equal(result.metadata.product_profile, "agentic_interaction_trust");
     assert.equal(result.metadata.canonical_http_endpoint, "/v1/agentic-interaction/trust");
     assert.equal(result.metadata.human_review_required, true);
@@ -1251,7 +1253,7 @@ test("agentic_interaction_trust message/send fails on missing structured request
       agenticRequest,
       {}
     );
-    assert.equal(response.result.status.state, "failed");
+    assert.equal(response.result.status.state, "TASK_STATE_FAILED");
     assert.equal(response.result.metadata.valid, false);
     assert.equal(response.result.metadata.product_profile, "agentic_interaction_trust");
   } finally {
@@ -1279,7 +1281,7 @@ test("cis_secondary_sanctions message/send dispatches to structured triage", asy
     assert.equal(response.jsonrpc, "2.0");
     assert.equal(response.id, "cis-1");
     const result = response.result;
-    assert.equal(result.status.state, "completed");
+    assert.equal(result.status.state, "TASK_STATE_COMPLETED");
     assert.equal(result.metadata.product_profile, "cis_secondary_sanctions");
     assert.equal(result.metadata.live_retrieval_status, "disabled");
     assert.equal(result.metadata.human_review_required, true);
@@ -1290,9 +1292,11 @@ test("cis_secondary_sanctions message/send dispatches to structured triage", asy
 
     // Machine-readable DataPart mirrors the structured response alongside the text part.
     const parts = result.artifacts[0].parts;
-    assert.equal(parts[0].kind, "text");
-    const dataPart = parts.find((part) => part.kind === "data");
+    assert.equal(parts[0].mediaType, "text/markdown");
+    assert.ok("text" in parts[0]);
+    const dataPart = parts.find((part) => "data" in part);
     assert.ok(dataPart, "expected a data part in the artifact");
+    assert.equal(dataPart.mediaType, "application/json");
     assert.equal(dataPart.data.triage_recommendation, "escalate_before_onboarding");
     assert.equal(dataPart.data.human_review_required, true);
   } finally {
@@ -1314,7 +1318,7 @@ test("cis_secondary_sanctions message/send fails on missing structured request",
       cisRequest,
       { OPENSANCTIONS_DISABLED: "1" }
     );
-    assert.equal(response.result.status.state, "failed");
+    assert.equal(response.result.status.state, "TASK_STATE_FAILED");
     assert.equal(response.result.metadata.valid, false);
   } finally {
     console.log = originalLog;

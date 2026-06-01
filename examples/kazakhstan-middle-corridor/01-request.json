@@ -6,7 +6,7 @@
     "message": {
       "parts": [
         {
-          "kind": "text",
+          "mediaType": "text/plain",
           "text": "Deal risk gate: route Altynkol -> Aktau/Kuryk -> Baku -> Poti. Cargo: industrial equipment. Counterparties: shipper, forwarder, consignee. Risk question: should this be escalated before contract signature? Dated sources supplied: port operator notice dated 2026-05-20; sanctions list extract dated 2026-05-21 with no exact match; carrier note dated 2026-05-22. Return source gaps, watch-next indicators, and human-review escalation."
         }
       ]

@@ -90,6 +90,10 @@ def test_agent_card_exposes_middle_corridor_skill():
     card = a2a_adapter.agent_card("https://example.com")
 
     assert card["url"] == "https://example.com"
+    assert card["protocolVersion"] == "1.0"
+    assert card["supportedInterfaces"][0]["url"] == "https://example.com/message/send"
+    assert card["supportedInterfaces"][0]["protocolBinding"] == "JSONRPC"
+    assert card["supportedInterfaces"][0]["protocolVersion"] == "1.0"
     assert card["x_agenda_intelligence"]["product_profile"] == "middle_corridor_deal_risk"
     assert card["x_agenda_intelligence"]["canonical_http_endpoint"] == "/v1/middle-corridor/deal-risk"
     assert card["skills"][0]["id"] == "middle-corridor-deal-risk-gate"
@@ -126,7 +130,7 @@ def test_jsonrpc_message_send_routes_structured_request_from_params_request():
 
     result = response["result"]
     contract = result["metadata"]["response"]
-    assert result["status"]["state"] == "completed"
+    assert result["status"]["state"] == "TASK_STATE_COMPLETED"
     assert contract["triage_recommendation"] == "escalate_before_signature"
     assert contract["risk_signal"] == "medium_high"
     assert contract["decision_readiness_score"] == 42
@@ -171,7 +175,7 @@ def test_jsonrpc_message_send_routes_agentic_interaction_trust_capability():
 
     result = response["result"]
     contract = result["metadata"]["response"]
-    assert result["status"]["state"] == "completed"
+    assert result["status"]["state"] == "TASK_STATE_COMPLETED"
     assert result["metadata"]["product_profile"] == "agentic_interaction_trust"
     assert result["metadata"]["canonical_http_endpoint"] == "/v1/agentic-interaction/trust"
     assert contract["triage_recommendation"] == "require_step_up"
@@ -225,7 +229,7 @@ def test_jsonrpc_message_send_routes_audit_claims_capability():
     )
 
     result = response["result"]
-    assert result["status"]["state"] == "completed"
+    assert result["status"]["state"] == "TASK_STATE_COMPLETED"
     assert result["metadata"]["product_profile"] == "audit_claims"
     assert result["metadata"]["canonical_http_endpoint"] == "/v1/audit-claims"
     assert result["metadata"]["response"]["summary"]["claim_count"] == 1
@@ -260,7 +264,7 @@ def test_jsonrpc_message_send_routes_source_coverage_capability():
     )
 
     result = response["result"]
-    assert result["status"]["state"] == "completed"
+    assert result["status"]["state"] == "TASK_STATE_COMPLETED"
     assert result["metadata"]["product_profile"] == "source_coverage"
     assert result["metadata"]["canonical_http_endpoint"] == "/v1/source-coverage"
     assert result["metadata"]["response"]["category"] == "sanctions"
@@ -288,7 +292,7 @@ def test_jsonrpc_message_send_routes_score_output_capability():
     )
 
     result = response["result"]
-    assert result["status"]["state"] == "completed"
+    assert result["status"]["state"] == "TASK_STATE_COMPLETED"
     assert result["metadata"]["product_profile"] == "score_output"
     assert result["metadata"]["canonical_http_endpoint"] == "/v1/score"
     assert result["metadata"]["response"]["score"] > 0
@@ -426,7 +430,7 @@ def test_a2a_example_requests_run_through_stdin_shell():
 
         assert "error" not in response, filename
         result = response["result"]
-        assert result["status"]["state"] == "completed", filename
+        assert result["status"]["state"] == "TASK_STATE_COMPLETED", filename
         assert result["metadata"]["product_profile"] == expected_profile, filename
 
 

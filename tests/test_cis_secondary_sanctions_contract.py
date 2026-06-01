@@ -178,7 +178,7 @@ def test_cis_a2a_result_shape(monkeypatch):
     monkeypatch.setenv("OPENSANCTIONS_DISABLED", "1")
     request_json = load_json(CONTRACT_DIR / "escalate_before_onboarding.request.json")
     result = a2a_result_for_cis_secondary_sanctions(request_json)
-    assert result["status"]["state"] == "completed"
+    assert result["status"]["state"] == "TASK_STATE_COMPLETED"
     metadata = result["metadata"]
     assert metadata["product_profile"] == "cis_secondary_sanctions"
     assert metadata["canonical_http_endpoint"] == CIS_SECONDARY_SANCTIONS_ENDPOINT
