@@ -121,6 +121,27 @@
         "minLength": 1
       }
     },
+    "exposure_layers": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Risk picture decomposed into the two layers a practitioner separates: home-jurisdiction legal / documentation posture (not assessed by this product) versus foreign / secondary-sanctions exposure. Structural decomposition only; not a legal or sanctions determination.",
+      "properties": {
+        "domestic_legal_layer": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "foreign_sanctions_exposure_layer": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
     "watch_next": {
       "type": "array",
       "items": {

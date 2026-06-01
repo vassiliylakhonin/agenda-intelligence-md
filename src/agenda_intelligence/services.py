@@ -448,6 +448,25 @@ HIGH_RISK_JURISDICTIONS = {
 }
 
 
+# Re-export / circumvention-watch jurisdictions (ADR 0015 follow-up).
+# These are NOT comprehensively or sectorally sanctioned. Their presence in a
+# Middle Corridor counterparty set is a re-export / diversion watch item — verify
+# end-use and onward destination — distinct from HIGH_RISK_JURISDICTIONS above and
+# carrying a deliberately softer flag. Seeded with the most frequently cited
+# parallel-import / transshipment corridors for sanctioned-origin goods.
+# Lowercased; matched as substring against the counterparty jurisdiction field.
+CIRCUMVENTION_WATCH_JURISDICTIONS = {
+    "armenia": "Armenia",
+    "georgia": "Georgia",
+    "kyrgyzstan": "Kyrgyzstan",
+    "uzbekistan": "Uzbekistan",
+    "turkey": "Turkey",
+    "turkiye": "Turkey",
+    "united arab emirates": "United Arab Emirates",
+    "uae": "United Arab Emirates",
+}
+
+
 def _high_risk_jurisdiction_counterparties(request_json: dict) -> list[dict]:
     """Flag counterparties domiciled in a sanctions-relevant / high-risk jurisdiction.
 
@@ -477,10 +496,49 @@ def _high_risk_jurisdiction_counterparties(request_json: dict) -> list[dict]:
     return flagged
 
 
-def _middle_corridor_top_risks(missing_sources: list[str], high_risk_jurisdictions: bool = False) -> list[str]:
+def _circumvention_watch_counterparties(request_json: dict) -> list[dict]:
+    """Flag counterparties in a re-export / circumvention-watch jurisdiction.
+
+    Softer sibling of _high_risk_jurisdiction_counterparties: these jurisdictions
+    are not comprehensively sanctioned, but their presence is a re-export /
+    diversion watch item. Presence-flagging only, not adjudication.
+    """
+    flagged: list[dict] = []
+    for cp in request_json.get("counterparties", []) or []:
+        if not isinstance(cp, dict):
+            continue
+        jurisdiction = cp.get("jurisdiction")
+        if not isinstance(jurisdiction, str):
+            continue
+        lowered = jurisdiction.lower()
+        # A comprehensively high-risk jurisdiction takes precedence over the
+        # softer watch flag; do not double-flag the same counterparty.
+        if any(token in lowered for token in HIGH_RISK_JURISDICTIONS):
+            continue
+        for token, label in CIRCUMVENTION_WATCH_JURISDICTIONS.items():
+            if token in lowered:
+                flagged.append(
+                    {
+                        "name": cp.get("name", "unnamed counterparty"),
+                        "role": cp.get("role", "unknown"),
+                        "jurisdiction": jurisdiction,
+                        "matched": label,
+                    }
+                )
+                break
+    return flagged
+
+
+def _middle_corridor_top_risks(
+    missing_sources: list[str],
+    high_risk_jurisdictions: bool = False,
+    circumvention_watch: bool = False,
+) -> list[str]:
     risks = ["sanctions adjacency", "Caspian chokepoint dependency"]
     if high_risk_jurisdictions:
         risks.insert(0, "counterparty in a sanctions-relevant / high-risk jurisdiction")
+    if circumvention_watch:
+        risks.append("counterparty in a re-export / circumvention-watch jurisdiction")
     if "customs_or_regulatory_source" in missing_sources:
         risks.append("customs and documentation uncertainty")
     if "insurance_clause_or_underwriter_note" in missing_sources:
@@ -490,6 +548,49 @@ def _middle_corridor_top_risks(missing_sources: list[str], high_risk_jurisdictio
     if "vessel_or_carrier_history" in missing_sources:
         risks.append("carrier or vessel history gap")
     return list(dict.fromkeys(risks))
+
+
+def _middle_corridor_exposure_layers(
+    missing_sources: list[str],
+    high_risk_jurisdictions: bool = False,
+    circumvention_watch: bool = False,
+) -> dict:
+    """Decompose the risk picture into the two layers a practitioner separates:
+    home-jurisdiction legal / documentation posture (not assessed here) versus
+    foreign / secondary-sanctions exposure. Structural decomposition only; not a
+    legal or sanctions determination.
+    """
+    domestic_legal_layer = [
+        (
+            "Home-jurisdiction legal and licensing posture not assessed here "
+            "(this product does not verify export-control licensing or documentation); "
+            "confirm with qualified review."
+        )
+    ]
+    if "customs_or_regulatory_source" in missing_sources:
+        domestic_legal_layer.append("No customs or regulatory source supplied to review documentation posture.")
+
+    foreign_sanctions_exposure_layer = [
+        "Secondary / extraterritorial sanctions adjacency present; exposure not adjudicated."
+    ]
+    if high_risk_jurisdictions:
+        foreign_sanctions_exposure_layer.append(
+            "Counterparty in a sanctions-relevant / high-risk jurisdiction — escalation flag, not a determination."
+        )
+    if circumvention_watch:
+        foreign_sanctions_exposure_layer.append(
+            "Counterparty in a re-export / circumvention-watch jurisdiction — verify end-use and onward destination."
+        )
+    if "sanctions_list_extract" in missing_sources:
+        foreign_sanctions_exposure_layer.append("No sanctions list extract supplied to review listed-party exposure.")
+    if "beneficial_ownership_source" in missing_sources:
+        foreign_sanctions_exposure_layer.append(
+            "No beneficial ownership source — indirect / ownership-based exposure cannot be reviewed."
+        )
+    return {
+        "domestic_legal_layer": domestic_legal_layer,
+        "foreign_sanctions_exposure_layer": foreign_sanctions_exposure_layer,
+    }
 
 
 def middle_corridor_deal_risk(request_json: dict) -> dict:
@@ -512,6 +613,7 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         source_type for source_type in MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO if source_type not in supplied_sources
     ]
     flagged_jurisdictions = _high_risk_jurisdiction_counterparties(request_json)
+    flagged_circumvention = _circumvention_watch_counterparties(request_json)
     readiness_score, readiness_label = _middle_corridor_readiness(request_json, supplied_sources)
     response = {
         "triage_recommendation": _middle_corridor_triage_recommendation(request_json, missing_sources),
@@ -524,7 +626,12 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         "supplied_sources": supplied_sources,
         "minimum_sources_before_go": missing_sources,
         "evidence_gaps": [_evidence_gap_for_source(source_type) for source_type in missing_sources],
-        "top_risks": _middle_corridor_top_risks(missing_sources, bool(flagged_jurisdictions)),
+        "top_risks": _middle_corridor_top_risks(
+            missing_sources, bool(flagged_jurisdictions), bool(flagged_circumvention)
+        ),
+        "exposure_layers": _middle_corridor_exposure_layers(
+            missing_sources, bool(flagged_jurisdictions), bool(flagged_circumvention)
+        ),
         "watch_next": [
             "new sanctions designations",
             "port delays or operator notices",
@@ -535,15 +642,23 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         "human_review_required": True,
         "not_advice_notice": NOT_ADVICE_NOTICE,
     }
+    limitations: list[str] = []
     if flagged_jurisdictions:
         named = ", ".join(f"{c['name']} ({c['role']}, {c['jurisdiction']})" for c in flagged_jurisdictions)
-        response["limitations"] = [
-            (
-                "One or more counterparties are domiciled in a sanctions-relevant / high-risk jurisdiction "
-                f"({named}); this is an escalation flag for human review, not a sanctions determination. "
-                "Confirm end-use, ownership, and applicable restrictions before any commercial action."
-            )
-        ]
+        limitations.append(
+            "One or more counterparties are domiciled in a sanctions-relevant / high-risk jurisdiction "
+            f"({named}); this is an escalation flag for human review, not a sanctions determination. "
+            "Confirm end-use, ownership, and applicable restrictions before any commercial action."
+        )
+    if flagged_circumvention:
+        named_cw = ", ".join(f"{c['name']} ({c['role']}, {c['jurisdiction']})" for c in flagged_circumvention)
+        limitations.append(
+            "One or more counterparties are domiciled in a re-export / circumvention-watch jurisdiction "
+            f"({named_cw}); this is a diversion watch item for human review, not a sanctions determination. "
+            "Verify end-use and onward destination before any commercial action."
+        )
+    if limitations:
+        response["limitations"] = limitations
     if "shipment_value" in request_json:
         response["shipment_value"] = request_json["shipment_value"]
 

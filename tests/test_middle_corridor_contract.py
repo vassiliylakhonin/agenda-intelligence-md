@@ -154,4 +154,97 @@ def test_middle_corridor_clean_jurisdiction_not_flagged():
     }
     resp = services.middle_corridor_deal_risk(req)["response"]
     assert "counterparty in a sanctions-relevant / high-risk jurisdiction" not in resp["top_risks"]
+    assert "counterparty in a re-export / circumvention-watch jurisdiction" not in resp["top_risks"]
     assert "limitations" not in resp
+
+
+def test_middle_corridor_flags_circumvention_watch_jurisdiction():
+    """Counterparty in a re-export / circumvention-watch jurisdiction (e.g. Armenia)
+    must be flagged with the softer watch wording, distinct from the high-risk flag."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau -> Baku -> Poti -> EU",
+        "cargo": "dual-use machine tools",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+            {"role": "consignee", "name": "Intermediary Trading", "jurisdiction": "Armenia"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+    resp = services.middle_corridor_deal_risk(req)["response"]
+    assert "counterparty in a re-export / circumvention-watch jurisdiction" in resp["top_risks"]
+    # Must NOT be mislabelled as a comprehensively sanctioned / high-risk jurisdiction.
+    assert "counterparty in a sanctions-relevant / high-risk jurisdiction" not in resp["top_risks"]
+    assert "limitations" in resp
+    joined = " ".join(resp["limitations"])
+    assert "diversion watch item" in joined
+    assert "not a sanctions determination" in joined
+
+
+def test_middle_corridor_high_risk_takes_precedence_over_watch():
+    """A jurisdiction on the high-risk list is not also double-flagged as watch."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "consignee", "name": "RU Buyer", "jurisdiction": "Russia"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate?",
+        "decision_stage": "pre_signature",
+    }
+    resp = services.middle_corridor_deal_risk(req)["response"]
+    assert "counterparty in a sanctions-relevant / high-risk jurisdiction" in resp["top_risks"]
+    assert "counterparty in a re-export / circumvention-watch jurisdiction" not in resp["top_risks"]
+
+
+def test_middle_corridor_exposure_layers_present_and_separated():
+    """Response must decompose risk into domestic-legal vs foreign-sanctions layers,
+    validate against the schema, and never assert compliance/clearance."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau -> Baku -> Poti -> EU",
+        "cargo": "dual-use machine tools",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+            {"role": "consignee", "name": "Intermediary Trading", "jurisdiction": "Armenia"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "compliant at home but any foreign exposure before signature?",
+        "decision_stage": "pre_signature",
+    }
+    result = services.middle_corridor_deal_risk(req)
+    assert result["valid"] is True
+    resp = result["response"]
+
+    layers = resp["exposure_layers"]
+    assert layers["domestic_legal_layer"]
+    assert layers["foreign_sanctions_exposure_layer"]
+    # The circumvention-watch signal must surface in the foreign-exposure layer.
+    assert any("circumvention-watch" in line for line in layers["foreign_sanctions_exposure_layer"])
+    # Boundary: the structured layers must not imply clearance.
+    text = json.dumps(layers).lower()
+    for word in ["cleared", "approved", "sanctions safe", "no sanctions risk"]:
+        assert word not in text
+    # Schema conformance of the full response (exposure_layers included).
+    assert_valid(RESPONSE_SCHEMA_PATH, _write_tmp(resp))
+
+
+def _write_tmp(obj):
+    import tempfile
+
+    path = Path(tempfile.mkstemp(suffix=".json")[1])
+    path.write_text(json.dumps(obj))
+    return path
