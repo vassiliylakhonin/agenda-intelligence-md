@@ -47,6 +47,7 @@ def test_release_version_fields_match_pyproject():
         "agent-manifest.json",
         "src/agenda_intelligence/data/agent-manifest.json",
         "server.json",
+        ".well-known/agent-card.json",
     ]:
         discovered.extend(collect_json_versions(ROOT / relative_path))
 
