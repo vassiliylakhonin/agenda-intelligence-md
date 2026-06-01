@@ -179,7 +179,7 @@
       ]
     },
     "boundaries": [
-      "No autonomous live source retrieval before v1.0.",
+      "No autonomous live source retrieval by default; per-profile live retrieval is opt-in and operator-configured (ADR 0014).",
       "No factual-truth verification; validates structure, provenance labels, quote presence, and evidence coverage diagnostics.",
       "Not legal, financial, compliance, investment, or trading advice."
     ],
