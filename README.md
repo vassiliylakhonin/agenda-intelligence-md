@@ -86,6 +86,8 @@ The HTTP shell is portable but **not a hardened internet-facing server**. No bui
 
 > Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation.
 
+The structured response also presence-flags sanctions-relevant / high-risk and re-export / circumvention-watch counterparty jurisdictions, decomposes risk into a domestic-legal vs foreign-sanctions exposure view, and surfaces a vessel deceptive-shipping-practice checklist for the maritime leg. All of this is presence-flagging and evidence triage routed to human review — not a sanctions determination.
+
 Live A2A listing:
 
 - Endpoint: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send>
