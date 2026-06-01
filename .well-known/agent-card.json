@@ -1,5 +1,4 @@
 {
-  "protocolVersion": "1.0",
   "name": "Agenda Intelligence MD",
   "description": "Evidence-discipline MCP layer for strategic-risk agents. Validates structured strategic-risk memos, audits claim/evidence linkage, diagnoses source-category coverage, routes geography-specific reasoning modules, and exposes packaged signal references. It does not perform live retrieval or factual-truth verification.",
   "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
@@ -7,7 +6,7 @@
     "organization": "Vassiliy Lakhonin",
     "url": "https://vassiliylakhonin.github.io/"
   },
-  "version": "0.9.2",
+  "version": "1.1.0",
   "documentationUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/MCP.md",
   "capabilities": {
     "streaming": false,
