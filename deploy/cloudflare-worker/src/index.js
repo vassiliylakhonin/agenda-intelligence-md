@@ -133,6 +133,48 @@ const MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO = [
 
 const MIDDLE_CORRIDOR_HELPFUL_CONTEXT = ["port_operator_notice", "carrier_note"];
 
+// Sanctions-relevant / high-risk jurisdictions for presence-flagging per ADR 0015.
+// Escalation flag routed to human review, NOT a determination. Comprehensively or
+// sectorally sanctioned jurisdictions. Lowercased; substring match on jurisdiction.
+const HIGH_RISK_JURISDICTIONS = {
+  russia: "Russia",
+  "russian federation": "Russia",
+  belarus: "Belarus",
+  iran: "Iran",
+  "north korea": "North Korea",
+  dprk: "North Korea",
+  syria: "Syria",
+  crimea: "Crimea",
+  donetsk: "Donetsk (non-government-controlled)",
+  luhansk: "Luhansk (non-government-controlled)"
+};
+
+// Re-export / circumvention-watch jurisdictions (ADR 0015 follow-up). NOT
+// comprehensively sanctioned; presence is a re-export / diversion watch item,
+// a deliberately softer flag than HIGH_RISK_JURISDICTIONS. Lowercased substring match.
+const CIRCUMVENTION_WATCH_JURISDICTIONS = {
+  armenia: "Armenia",
+  georgia: "Georgia",
+  kyrgyzstan: "Kyrgyzstan",
+  uzbekistan: "Uzbekistan",
+  turkey: "Turkey",
+  turkiye: "Turkey",
+  "united arab emirates": "United Arab Emirates",
+  uae: "United Arab Emirates"
+};
+
+// Deceptive-shipping-practice (DSP) verification checklist drawn from OFAC maritime
+// guidance, surfaced when vessel / carrier history is not yet supplied. Evidence-gap
+// checklist routed to human review — not vessel adjudication, AIS analysis, live
+// retrieval, or insurance advice (ADR 0015 boundary).
+const VESSEL_DUE_DILIGENCE_INDICATORS = [
+  "AIS continuity: check for extended transmission gaps or disablement over the voyage.",
+  "Vessel identity consistency: check for MMSI / name / IMO manipulation or misclassification.",
+  "Certificate-of-origin integrity: confirm shipping documents match declared cargo origin and destination.",
+  "Ship-to-ship transfer history: check for undisclosed STS transfers along the route.",
+  "Flag history: check for recent flag changes or registration with a high-risk registry."
+];
+
 const CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW = [
   "ofac_sdn_extract",
   "eu_consolidated_extract",
@@ -539,7 +581,7 @@ function applyAgentProfile(card, request, env = {}) {
   card.name = "Kazakhstan / Middle Corridor Deal Risk Gate";
   card.documentationUrl = MIDDLE_CORRIDOR_DOCS_URL;
   card.description =
-    "A2A-compatible evidence-readiness gate for Kazakhstan-Caspian / Middle Corridor logistics, trade-finance, procurement, and insurance-adjacent workflows. Bring route, cargo, counterparties, and dated sources; get structured deal-risk triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, risk signal, and human-review routing.";
+    "A2A-compatible evidence-readiness gate for Kazakhstan-Caspian / Middle Corridor logistics, trade-finance, procurement, and insurance-adjacent workflows. Bring route, cargo, counterparties, and dated sources; get structured deal-risk triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, risk signal, human-review routing, sanctions-relevant / re-export jurisdiction flags, a domestic-legal vs foreign-sanctions exposure decomposition, and a vessel deceptive-shipping-practice checklist. Presence-flagging and evidence triage only, not a sanctions determination.";
   card.provider.legalEntity.sameAs = [
     "https://github.com/vassiliylakhonin",
     "https://pypi.org/project/agenda-intelligence-md/",
@@ -1964,8 +2006,47 @@ function riskSignalForStructuredRequest(request, missingSources) {
   return "low";
 }
 
-function topRisksForStructuredRequest(missingSources) {
+function flaggedJurisdictionCounterparties(request, table) {
+  const flagged = [];
+  for (const cp of request.counterparties || []) {
+    if (!cp || typeof cp.jurisdiction !== "string") continue;
+    const lowered = cp.jurisdiction.toLowerCase();
+    for (const [token, label] of Object.entries(table)) {
+      if (lowered.includes(token)) {
+        flagged.push({ name: cp.name || "unnamed counterparty", role: cp.role || "unknown", jurisdiction: cp.jurisdiction, matched: label });
+        break;
+      }
+    }
+  }
+  return flagged;
+}
+
+function highRiskJurisdictionCounterparties(request) {
+  return flaggedJurisdictionCounterparties(request, HIGH_RISK_JURISDICTIONS);
+}
+
+function circumventionWatchCounterparties(request) {
+  const highRiskTokens = Object.keys(HIGH_RISK_JURISDICTIONS);
+  const flagged = [];
+  for (const cp of request.counterparties || []) {
+    if (!cp || typeof cp.jurisdiction !== "string") continue;
+    const lowered = cp.jurisdiction.toLowerCase();
+    // A high-risk jurisdiction takes precedence over the softer watch flag.
+    if (highRiskTokens.some((token) => lowered.includes(token))) continue;
+    for (const [token, label] of Object.entries(CIRCUMVENTION_WATCH_JURISDICTIONS)) {
+      if (lowered.includes(token)) {
+        flagged.push({ name: cp.name || "unnamed counterparty", role: cp.role || "unknown", jurisdiction: cp.jurisdiction, matched: label });
+        break;
+      }
+    }
+  }
+  return flagged;
+}
+
+function topRisksForStructuredRequest(missingSources, highRisk = false, circumventionWatch = false) {
   const risks = ["sanctions adjacency", "Caspian chokepoint dependency"];
+  if (highRisk) risks.unshift("counterparty in a sanctions-relevant / high-risk jurisdiction");
+  if (circumventionWatch) risks.push("counterparty in a re-export / circumvention-watch jurisdiction");
   if (missingSources.includes("customs_or_regulatory_source")) risks.push("customs/documentation uncertainty");
   if (missingSources.includes("insurance_clause_or_underwriter_note")) risks.push("insurance exclusions");
   if (
@@ -1976,6 +2057,29 @@ function topRisksForStructuredRequest(missingSources) {
   }
   if (missingSources.includes("vessel_or_carrier_history")) risks.push("carrier or vessel history gap");
   return [...new Set(risks)];
+}
+
+function exposureLayersForStructuredRequest(missingSources, highRisk = false, circumventionWatch = false) {
+  const domesticLegalLayer = [
+    "Home-jurisdiction legal and licensing posture not assessed here (this product does not verify export-control licensing or documentation); confirm with qualified review."
+  ];
+  if (missingSources.includes("customs_or_regulatory_source")) {
+    domesticLegalLayer.push("No customs or regulatory source supplied to review documentation posture.");
+  }
+  const foreignSanctionsExposureLayer = ["Secondary / extraterritorial sanctions adjacency present; exposure not adjudicated."];
+  if (highRisk) {
+    foreignSanctionsExposureLayer.push("Counterparty in a sanctions-relevant / high-risk jurisdiction — escalation flag, not a determination.");
+  }
+  if (circumventionWatch) {
+    foreignSanctionsExposureLayer.push("Counterparty in a re-export / circumvention-watch jurisdiction — verify end-use and onward destination.");
+  }
+  if (missingSources.includes("sanctions_list_extract")) {
+    foreignSanctionsExposureLayer.push("No sanctions list extract supplied to review listed-party exposure.");
+  }
+  if (missingSources.includes("beneficial_ownership_source")) {
+    foreignSanctionsExposureLayer.push("No beneficial ownership source — indirect / ownership-based exposure cannot be reviewed.");
+  }
+  return { domestic_legal_layer: domesticLegalLayer, foreign_sanctions_exposure_layer: foreignSanctionsExposureLayer };
 }
 
 function decisionReadinessForStructuredRequest(request, suppliedSources) {
@@ -2013,6 +2117,8 @@ function dealRiskContractResponseForRequest(request) {
     (sourceType) => !suppliedSources.includes(sourceType)
   );
   const decisionReadiness = decisionReadinessForStructuredRequest(request, suppliedSources);
+  const flaggedHighRisk = highRiskJurisdictionCounterparties(request);
+  const flaggedCircumvention = circumventionWatchCounterparties(request);
   const response = {
     triage_recommendation: triageRecommendationForStructuredRequest(request, minimumSourcesBeforeGo),
     risk_signal: riskSignalForStructuredRequest(request, minimumSourcesBeforeGo),
@@ -2024,7 +2130,8 @@ function dealRiskContractResponseForRequest(request) {
     supplied_sources: suppliedSources,
     minimum_sources_before_go: minimumSourcesBeforeGo,
     evidence_gaps: minimumSourcesBeforeGo.map(evidenceGapForSource),
-    top_risks: topRisksForStructuredRequest(minimumSourcesBeforeGo),
+    top_risks: topRisksForStructuredRequest(minimumSourcesBeforeGo, flaggedHighRisk.length > 0, flaggedCircumvention.length > 0),
+    exposure_layers: exposureLayersForStructuredRequest(minimumSourcesBeforeGo, flaggedHighRisk.length > 0, flaggedCircumvention.length > 0),
     watch_next: [
       "new sanctions designations",
       "port delays or operator notices",
@@ -2036,6 +2143,23 @@ function dealRiskContractResponseForRequest(request) {
     human_review_required: true,
     not_advice_notice: NOT_ADVICE_NOTICE
   };
+  const limitations = [];
+  if (flaggedHighRisk.length > 0) {
+    const named = flaggedHighRisk.map((c) => `${c.name} (${c.role}, ${c.jurisdiction})`).join(", ");
+    limitations.push(
+      `One or more counterparties are domiciled in a sanctions-relevant / high-risk jurisdiction (${named}); this is an escalation flag for human review, not a sanctions determination. Confirm end-use, ownership, and applicable restrictions before any commercial action.`
+    );
+  }
+  if (flaggedCircumvention.length > 0) {
+    const namedCw = flaggedCircumvention.map((c) => `${c.name} (${c.role}, ${c.jurisdiction})`).join(", ");
+    limitations.push(
+      `One or more counterparties are domiciled in a re-export / circumvention-watch jurisdiction (${namedCw}); this is a diversion watch item for human review, not a sanctions determination. Verify end-use and onward destination before any commercial action.`
+    );
+  }
+  if (limitations.length > 0) response.limitations = limitations;
+  if (minimumSourcesBeforeGo.includes("vessel_or_carrier_history")) {
+    response.vessel_due_diligence_indicators = [...VESSEL_DUE_DILIGENCE_INDICATORS];
+  }
   if (request.shipment_value) response.shipment_value = request.shipment_value;
   return response;
 }
@@ -3168,6 +3292,7 @@ export default {
 export {
   agentCard,
   buildUsageEvent,
+  dealRiskContractResponseForRequest,
   handleJsonRpc,
   healthInfo,
   PROBE_PROMPT_CHAR_THRESHOLD,

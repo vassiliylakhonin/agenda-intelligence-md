@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   agentCard,
   buildUsageEvent,
+  dealRiskContractResponseForRequest,
   handleJsonRpc,
   handleRequest,
   healthInfo,
@@ -250,6 +251,65 @@ test("kazakhstan profile defaults routing to Central Asia and sanctions modules"
   } finally {
     console.log = originalLog;
   }
+});
+
+function baseDealRiskRequest(overrides = {}) {
+  return {
+    route: "Altynkol -> Aktau/Kuryk -> Baku -> Poti -> EU",
+    cargo: "dual-use machine tools",
+    counterparties: [{ role: "forwarder", name: "KZ Forwarder", jurisdiction: "Kazakhstan" }],
+    dated_sources: [{ id: "e1", source_type: "port_operator_notice", title: "x", date: "2026-05-20" }],
+    risk_question: "escalate before signature?",
+    decision_stage: "pre_signature",
+    ...overrides
+  };
+}
+
+test("worker deal-risk contract flags high-risk jurisdiction (ADR 0015 parity)", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      counterparties: [
+        { role: "forwarder", name: "KZ Forwarder", jurisdiction: "Kazakhstan" },
+        { role: "consignee", name: "RU Buyer", jurisdiction: "Russia" }
+      ]
+    })
+  );
+  assert.ok(resp.top_risks.includes("counterparty in a sanctions-relevant / high-risk jurisdiction"));
+  assert.ok(resp.limitations.some((l) => l.includes("not a sanctions determination")));
+});
+
+test("worker deal-risk contract flags re-export / circumvention-watch (Armenia), not as sanctioned", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      counterparties: [
+        { role: "forwarder", name: "KZ Forwarder", jurisdiction: "Kazakhstan" },
+        { role: "consignee", name: "Intermediary", jurisdiction: "Armenia" }
+      ]
+    })
+  );
+  assert.ok(resp.top_risks.includes("counterparty in a re-export / circumvention-watch jurisdiction"));
+  assert.equal(resp.top_risks.includes("counterparty in a sanctions-relevant / high-risk jurisdiction"), false);
+  assert.ok(resp.limitations.some((l) => l.includes("diversion watch item")));
+});
+
+test("worker deal-risk contract exposes two-layer exposure + vessel DSP checklist", () => {
+  const resp = dealRiskContractResponseForRequest(baseDealRiskRequest());
+  assert.ok(resp.exposure_layers.domestic_legal_layer.length > 0);
+  assert.ok(resp.exposure_layers.foreign_sanctions_exposure_layer.length > 0);
+  // vessel history is not supplied -> DSP checklist surfaced
+  assert.ok(resp.vessel_due_diligence_indicators.some((i) => i.toLowerCase().includes("ais")));
+  // boundary: never asserts clearance
+  const blob = JSON.stringify(resp).toLowerCase();
+  for (const word of ["cleared", "approved", "sanctions safe"]) assert.equal(blob.includes(word), false);
+});
+
+test("worker deal-risk contract omits vessel checklist when vessel history supplied", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      dated_sources: [{ id: "e1", source_type: "vessel_or_carrier_history", title: "x", date: "2026-05-20" }]
+    })
+  );
+  assert.equal("vessel_due_diligence_indicators" in resp, false);
 });
 
 test("kazakhstan deal risk gate returns decision-ready escalation block", async () => {
