@@ -242,6 +242,59 @@ def test_middle_corridor_exposure_layers_present_and_separated():
     assert_valid(RESPONSE_SCHEMA_PATH, _write_tmp(resp))
 
 
+def test_middle_corridor_surfaces_vessel_dsp_checklist_when_history_missing():
+    """When vessel/carrier history is not supplied, the maritime leg gets a
+    deceptive-shipping-practice verification checklist (OFAC-grounded), and the
+    response stays schema-valid and within the evidence-gap boundary."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "dual-use machine tools",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+    result = services.middle_corridor_deal_risk(req)
+    assert result["valid"] is True
+    resp = result["response"]
+    indicators = resp["vessel_due_diligence_indicators"]
+    assert indicators
+    blob = " ".join(indicators).lower()
+    assert "ais" in blob
+    assert "ship-to-ship" in blob or "sts" in blob
+    # Boundary: a checklist of what to verify, never a clearance.
+    for word in ["cleared", "approved", "sanctions safe"]:
+        assert word not in blob
+    assert_valid(RESPONSE_SCHEMA_PATH, _write_tmp(resp))
+
+
+def test_middle_corridor_no_vessel_checklist_when_history_supplied():
+    """Negative control: if vessel/carrier history is supplied, the checklist is
+    not surfaced (the gap it addresses is closed)."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "vessel_or_carrier_history", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate?",
+        "decision_stage": "pre_signature",
+    }
+    resp = services.middle_corridor_deal_risk(req)["response"]
+    assert "vessel_due_diligence_indicators" not in resp
+
+
 def _write_tmp(obj):
     import tempfile
 

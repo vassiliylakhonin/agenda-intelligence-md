@@ -466,6 +466,19 @@ CIRCUMVENTION_WATCH_JURISDICTIONS = {
     "uae": "United Arab Emirates",
 }
 
+# Deceptive-shipping-practice (DSP) indicators a maritime-leg sanctions review
+# checks for, drawn from OFAC maritime guidance. Surfaced as a verification
+# checklist when vessel / carrier history is not yet supplied. This is an
+# evidence-gap checklist routed to human review — NOT vessel adjudication, AIS
+# analysis, live retrieval, or insurance advice (ADR 0015 boundary).
+VESSEL_DUE_DILIGENCE_INDICATORS = [
+    "AIS continuity: check for extended transmission gaps or disablement over the voyage.",
+    "Vessel identity consistency: check for MMSI / name / IMO manipulation or misclassification.",
+    "Certificate-of-origin integrity: confirm shipping documents match declared cargo origin and destination.",
+    "Ship-to-ship transfer history: check for undisclosed STS transfers along the route.",
+    "Flag history: check for recent flag changes or registration with a high-risk registry.",
+]
+
 
 def _high_risk_jurisdiction_counterparties(request_json: dict) -> list[dict]:
     """Flag counterparties domiciled in a sanctions-relevant / high-risk jurisdiction.
@@ -659,6 +672,8 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         )
     if limitations:
         response["limitations"] = limitations
+    if "vessel_or_carrier_history" in missing_sources:
+        response["vessel_due_diligence_indicators"] = list(VESSEL_DUE_DILIGENCE_INDICATORS)
     if "shipment_value" in request_json:
         response["shipment_value"] = request_json["shipment_value"]
 
