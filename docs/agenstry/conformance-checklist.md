@@ -17,7 +17,7 @@ Workers (all on `*.vassiliy-lakhonin.workers.dev`):
 |---|---:|---|---|
 | `valid_card` — schema-validates against A2A v1.0 | 10 | ✅ | `/.well-known/agent-card.json` on each domain |
 | `live_jsonrpc` — `message/send` responds < 10s | 25 | ✅ | ~110–180ms observed; see [demo-pack.md](demo-pack.md) |
-| `protocol_version` — declares `"1.0"` (string) | 10 | ✅ | `protocolVersion: "1.0"` |
+| `protocol_version` — declares `"1.0"` (string) | 10 | ✅ | `protocolVersion: "1.0"`; response body is genuinely A2A v1.0-shaped (member-discriminated parts + `mediaType`, `TASK_STATE_*` enums) per [ADR 0017](../adr/0017-a2a-wire-contract-v1.md) — the score is earned, not just asserted |
 | `jws_signature` — card carries valid ES256 JWS | 10 | ✅ | detached JWS per RFC 7515 §3.1 + RFC 7797, JCS RFC 8785; public key at `/.well-known/jwks.json` (see [ADR 0014](../adr/0014-per-profile-live-retrieval.md) is unrelated; signing flow in [deploy/cloudflare-worker/README.md](../../deploy/cloudflare-worker/README.md)) |
 | `uptime_track` — ≥90% probe success / 30d | 15 | ⏳ accumulating | Cloudflare Workers; recovers automatically after the Agenstry probe-library gzip bug was fixed 2026-05-27 |
 | `skills_declared` — non-empty `skills[]` with id+name | 10 | ✅ | each card declares its product skill(s) |

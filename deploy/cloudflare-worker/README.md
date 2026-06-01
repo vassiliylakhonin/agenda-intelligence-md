@@ -130,8 +130,8 @@ curl -X POST https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/messag
       "message": {
         "parts": [
           {
-            "kind": "text",
-            "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure."
+            "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure.",
+            "mediaType": "text/plain"
           }
         ]
       }
@@ -139,7 +139,7 @@ curl -X POST https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/messag
   }'
 ```
 
-Expected: HTTP 200 with a JSON-RPC 2.0 response, `status.state: "completed"`, and a routing note with `signal_screen`, suggested modules, source plan, quality gates, and next actions.
+Expected: HTTP 200 with a JSON-RPC 2.0 response, `status.state: "TASK_STATE_COMPLETED"`, and a routing note with `signal_screen`, suggested modules, source plan, quality gates, and next actions.
 
 ## Verify live Agent Cards
 

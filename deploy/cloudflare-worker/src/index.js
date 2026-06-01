@@ -21,7 +21,7 @@ const SUPPORT_CONTACT_EMAIL = "vassiliy.lakhonin@gmail.com";
 const SUPPORT_HOURS_LOCAL = "Mon–Fri 09:00–18:00 Asia/Almaty (UTC+5)";
 const SUPPORT_TIMEZONE = "Asia/Almaty";
 
-const VERSION = "1.0.1";
+const VERSION = "1.1.0";
 const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
 const DOCS_URL = `${REPOSITORY_URL}/blob/main/MCP.md`;
 const MIDDLE_CORRIDOR_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/kazakhstan-middle-corridor.md`;
@@ -1093,7 +1093,7 @@ function agenticEnumErrors(r) {
 function invalidRequestResult(profile, endpoint, schema, errors) {
   return {
     id: crypto.randomUUID(),
-    status: { state: "failed", timestamp: new Date().toISOString() },
+    status: { state: "TASK_STATE_FAILED", timestamp: new Date().toISOString() },
     artifacts: [],
     metadata: { product_profile: profile, canonical_http_endpoint: endpoint, schema, valid: false, errors }
   };
@@ -1444,7 +1444,7 @@ function a2aResultForAgenticInteractionTrust(params) {
   if (!structured) {
     return {
       id: crypto.randomUUID(),
-      status: { state: "failed", timestamp: new Date().toISOString() },
+      status: { state: "TASK_STATE_FAILED", timestamp: new Date().toISOString() },
       artifacts: [],
       metadata: {
         product_profile: "agentic_interaction_trust",
@@ -1467,19 +1467,19 @@ function a2aResultForAgenticInteractionTrust(params) {
   const result = agenticInteractionTrustResult(structured);
   return {
     id: crypto.randomUUID(),
-    status: { state: "completed", timestamp: new Date().toISOString() },
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
     artifacts: [
       {
         artifactId: "agentic-interaction-trust-response",
         name: "Agentic interaction trust response",
         parts: [
           {
-            kind: "text",
-            text: agenticArtifactText(result.response)
+            text: agenticArtifactText(result.response),
+            mediaType: "text/markdown"
           },
           {
-            kind: "data",
-            data: result.response
+            data: result.response,
+            mediaType: "application/json"
           }
         ]
       }
@@ -1643,7 +1643,7 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
   if (!structured) {
     return {
       id: crypto.randomUUID(),
-      status: { state: "failed", timestamp: new Date().toISOString() },
+      status: { state: "TASK_STATE_FAILED", timestamp: new Date().toISOString() },
       artifacts: [],
       metadata: {
         product_profile: "cis_secondary_sanctions",
@@ -1666,19 +1666,19 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
   const result = await cisSecondarySanctionsResult(structured, env);
   return {
     id: crypto.randomUUID(),
-    status: { state: "completed", timestamp: new Date().toISOString() },
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
     artifacts: [
       {
         artifactId: "cis-secondary-sanctions-exposure-response",
         name: "CIS secondary-sanctions exposure response",
         parts: [
           {
-            kind: "text",
-            text: cisArtifactText(result.response, result.live_retrieval_status)
+            text: cisArtifactText(result.response, result.live_retrieval_status),
+            mediaType: "text/markdown"
           },
           {
-            kind: "data",
-            data: result.response
+            data: result.response,
+            mediaType: "application/json"
           }
         ]
       }
@@ -2848,7 +2848,7 @@ function a2aResult(params, request, env = {}) {
   return {
     id: crypto.randomUUID(),
     status: {
-      state: "completed",
+      state: "TASK_STATE_COMPLETED",
       timestamp: new Date().toISOString()
     },
     artifacts: [
@@ -2857,16 +2857,16 @@ function a2aResult(params, request, env = {}) {
         name: "Agenda Intelligence routing note",
         parts: [
           {
-            kind: "text",
-            text: routingMarkdown(text, modules, profile, triage)
+            text: routingMarkdown(text, modules, profile, triage),
+            mediaType: "text/markdown"
           },
           {
             // Expose the product-level structured response as the primary
             // machine-readable payload when present (deal-risk contract for a
             // structured request, deal-risk gate for freeform text); fall back
             // to the full routing triage for the general agenda profile.
-            kind: "data",
-            data: triage.deal_risk_contract || triage.deal_risk_gate || triage
+            data: triage.deal_risk_contract || triage.deal_risk_gate || triage,
+            mediaType: "application/json"
           }
         ]
       }
@@ -3096,7 +3096,7 @@ function landingHtml(request, env) {
     "params": {
       "message": {
         "parts": [
-          { "kind": "text", "text": "Screen Kazakhstan Middle Corridor sanctions exposure for a logistics route." }
+          { "text": "Screen Kazakhstan Middle Corridor sanctions exposure for a logistics route.", "mediaType": "text/plain" }
         ]
       }
     }
@@ -3133,7 +3133,7 @@ function landingHtml(request, env) {
     "params": {
       "message": {
         "parts": [
-          { "kind": "text", "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure." }
+          { "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure.", "mediaType": "text/plain" }
         ]
       }
     }
