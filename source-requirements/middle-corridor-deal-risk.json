@@ -20,13 +20,15 @@
     "port_operator_notice",
     "carrier_note",
     "rail_capacity_or_border_wait_source",
-    "contract_or_invoice_extract"
+    "contract_or_invoice_extract",
+    "end_user_or_reexport_evidence"
   ],
   "supporting_sources": [
     "port_operator_notice",
     "carrier_note",
     "rail_capacity_or_border_wait_source",
-    "contract_or_invoice_extract"
+    "contract_or_invoice_extract",
+    "end_user_or_reexport_evidence"
   ],
   "watch_indicators": [
     "new sanctions designation",
@@ -34,7 +36,8 @@
     "rail capacity or border wait update",
     "customs rule change",
     "insurance term change",
-    "carrier or vessel history update"
+    "carrier or vessel history update",
+    "end-user or onward-destination change"
   ],
   "boundary": "This taxonomy supports pre-compliance evidence triage only. It does not provide legal, compliance, sanctions, insurance, financial, investment, trading, or shipment authorization advice."
 }
