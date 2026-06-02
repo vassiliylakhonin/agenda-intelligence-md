@@ -2197,6 +2197,37 @@ function decisionReadinessForStructuredRequest(request, suppliedSources) {
   };
 }
 
+function counterpartyReadinessForStructuredRequest(request, suppliedSources, minimumSourcesBeforeGo) {
+  const requiredTotal = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.length;
+  const outstanding = minimumSourcesBeforeGo.filter((sourceType) =>
+    MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.includes(sourceType)
+  );
+  const missingCount = outstanding.length;
+  const suppliedCount = requiredTotal - missingCount;
+  let status;
+  if (request.dated_sources.length === 0 || suppliedSources.length === 0) {
+    status = "insufficient_information";
+  } else if (missingCount === 0) {
+    status = "complete_for_review";
+  } else if (suppliedCount > 0) {
+    status = "partial";
+  } else {
+    status = "incomplete";
+  }
+  return {
+    status,
+    required_total: requiredTotal,
+    supplied_count: suppliedCount,
+    missing_count: missingCount,
+    outstanding_documents: outstanding,
+    presentable_note:
+      "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, " +
+      "insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; " +
+      "it is not clearance, approval, a sanctions determination, or compliance advice. Human review " +
+      "is required before any commercial action."
+  };
+}
+
 function dealRiskContractResponseForRequest(request) {
   const suppliedSources = suppliedSourcesFromStructuredRequest(request);
   const minimumSourcesBeforeGo = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.filter(
@@ -2227,7 +2258,8 @@ function dealRiskContractResponseForRequest(request) {
       "insurance or underwriter terms changes"
     ],
     human_review_required: true,
-    not_advice_notice: NOT_ADVICE_NOTICE
+    not_advice_notice: NOT_ADVICE_NOTICE,
+    counterparty_readiness: counterpartyReadinessForStructuredRequest(request, suppliedSources, minimumSourcesBeforeGo)
   };
   const limitations = [];
   if (flaggedHighRisk.length > 0) {
