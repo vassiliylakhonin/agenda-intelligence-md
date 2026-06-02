@@ -315,6 +315,43 @@ test("worker deal-risk contract omits vessel checklist when vessel history suppl
   assert.equal("vessel_due_diligence_indicators" in resp, false);
 });
 
+test("worker deal-risk contract emits outward counterparty_readiness (Python parity)", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      dated_sources: [{ id: "e1", source_type: "sanctions_list_extract", title: "x", date: "2026-05-21" }]
+    })
+  );
+  const readiness = resp.counterparty_readiness;
+  assert.equal(readiness.status, "partial");
+  assert.equal(readiness.required_total, 6);
+  assert.equal(readiness.supplied_count + readiness.missing_count, readiness.required_total);
+  assert.equal(readiness.supplied_count, 1);
+  // outstanding documents must equal the required-before-go gaps surfaced in the response
+  assert.deepEqual([...readiness.outstanding_documents].sort(), [...resp.minimum_sources_before_go].sort());
+  // boundary: completeness note must not imply clearance
+  const note = readiness.presentable_note.toLowerCase();
+  for (const word of ["cleared", "approved", "compliant", "sanctions safe"]) assert.equal(note.includes(word), false);
+});
+
+test("worker deal-risk contract counterparty_readiness completes when all required supplied", () => {
+  const required = [
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "sanctions_list_extract",
+    "customs_or_regulatory_source",
+    "insurance_clause_or_underwriter_note",
+    "vessel_or_carrier_history"
+  ];
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      dated_sources: required.map((src, i) => ({ id: `e${i}`, source_type: src, title: "x", date: "2026-05-20" }))
+    })
+  );
+  assert.equal(resp.counterparty_readiness.status, "complete_for_review");
+  assert.equal(resp.counterparty_readiness.missing_count, 0);
+  assert.deepEqual(resp.counterparty_readiness.outstanding_documents, []);
+});
+
 test("kazakhstan deal risk gate returns decision-ready escalation block", async () => {
   const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
   const originalLog = console.log;
