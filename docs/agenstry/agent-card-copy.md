@@ -138,6 +138,104 @@ Use this exact boundary language on public listings:
 
 The agent is useful when the file is incomplete. It does not pretend that three sources are enough for a serious corridor-risk decision. It tells the user which source categories are missing before a deal moves to signature, shipment, committee review, insurer handoff, or client memo.
 
+## Vertical worker listing: Agentic Interaction Trust Gate
+
+Use this for the agent-mediated-action trust worker (different buyer than the corridor gate: trust and safety, fraud/abuse, and platform-security teams).
+
+- Listing URL: <https://agenstry.com/agents/agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev>
+- Live endpoint: <https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev>
+- Agent card: <https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
+- Product contract: [`../use-cases/agentic-interaction-trust.md`](../use-cases/agentic-interaction-trust.md)
+- Runnable examples: [`../../examples/agentic-interaction-trust/`](../../examples/agentic-interaction-trust/)
+
+### Name
+
+Agentic Interaction Trust Gate
+
+### Short description
+
+A2A-compatible evidence-readiness gate for agent-mediated actions across checkout, account, API, MCP tool, and A2A endpoint surfaces.
+
+### Full description
+
+Bring an agent-mediated action, its target surface, the actor's identity claim, and dated evidence. The agent returns a structured trust-routing triage with missing source categories, evidence gaps, watch-next indicators, decision-readiness score, trust signal, and human-review routing.
+
+The point is not to decide whether the actor is a bot. The point is to decide whether the evidence is sufficient to route a specific automated action: allow low-risk, require step-up, escalate to human review, or block until verified.
+
+This is an evidence-readiness gate for teams that already have logs, agent claims, policy data, and risk signals. It does not perform live source retrieval, factual-truth verification, cybersecurity monitoring, fraud adjudication, identity verification, or transaction authorization.
+
+### Tags
+
+```text
+agentic-ai, agent-security, trust-and-safety, fraud-risk, mcp, a2a, evidence-audit, source-coverage, decision-readiness, human-review, agent-authorization
+```
+
+### Capabilities
+
+- Trust-routing triage for agent-mediated actions: allow / step-up / escalate / block.
+- Source-gap detection against required evidence categories (identity claim, operator authorization, agent card/manifest, tool-scope, session auth, action intent, target-action evidence).
+- Decision-readiness score for a human trust-routing decision.
+- Watch-next indicators and mandatory human-review routing.
+
+### Best for
+
+- Trust and safety teams designing policy for agent-mediated web traffic.
+- Fraud, risk, and abuse teams reviewing checkout, account, auth, or API actions.
+- Platform teams exposing MCP tools or A2A endpoints to external agents.
+- Consultants writing agentic-risk operating procedures for clients.
+
+### Example input
+
+```json
+{
+  "actor": {
+    "declared_type": "ai_agent",
+    "declared_name": "Example Shopping Agent",
+    "operator": "Example Consumer",
+    "authentication_context": "session_cookie"
+  },
+  "target_surface": "checkout",
+  "requested_action": "complete purchase of two restricted-delivery items",
+  "asset_or_resource": "order-123",
+  "decision_stage": "pre_execution",
+  "dated_sources": [
+    {
+      "id": "ait-1",
+      "source_type": "agent_identity_claim",
+      "title": "Declared agent identity header",
+      "date": "2026-05-28"
+    }
+  ],
+  "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?"
+}
+```
+
+### Example output
+
+```json
+{
+  "triage_recommendation": "require_step_up",
+  "trust_signal": "medium",
+  "decision_readiness_score": 40,
+  "decision_readiness_label": "not_decision_ready",
+  "minimum_sources_before_action": [
+    "operator_or_principal_authorization",
+    "agent_card_or_manifest",
+    "tool_scope_or_permission_evidence",
+    "action_intent_evidence"
+  ],
+  "human_review_required": true
+}
+```
+
+The canonical input is structured JSON, not a free-text prompt.
+
+### Boundary copy
+
+Use this exact boundary language on public listings:
+
+> Agentic interaction evidence triage only. No autonomous live source retrieval. No factual-truth verification. No cybersecurity monitoring, fraud adjudication, identity verification, or transaction authorization. No legal, compliance, financial, investment, insurance, or trading advice. No approval, clearance, authorization, denial, blocking, or final decision. Human review is required for consequential decisions.
+
 ## Secondary listing
 
 Use this for the broader Agenda Intelligence A2A / MCP discovery listing:
