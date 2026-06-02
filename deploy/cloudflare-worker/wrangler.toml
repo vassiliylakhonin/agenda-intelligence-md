@@ -10,6 +10,13 @@ enabled = true
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
 
+# Optional production access gate. When the MIDDLE_CORRIDOR_API_KEY secret is
+# set, the message/send production route requires `Authorization: Bearer <key>`
+# (401 + WWW-Authenticate: Bearer otherwise) and the agent card advertises the
+# `productionBearer` security requirement. While unset, the route stays an open
+# free demo and the card advertises no requirement (current state). To gate it:
+#   wrangler secret put MIDDLE_CORRIDOR_API_KEY --env middle-corridor-deal-risk-gate
+# agent/card discovery stays public regardless.
 [env.middle-corridor-deal-risk-gate]
 name = "middle-corridor-deal-risk-gate-a2a"
 workers_dev = true

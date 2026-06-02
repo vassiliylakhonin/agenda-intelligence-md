@@ -8,8 +8,10 @@ import {
   handleJsonRpc,
   handleRequest,
   healthInfo,
+  isProductionAuthorized,
   isStatsAuthorized,
   landingHtml,
+  productionAuthKey,
   PROBE_PROMPT_CHAR_THRESHOLD,
   recordUsageStats,
   routeModules,
@@ -1474,4 +1476,104 @@ test("agent card includes support block with hours/contact", () => {
 test("base64urlEncode handles empty and short inputs", () => {
   assert.equal(base64urlEncode(new Uint8Array()), "");
   assert.equal(base64urlEncode(new TextEncoder().encode("hi")), "aGk");
+});
+
+const KAZAKHSTAN_ORIGIN = "https://middle-corridor-deal-risk-gate-a2a.example.workers.dev";
+
+function messageSendRequest(origin, { token, body } = {}) {
+  const headers = { "content-type": "application/json", "user-agent": "node:test" };
+  if (token) headers.authorization = `Bearer ${token}`;
+  return new Request(`${origin}/message/send`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(
+      body ?? {
+        jsonrpc: "2.0",
+        id: "t1",
+        method: "message/send",
+        params: { message: { parts: [{ text: "Assess corridor deal risk for a Kazakhstan transit shipment." }] } }
+      }
+    )
+  });
+}
+
+test("productionAuthKey only resolves for kazakhstan profile when secret is set", () => {
+  assert.equal(productionAuthKey("kazakhstan", { MIDDLE_CORRIDOR_API_KEY: "secret" }), "secret");
+  assert.equal(productionAuthKey("kazakhstan", {}), "");
+  assert.equal(productionAuthKey("agenda", { MIDDLE_CORRIDOR_API_KEY: "secret" }), "");
+  assert.equal(productionAuthKey("agentic_interaction_trust", { MIDDLE_CORRIDOR_API_KEY: "secret" }), "");
+});
+
+test("isProductionAuthorized opens the route when no key is configured", () => {
+  const req = messageSendRequest(KAZAKHSTAN_ORIGIN);
+  assert.equal(isProductionAuthorized(req, {}, "kazakhstan"), true);
+});
+
+test("isProductionAuthorized requires a matching Bearer token when key is configured", () => {
+  const env = { MIDDLE_CORRIDOR_API_KEY: "secret" };
+  assert.equal(isProductionAuthorized(messageSendRequest(KAZAKHSTAN_ORIGIN), env, "kazakhstan"), false);
+  assert.equal(isProductionAuthorized(messageSendRequest(KAZAKHSTAN_ORIGIN, { token: "wrong" }), env, "kazakhstan"), false);
+  assert.equal(isProductionAuthorized(messageSendRequest(KAZAKHSTAN_ORIGIN, { token: "secret" }), env, "kazakhstan"), true);
+});
+
+test("kazakhstan card advertises productionBearer scheme but no requirement when key is unset", () => {
+  const card = agentCard(new Request(KAZAKHSTAN_ORIGIN), { AGENT_PROFILE: "kazakhstan" });
+  assert.ok(card.securitySchemes.optionalClientId, "optionalClientId remains defined");
+  assert.equal(card.securitySchemes.productionBearer.httpAuthSecurityScheme.scheme, "bearer");
+  assert.deepEqual(card.security, []);
+  assert.deepEqual(card.securityRequirements, []);
+});
+
+test("kazakhstan card advertises productionBearer requirement when key is set", () => {
+  const card = agentCard(new Request(KAZAKHSTAN_ORIGIN), {
+    AGENT_PROFILE: "kazakhstan",
+    MIDDLE_CORRIDOR_API_KEY: "secret"
+  });
+  assert.deepEqual(card.security, [{ productionBearer: [] }]);
+  assert.deepEqual(card.securityRequirements, [{ schemes: ["productionBearer"] }]);
+});
+
+test("agenda card never advertises a production requirement even if the secret leaks into env", () => {
+  const card = agentCard(request, { MIDDLE_CORRIDOR_API_KEY: "secret" });
+  assert.deepEqual(card.security, []);
+  assert.deepEqual(card.securityRequirements, []);
+});
+
+test("message/send on kazakhstan profile returns 401 without Bearer when key is set", async () => {
+  const env = { AGENT_PROFILE: "kazakhstan", MIDDLE_CORRIDOR_API_KEY: "secret", AGENDA_USAGE: new MemoryKv() };
+  const response = await handleRequest(messageSendRequest(KAZAKHSTAN_ORIGIN), env);
+  assert.equal(response.status, 401);
+  assert.equal(response.headers.get("www-authenticate"), "Bearer");
+  const body = await response.json();
+  assert.equal(body.error.code, -32001);
+  assert.equal(body.error.data.security_scheme, "productionBearer");
+});
+
+test("message/send on kazakhstan profile succeeds with a valid Bearer when key is set", async () => {
+  const env = { AGENT_PROFILE: "kazakhstan", MIDDLE_CORRIDOR_API_KEY: "secret", AGENDA_USAGE: new MemoryKv() };
+  const response = await handleRequest(messageSendRequest(KAZAKHSTAN_ORIGIN, { token: "secret" }), env);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.ok(body.result, "valid Bearer yields a JSON-RPC result");
+});
+
+test("message/send stays open on kazakhstan profile when no key is configured", async () => {
+  const env = { AGENT_PROFILE: "kazakhstan", AGENDA_USAGE: new MemoryKv() };
+  const response = await handleRequest(messageSendRequest(KAZAKHSTAN_ORIGIN), env);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.ok(body.result, "open demo returns a result without a key");
+});
+
+test("agent/card discovery stays public even when the production key is set", async () => {
+  const env = { AGENT_PROFILE: "kazakhstan", MIDDLE_CORRIDOR_API_KEY: "secret", AGENDA_USAGE: new MemoryKv() };
+  const response = await handleRequest(
+    messageSendRequest(KAZAKHSTAN_ORIGIN, {
+      body: { jsonrpc: "2.0", id: "c1", method: "agent/card" }
+    }),
+    env
+  );
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.ok(body.result.name, "agent/card returns the card without a Bearer");
 });

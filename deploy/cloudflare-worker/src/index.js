@@ -305,7 +305,7 @@ function jsonResponse(body, status = 200, extraHeaders = {}) {
       "content-type": "application/json; charset=utf-8",
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET, POST, OPTIONS",
-      "access-control-allow-headers": "content-type, x-client-id",
+      "access-control-allow-headers": "content-type, x-client-id, authorization",
       ...extraHeaders
     }
   });
@@ -375,8 +375,42 @@ function agentProfile(request, env = {}) {
   return "agenda";
 }
 
+// JSON-RPC methods that hit the production triage route (as opposed to the
+// public agent/card discovery method, which always stays open).
+const MESSAGE_SEND_METHODS = new Set(["message/send", "tasks/send", "SendMessage"]);
+
+// Per-profile production access key. Only the Middle Corridor deal-risk gate
+// (profile "kazakhstan") graduates to an explicit Bearer model; it reads the
+// MIDDLE_CORRIDOR_API_KEY secret. When the secret is unset the route is an
+// open free demo and no key is required — the agent card reflects that state
+// truthfully (no security requirement is advertised). Set the secret with
+// `wrangler secret put MIDDLE_CORRIDOR_API_KEY --env middle-corridor-deal-risk-gate`
+// to flip enforcement on the day a real counterparty needs gating.
+function productionAuthKey(profile, env = {}) {
+  if (profile === "kazakhstan") return env.MIDDLE_CORRIDOR_API_KEY || "";
+  return "";
+}
+
+function bearerTokenFromRequest(request) {
+  const header = request.headers.get("authorization") || "";
+  const match = /^Bearer\s+(.+)$/i.exec(header.trim());
+  return match ? match[1].trim() : "";
+}
+
+// Returns true when the production route may proceed: either no key is
+// configured (open demo) or the request carries the matching Bearer token.
+// Constant-time-ish comparison is unnecessary here — the key is an opaque
+// shared secret, not a password hash, and Workers offers no timing-safe
+// primitive in this runtime path.
+function isProductionAuthorized(request, env, profile) {
+  const key = productionAuthKey(profile, env);
+  if (!key) return true;
+  return bearerTokenFromRequest(request) === key;
+}
+
 function agentCard(request, env = {}) {
   const origin = originFromRequest(request);
+  const productionKey = productionAuthKey(agentProfile(request, env), env);
   const card = {
     protocolVersion: "1.0",
     name: "Agenda Intelligence MD",
@@ -414,12 +448,20 @@ function agentCard(request, env = {}) {
           location: "header",
           name: "X-Client-Id",
           description:
-            "Optional caller identifier for observability and abuse triage. The public lightweight triage endpoint does not require an access key."
+            "Optional caller identifier for observability and abuse triage. Not an access credential."
+        }
+      },
+      productionBearer: {
+        httpAuthSecurityScheme: {
+          scheme: "bearer",
+          bearerFormat: "opaque",
+          description:
+            "Bearer access key for the production message/send route. Enforced only when the operator configures an access key on this deployment; while unset the route is an open free demo and no key is required."
         }
       }
     },
-    securityRequirements: [],
-    security: [],
+    securityRequirements: productionKey ? [{ schemes: ["productionBearer"] }] : [],
+    security: productionKey ? [{ productionBearer: [] }] : [],
     capabilities: {
       streaming: false,
       pushNotifications: false,
@@ -3007,6 +3049,22 @@ async function handlePost(request, env, ctx) {
   } catch (_error) {
     return jsonResponse(jsonRpcError(null, -32700, "Parse error"), 200);
   }
+  const method = payload && typeof payload === "object" ? payload.method : null;
+  if (MESSAGE_SEND_METHODS.has(method)) {
+    const profile = agentProfile(request, env);
+    if (!isProductionAuthorized(request, env, profile)) {
+      return jsonResponse(
+        jsonRpcError(
+          payload.id ?? null,
+          -32001,
+          "Unauthorized: the production route requires a valid Bearer access key",
+          { security_scheme: "productionBearer", profile }
+        ),
+        401,
+        { "www-authenticate": "Bearer", "cache-control": "no-store" }
+      );
+    }
+  }
   return jsonResponse(await handleJsonRpc(payload, request, env, ctx));
 }
 
@@ -3330,7 +3388,9 @@ export {
   handleJsonRpc,
   healthInfo,
   PROBE_PROMPT_CHAR_THRESHOLD,
+  isProductionAuthorized,
   isStatsAuthorized,
+  productionAuthKey,
   landingHtml,
   recordUsageStats,
   routeModules,
