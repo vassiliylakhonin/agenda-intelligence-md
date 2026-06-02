@@ -606,6 +606,43 @@ def _middle_corridor_exposure_layers(
     }
 
 
+def _middle_corridor_counterparty_readiness(
+    request_json: dict, supplied_sources: list[str], missing_sources: list[str]
+) -> dict:
+    """Outward-facing reframe of the same evidence-gap picture, for the party that must
+    PRESENT a due-diligence dossier to a bank, insurer, or counterparty under enhanced
+    due diligence -- not the internal analyst deciding whether to escalate.
+
+    Derived entirely from the required-before-go contract and supplied sources. Reports
+    dossier-completeness only; not clearance, approval, sanctions advice, or compliance advice.
+    """
+    required_total = len(MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO)
+    outstanding = [s for s in missing_sources if s in MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO]
+    missing_count = len(outstanding)
+    supplied_count = required_total - missing_count
+    if not request_json.get("dated_sources") or not supplied_sources:
+        status = "insufficient_information"
+    elif missing_count == 0:
+        status = "complete_for_review"
+    elif supplied_count > 0:
+        status = "partial"
+    else:
+        status = "incomplete"
+    return {
+        "status": status,
+        "required_total": required_total,
+        "supplied_count": supplied_count,
+        "missing_count": missing_count,
+        "outstanding_documents": outstanding,
+        "presentable_note": (
+            "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, "
+            "insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; "
+            "it is not clearance, approval, a sanctions determination, or compliance advice. Human review "
+            "is required before any commercial action."
+        ),
+    }
+
+
 def middle_corridor_deal_risk(request_json: dict) -> dict:
     """Build a structured Middle Corridor deal-risk response.
 
@@ -654,6 +691,9 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         ],
         "human_review_required": True,
         "not_advice_notice": NOT_ADVICE_NOTICE,
+        "counterparty_readiness": _middle_corridor_counterparty_readiness(
+            request_json, supplied_sources, missing_sources
+        ),
     }
     limitations: list[str] = []
     if flagged_jurisdictions:

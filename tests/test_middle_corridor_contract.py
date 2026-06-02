@@ -295,6 +295,69 @@ def test_middle_corridor_no_vessel_checklist_when_history_supplied():
     assert "vessel_due_diligence_indicators" not in resp
 
 
+def test_middle_corridor_counterparty_readiness_partial_when_sources_missing():
+    """Outward dossier-completeness reframe: with only some required-before-go sources
+    supplied, status is partial, the counts reconcile against the required total, and the
+    outstanding list matches minimum_sources_before_go. Schema-valid throughout."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "sanctions_list_extract", "title": "x", "date": "2026-05-21"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+    result = services.middle_corridor_deal_risk(req)
+    assert result["valid"] is True
+    resp = result["response"]
+
+    readiness = resp["counterparty_readiness"]
+    assert readiness["status"] == "partial"
+    assert readiness["required_total"] == len(REQUIRED_BEFORE_GO)
+    assert readiness["supplied_count"] + readiness["missing_count"] == readiness["required_total"]
+    assert readiness["supplied_count"] == 1
+    # Outstanding documents must equal the required-before-go gaps surfaced in the response.
+    assert set(readiness["outstanding_documents"]) == set(resp["minimum_sources_before_go"])
+    assert_valid(RESPONSE_SCHEMA_PATH, _write_tmp(resp))
+
+
+def test_middle_corridor_counterparty_readiness_complete_when_all_required_supplied():
+    """When every required-before-go source is supplied, the dossier reads complete_for_review
+    with no outstanding documents -- still completeness, never a clearance."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": f"e{i}", "source_type": src, "title": "x", "date": "2026-05-20"}
+            for i, src in enumerate(sorted(REQUIRED_BEFORE_GO))
+        ],
+        "risk_question": "ready for human review?",
+        "decision_stage": "pre_signature",
+    }
+    result = services.middle_corridor_deal_risk(req)
+    assert result["valid"] is True
+    readiness = result["response"]["counterparty_readiness"]
+    assert readiness["status"] == "complete_for_review"
+    assert readiness["missing_count"] == 0
+    assert readiness["supplied_count"] == len(REQUIRED_BEFORE_GO)
+    assert readiness["outstanding_documents"] == []
+    # Boundary: completeness note must not imply clearance/approval.
+    note = readiness["presentable_note"].lower()
+    for word in ["cleared", "approved", "compliant", "sanctions safe"]:
+        assert word not in note
+
+
 def _write_tmp(obj):
     import tempfile
 

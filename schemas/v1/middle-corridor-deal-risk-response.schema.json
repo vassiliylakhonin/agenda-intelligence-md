@@ -170,6 +170,52 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "counterparty_readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Outward-facing reframe of the evidence-gap picture for the party that must PRESENT a due-diligence dossier to a bank, insurer, or counterparty under enhanced due diligence, rather than the internal analyst deciding whether to escalate. Derived from the required-before-go contract and supplied sources. Dossier-completeness only; not clearance, approval, a sanctions determination, or compliance advice.",
+      "required": [
+        "status",
+        "required_total",
+        "supplied_count",
+        "missing_count",
+        "outstanding_documents",
+        "presentable_note"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "insufficient_information",
+            "incomplete",
+            "partial",
+            "complete_for_review"
+          ]
+        },
+        "required_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "supplied_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "outstanding_documents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source_type"
+          }
+        },
+        "presentable_note": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
   },
   "$defs": {
