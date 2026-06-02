@@ -22,6 +22,26 @@ const SUPPORT_HOURS_LOCAL = "Mon–Fri 09:00–18:00 Asia/Almaty (UTC+5)";
 const SUPPORT_TIMEZONE = "Asia/Almaty";
 
 const VERSION = "1.1.0";
+// Canonical input mode shared by the per-profile product_contract blocks and the
+// top-level x_agent_contract discoverability extension. Single source of truth so
+// the two never drift.
+const CANONICAL_INPUT_MODE = "structured_json";
+// Versioned independently of the package/card VERSION: this is the discoverability
+// contract surfaced to catalogs and agents, not a package release.
+const MIDDLE_CORRIDOR_AGENT_CONTRACT_VERSION = "1.0";
+// Intent strings the Middle Corridor endpoint can actually emit. Mirrors
+// classifyIntent / classifyIntentForProfile / triageForText; verify-agent-card.js
+// asserts the primary intent so this list cannot silently drift from routing.
+const MIDDLE_CORRIDOR_SUPPORTED_INTENTS = [
+  "middle_corridor_deal_risk_contract",
+  "deal_risk_gate",
+  "sanctions_policy_signal_screen",
+  "source_coverage",
+  "evidence_audit",
+  "memo_validation",
+  "signal_monitoring",
+  "strategic_risk_triage"
+];
 const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
 const DOCS_URL = `${REPOSITORY_URL}/blob/main/MCP.md`;
 const MIDDLE_CORRIDOR_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/kazakhstan-middle-corridor.md`;
@@ -702,7 +722,7 @@ function applyAgentProfile(card, request, env = {}) {
     response_schema: MIDDLE_CORRIDOR_RESPONSE_SCHEMA_URL,
     source_taxonomy: MIDDLE_CORRIDOR_SOURCE_TAXONOMY_URL,
     runnable_examples: A2A_EXAMPLES_URL,
-    canonical_input_mode: "structured_json",
+    canonical_input_mode: CANONICAL_INPUT_MODE,
     demo_input_modes: ["structured_json", "text_prompt"]
   };
   card.x_agenda_intelligence.required_before_go = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO;
@@ -736,6 +756,20 @@ function applyAgentProfile(card, request, env = {}) {
     "No approval, clearance, authorization, or final decision.",
     "Human review is required for high-stakes decisions."
   ];
+  // Top-level x_* extension (does not collide with standard A2A fields) so catalogs
+  // and agents get a fast signal: send a structured data part, not a bare prompt.
+  // A text prompt falls through to lightweight_text_triage and leaves the deal-risk
+  // contract empty; only a structured request reaches the full contract.
+  card.x_agent_contract = {
+    contract_version: MIDDLE_CORRIDOR_AGENT_CONTRACT_VERSION,
+    canonical_input_mode: CANONICAL_INPUT_MODE,
+    primary_intent: "middle_corridor_deal_risk_contract",
+    supported_intents: MIDDLE_CORRIDOR_SUPPORTED_INTENTS,
+    structured_json_required_for_full_contract: true,
+    text_prompt_behavior: "lightweight_text_triage",
+    high_stakes_human_review_required: true,
+    not_advice: true
+  };
   return card;
 }
 
@@ -785,7 +819,7 @@ function applyAgenticInteractionTrustProfile(card, request) {
     response_schema: AGENTIC_INTERACTION_TRUST_RESPONSE_SCHEMA_URL,
     source_taxonomy: AGENTIC_INTERACTION_TRUST_SOURCE_TAXONOMY_URL,
     runnable_examples: `${REPOSITORY_URL}/tree/main/examples/agentic-interaction-trust`,
-    canonical_input_mode: "structured_json",
+    canonical_input_mode: CANONICAL_INPUT_MODE,
     demo_input_modes: ["structured_json"]
   };
   card.x_agenda_intelligence.required_before_action = AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION;
@@ -868,7 +902,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
     response_schema: CIS_SECONDARY_SANCTIONS_RESPONSE_SCHEMA_URL,
     source_taxonomy: CIS_SECONDARY_SANCTIONS_SOURCE_TAXONOMY_URL,
     runnable_examples: `${REPOSITORY_URL}/tree/main/examples/cis-secondary-sanctions`,
-    canonical_input_mode: "structured_json",
+    canonical_input_mode: CANONICAL_INPUT_MODE,
     demo_input_modes: ["structured_json"]
   };
   card.x_agenda_intelligence.required_before_review = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW;
