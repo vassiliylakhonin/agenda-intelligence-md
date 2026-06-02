@@ -61,7 +61,21 @@ This is not legal, compliance, investment, insurance, or sanctions advice. It is
     "rail capacity constraints",
     "customs enforcement changes"
   ],
-  "human_review_required": true
+  "human_review_required": true,
+  "counterparty_readiness": {
+    "status": "partial",
+    "required_total": 6,
+    "supplied_count": 1,
+    "missing_count": 5,
+    "outstanding_documents": [
+      "counterparty_registry_extract",
+      "beneficial_ownership_source",
+      "customs_or_regulatory_source",
+      "insurance_clause_or_underwriter_note",
+      "vessel_or_carrier_history"
+    ],
+    "presentable_note": "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; it is not clearance, approval, a sanctions determination, or compliance advice. Human review is required before any commercial action."
+  }
 }
 ```
 
@@ -85,6 +99,8 @@ The live A2A wrapper remains a demo and discovery convenience: it proves the rou
 
 `decision_readiness_score` is a heuristic 0-100 evidence-pack readiness score for human review. It is not approval, clearance, compliance status, or advice. In buyer language: a low score means the file is not ready to send to a committee, insurer, client, or sign-off workflow because required source categories are missing.
 
+`counterparty_readiness` reframes the same evidence-gap picture for the other actor. The score above answers the internal question — "should we escalate before signature?". The `counterparty_readiness` object answers the outward question a Kazakhstan / Central Asia party faces under tightened enhanced due diligence: "how complete is the dossier I must present to a bank, insurer, or counterparty?". Same required-before-go contract, no new evidence logic — `status` (`insufficient_information` / `incomplete` / `partial` / `complete_for_review`), the supplied-vs-required counts, and `outstanding_documents` (the source types still to obtain). It tracks dossier-completeness only; it is not clearance, approval, a sanctions determination, or compliance advice, and human review is still required.
+
 The boundary is part of the contract: no legal, compliance, sanctions, financial, investment, insurance, or trading advice; no autonomous live retrieval; no factual-truth verification; no authorization decision.
 
 ### Buyer-facing scenarios
@@ -94,6 +110,7 @@ The boundary is part of the contract: no legal, compliance, sanctions, financial
 | Pre-signature logistics deal | Route, cargo, counterparties, port notice, sanctions extract, carrier note | `42/100`, `escalate_before_signature`, missing registry, ownership, customs, insurance, vessel/carrier history |
 | Pre-shipment evidence check | Full evidence pack before goods move | Higher readiness score, remaining source gaps, watch-next indicators for delays, customs, insurance, and carrier history |
 | Committee review file readiness | Existing memo plus evidence pack | Human-review routing, missing source categories, evidence gaps, and a non-advice notice suitable for analyst QA |
+| Counterparty dossier readiness | Same evidence pack, viewed outward | `counterparty_readiness`: dossier-completeness `status`, supplied-vs-required counts, and `outstanding_documents` still to obtain before presenting to a bank, insurer, or counterparty |
 
 ### Live structured JSON test
 

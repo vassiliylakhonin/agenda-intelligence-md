@@ -780,10 +780,11 @@ function applyAgentProfile(card, request, env = {}) {
     "pre-shipment evidence completeness check",
     "trade-finance or compliance-adjacent file readiness",
     "insurance-adjacent source-pack handoff",
-    "management or client risk-memo quality gate"
+    "management or client risk-memo quality gate",
+    "counterparty dossier-completeness check before presenting evidence to a bank, insurer, or counterparty"
   ];
   card.x_agenda_intelligence.commercial_positioning =
-    "Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation.";
+    "Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation. The same evidence-gap picture is also returned outward as counterparty_readiness: a dossier-completeness view (status + supplied-vs-required counts + outstanding documents) for the party that must present enhanced-due-diligence evidence to a bank, insurer, or counterparty. Completeness only, not clearance or a sanctions determination.";
   card.x_agenda_intelligence.focus = [
     "Kazakhstan and Middle Corridor deal-risk triage",
     "sanctions-adjacent evidence gates",
