@@ -103,7 +103,7 @@ The product-grade structured JSON contract is documented in [`docs/use-cases/kaz
 
 ## Second vertical worker: CIS secondary-sanctions exposure
 
-For EU / UK / UAE / Singapore enhanced due diligence on CIS-domiciled counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Structured secondary-sanctions exposure evidence triage against OFAC EO 14114, EU 14th sanctions package, UK OFSI, UN, and FATF / EAG typologies.
+For EU / UK / UAE / Singapore enhanced due diligence on CIS, Caucasus, and Central Asia counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Structured secondary-sanctions exposure evidence triage against OFAC EO 14114, EU 14th sanctions package, UK OFSI, UN, and FATF / EAG typologies.
 
 This profile **declares the capability** for per-profile live retrieval with two upstream options, per [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md):
 
