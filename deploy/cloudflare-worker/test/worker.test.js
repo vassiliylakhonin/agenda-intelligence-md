@@ -369,6 +369,24 @@ test("worker deal-risk contract counterparty_readiness document_ledger tracks st
   assert.equal(received.length, resp.counterparty_readiness.supplied_count);
 });
 
+test("worker deal-risk contract surfaces reexport_control_indicators when end-user evidence missing (Python parity)", () => {
+  const resp = dealRiskContractResponseForRequest(baseDealRiskRequest());
+  assert.ok(resp.reexport_control_indicators.length > 0);
+  const blob = resp.reexport_control_indicators.join(" ").toLowerCase();
+  assert.ok(blob.includes("no-re-export"));
+  assert.ok(blob.includes("end-user"));
+  for (const word of ["cleared", "approved", "sanctions safe"]) assert.equal(blob.includes(word), false);
+});
+
+test("worker deal-risk contract omits reexport_control_indicators when end-user evidence supplied", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      dated_sources: [{ id: "e1", source_type: "end_user_or_reexport_evidence", title: "EUS", date: "2026-05-22" }]
+    })
+  );
+  assert.equal("reexport_control_indicators" in resp, false);
+});
+
 test("kazakhstan deal risk gate returns decision-ready escalation block", async () => {
   const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
   const originalLog = console.log;

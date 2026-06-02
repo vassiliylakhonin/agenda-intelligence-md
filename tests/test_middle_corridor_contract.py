@@ -393,6 +393,68 @@ def test_middle_corridor_counterparty_readiness_document_ledger():
     assert_valid(RESPONSE_SCHEMA_PATH, _write_tmp(result["response"]))
 
 
+def test_middle_corridor_surfaces_reexport_control_checklist_when_end_user_evidence_missing():
+    """When end-user / no-re-export evidence is not supplied, an end-use verification checklist
+    (EU Sanctions Helpdesk / US diversion red flags) is surfaced, routed to human review, and the
+    response stays schema-valid within the evidence-gap boundary."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti -> EU",
+        "cargo": "dual-use machine tools",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+    result = services.middle_corridor_deal_risk(req)
+    assert result["valid"] is True
+    resp = result["response"]
+    indicators = resp["reexport_control_indicators"]
+    assert indicators
+    blob = " ".join(indicators).lower()
+    assert "no-re-export" in blob or "no re-export" in blob
+    assert "end-user" in blob
+    for word in ["cleared", "approved", "sanctions safe"]:
+        assert word not in blob
+    assert_valid(RESPONSE_SCHEMA_PATH, _write_tmp(resp))
+
+
+def test_middle_corridor_reexport_checklist_omitted_and_score_unchanged_when_end_user_supplied():
+    """Negative control + score boundary: supplying end_user_or_reexport_evidence omits the
+    checklist and does NOT change the decision_readiness_score (the source is not a scored
+    required-before-go item, preserving ADR 0003 score comparability)."""
+    from agenda_intelligence import services
+
+    base = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "sanctions_list_extract", "title": "x", "date": "2026-05-21"},
+        ],
+        "risk_question": "escalate?",
+        "decision_stage": "pre_signature",
+    }
+    without = services.middle_corridor_deal_risk(base)["response"]
+    with_end_user = dict(base)
+    with_end_user["dated_sources"] = base["dated_sources"] + [
+        {"id": "e2", "source_type": "end_user_or_reexport_evidence", "title": "EUS", "date": "2026-05-22"},
+    ]
+    result = services.middle_corridor_deal_risk(with_end_user)
+    assert result["valid"] is True
+    resp = result["response"]
+    assert "reexport_control_indicators" not in resp
+    # Score comparability: adding the non-scored end-user evidence must not move the score.
+    assert resp["decision_readiness_score"] == without["decision_readiness_score"]
+
+
 def _write_tmp(obj):
     import tempfile
 

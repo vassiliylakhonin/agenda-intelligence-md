@@ -479,6 +479,14 @@ VESSEL_DUE_DILIGENCE_INDICATORS = [
     "Flag history: check for recent flag changes or registration with a high-risk registry.",
 ]
 
+REEXPORT_CONTROL_INDICATORS = [
+    "End-user statement: obtain a signed end-user / end-use statement naming the ultimate consignee.",
+    "No-re-export clause: confirm the counterparty accepts a no-re-export / no-diversion contract clause.",
+    "End-use consistency: check the stated end-use is consistent with the cargo type and the ordering party.",
+    "Onward destination: confirm disclosure of any onward destination beyond the first delivery point.",
+    "Order-vs-destination match: flag a stated end-user in a different country from the order origin.",
+]
+
 
 def _high_risk_jurisdiction_counterparties(request_json: dict) -> list[dict]:
     """Flag counterparties domiciled in a sanctions-relevant / high-risk jurisdiction.
@@ -733,6 +741,8 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         response["limitations"] = limitations
     if "vessel_or_carrier_history" in missing_sources:
         response["vessel_due_diligence_indicators"] = list(VESSEL_DUE_DILIGENCE_INDICATORS)
+    if "end_user_or_reexport_evidence" not in supplied_sources:
+        response["reexport_control_indicators"] = list(REEXPORT_CONTROL_INDICATORS)
     if "shipment_value" in request_json:
         response["shipment_value"] = request_json["shipment_value"]
 

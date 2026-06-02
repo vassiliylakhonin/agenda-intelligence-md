@@ -195,6 +195,14 @@ const VESSEL_DUE_DILIGENCE_INDICATORS = [
   "Flag history: check for recent flag changes or registration with a high-risk registry."
 ];
 
+const REEXPORT_CONTROL_INDICATORS = [
+  "End-user statement: obtain a signed end-user / end-use statement naming the ultimate consignee.",
+  "No-re-export clause: confirm the counterparty accepts a no-re-export / no-diversion contract clause.",
+  "End-use consistency: check the stated end-use is consistent with the cargo type and the ordering party.",
+  "Onward destination: confirm disclosure of any onward destination beyond the first delivery point.",
+  "Order-vs-destination match: flag a stated end-user in a different country from the order origin."
+];
+
 const CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW = [
   "ofac_sdn_extract",
   "eu_consolidated_extract",
@@ -2297,6 +2305,9 @@ function dealRiskContractResponseForRequest(request) {
   if (limitations.length > 0) response.limitations = limitations;
   if (minimumSourcesBeforeGo.includes("vessel_or_carrier_history")) {
     response.vessel_due_diligence_indicators = [...VESSEL_DUE_DILIGENCE_INDICATORS];
+  }
+  if (!suppliedSources.includes("end_user_or_reexport_evidence")) {
+    response.reexport_control_indicators = [...REEXPORT_CONTROL_INDICATORS];
   }
   if (request.shipment_value) response.shipment_value = request.shipment_value;
   return response;

@@ -181,6 +181,7 @@
         "vessel_or_carrier_history",
         "rail_capacity_or_border_wait_source",
         "contract_or_invoice_extract",
+        "end_user_or_reexport_evidence",
         "user_provided_note",
         "other"
       ]

@@ -150,6 +150,14 @@
         "minLength": 1
       }
     },
+    "reexport_control_indicators": {
+      "type": "array",
+      "description": "End-use / end-user verification checklist surfaced when end-user or no-re-export evidence is not yet supplied. An evidence-gap checklist routed to human review (drawn from EU Sanctions Helpdesk and US end-user diversion red flags); not an end-use determination, sanctions determination, live retrieval, or legal advice. Does not affect the decision-readiness score.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "watch_next": {
       "type": "array",
       "items": {
@@ -298,6 +306,7 @@
         "vessel_or_carrier_history",
         "rail_capacity_or_border_wait_source",
         "contract_or_invoice_extract",
+        "end_user_or_reexport_evidence",
         "user_provided_note",
         "other"
       ]
