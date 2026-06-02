@@ -1,0 +1,14 @@
+{
+  "status": "partial",
+  "required_total": 6,
+  "supplied_count": 1,
+  "missing_count": 5,
+  "outstanding_documents": [
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "customs_or_regulatory_source",
+    "insurance_clause_or_underwriter_note",
+    "vessel_or_carrier_history"
+  ],
+  "presentable_note": "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; it is not clearance, approval, a sanctions determination, or compliance advice. Human review is required before any commercial action."
+}

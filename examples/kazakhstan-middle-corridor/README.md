@@ -8,6 +8,8 @@ These examples show the intended commercial workflow for the Kazakhstan-focused 
 4. Produce a risk memo only with explicit evidence gaps and review limits.
 5. Score the memo for decision-readiness before handoff.
 
+The same evidence-gap picture is also reframed outward in `07-counterparty-readiness.json`. The numbered chain above answers the internal question "should we escalate before signature?"; the `counterparty_readiness` object (added to the response schema, emitted by `middle_corridor_deal_risk`) answers the other actor's question: "how complete is the dossier I must present to a bank, insurer, or counterparty under enhanced due diligence?" It tracks dossier-completeness only -- not clearance, approval, a sanctions determination, or compliance advice.
+
 The examples are illustrative fixtures. They do not contain live retrieval, sanctions advice, compliance advice, or factual verification against external systems.
 
 The `contract/` directory contains the product-grade structured JSON request/response fixtures validated by the Middle Corridor deal-risk schemas. The free-text live A2A request remains a demo convenience, not the canonical enterprise interface.
