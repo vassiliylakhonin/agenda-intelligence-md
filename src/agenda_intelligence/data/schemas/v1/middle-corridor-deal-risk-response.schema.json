@@ -166,6 +166,14 @@
         "minLength": 1
       }
     },
+    "pep_screening_indicators": {
+      "type": "array",
+      "description": "Politically-exposed-person (PEP) screening checklist surfaced when PEP-screening evidence is not yet supplied. An evidence-gap checklist routed to human review (drawn from FATF Recommendations 12 and 22); not a PEP determination, a political-exposure judgment, live retrieval, or legal advice. Does not affect the decision-readiness score.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "watch_next": {
       "type": "array",
       "items": {
@@ -316,6 +324,7 @@
         "contract_or_invoice_extract",
         "end_user_or_reexport_evidence",
         "source_of_funds_or_wealth_evidence",
+        "pep_screening_evidence",
         "user_provided_note",
         "other"
       ]

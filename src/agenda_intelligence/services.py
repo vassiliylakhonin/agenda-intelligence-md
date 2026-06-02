@@ -495,6 +495,14 @@ SOURCE_OF_FUNDS_INDICATORS = [
     "Funds-jurisdiction flag: flag funds routed through a high-risk or sanctions-relevant jurisdiction.",
 ]
 
+PEP_SCREENING_INDICATORS = [
+    "PEP screening: screen each counterparty and its beneficial owners against PEP lists.",
+    "Family and close associates: extend screening to immediate family and known close associates.",
+    "Senior-management approval: confirm sign-off where a PEP relationship is identified.",
+    "Source of funds/wealth: apply enhanced SOF/SOW checks for any identified PEP.",
+    "Ongoing monitoring: apply enhanced monitoring for the duration of any PEP relationship.",
+]
+
 
 def _high_risk_jurisdiction_counterparties(request_json: dict) -> list[dict]:
     """Flag counterparties domiciled in a sanctions-relevant / high-risk jurisdiction.
@@ -753,6 +761,8 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         response["reexport_control_indicators"] = list(REEXPORT_CONTROL_INDICATORS)
     if "source_of_funds_or_wealth_evidence" not in supplied_sources:
         response["source_of_funds_indicators"] = list(SOURCE_OF_FUNDS_INDICATORS)
+    if "pep_screening_evidence" not in supplied_sources:
+        response["pep_screening_indicators"] = list(PEP_SCREENING_INDICATORS)
     if "shipment_value" in request_json:
         response["shipment_value"] = request_json["shipment_value"]
 
