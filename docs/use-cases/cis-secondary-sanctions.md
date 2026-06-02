@@ -11,11 +11,11 @@ Compliance / sanctions / enhanced due-diligence analysts at:
 - DFIs / IFIs running enhanced due diligence on Central Asia / Caucasus counterparties.
 - Sanctions advisory firms producing client-facing exposure assessments.
 
-The product does not target Kazakhstani or Uzbek operating companies as buyers — it targets institutions outside the CIS that need to demonstrate to their own regulators that a CIS-domiciled counterparty is not a front for sanctioned Russian flow.
+The product does not target Kazakhstani or Uzbek operating companies as buyers — it targets institutions outside the CIS that need to demonstrate to their own regulators that a CIS, Caucasus, or Central Asia counterparty is not a front for sanctioned Russian flow.
 
 ## What the worker does
 
-The `cis_secondary_sanctions` profile accepts a structured request describing a CIS-domiciled counterparty (name, jurisdiction, sector, optional ownership layers), the exposure facets under review (ownership, financial flows, transit / re-export, dual-use, correspondent banking, etc.), the jurisdictions whose regimes are in scope (OFAC, EU, UK OFSI, UN, FATF, EAG), and any dated source extracts the caller has already pulled.
+The `cis_secondary_sanctions` profile accepts a structured request describing a CIS, Caucasus, or Central Asia counterparty (name, jurisdiction, sector, optional ownership layers), the exposure facets under review (ownership, financial flows, transit / re-export, dual-use, correspondent banking, etc.), the jurisdictions whose regimes are in scope (OFAC, EU, UK OFSI, UN, FATF, EAG), and any dated source extracts the caller has already pulled.
 
 When `OPENSANCTIONS_API_KEY` is set, the worker queries the [OpenSanctions](https://www.opensanctions.org) consolidated dataset for the counterparty name and merges direct matches into the evidence pack as auto-fetched `dated_source` entries with proper attribution. When the API key is missing or upstream fails, the worker degrades gracefully and returns `live_retrieval_status: degraded` / `disabled`.
 

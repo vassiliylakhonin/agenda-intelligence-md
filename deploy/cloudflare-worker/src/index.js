@@ -900,10 +900,17 @@ function applyAgenticInteractionTrustProfile(card, request) {
 
 function applyCisSecondarySanctionsProfile(card, request, env = {}) {
   const origin = originFromRequest(request);
+  const activeOption = activeUpstreamOption("cis_secondary_sanctions", env);
   card.name = "CIS Secondary-Sanctions Exposure";
   card.documentationUrl = CIS_SECONDARY_SANCTIONS_DOCS_URL;
   card.description =
-    "A2A-compatible secondary-sanctions exposure evidence triage for CIS-domiciled counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Bring counterparty, exposure facets, and dated source extracts; get auto-fetched OpenSanctions name matches (CC-BY 4.0), structured triage, evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review routing. Targets enhanced due diligence in EU / UK / UAE / Singapore institutions screening counterparties against OFAC EO 14114, EU 14th sanctions package, UK OFSI, and FATF / EAG typologies.";
+    "A2A-compatible secondary-sanctions exposure evidence triage for CIS, Caucasus, and Central Asia counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Bring counterparty, exposure facets, and dated source extracts; get " +
+    (activeOption ? `auto-fetched ${activeOption.name} name matches, ` : "") +
+    "structured triage, evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review routing. " +
+    (activeOption
+      ? ""
+      : "Sanctions-list name-match (OpenSanctions / Watchman, CC-BY 4.0 / Apache-2.0) is wired but disabled in this public deployment, which runs on user-supplied evidence only. ") +
+    "Targets enhanced due diligence in EU / UK / UAE / Singapore institutions screening counterparties against OFAC EO 14114, EU 14th sanctions package, UK OFSI, and FATF / EAG typologies.";
   card.provider.legalEntity.sameAs = [
     "https://github.com/vassiliylakhonin",
     "https://pypi.org/project/agenda-intelligence-md/",
@@ -914,7 +921,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
       id: "cis-secondary-sanctions-exposure",
       name: "CIS secondary-sanctions exposure triage",
       description:
-        "Turns a CIS counterparty + exposure facets + dated source extracts into a structured secondary-sanctions exposure triage with OpenSanctions name matches, evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review escalation.",
+        "Turns a CIS / Caucasus / Central Asia counterparty + exposure facets + dated source extracts into a structured secondary-sanctions exposure triage with optional sanctions-list name matches (OpenSanctions / Watchman, when a list upstream is configured), evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review escalation.",
       tags: [
         "cis",
         "kazakhstan",
@@ -938,7 +945,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
   card.x_agenda_intelligence.product_profile = "cis_secondary_sanctions";
   card.x_agenda_intelligence.canonical_product_name = "CIS Secondary-Sanctions Exposure";
   card.x_agenda_intelligence.wrapper_scope =
-    "A2A/JSON-RPC discovery, CIS secondary-sanctions exposure triage, OpenSanctions live retrieval, and routing response only";
+    "A2A/JSON-RPC discovery, CIS secondary-sanctions exposure triage, optional OpenSanctions / Watchman live retrieval when configured, and routing response only";
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
   card.x_agenda_intelligence.documentation = CIS_SECONDARY_SANCTIONS_DOCS_URL;
   card.x_agenda_intelligence.product_contract = {
@@ -951,7 +958,6 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
   };
   card.x_agenda_intelligence.required_before_review = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW;
   card.x_agenda_intelligence.helpful_context_sources = CIS_SECONDARY_SANCTIONS_HELPFUL_CONTEXT;
-  const activeOption = activeUpstreamOption("cis_secondary_sanctions", env);
   card.x_agenda_intelligence.live_retrieval = {
     capability_declared: true,
     active: activeOption !== null,
@@ -991,7 +997,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
     "FATF / EAG typology mapping for CIS-domiciled entities"
   ];
   card.x_agenda_intelligence.commercial_positioning =
-    "CIS counterparty + exposure facets + dated source extracts -> auditable secondary-sanctions exposure triage with OpenSanctions matches, evidence gaps, decision-readiness score, and mandatory human-review escalation.";
+    "CIS / Caucasus / Central Asia counterparty + exposure facets + dated source extracts -> auditable secondary-sanctions exposure triage with optional sanctions-list name matches (when a list upstream is configured), evidence gaps, decision-readiness score, and mandatory human-review escalation.";
   card.x_agenda_intelligence.focus = [
     "CIS counterparty secondary-sanctions exposure triage",
     "OpenSanctions consolidated dataset name matching",
@@ -1002,7 +1008,9 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
   card.x_agenda_intelligence.not_advice_notice = NOT_ADVICE_NOTICE;
   card.x_agenda_intelligence.boundaries = [
     "Pre-compliance evidence triage only.",
-    "Live retrieval is enabled for this profile against OpenSanctions only (CC-BY 4.0).",
+    activeOption
+      ? `Live retrieval is active for this profile against ${activeOption.name} (CC-BY 4.0 / Apache-2.0).`
+      : "Live retrieval (OpenSanctions / Watchman) is available for this profile but is not active in this deployment; triage runs on user-supplied evidence only.",
     "No factual-truth verification. A name match against a sanctions list is not legal-entity identity verification.",
     "No legal, compliance, sanctions, financial, investment, insurance, or trading advice.",
     "No approval, clearance, authorization, or final decision.",
