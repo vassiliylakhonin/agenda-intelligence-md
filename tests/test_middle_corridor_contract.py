@@ -358,6 +358,41 @@ def test_middle_corridor_counterparty_readiness_complete_when_all_required_suppl
         assert word not in note
 
 
+def test_middle_corridor_counterparty_readiness_document_ledger():
+    """Per-document ledger: one entry per required-before-go source type, status received/missing,
+    and date_received pulled from the supplied dated source when present. Schema-valid."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "sanctions_list_extract", "title": "x", "date": "2026-05-21"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+    result = services.middle_corridor_deal_risk(req)
+    assert result["valid"] is True
+    ledger = result["response"]["counterparty_readiness"]["document_ledger"]
+    # One entry per required-before-go source type, no more.
+    assert {e["source_type"] for e in ledger} == REQUIRED_BEFORE_GO
+    assert len(ledger) == len(REQUIRED_BEFORE_GO)
+    by_type = {e["source_type"]: e for e in ledger}
+    # The supplied source is received with its date; the rest are missing with no date.
+    assert by_type["sanctions_list_extract"]["status"] == "received"
+    assert by_type["sanctions_list_extract"]["date_received"] == "2026-05-21"
+    assert by_type["beneficial_ownership_source"]["status"] == "missing"
+    assert "date_received" not in by_type["beneficial_ownership_source"]
+    # Ledger received count reconciles with supplied_count.
+    received = [e for e in ledger if e["status"] == "received"]
+    assert len(received) == result["response"]["counterparty_readiness"]["supplied_count"]
+    assert_valid(RESPONSE_SCHEMA_PATH, _write_tmp(result["response"]))
+
+
 def _write_tmp(obj):
     import tempfile
 

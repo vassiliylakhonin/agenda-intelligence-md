@@ -211,6 +211,34 @@
             "$ref": "#/$defs/source_type"
           }
         },
+        "document_ledger": {
+          "type": "array",
+          "description": "Per-required-document ledger mirroring the EDD chain-of-custody practice of tracking each item with the date it was received. One entry per required-before-go source type. date_received is the earliest supplied dated source of that type, when present. Status tracking only; not verification of the document's contents or authenticity.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_type",
+              "status"
+            ],
+            "properties": {
+              "source_type": {
+                "$ref": "#/$defs/source_type"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "received",
+                  "missing"
+                ]
+              },
+              "date_received": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
         "presentable_note": {
           "type": "string",
           "minLength": 1

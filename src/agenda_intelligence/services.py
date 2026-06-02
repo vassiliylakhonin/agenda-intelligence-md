@@ -628,12 +628,31 @@ def _middle_corridor_counterparty_readiness(
         status = "partial"
     else:
         status = "incomplete"
+    # Per-document ledger: EDD guidance prescribes tracking each required item with the
+    # date it was received (chain-of-custody / "date requested, date received" practice).
+    # date_received is the earliest supplied dated_source of that type, when present.
+    received_dates: dict[str, str] = {}
+    for source in request_json.get("dated_sources") or []:
+        source_type = source.get("source_type")
+        date = source.get("date")
+        if source_type and date and (source_type not in received_dates or date < received_dates[source_type]):
+            received_dates[source_type] = date
+    document_ledger = []
+    for source_type in MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO:
+        entry = {
+            "source_type": source_type,
+            "status": "received" if source_type in supplied_sources else "missing",
+        }
+        if source_type in received_dates:
+            entry["date_received"] = received_dates[source_type]
+        document_ledger.append(entry)
     return {
         "status": status,
         "required_total": required_total,
         "supplied_count": supplied_count,
         "missing_count": missing_count,
         "outstanding_documents": outstanding,
+        "document_ledger": document_ledger,
         "presentable_note": (
             "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, "
             "insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; "

@@ -74,6 +74,10 @@ This is not legal, compliance, investment, insurance, or sanctions advice. It is
       "insurance_clause_or_underwriter_note",
       "vessel_or_carrier_history"
     ],
+    "document_ledger": [
+      { "source_type": "sanctions_list_extract", "status": "received", "date_received": "2026-05-21" },
+      { "source_type": "beneficial_ownership_source", "status": "missing" }
+    ],
     "presentable_note": "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; it is not clearance, approval, a sanctions determination, or compliance advice. Human review is required before any commercial action."
   }
 }
@@ -100,6 +104,8 @@ The live A2A wrapper remains a demo and discovery convenience: it proves the rou
 `decision_readiness_score` is a heuristic 0-100 evidence-pack readiness score for human review. It is not approval, clearance, compliance status, or advice. In buyer language: a low score means the file is not ready to send to a committee, insurer, client, or sign-off workflow because required source categories are missing.
 
 `counterparty_readiness` reframes the same evidence-gap picture for the other actor. The score above answers the internal question — "should we escalate before signature?". The `counterparty_readiness` object answers the outward question a Kazakhstan / Central Asia party faces under tightened enhanced due diligence: "how complete is the dossier I must present to a bank, insurer, or counterparty?". Same required-before-go contract, no new evidence logic — `status` (`insufficient_information` / `incomplete` / `partial` / `complete_for_review`), the supplied-vs-required counts, and `outstanding_documents` (the source types still to obtain). It tracks dossier-completeness only; it is not clearance, approval, a sanctions determination, or compliance advice, and human review is still required.
+
+`counterparty_readiness.document_ledger` mirrors the EDD chain-of-custody practice that guidance prescribes — tracking each required item with the date it was received. One entry per required-before-go source type, each `received` or `missing`, with `date_received` taken from the earliest supplied dated source of that type. It is status tracking only — not verification of any document's contents or authenticity.
 
 The boundary is part of the contract: no legal, compliance, sanctions, financial, investment, insurance, or trading advice; no autonomous live retrieval; no factual-truth verification; no authorization decision.
 

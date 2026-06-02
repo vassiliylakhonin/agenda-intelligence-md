@@ -10,5 +10,13 @@
     "insurance_clause_or_underwriter_note",
     "vessel_or_carrier_history"
   ],
+  "document_ledger": [
+    { "source_type": "counterparty_registry_extract", "status": "missing" },
+    { "source_type": "beneficial_ownership_source", "status": "missing" },
+    { "source_type": "sanctions_list_extract", "status": "received", "date_received": "2026-05-21" },
+    { "source_type": "customs_or_regulatory_source", "status": "missing" },
+    { "source_type": "insurance_clause_or_underwriter_note", "status": "missing" },
+    { "source_type": "vessel_or_carrier_history", "status": "missing" }
+  ],
   "presentable_note": "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; it is not clearance, approval, a sanctions determination, or compliance advice. Human review is required before any commercial action."
 }

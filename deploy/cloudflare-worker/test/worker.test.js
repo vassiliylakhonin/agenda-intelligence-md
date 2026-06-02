@@ -352,6 +352,23 @@ test("worker deal-risk contract counterparty_readiness completes when all requir
   assert.deepEqual(resp.counterparty_readiness.outstanding_documents, []);
 });
 
+test("worker deal-risk contract counterparty_readiness document_ledger tracks status + date (Python parity)", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      dated_sources: [{ id: "e1", source_type: "sanctions_list_extract", title: "x", date: "2026-05-21" }]
+    })
+  );
+  const ledger = resp.counterparty_readiness.document_ledger;
+  assert.equal(ledger.length, 6);
+  const byType = Object.fromEntries(ledger.map((e) => [e.source_type, e]));
+  assert.equal(byType.sanctions_list_extract.status, "received");
+  assert.equal(byType.sanctions_list_extract.date_received, "2026-05-21");
+  assert.equal(byType.beneficial_ownership_source.status, "missing");
+  assert.equal("date_received" in byType.beneficial_ownership_source, false);
+  const received = ledger.filter((e) => e.status === "received");
+  assert.equal(received.length, resp.counterparty_readiness.supplied_count);
+});
+
 test("kazakhstan deal risk gate returns decision-ready escalation block", async () => {
   const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
   const originalLog = console.log;
