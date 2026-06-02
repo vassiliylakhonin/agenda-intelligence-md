@@ -74,6 +74,19 @@ function validateMiddleCorridorCard(card) {
   if (!Array.isArray(card.skills) || !card.skills.some((skill) => skill.id === "middle-corridor-deal-desk-triage")) {
     errors.push("expected middle-corridor-deal-desk-triage skill");
   }
+  const agentContract = card?.x_agent_contract;
+  if (agentContract?.canonical_input_mode !== "structured_json") {
+    errors.push("expected x_agent_contract.canonical_input_mode=structured_json");
+  }
+  if (agentContract?.primary_intent !== "middle_corridor_deal_risk_contract") {
+    errors.push("expected x_agent_contract.primary_intent=middle_corridor_deal_risk_contract");
+  }
+  if (
+    !Array.isArray(agentContract?.supported_intents) ||
+    !agentContract.supported_intents.includes("middle_corridor_deal_risk_contract")
+  ) {
+    errors.push("expected middle_corridor_deal_risk_contract in x_agent_contract.supported_intents");
+  }
   return errors;
 }
 
