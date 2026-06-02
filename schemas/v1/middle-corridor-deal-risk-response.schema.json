@@ -158,6 +158,14 @@
         "minLength": 1
       }
     },
+    "source_of_funds_indicators": {
+      "type": "array",
+      "description": "Source-of-funds / source-of-wealth verification checklist surfaced when source-of-funds-or-wealth evidence is not yet supplied. An evidence-gap checklist routed to human review (drawn from FATF Recommendation 10 EDD guidance); not a financial determination, AML clearance, live retrieval, or financial advice. Does not affect the decision-readiness score.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "watch_next": {
       "type": "array",
       "items": {
@@ -307,6 +315,7 @@
         "rail_capacity_or_border_wait_source",
         "contract_or_invoice_extract",
         "end_user_or_reexport_evidence",
+        "source_of_funds_or_wealth_evidence",
         "user_provided_note",
         "other"
       ]

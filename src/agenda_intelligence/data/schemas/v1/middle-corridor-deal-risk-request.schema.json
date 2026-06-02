@@ -182,6 +182,7 @@
         "rail_capacity_or_border_wait_source",
         "contract_or_invoice_extract",
         "end_user_or_reexport_evidence",
+        "source_of_funds_or_wealth_evidence",
         "user_provided_note",
         "other"
       ]

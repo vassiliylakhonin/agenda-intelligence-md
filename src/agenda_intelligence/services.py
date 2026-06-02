@@ -487,6 +487,14 @@ REEXPORT_CONTROL_INDICATORS = [
     "Order-vs-destination match: flag a stated end-user in a different country from the order origin.",
 ]
 
+SOURCE_OF_FUNDS_INDICATORS = [
+    "Source of funds: obtain evidence of the funds used for this deal (bank statement, loan or sale proceeds).",
+    "Source of wealth: obtain evidence of the counterparty's overall wealth origin (business, prior trade).",
+    "Consistency: check the declared source of funds fits the counterparty profile and the deal size.",
+    "Payer match: confirm the paying entity and account match the contracting counterparty.",
+    "Funds-jurisdiction flag: flag funds routed through a high-risk or sanctions-relevant jurisdiction.",
+]
+
 
 def _high_risk_jurisdiction_counterparties(request_json: dict) -> list[dict]:
     """Flag counterparties domiciled in a sanctions-relevant / high-risk jurisdiction.
@@ -743,6 +751,8 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         response["vessel_due_diligence_indicators"] = list(VESSEL_DUE_DILIGENCE_INDICATORS)
     if "end_user_or_reexport_evidence" not in supplied_sources:
         response["reexport_control_indicators"] = list(REEXPORT_CONTROL_INDICATORS)
+    if "source_of_funds_or_wealth_evidence" not in supplied_sources:
+        response["source_of_funds_indicators"] = list(SOURCE_OF_FUNDS_INDICATORS)
     if "shipment_value" in request_json:
         response["shipment_value"] = request_json["shipment_value"]
 

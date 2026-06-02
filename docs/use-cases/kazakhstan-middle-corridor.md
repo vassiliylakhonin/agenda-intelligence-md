@@ -109,6 +109,8 @@ The live A2A wrapper remains a demo and discovery convenience: it proves the rou
 
 When end-user / no-re-export evidence is not among the supplied sources, the response also carries `reexport_control_indicators`: an end-use verification checklist (signed end-user statement, no-re-export clause acceptance, end-use consistency, onward-destination disclosure, order-vs-destination match) drawn from EU Sanctions Helpdesk and US diversion red flags. It mirrors the `vessel_due_diligence_indicators` pattern — an evidence-gap checklist routed to human review, not an end-use or sanctions determination, and it does not change the `decision_readiness_score`. Supply a dated `end_user_or_reexport_evidence` source to close it.
 
+Similarly, when source-of-funds / source-of-wealth evidence is not among the supplied sources, the response carries `source_of_funds_indicators`: an SOF/SOW verification checklist (source-of-funds and source-of-wealth evidence, profile/size consistency, payer match, funds-jurisdiction flag) drawn from FATF Recommendation 10 EDD guidance. Same pattern and boundary as the other checklists — routed to human review, not a financial determination or AML clearance, and it does not change the `decision_readiness_score`. Supply a dated `source_of_funds_or_wealth_evidence` source to close it.
+
 The boundary is part of the contract: no legal, compliance, sanctions, financial, investment, insurance, or trading advice; no autonomous live retrieval; no factual-truth verification; no authorization decision.
 
 ### Buyer-facing scenarios

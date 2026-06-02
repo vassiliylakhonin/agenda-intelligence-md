@@ -387,6 +387,24 @@ test("worker deal-risk contract omits reexport_control_indicators when end-user 
   assert.equal("reexport_control_indicators" in resp, false);
 });
 
+test("worker deal-risk contract surfaces source_of_funds_indicators when SOF/SOW evidence missing (Python parity)", () => {
+  const resp = dealRiskContractResponseForRequest(baseDealRiskRequest());
+  assert.ok(resp.source_of_funds_indicators.length > 0);
+  const blob = resp.source_of_funds_indicators.join(" ").toLowerCase();
+  assert.ok(blob.includes("source of funds"));
+  assert.ok(blob.includes("source of wealth"));
+  for (const word of ["cleared", "approved", "sanctions safe"]) assert.equal(blob.includes(word), false);
+});
+
+test("worker deal-risk contract omits source_of_funds_indicators when SOF/SOW evidence supplied", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      dated_sources: [{ id: "e1", source_type: "source_of_funds_or_wealth_evidence", title: "SOF", date: "2026-05-22" }]
+    })
+  );
+  assert.equal("source_of_funds_indicators" in resp, false);
+});
+
 test("kazakhstan deal risk gate returns decision-ready escalation block", async () => {
   const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
   const originalLog = console.log;
