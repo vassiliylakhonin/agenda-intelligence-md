@@ -455,6 +455,66 @@ def test_middle_corridor_reexport_checklist_omitted_and_score_unchanged_when_end
     assert resp["decision_readiness_score"] == without["decision_readiness_score"]
 
 
+def test_middle_corridor_surfaces_source_of_funds_checklist_when_evidence_missing():
+    """When source-of-funds / source-of-wealth evidence is not supplied, an SOF/SOW verification
+    checklist (FATF Rec 10 EDD guidance) is surfaced, routed to human review, and the response
+    stays schema-valid within the evidence-gap boundary."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+    result = services.middle_corridor_deal_risk(req)
+    assert result["valid"] is True
+    resp = result["response"]
+    indicators = resp["source_of_funds_indicators"]
+    assert indicators
+    blob = " ".join(indicators).lower()
+    assert "source of funds" in blob
+    assert "source of wealth" in blob
+    for word in ["cleared", "approved", "sanctions safe"]:
+        assert word not in blob
+    assert_valid(RESPONSE_SCHEMA_PATH, _write_tmp(resp))
+
+
+def test_middle_corridor_sof_checklist_omitted_and_score_unchanged_when_evidence_supplied():
+    """Negative control + score boundary: supplying source_of_funds_or_wealth_evidence omits the
+    checklist and does NOT change the decision_readiness_score (not a scored required-before-go item)."""
+    from agenda_intelligence import services
+
+    base = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "sanctions_list_extract", "title": "x", "date": "2026-05-21"},
+        ],
+        "risk_question": "escalate?",
+        "decision_stage": "pre_signature",
+    }
+    without = services.middle_corridor_deal_risk(base)["response"]
+    with_sof = dict(base)
+    with_sof["dated_sources"] = base["dated_sources"] + [
+        {"id": "e2", "source_type": "source_of_funds_or_wealth_evidence", "title": "SOF", "date": "2026-05-22"},
+    ]
+    result = services.middle_corridor_deal_risk(with_sof)
+    assert result["valid"] is True
+    resp = result["response"]
+    assert "source_of_funds_indicators" not in resp
+    assert resp["decision_readiness_score"] == without["decision_readiness_score"]
+
+
 def _write_tmp(obj):
     import tempfile
 

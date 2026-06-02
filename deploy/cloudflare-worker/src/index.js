@@ -203,6 +203,14 @@ const REEXPORT_CONTROL_INDICATORS = [
   "Order-vs-destination match: flag a stated end-user in a different country from the order origin."
 ];
 
+const SOURCE_OF_FUNDS_INDICATORS = [
+  "Source of funds: obtain evidence of the funds used for this deal (bank statement, loan or sale proceeds).",
+  "Source of wealth: obtain evidence of the counterparty's overall wealth origin (business, prior trade).",
+  "Consistency: check the declared source of funds fits the counterparty profile and the deal size.",
+  "Payer match: confirm the paying entity and account match the contracting counterparty.",
+  "Funds-jurisdiction flag: flag funds routed through a high-risk or sanctions-relevant jurisdiction."
+];
+
 const CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW = [
   "ofac_sdn_extract",
   "eu_consolidated_extract",
@@ -2308,6 +2316,9 @@ function dealRiskContractResponseForRequest(request) {
   }
   if (!suppliedSources.includes("end_user_or_reexport_evidence")) {
     response.reexport_control_indicators = [...REEXPORT_CONTROL_INDICATORS];
+  }
+  if (!suppliedSources.includes("source_of_funds_or_wealth_evidence")) {
+    response.source_of_funds_indicators = [...SOURCE_OF_FUNDS_INDICATORS];
   }
   if (request.shipment_value) response.shipment_value = request.shipment_value;
   return response;
