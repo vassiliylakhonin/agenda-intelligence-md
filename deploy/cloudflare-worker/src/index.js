@@ -2215,12 +2215,31 @@ function counterpartyReadinessForStructuredRequest(request, suppliedSources, min
   } else {
     status = "incomplete";
   }
+  // Per-document ledger mirroring the EDD "date requested, date received" / chain-of-custody
+  // practice. date_received is the earliest supplied dated source of that type, when present.
+  const receivedDates = {};
+  for (const source of request.dated_sources || []) {
+    const sourceType = source.source_type;
+    const date = source.date;
+    if (sourceType && date && (!(sourceType in receivedDates) || date < receivedDates[sourceType])) {
+      receivedDates[sourceType] = date;
+    }
+  }
+  const documentLedger = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.map((sourceType) => {
+    const entry = {
+      source_type: sourceType,
+      status: suppliedSources.includes(sourceType) ? "received" : "missing"
+    };
+    if (sourceType in receivedDates) entry.date_received = receivedDates[sourceType];
+    return entry;
+  });
   return {
     status,
     required_total: requiredTotal,
     supplied_count: suppliedCount,
     missing_count: missingCount,
     outstanding_documents: outstanding,
+    document_ledger: documentLedger,
     presentable_note:
       "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, " +
       "insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; " +
