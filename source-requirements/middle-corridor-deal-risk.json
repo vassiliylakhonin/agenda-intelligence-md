@@ -22,7 +22,8 @@
     "rail_capacity_or_border_wait_source",
     "contract_or_invoice_extract",
     "end_user_or_reexport_evidence",
-    "source_of_funds_or_wealth_evidence"
+    "source_of_funds_or_wealth_evidence",
+    "pep_screening_evidence"
   ],
   "supporting_sources": [
     "port_operator_notice",
@@ -30,7 +31,8 @@
     "rail_capacity_or_border_wait_source",
     "contract_or_invoice_extract",
     "end_user_or_reexport_evidence",
-    "source_of_funds_or_wealth_evidence"
+    "source_of_funds_or_wealth_evidence",
+    "pep_screening_evidence"
   ],
   "watch_indicators": [
     "new sanctions designation",
@@ -40,7 +42,8 @@
     "insurance term change",
     "carrier or vessel history update",
     "end-user or onward-destination change",
-    "source of funds or payer change"
+    "source of funds or payer change",
+    "PEP status or political-exposure change"
   ],
   "boundary": "This taxonomy supports pre-compliance evidence triage only. It does not provide legal, compliance, sanctions, insurance, financial, investment, trading, or shipment authorization advice."
 }

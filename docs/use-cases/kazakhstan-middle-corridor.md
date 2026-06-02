@@ -111,6 +111,8 @@ When end-user / no-re-export evidence is not among the supplied sources, the res
 
 Similarly, when source-of-funds / source-of-wealth evidence is not among the supplied sources, the response carries `source_of_funds_indicators`: an SOF/SOW verification checklist (source-of-funds and source-of-wealth evidence, profile/size consistency, payer match, funds-jurisdiction flag) drawn from FATF Recommendation 10 EDD guidance. Same pattern and boundary as the other checklists — routed to human review, not a financial determination or AML clearance, and it does not change the `decision_readiness_score`. Supply a dated `source_of_funds_or_wealth_evidence` source to close it.
 
+And when PEP-screening evidence is not among the supplied sources, the response carries `pep_screening_indicators`: a politically-exposed-person screening checklist (counterparty + beneficial-owner PEP screening, family / close associates, senior-management approval, enhanced SOF/SOW, ongoing monitoring) drawn from FATF Recommendations 12 and 22. Same pattern and boundary — a checklist of what to screen routed to human review, never a PEP determination or political-exposure judgment, and it does not change the `decision_readiness_score`. Supply a dated `pep_screening_evidence` source to close it.
+
 The boundary is part of the contract: no legal, compliance, sanctions, financial, investment, insurance, or trading advice; no autonomous live retrieval; no factual-truth verification; no authorization decision.
 
 ### Buyer-facing scenarios

@@ -183,6 +183,7 @@
         "contract_or_invoice_extract",
         "end_user_or_reexport_evidence",
         "source_of_funds_or_wealth_evidence",
+        "pep_screening_evidence",
         "user_provided_note",
         "other"
       ]

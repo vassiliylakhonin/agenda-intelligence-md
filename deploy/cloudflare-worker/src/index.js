@@ -211,6 +211,14 @@ const SOURCE_OF_FUNDS_INDICATORS = [
   "Funds-jurisdiction flag: flag funds routed through a high-risk or sanctions-relevant jurisdiction."
 ];
 
+const PEP_SCREENING_INDICATORS = [
+  "PEP screening: screen each counterparty and its beneficial owners against PEP lists.",
+  "Family and close associates: extend screening to immediate family and known close associates.",
+  "Senior-management approval: confirm sign-off where a PEP relationship is identified.",
+  "Source of funds/wealth: apply enhanced SOF/SOW checks for any identified PEP.",
+  "Ongoing monitoring: apply enhanced monitoring for the duration of any PEP relationship."
+];
+
 const CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW = [
   "ofac_sdn_extract",
   "eu_consolidated_extract",
@@ -2319,6 +2327,9 @@ function dealRiskContractResponseForRequest(request) {
   }
   if (!suppliedSources.includes("source_of_funds_or_wealth_evidence")) {
     response.source_of_funds_indicators = [...SOURCE_OF_FUNDS_INDICATORS];
+  }
+  if (!suppliedSources.includes("pep_screening_evidence")) {
+    response.pep_screening_indicators = [...PEP_SCREENING_INDICATORS];
   }
   if (request.shipment_value) response.shipment_value = request.shipment_value;
   return response;
