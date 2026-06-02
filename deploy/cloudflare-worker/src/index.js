@@ -808,7 +808,7 @@ function applyAgentProfile(card, request, env = {}) {
     "counterparty dossier-completeness check before presenting evidence to a bank, insurer, or counterparty"
   ];
   card.x_agenda_intelligence.commercial_positioning =
-    "Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation. The same evidence-gap picture is also returned outward as counterparty_readiness: a dossier-completeness view (status + supplied-vs-required counts + outstanding documents) for the party that must present enhanced-due-diligence evidence to a bank, insurer, or counterparty. Completeness only, not clearance or a sanctions determination.";
+    "Pre-screening evidence triage: identifies which due-diligence documents are still missing before a deal's counterparties are committed to a sanctions-screening or network-intelligence tool. It complements those tools rather than replacing them, and performs no screening, name-matching, or data retrieval itself. Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation. The same evidence-gap picture is also returned outward as counterparty_readiness: a dossier-completeness view (status + supplied-vs-required counts + outstanding documents) for the party that must present enhanced-due-diligence evidence to a bank, insurer, or counterparty. Completeness only, not clearance or a sanctions determination.";
   card.x_agenda_intelligence.focus = [
     "Kazakhstan and Middle Corridor deal-risk triage",
     "sanctions-adjacent evidence gates",

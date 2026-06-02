@@ -6,6 +6,8 @@ Flagship commercial use case for Agenda Intelligence MD.
 
 Bring route, cargo, counterparties, and dated sources. Get an auditable corridor-risk triage with evidence gaps, source coverage, watch-next indicators, and human-review escalation.
 
+This is a **pre-screening evidence triage layer**: it tells you which due-diligence documents are still missing before a deal's counterparties are committed to a sanctions-screening or network-intelligence tool. It complements those tools rather than replacing them — it performs no screening, name-matching, or live data retrieval itself, and holds no proprietary lists or ownership graph. Its job is to make the evidence dossier complete and auditable before the expensive data step, not to be that step.
+
 This is not legal, compliance, investment, insurance, or sanctions advice. It is a pre-compliance evidence and decision-readiness gate for analyst, compliance-adjacent, logistics, procurement, trade-finance, and insurance workflows.
 
 ## Target users
