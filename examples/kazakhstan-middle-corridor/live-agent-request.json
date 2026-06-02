@@ -7,8 +7,57 @@
       "role": "ROLE_USER",
       "parts": [
         {
-          "mediaType": "text/plain",
-          "text": "Deal risk gate test for a logistics and trade-finance team. We are evaluating a USD 2.4m shipment of industrial equipment on route Altynkol -> Aktau/Kuryk -> Baku -> Poti. Counterparties: Kazakhstan forwarder, Azerbaijan port agent, Georgian consignee. Sources supplied: port operator notice dated 2026-05-20; OFAC/EU/UK sanctions list extract dated 2026-05-21 with no exact matches; carrier note dated 2026-05-22. Missing: no beneficial ownership extract, no counterparty registry extract, no insurance clause, no customs source, no vessel or carrier history. Question: should this be escalated before contract signature, and what minimum evidence is needed before go?"
+          "kind": "data",
+          "mediaType": "application/json",
+          "data": {
+            "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+            "cargo": "industrial equipment",
+            "shipment_value": {
+              "amount": 2400000,
+              "currency": "USD"
+            },
+            "counterparties": [
+              {
+                "role": "forwarder",
+                "name": "Kazakhstan forwarder",
+                "jurisdiction": "Kazakhstan"
+              },
+              {
+                "role": "port_agent",
+                "name": "Azerbaijan port agent",
+                "jurisdiction": "Azerbaijan"
+              },
+              {
+                "role": "consignee",
+                "name": "Georgian consignee",
+                "jurisdiction": "Georgia"
+              }
+            ],
+            "dated_sources": [
+              {
+                "id": "e1",
+                "source_type": "port_operator_notice",
+                "title": "Port operator notice (caller-supplied)",
+                "date": "2026-05-20"
+              },
+              {
+                "id": "e2",
+                "source_type": "sanctions_list_extract",
+                "title": "OFAC/EU/UK sanctions list extract, no exact matches (caller-supplied)",
+                "date": "2026-05-21"
+              },
+              {
+                "id": "e3",
+                "source_type": "carrier_note",
+                "title": "Carrier note (caller-supplied)",
+                "date": "2026-05-22"
+              }
+            ],
+            "risk_question": "Should this be escalated before contract signature, and what minimum evidence is needed before go?",
+            "decision_stage": "pre_signature",
+            "notes": "Caller-supplied sources only; the gate does not retrieve or verify them. Missing: beneficial ownership extract, counterparty registry extract, insurance clause or underwriter note, customs or regulatory source, vessel or carrier history.",
+            "requested_output": "both"
+          }
         }
       ]
     }
