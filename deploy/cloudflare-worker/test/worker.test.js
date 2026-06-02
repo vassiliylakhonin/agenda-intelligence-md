@@ -1497,11 +1497,19 @@ function messageSendRequest(origin, { token, body } = {}) {
   });
 }
 
-test("productionAuthKey only resolves for kazakhstan profile when secret is set", () => {
+test("productionAuthKey resolves per-profile secrets and stays scoped", () => {
   assert.equal(productionAuthKey("kazakhstan", { MIDDLE_CORRIDOR_API_KEY: "secret" }), "secret");
   assert.equal(productionAuthKey("kazakhstan", {}), "");
   assert.equal(productionAuthKey("agenda", { MIDDLE_CORRIDOR_API_KEY: "secret" }), "");
+  // Per-profile keys do not cross over: the Middle Corridor secret never gates the trust profile.
   assert.equal(productionAuthKey("agentic_interaction_trust", { MIDDLE_CORRIDOR_API_KEY: "secret" }), "");
+  assert.equal(
+    productionAuthKey("agentic_interaction_trust", { AGENTIC_INTERACTION_TRUST_API_KEY: "trust-secret" }),
+    "trust-secret"
+  );
+  assert.equal(productionAuthKey("agentic_interaction_trust", {}), "");
+  // And the trust secret never gates Middle Corridor.
+  assert.equal(productionAuthKey("kazakhstan", { AGENTIC_INTERACTION_TRUST_API_KEY: "trust-secret" }), "");
 });
 
 test("isProductionAuthorized opens the route when no key is configured", () => {

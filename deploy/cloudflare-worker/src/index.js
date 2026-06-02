@@ -379,15 +379,17 @@ function agentProfile(request, env = {}) {
 // public agent/card discovery method, which always stays open).
 const MESSAGE_SEND_METHODS = new Set(["message/send", "tasks/send", "SendMessage"]);
 
-// Per-profile production access key. Only the Middle Corridor deal-risk gate
-// (profile "kazakhstan") graduates to an explicit Bearer model; it reads the
-// MIDDLE_CORRIDOR_API_KEY secret. When the secret is unset the route is an
-// open free demo and no key is required — the agent card reflects that state
-// truthfully (no security requirement is advertised). Set the secret with
-// `wrangler secret put MIDDLE_CORRIDOR_API_KEY --env middle-corridor-deal-risk-gate`
-// to flip enforcement on the day a real counterparty needs gating.
+// Per-profile production access key. Profiles that graduate to an explicit
+// Bearer model read a per-profile secret; when the secret is unset the route is
+// an open free demo and no key is required — the agent card reflects that state
+// truthfully (no security requirement is advertised). Flip enforcement on the
+// day a real counterparty needs gating:
+//   wrangler secret put MIDDLE_CORRIDOR_API_KEY --env middle-corridor-deal-risk-gate
+//   wrangler secret put AGENTIC_INTERACTION_TRUST_API_KEY --env agentic-interaction-trust
 function productionAuthKey(profile, env = {}) {
   if (profile === "kazakhstan") return env.MIDDLE_CORRIDOR_API_KEY || "";
+  if (profile === "agentic_interaction_trust")
+    return env.AGENTIC_INTERACTION_TRUST_API_KEY || "";
   return "";
 }
 
