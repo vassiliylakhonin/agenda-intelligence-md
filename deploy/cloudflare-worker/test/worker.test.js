@@ -1693,3 +1693,69 @@ test("agent/card discovery stays public even when the production key is set", as
   const body = await response.json();
   assert.ok(body.result.name, "agent/card returns the card without a Bearer");
 });
+
+const GULF_ORIGIN = "https://gulf-maritime-exposure-a2a.example.workers.dev";
+const GULF_ENV = { AGENT_PROFILE: "gulf_maritime_exposure", AGENDA_USAGE: new MemoryKv() };
+
+function gulfRequest() {
+  return new Request(`${GULF_ORIGIN}/message/send`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "user-agent": "node:test" }
+  });
+}
+
+const GULF_GOLDEN = {
+  vessel: { name: "Example Tanker", flag: "Panama", vessel_type: "crude oil tanker" },
+  voyage: { chokepoint: "strait_of_hormuz", origin: "undisclosed Gulf terminal", destination: "STS area, Gulf of Oman" },
+  cargo: "crude oil",
+  counterparties: [{ role: "registered_owner", name: "Example Holding Ltd", jurisdiction: "Marshall Islands" }],
+  exposure_facets: ["iran_oil_exposure", "dark_fleet_indicators", "sts_transfer", "insurance_or_pi_gap"],
+  jurisdictions_in_scope: ["OFAC", "EU", "UK_OFSI"],
+  decision_stage: "pre_fixture",
+  dated_sources: [{ id: "g1", source_type: "ais_track_record", title: "AIS track extract", date: "2026-05-28" }],
+  risk_question: "Is this Hormuz transit ready to fix, or should it be escalated before fixture?"
+};
+
+test("gulf profile agent card exposes the gulf maritime skill", () => {
+  const card = agentCard(gulfRequest(), GULF_ENV);
+  assert.equal(card.x_agenda_intelligence.product_profile, "gulf_maritime_exposure");
+  assert.equal(card.x_agenda_intelligence.supported_contracts[0], "gulf_maritime_exposure_contract");
+  assert.ok(card.skills.some((s) => s.id === "gulf-maritime-exposure"));
+});
+
+test("gulf message/send escalates before fixture with high signal (Python parity)", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "g-1", method: "message/send", params: { capability: "gulf_maritime_exposure", request: GULF_GOLDEN } },
+      gulfRequest(),
+      GULF_ENV
+    );
+    assert.equal(response.result.metadata.product_profile, "gulf_maritime_exposure");
+    const resp = response.result.metadata.response;
+    assert.equal(resp.triage_recommendation, "escalate_before_fixture");
+    assert.equal(resp.exposure_signal, "high");
+    assert.equal(resp.human_review_required, true);
+    assert.ok(resp.minimum_sources_before_review.includes("sanctions_list_extract"));
+    assert.ok(resp.chokepoint_disruption_watch.some((w) => w.includes("Hormuz")));
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("gulf message/send rejects a non-gulf request shape", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "g-2", method: "message/send", params: { capability: "gulf_maritime_exposure", request: { foo: "bar" } } },
+      gulfRequest(),
+      GULF_ENV
+    );
+    assert.equal(response.result.status.state, "TASK_STATE_FAILED");
+    assert.equal(response.result.metadata.valid, false);
+  } finally {
+    console.log = originalLog;
+  }
+});

@@ -57,3 +57,14 @@ AGENT_PROFILE = "agentic_interaction_trust"
 [[env.agentic-interaction-trust.kv_namespaces]]
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
+
+[env.gulf-maritime-exposure]
+name = "gulf-maritime-exposure-a2a"
+workers_dev = true
+
+[env.gulf-maritime-exposure.vars]
+AGENT_PROFILE = "gulf_maritime_exposure"
+
+[[env.gulf-maritime-exposure.kv_namespaces]]
+binding = "AGENDA_USAGE"
+id = "d2228183999246ccbec8aa2d5f130bfc"
