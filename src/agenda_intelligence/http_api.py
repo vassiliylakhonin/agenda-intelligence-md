@@ -54,6 +54,7 @@ def handle_get(path: str) -> tuple[int, dict]:
                     "middle_corridor_deal_risk",
                     "agentic_interaction_trust",
                     "cis_secondary_sanctions_exposure",
+                    "gulf_maritime_exposure",
                 ],
                 "boundary": BOUNDARY_NOTICE,
             },
@@ -103,6 +104,16 @@ def handle_post(path: str, payload: dict) -> tuple[int, dict]:
             return 400, {
                 "ok": False,
                 "error": "Invalid CIS secondary-sanctions exposure request",
+                "errors": result["errors"],
+            }
+        return 200, result["response"]
+
+    if path == "/v1/gulf-maritime/exposure":
+        result = services.gulf_maritime_exposure(payload)
+        if not result.get("valid"):
+            return 400, {
+                "ok": False,
+                "error": "Invalid Gulf maritime exposure request",
                 "errors": result["errors"],
             }
         return 200, result["response"]

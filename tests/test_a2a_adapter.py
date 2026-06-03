@@ -101,6 +101,7 @@ def test_agent_card_exposes_middle_corridor_skill():
         "middle_corridor_deal_risk",
         "agentic_interaction_trust",
         "cis_secondary_sanctions_exposure",
+        "gulf_maritime_exposure",
         "audit_claims",
         "source_coverage",
         "score_output",
@@ -317,6 +318,7 @@ def test_jsonrpc_message_send_rejects_unknown_capability():
         "middle_corridor_deal_risk",
         "agentic_interaction_trust",
         "cis_secondary_sanctions_exposure",
+        "gulf_maritime_exposure",
         "audit_claims",
         "source_coverage",
         "score_output",
@@ -420,6 +422,7 @@ def test_a2a_example_requests_are_valid_jsonrpc_objects():
 def test_a2a_example_requests_run_through_stdin_shell():
     expected_profiles = {
         "middle-corridor-deal-risk.request.json": "middle_corridor_deal_risk",
+        "gulf-maritime-exposure.request.json": "gulf_maritime_exposure",
         "audit-claims.request.json": "audit_claims",
         "source-coverage.request.json": "source_coverage",
         "score-output.request.json": "score_output",
@@ -442,6 +445,7 @@ def test_a2a_agent_card_example_runs_through_stdin_shell():
         "middle_corridor_deal_risk",
         "agentic_interaction_trust",
         "cis_secondary_sanctions_exposure",
+        "gulf_maritime_exposure",
         "audit_claims",
         "source_coverage",
         "score_output",

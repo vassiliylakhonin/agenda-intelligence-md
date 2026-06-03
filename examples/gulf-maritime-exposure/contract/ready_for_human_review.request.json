@@ -1,0 +1,60 @@
+{
+  "voyage": {
+    "chokepoint": "strait_of_hormuz"
+  },
+  "exposure_facets": [
+    "ownership_or_control"
+  ],
+  "decision_stage": "committee_review",
+  "dated_sources": [
+    {
+      "id": "s0",
+      "source_type": "vessel_registry_extract",
+      "title": "vessel_registry_extract",
+      "date": "2026-05-28"
+    },
+    {
+      "id": "s1",
+      "source_type": "pi_insurance_certificate",
+      "title": "pi_insurance_certificate",
+      "date": "2026-05-28"
+    },
+    {
+      "id": "s2",
+      "source_type": "ownership_or_control_evidence",
+      "title": "ownership_or_control_evidence",
+      "date": "2026-05-28"
+    },
+    {
+      "id": "s3",
+      "source_type": "sanctions_list_extract",
+      "title": "sanctions_list_extract",
+      "date": "2026-05-28"
+    },
+    {
+      "id": "s4",
+      "source_type": "ais_track_record",
+      "title": "ais_track_record",
+      "date": "2026-05-28"
+    },
+    {
+      "id": "s5",
+      "source_type": "flag_registry_record",
+      "title": "flag_registry_record",
+      "date": "2026-05-28"
+    },
+    {
+      "id": "s6",
+      "source_type": "sts_transfer_evidence",
+      "title": "sts_transfer_evidence",
+      "date": "2026-05-28"
+    },
+    {
+      "id": "s7",
+      "source_type": "cargo_or_bl_evidence",
+      "title": "cargo_or_bl_evidence",
+      "date": "2026-05-28"
+    }
+  ],
+  "risk_question": "Is the file ready for human review?"
+}

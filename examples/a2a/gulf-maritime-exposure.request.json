@@ -1,0 +1,50 @@
+{
+  "jsonrpc": "2.0",
+  "id": "a2a-gulf-maritime-demo",
+  "method": "message/send",
+  "params": {
+    "capability": "gulf_maritime_exposure",
+    "request": {
+      "vessel": {
+        "name": "Example Tanker",
+        "flag": "Panama",
+        "vessel_type": "crude oil tanker"
+      },
+      "voyage": {
+        "chokepoint": "strait_of_hormuz",
+        "origin": "undisclosed Gulf terminal",
+        "destination": "ship-to-ship area, Gulf of Oman"
+      },
+      "cargo": "crude oil",
+      "counterparties": [
+        {
+          "role": "registered_owner",
+          "name": "Example Holding Ltd",
+          "jurisdiction": "Marshall Islands"
+        },
+        {
+          "role": "insurer_or_pi_club",
+          "name": "Unknown"
+        }
+      ],
+      "exposure_facets": [
+        "iran_oil_exposure",
+        "dark_fleet_indicators",
+        "sts_transfer",
+        "insurance_or_pi_gap"
+      ],
+      "jurisdictions_in_scope": ["OFAC", "EU", "UK_OFSI"],
+      "dated_sources": [
+        {
+          "id": "g1",
+          "source_type": "ais_track_record",
+          "title": "AIS track extract",
+          "date": "2026-05-28",
+          "url": "https://example.com/ais"
+        }
+      ],
+      "risk_question": "Is this Hormuz transit ready to fix, or should it be escalated before fixture?",
+      "decision_stage": "pre_fixture"
+    }
+  }
+}

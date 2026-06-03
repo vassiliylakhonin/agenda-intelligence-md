@@ -1,0 +1,45 @@
+{
+  "category": "gulf-maritime-exposure",
+  "required_before_go": [
+    "vessel_registry_extract",
+    "pi_insurance_certificate",
+    "ownership_or_control_evidence",
+    "sanctions_list_extract",
+    "ais_track_record"
+  ],
+  "must_check": [
+    "vessel_registry_extract",
+    "pi_insurance_certificate",
+    "ownership_or_control_evidence",
+    "sanctions_list_extract",
+    "ais_track_record"
+  ],
+  "helpful_context": [
+    "flag_registry_record",
+    "sts_transfer_evidence",
+    "classification_society_record",
+    "port_state_control_record",
+    "cargo_or_bl_evidence",
+    "adverse_media_evidence",
+    "prior_incident_or_detention"
+  ],
+  "supporting_sources": [
+    "flag_registry_record",
+    "sts_transfer_evidence",
+    "classification_society_record",
+    "port_state_control_record",
+    "cargo_or_bl_evidence",
+    "adverse_media_evidence",
+    "prior_incident_or_detention"
+  ],
+  "watch_indicators": [
+    "new OFAC vessel or entity designation",
+    "new EU or UK OFSI shipping-related listing",
+    "Hormuz or Bab-el-Mandeb security incident or transit advisory",
+    "Red Sea attack or rerouting notice",
+    "P&I club withdrawal or cover-confirmation change",
+    "flag-registry deregistration or flag-hopping report",
+    "AIS gap, spoofing, or dark-activity report on the vessel"
+  ],
+  "boundary": "This taxonomy supports pre-compliance evidence triage of maritime sanctions and chokepoint-disruption exposure for vessels and voyages transiting the Strait of Hormuz, Persian/Arabian Gulf, Gulf of Oman, Bab-el-Mandeb, or Red Sea. It does not resolve vessel ownership, verify identity, or provide legal, sanctions, compliance, financial, investment, insurance, or trading advice."
+}
