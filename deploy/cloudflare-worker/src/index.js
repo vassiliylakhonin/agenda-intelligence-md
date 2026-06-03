@@ -57,6 +57,10 @@ const AGENTIC_INTERACTION_TRUST_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use
 const AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agentic-interaction-trust-request.schema.json`;
 const AGENTIC_INTERACTION_TRUST_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agentic-interaction-trust-response.schema.json`;
 const AGENTIC_INTERACTION_TRUST_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/agentic-interaction-trust.json`;
+const GULF_MARITIME_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/gulf-maritime-exposure.md`;
+const GULF_MARITIME_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/gulf-maritime-exposure-request.schema.json`;
+const GULF_MARITIME_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/gulf-maritime-exposure-response.schema.json`;
+const GULF_MARITIME_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/gulf-maritime-exposure.json`;
 const A2A_EXAMPLES_URL = `${REPOSITORY_URL}/tree/main/examples/a2a`;
 const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";
 
@@ -256,6 +260,23 @@ const AGENTIC_INTERACTION_TRUST_HELPFUL_CONTEXT = [
   "human_review_note"
 ];
 
+const GULF_MARITIME_REQUIRED_BEFORE_REVIEW = [
+  "vessel_registry_extract",
+  "pi_insurance_certificate",
+  "ownership_or_control_evidence",
+  "sanctions_list_extract",
+  "ais_track_record"
+];
+
+const GULF_MARITIME_HELPFUL_CONTEXT = [
+  "flag_registry_record",
+  "sts_transfer_evidence",
+  "classification_society_record",
+  "port_state_control_record",
+  "cargo_or_bl_evidence",
+  "adverse_media_evidence"
+];
+
 // Per-profile live retrieval CAPABILITY declarations. Actual runtime
 // activation is env-derived via isLiveRetrievalActive(profile, env). Per the
 // 2026-05-27 update to ADR 0014, multiple upstreams can be configured per
@@ -271,6 +292,7 @@ const PROFILE_LIVE_RETRIEVAL = {
   agenda: { capability_declared: false, upstream_options: [] },
   kazakhstan: { capability_declared: false, upstream_options: [] },
   agentic_interaction_trust: { capability_declared: false, upstream_options: [] },
+  gulf_maritime_exposure: { capability_declared: false, upstream_options: [] },
   cis_secondary_sanctions: {
     capability_declared: true,
     upstream_options: [
@@ -389,6 +411,12 @@ function agentProfile(request, env = {}) {
     host.includes("agentic-trust-gate-a2a")
   ) {
     return "agentic_interaction_trust";
+  }
+  if (
+    env.AGENT_PROFILE === "gulf_maritime_exposure" ||
+    host.includes("gulf-maritime-exposure-a2a")
+  ) {
+    return "gulf_maritime_exposure";
   }
   if (
     env.AGENT_PROFILE === "kazakhstan" ||
@@ -663,6 +691,7 @@ function applyAgentProfile(card, request, env = {}) {
   const profile = agentProfile(request, env);
   if (profile === "cis_secondary_sanctions") return applyCisSecondarySanctionsProfile(card, request, env);
   if (profile === "agentic_interaction_trust") return applyAgenticInteractionTrustProfile(card, request);
+  if (profile === "gulf_maritime_exposure") return applyGulfMaritimeProfile(card, request);
   if (profile !== "kazakhstan") return card;
 
   const origin = originFromRequest(request);
@@ -919,6 +948,75 @@ function applyAgenticInteractionTrustProfile(card, request) {
     "No legal, compliance, financial, investment, insurance, or trading advice.",
     "No approval, clearance, authorization, denial, blocking, or final decision.",
     "Human review is required for consequential decisions."
+  ];
+  return card;
+}
+
+function applyGulfMaritimeProfile(card, request) {
+  const origin = originFromRequest(request);
+  card.name = "Gulf Maritime Exposure Gate";
+  card.documentationUrl = GULF_MARITIME_DOCS_URL;
+  card.description =
+    "A2A-compatible evidence-readiness gate for maritime sanctions and chokepoint-disruption exposure on a vessel " +
+    "or voyage transiting the Strait of Hormuz, Persian/Arabian Gulf, Gulf of Oman, Bab-el-Mandeb, or Red Sea. Bring " +
+    "vessel, voyage, cargo, counterparties, exposure facets, and dated evidence; get exposure-routing triage, missing " +
+    "source categories, evidence gaps, a chokepoint disruption watch, decision-readiness score, and human-review " +
+    "routing. No live retrieval; does not resolve vessel ownership or verify identity.";
+  card.provider.legalEntity.sameAs = [
+    "https://github.com/vassiliylakhonin",
+    "https://pypi.org/project/agenda-intelligence-md/",
+    "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
+  ];
+  card.skills = [
+    {
+      id: "gulf-maritime-exposure",
+      name: "Gulf maritime exposure triage",
+      description:
+        "Turns a vessel/voyage, counterparties, exposure facets, and dated evidence into a structured maritime " +
+        "sanctions and chokepoint-disruption triage with decision-readiness score, evidence gaps, a chokepoint " +
+        "disruption watch, and mandatory human-review routing.",
+      tags: ["maritime", "sanctions", "hormuz", "red-sea", "dark-fleet", "evidence-readiness", "human-review", "free"],
+      examples: [
+        "Should this Hormuz tanker transit be escalated before fixture?",
+        "Triage a dark-fleet-indicator voyage with no confirmed P&I cover."
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    }
+  ];
+  card.x_agenda_intelligence.product_profile = "gulf_maritime_exposure";
+  card.x_agenda_intelligence.canonical_product_name = "Gulf Maritime Exposure Gate";
+  card.x_agenda_intelligence.wrapper_scope =
+    "A2A/JSON-RPC discovery, maritime sanctions and chokepoint-disruption triage, evidence gating, and routing response only";
+  card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
+  card.x_agenda_intelligence.documentation = GULF_MARITIME_DOCS_URL;
+  card.x_agenda_intelligence.product_contract = {
+    request_schema: GULF_MARITIME_REQUEST_SCHEMA_URL,
+    response_schema: GULF_MARITIME_RESPONSE_SCHEMA_URL,
+    source_taxonomy: GULF_MARITIME_SOURCE_TAXONOMY_URL,
+    runnable_examples: `${REPOSITORY_URL}/tree/main/examples/gulf-maritime-exposure`,
+    canonical_input_mode: CANONICAL_INPUT_MODE,
+    demo_input_modes: ["structured_json"]
+  };
+  card.x_agenda_intelligence.required_before_review = GULF_MARITIME_REQUIRED_BEFORE_REVIEW;
+  card.x_agenda_intelligence.helpful_context_sources = GULF_MARITIME_HELPFUL_CONTEXT;
+  card.x_agenda_intelligence.supported_contracts = ["gulf_maritime_exposure_contract"];
+  card.x_agenda_intelligence.buyer_use_cases = [
+    "marine and war-risk underwriting before binding cover",
+    "tanker chartering fixture clearance through the Gulf or Red Sea",
+    "shipowner/operator sanctions clearance before fixture",
+    "bunkering and ship-agency dark-fleet exposure triage"
+  ];
+  card.x_agenda_intelligence.commercial_positioning =
+    "Vessel + voyage + counterparties + exposure facets + dated evidence -> auditable exposure triage with evidence " +
+    "gaps, decision-readiness score, chokepoint disruption watch, and human-review escalation. Sits beside a " +
+    "vessel-screening or ownership-resolution tool, not instead of one.";
+  card.x_agenda_intelligence.boundaries = [
+    "No live source retrieval; caller-supplied evidence only.",
+    "No vessel-ownership resolution, vessel-identity verification, or name screening.",
+    "No factual-truth verification.",
+    "No legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
+    "Human review is required before any commercial action."
   ];
   return card;
 }
@@ -1599,6 +1697,288 @@ function a2aResultForAgenticInteractionTrust(params) {
       product_profile: "agentic_interaction_trust",
       canonical_http_endpoint: "/v1/agentic-interaction/trust",
       schema: "schemas/v1/agentic-interaction-trust-request.schema.json",
+      human_review_required: result.response.human_review_required,
+      not_advice_notice: result.response.not_advice_notice,
+      response: result.response
+    }
+  };
+}
+
+const GULF_NOT_ADVICE_NOTICE =
+  "Maritime sanctions and chokepoint-disruption evidence triage only. Not legal, sanctions, compliance, " +
+  "financial, investment, insurance, or trading advice. Does not resolve vessel ownership or verify identity.";
+
+const GULF_CHOKEPOINTS = [
+  "strait_of_hormuz", "persian_gulf", "gulf_of_oman", "bab_el_mandeb", "red_sea", "suez_canal", "other"
+];
+const GULF_DECISION_STAGES = [
+  "pre_fixture", "pre_voyage", "pre_port_call", "post_alert", "committee_review", "other"
+];
+const GULF_EXPOSURE_FACETS = [
+  "iran_oil_exposure", "russia_oil_price_cap", "dark_fleet_indicators", "sts_transfer", "flag_hopping",
+  "insurance_or_pi_gap", "ais_manipulation", "ownership_or_control", "dual_use_cargo", "chokepoint_disruption"
+];
+const GULF_SOURCE_TYPES = [
+  "vessel_registry_extract", "flag_registry_record", "pi_insurance_certificate", "ais_track_record",
+  "sts_transfer_evidence", "ownership_or_control_evidence", "sanctions_list_extract", "cargo_or_bl_evidence",
+  "classification_society_record", "port_state_control_record", "charterer_kyc_evidence",
+  "adverse_media_evidence", "prior_incident_or_detention", "human_review_note", "user_provided_note", "other"
+];
+
+const GULF_CHOKEPOINT_WATCH = {
+  strait_of_hormuz: [
+    "Strait of Hormuz transit advisory or security incident",
+    "Iran IRGC interdiction or detention report"
+  ],
+  persian_gulf: ["Persian/Arabian Gulf security incident or escalation notice"],
+  gulf_of_oman: ["Gulf of Oman ship-to-ship-area attack or seizure report"],
+  bab_el_mandeb: ["Bab-el-Mandeb attack or transit-advisory notice"],
+  red_sea: ["Red Sea attack, rerouting notice, or Cape-of-Good-Hope diversion update"],
+  suez_canal: ["Suez Canal transit disruption or rerouting notice"]
+};
+
+function gulfEnumErrors(r) {
+  const errors = [];
+  const voyage = r.voyage && typeof r.voyage === "object" ? r.voyage : {};
+  offEnum("voyage.chokepoint", voyage.chokepoint, GULF_CHOKEPOINTS, errors);
+  offEnum("exposure_facets", r.exposure_facets, GULF_EXPOSURE_FACETS, errors);
+  offEnum("decision_stage", r.decision_stage, GULF_DECISION_STAGES, errors);
+  offEnum("requested_output", r.requested_output, REQUESTED_OUTPUTS, errors);
+  for (const s of Array.isArray(r.dated_sources) ? r.dated_sources : []) {
+    if (s && typeof s === "object") offEnum("dated_sources[].source_type", s.source_type, GULF_SOURCE_TYPES, errors);
+  }
+  return errors;
+}
+
+function isGulfMaritimeRequest(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    value.voyage &&
+    typeof value.voyage === "object" &&
+    Array.isArray(value.exposure_facets) &&
+    Array.isArray(value.dated_sources) &&
+    typeof value.risk_question === "string" &&
+    typeof value.decision_stage === "string"
+  );
+}
+
+function structuredGulfMaritimeRequestFromParams(params) {
+  if (!params || typeof params !== "object") return null;
+  const candidates = [
+    params.request,
+    params.gulf_maritime_request,
+    params.gulf_maritime_exposure_request,
+    params.input,
+    params
+  ];
+  const message = params.message;
+  if (message && typeof message === "object") {
+    if (message.data && typeof message.data === "object") candidates.push(message.data);
+    if (Array.isArray(message.parts)) {
+      for (const part of message.parts) {
+        if (!part || typeof part !== "object") continue;
+        candidates.push(part.data, part.json, part.content);
+        const parsed = tryParseJsonObject(part.text);
+        if (parsed) candidates.push(parsed);
+      }
+    }
+  }
+  for (const candidate of candidates) {
+    if (isGulfMaritimeRequest(candidate)) return candidate;
+    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
+    if (parsed && isGulfMaritimeRequest(parsed)) return parsed;
+  }
+  return null;
+}
+
+function gulfEvidenceGapForSource(sourceType) {
+  const gaps = {
+    vessel_registry_extract: "No vessel registry extract supplied.",
+    flag_registry_record: "No flag registry record supplied.",
+    pi_insurance_certificate: "No P&I insurance certificate supplied.",
+    ais_track_record: "No AIS track record supplied.",
+    sts_transfer_evidence: "No ship-to-ship transfer evidence supplied.",
+    ownership_or_control_evidence: "No ownership or control evidence supplied.",
+    sanctions_list_extract: "No sanctions list extract supplied.",
+    cargo_or_bl_evidence: "No cargo or bill-of-lading evidence supplied.",
+    classification_society_record: "No classification society record supplied.",
+    port_state_control_record: "No port state control record supplied.",
+    charterer_kyc_evidence: "No charterer KYC evidence supplied.",
+    adverse_media_evidence: "No adverse media evidence supplied.",
+    prior_incident_or_detention: "No prior incident or detention record supplied."
+  };
+  return gaps[sourceType] || `No ${sourceType} supplied.`;
+}
+
+function gulfDecisionReadiness(request, supplied) {
+  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0 || supplied.length === 0) {
+    return [0, "insufficient_information"];
+  }
+  const requiredPresent = GULF_MARITIME_REQUIRED_BEFORE_REVIEW.filter((s) => supplied.includes(s)).length;
+  const contextPresent = GULF_MARITIME_HELPFUL_CONTEXT.filter((s) => supplied.includes(s)).length;
+  const score = Math.min(
+    100,
+    Math.round(
+      10 +
+        (requiredPresent / GULF_MARITIME_REQUIRED_BEFORE_REVIEW.length) * 70 +
+        (contextPresent / GULF_MARITIME_HELPFUL_CONTEXT.length) * 20
+    )
+  );
+  if (score >= 85) return [score, "review_ready"];
+  if (score >= 50) return [score, "partial"];
+  return [score, "not_decision_ready"];
+}
+
+function gulfExposureSignal(request, missing) {
+  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0) return "unknown";
+  const facets = Array.isArray(request.exposure_facets) ? request.exposure_facets : [];
+  const highRisk = ["iran_oil_exposure", "russia_oil_price_cap", "dark_fleet_indicators", "ais_manipulation"];
+  if (missing.includes("sanctions_list_extract") && facets.some((f) => highRisk.includes(f))) return "high";
+  if (missing.length >= 4) return "medium_high";
+  if (missing.length > 0) return "medium";
+  return "low";
+}
+
+function gulfTriageRecommendation(request, missing, exposureSignal) {
+  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0) return "insufficient_information";
+  if (missing.length === 0 && exposureSignal === "low") return "ready_for_human_review";
+  if (request.decision_stage === "pre_fixture") return "escalate_before_fixture";
+  if (["pre_voyage", "pre_port_call"].includes(request.decision_stage)) return "escalate_before_voyage";
+  return "not_decision_ready";
+}
+
+function gulfTopExposureDimensions(facets, missing) {
+  const map = {
+    iran_oil_exposure: "Iran-origin oil sanctions exposure (OFAC / EU)",
+    russia_oil_price_cap: "Russia oil price-cap / attestation exposure",
+    dark_fleet_indicators: "dark-fleet indicators (aged tanker, opaque ownership, no mainstream P&I)",
+    sts_transfer: "ship-to-ship transfer concealment exposure",
+    flag_hopping: "flag-hopping or convenience-flag exposure",
+    insurance_or_pi_gap: "insurance or P&I cover gap",
+    ais_manipulation: "AIS gap, spoofing, or manipulation exposure",
+    ownership_or_control: "indirect ownership or control exposure",
+    dual_use_cargo: "dual-use cargo diversion exposure",
+    chokepoint_disruption: "chokepoint security or disruption exposure"
+  };
+  const dims = [];
+  for (const f of facets) if (map[f]) dims.push(map[f]);
+  if (missing.includes("ownership_or_control_evidence")) dims.push("vessel ownership or control not yet documented");
+  if (missing.includes("pi_insurance_certificate")) dims.push("P&I cover not yet confirmed");
+  return Array.from(new Set(dims));
+}
+
+function gulfChokepointDisruptionWatch(request) {
+  const voyage = request.voyage && typeof request.voyage === "object" ? request.voyage : {};
+  const watch = (GULF_CHOKEPOINT_WATCH[voyage.chokepoint] || []).slice();
+  watch.push("war-risk premium or underwriter advisory change for the transit area");
+  return watch;
+}
+
+function gulfMaritimeExposureResult(request) {
+  const supplied = suppliedSourceTypes(request);
+  const missing = GULF_MARITIME_REQUIRED_BEFORE_REVIEW.filter((s) => !supplied.includes(s));
+  const [score, label] = gulfDecisionReadiness(request, supplied);
+  const exposureSignal = gulfExposureSignal(request, missing);
+  const facets = Array.isArray(request.exposure_facets) ? request.exposure_facets : [];
+  const response = {
+    triage_recommendation: gulfTriageRecommendation(request, missing, exposureSignal),
+    exposure_signal: exposureSignal,
+    decision_readiness_score: score,
+    decision_readiness_label: label,
+    voyage: request.voyage,
+    exposure_facets: facets,
+    supplied_sources: supplied,
+    minimum_sources_before_review: missing,
+    evidence_gaps: missing.map(gulfEvidenceGapForSource),
+    top_exposure_dimensions: gulfTopExposureDimensions(facets, missing),
+    chokepoint_disruption_watch: gulfChokepointDisruptionWatch(request),
+    watch_next: [
+      "new OFAC vessel or entity designation",
+      "new EU or UK OFSI shipping-related listing",
+      "P&I club cover withdrawal or confirmation change",
+      "flag-registry deregistration or flag-hopping report",
+      "AIS gap, spoofing, or dark-activity report on the vessel"
+    ],
+    human_review_required: true,
+    not_advice_notice: GULF_NOT_ADVICE_NOTICE,
+    limitations: [
+      "Triage is based on caller-supplied evidence only; this service does not retrieve sources, " +
+        "resolve vessel ownership, or verify vessel identity.",
+      "A name match against a sanctions list is not legal-entity or vessel-identity verification. " +
+        "Human review is required."
+    ]
+  };
+  if (request.vessel) response.vessel = request.vessel;
+  if (request.cargo) response.cargo = request.cargo;
+  return { response };
+}
+
+function gulfArtifactText(response) {
+  const missing = response.minimum_sources_before_review || [];
+  const missingText = missing.length ? missing.map((s) => `- ${s}`).join("\n") : "- none";
+  const dims = response.top_exposure_dimensions || [];
+  const dimsText = dims.length ? dims.map((s) => `- ${s}`).join("\n") : "- none";
+  const watch = response.chokepoint_disruption_watch || [];
+  const watchText = watch.length ? watch.map((s) => `- ${s}`).join("\n") : "- none";
+  return [
+    "Gulf maritime exposure response",
+    "",
+    `Recommendation: ${response.triage_recommendation}`,
+    `Exposure signal: ${response.exposure_signal}`,
+    `Decision readiness: ${response.decision_readiness_score}/100 (${response.decision_readiness_label})`,
+    `Human review required: ${String(response.human_review_required)}`,
+    "",
+    "Top exposure dimensions:",
+    dimsText,
+    "",
+    "Minimum sources before review:",
+    missingText,
+    "",
+    "Chokepoint disruption watch:",
+    watchText,
+    "",
+    response.not_advice_notice
+  ].join("\n");
+}
+
+function a2aResultForGulfMaritimeExposure(params) {
+  const structured = structuredGulfMaritimeRequestFromParams(params);
+  if (!structured) {
+    return invalidRequestResult(
+      "gulf_maritime_exposure",
+      "/v1/gulf-maritime/exposure",
+      "schemas/v1/gulf-maritime-exposure-request.schema.json",
+      ["Missing structured Gulf maritime exposure request"]
+    );
+  }
+  const enumErrors = gulfEnumErrors(structured);
+  if (enumErrors.length) {
+    return invalidRequestResult(
+      "gulf_maritime_exposure",
+      "/v1/gulf-maritime/exposure",
+      "schemas/v1/gulf-maritime-exposure-request.schema.json",
+      enumErrors
+    );
+  }
+  const result = gulfMaritimeExposureResult(structured);
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "gulf-maritime-exposure-response",
+        name: "Gulf maritime exposure response",
+        parts: [
+          { text: gulfArtifactText(result.response), mediaType: "text/markdown" },
+          { data: result.response, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "gulf_maritime_exposure",
+      canonical_http_endpoint: "/v1/gulf-maritime/exposure",
+      schema: "schemas/v1/gulf-maritime-exposure-request.schema.json",
       human_review_required: result.response.human_review_required,
       not_advice_notice: result.response.not_advice_notice,
       response: result.response
@@ -3092,6 +3472,11 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
       const structured = structuredAgenticInteractionTrustRequestFromParams(params);
       promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
       modulesUsed = ["agentic_interaction_trust"];
+    } else if (profile === "gulf_maritime_exposure") {
+      result = a2aResultForGulfMaritimeExposure(params);
+      const structured = structuredGulfMaritimeRequestFromParams(params);
+      promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
+      modulesUsed = ["gulf_maritime_exposure"];
     } else {
       result = a2aResult(params, request, env);
       const structuredRequest = structuredDealRiskRequestFromParams(params);
