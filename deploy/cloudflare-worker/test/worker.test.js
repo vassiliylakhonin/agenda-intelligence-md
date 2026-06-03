@@ -21,7 +21,6 @@ import {
   usageStats
 } from "../src/index.js";
 import { validateAgentCard } from "../scripts/verify-agent-card.js";
-import { x402Intercept, x402AppliesTo, x402ChallengeBody } from "../src/x402.js";
 
 const request = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
   method: "POST",
@@ -1693,63 +1692,4 @@ test("agent/card discovery stays public even when the production key is set", as
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.ok(body.result.name, "agent/card returns the card without a Bearer");
-});
-
-const AGENTIC_ORIGIN = "https://agentic-interaction-trust-a2a.example.workers.dev";
-
-test("x402 gate is off by default and only applies to the trust profile", () => {
-  assert.equal(x402AppliesTo("agentic_interaction_trust", {}), false);
-  assert.equal(x402AppliesTo("agentic_interaction_trust", { X402_ENABLED: "true" }), true);
-  assert.equal(x402AppliesTo("kazakhstan", { X402_ENABLED: "true" }), false);
-});
-
-test("x402 challenge body carries accepts + grounded discovery metadata", () => {
-  const body = x402ChallengeBody({ X402_PAY_TO: "0xabc", X402_PRICE: "$0.05" }, AGENTIC_ORIGIN);
-  assert.equal(body.x402Version, 1);
-  assert.equal(body.accepts[0].scheme, "exact");
-  assert.equal(body.accepts[0].network, "eip155:8453");
-  assert.equal(body.accepts[0].payTo, "0xabc");
-  assert.equal(body.accepts[0].resource, `${AGENTIC_ORIGIN}/message/send`);
-  assert.deepEqual(body.inputSchema.required, [
-    "actor",
-    "target_surface",
-    "requested_action",
-    "decision_stage",
-    "dated_sources",
-    "risk_question"
-  ]);
-});
-
-test("x402Intercept returns null when disabled (no behavior change)", () => {
-  const req = new Request(`${AGENTIC_ORIGIN}/message/send`, { method: "POST" });
-  assert.equal(x402Intercept("agentic_interaction_trust", req, {}, AGENTIC_ORIGIN), null);
-});
-
-test("enabled x402: paid route without payment returns HTTP 402 challenge", async () => {
-  const env = { X402_ENABLED: "true", X402_PAY_TO: "0xabc", AGENDA_USAGE: new MemoryKv() };
-  const response = await handleRequest(messageSendRequest(AGENTIC_ORIGIN), env);
-  assert.equal(response.status, 402);
-  const body = await response.json();
-  assert.equal(body.x402Version, 1);
-  assert.equal(body.accepts[0].payTo, "0xabc");
-  assert.equal(body.error, "payment required");
-});
-
-test("enabled x402: presented payment without facilitator is never served unverified", async () => {
-  const env = { X402_ENABLED: "true", X402_PAY_TO: "0xabc", AGENDA_USAGE: new MemoryKv() };
-  const req = new Request(`${AGENTIC_ORIGIN}/message/send`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-payment": "deadbeef" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: "p1", method: "message/send", params: { message: { parts: [{ text: "x" }] } } })
-  });
-  const response = await handleRequest(req, env);
-  assert.equal(response.status, 402);
-  const body = await response.json();
-  assert.match(body.error, /settlement is not active/);
-});
-
-test("x402 stays off for other profiles even when enabled", async () => {
-  const env = { X402_ENABLED: "true", X402_PAY_TO: "0xabc", AGENDA_USAGE: new MemoryKv() };
-  const response = await handleRequest(messageSendRequest(KAZAKHSTAN_ORIGIN), env);
-  assert.notEqual(response.status, 402);
 });

@@ -6,8 +6,6 @@ import {
   matchCounterparty as matchCounterpartyAgainstOpenSanctions
 } from "./upstream_opensanctions.js";
 
-import { x402Intercept } from "./x402.js";
-
 import {
   WATCHMAN_ATTRIBUTION,
   WATCHMAN_LICENSE,
@@ -3149,14 +3147,6 @@ async function handlePost(request, env, ctx) {
   const method = payload && typeof payload === "object" ? payload.method : null;
   if (MESSAGE_SEND_METHODS.has(method)) {
     const profile = agentProfile(request, env);
-    // Optional x402 pay-per-call gate (default OFF). When X402_ENABLED is set on
-    // a matching profile, short-circuit the paid route with an HTTP 402
-    // payment-required challenge. Never serves on an unverified payment — see
-    // src/x402.js for the verify/settle boundary.
-    const x402 = x402Intercept(profile, request, env, originFromRequest(request));
-    if (x402) {
-      return jsonResponse(x402.body, x402.status, { "cache-control": "no-store" });
-    }
     if (!isProductionAuthorized(request, env, profile)) {
       return jsonResponse(
         jsonRpcError(
