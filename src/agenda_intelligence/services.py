@@ -64,9 +64,31 @@ AGENTIC_INTERACTION_TRUST_READINESS_CONTEXT = [
     "human_review_note",
 ]
 
+GULF_MARITIME_REQUIRED_BEFORE_REVIEW = [
+    "vessel_registry_extract",
+    "pi_insurance_certificate",
+    "ownership_or_control_evidence",
+    "sanctions_list_extract",
+    "ais_track_record",
+]
+
+GULF_MARITIME_READINESS_CONTEXT = [
+    "flag_registry_record",
+    "sts_transfer_evidence",
+    "classification_society_record",
+    "port_state_control_record",
+    "cargo_or_bl_evidence",
+    "adverse_media_evidence",
+]
+
 NOT_ADVICE_NOTICE = (
     "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, "
     "insurance, or trading advice."
+)
+
+GULF_NOT_ADVICE_NOTICE = (
+    "Maritime sanctions and chokepoint-disruption evidence triage only. Not legal, sanctions, compliance, "
+    "financial, investment, insurance, or trading advice. Does not resolve vessel ownership or verify identity."
 )
 
 AGENTIC_TRUST_NOT_ADVICE_NOTICE = (
@@ -1183,4 +1205,182 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
         "live_retrieval_status": live_retrieval_status,
         "auto_fetched_sources": auto_fetched_sources,
         "upstream_attribution": upstream_attribution,
+    }
+
+
+def _gulf_evidence_gap_for_source(source_type: str) -> str:
+    gaps = {
+        "vessel_registry_extract": "No vessel registry extract supplied.",
+        "flag_registry_record": "No flag registry record supplied.",
+        "pi_insurance_certificate": "No P&I insurance certificate supplied.",
+        "ais_track_record": "No AIS track record supplied.",
+        "sts_transfer_evidence": "No ship-to-ship transfer evidence supplied.",
+        "ownership_or_control_evidence": "No ownership or control evidence supplied.",
+        "sanctions_list_extract": "No sanctions list extract supplied.",
+        "cargo_or_bl_evidence": "No cargo or bill-of-lading evidence supplied.",
+        "classification_society_record": "No classification society record supplied.",
+        "port_state_control_record": "No port state control record supplied.",
+        "charterer_kyc_evidence": "No charterer KYC evidence supplied.",
+        "adverse_media_evidence": "No adverse media evidence supplied.",
+        "prior_incident_or_detention": "No prior incident or detention record supplied.",
+    }
+    return gaps.get(source_type, f"No {source_type} supplied.")
+
+
+def _gulf_triage_recommendation(request_json: dict, missing_sources: list[str], exposure_signal: str) -> str:
+    if not request_json.get("dated_sources"):
+        return "insufficient_information"
+    if not missing_sources and exposure_signal == "low":
+        return "ready_for_human_review"
+    decision_stage = request_json.get("decision_stage")
+    if decision_stage == "pre_fixture":
+        return "escalate_before_fixture"
+    if decision_stage in {"pre_voyage", "pre_port_call"}:
+        return "escalate_before_voyage"
+    return "not_decision_ready"
+
+
+def _gulf_exposure_signal(request_json: dict, missing_sources: list[str]) -> str:
+    if not request_json.get("dated_sources"):
+        return "unknown"
+    facets = list(request_json.get("exposure_facets", []))
+    high_risk_facets = {"iran_oil_exposure", "russia_oil_price_cap", "dark_fleet_indicators", "ais_manipulation"}
+    if "sanctions_list_extract" in missing_sources and high_risk_facets.intersection(facets):
+        return "high"
+    if len(missing_sources) >= 4:
+        return "medium_high"
+    if missing_sources:
+        return "medium"
+    return "low"
+
+
+def _gulf_readiness(request_json: dict, supplied_sources: list[str]) -> tuple[int, str]:
+    if not request_json.get("dated_sources") or not supplied_sources:
+        return 0, "insufficient_information"
+    required_present = len([s for s in GULF_MARITIME_REQUIRED_BEFORE_REVIEW if s in supplied_sources])
+    context_present = len([s for s in GULF_MARITIME_READINESS_CONTEXT if s in supplied_sources])
+    score = min(
+        100,
+        round(
+            10
+            + (required_present / len(GULF_MARITIME_REQUIRED_BEFORE_REVIEW)) * 70
+            + (context_present / len(GULF_MARITIME_READINESS_CONTEXT)) * 20
+        ),
+    )
+    if score >= 85:
+        return score, "review_ready"
+    if score >= 50:
+        return score, "partial"
+    return score, "not_decision_ready"
+
+
+def _gulf_top_exposure_dimensions(facets: list[str], missing_sources: list[str]) -> list[str]:
+    dims: list[str] = []
+    facet_dims = {
+        "iran_oil_exposure": "Iran-origin oil sanctions exposure (OFAC / EU)",
+        "russia_oil_price_cap": "Russia oil price-cap / attestation exposure",
+        "dark_fleet_indicators": "dark-fleet indicators (aged tanker, opaque ownership, no mainstream P&I)",
+        "sts_transfer": "ship-to-ship transfer concealment exposure",
+        "flag_hopping": "flag-hopping or convenience-flag exposure",
+        "insurance_or_pi_gap": "insurance or P&I cover gap",
+        "ais_manipulation": "AIS gap, spoofing, or manipulation exposure",
+        "ownership_or_control": "indirect ownership or control exposure",
+        "dual_use_cargo": "dual-use cargo diversion exposure",
+        "chokepoint_disruption": "chokepoint security or disruption exposure",
+    }
+    for facet in facets:
+        if facet in facet_dims:
+            dims.append(facet_dims[facet])
+    if "ownership_or_control_evidence" in missing_sources:
+        dims.append("vessel ownership or control not yet documented")
+    if "pi_insurance_certificate" in missing_sources:
+        dims.append("P&I cover not yet confirmed")
+    return list(dict.fromkeys(dims))
+
+
+_GULF_CHOKEPOINT_WATCH = {
+    "strait_of_hormuz": [
+        "Strait of Hormuz transit advisory or security incident",
+        "Iran IRGC interdiction or detention report",
+    ],
+    "persian_gulf": ["Persian/Arabian Gulf security incident or escalation notice"],
+    "gulf_of_oman": ["Gulf of Oman ship-to-ship-area attack or seizure report"],
+    "bab_el_mandeb": ["Bab-el-Mandeb attack or transit-advisory notice"],
+    "red_sea": ["Red Sea attack, rerouting notice, or Cape-of-Good-Hope diversion update"],
+    "suez_canal": ["Suez Canal transit disruption or rerouting notice"],
+}
+
+
+def _gulf_chokepoint_disruption_watch(request_json: dict) -> list[str]:
+    voyage = request_json.get("voyage", {}) or {}
+    chokepoint = voyage.get("chokepoint")
+    watch = list(_GULF_CHOKEPOINT_WATCH.get(chokepoint, []))
+    watch.append("war-risk premium or underwriter advisory change for the transit area")
+    return watch
+
+
+def gulf_maritime_exposure(request_json: dict) -> dict:
+    """Build a structured Gulf maritime sanctions and chokepoint-disruption exposure response.
+
+    Pre-compliance evidence triage only on caller-supplied evidence. No live retrieval.
+    Does not resolve vessel ownership, verify identity, perform factual-truth verification,
+    or provide legal / sanctions / compliance / financial / investment / insurance / trading advice.
+    """
+    request_validation = _validate_json(request_json, "gulf-maritime-exposure-request.schema.json")
+    if not request_validation.get("valid"):
+        return {
+            "implemented": True,
+            "valid": False,
+            "errors": request_validation.get("errors", []),
+            "response": None,
+        }
+
+    supplied_sources = _supplied_source_types(request_json)
+    missing_sources = [s for s in GULF_MARITIME_REQUIRED_BEFORE_REVIEW if s not in supplied_sources]
+    readiness_score, readiness_label = _gulf_readiness(request_json, supplied_sources)
+    exposure_signal = _gulf_exposure_signal(request_json, missing_sources)
+    triage = _gulf_triage_recommendation(request_json, missing_sources, exposure_signal)
+    facets = list(request_json.get("exposure_facets", []))
+
+    limitations = [
+        "Triage is based on caller-supplied evidence only; this service does not retrieve sources, "
+        "resolve vessel ownership, or verify vessel identity.",
+        "A name match against a sanctions list is not legal-entity or vessel-identity verification. "
+        "Human review is required.",
+    ]
+
+    response = {
+        "triage_recommendation": triage,
+        "exposure_signal": exposure_signal,
+        "decision_readiness_score": readiness_score,
+        "decision_readiness_label": readiness_label,
+        "voyage": request_json["voyage"],
+        "exposure_facets": facets,
+        "supplied_sources": list(dict.fromkeys(supplied_sources)),
+        "minimum_sources_before_review": missing_sources,
+        "evidence_gaps": [_gulf_evidence_gap_for_source(s) for s in missing_sources],
+        "top_exposure_dimensions": _gulf_top_exposure_dimensions(facets, missing_sources),
+        "chokepoint_disruption_watch": _gulf_chokepoint_disruption_watch(request_json),
+        "watch_next": [
+            "new OFAC vessel or entity designation",
+            "new EU or UK OFSI shipping-related listing",
+            "P&I club cover withdrawal or confirmation change",
+            "flag-registry deregistration or flag-hopping report",
+            "AIS gap, spoofing, or dark-activity report on the vessel",
+        ],
+        "human_review_required": True,
+        "not_advice_notice": GULF_NOT_ADVICE_NOTICE,
+        "limitations": limitations,
+    }
+    if "vessel" in request_json:
+        response["vessel"] = request_json["vessel"]
+    if "cargo" in request_json:
+        response["cargo"] = request_json["cargo"]
+
+    response_validation = _validate_json(response, "gulf-maritime-exposure-response.schema.json")
+    return {
+        "implemented": True,
+        "valid": bool(response_validation.get("valid")),
+        "errors": response_validation.get("errors", []),
+        "response": response,
     }

@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/gulf-maritime-exposure-request.schema.json",
+  "title": "GulfMaritimeExposureRequest",
+  "description": "Product-grade structured request contract for evidence triage of maritime sanctions and chokepoint-disruption exposure for a vessel or voyage transiting the Strait of Hormuz, Persian/Arabian Gulf, Gulf of Oman, Bab-el-Mandeb, or Red Sea. The contract asks whether the supplied evidence is sufficient for allow, escalate-before-fixture, escalate-before-voyage, human-review, or not-decision-ready routing. It does not provide legal, sanctions, compliance, financial, investment, insurance, or trading advice, identity verification, vessel-ownership resolution, live retrieval, or factual-truth verification.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "voyage",
+    "exposure_facets",
+    "decision_stage",
+    "dated_sources",
+    "risk_question"
+  ],
+  "properties": {
+    "vessel": {
+      "$ref": "#/$defs/vessel"
+    },
+    "voyage": {
+      "$ref": "#/$defs/voyage"
+    },
+    "cargo": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Cargo under carriage (e.g. crude oil, refined products, LNG, dual-use goods, containers)."
+    },
+    "counterparties": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/counterparty"
+      }
+    },
+    "exposure_facets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/exposure_facet"
+      }
+    },
+    "jurisdictions_in_scope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["OFAC", "EU", "UK_OFSI", "UN", "OTHER"]
+      }
+    },
+    "decision_stage": {
+      "type": "string",
+      "enum": [
+        "pre_fixture",
+        "pre_voyage",
+        "pre_port_call",
+        "post_alert",
+        "committee_review",
+        "other"
+      ]
+    },
+    "dated_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dated_source"
+      }
+    },
+    "risk_question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requested_output": {
+      "type": "string",
+      "enum": ["structured_json", "markdown_summary", "both"],
+      "default": "structured_json"
+    }
+  },
+  "$defs": {
+    "vessel": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "imo": {
+          "type": "string",
+          "minLength": 1,
+          "description": "IMO number, if known. Not verified by this service."
+        },
+        "flag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "vessel_type": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "voyage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chokepoint"],
+      "properties": {
+        "chokepoint": {
+          "type": "string",
+          "enum": [
+            "strait_of_hormuz",
+            "persian_gulf",
+            "gulf_of_oman",
+            "bab_el_mandeb",
+            "red_sea",
+            "suez_canal",
+            "other"
+          ]
+        },
+        "origin": {
+          "type": "string",
+          "minLength": 1
+        },
+        "destination": {
+          "type": "string",
+          "minLength": 1
+        },
+        "route_note": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "counterparty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role"],
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": [
+            "registered_owner",
+            "beneficial_owner",
+            "operator",
+            "charterer",
+            "manager",
+            "insurer_or_pi_club",
+            "flag_registry",
+            "bunker_supplier",
+            "other"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "exposure_facet": {
+      "type": "string",
+      "enum": [
+        "iran_oil_exposure",
+        "russia_oil_price_cap",
+        "dark_fleet_indicators",
+        "sts_transfer",
+        "flag_hopping",
+        "insurance_or_pi_gap",
+        "ais_manipulation",
+        "ownership_or_control",
+        "dual_use_cargo",
+        "chokepoint_disruption"
+      ]
+    },
+    "dated_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source_type", "title", "date"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "$ref": "#/$defs/source_type"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "vessel_registry_extract",
+        "flag_registry_record",
+        "pi_insurance_certificate",
+        "ais_track_record",
+        "sts_transfer_evidence",
+        "ownership_or_control_evidence",
+        "sanctions_list_extract",
+        "cargo_or_bl_evidence",
+        "classification_society_record",
+        "port_state_control_record",
+        "charterer_kyc_evidence",
+        "adverse_media_evidence",
+        "prior_incident_or_detention",
+        "human_review_note",
+        "user_provided_note",
+        "other"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "vessel": {
+        "name": "Example Tanker",
+        "flag": "Panama",
+        "vessel_type": "crude oil tanker"
+      },
+      "voyage": {
+        "chokepoint": "strait_of_hormuz",
+        "origin": "undisclosed Gulf terminal",
+        "destination": "ship-to-ship area, Gulf of Oman"
+      },
+      "cargo": "crude oil",
+      "counterparties": [
+        {"role": "registered_owner", "name": "Example Holding Ltd", "jurisdiction": "Marshall Islands"},
+        {"role": "insurer_or_pi_club", "name": "Unknown"}
+      ],
+      "exposure_facets": ["iran_oil_exposure", "dark_fleet_indicators", "sts_transfer", "insurance_or_pi_gap"],
+      "jurisdictions_in_scope": ["OFAC", "EU", "UK_OFSI"],
+      "decision_stage": "pre_fixture",
+      "dated_sources": [
+        {"id": "g1", "source_type": "ais_track_record", "title": "AIS track extract", "date": "2026-05-28"}
+      ],
+      "risk_question": "Is this Hormuz transit ready to fix, or should it be escalated before fixture?",
+      "requested_output": "structured_json"
+    }
+  ]
+}

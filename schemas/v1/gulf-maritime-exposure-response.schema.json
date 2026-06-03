@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/gulf-maritime-exposure-response.schema.json",
+  "title": "GulfMaritimeExposureResponse",
+  "description": "Structured response for maritime sanctions and chokepoint-disruption exposure triage. Evidence-sufficiency triage only; always requires human review. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "triage_recommendation",
+    "exposure_signal",
+    "decision_readiness_score",
+    "decision_readiness_label",
+    "voyage",
+    "exposure_facets",
+    "supplied_sources",
+    "minimum_sources_before_review",
+    "evidence_gaps",
+    "top_exposure_dimensions",
+    "chokepoint_disruption_watch",
+    "watch_next",
+    "human_review_required",
+    "not_advice_notice",
+    "limitations"
+  ],
+  "properties": {
+    "triage_recommendation": {
+      "type": "string",
+      "enum": [
+        "insufficient_information",
+        "escalate_before_fixture",
+        "escalate_before_voyage",
+        "not_decision_ready",
+        "ready_for_human_review"
+      ]
+    },
+    "exposure_signal": {
+      "type": "string",
+      "enum": ["low", "medium", "medium_high", "high", "unknown"]
+    },
+    "decision_readiness_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "decision_readiness_label": {
+      "type": "string",
+      "enum": ["insufficient_information", "not_decision_ready", "partial", "review_ready"]
+    },
+    "vessel": {
+      "type": "object"
+    },
+    "voyage": {
+      "type": "object"
+    },
+    "cargo": {
+      "type": "string"
+    },
+    "exposure_facets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "supplied_sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "minimum_sources_before_review": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "top_exposure_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "chokepoint_disruption_watch": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "watch_next": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "human_review_required": {
+      "type": "boolean",
+      "const": true
+    },
+    "not_advice_notice": {
+      "type": "string"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
