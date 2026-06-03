@@ -2,6 +2,12 @@
 
 Status: shipped 2026-05-26. Vertical worker profile `cis_secondary_sanctions`. Schema family v1, additive (non-breaking under [ADR 0003](../adr/0003-v1-compatibility-policy.md)). Live retrieval enabled per [ADR 0014](../adr/0014-per-profile-live-retrieval.md).
 
+## What this is for
+
+A clean sanctions screen does not, by itself, document a defensible secondary-sanctions determination. Under EU enhanced-due-diligence guidance on circumvention, an institution dealing with a CIS, Caucasus, or Central Asia counterparty still has to show a reasoned, documented exposure determination — what was checked, what is missing, why it was escalated. Enforcement programs are judged on that documented reasoning, not on a clean hit.
+
+This worker produces that documented triage. It sits beside a screening or ownership-resolution tool, not instead of one.
+
 ## Who this is for
 
 Compliance / sanctions / enhanced due-diligence analysts at:
@@ -37,6 +43,7 @@ The response is an auditable triage shape:
 - Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.
 - Not legal-entity identity verification. A direct name match against an OFAC SDN entry is not the same as confirming that the matched entity is in fact the same legal entity as the caller's counterparty. The schema enforces `human_review_required: true` always.
 - Not a substitute for a sanctions-list vendor (Refinitiv World-Check, Dow Jones, Sayari, Castellum, etc.). It is an evidence-discipline layer over the open OpenSanctions dataset, designed for structured triage and audit-trail discipline.
+- Not a beneficial-ownership resolver. It does not traverse or reconstruct multi-layer (5–7 deep) ownership graphs. It consumes caller-supplied or OpenSanctions-matched ownership evidence and flags what is missing under the 50% rule; resolving the ownership chain itself is the job of specialized ownership/OSINT tooling (Sayari, Castellum, OxINT, Moody's).
 
 ## Source taxonomy
 
@@ -62,6 +69,7 @@ The response may include `typology_refs` pointing at publicly published FATF, EA
 - EAG (Eurasian Group on Combating Money Laundering) typology reports on Russia-CIS evasion patterns.
 - OFAC EO 14114 (October 2024) — secondary-sanctions exposure for non-US financial institutions facilitating Russia-related transactions.
 - EU 14th sanctions package — secondary-sanctions provisions for non-EU subsidiaries.
+- European Commission enhanced-due-diligence guidance on circumvention, naming EAEU circumvention hubs (Armenia, Kazakhstan, Kyrgyzstan, Uzbekistan) and expecting EDD where activity may indirectly facilitate circumvention even in non-sanctioned countries.
 
 ## Boundaries (per ADR 0014)
 

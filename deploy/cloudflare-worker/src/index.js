@@ -946,7 +946,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
       id: "cis-secondary-sanctions-exposure",
       name: "CIS secondary-sanctions exposure triage",
       description:
-        "Turns a CIS / Caucasus / Central Asia counterparty + exposure facets + dated source extracts into a structured secondary-sanctions exposure triage with optional sanctions-list name matches (OpenSanctions / Watchman, when a list upstream is configured), evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review escalation.",
+        "Turns a CIS / Caucasus / Central Asia counterparty + exposure facets + dated source extracts into a structured secondary-sanctions exposure triage with optional sanctions-list name matches (OpenSanctions / Watchman, when a list upstream is configured), evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review escalation. It is an evidence-discipline and documented-determination layer beside a screening or ownership-resolution tool, not a replacement; it does not traverse multi-layer beneficial-ownership graphs.",
       tags: [
         "cis",
         "kazakhstan",
