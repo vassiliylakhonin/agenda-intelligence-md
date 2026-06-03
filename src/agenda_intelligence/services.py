@@ -1313,7 +1313,7 @@ _GULF_CHOKEPOINT_WATCH = {
 
 def _gulf_chokepoint_disruption_watch(request_json: dict) -> list[str]:
     voyage = request_json.get("voyage", {}) or {}
-    chokepoint = voyage.get("chokepoint")
+    chokepoint = str(voyage.get("chokepoint") or "")
     watch = list(_GULF_CHOKEPOINT_WATCH.get(chokepoint, []))
     watch.append("war-risk premium or underwriter advisory change for the transit area")
     return watch
