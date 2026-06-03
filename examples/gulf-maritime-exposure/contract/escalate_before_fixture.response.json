@@ -1,0 +1,64 @@
+{
+  "triage_recommendation": "escalate_before_fixture",
+  "exposure_signal": "high",
+  "decision_readiness_score": 24,
+  "decision_readiness_label": "not_decision_ready",
+  "voyage": {
+    "chokepoint": "strait_of_hormuz",
+    "origin": "undisclosed Gulf terminal",
+    "destination": "ship-to-ship area, Gulf of Oman"
+  },
+  "exposure_facets": [
+    "iran_oil_exposure",
+    "dark_fleet_indicators",
+    "sts_transfer",
+    "insurance_or_pi_gap"
+  ],
+  "supplied_sources": [
+    "ais_track_record"
+  ],
+  "minimum_sources_before_review": [
+    "vessel_registry_extract",
+    "pi_insurance_certificate",
+    "ownership_or_control_evidence",
+    "sanctions_list_extract"
+  ],
+  "evidence_gaps": [
+    "No vessel registry extract supplied.",
+    "No P&I insurance certificate supplied.",
+    "No ownership or control evidence supplied.",
+    "No sanctions list extract supplied."
+  ],
+  "top_exposure_dimensions": [
+    "Iran-origin oil sanctions exposure (OFAC / EU)",
+    "dark-fleet indicators (aged tanker, opaque ownership, no mainstream P&I)",
+    "ship-to-ship transfer concealment exposure",
+    "insurance or P&I cover gap",
+    "vessel ownership or control not yet documented",
+    "P&I cover not yet confirmed"
+  ],
+  "chokepoint_disruption_watch": [
+    "Strait of Hormuz transit advisory or security incident",
+    "Iran IRGC interdiction or detention report",
+    "war-risk premium or underwriter advisory change for the transit area"
+  ],
+  "watch_next": [
+    "new OFAC vessel or entity designation",
+    "new EU or UK OFSI shipping-related listing",
+    "P&I club cover withdrawal or confirmation change",
+    "flag-registry deregistration or flag-hopping report",
+    "AIS gap, spoofing, or dark-activity report on the vessel"
+  ],
+  "human_review_required": true,
+  "not_advice_notice": "Maritime sanctions and chokepoint-disruption evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice. Does not resolve vessel ownership or verify identity.",
+  "limitations": [
+    "Triage is based on caller-supplied evidence only; this service does not retrieve sources, resolve vessel ownership, or verify vessel identity.",
+    "A name match against a sanctions list is not legal-entity or vessel-identity verification. Human review is required."
+  ],
+  "vessel": {
+    "name": "Example Tanker",
+    "flag": "Panama",
+    "vessel_type": "crude oil tanker"
+  },
+  "cargo": "crude oil"
+}

@@ -20,6 +20,8 @@ AGENTIC_INTERACTION_TRUST_SCHEMA = "schemas/v1/agentic-interaction-trust-request
 AGENTIC_INTERACTION_TRUST_ENDPOINT = "/v1/agentic-interaction/trust"
 CIS_SECONDARY_SANCTIONS_SCHEMA = "schemas/v1/cis-secondary-sanctions-request.schema.json"
 CIS_SECONDARY_SANCTIONS_ENDPOINT = "/v1/cis-secondary-sanctions/exposure"
+GULF_MARITIME_SCHEMA = "schemas/v1/gulf-maritime-exposure-request.schema.json"
+GULF_MARITIME_ENDPOINT = "/v1/gulf-maritime/exposure"
 AUDIT_CLAIMS_ENDPOINT = "/v1/audit-claims"
 SOURCE_COVERAGE_ENDPOINT = "/v1/source-coverage"
 SCORE_OUTPUT_ENDPOINT = "/v1/score"
@@ -28,6 +30,7 @@ SUPPORTED_CAPABILITIES = [
     "middle_corridor_deal_risk",
     "agentic_interaction_trust",
     "cis_secondary_sanctions_exposure",
+    "gulf_maritime_exposure",
     "audit_claims",
     "source_coverage",
     "score_output",
@@ -51,6 +54,13 @@ CAPABILITY_ALIASES = {
     "cis-secondary-sanctions-exposure": "cis_secondary_sanctions_exposure",
     "secondary_sanctions": "cis_secondary_sanctions_exposure",
     "secondary-sanctions": "cis_secondary_sanctions_exposure",
+    "gulf_maritime_exposure": "gulf_maritime_exposure",
+    "gulf-maritime-exposure": "gulf_maritime_exposure",
+    "gulf_maritime": "gulf_maritime_exposure",
+    "gulf-maritime": "gulf_maritime_exposure",
+    "maritime_exposure": "gulf_maritime_exposure",
+    "maritime-exposure": "gulf_maritime_exposure",
+    "hormuz": "gulf_maritime_exposure",
     "audit_claims": "audit_claims",
     "audit-claims": "audit_claims",
     "audit": "audit_claims",
@@ -241,6 +251,26 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "outputModes": ["application/json", "text/markdown"],
             },
             {
+                "id": "gulf-maritime-exposure",
+                "name": "Gulf maritime exposure triage",
+                "description": (
+                    "Structured evidence triage of maritime sanctions and chokepoint-disruption exposure for a "
+                    "vessel or voyage transiting the Strait of Hormuz, Persian/Arabian Gulf, Gulf of Oman, "
+                    "Bab-el-Mandeb, or Red Sea. Returns exposure signal, evidence gaps, a chokepoint disruption "
+                    "watch, and mandatory human-review routing. Does not resolve vessel ownership or verify identity."
+                ),
+                "tags": [
+                    "maritime",
+                    "sanctions",
+                    "hormuz",
+                    "red-sea",
+                    "dark-fleet",
+                    "evidence-readiness",
+                ],
+                "inputModes": ["application/json"],
+                "outputModes": ["application/json", "text/markdown"],
+            },
+            {
                 "id": "audit-claims",
                 "name": "Audit claims",
                 "description": "Validates and summarizes claim-level evidence support without checking factual truth.",
@@ -274,6 +304,7 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "middle_corridor_deal_risk_contract",
                 "agentic_interaction_trust_contract",
                 "cis_secondary_sanctions_exposure_contract",
+                "gulf_maritime_exposure_contract",
             ],
             "supported_capabilities": SUPPORTED_CAPABILITIES,
             "per_profile_live_retrieval": _build_per_profile_live_retrieval_block(),
@@ -406,6 +437,34 @@ def cis_secondary_sanctions_request_from_params(params: dict) -> dict | None:
     )
     for candidate in candidates:
         if _looks_like_cis_secondary_sanctions_request(candidate):
+            return candidate
+    return None
+
+
+def _looks_like_gulf_maritime_request(value: Any) -> bool:
+    return (
+        isinstance(value, dict)
+        and isinstance(value.get("voyage"), dict)
+        and isinstance(value.get("exposure_facets"), list)
+        and isinstance(value.get("dated_sources"), list)
+        and isinstance(value.get("risk_question"), str)
+        and isinstance(value.get("decision_stage"), str)
+    )
+
+
+def gulf_maritime_request_from_params(params: dict) -> dict | None:
+    """Extract a structured Gulf maritime exposure request from A2A/JSON-RPC params."""
+    candidates = _candidate_objects_from_params(params)
+    candidates.extend(
+        candidate
+        for candidate in [
+            _try_parse_json_object(params.get("gulf_maritime_request")),
+            _try_parse_json_object(params.get("gulf_maritime_exposure_request")),
+        ]
+        if candidate is not None
+    )
+    for candidate in candidates:
+        if _looks_like_gulf_maritime_request(candidate):
             return candidate
     return None
 
@@ -596,6 +655,74 @@ def a2a_result_for_cis_secondary_sanctions(request_json: dict) -> dict:
             "live_retrieval_status": live_retrieval_status,
             "auto_fetched_sources": result.get("auto_fetched_sources", []),
             "upstream_attribution": result.get("upstream_attribution"),
+            "human_review_required": response["human_review_required"],
+            "not_advice_notice": response["not_advice_notice"],
+            "response": response,
+        },
+    }
+
+
+def _gulf_artifact_text(response: dict) -> str:
+    missing = response.get("minimum_sources_before_review", [])
+    missing_text = "\n".join(f"- {item}" for item in missing) if missing else "- none"
+    dims = response.get("top_exposure_dimensions", [])
+    dims_text = "\n".join(f"- {item}" for item in dims) if dims else "- none"
+    watch = response.get("chokepoint_disruption_watch", [])
+    watch_text = "\n".join(f"- {item}" for item in watch) if watch else "- none"
+    return "\n".join(
+        [
+            "Gulf maritime exposure response",
+            "",
+            f"Recommendation: {response['triage_recommendation']}",
+            f"Exposure signal: {response['exposure_signal']}",
+            f"Decision readiness: {response['decision_readiness_score']}/100 ({response['decision_readiness_label']})",
+            f"Human review required: {str(response['human_review_required']).lower()}",
+            "",
+            "Top exposure dimensions:",
+            dims_text,
+            "",
+            "Minimum sources before review:",
+            missing_text,
+            "",
+            "Chokepoint disruption watch:",
+            watch_text,
+            "",
+            response["not_advice_notice"],
+        ]
+    )
+
+
+def a2a_result_for_gulf_maritime_exposure(request_json: dict) -> dict:
+    result = services.gulf_maritime_exposure(request_json)
+    if not result.get("valid"):
+        return {
+            "id": "agenda-intelligence-a2a-result",
+            "status": {"state": "TASK_STATE_FAILED"},
+            "artifacts": [],
+            "metadata": {
+                "product_profile": "gulf_maritime_exposure",
+                "canonical_http_endpoint": GULF_MARITIME_ENDPOINT,
+                "schema": GULF_MARITIME_SCHEMA,
+                "valid": False,
+                "errors": result.get("errors", []),
+            },
+        }
+
+    response = result["response"]
+    return {
+        "id": "agenda-intelligence-a2a-result",
+        "status": {"state": "TASK_STATE_COMPLETED"},
+        "artifacts": [
+            {
+                "artifactId": "gulf-maritime-exposure-response",
+                "name": "Gulf maritime exposure response",
+                "parts": [{"text": _gulf_artifact_text(response), "mediaType": "text/markdown"}],
+            }
+        ],
+        "metadata": {
+            "product_profile": "gulf_maritime_exposure",
+            "canonical_http_endpoint": GULF_MARITIME_ENDPOINT,
+            "schema": GULF_MARITIME_SCHEMA,
             "human_review_required": response["human_review_required"],
             "not_advice_notice": response["not_advice_notice"],
             "response": response,
@@ -794,6 +921,30 @@ def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> di
                 "jsonrpc": "2.0",
                 "id": id_value,
                 "result": a2a_result_for_cis_secondary_sanctions(request_json),
+            }
+
+        if capability == "gulf_maritime_exposure":
+            request_json = gulf_maritime_request_from_params(params)
+            if request_json is None:
+                return jsonrpc_error(
+                    id_value,
+                    -32602,
+                    "Missing structured Gulf maritime exposure request",
+                    {
+                        "required_shape": {
+                            "voyage": "object",
+                            "exposure_facets": "array",
+                            "dated_sources": "array",
+                            "risk_question": "string",
+                            "decision_stage": "string",
+                        },
+                        "schema": GULF_MARITIME_SCHEMA,
+                    },
+                )
+            return {
+                "jsonrpc": "2.0",
+                "id": id_value,
+                "result": a2a_result_for_gulf_maritime_exposure(request_json),
             }
 
         if capability == "agentic_interaction_trust":
