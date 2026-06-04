@@ -17,11 +17,15 @@ Implemented layers:
 
 These tools can say that an evidence contract is present, incomplete, internally inconsistent, or missing required support. They cannot say that the underlying claim is true in the world.
 
+This is the *faithfulness* vs *factuality* distinction from the attribution literature: faithfulness means a claim is explicitly supported by the supplied evidence; factuality means it is true in the world. The two must not be conflated — a true claim can be unsupported by the supplied evidence, and a well-supported claim can still be false (cf. FRANQ, arXiv:2505.21072). Every tool in this repo measures faithfulness against supplied or fetched evidence. None measures factuality.
+
 Source-plan coverage is one step below factual verification. It can identify missing required source types for a category, but it still does not decide whether the claim is true. See [`source-plan-coverage.md`](source-plan-coverage.md).
 
 ## What Is Not Implemented
 
-Agenda Intelligence MD does not currently:
+This describes the default evidence/eval contract. The `cis_secondary_sanctions` vertical worker is the one documented exception: it opts in to per-profile live retrieval against the OpenSanctions consolidated dataset (ADR 0014). The points below hold for every other surface and profile.
+
+Agenda Intelligence MD does not by default:
 
 - discover new sources for a claim;
 - gather live news;
@@ -39,7 +43,7 @@ It should not return a verdict that the statement is true or false in the world.
 
 ## Future Layer
 
-If factual verification is added after v1.0, model it as a separate layer with an explicit Claim Verdict contract. Likely verdicts include:
+If factual verification is added after v1.0, model it as a separate layer with an explicit Claim Verdict contract — a factuality layer distinct from the faithfulness checks above. Likely verdicts include:
 
 - `verified`
 - `contradicted`
