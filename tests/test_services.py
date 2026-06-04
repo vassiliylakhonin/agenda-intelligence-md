@@ -18,6 +18,57 @@ def test_services_audit_claims_matches_mcp_wrapper():
     assert services.audit_claims(audit) == mcp_server.audit_claims(audit)
 
 
+def test_audit_claims_span_grounding_clean():
+    audit = {
+        "topic": "x",
+        "claims": [
+            {
+                "claim_id": "c1",
+                "claim": "test",
+                "evidence_ids": ["e1"],
+                "support_level": "direct",
+                "supporting_quotes": [{"evidence_id": "e1", "quote": "the cited span"}],
+            }
+        ],
+        "evidence": [{"evidence_id": "e1", "source_type": "news"}],
+    }
+    result = services.audit_claims(audit)
+    assert result["valid"] is True
+    summary = result["summary"]
+    assert summary["grounded_claim_count"] == 1
+    assert summary["span_orphans"] == []
+
+
+def test_audit_claims_span_orphan_flagged():
+    audit = {
+        "topic": "x",
+        "claims": [
+            {
+                "claim_id": "c1",
+                "claim": "test",
+                "evidence_ids": ["e1"],
+                "support_level": "partial",
+                "supporting_quotes": [
+                    {"evidence_id": "e1", "quote": "ok span"},
+                    {"evidence_id": "e2", "quote": "span from evidence this claim does not cite"},
+                ],
+            }
+        ],
+        "evidence": [
+            {"evidence_id": "e1", "source_type": "news"},
+            {"evidence_id": "e2", "source_type": "news"},
+        ],
+    }
+    result = services.audit_claims(audit)
+    # A span orphan is a summary signal, like orphan_evidence_refs — it does not make the audit invalid.
+    assert result["valid"] is True
+    summary = result["summary"]
+    assert summary["grounded_claim_count"] == 1
+    assert summary["span_orphans"] == [
+        {"claim_id": "c1", "evidence_id": "e2", "reason": "evidence_id not in claim.evidence_ids"}
+    ]
+
+
 def test_services_source_coverage_matches_mcp_wrapper():
     evidence = {
         "topic": "sanctions claim",

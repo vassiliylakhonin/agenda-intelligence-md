@@ -162,11 +162,27 @@ def audit_claims(audit_json: dict) -> dict:
 
     levels: dict = {}
     orphans: list = []
+    span_orphans: list = []
+    grounded_claim_count = 0
     for claim in claims:
         levels[claim["support_level"]] = levels.get(claim["support_level"], 0) + 1
-        missing = [eid for eid in claim.get("evidence_ids", []) if eid not in evidence_ids]
+        declared_ids = claim.get("evidence_ids", []) or []
+        missing = [eid for eid in declared_ids if eid not in evidence_ids]
         if missing:
             orphans.append({"claim_id": claim["claim_id"], "missing_evidence_ids": missing})
+
+        supporting_quotes = claim.get("supporting_quotes", []) or []
+        if supporting_quotes:
+            grounded_claim_count += 1
+        declared_set = set(declared_ids)
+        for sq in supporting_quotes:
+            eid = sq.get("evidence_id")
+            if eid not in declared_set:
+                if eid in evidence_ids:
+                    reason = "evidence_id not in claim.evidence_ids"
+                else:
+                    reason = "evidence_id not in evidence"
+                span_orphans.append({"claim_id": claim["claim_id"], "evidence_id": eid, "reason": reason})
 
     return {
         "implemented": True,
@@ -177,6 +193,8 @@ def audit_claims(audit_json: dict) -> dict:
             "evidence_count": len(evidence),
             "support_levels": levels,
             "orphan_evidence_refs": orphans,
+            "grounded_claim_count": grounded_claim_count,
+            "span_orphans": span_orphans,
             "unsupported_claims_listed": len(audit_json.get("unsupported_claims", []) or []),
         },
         "note": "Schema-level only. Does not verify factual truth.",
