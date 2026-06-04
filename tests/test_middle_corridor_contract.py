@@ -575,6 +575,67 @@ def test_middle_corridor_pep_checklist_omitted_and_score_unchanged_when_evidence
     assert resp["decision_readiness_score"] == without["decision_readiness_score"]
 
 
+def test_middle_corridor_surfaces_front_company_checklist_when_evidence_missing():
+    """When business-substance evidence is not supplied, a front-company / business-substance
+    checklist (EU Sanctions Helpdesk counterparty red flags) is surfaced, routed to human review,
+    and the response stays schema-valid. It is a checklist of what to verify, never a
+    shell-company determination."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+    result = services.middle_corridor_deal_risk(req)
+    assert result["valid"] is True
+    resp = result["response"]
+    indicators = resp["front_company_indicators"]
+    assert indicators
+    blob = " ".join(indicators).lower()
+    assert "business substance" in blob
+    assert "power of attorney" in blob
+    for word in ["cleared", "approved", "sanctions safe", "is a shell"]:
+        assert word not in blob
+    assert_valid(RESPONSE_SCHEMA_PATH, _write_tmp(resp))
+
+
+def test_middle_corridor_front_company_checklist_omitted_and_score_unchanged_when_evidence_supplied():
+    """Negative control + score boundary: supplying business_substance_evidence omits the checklist
+    and does NOT change the decision_readiness_score (not a scored required-before-go item)."""
+    from agenda_intelligence import services
+
+    base = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "sanctions_list_extract", "title": "x", "date": "2026-05-21"},
+        ],
+        "risk_question": "escalate?",
+        "decision_stage": "pre_signature",
+    }
+    without = services.middle_corridor_deal_risk(base)["response"]
+    with_substance = dict(base)
+    with_substance["dated_sources"] = base["dated_sources"] + [
+        {"id": "e2", "source_type": "business_substance_evidence", "title": "Substance", "date": "2026-05-22"},
+    ]
+    result = services.middle_corridor_deal_risk(with_substance)
+    assert result["valid"] is True
+    resp = result["response"]
+    assert "front_company_indicators" not in resp
+    assert resp["decision_readiness_score"] == without["decision_readiness_score"]
+
+
 def _write_tmp(obj):
     import tempfile
 

@@ -223,6 +223,14 @@ const PEP_SCREENING_INDICATORS = [
   "Ongoing monitoring: apply enhanced monitoring for the duration of any PEP relationship."
 ];
 
+const FRONT_COMPANY_INDICATORS = [
+  "Business substance: confirm the counterparty is a real operating business, not a recently formed shell.",
+  "Web and registry footprint: check for a verifiable web presence and a registry record that predates the deal.",
+  "Address integrity: flag an address shared with multiple unrelated companies or with a sanctioned entity.",
+  "Line-of-business fit: confirm the goods or service fit the counterparty's stated line of business.",
+  "Representation: flag contact only via an intermediary with broad power of attorney, principals unavailable."
+];
+
 const CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW = [
   "ofac_sdn_extract",
   "eu_consolidated_extract",
@@ -2710,6 +2718,9 @@ function dealRiskContractResponseForRequest(request) {
   }
   if (!suppliedSources.includes("pep_screening_evidence")) {
     response.pep_screening_indicators = [...PEP_SCREENING_INDICATORS];
+  }
+  if (!suppliedSources.includes("business_substance_evidence")) {
+    response.front_company_indicators = [...FRONT_COMPANY_INDICATORS];
   }
   if (request.shipment_value) response.shipment_value = request.shipment_value;
   return response;

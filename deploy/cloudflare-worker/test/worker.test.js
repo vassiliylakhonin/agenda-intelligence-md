@@ -423,6 +423,24 @@ test("worker deal-risk contract omits pep_screening_indicators when PEP evidence
   assert.equal("pep_screening_indicators" in resp, false);
 });
 
+test("worker deal-risk contract surfaces front_company_indicators when business-substance evidence missing (Python parity)", () => {
+  const resp = dealRiskContractResponseForRequest(baseDealRiskRequest());
+  assert.ok(resp.front_company_indicators.length > 0);
+  const blob = resp.front_company_indicators.join(" ").toLowerCase();
+  assert.ok(blob.includes("business substance"));
+  assert.ok(blob.includes("power of attorney"));
+  for (const word of ["cleared", "approved", "sanctions safe", "is a shell"]) assert.equal(blob.includes(word), false);
+});
+
+test("worker deal-risk contract omits front_company_indicators when business-substance evidence supplied", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      dated_sources: [{ id: "e1", source_type: "business_substance_evidence", title: "Substance", date: "2026-05-22" }]
+    })
+  );
+  assert.equal("front_company_indicators" in resp, false);
+});
+
 test("kazakhstan deal risk gate returns decision-ready escalation block", async () => {
   const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
   const originalLog = console.log;
