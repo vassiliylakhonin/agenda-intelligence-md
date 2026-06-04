@@ -6,7 +6,9 @@ validated by `agenda-intelligence audit-claims <path>`.
 
 This contract is for agents that want to make their own claims auditable.
 It is intentionally narrow — it tells you whether the *form* of the claim →
-evidence link is sound. It does **not** verify factual truth.
+evidence link is sound. It checks *faithfulness* (is the claim backed by the
+supplied evidence), not *factuality* (is the claim true in the world). It does
+**not** verify factual truth.
 
 ## The shape
 
@@ -51,7 +53,9 @@ A reasonable agent loop:
 3. For each cited source, emit an `evidence` item with a stable
    `evidence_id`.
 4. Wire claims to evidence via `evidence_ids`.
-5. Set `support_level` honestly. **`unsupported` is allowed and useful.**
+5. Set `support_level` honestly. **`unsupported` is allowed and useful.** It is
+   a faithfulness label — it means no supplied evidence backs the claim, not
+   that the claim is false.
 6. Add `uncertainty` and `risk_if_wrong` for any claim with `support_level`
    weaker than `direct`.
 7. List things the agent wanted to claim but could not back into
