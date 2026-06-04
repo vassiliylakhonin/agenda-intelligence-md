@@ -73,6 +73,14 @@ A reasonable agent loop:
   orphan refs are flagged on stderr.
 - Distribution of `support_level` across claims (printed summary).
 - Count of explicitly listed `unsupported_claims`.
+- Span-level grounding (optional): a claim may carry `supporting_quotes`,
+  each `{evidence_id, quote}` naming the exact span that backs it — not just
+  which document. `audit-claims` reports `grounded_claim_count` and flags
+  `span_orphans` (a `supporting_quote.evidence_id` not among that claim's
+  `evidence_ids`). This is structural only; whether the quote text actually
+  appears in the source is `verify-quotes`' job, and neither verifies truth.
+  A span orphan is a summary signal, like an orphan ref — it does not make the
+  audit invalid.
 
 ## What `audit-claims` does NOT check
 
