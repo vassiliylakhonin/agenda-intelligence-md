@@ -42,6 +42,20 @@ Common failure: a tag gets dropped or mutated under layout pressure ("`[primary]
 
 Authoritative reference: end of `## Per-claim provenance tags` in CA-Caspian and Gulf+ME `AGENTS.md`. Tracked as a known canon-failure mode in [`evals/failure-modes.md`](https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main/evals/failure-modes.md) in the Global Think Tank Analyst repo.
 
+### Attribution / citation / quotation — mapping to the external literature
+
+The portfolio's evidence vocabulary lines up with the taxonomy in a 2025 survey of evidence-based text generation with LLMs ("Attribution, Citation, and Quotation: A Survey of Evidence-based Text Generation with Large Language Models", arXiv:2508.15396). The survey's three terms map onto the product-runtime mechanisms:
+
+| Survey term | Definition (survey) | Portfolio mechanism |
+|---|---|---|
+| Quotation | excerpts from evidence inserted into the text | `verify-quotes` and a claim's `supporting_quotes` (literal span presence) |
+| Citation | citation markers that reference supporting evidence sources | `evidence_ids` on a claim (evidence-audit contract) |
+| Attribution | broad linking of generated content back to grounding sources | `audit-claims` claim→evidence traceability; `evidence_mode` governs when attribution is required |
+
+The survey groups its ~300 evaluation metrics into seven dimensions: Attribution, Citation, Correctness, Linguistic Quality, Preservation, Relevance, Retrieval. The toolkit deliberately addresses only the structural ones — **Attribution**, **Citation**, and **Preservation** (the literal-presence check that a quoted excerpt is preserved from its source). It does **not** measure **Correctness** (that is factuality — see [`factual-verification.md`](factual-verification.md)) and does not perform **Retrieval** or **Relevance** scoring by default. This is the same faithfulness-not-factuality boundary, stated in the survey's vocabulary.
+
+On timing, the toolkit is **post-hoc** and **in-context** in the survey's scheme: it validates caller-supplied evidence after generation rather than retrieving live at generation time. The `cis_secondary_sanctions` profile is the one per-profile exception (ADR 0014).
+
 ## Terms that have their own `##` section — index
 
 For these, click through to the canonical definition. Where a term exists in more than one repo's `AGENTS.md`, the linked one is the most fully developed.
