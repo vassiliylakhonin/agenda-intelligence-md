@@ -348,7 +348,11 @@ def _fetch_url_text(url: str, timeout: int = 10) -> str:
 
 
 def cmd_verify_quotes(args):
-    """Verify that quoted fragments cited in an evidence pack are present in source texts.
+    """Verify that quoted fragments cited in a pack are present in source texts.
+
+    Accepts both shapes: evidence-pack ``sources`` / ``evidence`` items that carry
+    a ``quote``, and span-level ``supporting_quotes`` harvested from the ``claims``
+    of an evidence-audit-shaped doc (results carry the originating ``claim_id``).
 
     Scope: answers only "is the cited quote present in the source text?" — not
     "is the claim true?" and not "is the source reputable?".
@@ -368,8 +372,9 @@ def cmd_verify_quotes(args):
         raise SystemExit(f"Not found: {pack_path}")
     pack = json.loads(pack_path.read_text())
     sources = pack.get("sources") or pack.get("evidence") or []
-    if not sources:
-        raise SystemExit("No 'sources' or 'evidence' array found in pack")
+    claims = pack.get("claims") or []
+    if not sources and not claims:
+        raise SystemExit("No 'sources', 'evidence', or 'claims' array found in pack")
 
     texts_dir = Path(args.texts_dir) if args.texts_dir else pack_path.parent / "evidence_text"
     do_fetch = getattr(args, "fetch", False)
@@ -382,31 +387,58 @@ def cmd_verify_quotes(args):
         s = unicodedata.normalize("NFKC", s)
         return re.sub(r"\s+", " ", s).strip().lower()
 
-    results: list[dict] = []
+    # Unified list of quote checks: source/evidence-level quotes plus span-level
+    # supporting_quotes harvested from an evidence-audit-shaped doc.
+    checks: list[dict] = []
     for source in sources:
         quote = source.get("quote") or source.get("quote_or_excerpt")
         if not quote:
             continue
         ident = source.get("evidence_id") or _slugify(source.get("name", "source"))
+        checks.append({"id": ident, "quote": quote, "name": source.get("name"), "url": source.get("url")})
+
+    evidence_by_id = {e.get("evidence_id"): e for e in (pack.get("evidence") or []) if e.get("evidence_id")}
+    for claim in claims:
+        claim_id = claim.get("claim_id")
+        for sq in claim.get("supporting_quotes", []) or []:
+            quote = sq.get("quote")
+            eid = sq.get("evidence_id")
+            if not quote or not eid:
+                continue
+            ev = evidence_by_id.get(eid, {})
+            checks.append(
+                {"id": eid, "quote": quote, "name": ev.get("name"), "url": ev.get("url"), "claim_id": claim_id}
+            )
+
+    results: list[dict] = []
+    for check in checks:
+        ident = check["id"]
+        quote = check["quote"]
+        extra = {"claim_id": check["claim_id"]} if check.get("claim_id") else {}
         candidates = [texts_dir / f"{ident}.txt"]
-        if "name" in source:
-            candidates.append(texts_dir / f"{_slugify(source['name'])}.txt")
+        if check.get("name"):
+            candidates.append(texts_dir / f"{_slugify(check['name'])}.txt")
         text_path = next((p for p in candidates if p.is_file()), None)
         if text_path is not None:
             text = _normalize(text_path.read_text(encoding="utf-8"))
             match = _normalize(quote) in text
-            results.append({"id": ident, "status": "present" if match else "absent", "source_text": str(text_path)})
+            status = "present" if match else "absent"
+            results.append({"id": ident, "status": status, "source_text": str(text_path), **extra})
             continue
-        if do_fetch and source.get("url"):
+        if do_fetch and check.get("url"):
             try:
-                raw_text = _fetch_url_text(source["url"])
+                raw_text = _fetch_url_text(check["url"])
                 match = _normalize(quote) in _normalize(raw_text)
                 status = "present" if match else "absent"
-                results.append({"id": ident, "status": status, "mode": "fetched", "url": source["url"]})
+                results.append({"id": ident, "status": status, "mode": "fetched", "url": check["url"], **extra})
             except Exception as exc:
-                results.append({"id": ident, "status": "fetch_error", "url": source.get("url"), "error": str(exc)})
+                results.append(
+                    {"id": ident, "status": "fetch_error", "url": check.get("url"), "error": str(exc), **extra}
+                )
             continue
-        results.append({"id": ident, "status": "missing_source_text", "looked_in": [str(p) for p in candidates]})
+        results.append(
+            {"id": ident, "status": "missing_source_text", "looked_in": [str(p) for p in candidates], **extra}
+        )
 
     note = (
         "Verifies presence of cited fragment in source text. Does not discover sources, "
@@ -420,6 +452,7 @@ def cmd_verify_quotes(args):
         "absent": sum(1 for r in results if r["status"] == "absent"),
         "missing_source_text": sum(1 for r in results if r["status"] == "missing_source_text"),
         "fetch_error": sum(1 for r in results if r["status"] == "fetch_error"),
+        "from_supporting_quotes": sum(1 for r in results if r.get("claim_id")),
         "note": note,
     }
     if args.format == "json":
@@ -430,7 +463,8 @@ def cmd_verify_quotes(args):
         print(f"  absent: {summary['absent']}")
         print(f"  missing source text: {summary['missing_source_text']}")
         for r in results:
-            print(f"  - {r['id']}: {r['status']}")
+            tag = f" (claim {r['claim_id']})" if r.get("claim_id") else ""
+            print(f"  - {r['id']}: {r['status']}{tag}")
         print(f"note: {summary['note']}")
     if args.strict and (summary["absent"] or summary["missing_source_text"] or summary["fetch_error"]):
         raise SystemExit(1)

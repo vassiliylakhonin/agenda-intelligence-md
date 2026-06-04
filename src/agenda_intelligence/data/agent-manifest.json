@@ -313,7 +313,7 @@
           "properties": {
             "pack_json": {
               "type": "object",
-              "description": "Evidence pack containing evidence IDs and quote fragments to check."
+              "description": "Evidence pack (evidence IDs + quote fragments) or evidence-audit doc (claims with supporting_quotes) to check."
             },
             "texts": {
               "type": "object",

@@ -226,18 +226,22 @@ TOOLS: dict[str, dict[str, Any]] = {
     },
     "verify_quotes": {
         "description": (
-            "Check whether quoted fragments from an evidence pack appear in caller-provided "
-            "source text. Use when you have local excerpts and need to catch citation drift or "
-            "misquoted snippets. Pass pack_json plus texts mapping evidence_id to plain text. "
-            "Returns present, absent, and missing_source_text results. Local-text only: it does "
-            "not make outbound requests, discover sources, score source reputation, gather news, or "
-            "verify factual truth."
+            "Check whether quoted fragments appear in caller-provided source text. Use when you "
+            "have local excerpts and need to catch citation drift or misquoted snippets. Accepts an "
+            "evidence pack (sources/evidence items with a quote) or an evidence-audit doc with "
+            "claims[].supporting_quotes; span checks carry the originating claim_id. Pass pack_json "
+            "plus texts mapping evidence_id to plain text. Returns present, absent, and "
+            "missing_source_text results. Local-text only: it does not make outbound requests, "
+            "discover sources, score source reputation, gather news, or verify factual truth."
         ),
         "inputSchema": _schema(
             {
                 "pack_json": {
                     "type": "object",
-                    "description": "Evidence pack containing evidence IDs and quote fragments to check.",
+                    "description": (
+                        "Evidence pack (evidence IDs + quote fragments) or evidence-audit doc "
+                        "(claims with supporting_quotes) to check."
+                    ),
                 },
                 "texts": {
                     "type": "object",

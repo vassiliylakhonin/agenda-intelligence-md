@@ -82,6 +82,12 @@ A reasonable agent loop:
   A span orphan is a summary signal, like an orphan ref — it does not make the
   audit invalid.
 
+To check the span text itself, run `verify-quotes` on the same doc: it
+harvests `claims[].supporting_quotes`, checks each `quote` against the source
+text for its `evidence_id` (local file, `--texts-dir`, or `--fetch`), and
+reports `present` / `absent` / `missing_source_text` with the originating
+`claim_id`. Still presence-only — not factual truth.
+
 ## What `audit-claims` does NOT check
 
 - Whether the cited URL actually says what `supports` claims it says.
