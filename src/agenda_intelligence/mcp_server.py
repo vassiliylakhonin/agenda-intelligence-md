@@ -252,10 +252,18 @@ def source_coverage(evidence_json: dict, category: Optional[str] = None) -> dict
 
 
 def verify_quotes(pack_json: dict, texts: Optional[dict] = None) -> dict:
-    """Verify that quoted fragments in an evidence pack are present in the provided source texts.
+    """Verify that quoted fragments are present in the provided source texts.
+
+    Checks two shapes against ``texts``:
+
+    - evidence-pack ``sources`` / ``evidence`` items that carry a ``quote``;
+    - span-level ``supporting_quotes`` ``{evidence_id, quote}`` harvested from
+      the ``claims`` of an evidence-audit-shaped doc — each result carries the
+      originating ``claim_id``.
 
     ``texts`` is an optional dict mapping ``evidence_id`` → plain text content.
-    Sources without a matching entry in ``texts`` are reported as ``missing_source_text``.
+    Quotes whose evidence has no matching entry in ``texts`` are reported as
+    ``missing_source_text``.
 
     Scope: local-text only. Does not make outbound network requests, discover
     sources, score source reputation, gather live news, or verify factual truth.
@@ -267,8 +275,16 @@ def verify_quotes(pack_json: dict, texts: Optional[dict] = None) -> dict:
         s = unicodedata.normalize("NFKC", s)
         return re.sub(r"\s+", " ", s).strip().lower()
 
-    sources = pack_json.get("sources") or pack_json.get("evidence") or []
     resolved_texts: dict = texts or {}
+
+    def _check(ident: str, quote: str) -> dict:
+        source_text = resolved_texts.get(ident)
+        if source_text is None:
+            return {"id": ident, "status": "missing_source_text"}
+        match = _normalize(quote) in _normalize(source_text)
+        return {"id": ident, "status": "present" if match else "absent"}
+
+    sources = pack_json.get("sources") or pack_json.get("evidence") or []
     results: list[dict] = []
 
     for source in sources:
@@ -276,18 +292,27 @@ def verify_quotes(pack_json: dict, texts: Optional[dict] = None) -> dict:
         if not quote:
             continue
         ident = source.get("evidence_id") or source.get("name", "source")
-        source_text = resolved_texts.get(ident)
-        if source_text is None:
-            results.append({"id": ident, "status": "missing_source_text"})
-            continue
-        match = _normalize(quote) in _normalize(source_text)
-        results.append({"id": ident, "status": "present" if match else "absent"})
+        results.append(_check(ident, quote))
+
+    span_count = 0
+    for claim in pack_json.get("claims", []) or []:
+        claim_id = claim.get("claim_id")
+        for sq in claim.get("supporting_quotes", []) or []:
+            quote = sq.get("quote")
+            ident = sq.get("evidence_id")
+            if not quote or not ident:
+                continue
+            result = _check(ident, quote)
+            result["claim_id"] = claim_id
+            results.append(result)
+            span_count += 1
 
     summary = {
         "total_quotes": len(results),
         "present": sum(1 for r in results if r["status"] == "present"),
         "absent": sum(1 for r in results if r["status"] == "absent"),
         "missing_source_text": sum(1 for r in results if r["status"] == "missing_source_text"),
+        "from_supporting_quotes": span_count,
         "note": (
             "Local-text mode only. Does not fetch URLs, discover sources, score source reputation, "
             "gather live news, or verify factual truth."

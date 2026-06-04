@@ -498,6 +498,64 @@ def test_mcp_verify_quotes_skips_sources_without_quote():
     assert res["summary"]["total_quotes"] == 0
 
 
+def test_mcp_verify_quotes_harvests_supporting_quotes():
+    from agenda_intelligence.mcp_server import verify_quotes
+
+    audit = {
+        "topic": "test",
+        "claims": [
+            {
+                "claim_id": "c1",
+                "claim": "High-risk AI systems must undergo conformity assessment.",
+                "evidence_ids": ["e1"],
+                "support_level": "direct",
+                "supporting_quotes": [
+                    {"evidence_id": "e1", "quote": "high-risk AI systems shall undergo conformity assessment"},
+                    {"evidence_id": "e1", "quote": "this fragment definitely does not appear"},
+                ],
+            }
+        ],
+        "evidence": [{"evidence_id": "e1", "source_type": "official_document"}],
+    }
+    res = verify_quotes(audit, texts={"e1": "Article 19. High-risk AI systems shall undergo conformity assessment."})
+    assert res["summary"]["from_supporting_quotes"] == 2
+    assert res["summary"]["present"] == 1
+    assert res["summary"]["absent"] == 1
+    # span results carry the originating claim_id
+    assert all(r["claim_id"] == "c1" for r in res["results"])
+
+
+def test_verify_quotes_supporting_quotes_local_text(tmp_path: Path):
+    texts = tmp_path / "evidence_text"
+    texts.mkdir()
+    (texts / "e1.txt").write_text("Article 19. High-risk AI systems shall undergo conformity assessment.")
+    pack = tmp_path / "audit.json"
+    pack.write_text(
+        json.dumps(
+            {
+                "topic": "x",
+                "claims": [
+                    {
+                        "claim_id": "c1",
+                        "claim": "conformity assessment is required",
+                        "evidence_ids": ["e1"],
+                        "support_level": "direct",
+                        "supporting_quotes": [
+                            {"evidence_id": "e1", "quote": "high-risk AI systems shall undergo conformity assessment"}
+                        ],
+                    }
+                ],
+                "evidence": [{"evidence_id": "e1", "name": "AI Act", "source_type": "official_document"}],
+            }
+        )
+    )
+    res = run("verify-quotes", str(pack), "--texts-dir", str(texts), "--format", "json")
+    payload = json.loads(res.stdout)
+    assert payload["summary"]["present"] == 1
+    assert payload["summary"]["from_supporting_quotes"] == 1
+    assert payload["results"][0]["claim_id"] == "c1"
+
+
 def test_stdio_tools_list_includes_verify_quotes():
     from agenda_intelligence.mcp_stdio import TOOLS
 
