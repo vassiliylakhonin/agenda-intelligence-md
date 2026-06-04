@@ -543,6 +543,14 @@ PEP_SCREENING_INDICATORS = [
     "Ongoing monitoring: apply enhanced monitoring for the duration of any PEP relationship.",
 ]
 
+FRONT_COMPANY_INDICATORS = [
+    "Business substance: confirm the counterparty is a real operating business, not a recently formed shell.",
+    "Web and registry footprint: check for a verifiable web presence and a registry record that predates the deal.",
+    "Address integrity: flag an address shared with multiple unrelated companies or with a sanctioned entity.",
+    "Line-of-business fit: confirm the goods or service fit the counterparty's stated line of business.",
+    "Representation: flag contact only via an intermediary with broad power of attorney, principals unavailable.",
+]
+
 
 def _high_risk_jurisdiction_counterparties(request_json: dict) -> list[dict]:
     """Flag counterparties domiciled in a sanctions-relevant / high-risk jurisdiction.
@@ -803,6 +811,8 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         response["source_of_funds_indicators"] = list(SOURCE_OF_FUNDS_INDICATORS)
     if "pep_screening_evidence" not in supplied_sources:
         response["pep_screening_indicators"] = list(PEP_SCREENING_INDICATORS)
+    if "business_substance_evidence" not in supplied_sources:
+        response["front_company_indicators"] = list(FRONT_COMPANY_INDICATORS)
     if "shipment_value" in request_json:
         response["shipment_value"] = request_json["shipment_value"]
 

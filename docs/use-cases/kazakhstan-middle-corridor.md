@@ -115,6 +115,8 @@ Similarly, when source-of-funds / source-of-wealth evidence is not among the sup
 
 And when PEP-screening evidence is not among the supplied sources, the response carries `pep_screening_indicators`: a politically-exposed-person screening checklist (counterparty + beneficial-owner PEP screening, family / close associates, senior-management approval, enhanced SOF/SOW, ongoing monitoring) drawn from FATF Recommendations 12 and 22. Same pattern and boundary — a checklist of what to screen routed to human review, never a PEP determination or political-exposure judgment, and it does not change the `decision_readiness_score`. Supply a dated `pep_screening_evidence` source to close it.
 
+And when business-substance evidence is not among the supplied sources, the response carries `front_company_indicators`: a front-company / business-substance checklist (operating substance vs recently formed shell, web and registry footprint, address integrity, line-of-business fit, contact only via broad power of attorney) drawn from EU Sanctions Helpdesk counterparty red flags. Same pattern and boundary — a checklist of what to verify routed to human review, never a shell-company or ownership determination, and it does not change the `decision_readiness_score`. Supply a dated `business_substance_evidence` source to close it.
+
 The boundary is part of the contract: no legal, compliance, sanctions, financial, investment, insurance, or trading advice; no autonomous live retrieval; no factual-truth verification; no authorization decision.
 
 ### Buyer-facing scenarios
