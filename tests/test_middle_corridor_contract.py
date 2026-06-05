@@ -636,6 +636,56 @@ def test_middle_corridor_front_company_checklist_omitted_and_score_unchanged_whe
     assert resp["decision_readiness_score"] == without["decision_readiness_score"]
 
 
+def test_middle_corridor_run_provenance_is_emitted_and_schema_valid():
+    """Every response carries a run_provenance stamp: contract version, the response
+    schema $id, and a sha256 digest of the request. Schema-valid throughout (ADR 0018)."""
+    from agenda_intelligence import __version__, services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "sanctions_list_extract", "title": "x", "date": "2026-05-21"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+    resp = services.middle_corridor_deal_risk(req)["response"]
+    prov = resp["run_provenance"]
+    assert prov["contract_version"] == __version__
+    assert prov["schema_id"].endswith("middle-corridor-deal-risk-response.schema.json")
+    assert re.fullmatch(r"sha256:[0-9a-f]{64}", prov["input_digest"])
+    assert_valid(RESPONSE_SCHEMA_PATH, _write_tmp(resp))
+
+
+def test_middle_corridor_input_digest_is_deterministic_and_input_bound():
+    """The digest is reproducible for the same request and changes when the input
+    changes -- the reproducibility relation the stamp claims (ADR 0018)."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "sanctions_list_extract", "title": "x", "date": "2026-05-21"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+    first = services.middle_corridor_deal_risk(req)["response"]["run_provenance"]["input_digest"]
+    second = services.middle_corridor_deal_risk(req)["response"]["run_provenance"]["input_digest"]
+    assert first == second
+    changed = dict(req, cargo="dual-use industrial equipment")
+    changed_digest = services.middle_corridor_deal_risk(changed)["response"]["run_provenance"]["input_digest"]
+    assert changed_digest != first
+
+
 def _write_tmp(obj):
     import tempfile
 
