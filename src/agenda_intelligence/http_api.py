@@ -29,6 +29,23 @@ def _json_bytes(payload: dict) -> bytes:
     return json.dumps(payload, indent=2, sort_keys=True).encode("utf-8")
 
 
+def _validation_unavailable(result: dict, label: str) -> tuple[int, dict] | None:
+    """Return a 500 response when the service could not validate the request.
+
+    A vertical-worker result carries ``valid is None`` when schema validation was
+    unavailable (e.g. jsonschema not installed or a schema failed to load). That
+    is a server-side fault, not a bad request, so it maps to 500 rather than 400.
+    Returns ``None`` when validation ran (``valid`` is True or False).
+    """
+    if result.get("valid") is None:
+        return 500, {
+            "ok": False,
+            "error": f"{label} request validation unavailable",
+            "errors": result.get("errors", []),
+        }
+    return None
+
+
 def handle_get(path: str) -> tuple[int, dict]:
     if path == "/healthz":
         return (
@@ -88,18 +105,27 @@ def handle_post(path: str, payload: dict) -> tuple[int, dict]:
 
     if path == "/v1/middle-corridor/deal-risk":
         result = services.middle_corridor_deal_risk(payload)
+        unavailable = _validation_unavailable(result, "Middle Corridor deal-risk")
+        if unavailable is not None:
+            return unavailable
         if not result.get("valid"):
             return 400, {"ok": False, "error": "Invalid Middle Corridor deal-risk request", "errors": result["errors"]}
         return 200, result["response"]
 
     if path == "/v1/agentic-interaction/trust":
         result = services.agentic_interaction_trust(payload)
+        unavailable = _validation_unavailable(result, "agentic interaction trust")
+        if unavailable is not None:
+            return unavailable
         if not result.get("valid"):
             return 400, {"ok": False, "error": "Invalid agentic interaction trust request", "errors": result["errors"]}
         return 200, result["response"]
 
     if path == "/v1/cis-secondary-sanctions/exposure":
         result = services.cis_secondary_sanctions_exposure(payload)
+        unavailable = _validation_unavailable(result, "CIS secondary-sanctions exposure")
+        if unavailable is not None:
+            return unavailable
         if not result.get("valid"):
             return 400, {
                 "ok": False,
@@ -110,6 +136,9 @@ def handle_post(path: str, payload: dict) -> tuple[int, dict]:
 
     if path == "/v1/gulf-maritime/exposure":
         result = services.gulf_maritime_exposure(payload)
+        unavailable = _validation_unavailable(result, "Gulf maritime exposure")
+        if unavailable is not None:
+            return unavailable
         if not result.get("valid"):
             return 400, {
                 "ok": False,

@@ -218,3 +218,50 @@ def test_services_agentic_interaction_trust_builds_contract_response():
         "action_intent_evidence",
     ]
     assert response["human_review_required"] is True
+
+
+# ---------------------------------------------------------------------------
+# Validation tri-state: distinguish "invalid" from "could not validate"
+# ---------------------------------------------------------------------------
+
+
+def test_validation_failure_passes_through_schema_invalid():
+    failure = services._validation_failure({"implemented": True, "valid": False, "errors": ["bad field"]})
+    assert failure is not None
+    assert failure["valid"] is False
+    assert failure["errors"] == ["bad field"]
+    assert failure["response"] is None
+
+
+def test_validation_failure_marks_validation_unavailable():
+    """jsonschema-missing / schema-load failure must surface as valid=None, not False."""
+    failure = services._validation_failure(
+        {"implemented": False, "valid": None, "errors": ["jsonschema is not installed – cannot validate"]}
+    )
+    assert failure is not None
+    assert failure["valid"] is None
+    assert failure["errors"] == ["jsonschema is not installed – cannot validate"]
+
+
+def test_validation_failure_returns_none_when_valid():
+    assert services._validation_failure({"implemented": True, "valid": True, "errors": []}) is None
+
+
+def test_validate_json_surfaces_reason_on_infra_failure():
+    """A schema that cannot be loaded must carry its reason in errors, never swallow it."""
+    result = services._validate_json({}, "does-not-exist.schema.json")
+    assert result["valid"] is None
+    assert result["errors"] and result["errors"][0]
+
+
+def test_vertical_worker_distinguishes_validation_unavailable(monkeypatch):
+    """When request validation is unavailable, the worker returns valid=None with a reason."""
+    monkeypatch.setattr(
+        services,
+        "_validate_json",
+        lambda data, schema: {"implemented": False, "valid": None, "errors": ["jsonschema is not installed"]},
+    )
+    result = services.middle_corridor_deal_risk({"any": "payload"})
+    assert result["valid"] is None
+    assert result["response"] is None
+    assert result["errors"] == ["jsonschema is not installed"]

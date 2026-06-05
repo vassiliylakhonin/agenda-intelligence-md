@@ -129,7 +129,7 @@ def _validate_json(data: dict, schema_name: str) -> dict:
         return {
             "implemented": False,
             "valid": None,
-            "error": "jsonschema is not installed – cannot validate",
+            "errors": ["jsonschema is not installed – cannot validate"],
         }
 
     try:
@@ -142,6 +142,27 @@ def _validate_json(data: dict, schema_name: str) -> dict:
         return {"implemented": True, "valid": None, "errors": [str(e)]}
 
 
+def _validation_failure(validation: dict) -> dict | None:
+    """Build a service-envelope failure dict when validation did not pass.
+
+    Returns ``None`` when the data is valid. Otherwise it distinguishes a
+    schema-invalid payload (``valid`` is ``False``) from validation being
+    unavailable (``valid`` is ``None`` — e.g. jsonschema is not installed or the
+    schema failed to load) so callers and transports can separate a bad request
+    from a server-side failure. The reason always rides along in ``errors``;
+    previously a missing-dependency failure surfaced as ``valid: False`` with an
+    empty ``errors`` list, which read like "invalid request, no reason given".
+    """
+    if validation.get("valid"):
+        return None
+    return {
+        "implemented": validation.get("implemented", True),
+        "valid": validation.get("valid"),
+        "errors": validation.get("errors", []),
+        "response": None,
+    }
+
+
 def audit_claims(audit_json: dict) -> dict:
     """Validate and summarize a claim-level evidence audit.
 
@@ -150,8 +171,8 @@ def audit_claims(audit_json: dict) -> dict:
     base = _validate_json(audit_json, "evidence-audit.schema.json")
     if not base.get("valid"):
         return {
-            "implemented": True,
-            "valid": False,
+            "implemented": base.get("implemented", True),
+            "valid": base.get("valid"),
             "errors": base.get("errors", []),
             "summary": None,
         }
@@ -740,14 +761,9 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
     This is pre-compliance evidence triage only. It does not perform live
     retrieval, factual-truth verification, or legal/compliance/sanctions advice.
     """
-    request_validation = _validate_json(request_json, "middle-corridor-deal-risk-request.schema.json")
-    if not request_validation.get("valid"):
-        return {
-            "implemented": True,
-            "valid": False,
-            "errors": request_validation.get("errors", []),
-            "response": None,
-        }
+    request_failure = _validation_failure(_validate_json(request_json, "middle-corridor-deal-risk-request.schema.json"))
+    if request_failure is not None:
+        return request_failure
 
     supplied_sources = _supplied_source_types(request_json)
     missing_sources = [
@@ -818,8 +834,8 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
 
     response_validation = _validate_json(response, "middle-corridor-deal-risk-response.schema.json")
     return {
-        "implemented": True,
-        "valid": bool(response_validation.get("valid")),
+        "implemented": response_validation.get("implemented", True),
+        "valid": response_validation.get("valid"),
         "errors": response_validation.get("errors", []),
         "response": response,
     }
@@ -932,14 +948,9 @@ def agentic_interaction_trust(request_json: dict) -> dict:
     cybersecurity monitoring, transaction authorization, or autonomous
     allow/block decisions.
     """
-    request_validation = _validate_json(request_json, "agentic-interaction-trust-request.schema.json")
-    if not request_validation.get("valid"):
-        return {
-            "implemented": True,
-            "valid": False,
-            "errors": request_validation.get("errors", []),
-            "response": None,
-        }
+    request_failure = _validation_failure(_validate_json(request_json, "agentic-interaction-trust-request.schema.json"))
+    if request_failure is not None:
+        return request_failure
 
     supplied_sources = _supplied_source_types(request_json)
     missing_sources = [
@@ -982,8 +993,8 @@ def agentic_interaction_trust(request_json: dict) -> dict:
 
     response_validation = _validate_json(response, "agentic-interaction-trust-response.schema.json")
     return {
-        "implemented": True,
-        "valid": bool(response_validation.get("valid")),
+        "implemented": response_validation.get("implemented", True),
+        "valid": response_validation.get("valid"),
         "errors": response_validation.get("errors", []),
         "response": response,
     }
@@ -1131,14 +1142,9 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
     ``live_retrieval_status: degraded`` and triage is based on user-supplied
     evidence only.
     """
-    request_validation = _validate_json(request_json, "cis-secondary-sanctions-request.schema.json")
-    if not request_validation.get("valid"):
-        return {
-            "implemented": True,
-            "valid": False,
-            "errors": request_validation.get("errors", []),
-            "response": None,
-        }
+    request_failure = _validation_failure(_validate_json(request_json, "cis-secondary-sanctions-request.schema.json"))
+    if request_failure is not None:
+        return request_failure
 
     supplied_sources = _supplied_source_types(request_json)
     auto_fetched_sources: list[dict] = []
@@ -1226,8 +1232,8 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
 
     response_validation = _validate_json(response, "cis-secondary-sanctions-response.schema.json")
     return {
-        "implemented": True,
-        "valid": bool(response_validation.get("valid")),
+        "implemented": response_validation.get("implemented", True),
+        "valid": response_validation.get("valid"),
         "errors": response_validation.get("errors", []),
         "response": response,
         "live_retrieval_status": live_retrieval_status,
@@ -1354,14 +1360,9 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
     Does not resolve vessel ownership, verify identity, perform factual-truth verification,
     or provide legal / sanctions / compliance / financial / investment / insurance / trading advice.
     """
-    request_validation = _validate_json(request_json, "gulf-maritime-exposure-request.schema.json")
-    if not request_validation.get("valid"):
-        return {
-            "implemented": True,
-            "valid": False,
-            "errors": request_validation.get("errors", []),
-            "response": None,
-        }
+    request_failure = _validation_failure(_validate_json(request_json, "gulf-maritime-exposure-request.schema.json"))
+    if request_failure is not None:
+        return request_failure
 
     supplied_sources = _supplied_source_types(request_json)
     missing_sources = [s for s in GULF_MARITIME_REQUIRED_BEFORE_REVIEW if s not in supplied_sources]
@@ -1407,8 +1408,8 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
 
     response_validation = _validate_json(response, "gulf-maritime-exposure-response.schema.json")
     return {
-        "implemented": True,
-        "valid": bool(response_validation.get("valid")),
+        "implemented": response_validation.get("implemented", True),
+        "valid": response_validation.get("valid"),
         "errors": response_validation.get("errors", []),
         "response": response,
     }

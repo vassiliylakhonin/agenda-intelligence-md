@@ -633,6 +633,9 @@ def analyze(request: dict) -> dict:
         modules_used: list[{module, role}]
         system_prompt: str
         llm_invoked: bool
+        mode: str               ("server_completed" when the model ran here;
+                                 "host_completion" when no model was invoked and the
+                                 caller is expected to complete from system_prompt)
         memo: dict | None       (valid against agenda-memo.schema.json when llm_invoked)
         memo_valid: bool | None
         memo_errors: list[str]
@@ -660,9 +663,15 @@ def analyze(request: dict) -> dict:
             "modules_used": modules,
             "system_prompt": system_prompt,
             "llm_invoked": False,
+            "mode": "host_completion",
             "memo": memo,
             "memo_valid": False,
-            "memo_errors": ["skeleton memo: ANTHROPIC_API_KEY missing or anthropic SDK not installed"],
+            "memo_errors": [
+                "host_completion mode: no server-side model was invoked (ANTHROPIC_API_KEY unset or "
+                "anthropic SDK absent). This is expected — complete the analysis from system_prompt, or "
+                "set ANTHROPIC_API_KEY for server-side completion. The skeleton memo is a structure "
+                "placeholder, not a failure."
+            ],
         }
         if request.get("output_format") == "markdown":
             response["rendered_memo"] = render_memo_markdown(memo)
@@ -677,6 +686,7 @@ def analyze(request: dict) -> dict:
             "modules_used": modules,
             "system_prompt": system_prompt,
             "llm_invoked": True,
+            "mode": "server_completed",
             "memo": None,
             "memo_valid": False,
             "memo_errors": ["could not parse JSON from model response"],
@@ -702,6 +712,7 @@ def analyze(request: dict) -> dict:
         "modules_used": modules,
         "system_prompt": system_prompt,
         "llm_invoked": True,
+        "mode": "server_completed",
         "memo": parsed,
         "memo_valid": schema_valid,
         "memo_errors": mv.get("errors", []),
