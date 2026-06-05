@@ -44,6 +44,7 @@ def _run_provenance(request_json: dict, response_schema_name: str) -> dict:
         "input_digest": _input_digest(request_json),
     }
 
+
 MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO = [
     "counterparty_registry_extract",
     "beneficial_ownership_source",
