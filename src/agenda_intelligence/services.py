@@ -7,14 +7,43 @@ other. They are stateless and do not persist caller payloads.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from importlib import resources
 from typing import Optional
 
-from agenda_intelligence import upstream_opensanctions
+from agenda_intelligence import __version__, upstream_opensanctions
 from agenda_intelligence.eval import score_before_after
 
 PACKAGE_NAME = "agenda_intelligence"
+
+SCHEMA_ID_BASE = "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1"
+
+
+def _input_digest(request_json: dict) -> str:
+    """sha256 of the canonicalized request JSON.
+
+    Canonical form: UTF-8, keys sorted, no insignificant whitespace. Same input
+    reproduces the same digest, across runs and (by spec) across language ports.
+    """
+    canonical = json.dumps(request_json, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _run_provenance(request_json: dict, response_schema_name: str) -> dict:
+    """Deterministic content-provenance stamp for a structured response.
+
+    Records which contract version and response schema produced the output and a
+    digest of the exact request input, so a downstream reviewer can confirm the
+    artifact is reproducible. Reproducibility only — not a signature of
+    authenticity, factuality, or clearance.
+    """
+    return {
+        "contract_version": __version__,
+        "schema_id": f"{SCHEMA_ID_BASE}/{response_schema_name}",
+        "input_digest": _input_digest(request_json),
+    }
+
 
 MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO = [
     "counterparty_registry_extract",
@@ -801,6 +830,7 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         "counterparty_readiness": _middle_corridor_counterparty_readiness(
             request_json, supplied_sources, missing_sources
         ),
+        "run_provenance": _run_provenance(request_json, "middle-corridor-deal-risk-response.schema.json"),
     }
     limitations: list[str] = []
     if flagged_jurisdictions:

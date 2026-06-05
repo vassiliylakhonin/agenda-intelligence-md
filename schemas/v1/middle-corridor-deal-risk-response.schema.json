@@ -276,6 +276,33 @@
           "minLength": 1
         }
       }
+    },
+    "run_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Deterministic content-provenance stamp: which contract version and response schema produced this output, plus a digest of the exact request input. Lets a downstream reviewer (compliance committee, bank, auditor) confirm the artifact is reproducible from a named input and ruleset. Reproducibility / traceability only; not a signature of authenticity (that is the A2A / JWS transport layer, ADR 0017), and not a factuality, clearance, or compliance attestation.",
+      "required": [
+        "contract_version",
+        "schema_id",
+        "input_digest"
+      ],
+      "properties": {
+        "contract_version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Version of the agenda-intelligence package / ruleset that produced this response."
+        },
+        "schema_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The $id of the response schema this output conforms to."
+        },
+        "input_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "sha256 of the canonicalized request JSON (UTF-8, keys sorted, no insignificant whitespace). Same input + same contract_version reproduces the same digest."
+        }
+      }
     }
   },
   "$defs": {
@@ -382,7 +409,12 @@
         "port delays or operator notices"
       ],
       "human_review_required": true,
-      "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
+      "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
+      "run_provenance": {
+        "contract_version": "1.1.0",
+        "schema_id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/middle-corridor-deal-risk-response.schema.json",
+        "input_digest": "sha256:3b8c1d2e4f5a6079889aabbccddeeff00112233445566778899aabbccddeeff0"
+      }
     }
   ]
 }
