@@ -441,6 +441,52 @@ test("worker deal-risk contract omits front_company_indicators when business-sub
   assert.equal("front_company_indicators" in resp, false);
 });
 
+test("message/send accepts the newer EDD source types and suppresses their checklists (enum parity)", async () => {
+  // Regression: the worker MC_SOURCE_TYPES enum was narrower than the Python
+  // schema, so a structured request *supplying* these four EDD source types was
+  // rejected by middleCorridorEnumErrors before reaching the contract builder.
+  // The omit-when-supplied unit tests above bypass that path by calling the
+  // builder directly; this exercises the full message/send enum-validation path.
+  const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const structured = {
+      route: "Altynkol -> Aktau -> Baku -> Poti",
+      cargo: "industrial equipment",
+      counterparties: [{ role: "forwarder", name: "KZ forwarder", jurisdiction: "Kazakhstan" }],
+      dated_sources: [
+        { id: "e1", source_type: "end_user_or_reexport_evidence", title: "EUS", date: "2026-05-22" },
+        { id: "e2", source_type: "source_of_funds_or_wealth_evidence", title: "SOF", date: "2026-05-22" },
+        { id: "e3", source_type: "pep_screening_evidence", title: "PEP", date: "2026-05-22" },
+        { id: "e4", source_type: "business_substance_evidence", title: "Substance", date: "2026-05-22" }
+      ],
+      risk_question: "Escalate before signature?",
+      decision_stage: "pre_signature"
+    };
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "edd-enum", method: "message/send", params: { request: structured } },
+      kazakhstanRequest,
+      { AGENT_PROFILE: "kazakhstan" }
+    );
+
+    // Accepted, not rejected as an invalid request.
+    assert.equal(response.result.status.state, "TASK_STATE_COMPLETED");
+    assert.notEqual(response.result.metadata.valid, false);
+
+    const jsonPart = response.result.artifacts[0].parts.find((p) => p.mediaType === "application/json");
+    const contract = jsonPart.data;
+    assert.equal(typeof contract.decision_readiness_score, "number");
+    // Each checklist is suppressed because its evidence was supplied.
+    assert.equal("reexport_control_indicators" in contract, false);
+    assert.equal("source_of_funds_indicators" in contract, false);
+    assert.equal("pep_screening_indicators" in contract, false);
+    assert.equal("front_company_indicators" in contract, false);
+  } finally {
+    console.log = originalLog;
+  }
+});
+
 test("kazakhstan deal risk gate returns decision-ready escalation block", async () => {
   const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
   const originalLog = console.log;

@@ -1209,7 +1209,8 @@ const MC_SOURCE_TYPES = [
   "port_operator_notice", "sanctions_list_extract", "carrier_note", "counterparty_registry_extract",
   "beneficial_ownership_source", "customs_or_regulatory_source", "insurance_clause_or_underwriter_note",
   "vessel_or_carrier_history", "rail_capacity_or_border_wait_source", "contract_or_invoice_extract",
-  "user_provided_note", "other"
+  "end_user_or_reexport_evidence", "source_of_funds_or_wealth_evidence", "pep_screening_evidence",
+  "business_substance_evidence", "user_provided_note", "other"
 ];
 
 const CIS_SECTORS = [
