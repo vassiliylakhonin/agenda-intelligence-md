@@ -203,3 +203,35 @@ def test_http_api_rejects_invalid_agentic_interaction_trust_request():
     assert body["ok"] is False
     assert body["error"] == "Invalid agentic interaction trust request"
     assert body["errors"]
+
+
+def test_http_api_vertical_worker_validation_unavailable_maps_to_500(monkeypatch):
+    """If schema validation is unavailable (server fault), HTTP returns 500, not 400."""
+    from agenda_intelligence import services
+
+    monkeypatch.setattr(
+        services,
+        "middle_corridor_deal_risk",
+        lambda payload: {
+            "implemented": False,
+            "valid": None,
+            "errors": ["jsonschema is not installed – cannot validate"],
+            "response": None,
+        },
+    )
+
+    status, body = handle_post("/v1/middle-corridor/deal-risk", {"any": "payload"})
+
+    assert status == 500
+    assert body["ok"] is False
+    assert "validation unavailable" in body["error"]
+    assert body["errors"]
+
+
+def test_http_api_vertical_worker_schema_invalid_still_maps_to_400():
+    """A genuinely invalid request (validation ran) stays a 400 client error."""
+    status, body = handle_post("/v1/middle-corridor/deal-risk", {"missing": "required fields"})
+
+    assert status == 400
+    assert body["ok"] is False
+    assert body["errors"]

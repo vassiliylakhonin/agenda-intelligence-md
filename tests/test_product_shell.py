@@ -420,3 +420,31 @@ def test_routing_terms_documented_in_canon(term_set_name: str):
         "to mention each term verbatim (or add to TERM_EXEMPT_DOCS with a "
         "comment). Missing:\n  " + "\n  ".join(missing)
     )
+
+
+# ---------------------------------------------------------------------------
+# Result `mode`: host_completion vs server_completed (BYO-host clarity)
+# ---------------------------------------------------------------------------
+
+
+def test_analyze_skeleton_mode_is_host_completion():
+    """Keyless analyze must self-describe as expected host-completion, not a failure."""
+    result = mcp_server.analyze({"question": "sanctions q", "geography": "Kazakhstan"})
+
+    assert result["llm_invoked"] is False
+    assert result["mode"] == "host_completion"
+    # The skeleton is still not a real memo, but the message must read as expected,
+    # not as a crash.
+    assert result["memo_valid"] is False
+    assert any("host_completion" in e for e in result["memo_errors"])
+
+
+def test_analyze_server_completed_mode_when_llm_runs(monkeypatch):
+    """When the model is invoked here, mode must report server_completed."""
+    monkeypatch.setattr(product, "_call_anthropic", lambda s, u: json.dumps(_memo_example()))
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-used")
+
+    result = mcp_server.analyze({"question": "sanctions q", "geography": "Kazakhstan"})
+
+    assert result["llm_invoked"] is True
+    assert result["mode"] == "server_completed"
