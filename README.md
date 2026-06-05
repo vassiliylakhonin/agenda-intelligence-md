@@ -1,6 +1,6 @@
 # Agenda Intelligence MD
 
-Product runtime and evidence-discipline layer for strategic intelligence agents. One core service layer behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — plus structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Ships with three vertical workers: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, and Agentic Interaction Trust Gate.
+Product runtime and evidence-discipline layer for strategic intelligence agents. One core service layer behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — plus structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Ships with four vertical workers: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, and Gulf Maritime Exposure Gate.
 
 Read it as a **trust-routing layer for agent-mediated decisions**: it turns a partial evidence pack into a structured routing decision — allow, step up, escalate, or not-decision-ready — surfaces the specific missing evidence, and always requires human review for high-stakes actions. It does not approve, clear, or make a factual determination. Evaluate any of the three workers in 3 minutes with live curl calls: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md). Per-profile live retrieval is declared as a capability for `cis_secondary_sanctions` with two upstream options ([ADR 0014](docs/adr/0014-per-profile-live-retrieval.md)): [Watchman](https://github.com/moov-io/watchman) self-host (Apache-2.0, $0/month on free-tier container) — preferred — and the [OpenSanctions](https://www.opensanctions.org) hosted API (paid €0.10/call) — fallback. Activation is env-derived (`WATCHMAN_URL` or `OPENSANCTIONS_API_KEY`); both are currently deferred until an operator configures one. Profile operates on user-supplied evidence only when nothing is wired. No factual-truth verification.
 
@@ -36,6 +36,11 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightwei
 - Agenstry listing: <https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev>
 - Kazakhstan / Middle Corridor Deal Risk Gate: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
 - Kazakhstan Agenstry listing: <https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
+- CIS Secondary-Sanctions Exposure: <https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev>
+- CIS Agenstry listing: <https://agenstry.com/agents/cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev>
+- Agentic Interaction Trust Gate: <https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev>
+- Agentic Interaction Trust Agenstry listing: <https://agenstry.com/agents/agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev>
+- Gulf Maritime Exposure Gate: <https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev> (live; not yet listed on Agenstry)
 - Announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
 
 The hosted wrapper is intentionally limited: no payments, no wallets, no factual-truth verification, and no legal/financial/compliance advice. Live retrieval is off by default and opt-in per vertical-worker profile only (currently `cis_secondary_sanctions` against OpenSanctions, CC-BY 4.0; see [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) and [SOURCE_POLICY.md](SOURCE_POLICY.md)). Full product behavior remains in the installable stdio MCP server.
@@ -324,7 +329,7 @@ Stdio MCP server with 19 tools. Full docs and wire-protocol verification: [`MCP.
 | MCP stdio server | Stable |
 | HTTP API shell | Shipped (self-host); contract early — see `docs/deployment/http-api.md` |
 | A2A adapter | Shipped (Cloudflare Worker baseline); contract in `docs/product/a2a-adapter-plan.md` |
-| Cloudflare Worker deployment | Live (2 workers: general triage + Middle Corridor Deal Risk Gate) |
+| Cloudflare Worker deployment | Live (5 workers: general triage + Middle Corridor Deal Risk Gate + CIS Secondary-Sanctions Exposure + Agentic Interaction Trust Gate + Gulf Maritime Exposure) |
 | Middle Corridor Deal Risk Gate (vertical worker) | Live, no paying customers yet — illustrative usage only |
 | Evidence-audit schema (claim-level) | Stable |
 | Signal-tracker schema (lifecycle) | Stable |
