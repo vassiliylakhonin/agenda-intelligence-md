@@ -40,7 +40,8 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightwei
 - CIS Agenstry listing: <https://agenstry.com/agents/cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev>
 - Agentic Interaction Trust Gate: <https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev>
 - Agentic Interaction Trust Agenstry listing: <https://agenstry.com/agents/agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev>
-- Gulf Maritime Exposure Gate: <https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev> (live; not yet listed on Agenstry)
+- Gulf Maritime Exposure Gate: <https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev>
+- Gulf Maritime Agenstry listing: <https://agenstry.com/agents/gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev>
 - Announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
 
 The hosted wrapper is intentionally limited: no payments, no wallets, no factual-truth verification, and no legal/financial/compliance advice. Live retrieval is off by default and opt-in per vertical-worker profile only (currently `cis_secondary_sanctions` against OpenSanctions, CC-BY 4.0; see [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) and [SOURCE_POLICY.md](SOURCE_POLICY.md)). Full product behavior remains in the installable stdio MCP server.
