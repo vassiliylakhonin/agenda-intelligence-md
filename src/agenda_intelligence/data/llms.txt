@@ -10,6 +10,7 @@ Product MCP tools:
 - middle_corridor_deal_risk — Kazakhstan / Middle Corridor deal-risk gate; structured deal_risk_request (middle-corridor-deal-risk-request.schema.json) in, triage recommendation + decision-readiness + evidence gaps out. Pre-compliance triage; human review required.
 - cis_secondary_sanctions_exposure — CIS counterparty secondary-sanctions exposure triage (cis-secondary-sanctions-request.schema.json) for EU/UK/UAE/Singapore EDD. Local stdio runs on user-supplied evidence only; a name match is not identity verification.
 - agentic_interaction_trust — trust-evidence triage for an agent-mediated interaction (agentic-interaction-trust-request.schema.json) before a high-stakes action. Evidence triage only; human review required.
+- gulf_maritime_exposure — maritime sanctions + chokepoint-disruption exposure triage (gulf-maritime-exposure-request.schema.json) for a vessel/voyage transiting Strait of Hormuz / Persian-Arabian Gulf / Gulf of Oman / Bab-el-Mandeb / Red Sea. No live retrieval; does not resolve vessel ownership or verify identity; human review required.
 
 Geography routing terms (lowercased substring match against question, decision_context, geography). Modules union, not exclusive. Authoritative source: src/agenda_intelligence/product.py. Guard: tests/test_product_shell.py::test_routing_terms_documented_in_canon.
 
