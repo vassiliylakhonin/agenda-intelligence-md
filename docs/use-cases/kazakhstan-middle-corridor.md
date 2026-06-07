@@ -47,7 +47,7 @@ This is not legal, compliance, investment, insurance, or sanctions advice. It is
   "decision_readiness_label": "not_decision_ready",
   "top_risks": [
     "sanctions adjacency",
-    "Caspian chokepoint dependency",
+    "Caspian crossing capacity and draft exposure",
     "customs/documentation uncertainty",
     "insurance exclusions"
   ],
@@ -59,6 +59,7 @@ This is not legal, compliance, investment, insurance, or sanctions advice. It is
   ],
   "watch_next": [
     "new sanctions designations",
+    "Caspian ferry-slot, tonnage, or draft notice",
     "port delays or operator notices",
     "rail capacity constraints",
     "customs enforcement changes"
