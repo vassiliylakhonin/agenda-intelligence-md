@@ -686,6 +686,121 @@ def test_middle_corridor_input_digest_is_deterministic_and_input_bound():
     assert changed_digest != first
 
 
+def test_middle_corridor_flags_named_sector_counterparty():
+    """Counterparty with a non-'other' specified_sectors[] value must be flagged
+    as an OFAC FAQ 1148 / 1151 FFI sanctions-exposure point under EO 14024 / EO 14114."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {
+                "role": "consignee",
+                "name": "KZ Industries",
+                "jurisdiction": "Kazakhstan",
+                "specified_sectors": ["manufacturing", "technology"],
+            },
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+    resp = services.middle_corridor_deal_risk(req)["response"]
+    assert "counterparty operates in an OFAC-named sector under EO 14024" in resp["top_risks"]
+    assert "limitations" in resp
+    joined = " ".join(resp["limitations"])
+    assert "OFAC-named sector" in joined
+    assert "not a sanctions determination" in joined
+    foreign_layer = " ".join(resp["exposure_layers"]["foreign_sanctions_exposure_layer"])
+    assert "OFAC-named sector" in foreign_layer
+
+
+def test_middle_corridor_sector_other_only_not_flagged():
+    """Negative control: a counterparty whose only sector value is 'other'
+    must NOT trigger the OFAC-named-sector flag."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {
+                "role": "forwarder",
+                "name": "KZ Forwarder",
+                "jurisdiction": "Kazakhstan",
+                "specified_sectors": ["other"],
+            },
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate?",
+        "decision_stage": "pre_signature",
+    }
+    resp = services.middle_corridor_deal_risk(req)["response"]
+    assert "counterparty operates in an OFAC-named sector under EO 14024" not in resp["top_risks"]
+
+
+def test_middle_corridor_flags_newly_formed_counterparty():
+    """Counterparty with date_of_formation on or after 2022-02-24 in a high-risk
+    or circumvention-watch jurisdiction must be flagged per the OFAC FFI advisory
+    red-flag pattern."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "electronics",
+        "counterparties": [
+            {
+                "role": "consignee",
+                "name": "KZ NewCo",
+                "jurisdiction": "Kazakhstan",
+                "date_of_formation": "2022-03-15",
+            },
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+    resp = services.middle_corridor_deal_risk(req)["response"]
+    assert "counterparty newly formed in a transshipment-risk jurisdiction" in resp["top_risks"]
+    assert "limitations" in resp
+    joined = " ".join(resp["limitations"])
+    assert "newly formed" in joined
+    assert "not a sanctions determination" in joined
+
+
+def test_middle_corridor_pre_2022_formation_not_flagged():
+    """Negative control: a counterparty formed before the 2022-02-24 cutoff
+    must NOT trigger the newly-formed red flag, even in a watch jurisdiction."""
+    from agenda_intelligence import services
+
+    req = {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+            {
+                "role": "forwarder",
+                "name": "KZ Old Co",
+                "jurisdiction": "Kazakhstan",
+                "date_of_formation": "2018-06-01",
+            },
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate?",
+        "decision_stage": "pre_signature",
+    }
+    resp = services.middle_corridor_deal_risk(req)["response"]
+    assert "counterparty newly formed in a transshipment-risk jurisdiction" not in resp["top_risks"]
+
+
 def _write_tmp(obj):
     import tempfile
 
