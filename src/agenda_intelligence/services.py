@@ -669,7 +669,7 @@ def _middle_corridor_top_risks(
     high_risk_jurisdictions: bool = False,
     circumvention_watch: bool = False,
 ) -> list[str]:
-    risks = ["sanctions adjacency", "Caspian chokepoint dependency"]
+    risks = ["sanctions adjacency", "Caspian crossing capacity and draft exposure"]
     if high_risk_jurisdictions:
         risks.insert(0, "counterparty in a sanctions-relevant / high-risk jurisdiction")
     if circumvention_watch:
@@ -820,6 +820,7 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         ),
         "watch_next": [
             "new sanctions designations",
+            "Caspian ferry-slot, tonnage, or draft notice",
             "port delays or operator notices",
             "customs rule or enforcement changes",
             "carrier or vessel history updates",
