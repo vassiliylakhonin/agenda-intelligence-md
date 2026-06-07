@@ -42,11 +42,12 @@
     "No rail capacity or border wait source supplied."
   ],
   "top_risks": [
-    "Caspian chokepoint dependency",
+    "Caspian crossing capacity and draft exposure",
     "documentation timing uncertainty",
     "insurance term sensitivity"
   ],
   "watch_next": [
+    "Caspian ferry-slot, tonnage, or draft notice",
     "port delays or operator notices",
     "rail capacity or border wait updates",
     "customs enforcement changes",
