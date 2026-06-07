@@ -2544,7 +2544,7 @@ function circumventionWatchCounterparties(request) {
 }
 
 function topRisksForStructuredRequest(missingSources, highRisk = false, circumventionWatch = false) {
-  const risks = ["sanctions adjacency", "Caspian chokepoint dependency"];
+  const risks = ["sanctions adjacency", "Caspian crossing capacity and draft exposure"];
   if (highRisk) risks.unshift("counterparty in a sanctions-relevant / high-risk jurisdiction");
   if (circumventionWatch) risks.push("counterparty in a re-export / circumvention-watch jurisdiction");
   if (missingSources.includes("customs_or_regulatory_source")) risks.push("customs/documentation uncertainty");
@@ -2684,6 +2684,7 @@ function dealRiskContractResponseForRequest(request) {
     exposure_layers: exposureLayersForStructuredRequest(minimumSourcesBeforeGo, flaggedHighRisk.length > 0, flaggedCircumvention.length > 0),
     watch_next: [
       "new sanctions designations",
+      "Caspian ferry-slot, tonnage, or draft notice",
       "port delays or operator notices",
       "rail capacity constraints",
       "customs enforcement changes",
