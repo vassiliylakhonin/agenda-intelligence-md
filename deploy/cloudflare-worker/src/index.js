@@ -187,6 +187,35 @@ const CIRCUMVENTION_WATCH_JURISDICTIONS = {
   uae: "United Arab Emirates"
 };
 
+// OFAC FAQ 1148 / 1151 named sectors of the Russian Federation economy. A counterparty
+// operating in any of these (other than "other") is an FFI sanctions-exposure point
+// under EO 14024 as amended by EO 14114. Presence-flagging only; not a determination.
+const NAMED_SECTORS = {
+  technology: "technology",
+  defense_and_related_materiel: "defense and related materiel",
+  construction: "construction",
+  aerospace: "aerospace",
+  manufacturing: "manufacturing"
+};
+
+// Cutoff date for the OFAC FFI advisory "newly formed" red flag. Russia's further
+// invasion of Ukraine on 2022-02-24 marked the start of the transshipment-hub pattern
+// ("EXAMPLE OF HIGHER RISK CUSTOMER: A microelectronics exporter formed in March 2022
+// located in a high-risk jurisdiction"). Presence-flagging only; not a determination.
+const NEWLY_FORMED_COUNTERPARTY_CUTOFF = "2022-02-24";
+
+// Additional transshipment-hub jurisdictions for the OFAC FFI advisory newly-formed
+// red flag, drawn from U.S. Treasury / BIS designations of third-country transshipment
+// hubs. Deliberately disjoint from HIGH_RISK and CIRCUMVENTION_WATCH above so the
+// existing presence / diversion flags are unaffected; used only by newlyFormedCounterparties.
+// Lowercased; substring match.
+const TRANSSHIPMENT_HUB_JURISDICTIONS = {
+  kazakhstan: "Kazakhstan",
+  china: "China",
+  "hong kong": "Hong Kong",
+  cyprus: "Cyprus"
+};
+
 // Deceptive-shipping-practice (DSP) verification checklist drawn from OFAC maritime
 // guidance, surfaced when vessel / carrier history is not yet supplied. Evidence-gap
 // checklist routed to human review — not vessel adjudication, AIS analysis, live
@@ -2543,10 +2572,71 @@ function circumventionWatchCounterparties(request) {
   return flagged;
 }
 
-function topRisksForStructuredRequest(missingSources, highRisk = false, circumventionWatch = false) {
+// Flag counterparties operating in an OFAC-named sector (FAQ 1148 / 1151). FFIs are
+// exposed under EO 14024 as amended by EO 14114 for facilitating transactions involving
+// persons in the technology, defense and related materiel, construction, aerospace, or
+// manufacturing sectors of the Russian Federation economy. Presence-flagging based on
+// the counterparty's declared sector(s); does not adjudicate whether a sanction applies.
+function namedSectorCounterparties(request) {
+  const flagged = [];
+  for (const cp of request.counterparties || []) {
+    if (!cp || !Array.isArray(cp.specified_sectors)) continue;
+    const named = cp.specified_sectors
+      .filter((s) => typeof s === "string" && s in NAMED_SECTORS)
+      .map((s) => NAMED_SECTORS[s]);
+    if (named.length === 0) continue;
+    flagged.push({ name: cp.name || "unnamed counterparty", role: cp.role || "unknown", sectors: named });
+  }
+  return flagged;
+}
+
+// Flag counterparties newly formed on or after 2022-02-24 in a high-risk,
+// circumvention-watch, or transshipment-hub jurisdiction. Mirrors the OFAC FFI
+// advisory red flag: "EXAMPLE OF HIGHER RISK CUSTOMER: A microelectronics exporter
+// formed in March 2022 located in a high-risk jurisdiction". Presence-flagging only.
+function newlyFormedCounterparties(request) {
+  const flagged = [];
+  const sources = [HIGH_RISK_JURISDICTIONS, CIRCUMVENTION_WATCH_JURISDICTIONS, TRANSSHIPMENT_HUB_JURISDICTIONS];
+  for (const cp of request.counterparties || []) {
+    if (!cp) continue;
+    const dateOfFormation = cp.date_of_formation;
+    if (typeof dateOfFormation !== "string" || dateOfFormation < NEWLY_FORMED_COUNTERPARTY_CUTOFF) continue;
+    if (typeof cp.jurisdiction !== "string") continue;
+    const lowered = cp.jurisdiction.toLowerCase();
+    let matchedLabel = null;
+    for (const source of sources) {
+      for (const [token, label] of Object.entries(source)) {
+        if (lowered.includes(token)) {
+          matchedLabel = label;
+          break;
+        }
+      }
+      if (matchedLabel !== null) break;
+    }
+    if (matchedLabel === null) continue;
+    flagged.push({
+      name: cp.name || "unnamed counterparty",
+      role: cp.role || "unknown",
+      jurisdiction: cp.jurisdiction,
+      date_of_formation: dateOfFormation,
+      matched: matchedLabel
+    });
+  }
+  return flagged;
+}
+
+function topRisksForStructuredRequest(
+  missingSources,
+  highRisk = false,
+  circumventionWatch = false,
+  namedSectorPresent = false,
+  newlyFormedPresent = false
+) {
   const risks = ["sanctions adjacency", "Caspian crossing capacity and draft exposure"];
   if (highRisk) risks.unshift("counterparty in a sanctions-relevant / high-risk jurisdiction");
   if (circumventionWatch) risks.push("counterparty in a re-export / circumvention-watch jurisdiction");
+  if (namedSectorPresent) risks.push("counterparty operates in an OFAC-named sector under EO 14024");
+  if (newlyFormedPresent) risks.push("counterparty newly formed in a transshipment-risk jurisdiction");
   if (missingSources.includes("customs_or_regulatory_source")) risks.push("customs/documentation uncertainty");
   if (missingSources.includes("insurance_clause_or_underwriter_note")) risks.push("insurance exclusions");
   if (
@@ -2559,7 +2649,13 @@ function topRisksForStructuredRequest(missingSources, highRisk = false, circumve
   return [...new Set(risks)];
 }
 
-function exposureLayersForStructuredRequest(missingSources, highRisk = false, circumventionWatch = false) {
+function exposureLayersForStructuredRequest(
+  missingSources,
+  highRisk = false,
+  circumventionWatch = false,
+  namedSectorPresent = false,
+  newlyFormedPresent = false
+) {
   const domesticLegalLayer = [
     "Home-jurisdiction legal and licensing posture not assessed here (this product does not verify export-control licensing or documentation); confirm with qualified review."
   ];
@@ -2572,6 +2668,16 @@ function exposureLayersForStructuredRequest(missingSources, highRisk = false, ci
   }
   if (circumventionWatch) {
     foreignSanctionsExposureLayer.push("Counterparty in a re-export / circumvention-watch jurisdiction — verify end-use and onward destination.");
+  }
+  if (namedSectorPresent) {
+    foreignSanctionsExposureLayer.push(
+      "Counterparty operates in an OFAC-named sector (FAQ 1148 / 1151) — FFI sanctions-exposure flag under EO 14024 / EO 14114, not a determination."
+    );
+  }
+  if (newlyFormedPresent) {
+    foreignSanctionsExposureLayer.push(
+      "Counterparty newly formed in a transshipment-risk jurisdiction (OFAC FFI advisory red flag) — escalation flag for human review, not a determination."
+    );
   }
   if (missingSources.includes("sanctions_list_extract")) {
     foreignSanctionsExposureLayer.push("No sanctions list extract supplied to review listed-party exposure.");
@@ -2669,6 +2775,8 @@ function dealRiskContractResponseForRequest(request) {
   const decisionReadiness = decisionReadinessForStructuredRequest(request, suppliedSources);
   const flaggedHighRisk = highRiskJurisdictionCounterparties(request);
   const flaggedCircumvention = circumventionWatchCounterparties(request);
+  const flaggedNamedSectors = namedSectorCounterparties(request);
+  const flaggedNewlyFormed = newlyFormedCounterparties(request);
   const response = {
     triage_recommendation: triageRecommendationForStructuredRequest(request, minimumSourcesBeforeGo),
     risk_signal: riskSignalForStructuredRequest(request, minimumSourcesBeforeGo),
@@ -2680,8 +2788,20 @@ function dealRiskContractResponseForRequest(request) {
     supplied_sources: suppliedSources,
     minimum_sources_before_go: minimumSourcesBeforeGo,
     evidence_gaps: minimumSourcesBeforeGo.map(evidenceGapForSource),
-    top_risks: topRisksForStructuredRequest(minimumSourcesBeforeGo, flaggedHighRisk.length > 0, flaggedCircumvention.length > 0),
-    exposure_layers: exposureLayersForStructuredRequest(minimumSourcesBeforeGo, flaggedHighRisk.length > 0, flaggedCircumvention.length > 0),
+    top_risks: topRisksForStructuredRequest(
+      minimumSourcesBeforeGo,
+      flaggedHighRisk.length > 0,
+      flaggedCircumvention.length > 0,
+      flaggedNamedSectors.length > 0,
+      flaggedNewlyFormed.length > 0
+    ),
+    exposure_layers: exposureLayersForStructuredRequest(
+      minimumSourcesBeforeGo,
+      flaggedHighRisk.length > 0,
+      flaggedCircumvention.length > 0,
+      flaggedNamedSectors.length > 0,
+      flaggedNewlyFormed.length > 0
+    ),
     watch_next: [
       "new sanctions designations",
       "Caspian ferry-slot, tonnage, or draft notice",
@@ -2706,6 +2826,22 @@ function dealRiskContractResponseForRequest(request) {
     const namedCw = flaggedCircumvention.map((c) => `${c.name} (${c.role}, ${c.jurisdiction})`).join(", ");
     limitations.push(
       `One or more counterparties are domiciled in a re-export / circumvention-watch jurisdiction (${namedCw}); this is a diversion watch item for human review, not a sanctions determination. Verify end-use and onward destination before any commercial action.`
+    );
+  }
+  if (flaggedNamedSectors.length > 0) {
+    const namedNs = flaggedNamedSectors
+      .map((c) => `${c.name} (${c.role}, sectors: ${c.sectors.join("/")})`)
+      .join(", ");
+    limitations.push(
+      `One or more counterparties operate in an OFAC-named sector of the Russian Federation economy (${namedNs}); this is an FFI sanctions-exposure escalation flag under EO 14024 as amended by EO 14114, not a sanctions determination. Confirm end-use and applicable restrictions before any commercial action.`
+    );
+  }
+  if (flaggedNewlyFormed.length > 0) {
+    const namedNf = flaggedNewlyFormed
+      .map((c) => `${c.name} (${c.role}, ${c.jurisdiction}, formed ${c.date_of_formation})`)
+      .join(", ");
+    limitations.push(
+      `One or more counterparties were newly formed in a transshipment-risk jurisdiction (${namedNf}); this matches an OFAC FFI advisory red-flag pattern and is an escalation flag for human review, not a sanctions determination.`
     );
   }
   if (limitations.length > 0) response.limitations = limitations;

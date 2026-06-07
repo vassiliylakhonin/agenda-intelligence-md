@@ -295,6 +295,76 @@ test("worker deal-risk contract flags re-export / circumvention-watch (Armenia),
   assert.ok(resp.limitations.some((l) => l.includes("diversion watch item")));
 });
 
+test("worker deal-risk contract flags counterparty.specified_sectors[] under OFAC EO 14024 (Python parity)", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      counterparties: [
+        {
+          role: "consignee",
+          name: "KZ Industries",
+          jurisdiction: "Kazakhstan",
+          specified_sectors: ["manufacturing", "technology"]
+        }
+      ]
+    })
+  );
+  assert.ok(resp.top_risks.includes("counterparty operates in an OFAC-named sector under EO 14024"));
+  assert.ok(resp.limitations.some((l) => l.includes("OFAC-named sector")));
+  assert.ok(resp.limitations.some((l) => l.includes("not a sanctions determination")));
+  const foreign = resp.exposure_layers.foreign_sanctions_exposure_layer.join(" ");
+  assert.ok(foreign.includes("OFAC-named sector"));
+});
+
+test("worker deal-risk contract: counterparty.specified_sectors=['other'] only is NOT flagged (Python parity)", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      counterparties: [
+        {
+          role: "forwarder",
+          name: "KZ Forwarder",
+          jurisdiction: "Kazakhstan",
+          specified_sectors: ["other"]
+        }
+      ]
+    })
+  );
+  assert.equal(resp.top_risks.includes("counterparty operates in an OFAC-named sector under EO 14024"), false);
+});
+
+test("worker deal-risk contract flags counterparty.date_of_formation post-2022-02-24 in transshipment hub (Python parity)", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      counterparties: [
+        {
+          role: "consignee",
+          name: "KZ NewCo",
+          jurisdiction: "Kazakhstan",
+          date_of_formation: "2022-03-15"
+        }
+      ]
+    })
+  );
+  assert.ok(resp.top_risks.includes("counterparty newly formed in a transshipment-risk jurisdiction"));
+  assert.ok(resp.limitations.some((l) => l.includes("newly formed")));
+  assert.ok(resp.limitations.some((l) => l.includes("not a sanctions determination")));
+});
+
+test("worker deal-risk contract: counterparty.date_of_formation pre-2022-02-24 is NOT flagged (Python parity)", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      counterparties: [
+        {
+          role: "forwarder",
+          name: "KZ Old Co",
+          jurisdiction: "Kazakhstan",
+          date_of_formation: "2018-06-01"
+        }
+      ]
+    })
+  );
+  assert.equal(resp.top_risks.includes("counterparty newly formed in a transshipment-risk jurisdiction"), false);
+});
+
 test("worker deal-risk contract surfaces Caspian capacity / draft language in top_risks and watch_next (Python parity)", () => {
   const resp = dealRiskContractResponseForRequest(baseDealRiskRequest());
   assert.ok(resp.top_risks.includes("Caspian crossing capacity and draft exposure"));
