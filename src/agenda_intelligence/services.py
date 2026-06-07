@@ -556,6 +556,42 @@ CIRCUMVENTION_WATCH_JURISDICTIONS = {
     "uae": "United Arab Emirates",
 }
 
+# OFAC FAQ 1148 / 1151 named sectors of the Russian Federation economy. A
+# counterparty operating in any of these (other than "other") is an FFI
+# sanctions-exposure point under EO 14024 as amended by EO 14114. Presence-
+# flagging based on the counterparty's declared sector(s); not a sanctions
+# determination.
+NAMED_SECTORS = {
+    "technology": "technology",
+    "defense_and_related_materiel": "defense and related materiel",
+    "construction": "construction",
+    "aerospace": "aerospace",
+    "manufacturing": "manufacturing",
+}
+
+# Cutoff date for the OFAC FFI advisory "newly formed" red flag. Russia's
+# further invasion of Ukraine on 2022-02-24 marked the start of the
+# transshipment-hub pattern flagged in the advisory ("EXAMPLE OF HIGHER RISK
+# CUSTOMER: A microelectronics exporter formed in March 2022 located in a
+# high-risk jurisdiction"). Presence-flagging only; not a sanctions
+# determination.
+NEWLY_FORMED_COUNTERPARTY_CUTOFF = "2022-02-24"
+
+# Additional transshipment-hub jurisdictions for the OFAC FFI advisory
+# newly-formed red flag, drawn from the third-country hubs named across U.S.
+# Treasury / BIS / partner advisories on Russia sanctions evasion (Miller &
+# Chevalier and FPRI cite Kazakhstan, China, Hong Kong, and Cyprus as common
+# transshipment points beyond the circumvention-watch list above). Used only
+# by _newly_formed_counterparties, deliberately disjoint from HIGH_RISK and
+# CIRCUMVENTION_WATCH so the existing presence / diversion flags are
+# unaffected. Lowercased; substring match against counterparty jurisdiction.
+TRANSSHIPMENT_HUB_JURISDICTIONS = {
+    "kazakhstan": "Kazakhstan",
+    "china": "China",
+    "hong kong": "Hong Kong",
+    "cyprus": "Cyprus",
+}
+
 # Deceptive-shipping-practice (DSP) indicators a maritime-leg sanctions review
 # checks for, drawn from OFAC maritime guidance. Surfaced as a verification
 # checklist when vessel / carrier history is not yet supplied. This is an
@@ -664,16 +700,93 @@ def _circumvention_watch_counterparties(request_json: dict) -> list[dict]:
     return flagged
 
 
+def _named_sector_counterparties(request_json: dict) -> list[dict]:
+    """Flag counterparties operating in an OFAC-named sector (FAQ 1148 / 1151).
+
+    Per OFAC, foreign financial institutions are exposed to sanctions under
+    EO 14024 as amended by EO 14114 for facilitating transactions involving
+    persons operating in the technology, defense and related materiel,
+    construction, aerospace, or manufacturing sectors of the Russian
+    Federation economy. This is presence-flagging based on the counterparty's
+    declared sector(s); it does not adjudicate whether a sanction applies.
+    """
+    flagged: list[dict] = []
+    for cp in request_json.get("counterparties", []) or []:
+        if not isinstance(cp, dict):
+            continue
+        sectors = cp.get("specified_sectors") or []
+        if not isinstance(sectors, list):
+            continue
+        named = [NAMED_SECTORS[s] for s in sectors if isinstance(s, str) and s in NAMED_SECTORS]
+        if not named:
+            continue
+        flagged.append(
+            {
+                "name": cp.get("name", "unnamed counterparty"),
+                "role": cp.get("role", "unknown"),
+                "sectors": named,
+            }
+        )
+    return flagged
+
+
+def _newly_formed_counterparties(request_json: dict) -> list[dict]:
+    """Flag counterparties newly formed on or after 2022-02-24 in a high-risk
+    or circumvention-watch jurisdiction.
+
+    Mirrors the OFAC FFI advisory red flag: "EXAMPLE OF HIGHER RISK CUSTOMER:
+    A microelectronics exporter formed in March 2022 located in a high-risk
+    jurisdiction". Presence-flagging only; not a sanctions determination.
+    """
+    flagged: list[dict] = []
+    for cp in request_json.get("counterparties", []) or []:
+        if not isinstance(cp, dict):
+            continue
+        date_of_formation = cp.get("date_of_formation")
+        if not isinstance(date_of_formation, str) or date_of_formation < NEWLY_FORMED_COUNTERPARTY_CUTOFF:
+            continue
+        jurisdiction = cp.get("jurisdiction")
+        if not isinstance(jurisdiction, str):
+            continue
+        lowered = jurisdiction.lower()
+        matched_label = None
+        for source in (HIGH_RISK_JURISDICTIONS, CIRCUMVENTION_WATCH_JURISDICTIONS, TRANSSHIPMENT_HUB_JURISDICTIONS):
+            for token, label in source.items():
+                if token in lowered:
+                    matched_label = label
+                    break
+            if matched_label is not None:
+                break
+        if matched_label is None:
+            continue
+        flagged.append(
+            {
+                "name": cp.get("name", "unnamed counterparty"),
+                "role": cp.get("role", "unknown"),
+                "jurisdiction": jurisdiction,
+                "date_of_formation": date_of_formation,
+                "matched": matched_label,
+            }
+        )
+    return flagged
+
+
 def _middle_corridor_top_risks(
     missing_sources: list[str],
     high_risk_jurisdictions: bool = False,
     circumvention_watch: bool = False,
+    named_sector_present: bool = False,
+    newly_formed_present: bool = False,
 ) -> list[str]:
     risks = ["sanctions adjacency", "Caspian crossing capacity and draft exposure"]
     if high_risk_jurisdictions:
         risks.insert(0, "counterparty in a sanctions-relevant / high-risk jurisdiction")
     if circumvention_watch:
         risks.append("counterparty in a re-export / circumvention-watch jurisdiction")
+    if named_sector_present:
+        risks.append("counterparty operates in an OFAC-named sector under EO 14024")
+    if newly_formed_present:
+        risks.append("counterparty newly formed in a transshipment-risk jurisdiction")
     if "customs_or_regulatory_source" in missing_sources:
         risks.append("customs and documentation uncertainty")
     if "insurance_clause_or_underwriter_note" in missing_sources:
@@ -689,6 +802,8 @@ def _middle_corridor_exposure_layers(
     missing_sources: list[str],
     high_risk_jurisdictions: bool = False,
     circumvention_watch: bool = False,
+    named_sector_present: bool = False,
+    newly_formed_present: bool = False,
 ) -> dict:
     """Decompose the risk picture into the two layers a practitioner separates:
     home-jurisdiction legal / documentation posture (not assessed here) versus
@@ -715,6 +830,16 @@ def _middle_corridor_exposure_layers(
     if circumvention_watch:
         foreign_sanctions_exposure_layer.append(
             "Counterparty in a re-export / circumvention-watch jurisdiction — verify end-use and onward destination."
+        )
+    if named_sector_present:
+        foreign_sanctions_exposure_layer.append(
+            "Counterparty operates in an OFAC-named sector (FAQ 1148 / 1151) — FFI sanctions-exposure flag under "
+            "EO 14024 / EO 14114, not a determination."
+        )
+    if newly_formed_present:
+        foreign_sanctions_exposure_layer.append(
+            "Counterparty newly formed in a transshipment-risk jurisdiction (OFAC FFI advisory red flag) — "
+            "escalation flag for human review, not a determination."
         )
     if "sanctions_list_extract" in missing_sources:
         foreign_sanctions_exposure_layer.append("No sanctions list extract supplied to review listed-party exposure.")
@@ -800,6 +925,8 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
     ]
     flagged_jurisdictions = _high_risk_jurisdiction_counterparties(request_json)
     flagged_circumvention = _circumvention_watch_counterparties(request_json)
+    flagged_named_sectors = _named_sector_counterparties(request_json)
+    flagged_newly_formed = _newly_formed_counterparties(request_json)
     readiness_score, readiness_label = _middle_corridor_readiness(request_json, supplied_sources)
     response = {
         "triage_recommendation": _middle_corridor_triage_recommendation(request_json, missing_sources),
@@ -813,10 +940,18 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         "minimum_sources_before_go": missing_sources,
         "evidence_gaps": [_evidence_gap_for_source(source_type) for source_type in missing_sources],
         "top_risks": _middle_corridor_top_risks(
-            missing_sources, bool(flagged_jurisdictions), bool(flagged_circumvention)
+            missing_sources,
+            bool(flagged_jurisdictions),
+            bool(flagged_circumvention),
+            bool(flagged_named_sectors),
+            bool(flagged_newly_formed),
         ),
         "exposure_layers": _middle_corridor_exposure_layers(
-            missing_sources, bool(flagged_jurisdictions), bool(flagged_circumvention)
+            missing_sources,
+            bool(flagged_jurisdictions),
+            bool(flagged_circumvention),
+            bool(flagged_named_sectors),
+            bool(flagged_newly_formed),
         ),
         "watch_next": [
             "new sanctions designations",
@@ -847,6 +982,26 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
             "One or more counterparties are domiciled in a re-export / circumvention-watch jurisdiction "
             f"({named_cw}); this is a diversion watch item for human review, not a sanctions determination. "
             "Verify end-use and onward destination before any commercial action."
+        )
+    if flagged_named_sectors:
+        named_ns = ", ".join(
+            f"{c['name']} ({c['role']}, sectors: {'/'.join(c['sectors'])})" for c in flagged_named_sectors
+        )
+        limitations.append(
+            "One or more counterparties operate in an OFAC-named sector of the Russian Federation economy "
+            f"({named_ns}); this is an FFI sanctions-exposure escalation flag under EO 14024 as amended by "
+            "EO 14114, not a sanctions determination. Confirm end-use and applicable restrictions before any "
+            "commercial action."
+        )
+    if flagged_newly_formed:
+        named_nf = ", ".join(
+            f"{c['name']} ({c['role']}, {c['jurisdiction']}, formed {c['date_of_formation']})"
+            for c in flagged_newly_formed
+        )
+        limitations.append(
+            "One or more counterparties were newly formed in a transshipment-risk jurisdiction "
+            f"({named_nf}); this matches an OFAC FFI advisory red-flag pattern and is an escalation flag for "
+            "human review, not a sanctions determination."
         )
     if limitations:
         response["limitations"] = limitations
