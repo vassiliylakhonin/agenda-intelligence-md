@@ -1,0 +1,158 @@
+{
+  "triage_recommendation": "escalate_before_signature",
+  "risk_signal": "medium_high",
+  "decision_readiness_score": 42,
+  "decision_readiness_label": "not_decision_ready",
+  "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+  "cargo": "general electronic equipment",
+  "counterparties": [
+    {
+      "role": "forwarder",
+      "name": "Kazakhstan forwarder",
+      "jurisdiction": "Kazakhstan"
+    },
+    {
+      "role": "consignee",
+      "name": "Astana NewCo Trading LLP",
+      "jurisdiction": "Kazakhstan",
+      "date_of_formation": "2023-08-12"
+    }
+  ],
+  "supplied_sources": [
+    "port_operator_notice",
+    "sanctions_list_extract",
+    "carrier_note"
+  ],
+  "minimum_sources_before_go": [
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "customs_or_regulatory_source",
+    "insurance_clause_or_underwriter_note",
+    "vessel_or_carrier_history"
+  ],
+  "evidence_gaps": [
+    "No counterparty registry extract supplied.",
+    "No beneficial ownership source supplied.",
+    "No customs or regulatory source supplied.",
+    "No insurance clause or underwriter note supplied.",
+    "No vessel or carrier history supplied."
+  ],
+  "top_risks": [
+    "sanctions adjacency",
+    "Caspian crossing capacity and draft exposure",
+    "counterparty newly formed in a transshipment-risk jurisdiction",
+    "customs and documentation uncertainty",
+    "insurance exclusions or coverage limitations",
+    "counterparty and ownership uncertainty",
+    "carrier or vessel history gap"
+  ],
+  "exposure_layers": {
+    "domestic_legal_layer": [
+      "Home-jurisdiction legal and licensing posture not assessed here (this product does not verify export-control licensing or documentation); confirm with qualified review.",
+      "No customs or regulatory source supplied to review documentation posture."
+    ],
+    "foreign_sanctions_exposure_layer": [
+      "Secondary / extraterritorial sanctions adjacency present; exposure not adjudicated.",
+      "Counterparty newly formed in a transshipment-risk jurisdiction (OFAC FFI advisory red flag) \u2014 escalation flag for human review, not a determination.",
+      "No beneficial ownership source \u2014 indirect / ownership-based exposure cannot be reviewed."
+    ]
+  },
+  "watch_next": [
+    "new sanctions designations",
+    "Caspian ferry-slot, tonnage, or draft notice",
+    "port delays or operator notices",
+    "customs rule or enforcement changes",
+    "carrier or vessel history updates",
+    "insurance term changes"
+  ],
+  "human_review_required": true,
+  "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
+  "counterparty_readiness": {
+    "status": "partial",
+    "required_total": 6,
+    "supplied_count": 1,
+    "missing_count": 5,
+    "outstanding_documents": [
+      "counterparty_registry_extract",
+      "beneficial_ownership_source",
+      "customs_or_regulatory_source",
+      "insurance_clause_or_underwriter_note",
+      "vessel_or_carrier_history"
+    ],
+    "document_ledger": [
+      {
+        "source_type": "counterparty_registry_extract",
+        "status": "missing"
+      },
+      {
+        "source_type": "beneficial_ownership_source",
+        "status": "missing"
+      },
+      {
+        "source_type": "sanctions_list_extract",
+        "status": "received",
+        "date_received": "2026-05-21"
+      },
+      {
+        "source_type": "customs_or_regulatory_source",
+        "status": "missing"
+      },
+      {
+        "source_type": "insurance_clause_or_underwriter_note",
+        "status": "missing"
+      },
+      {
+        "source_type": "vessel_or_carrier_history",
+        "status": "missing"
+      }
+    ],
+    "presentable_note": "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; it is not clearance, approval, a sanctions determination, or compliance advice. Human review is required before any commercial action."
+  },
+  "run_provenance": {
+    "contract_version": "1.1.0",
+    "schema_id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/middle-corridor-deal-risk-response.schema.json",
+    "input_digest": "sha256:741c46f8337c709c8b75acb6c15defffa5a7520923929c0fc82770522eed8b6c"
+  },
+  "limitations": [
+    "One or more counterparties were newly formed in a transshipment-risk jurisdiction (Astana NewCo Trading LLP (consignee, Kazakhstan, formed 2023-08-12)); this matches an OFAC FFI advisory red-flag pattern and is an escalation flag for human review, not a sanctions determination."
+  ],
+  "vessel_due_diligence_indicators": [
+    "AIS continuity: check for extended transmission gaps or disablement over the voyage.",
+    "Vessel identity consistency: check for MMSI / name / IMO manipulation or misclassification.",
+    "Certificate-of-origin integrity: confirm shipping documents match declared cargo origin and destination.",
+    "Ship-to-ship transfer history: check for undisclosed STS transfers along the route.",
+    "Flag history: check for recent flag changes or registration with a high-risk registry."
+  ],
+  "reexport_control_indicators": [
+    "End-user statement: obtain a signed end-user / end-use statement naming the ultimate consignee.",
+    "No-re-export clause: confirm the counterparty accepts a no-re-export / no-diversion contract clause.",
+    "End-use consistency: check the stated end-use is consistent with the cargo type and the ordering party.",
+    "Onward destination: confirm disclosure of any onward destination beyond the first delivery point.",
+    "Order-vs-destination match: flag a stated end-user in a different country from the order origin."
+  ],
+  "source_of_funds_indicators": [
+    "Source of funds: obtain evidence of the funds used for this deal (bank statement, loan or sale proceeds).",
+    "Source of wealth: obtain evidence of the counterparty's overall wealth origin (business, prior trade).",
+    "Consistency: check the declared source of funds fits the counterparty profile and the deal size.",
+    "Payer match: confirm the paying entity and account match the contracting counterparty.",
+    "Funds-jurisdiction flag: flag funds routed through a high-risk or sanctions-relevant jurisdiction."
+  ],
+  "pep_screening_indicators": [
+    "PEP screening: screen each counterparty and its beneficial owners against PEP lists.",
+    "Family and close associates: extend screening to immediate family and known close associates.",
+    "Senior-management approval: confirm sign-off where a PEP relationship is identified.",
+    "Source of funds/wealth: apply enhanced SOF/SOW checks for any identified PEP.",
+    "Ongoing monitoring: apply enhanced monitoring for the duration of any PEP relationship."
+  ],
+  "front_company_indicators": [
+    "Business substance: confirm the counterparty is a real operating business, not a recently formed shell.",
+    "Web and registry footprint: check for a verifiable web presence and a registry record that predates the deal.",
+    "Address integrity: flag an address shared with multiple unrelated companies or with a sanctioned entity.",
+    "Line-of-business fit: confirm the goods or service fit the counterparty's stated line of business.",
+    "Representation: flag contact only via an intermediary with broad power of attorney, principals unavailable."
+  ],
+  "shipment_value": {
+    "amount": 950000,
+    "currency": "USD"
+  }
+}
