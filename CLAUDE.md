@@ -39,6 +39,8 @@ When changing any of these, change the paired copy in the same commit. Version b
 
 ## Validators before push
 
+TL;DR: `make ci` is sufficient before push — it runs lint, typecheck, and the full test suite. The list below is for debugging which specific step failed, not a sequence to run by hand every time.
+
 Mirror the CI checks locally before pushing:
 
 ```
@@ -61,6 +63,10 @@ For MCP smoke check:
 ```
 python3 -m agenda_intelligence.cli doctor --mcp-command "python3 -m agenda_intelligence.mcp_stdio" --strict
 ```
+
+## PR workflow
+
+PRs auto-merge on green CI per branch protection — no need to wait for manual approval after `gh pr create`. Standing permission to use `gh pr merge --auto --squash --delete-branch` on docs and CI-green code changes. Pause only for irreversible / schema-breaking / public-positioning changes (those need an ADR and explicit approval, per AGENTS.md change discipline).
 
 ## Working style in this repo
 
