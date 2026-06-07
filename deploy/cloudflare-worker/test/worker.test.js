@@ -295,6 +295,13 @@ test("worker deal-risk contract flags re-export / circumvention-watch (Armenia),
   assert.ok(resp.limitations.some((l) => l.includes("diversion watch item")));
 });
 
+test("worker deal-risk contract surfaces Caspian capacity / draft language in top_risks and watch_next (Python parity)", () => {
+  const resp = dealRiskContractResponseForRequest(baseDealRiskRequest());
+  assert.ok(resp.top_risks.includes("Caspian crossing capacity and draft exposure"));
+  assert.equal(resp.top_risks.includes("Caspian chokepoint dependency"), false);
+  assert.ok(resp.watch_next.includes("Caspian ferry-slot, tonnage, or draft notice"));
+});
+
 test("worker deal-risk contract exposes two-layer exposure + vessel DSP checklist", () => {
   const resp = dealRiskContractResponseForRequest(baseDealRiskRequest());
   assert.ok(resp.exposure_layers.domestic_legal_layer.length > 0);
