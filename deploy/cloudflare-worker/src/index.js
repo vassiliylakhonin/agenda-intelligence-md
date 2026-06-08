@@ -1760,7 +1760,8 @@ const GULF_SOURCE_TYPES = [
   "vessel_registry_extract", "flag_registry_record", "pi_insurance_certificate", "ais_track_record",
   "sts_transfer_evidence", "ownership_or_control_evidence", "sanctions_list_extract", "cargo_or_bl_evidence",
   "classification_society_record", "port_state_control_record", "charterer_kyc_evidence",
-  "adverse_media_evidence", "prior_incident_or_detention", "human_review_note", "user_provided_note", "other"
+  "adverse_media_evidence", "prior_incident_or_detention", "price_cap_attestation_or_recordkeeping",
+  "human_review_note", "user_provided_note", "other"
 ];
 
 const GULF_CHOKEPOINT_WATCH = {
@@ -1844,7 +1845,9 @@ function gulfEvidenceGapForSource(sourceType) {
     port_state_control_record: "No port state control record supplied.",
     charterer_kyc_evidence: "No charterer KYC evidence supplied.",
     adverse_media_evidence: "No adverse media evidence supplied.",
-    prior_incident_or_detention: "No prior incident or detention record supplied."
+    prior_incident_or_detention: "No prior incident or detention record supplied.",
+    price_cap_attestation_or_recordkeeping:
+      "No price-cap attestation or itemized ancillary-cost recordkeeping supplied."
   };
   return gaps[sourceType] || `No ${sourceType} supplied.`;
 }
@@ -1886,7 +1889,7 @@ function gulfTriageRecommendation(request, missing, exposureSignal) {
   return "not_decision_ready";
 }
 
-function gulfTopExposureDimensions(facets, missing) {
+function gulfTopExposureDimensions(facets, missing, supplied) {
   const map = {
     iran_oil_exposure: "Iran-origin oil sanctions exposure (OFAC / EU)",
     russia_oil_price_cap: "Russia oil price-cap / attestation exposure",
@@ -1903,6 +1906,12 @@ function gulfTopExposureDimensions(facets, missing) {
   for (const f of facets) if (map[f]) dims.push(map[f]);
   if (missing.includes("ownership_or_control_evidence")) dims.push("vessel ownership or control not yet documented");
   if (missing.includes("pi_insurance_certificate")) dims.push("P&I cover not yet confirmed");
+  if (facets.includes("russia_oil_price_cap") && !(supplied || []).includes("price_cap_attestation_or_recordkeeping")) {
+    dims.push(
+      "per-loading price-cap attestation and itemized ancillary-cost recordkeeping " +
+        "not yet evidenced (OFAC tiered safe-harbor)"
+    );
+  }
   return Array.from(new Set(dims));
 }
 
@@ -1919,6 +1928,16 @@ function gulfMaritimeExposureResult(request) {
   const [score, label] = gulfDecisionReadiness(request, supplied);
   const exposureSignal = gulfExposureSignal(request, missing);
   const facets = Array.isArray(request.exposure_facets) ? request.exposure_facets : [];
+  const watchNext = [
+    "new OFAC vessel or entity designation",
+    "new EU or UK OFSI shipping-related listing",
+    "P&I club cover withdrawal or confirmation change",
+    "flag-registry deregistration or flag-hopping report",
+    "AIS gap, spoofing, or dark-activity report on the vessel"
+  ];
+  if (facets.includes("russia_oil_price_cap")) {
+    watchNext.push("price-cap attestation refusal, withdrawal, or itemized ancillary-cost gap");
+  }
   const response = {
     triage_recommendation: gulfTriageRecommendation(request, missing, exposureSignal),
     exposure_signal: exposureSignal,
@@ -1929,15 +1948,9 @@ function gulfMaritimeExposureResult(request) {
     supplied_sources: supplied,
     minimum_sources_before_review: missing,
     evidence_gaps: missing.map(gulfEvidenceGapForSource),
-    top_exposure_dimensions: gulfTopExposureDimensions(facets, missing),
+    top_exposure_dimensions: gulfTopExposureDimensions(facets, missing, supplied),
     chokepoint_disruption_watch: gulfChokepointDisruptionWatch(request),
-    watch_next: [
-      "new OFAC vessel or entity designation",
-      "new EU or UK OFSI shipping-related listing",
-      "P&I club cover withdrawal or confirmation change",
-      "flag-registry deregistration or flag-hopping report",
-      "AIS gap, spoofing, or dark-activity report on the vessel"
-    ],
+    watch_next: watchNext,
     human_review_required: true,
     not_advice_notice: GULF_NOT_ADVICE_NOTICE,
     limitations: [
