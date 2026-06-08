@@ -2,7 +2,7 @@
 
 Product runtime and evidence-discipline layer for strategic intelligence agents. One core service layer behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — plus structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Ships with four vertical workers: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, and Gulf Maritime Exposure Gate.
 
-Read it as a **trust-routing layer for agent-mediated decisions**: it turns a partial evidence pack into a structured routing decision — allow, step up, escalate, or not-decision-ready — surfaces the specific missing evidence, and always requires human review for high-stakes actions. It does not approve, clear, or make a factual determination. Evaluate any of the four workers in a few minutes with live curl calls: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md). Per-profile live retrieval is declared as a capability for `cis_secondary_sanctions` with two upstream options ([ADR 0014](docs/adr/0014-per-profile-live-retrieval.md)): [Watchman](https://github.com/moov-io/watchman) self-host (Apache-2.0, $0/month on free-tier container) — preferred — and the [OpenSanctions](https://www.opensanctions.org) hosted API (paid €0.10/call) — fallback. Activation is env-derived (`WATCHMAN_URL` or `OPENSANCTIONS_API_KEY`); both are currently deferred until an operator configures one. Profile operates on user-supplied evidence only when nothing is wired. No factual-truth verification.
+Read it as a **trust-routing layer for agent-mediated decisions**: it turns a partial evidence pack into a structured routing decision — allow, step up, escalate, or not-decision-ready — surfaces the specific missing evidence, and always requires human review for high-stakes actions. It does not approve, clear, or make a factual determination, and does not verify factual truth. Live retrieval is off by default and opt-in per worker profile (see the [CIS worker](#second-vertical-worker-cis-secondary-sanctions-exposure) and [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md)). Evaluate any worker in a few minutes with live curl calls: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md).
 
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![Agenstry A2A](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/protocol.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![Agenstry uptime](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/uptime.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -28,24 +28,133 @@ Longer guided tutorial: [`docs/quickstart.md`](docs/quickstart.md). MCP client s
 
 ## Live A2A wrapper
 
-A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightweight strategic-risk triage, and A2A/JSON-RPC routing:
+A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightweight strategic-risk triage, and A2A/JSON-RPC routing. Five workers are deployed (general triage + the four vertical workers); per-worker endpoints live in each worker section below and in the [Status](#status) table.
 
 - Interactive browser demos: [Middle Corridor Deal Risk Gate](https://vassiliylakhonin.github.io/deal-risk-gate.html) · [CIS Secondary-Sanctions Exposure](https://vassiliylakhonin.github.io/cis-secondary-sanctions.html)
-- Live endpoint: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev>
-- Agent Card: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
-- JSON-RPC: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send>
-- Agenstry listing: <https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev>
-- Kazakhstan / Middle Corridor Deal Risk Gate: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
-- Kazakhstan Agenstry listing: <https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
-- CIS Secondary-Sanctions Exposure: <https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev>
-- CIS Agenstry listing: <https://agenstry.com/agents/cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev>
-- Agentic Interaction Trust Gate: <https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev>
-- Agentic Interaction Trust Agenstry listing: <https://agenstry.com/agents/agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev>
-- Gulf Maritime Exposure Gate: <https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev>
-- Gulf Maritime Agenstry listing: <https://agenstry.com/agents/gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev>
-- Announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
+- General wrapper: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev> · [agent card](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) · [JSON-RPC](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send) · [Agenstry](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev)
+- Worked curl calls for every worker: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md) · repeatable Kazakhstan test: [`docs/agenstry/kazakhstan-live-test.md`](docs/agenstry/kazakhstan-live-test.md) · announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
 
-The hosted wrapper is intentionally limited: no payments, no wallets, no factual-truth verification, and no legal/financial/compliance advice. Live retrieval is off by default and opt-in per vertical-worker profile only (currently `cis_secondary_sanctions` against OpenSanctions, CC-BY 4.0; see [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) and [SOURCE_POLICY.md](SOURCE_POLICY.md)). Full product behavior remains in the installable stdio MCP server.
+Try the flagship live:
+
+```bash
+curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send \
+  -H 'content-type: application/json' \
+  -H 'x-client-id: live-demo' \
+  -d @examples/kazakhstan-middle-corridor/live-agent-request.json
+```
+
+Expected: JSON-RPC 2.0 with `triage_recommendation: "escalate_before_signature"`, route/cargo/value extraction, supplied-source detection, the minimum evidence still missing before go, and human-review escalation.
+
+The hosted wrapper is intentionally limited: no payments, no wallets, no factual-truth verification, and no legal/financial/compliance advice. Live retrieval is off by default and opt-in per vertical-worker profile only (currently `cis_secondary_sanctions`; see [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) and [SOURCE_POLICY.md](SOURCE_POLICY.md)). Private usage stats: [`deploy/cloudflare-worker/README.md`](deploy/cloudflare-worker/README.md). Full product behavior remains in the installable stdio MCP server.
+
+## Flagship commercial use case
+
+**Kazakhstan / Middle Corridor Deal Risk Gate** is the focused commercial proposition for logistics, trade-finance, procurement, insurance, and compliance-adjacent workflows:
+
+> Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation.
+
+The structured response also presence-flags sanctions-relevant / high-risk and re-export / circumvention-watch counterparty jurisdictions, decomposes risk into a domestic-legal vs foreign-sanctions exposure view, and surfaces a vessel deceptive-shipping-practice checklist for the maritime leg. All of this is presence-flagging and evidence triage routed to human review — not a sanctions determination.
+
+Live A2A listing:
+
+- Endpoint: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send>
+- Agent card: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
+- Agenstry: <https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
+- Use-case notes: [`docs/use-cases/kazakhstan-middle-corridor.md`](docs/use-cases/kazakhstan-middle-corridor.md)
+- Example pack: [`examples/kazakhstan-middle-corridor/`](examples/kazakhstan-middle-corridor/)
+- Repeatable live test: [`docs/agenstry/kazakhstan-live-test.md`](docs/agenstry/kazakhstan-live-test.md)
+
+This use case is a pre-compliance evidence and decision-readiness gate. It is not legal, compliance, sanctions, financial, investment, or insurance advice.
+
+The product-grade structured JSON contract is documented in [`docs/use-cases/kazakhstan-middle-corridor.md`](docs/use-cases/kazakhstan-middle-corridor.md#product-contract), with schemas and fixtures under [`examples/kazakhstan-middle-corridor/contract/`](examples/kazakhstan-middle-corridor/contract/).
+
+## Second vertical worker: CIS secondary-sanctions exposure
+
+For EU / UK / UAE / Singapore enhanced due diligence on CIS, Caucasus, and Central Asia counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Structured secondary-sanctions exposure evidence triage against OFAC EO 14114, EU 14th sanctions package, UK OFSI, UN, and FATF / EAG typologies.
+
+This profile **declares the capability** for per-profile live retrieval with two upstream options, per [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md):
+
+1. **Watchman** (preferred, free) — `moov-io/watchman` Apache-2.0 self-host on a free-tier container (Fly.io, Railway, Render). Set `WATCHMAN_URL` to activate.
+2. **OpenSanctions** (fallback, paid) — hosted API at €0.10/call. Set `OPENSANCTIONS_API_KEY` (30-day business-email trial at https://www.opensanctions.org/api/, then per-call billing).
+
+Both are currently deferred — the project has not committed to either, and no buyer has been confirmed. When both env vars are set, Watchman wins. When neither is set, the service degrades gracefully and triage is based on user-supplied evidence only — `live_retrieval_status: disabled` in the response and `boundaries.live_retrieval: false` in `/status`.
+
+- Live endpoint: <https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev> · [Agenstry](https://agenstry.com/agents/cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev)
+- HTTP: `POST /v1/cis-secondary-sanctions/exposure`
+- Schemas: [request](schemas/v1/cis-secondary-sanctions-request.schema.json) + [response](schemas/v1/cis-secondary-sanctions-response.schema.json)
+- A2A profile: `cis_secondary_sanctions`; capability `cis_secondary_sanctions_exposure`
+- Use-case notes: [`docs/use-cases/cis-secondary-sanctions.md`](docs/use-cases/cis-secondary-sanctions.md)
+- Example pack: [`examples/cis-secondary-sanctions/`](examples/cis-secondary-sanctions/)
+- Source-requirements taxonomy: [`source-requirements/cis-secondary-sanctions.json`](source-requirements/cis-secondary-sanctions.json)
+
+Honest traction: zero paying customers, zero named pilots. Shipped as a portfolio-grade vertical worker for technical evaluators and as a contract real practitioners can inspect, not as a claim of production traction. Boundaries unchanged from the rest of the runtime: `not_advice: true`, `factual_verification: false`, `human_review_required: true` always.
+
+The structured response includes a `decision_readiness_score` from 0-100, so a buyer can see whether the evidence pack is ready for human review or still missing required source categories.
+
+## Third vertical worker: Agentic Interaction Trust Gate
+
+For trust-and-safety, fraud-risk, product-security, and platform teams reviewing agent-mediated actions across checkout, account, API, MCP tool, and A2A endpoint surfaces.
+
+This worker does not decide whether an actor is a bot. It asks whether the supplied evidence is sufficient to route a specific automated or agentic action: `allow_low_risk`, `require_step_up`, `escalate_to_human_review`, `block_until_verified`, `not_decision_ready`, or `insufficient_information`.
+
+- Live endpoint: <https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev> · [Agenstry](https://agenstry.com/agents/agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev)
+- HTTP: `POST /v1/agentic-interaction/trust`
+- A2A capability: `agentic_interaction_trust`
+- Schemas: [request](schemas/v1/agentic-interaction-trust-request.schema.json) + [response](schemas/v1/agentic-interaction-trust-response.schema.json)
+- Use-case notes: [`docs/use-cases/agentic-interaction-trust.md`](docs/use-cases/agentic-interaction-trust.md)
+- Example pack: [`examples/agentic-interaction-trust/`](examples/agentic-interaction-trust/)
+- Source-requirements taxonomy: [`source-requirements/agentic-interaction-trust.json`](source-requirements/agentic-interaction-trust.json)
+
+Boundaries: no cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice. The worker returns evidence gaps, readiness scoring, watch-next indicators, and `human_review_required: true`.
+
+## Fourth vertical worker: Gulf Maritime Exposure Gate
+
+For trade-finance, marine-insurance, P&I, chartering, and compliance teams reviewing a vessel or voyage transiting the Strait of Hormuz, Persian/Arabian Gulf, Gulf of Oman, Bab-el-Mandeb, or Red Sea.
+
+Structured triage of maritime sanctions and chokepoint-disruption exposure — Iran-oil, Russia price-cap, dark-fleet, STS transfer, flag-hopping, P&I gap, AIS manipulation, ownership/control, dual-use cargo — into an evidence-sufficiency routing decision: `insufficient_information`, `escalate_before_fixture`, `escalate_before_voyage`, `not_decision_ready`, or `ready_for_human_review`.
+
+- HTTP: `POST /v1/gulf-maritime/exposure`
+- A2A capability: `gulf_maritime_exposure`
+- Live endpoint: <https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev> · [Agenstry](https://agenstry.com/agents/gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev)
+- Schemas: [request](schemas/v1/gulf-maritime-exposure-request.schema.json) + [response](schemas/v1/gulf-maritime-exposure-response.schema.json)
+- Use-case notes: [`docs/use-cases/gulf-maritime-exposure.md`](docs/use-cases/gulf-maritime-exposure.md)
+- Example pack: [`examples/gulf-maritime-exposure/`](examples/gulf-maritime-exposure/)
+- Source-requirements taxonomy: [`source-requirements/gulf-maritime-exposure.json`](source-requirements/gulf-maritime-exposure.json)
+
+Boundaries: no live retrieval, does not resolve vessel ownership or verify identity, no legal or sanctions advice. Returns exposure dimensions, evidence gaps, a chokepoint-disruption watch, `decision_readiness_score`, and `human_review_required: true`.
+
+## Where this fits in the Agenda Intelligence stack
+
+| Layer | Repo | Role |
+|---|---|---|
+| **Product runtime** (this repo) | **agenda-intelligence-md** | Core service layer + MCP / HTTP / A2A surfaces, request/memo schemas, geography routing, evidence audit, scoring, vertical workers |
+| Reasoning method | [global-think-tank-analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) | Strategic-risk reasoning contract; loaded by `analyze` as the default method |
+| Vertical specialist | [central-asia-caspian-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) | Central Asia / Caspian / Middle Corridor domain depth; routed by geography |
+| Vertical specialist | [gulf-middle-east-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) | Iran / GCC / maritime chokepoint domain depth; routed by geography |
+
+The product runtime is the integration point: agents call `analyze` via any surface (MCP, HTTP, A2A), geography routes to the relevant specialist, and the GTTA method frames the reasoning. Each canonical repo (GTTA, vertical specialists) is also usable standalone (paste/attach into any agent). Vertical workers (currently: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, and Gulf Maritime Exposure Gate) live inside this runtime as productized service functions with their own schemas and HTTP/A2A profiles — see [`AGENTS.md`](AGENTS.md#vertical-workers-inside-this-repo) for the spin-off rule.
+
+## What this is
+
+- **Core service layer** — pure Python functions (`audit_claims`, `source_coverage`, `score_output`, `middle_corridor_deal_risk`, `agentic_interaction_trust`, etc.) vendor-neutral, no transport, no marketplace
+- **MCP server** — stdio server exposing 21 tools across the validation, product, and vertical worker layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
+- **HTTP API shell** — thin transport over the service layer; self-host with `docs/deployment/http-api.md`
+- **A2A adapter** — agent-card + JSON-RPC `message/send` over the HTTP/service layer; contract in `docs/product/a2a-adapter-plan.md`
+- **Cloudflare Worker baseline** — deployment config under `deploy/cloudflare-worker/`; five live workers (general triage + the four vertical workers below)
+- **Vertical workers** — productized service functions with their own schemas + HTTP/A2A profiles; Cloudflare deployments exist where configured. Currently shipped in the runtime: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate
+- **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
+- **JSON schemas** — request/memo product contract + per-product contracts (e.g. `middle-corridor-deal-risk-*`) + validators for briefs, evidence packs, audits, signals, memory cards, lenses
+- **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `score`, `bench`, `doctor` (30+ commands)
+- **Eval kit** — rubric, LLM-judge prompt, human checklist, benchmark harness, agent-eval methodology
+- **Source policy** — per-claim provenance tags (Axis A/B), source requirements for 12 categories
+
+## What this is not
+
+- Not a factuality verifier — checks structure, not truth
+- Not an autonomous news agent or source retriever
+- Not a source reputation scorer or live news gatherer
+- Not a replacement for analyst judgment
+- Not a compliance, legal, or financial advisory product
 
 ## Self-host via HTTP API (if your stack does not run MCP)
 
@@ -86,180 +195,6 @@ docker run --rm -p 8080:8080 agenda-intelligence-md-api:1.1.0
 Full HTTP deployment guide, including environment defaults (`AGENDA_INTELLIGENCE_HTTP_HOST`, `AGENDA_INTELLIGENCE_HTTP_PORT`), logging discipline, and boundary statements: [`docs/deployment/http-api.md`](docs/deployment/http-api.md).
 
 The HTTP shell is portable but **not a hardened internet-facing server**. No built-in authentication, rate limiting, or TLS — front it with a reverse proxy (nginx, Caddy, Cloudflare Tunnel) and your existing auth layer before exposing it beyond localhost / private network.
-
-## Flagship commercial use case
-
-**Kazakhstan / Middle Corridor Deal Risk Gate** is the focused commercial proposition for logistics, trade-finance, procurement, insurance, and compliance-adjacent workflows:
-
-> Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation.
-
-The structured response also presence-flags sanctions-relevant / high-risk and re-export / circumvention-watch counterparty jurisdictions, decomposes risk into a domestic-legal vs foreign-sanctions exposure view, and surfaces a vessel deceptive-shipping-practice checklist for the maritime leg. All of this is presence-flagging and evidence triage routed to human review — not a sanctions determination.
-
-Live A2A listing:
-
-- Endpoint: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send>
-- Agent card: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
-- Agenstry: <https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
-- Use-case notes: [`docs/use-cases/kazakhstan-middle-corridor.md`](docs/use-cases/kazakhstan-middle-corridor.md)
-- Example pack: [`examples/kazakhstan-middle-corridor/`](examples/kazakhstan-middle-corridor/)
-- Repeatable live test: [`docs/agenstry/kazakhstan-live-test.md`](docs/agenstry/kazakhstan-live-test.md)
-
-This use case is a pre-compliance evidence and decision-readiness gate. It is not legal, compliance, sanctions, financial, investment, or insurance advice.
-
-The product-grade structured JSON contract is documented in [`docs/use-cases/kazakhstan-middle-corridor.md`](docs/use-cases/kazakhstan-middle-corridor.md#product-contract), with schemas and fixtures under [`examples/kazakhstan-middle-corridor/contract/`](examples/kazakhstan-middle-corridor/contract/).
-
-## Second vertical worker: CIS secondary-sanctions exposure
-
-For EU / UK / UAE / Singapore enhanced due diligence on CIS, Caucasus, and Central Asia counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Structured secondary-sanctions exposure evidence triage against OFAC EO 14114, EU 14th sanctions package, UK OFSI, UN, and FATF / EAG typologies.
-
-This profile **declares the capability** for per-profile live retrieval with two upstream options, per [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md):
-
-1. **Watchman** (preferred, free) — `moov-io/watchman` Apache-2.0 self-host on a free-tier container (Fly.io, Railway, Render). Set `WATCHMAN_URL` to activate.
-2. **OpenSanctions** (fallback, paid) — hosted API at €0.10/call. Set `OPENSANCTIONS_API_KEY` (30-day business-email trial at https://www.opensanctions.org/api/, then per-call billing).
-
-Both are currently deferred — the project has not committed to either, and no buyer has been confirmed. When both env vars are set, Watchman wins. When neither is set, the service degrades gracefully and triage is based on user-supplied evidence only — `live_retrieval_status: disabled` in the response and `boundaries.live_retrieval: false` in `/status`.
-
-- HTTP: `POST /v1/cis-secondary-sanctions/exposure`
-- Schemas: [request](schemas/v1/cis-secondary-sanctions-request.schema.json) + [response](schemas/v1/cis-secondary-sanctions-response.schema.json)
-- A2A profile: `cis_secondary_sanctions`; capability `cis_secondary_sanctions_exposure`
-- Use-case notes: [`docs/use-cases/cis-secondary-sanctions.md`](docs/use-cases/cis-secondary-sanctions.md)
-- Example pack: [`examples/cis-secondary-sanctions/`](examples/cis-secondary-sanctions/)
-- Source-requirements taxonomy: [`source-requirements/cis-secondary-sanctions.json`](source-requirements/cis-secondary-sanctions.json)
-
-Honest traction: zero paying customers, zero named pilots. Shipped as a portfolio-grade vertical worker for technical evaluators and as a contract real practitioners can inspect, not as a claim of production traction. Boundaries unchanged from the rest of the runtime: `not_advice: true`, `factual_verification: false`, `human_review_required: true` always.
-
-The structured response includes a `decision_readiness_score` from 0-100, so a buyer can see whether the evidence pack is ready for human review or still missing required source categories.
-
-## Third vertical worker: Agentic Interaction Trust Gate
-
-For trust-and-safety, fraud-risk, product-security, and platform teams reviewing agent-mediated actions across checkout, account, API, MCP tool, and A2A endpoint surfaces.
-
-This worker does not decide whether an actor is a bot. It asks whether the supplied evidence is sufficient to route a specific automated or agentic action: `allow_low_risk`, `require_step_up`, `escalate_to_human_review`, `block_until_verified`, `not_decision_ready`, or `insufficient_information`.
-
-- HTTP: `POST /v1/agentic-interaction/trust`
-- A2A capability: `agentic_interaction_trust`
-- Schemas: [request](schemas/v1/agentic-interaction-trust-request.schema.json) + [response](schemas/v1/agentic-interaction-trust-response.schema.json)
-- Use-case notes: [`docs/use-cases/agentic-interaction-trust.md`](docs/use-cases/agentic-interaction-trust.md)
-- Example pack: [`examples/agentic-interaction-trust/`](examples/agentic-interaction-trust/)
-- Source-requirements taxonomy: [`source-requirements/agentic-interaction-trust.json`](source-requirements/agentic-interaction-trust.json)
-
-Boundaries: no cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice. The worker returns evidence gaps, readiness scoring, watch-next indicators, and `human_review_required: true`.
-
-## Fourth vertical worker: Gulf Maritime Exposure Gate
-
-For trade-finance, marine-insurance, P&I, chartering, and compliance teams reviewing a vessel or voyage transiting the Strait of Hormuz, Persian/Arabian Gulf, Gulf of Oman, Bab-el-Mandeb, or Red Sea.
-
-Structured triage of maritime sanctions and chokepoint-disruption exposure — Iran-oil, Russia price-cap, dark-fleet, STS transfer, flag-hopping, P&I gap, AIS manipulation, ownership/control, dual-use cargo — into an evidence-sufficiency routing decision: `insufficient_information`, `escalate_before_fixture`, `escalate_before_voyage`, `not_decision_ready`, or `ready_for_human_review`.
-
-- HTTP: `POST /v1/gulf-maritime/exposure`
-- A2A capability: `gulf_maritime_exposure`
-- Live endpoint: <https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev>
-- Schemas: [request](schemas/v1/gulf-maritime-exposure-request.schema.json) + [response](schemas/v1/gulf-maritime-exposure-response.schema.json)
-- Use-case notes: [`docs/use-cases/gulf-maritime-exposure.md`](docs/use-cases/gulf-maritime-exposure.md)
-- Example pack: [`examples/gulf-maritime-exposure/`](examples/gulf-maritime-exposure/)
-- Source-requirements taxonomy: [`source-requirements/gulf-maritime-exposure.json`](source-requirements/gulf-maritime-exposure.json)
-
-Boundaries: no live retrieval, does not resolve vessel ownership or verify identity, no legal or sanctions advice. Returns exposure dimensions, evidence gaps, a chokepoint-disruption watch, `decision_readiness_score`, and `human_review_required: true`.
-
-Try the Kazakhstan agent:
-
-```bash
-curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send \
-  -H 'content-type: application/json' \
-  -H 'x-client-id: live-demo' \
-  -d @examples/kazakhstan-middle-corridor/live-agent-request.json
-```
-
-Expected: JSON-RPC 2.0 with `triage_recommendation: "escalate_before_signature"`, route/cargo/value extraction, supplied-source detection, missing minimum evidence before go, commercial-impact notes, and human-review escalation.
-
-Try the live wrapper:
-
-```bash
-curl -X POST https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send \
-  -H 'content-type: application/json' \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": "demo-1",
-    "method": "message/send",
-    "params": {
-      "message": {
-        "parts": [
-          {
-            "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure.",
-            "mediaType": "text/plain"
-          }
-        ]
-      }
-    }
-  }'
-```
-
-Kazakhstan-focused live triage:
-
-```bash
-curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send \
-  -H 'content-type: application/json' \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": "kazakhstan-demo-1",
-    "method": "message/send",
-    "params": {
-      "message": {
-        "parts": [
-          {
-            "text": "Screen Kazakhstan Middle Corridor sanctions exposure for a logistics route.",
-            "mediaType": "text/plain"
-          }
-        ]
-      }
-    }
-  }'
-```
-
-Expected: JSON-RPC 2.0 with `status.state: "TASK_STATE_COMPLETED"`, `metadata.signal_screen.risk_signal`, affected regions, required source categories, evidence gaps, watch-next indicators, suggested modules, and next actions.
-
-Private usage stats for the wrapper are available from the Cloudflare Worker project:
-
-```bash
-cd deploy/cloudflare-worker
-npm run stats
-npm run stats -- 2026-05-22
-```
-
-The stats helper reads `STATS_TOKEN` from the local ignored `.env` file. Deployment and analytics notes: [`deploy/cloudflare-worker/README.md`](deploy/cloudflare-worker/README.md).
-
-## Where this fits in the Agenda Intelligence stack
-
-| Layer | Repo | Role |
-|---|---|---|
-| **Product runtime** (this repo) | **agenda-intelligence-md** | Core service layer + MCP / HTTP / A2A surfaces, request/memo schemas, geography routing, evidence audit, scoring, vertical workers |
-| Reasoning method | [global-think-tank-analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) | Strategic-risk reasoning contract; loaded by `analyze` as the default method |
-| Vertical specialist | [central-asia-caspian-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) | Central Asia / Caspian / Middle Corridor domain depth; routed by geography |
-| Vertical specialist | [gulf-middle-east-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) | Iran / GCC / maritime chokepoint domain depth; routed by geography |
-
-The product runtime is the integration point: agents call `analyze` via any surface (MCP, HTTP, A2A), geography routes to the relevant specialist, and the GTTA method frames the reasoning. Each canonical repo (GTTA, vertical specialists) is also usable standalone (paste/attach into any agent). Vertical workers (currently: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, and Gulf Maritime Exposure Gate) live inside this runtime as productized service functions with their own schemas and HTTP/A2A profiles — see [`AGENTS.md`](AGENTS.md#vertical-workers-inside-this-repo) for the spin-off rule.
-
-## What this is
-
-- **Core service layer** — pure Python functions (`audit_claims`, `source_coverage`, `score_output`, `middle_corridor_deal_risk`, `agentic_interaction_trust`, etc.) vendor-neutral, no transport, no marketplace
-- **MCP server** — stdio server exposing 21 tools across the validation, product, and vertical worker layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
-- **HTTP API shell** — thin transport over the service layer; self-host with `docs/deployment/http-api.md`
-- **A2A adapter** — agent-card + JSON-RPC `message/send` over the HTTP/service layer; contract in `docs/product/a2a-adapter-plan.md`
-- **Cloudflare Worker baseline** — deployment config under `deploy/cloudflare-worker/`; five live workers (general triage + the four vertical workers below)
-- **Vertical workers** — productized service functions with their own schemas + HTTP/A2A profiles; Cloudflare deployments exist where configured. Currently shipped in the runtime: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate
-- **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
-- **JSON schemas** — request/memo product contract + per-product contracts (e.g. `middle-corridor-deal-risk-*`) + validators for briefs, evidence packs, audits, signals, memory cards, lenses
-- **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `score`, `bench`, `doctor` (30+ commands)
-- **Eval kit** — rubric, LLM-judge prompt, human checklist, benchmark harness, agent-eval methodology
-- **Source policy** — per-claim provenance tags (Axis A/B), source requirements for 12 categories
-
-## What this is not
-
-- Not a factuality verifier — checks structure, not truth
-- Not an autonomous news agent or source retriever
-- Not a source reputation scorer or live news gatherer
-- Not a replacement for analyst judgment
-- Not a compliance, legal, or financial advisory product
 
 ## More CLI examples
 
