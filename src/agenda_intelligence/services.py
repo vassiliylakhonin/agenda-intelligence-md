@@ -1444,6 +1444,9 @@ def _gulf_evidence_gap_for_source(source_type: str) -> str:
         "charterer_kyc_evidence": "No charterer KYC evidence supplied.",
         "adverse_media_evidence": "No adverse media evidence supplied.",
         "prior_incident_or_detention": "No prior incident or detention record supplied.",
+        "price_cap_attestation_or_recordkeeping": (
+            "No price-cap attestation or itemized ancillary-cost recordkeeping supplied."
+        ),
     }
     return gaps.get(source_type, f"No {source_type} supplied.")
 
@@ -1495,7 +1498,9 @@ def _gulf_readiness(request_json: dict, supplied_sources: list[str]) -> tuple[in
     return score, "not_decision_ready"
 
 
-def _gulf_top_exposure_dimensions(facets: list[str], missing_sources: list[str]) -> list[str]:
+def _gulf_top_exposure_dimensions(
+    facets: list[str], missing_sources: list[str], supplied_sources: list[str]
+) -> list[str]:
     dims: list[str] = []
     facet_dims = {
         "iran_oil_exposure": "Iran-origin oil sanctions exposure (OFAC / EU)",
@@ -1516,6 +1521,11 @@ def _gulf_top_exposure_dimensions(facets: list[str], missing_sources: list[str])
         dims.append("vessel ownership or control not yet documented")
     if "pi_insurance_certificate" in missing_sources:
         dims.append("P&I cover not yet confirmed")
+    if "russia_oil_price_cap" in facets and "price_cap_attestation_or_recordkeeping" not in supplied_sources:
+        dims.append(
+            "per-loading price-cap attestation and itemized ancillary-cost recordkeeping "
+            "not yet evidenced (OFAC tiered safe-harbor)"
+        )
     return list(dict.fromkeys(dims))
 
 
@@ -1565,6 +1575,16 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
         "Human review is required.",
     ]
 
+    watch_next = [
+        "new OFAC vessel or entity designation",
+        "new EU or UK OFSI shipping-related listing",
+        "P&I club cover withdrawal or confirmation change",
+        "flag-registry deregistration or flag-hopping report",
+        "AIS gap, spoofing, or dark-activity report on the vessel",
+    ]
+    if "russia_oil_price_cap" in facets:
+        watch_next.append("price-cap attestation refusal, withdrawal, or itemized ancillary-cost gap")
+
     response = {
         "triage_recommendation": triage,
         "exposure_signal": exposure_signal,
@@ -1575,15 +1595,9 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
         "supplied_sources": list(dict.fromkeys(supplied_sources)),
         "minimum_sources_before_review": missing_sources,
         "evidence_gaps": [_gulf_evidence_gap_for_source(s) for s in missing_sources],
-        "top_exposure_dimensions": _gulf_top_exposure_dimensions(facets, missing_sources),
+        "top_exposure_dimensions": _gulf_top_exposure_dimensions(facets, missing_sources, supplied_sources),
         "chokepoint_disruption_watch": _gulf_chokepoint_disruption_watch(request_json),
-        "watch_next": [
-            "new OFAC vessel or entity designation",
-            "new EU or UK OFSI shipping-related listing",
-            "P&I club cover withdrawal or confirmation change",
-            "flag-registry deregistration or flag-hopping report",
-            "AIS gap, spoofing, or dark-activity report on the vessel",
-        ],
+        "watch_next": watch_next,
         "human_review_required": True,
         "not_advice_notice": GULF_NOT_ADVICE_NOTICE,
         "limitations": limitations,
