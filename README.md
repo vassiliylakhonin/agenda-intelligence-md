@@ -79,8 +79,8 @@ curl -sS http://127.0.0.1:8080/v1/middle-corridor/deal-risk \
 Container build (`Dockerfile.api`):
 
 ```bash
-docker build -f Dockerfile.api -t agenda-intelligence-md-api:1.0.1 .
-docker run --rm -p 8080:8080 agenda-intelligence-md-api:1.0.1
+docker build -f Dockerfile.api -t agenda-intelligence-md-api:1.1.0 .
+docker run --rm -p 8080:8080 agenda-intelligence-md-api:1.1.0
 ```
 
 Full HTTP deployment guide, including environment defaults (`AGENDA_INTELLIGENCE_HTTP_HOST`, `AGENDA_INTELLIGENCE_HTTP_PORT`), logging discipline, and boundary statements: [`docs/deployment/http-api.md`](docs/deployment/http-api.md).
@@ -144,6 +144,22 @@ This worker does not decide whether an actor is a bot. It asks whether the suppl
 - Source-requirements taxonomy: [`source-requirements/agentic-interaction-trust.json`](source-requirements/agentic-interaction-trust.json)
 
 Boundaries: no cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice. The worker returns evidence gaps, readiness scoring, watch-next indicators, and `human_review_required: true`.
+
+## Fourth vertical worker: Gulf Maritime Exposure Gate
+
+For trade-finance, marine-insurance, P&I, chartering, and compliance teams reviewing a vessel or voyage transiting the Strait of Hormuz, Persian/Arabian Gulf, Gulf of Oman, Bab-el-Mandeb, or Red Sea.
+
+Structured triage of maritime sanctions and chokepoint-disruption exposure — Iran-oil, Russia price-cap, dark-fleet, STS transfer, flag-hopping, P&I gap, AIS manipulation, ownership/control, dual-use cargo — into an evidence-sufficiency routing decision: `insufficient_information`, `escalate_before_fixture`, `escalate_before_voyage`, `not_decision_ready`, or `ready_for_human_review`.
+
+- HTTP: `POST /v1/gulf-maritime/exposure`
+- A2A capability: `gulf_maritime_exposure`
+- Live endpoint: <https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev>
+- Schemas: [request](schemas/v1/gulf-maritime-exposure-request.schema.json) + [response](schemas/v1/gulf-maritime-exposure-response.schema.json)
+- Use-case notes: [`docs/use-cases/gulf-maritime-exposure.md`](docs/use-cases/gulf-maritime-exposure.md)
+- Example pack: [`examples/gulf-maritime-exposure/`](examples/gulf-maritime-exposure/)
+- Source-requirements taxonomy: [`source-requirements/gulf-maritime-exposure.json`](source-requirements/gulf-maritime-exposure.json)
+
+Boundaries: no live retrieval, does not resolve vessel ownership or verify identity, no legal or sanctions advice. Returns exposure dimensions, evidence gaps, a chokepoint-disruption watch, `decision_readiness_score`, and `human_review_required: true`.
 
 Try the Kazakhstan agent:
 
@@ -221,16 +237,16 @@ The stats helper reads `STATS_TOKEN` from the local ignored `.env` file. Deploym
 | Vertical specialist | [central-asia-caspian-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) | Central Asia / Caspian / Middle Corridor domain depth; routed by geography |
 | Vertical specialist | [gulf-middle-east-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) | Iran / GCC / maritime chokepoint domain depth; routed by geography |
 
-The product runtime is the integration point: agents call `analyze` via any surface (MCP, HTTP, A2A), geography routes to the relevant specialist, and the GTTA method frames the reasoning. Each canonical repo (GTTA, vertical specialists) is also usable standalone (paste/attach into any agent). Vertical workers (currently: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, and Agentic Interaction Trust Gate) live inside this runtime as productized service functions with their own schemas and HTTP/A2A profiles — see [`AGENTS.md`](AGENTS.md#vertical-workers-inside-this-repo) for the spin-off rule.
+The product runtime is the integration point: agents call `analyze` via any surface (MCP, HTTP, A2A), geography routes to the relevant specialist, and the GTTA method frames the reasoning. Each canonical repo (GTTA, vertical specialists) is also usable standalone (paste/attach into any agent). Vertical workers (currently: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, and Gulf Maritime Exposure Gate) live inside this runtime as productized service functions with their own schemas and HTTP/A2A profiles — see [`AGENTS.md`](AGENTS.md#vertical-workers-inside-this-repo) for the spin-off rule.
 
 ## What this is
 
 - **Core service layer** — pure Python functions (`audit_claims`, `source_coverage`, `score_output`, `middle_corridor_deal_risk`, `agentic_interaction_trust`, etc.) vendor-neutral, no transport, no marketplace
-- **MCP server** — stdio server exposing 19 tools across the validation, product, and vertical worker layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
+- **MCP server** — stdio server exposing 21 tools across the validation, product, and vertical worker layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
 - **HTTP API shell** — thin transport over the service layer; self-host with `docs/deployment/http-api.md`
 - **A2A adapter** — agent-card + JSON-RPC `message/send` over the HTTP/service layer; contract in `docs/product/a2a-adapter-plan.md`
-- **Cloudflare Worker baseline** — production deployment under `deploy/cloudflare-worker/`; two live workers (general triage + Middle Corridor Deal Risk Gate)
-- **Vertical workers** — productized service functions with their own schemas + HTTP/A2A profiles; Cloudflare deployments exist where configured. Currently shipped in the runtime: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate
+- **Cloudflare Worker baseline** — deployment config under `deploy/cloudflare-worker/`; five live workers (general triage + the four vertical workers below)
+- **Vertical workers** — productized service functions with their own schemas + HTTP/A2A profiles; Cloudflare deployments exist where configured. Currently shipped in the runtime: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate
 - **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
 - **JSON schemas** — request/memo product contract + per-product contracts (e.g. `middle-corridor-deal-risk-*`) + validators for briefs, evidence packs, audits, signals, memory cards, lenses
 - **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `score`, `bench`, `doctor` (30+ commands)
@@ -298,7 +314,7 @@ Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed
 
 ## MCP
 
-Stdio MCP server with 19 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
+Stdio MCP server with 21 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
 
 | Tool | What it does |
 |---|---|
@@ -307,6 +323,7 @@ Stdio MCP server with 19 tools. Full docs and wire-protocol verification: [`MCP.
 | `audit_claims` | Check claim-level audit: support distribution, orphan refs, unsupported claims |
 | `score_output` | Heuristic score for structure, evidence labeling, decision-readiness |
 | `get_protocol` | Return the full Agenda-Intelligence.md reasoning protocol |
+| `get_schema` | Return a packaged JSON Schema by name (or list all) so an agent can construct a valid payload before validating |
 | `list_source_categories` | List source requirement categories before calling `source_plan` |
 | `source_plan` | Generate a source plan for a given topic |
 | `source_coverage` | Diagnose evidence-pack coverage against category source requirements |
@@ -321,6 +338,7 @@ Stdio MCP server with 19 tools. Full docs and wire-protocol verification: [`MCP.
 | `middle_corridor_deal_risk` | Kazakhstan / Middle Corridor deal-risk gate: structured request → triage, decision-readiness, evidence gaps, human-review flag |
 | `cis_secondary_sanctions_exposure` | CIS counterparty secondary-sanctions exposure triage for EU/UK/UAE/Singapore EDD; local stdio runs on user-supplied evidence only |
 | `agentic_interaction_trust` | Trust-evidence triage for an agent-mediated interaction before a high-stakes action |
+| `gulf_maritime_exposure` | Maritime sanctions / chokepoint-disruption exposure triage for a vessel or voyage (Hormuz, Gulf, Bab-el-Mandeb, Red Sea) |
 
 ## Status
 
