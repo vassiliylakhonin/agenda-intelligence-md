@@ -453,6 +453,38 @@
           ],
           "additionalProperties": false
         }
+      },
+      {
+        "name": "gulf_maritime_exposure",
+        "since": "v1.1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "exposure_request": {
+              "type": "object",
+              "description": "Structured Gulf maritime exposure request matching gulf-maritime-exposure-request.schema.json."
+            }
+          },
+          "required": [
+            "exposure_request"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "get_schema",
+        "since": "v1.1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Schema key, file name, or bare stem. Omit to list all available schema names."
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
       }
     ]
   },

@@ -413,6 +413,50 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "handler": lambda args: mcp_server.agentic_interaction_trust(args["trust_request"]),
     },
+    "gulf_maritime_exposure": {
+        "description": (
+            "Triage maritime sanctions and chokepoint-disruption exposure for a vessel/voyage transiting the "
+            "Strait of Hormuz, Persian/Arabian Gulf, Gulf of Oman, Bab-el-Mandeb, or Red Sea (Iran-oil, Russia "
+            "price-cap, dark-fleet, STS transfer, flag-hopping, P&I gap, AIS manipulation). Pass a structured "
+            "exposure_request (vessel/voyage, route, cargo, counterparties, dated_sources, risk_question, "
+            "decision_stage) matching gulf-maritime-exposure-request.schema.json. Returns a triage "
+            "recommendation, exposure signal, decision-readiness score, supplied vs. minimum-required sources, "
+            "and evidence gaps. Pre-compliance evidence triage only: no live retrieval, does not resolve vessel "
+            "ownership or verify identity, no legal or sanctions advice; human review is required."
+        ),
+        "inputSchema": _schema(
+            {
+                "exposure_request": {
+                    "type": "object",
+                    "description": (
+                        "Structured Gulf maritime exposure request matching "
+                        "gulf-maritime-exposure-request.schema.json."
+                    ),
+                }
+            },
+            ["exposure_request"],
+        ),
+        "handler": lambda args: mcp_server.gulf_maritime_exposure(args["exposure_request"]),
+    },
+    "get_schema": {
+        "description": (
+            "Return a packaged Agenda Intelligence JSON Schema so an agent can construct a valid payload "
+            "before calling validate_brief, validate_evidence, validate_memo, analyze, or a vertical worker. "
+            "Pass name as the schema key (for example agenda_brief, evidence_pack, agenda_memo, "
+            "middle_corridor_deal_risk_request), its file name, or its bare stem; omit name to list the "
+            "available schema keys. Returns the schema document and its version. Contract discovery only: it "
+            "does not validate data, fill in a template, or verify factual truth."
+        ),
+        "inputSchema": _schema(
+            {
+                "name": {
+                    "type": "string",
+                    "description": ("Schema key, file name, or bare stem. Omit to list all available schema names."),
+                }
+            }
+        ),
+        "handler": lambda args: mcp_server.get_schema(args.get("name")),
+    },
 }
 
 

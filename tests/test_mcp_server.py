@@ -4,11 +4,13 @@ from pathlib import Path
 from agenda_intelligence.mcp_server import (
     get_lens,
     get_protocol,
+    get_schema,
     list_lenses,
     list_source_categories,
     score_output,
     source_coverage,
     source_plan,
+    validate_brief,
 )
 from agenda_intelligence.mcp_stdio import handle_message
 
@@ -346,6 +348,7 @@ def test_mcp_stdio_tools_list_includes_vertical_workers():
         "middle_corridor_deal_risk",
         "cis_secondary_sanctions_exposure",
         "agentic_interaction_trust",
+        "gulf_maritime_exposure",
     } <= names
 
 
@@ -386,3 +389,53 @@ def test_mcp_tool_vertical_worker_missing_argument_is_tool_error():
     result, payload = _call_tool("middle_corridor_deal_risk", {})
     assert result["isError"] is True
     assert "Missing required argument" in result["content"][0]["text"]
+
+
+def test_mcp_tool_gulf_maritime_exposure_golden():
+    req = json.loads((_EXAMPLES / "gulf-maritime-exposure/contract/ready_for_human_review.request.json").read_text())
+    result, payload = _call_tool("gulf_maritime_exposure", {"exposure_request": req})
+    assert result["isError"] is False
+    assert payload["valid"] is True
+    assert payload["response"]["human_review_required"] is True
+    assert payload["response"]["triage_recommendation"] == "ready_for_human_review"
+
+
+def test_validate_brief_returns_all_missing_fields_not_just_first():
+    """An empty brief is missing several required fields; the validator must
+    surface all of them in one call so an agent can fix the payload in one pass."""
+    result = validate_brief({})
+    assert result["valid"] is False
+    assert len(result["errors"]) > 1, result["errors"]
+    assert any("bottom_line" in e for e in result["errors"])
+
+
+def test_get_schema_returns_named_schema_with_resolvable_aliases():
+    for name in ("agenda_brief", "agenda-brief.schema.json", "agenda-brief"):
+        result = get_schema(name)
+        assert result["error"] is None, name
+        assert result["name"] == "agenda_brief"
+        assert result["path"].endswith("agenda-brief.schema.json")
+        assert isinstance(result["schema"], dict)
+        assert "bottom_line" in result["schema"].get("properties", {})
+
+
+def test_get_schema_lists_available_when_name_omitted():
+    result = get_schema()
+    assert result["error"] is None
+    names = {item["name"] for item in result["available"]}
+    assert {"agenda_brief", "evidence_pack", "agenda_memo"} <= names
+    assert result["count"] == len(result["available"])
+
+
+def test_get_schema_unknown_name_reports_available():
+    result = get_schema("does-not-exist")
+    assert result["schema"] is None
+    assert "Unknown schema" in result["error"]
+    assert "agenda_brief" in result["available"]
+
+
+def test_mcp_stdio_get_schema_tool_call_returns_schema():
+    result, payload = _call_tool("get_schema", {"name": "evidence_pack"})
+    assert result["isError"] is False
+    assert payload["name"] == "evidence_pack"
+    assert isinstance(payload["schema"], dict)

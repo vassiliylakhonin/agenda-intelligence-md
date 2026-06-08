@@ -153,7 +153,7 @@ def _load_data_json(relative_path: str) -> dict:
 
 def _validate_json(data: dict, schema_name: str) -> dict:
     try:
-        from jsonschema import ValidationError, validate
+        from jsonschema.validators import validator_for
     except ImportError:
         return {
             "implemented": False,
@@ -163,10 +163,11 @@ def _validate_json(data: dict, schema_name: str) -> dict:
 
     try:
         schema = _load_schema(schema_name)
-        validate(instance=data, schema=schema)
+        validator = validator_for(schema)(schema)
+        errors = sorted(validator.iter_errors(data), key=lambda e: ([str(p) for p in e.path], e.message))
+        if errors:
+            return {"implemented": True, "valid": False, "errors": [e.message for e in errors]}
         return {"implemented": True, "valid": True, "errors": []}
-    except ValidationError as e:
-        return {"implemented": True, "valid": False, "errors": [e.message]}
     except Exception as e:
         return {"implemented": True, "valid": None, "errors": [str(e)]}
 
