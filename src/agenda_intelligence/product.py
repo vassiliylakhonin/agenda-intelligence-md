@@ -352,14 +352,16 @@ def _load_schema(schema_name: str) -> dict:
 
 def _validate(data: dict, schema_name: str) -> dict:
     try:
-        from jsonschema import ValidationError, validate
+        from jsonschema.validators import validator_for
     except ImportError:
         return {"valid": None, "errors": ["jsonschema is not installed"]}
     try:
-        validate(instance=data, schema=_load_schema(schema_name))
-        return {"valid": True, "errors": []}
-    except ValidationError as e:
-        return {"valid": False, "errors": [e.message]}
+        schema = _load_schema(schema_name)
+        validator = validator_for(schema)(schema)
+        errors = sorted(validator.iter_errors(data), key=lambda e: ([str(p) for p in e.path], e.message))
+        return {"valid": not errors, "errors": [e.message for e in errors]}
+    except Exception as e:
+        return {"valid": None, "errors": [str(e)]}
 
 
 def validate_request(request: dict) -> dict:

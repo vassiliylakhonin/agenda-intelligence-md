@@ -1,18 +1,20 @@
 # MCP
 
 `agenda-intelligence-mcp` is a real stdio MCP server shipping with the package.
-It exposes 19 tool functions implemented in `agenda_intelligence.mcp_server`.
+It exposes 21 tool functions implemented in `agenda_intelligence.mcp_server`.
 
 The tools split into three layers:
 
-- **Validation layer** (11 tools, this repo's original scope): schema checks,
-  evidence audit, lens and source-plan access, output scoring, quote verification.
+- **Validation layer** (12 tools, this repo's original scope): schema checks,
+  schema discovery (`get_schema`), evidence audit, lens and source-plan access,
+  output scoring, quote verification.
 - **Product layer** (5 tools, Agenda Intelligence product shell): `analyze`,
   `validate_memo`, `list_signals`, `get_signal`, `deep_dive` (reserved/planned, returns a v2 placeholder). These wrap the
   validation layer with geography routing, system-prompt assembly, optional LLM
   invocation, and vendored signal access.
-- **Vertical worker layer** (3 tools): `middle_corridor_deal_risk`,
-  `cis_secondary_sanctions_exposure`, `agentic_interaction_trust` — the productized
+- **Vertical worker layer** (4 tools): `middle_corridor_deal_risk`,
+  `cis_secondary_sanctions_exposure`, `agentic_interaction_trust`,
+  `gulf_maritime_exposure` — the productized
   service functions (also exposed over HTTP and A2A) as MCP tools. Each takes a
   structured request matching its `schemas/v1/` contract and returns a triage
   recommendation, decision-readiness score, evidence gaps, and a mandatory
@@ -50,7 +52,9 @@ Validate an agenda-brief dict against `agenda-brief.schema.json`.
 { "brief_json": { "bottom_line": "...", "signal_classification": "structural_shift", "what_changed": "...", "why_it_matters": "...", "main_uncertainty": "...", "watch_next": ["..."] } }
 ```
 
-Returns `{ "implemented": true, "valid": true|false, "errors": [...] }`.
+Returns `{ "implemented": true, "valid": true|false, "errors": [...] }`. When
+invalid, `errors` lists **all** schema violations (not just the first), so an
+agent can fix the payload in a single pass.
 
 ---
 
@@ -114,6 +118,31 @@ Returns:
 ```
 
 Honest scope: schema-level only. Does not verify factual truth.
+
+---
+
+### `get_schema`
+
+Return a packaged JSON Schema so an agent can construct a valid payload *before*
+calling `validate_brief`, `validate_evidence`, `validate_memo`, `analyze`, or a
+vertical worker — closing the discover → construct → validate loop without
+leaving the MCP surface.
+
+`name` accepts the schema key (`agenda_brief`), the file name
+(`agenda-brief.schema.json`), or the bare stem (`agenda-brief`). Omit `name` to
+list the available schemas.
+
+```json
+{ "name": "agenda_brief" }
+```
+
+Returns `{ "implemented": true, "name": "...", "path": "...", "schema_version": "v1", "schema": { ... } }`,
+or, when `name` is omitted, `{ "available": [{ "name", "path", "schema_version" }], "count": N }`.
+
+The registry is read from `agent-manifest.json` (ADR 0013: the manifest is the
+authoritative schema registry), so the set never drifts from the packaged
+`schemas/v1/` files. Contract discovery only: it does not validate data, fill in
+a template, or verify factual truth.
 
 ---
 

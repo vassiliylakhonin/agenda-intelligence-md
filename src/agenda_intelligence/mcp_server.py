@@ -65,10 +65,13 @@ def _validate_json(data: dict, schema_name: str) -> dict:
     Returns a dict with keys:
         implemented: True
         valid: bool
-        errors: list[str]   (empty when valid)
+        errors: list[str]   (empty when valid; when invalid, ALL schema
+                             errors are returned — not just the first — so an
+                             agent can fix a payload in one pass instead of
+                             one round-trip per missing field)
     """
     try:
-        from jsonschema import ValidationError, validate
+        from jsonschema.validators import validator_for
     except ImportError:
         return {
             "implemented": False,
@@ -78,10 +81,11 @@ def _validate_json(data: dict, schema_name: str) -> dict:
 
     try:
         schema = _load_schema(schema_name)
-        validate(instance=data, schema=schema)
+        validator = validator_for(schema)(schema)
+        errors = sorted(validator.iter_errors(data), key=lambda e: ([str(p) for p in e.path], e.message))
+        if errors:
+            return {"implemented": True, "valid": False, "errors": [e.message for e in errors]}
         return {"implemented": True, "valid": True, "errors": []}
-    except ValidationError as e:
-        return {"implemented": True, "valid": False, "errors": [e.message]}
     except Exception as e:
         return {"implemented": True, "valid": None, "errors": [str(e)]}
 
@@ -110,6 +114,57 @@ def audit_claims(audit_json: dict) -> dict:
     Honest scope: schema-level only. Does not verify factual truth.
     """
     return _services.audit_claims(audit_json)
+
+
+def get_schema(name: Optional[str] = None) -> dict:
+    """Return a packaged JSON Schema so an agent can construct a valid payload.
+
+    ``name`` accepts the manifest schema key (e.g. ``agenda_brief``), the file
+    name (``agenda-brief.schema.json``), or the bare stem (``agenda-brief``).
+    Call with no ``name`` to list the available schema keys.
+
+    The schema registry is read from ``agent-manifest.json`` (ADR 0013: the
+    manifest is the authoritative schema registry), so the set never drifts
+    from the packaged ``schemas/v1/`` files. Contract discovery only: it does
+    not validate data, fill in a template, or verify factual truth.
+    """
+    try:
+        schemas = _load_manifest().get("schemas", {})
+        index: dict[str, tuple[str, dict]] = {}
+        for key, entry in schemas.items():
+            base = entry["path"].rsplit("/", 1)[-1]
+            stem = base.removesuffix(".schema.json")
+            for alias in (key, base, stem):
+                index[alias] = (key, entry)
+        if name is None:
+            return {
+                "implemented": True,
+                "available": [
+                    {"name": key, "path": entry["path"], "schema_version": entry.get("schema_version")}
+                    for key, entry in sorted(schemas.items())
+                ],
+                "count": len(schemas),
+                "note": "Contract discovery only. Does not validate data or verify factual truth.",
+                "error": None,
+            }
+        if name not in index:
+            return {
+                "implemented": True,
+                "schema": None,
+                "available": sorted(schemas),
+                "error": f"Unknown schema: {name}",
+            }
+        key, entry = index[name]
+        return {
+            "implemented": True,
+            "name": key,
+            "path": entry["path"],
+            "schema_version": entry.get("schema_version"),
+            "schema": _load_data_json(entry["path"]),
+            "error": None,
+        }
+    except Exception as e:
+        return {"implemented": True, "schema": None, "error": str(e)}
 
 
 def get_protocol(name: str) -> dict:
@@ -392,3 +447,13 @@ def agentic_interaction_trust(request_json: dict) -> dict:
     verification or authorization. Human review required.
     """
     return _services.agentic_interaction_trust(request_json)
+
+
+def gulf_maritime_exposure(request_json: dict) -> dict:
+    """Run the Gulf maritime exposure triage on a structured request.
+
+    Evidence triage of maritime sanctions and chokepoint-disruption exposure
+    for a vessel/voyage only. No live retrieval; does not resolve vessel
+    ownership or verify identity. Human review required.
+    """
+    return _services.gulf_maritime_exposure(request_json)
