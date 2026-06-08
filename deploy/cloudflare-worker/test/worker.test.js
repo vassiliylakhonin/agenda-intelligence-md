@@ -1900,3 +1900,49 @@ test("gulf message/send rejects a non-gulf request shape", async () => {
     console.log = originalLog;
   }
 });
+
+const GULF_PRICE_CAP = {
+  voyage: { chokepoint: "suez_canal" },
+  exposure_facets: ["russia_oil_price_cap"],
+  decision_stage: "pre_fixture",
+  dated_sources: [{ id: "p1", source_type: "ais_track_record", title: "AIS track", date: "2026-05-28" }],
+  risk_question: "Is the price-cap attestation evidence sufficient before fixture?"
+};
+
+async function gulfResponseFor(reqBody) {
+  const env = { AGENT_PROFILE: "gulf_maritime_exposure", AGENDA_USAGE: new MemoryKv() };
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "pc", method: "message/send", params: { capability: "gulf_maritime_exposure", request: reqBody } },
+      gulfRequest(),
+      env
+    );
+    return response.result.metadata.response;
+  } finally {
+    console.log = originalLog;
+  }
+}
+
+test("gulf surfaces the price-cap attestation gap when facet present and attestation absent (Python parity)", async () => {
+  const resp = await gulfResponseFor(GULF_PRICE_CAP);
+  assert.ok(resp.top_exposure_dimensions.some((d) => d.includes("not yet evidenced")));
+  assert.ok(resp.top_exposure_dimensions.some((d) => d.includes("Russia oil price-cap")));
+  assert.ok(resp.watch_next.some((w) => w.includes("attestation refusal")));
+});
+
+test("gulf price-cap attestation supplied clears the gap without moving the score (Python parity)", async () => {
+  const withAttestation = JSON.parse(JSON.stringify(GULF_PRICE_CAP));
+  withAttestation.dated_sources.push({
+    id: "p2",
+    source_type: "price_cap_attestation_or_recordkeeping",
+    title: "per-loading price-cap attestation + itemized ancillary-cost records",
+    date: "2026-05-28"
+  });
+  const base = await gulfResponseFor(GULF_PRICE_CAP);
+  const supplied = await gulfResponseFor(withAttestation);
+  assert.ok(base.top_exposure_dimensions.some((d) => d.includes("not yet evidenced")));
+  assert.ok(!supplied.top_exposure_dimensions.some((d) => d.includes("not yet evidenced")));
+  assert.equal(supplied.decision_readiness_score, base.decision_readiness_score);
+});
