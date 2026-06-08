@@ -56,7 +56,9 @@ Source-requirement plan: [source-requirements/gulf-maritime-exposure.json](../..
 | `sanctions_list_extract` | Dated OFAC / EU / UK OFSI vessel or entity list check. |
 | `ais_track_record` | AIS history to surface gaps, spoofing, or dark activity. |
 
-`helpful_context`: `flag_registry_record`, `sts_transfer_evidence`, `classification_society_record`, `port_state_control_record`, `cargo_or_bl_evidence`, `adverse_media_evidence`, `prior_incident_or_detention`.
+`helpful_context`: `flag_registry_record`, `sts_transfer_evidence`, `classification_society_record`, `port_state_control_record`, `cargo_or_bl_evidence`, `adverse_media_evidence`, `prior_incident_or_detention`, `price_cap_attestation_or_recordkeeping`.
+
+When `russia_oil_price_cap` is among the exposure facets and no `price_cap_attestation_or_recordkeeping` evidence is supplied, `top_exposure_dimensions` flags that the per-loading price-cap attestation and itemized ancillary-cost recordkeeping are not yet evidenced (the OFAC tiered safe-harbor artifact). This is an evidence-gap flag routed to human review — never a determination that the cap was met or breached. It is intentionally `helpful_context`, not `required_before_go`, so supplying it does not change the `decision_readiness_score`.
 
 ## Boundaries
 

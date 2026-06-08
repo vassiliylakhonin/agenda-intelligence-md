@@ -221,6 +221,7 @@
         "charterer_kyc_evidence",
         "adverse_media_evidence",
         "prior_incident_or_detention",
+        "price_cap_attestation_or_recordkeeping",
         "human_review_note",
         "user_provided_note",
         "other"

@@ -122,3 +122,40 @@ def test_no_forbidden_clearance_wording():
     blob = json.dumps(response)
     for pattern in FORBIDDEN_CLEARANCE_WORDING:
         assert not pattern.search(blob), pattern.pattern
+
+
+_PRICE_CAP_BASE = {
+    "voyage": {"chokepoint": "suez_canal"},
+    "exposure_facets": ["russia_oil_price_cap"],
+    "decision_stage": "pre_fixture",
+    "dated_sources": [{"id": "p1", "source_type": "ais_track_record", "title": "AIS track", "date": "2026-05-28"}],
+    "risk_question": "Is the price-cap attestation evidence sufficient before fixture?",
+}
+
+
+def test_price_cap_attestation_gap_surfaces_when_facet_present_and_attestation_absent():
+    response = services.gulf_maritime_exposure(_PRICE_CAP_BASE)["response"]
+    Draft202012Validator(load_json(RESPONSE_SCHEMA_PATH)).validate(response)
+    dims = response["top_exposure_dimensions"]
+    assert any("not yet evidenced" in d for d in dims), dims
+    assert any("Russia oil price-cap" in d for d in dims), dims
+    assert any("attestation refusal" in w for w in response["watch_next"]), response["watch_next"]
+
+
+def test_price_cap_attestation_supplied_clears_gap_without_moving_score():
+    with_attestation = json.loads(json.dumps(_PRICE_CAP_BASE))
+    with_attestation["dated_sources"].append(
+        {
+            "id": "p2",
+            "source_type": "price_cap_attestation_or_recordkeeping",
+            "title": "per-loading price-cap attestation + itemized ancillary-cost records",
+            "date": "2026-05-28",
+        }
+    )
+    base = services.gulf_maritime_exposure(_PRICE_CAP_BASE)["response"]
+    supplied = services.gulf_maritime_exposure(with_attestation)["response"]
+    # gap note clears once the attestation is evidenced
+    assert any("not yet evidenced" in d for d in base["top_exposure_dimensions"])
+    assert not any("not yet evidenced" in d for d in supplied["top_exposure_dimensions"])
+    # the new source type is not in required/context -> decision_readiness_score is unchanged
+    assert supplied["decision_readiness_score"] == base["decision_readiness_score"]
