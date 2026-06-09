@@ -162,6 +162,8 @@ The product-grade interface is structured JSON, not free-text prompting.
 - Law-firm opinion.
 - Counterparty registry extract.
 - Beneficial ownership source.
+- Counterparty integrity / anti-corruption due diligence (on distributors, agents, and government-facing intermediaries — the foreign parent can carry FCPA / UK Bribery Act exposure for a partner's conduct).
+- Bank-account / KYC onboarding readiness (full UBO and source-of-funds pack, expected-turnover statement, and presence/timeline — account opening for foreign-owned entities is document-heavy and slow).
 - Business-substance evidence.
 - Authority-to-sign evidence.
 - Contract or term-sheet draft.

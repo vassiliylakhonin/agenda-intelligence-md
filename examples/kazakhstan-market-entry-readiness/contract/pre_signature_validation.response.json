@@ -41,6 +41,22 @@
       "decision_blocked": "Cross-border payment and profit-repatriation planning."
     },
     {
+      "source_type": "counterparty_integrity_due_diligence",
+      "evidence_needed": "Integrity / anti-corruption due diligence on the distributor, agents, and any government-facing intermediaries (ownership, embedded officials, adverse media, sanctions and PEP screening).",
+      "why_it_matters": "Under FCPA / UK Bribery Act the foreign parent can be liable for an intermediary's conduct; engaging a partner who touches customs, certification, or akimat without integrity DD is an unmanaged exposure.",
+      "owner": "Compliance / legal counsel",
+      "next_action": "Run integrity DD before appointing or contracting any local partner or agent.",
+      "decision_blocked": "Partner appointment and signature."
+    },
+    {
+      "source_type": "bank_account_and_kyc_onboarding",
+      "evidence_needed": "Bank-account opening readiness: full UBO pack (apostilled), source-of-funds and expected-turnover statement, and the presence / timeline the chosen bank requires.",
+      "why_it_matters": "Account opening for a foreign-owned entity is document-heavy and slow; until it clears, the entity cannot pay suppliers or receive revenue.",
+      "owner": "Finance lead",
+      "next_action": "Confirm the bank's KYC checklist and start onboarding in parallel with entity setup.",
+      "decision_blocked": "Supplier payment and revenue collection."
+    },
+    {
       "source_type": "customs_broker_memo",
       "evidence_needed": "HS code, duty, VAT, import classification, and documentation memo.",
       "why_it_matters": "The landed-cost model and import feasibility cannot be confirmed without customs treatment.",
@@ -130,6 +146,8 @@
     "customs rule change",
     "certification requirement change",
     "tax or VAT treatment change",
+    "anti-corruption enforcement or third-party due-diligence expectation change",
+    "bank KYC or account-opening tightening for foreign-owned entities",
     "permanent-establishment or tax-residency rule change",
     "currency-control or profit-repatriation rule change",
     "foreign-worker quota or local-employment ratio change",

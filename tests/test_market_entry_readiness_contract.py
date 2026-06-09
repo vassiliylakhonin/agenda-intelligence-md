@@ -38,6 +38,13 @@ IP_AND_DATA_TYPES = {
     "data_localization_and_privacy_note",
 }
 
+# Discovery-pain additions (2026-06-10): counterparty integrity and banking
+# onboarding a foreign parent must clear before appointing a partner or operating.
+INTEGRITY_AND_BANKING_TYPES = {
+    "counterparty_integrity_due_diligence",
+    "bank_account_and_kyc_onboarding",
+}
+
 
 def load_json(path: Path):
     return json.loads(path.read_text())
@@ -93,6 +100,14 @@ def test_ip_and_data_types_present_in_enum_and_taxonomy():
     taxonomy = load_json(TAXONOMY_PATH)
     referenced = {item for v in taxonomy.values() if isinstance(v, list) for item in v}
     assert IP_AND_DATA_TYPES <= referenced, "IP / data types not mapped in source taxonomy"
+
+
+def test_integrity_and_banking_types_present_in_enum_and_taxonomy():
+    enum = request_enum()
+    assert INTEGRITY_AND_BANKING_TYPES <= enum, "integrity / banking types missing from request enum"
+    taxonomy = load_json(TAXONOMY_PATH)
+    referenced = {item for v in taxonomy.values() if isinstance(v, list) for item in v}
+    assert INTEGRITY_AND_BANKING_TYPES <= referenced, "integrity / banking types not mapped in source taxonomy"
 
 
 def test_dual_copy_in_sync():

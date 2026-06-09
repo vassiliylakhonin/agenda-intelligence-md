@@ -190,6 +190,8 @@
         "law_firm_opinion",
         "counterparty_registry_extract",
         "beneficial_ownership_source",
+        "counterparty_integrity_due_diligence",
+        "bank_account_and_kyc_onboarding",
         "business_substance_evidence",
         "authority_to_sign_evidence",
         "contract_or_term_sheet_draft",

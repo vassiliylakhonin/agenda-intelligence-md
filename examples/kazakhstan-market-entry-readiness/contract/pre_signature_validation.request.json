@@ -53,6 +53,8 @@
   ],
   "known_blockers": [
     "No law-firm opinion supplied.",
+    "No counterparty integrity / anti-corruption due diligence supplied.",
+    "No bank-account / KYC onboarding pack supplied.",
     "No permanent-establishment / tax-residency assessment supplied.",
     "No currency-control / repatriation note supplied.",
     "No work-permit / local-employment-quota note supplied.",
