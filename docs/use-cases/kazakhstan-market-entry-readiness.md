@@ -90,6 +90,14 @@ It is not legal, compliance, customs, tax, financial, investment, insurance, san
       "decision_blocked": "Signature or entity setup."
     }
   ],
+  "owner_actions": [
+    {
+      "timeframe": "7_days",
+      "owner": "Project lead",
+      "action": "Request the legal-structure, tax-residency, and customs memos from advisors.",
+      "output": "Gate 1 evidence pack."
+    }
+  ],
   "watch_next": [
     "customs rule change",
     "certification requirement change",
@@ -158,6 +166,11 @@ The product-grade interface is structured JSON, not free-text prompting.
 - Authority-to-sign evidence.
 - Contract or term-sheet draft.
 - Tax/accounting note.
+- Permanent-establishment / tax-residency assessment (whether the entry model creates a taxable presence; branches are treated as residents).
+- Currency-control / repatriation note (currency-contract registration and profit-repatriation reporting thresholds).
+- Work-permit / local-employment-quota note (foreign-worker quota and the local-national employee ratio for the chosen entity).
+
+Where the deal targets government or quasi-government procurement, add a local-content / procurement-localization note (production-facility and pre-qualified-bidder requirements). A special-economic-zone eligibility note is supporting context where SEZ tax, hiring, or customs relief changes the economics.
 
 ### Before import or first batch
 

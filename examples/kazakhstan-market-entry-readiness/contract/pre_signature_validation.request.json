@@ -53,6 +53,9 @@
   ],
   "known_blockers": [
     "No law-firm opinion supplied.",
+    "No permanent-establishment / tax-residency assessment supplied.",
+    "No currency-control / repatriation note supplied.",
+    "No work-permit / local-employment-quota note supplied.",
     "No customs-broker memo supplied.",
     "No certification pathway supplied.",
     "No real showroom lease offer supplied.",

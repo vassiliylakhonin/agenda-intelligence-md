@@ -14,7 +14,10 @@
     "business_substance_evidence",
     "authority_to_sign_evidence",
     "contract_or_term_sheet_draft",
-    "tax_accounting_note"
+    "tax_accounting_note",
+    "permanent_establishment_or_tax_residency_assessment",
+    "currency_control_and_repatriation_note",
+    "work_permit_and_local_employment_quota_note"
   ],
   "required_before_import_or_first_batch": [
     "customs_broker_memo",
@@ -57,7 +60,9 @@
     "sdg_or_sustainability_mapping",
     "project_timeline",
     "risk_register",
-    "decision_log"
+    "decision_log",
+    "local_content_or_procurement_localization_note",
+    "special_economic_zone_eligibility_note"
   ],
   "supporting_sources": [
     "market_size_source",
@@ -69,12 +74,18 @@
     "sdg_or_sustainability_mapping",
     "project_timeline",
     "risk_register",
-    "decision_log"
+    "decision_log",
+    "local_content_or_procurement_localization_note",
+    "special_economic_zone_eligibility_note"
   ],
   "watch_indicators": [
     "customs rule change",
     "certification requirement change",
     "tax or VAT treatment change",
+    "permanent-establishment or tax-residency rule change",
+    "currency-control or profit-repatriation rule change",
+    "foreign-worker quota or local-employment ratio change",
+    "local-content or procurement-localization rule change",
     "lease availability or rent change",
     "freight rate change",
     "battery handling or insurance constraint",
