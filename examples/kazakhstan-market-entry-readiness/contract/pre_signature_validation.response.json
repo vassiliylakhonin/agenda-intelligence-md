@@ -25,6 +25,22 @@
       "decision_blocked": "Signature or entity setup."
     },
     {
+      "source_type": "permanent_establishment_or_tax_residency_assessment",
+      "evidence_needed": "Assessment of whether the chosen entry model (branch, representative office, LLP, or direct contracting) creates a taxable permanent establishment or resident status.",
+      "why_it_matters": "Permanent-establishment and residency treatment drive tax registration, reporting load, and the real cost of the entry model.",
+      "owner": "Tax advisor",
+      "next_action": "Request a permanent-establishment and tax-residency memo for each candidate entry model.",
+      "decision_blocked": "Entity model choice and signature."
+    },
+    {
+      "source_type": "currency_control_and_repatriation_note",
+      "evidence_needed": "Note on currency-contract registration thresholds, repatriation reporting, and how supplier payments and profit repatriation will clear local banks.",
+      "why_it_matters": "Currency-control registration and repatriation reporting affect how, and how quickly, money can move in and out after commitment.",
+      "owner": "Treasury / banking advisor",
+      "next_action": "Confirm currency-contract registration and repatriation steps with the servicing bank.",
+      "decision_blocked": "Cross-border payment and profit-repatriation planning."
+    },
+    {
       "source_type": "customs_broker_memo",
       "evidence_needed": "HS code, duty, VAT, import classification, and documentation memo.",
       "why_it_matters": "The landed-cost model and import feasibility cannot be confirmed without customs treatment.",
@@ -98,6 +114,9 @@
     "customs rule change",
     "certification requirement change",
     "tax or VAT treatment change",
+    "permanent-establishment or tax-residency rule change",
+    "currency-control or profit-repatriation rule change",
+    "foreign-worker quota or local-employment ratio change",
     "lease availability or rent change",
     "freight rate change",
     "supplier price or MOQ change",
