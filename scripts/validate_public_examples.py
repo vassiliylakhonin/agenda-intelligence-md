@@ -83,6 +83,7 @@ def validate_examples() -> None:
     }
     commercial_fixture_dirs = {
         ROOT / "examples" / "kazakhstan-middle-corridor",
+        ROOT / "examples" / "kazakhstan-market-entry-readiness",
         ROOT / "examples" / "cis-secondary-sanctions",
         ROOT / "examples" / "agentic-interaction-trust",
         ROOT / "examples" / "gulf-maritime-exposure",
