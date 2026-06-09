@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/market-entry-readiness-request.schema.json",
+  "title": "MarketEntryReadinessRequest",
+  "description": "Product-grade structured request contract for Kazakhstan market-entry evidence triage. This schema describes caller-supplied company, project, counterparty, source, and decision-stage inputs. It does not enable live retrieval, factual-truth verification, legal advice, compliance advice, customs advice, tax advice, financial advice, investment advice, insurance advice, sanctions advice, or launch authorization.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "project_name",
+    "partner_or_company",
+    "market",
+    "decision_question",
+    "decision_stage",
+    "supplied_sources"
+  ],
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "partner_or_company": {
+      "type": "string",
+      "minLength": 1
+    },
+    "market": {
+      "type": "string",
+      "minLength": 1,
+      "default": "Kazakhstan"
+    },
+    "sector": {
+      "type": "string",
+      "enum": [
+        "mobility",
+        "renewable_energy",
+        "epc",
+        "infrastructure",
+        "data_center",
+        "technology_transfer",
+        "distribution",
+        "real_estate_or_land",
+        "other"
+      ]
+    },
+    "commercial_objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_stage": {
+      "type": "string",
+      "enum": [
+        "concept_review",
+        "pre_entity_setup",
+        "pre_signature",
+        "pre_import",
+        "pre_certification",
+        "pre_showroom_lease",
+        "pre_first_batch_order",
+        "pre_ad_spend",
+        "pre_dealer_contract",
+        "committee_review",
+        "other"
+      ]
+    },
+    "counterparties": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/counterparty"
+      }
+    },
+    "supplied_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/supplied_source"
+      }
+    },
+    "known_assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "known_blockers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "requested_output": {
+      "type": "string",
+      "enum": [
+        "management_summary",
+        "structured_json",
+        "both"
+      ],
+      "default": "structured_json"
+    }
+  },
+  "$defs": {
+    "counterparty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "name"
+      ],
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": [
+            "supplier",
+            "distributor",
+            "dealer",
+            "customer",
+            "bank",
+            "law_firm",
+            "customs_broker",
+            "freight_forwarder",
+            "certification_advisor",
+            "realtor",
+            "advertising_agency",
+            "service_partner",
+            "government_stakeholder",
+            "investor",
+            "other"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "supplied_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_type",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "$ref": "#/$defs/source_type"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "partner_company_profile",
+        "product_or_project_description",
+        "commercial_objective",
+        "kazakhstan_use_case",
+        "initial_source_links_or_documents",
+        "law_firm_opinion",
+        "counterparty_registry_extract",
+        "beneficial_ownership_source",
+        "business_substance_evidence",
+        "authority_to_sign_evidence",
+        "contract_or_term_sheet_draft",
+        "tax_accounting_note",
+        "customs_broker_memo",
+        "hs_code_classification",
+        "certification_pathway",
+        "packing_list_and_incoterms",
+        "battery_safety_documents",
+        "freight_forwarder_quote",
+        "insurance_or_cargo_handling_note",
+        "landed_cost_model",
+        "supplier_moq_payment_terms",
+        "showroom_lease_offer",
+        "showroom_opex_model",
+        "outdoor_advertising_quote",
+        "localized_customer_materials",
+        "warranty_policy",
+        "service_partner_confirmation",
+        "spare_parts_price_list",
+        "demo_unit_plan",
+        "test_ride_or_pilot_safety_process",
+        "dealer_interview_notes",
+        "fleet_customer_validation",
+        "dealer_margin_model",
+        "fleet_tco_model",
+        "financing_or_leasing_partner_note",
+        "service_sla_draft",
+        "regional_expansion_assumption_register",
+        "market_size_source",
+        "competitor_scan",
+        "pricing_benchmark",
+        "customer_interview_notes",
+        "government_or_akimat_note",
+        "bankability_note",
+        "sdg_or_sustainability_mapping",
+        "project_timeline",
+        "risk_register",
+        "decision_log",
+        "user_provided_note",
+        "other"
+      ]
+    }
+  }
+}

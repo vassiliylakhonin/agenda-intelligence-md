@@ -1,0 +1,62 @@
+{
+  "project_name": "Kazakhstan market-entry review",
+  "partner_or_company": "Example Mobility Company",
+  "market": "Kazakhstan / Almaty first",
+  "sector": "mobility",
+  "commercial_objective": "Evaluate Kazakhstan distribution, import, service, showroom, and partner-entry readiness.",
+  "decision_question": "Can the project move from concept discussion to controlled validation, and what must be closed before launch commitment?",
+  "decision_stage": "pre_signature",
+  "counterparties": [
+    {
+      "role": "supplier",
+      "name": "Example Mobility Company",
+      "jurisdiction": "China",
+      "notes": "Supplier and potential Kazakhstan market-entry partner."
+    },
+    {
+      "role": "law_firm",
+      "name": "Kazakhstan counsel",
+      "jurisdiction": "Kazakhstan",
+      "notes": "Needed for legal-structure review."
+    },
+    {
+      "role": "customs_broker",
+      "name": "Kazakhstan customs broker",
+      "jurisdiction": "Kazakhstan",
+      "notes": "Needed for HS code, duty, VAT, certification, and import-path review."
+    }
+  ],
+  "supplied_sources": [
+    {
+      "id": "s1",
+      "source_type": "partner_company_profile",
+      "title": "Company profile",
+      "date": "2026-06-01"
+    },
+    {
+      "id": "s2",
+      "source_type": "product_or_project_description",
+      "title": "Product catalogue",
+      "date": "2026-06-01"
+    },
+    {
+      "id": "s3",
+      "source_type": "market_size_source",
+      "title": "Kazakhstan macro and city-market source note",
+      "date": "2026-06-01"
+    }
+  ],
+  "known_assumptions": [
+    "Public cost benchmarks are not signed quotes.",
+    "Supplier prices are not Kazakhstan landed costs.",
+    "Representative-office, branch, LLP, distributor, importer, and dealer models require local legal review."
+  ],
+  "known_blockers": [
+    "No law-firm opinion supplied.",
+    "No customs-broker memo supplied.",
+    "No certification pathway supplied.",
+    "No real showroom lease offer supplied.",
+    "No service-partner confirmation supplied."
+  ],
+  "requested_output": "both"
+}

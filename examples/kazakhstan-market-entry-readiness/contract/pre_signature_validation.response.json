@@ -1,0 +1,108 @@
+{
+  "gate_decision": "proceed_to_validation",
+  "readiness_label": "validation_ready",
+  "human_review_required": true,
+  "summary": "The market-entry opportunity appears commercially attractive and coherent enough for controlled validation, but it is not launch-commitment-ready until legal, customs, certification, landed-cost, service, lease, and partner evidence gaps are closed.",
+  "strongest_reason_to_proceed": "The Kazakhstan use case and commercial objective are specific enough to start advisor requests, quote collection, and partner validation.",
+  "strongest_reason_to_pause": "The current evidence pack is not sufficient for signature, import, lease, first-batch order, advertising spend, or partner appointment.",
+  "confirmed_facts": [
+    "A company profile and product or project description were supplied.",
+    "The decision question is at pre-signature stage.",
+    "Known blockers include missing legal, customs, certification, lease, and service evidence."
+  ],
+  "assumptions": [
+    "Public cost benchmarks are not signed quotes.",
+    "Supplier prices are not Kazakhstan landed costs.",
+    "The final commercial structure depends on local legal, tax, customs, and operational review."
+  ],
+  "evidence_gaps": [
+    {
+      "source_type": "law_firm_opinion",
+      "evidence_needed": "Written recommendation on branch, representative office, LLP, distributor, importer, or dealer structure.",
+      "why_it_matters": "The legal form affects sales, import, service, tax, contracting, and liability.",
+      "owner": "Kazakhstan legal counsel",
+      "next_action": "Request a short legal-structure memo.",
+      "decision_blocked": "Signature or entity setup."
+    },
+    {
+      "source_type": "customs_broker_memo",
+      "evidence_needed": "HS code, duty, VAT, import classification, and documentation memo.",
+      "why_it_matters": "The landed-cost model and import feasibility cannot be confirmed without customs treatment.",
+      "owner": "Customs broker",
+      "next_action": "Send catalogue, specs, packing list, and Incoterms for review.",
+      "decision_blocked": "Import or first-batch order."
+    },
+    {
+      "source_type": "certification_pathway",
+      "evidence_needed": "Kazakhstan or EAEU certification and road-use classification path by product category.",
+      "why_it_matters": "Commercial sales and customer-facing claims may depend on classification and conformity requirements.",
+      "owner": "Certification advisor",
+      "next_action": "Request product-category certification memo.",
+      "decision_blocked": "Public launch and sales."
+    },
+    {
+      "source_type": "showroom_lease_offer",
+      "evidence_needed": "Real lease offer with availability, area, rent, service charges, deposit, and permitted use.",
+      "why_it_matters": "Showroom cost assumptions remain benchmark-only until confirmed by lease offers.",
+      "owner": "Real-estate broker",
+      "next_action": "Request lean, base, and premium location offers.",
+      "decision_blocked": "Showroom lease or launch budget."
+    },
+    {
+      "source_type": "service_partner_confirmation",
+      "evidence_needed": "Service partner, mechanic, warranty process, spare-parts list, and service SLA.",
+      "why_it_matters": "After-sales readiness is required before advertising or large-volume sales.",
+      "owner": "Operations lead",
+      "next_action": "Identify service partner and define minimum launch service promise.",
+      "decision_blocked": "Public launch and dealer appointment."
+    }
+  ],
+  "claim_audit": [
+    {
+      "claim": "Kazakhstan is a credible entry market.",
+      "status": "directionally_supported",
+      "how_to_use_now": "Use as an executive thesis, not as proof of demand."
+    },
+    {
+      "claim": "The project can move to controlled validation.",
+      "status": "supported",
+      "how_to_use_now": "Use for advisor requests, quotes, and structured customer or partner interviews."
+    },
+    {
+      "claim": "The project is ready for launch commitment.",
+      "status": "unsupported",
+      "how_to_use_now": "Do not use. Replace with validation-ready until evidence gaps are closed."
+    }
+  ],
+  "owner_actions": [
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Send evidence request to partner and advisors.",
+      "output": "Missing-document checklist and advisor request pack."
+    },
+    {
+      "timeframe": "7_days",
+      "owner": "Project lead",
+      "action": "Collect legal, customs, certification, freight, lease, and service inputs.",
+      "output": "Gate 1 evidence pack."
+    },
+    {
+      "timeframe": "30_days",
+      "owner": "Project lead",
+      "action": "Convert validation evidence into a launch budget and first-batch decision memo.",
+      "output": "Committee-ready gate memo."
+    }
+  ],
+  "watch_next": [
+    "customs rule change",
+    "certification requirement change",
+    "tax or VAT treatment change",
+    "lease availability or rent change",
+    "freight rate change",
+    "supplier price or MOQ change",
+    "service capacity bottleneck"
+  ],
+  "management_note": "The opportunity can move to controlled validation, but should not move to launch commitment until legal, customs, certification, landed-cost, service, lease, and partner evidence gaps are closed.",
+  "boundary_notice": "Internal evidence triage only. Not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice."
+}

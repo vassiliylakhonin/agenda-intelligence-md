@@ -1,0 +1,89 @@
+{
+  "category": "kazakhstan-market-entry-readiness",
+  "required_before_validation": [
+    "partner_company_profile",
+    "product_or_project_description",
+    "commercial_objective",
+    "kazakhstan_use_case",
+    "initial_source_links_or_documents"
+  ],
+  "required_before_signature": [
+    "law_firm_opinion",
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "business_substance_evidence",
+    "authority_to_sign_evidence",
+    "contract_or_term_sheet_draft",
+    "tax_accounting_note"
+  ],
+  "required_before_import_or_first_batch": [
+    "customs_broker_memo",
+    "hs_code_classification",
+    "certification_pathway",
+    "packing_list_and_incoterms",
+    "battery_safety_documents",
+    "freight_forwarder_quote",
+    "insurance_or_cargo_handling_note",
+    "landed_cost_model",
+    "supplier_moq_payment_terms"
+  ],
+  "required_before_showroom_or_public_launch": [
+    "showroom_lease_offer",
+    "showroom_opex_model",
+    "outdoor_advertising_quote",
+    "localized_customer_materials",
+    "warranty_policy",
+    "service_partner_confirmation",
+    "spare_parts_price_list",
+    "demo_unit_plan",
+    "test_ride_or_pilot_safety_process"
+  ],
+  "required_before_dealer_or_fleet_expansion": [
+    "dealer_interview_notes",
+    "fleet_customer_validation",
+    "dealer_margin_model",
+    "fleet_tco_model",
+    "financing_or_leasing_partner_note",
+    "service_sla_draft",
+    "regional_expansion_assumption_register"
+  ],
+  "helpful_context": [
+    "market_size_source",
+    "competitor_scan",
+    "pricing_benchmark",
+    "customer_interview_notes",
+    "government_or_akimat_note",
+    "bankability_note",
+    "sdg_or_sustainability_mapping",
+    "project_timeline",
+    "risk_register",
+    "decision_log"
+  ],
+  "supporting_sources": [
+    "market_size_source",
+    "competitor_scan",
+    "pricing_benchmark",
+    "customer_interview_notes",
+    "government_or_akimat_note",
+    "bankability_note",
+    "sdg_or_sustainability_mapping",
+    "project_timeline",
+    "risk_register",
+    "decision_log"
+  ],
+  "watch_indicators": [
+    "customs rule change",
+    "certification requirement change",
+    "tax or VAT treatment change",
+    "lease availability or rent change",
+    "freight rate change",
+    "battery handling or insurance constraint",
+    "supplier price or MOQ change",
+    "partner commitment change",
+    "dealer or fleet demand signal",
+    "service capacity bottleneck",
+    "public announcement risk",
+    "government or regulator signal"
+  ],
+  "boundary": "This taxonomy supports internal market-entry evidence triage only. It does not provide legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice."
+}
