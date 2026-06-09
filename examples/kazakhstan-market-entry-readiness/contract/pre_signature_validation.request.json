@@ -59,7 +59,9 @@
     "No customs-broker memo supplied.",
     "No certification pathway supplied.",
     "No real showroom lease offer supplied.",
-    "No service-partner confirmation supplied."
+    "No service-partner confirmation supplied.",
+    "No trademark / brand-protection filing supplied.",
+    "No data-localization / privacy note supplied."
   ],
   "requested_output": "both"
 }

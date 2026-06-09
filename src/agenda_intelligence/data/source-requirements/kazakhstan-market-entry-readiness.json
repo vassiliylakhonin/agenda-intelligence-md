@@ -39,7 +39,9 @@
     "service_partner_confirmation",
     "spare_parts_price_list",
     "demo_unit_plan",
-    "test_ride_or_pilot_safety_process"
+    "test_ride_or_pilot_safety_process",
+    "trademark_or_brand_protection_filing",
+    "data_localization_and_privacy_note"
   ],
   "required_before_dealer_or_fleet_expansion": [
     "dealer_interview_notes",
@@ -86,6 +88,8 @@
     "currency-control or profit-repatriation rule change",
     "foreign-worker quota or local-employment ratio change",
     "local-content or procurement-localization rule change",
+    "third-party trademark filing or brand-squatting signal",
+    "personal-data localization or privacy rule change",
     "lease availability or rent change",
     "freight rate change",
     "battery handling or insurance constraint",

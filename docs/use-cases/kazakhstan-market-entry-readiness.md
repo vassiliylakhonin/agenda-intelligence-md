@@ -195,6 +195,8 @@ Where the deal targets government or quasi-government procurement, add a local-c
 - Spare-parts price list.
 - Demo-unit plan.
 - Test-ride or pilot safety process.
+- Trademark / brand-protection filing (national or EAEU/Madrid registration, plus a squatting check before any public promotion — most brand disputes surface within months of launch).
+- Data-localization / privacy note (where customer, lead, app, CRM, or fleet data is collected, Kazakhstan personal-data localization can apply even through a distributor without a local entity).
 
 ### Before dealer or fleet expansion
 
