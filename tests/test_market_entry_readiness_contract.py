@@ -31,6 +31,13 @@ REGULATORY_SETUP_TYPES = {
     "special_economic_zone_eligibility_note",
 }
 
+# Discovery-pain additions (2026-06-10): intangible-asset / data protection a
+# brand-heavy entrant typically misses (trademark squatting, data localization).
+IP_AND_DATA_TYPES = {
+    "trademark_or_brand_protection_filing",
+    "data_localization_and_privacy_note",
+}
+
 
 def load_json(path: Path):
     return json.loads(path.read_text())
@@ -78,6 +85,14 @@ def test_regulatory_setup_types_present_in_enum_and_taxonomy():
     taxonomy = load_json(TAXONOMY_PATH)
     referenced = {item for v in taxonomy.values() if isinstance(v, list) for item in v}
     assert REGULATORY_SETUP_TYPES <= referenced, "regulatory-setup types not mapped in source taxonomy"
+
+
+def test_ip_and_data_types_present_in_enum_and_taxonomy():
+    enum = request_enum()
+    assert IP_AND_DATA_TYPES <= enum, "IP / data types missing from request enum"
+    taxonomy = load_json(TAXONOMY_PATH)
+    referenced = {item for v in taxonomy.values() if isinstance(v, list) for item in v}
+    assert IP_AND_DATA_TYPES <= referenced, "IP / data types not mapped in source taxonomy"
 
 
 def test_dual_copy_in_sync():

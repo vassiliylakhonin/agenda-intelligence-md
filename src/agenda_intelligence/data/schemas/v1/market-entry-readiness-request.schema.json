@@ -215,6 +215,8 @@
         "spare_parts_price_list",
         "demo_unit_plan",
         "test_ride_or_pilot_safety_process",
+        "trademark_or_brand_protection_filing",
+        "data_localization_and_privacy_note",
         "dealer_interview_notes",
         "fleet_customer_validation",
         "dealer_margin_model",
