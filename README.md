@@ -68,6 +68,20 @@ This use case is a pre-compliance evidence and decision-readiness gate. It is no
 
 The product-grade structured JSON contract is documented in [`docs/use-cases/kazakhstan-middle-corridor.md`](docs/use-cases/kazakhstan-middle-corridor.md#product-contract), with schemas and fixtures under [`examples/kazakhstan-middle-corridor/contract/`](examples/kazakhstan-middle-corridor/contract/).
 
+## Kazakhstan market-entry readiness contract
+
+**Kazakhstan Market Entry Readiness Gate** is a structured contract pack for distribution, import, service, showroom, EPC, renewable-energy, infrastructure, technology-transfer, and partner-entry files:
+
+> Company + project + Kazakhstan objective + counterparties + supplied sources -> gate decision, readiness label, evidence gaps, claim audit, owner actions, watch-next indicators, and human-review routing.
+
+This is currently a schema / source-taxonomy / use-case contract, not a deployed live worker. It is not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice.
+
+- Use-case notes: [`docs/use-cases/kazakhstan-market-entry-readiness.md`](docs/use-cases/kazakhstan-market-entry-readiness.md)
+- Request schema: [`schemas/v1/market-entry-readiness-request.schema.json`](schemas/v1/market-entry-readiness-request.schema.json)
+- Response schema: [`schemas/v1/market-entry-readiness-response.schema.json`](schemas/v1/market-entry-readiness-response.schema.json)
+- Source taxonomy: [`source-requirements/kazakhstan-market-entry-readiness.json`](source-requirements/kazakhstan-market-entry-readiness.json)
+- Example pack: [`examples/kazakhstan-market-entry-readiness/contract/`](examples/kazakhstan-market-entry-readiness/contract/)
+
 ## Second vertical worker: CIS secondary-sanctions exposure
 
 For EU / UK / UAE / Singapore enhanced due diligence on CIS, Caucasus, and Central Asia counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Structured secondary-sanctions exposure evidence triage against OFAC EO 14114, EU 14th sanctions package, UK OFSI, UN, and FATF / EAG typologies.

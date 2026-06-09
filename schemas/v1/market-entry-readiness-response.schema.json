@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/market-entry-readiness-response.schema.json",
+  "title": "MarketEntryReadinessResponse",
+  "description": "Product-grade structured response contract for Kazakhstan market-entry evidence triage. This schema supports gate decisions, readiness labels, evidence gaps, claim audit, owner actions, watch-next indicators, and human-review requirements. It does not provide legal advice, compliance advice, customs advice, tax advice, financial advice, investment advice, insurance advice, sanctions advice, live retrieval, factual-truth verification, or launch authorization.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "gate_decision",
+    "readiness_label",
+    "human_review_required",
+    "summary",
+    "evidence_gaps",
+    "owner_actions",
+    "watch_next",
+    "boundary_notice"
+  ],
+  "properties": {
+    "gate_decision": {
+      "type": "string",
+      "enum": [
+        "proceed_to_validation",
+        "pause_for_evidence",
+        "escalate_before_signature",
+        "not_decision_ready",
+        "stop"
+      ]
+    },
+    "readiness_label": {
+      "type": "string",
+      "enum": [
+        "insufficient_information",
+        "concept_ready",
+        "validation_ready",
+        "committee_review_ready",
+        "launch_commitment_ready"
+      ]
+    },
+    "human_review_required": {
+      "type": "boolean"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "strongest_reason_to_proceed": {
+      "type": "string",
+      "minLength": 1
+    },
+    "strongest_reason_to_pause": {
+      "type": "string",
+      "minLength": 1
+    },
+    "confirmed_facts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "evidence_gaps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence_gap"
+      }
+    },
+    "claim_audit": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/claim_audit_item"
+      }
+    },
+    "owner_actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/owner_action"
+      }
+    },
+    "watch_next": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "management_note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "boundary_notice": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Deterministic content-provenance stamp for reproducibility. It is not a signature of authenticity, factuality, clearance, compliance, or authorization.",
+      "required": [
+        "contract_version",
+        "schema_id",
+        "input_digest"
+      ],
+      "properties": {
+        "contract_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "evidence_gap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_type",
+        "evidence_needed",
+        "why_it_matters",
+        "owner",
+        "next_action",
+        "decision_blocked"
+      ],
+      "properties": {
+        "source_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_needed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "why_it_matters": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "next_action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision_blocked": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "claim_audit_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim",
+        "status",
+        "how_to_use_now"
+      ],
+      "properties": {
+        "claim": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "supported",
+            "directionally_supported",
+            "assumption_only",
+            "unsupported",
+            "needs_professional_confirmation"
+          ]
+        },
+        "how_to_use_now": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "owner_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timeframe",
+        "owner",
+        "action",
+        "output"
+      ],
+      "properties": {
+        "timeframe": {
+          "type": "string",
+          "enum": [
+            "48_hours",
+            "7_days",
+            "30_days",
+            "later"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "output": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
