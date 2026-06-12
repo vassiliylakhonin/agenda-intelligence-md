@@ -16,6 +16,7 @@ import {
 } from "./upstream_watchman.js";
 
 import { buildJwks, maybeSignCard } from "./jws.js";
+import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 
 const SUPPORT_CONTACT_EMAIL = "vassiliy.lakhonin@gmail.com";
 const SUPPORT_HOURS_LOCAL = "Mon–Fri 09:00–18:00 Asia/Almaty (UTC+5)";
@@ -3150,7 +3151,6 @@ function headerHost(request, headerName) {
 // known monitors (Agenstry, uptime pingers) send near-empty payloads. This
 // catches small-payload probes that do not announce themselves as "agenstry"
 // in the user-agent (e.g. untagged uptime checks from monitor colos).
-const PROBE_PROMPT_CHAR_THRESHOLD = 24;
 
 function classifyClient(request) {
   const clientId = request.headers.get("x-client-id");
@@ -4029,7 +4029,6 @@ export {
   dealRiskContractResponseForRequest,
   handleJsonRpc,
   healthInfo,
-  PROBE_PROMPT_CHAR_THRESHOLD,
   isProductionAuthorized,
   isStatsAuthorized,
   productionAuthKey,
