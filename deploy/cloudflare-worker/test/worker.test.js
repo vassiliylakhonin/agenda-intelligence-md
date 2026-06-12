@@ -12,7 +12,6 @@ import {
   isStatsAuthorized,
   landingHtml,
   productionAuthKey,
-  PROBE_PROMPT_CHAR_THRESHOLD,
   recordUsageStats,
   routeModules,
   signalScreenForText,
@@ -20,6 +19,7 @@ import {
   triageForText,
   usageStats
 } from "../src/index.js";
+import { PROBE_PROMPT_CHAR_THRESHOLD } from "../src/usage_constants.js";
 import { validateAgentCard } from "../scripts/verify-agent-card.js";
 
 const request = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
