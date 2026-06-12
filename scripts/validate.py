@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
+import importlib.util
 import json
 import subprocess
 import sys
 from pathlib import Path
+
+for module in ["jsonschema", "referencing"]:
+    if importlib.util.find_spec(module) is None:
+        raise SystemExit(
+            f"Missing required dependency: {module}. "
+            f"Install project dependencies first (pip install -e .) "
+            f"or run via the project venv: .venv/bin/python scripts/validate.py"
+        )
 
 root = Path(__file__).resolve().parents[1]
 required = [
