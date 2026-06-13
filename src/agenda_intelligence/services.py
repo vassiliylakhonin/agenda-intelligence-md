@@ -638,6 +638,60 @@ FRONT_COMPANY_INDICATORS = [
     "Representation: flag contact only via an intermediary with broad power of attorney, principals unavailable.",
 ]
 
+# Middle Corridor connections that carry elevated sanctions-program exposure
+# (OFAC Iran and Russia programs; sanctioned Caspian ports, operators, or
+# vessels). Surfaced as a standing route-screening checklist. Presence-flagging
+# routed to human review — NOT a sanctions determination, live screening, or
+# legal advice (ADR 0015 boundary).
+MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_CONNECTIONS = [
+    "Iran transit legs (Rasht-Astara rail, Bandar Abbas / Chabahar sea): screen for OFAC Iran-program exposure.",
+    "Russia Northern Corridor overlaps (Russian rail or territory as a leg or fallback): screen for diversion.",
+    "Sanctioned Caspian ports, operators, or flagged vessels: screen operator and vessel against designations.",
+    "Onward connection into a sanctions-relevant jurisdiction: confirm ultimate consignee and destination first.",
+]
+
+# Substring triggers that presence-flag a sanctions-exposed segment named in the
+# free-text route. Match on the declared route string only — presence-flagging,
+# not adjudication or live screening (ADR 0015 boundary).
+MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_ROUTE_TERMS = [
+    ("rasht", "Rasht-Astara (Iran) leg"),
+    ("astara", "Rasht-Astara (Iran) leg"),
+    ("bandar abbas", "Bandar Abbas (Iran) leg"),
+    ("chabahar", "Chabahar (Iran) leg"),
+    ("iran", "Iran transit leg"),
+    ("northern corridor", "Russia Northern Corridor overlap"),
+    ("russia", "Russia Northern Corridor overlap"),
+    ("russian", "Russia Northern Corridor overlap"),
+]
+
+# Customs-regime review items for the Middle Corridor: harmonized digital-customs
+# transit (eTIR; adopted by Organization of Turkic States members) versus
+# unharmonized national permitting, which remains a recurring barrier to
+# private-sector corridor use. Surfaced as evidence-gap review prompts — NOT
+# customs, legal, or compliance advice (ADR 0015 boundary).
+MIDDLE_CORRIDOR_CUSTOMS_HARMONIZATION_INDICATORS = [
+    "Permitting clarity: confirm licenses and permits needed at each crossing; flag any unharmonized leg.",
+    "Harmonized transit: check which crossings run under eTIR or another harmonized digital-customs regime.",
+    "Document acceptance: confirm transit documents are accepted at all crossings without re-declaration.",
+    "Tariff consistency: confirm cargo tariff classification and duties are consistent across corridor states.",
+    "Customs-rule change watch: flag recent customs-rule or enforcement changes at any crossing on the route.",
+]
+
+
+def _matched_sanctions_exposed_segments(route_text: str) -> list[str]:
+    """Presence-flag sanctions-exposed corridor segments named in the route text.
+
+    Case-insensitive substring match on the declared route string only. Per ADR
+    0015 this is presence-flagging routed to human review, NOT a sanctions
+    determination, live screening, or legal advice.
+    """
+    text = (route_text or "").lower()
+    matched: list[str] = []
+    for term, label in MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_ROUTE_TERMS:
+        if term in text and label not in matched:
+            matched.append(label)
+    return matched
+
 
 def _high_risk_jurisdiction_counterparties(request_json: dict) -> list[dict]:
     """Flag counterparties domiciled in a sanctions-relevant / high-risk jurisdiction.
@@ -929,6 +983,7 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
     flagged_named_sectors = _named_sector_counterparties(request_json)
     flagged_newly_formed = _newly_formed_counterparties(request_json)
     readiness_score, readiness_label = _middle_corridor_readiness(request_json, supplied_sources)
+    matched_sanctions_segments = _matched_sanctions_exposed_segments(request_json.get("route", ""))
     response = {
         "triage_recommendation": _middle_corridor_triage_recommendation(request_json, missing_sources),
         "risk_signal": _middle_corridor_risk_signal(request_json, missing_sources),
@@ -967,6 +1022,8 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         "counterparty_readiness": _middle_corridor_counterparty_readiness(
             request_json, supplied_sources, missing_sources
         ),
+        "route_sanctions_exposure_indicators": list(MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_CONNECTIONS),
+        "customs_harmonization_indicators": list(MIDDLE_CORRIDOR_CUSTOMS_HARMONIZATION_INDICATORS),
         "run_provenance": _run_provenance(request_json, "middle-corridor-deal-risk-response.schema.json"),
     }
     limitations: list[str] = []
@@ -1004,8 +1061,18 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
             f"({named_nf}); this matches an OFAC FFI advisory red-flag pattern and is an escalation flag for "
             "human review, not a sanctions determination."
         )
+    if matched_sanctions_segments:
+        named_seg = ", ".join(matched_sanctions_segments)
+        limitations.append(
+            "The declared route references one or more connections flagged as sanctions-exposed "
+            f"({named_seg}); this is a route-screening escalation flag for human review, not a sanctions "
+            "determination. Screen the specific connection, its operators, and any onward destination "
+            "before any commercial action."
+        )
     if limitations:
         response["limitations"] = limitations
+    if matched_sanctions_segments:
+        response["route_sanctions_matched_segments"] = list(matched_sanctions_segments)
     if "vessel_or_carrier_history" in missing_sources:
         response["vessel_due_diligence_indicators"] = list(VESSEL_DUE_DILIGENCE_INDICATORS)
     if "end_user_or_reexport_evidence" not in supplied_sources:

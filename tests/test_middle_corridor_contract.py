@@ -807,3 +807,47 @@ def _write_tmp(obj):
     path = Path(tempfile.mkstemp(suffix=".json")[1])
     path.write_text(json.dumps(obj))
     return path
+
+
+def _base_request(route: str) -> dict:
+    return {
+        "route": route,
+        "cargo": "containerized machinery",
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "screen before signature?",
+        "decision_stage": "pre_signature",
+    }
+
+
+def test_middle_corridor_ships_route_and_customs_screening_layers():
+    """Standing route-sanctions and customs-harmonization layers ship on every response."""
+    from agenda_intelligence import services
+
+    result = services.middle_corridor_deal_risk(_base_request("Altynkol -> Aktau -> Baku -> Poti -> EU"))
+    assert result["valid"] is True
+    resp = result["response"]
+    assert resp["route_sanctions_exposure_indicators"]
+    assert resp["customs_harmonization_indicators"]
+    # Clean route: no sanctions-exposed segment matched, so the optional field is absent.
+    assert "route_sanctions_matched_segments" not in resp
+
+
+def test_middle_corridor_flags_sanctions_exposed_route_segment():
+    """A route naming an Iran-transit leg is presence-flagged, not adjudicated (ADR 0015)."""
+    from agenda_intelligence import services
+
+    result = services.middle_corridor_deal_risk(_base_request("Bandar Abbas -> Rasht-Astara -> Baku -> Poti"))
+    assert result["valid"] is True
+    resp = result["response"]
+    matched = resp["route_sanctions_matched_segments"]
+    assert any("Iran" in segment for segment in matched)
+    assert "limitations" in resp
+    joined = " ".join(resp["limitations"])
+    assert "route-screening escalation flag for human review" in joined
+    # Boundary: must NOT phrase it as a determination.
+    assert "not a sanctions determination" in joined

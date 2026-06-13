@@ -182,6 +182,30 @@
         "minLength": 1
       }
     },
+    "route_sanctions_exposure_indicators": {
+      "type": "array",
+      "description": "Standing route-screening checklist of Middle Corridor connections that carry elevated sanctions-program exposure: Iran-transit legs and Russia Northern Corridor overlaps (OFAC Iran and Russia programs), sanctioned Caspian operators, and onward connections into a sanctions-relevant jurisdiction. Presence-flagging routed to human review; not a sanctions determination, live screening, or legal advice.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "route_sanctions_matched_segments": {
+      "type": "array",
+      "description": "Corridor segments named in the declared route text that match a sanctions-exposed connection on the screening checklist. Case-insensitive substring presence-flagging on the route string only, routed to human review; not a sanctions determination or live screening. Does not affect the decision-readiness score.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "customs_harmonization_indicators": {
+      "type": "array",
+      "description": "Standing customs-regime review checklist for the route: permitting clarity, and harmonized digital-customs coverage (eTIR; adopted by Organization of Turkic States members) versus unharmonized national permitting that remains a recurring barrier to private-sector corridor use. Evidence-gap prompts routed to human review; not customs, legal, or compliance advice. Does not affect the decision-readiness score.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "watch_next": {
       "type": "array",
       "items": {
