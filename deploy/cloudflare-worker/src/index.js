@@ -261,6 +261,54 @@ const FRONT_COMPANY_INDICATORS = [
   "Representation: flag contact only via an intermediary with broad power of attorney, principals unavailable."
 ];
 
+// Middle Corridor connections that carry elevated sanctions-program exposure
+// (OFAC Iran and Russia programs; sanctioned Caspian ports, operators, or
+// vessels). Surfaced as a standing route-screening checklist. Presence-flagging
+// routed to human review — NOT a sanctions determination, live screening, or
+// legal advice (ADR 0015 boundary).
+const MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_CONNECTIONS = [
+  "Iran transit legs (Rasht-Astara rail, Bandar Abbas / Chabahar sea): screen for OFAC Iran-program exposure.",
+  "Russia Northern Corridor overlaps (Russian rail or territory as a leg or fallback): screen for diversion.",
+  "Sanctioned Caspian ports, operators, or flagged vessels: screen operator and vessel against designations.",
+  "Onward connection into a sanctions-relevant jurisdiction: confirm ultimate consignee and destination first."
+];
+
+// Substring triggers that presence-flag a sanctions-exposed segment named in the
+// free-text route. Match on the declared route string only — presence-flagging,
+// not adjudication or live screening (ADR 0015 boundary).
+const MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_ROUTE_TERMS = [
+  ["rasht", "Rasht-Astara (Iran) leg"],
+  ["astara", "Rasht-Astara (Iran) leg"],
+  ["bandar abbas", "Bandar Abbas (Iran) leg"],
+  ["chabahar", "Chabahar (Iran) leg"],
+  ["iran", "Iran transit leg"],
+  ["northern corridor", "Russia Northern Corridor overlap"],
+  ["russia", "Russia Northern Corridor overlap"],
+  ["russian", "Russia Northern Corridor overlap"]
+];
+
+// Customs-regime review items for the Middle Corridor: harmonized digital-customs
+// transit (eTIR; adopted by Organization of Turkic States members) versus
+// unharmonized national permitting, which remains a recurring barrier to
+// private-sector corridor use. Surfaced as evidence-gap review prompts — NOT
+// customs, legal, or compliance advice (ADR 0015 boundary).
+const MIDDLE_CORRIDOR_CUSTOMS_HARMONIZATION_INDICATORS = [
+  "Permitting clarity: confirm licenses and permits needed at each crossing; flag any unharmonized leg.",
+  "Harmonized transit: check which crossings run under eTIR or another harmonized digital-customs regime.",
+  "Document acceptance: confirm transit documents are accepted at all crossings without re-declaration.",
+  "Tariff consistency: confirm cargo tariff classification and duties are consistent across corridor states.",
+  "Customs-rule change watch: flag recent customs-rule or enforcement changes at any crossing on the route."
+];
+
+function matchedSanctionsExposedSegments(routeText) {
+  const text = (routeText || "").toLowerCase();
+  const matched = [];
+  for (const [term, label] of MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_ROUTE_TERMS) {
+    if (text.includes(term) && !matched.includes(label)) matched.push(label);
+  }
+  return matched;
+}
+
 const CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW = [
   "ofac_sdn_extract",
   "eu_consolidated_extract",
@@ -2791,6 +2839,7 @@ function dealRiskContractResponseForRequest(request) {
   const flaggedCircumvention = circumventionWatchCounterparties(request);
   const flaggedNamedSectors = namedSectorCounterparties(request);
   const flaggedNewlyFormed = newlyFormedCounterparties(request);
+  const matchedSanctionsSegments = matchedSanctionsExposedSegments(request.route);
   const response = {
     triage_recommendation: triageRecommendationForStructuredRequest(request, minimumSourcesBeforeGo),
     risk_signal: riskSignalForStructuredRequest(request, minimumSourcesBeforeGo),
@@ -2827,7 +2876,9 @@ function dealRiskContractResponseForRequest(request) {
     ],
     human_review_required: true,
     not_advice_notice: NOT_ADVICE_NOTICE,
-    counterparty_readiness: counterpartyReadinessForStructuredRequest(request, suppliedSources, minimumSourcesBeforeGo)
+    counterparty_readiness: counterpartyReadinessForStructuredRequest(request, suppliedSources, minimumSourcesBeforeGo),
+    route_sanctions_exposure_indicators: [...MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_CONNECTIONS],
+    customs_harmonization_indicators: [...MIDDLE_CORRIDOR_CUSTOMS_HARMONIZATION_INDICATORS]
   };
   const limitations = [];
   if (flaggedHighRisk.length > 0) {
@@ -2858,7 +2909,16 @@ function dealRiskContractResponseForRequest(request) {
       `One or more counterparties were newly formed in a transshipment-risk jurisdiction (${namedNf}); this matches an OFAC FFI advisory red-flag pattern and is an escalation flag for human review, not a sanctions determination.`
     );
   }
+  if (matchedSanctionsSegments.length > 0) {
+    const namedSeg = matchedSanctionsSegments.join(", ");
+    limitations.push(
+      `The declared route references one or more connections flagged as sanctions-exposed (${namedSeg}); this is a route-screening escalation flag for human review, not a sanctions determination. Screen the specific connection, its operators, and any onward destination before any commercial action.`
+    );
+  }
   if (limitations.length > 0) response.limitations = limitations;
+  if (matchedSanctionsSegments.length > 0) {
+    response.route_sanctions_matched_segments = [...matchedSanctionsSegments];
+  }
   if (minimumSourcesBeforeGo.includes("vessel_or_carrier_history")) {
     response.vessel_due_diligence_indicators = [...VESSEL_DUE_DILIGENCE_INDICATORS];
   }
