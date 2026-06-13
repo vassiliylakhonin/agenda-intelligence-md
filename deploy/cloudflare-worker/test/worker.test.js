@@ -518,6 +518,31 @@ test("worker deal-risk contract omits front_company_indicators when business-sub
   assert.equal("front_company_indicators" in resp, false);
 });
 
+test("worker deal-risk contract ships route-sanctions and customs-harmonization layers (Python parity)", () => {
+  const resp = dealRiskContractResponseForRequest(baseDealRiskRequest());
+  assert.ok(resp.route_sanctions_exposure_indicators.length > 0);
+  assert.ok(resp.customs_harmonization_indicators.length > 0);
+  const blob = `${resp.route_sanctions_exposure_indicators.join(" ")} ${resp.customs_harmonization_indicators.join(
+    " "
+  )}`.toLowerCase();
+  assert.ok(blob.includes("ofac"));
+  assert.ok(blob.includes("etir"));
+  for (const word of ["cleared", "approved", "compliant", "sanctions safe"]) assert.equal(blob.includes(word), false);
+  // Clean base route: no sanctions-exposed segment matched.
+  assert.equal("route_sanctions_matched_segments" in resp, false);
+});
+
+test("worker deal-risk contract presence-flags a sanctions-exposed route segment (ADR 0015)", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({ route: "Bandar Abbas -> Rasht-Astara -> Baku -> Poti" })
+  );
+  assert.ok(resp.route_sanctions_matched_segments.length > 0);
+  assert.ok(resp.route_sanctions_matched_segments.some((s) => s.includes("Iran")));
+  assert.ok(resp.limitations.some((l) => l.includes("route-screening escalation flag for human review")));
+  // Boundary: presence-flag, not a determination.
+  assert.ok(resp.limitations.some((l) => l.includes("not a sanctions determination")));
+});
+
 test("message/send accepts the newer EDD source types and suppresses their checklists (enum parity)", async () => {
   // Regression: the worker MC_SOURCE_TYPES enum was narrower than the Python
   // schema, so a structured request *supplying* these four EDD source types was
