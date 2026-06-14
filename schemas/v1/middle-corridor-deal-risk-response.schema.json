@@ -54,6 +54,35 @@
         "review_ready"
       ]
     },
+    "operational_decision": {
+      "description": "Logistics/ops-facing booking decision derived from the decision-readiness score, risk signal, triage recommendation, and decision stage. Triage routing only; not clearance, approval, a sanctions determination, or any legal, sanctions, compliance, financial, investment, insurance, or trading advice. It never issues a hard reject (a compliance/legal call) and stops at hold or escalate. Human review is required before any commercial action.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "applies_to",
+        "rationale"
+      ],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": [
+            "proceed",
+            "proceed_with_conditions",
+            "hold",
+            "escalate"
+          ]
+        },
+        "applies_to": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "route": {
       "type": "string",
       "minLength": 1
@@ -416,6 +445,11 @@
       "risk_signal": "medium_high",
       "decision_readiness_score": 42,
       "decision_readiness_label": "not_decision_ready",
+      "operational_decision": {
+        "decision": "escalate",
+        "applies_to": "quote / sign the booking",
+        "rationale": "Route to compliance or legal before you quote / sign the booking."
+      },
       "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
       "cargo": "industrial equipment",
       "shipment_value": {

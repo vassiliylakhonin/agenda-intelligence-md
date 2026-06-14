@@ -520,6 +520,38 @@ def _middle_corridor_readiness(request_json: dict, supplied_sources: list[str]) 
     return score, "not_decision_ready"
 
 
+def _middle_corridor_operational_decision(
+    request_json: dict, triage_recommendation: str, risk_signal: str, readiness_score: int
+) -> dict:
+    """Logistics/ops-facing booking decision derived from the readiness score, risk signal, and stage.
+
+    Restates the existing triage as the booking verb a forwarder/ops reader needs (quote, hold, or
+    escalate?). Triage routing only - not clearance, approval, a sanctions determination, or advice.
+    It never issues a hard reject (a compliance/legal call); it stops at hold or escalate. Human
+    review remains required before any commercial action.
+    """
+    gate = {
+        "pre_signature": "quote / sign the booking",
+        "pre_shipment": "accept the booking and release for loading",
+        "in_transit": "let the shipment continue",
+        "post_incident": "clear the shipment post-incident",
+        "committee_review": "take the committee decision",
+    }.get(request_json.get("decision_stage", ""), "take the next commercial step")
+    if "escalate" in triage_recommendation or "high" in risk_signal:
+        decision = "escalate"
+        rationale = f"Route to compliance or legal before you {gate}."
+    elif readiness_score < 40:
+        decision = "hold"
+        rationale = f"Do not {gate} yet; request the missing evidence first."
+    elif readiness_score < 70:
+        decision = "proceed_with_conditions"
+        rationale = f"Only {gate} after the evidence gaps are closed and assigned an owner."
+    else:
+        decision = "proceed"
+        rationale = f"Evidence set looks complete; you may {gate}, subject to human sign-off."
+    return {"decision": decision, "applies_to": gate, "rationale": rationale}
+
+
 # Sanctions-relevant / high-risk jurisdictions for presence-flagging per ADR 0015.
 # This is an escalation flag (route to human review), NOT a designation or legal
 # conclusion. Comprehensively or sectorally sanctioned jurisdictions whose presence
@@ -983,12 +1015,17 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
     flagged_named_sectors = _named_sector_counterparties(request_json)
     flagged_newly_formed = _newly_formed_counterparties(request_json)
     readiness_score, readiness_label = _middle_corridor_readiness(request_json, supplied_sources)
+    triage_recommendation = _middle_corridor_triage_recommendation(request_json, missing_sources)
+    risk_signal = _middle_corridor_risk_signal(request_json, missing_sources)
     matched_sanctions_segments = _matched_sanctions_exposed_segments(request_json.get("route", ""))
     response = {
-        "triage_recommendation": _middle_corridor_triage_recommendation(request_json, missing_sources),
-        "risk_signal": _middle_corridor_risk_signal(request_json, missing_sources),
+        "triage_recommendation": triage_recommendation,
+        "risk_signal": risk_signal,
         "decision_readiness_score": readiness_score,
         "decision_readiness_label": readiness_label,
+        "operational_decision": _middle_corridor_operational_decision(
+            request_json, triage_recommendation, risk_signal, readiness_score
+        ),
         "route": request_json["route"],
         "cargo": request_json["cargo"],
         "counterparties": request_json["counterparties"],
