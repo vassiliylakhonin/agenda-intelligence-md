@@ -109,6 +109,39 @@ def test_middle_corridor_response_fixtures_do_not_imply_clearance():
             assert not pattern.search(text), f"{fixture_path.name} contains forbidden wording: {pattern.pattern}"
 
 
+def test_middle_corridor_operational_decision_escalates_when_evidence_missing():
+    """Golden: a pre_signature request missing required-before-go evidence yields an escalate booking verb."""
+    from agenda_intelligence import services
+
+    response = services.middle_corridor_deal_risk(
+        {
+            "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+            "cargo": "dual-use-capable electronics",
+            "counterparties": [{"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"}],
+            "dated_sources": [{"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"}],
+            "risk_question": "escalate before signature?",
+            "decision_stage": "pre_signature",
+        }
+    )["response"]
+    decision = response["operational_decision"]
+    assert decision["decision"] == "escalate"
+    assert decision["applies_to"]
+    assert decision["rationale"]
+    # The gate never issues a hard reject - that is a compliance/legal call, outside the boundary.
+    assert "reject" not in decision["rationale"].lower()
+    # The whole response, with the new field, still validates against the response contract.
+    Draft202012Validator(load_json(RESPONSE_SCHEMA_PATH)).validate(response)
+
+
+def test_middle_corridor_operational_decision_schema_rejects_off_enum_decision():
+    """Failure: an off-enum booking decision (e.g. a hard 'reject') must be rejected by the schema."""
+    operational_decision_schema = load_json(RESPONSE_SCHEMA_PATH)["properties"]["operational_decision"]
+    bad = {"decision": "reject", "applies_to": "quote / sign the booking", "rationale": "x"}
+    errors = list(Draft202012Validator(operational_decision_schema).iter_errors(bad))
+    assert errors
+    assert any("reject" in str(error.message) for error in errors)
+
+
 def test_middle_corridor_flags_high_risk_jurisdiction():
     """Counterparty in a sanctions-relevant jurisdiction must be flagged (ADR 0015)."""
     from agenda_intelligence import services

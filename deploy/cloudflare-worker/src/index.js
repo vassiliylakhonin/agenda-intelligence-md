@@ -2829,6 +2829,35 @@ function counterpartyReadinessForStructuredRequest(request, suppliedSources, min
   };
 }
 
+function operationalDecisionForStructuredRequest(request, triageRecommendation, riskSignal, score) {
+  const gate =
+    {
+      pre_signature: "quote / sign the booking",
+      pre_shipment: "accept the booking and release for loading",
+      in_transit: "let the shipment continue",
+      post_incident: "clear the shipment post-incident",
+      committee_review: "take the committee decision"
+    }[request.decision_stage] || "take the next commercial step";
+  if (String(triageRecommendation).includes("escalate") || String(riskSignal).includes("high")) {
+    return { decision: "escalate", applies_to: gate, rationale: `Route to compliance or legal before you ${gate}.` };
+  }
+  if (score < 40) {
+    return { decision: "hold", applies_to: gate, rationale: `Do not ${gate} yet; request the missing evidence first.` };
+  }
+  if (score < 70) {
+    return {
+      decision: "proceed_with_conditions",
+      applies_to: gate,
+      rationale: `Only ${gate} after the evidence gaps are closed and assigned an owner.`
+    };
+  }
+  return {
+    decision: "proceed",
+    applies_to: gate,
+    rationale: `Evidence set looks complete; you may ${gate}, subject to human sign-off.`
+  };
+}
+
 function dealRiskContractResponseForRequest(request) {
   const suppliedSources = suppliedSourcesFromStructuredRequest(request);
   const minimumSourcesBeforeGo = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.filter(
@@ -2840,11 +2869,19 @@ function dealRiskContractResponseForRequest(request) {
   const flaggedNamedSectors = namedSectorCounterparties(request);
   const flaggedNewlyFormed = newlyFormedCounterparties(request);
   const matchedSanctionsSegments = matchedSanctionsExposedSegments(request.route);
+  const triageRecommendation = triageRecommendationForStructuredRequest(request, minimumSourcesBeforeGo);
+  const riskSignal = riskSignalForStructuredRequest(request, minimumSourcesBeforeGo);
   const response = {
-    triage_recommendation: triageRecommendationForStructuredRequest(request, minimumSourcesBeforeGo),
-    risk_signal: riskSignalForStructuredRequest(request, minimumSourcesBeforeGo),
+    triage_recommendation: triageRecommendation,
+    risk_signal: riskSignal,
     decision_readiness_score: decisionReadiness.score,
     decision_readiness_label: decisionReadiness.label,
+    operational_decision: operationalDecisionForStructuredRequest(
+      request,
+      triageRecommendation,
+      riskSignal,
+      decisionReadiness.score
+    ),
     route: request.route,
     cargo: request.cargo,
     counterparties: request.counterparties,
@@ -3521,6 +3558,7 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
           `Recommendation: ${triage.deal_risk_contract.triage_recommendation}`,
           `Risk signal: ${triage.deal_risk_contract.risk_signal}`,
           `Decision readiness: ${triage.deal_risk_contract.decision_readiness_score}/100 (${triage.deal_risk_contract.decision_readiness_label})`,
+          `Operational decision: ${triage.deal_risk_contract.operational_decision.decision} (${triage.deal_risk_contract.operational_decision.applies_to})`,
           `Route: ${triage.deal_risk_contract.route}`,
           `Cargo: ${triage.deal_risk_contract.cargo}`,
           "",

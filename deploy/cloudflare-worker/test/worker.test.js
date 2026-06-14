@@ -295,6 +295,17 @@ test("worker deal-risk contract flags re-export / circumvention-watch (Armenia),
   assert.ok(resp.limitations.some((l) => l.includes("diversion watch item")));
 });
 
+test("worker deal-risk contract emits an operational_decision booking verb (Python parity)", () => {
+  const resp = dealRiskContractResponseForRequest(baseDealRiskRequest());
+  assert.ok(["proceed", "proceed_with_conditions", "hold", "escalate"].includes(resp.operational_decision.decision));
+  // base request: pre_signature, required-before-go evidence missing -> escalate
+  assert.equal(resp.operational_decision.decision, "escalate");
+  assert.ok(resp.operational_decision.applies_to.length > 0);
+  assert.ok(resp.operational_decision.rationale.length > 0);
+  // the gate never issues a hard reject - that is a compliance/legal call
+  assert.equal(/\breject\b/i.test(resp.operational_decision.rationale), false);
+});
+
 test("worker deal-risk contract flags counterparty.specified_sectors[] under OFAC EO 14024 (Python parity)", () => {
   const resp = dealRiskContractResponseForRequest(
     baseDealRiskRequest({
