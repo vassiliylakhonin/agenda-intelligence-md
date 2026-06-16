@@ -268,7 +268,8 @@ def render_html(response: dict[str, Any]) -> str:
     <div><div class="kick">Kazakhstan &middot; Middle Corridor</div><div class="word">Deal Risk Gate</div></div>
   </div>
   <div class="body">
-    <p class="gen">Evidence-readiness memo &mdash; {GENERATED_LABEL} &middot; generated {_today()} &middot; illustrative</p>
+    <p class="gen">Evidence-readiness memo &mdash; {GENERATED_LABEL}
+      &middot; generated {_today()} &middot; illustrative</p>
     <div class="verdict"><div class="verb">{escape(verb)}</div>
       {f'<p class="why">{escape(rationale)}</p>' if rationale else ''}
       <div class="meta"><span>Decision-readiness <b>{score}/100</b> ({label})</span>
