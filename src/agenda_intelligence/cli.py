@@ -576,6 +576,42 @@ def cmd_audit_claims(args):
         raise SystemExit(1)
 
 
+def cmd_deal_report(args):
+    """Render a Middle Corridor deal-risk response as an evidence-readiness memo.
+
+    Input is the structured response JSON (the contract emitted by the
+    ``middle_corridor_deal_risk`` service / live A2A worker), either the raw
+    response object or a ``{"response": {...}}`` service-result wrapper. This
+    reformats the structured output; it is not advice, performs no factual-truth
+    verification, and requires human review before any commercial action.
+    """
+    from agenda_intelligence import reporting
+
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"Not found: {path}")
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Invalid JSON: {e}")
+
+    try:
+        rendered = reporting.render_report(data, args.format)
+    except RuntimeError as e:  # optional pdf extra not installed
+        raise SystemExit(str(e))
+
+    if isinstance(rendered, bytes):
+        if not args.out:
+            raise SystemExit("PDF output requires --out <file.pdf>.")
+        Path(args.out).write_bytes(rendered)
+        print(f"Wrote {args.out}")
+    elif args.out:
+        Path(args.out).write_text(rendered)
+        print(f"Wrote {args.out}")
+    else:
+        print(rendered)
+
+
 def cmd_report(args):
     """Generate a concise Markdown report combining schema check + heuristic
     structure scoring for an agenda brief JSON file.
@@ -817,6 +853,12 @@ def main():
     p = sub.add_parser("report", help="Generate a Markdown report from a brief")
     p.add_argument("path")
     p.set_defaults(func=cmd_report)
+    # deal-report — render a vertical-worker deal-risk response as a memo
+    p = sub.add_parser("deal-report", help="Render a Middle Corridor deal-risk response as a memo (md/html/pdf)")
+    p.add_argument("path", help="Path to the deal-risk response JSON")
+    p.add_argument("--format", choices=["md", "html", "pdf"], default="md", help="Output format (default: md)")
+    p.add_argument("--out", help="Write to this file instead of stdout (required for pdf)")
+    p.set_defaults(func=cmd_deal_report)
     # eval (alias of score)
     p = sub.add_parser("eval", help="Run the eval/scoring rubric (alias of score)")
     p.add_argument("path", nargs="?")
