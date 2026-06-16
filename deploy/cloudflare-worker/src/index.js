@@ -2149,7 +2149,10 @@ async function cisSecondarySanctionsResult(request, env) {
   const undisclosedUbo = cisHasUndisclosedUbo(request);
 
   const limitations = [];
-  if (upstreamResult.attribution) limitations.push(upstreamResult.attribution.notice);
+  // Attribution only when upstream data was actually merged (Python parity): on the
+  // disabled / degraded / zero-match paths nothing was fetched, so the notice would
+  // imply a sanctions-list match via the upstream that never happened.
+  if (upstreamResult.attribution && autoFetched.length) limitations.push(upstreamResult.attribution.notice);
   // User-facing degrade note derived from status only — never echo internal
   // env-var names or upstream stack details (parity with the Python service;
   // degrade_reason is kept on live_retrieval_status for operators).
