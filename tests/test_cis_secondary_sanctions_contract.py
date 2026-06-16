@@ -106,7 +106,13 @@ def test_cis_service_degrades_gracefully_when_upstream_unavailable(monkeypatch):
     assert result["valid"] is True
     assert result["live_retrieval_status"] in {"disabled", "degraded"}
     response = result["response"]
-    assert any("OpenSanctions" in note for note in response["limitations"])
+    # The degrade note must be surfaced so the caller knows retrieval is off...
+    assert any("Live sanctions-list retrieval" in note for note in response["limitations"])
+    # ...but the CC-BY attribution must NOT appear when nothing was fetched: no
+    # upstream data was used, so there is no attribution obligation and no match to
+    # imply. Regression guard for the disabled / degraded / zero-match path.
+    assert result["auto_fetched_sources"] == []
+    assert not any("via OpenSanctions" in note for note in response["limitations"])
     assert response["human_review_required"] is True
 
 

@@ -1473,7 +1473,11 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
     triage = _cis_triage_recommendation(request_json, missing_sources, exposure_signal)
 
     limitations: list[str] = []
-    if upstream_attribution is not None:
+    # CC-BY / source attribution is only required — and only honest — when upstream
+    # data was actually merged into the evidence pack. On the disabled / degraded /
+    # zero-match paths nothing was fetched, so surfacing the attribution notice would
+    # imply a sanctions-list match via OpenSanctions that never happened.
+    if upstream_attribution is not None and auto_fetched_sources:
         limitations.append(upstream_attribution["notice"])
     # User-facing degrade note: derive from status, never echo internal env-var
     # names or stack details (degrade_reason is kept on live_retrieval_status

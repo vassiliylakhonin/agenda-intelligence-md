@@ -1575,7 +1575,11 @@ test("cis_secondary_sanctions message/send dispatches to structured triage", asy
     const resp = result.metadata.response;
     assert.equal(resp.triage_recommendation, "escalate_before_onboarding");
     assert.ok(Array.isArray(resp.minimum_sources_before_review));
-    assert.ok(resp.limitations.some((line) => line.includes("OpenSanctions")));
+    // Degrade note must be surfaced so the caller knows retrieval is off...
+    assert.ok(resp.limitations.some((line) => line.includes("Live sanctions-list retrieval")));
+    // ...but the CC-BY attribution must NOT appear on the disabled path: nothing was
+    // fetched, so there is no attribution obligation and no match to imply.
+    assert.ok(!resp.limitations.some((line) => line.includes("via OpenSanctions")));
 
     // Machine-readable DataPart mirrors the structured response alongside the text part.
     const parts = result.artifacts[0].parts;
