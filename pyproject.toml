@@ -39,6 +39,9 @@ dev = [
 llm = [
     "anthropic>=0.40",
 ]
+pdf = [
+    "fpdf2>=2.7",
+]
 
 [project.scripts]
 agenda-intelligence = "agenda_intelligence.cli:main"
