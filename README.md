@@ -6,6 +6,10 @@ Read it as a **trust-routing layer for agent-mediated decisions**: it turns a pa
 
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![Agenstry A2A](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/protocol.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![Agenstry uptime](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/uptime.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+## Why a repo full of markdown?
+
+The skills under `skills/` and the canon docs are source, not documentation — a `SKILL.md` is instructions an agent loads and *executes*, the way a runtime loads a module. The Python in `src/` is the runtime that composes them: [`global-think-tank-analyst`](https://github.com/vassiliylakhonin/global-think-tank-analyst) as the reasoning method, [`central-asia-caspian`](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) and [`gulf-middle-east`](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) as regional layers (module roles in [`llms.txt`](llms.txt) / [`agent-manifest.json`](agent-manifest.json)). Both are version-controlled for the same reason — they're what runs.
+
 ## First run
 
 ```bash
