@@ -1986,3 +1986,90 @@ test("gulf price-cap attestation supplied clears the gap without moving the scor
   assert.ok(!supplied.top_exposure_dimensions.some((d) => d.includes("not yet evidenced")));
   assert.equal(supplied.decision_readiness_score, base.decision_readiness_score);
 });
+
+const MARKET_ENTRY_ORIGIN = "https://kazakhstan-market-entry-readiness-a2a.example.workers.dev";
+const MARKET_ENTRY_ENV = { AGENT_PROFILE: "market_entry_readiness", AGENDA_USAGE: new MemoryKv() };
+
+function marketEntryRequest() {
+  return new Request(`${MARKET_ENTRY_ORIGIN}/message/send`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "user-agent": "node:test" }
+  });
+}
+
+const MARKET_ENTRY_GOLDEN = {
+  project_name: "Kazakhstan market-entry review",
+  partner_or_company: "Example Mobility Company",
+  market: "Kazakhstan / Almaty first",
+  sector: "mobility",
+  commercial_objective: "Evaluate Kazakhstan distribution, import, service, showroom, and partner-entry readiness.",
+  decision_question: "Can the project move from concept discussion to controlled validation?",
+  decision_stage: "pre_signature",
+  supplied_sources: [
+    { id: "s1", source_type: "partner_company_profile", title: "Company profile", date: "2026-06-01" },
+    { id: "s2", source_type: "product_or_project_description", title: "Product catalogue", date: "2026-06-01" },
+    { id: "s3", source_type: "market_size_source", title: "Kazakhstan macro source note", date: "2026-06-01" }
+  ],
+  requested_output: "both"
+};
+
+async function marketEntryResponseFor(reqBody, env = MARKET_ENTRY_ENV) {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    return await handleJsonRpc(
+      { jsonrpc: "2.0", id: "me", method: "message/send", params: { capability: "market_entry_readiness", request: reqBody } },
+      marketEntryRequest(),
+      env
+    );
+  } finally {
+    console.log = originalLog;
+  }
+}
+
+test("market-entry profile agent card exposes the readiness skill", () => {
+  const card = agentCard(marketEntryRequest(), MARKET_ENTRY_ENV);
+  assert.equal(card.x_agenda_intelligence.product_profile, "kazakhstan_market_entry_readiness");
+  assert.equal(card.x_agenda_intelligence.supported_contracts[0], "kazakhstan_market_entry_readiness_contract");
+  assert.ok(card.skills.some((s) => s.id === "kazakhstan-market-entry-readiness"));
+});
+
+test("market-entry message/send returns proceed_to_validation / validation_ready (Python parity)", async () => {
+  const response = await marketEntryResponseFor(MARKET_ENTRY_GOLDEN);
+  assert.equal(response.result.metadata.product_profile, "kazakhstan_market_entry_readiness");
+  const resp = response.result.metadata.response;
+  assert.equal(resp.gate_decision, "proceed_to_validation");
+  assert.equal(resp.readiness_label, "validation_ready");
+  assert.equal(resp.human_review_required, true);
+  assert.ok(resp.evidence_gaps.some((g) => g.source_type === "law_firm_opinion"));
+  assert.ok(resp.boundary_notice.includes("Not legal"));
+});
+
+test("market-entry empty evidence at commitment stage stops", async () => {
+  const bare = {
+    project_name: "Bare file",
+    partner_or_company: "Example Co",
+    market: "Kazakhstan",
+    decision_question: "Can we sign now?",
+    decision_stage: "pre_signature",
+    supplied_sources: []
+  };
+  const response = await marketEntryResponseFor(bare);
+  const resp = response.result.metadata.response;
+  assert.equal(resp.readiness_label, "insufficient_information");
+  assert.equal(resp.gate_decision, "stop");
+});
+
+test("market-entry message/send rejects a bad source_type enum", async () => {
+  const bad = JSON.parse(JSON.stringify(MARKET_ENTRY_GOLDEN));
+  bad.supplied_sources[0].source_type = "not_a_real_source";
+  const response = await marketEntryResponseFor(bad);
+  assert.equal(response.result.status.state, "TASK_STATE_FAILED");
+  assert.equal(response.result.metadata.valid, false);
+});
+
+test("market-entry message/send rejects a non-market-entry request shape", async () => {
+  const response = await marketEntryResponseFor({ foo: "bar" });
+  assert.equal(response.result.status.state, "TASK_STATE_FAILED");
+  assert.equal(response.result.metadata.valid, false);
+});
