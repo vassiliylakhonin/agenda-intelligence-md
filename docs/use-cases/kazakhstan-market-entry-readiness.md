@@ -117,6 +117,43 @@ The product-grade interface is structured JSON, not free-text prompting.
 - Source taxonomy: [`../../source-requirements/kazakhstan-market-entry-readiness.json`](../../source-requirements/kazakhstan-market-entry-readiness.json)
 - Contract example: [`../../examples/kazakhstan-market-entry-readiness/contract/pre_signature_validation.request.json`](../../examples/kazakhstan-market-entry-readiness/contract/pre_signature_validation.request.json)
 
+## Calling the worker
+
+HTTP:
+
+```bash
+curl -sS -X POST http://localhost:8080/v1/market-entry/readiness \
+  -H "content-type: application/json" \
+  --data @examples/kazakhstan-market-entry-readiness/contract/pre_signature_validation.request.json
+```
+
+A2A (JSON-RPC over the worker `/message/send` endpoint):
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "method": "message/send",
+  "params": {
+    "capability": "kazakhstan_market_entry_readiness",
+    "request": {
+      "project_name": "Kazakhstan market-entry review",
+      "partner_or_company": "Example Mobility Company",
+      "market": "Kazakhstan / Almaty first",
+      "decision_question": "Can the project move from concept to controlled validation?",
+      "decision_stage": "pre_signature",
+      "supplied_sources": [
+        {"id": "s1", "source_type": "partner_company_profile", "title": "Company profile", "date": "2026-06-01"}
+      ]
+    }
+  }
+}
+```
+
+## Honest traction note
+
+This worker has zero paying customers, zero named pilot users, and no usage above operator smoke tests. It is shipped as a portfolio-grade, topical vertical worker — a concrete artifact for technical evaluators and a contract real practitioners can inspect — not a claim of production traction. The Python service function, HTTP route, and A2A profile are live in-package; the deployed Cloudflare Worker A2A endpoint and its `wrangler` env (`kazakhstan-market-entry-readiness`) are configured and deploy-ready, with the `wrangler deploy` itself the one remaining step.
+
 ## Decision stages
 
 - `concept_review`

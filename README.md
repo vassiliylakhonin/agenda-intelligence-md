@@ -78,13 +78,15 @@ The product-grade structured JSON contract is documented in [`docs/use-cases/kaz
 
 > Company + project + Kazakhstan objective + counterparties + supplied sources -> gate decision, readiness label, evidence gaps, claim audit, owner actions, watch-next indicators, and human-review routing.
 
-This is currently a schema / source-taxonomy / use-case contract, not a deployed live worker. It is not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice.
+It is now a live in-repo vertical worker: a `kazakhstan_market_entry_readiness` service function, an HTTP route, and an A2A profile. Cloudflare Worker JS parity and a dedicated `wrangler` env are shipped; the standalone `*.workers.dev` A2A endpoint goes live on `wrangler deploy --env kazakhstan-market-entry-readiness` (not yet deployed). It is not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice.
 
 - Use-case notes: [`docs/use-cases/kazakhstan-market-entry-readiness.md`](docs/use-cases/kazakhstan-market-entry-readiness.md)
 - Request schema: [`schemas/v1/market-entry-readiness-request.schema.json`](schemas/v1/market-entry-readiness-request.schema.json)
 - Response schema: [`schemas/v1/market-entry-readiness-response.schema.json`](schemas/v1/market-entry-readiness-response.schema.json)
 - Source taxonomy: [`source-requirements/kazakhstan-market-entry-readiness.json`](source-requirements/kazakhstan-market-entry-readiness.json)
 - Example pack: [`examples/kazakhstan-market-entry-readiness/contract/`](examples/kazakhstan-market-entry-readiness/contract/)
+- HTTP: `POST /v1/market-entry/readiness`
+- A2A profile: `kazakhstan_market_entry_readiness` (worker env `kazakhstan-market-entry-readiness`, deploy-ready)
 
 ## Second vertical worker: CIS secondary-sanctions exposure
 
