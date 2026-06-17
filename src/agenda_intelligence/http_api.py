@@ -72,6 +72,7 @@ def handle_get(path: str) -> tuple[int, dict]:
                     "agentic_interaction_trust",
                     "cis_secondary_sanctions_exposure",
                     "gulf_maritime_exposure",
+                    "kazakhstan_market_entry_readiness",
                 ],
                 "boundary": BOUNDARY_NOTICE,
             },
@@ -143,6 +144,19 @@ def handle_post(path: str, payload: dict) -> tuple[int, dict]:
             return 400, {
                 "ok": False,
                 "error": "Invalid Gulf maritime exposure request",
+                "errors": result["errors"],
+            }
+        return 200, result["response"]
+
+    if path == "/v1/market-entry/readiness":
+        result = services.kazakhstan_market_entry_readiness(payload)
+        unavailable = _validation_unavailable(result, "Kazakhstan market-entry readiness")
+        if unavailable is not None:
+            return unavailable
+        if not result.get("valid"):
+            return 400, {
+                "ok": False,
+                "error": "Invalid Kazakhstan market-entry readiness request",
                 "errors": result["errors"],
             }
         return 200, result["response"]

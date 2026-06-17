@@ -1722,3 +1722,377 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
         "errors": response_validation.get("errors", []),
         "response": response,
     }
+
+
+# ---------------------------------------------------------------------------
+# Kazakhstan market-entry readiness gate (vertical worker)
+# ---------------------------------------------------------------------------
+
+MARKET_ENTRY_BOUNDARY_NOTICE = (
+    "Internal evidence triage only. Not legal, compliance, customs, tax, financial, investment, "
+    "insurance, sanctions, or launch-authorization advice."
+)
+
+# decision_stage values that imply the caller is approaching a binding commitment,
+# not just exploring. Used to harden the gate decision when evidence is thin.
+MARKET_ENTRY_COMMITMENT_STAGES = {
+    "pre_entity_setup",
+    "pre_signature",
+    "pre_import",
+    "pre_certification",
+    "pre_showroom_lease",
+    "pre_first_batch_order",
+    "pre_ad_spend",
+    "pre_dealer_contract",
+    "committee_review",
+}
+
+# decision_stage -> the source-requirement tier key the decision is gated on.
+MARKET_ENTRY_STAGE_TIER = {
+    "concept_review": "required_before_validation",
+    "pre_entity_setup": "required_before_signature",
+    "pre_signature": "required_before_signature",
+    "committee_review": "required_before_signature",
+    "pre_import": "required_before_import_or_first_batch",
+    "pre_certification": "required_before_import_or_first_batch",
+    "pre_first_batch_order": "required_before_import_or_first_batch",
+    "pre_showroom_lease": "required_before_showroom_or_public_launch",
+    "pre_ad_spend": "required_before_showroom_or_public_launch",
+    "pre_dealer_contract": "required_before_dealer_or_fleet_expansion",
+    "other": "required_before_signature",
+}
+
+# Curated evidence-gap copy for the signature tier (the most common gate). Tuple
+# order: (evidence_needed, why_it_matters, owner, next_action, decision_blocked).
+# Source types outside this map fall back to a generic, schema-valid gap.
+MARKET_ENTRY_EVIDENCE_GAP_DETAILS: dict[str, tuple[str, str, str, str, str]] = {
+    "law_firm_opinion": (
+        "Written recommendation on branch, representative office, LLP, distributor, importer, or dealer structure.",
+        "The legal form affects sales, import, service, tax, contracting, and liability.",
+        "Kazakhstan legal counsel",
+        "Request a short legal-structure memo.",
+        "Signature or entity setup.",
+    ),
+    "counterparty_registry_extract": (
+        "Current registry extract for the partner and any local counterparty (status, directors, address).",
+        "A live registry extract confirms the counterparty exists and who can bind it before any contract.",
+        "Legal counsel",
+        "Pull a fresh registry extract for each named counterparty.",
+        "Partner appointment and signature.",
+    ),
+    "beneficial_ownership_source": (
+        "Beneficial-ownership record showing who ultimately owns and controls the counterparty.",
+        "Ownership drives integrity, sanctions, and conflict exposure; an unknown UBO is an unmanaged risk.",
+        "Compliance / legal counsel",
+        "Obtain a UBO declaration or registry source for each counterparty.",
+        "Partner appointment and signature.",
+    ),
+    "counterparty_integrity_due_diligence": (
+        "Integrity / anti-corruption due diligence on the distributor, agents, and any government-facing "
+        "intermediaries (ownership, embedded officials, adverse media, sanctions and PEP screening).",
+        "Under FCPA / UK Bribery Act the foreign parent can be liable for an intermediary's conduct; engaging "
+        "a partner who touches customs, certification, or akimat without integrity DD is an unmanaged exposure.",
+        "Compliance / legal counsel",
+        "Run integrity DD before appointing or contracting any local partner or agent.",
+        "Partner appointment and signature.",
+    ),
+    "bank_account_and_kyc_onboarding": (
+        "Bank-account opening readiness: full UBO pack (apostilled), source-of-funds and expected-turnover "
+        "statement, and the presence / timeline the chosen bank requires.",
+        "Account opening for a foreign-owned entity is document-heavy and slow; until it clears, the entity "
+        "cannot pay suppliers or receive revenue.",
+        "Finance lead",
+        "Confirm the bank's KYC checklist and start onboarding in parallel with entity setup.",
+        "Supplier payment and revenue collection.",
+    ),
+    "business_substance_evidence": (
+        "Evidence the entry vehicle has real substance (office, staff, local decision-making) appropriate to "
+        "the chosen model.",
+        "Thin substance undermines tax treatment, banking onboarding, and counterparty trust.",
+        "Operations lead",
+        "Document the planned substance for the chosen entry model.",
+        "Entity model choice and signature.",
+    ),
+    "authority_to_sign_evidence": (
+        "Evidence that the individual signing for each counterparty has authority to bind it.",
+        "A contract signed without authority is unenforceable and a fraud vector.",
+        "Legal counsel",
+        "Collect powers of attorney or board authorizations for the signatories.",
+        "Signature.",
+    ),
+    "contract_or_term_sheet_draft": (
+        "Draft contract or term sheet covering scope, pricing, territory, exclusivity, term, and exit.",
+        "Commercial terms must be on paper before signature so they can be reviewed and negotiated.",
+        "Commercial lead / legal counsel",
+        "Produce a term sheet or draft contract for review.",
+        "Signature.",
+    ),
+    "tax_accounting_note": (
+        "Note on VAT, corporate tax, withholding, and accounting treatment for the chosen entry model.",
+        "Tax and accounting treatment change the real cost and reporting load of the entry model.",
+        "Tax advisor",
+        "Request a tax and accounting memo for each candidate entry model.",
+        "Entity model choice and signature.",
+    ),
+    "permanent_establishment_or_tax_residency_assessment": (
+        "Assessment of whether the chosen entry model (branch, representative office, LLP, or direct "
+        "contracting) creates a taxable permanent establishment or resident status.",
+        "Permanent-establishment and residency treatment drive tax registration, reporting load, and the "
+        "real cost of the entry model.",
+        "Tax advisor",
+        "Request a permanent-establishment and tax-residency memo for each candidate entry model.",
+        "Entity model choice and signature.",
+    ),
+    "currency_control_and_repatriation_note": (
+        "Note on currency-contract registration thresholds, repatriation reporting, and how supplier payments "
+        "and profit repatriation will clear local banks.",
+        "Currency-control registration and repatriation reporting affect how, and how quickly, money can move "
+        "in and out after commitment.",
+        "Treasury / banking advisor",
+        "Confirm currency-contract registration and repatriation steps with the servicing bank.",
+        "Cross-border payment and profit-repatriation planning.",
+    ),
+    "work_permit_and_local_employment_quota_note": (
+        "Note on work-permit requirements and local-employment ratio / quota obligations for the planned "
+        "expatriate and local headcount.",
+        "Foreign-worker quotas and local-employment ratios constrain who can be deployed and when.",
+        "HR / legal counsel",
+        "Confirm work-permit and local-employment quota requirements for the staffing plan.",
+        "Staffing and entity operation.",
+    ),
+}
+
+
+def _market_entry_taxonomy() -> dict:
+    return _load_data_json("source-requirements/kazakhstan-market-entry-readiness.json")
+
+
+def _market_entry_supplied_types(request_json: dict) -> list[str]:
+    sources = request_json.get("supplied_sources", []) or []
+    return [s["source_type"] for s in sources if isinstance(s, dict) and s.get("source_type")]
+
+
+def _market_entry_satisfied(request_json: dict, supplied: list[str]) -> set[str]:
+    """Validation-tier coverage, generous about evidence carried in the request body.
+
+    The request body itself supplies the commercial objective and the Kazakhstan
+    use case (market + decision question are required fields), and at least one
+    supplied source counts as the initial source links / documents.
+    """
+    satisfied = set(supplied)
+    if request_json.get("commercial_objective"):
+        satisfied.add("commercial_objective")
+    if request_json.get("market") and request_json.get("decision_question"):
+        satisfied.add("kazakhstan_use_case")
+    if supplied:
+        satisfied.add("initial_source_links_or_documents")
+    return satisfied
+
+
+def _market_entry_readiness(taxonomy: dict, satisfied: set[str], stage_tier: str) -> str:
+    core_validation = {
+        "partner_company_profile",
+        "product_or_project_description",
+        "initial_source_links_or_documents",
+        "commercial_objective",
+    }
+    core_present = len(core_validation & satisfied)
+    validation_missing = [s for s in taxonomy.get("required_before_validation", []) if s not in satisfied]
+    signature_missing = [s for s in taxonomy.get("required_before_signature", []) if s not in satisfied]
+    operational_missing = [s for s in taxonomy.get(stage_tier, []) if s not in satisfied]
+    if core_present == 0:
+        return "insufficient_information"
+    if validation_missing:
+        return "concept_ready"
+    if signature_missing:
+        return "validation_ready"
+    if operational_missing:
+        return "committee_review_ready"
+    return "launch_commitment_ready"
+
+
+def _market_entry_gate_decision(readiness: str, stage: str) -> str:
+    if readiness == "insufficient_information":
+        return "stop" if stage in MARKET_ENTRY_COMMITMENT_STAGES else "not_decision_ready"
+    if readiness == "concept_ready":
+        return "pause_for_evidence"
+    if readiness == "validation_ready":
+        return "proceed_to_validation"
+    return "escalate_before_signature"
+
+
+def _market_entry_evidence_gap(source_type: str) -> dict:
+    detail = MARKET_ENTRY_EVIDENCE_GAP_DETAILS.get(source_type)
+    label = source_type.replace("_", " ")
+    if detail is None:
+        return {
+            "source_type": source_type,
+            "evidence_needed": f"Supply the {label} for this market-entry file.",
+            "why_it_matters": f"The {label} is a required gate input that is not yet in the evidence pack.",
+            "owner": "Project lead",
+            "next_action": f"Request or produce the {label}.",
+            "decision_blocked": "Progression to the next market-entry commitment.",
+        }
+    needed, why, owner, action, blocked = detail
+    return {
+        "source_type": source_type,
+        "evidence_needed": needed,
+        "why_it_matters": why,
+        "owner": owner,
+        "next_action": action,
+        "decision_blocked": blocked,
+    }
+
+
+MARKET_ENTRY_SUMMARY = {
+    "insufficient_information": (
+        "Not enough has been supplied to assess Kazakhstan market-entry readiness; the gate cannot return a "
+        "meaningful decision yet."
+    ),
+    "concept_ready": (
+        "The concept is taking shape, but the validation-tier evidence is incomplete, so the file is not yet "
+        "ready for controlled validation."
+    ),
+    "validation_ready": (
+        "The concept is coherent enough for controlled validation, but it is not signature-, import-, lease-, "
+        "or launch-ready until the flagged legal, tax, banking, customs, certification, and operational gaps "
+        "are closed."
+    ),
+    "committee_review_ready": (
+        "Validation and signature-tier evidence are largely in place; the remaining operational gaps for this "
+        "stage should go to committee review before the binding commitment."
+    ),
+    "launch_commitment_ready": (
+        "The evidence pack covers the validation, signature, and stage-relevant operational tiers; route to "
+        "committee for the binding launch-commitment decision with human sign-off."
+    ),
+}
+
+
+def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
+    """Build a structured Kazakhstan market-entry readiness response.
+
+    Internal evidence triage only: it grades how decision-ready a market-entry
+    file is against a staged source-requirement taxonomy and routes every output
+    through mandatory human review. It performs no live retrieval, factual-truth
+    verification, or legal / compliance / customs / tax / sanctions advice.
+    """
+    request_failure = _validation_failure(_validate_json(request_json, "market-entry-readiness-request.schema.json"))
+    if request_failure is not None:
+        return request_failure
+
+    taxonomy = _market_entry_taxonomy()
+    stage = request_json["decision_stage"]
+    stage_tier = MARKET_ENTRY_STAGE_TIER.get(stage, "required_before_signature")
+    supplied = _market_entry_supplied_types(request_json)
+    satisfied = _market_entry_satisfied(request_json, supplied)
+    readiness_label = _market_entry_readiness(taxonomy, satisfied, stage_tier)
+    gate_decision = _market_entry_gate_decision(readiness_label, stage)
+
+    gap_source_types: list[str] = []
+    for tier_key in ("required_before_validation", "required_before_signature", stage_tier):
+        for source_type in taxonomy.get(tier_key, []):
+            if source_type not in satisfied and source_type not in gap_source_types:
+                gap_source_types.append(source_type)
+    evidence_gaps = [_market_entry_evidence_gap(source_type) for source_type in gap_source_types]
+
+    confirmed_facts: list[str] = []
+    if "partner_company_profile" in satisfied:
+        confirmed_facts.append("A partner or company profile was supplied.")
+    if "product_or_project_description" in satisfied:
+        confirmed_facts.append("A product or project description was supplied.")
+    confirmed_facts.append(f"The decision is at {stage.replace('_', ' ')} stage.")
+    if request_json.get("known_blockers"):
+        confirmed_facts.append("The caller has already named open blockers on the file.")
+
+    assumptions = list(request_json.get("known_assumptions") or [])
+    if not assumptions:
+        assumptions = [
+            "Public cost benchmarks are not signed quotes.",
+            "Supplier prices are not Kazakhstan landed costs.",
+            "The final commercial structure depends on local legal, tax, customs, and operational review.",
+        ]
+
+    ready_to_validate = readiness_label in {"validation_ready", "committee_review_ready", "launch_commitment_ready"}
+    ready_to_commit = readiness_label == "launch_commitment_ready"
+    claim_audit = [
+        {
+            "claim": "The project can move into controlled validation.",
+            "status": "supported" if ready_to_validate else "needs_professional_confirmation",
+            "how_to_use_now": (
+                "Use for advisor requests, quotes, and structured partner or customer interviews."
+                if ready_to_validate
+                else "Do not rely on this yet; close the validation-tier evidence first."
+            ),
+        },
+        {
+            "claim": "The project is ready for launch commitment.",
+            "status": "supported" if ready_to_commit else "unsupported",
+            "how_to_use_now": (
+                "Route to committee for the binding decision with human sign-off."
+                if ready_to_commit
+                else "Do not use. Replace with the current readiness label until the evidence gaps are closed."
+            ),
+        },
+    ]
+
+    owner_actions = [
+        {
+            "timeframe": "48_hours",
+            "owner": "Project lead",
+            "action": "Send the missing-evidence request to the partner and named advisors.",
+            "output": "Evidence-request pack and missing-document checklist.",
+        },
+        {
+            "timeframe": "7_days",
+            "owner": "Project lead",
+            "action": (
+                "Collect the legal, tax, banking, customs, certification, and operational inputs the gate flagged."
+            ),
+            "output": "Gate evidence pack.",
+        },
+        {
+            "timeframe": "30_days",
+            "owner": "Project lead",
+            "action": "Convert the validation evidence into a committee-ready entry decision memo.",
+            "output": "Committee-ready gate memo.",
+        },
+    ]
+
+    response = {
+        "gate_decision": gate_decision,
+        "readiness_label": readiness_label,
+        "human_review_required": True,
+        "summary": MARKET_ENTRY_SUMMARY[readiness_label],
+        "confirmed_facts": confirmed_facts,
+        "assumptions": assumptions,
+        "evidence_gaps": evidence_gaps,
+        "claim_audit": claim_audit,
+        "owner_actions": owner_actions,
+        "watch_next": list(taxonomy.get("watch_indicators", [])),
+        "boundary_notice": MARKET_ENTRY_BOUNDARY_NOTICE,
+        "run_provenance": _run_provenance(request_json, "market-entry-readiness-response.schema.json"),
+    }
+    if readiness_label != "insufficient_information":
+        response["strongest_reason_to_proceed"] = (
+            "The Kazakhstan use case and commercial objective are specific enough to start advisor requests, "
+            "quote collection, and partner validation."
+        )
+    if evidence_gaps:
+        response["strongest_reason_to_pause"] = (
+            "The current evidence pack is not sufficient for signature, import, lease, first-batch order, "
+            "advertising spend, or partner appointment."
+        )
+        response["management_note"] = (
+            "The opportunity can move at the level of its readiness label, but should not move to launch "
+            "commitment until the flagged legal, customs, certification, landed-cost, service, lease, and "
+            "partner evidence gaps are closed."
+        )
+
+    response_validation = _validate_json(response, "market-entry-readiness-response.schema.json")
+    return {
+        "implemented": response_validation.get("implemented", True),
+        "valid": response_validation.get("valid"),
+        "errors": response_validation.get("errors", []),
+        "response": response,
+    }
