@@ -152,7 +152,7 @@ A2A (JSON-RPC over the worker `/message/send` endpoint):
 
 ## Honest traction note
 
-This worker has zero paying customers, zero named pilot users, and no usage above operator smoke tests. It is shipped as a portfolio-grade, topical vertical worker — a concrete artifact for technical evaluators and a contract real practitioners can inspect — not a claim of production traction. The Python service function, HTTP route, and A2A profile are live in-package; the deployed Cloudflare Worker A2A endpoint and its `wrangler` env (`kazakhstan-market-entry-readiness`) are configured and deploy-ready, with the `wrangler deploy` itself the one remaining step.
+This worker has zero paying customers, zero named pilot users, and no usage above operator smoke tests. It is shipped as a portfolio-grade, topical vertical worker — a concrete artifact for technical evaluators and a contract real practitioners can inspect — not a claim of production traction. The Python service function, HTTP route, and A2A profile are live in-package, and the Cloudflare Worker A2A endpoint is deployed and live: <https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev>.
 
 ## Decision stages
 
