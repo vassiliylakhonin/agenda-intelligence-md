@@ -2,18 +2,17 @@
   "gate_decision": "proceed_to_validation",
   "readiness_label": "validation_ready",
   "human_review_required": true,
-  "summary": "The market-entry opportunity appears commercially attractive and coherent enough for controlled validation, but it is not launch-commitment-ready until legal, customs, certification, landed-cost, service, lease, and partner evidence gaps are closed.",
-  "strongest_reason_to_proceed": "The Kazakhstan use case and commercial objective are specific enough to start advisor requests, quote collection, and partner validation.",
-  "strongest_reason_to_pause": "The current evidence pack is not sufficient for signature, import, lease, first-batch order, advertising spend, or partner appointment.",
+  "summary": "The concept is coherent enough for controlled validation, but it is not signature-, import-, lease-, or launch-ready until the flagged legal, tax, banking, customs, certification, and operational gaps are closed.",
   "confirmed_facts": [
-    "A company profile and product or project description were supplied.",
-    "The decision question is at pre-signature stage.",
-    "Known blockers include missing legal, customs, certification, lease, and service evidence."
+    "A partner or company profile was supplied.",
+    "A product or project description was supplied.",
+    "The decision is at pre signature stage.",
+    "The caller has already named open blockers on the file."
   ],
   "assumptions": [
     "Public cost benchmarks are not signed quotes.",
     "Supplier prices are not Kazakhstan landed costs.",
-    "The final commercial structure depends on local legal, tax, customs, and operational review."
+    "Representative-office, branch, LLP, distributor, importer, and dealer models require local legal review."
   ],
   "evidence_gaps": [
     {
@@ -25,20 +24,20 @@
       "decision_blocked": "Signature or entity setup."
     },
     {
-      "source_type": "permanent_establishment_or_tax_residency_assessment",
-      "evidence_needed": "Assessment of whether the chosen entry model (branch, representative office, LLP, or direct contracting) creates a taxable permanent establishment or resident status.",
-      "why_it_matters": "Permanent-establishment and residency treatment drive tax registration, reporting load, and the real cost of the entry model.",
-      "owner": "Tax advisor",
-      "next_action": "Request a permanent-establishment and tax-residency memo for each candidate entry model.",
-      "decision_blocked": "Entity model choice and signature."
+      "source_type": "counterparty_registry_extract",
+      "evidence_needed": "Current registry extract for the partner and any local counterparty (status, directors, address).",
+      "why_it_matters": "A live registry extract confirms the counterparty exists and who can bind it before any contract.",
+      "owner": "Legal counsel",
+      "next_action": "Pull a fresh registry extract for each named counterparty.",
+      "decision_blocked": "Partner appointment and signature."
     },
     {
-      "source_type": "currency_control_and_repatriation_note",
-      "evidence_needed": "Note on currency-contract registration thresholds, repatriation reporting, and how supplier payments and profit repatriation will clear local banks.",
-      "why_it_matters": "Currency-control registration and repatriation reporting affect how, and how quickly, money can move in and out after commitment.",
-      "owner": "Treasury / banking advisor",
-      "next_action": "Confirm currency-contract registration and repatriation steps with the servicing bank.",
-      "decision_blocked": "Cross-border payment and profit-repatriation planning."
+      "source_type": "beneficial_ownership_source",
+      "evidence_needed": "Beneficial-ownership record showing who ultimately owns and controls the counterparty.",
+      "why_it_matters": "Ownership drives integrity, sanctions, and conflict exposure; an unknown UBO is an unmanaged risk.",
+      "owner": "Compliance / legal counsel",
+      "next_action": "Obtain a UBO declaration or registry source for each counterparty.",
+      "decision_blocked": "Partner appointment and signature."
     },
     {
       "source_type": "counterparty_integrity_due_diligence",
@@ -57,107 +56,145 @@
       "decision_blocked": "Supplier payment and revenue collection."
     },
     {
-      "source_type": "customs_broker_memo",
-      "evidence_needed": "HS code, duty, VAT, import classification, and documentation memo.",
-      "why_it_matters": "The landed-cost model and import feasibility cannot be confirmed without customs treatment.",
-      "owner": "Customs broker",
-      "next_action": "Send catalogue, specs, packing list, and Incoterms for review.",
-      "decision_blocked": "Import or first-batch order."
+      "source_type": "business_substance_evidence",
+      "evidence_needed": "Evidence the entry vehicle has real substance (office, staff, local decision-making) appropriate to the chosen model.",
+      "why_it_matters": "Thin substance undermines tax treatment, banking onboarding, and counterparty trust.",
+      "owner": "Operations lead",
+      "next_action": "Document the planned substance for the chosen entry model.",
+      "decision_blocked": "Entity model choice and signature."
+    },
+    {
+      "source_type": "authority_to_sign_evidence",
+      "evidence_needed": "Evidence that the individual signing for each counterparty has authority to bind it.",
+      "why_it_matters": "A contract signed without authority is unenforceable and a fraud vector.",
+      "owner": "Legal counsel",
+      "next_action": "Collect powers of attorney or board authorizations for the signatories.",
+      "decision_blocked": "Signature."
+    },
+    {
+      "source_type": "contract_or_term_sheet_draft",
+      "evidence_needed": "Draft contract or term sheet covering scope, pricing, territory, exclusivity, term, and exit.",
+      "why_it_matters": "Commercial terms must be on paper before signature so they can be reviewed and negotiated.",
+      "owner": "Commercial lead / legal counsel",
+      "next_action": "Produce a term sheet or draft contract for review.",
+      "decision_blocked": "Signature."
+    },
+    {
+      "source_type": "tax_accounting_note",
+      "evidence_needed": "Note on VAT, corporate tax, withholding, and accounting treatment for the chosen entry model.",
+      "why_it_matters": "Tax and accounting treatment change the real cost and reporting load of the entry model.",
+      "owner": "Tax advisor",
+      "next_action": "Request a tax and accounting memo for each candidate entry model.",
+      "decision_blocked": "Entity model choice and signature."
+    },
+    {
+      "source_type": "permanent_establishment_or_tax_residency_assessment",
+      "evidence_needed": "Assessment of whether the chosen entry model (branch, representative office, LLP, or direct contracting) creates a taxable permanent establishment or resident status.",
+      "why_it_matters": "Permanent-establishment and residency treatment drive tax registration, reporting load, and the real cost of the entry model.",
+      "owner": "Tax advisor",
+      "next_action": "Request a permanent-establishment and tax-residency memo for each candidate entry model.",
+      "decision_blocked": "Entity model choice and signature."
+    },
+    {
+      "source_type": "currency_control_and_repatriation_note",
+      "evidence_needed": "Note on currency-contract registration thresholds, repatriation reporting, and how supplier payments and profit repatriation will clear local banks.",
+      "why_it_matters": "Currency-control registration and repatriation reporting affect how, and how quickly, money can move in and out after commitment.",
+      "owner": "Treasury / banking advisor",
+      "next_action": "Confirm currency-contract registration and repatriation steps with the servicing bank.",
+      "decision_blocked": "Cross-border payment and profit-repatriation planning."
+    },
+    {
+      "source_type": "work_permit_and_local_employment_quota_note",
+      "evidence_needed": "Note on work-permit requirements and local-employment ratio / quota obligations for the planned expatriate and local headcount.",
+      "why_it_matters": "Foreign-worker quotas and local-employment ratios constrain who can be deployed and when.",
+      "owner": "HR / legal counsel",
+      "next_action": "Confirm work-permit and local-employment quota requirements for the staffing plan.",
+      "decision_blocked": "Staffing and entity operation."
     },
     {
       "source_type": "certification_pathway",
-      "evidence_needed": "Kazakhstan or EAEU certification and road-use classification path by product category.",
-      "why_it_matters": "Commercial sales and customer-facing claims may depend on classification and conformity requirements.",
-      "owner": "Certification advisor",
-      "next_action": "Request product-category certification memo.",
-      "decision_blocked": "Public launch and sales."
-    },
-    {
-      "source_type": "showroom_lease_offer",
-      "evidence_needed": "Real lease offer with availability, area, rent, service charges, deposit, and permitted use.",
-      "why_it_matters": "Showroom cost assumptions remain benchmark-only until confirmed by lease offers.",
-      "owner": "Real-estate broker",
-      "next_action": "Request lean, base, and premium location offers.",
-      "decision_blocked": "Showroom lease or launch budget."
+      "evidence_needed": "Supply the certification pathway for this market-entry file.",
+      "why_it_matters": "The certification pathway is a required gate input that is not yet in the evidence pack.",
+      "owner": "Project lead",
+      "next_action": "Request or produce the certification pathway.",
+      "decision_blocked": "Progression to the next market-entry commitment."
     },
     {
       "source_type": "service_partner_confirmation",
-      "evidence_needed": "Service partner, mechanic, warranty process, spare-parts list, and service SLA.",
-      "why_it_matters": "After-sales readiness is required before advertising or large-volume sales.",
-      "owner": "Operations lead",
-      "next_action": "Identify service partner and define minimum launch service promise.",
-      "decision_blocked": "Public launch and dealer appointment."
+      "evidence_needed": "Supply the service partner confirmation for this market-entry file.",
+      "why_it_matters": "The service partner confirmation is a required gate input that is not yet in the evidence pack.",
+      "owner": "Project lead",
+      "next_action": "Request or produce the service partner confirmation.",
+      "decision_blocked": "Progression to the next market-entry commitment."
     },
     {
-      "source_type": "trademark_or_brand_protection_filing",
-      "evidence_needed": "Trademark filing or registration status in Kazakhstan (national or EAEU/Madrid) for the brand and key product names, plus a third-party-filing / squatting check.",
-      "why_it_matters": "Public brand promotion before the mark is secured invites squatting; most brand disputes surface within months of launch, and an unsecured mark can block the launch it was meant to support.",
-      "owner": "IP counsel",
-      "next_action": "Run a clearance search and file the core classes before any public promotion or advertising spend.",
-      "decision_blocked": "Brand advertising and public launch."
-    },
-    {
-      "source_type": "data_localization_and_privacy_note",
-      "evidence_needed": "Whether the planned website, lead capture, CRM, app, or fleet data triggers Kazakhstan personal-data localization, and how citizen data will be stored in-country (including backups).",
-      "why_it_matters": "Personal-data localization can apply even through a distributor without a local entity; non-compliance risks fines and operational disruption once customer data is collected.",
-      "owner": "Data-protection counsel / IT",
-      "next_action": "Map data flows and confirm in-country storage before launching lead capture or the app.",
-      "decision_blocked": "Customer data collection and app/lead-gen launch."
+      "source_type": "spare_parts_price_list",
+      "evidence_needed": "Supply the spare parts price list for this market-entry file.",
+      "why_it_matters": "The spare parts price list is a required gate input that is not yet in the evidence pack.",
+      "owner": "Project lead",
+      "next_action": "Request or produce the spare parts price list.",
+      "decision_blocked": "Progression to the next market-entry commitment."
     }
   ],
   "claim_audit": [
     {
-      "claim": "Kazakhstan is a credible entry market.",
-      "status": "directionally_supported",
-      "how_to_use_now": "Use as an executive thesis, not as proof of demand."
-    },
-    {
-      "claim": "The project can move to controlled validation.",
+      "claim": "The project can move into controlled validation.",
       "status": "supported",
-      "how_to_use_now": "Use for advisor requests, quotes, and structured customer or partner interviews."
+      "how_to_use_now": "Use for advisor requests, quotes, and structured partner or customer interviews."
     },
     {
       "claim": "The project is ready for launch commitment.",
       "status": "unsupported",
-      "how_to_use_now": "Do not use. Replace with validation-ready until evidence gaps are closed."
+      "how_to_use_now": "Do not use. Replace with the current readiness label until the evidence gaps are closed."
+    },
+    {
+      "claim": "The blockers the caller named on this file are resolved.",
+      "status": "unsupported",
+      "how_to_use_now": "Do not treat as resolved: the caller listed 12 open blocker(s) (e.g. \"No law-firm opinion supplied.\"). Close each one and re-run the gate."
+    },
+    {
+      "claim": "The caller-supplied cost, price, and structure assumptions are decision-grade.",
+      "status": "assumption_only",
+      "how_to_use_now": "Treat the caller's assumptions as planning inputs only; confirm with signed quotes, landed-cost models, and local legal / tax review before any commitment."
     }
   ],
   "owner_actions": [
     {
       "timeframe": "48_hours",
       "owner": "Project lead",
-      "action": "Send evidence request to partner and advisors.",
-      "output": "Missing-document checklist and advisor request pack."
+      "action": "Send the missing-evidence request to the partner and named advisors.",
+      "output": "Evidence-request pack and missing-document checklist."
     },
     {
       "timeframe": "7_days",
       "owner": "Project lead",
-      "action": "Collect legal, customs, certification, freight, lease, and service inputs.",
-      "output": "Gate 1 evidence pack."
+      "action": "Collect the legal, tax, banking, customs, certification, and operational inputs the gate flagged.",
+      "output": "Gate evidence pack."
     },
     {
       "timeframe": "30_days",
       "owner": "Project lead",
-      "action": "Convert validation evidence into a launch budget and first-batch decision memo.",
+      "action": "Convert the validation evidence into a committee-ready entry decision memo.",
       "output": "Committee-ready gate memo."
     }
   ],
   "watch_next": [
-    "customs rule change",
     "certification requirement change",
-    "tax or VAT treatment change",
-    "anti-corruption enforcement or third-party due-diligence expectation change",
+    "battery handling or insurance constraint",
+    "service capacity bottleneck",
     "bank KYC or account-opening tightening for foreign-owned entities",
-    "permanent-establishment or tax-residency rule change",
+    "tax or VAT treatment change",
     "currency-control or profit-repatriation rule change",
-    "foreign-worker quota or local-employment ratio change",
-    "third-party trademark filing or brand-squatting signal",
-    "personal-data localization or privacy rule change",
-    "lease availability or rent change",
-    "freight rate change",
-    "supplier price or MOQ change",
-    "service capacity bottleneck"
+    "anti-corruption enforcement or third-party due-diligence expectation change",
+    "government or regulator signal"
   ],
-  "management_note": "The opportunity can move to controlled validation, but should not move to launch commitment until legal, customs, certification, landed-cost, service, lease, and partner evidence gaps are closed.",
-  "boundary_notice": "Internal evidence triage only. Not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice."
+  "boundary_notice": "Internal evidence triage only. Not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice.",
+  "run_provenance": {
+    "contract_version": "1.1.0",
+    "schema_id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/market-entry-readiness-response.schema.json",
+    "input_digest": "sha256:441f105b9e734f34bf816c29d2bac07c29b359383b959b99163877c57d5019d9"
+  },
+  "strongest_reason_to_proceed": "The Kazakhstan use case and commercial objective are specific enough to start advisor requests, quote collection, and partner validation.",
+  "strongest_reason_to_pause": "The current evidence pack is not sufficient for signature, import, lease, first-batch order, advertising spend, or partner appointment.",
+  "management_note": "The opportunity can move at the level of its readiness label, but should not move to launch commitment until the flagged legal, customs, certification, landed-cost, service, lease, and partner evidence gaps are closed."
 }
