@@ -2149,5 +2149,36 @@ test("market-entry sector evidence caps launch_commitment (Python parity)", asyn
   const req = marketEntrySectorProbe("renewable_energy", { supplied_sources: fullPack });
   const resp = (await marketEntryResponseFor(req)).result.metadata.response;
   assert.equal(resp.readiness_label, "committee_review_ready");
+  assert.equal(resp.gate_decision, "route_to_committee");
   assert.ok(resp.evidence_gaps.some((g) => g.source_type === "grid_connection_and_offtake_evidence"));
+});
+
+test("market-entry complete file across all tiers escalates before signature (ADR 0019)", async () => {
+  const fullPack = [
+    "partner_company_profile",
+    "product_or_project_description",
+    "commercial_objective",
+    "kazakhstan_use_case",
+    "initial_source_links_or_documents",
+    "law_firm_opinion",
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "counterparty_integrity_due_diligence",
+    "bank_account_and_kyc_onboarding",
+    "business_substance_evidence",
+    "authority_to_sign_evidence",
+    "contract_or_term_sheet_draft",
+    "tax_accounting_note",
+    "permanent_establishment_or_tax_residency_assessment",
+    "currency_control_and_repatriation_note",
+    "work_permit_and_local_employment_quota_note",
+    "grid_connection_and_offtake_evidence",
+    "land_or_site_control_evidence",
+    "bankability_note",
+    "local_content_or_procurement_localization_note"
+  ].map((t, i) => ({ id: `s${i}`, source_type: t, title: t, date: "2026-06-17" }));
+  const req = marketEntrySectorProbe("renewable_energy", { supplied_sources: fullPack });
+  const resp = (await marketEntryResponseFor(req)).result.metadata.response;
+  assert.equal(resp.readiness_label, "launch_commitment_ready");
+  assert.equal(resp.gate_decision, "escalate_before_signature");
 });

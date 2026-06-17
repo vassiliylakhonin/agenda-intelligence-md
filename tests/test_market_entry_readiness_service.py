@@ -183,4 +183,22 @@ def test_sector_evidence_caps_launch_commitment():
     request = _market_entry_request("renewable_energy", supplied_sources=sources)
     response = services.kazakhstan_market_entry_readiness(request)["response"]
     assert response["readiness_label"] == "committee_review_ready"
+    # committee-ready files route to committee, distinct from a complete file's escalate (ADR 0019)
+    assert response["gate_decision"] == "route_to_committee"
     assert "grid_connection_and_offtake_evidence" in _gap_types(response)
+
+
+def test_complete_file_escalates_before_signature():
+    """A file complete across validation, signature, stage, and sector tiers
+    reaches launch_commitment_ready and escalates (not route_to_committee)."""
+    taxonomy = services._market_entry_taxonomy()
+    full = (
+        taxonomy["required_before_validation"]
+        + taxonomy["required_before_signature"]
+        + taxonomy["sector_requirements"]["renewable_energy"]
+    )
+    sources = [{"id": f"s{i}", "source_type": t, "title": t, "date": "2026-06-17"} for i, t in enumerate(full)]
+    request = _market_entry_request("renewable_energy", decision_stage="pre_signature", supplied_sources=sources)
+    response = services.kazakhstan_market_entry_readiness(request)["response"]
+    assert response["readiness_label"] == "launch_commitment_ready"
+    assert response["gate_decision"] == "escalate_before_signature"

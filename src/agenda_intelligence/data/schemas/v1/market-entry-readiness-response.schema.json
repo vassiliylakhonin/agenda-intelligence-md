@@ -22,6 +22,7 @@
       "enum": [
         "proceed_to_validation",
         "pause_for_evidence",
+        "route_to_committee",
         "escalate_before_signature",
         "not_decision_ready",
         "stop"
