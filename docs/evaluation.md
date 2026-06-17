@@ -71,6 +71,8 @@ Run against source-structured cases in `examples/source-backed/`. Deterministic;
 
 Full baseline: [`evals/baselines/source-backed.md`](../evals/baselines/source-backed.md)
 
+To score your **own** agent's output against this baseline, see [`benchmark-your-output.md`](benchmark-your-output.md).
+
 These are structural/evidence-discipline metrics. Source coverage reports category `must_check` coverage gaps; it does not measure factual accuracy, and illustrative source cases are not live-source-backed factual benchmarks.
 
 ## Quote Verification Contract
