@@ -304,6 +304,7 @@ def _latin1(s: str) -> str:
 def render_pdf(response: dict[str, Any]) -> bytes:
     try:
         from fpdf import FPDF  # type: ignore
+        from fpdf.enums import XPos, YPos  # type: ignore
     except ImportError as exc:  # pragma: no cover - exercised only without the extra
         raise RuntimeError(
             "PDF output requires the optional 'pdf' extra. Install it with: "
@@ -331,16 +332,22 @@ def render_pdf(response: dict[str, Any]) -> bytes:
     pdf.set_xy(32, 6)
     pdf.set_text_color(180, 235, 230)
     pdf.set_font("Helvetica", "B", 7)
-    pdf.cell(0, 4, _latin1("KAZAKHSTAN - MIDDLE CORRIDOR"), ln=1)
+    pdf.cell(0, 4, _latin1("KAZAKHSTAN - MIDDLE CORRIDOR"), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.set_x(32)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font("Helvetica", "B", 15)
-    pdf.cell(0, 8, "Deal Risk Gate", ln=1)
+    pdf.cell(0, 8, "Deal Risk Gate", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     pdf.set_xy(15, 32)
     pdf.set_text_color(*_RGB[BRAND_MUTED])
     pdf.set_font("Helvetica", "", 8)
-    pdf.cell(0, 4, _latin1(f"Evidence-readiness memo - {GENERATED_LABEL} - generated {_today()} - illustrative"), ln=1)
+    pdf.cell(
+        0,
+        4,
+        _latin1(f"Evidence-readiness memo - {GENERATED_LABEL} - generated {_today()} - illustrative"),
+        new_x=XPos.LMARGIN,
+        new_y=YPos.NEXT,
+    )
     pdf.ln(2)
 
     # Verdict box.
@@ -352,7 +359,7 @@ def render_pdf(response: dict[str, Any]) -> bytes:
     pdf.set_xy(18, box_y + 2)
     pdf.set_text_color(vr, vg, vb)
     pdf.set_font("Helvetica", "B", 17)
-    pdf.cell(0, 9, _latin1(verb), ln=1)
+    pdf.cell(0, 9, _latin1(verb), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     if rationale:
         pdf.set_x(18)
         pdf.set_text_color(*_RGB[BRAND_MUTED])
@@ -370,20 +377,21 @@ def render_pdf(response: dict[str, Any]) -> bytes:
             f"triage {d.get('triage_recommendation', 'n/a')}  -  "
             f"risk signal {d.get('risk_signal', 'n/a')}"
         ),
-        ln=1,
+        new_x=XPos.LMARGIN,
+        new_y=YPos.NEXT,
     )
     pdf.ln(2)
 
     def heading(title: str) -> None:
         pdf.set_font("Helvetica", "B", 11)
         pdf.set_text_color(*_RGB[BRAND_INK])
-        pdf.cell(0, 6, _latin1(title), ln=1)
+        pdf.cell(0, 6, _latin1(title), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     def bullets(items: list[str] | None) -> None:
         pdf.set_font("Helvetica", "", 9.5)
         pdf.set_text_color(*_RGB[BRAND_INK])
         if not items:
-            pdf.cell(0, 5, "(none)", ln=1)
+            pdf.cell(0, 5, "(none)", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
             return
         for x in items:
             pdf.set_x(17)

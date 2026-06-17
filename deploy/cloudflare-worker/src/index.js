@@ -2613,6 +2613,7 @@ function marketEntryGateDecision(readiness, stage) {
   }
   if (readiness === "concept_ready") return "pause_for_evidence";
   if (readiness === "validation_ready") return "proceed_to_validation";
+  if (readiness === "committee_review_ready") return "route_to_committee";
   return "escalate_before_signature";
 }
 
