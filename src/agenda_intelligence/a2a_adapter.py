@@ -22,6 +22,8 @@ CIS_SECONDARY_SANCTIONS_SCHEMA = "schemas/v1/cis-secondary-sanctions-request.sch
 CIS_SECONDARY_SANCTIONS_ENDPOINT = "/v1/cis-secondary-sanctions/exposure"
 GULF_MARITIME_SCHEMA = "schemas/v1/gulf-maritime-exposure-request.schema.json"
 GULF_MARITIME_ENDPOINT = "/v1/gulf-maritime/exposure"
+MARKET_ENTRY_READINESS_SCHEMA = "schemas/v1/market-entry-readiness-request.schema.json"
+MARKET_ENTRY_READINESS_ENDPOINT = "/v1/market-entry/readiness"
 AUDIT_CLAIMS_ENDPOINT = "/v1/audit-claims"
 SOURCE_COVERAGE_ENDPOINT = "/v1/source-coverage"
 SCORE_OUTPUT_ENDPOINT = "/v1/score"
@@ -31,6 +33,7 @@ SUPPORTED_CAPABILITIES = [
     "agentic_interaction_trust",
     "cis_secondary_sanctions_exposure",
     "gulf_maritime_exposure",
+    "kazakhstan_market_entry_readiness",
     "audit_claims",
     "source_coverage",
     "score_output",
@@ -61,6 +64,14 @@ CAPABILITY_ALIASES = {
     "maritime_exposure": "gulf_maritime_exposure",
     "maritime-exposure": "gulf_maritime_exposure",
     "hormuz": "gulf_maritime_exposure",
+    "kazakhstan_market_entry_readiness": "kazakhstan_market_entry_readiness",
+    "kazakhstan-market-entry-readiness": "kazakhstan_market_entry_readiness",
+    "market_entry_readiness": "kazakhstan_market_entry_readiness",
+    "market-entry-readiness": "kazakhstan_market_entry_readiness",
+    "market_entry": "kazakhstan_market_entry_readiness",
+    "market-entry": "kazakhstan_market_entry_readiness",
+    "kazakhstan_market_entry": "kazakhstan_market_entry_readiness",
+    "kazakhstan-market-entry": "kazakhstan_market_entry_readiness",
     "audit_claims": "audit_claims",
     "audit-claims": "audit_claims",
     "audit": "audit_claims",
@@ -271,6 +282,26 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "outputModes": ["application/json", "text/markdown"],
             },
             {
+                "id": "kazakhstan-market-entry-readiness",
+                "name": "Kazakhstan market-entry readiness gate",
+                "description": (
+                    "Structured evidence triage for a Kazakhstan market-entry file (distribution, import, "
+                    "service, showroom, EPC, renewable-energy, infrastructure, technology-transfer, or "
+                    "partner-entry). Returns a gate decision, readiness label, evidence gaps, claim audit, "
+                    "owner actions, watch-next indicators, and mandatory human-review routing. Not legal, "
+                    "compliance, customs, tax, sanctions, or launch-authorization advice."
+                ),
+                "tags": [
+                    "kazakhstan",
+                    "market-entry",
+                    "evidence-readiness",
+                    "go-to-market",
+                    "due-diligence",
+                ],
+                "inputModes": ["application/json"],
+                "outputModes": ["application/json", "text/markdown"],
+            },
+            {
                 "id": "audit-claims",
                 "name": "Audit claims",
                 "description": "Validates and summarizes claim-level evidence support without checking factual truth.",
@@ -305,6 +336,7 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "agentic_interaction_trust_contract",
                 "cis_secondary_sanctions_exposure_contract",
                 "gulf_maritime_exposure_contract",
+                "kazakhstan_market_entry_readiness_contract",
             ],
             "supported_capabilities": SUPPORTED_CAPABILITIES,
             "per_profile_live_retrieval": _build_per_profile_live_retrieval_block(),
@@ -465,6 +497,35 @@ def gulf_maritime_request_from_params(params: dict) -> dict | None:
     )
     for candidate in candidates:
         if _looks_like_gulf_maritime_request(candidate):
+            return candidate
+    return None
+
+
+def _looks_like_market_entry_readiness_request(value: Any) -> bool:
+    return (
+        isinstance(value, dict)
+        and isinstance(value.get("project_name"), str)
+        and isinstance(value.get("partner_or_company"), str)
+        and isinstance(value.get("market"), str)
+        and isinstance(value.get("decision_question"), str)
+        and isinstance(value.get("decision_stage"), str)
+        and isinstance(value.get("supplied_sources"), list)
+    )
+
+
+def market_entry_readiness_request_from_params(params: dict) -> dict | None:
+    """Extract a structured Kazakhstan market-entry readiness request from A2A/JSON-RPC params."""
+    candidates = _candidate_objects_from_params(params)
+    candidates.extend(
+        candidate
+        for candidate in [
+            _try_parse_json_object(params.get("market_entry_request")),
+            _try_parse_json_object(params.get("market_entry_readiness_request")),
+        ]
+        if candidate is not None
+    )
+    for candidate in candidates:
+        if _looks_like_market_entry_readiness_request(candidate):
             return candidate
     return None
 
@@ -730,6 +791,65 @@ def a2a_result_for_gulf_maritime_exposure(request_json: dict) -> dict:
     }
 
 
+def _market_entry_artifact_text(response: dict) -> str:
+    gaps = response.get("evidence_gaps", [])
+    gaps_text = "\n".join(f"- {gap['source_type']}: {gap['next_action']}" for gap in gaps) if gaps else "- none"
+    return "\n".join(
+        [
+            "Kazakhstan market-entry readiness gate response",
+            "",
+            f"Gate decision: {response['gate_decision']}",
+            f"Readiness label: {response['readiness_label']}",
+            f"Human review required: {str(response['human_review_required']).lower()}",
+            "",
+            response["summary"],
+            "",
+            "Evidence gaps:",
+            gaps_text,
+            "",
+            response["boundary_notice"],
+        ]
+    )
+
+
+def a2a_result_for_market_entry_readiness(request_json: dict) -> dict:
+    result = services.kazakhstan_market_entry_readiness(request_json)
+    if not result.get("valid"):
+        return {
+            "id": "agenda-intelligence-a2a-result",
+            "status": {"state": "TASK_STATE_FAILED"},
+            "artifacts": [],
+            "metadata": {
+                "product_profile": "kazakhstan_market_entry_readiness",
+                "canonical_http_endpoint": MARKET_ENTRY_READINESS_ENDPOINT,
+                "schema": MARKET_ENTRY_READINESS_SCHEMA,
+                "valid": False,
+                "errors": result.get("errors", []),
+            },
+        }
+
+    response = result["response"]
+    return {
+        "id": "agenda-intelligence-a2a-result",
+        "status": {"state": "TASK_STATE_COMPLETED"},
+        "artifacts": [
+            {
+                "artifactId": "market-entry-readiness-response",
+                "name": "Kazakhstan market-entry readiness response",
+                "parts": [{"text": _market_entry_artifact_text(response), "mediaType": "text/markdown"}],
+            }
+        ],
+        "metadata": {
+            "product_profile": "kazakhstan_market_entry_readiness",
+            "canonical_http_endpoint": MARKET_ENTRY_READINESS_ENDPOINT,
+            "schema": MARKET_ENTRY_READINESS_SCHEMA,
+            "human_review_required": response["human_review_required"],
+            "not_advice_notice": response["boundary_notice"],
+            "response": response,
+        },
+    }
+
+
 def _agentic_artifact_text(response: dict) -> str:
     missing = response.get("minimum_sources_before_action", [])
     missing_text = "\n".join(f"- {item}" for item in missing) if missing else "- none"
@@ -945,6 +1065,31 @@ def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> di
                 "jsonrpc": "2.0",
                 "id": id_value,
                 "result": a2a_result_for_gulf_maritime_exposure(request_json),
+            }
+
+        if capability == "kazakhstan_market_entry_readiness":
+            request_json = market_entry_readiness_request_from_params(params)
+            if request_json is None:
+                return jsonrpc_error(
+                    id_value,
+                    -32602,
+                    "Missing structured Kazakhstan market-entry readiness request",
+                    {
+                        "required_shape": {
+                            "project_name": "string",
+                            "partner_or_company": "string",
+                            "market": "string",
+                            "decision_question": "string",
+                            "decision_stage": "string",
+                            "supplied_sources": "array",
+                        },
+                        "schema": MARKET_ENTRY_READINESS_SCHEMA,
+                    },
+                )
+            return {
+                "jsonrpc": "2.0",
+                "id": id_value,
+                "result": a2a_result_for_market_entry_readiness(request_json),
             }
 
         if capability == "agentic_interaction_trust":
