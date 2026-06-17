@@ -1,6 +1,6 @@
 # Agenda Intelligence MD
 
-Product runtime and evidence-discipline layer for strategic intelligence agents. One core service layer behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — plus structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Ships with five vertical workers: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, and Kazakhstan Market-Entry Readiness Gate — four deployed, the last deploy-ready.
+Product runtime and evidence-discipline layer for strategic intelligence agents. One core service layer behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — plus structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Ships with five vertical workers, all deployed: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, and Kazakhstan Market-Entry Readiness Gate.
 
 Read it as a **trust-routing layer for agent-mediated decisions**: it turns a partial evidence pack into a structured routing decision — allow, step up, escalate, or not-decision-ready — surfaces the specific missing evidence, and always requires human review for high-stakes actions. It does not approve, clear, or make a factual determination, and does not verify factual truth. Live retrieval is off by default and opt-in per worker profile (see the [CIS worker](#second-vertical-worker-cis-secondary-sanctions-exposure) and [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md)). Evaluate any worker in a few minutes with live curl calls: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md).
 
@@ -32,7 +32,7 @@ Longer guided tutorial: [`docs/quickstart.md`](docs/quickstart.md). MCP client s
 
 ## Live A2A wrapper
 
-A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightweight strategic-risk triage, and A2A/JSON-RPC routing. Five workers are deployed (general triage + four vertical workers); a fifth vertical worker, the Kazakhstan Market-Entry Readiness Gate, is deploy-ready but not yet deployed. Per-worker endpoints live in each worker section below and in the [Status](#status) table.
+A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightweight strategic-risk triage, and A2A/JSON-RPC routing. Six workers are deployed (general triage + the five vertical workers); per-worker endpoints live in each worker section below and in the [Status](#status) table.
 
 - Interactive browser demos: [Middle Corridor Deal Risk Gate](https://vassiliylakhonin.github.io/deal-risk-gate.html) · [CIS Secondary-Sanctions Exposure](https://vassiliylakhonin.github.io/cis-secondary-sanctions.html)
 - General wrapper: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev> · [agent card](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) · [JSON-RPC](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send) · [Agenstry](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev)
@@ -78,7 +78,7 @@ The product-grade structured JSON contract is documented in [`docs/use-cases/kaz
 
 > Company + project + Kazakhstan objective + counterparties + supplied sources -> gate decision, readiness label, evidence gaps, claim audit, owner actions, watch-next indicators, and human-review routing.
 
-It is now a live in-repo vertical worker: a `kazakhstan_market_entry_readiness` service function, an HTTP route, and an A2A profile. Cloudflare Worker JS parity and a dedicated `wrangler` env are shipped; the standalone `*.workers.dev` A2A endpoint goes live on `wrangler deploy --env kazakhstan-market-entry-readiness` (not yet deployed). It is not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice.
+It is a live vertical worker: a `kazakhstan_market_entry_readiness` service function, an HTTP route, an A2A profile, and a deployed Cloudflare Worker at <https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev>. It is not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice.
 
 - Use-case notes: [`docs/use-cases/kazakhstan-market-entry-readiness.md`](docs/use-cases/kazakhstan-market-entry-readiness.md)
 - Request schema: [`schemas/v1/market-entry-readiness-request.schema.json`](schemas/v1/market-entry-readiness-request.schema.json)
@@ -86,7 +86,8 @@ It is now a live in-repo vertical worker: a `kazakhstan_market_entry_readiness` 
 - Source taxonomy: [`source-requirements/kazakhstan-market-entry-readiness.json`](source-requirements/kazakhstan-market-entry-readiness.json)
 - Example pack: [`examples/kazakhstan-market-entry-readiness/contract/`](examples/kazakhstan-market-entry-readiness/contract/)
 - HTTP: `POST /v1/market-entry/readiness`
-- A2A profile: `kazakhstan_market_entry_readiness` (worker env `kazakhstan-market-entry-readiness`, deploy-ready)
+- A2A profile: `kazakhstan_market_entry_readiness`
+- Live endpoint: <https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev> · [agent card](https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json)
 
 ## Second vertical worker: CIS secondary-sanctions exposure
 
@@ -160,8 +161,8 @@ The product runtime is the integration point: agents call `analyze` via any surf
 - **MCP server** — stdio server exposing 21 tools across the validation, product, and vertical worker layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
 - **HTTP API shell** — thin transport over the service layer; self-host with `docs/deployment/http-api.md`
 - **A2A adapter** — agent-card + JSON-RPC `message/send` over the HTTP/service layer; contract in `docs/product/a2a-adapter-plan.md`
-- **Cloudflare Worker baseline** — deployment config under `deploy/cloudflare-worker/`; five live workers (general triage + four vertical workers below), plus the Kazakhstan Market-Entry Readiness Gate worker JS + env shipped and deploy-ready
-- **Vertical workers** — productized service functions with their own schemas + HTTP/A2A profiles; Cloudflare deployments exist where configured. Currently shipped in the runtime: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate
+- **Cloudflare Worker baseline** — deployment config under `deploy/cloudflare-worker/`; six live workers (general triage + the five vertical workers below)
+- **Vertical workers** — productized service functions with their own schemas + HTTP/A2A profiles; Cloudflare deployments exist where configured. Currently shipped in the runtime: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, Kazakhstan Market-Entry Readiness Gate
 - **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
 - **JSON schemas** — request/memo product contract + per-product contracts (e.g. `middle-corridor-deal-risk-*`) + validators for briefs, evidence packs, audits, signals, memory cards, lenses
 - **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `score`, `bench`, `doctor` (30+ commands)
@@ -304,9 +305,9 @@ Stdio MCP server with 21 tools. Full docs and wire-protocol verification: [`MCP.
 | MCP stdio server | Stable |
 | HTTP API shell | Shipped (self-host); contract early — see `docs/deployment/http-api.md` |
 | A2A adapter | Shipped (Cloudflare Worker baseline); contract in `docs/product/a2a-adapter-plan.md` |
-| Cloudflare Worker deployment | Live (5 workers: general triage + Middle Corridor Deal Risk Gate + CIS Secondary-Sanctions Exposure + Agentic Interaction Trust Gate + Gulf Maritime Exposure) |
+| Cloudflare Worker deployment | Live (6 workers: general triage + Middle Corridor Deal Risk Gate + CIS Secondary-Sanctions Exposure + Agentic Interaction Trust Gate + Gulf Maritime Exposure + Kazakhstan Market-Entry Readiness Gate) |
 | Middle Corridor Deal Risk Gate (vertical worker) | Live, no paying customers yet — illustrative usage only |
-| Kazakhstan Market-Entry Readiness Gate (vertical worker) | In-package (service + HTTP + A2A + worker JS parity); deploy-ready, `wrangler deploy --env kazakhstan-market-entry-readiness` pending |
+| Kazakhstan Market-Entry Readiness Gate (vertical worker) | Live, no paying customers yet — illustrative usage only |
 | Evidence-audit schema (claim-level) | Stable |
 | Signal-tracker schema (lifecycle) | Stable |
 | Heuristic scoring | Stable (uncalibrated) |
