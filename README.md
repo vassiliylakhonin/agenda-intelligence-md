@@ -250,6 +250,8 @@ pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/
 
 Heuristic scores are uncalibrated and not validated against expert judgment. They evaluate structure, evidence labeling, source-coverage diagnostics, and decision-readiness — not factual truth.
 
+**Benchmark your own output.** The same harness scores *your* agent's briefs and compares them to this baseline — point `bench` at a directory of your `<name>.brief.json` cases. No LLM, no network: [`docs/benchmark-your-output.md`](docs/benchmark-your-output.md).
+
 Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed/eu-ai-act.md) — brief + evidence pack + claim-level audit using illustrative sources. Before / after pairs: [`examples/before-after/`](examples/before-after/).
 
 ## Verification Contract
@@ -331,6 +333,7 @@ Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-con
 | Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
 | Tutorial | [`docs/tutorial.md`](docs/tutorial.md) |
 | Evaluation layers | [`docs/evaluation.md`](docs/evaluation.md) |
+| Benchmark your own output | [`docs/benchmark-your-output.md`](docs/benchmark-your-output.md) |
 | Agent-eval methodology | [`docs/agent-eval-methodology.md`](docs/agent-eval-methodology.md) |
 | Factual verification boundary | [`docs/factual-verification.md`](docs/factual-verification.md) |
 | Source plan coverage boundary | [`docs/source-plan-coverage.md`](docs/source-plan-coverage.md) |
