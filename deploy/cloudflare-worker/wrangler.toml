@@ -68,3 +68,17 @@ AGENT_PROFILE = "gulf_maritime_exposure"
 [[env.gulf-maritime-exposure.kv_namespaces]]
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
+
+# Kazakhstan Market-Entry Readiness Gate — evidence triage only, no live
+# retrieval. Open free demo (no API key). Deploy with:
+#   wrangler deploy --env kazakhstan-market-entry-readiness
+[env.kazakhstan-market-entry-readiness]
+name = "kazakhstan-market-entry-readiness-a2a"
+workers_dev = true
+
+[env.kazakhstan-market-entry-readiness.vars]
+AGENT_PROFILE = "market_entry_readiness"
+
+[[env.kazakhstan-market-entry-readiness.kv_namespaces]]
+binding = "AGENDA_USAGE"
+id = "d2228183999246ccbec8aa2d5f130bfc"

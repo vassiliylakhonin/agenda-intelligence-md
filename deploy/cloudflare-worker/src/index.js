@@ -505,6 +505,12 @@ function agentProfile(request, env = {}) {
     return "gulf_maritime_exposure";
   }
   if (
+    env.AGENT_PROFILE === "market_entry_readiness" ||
+    host.includes("kazakhstan-market-entry-readiness-a2a")
+  ) {
+    return "market_entry_readiness";
+  }
+  if (
     env.AGENT_PROFILE === "kazakhstan" ||
     host.includes("middle-corridor-deal-risk-gate-a2a")
   ) {
@@ -778,6 +784,7 @@ function applyAgentProfile(card, request, env = {}) {
   if (profile === "cis_secondary_sanctions") return applyCisSecondarySanctionsProfile(card, request, env);
   if (profile === "agentic_interaction_trust") return applyAgenticInteractionTrustProfile(card, request);
   if (profile === "gulf_maritime_exposure") return applyGulfMaritimeProfile(card, request);
+  if (profile === "market_entry_readiness") return applyMarketEntryReadinessProfile(card, request);
   if (profile !== "kazakhstan") return card;
 
   const origin = originFromRequest(request);
@@ -2084,6 +2091,671 @@ function a2aResultForGulfMaritimeExposure(params) {
       response: result.response
     }
   };
+}
+
+// ---------------------------------------------------------------------------
+// Kazakhstan market-entry readiness gate (fifth vertical worker)
+// JS parity of services.kazakhstan_market_entry_readiness. No live retrieval.
+// run_provenance is intentionally omitted here (deferred, like the other
+// workers' worker-side provenance); the response schema makes it optional.
+// ---------------------------------------------------------------------------
+
+const MARKET_ENTRY_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/kazakhstan-market-entry-readiness.md`;
+const MARKET_ENTRY_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/market-entry-readiness-request.schema.json`;
+const MARKET_ENTRY_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/market-entry-readiness-response.schema.json`;
+const MARKET_ENTRY_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/kazakhstan-market-entry-readiness.json`;
+
+const MARKET_ENTRY_BOUNDARY_NOTICE =
+  "Internal evidence triage only. Not legal, compliance, customs, tax, financial, investment, " +
+  "insurance, sanctions, or launch-authorization advice.";
+
+const MARKET_ENTRY_REQUIRED_BEFORE_VALIDATION = [
+  "partner_company_profile",
+  "product_or_project_description",
+  "commercial_objective",
+  "kazakhstan_use_case",
+  "initial_source_links_or_documents"
+];
+const MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE = [
+  "law_firm_opinion",
+  "counterparty_registry_extract",
+  "beneficial_ownership_source",
+  "counterparty_integrity_due_diligence",
+  "bank_account_and_kyc_onboarding",
+  "business_substance_evidence",
+  "authority_to_sign_evidence",
+  "contract_or_term_sheet_draft",
+  "tax_accounting_note",
+  "permanent_establishment_or_tax_residency_assessment",
+  "currency_control_and_repatriation_note",
+  "work_permit_and_local_employment_quota_note"
+];
+const MARKET_ENTRY_REQUIRED_BEFORE_IMPORT = [
+  "customs_broker_memo",
+  "hs_code_classification",
+  "certification_pathway",
+  "packing_list_and_incoterms",
+  "battery_safety_documents",
+  "freight_forwarder_quote",
+  "insurance_or_cargo_handling_note",
+  "landed_cost_model",
+  "supplier_moq_payment_terms"
+];
+const MARKET_ENTRY_REQUIRED_BEFORE_SHOWROOM = [
+  "showroom_lease_offer",
+  "showroom_opex_model",
+  "outdoor_advertising_quote",
+  "localized_customer_materials",
+  "warranty_policy",
+  "service_partner_confirmation",
+  "spare_parts_price_list",
+  "demo_unit_plan",
+  "test_ride_or_pilot_safety_process",
+  "trademark_or_brand_protection_filing",
+  "data_localization_and_privacy_note"
+];
+const MARKET_ENTRY_REQUIRED_BEFORE_DEALER = [
+  "dealer_interview_notes",
+  "fleet_customer_validation",
+  "dealer_margin_model",
+  "fleet_tco_model",
+  "financing_or_leasing_partner_note",
+  "service_sla_draft",
+  "regional_expansion_assumption_register"
+];
+const MARKET_ENTRY_WATCH_INDICATORS = [
+  "customs rule change",
+  "certification requirement change",
+  "tax or VAT treatment change",
+  "permanent-establishment or tax-residency rule change",
+  "currency-control or profit-repatriation rule change",
+  "foreign-worker quota or local-employment ratio change",
+  "local-content or procurement-localization rule change",
+  "third-party trademark filing or brand-squatting signal",
+  "personal-data localization or privacy rule change",
+  "anti-corruption enforcement or third-party due-diligence expectation change",
+  "bank KYC or account-opening tightening for foreign-owned entities",
+  "lease availability or rent change",
+  "freight rate change",
+  "battery handling or insurance constraint",
+  "supplier price or MOQ change",
+  "partner commitment change",
+  "dealer or fleet demand signal",
+  "service capacity bottleneck",
+  "public announcement risk",
+  "government or regulator signal"
+];
+
+const MARKET_ENTRY_COMMITMENT_STAGES = [
+  "pre_entity_setup",
+  "pre_signature",
+  "pre_import",
+  "pre_certification",
+  "pre_showroom_lease",
+  "pre_first_batch_order",
+  "pre_ad_spend",
+  "pre_dealer_contract",
+  "committee_review"
+];
+
+const MARKET_ENTRY_SECTORS = [
+  "mobility",
+  "renewable_energy",
+  "epc",
+  "infrastructure",
+  "data_center",
+  "technology_transfer",
+  "distribution",
+  "real_estate_or_land",
+  "other"
+];
+const MARKET_ENTRY_DECISION_STAGES = [
+  "concept_review",
+  "pre_entity_setup",
+  "pre_signature",
+  "pre_import",
+  "pre_certification",
+  "pre_showroom_lease",
+  "pre_first_batch_order",
+  "pre_ad_spend",
+  "pre_dealer_contract",
+  "committee_review",
+  "other"
+];
+const MARKET_ENTRY_COUNTERPARTY_ROLES = [
+  "supplier",
+  "distributor",
+  "dealer",
+  "customer",
+  "bank",
+  "law_firm",
+  "customs_broker",
+  "freight_forwarder",
+  "certification_advisor",
+  "realtor",
+  "advertising_agency",
+  "service_partner",
+  "government_stakeholder",
+  "investor",
+  "other"
+];
+const MARKET_ENTRY_SOURCE_TYPES = [
+  ...MARKET_ENTRY_REQUIRED_BEFORE_VALIDATION,
+  ...MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE,
+  ...MARKET_ENTRY_REQUIRED_BEFORE_IMPORT,
+  ...MARKET_ENTRY_REQUIRED_BEFORE_SHOWROOM,
+  ...MARKET_ENTRY_REQUIRED_BEFORE_DEALER,
+  "market_size_source",
+  "competitor_scan",
+  "pricing_benchmark",
+  "customer_interview_notes",
+  "government_or_akimat_note",
+  "local_content_or_procurement_localization_note",
+  "special_economic_zone_eligibility_note",
+  "bankability_note",
+  "sdg_or_sustainability_mapping",
+  "project_timeline",
+  "risk_register",
+  "decision_log",
+  "user_provided_note",
+  "other"
+];
+
+const MARKET_ENTRY_STAGE_TIER = {
+  concept_review: MARKET_ENTRY_REQUIRED_BEFORE_VALIDATION,
+  pre_entity_setup: MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE,
+  pre_signature: MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE,
+  committee_review: MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE,
+  pre_import: MARKET_ENTRY_REQUIRED_BEFORE_IMPORT,
+  pre_certification: MARKET_ENTRY_REQUIRED_BEFORE_IMPORT,
+  pre_first_batch_order: MARKET_ENTRY_REQUIRED_BEFORE_IMPORT,
+  pre_showroom_lease: MARKET_ENTRY_REQUIRED_BEFORE_SHOWROOM,
+  pre_ad_spend: MARKET_ENTRY_REQUIRED_BEFORE_SHOWROOM,
+  pre_dealer_contract: MARKET_ENTRY_REQUIRED_BEFORE_DEALER,
+  other: MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE
+};
+
+const MARKET_ENTRY_EVIDENCE_GAP_DETAILS = {
+  law_firm_opinion: {
+    evidence_needed:
+      "Written recommendation on branch, representative office, LLP, distributor, importer, or dealer structure.",
+    why_it_matters: "The legal form affects sales, import, service, tax, contracting, and liability.",
+    owner: "Kazakhstan legal counsel",
+    next_action: "Request a short legal-structure memo.",
+    decision_blocked: "Signature or entity setup."
+  },
+  counterparty_registry_extract: {
+    evidence_needed: "Current registry extract for the partner and any local counterparty (status, directors, address).",
+    why_it_matters: "A live registry extract confirms the counterparty exists and who can bind it before any contract.",
+    owner: "Legal counsel",
+    next_action: "Pull a fresh registry extract for each named counterparty.",
+    decision_blocked: "Partner appointment and signature."
+  },
+  beneficial_ownership_source: {
+    evidence_needed: "Beneficial-ownership record showing who ultimately owns and controls the counterparty.",
+    why_it_matters: "Ownership drives integrity, sanctions, and conflict exposure; an unknown UBO is an unmanaged risk.",
+    owner: "Compliance / legal counsel",
+    next_action: "Obtain a UBO declaration or registry source for each counterparty.",
+    decision_blocked: "Partner appointment and signature."
+  },
+  counterparty_integrity_due_diligence: {
+    evidence_needed:
+      "Integrity / anti-corruption due diligence on the distributor, agents, and any government-facing " +
+      "intermediaries (ownership, embedded officials, adverse media, sanctions and PEP screening).",
+    why_it_matters:
+      "Under FCPA / UK Bribery Act the foreign parent can be liable for an intermediary's conduct; engaging " +
+      "a partner who touches customs, certification, or akimat without integrity DD is an unmanaged exposure.",
+    owner: "Compliance / legal counsel",
+    next_action: "Run integrity DD before appointing or contracting any local partner or agent.",
+    decision_blocked: "Partner appointment and signature."
+  },
+  bank_account_and_kyc_onboarding: {
+    evidence_needed:
+      "Bank-account opening readiness: full UBO pack (apostilled), source-of-funds and expected-turnover " +
+      "statement, and the presence / timeline the chosen bank requires.",
+    why_it_matters:
+      "Account opening for a foreign-owned entity is document-heavy and slow; until it clears, the entity " +
+      "cannot pay suppliers or receive revenue.",
+    owner: "Finance lead",
+    next_action: "Confirm the bank's KYC checklist and start onboarding in parallel with entity setup.",
+    decision_blocked: "Supplier payment and revenue collection."
+  },
+  business_substance_evidence: {
+    evidence_needed:
+      "Evidence the entry vehicle has real substance (office, staff, local decision-making) appropriate to " +
+      "the chosen model.",
+    why_it_matters: "Thin substance undermines tax treatment, banking onboarding, and counterparty trust.",
+    owner: "Operations lead",
+    next_action: "Document the planned substance for the chosen entry model.",
+    decision_blocked: "Entity model choice and signature."
+  },
+  authority_to_sign_evidence: {
+    evidence_needed: "Evidence that the individual signing for each counterparty has authority to bind it.",
+    why_it_matters: "A contract signed without authority is unenforceable and a fraud vector.",
+    owner: "Legal counsel",
+    next_action: "Collect powers of attorney or board authorizations for the signatories.",
+    decision_blocked: "Signature."
+  },
+  contract_or_term_sheet_draft: {
+    evidence_needed: "Draft contract or term sheet covering scope, pricing, territory, exclusivity, term, and exit.",
+    why_it_matters: "Commercial terms must be on paper before signature so they can be reviewed and negotiated.",
+    owner: "Commercial lead / legal counsel",
+    next_action: "Produce a term sheet or draft contract for review.",
+    decision_blocked: "Signature."
+  },
+  tax_accounting_note: {
+    evidence_needed: "Note on VAT, corporate tax, withholding, and accounting treatment for the chosen entry model.",
+    why_it_matters: "Tax and accounting treatment change the real cost and reporting load of the entry model.",
+    owner: "Tax advisor",
+    next_action: "Request a tax and accounting memo for each candidate entry model.",
+    decision_blocked: "Entity model choice and signature."
+  },
+  permanent_establishment_or_tax_residency_assessment: {
+    evidence_needed:
+      "Assessment of whether the chosen entry model (branch, representative office, LLP, or direct " +
+      "contracting) creates a taxable permanent establishment or resident status.",
+    why_it_matters:
+      "Permanent-establishment and residency treatment drive tax registration, reporting load, and the " +
+      "real cost of the entry model.",
+    owner: "Tax advisor",
+    next_action: "Request a permanent-establishment and tax-residency memo for each candidate entry model.",
+    decision_blocked: "Entity model choice and signature."
+  },
+  currency_control_and_repatriation_note: {
+    evidence_needed:
+      "Note on currency-contract registration thresholds, repatriation reporting, and how supplier payments " +
+      "and profit repatriation will clear local banks.",
+    why_it_matters:
+      "Currency-control registration and repatriation reporting affect how, and how quickly, money can move " +
+      "in and out after commitment.",
+    owner: "Treasury / banking advisor",
+    next_action: "Confirm currency-contract registration and repatriation steps with the servicing bank.",
+    decision_blocked: "Cross-border payment and profit-repatriation planning."
+  },
+  work_permit_and_local_employment_quota_note: {
+    evidence_needed:
+      "Note on work-permit requirements and local-employment ratio / quota obligations for the planned " +
+      "expatriate and local headcount.",
+    why_it_matters: "Foreign-worker quotas and local-employment ratios constrain who can be deployed and when.",
+    owner: "HR / legal counsel",
+    next_action: "Confirm work-permit and local-employment quota requirements for the staffing plan.",
+    decision_blocked: "Staffing and entity operation."
+  }
+};
+
+const MARKET_ENTRY_SUMMARY = {
+  insufficient_information:
+    "Not enough has been supplied to assess Kazakhstan market-entry readiness; the gate cannot return a " +
+    "meaningful decision yet.",
+  concept_ready:
+    "The concept is taking shape, but the validation-tier evidence is incomplete, so the file is not yet " +
+    "ready for controlled validation.",
+  validation_ready:
+    "The concept is coherent enough for controlled validation, but it is not signature-, import-, lease-, " +
+    "or launch-ready until the flagged legal, tax, banking, customs, certification, and operational gaps " +
+    "are closed.",
+  committee_review_ready:
+    "Validation and signature-tier evidence are largely in place; the remaining operational gaps for this " +
+    "stage should go to committee review before the binding commitment.",
+  launch_commitment_ready:
+    "The evidence pack covers the validation, signature, and stage-relevant operational tiers; route to " +
+    "committee for the binding launch-commitment decision with human sign-off."
+};
+
+function marketEntrySuppliedTypes(request) {
+  const types = [];
+  for (const source of Array.isArray(request.supplied_sources) ? request.supplied_sources : []) {
+    if (source && typeof source === "object" && typeof source.source_type === "string") {
+      types.push(source.source_type);
+    }
+  }
+  return Array.from(new Set(types));
+}
+
+function marketEntrySatisfied(request, supplied) {
+  const satisfied = new Set(supplied);
+  if (request.commercial_objective) satisfied.add("commercial_objective");
+  if (request.market && request.decision_question) satisfied.add("kazakhstan_use_case");
+  if (supplied.length) satisfied.add("initial_source_links_or_documents");
+  return satisfied;
+}
+
+function marketEntryReadiness(satisfied, stageTier) {
+  const coreValidation = [
+    "partner_company_profile",
+    "product_or_project_description",
+    "initial_source_links_or_documents",
+    "commercial_objective"
+  ];
+  const corePresent = coreValidation.filter((s) => satisfied.has(s)).length;
+  const validationMissing = MARKET_ENTRY_REQUIRED_BEFORE_VALIDATION.filter((s) => !satisfied.has(s));
+  const signatureMissing = MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE.filter((s) => !satisfied.has(s));
+  const operationalMissing = stageTier.filter((s) => !satisfied.has(s));
+  if (corePresent === 0) return "insufficient_information";
+  if (validationMissing.length) return "concept_ready";
+  if (signatureMissing.length) return "validation_ready";
+  if (operationalMissing.length) return "committee_review_ready";
+  return "launch_commitment_ready";
+}
+
+function marketEntryGateDecision(readiness, stage) {
+  if (readiness === "insufficient_information") {
+    return MARKET_ENTRY_COMMITMENT_STAGES.includes(stage) ? "stop" : "not_decision_ready";
+  }
+  if (readiness === "concept_ready") return "pause_for_evidence";
+  if (readiness === "validation_ready") return "proceed_to_validation";
+  return "escalate_before_signature";
+}
+
+function marketEntryEvidenceGap(sourceType) {
+  const detail = MARKET_ENTRY_EVIDENCE_GAP_DETAILS[sourceType];
+  const label = sourceType.replace(/_/g, " ");
+  if (!detail) {
+    return {
+      source_type: sourceType,
+      evidence_needed: `Supply the ${label} for this market-entry file.`,
+      why_it_matters: `The ${label} is a required gate input that is not yet in the evidence pack.`,
+      owner: "Project lead",
+      next_action: `Request or produce the ${label}.`,
+      decision_blocked: "Progression to the next market-entry commitment."
+    };
+  }
+  return { source_type: sourceType, ...detail };
+}
+
+function marketEntryReadinessResult(request) {
+  const stage = request.decision_stage;
+  const stageTier = MARKET_ENTRY_STAGE_TIER[stage] || MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE;
+  const supplied = marketEntrySuppliedTypes(request);
+  const satisfied = marketEntrySatisfied(request, supplied);
+  const readinessLabel = marketEntryReadiness(satisfied, stageTier);
+  const gateDecision = marketEntryGateDecision(readinessLabel, stage);
+
+  const gapSourceTypes = [];
+  for (const tier of [MARKET_ENTRY_REQUIRED_BEFORE_VALIDATION, MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE, stageTier]) {
+    for (const sourceType of tier) {
+      if (!satisfied.has(sourceType) && !gapSourceTypes.includes(sourceType)) gapSourceTypes.push(sourceType);
+    }
+  }
+  const evidenceGaps = gapSourceTypes.map(marketEntryEvidenceGap);
+
+  const confirmedFacts = [];
+  if (satisfied.has("partner_company_profile")) confirmedFacts.push("A partner or company profile was supplied.");
+  if (satisfied.has("product_or_project_description")) {
+    confirmedFacts.push("A product or project description was supplied.");
+  }
+  confirmedFacts.push(`The decision is at ${stage.replace(/_/g, " ")} stage.`);
+  if (Array.isArray(request.known_blockers) && request.known_blockers.length) {
+    confirmedFacts.push("The caller has already named open blockers on the file.");
+  }
+
+  let assumptions = Array.isArray(request.known_assumptions) ? request.known_assumptions.slice() : [];
+  if (!assumptions.length) {
+    assumptions = [
+      "Public cost benchmarks are not signed quotes.",
+      "Supplier prices are not Kazakhstan landed costs.",
+      "The final commercial structure depends on local legal, tax, customs, and operational review."
+    ];
+  }
+
+  const readyToValidate = ["validation_ready", "committee_review_ready", "launch_commitment_ready"].includes(
+    readinessLabel
+  );
+  const readyToCommit = readinessLabel === "launch_commitment_ready";
+  const claimAudit = [
+    {
+      claim: "The project can move into controlled validation.",
+      status: readyToValidate ? "supported" : "needs_professional_confirmation",
+      how_to_use_now: readyToValidate
+        ? "Use for advisor requests, quotes, and structured partner or customer interviews."
+        : "Do not rely on this yet; close the validation-tier evidence first."
+    },
+    {
+      claim: "The project is ready for launch commitment.",
+      status: readyToCommit ? "supported" : "unsupported",
+      how_to_use_now: readyToCommit
+        ? "Route to committee for the binding decision with human sign-off."
+        : "Do not use. Replace with the current readiness label until the evidence gaps are closed."
+    }
+  ];
+
+  const ownerActions = [
+    {
+      timeframe: "48_hours",
+      owner: "Project lead",
+      action: "Send the missing-evidence request to the partner and named advisors.",
+      output: "Evidence-request pack and missing-document checklist."
+    },
+    {
+      timeframe: "7_days",
+      owner: "Project lead",
+      action: "Collect the legal, tax, banking, customs, certification, and operational inputs the gate flagged.",
+      output: "Gate evidence pack."
+    },
+    {
+      timeframe: "30_days",
+      owner: "Project lead",
+      action: "Convert the validation evidence into a committee-ready entry decision memo.",
+      output: "Committee-ready gate memo."
+    }
+  ];
+
+  const response = {
+    gate_decision: gateDecision,
+    readiness_label: readinessLabel,
+    human_review_required: true,
+    summary: MARKET_ENTRY_SUMMARY[readinessLabel],
+    confirmed_facts: confirmedFacts,
+    assumptions,
+    evidence_gaps: evidenceGaps,
+    claim_audit: claimAudit,
+    owner_actions: ownerActions,
+    watch_next: MARKET_ENTRY_WATCH_INDICATORS.slice(),
+    boundary_notice: MARKET_ENTRY_BOUNDARY_NOTICE
+  };
+  if (readinessLabel !== "insufficient_information") {
+    response.strongest_reason_to_proceed =
+      "The Kazakhstan use case and commercial objective are specific enough to start advisor requests, " +
+      "quote collection, and partner validation.";
+  }
+  if (evidenceGaps.length) {
+    response.strongest_reason_to_pause =
+      "The current evidence pack is not sufficient for signature, import, lease, first-batch order, " +
+      "advertising spend, or partner appointment.";
+    response.management_note =
+      "The opportunity can move at the level of its readiness label, but should not move to launch " +
+      "commitment until the flagged legal, customs, certification, landed-cost, service, lease, and " +
+      "partner evidence gaps are closed.";
+  }
+  return { response };
+}
+
+function marketEntryArtifactText(response) {
+  const gaps = response.evidence_gaps || [];
+  const gapsText = gaps.length ? gaps.map((g) => `- ${g.source_type}: ${g.next_action}`).join("\n") : "- none";
+  return [
+    "Kazakhstan market-entry readiness gate response",
+    "",
+    `Gate decision: ${response.gate_decision}`,
+    `Readiness label: ${response.readiness_label}`,
+    `Human review required: ${String(response.human_review_required)}`,
+    "",
+    response.summary,
+    "",
+    "Evidence gaps:",
+    gapsText,
+    "",
+    response.boundary_notice
+  ].join("\n");
+}
+
+function marketEntryEnumErrors(r) {
+  const errors = [];
+  offEnum("sector", r.sector, MARKET_ENTRY_SECTORS, errors);
+  offEnum("decision_stage", r.decision_stage, MARKET_ENTRY_DECISION_STAGES, errors);
+  offEnum("requested_output", r.requested_output, REQUESTED_OUTPUTS, errors);
+  for (const cp of Array.isArray(r.counterparties) ? r.counterparties : []) {
+    if (cp && typeof cp === "object") offEnum("counterparties[].role", cp.role, MARKET_ENTRY_COUNTERPARTY_ROLES, errors);
+  }
+  for (const s of Array.isArray(r.supplied_sources) ? r.supplied_sources : []) {
+    if (s && typeof s === "object") offEnum("supplied_sources[].source_type", s.source_type, MARKET_ENTRY_SOURCE_TYPES, errors);
+  }
+  return errors;
+}
+
+function isMarketEntryReadinessRequest(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    typeof value.project_name === "string" &&
+    typeof value.partner_or_company === "string" &&
+    typeof value.market === "string" &&
+    typeof value.decision_question === "string" &&
+    typeof value.decision_stage === "string" &&
+    Array.isArray(value.supplied_sources)
+  );
+}
+
+function structuredMarketEntryReadinessRequestFromParams(params) {
+  if (!params || typeof params !== "object") return null;
+  const candidates = [
+    params.request,
+    params.market_entry_request,
+    params.market_entry_readiness_request,
+    params.input,
+    params
+  ];
+  const message = params.message;
+  if (message && typeof message === "object") {
+    if (message.data && typeof message.data === "object") candidates.push(message.data);
+    if (Array.isArray(message.parts)) {
+      for (const part of message.parts) {
+        if (!part || typeof part !== "object") continue;
+        candidates.push(part.data, part.json, part.content);
+        const parsed = tryParseJsonObject(part.text);
+        if (parsed) candidates.push(parsed);
+      }
+    }
+  }
+  for (const candidate of candidates) {
+    if (isMarketEntryReadinessRequest(candidate)) return candidate;
+    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
+    if (parsed && isMarketEntryReadinessRequest(parsed)) return parsed;
+  }
+  return null;
+}
+
+function a2aResultForMarketEntryReadiness(params) {
+  const structured = structuredMarketEntryReadinessRequestFromParams(params);
+  if (!structured) {
+    return invalidRequestResult(
+      "kazakhstan_market_entry_readiness",
+      "/v1/market-entry/readiness",
+      "schemas/v1/market-entry-readiness-request.schema.json",
+      ["Missing structured Kazakhstan market-entry readiness request"]
+    );
+  }
+  const enumErrors = marketEntryEnumErrors(structured);
+  if (enumErrors.length) {
+    return invalidRequestResult(
+      "kazakhstan_market_entry_readiness",
+      "/v1/market-entry/readiness",
+      "schemas/v1/market-entry-readiness-request.schema.json",
+      enumErrors
+    );
+  }
+  const result = marketEntryReadinessResult(structured);
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "market-entry-readiness-response",
+        name: "Kazakhstan market-entry readiness response",
+        parts: [
+          { text: marketEntryArtifactText(result.response), mediaType: "text/markdown" },
+          { data: result.response, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "kazakhstan_market_entry_readiness",
+      canonical_http_endpoint: "/v1/market-entry/readiness",
+      schema: "schemas/v1/market-entry-readiness-request.schema.json",
+      human_review_required: result.response.human_review_required,
+      not_advice_notice: result.response.boundary_notice,
+      response: result.response
+    }
+  };
+}
+
+function applyMarketEntryReadinessProfile(card, request) {
+  const origin = originFromRequest(request);
+  card.name = "Kazakhstan Market-Entry Readiness Gate";
+  card.documentationUrl = MARKET_ENTRY_DOCS_URL;
+  card.description =
+    "A2A-compatible evidence-readiness gate for a Kazakhstan market-entry file (distribution, import, service, " +
+    "showroom, EPC, renewable-energy, infrastructure, technology-transfer, or partner-entry). Bring company, " +
+    "project, Kazakhstan objective, counterparties, and supplied sources; get a gate decision, readiness label, " +
+    "evidence gaps, claim audit, owner actions, watch-next indicators, and mandatory human-review routing. No live " +
+    "retrieval; not legal, compliance, customs, tax, sanctions, or launch-authorization advice.";
+  card.provider.legalEntity.sameAs = [
+    "https://github.com/vassiliylakhonin",
+    "https://pypi.org/project/agenda-intelligence-md/",
+    "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
+  ];
+  card.skills = [
+    {
+      id: "kazakhstan-market-entry-readiness",
+      name: "Kazakhstan market-entry readiness gate",
+      description:
+        "Turns a company, project, Kazakhstan objective, counterparties, and supplied sources into a structured " +
+        "market-entry readiness triage with a gate decision, readiness label, evidence gaps, claim audit, owner " +
+        "actions, watch-next indicators, and mandatory human-review routing.",
+      tags: ["kazakhstan", "market-entry", "go-to-market", "due-diligence", "evidence-readiness", "human-review", "free"],
+      examples: [
+        "Can this Kazakhstan distribution file move from concept to controlled validation?",
+        "What must be closed before we sign the dealer contract in Kazakhstan?"
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    }
+  ];
+  card.x_agenda_intelligence.product_profile = "kazakhstan_market_entry_readiness";
+  card.x_agenda_intelligence.canonical_product_name = "Kazakhstan Market-Entry Readiness Gate";
+  card.x_agenda_intelligence.wrapper_scope =
+    "A2A/JSON-RPC discovery, market-entry evidence triage, gate decision, and routing response only";
+  card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
+  card.x_agenda_intelligence.documentation = MARKET_ENTRY_DOCS_URL;
+  card.x_agenda_intelligence.product_contract = {
+    request_schema: MARKET_ENTRY_REQUEST_SCHEMA_URL,
+    response_schema: MARKET_ENTRY_RESPONSE_SCHEMA_URL,
+    source_taxonomy: MARKET_ENTRY_SOURCE_TAXONOMY_URL,
+    runnable_examples: `${REPOSITORY_URL}/tree/main/examples/kazakhstan-market-entry-readiness`,
+    canonical_input_mode: CANONICAL_INPUT_MODE,
+    demo_input_modes: ["structured_json"]
+  };
+  card.x_agenda_intelligence.required_before_validation = MARKET_ENTRY_REQUIRED_BEFORE_VALIDATION;
+  card.x_agenda_intelligence.required_before_signature = MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE;
+  card.x_agenda_intelligence.supported_contracts = ["kazakhstan_market_entry_readiness_contract"];
+  card.x_agenda_intelligence.buyer_use_cases = [
+    "foreign company assessing a Kazakhstan distribution / import entry before signature",
+    "EPC, renewable-energy, or infrastructure entrant gating committee review",
+    "advisor or consultant triaging a client's Kazakhstan market-entry file",
+    "partner-entry / technology-transfer readiness before commitment"
+  ];
+  card.x_agenda_intelligence.commercial_positioning =
+    "Company + project + Kazakhstan objective + counterparties + supplied sources -> auditable market-entry triage " +
+    "with a gate decision, readiness label, evidence gaps, owner actions, and human-review escalation. Sits beside " +
+    "legal, tax, and customs advisors, not instead of them.";
+  card.x_agenda_intelligence.boundaries = [
+    "No live source retrieval; caller-supplied evidence only.",
+    "No factual-truth verification.",
+    "No legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice.",
+    "Human review is required before any commercial action."
+  ];
+  return card;
 }
 
 async function matchAgainstActiveUpstream(env, counterparty) {
@@ -3740,6 +4412,11 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
       const structured = structuredGulfMaritimeRequestFromParams(params);
       promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
       modulesUsed = ["gulf_maritime_exposure"];
+    } else if (profile === "market_entry_readiness") {
+      result = a2aResultForMarketEntryReadiness(params);
+      const structured = structuredMarketEntryReadinessRequestFromParams(params);
+      promptChars = structured && structured.decision_question ? structured.decision_question.length : 0;
+      modulesUsed = ["market_entry_readiness"];
     } else {
       result = a2aResult(params, request, env);
       const structuredRequest = structuredDealRiskRequestFromParams(params);
