@@ -181,3 +181,41 @@ def test_manifest_validates_against_packaged_schema():
     manifest = load_json(ROOT / "agent-manifest.json")
     schema = load_json(ROOT / "schemas" / "v1" / "agent-manifest.schema.json")
     validate(manifest, schema)
+
+
+# Cold-start onboarding invariant: an agent given only agent-manifest.json must
+# be able to follow every reference it advertises without extra context. ADR
+# 0012/0013 already lock the MCP tool surface and schemas[*].path existence;
+# these two tests close the remaining references an integrator would resolve:
+# the path-like doc/script pointers, and the by-name product schema refs.
+def test_manifest_path_references_exist():
+    """Every doc/script path the manifest advertises must resolve on disk, so a
+    cold integrator following the manifest never hits a dead pointer.
+    """
+    manifest = load_json(ROOT / "agent-manifest.json")
+
+    path_refs = {}
+    for field in ("entrypoint", "adoption", "llms", "eval"):
+        value = manifest.get(field)
+        if isinstance(value, str):
+            path_refs[field] = value
+    for i, proto in enumerate(manifest.get("protocols", [])):
+        path_refs[f"protocols[{i}]"] = proto
+
+    missing = {ref: p for ref, p in path_refs.items() if not (ROOT / p).is_file()}
+    assert not missing, f"manifest advertises path(s) that do not exist: {missing}"
+
+
+def test_manifest_product_schema_refs_resolve():
+    """product.request_schema / response_schema name keys that must exist in the
+    manifest.schemas registry, so an agent can resolve the analyze contract.
+    """
+    manifest = load_json(ROOT / "agent-manifest.json")
+    schema_keys = set(manifest.get("schemas", {}))
+    product = manifest.get("product", {})
+
+    for field in ("request_schema", "response_schema"):
+        ref = product.get(field)
+        assert ref in schema_keys, (
+            f"product.{field}={ref!r} is not a key in manifest.schemas " f"(known: {sorted(schema_keys)})"
+        )
