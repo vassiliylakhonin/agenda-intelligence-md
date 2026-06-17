@@ -2073,3 +2073,81 @@ test("market-entry message/send rejects a non-market-entry request shape", async
   assert.equal(response.result.status.state, "TASK_STATE_FAILED");
   assert.equal(response.result.metadata.valid, false);
 });
+
+function marketEntrySectorProbe(sector, overrides = {}) {
+  return {
+    project_name: "Sector probe",
+    partner_or_company: "EU entrant",
+    market: "Kazakhstan",
+    sector,
+    decision_question: "Ready for the next gate?",
+    decision_stage: "pre_signature",
+    supplied_sources: [
+      { id: "s1", source_type: "product_or_project_description", title: "x", date: "2026-06-17" }
+    ],
+    ...overrides
+  };
+}
+
+test("market-entry sector requirements differentiate evidence gaps (Python parity)", async () => {
+  const renewable = (await marketEntryResponseFor(marketEntrySectorProbe("renewable_energy"))).result.metadata.response;
+  const tech = (await marketEntryResponseFor(marketEntrySectorProbe("technology_transfer"))).result.metadata.response;
+  const distribution = (await marketEntryResponseFor(marketEntrySectorProbe("distribution"))).result.metadata.response;
+  const types = (r) => new Set(r.evidence_gaps.map((g) => g.source_type));
+
+  assert.ok(types(renewable).has("grid_connection_and_offtake_evidence"));
+  assert.ok(types(renewable).has("land_or_site_control_evidence"));
+  assert.equal(types(distribution).has("grid_connection_and_offtake_evidence"), false);
+  assert.ok(types(tech).has("ip_ownership_and_licensing_evidence"));
+  assert.ok(types(tech).has("export_control_classification_note"));
+  assert.ok(types(distribution).has("customs_broker_memo"));
+});
+
+test("market-entry watch_next is sector-tailored, not a static dump (Python parity)", async () => {
+  const renewable = (await marketEntryResponseFor(marketEntrySectorProbe("renewable_energy"))).result.metadata.response;
+  const tech = (await marketEntryResponseFor(marketEntrySectorProbe("technology_transfer"))).result.metadata.response;
+  assert.ok(renewable.watch_next.includes("auction or PPA tariff change"));
+  assert.ok(tech.watch_next.includes("export-control or dual-use classification change"));
+  assert.notDeepEqual(renewable.watch_next, tech.watch_next);
+  assert.ok(renewable.watch_next.includes("government or regulator signal"));
+  assert.ok(renewable.watch_next.length < 20);
+});
+
+test("market-entry claim_audit reflects caller blockers and assumptions (Python parity)", async () => {
+  const req = marketEntrySectorProbe("distribution", {
+    known_blockers: ["No law-firm opinion supplied.", "No customs-broker memo."],
+    known_assumptions: ["Public benchmarks are not signed quotes."]
+  });
+  const resp = (await marketEntryResponseFor(req)).result.metadata.response;
+  const blocker = resp.claim_audit.find((c) => c.claim.includes("blockers"));
+  assert.equal(blocker.status, "unsupported");
+  assert.ok(blocker.how_to_use_now.includes("2 open blocker"));
+  const assumption = resp.claim_audit.find((c) => c.claim.includes("decision-grade"));
+  assert.equal(assumption.status, "assumption_only");
+});
+
+test("market-entry sector evidence caps launch_commitment (Python parity)", async () => {
+  const fullPack = [
+    "partner_company_profile",
+    "product_or_project_description",
+    "commercial_objective",
+    "kazakhstan_use_case",
+    "initial_source_links_or_documents",
+    "law_firm_opinion",
+    "counterparty_registry_extract",
+    "beneficial_ownership_source",
+    "counterparty_integrity_due_diligence",
+    "bank_account_and_kyc_onboarding",
+    "business_substance_evidence",
+    "authority_to_sign_evidence",
+    "contract_or_term_sheet_draft",
+    "tax_accounting_note",
+    "permanent_establishment_or_tax_residency_assessment",
+    "currency_control_and_repatriation_note",
+    "work_permit_and_local_employment_quota_note"
+  ].map((t, i) => ({ id: `s${i}`, source_type: t, title: t, date: "2026-06-17" }));
+  const req = marketEntrySectorProbe("renewable_energy", { supplied_sources: fullPack });
+  const resp = (await marketEntryResponseFor(req)).result.metadata.response;
+  assert.equal(resp.readiness_label, "committee_review_ready");
+  assert.ok(resp.evidence_gaps.some((g) => g.source_type === "grid_connection_and_offtake_evidence"));
+});

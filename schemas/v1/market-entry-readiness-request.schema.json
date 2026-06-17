@@ -238,6 +238,10 @@
         "project_timeline",
         "risk_register",
         "decision_log",
+        "grid_connection_and_offtake_evidence",
+        "land_or_site_control_evidence",
+        "ip_ownership_and_licensing_evidence",
+        "export_control_classification_note",
         "user_provided_note",
         "other"
       ]

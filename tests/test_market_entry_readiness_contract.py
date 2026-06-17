@@ -110,6 +110,25 @@ def test_integrity_and_banking_types_present_in_enum_and_taxonomy():
     assert INTEGRITY_AND_BANKING_TYPES <= referenced, "integrity / banking types not mapped in source taxonomy"
 
 
+def test_sector_requirement_types_are_in_request_enum():
+    """sector_requirements / tier_watch are dict-valued so the subset test above
+    skips them; guard their source-type values against the request enum here."""
+    taxonomy = load_json(TAXONOMY_PATH)
+    enum = request_enum()
+    referenced = {item for reqs in taxonomy.get("sector_requirements", {}).values() for item in reqs}
+    missing = referenced - enum
+    assert not missing, f"sector-requirement types absent from request enum: {sorted(missing)}"
+
+
+def test_sector_requirements_cover_every_sector_enum_value():
+    """Every sector the request schema accepts must have a (possibly empty)
+    requirement list, so no advertised sector silently falls back to generic."""
+    request_schema = load_json(REQUEST_SCHEMA_PATH)
+    sectors = set(request_schema["properties"]["sector"]["enum"])
+    mapped = set(load_json(TAXONOMY_PATH).get("sector_requirements", {}))
+    assert sectors <= mapped, f"sectors without a requirement list: {sorted(sectors - mapped)}"
+
+
 def test_dual_copy_in_sync():
     pairs = [
         (REQUEST_SCHEMA_PATH, DATA_DIR / "schemas" / "v1" / "market-entry-readiness-request.schema.json"),

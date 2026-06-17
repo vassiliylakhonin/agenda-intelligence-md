@@ -2257,6 +2257,10 @@ const MARKET_ENTRY_SOURCE_TYPES = [
   "project_timeline",
   "risk_register",
   "decision_log",
+  "grid_connection_and_offtake_evidence",
+  "land_or_site_control_evidence",
+  "ip_ownership_and_licensing_evidence",
+  "export_control_classification_note",
   "user_provided_note",
   "other"
 ];
@@ -2273,6 +2277,107 @@ const MARKET_ENTRY_STAGE_TIER = {
   pre_ad_spend: MARKET_ENTRY_REQUIRED_BEFORE_SHOWROOM,
   pre_dealer_contract: MARKET_ENTRY_REQUIRED_BEFORE_DEALER,
   other: MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE
+};
+
+// JS parity of taxonomy.tier_watch_indicators / sector_* maps. Keyed by the same
+// taxonomy tier-key strings as the Python service so watch_next output matches.
+const MARKET_ENTRY_TIER_BY_KEY = {
+  required_before_validation: MARKET_ENTRY_REQUIRED_BEFORE_VALIDATION,
+  required_before_signature: MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE,
+  required_before_import_or_first_batch: MARKET_ENTRY_REQUIRED_BEFORE_IMPORT,
+  required_before_showroom_or_public_launch: MARKET_ENTRY_REQUIRED_BEFORE_SHOWROOM,
+  required_before_dealer_or_fleet_expansion: MARKET_ENTRY_REQUIRED_BEFORE_DEALER
+};
+const MARKET_ENTRY_STAGE_TIER_KEY = {
+  concept_review: "required_before_validation",
+  pre_entity_setup: "required_before_signature",
+  pre_signature: "required_before_signature",
+  committee_review: "required_before_signature",
+  pre_import: "required_before_import_or_first_batch",
+  pre_certification: "required_before_import_or_first_batch",
+  pre_first_batch_order: "required_before_import_or_first_batch",
+  pre_showroom_lease: "required_before_showroom_or_public_launch",
+  pre_ad_spend: "required_before_showroom_or_public_launch",
+  pre_dealer_contract: "required_before_dealer_or_fleet_expansion",
+  other: "required_before_signature"
+};
+
+// Sector-specific required evidence beyond the universal validation/signature
+// tiers. Folded into the launch-commitment ceiling and the gap list so the
+// advertised sector breadth is real, not cosmetic.
+const MARKET_ENTRY_SECTOR_REQUIREMENTS = {
+  mobility: ["certification_pathway", "service_partner_confirmation", "spare_parts_price_list"],
+  renewable_energy: [
+    "grid_connection_and_offtake_evidence",
+    "land_or_site_control_evidence",
+    "bankability_note",
+    "local_content_or_procurement_localization_note"
+  ],
+  epc: [
+    "land_or_site_control_evidence",
+    "local_content_or_procurement_localization_note",
+    "project_timeline",
+    "risk_register"
+  ],
+  infrastructure: [
+    "land_or_site_control_evidence",
+    "local_content_or_procurement_localization_note",
+    "government_or_akimat_note",
+    "project_timeline"
+  ],
+  data_center: [
+    "grid_connection_and_offtake_evidence",
+    "land_or_site_control_evidence",
+    "data_localization_and_privacy_note",
+    "special_economic_zone_eligibility_note"
+  ],
+  technology_transfer: [
+    "ip_ownership_and_licensing_evidence",
+    "export_control_classification_note",
+    "trademark_or_brand_protection_filing"
+  ],
+  distribution: ["customs_broker_memo", "certification_pathway", "landed_cost_model"],
+  real_estate_or_land: ["land_or_site_control_evidence", "government_or_akimat_note"],
+  other: []
+};
+const MARKET_ENTRY_SECTOR_WATCH = {
+  mobility: ["certification requirement change", "battery handling or insurance constraint", "service capacity bottleneck"],
+  renewable_energy: [
+    "auction or PPA tariff change",
+    "grid-connection queue or curtailment change",
+    "bankability or lender-appetite change"
+  ],
+  epc: [
+    "public-procurement or tender-term change",
+    "cost-escalation or FX exposure change",
+    "local-content or procurement-localization rule change"
+  ],
+  infrastructure: ["concession or PPP framework change", "local-content or procurement-localization rule change"],
+  data_center: [
+    "power availability or tariff change",
+    "personal-data localization or privacy rule change",
+    "special-economic-zone eligibility change"
+  ],
+  technology_transfer: [
+    "export-control or dual-use classification change",
+    "IP registration or enforcement change",
+    "third-party trademark filing or brand-squatting signal"
+  ],
+  distribution: ["customs rule change", "certification requirement change", "supplier price or MOQ change"],
+  real_estate_or_land: ["land-use or zoning rule change", "lease availability or rent change"],
+  other: []
+};
+const MARKET_ENTRY_TIER_WATCH = {
+  required_before_validation: ["partner commitment change"],
+  required_before_signature: [
+    "bank KYC or account-opening tightening for foreign-owned entities",
+    "tax or VAT treatment change",
+    "currency-control or profit-repatriation rule change",
+    "anti-corruption enforcement or third-party due-diligence expectation change"
+  ],
+  required_before_import_or_first_batch: ["customs rule change", "freight rate change", "supplier price or MOQ change"],
+  required_before_showroom_or_public_launch: ["lease availability or rent change", "service capacity bottleneck"],
+  required_before_dealer_or_fleet_expansion: ["dealer or fleet demand signal"]
 };
 
 const MARKET_ENTRY_EVIDENCE_GAP_DETAILS = {
@@ -2380,6 +2485,48 @@ const MARKET_ENTRY_EVIDENCE_GAP_DETAILS = {
     owner: "HR / legal counsel",
     next_action: "Confirm work-permit and local-employment quota requirements for the staffing plan.",
     decision_blocked: "Staffing and entity operation."
+  },
+  grid_connection_and_offtake_evidence: {
+    evidence_needed:
+      "Grid-connection study or technical conditions plus the offtake or power-purchase basis (PPA term " +
+      "sheet, settlement route, or anchor-customer load commitment).",
+    why_it_matters:
+      "Without a connection path and a buyer for the output, the project's revenue and bankability are " +
+      "unproven and any commitment is premature.",
+    owner: "Project / technical lead",
+    next_action: "Obtain the grid-connection conditions and the offtake or PPA basis before any binding step.",
+    decision_blocked: "Investment commitment and signature."
+  },
+  land_or_site_control_evidence: {
+    evidence_needed:
+      "Evidence of site control: land lease, allocation decision, or ownership for the project footprint, " +
+      "with zoning / land-use suitability.",
+    why_it_matters: "A project without secured, correctly-zoned land cannot be built, financed, or committed to.",
+    owner: "Project lead / legal counsel",
+    next_action: "Secure and document land or site control with a zoning suitability check.",
+    decision_blocked: "Investment commitment and signature."
+  },
+  ip_ownership_and_licensing_evidence: {
+    evidence_needed:
+      "Evidence of who owns the transferred technology and on what licensing terms, with freedom-to-operate " +
+      "and any third-party or background-IP constraints.",
+    why_it_matters:
+      "Transferring or licensing technology without clear ownership and freedom to operate exposes both " +
+      "sides to infringement and enforceability disputes.",
+    owner: "IP counsel",
+    next_action: "Confirm IP ownership, licensing scope, and freedom to operate before the transfer agreement.",
+    decision_blocked: "Technology-transfer signature."
+  },
+  export_control_classification_note: {
+    evidence_needed:
+      "Classification of the technology against applicable export-control / dual-use regimes and whether a " +
+      "license or authorization is required to transfer it to Kazakhstan.",
+    why_it_matters:
+      "Transferring controlled or dual-use technology without classification can breach export-control law " +
+      "in the origin jurisdiction regardless of Kazakhstan-side approvals.",
+    owner: "Export-control / trade counsel",
+    next_action: "Classify the technology and confirm whether an export license is required before transfer.",
+    decision_blocked: "Technology-transfer signature."
   }
 };
 
@@ -2420,7 +2567,7 @@ function marketEntrySatisfied(request, supplied) {
   return satisfied;
 }
 
-function marketEntryReadiness(satisfied, stageTier) {
+function marketEntryReadiness(satisfied, stageTier, sectorMissing) {
   const coreValidation = [
     "partner_company_profile",
     "product_or_project_description",
@@ -2434,8 +2581,30 @@ function marketEntryReadiness(satisfied, stageTier) {
   if (corePresent === 0) return "insufficient_information";
   if (validationMissing.length) return "concept_ready";
   if (signatureMissing.length) return "validation_ready";
-  if (operationalMissing.length) return "committee_review_ready";
+  if (operationalMissing.length || (sectorMissing && sectorMissing.length)) return "committee_review_ready";
   return "launch_commitment_ready";
+}
+
+// JS parity of services._market_entry_watch_next: sector indicators + the
+// indicators for tiers that still have gaps + one always-on regulator signal,
+// de-duplicated in insertion order. Replaces the prior static 20-item dump.
+function marketEntryWatchNext(sector, stageTierKey, satisfied) {
+  const out = [];
+  const add = (item) => {
+    if (item && !out.includes(item)) out.push(item);
+  };
+  for (const item of MARKET_ENTRY_SECTOR_WATCH[sector] || []) add(item);
+  const openTierKeys = [];
+  for (const tierKey of ["required_before_validation", "required_before_signature", stageTierKey]) {
+    if (openTierKeys.includes(tierKey)) continue;
+    const tier = MARKET_ENTRY_TIER_BY_KEY[tierKey] || [];
+    if (tier.some((s) => !satisfied.has(s))) openTierKeys.push(tierKey);
+  }
+  for (const tierKey of openTierKeys) {
+    for (const item of MARKET_ENTRY_TIER_WATCH[tierKey] || []) add(item);
+  }
+  add("government or regulator signal");
+  return out;
 }
 
 function marketEntryGateDecision(readiness, stage) {
@@ -2465,10 +2634,14 @@ function marketEntryEvidenceGap(sourceType) {
 
 function marketEntryReadinessResult(request) {
   const stage = request.decision_stage;
+  const sector = request.sector;
   const stageTier = MARKET_ENTRY_STAGE_TIER[stage] || MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE;
+  const stageTierKey = MARKET_ENTRY_STAGE_TIER_KEY[stage] || "required_before_signature";
   const supplied = marketEntrySuppliedTypes(request);
   const satisfied = marketEntrySatisfied(request, supplied);
-  const readinessLabel = marketEntryReadiness(satisfied, stageTier);
+  const sectorRequired = MARKET_ENTRY_SECTOR_REQUIREMENTS[sector] || [];
+  const sectorMissing = sectorRequired.filter((s) => !satisfied.has(s));
+  const readinessLabel = marketEntryReadiness(satisfied, stageTier, sectorMissing);
   const gateDecision = marketEntryGateDecision(readinessLabel, stage);
 
   const gapSourceTypes = [];
@@ -2476,6 +2649,9 @@ function marketEntryReadinessResult(request) {
     for (const sourceType of tier) {
       if (!satisfied.has(sourceType) && !gapSourceTypes.includes(sourceType)) gapSourceTypes.push(sourceType);
     }
+  }
+  for (const sourceType of sectorMissing) {
+    if (!gapSourceTypes.includes(sourceType)) gapSourceTypes.push(sourceType);
   }
   const evidenceGaps = gapSourceTypes.map(marketEntryEvidenceGap);
 
@@ -2518,6 +2694,25 @@ function marketEntryReadinessResult(request) {
         : "Do not use. Replace with the current readiness label until the evidence gaps are closed."
     }
   ];
+  const blockers = Array.isArray(request.known_blockers) ? request.known_blockers : [];
+  if (blockers.length) {
+    claimAudit.push({
+      claim: "The blockers the caller named on this file are resolved.",
+      status: "unsupported",
+      how_to_use_now:
+        `Do not treat as resolved: the caller listed ${blockers.length} open blocker(s) ` +
+        `(e.g. "${blockers[0]}"). Close each one and re-run the gate.`
+    });
+  }
+  if (Array.isArray(request.known_assumptions) && request.known_assumptions.length) {
+    claimAudit.push({
+      claim: "The caller-supplied cost, price, and structure assumptions are decision-grade.",
+      status: "assumption_only",
+      how_to_use_now:
+        "Treat the caller's assumptions as planning inputs only; confirm with signed quotes, " +
+        "landed-cost models, and local legal / tax review before any commitment."
+    });
+  }
 
   const ownerActions = [
     {
@@ -2550,7 +2745,7 @@ function marketEntryReadinessResult(request) {
     evidence_gaps: evidenceGaps,
     claim_audit: claimAudit,
     owner_actions: ownerActions,
-    watch_next: MARKET_ENTRY_WATCH_INDICATORS.slice(),
+    watch_next: marketEntryWatchNext(sector, stageTierKey, satisfied),
     boundary_notice: MARKET_ENTRY_BOUNDARY_NOTICE
   };
   if (readinessLabel !== "insufficient_information") {

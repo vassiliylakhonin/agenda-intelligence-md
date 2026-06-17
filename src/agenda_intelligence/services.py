@@ -1860,6 +1860,41 @@ MARKET_ENTRY_EVIDENCE_GAP_DETAILS: dict[str, tuple[str, str, str, str, str]] = {
         "Confirm work-permit and local-employment quota requirements for the staffing plan.",
         "Staffing and entity operation.",
     ),
+    "grid_connection_and_offtake_evidence": (
+        "Grid-connection study or technical conditions plus the offtake or power-purchase basis (PPA term "
+        "sheet, settlement route, or anchor-customer load commitment).",
+        "Without a connection path and a buyer for the output, the project's revenue and bankability are "
+        "unproven and any commitment is premature.",
+        "Project / technical lead",
+        "Obtain the grid-connection conditions and the offtake or PPA basis before any binding step.",
+        "Investment commitment and signature.",
+    ),
+    "land_or_site_control_evidence": (
+        "Evidence of site control: land lease, allocation decision, or ownership for the project footprint, "
+        "with zoning / land-use suitability.",
+        "A project without secured, correctly-zoned land cannot be built, financed, or committed to.",
+        "Project lead / legal counsel",
+        "Secure and document land or site control with a zoning suitability check.",
+        "Investment commitment and signature.",
+    ),
+    "ip_ownership_and_licensing_evidence": (
+        "Evidence of who owns the transferred technology and on what licensing terms, with freedom-to-operate "
+        "and any third-party or background-IP constraints.",
+        "Transferring or licensing technology without clear ownership and freedom to operate exposes both "
+        "sides to infringement and enforceability disputes.",
+        "IP counsel",
+        "Confirm IP ownership, licensing scope, and freedom to operate before the transfer agreement.",
+        "Technology-transfer signature.",
+    ),
+    "export_control_classification_note": (
+        "Classification of the technology against applicable export-control / dual-use regimes and whether a "
+        "license or authorization is required to transfer it to Kazakhstan.",
+        "Transferring controlled or dual-use technology without classification can breach export-control law "
+        "in the origin jurisdiction regardless of Kazakhstan-side approvals.",
+        "Export-control / trade counsel",
+        "Classify the technology and confirm whether an export license is required before transfer.",
+        "Technology-transfer signature.",
+    ),
 }
 
 
@@ -1889,7 +1924,17 @@ def _market_entry_satisfied(request_json: dict, supplied: list[str]) -> set[str]
     return satisfied
 
 
-def _market_entry_readiness(taxonomy: dict, satisfied: set[str], stage_tier: str) -> str:
+def _market_entry_sector_required(taxonomy: dict, sector: str | None) -> list[str]:
+    """Sector-specific required evidence beyond the universal tiers.
+
+    Folded into the launch-commitment ceiling and the gap list so the advertised
+    sector breadth is real, not cosmetic. Unknown / missing sector -> no extra.
+    """
+    sector_map = taxonomy.get("sector_requirements", {})
+    return list(sector_map.get(sector or "other", []))
+
+
+def _market_entry_readiness(taxonomy: dict, satisfied: set[str], stage_tier: str, sector_missing: list[str]) -> str:
     core_validation = {
         "partner_company_profile",
         "product_or_project_description",
@@ -1906,9 +1951,38 @@ def _market_entry_readiness(taxonomy: dict, satisfied: set[str], stage_tier: str
         return "concept_ready"
     if signature_missing:
         return "validation_ready"
-    if operational_missing:
+    if operational_missing or sector_missing:
         return "committee_review_ready"
     return "launch_commitment_ready"
+
+
+def _market_entry_watch_next(taxonomy: dict, sector: str | None, satisfied: set[str], stage_tier: str) -> list[str]:
+    """Build a watch list tailored to the sector and the still-open tiers.
+
+    Replaces the prior static dump of every indicator: only the sector's
+    indicators, the indicators for tiers that still have gaps, and a single
+    always-on regulator signal are surfaced, de-duplicated in insertion order.
+    """
+    out: list[str] = []
+
+    def add(item: str) -> None:
+        if item and item not in out:
+            out.append(item)
+
+    for item in taxonomy.get("sector_watch_indicators", {}).get(sector or "other", []):
+        add(item)
+    tier_watch = taxonomy.get("tier_watch_indicators", {})
+    open_tier_keys = []
+    for tier_key in ("required_before_validation", "required_before_signature", stage_tier):
+        if tier_key in open_tier_keys:
+            continue
+        if any(s not in satisfied for s in taxonomy.get(tier_key, [])):
+            open_tier_keys.append(tier_key)
+    for tier_key in open_tier_keys:
+        for item in tier_watch.get(tier_key, []):
+            add(item)
+    add("government or regulator signal")
+    return out
 
 
 def _market_entry_gate_decision(readiness: str, stage: str) -> str:
@@ -1983,10 +2057,13 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
 
     taxonomy = _market_entry_taxonomy()
     stage = request_json["decision_stage"]
+    sector = request_json.get("sector")
     stage_tier = MARKET_ENTRY_STAGE_TIER.get(stage, "required_before_signature")
     supplied = _market_entry_supplied_types(request_json)
     satisfied = _market_entry_satisfied(request_json, supplied)
-    readiness_label = _market_entry_readiness(taxonomy, satisfied, stage_tier)
+    sector_required = _market_entry_sector_required(taxonomy, sector)
+    sector_missing = [s for s in sector_required if s not in satisfied]
+    readiness_label = _market_entry_readiness(taxonomy, satisfied, stage_tier, sector_missing)
     gate_decision = _market_entry_gate_decision(readiness_label, stage)
 
     gap_source_types: list[str] = []
@@ -1994,6 +2071,9 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
         for source_type in taxonomy.get(tier_key, []):
             if source_type not in satisfied and source_type not in gap_source_types:
                 gap_source_types.append(source_type)
+    for source_type in sector_missing:
+        if source_type not in gap_source_types:
+            gap_source_types.append(source_type)
     evidence_gaps = [_market_entry_evidence_gap(source_type) for source_type in gap_source_types]
 
     confirmed_facts: list[str] = []
@@ -2035,6 +2115,29 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
             ),
         },
     ]
+    blockers = list(request_json.get("known_blockers") or [])
+    if blockers:
+        claim_audit.append(
+            {
+                "claim": "The blockers the caller named on this file are resolved.",
+                "status": "unsupported",
+                "how_to_use_now": (
+                    f"Do not treat as resolved: the caller listed {len(blockers)} open blocker(s) "
+                    f'(e.g. "{blockers[0]}"). Close each one and re-run the gate.'
+                ),
+            }
+        )
+    if request_json.get("known_assumptions"):
+        claim_audit.append(
+            {
+                "claim": "The caller-supplied cost, price, and structure assumptions are decision-grade.",
+                "status": "assumption_only",
+                "how_to_use_now": (
+                    "Treat the caller's assumptions as planning inputs only; confirm with signed quotes, "
+                    "landed-cost models, and local legal / tax review before any commitment."
+                ),
+            }
+        )
 
     owner_actions = [
         {
@@ -2069,7 +2172,7 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
         "evidence_gaps": evidence_gaps,
         "claim_audit": claim_audit,
         "owner_actions": owner_actions,
-        "watch_next": list(taxonomy.get("watch_indicators", [])),
+        "watch_next": _market_entry_watch_next(taxonomy, sector, satisfied, stage_tier),
         "boundary_notice": MARKET_ENTRY_BOUNDARY_NOTICE,
         "run_provenance": _run_provenance(request_json, "market-entry-readiness-response.schema.json"),
     }

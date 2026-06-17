@@ -104,5 +104,115 @@
     "public announcement risk",
     "government or regulator signal"
   ],
+  "sector_requirements": {
+    "mobility": [
+      "certification_pathway",
+      "service_partner_confirmation",
+      "spare_parts_price_list"
+    ],
+    "renewable_energy": [
+      "grid_connection_and_offtake_evidence",
+      "land_or_site_control_evidence",
+      "bankability_note",
+      "local_content_or_procurement_localization_note"
+    ],
+    "epc": [
+      "land_or_site_control_evidence",
+      "local_content_or_procurement_localization_note",
+      "project_timeline",
+      "risk_register"
+    ],
+    "infrastructure": [
+      "land_or_site_control_evidence",
+      "local_content_or_procurement_localization_note",
+      "government_or_akimat_note",
+      "project_timeline"
+    ],
+    "data_center": [
+      "grid_connection_and_offtake_evidence",
+      "land_or_site_control_evidence",
+      "data_localization_and_privacy_note",
+      "special_economic_zone_eligibility_note"
+    ],
+    "technology_transfer": [
+      "ip_ownership_and_licensing_evidence",
+      "export_control_classification_note",
+      "trademark_or_brand_protection_filing"
+    ],
+    "distribution": [
+      "customs_broker_memo",
+      "certification_pathway",
+      "landed_cost_model"
+    ],
+    "real_estate_or_land": [
+      "land_or_site_control_evidence",
+      "government_or_akimat_note"
+    ],
+    "other": []
+  },
+  "sector_watch_indicators": {
+    "mobility": [
+      "certification requirement change",
+      "battery handling or insurance constraint",
+      "service capacity bottleneck"
+    ],
+    "renewable_energy": [
+      "auction or PPA tariff change",
+      "grid-connection queue or curtailment change",
+      "bankability or lender-appetite change"
+    ],
+    "epc": [
+      "public-procurement or tender-term change",
+      "cost-escalation or FX exposure change",
+      "local-content or procurement-localization rule change"
+    ],
+    "infrastructure": [
+      "concession or PPP framework change",
+      "local-content or procurement-localization rule change"
+    ],
+    "data_center": [
+      "power availability or tariff change",
+      "personal-data localization or privacy rule change",
+      "special-economic-zone eligibility change"
+    ],
+    "technology_transfer": [
+      "export-control or dual-use classification change",
+      "IP registration or enforcement change",
+      "third-party trademark filing or brand-squatting signal"
+    ],
+    "distribution": [
+      "customs rule change",
+      "certification requirement change",
+      "supplier price or MOQ change"
+    ],
+    "real_estate_or_land": [
+      "land-use or zoning rule change",
+      "lease availability or rent change"
+    ],
+    "other": []
+  },
+  "tier_watch_indicators": {
+    "required_before_validation": [
+      "partner commitment change"
+    ],
+    "required_before_signature": [
+      "bank KYC or account-opening tightening for foreign-owned entities",
+      "tax or VAT treatment change",
+      "currency-control or profit-repatriation rule change",
+      "anti-corruption enforcement or third-party due-diligence expectation change"
+    ],
+    "required_before_import_or_first_batch": [
+      "customs rule change",
+      "freight rate change",
+      "supplier price or MOQ change"
+    ],
+    "required_before_showroom_or_public_launch": [
+      "lease availability or rent change",
+      "service capacity bottleneck"
+    ],
+    "required_before_dealer_or_fleet_expansion": [
+      "dealer or fleet demand signal"
+    ]
+  },
   "boundary": "This taxonomy supports internal market-entry evidence triage only. It does not provide legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice."
 }
