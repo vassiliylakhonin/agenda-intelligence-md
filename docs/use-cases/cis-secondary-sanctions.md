@@ -54,7 +54,7 @@ Source-requirement plan: [source-requirements/cis-secondary-sanctions.json](../.
 | Source type | Why required |
 |---|---|
 | `ofac_sdn_extract` | Primary US designation list (OFAC SDN + Consolidated). |
-| `eu_consolidated_extract` | Primary EU consolidated sanctions list (covers EU 14th package and successors). |
+| `eu_consolidated_extract` | Primary EU consolidated sanctions list (covers EU sanctions package and successors). |
 | `ownership_chain_evidence` | Counterparty-disclosed or independently obtained ownership chain up to UBO. |
 | `bank_correspondent_evidence` | Correspondent banking chain for the counterparty's settlement path. |
 | `transit_or_invoice_evidence` | Recent transit / invoice / customs documents demonstrating actual flow. |
@@ -68,7 +68,7 @@ The response may include `typology_refs` pointing at publicly published FATF, EA
 - FATF trade-based money laundering typologies (third-party intermediation, false invoicing, transit re-routing).
 - EAG (Eurasian Group on Combating Money Laundering) typology reports on Russia-CIS evasion patterns.
 - OFAC EO 14114 (October 2024) — secondary-sanctions exposure for non-US financial institutions facilitating Russia-related transactions.
-- EU 14th sanctions package — secondary-sanctions provisions for non-EU subsidiaries.
+- EU sanctions package — secondary-sanctions provisions for non-EU subsidiaries.
 - European Commission enhanced-due-diligence guidance on circumvention, naming EAEU circumvention hubs (Armenia, Kazakhstan, Kyrgyzstan, Uzbekistan) and expecting EDD where activity may indirectly facilitate circumvention even in non-sanctioned countries.
 
 ## Boundaries (per ADR 0014)

@@ -32,6 +32,6 @@
       "date": "2026-05-21"
     }
   ],
-  "risk_question": "Does the disclosed ownership chain create indirect exposure under OFAC EO 14114 or EU 14th package?",
+  "risk_question": "Does the disclosed ownership chain create indirect exposure under OFAC EO 14114 or EU sanctions package?",
   "decision_stage": "onboarding"
 }

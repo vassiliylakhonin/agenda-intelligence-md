@@ -1176,7 +1176,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
     (activeOption
       ? ""
       : "Sanctions-list name-match (OpenSanctions / Watchman, CC-BY 4.0 / Apache-2.0) is wired but disabled in this public deployment, which runs on user-supplied evidence only. ") +
-    "Targets enhanced due diligence in EU / UK / UAE / Singapore institutions screening counterparties against OFAC EO 14114, EU 14th sanctions package, UK OFSI, and FATF / EAG typologies.";
+    "Targets enhanced due diligence in EU / UK / UAE / Singapore institutions screening counterparties against OFAC EO 14114, EU sanctions package, UK OFSI, and FATF / EAG typologies.";
   card.provider.legalEntity.sameAs = [
     "https://github.com/vassiliylakhonin",
     "https://pypi.org/project/agenda-intelligence-md/",
@@ -1202,7 +1202,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
       ],
       examples: [
         "Does the disclosed ownership chain create indirect exposure under OFAC EO 14114?",
-        "Triage a Kazakhstani trading-house counterparty against the EU 14th sanctions package."
+        "Triage a Kazakhstani trading-house counterparty against the EU sanctions package."
       ],
       inputModes: ["application/json", "text/plain"],
       outputModes: ["application/json", "text/markdown"]
@@ -1258,7 +1258,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
   card.x_agenda_intelligence.buyer_use_cases = [
     "EU / UK / UAE / Singapore enhanced due diligence on CIS counterparties",
     "OFAC EO 14114 secondary-sanctions exposure screening",
-    "EU 14th sanctions package transit / re-export risk triage",
+    "EU sanctions package transit / re-export risk triage",
     "UK OFSI alignment for CIS-facing trade-finance files",
     "FATF / EAG typology mapping for CIS-domiciled entities"
   ];
@@ -1585,7 +1585,7 @@ function cisTopExposureDimensions(facets, missing, openSanctionsMatchCount, undi
   if (undisclosedUbo) dims.push("undisclosed or unverified ultimate beneficial owner");
   if (facets.includes("ownership_or_control")) dims.push("indirect ownership or control exposure");
   if (facets.includes("transit_or_re_export")) {
-    dims.push("transit or re-export exposure under EU 14th package / OFAC EO 14114");
+    dims.push("transit or re-export exposure under EU sanctions package / OFAC EO 14114");
   }
   if (facets.includes("ict_or_dual_use_goods")) dims.push("ICT or dual-use goods diversion exposure");
   if (facets.includes("correspondent_banking")) dims.push("correspondent banking exposure");

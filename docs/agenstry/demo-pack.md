@@ -62,7 +62,7 @@ curl -sS -X POST https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.d
         {"id": "s1", "source_type": "ofac_sdn_extract", "title": "OFAC SDN excerpt", "date": "2026-05-20"},
         {"id": "s2", "source_type": "ownership_chain_evidence", "title": "Disclosed ownership chain", "date": "2026-05-15"}
       ],
-      "risk_question": "Onboarding exposure under OFAC EO 14114 / EU 14th package? Decision-ready?",
+      "risk_question": "Onboarding exposure under OFAC EO 14114 / EU sanctions package? Decision-ready?",
       "decision_stage": "onboarding"
     }}}
   }'

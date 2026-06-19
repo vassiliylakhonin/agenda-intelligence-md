@@ -367,7 +367,7 @@ TOOLS: dict[str, dict[str, Any]] = {
         "description": (
             "Triage secondary-sanctions exposure for a CIS-domiciled counterparty (Kazakhstan, Uzbekistan, "
             "Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova) for EU / UK / UAE / "
-            "Singapore enhanced due diligence against OFAC EO 14114, the EU 14th sanctions package, UK OFSI, and "
+            "Singapore enhanced due diligence against OFAC EO 14114, the EU sanctions package, UK OFSI, and "
             "FATF / EAG typologies. Pass a structured exposure_request (counterparty, exposure_facets, "
             "jurisdiction_review_scope, dated_sources, risk_question, decision_stage) matching "
             "cis-secondary-sanctions-request.schema.json. Returns a triage recommendation, decision-readiness "
