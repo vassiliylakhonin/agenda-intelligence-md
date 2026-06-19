@@ -287,6 +287,40 @@ const MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_ROUTE_TERMS = [
   ["russian", "Russia Northern Corridor overlap"]
 ];
 
+// Substring triggers that presence-flag a potential dual-use / export-controlled
+// item named in the free-text cargo. Terms follow the BIS/EU Common High Priority
+// List (CHPL) pattern of goods most diverted to sanctioned end-users. Match on the
+// declared cargo string only — presence-flagging routed to human review, NOT an
+// export-control classification, licensing determination, or live screening. This
+// is the cargo-string dual-use flag deferred in ADR 0015, on the allowed side of
+// its boundary.
+const MIDDLE_CORRIDOR_DUAL_USE_CARGO_TERMS = [
+  ["microcontroller", "microcontrollers"],
+  ["microprocessor", "microprocessors"],
+  ["integrated circuit", "integrated circuits"],
+  ["semiconductor", "semiconductors"],
+  ["microelectronic", "microelectronics"],
+  ["fpga", "FPGAs / programmable logic"],
+  ["transceiver", "RF transceivers"],
+  ["rf module", "RF modules"],
+  ["rf amplifier", "RF amplifiers"],
+  ["oscillator", "oscillators"],
+  ["gnss", "GNSS / navigation modules"],
+  ["gps module", "GPS / navigation modules"],
+  ["gyroscope", "gyroscopes / inertial sensors"],
+  ["accelerometer", "accelerometers / inertial sensors"],
+  ["inertial measurement", "inertial measurement units"],
+  ["cnc", "CNC / machine tools"],
+  ["machine tool", "machine tools"],
+  ["ball bearing", "precision bearings"],
+  ["uav", "UAV / drone components"],
+  ["drone", "UAV / drone components"],
+  ["thermal imaging", "thermal-imaging / night-vision optics"],
+  ["night vision", "thermal-imaging / night-vision optics"],
+  ["carbon fiber", "carbon-fibre materials"],
+  ["carbon fibre", "carbon-fibre materials"]
+];
+
 // Customs-regime review items for the Middle Corridor: harmonized digital-customs
 // transit (eTIR; adopted by Organization of Turkic States members) versus
 // unharmonized national permitting, which remains a recurring barrier to
@@ -304,6 +338,20 @@ function matchedSanctionsExposedSegments(routeText) {
   const text = (routeText || "").toLowerCase();
   const matched = [];
   for (const [term, label] of MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_ROUTE_TERMS) {
+    if (text.includes(term) && !matched.includes(label)) matched.push(label);
+  }
+  return matched;
+}
+
+// Presence-flag potential dual-use / export-controlled items named in the cargo
+// text. Case-insensitive substring match on the declared cargo string only. Per
+// ADR 0015 (cargo-string dual-use detection) this is presence-flagging routed to
+// human review, NOT an export-control classification, licensing determination, or
+// live screening.
+function matchedDualUseCargoTerms(cargoText) {
+  const text = (cargoText || "").toLowerCase();
+  const matched = [];
+  for (const [term, label] of MIDDLE_CORRIDOR_DUAL_USE_CARGO_TERMS) {
     if (text.includes(term) && !matched.includes(label)) matched.push(label);
   }
   return matched;
@@ -3563,10 +3611,12 @@ function topRisksForStructuredRequest(
   highRisk = false,
   circumventionWatch = false,
   namedSectorPresent = false,
-  newlyFormedPresent = false
+  newlyFormedPresent = false,
+  dualUsePresent = false
 ) {
   const risks = ["sanctions adjacency", "Caspian crossing capacity and draft exposure"];
   if (highRisk) risks.unshift("counterparty in a sanctions-relevant / high-risk jurisdiction");
+  if (dualUsePresent) risks.unshift("cargo includes a potential dual-use / export-controlled item");
   if (circumventionWatch) risks.push("counterparty in a re-export / circumvention-watch jurisdiction");
   if (namedSectorPresent) risks.push("counterparty operates in an OFAC-named sector under EO 14024");
   if (newlyFormedPresent) risks.push("counterparty newly formed in a transshipment-risk jurisdiction");
@@ -3740,6 +3790,7 @@ function dealRiskContractResponseForRequest(request) {
   const flaggedNamedSectors = namedSectorCounterparties(request);
   const flaggedNewlyFormed = newlyFormedCounterparties(request);
   const matchedSanctionsSegments = matchedSanctionsExposedSegments(request.route);
+  const matchedDualUse = matchedDualUseCargoTerms(request.cargo);
   const triageRecommendation = triageRecommendationForStructuredRequest(request, minimumSourcesBeforeGo);
   const riskSignal = riskSignalForStructuredRequest(request, minimumSourcesBeforeGo);
   const response = {
@@ -3764,7 +3815,8 @@ function dealRiskContractResponseForRequest(request) {
       flaggedHighRisk.length > 0,
       flaggedCircumvention.length > 0,
       flaggedNamedSectors.length > 0,
-      flaggedNewlyFormed.length > 0
+      flaggedNewlyFormed.length > 0,
+      matchedDualUse.length > 0
     ),
     exposure_layers: exposureLayersForStructuredRequest(
       minimumSourcesBeforeGo,
@@ -3823,6 +3875,12 @@ function dealRiskContractResponseForRequest(request) {
       `The declared route references one or more connections flagged as sanctions-exposed (${namedSeg}); this is a route-screening escalation flag for human review, not a sanctions determination. Screen the specific connection, its operators, and any onward destination before any commercial action.`
     );
   }
+  if (matchedDualUse.length > 0) {
+    const namedDu = matchedDualUse.join(", ");
+    limitations.push(
+      `The declared cargo references one or more potential dual-use / export-controlled items (${namedDu}); under the BIS/EU Common High Priority List pattern this is an export-control escalation flag for human review, not a classification or licensing determination. Obtain an end-use / end-user statement and confirm export-control classification before any commercial action.`
+    );
+  }
   if (limitations.length > 0) response.limitations = limitations;
   if (matchedSanctionsSegments.length > 0) {
     response.route_sanctions_matched_segments = [...matchedSanctionsSegments];
@@ -3830,7 +3888,7 @@ function dealRiskContractResponseForRequest(request) {
   if (minimumSourcesBeforeGo.includes("vessel_or_carrier_history")) {
     response.vessel_due_diligence_indicators = [...VESSEL_DUE_DILIGENCE_INDICATORS];
   }
-  if (!suppliedSources.includes("end_user_or_reexport_evidence")) {
+  if (matchedDualUse.length > 0 || !suppliedSources.includes("end_user_or_reexport_evidence")) {
     response.reexport_control_indicators = [...REEXPORT_CONTROL_INDICATORS];
   }
   if (!suppliedSources.includes("source_of_funds_or_wealth_evidence")) {
