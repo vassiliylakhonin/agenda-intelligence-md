@@ -235,6 +235,25 @@ def test_middle_corridor_dual_use_does_not_move_structural_score():
     assert benign["risk_signal"] == dual_use["risk_signal"]
 
 
+def test_middle_corridor_dual_use_without_eus_flags_missing_end_user_statement():
+    """Dual-use cargo with no end-user evidence on hand raises a distinct evidence-readiness
+    limitation; supplying the evidence removes that specific flag and does NOT move the score."""
+    from agenda_intelligence import services
+
+    phrase = "no end-user / re-export evidence is on hand"
+    without = services.middle_corridor_deal_risk(_dual_use_base_request("microcontrollers and RF modules"))["response"]
+    assert any(phrase in line for line in without["limitations"])
+
+    with_eus = _dual_use_base_request("microcontrollers and RF modules")
+    with_eus["dated_sources"] = with_eus["dated_sources"] + [
+        {"id": "e2", "source_type": "end_user_or_reexport_evidence", "title": "EUS", "date": "2026-05-22"},
+    ]
+    supplied = services.middle_corridor_deal_risk(with_eus)["response"]
+    assert not any(phrase in line for line in supplied.get("limitations", []))
+    # Boundary: supplying the end-user statement is not a scored required-before-go item.
+    assert supplied["decision_readiness_score"] == without["decision_readiness_score"]
+
+
 def test_middle_corridor_flags_circumvention_watch_jurisdiction():
     """Counterparty in a re-export / circumvention-watch jurisdiction (e.g. Armenia)
     must be flagged with the softer watch wording, distinct from the high-risk flag."""

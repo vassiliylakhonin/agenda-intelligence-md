@@ -299,6 +299,23 @@ test("worker deal-risk contract: dual-use cargo does not move the structural sco
   assert.equal(benign.risk_signal, dualUse.risk_signal);
 });
 
+test("worker deal-risk contract: dual-use without end-user evidence flags the gap (Python parity)", () => {
+  const phrase = "no end-user / re-export evidence is on hand";
+  const without = dealRiskContractResponseForRequest(baseDealRiskRequest({ cargo: "microcontrollers and RF modules" }));
+  assert.ok(without.limitations.some((l) => l.includes(phrase)));
+  const withEus = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      cargo: "microcontrollers and RF modules",
+      dated_sources: [
+        { id: "e1", source_type: "port_operator_notice", title: "x", date: "2026-05-20" },
+        { id: "e2", source_type: "end_user_or_reexport_evidence", title: "EUS", date: "2026-05-22" }
+      ]
+    })
+  );
+  assert.equal((withEus.limitations || []).some((l) => l.includes(phrase)), false);
+  assert.equal(withEus.decision_readiness_score, without.decision_readiness_score);
+});
+
 test("worker deal-risk contract flags re-export / circumvention-watch (Armenia), not as sanctioned", () => {
   const resp = dealRiskContractResponseForRequest(
     baseDealRiskRequest({
