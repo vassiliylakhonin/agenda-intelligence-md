@@ -696,6 +696,40 @@ MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_ROUTE_TERMS = [
     ("russian", "Russia Northern Corridor overlap"),
 ]
 
+# Substring triggers that presence-flag a potential dual-use / export-controlled
+# item named in the free-text cargo. Terms follow the BIS/EU Common High Priority
+# List (CHPL) pattern of goods most diverted to sanctioned end-users. Match on the
+# declared cargo string only — presence-flagging routed to human review, NOT an
+# export-control classification, licensing determination, or live screening. This
+# is the cargo-string dual-use flag deferred in ADR 0015, on the allowed side of
+# its boundary.
+MIDDLE_CORRIDOR_DUAL_USE_CARGO_TERMS = [
+    ("microcontroller", "microcontrollers"),
+    ("microprocessor", "microprocessors"),
+    ("integrated circuit", "integrated circuits"),
+    ("semiconductor", "semiconductors"),
+    ("microelectronic", "microelectronics"),
+    ("fpga", "FPGAs / programmable logic"),
+    ("transceiver", "RF transceivers"),
+    ("rf module", "RF modules"),
+    ("rf amplifier", "RF amplifiers"),
+    ("oscillator", "oscillators"),
+    ("gnss", "GNSS / navigation modules"),
+    ("gps module", "GPS / navigation modules"),
+    ("gyroscope", "gyroscopes / inertial sensors"),
+    ("accelerometer", "accelerometers / inertial sensors"),
+    ("inertial measurement", "inertial measurement units"),
+    ("cnc", "CNC / machine tools"),
+    ("machine tool", "machine tools"),
+    ("ball bearing", "precision bearings"),
+    ("uav", "UAV / drone components"),
+    ("drone", "UAV / drone components"),
+    ("thermal imaging", "thermal-imaging / night-vision optics"),
+    ("night vision", "thermal-imaging / night-vision optics"),
+    ("carbon fiber", "carbon-fibre materials"),
+    ("carbon fibre", "carbon-fibre materials"),
+]
+
 # Customs-regime review items for the Middle Corridor: harmonized digital-customs
 # transit (eTIR; adopted by Organization of Turkic States members) versus
 # unharmonized national permitting, which remains a recurring barrier to
@@ -720,6 +754,21 @@ def _matched_sanctions_exposed_segments(route_text: str) -> list[str]:
     text = (route_text or "").lower()
     matched: list[str] = []
     for term, label in MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_ROUTE_TERMS:
+        if term in text and label not in matched:
+            matched.append(label)
+    return matched
+
+
+def _matched_dual_use_cargo_terms(cargo_text: str) -> list[str]:
+    """Presence-flag potential dual-use / export-controlled items named in the cargo text.
+
+    Case-insensitive substring match on the declared cargo string only. Per ADR 0015
+    (cargo-string dual-use detection) this is presence-flagging routed to human review,
+    NOT an export-control classification, licensing determination, or live screening.
+    """
+    text = (cargo_text or "").lower()
+    matched: list[str] = []
+    for term, label in MIDDLE_CORRIDOR_DUAL_USE_CARGO_TERMS:
         if term in text and label not in matched:
             matched.append(label)
     return matched
@@ -864,10 +913,13 @@ def _middle_corridor_top_risks(
     circumvention_watch: bool = False,
     named_sector_present: bool = False,
     newly_formed_present: bool = False,
+    dual_use_present: bool = False,
 ) -> list[str]:
     risks = ["sanctions adjacency", "Caspian crossing capacity and draft exposure"]
     if high_risk_jurisdictions:
         risks.insert(0, "counterparty in a sanctions-relevant / high-risk jurisdiction")
+    if dual_use_present:
+        risks.insert(0, "cargo includes a potential dual-use / export-controlled item")
     if circumvention_watch:
         risks.append("counterparty in a re-export / circumvention-watch jurisdiction")
     if named_sector_present:
@@ -1018,6 +1070,7 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
     triage_recommendation = _middle_corridor_triage_recommendation(request_json, missing_sources)
     risk_signal = _middle_corridor_risk_signal(request_json, missing_sources)
     matched_sanctions_segments = _matched_sanctions_exposed_segments(request_json.get("route", ""))
+    matched_dual_use = _matched_dual_use_cargo_terms(request_json.get("cargo", ""))
     response = {
         "triage_recommendation": triage_recommendation,
         "risk_signal": risk_signal,
@@ -1038,6 +1091,7 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
             bool(flagged_circumvention),
             bool(flagged_named_sectors),
             bool(flagged_newly_formed),
+            bool(matched_dual_use),
         ),
         "exposure_layers": _middle_corridor_exposure_layers(
             missing_sources,
@@ -1106,13 +1160,22 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
             "determination. Screen the specific connection, its operators, and any onward destination "
             "before any commercial action."
         )
+    if matched_dual_use:
+        named_du = ", ".join(matched_dual_use)
+        limitations.append(
+            "The declared cargo references one or more potential dual-use / export-controlled items "
+            f"({named_du}); under the BIS/EU Common High Priority List pattern this is an export-control "
+            "escalation flag for human review, not a classification or licensing determination. Obtain an "
+            "end-use / end-user statement and confirm export-control classification before any commercial "
+            "action."
+        )
     if limitations:
         response["limitations"] = limitations
     if matched_sanctions_segments:
         response["route_sanctions_matched_segments"] = list(matched_sanctions_segments)
     if "vessel_or_carrier_history" in missing_sources:
         response["vessel_due_diligence_indicators"] = list(VESSEL_DUE_DILIGENCE_INDICATORS)
-    if "end_user_or_reexport_evidence" not in supplied_sources:
+    if matched_dual_use or "end_user_or_reexport_evidence" not in supplied_sources:
         response["reexport_control_indicators"] = list(REEXPORT_CONTROL_INDICATORS)
     if "source_of_funds_or_wealth_evidence" not in supplied_sources:
         response["source_of_funds_indicators"] = list(SOURCE_OF_FUNDS_INDICATORS)

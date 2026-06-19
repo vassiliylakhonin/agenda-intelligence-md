@@ -191,6 +191,50 @@ def test_middle_corridor_clean_jurisdiction_not_flagged():
     assert "limitations" not in resp
 
 
+def _dual_use_base_request(cargo: str) -> dict:
+    """All-Kazakhstan, benign-route fixture so the only varying signal is the cargo string."""
+    return {
+        "route": "Altynkol -> Aktau -> Baku -> Poti",
+        "cargo": cargo,
+        "counterparties": [
+            {"role": "forwarder", "name": "KZ Forwarder", "jurisdiction": "Kazakhstan"},
+        ],
+        "dated_sources": [
+            {"id": "e1", "source_type": "port_operator_notice", "title": "x", "date": "2026-05-20"},
+        ],
+        "risk_question": "escalate before signature?",
+        "decision_stage": "pre_signature",
+    }
+
+
+def test_middle_corridor_flags_dual_use_cargo():
+    """A dual-use / export-controlled cargo string is presence-flagged (ADR 0015 deferred item)."""
+    from agenda_intelligence import services
+
+    req = _dual_use_base_request("microcontrollers and RF modules")
+    resp = services.middle_corridor_deal_risk(req)["response"]
+    assert "cargo includes a potential dual-use / export-controlled item" in resp["top_risks"]
+    assert "limitations" in resp
+    joined = " ".join(resp["limitations"])
+    assert "Common High Priority List" in joined
+    # Boundary: must NOT phrase it as a classification / licensing determination.
+    assert "not a classification or licensing determination" in joined
+    # A dual-use cargo surfaces the re-export / end-user checklist for the human reviewer.
+    assert "reexport_control_indicators" in resp
+
+
+def test_middle_corridor_dual_use_does_not_move_structural_score():
+    """ADR 0015 boundary: cargo content is presence-flagged but must NOT move the
+    structural (evidence-completeness) score or risk signal."""
+    from agenda_intelligence import services
+
+    benign = services.middle_corridor_deal_risk(_dual_use_base_request("industrial equipment"))["response"]
+    dual_use = services.middle_corridor_deal_risk(_dual_use_base_request("microcontrollers and RF modules"))["response"]
+    assert "cargo includes a potential dual-use / export-controlled item" not in benign["top_risks"]
+    assert benign["decision_readiness_score"] == dual_use["decision_readiness_score"]
+    assert benign["risk_signal"] == dual_use["risk_signal"]
+
+
 def test_middle_corridor_flags_circumvention_watch_jurisdiction():
     """Counterparty in a re-export / circumvention-watch jurisdiction (e.g. Armenia)
     must be flagged with the softer watch wording, distinct from the high-risk flag."""

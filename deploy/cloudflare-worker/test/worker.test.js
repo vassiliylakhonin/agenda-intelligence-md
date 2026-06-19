@@ -281,6 +281,24 @@ test("worker deal-risk contract flags high-risk jurisdiction (ADR 0015 parity)",
   assert.ok(resp.limitations.some((l) => l.includes("not a sanctions determination")));
 });
 
+test("worker deal-risk contract flags dual-use cargo (ADR 0015 parity)", () => {
+  const resp = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({ cargo: "microcontrollers and RF modules" })
+  );
+  assert.ok(resp.top_risks.includes("cargo includes a potential dual-use / export-controlled item"));
+  assert.ok(resp.limitations.some((l) => l.includes("Common High Priority List")));
+  assert.ok(resp.limitations.some((l) => l.includes("not a classification or licensing determination")));
+  assert.ok(Array.isArray(resp.reexport_control_indicators));
+});
+
+test("worker deal-risk contract: dual-use cargo does not move the structural score (ADR 0015 parity)", () => {
+  const benign = dealRiskContractResponseForRequest(baseDealRiskRequest({ cargo: "industrial equipment" }));
+  const dualUse = dealRiskContractResponseForRequest(baseDealRiskRequest({ cargo: "microcontrollers and RF modules" }));
+  assert.equal(benign.top_risks.includes("cargo includes a potential dual-use / export-controlled item"), false);
+  assert.equal(benign.decision_readiness_score, dualUse.decision_readiness_score);
+  assert.equal(benign.risk_signal, dualUse.risk_signal);
+});
+
 test("worker deal-risk contract flags re-export / circumvention-watch (Armenia), not as sanctioned", () => {
   const resp = dealRiskContractResponseForRequest(
     baseDealRiskRequest({
@@ -469,6 +487,8 @@ test("worker deal-risk contract surfaces reexport_control_indicators when end-us
 test("worker deal-risk contract omits reexport_control_indicators when end-user evidence supplied", () => {
   const resp = dealRiskContractResponseForRequest(
     baseDealRiskRequest({
+      // benign cargo so the dual-use presence flag does not independently surface the checklist
+      cargo: "industrial equipment",
       dated_sources: [{ id: "e1", source_type: "end_user_or_reexport_evidence", title: "EUS", date: "2026-05-22" }]
     })
   );
