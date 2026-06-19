@@ -465,10 +465,10 @@ def _evidence_gap_for_source(source_type: str) -> str:
     gaps = {
         "counterparty_registry_extract": "No counterparty registry extract supplied.",
         "beneficial_ownership_source": "No beneficial ownership source supplied.",
-        "sanctions_list_extract": "No sanctions list extract supplied.",
+        "sanctions_list_extract": "No sanctions screening result supplied.",
         "customs_or_regulatory_source": "No customs or regulatory source supplied.",
         "insurance_clause_or_underwriter_note": "No insurance clause or underwriter note supplied.",
-        "vessel_or_carrier_history": "No vessel or carrier history supplied.",
+        "vessel_or_carrier_history": "No carrier, vessel, or rail-operator history supplied.",
     }
     return gaps.get(source_type, f"No {source_type} supplied.")
 
@@ -741,6 +741,10 @@ MIDDLE_CORRIDOR_CUSTOMS_HARMONIZATION_INDICATORS = [
     "Document acceptance: confirm transit documents are accepted at all crossings without re-declaration.",
     "Tariff consistency: confirm cargo tariff classification and duties are consistent across corridor states.",
     "Customs-rule change watch: flag recent customs-rule or enforcement changes at any crossing on the route.",
+    "Rail gauge-change points: confirm transloading and gauge-change handling and capacity at Khorgos / Altynkol "
+    "and at the Caspian rail-ferry interchange (the corridor is rail-dominant, not maritime).",
+    "Caspian dwell exposure: flag demurrage, wagon-detention, and ferry-slot risk at Aktau / Kuryk and onward "
+    "Black Sea ports.",
 ]
 
 
@@ -933,7 +937,7 @@ def _middle_corridor_top_risks(
     if "counterparty_registry_extract" in missing_sources or "beneficial_ownership_source" in missing_sources:
         risks.append("counterparty and ownership uncertainty")
     if "vessel_or_carrier_history" in missing_sources:
-        risks.append("carrier or vessel history gap")
+        risks.append("carrier / vessel / rail-operator history gap")
     return list(dict.fromkeys(risks))
 
 
@@ -981,10 +985,14 @@ def _middle_corridor_exposure_layers(
             "escalation flag for human review, not a determination."
         )
     if "sanctions_list_extract" in missing_sources:
-        foreign_sanctions_exposure_layer.append("No sanctions list extract supplied to review listed-party exposure.")
+        foreign_sanctions_exposure_layer.append(
+            "No sanctions screening result supplied to review listed-party exposure."
+        )
     if "beneficial_ownership_source" in missing_sources:
         foreign_sanctions_exposure_layer.append(
-            "No beneficial ownership source — indirect / ownership-based exposure cannot be reviewed."
+            "No beneficial ownership source — indirect / ownership-based exposure cannot be reviewed; the "
+            "OFAC/EU 50 Percent Rule (aggregate blocked-person ownership) is a human-review step the file is "
+            "not yet ready for."
         )
     return {
         "domestic_legal_layer": domestic_legal_layer,
@@ -1168,6 +1176,12 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
             "escalation flag for human review, not a classification or licensing determination. Obtain an "
             "end-use / end-user statement and confirm export-control classification before any commercial "
             "action."
+        )
+    if matched_dual_use and "end_user_or_reexport_evidence" not in supplied_sources:
+        limitations.append(
+            "The file presents a potential dual-use / export-controlled cargo but no end-user / re-export "
+            "evidence is on hand; obtain a signed end-user statement before signature. This is an "
+            "evidence-readiness gap for human review, not a licensing determination."
         )
     if limitations:
         response["limitations"] = limitations

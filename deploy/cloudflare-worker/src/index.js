@@ -331,7 +331,9 @@ const MIDDLE_CORRIDOR_CUSTOMS_HARMONIZATION_INDICATORS = [
   "Harmonized transit: check which crossings run under eTIR or another harmonized digital-customs regime.",
   "Document acceptance: confirm transit documents are accepted at all crossings without re-declaration.",
   "Tariff consistency: confirm cargo tariff classification and duties are consistent across corridor states.",
-  "Customs-rule change watch: flag recent customs-rule or enforcement changes at any crossing on the route."
+  "Customs-rule change watch: flag recent customs-rule or enforcement changes at any crossing on the route.",
+  "Rail gauge-change points: confirm transloading and gauge-change handling and capacity at Khorgos / Altynkol and at the Caspian rail-ferry interchange (the corridor is rail-dominant, not maritime).",
+  "Caspian dwell exposure: flag demurrage, wagon-detention, and ferry-slot risk at Aktau / Kuryk and onward Black Sea ports."
 ];
 
 function matchedSanctionsExposedSegments(routeText) {
@@ -3493,10 +3495,10 @@ function evidenceGapForSource(sourceType) {
   const gaps = {
     counterparty_registry_extract: "No counterparty registry extract supplied.",
     beneficial_ownership_source: "No beneficial ownership source supplied.",
-    sanctions_list_extract: "No sanctions list extract supplied.",
+    sanctions_list_extract: "No sanctions screening result supplied.",
     customs_or_regulatory_source: "No customs or regulatory source supplied.",
     insurance_clause_or_underwriter_note: "No insurance clause or underwriter note supplied.",
-    vessel_or_carrier_history: "No vessel or carrier history supplied."
+    vessel_or_carrier_history: "No carrier, vessel, or rail-operator history supplied."
   };
   return gaps[sourceType] || `No ${sourceType} supplied.`;
 }
@@ -3628,7 +3630,7 @@ function topRisksForStructuredRequest(
   ) {
     risks.push("counterparty and ownership uncertainty");
   }
-  if (missingSources.includes("vessel_or_carrier_history")) risks.push("carrier or vessel history gap");
+  if (missingSources.includes("vessel_or_carrier_history")) risks.push("carrier / vessel / rail-operator history gap");
   return [...new Set(risks)];
 }
 
@@ -3663,10 +3665,10 @@ function exposureLayersForStructuredRequest(
     );
   }
   if (missingSources.includes("sanctions_list_extract")) {
-    foreignSanctionsExposureLayer.push("No sanctions list extract supplied to review listed-party exposure.");
+    foreignSanctionsExposureLayer.push("No sanctions screening result supplied to review listed-party exposure.");
   }
   if (missingSources.includes("beneficial_ownership_source")) {
-    foreignSanctionsExposureLayer.push("No beneficial ownership source — indirect / ownership-based exposure cannot be reviewed.");
+    foreignSanctionsExposureLayer.push("No beneficial ownership source — indirect / ownership-based exposure cannot be reviewed; the OFAC/EU 50 Percent Rule (aggregate blocked-person ownership) is a human-review step the file is not yet ready for.");
   }
   return { domestic_legal_layer: domesticLegalLayer, foreign_sanctions_exposure_layer: foreignSanctionsExposureLayer };
 }
@@ -3879,6 +3881,11 @@ function dealRiskContractResponseForRequest(request) {
     const namedDu = matchedDualUse.join(", ");
     limitations.push(
       `The declared cargo references one or more potential dual-use / export-controlled items (${namedDu}); under the BIS/EU Common High Priority List pattern this is an export-control escalation flag for human review, not a classification or licensing determination. Obtain an end-use / end-user statement and confirm export-control classification before any commercial action.`
+    );
+  }
+  if (matchedDualUse.length > 0 && !suppliedSources.includes("end_user_or_reexport_evidence")) {
+    limitations.push(
+      "The file presents a potential dual-use / export-controlled cargo but no end-user / re-export evidence is on hand; obtain a signed end-user statement before signature. This is an evidence-readiness gap for human review, not a licensing determination."
     );
   }
   if (limitations.length > 0) response.limitations = limitations;
