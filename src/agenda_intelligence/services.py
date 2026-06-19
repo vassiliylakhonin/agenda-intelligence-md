@@ -1482,7 +1482,7 @@ def _cis_top_exposure_dimensions(
     if "ownership_or_control" in facets:
         dims.append("indirect ownership or control exposure")
     if "transit_or_re_export" in facets:
-        dims.append("transit or re-export exposure under EU 14th package / OFAC EO 14114")
+        dims.append("transit or re-export exposure under EU sanctions package / OFAC EO 14114")
     if "ict_or_dual_use_goods" in facets:
         dims.append("ICT or dual-use goods diversion exposure")
     if "correspondent_banking" in facets:

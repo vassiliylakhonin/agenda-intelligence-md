@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/cis-secondary-sanctions-request.schema.json",
   "title": "CISSecondarySanctionsExposureRequest",
-  "description": "Product-grade structured request contract for secondary-sanctions exposure evidence triage of a CIS, Caucasus, or Central Asia counterparty (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Designed for enhanced due diligence in EU / UK / UAE / Singapore institutions screening counterparties against OFAC EO 14114, EU 14th sanctions package, UK OFSI, and FATF / EAG typologies for Russia-related re-export and circumvention risk. This schema describes caller-supplied counterparty, ownership, financial-flow, transit, and dated-source inputs. It does not enable live retrieval, factual-truth verification, legal advice, sanctions advice, compliance advice, financial advice, investment advice, insurance advice, or trading advice.",
+  "description": "Product-grade structured request contract for secondary-sanctions exposure evidence triage of a CIS, Caucasus, or Central Asia counterparty (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Designed for enhanced due diligence in EU / UK / UAE / Singapore institutions screening counterparties against OFAC EO 14114, EU sanctions package, UK OFSI, and FATF / EAG typologies for Russia-related re-export and circumvention risk. This schema describes caller-supplied counterparty, ownership, financial-flow, transit, and dated-source inputs. It does not enable live retrieval, factual-truth verification, legal advice, sanctions advice, compliance advice, financial advice, investment advice, insurance advice, or trading advice.",
   "x-schema-version": "1",
   "type": "object",
   "additionalProperties": false,
@@ -255,7 +255,7 @@
           "date": "2026-05-20"
         }
       ],
-      "risk_question": "Does the disclosed ownership chain create indirect exposure under OFAC EO 14114 or EU 14th package?",
+      "risk_question": "Does the disclosed ownership chain create indirect exposure under OFAC EO 14114 or EU sanctions package?",
       "decision_stage": "onboarding"
     }
   ]
