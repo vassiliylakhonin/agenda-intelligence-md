@@ -4,7 +4,7 @@ Run from the repo root:
 
     python tests/fixtures/evidence_mode/build.py
 
-Produces six schema-valid agenda-memo fixtures under ``golden/`` and
+Produces schema-valid agenda-memo fixtures under ``golden/`` and
 ``failure/``. Each varies only ``meta.evidence_mode`` and
 ``audit.provenance``; everything else is held constant so the
 discipline check is the only thing under test. The fixtures stay in
@@ -62,6 +62,13 @@ def _memo(mode: str, provenance: list[dict]) -> dict:
     return memo
 
 
+def _memo_without_provenance(mode: str) -> dict:
+    memo = copy.deepcopy(BASELINE)
+    memo["meta"]["evidence_mode"] = mode
+    del memo["audit"]["provenance"]
+    return memo
+
+
 def _write(path: Path, memo: dict) -> None:
     path.write_text(json.dumps(memo, indent=2) + "\n")
 
@@ -81,6 +88,11 @@ def main() -> None:
                 {"claim": "OFAC priorities for FY2026 are unclear.", "basis": "unknown"},
             ],
         ),
+    )
+
+    _write(
+        golden / "reasoning-only-empty-provenance.json",
+        _memo("reasoning_only", []),
     )
 
     _write(
@@ -118,6 +130,20 @@ def main() -> None:
     )
 
     _write(
+        golden / "mixed-fact-with-verify-trailing-period.json",
+        _memo(
+            "mixed",
+            [
+                {
+                    "claim": "Real sourced fact needing review [verify].",
+                    "basis": "fact",
+                },
+                {"claim": "Follow-up review should confirm the date.", "basis": "assessment"},
+            ],
+        ),
+    )
+
+    _write(
         failure / "reasoning-only-with-source.json",
         _memo(
             "reasoning_only",
@@ -129,6 +155,16 @@ def main() -> None:
                 },
             ],
         ),
+    )
+
+    _write(
+        failure / "mixed-empty-provenance.json",
+        _memo("mixed", []),
+    )
+
+    _write(
+        failure / "user-provided-missing-provenance.json",
+        _memo_without_provenance("user_provided"),
     )
 
     _write(
