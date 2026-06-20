@@ -122,6 +122,20 @@ def _gap_types(response: dict) -> set[str]:
     return {gap["source_type"] for gap in response["evidence_gaps"]}
 
 
+def test_market_entry_currency_gap_reflects_2026_mechanism():
+    """The currency-control evidence-gap copy names the 2026 mechanism: the USD 50,000
+    currency-contract registration threshold and economic-substance scrutiny for intercompany flows."""
+    response = services.kazakhstan_market_entry_readiness(_market_entry_request("distribution"))["response"]
+    currency = next(
+        (g for g in response["evidence_gaps"] if g["source_type"] == "currency_control_and_repatriation_note"),
+        None,
+    )
+    assert currency is not None, "currency-control gap should surface when the note is not supplied"
+    blob = " ".join(str(v) for v in currency.values())
+    assert "economic substance" in blob
+    assert "50,000" in blob
+
+
 def test_sector_requirements_differentiate_evidence_gaps():
     """The advertised sector breadth must be real: each sector surfaces its own
     required evidence, not one generic distribution-flavoured checklist."""

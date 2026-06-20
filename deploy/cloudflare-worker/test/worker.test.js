@@ -1343,6 +1343,37 @@ test("cis worker does not flag a UBO when the ownership chain is fully disclosed
   }
 });
 
+test("cis worker flags EU country-level anti-circumvention for Kyrgyzstan (Python parity)", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const kgReq = {
+      ...cisSampleStructuredRequest,
+      counterparty: { ...cisSampleStructuredRequest.counterparty, jurisdiction: "Kyrgyzstan" }
+    };
+    const kg = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "cis-acm", method: "message/send", params: { message: { data: kgReq } } },
+      cisRequest,
+      { OPENSANCTIONS_DISABLED: "1" }
+    );
+    assert.ok(
+      kg.result.metadata.response.limitations.some((line) => line.includes("country-level anti-circumvention")),
+      "expected country-level anti-circumvention limitation for Kyrgyzstan"
+    );
+    const kz = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "cis-acm-neg", method: "message/send", params: { message: { data: cisSampleStructuredRequest } } },
+      cisRequest,
+      { OPENSANCTIONS_DISABLED: "1" }
+    );
+    assert.ok(
+      !kz.result.metadata.response.limitations.some((line) => line.includes("country-level anti-circumvention")),
+      "Kazakhstan sample must not raise the country-level flag"
+    );
+  } finally {
+    console.log = originalLog;
+  }
+});
+
 test("cis worker rejects an off-enum field like the canonical schema (validation parity)", async () => {
   const originalLog = console.log;
   console.log = () => {};
@@ -2069,6 +2100,16 @@ test("market-entry profile agent card exposes the readiness skill", () => {
   assert.equal(card.x_agenda_intelligence.product_profile, "kazakhstan_market_entry_readiness");
   assert.equal(card.x_agenda_intelligence.supported_contracts[0], "kazakhstan_market_entry_readiness_contract");
   assert.ok(card.skills.some((s) => s.id === "kazakhstan-market-entry-readiness"));
+});
+
+test("market-entry currency-control gap names the 2026 mechanism (Python parity)", async () => {
+  const response = await marketEntryResponseFor(MARKET_ENTRY_GOLDEN);
+  const resp = response.result.metadata.response;
+  const currency = resp.evidence_gaps.find((g) => g.source_type === "currency_control_and_repatriation_note");
+  assert.ok(currency, "currency-control gap should surface when the note is not supplied");
+  const blob = Object.values(currency).join(" ");
+  assert.ok(blob.includes("economic substance"), "currency gap should name economic-substance scrutiny");
+  assert.ok(blob.includes("50,000"), "currency gap should name the USD 50,000 registration threshold");
 });
 
 test("market-entry message/send returns proceed_to_validation / validation_ready (Python parity)", async () => {
