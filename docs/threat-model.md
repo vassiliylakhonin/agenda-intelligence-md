@@ -43,6 +43,8 @@ The toolkit checks that a claim carries a syntactically valid provenance tag. It
 
 Mitigation: reviewer judgement; spot-checking against cited URLs.
 
+The memo evidence-mode discipline check has the same declared-structure boundary. It can reject a `mixed` or `user_provided` memo with no provenance entries, and it can reject a `basis: "fact"` entry without a non-empty `source` or terminal `[verify]` marker. It cannot detect an author who relabels a factual claim as `basis: "assessment"`, cannot tell whether a `[verify]`-marked claim is fabricated, and cannot scan `reasoning_only` prose for determinative real-world facts. `[verify]` means "force human review"; it is not evidence that the claim is true.
+
 ### 3. Source quality
 
 `SOURCE_POLICY.md` defines tiering rules; the toolkit does not currently classify a URL into a tier or refuse a source on quality grounds. A brief built entirely on Tier-3 commentary can pass validation if it is otherwise well-structured.

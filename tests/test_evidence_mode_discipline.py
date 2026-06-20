@@ -57,3 +57,34 @@ def test_failure_passes_schema_but_fails_discipline(path: Path) -> None:
     discipline = check_evidence_mode_discipline(memo)
     assert not discipline["ok"], f"{path.name}: discipline check unexpectedly passed"
     assert discipline["errors"], f"{path.name}: discipline failed with no errors recorded"
+
+
+def test_verify_marker_allows_trailing_punctuation_but_not_mid_sentence() -> None:
+    trailing_period = {
+        "meta": {"evidence_mode": "mixed"},
+        "audit": {"provenance": [{"claim": "Real sourced fact needing review [verify].", "basis": "fact"}]},
+    }
+    mid_sentence = {
+        "meta": {"evidence_mode": "mixed"},
+        "audit": {"provenance": [{"claim": "Real sourced fact [verify] still asserted later.", "basis": "fact"}]},
+    }
+
+    assert check_evidence_mode_discipline(trailing_period)["ok"]
+
+    result = check_evidence_mode_discipline(mid_sentence)
+    assert not result["ok"]
+    assert "no source and no [verify] marker" in result["errors"][0]
+
+
+@pytest.mark.parametrize("mode", ["user_provided", "mixed"])
+def test_source_backed_modes_require_at_least_one_provenance_entry(mode: str) -> None:
+    result = check_evidence_mode_discipline({"meta": {"evidence_mode": mode}, "audit": {"provenance": []}})
+
+    assert not result["ok"]
+    assert result["errors"] == [f"audit.provenance must contain at least one entry when evidence_mode={mode}"]
+
+
+def test_reasoning_only_allows_empty_provenance() -> None:
+    result = check_evidence_mode_discipline({"meta": {"evidence_mode": "reasoning_only"}, "audit": {"provenance": []}})
+
+    assert result == {"ok": True, "errors": []}
