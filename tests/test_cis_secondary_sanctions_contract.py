@@ -237,6 +237,27 @@ def test_cis_clean_ownership_does_not_flag_ubo(monkeypatch):
     assert not any("undisclosed or unverified" in line for line in resp["limitations"])
 
 
+def test_cis_country_level_anti_circumvention_flag(monkeypatch):
+    """A counterparty domiciled in a jurisdiction under EU country-level anti-circumvention
+    (Kyrgyzstan, 20th package) raises a sharper limitation; a non-listed jurisdiction does not."""
+    monkeypatch.setenv("OPENSANCTIONS_DISABLED", "1")
+
+    def _req(jurisdiction: str) -> dict:
+        return {
+            "counterparty": {"name": "Example Trading LLP", "jurisdiction": jurisdiction},
+            "exposure_facets": ["transit_or_re_export"],
+            "dated_sources": [{"id": "s1", "source_type": "ofac_sdn_extract", "title": "x", "date": "2026-05-20"}],
+            "risk_question": "q",
+            "decision_stage": "onboarding",
+        }
+
+    kg = services.cis_secondary_sanctions_exposure(_req("Kyrgyzstan"))["response"]
+    assert any("country-level anti-circumvention" in line for line in kg["limitations"])
+
+    kz = services.cis_secondary_sanctions_exposure(_req("Kazakhstan"))["response"]
+    assert not any("country-level anti-circumvention" in line for line in kz["limitations"])
+
+
 def test_cis_limitations_do_not_leak_env_var_names(monkeypatch):
     """The user-facing limitations array must not echo internal env-var names
     (OPENSANCTIONS_DISABLED / OPENSANCTIONS_API_KEY / WATCHMAN_URL). Dogfood

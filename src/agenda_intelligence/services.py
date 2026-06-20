@@ -589,6 +589,20 @@ CIRCUMVENTION_WATCH_JURISDICTIONS = {
     "uae": "United Arab Emirates",
 }
 
+# Jurisdictions where the EU has ACTUALLY activated its country-level
+# anti-circumvention tool (Art. 12i-style country listing), as opposed to the
+# broader circumvention-watch set above. Kyrgyzstan is the first activation, in
+# the 20th sanctions package (2026-04): specific item categories (metalworking /
+# CNC machining centres, telecom equipment) are restricted to the country to
+# prevent onward re-export to Russia, and several regional financial institutions
+# were transaction-banned in the same package. Sharper than circumvention-watch
+# because a country-level restriction plus regional FI designations is live.
+# Presence-flagging only; not a sanctions determination. Lowercased; substring
+# match against the counterparty jurisdiction field.
+COUNTRY_LEVEL_ANTI_CIRCUMVENTION = {
+    "kyrgyzstan": "Kyrgyzstan",
+}
+
 # OFAC FAQ 1148 / 1151 named sectors of the Russian Federation economy. A
 # counterparty operating in any of these (other than "other") is an FFI
 # sanctions-exposure point under EO 14024 as amended by EO 14114. Presence-
@@ -1572,6 +1586,19 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
             "Ultimate beneficial owner is undisclosed or unverified in the supplied ownership chain; "
             "the counterparty cannot be fully screened until the UBO is resolved."
         )
+    cp_jurisdiction = (request_json.get("counterparty") or {}).get("jurisdiction")
+    if isinstance(cp_jurisdiction, str):
+        cp_jur_lowered = cp_jurisdiction.lower()
+        for token, label in COUNTRY_LEVEL_ANTI_CIRCUMVENTION.items():
+            if token in cp_jur_lowered:
+                limitations.append(
+                    f"Counterparty domiciled in {label}, now subject to EU country-level anti-circumvention "
+                    "measures (first activated in the 20th sanctions package): confirm the specific restricted "
+                    "item categories and onward destination, and check correspondent-banking exposure to any "
+                    "regional financial institution designated in that package. Escalation flag for human "
+                    "review, not a sanctions determination."
+                )
+                break
     limitations.append(
         "Name match against a sanctions list is not legal-entity identity verification. " "Human review is required."
     )
@@ -1921,13 +1948,16 @@ MARKET_ENTRY_EVIDENCE_GAP_DETAILS: dict[str, tuple[str, str, str, str, str]] = {
         "Entity model choice and signature.",
     ),
     "currency_control_and_repatriation_note": (
-        "Note on currency-contract registration thresholds, repatriation reporting, and how supplier payments "
+        "Note on currency-contract registration (mandatory at the USD 50,000 threshold for legal entities under "
+        "the 2026 currency-control rules), repatriation reporting, and how supplier payments, intercompany flows, "
         "and profit repatriation will clear local banks.",
-        "Currency-control registration and repatriation reporting affect how, and how quickly, money can move "
-        "in and out after commitment.",
+        "Under the 2026 currency-control regime local banks can delay or refuse cross-border intercompany "
+        "transfers (capital, shareholder loans, royalties, management fees) that lack demonstrable economic "
+        "substance, so substance evidence affects how, and how quickly, money moves after commitment.",
         "Treasury / banking advisor",
-        "Confirm currency-contract registration and repatriation steps with the servicing bank.",
-        "Cross-border payment and profit-repatriation planning.",
+        "Confirm currency-contract registration at the USD 50,000 threshold and prepare economic-substance "
+        "evidence for intercompany flows with the servicing bank.",
+        "Cross-border payment, intercompany-flow, and profit-repatriation planning.",
     ),
     "work_permit_and_local_employment_quota_note": (
         "Note on work-permit requirements and local-employment ratio / quota obligations for the planned "
