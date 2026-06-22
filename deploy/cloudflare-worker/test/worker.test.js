@@ -86,7 +86,7 @@ test("agent card uses request origin for live endpoints", () => {
       "agenda-signals"
     ]
   );
-  assert.equal(card.skills[0].name, "Sanctions and policy risk signal screen");
+  assert.equal(card.skills[0].name, "Sanctions and policy risk signal triage");
   assert.ok(card.skills[0].tags.includes("policy-risk"));
   assert.equal(
     card.x_agenda_intelligence.wrapper_scope,

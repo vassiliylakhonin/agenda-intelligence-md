@@ -677,7 +677,7 @@ function agentCard(request, env = {}) {
     skills: [
       {
         id: "agenda-signal-screen",
-        name: "Sanctions and policy risk signal screen",
+        name: "Sanctions and policy risk signal triage",
         description:
           "Returns a free live A2A signal screen for sanctions, policy, corridor, and regulatory-risk questions: risk signal, affected regions, required source categories, evidence gaps, watch-next indicators, and recommended MCP tool.",
         tags: [
