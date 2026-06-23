@@ -849,7 +849,7 @@ function applyAgentProfile(card, request, env = {}) {
   card.name = "Kazakhstan / Middle Corridor Deal Risk Gate";
   card.documentationUrl = MIDDLE_CORRIDOR_DOCS_URL;
   card.description =
-    "A2A-compatible evidence-readiness gate for Kazakhstan-Caspian / Middle Corridor logistics, trade-finance, procurement, and insurance-adjacent workflows. Bring route, cargo, counterparties, and dated sources; get structured deal-risk triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, risk signal, human-review routing, sanctions-relevant / re-export jurisdiction flags, a domestic-legal vs foreign-sanctions exposure decomposition, and a vessel deceptive-shipping-practice checklist. Presence-flagging and evidence triage only, not a sanctions determination.";
+    "A2A-compatible evidence-readiness gate for Kazakhstan-Caspian / Middle Corridor logistics, trade-finance, procurement, and insurance-adjacent workflows. Bring route, cargo, counterparties, and dated sources; get structured deal-risk triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, risk signal, human-review routing, and named sanctions-exposure flags: OFAC named-sector (EO 14024/14114) and newly-formed-counterparty red flags, EU re-export / circumvention-watch jurisdictions (incl. the 20th-package measures on Kyrgyzstan), dual-use cargo screened against the EU/US Common High Priority List, a domestic-legal vs foreign-sanctions exposure decomposition, and a vessel deceptive-shipping-practice checklist. Deterministic rule-based logic, no model in the decision path. Presence-flagging and evidence triage only, not a sanctions determination.";
   card.provider.legalEntity.sameAs = [
     "https://github.com/vassiliylakhonin",
     "https://pypi.org/project/agenda-intelligence-md/",
@@ -902,7 +902,7 @@ function applyAgentProfile(card, request, env = {}) {
       id: "sanctions-adjacency-evidence-gate",
       name: "Sanctions adjacency evidence gate",
       description:
-        "Provides a pre-compliance evidence gate for sanctions-adjacent Kazakhstan and Central Asia corridor exposure: source-backed claims, unsupported assertions, missing ownership/counterparty/vessel evidence, and human-review triggers. Not legal or compliance advice.",
+        "Provides a pre-compliance evidence gate for sanctions-adjacent Kazakhstan and Central Asia corridor exposure: OFAC named-sector (EO 14024/14114) and newly-formed-counterparty flags, EU re-export / circumvention-watch jurisdictions, dual-use cargo against the EU/US Common High Priority List, missing ownership/counterparty/vessel evidence, and human-review triggers. Deterministic rule-based presence-flagging; not legal or compliance advice, not a sanctions determination.",
       tags: [
         "sanctions-adjacency",
         "pre-compliance",
