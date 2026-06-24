@@ -54,6 +54,54 @@
         "review_ready"
       ]
     },
+    "link_integrity": {
+      "description": "Observe-only structural lint of cited source-URL well-formedness. Present only when at least one supplied source carries a malformed or placeholder URL. Structural check only: it does not fetch URLs, verify that a page exists, perform live retrieval, or verify factual content. It does not change the triage recommendation, risk signal, operational decision, or evidence gaps.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checked",
+        "flagged"
+      ],
+      "properties": {
+        "checked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "well_formed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "illustrative": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "flagged": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "url",
+              "reason"
+            ],
+            "properties": {
+              "source_id": {
+                "type": "string"
+              },
+              "source_type": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
     "operational_decision": {
       "description": "Logistics/ops-facing booking decision derived from the decision-readiness score, risk signal, triage recommendation, and decision stage. Triage routing only; not clearance, approval, a sanctions determination, or any legal, sanctions, compliance, financial, investment, insurance, or trading advice. It never issues a hard reject (a compliance/legal call) and stops at hold or escalate. Human review is required before any commercial action.",
       "type": "object",

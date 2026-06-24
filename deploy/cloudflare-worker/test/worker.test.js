@@ -299,6 +299,38 @@ test("worker deal-risk contract: dual-use cargo does not move the structural sco
   assert.equal(benign.risk_signal, dualUse.risk_signal);
 });
 
+test("worker deal-risk contract: link_integrity is observe-only (Python parity)", () => {
+  // No url on any source -> no link_integrity block (field omitted).
+  const base = dealRiskContractResponseForRequest(baseDealRiskRequest());
+  assert.equal(base.link_integrity, undefined);
+
+  // Documented example.com placeholder -> illustrative, still no block.
+  const illustrative = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      dated_sources: [
+        { id: "e1", source_type: "port_operator_notice", title: "x", date: "2026-05-20", url: "https://example.com/x" }
+      ]
+    })
+  );
+  assert.equal(illustrative.link_integrity, undefined);
+
+  // A malformed url surfaces a flag but must change nothing else.
+  const flagged = dealRiskContractResponseForRequest(
+    baseDealRiskRequest({
+      dated_sources: [{ id: "e1", source_type: "port_operator_notice", title: "x", date: "2026-05-20", url: "ftp://tbd" }]
+    })
+  );
+  assert.ok(flagged.link_integrity);
+  assert.ok(flagged.link_integrity.checked >= 1);
+  assert.ok(flagged.link_integrity.flagged.some((f) => f.url === "ftp://tbd"));
+
+  // Observe-only: verdict-bearing fields match the no-url base run.
+  assert.equal(flagged.triage_recommendation, base.triage_recommendation);
+  assert.equal(flagged.risk_signal, base.risk_signal);
+  assert.equal(flagged.decision_readiness_score, base.decision_readiness_score);
+  assert.deepEqual(flagged.minimum_sources_before_go, base.minimum_sources_before_go);
+});
+
 test("worker deal-risk contract: dual-use without end-user evidence flags the gap (Python parity)", () => {
   const phrase = "no end-user / re-export evidence is on hand";
   const without = dealRiskContractResponseForRequest(baseDealRiskRequest({ cargo: "microcontrollers and RF modules" }));
