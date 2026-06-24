@@ -95,6 +95,14 @@ A2A (JSON-RPC over the worker `/message/send` endpoint):
 }
 ```
 
+## Supporting research (empirical context)
+
+The dark-fleet, ship-to-ship, and AIS-manipulation facets this worker flags are not hypothetical: recent maritime-detection research documents both their prevalence and the difficulty of detecting them, which is why a documented evidence-readiness check is warranted *before* fixing or sailing. This is empirical corroboration of the practices — it is **not** the regulatory basis (that remains OFAC / EU / UK OFSI / UN guidance), and the worker implements none of these detection methods; it consumes caller-supplied dated evidence and flags what is missing.
+
+- **Dark ship-to-ship transfers** — "Automatic Detection of Dark Ship-to-Ship Transfers using Deep Learning and Satellite Imagery" ([arXiv:2404.07607](https://arxiv.org/abs/2404.07607)) detected over 400 dark transshipment events in the Kerch Strait since 2022 from satellite imagery cross-referenced with vessel tracking, in the context of the EU ban on port access for vessels suspected of STS-transferring Russian-origin cargo. Grounds the `sts_transfer` facet and the `ais_track_record` source requirement.
+- **Dark (AIS-off) vessels** — "Sea-cret Agents: Maritime Abduction for Region Generation to Expose Dark Vessel Trajectories" ([arXiv:2502.01503](https://arxiv.org/abs/2502.01503)) uses abduction and logic programming to locate vessels that disable AIS to conceal illicit activity. Corroborates the `dark_fleet_indicators` facet and why an AIS-continuity gap is a review trigger, not a benign artifact.
+- **AIS / GNSS spoofing** — "SeaSpoofFinder – Potential GNSS Spoofing Event Detection Using AIS" ([arXiv:2602.16257](https://arxiv.org/abs/2602.16257)) flags implausible vessel movements and cross-validates anomalies across ships to distinguish spoofing from single-vessel artifacts. Corroborates the `ais_manipulation` facet — spoofing, not only signal gaps.
+
 ## Honest traction note
 
 As of 2026-06-03, this worker has zero paying customers, zero named pilot users, and no usage above operator smoke tests. It is shipped as a portfolio-grade, topical vertical worker — a concrete artifact for technical evaluators and a contract real practitioners can inspect — not a claim of production traction. The deployed Cloudflare Worker A2A endpoint and its `wrangler` env are a deploy-time follow-up; the Python service, HTTP route, and A2A profile are live in-package.
