@@ -11,6 +11,7 @@ import hashlib
 import json
 from importlib import resources
 from typing import Optional
+from urllib.parse import urlparse
 
 from agenda_intelligence import __version__, upstream_opensanctions
 from agenda_intelligence.eval import score_before_after
@@ -347,6 +348,72 @@ def _evidence_sources(evidence_json: dict) -> list[dict]:
     for key in ["sources", "evidence"]:
         sources.extend(source for source in evidence_json.get(key, []) or [] if isinstance(source, dict))
     return sources
+
+
+_RESERVED_LINK_HOSTS = {"example.com", "example.org", "example.net", "localhost"}
+_RESERVED_LINK_TLDS = (".example", ".test", ".invalid", ".localhost")
+_LINK_PLACEHOLDER_TOKENS = {"tbd", "n/a", "na", "none", "xxx", "todo", "pending", "url"}
+
+
+def _classify_source_url(url: str) -> str:
+    """Classify a cited source URL by structural well-formedness.
+
+    Returns ``well_formed``, ``illustrative`` (a documented placeholder host
+    such as example.com — the repo's own example convention, not a defect), or
+    ``malformed``. Structural lint only: it does not fetch the URL, verify that
+    a page exists, perform live retrieval, or check content.
+    """
+    raw = (url or "").strip()
+    if not raw or raw.lower() in _LINK_PLACEHOLDER_TOKENS:
+        return "malformed"
+    parsed = urlparse(raw)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return "malformed"
+    host = (parsed.hostname or "").lower()
+    if host in _RESERVED_LINK_HOSTS or host.endswith(_RESERVED_LINK_TLDS):
+        return "illustrative"
+    return "well_formed"
+
+
+def _link_integrity(sources: list[dict]) -> Optional[dict]:
+    """Observe-only structural lint of cited source URLs.
+
+    Returns a diagnostic block only when at least one supplied source carries a
+    malformed URL; returns ``None`` otherwise so callers omit the field and
+    leave existing output byte-identical. Never fetches URLs, never performs
+    live retrieval, and never changes a triage recommendation or evidence gap.
+    """
+    checked = 0
+    well_formed = 0
+    illustrative = 0
+    flagged: list[dict] = []
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        url = source.get("url")
+        if not isinstance(url, str) or not url.strip():
+            continue
+        checked += 1
+        verdict = _classify_source_url(url)
+        if verdict == "well_formed":
+            well_formed += 1
+        elif verdict == "illustrative":
+            illustrative += 1
+        else:
+            entry: dict = {"url": url, "reason": "url is not a well-formed http(s) link"}
+            if isinstance(source.get("id"), str):
+                entry["source_id"] = source["id"]
+            if isinstance(source.get("source_type"), str):
+                entry["source_type"] = source["source_type"]
+            flagged.append(entry)
+    if not flagged:
+        return None
+    return {
+        "checked": checked,
+        "well_formed": well_formed,
+        "illustrative": illustrative,
+        "flagged": flagged,
+    }
 
 
 def source_coverage(evidence_json: dict, category: Optional[str] = None) -> dict:
@@ -1213,6 +1280,9 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         response["front_company_indicators"] = list(FRONT_COMPANY_INDICATORS)
     if "shipment_value" in request_json:
         response["shipment_value"] = request_json["shipment_value"]
+    link_integrity = _link_integrity(request_json.get("dated_sources", []) or [])
+    if link_integrity is not None:
+        response["link_integrity"] = link_integrity
 
     response_validation = _validate_json(response, "middle-corridor-deal-risk-response.schema.json")
     return {

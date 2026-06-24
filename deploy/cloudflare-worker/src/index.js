@@ -3935,7 +3935,63 @@ function dealRiskContractResponseForRequest(request) {
     response.front_company_indicators = [...FRONT_COMPANY_INDICATORS];
   }
   if (request.shipment_value) response.shipment_value = request.shipment_value;
+  const linkIntegrityBlock = linkIntegrity(request.dated_sources);
+  if (linkIntegrityBlock) response.link_integrity = linkIntegrityBlock;
   return response;
+}
+
+// Observe-only structural lint of cited source URLs. Mirrors the Python
+// services._link_integrity: classifies dated_sources[].url as well_formed,
+// illustrative (documented placeholder hosts such as example.com), or
+// malformed, and returns a diagnostic block only when at least one URL is
+// malformed. It never fetches URLs, never performs live retrieval, and never
+// changes a triage recommendation or evidence gap.
+const RESERVED_LINK_HOSTS = new Set(["example.com", "example.org", "example.net", "localhost"]);
+const RESERVED_LINK_TLDS = [".example", ".test", ".invalid", ".localhost"];
+const LINK_PLACEHOLDER_TOKENS = new Set(["tbd", "n/a", "na", "none", "xxx", "todo", "pending", "url"]);
+
+function classifySourceUrl(url) {
+  const raw = typeof url === "string" ? url.trim() : "";
+  if (!raw || LINK_PLACEHOLDER_TOKENS.has(raw.toLowerCase())) return "malformed";
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return "malformed";
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "malformed";
+  if (!parsed.hostname) return "malformed";
+  const host = parsed.hostname.toLowerCase();
+  if (RESERVED_LINK_HOSTS.has(host) || RESERVED_LINK_TLDS.some((tld) => host.endsWith(tld))) {
+    return "illustrative";
+  }
+  return "well_formed";
+}
+
+function linkIntegrity(sources) {
+  let checked = 0;
+  let wellFormed = 0;
+  let illustrative = 0;
+  const flagged = [];
+  for (const source of Array.isArray(sources) ? sources : []) {
+    if (!source || typeof source !== "object") continue;
+    const url = source.url;
+    if (typeof url !== "string" || !url.trim()) continue;
+    checked += 1;
+    const verdict = classifySourceUrl(url);
+    if (verdict === "well_formed") {
+      wellFormed += 1;
+    } else if (verdict === "illustrative") {
+      illustrative += 1;
+    } else {
+      const entry = { url, reason: "url is not a well-formed http(s) link" };
+      if (typeof source.id === "string") entry.source_id = source.id;
+      if (typeof source.source_type === "string") entry.source_type = source.source_type;
+      flagged.push(entry);
+    }
+  }
+  if (flagged.length === 0) return null;
+  return { checked, well_formed: wellFormed, illustrative, flagged };
 }
 
 function sourcePlanForModules(modules) {

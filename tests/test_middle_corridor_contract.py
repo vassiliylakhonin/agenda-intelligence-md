@@ -947,3 +947,46 @@ def test_middle_corridor_flags_sanctions_exposed_route_segment():
     assert "route-screening escalation flag for human review" in joined
     # Boundary: must NOT phrase it as a determination.
     assert "not a sanctions determination" in joined
+
+
+def test_middle_corridor_link_integrity_is_observe_only_and_non_breaking():
+    """v1 source-URL link-integrity lint is observe-only.
+
+    - Canonical example URLs (example.com) classify as illustrative, never
+      flagged, so the diagnostic block is absent and existing output is
+      byte-identical to before this feature.
+    - A malformed URL surfaces a link_integrity block but does NOT change the
+      triage recommendation, risk signal, readiness, evidence gaps, or any
+      other field (run_provenance excepted: its sha256 input digest legitimately
+      tracks the changed input).
+    - The response carrying the new optional field still validates against the
+      frozen response contract.
+    """
+    import copy
+
+    from agenda_intelligence import services
+
+    request = load_json(CONTRACT_DIR / "ready_for_human_review.request.json")
+
+    base = services.middle_corridor_deal_risk(copy.deepcopy(request))
+    assert base["valid"] is True
+    assert "link_integrity" not in base["response"]
+
+    mutated_request = copy.deepcopy(request)
+    mutated_request["dated_sources"][0]["url"] = "ftp://tbd"
+    mutated = services.middle_corridor_deal_risk(mutated_request)
+    assert mutated["valid"] is True
+
+    link_integrity = mutated["response"].get("link_integrity")
+    assert link_integrity is not None
+    assert link_integrity["checked"] >= 1
+    assert any(flag["url"] == "ftp://tbd" for flag in link_integrity["flagged"])
+
+    # Observe-only: nothing except link_integrity (and the input-bound provenance
+    # digest) changes versus the base run.
+    ignore = {"link_integrity", "run_provenance"}
+    base_cmp = {k: v for k, v in base["response"].items() if k not in ignore}
+    mutated_cmp = {k: v for k, v in mutated["response"].items() if k not in ignore}
+    assert mutated_cmp == base_cmp
+
+    assert_valid(RESPONSE_SCHEMA_PATH, _write_tmp(mutated["response"]))
