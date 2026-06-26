@@ -84,8 +84,9 @@ The product runtime defaults to `live_retrieval: false`. Specific vertical-worke
 
 | Upstream | License | Used by profile | Activation status | Purpose |
 |---|---|---|---|---|
-| Watchman (`moov-io/watchman`, self-host) | Apache-2.0 | `cis_secondary_sanctions` (preferred) | **Deferred** until operator sets `WATCHMAN_URL` (self-host on free-tier container) | Counterparty name → matched OFAC SDN / EU consolidated / UK OFSI / UN entries with `match` score |
-| OpenSanctions consolidated dataset (`api.opensanctions.org`) | CC-BY 4.0 (data); hosted API is paid €0.10/call | `cis_secondary_sanctions` (fallback) | **Deferred** until operator sets `OPENSANCTIONS_API_KEY` | Counterparty name → matched SDN / EU consolidated / UK OFSI / UN entries with Yente fuzzy match scoring |
+| Snapshot (compact public-list name index, fetched from the portfolio site) | Public official lists (OFAC SDN + consolidated, EU, UK FCDO) | `cis_secondary_sanctions` (preferred, $0) | **Active** — `SNAPSHOT_INDEX_URL` set, deployed 2026-06-26 (ADR 0020) | Counterparty name → exact + token-overlap matches against a fresh public-list snapshot, matched in-worker (no external host) |
+| Watchman (`moov-io/watchman`, self-host) | Apache-2.0 | `cis_secondary_sanctions` (self-host option) | **Deferred** until operator sets `WATCHMAN_URL` (self-host on free-tier container) | Counterparty name → matched OFAC SDN / EU consolidated / UK OFSI / UN entries with `match` score |
+| OpenSanctions consolidated dataset (`api.opensanctions.org`) | CC-BY 4.0 (data); hosted API is paid €0.10/call | `cis_secondary_sanctions` (paid fallback) | **Deferred** until operator sets `OPENSANCTIONS_API_KEY` | Counterparty name → matched SDN / EU consolidated / UK OFSI / UN entries with Yente fuzzy match scoring |
 
 Adding a new upstream requires a CHANGELOG entry and a row in this table. A new ADR is required only when the new upstream changes the license model, attribution model, or rate-limit shape materially.
 
