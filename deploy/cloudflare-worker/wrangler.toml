@@ -43,6 +43,10 @@ workers_dev = true
 
 [env.cis-secondary-sanctions.vars]
 AGENT_PROFILE = "cis_secondary_sanctions"
+# Snapshot upstream activation (ADR 0014): $0 server-side name screening against
+# the published compact public-list index. Not a secret (public URL), so kept as
+# a declarative var. Set SNAPSHOT_DISABLED=1 to deactivate without removing this.
+SNAPSHOT_INDEX_URL = "https://vassiliylakhonin.github.io/docs/assets/sanctions-name-index-compact.json"
 
 [[env.cis-secondary-sanctions.kv_namespaces]]
 binding = "AGENDA_USAGE"
