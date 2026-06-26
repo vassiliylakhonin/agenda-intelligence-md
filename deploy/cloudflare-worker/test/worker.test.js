@@ -22,6 +22,10 @@ import {
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "../src/usage_constants.js";
 import { validateAgentCard } from "../scripts/verify-agent-card.js";
 import { matchCounterparty as matchCounterpartyAgainstWatchman } from "../src/upstream_watchman.js";
+import {
+  matchCounterparty as matchCounterpartyAgainstSnapshot,
+  __resetCache as resetSnapshotCache
+} from "../src/upstream_snapshot.js";
 
 const request = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
   method: "POST",
@@ -108,6 +112,61 @@ test("Watchman adapter queries real /search path and normalizes grouped results"
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+const SNAPSHOT_FIXTURE = JSON.stringify({
+  schema_version: "sanctions-name-index-compact.v1",
+  generated_at_utc: "2026-06-26T05:36:01+00:00",
+  summary: { source_count: 2, name_count: 3 },
+  src: [
+    ["US OFAC", "SDN"],
+    ["European Union", "EU consolidated financial sanctions"]
+  ],
+  entries: [
+    ["GAZPROM NEFT PJSC", 0],
+    ["GAZPROM EXPORT", 0],
+    ["SOME UNRELATED COMPANY", 1]
+  ]
+});
+
+test("Snapshot adapter matches exact + token overlap against the compact index", async () => {
+  resetSnapshotCache();
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    calls.push(new URL(url));
+    return new Response(SNAPSHOT_FIXTURE, { status: 200, headers: { "content-type": "application/json" } });
+  };
+  try {
+    const env = { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" };
+
+    const exact = await matchCounterpartyAgainstSnapshot(env, { name: "Gazprom Export" });
+    assert.equal(exact.status, "success");
+    assert.equal(calls.length, 1);
+    assert.equal(exact.matches[0].name, "GAZPROM EXPORT");
+    assert.equal(exact.matches[0].score, 1);
+    assert.equal(exact.matches[0].source_type, "ofac_sdn_extract");
+
+    // Second call reuses the module-global cache (no new fetch).
+    const token = await matchCounterpartyAgainstSnapshot(env, { name: "Gazprom Neft" });
+    assert.equal(token.status, "success");
+    assert.equal(calls.length, 1);
+    assert.equal(token.matches[0].name, "GAZPROM NEFT PJSC");
+
+    // An unrelated name finds no match (no false positive).
+    const none = await matchCounterpartyAgainstSnapshot(env, { name: "Totally Different Holding" });
+    assert.equal(none.status, "success");
+    assert.deepEqual(none.matches, []);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Snapshot adapter degrades to disabled when SNAPSHOT_INDEX_URL is unset", async () => {
+  resetSnapshotCache();
+  const result = await matchCounterpartyAgainstSnapshot({}, { name: "Gazprom" });
+  assert.equal(result.status, "disabled");
+  assert.deepEqual(result.matches, []);
 });
 
 test("agent card uses request origin for live endpoints", () => {
@@ -1516,12 +1575,13 @@ test("cis_secondary_sanctions profile is detected from host and env", () => {
   assert.equal(card.x_agenda_intelligence.live_retrieval.active, false);
   assert.equal(card.x_agenda_intelligence.live_retrieval.active_upstream, null);
   const options = card.x_agenda_intelligence.live_retrieval.upstream_options;
-  assert.ok(Array.isArray(options) && options.length === 2);
-  // Watchman (free self-host) is listed first, OpenSanctions (paid) second.
-  assert.equal(options[0].name, "Watchman");
-  assert.equal(options[0].license, "Apache-2.0");
-  assert.equal(options[1].name, "OpenSanctions");
-  assert.equal(options[1].license, "CC-BY-4.0");
+  assert.ok(Array.isArray(options) && options.length === 3);
+  // Snapshot ($0, no host) first, then Watchman (free self-host), then OpenSanctions (paid).
+  assert.equal(options[0].name, "Snapshot");
+  assert.equal(options[1].name, "Watchman");
+  assert.equal(options[1].license, "Apache-2.0");
+  assert.equal(options[2].name, "OpenSanctions");
+  assert.equal(options[2].license, "CC-BY-4.0");
 });
 
 test("agent card live_retrieval flips active=true with Watchman when WATCHMAN_URL is set", () => {
@@ -1559,10 +1619,19 @@ test("statusInfo exposes per-profile live_retrieval capability for cis_secondary
   assert.equal(status.live_retrieval.capability_declared, true);
   assert.equal(status.live_retrieval.active, false);
   assert.equal(status.live_retrieval.active_upstream, null);
-  assert.equal(status.live_retrieval.upstream_options[0].name, "Watchman");
+  assert.equal(status.live_retrieval.upstream_options[0].name, "Snapshot");
   assert.equal(status.live_retrieval.upstream_options[0].active, false);
-  assert.equal(status.live_retrieval.upstream_options[1].name, "OpenSanctions");
+  assert.equal(status.live_retrieval.upstream_options[1].name, "Watchman");
+  assert.equal(status.live_retrieval.upstream_options[2].name, "OpenSanctions");
   assert.ok(typeof status.live_retrieval.deferral_note === "string");
+});
+
+test("statusInfo flips live_retrieval boundary to true with Snapshot when SNAPSHOT_INDEX_URL is set", () => {
+  const status = statusInfo(cisRequest, { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" });
+  assert.equal(status.boundaries.live_retrieval, true);
+  assert.equal(status.live_retrieval.active, true);
+  assert.equal(status.live_retrieval.active_upstream, "Snapshot");
+  assert.equal(status.live_retrieval.deferral_note, undefined);
 });
 
 test("statusInfo flips live_retrieval boundary to true when OPENSANCTIONS_API_KEY is set", () => {
