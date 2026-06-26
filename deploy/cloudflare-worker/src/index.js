@@ -15,6 +15,13 @@ import {
   matchCounterparty as matchCounterpartyAgainstWatchman
 } from "./upstream_watchman.js";
 
+import {
+  SNAPSHOT_ATTRIBUTION,
+  SNAPSHOT_LICENSE,
+  SNAPSHOT_PROJECT_URL,
+  matchCounterparty as matchCounterpartyAgainstSnapshot
+} from "./upstream_snapshot.js";
+
 import { buildJwks, maybeSignCard } from "./jws.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 
@@ -440,6 +447,14 @@ const PROFILE_LIVE_RETRIEVAL = {
   cis_secondary_sanctions: {
     capability_declared: true,
     upstream_options: [
+      {
+        name: "Snapshot",
+        license: SNAPSHOT_LICENSE,
+        homepage: SNAPSHOT_PROJECT_URL,
+        activation_env_var: "SNAPSHOT_INDEX_URL",
+        disable_env_var: "SNAPSHOT_DISABLED",
+        cost_model: "static public-list snapshot fetched by the worker; $0, no external host"
+      },
       {
         name: "Watchman",
         license: WATCHMAN_LICENSE,
@@ -1238,6 +1253,15 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
     active_upstream: activeOption ? activeOption.name : null,
     upstream_options: [
       {
+        name: "Snapshot",
+        homepage: SNAPSHOT_PROJECT_URL,
+        license: SNAPSHOT_LICENSE,
+        attribution_notice: SNAPSHOT_ATTRIBUTION,
+        activation_env_var: "SNAPSHOT_INDEX_URL",
+        disable_env_var: "SNAPSHOT_DISABLED",
+        cost_model: "static public-list snapshot fetched by the worker; $0, no external host"
+      },
+      {
         name: "Watchman",
         homepage: WATCHMAN_PROJECT_URL,
         license: WATCHMAN_LICENSE,
@@ -1260,7 +1284,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
     graceful_degrade: true,
     deferral_note: activeOption
       ? undefined
-      : "Per the 2026-05-27 update to ADR 0014, live retrieval upstreams are declared but not activated. Set WATCHMAN_URL (free self-host) or OPENSANCTIONS_API_KEY (paid) to activate. Profile currently operates on user-supplied evidence only."
+      : "Per the 2026-05-27 update to ADR 0014, live retrieval upstreams are declared but not activated. Set SNAPSHOT_INDEX_URL ($0 static snapshot, no host), WATCHMAN_URL (free self-host), or OPENSANCTIONS_API_KEY (paid) to activate. Profile currently operates on user-supplied evidence only."
   };
   card.x_agenda_intelligence.supported_contracts = ["cis_secondary_sanctions_exposure_contract"];
   card.x_agenda_intelligence.buyer_use_cases = [
@@ -3025,6 +3049,15 @@ async function matchAgainstActiveUpstream(env, counterparty) {
     return {
       upstream_name: null,
       result: await matchCounterpartyAgainstOpenSanctions(env, {
+        name: counterparty.name,
+        jurisdiction: counterparty.jurisdiction
+      })
+    };
+  }
+  if (active.name === "Snapshot") {
+    return {
+      upstream_name: "Snapshot",
+      result: await matchCounterpartyAgainstSnapshot(env, {
         name: counterparty.name,
         jurisdiction: counterparty.jurisdiction
       })
