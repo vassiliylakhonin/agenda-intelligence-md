@@ -21,6 +21,7 @@ import {
 } from "../src/index.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "../src/usage_constants.js";
 import { validateAgentCard } from "../scripts/verify-agent-card.js";
+import { matchCounterparty as matchCounterpartyAgainstWatchman } from "../src/upstream_watchman.js";
 
 const request = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
   method: "POST",
@@ -50,6 +51,64 @@ class MemoryKv {
     };
   }
 }
+
+test("Watchman adapter queries real /search path and normalizes grouped results", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    calls.push(new URL(url));
+    return new Response(
+      JSON.stringify({
+        SDNs: [
+          {
+            entityID: "18733",
+            sdnName: "VTB FACTORING LTD",
+            sdnType: "Entity",
+            program: ["RUSSIA-EO14024"],
+            match: 0.88
+          }
+        ],
+        euConsolidatedSanctionsList: [
+          {
+            EntityLogicalID: 135346,
+            NameAliasWholeNames: ["VEB.RF"],
+            EntitySubjectType: "enterprise",
+            match: 0.8
+          }
+        ],
+        ukConsolidatedSanctionsList: [
+          {
+            GroupID: 14195,
+            GroupType: "Entity",
+            Names: ["VTB", "VTB BANK (PJSC)"],
+            match: 1
+          }
+        ]
+      }),
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
+  };
+  try {
+    const result = await matchCounterpartyAgainstWatchman(
+      { WATCHMAN_URL: "https://watchman.example.com", AGENDA_USAGE: new MemoryKv() },
+      { name: "VTB", jurisdiction: "Russia", maxMatches: 5 }
+    );
+    assert.equal(result.status, "success");
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].pathname, "/search");
+    assert.equal(calls[0].searchParams.get("name"), "VTB");
+    assert.deepEqual(
+      result.matches.map((match) => match.source_type),
+      ["ofac_sdn_extract", "eu_consolidated_extract", "uk_ofsi_extract"]
+    );
+    assert.deepEqual(
+      result.matches.map((match) => match.name),
+      ["VTB FACTORING LTD", "VEB.RF", "VTB"]
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 test("agent card uses request origin for live endpoints", () => {
   const card = agentCard(request);

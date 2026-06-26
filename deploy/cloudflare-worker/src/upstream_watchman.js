@@ -2,9 +2,8 @@
 //
 // Watchman is an open-source (Apache 2.0) self-hosted OFAC / EU / UK OFSI / UN
 // consolidated sanctions search engine maintained by Moov Financial. It exposes
-// /v2/search?name=...&type=...&limit=...&minMatch=... and returns
-// entity objects with a `match` score (0-1) and `sourceList` (OFAC, EU, UK,
-// UN, etc.).
+// /search?name=...&type=...&limit=...&minMatch=... and returns grouped list
+// results with a `match` score (0-1).
 //
 // Used as a per-profile live retrieval upstream for the `cis_secondary_sanctions`
 // profile (per ADR 0014). Selected when env.WATCHMAN_URL is set. Activation is
@@ -31,7 +30,8 @@ export const DEFAULT_MAX_MATCHES = 5;
 export const DEFAULT_MIN_MATCH = 0.75;
 export const CACHE_KEY_PREFIX = "watchman:";
 
-// Watchman sourceList → canonical source_type used by the cis-secondary-sanctions schema.
+// Watchman source/list identifiers -> canonical source_type used by the
+// cis-secondary-sanctions schema.
 const SOURCE_LIST_TO_SOURCE_TYPE = {
   "us-ofac-sdn": "ofac_sdn_extract",
   "us_ofac_sdn": "ofac_sdn_extract",
@@ -46,6 +46,20 @@ const SOURCE_LIST_TO_SOURCE_TYPE = {
   "uk": "uk_ofsi_extract",
   "un-sc": "un_security_council_extract",
   "un": "un_security_council_extract"
+};
+
+const RESULT_KEY_TO_SOURCE_TYPE = {
+  SDNs: "ofac_sdn_extract",
+  altNames: "ofac_sdn_extract",
+  addresses: "ofac_sdn_extract",
+  sectoralSanctions: "ofac_sdn_extract",
+  deniedPersons: "dual_use_export_evidence",
+  bisEntities: "dual_use_export_evidence",
+  militaryEndUsers: "dual_use_export_evidence",
+  unverifiedCSL: "dual_use_export_evidence",
+  euConsolidatedSanctionsList: "eu_consolidated_extract",
+  ukConsolidatedSanctionsList: "uk_ofsi_extract",
+  ukSanctionsList: "uk_ofsi_extract"
 };
 
 export function attributionBlock() {
@@ -77,7 +91,10 @@ function cacheKey(name, jurisdiction, type) {
   return `${CACHE_KEY_PREFIX}${type}|${j}|${n}`;
 }
 
-function mapSourceListToSourceType(sourceList) {
+function mapSourceListToSourceType(sourceList, resultKey) {
+  if (resultKey && RESULT_KEY_TO_SOURCE_TYPE[resultKey]) {
+    return RESULT_KEY_TO_SOURCE_TYPE[resultKey];
+  }
   if (!sourceList) return "user_provided_note";
   const key = String(sourceList).toLowerCase();
   return SOURCE_LIST_TO_SOURCE_TYPE[key] || "user_provided_note";
@@ -137,34 +154,73 @@ function disabledResult(reason) {
   };
 }
 
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      const first = value.find((item) => item !== null && item !== undefined && String(item).trim());
+      if (first !== undefined) return String(first);
+    } else if (value !== null && value !== undefined && String(value).trim()) {
+      return String(value);
+    }
+  }
+  return "";
+}
+
+function normalizePrograms(entity) {
+  const programs = entity.program || entity.Programs || entity.topics || [];
+  return Array.isArray(programs) ? programs.map(String) : [];
+}
+
+function normalizeDatasets(entity, resultKey) {
+  const sourceList = entity.sourceList || entity.SourceList || entity.source_list || "";
+  if (sourceList) return [String(sourceList)];
+  return resultKey ? [String(resultKey)] : [];
+}
+
 function parseEntities(payload, maxMatches) {
-  // Watchman v2/search returns an object; the top-level array may be `entities`
-  // or per-list keys depending on the deployment. Normalize defensively.
-  const candidates =
-    (payload && (payload.entities || payload.results)) ||
-    [].concat(payload?.SDNs || [], payload?.altNames || [], payload?.addresses || []);
-  if (!Array.isArray(candidates)) return [];
+  // Watchman /search returns grouped arrays keyed by list name. Older or custom
+  // deployments may return a flat `entities` / `results` array, so keep that
+  // shape as a compatibility fallback.
+  const grouped = [];
+  if (payload && Array.isArray(payload.entities)) grouped.push(["entities", payload.entities]);
+  if (payload && Array.isArray(payload.results)) grouped.push(["results", payload.results]);
+  for (const key of Object.keys(RESULT_KEY_TO_SOURCE_TYPE)) {
+    if (Array.isArray(payload?.[key])) grouped.push([key, payload[key]]);
+  }
+
+  if (grouped.length === 0) return [];
   const matches = [];
-  for (const entity of candidates.slice(0, maxMatches)) {
-    if (!entity || typeof entity !== "object") continue;
-    const sourceList = entity.sourceList || (entity.sourceData && entity.sourceData.list) || "";
-    const sourceType = mapSourceListToSourceType(sourceList);
-    const name = entity.name || (entity.sourceData && entity.sourceData.sdnName) || "";
-    const score = typeof entity.match === "number" ? entity.match : null;
-    const entityType = entity.entityType || (entity.sourceData && entity.sourceData.sdnType) || null;
-    const programs =
-      (entity.sourceData && Array.isArray(entity.sourceData.program) && entity.sourceData.program) || [];
-    matches.push({
-      name,
-      schema: entityType || "Company",
-      datasets: sourceList ? [String(sourceList)] : [],
-      source_type: sourceType,
-      score,
-      opensanctions_id: null,
-      topics: programs.map(String),
-      jurisdictions: [],
-      watchman_source_id: entity.sourceID || null
-    });
+  for (const [resultKey, entities] of grouped) {
+    for (const entity of entities) {
+      if (!entity || typeof entity !== "object") continue;
+      const sourceList = entity.sourceList || (entity.sourceData && entity.sourceData.list) || "";
+      const sourceType = mapSourceListToSourceType(sourceList, resultKey);
+      const name = firstNonEmpty(
+        entity.name,
+        entity.sdnName,
+        entity.Name,
+        entity.Names,
+        entity.NameAliasWholeNames,
+        entity.AlternateNames,
+        entity.alternateName,
+        entity.sourceData && entity.sourceData.sdnName
+      );
+      const score = typeof entity.match === "number" ? entity.match : null;
+      const entityType =
+        entity.entityType || entity.Type || entity.GroupType || (entity.sourceData && entity.sourceData.sdnType) || null;
+      matches.push({
+        name,
+        schema: entityType || "Company",
+        datasets: normalizeDatasets(entity, resultKey),
+        source_type: sourceType,
+        score,
+        opensanctions_id: null,
+        topics: normalizePrograms(entity),
+        jurisdictions: [],
+        watchman_source_id: entity.sourceID || entity.entityID || entity.EntityID || entity.GroupID || null
+      });
+      if (matches.length >= maxMatches) return matches;
+    }
   }
   return matches;
 }
@@ -200,7 +256,7 @@ export async function matchCounterparty(env, options = {}) {
   const cached = await readCache(env, ck);
   if (cached) return cached;
 
-  const url = new URL(`${root}/v2/search`);
+  const url = new URL(`${root}/search`);
   url.searchParams.set("name", name.trim());
   url.searchParams.set("type", type);
   url.searchParams.set("limit", String(maxMatches));

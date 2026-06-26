@@ -28,14 +28,15 @@ AGENT_PROFILE = "kazakhstan"
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
 
-# CIS Secondary-Sanctions Exposure — per ADR 0014, this profile opts in to
-# live retrieval against the OpenSanctions consolidated dataset (CC-BY 4.0).
-# Before deploying with `wrangler deploy --env cis-secondary-sanctions`:
+# CIS Secondary-Sanctions Exposure — per ADR 0014, this profile declares
+# optional live sanctions-list retrieval. Watchman self-host is preferred
+# (Apache-2.0, no per-call fee); OpenSanctions hosted API remains a paid
+# fallback (CC-BY-4.0). Before deploying with activation:
+#   wrangler secret put WATCHMAN_URL --env cis-secondary-sanctions
+# or:
 #   wrangler secret put OPENSANCTIONS_API_KEY --env cis-secondary-sanctions
-# (free key at https://www.opensanctions.org/api/).
-# Without the secret the profile responds gracefully with
-# live_retrieval_status: disabled and triage based on user-supplied
-# evidence only.
+# Without either secret, the profile responds gracefully with
+# live_retrieval_status: disabled and triage based on user-supplied evidence.
 [env.cis-secondary-sanctions]
 name = "cis-secondary-sanctions-a2a"
 workers_dev = true

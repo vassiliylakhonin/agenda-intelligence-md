@@ -9,7 +9,7 @@ This Worker is intentionally small:
 - returns a sanctions/policy signal screen, source-planning guidance, quality gates, routing metadata, and install instructions for the stdio MCP server;
 - serves a human-readable HTML landing page at `GET /` for browser visitors (clients with `Accept: text/html`), JSON for everything else;
 - exposes a public JSON status endpoint at `GET /status` suitable for uptime monitoring (UptimeRobot, Better Stack, etc.) — includes version, profile, A2A protocol version, boundary flags;
-- does not call paid APIs, payment rails, wallets, or live retrieval;
+- does not call paid APIs, payment rails, wallets, or live retrieval by default;
 - does not replace the installable MCP server.
 
 ## Public endpoints
@@ -88,6 +88,25 @@ The Agentic Interaction Trust Gate profile deploys as:
 ```text
 https://agentic-interaction-trust-a2a.<your-subdomain>.workers.dev
 ```
+
+### Optional Watchman activation for CIS sanctions matching
+
+The `cis-secondary-sanctions` profile can use a self-hosted
+[`moov-io/watchman`](https://github.com/moov-io/watchman) instance for
+sanctions-list name matching. The Worker expects a public `WATCHMAN_URL` whose
+Watchman server answers `GET /search`.
+
+```bash
+cd deploy/cloudflare-worker
+npx wrangler secret put WATCHMAN_URL --env cis-secondary-sanctions
+npx wrangler deploy --env cis-secondary-sanctions
+curl https://cis-secondary-sanctions-a2a.<your-subdomain>.workers.dev/status
+```
+
+The status response should show `live_retrieval.active: true` and
+`active_upstream: "Watchman"`. Name matching remains a screening aid only: it is
+not legal-entity identity verification, ownership resolution, a 50% rule
+determination, or legal/compliance advice.
 
 Use this URL in Agenstry as an A2A agent URL:
 
