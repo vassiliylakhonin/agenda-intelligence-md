@@ -49,7 +49,7 @@ curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.worker
 
 Expected: JSON-RPC 2.0 with `triage_recommendation: "escalate_before_signature"`, route/cargo/value extraction, supplied-source detection, the minimum evidence still missing before go, and human-review escalation.
 
-The hosted wrapper is intentionally limited: no payments, no wallets, no factual-truth verification, and no legal/financial/compliance advice. Live retrieval is off by default and opt-in per vertical-worker profile only (currently `cis_secondary_sanctions`; see [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) and [SOURCE_POLICY.md](SOURCE_POLICY.md)). Private usage stats: [`deploy/cloudflare-worker/README.md`](deploy/cloudflare-worker/README.md). Full product behavior remains in the installable stdio MCP server.
+The hosted wrapper is intentionally limited: no payments, no wallets, no factual-truth verification, and no legal/financial/compliance advice. Live retrieval is off by default and opt-in per vertical-worker profile; it is currently active only for `cis_secondary_sanctions`, via the $0 Snapshot upstream (see [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) / [ADR 0020](docs/adr/0020-activate-snapshot-upstream-cis-secondary-sanctions.md) and [SOURCE_POLICY.md](SOURCE_POLICY.md)). Private usage stats: [`deploy/cloudflare-worker/README.md`](deploy/cloudflare-worker/README.md). Full product behavior remains in the installable stdio MCP server.
 
 ## Flagship commercial use case
 
@@ -93,12 +93,13 @@ It is a live vertical worker: a `kazakhstan_market_entry_readiness` service func
 
 For EU / UK / UAE / Singapore enhanced due diligence on CIS, Caucasus, and Central Asia counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Structured secondary-sanctions exposure evidence triage against OFAC EO 14114, EU sanctions package, UK OFSI, UN, and FATF / EAG typologies.
 
-This profile **declares the capability** for per-profile live retrieval with two upstream options, per [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md):
+This profile runs **per-profile live retrieval** with three upstream options, tried in order (free before paid), per [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) / [ADR 0020](docs/adr/0020-activate-snapshot-upstream-cis-secondary-sanctions.md):
 
-1. **Watchman** (preferred, free) — `moov-io/watchman` Apache-2.0 self-host on a free-tier container (Fly.io, Railway, Render). Set `WATCHMAN_URL` to activate.
-2. **OpenSanctions** (fallback, paid) — hosted API at €0.10/call. Set `OPENSANCTIONS_API_KEY` (30-day business-email trial at https://www.opensanctions.org/api/, then per-call billing).
+1. **Snapshot** (active, $0, no host) — the worker fetches a compact public-list name index (OFAC SDN + consolidated, EU, UK FCDO) published by the portfolio site and matches the counterparty name in-worker (exact + token overlap). Activated via `SNAPSHOT_INDEX_URL`; deployed and live since 2026-06-26.
+2. **Watchman** (free self-host) — `moov-io/watchman` Apache-2.0 self-host on an always-on container. Set `WATCHMAN_URL` to use instead.
+3. **OpenSanctions** (paid) — hosted API at €0.10/call. Set `OPENSANCTIONS_API_KEY` (30-day business-email trial at https://www.opensanctions.org/api/, then per-call billing).
 
-Both are currently deferred — the project has not committed to either, and no buyer has been confirmed. When both env vars are set, Watchman wins. When neither is set, the service degrades gracefully and triage is based on user-supplied evidence only — `live_retrieval_status: disabled` in the response and `boundaries.live_retrieval: false` in `/status`.
+The first active upstream wins (Snapshot, unless `SNAPSHOT_DISABLED=1`). When none is configured or the active one fails, the service degrades gracefully and triage is based on user-supplied evidence only — `live_retrieval_status: degraded` / `disabled` in the response. A match is a possible string match only, not identity verification or a sanctions determination; human review is required. No paying customers — illustrative usage only.
 
 - Live endpoint: <https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev> · [Agenstry](https://agenstry.com/agents/cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev)
 - HTTP: `POST /v1/cis-secondary-sanctions/exposure`
@@ -196,7 +197,7 @@ Endpoints:
 - `POST /v1/score` — heuristic before/after score
 - `POST /v1/middle-corridor/deal-risk` — Middle Corridor Deal Risk Gate (`middle-corridor-deal-risk-request.schema.json`)
 - `POST /v1/agentic-interaction/trust` — Agentic Interaction Trust Gate (`agentic-interaction-trust-request.schema.json`)
-- `POST /v1/cis-secondary-sanctions/exposure` — CIS Secondary-Sanctions Exposure triage (`cis-secondary-sanctions-request.schema.json`); set `OPENSANCTIONS_API_KEY` to enable live retrieval, otherwise the profile degrades gracefully to user-supplied evidence only
+- `POST /v1/cis-secondary-sanctions/exposure` — CIS Secondary-Sanctions Exposure triage (`cis-secondary-sanctions-request.schema.json`); live retrieval is active via the $0 Snapshot upstream (or set `WATCHMAN_URL` / `OPENSANCTIONS_API_KEY`), degrading gracefully to user-supplied evidence only if unavailable
 
 One-call probe:
 
