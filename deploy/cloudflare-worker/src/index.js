@@ -603,11 +603,53 @@ const MESSAGE_SEND_METHODS = new Set(["message/send", "tasks/send", "SendMessage
 // day a real counterparty needs gating:
 //   wrangler secret put MIDDLE_CORRIDOR_API_KEY --env middle-corridor-deal-risk-gate
 //   wrangler secret put AGENTIC_INTERACTION_TRUST_API_KEY --env agentic-interaction-trust
+//   wrangler secret put CIS_SECONDARY_SANCTIONS_API_KEY --env cis-secondary-sanctions
 function productionAuthKey(profile, env = {}) {
   if (profile === "kazakhstan") return env.MIDDLE_CORRIDOR_API_KEY || "";
   if (profile === "agentic_interaction_trust")
     return env.AGENTIC_INTERACTION_TRUST_API_KEY || "";
+  if (profile === "cis_secondary_sanctions")
+    return env.CIS_SECONDARY_SANCTIONS_API_KEY || "";
   return "";
+}
+
+// Best-effort soft rate limit on the message/send route. Off by default: when
+// RATE_LIMIT_PER_HOUR is unset or <= 0 the route is unthrottled (current state).
+// Set it per-env to cap free programmatic use while keeping the browser demo
+// usable — a human clicking the demo issues only a handful of calls/hour. KV is
+// eventually consistent, so this deters bulk scripting; it is NOT a hard
+// security control and it fails open on any storage error. Activation is the
+// go-live step, e.g. a [vars] entry or:
+//   wrangler secret put RATE_LIMIT_PER_HOUR --env cis-secondary-sanctions   # e.g. 60
+// Deactivate by removing it (or setting 0).
+function rateLimitPerHour(env = {}) {
+  const raw = Number.parseInt(env.RATE_LIMIT_PER_HOUR, 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : 0;
+}
+
+function clientIpFromRequest(request) {
+  const raw =
+    request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown";
+  return raw.split(",")[0].trim() || "unknown";
+}
+
+// Returns { limited, limit, count }. Fails open: a KV hiccup never blocks a
+// legitimate call. Buckets per profile + client IP + UTC hour.
+async function checkRateLimit(request, env, profile) {
+  const limit = rateLimitPerHour(env);
+  const kv = env?.AGENDA_USAGE;
+  if (!limit || !kv) return { limited: false, limit, count: 0 };
+  const ip = clientIpFromRequest(request);
+  const hour = new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH
+  const key = `rate:${profile || "unknown"}:${ip}:${hour}`;
+  try {
+    const current = Number.parseInt((await kv.get(key)) || "0", 10) || 0;
+    if (current >= limit) return { limited: true, limit, count: current };
+    await kv.put(key, String(current + 1), { expirationTtl: 7200 });
+    return { limited: false, limit, count: current + 1 };
+  } catch (_error) {
+    return { limited: false, limit, count: 0 };
+  }
 }
 
 function bearerTokenFromRequest(request) {
@@ -4861,6 +4903,19 @@ async function handlePost(request, env, ctx) {
         { "www-authenticate": "Bearer", "cache-control": "no-store" }
       );
     }
+    const rate = await checkRateLimit(request, env, profile);
+    if (rate.limited) {
+      return jsonResponse(
+        jsonRpcError(
+          payload.id ?? null,
+          -32002,
+          "Rate limit exceeded: too many requests from this client. Request API access for higher limits.",
+          { limit_per_hour: rate.limit, profile }
+        ),
+        429,
+        { "retry-after": "3600", "cache-control": "no-store" }
+      );
+    }
   }
   return jsonResponse(await handleJsonRpc(payload, request, env, ctx));
 }
@@ -5184,9 +5239,11 @@ export {
   dealRiskContractResponseForRequest,
   handleJsonRpc,
   healthInfo,
+  checkRateLimit,
   isProductionAuthorized,
   isStatsAuthorized,
   productionAuthKey,
+  rateLimitPerHour,
   landingHtml,
   recordUsageStats,
   routeModules,
