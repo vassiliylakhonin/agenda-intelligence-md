@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   agentCard,
   buildUsageEvent,
+  checkRateLimit,
   dealRiskContractResponseForRequest,
   handleJsonRpc,
   handleRequest,
@@ -12,6 +13,7 @@ import {
   isStatsAuthorized,
   landingHtml,
   productionAuthKey,
+  rateLimitPerHour,
   recordUsageStats,
   routeModules,
   signalScreenForText,
@@ -2027,6 +2029,79 @@ test("productionAuthKey resolves per-profile secrets and stays scoped", () => {
   assert.equal(productionAuthKey("agentic_interaction_trust", {}), "");
   // And the trust secret never gates Middle Corridor.
   assert.equal(productionAuthKey("kazakhstan", { AGENTIC_INTERACTION_TRUST_API_KEY: "trust-secret" }), "");
+  // CIS secondary-sanctions wired with its own scoped secret.
+  assert.equal(
+    productionAuthKey("cis_secondary_sanctions", { CIS_SECONDARY_SANCTIONS_API_KEY: "cis-secret" }),
+    "cis-secret"
+  );
+  assert.equal(productionAuthKey("cis_secondary_sanctions", {}), "");
+  assert.equal(productionAuthKey("cis_secondary_sanctions", { MIDDLE_CORRIDOR_API_KEY: "secret" }), "");
+});
+
+function fakeRateKv() {
+  const store = new Map();
+  return {
+    async get(k) {
+      return store.has(k) ? store.get(k) : null;
+    },
+    async put(k, v) {
+      store.set(k, String(v));
+    }
+  };
+}
+
+function ipRequest(ip) {
+  return new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/message/send", {
+    method: "POST",
+    headers: { "cf-connecting-ip": ip }
+  });
+}
+
+test("rateLimitPerHour parses env and stays off by default", () => {
+  assert.equal(rateLimitPerHour({}), 0);
+  assert.equal(rateLimitPerHour({ RATE_LIMIT_PER_HOUR: "0" }), 0);
+  assert.equal(rateLimitPerHour({ RATE_LIMIT_PER_HOUR: "-5" }), 0);
+  assert.equal(rateLimitPerHour({ RATE_LIMIT_PER_HOUR: "abc" }), 0);
+  assert.equal(rateLimitPerHour({ RATE_LIMIT_PER_HOUR: "60" }), 60);
+});
+
+test("checkRateLimit is a no-op when unconfigured or no KV", async () => {
+  assert.deepEqual(await checkRateLimit(ipRequest("1.1.1.1"), {}, "cis_secondary_sanctions"), {
+    limited: false,
+    limit: 0,
+    count: 0
+  });
+  // Limit set but no KV binding -> still open.
+  assert.equal(
+    (await checkRateLimit(ipRequest("1.1.1.1"), { RATE_LIMIT_PER_HOUR: "2" }, "cis_secondary_sanctions"))
+      .limited,
+    false
+  );
+});
+
+test("checkRateLimit throttles a client past the per-hour cap", async () => {
+  const env = { RATE_LIMIT_PER_HOUR: "2", AGENDA_USAGE: fakeRateKv() };
+  const req = ipRequest("9.9.9.9");
+  assert.equal((await checkRateLimit(req, env, "cis_secondary_sanctions")).limited, false); // 1
+  assert.equal((await checkRateLimit(req, env, "cis_secondary_sanctions")).limited, false); // 2
+  const third = await checkRateLimit(req, env, "cis_secondary_sanctions");
+  assert.equal(third.limited, true); // 3rd over cap
+  assert.equal(third.limit, 2);
+  // A different IP is bucketed independently.
+  assert.equal((await checkRateLimit(ipRequest("8.8.8.8"), env, "cis_secondary_sanctions")).limited, false);
+});
+
+test("checkRateLimit fails open when KV errors", async () => {
+  const env = {
+    RATE_LIMIT_PER_HOUR: "1",
+    AGENDA_USAGE: {
+      async get() {
+        throw new Error("kv down");
+      },
+      async put() {}
+    }
+  };
+  assert.equal((await checkRateLimit(ipRequest("7.7.7.7"), env, "cis_secondary_sanctions")).limited, false);
 });
 
 test("isProductionAuthorized opens the route when no key is configured", () => {

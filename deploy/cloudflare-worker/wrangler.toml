@@ -47,6 +47,13 @@ AGENT_PROFILE = "cis_secondary_sanctions"
 # the published compact public-list index. Not a secret (public URL), so kept as
 # a declarative var. Set SNAPSHOT_DISABLED=1 to deactivate without removing this.
 SNAPSHOT_INDEX_URL = "https://vassiliylakhonin.github.io/docs/assets/sanctions-name-index-compact.json"
+# Optional access controls for the message/send route — both OFF by default so
+# the browser demo stays an open free evaluation. Flip on when needed:
+#   Hard paywall (closes the route, incl. the demo) — issue a key per customer:
+#     wrangler secret put CIS_SECONDARY_SANCTIONS_API_KEY --env cis-secondary-sanctions
+#   Soft per-IP/hour throttle (keeps the demo usable, caps bulk free use) —
+#     uncomment the line below (best-effort, KV-backed, fails open):
+# RATE_LIMIT_PER_HOUR = "60"
 
 [[env.cis-secondary-sanctions.kv_namespaces]]
 binding = "AGENDA_USAGE"
