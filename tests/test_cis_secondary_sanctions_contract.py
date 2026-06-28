@@ -120,14 +120,15 @@ def test_cis_a2a_adapter_capability_registered():
     assert "cis_secondary_sanctions_exposure" in SUPPORTED_CAPABILITIES
     assert "cis_secondary_sanctions" in LIVE_RETRIEVAL_PROFILES
     profile = LIVE_RETRIEVAL_PROFILES["cis_secondary_sanctions"]
-    # Per the 2026-05-27 update to ADR 0014, the profile declares multiple
-    # upstream options (free options first, paid options second).
+    # Per ADR 0020, Snapshot is the first $0 upstream; Watchman and
+    # OpenSanctions remain alternates.
     options = profile["upstream_options"]
-    assert [o["name"] for o in options] == ["Watchman", "OpenSanctions"]
-    assert options[0]["license"] == "Apache-2.0"
-    assert options[0]["activation_env_var"] == "WATCHMAN_URL"
-    assert options[1]["license"] == "CC-BY-4.0"
-    assert options[1]["activation_env_var"] == "OPENSANCTIONS_API_KEY"
+    assert [o["name"] for o in options] == ["Snapshot", "Watchman", "OpenSanctions"]
+    assert options[0]["activation_env_var"] == "SNAPSHOT_INDEX_URL"
+    assert options[1]["license"] == "Apache-2.0"
+    assert options[1]["activation_env_var"] == "WATCHMAN_URL"
+    assert options[2]["license"] == "CC-BY-4.0"
+    assert options[2]["activation_env_var"] == "OPENSANCTIONS_API_KEY"
 
 
 def test_is_live_retrieval_active_requires_an_upstream(monkeypatch):
@@ -136,17 +137,29 @@ def test_is_live_retrieval_active_requires_an_upstream(monkeypatch):
         is_live_retrieval_active,
     )
 
-    for var in ["WATCHMAN_URL", "WATCHMAN_DISABLED", "OPENSANCTIONS_API_KEY", "OPENSANCTIONS_DISABLED"]:
+    for var in [
+        "SNAPSHOT_INDEX_URL",
+        "SNAPSHOT_DISABLED",
+        "WATCHMAN_URL",
+        "WATCHMAN_DISABLED",
+        "OPENSANCTIONS_API_KEY",
+        "OPENSANCTIONS_DISABLED",
+    ]:
         monkeypatch.delenv(var, raising=False)
     assert is_live_retrieval_active("cis_secondary_sanctions") is False
     assert active_upstream_option("cis_secondary_sanctions") is None
 
-    monkeypatch.setenv("OPENSANCTIONS_API_KEY", "test-key")
+    monkeypatch.setenv("SNAPSHOT_INDEX_URL", "https://example.github.io/sanctions-name-index-compact.json")
     assert is_live_retrieval_active("cis_secondary_sanctions") is True
+    active = active_upstream_option("cis_secondary_sanctions")
+    assert active is not None and active["name"] == "Snapshot"
+
+    monkeypatch.setenv("SNAPSHOT_DISABLED", "1")
+    monkeypatch.setenv("OPENSANCTIONS_API_KEY", "test-key")
     active = active_upstream_option("cis_secondary_sanctions")
     assert active is not None and active["name"] == "OpenSanctions"
 
-    # Watchman is preferred over OpenSanctions when both are set (free first).
+    # Watchman is preferred over OpenSanctions when Snapshot is disabled.
     monkeypatch.setenv("WATCHMAN_URL", "https://watchman.example.com")
     active = active_upstream_option("cis_secondary_sanctions")
     assert active is not None and active["name"] == "Watchman"
@@ -163,21 +176,28 @@ def test_is_live_retrieval_active_requires_an_upstream(monkeypatch):
 def test_agent_card_per_profile_live_retrieval_reports_capability_and_active(monkeypatch):
     from agenda_intelligence.a2a_adapter import agent_card
 
-    for var in ["WATCHMAN_URL", "WATCHMAN_DISABLED", "OPENSANCTIONS_API_KEY", "OPENSANCTIONS_DISABLED"]:
+    for var in [
+        "SNAPSHOT_INDEX_URL",
+        "SNAPSHOT_DISABLED",
+        "WATCHMAN_URL",
+        "WATCHMAN_DISABLED",
+        "OPENSANCTIONS_API_KEY",
+        "OPENSANCTIONS_DISABLED",
+    ]:
         monkeypatch.delenv(var, raising=False)
     card = agent_card()
     block = card["x_agenda_intelligence"]["per_profile_live_retrieval"]["cis_secondary_sanctions"]
     assert block["capability_declared"] is True
     assert block["active"] is False
     assert block["active_upstream"] is None
-    assert [o["name"] for o in block["upstream_options"]] == ["Watchman", "OpenSanctions"]
+    assert [o["name"] for o in block["upstream_options"]] == ["Snapshot", "Watchman", "OpenSanctions"]
     assert block["upstream_options"][0]["active"] is False
 
-    monkeypatch.setenv("WATCHMAN_URL", "https://watchman.example.com")
+    monkeypatch.setenv("SNAPSHOT_INDEX_URL", "https://example.github.io/sanctions-name-index-compact.json")
     card = agent_card()
     block = card["x_agenda_intelligence"]["per_profile_live_retrieval"]["cis_secondary_sanctions"]
     assert block["active"] is True
-    assert block["active_upstream"] == "Watchman"
+    assert block["active_upstream"] == "Snapshot"
 
 
 def test_cis_a2a_result_shape(monkeypatch):

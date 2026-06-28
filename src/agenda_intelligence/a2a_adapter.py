@@ -86,11 +86,10 @@ CAPABILITY_ALIASES = {
 # Profiles that opt in to per-profile live retrieval per ADR 0014.
 #
 # This declares the *capability* — what the profile can do if the operator
-# wires the relevant credentials. The actual runtime activation is env-derived
-# (see `is_live_retrieval_active`). Per the 2026-05-27 update to ADR 0014,
-# OpenSanctions live retrieval is currently deferred (the hosted API is paid
-# €0.10/call and no commitment has been made), so callers see
-# `live_retrieval_active: false` until `OPENSANCTIONS_API_KEY` is configured.
+# wires the relevant env var. The actual runtime activation is env-derived
+# (see `is_live_retrieval_active`). For `cis_secondary_sanctions`, Snapshot is
+# the preferred $0 upstream activated by `SNAPSHOT_INDEX_URL` (ADR 0020);
+# Watchman and OpenSanctions remain alternate upstreams.
 LIVE_RETRIEVAL_PROFILES: dict[str, dict[str, Any]] = {
     "cis_secondary_sanctions": {
         # `upstreams` kept for backward compatibility (consumers that only need a
@@ -98,9 +97,17 @@ LIVE_RETRIEVAL_PROFILES: dict[str, dict[str, Any]] = {
         # authoritative shape and matches the JS worker per ADR 0014 update
         # 2026-05-27 — multiple upstreams can be declared per profile; the
         # dispatcher picks the first active one (free options before paid).
-        "upstreams": ["Watchman", "OpenSanctions"],
-        "license": "Apache-2.0 (Watchman) or CC-BY-4.0 (OpenSanctions)",
+        "upstreams": ["Snapshot", "Watchman", "OpenSanctions"],
+        "license": "Public-list Snapshot, Apache-2.0 (Watchman), or CC-BY-4.0 (OpenSanctions)",
         "upstream_options": [
+            {
+                "name": "Snapshot",
+                "license": "Public official-list snapshot",
+                "homepage": "https://vassiliylakhonin.github.io/",
+                "activation_env_var": "SNAPSHOT_INDEX_URL",
+                "disable_env_var": "SNAPSHOT_DISABLED",
+                "cost_model": "$0 static compact public-list index; no external host",
+            },
             {
                 "name": "Watchman",
                 "license": "Apache-2.0",
@@ -119,8 +126,8 @@ LIVE_RETRIEVAL_PROFILES: dict[str, dict[str, Any]] = {
             },
         ],
         # Backward-compatibility shims for the prior single-upstream shape.
-        "activation_env_var": "OPENSANCTIONS_API_KEY",
-        "disable_env_var": "OPENSANCTIONS_DISABLED",
+        "activation_env_var": "SNAPSHOT_INDEX_URL",
+        "disable_env_var": "SNAPSHOT_DISABLED",
     },
 }
 
@@ -223,10 +230,11 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "name": "CIS secondary-sanctions exposure",
                 "description": (
                     "Structured secondary-sanctions exposure evidence triage for CIS-domiciled "
-                    "counterparties. Consults the OpenSanctions consolidated dataset (CC-BY 4.0) "
-                    "for direct name matches and merges them with caller-supplied evidence. Returns "
-                    "an auditable triage response with evidence gaps, exposure dimensions, and "
-                    "mandatory human-review routing."
+                    "counterparties. When configured, performs possible string matching against "
+                    "the active per-profile upstream (Snapshot first, then Watchman or OpenSanctions) "
+                    "and merges matches with caller-supplied evidence. Returns an auditable triage "
+                    "response with evidence gaps, exposure dimensions, and mandatory human-review "
+                    "routing. A match is not identity verification or a sanctions determination."
                 ),
                 "tags": [
                     "cis",
@@ -235,7 +243,7 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                     "georgia",
                     "secondary-sanctions",
                     "ofac",
-                    "eu-14th-package",
+                    "eu-sanctions",
                     "uk-ofsi",
                     "evidence-readiness",
                 ],

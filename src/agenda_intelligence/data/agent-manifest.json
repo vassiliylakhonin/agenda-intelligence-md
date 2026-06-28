@@ -83,12 +83,36 @@
       "path": "schemas/v1/middle-corridor-deal-risk-response.schema.json",
       "schema_version": "v1"
     },
+    "cis_secondary_sanctions_request": {
+      "path": "schemas/v1/cis-secondary-sanctions-request.schema.json",
+      "schema_version": "v1"
+    },
+    "cis_secondary_sanctions_response": {
+      "path": "schemas/v1/cis-secondary-sanctions-response.schema.json",
+      "schema_version": "v1"
+    },
     "agentic_interaction_trust_request": {
       "path": "schemas/v1/agentic-interaction-trust-request.schema.json",
       "schema_version": "v1"
     },
     "agentic_interaction_trust_response": {
       "path": "schemas/v1/agentic-interaction-trust-response.schema.json",
+      "schema_version": "v1"
+    },
+    "gulf_maritime_exposure_request": {
+      "path": "schemas/v1/gulf-maritime-exposure-request.schema.json",
+      "schema_version": "v1"
+    },
+    "gulf_maritime_exposure_response": {
+      "path": "schemas/v1/gulf-maritime-exposure-response.schema.json",
+      "schema_version": "v1"
+    },
+    "market_entry_readiness_request": {
+      "path": "schemas/v1/market-entry-readiness-request.schema.json",
+      "schema_version": "v1"
+    },
+    "market_entry_readiness_response": {
+      "path": "schemas/v1/market-entry-readiness-response.schema.json",
       "schema_version": "v1"
     }
   },

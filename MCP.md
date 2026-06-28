@@ -12,7 +12,7 @@ The tools split into three layers:
   `validate_memo`, `list_signals`, `get_signal`, `deep_dive` (reserved/planned, returns a v2 placeholder). These wrap the
   validation layer with geography routing, system-prompt assembly, optional LLM
   invocation, and vendored signal access.
-- **Vertical worker layer** (4 tools): `middle_corridor_deal_risk`,
+- **Vertical worker layer** (4 local stdio tools): `middle_corridor_deal_risk`,
   `cis_secondary_sanctions_exposure`, `agentic_interaction_trust`,
   `gulf_maritime_exposure` — the productized
   service functions (also exposed over HTTP and A2A) as MCP tools. Each takes a
@@ -21,9 +21,13 @@ The tools split into three layers:
   human-review flag. Pre-compliance evidence triage only: no live retrieval in the
   local stdio transport, no factual-truth verification, no advice.
 
+`kazakhstan_market_entry_readiness` is also shipped in the runtime as a service
+function, HTTP route, A2A profile, and deployed Cloudflare Worker, but it is not
+exposed as a local stdio MCP tool in this release.
+
 **Verification status**: wire-protocol verified — `scripts/smoke_mcp.py` exercises the full JSON-RPC cycle (initialize → tools/list → tools/call) against the running stdio server, including `list_source_categories` and `audit_claims`.
 
-Live source retrieval is **not implemented**.
+Live source retrieval is **not implemented in the local stdio MCP transport**.
 
 ---
 

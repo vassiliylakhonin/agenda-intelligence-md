@@ -136,6 +136,31 @@ def test_manifest_schemas_paths_exist_and_match_schema_version():
         ), f"schemas[{key}] schema_version={entry['schema_version']!r} does not match path={entry['path']!r}"
 
 
+def test_manifest_registers_shipped_vertical_contract_schemas():
+    """Every shipped vertical profile must be resolvable from manifest.schemas.
+
+    The manifest is the cold-start contract for agent integrators. If README,
+    A2A, HTTP, or MCP advertise a shipped vertical profile, its request and
+    response schemas must be discoverable here.
+    """
+    manifest = load_json(ROOT / "agent-manifest.json")
+    schema_paths = {entry["path"] for entry in manifest["schemas"].values()}
+    expected = {
+        "schemas/v1/middle-corridor-deal-risk-request.schema.json",
+        "schemas/v1/middle-corridor-deal-risk-response.schema.json",
+        "schemas/v1/cis-secondary-sanctions-request.schema.json",
+        "schemas/v1/cis-secondary-sanctions-response.schema.json",
+        "schemas/v1/agentic-interaction-trust-request.schema.json",
+        "schemas/v1/agentic-interaction-trust-response.schema.json",
+        "schemas/v1/gulf-maritime-exposure-request.schema.json",
+        "schemas/v1/gulf-maritime-exposure-response.schema.json",
+        "schemas/v1/market-entry-readiness-request.schema.json",
+        "schemas/v1/market-entry-readiness-response.schema.json",
+    }
+
+    assert expected <= schema_paths, f"manifest.schemas missing shipped vertical contracts: {sorted(expected - schema_paths)}"
+
+
 def test_manifest_contract_and_informational_fields_cover_top_level_keys():
     """ADR 0013: _contract_fields and _informational_fields together must cover
     every top-level manifest key except themselves.

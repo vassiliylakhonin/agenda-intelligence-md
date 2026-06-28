@@ -91,7 +91,7 @@ for token in ["name: agenda-intelligence", "description:", "references/analysis-
 
 readme = (root / "README.md").read_text()
 for token in [
-    "evidence-discipline layer for strategic intelligence agents",
+    "evidence-readiness and trust-routing runtime",
     "What this is",
     "What this is not",
     "First run",
