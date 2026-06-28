@@ -1,12 +1,12 @@
 # AI Vendor Evidence-Readiness Profile Pack v0.1
 
-Status: buyer-facing discovery pack.
+Status: public discovery artifact for reviewer feedback.
 Date: 2026-06-28.
 Mode: `build-to-learn`.
 
-This pack is the first packaged commercial experiment for the current Agenda Intelligence MD wedge: **AI vendor evidence-readiness for regulated procurement**.
+This pack is a public workflow sample for testing the current Agenda Intelligence MD wedge: **AI vendor evidence-readiness for regulated procurement**.
 
-It is not a product launch, landing page, worker spec, dashboard, legal/compliance/security assessment, procurement recommendation, or claim of product-market fit. It is a reusable artifact format for testing whether procurement, AI governance, vendor-risk, records, privacy, security, and program owners recognize the evidence-review workflow.
+It is not a product launch, sales page, landing page, worker spec, dashboard, legal/compliance/security assessment, procurement recommendation, or claim of product-market fit. It is a reusable artifact format for testing whether procurement, AI governance, vendor-risk, records, privacy, security, and program owners recognize the evidence-review workflow.
 
 ## What this pack tests
 
