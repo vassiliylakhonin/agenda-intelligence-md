@@ -158,7 +158,8 @@ def test_manifest_registers_shipped_vertical_contract_schemas():
         "schemas/v1/market-entry-readiness-response.schema.json",
     }
 
-    assert expected <= schema_paths, f"manifest.schemas missing shipped vertical contracts: {sorted(expected - schema_paths)}"
+    missing = sorted(expected - schema_paths)
+    assert expected <= schema_paths, f"manifest.schemas missing shipped vertical contracts: {missing}"
 
 
 def test_manifest_contract_and_informational_fields_cover_top_level_keys():
