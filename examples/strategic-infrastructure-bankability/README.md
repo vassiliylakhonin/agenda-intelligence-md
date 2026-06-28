@@ -8,8 +8,10 @@ Use it to test whether Agenda Intelligence MD can turn a confidential or redacte
 
 - Stable aliases instead of real names.
 - Claim-level evidence review for a project file.
+- Weekly/status-call conversion into a decision-readiness delta.
 - Bankability blocks: demand, procurement, site/power, financing, tax/customs, regulatory/export-control, governance, and risk-register maturity.
 - `not_decision_ready` routing when the packet has plausible activity but not enough evidence for the next decision.
+- `unclear_due_to_missing_evidence` routing when the week added activity but not enough proof.
 - Unsafe-to-repeat claims that should not be used externally without caveats.
 
 ## Files
@@ -17,6 +19,7 @@ Use it to test whether Agenda Intelligence MD can turn a confidential or redacte
 | File | Purpose |
 |---|---|
 | [`synthetic-profile.md`](synthetic-profile.md) | Redacted-style evidence-readiness profile for a fictional project |
+| [`weekly-status-delta.synthetic.md`](weekly-status-delta.synthetic.md) | Synthetic weekly/status-call delta that turns activity into evidence state and owner actions |
 | [`claim.audit.json`](claim.audit.json) | Claim-level evidence audit using generic source IDs and aliases |
 
 ## Boundary
