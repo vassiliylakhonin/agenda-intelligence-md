@@ -62,6 +62,7 @@ The current product bet is **AI vendor evidence-readiness for regulated procurem
 This is a `build-to-learn` wedge, not a claim of product-market fit. The smallest artifact is an AI Vendor Evidence-Readiness Profile, built from public RFP language, vendor pages, standards, and public documentation. See the discovery plan and template:
 
 - [`docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md`](docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md)
+- [`docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md`](docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md)
 - [`docs/templates/ai-vendor-evidence-readiness-profile.md`](docs/templates/ai-vendor-evidence-readiness-profile.md)
 
 Success means buyer behavior: a redacted file, second artifact request, paid concierge review, budget-owner intro, or concrete workflow correction. Compliments and "interesting" are not traction.
