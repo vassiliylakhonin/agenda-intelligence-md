@@ -1,0 +1,112 @@
+{
+  "topic": "Synthetic strategic infrastructure bankability evidence-readiness review",
+  "claims": [
+    {
+      "claim_id": "C1",
+      "claim": "ProjectCo can proceed to committee review with current economics.",
+      "claim_type": "corporate_disclosure",
+      "evidence_ids": ["S1", "S3", "S5"],
+      "support_level": "weak",
+      "uncertainty": "Final vendor pricing and lender-required source pack are not present.",
+      "risk_if_wrong": "The committee may approve a model that changes materially after vendor or lender review."
+    },
+    {
+      "claim_id": "C2",
+      "claim": "Procurement can be shortlisted from the current RFP process.",
+      "claim_type": "capability_claim",
+      "evidence_ids": ["S2", "S3"],
+      "support_level": "partial",
+      "uncertainty": "The packet contains one partial proposal and no comparable matrix.",
+      "risk_if_wrong": "The shortlist may be premature or based on non-comparable proposals."
+    },
+    {
+      "claim_id": "C3",
+      "claim": "Customer demand supports the base-case utilization assumption.",
+      "claim_type": "market_event",
+      "evidence_ids": ["S4"],
+      "support_level": "weak",
+      "uncertainty": "The LOI is non-binding and lacks volume, term, pricing, and budget-owner evidence.",
+      "risk_if_wrong": "The revenue case may be overstated and financing discussions may stall."
+    },
+    {
+      "claim_id": "C4",
+      "claim": "Site and infrastructure readiness support the target schedule.",
+      "claim_type": "capability_claim",
+      "evidence_ids": ["S1"],
+      "support_level": "unsupported",
+      "uncertainty": "The packet lacks site-control, power-allocation, cooling, interconnection, and commissioning evidence.",
+      "risk_if_wrong": "Schedule and CAPEX assumptions may be materially wrong."
+    },
+    {
+      "claim_id": "C5",
+      "claim": "Tax treatment improves project economics.",
+      "claim_type": "regulatory_gap",
+      "evidence_ids": ["S6"],
+      "support_level": "weak",
+      "uncertainty": "The preliminary note does not include final adviser conclusion or applicability test.",
+      "risk_if_wrong": "The model may understate costs or use a benefit that is not available."
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "S1",
+      "name": "Redacted feasibility study excerpt",
+      "source_type": "user_provided",
+      "freshness": "current",
+      "supports": ["High-level rationale and economics"],
+      "limits": ["No final vendor pricing", "No standalone site or power evidence"]
+    },
+    {
+      "evidence_id": "S2",
+      "name": "Redacted RFP summary",
+      "source_type": "user_provided",
+      "freshness": "current",
+      "supports": ["RFP process exists", "Technical scope is partially described"],
+      "limits": ["Does not prove vendor comparability or delivery feasibility"]
+    },
+    {
+      "evidence_id": "S3",
+      "name": "Redacted vendor proposal excerpt",
+      "source_type": "user_provided",
+      "freshness": "current",
+      "supports": ["Indicative pricing", "Some delivery assumptions"],
+      "limits": ["No export-control conditions", "No warranty or service detail", "Not compared against other proposals"]
+    },
+    {
+      "evidence_id": "S4",
+      "name": "Redacted customer LOI",
+      "source_type": "user_provided",
+      "freshness": "current",
+      "supports": ["Customer interest"],
+      "limits": ["Non-binding", "No volume", "No term", "No pricing", "No budget-owner confirmation"]
+    },
+    {
+      "evidence_id": "S5",
+      "name": "Redacted lender email",
+      "source_type": "user_provided",
+      "freshness": "current",
+      "supports": ["Lender diligence questions"],
+      "limits": ["Not a term sheet", "No commitment", "Lists missing materials"]
+    },
+    {
+      "evidence_id": "S6",
+      "name": "Redacted preliminary tax note",
+      "source_type": "user_provided",
+      "freshness": "unknown",
+      "supports": ["Possible tax treatment to assess"],
+      "limits": ["No final conclusion", "No explicit applicability test"]
+    },
+    {
+      "evidence_id": "S7",
+      "name": "Redacted risk-register draft",
+      "source_type": "user_provided",
+      "freshness": "current",
+      "supports": ["Risk themes are being tracked"],
+      "limits": ["Several entries lack owner, mitigation, trigger, and deadline"]
+    }
+  ],
+  "unsupported_claims": [
+    "Site and infrastructure readiness support the target schedule.",
+    "The project is ready for committee approval."
+  ]
+}

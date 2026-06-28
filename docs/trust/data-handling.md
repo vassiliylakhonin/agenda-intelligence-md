@@ -29,3 +29,9 @@ Do not log by default:
 - customer identifiers beyond what is necessary for operation
 
 Full-payload logging, if ever added by a downstream operator, must be explicit opt-in and documented.
+
+## Confidential projects
+
+For private deal files, investment projects, procurement packets, financing data rooms, or any review where named companies and counterparties are sensitive, use the alias-first workflow in [`confidential-project-workflow.md`](confidential-project-workflow.md).
+
+Default to redacted source IDs and role-based aliases such as `ProjectCo`, `SponsorCo`, `OEM-A`, `Lender-1`, and `Anchor-Customer-1`. Preserve the evidence relationship and owner action; do not preserve identifying names unless the caller explicitly confirms that they are public and safe to repeat.

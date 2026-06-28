@@ -517,6 +517,7 @@
     "taxonomy": "source-taxonomy.json",
     "requirements": {
       "agentic-interaction-trust": "source-requirements/agentic-interaction-trust.json",
+      "ai-infrastructure-bankability": "source-requirements/ai-infrastructure-bankability.json",
       "conflict-security": "source-requirements/conflict-security.json",
       "cyber-threats": "source-requirements/cyber-threats.json",
       "elections": "source-requirements/elections.json",

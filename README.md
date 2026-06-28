@@ -67,6 +67,8 @@ This is a `build-to-learn` wedge, not a claim of product-market fit. The smalles
 
 Success means buyer behavior: a redacted file, second artifact request, paid concierge review, budget-owner intro, or concrete workflow correction. Compliments and "interesting" are not traction.
 
+For confidential strategic-infrastructure and AI-compute project files, use the same evidence-readiness discipline without naming parties: [`docs/trust/confidential-project-workflow.md`](docs/trust/confidential-project-workflow.md), [`docs/templates/strategic-infrastructure-evidence-readiness-profile.md`](docs/templates/strategic-infrastructure-evidence-readiness-profile.md), and the synthetic alias-only example pack at [`examples/strategic-infrastructure-bankability/`](examples/strategic-infrastructure-bankability/). This is also `build-to-learn`: no new worker, no case-study claims, and no client names.
+
 ## Live portfolio demo: Middle Corridor
 
 **Kazakhstan / Middle Corridor Deal Risk Gate** is a live portfolio/demo profile for logistics, trade-finance, procurement, insurance, and compliance-adjacent workflows:
@@ -364,6 +366,7 @@ Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-con
 | Deployable architecture | [`docs/product/deployable-architecture.md`](docs/product/deployable-architecture.md) |
 | A2A adapter plan | [`docs/product/a2a-adapter-plan.md`](docs/product/a2a-adapter-plan.md) |
 | Data handling | [`docs/trust/data-handling.md`](docs/trust/data-handling.md) |
+| Confidential project workflow | [`docs/trust/confidential-project-workflow.md`](docs/trust/confidential-project-workflow.md) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |
 | Agenstry discovery | [`docs/integrations/agenstry.md`](docs/integrations/agenstry.md) |
 | Agenstry agent card copy | [`docs/agenstry/agent-card-copy.md`](docs/agenstry/agent-card-copy.md) |

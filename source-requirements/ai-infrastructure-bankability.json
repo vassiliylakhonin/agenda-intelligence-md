@@ -1,0 +1,72 @@
+{
+  "category": "ai-infrastructure-bankability",
+  "must_check": [
+    "project_mandate_or_decision_moment",
+    "feasibility_or_business_case",
+    "procurement_or_rfp",
+    "vendor_oem_integrator_delivery_evidence",
+    "site_power_cooling_infrastructure",
+    "demand_or_offtake_evidence",
+    "financing_or_lender_requirements",
+    "tax_customs_incentives",
+    "regulatory_export_control_supply_chain",
+    "operator_governance_readiness",
+    "risk_register"
+  ],
+  "supporting_sources": [
+    "public_authority_document",
+    "committee_memo",
+    "feasibility_study",
+    "financial_model",
+    "vendor_proposal",
+    "tco_template",
+    "site_power_document",
+    "customer_loi",
+    "offtake_agreement",
+    "lender_term_sheet",
+    "legal_memo",
+    "tax_memo",
+    "compliance_review",
+    "risk_register",
+    "implementation_schedule"
+  ],
+  "red_flags": [
+    "Public announcement treated as financing close",
+    "LOI treated as binding demand without volume, term, pricing, or budget-owner evidence",
+    "Vendor marketing treated as delivery commitment",
+    "Strategic importance treated as bankability",
+    "Tax, customs, or incentive benefit assumed without a supporting memo or official source",
+    "Export-control, supply-chain, or end-use restrictions treated as solved without counsel or compliance review",
+    "Site or power capacity treated as available without allocation, interconnection, cooling, and commissioning evidence",
+    "RFP shortlist built from incomplete or non-comparable proposals",
+    "Financing pipeline treated as committed capital",
+    "Risk register lists meetings instead of owner actions, mitigations, and evidence required"
+  ],
+  "do_not_claim_without": [
+    "project bankability without demand, procurement, financing, site, and regulatory evidence",
+    "financial close without signed financing documents or lender-confirmed conditions",
+    "binding demand without signed or near-binding customer evidence",
+    "deliverable procurement without vendor, OEM, integrator, supply-chain, and restriction evidence",
+    "tax or customs benefit without source-backed treatment and owner review",
+    "FID readiness without a committee-ready risk register and unresolved-blocker list"
+  ],
+  "freshness_rules": [
+    "Vendor pricing, delivery timing, financing terms, and export-control posture are volatile; treat stale sources as partial support.",
+    "Public announcements should be paired with current project documents before committee or lender review.",
+    "LOIs and financing correspondence require date, signatory status, scope, conditions, and binding/non-binding label.",
+    "Tax, customs, and regulatory assumptions require current source date and explicit owner review status."
+  ],
+  "watch_indicators": [
+    "RFP deadline",
+    "vendor proposal receipt",
+    "TCO update",
+    "site or power allocation change",
+    "customer LOI or offtake conversion",
+    "lender term sheet",
+    "public-authority decision",
+    "tax or customs memo",
+    "export-control rule or license posture change",
+    "risk-register reprioritization",
+    "FID or committee date"
+  ]
+}
