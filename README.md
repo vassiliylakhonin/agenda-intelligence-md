@@ -1,8 +1,8 @@
 # Agenda Intelligence MD
 
-Product runtime and evidence-discipline layer for strategic intelligence agents. One core service layer behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — plus structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Ships with five vertical workers, all deployed: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, and Kazakhstan Market-Entry Readiness Gate.
+Product runtime and evidence-discipline layer for strategic intelligence agents. One core service layer behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — plus structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Ships with five deployed vertical profiles: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, and Kazakhstan Market-Entry Readiness Gate.
 
-Read it as a **trust-routing layer for agent-mediated decisions**: it turns a partial evidence pack into a structured routing decision — allow, step up, escalate, or not-decision-ready — surfaces the specific missing evidence, and always requires human review for high-stakes actions. It does not approve, clear, or make a factual determination, and does not verify factual truth. Live retrieval is off by default and opt-in per worker profile (see the [CIS worker](#second-vertical-worker-cis-secondary-sanctions-exposure) and [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md)). Evaluate any worker in a few minutes with live curl calls: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md).
+Read it as a **trust-routing layer for agent-mediated decisions**: it turns a partial evidence pack into a structured routing decision — allow, step up, escalate, or not-decision-ready — surfaces the specific missing evidence, and always requires human review for high-stakes actions. It does not approve, clear, or make a factual determination, and does not verify factual truth. Live retrieval is off by default and opt-in per worker profile (see the [CIS worker](#second-vertical-worker-cis-secondary-sanctions-exposure) and [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md)). The next commercial discovery wedge is **AI vendor evidence-readiness for regulated procurement**, explored through public-signal research and evidence-readiness templates before any new worker is built: [`docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md`](docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md). Evaluate the deployed profiles in a few minutes with live curl calls: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md).
 
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![Agenstry A2A](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/protocol.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![Agenstry uptime](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/uptime.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -38,7 +38,7 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightwei
 - General wrapper: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev> · [agent card](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) · [JSON-RPC](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send) · [Agenstry](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev)
 - Worked curl calls for every worker: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md) · repeatable Kazakhstan test: [`docs/agenstry/kazakhstan-live-test.md`](docs/agenstry/kazakhstan-live-test.md) · announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
 
-Try the flagship live:
+Try a live portfolio demo:
 
 ```bash
 curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send \
@@ -51,13 +51,26 @@ Expected: JSON-RPC 2.0 with `triage_recommendation: "escalate_before_signature"`
 
 The hosted wrapper is intentionally limited: no payments, no wallets, no factual-truth verification, and no legal/financial/compliance advice. Live retrieval is off by default and opt-in per vertical-worker profile; it is currently active only for `cis_secondary_sanctions`, via the $0 Snapshot upstream (see [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) / [ADR 0020](docs/adr/0020-activate-snapshot-upstream-cis-secondary-sanctions.md) and [SOURCE_POLICY.md](SOURCE_POLICY.md)). Private usage stats: [`deploy/cloudflare-worker/README.md`](deploy/cloudflare-worker/README.md). Full product behavior remains in the installable stdio MCP server.
 
-## Flagship commercial use case
+## Current commercial discovery wedge
 
-**Kazakhstan / Middle Corridor Deal Risk Gate** is the focused commercial proposition for logistics, trade-finance, procurement, insurance, and compliance-adjacent workflows:
+The current product bet is **AI vendor evidence-readiness for regulated procurement**:
+
+> RFP + vendor claims + public documentation + standards references -> a human-review packet showing claim support, missing evidence, unanswered buyer questions, and escalation-ready next actions.
+
+This is a `build-to-learn` wedge, not a claim of product-market fit. The smallest artifact is an AI Vendor Evidence-Readiness Profile, built from public RFP language, vendor pages, standards, and public documentation. See the discovery plan and template:
+
+- [`docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md`](docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md)
+- [`docs/templates/ai-vendor-evidence-readiness-profile.md`](docs/templates/ai-vendor-evidence-readiness-profile.md)
+
+Success means buyer behavior: a redacted file, second artifact request, paid concierge review, budget-owner intro, or concrete workflow correction. Compliments and "interesting" are not traction.
+
+## Live portfolio demo: Middle Corridor
+
+**Kazakhstan / Middle Corridor Deal Risk Gate** is a live portfolio/demo profile for logistics, trade-finance, procurement, insurance, and compliance-adjacent workflows:
 
 > Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation.
 
-The structured response also presence-flags sanctions-relevant / high-risk and re-export / circumvention-watch counterparty jurisdictions, decomposes risk into a domestic-legal vs foreign-sanctions exposure view, and surfaces a vessel deceptive-shipping-practice checklist for the maritime leg. All of this is presence-flagging and evidence triage routed to human review — not a sanctions determination.
+The structured response also presence-flags sanctions-relevant / high-risk and re-export / circumvention-watch counterparty jurisdictions, decomposes risk into a domestic-legal vs foreign-sanctions exposure view, and surfaces a vessel deceptive-shipping-practice checklist for the maritime leg. All of this is presence-flagging and evidence triage routed to human review — not a sanctions determination. This profile is not assumed to be the commercial flagship; Kazakhstan/local-forwarder demand must be revalidated before further buyer-facing expansion.
 
 Live A2A listing:
 
@@ -309,12 +322,13 @@ Stdio MCP server with 21 tools. Full docs and wire-protocol verification: [`MCP.
 | HTTP API shell | Shipped (self-host); contract early — see `docs/deployment/http-api.md` |
 | A2A adapter | Shipped (Cloudflare Worker baseline); contract in `docs/product/a2a-adapter-plan.md` |
 | Cloudflare Worker deployment | Live (6 workers: general triage + Middle Corridor Deal Risk Gate + CIS Secondary-Sanctions Exposure + Agentic Interaction Trust Gate + Gulf Maritime Exposure + Kazakhstan Market-Entry Readiness Gate) |
-| Middle Corridor Deal Risk Gate (vertical worker) | Live, no paying customers yet — illustrative usage only |
+| Current commercial discovery wedge | AI vendor evidence-readiness for regulated procurement; public-signal research and template stage, no worker |
+| Middle Corridor Deal Risk Gate (vertical worker) | Live portfolio/demo profile, no paying customers yet — illustrative usage only |
 | Kazakhstan Market-Entry Readiness Gate (vertical worker) | Live, no paying customers yet — illustrative usage only |
 | Evidence-audit schema (claim-level) | Stable |
 | Signal-tracker schema (lifecycle) | Stable |
 | Heuristic scoring | Stable (uncalibrated) |
-| Live source retrieval | Not implemented |
+| Live source retrieval | Default off; active only for `cis_secondary_sanctions` through the Snapshot upstream |
 | Factual-truth verification | Not in scope |
 
 ## Safety model
