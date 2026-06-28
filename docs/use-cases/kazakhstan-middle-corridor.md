@@ -1,6 +1,6 @@
 # Kazakhstan / Middle Corridor Deal Risk Gate
 
-Flagship commercial use case for Agenda Intelligence MD.
+Live portfolio/demo profile for Agenda Intelligence MD. It is not the default commercial wedge; Kazakhstan/local-forwarder demand should be treated as unvalidated unless fresh discovery evidence proves otherwise.
 
 ## Proposition
 
@@ -9,6 +9,10 @@ Bring route, cargo, counterparties, and dated sources. Get an auditable corridor
 This is a **pre-screening evidence triage layer**: it tells you which due-diligence documents are still missing before a deal's counterparties are committed to a sanctions-screening or network-intelligence tool. It complements those tools rather than replacing them — it performs no screening, name-matching, or live data retrieval itself, and holds no proprietary lists or ownership graph. Its job is to make the evidence dossier complete and auditable before the expensive data step, not to be that step.
 
 This is not legal, compliance, investment, insurance, or sanctions advice. It is a pre-compliance evidence and decision-readiness gate for analyst, compliance-adjacent, logistics, procurement, trade-finance, and insurance workflows.
+
+## Commercial status
+
+No paying customers or named pilots are claimed for this profile. Do not improve local-forwarder positioning, pilot pages, outreach copy, or public listings as a substitute for validating buyer demand. Current product discovery is focused on AI vendor evidence-readiness for regulated procurement; this profile remains useful as a concrete demonstration of the shared evidence-readiness runtime.
 
 ## Target users
 
