@@ -37,6 +37,17 @@ This profile uses a public RFP as the buyer artifact and asks what evidence a ve
 | S5 | ISO/IEC 42001:2023 | 2023-12 | standard | <https://www.iso.org/standard/42001> | AI management-system reference |
 | S6 | UC AI Council Risk Assessment Guide | 2024 | buyer questionnaire / risk guide | <https://ai.universityofcalifornia.edu/_files/documents/final-uc-ai-council-risk-assessment-guide-1.0.pdf> | Third-party AI supplier questions suitable for RFP stage |
 
+## Retrieval and citation hints
+
+- Canonical public URL: repository path for this Markdown profile
+- Primary query phrase: healthcare AI governance platform RFP evidence readiness
+- Secondary query phrases: UTHSA AI governance monitoring platform evidence gaps; AI vendor evidence-readiness healthcare procurement; AI governance platform audit trail retention evidence
+- Related profile pack: [`ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md`](ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md)
+- Source IDs referenced from claim rows: yes
+- Crawlable text version available: yes
+- PDF-only dependency avoided: yes
+- Boundary notes present: yes
+
 ## Buyer questions implied by the artifact
 
 | Question | Why it matters | Evidence needed | Owner |
@@ -53,18 +64,18 @@ This profile uses a public RFP as the buyer artifact and asks what evidence a ve
 
 ## Vendor or system claims
 
-| Claim | Claim type | Evidence present | Evidence gap | Readiness |
-|---|---|---|---|---|
-| "Centralized AI inventory and lifecycle management" | capability | RFP requires it; no vendor packet assessed yet | Need data model, workflow proof, lifecycle-state examples, export/API evidence | missing |
-| "Risk classification for healthcare and higher education" | governance / risk | RFP names risk tiers and PHI/student-data triggers | Need risk methodology, configuration proof, PHI/student-data scenario, human override logging | missing |
-| "Policy enforcement and control validation" | governance | RFP requires policy mapping, structured signoffs, approval requirements, and automated enforcement | Need control library, mapping examples, signoff/audit logs, limits of enforcement | missing |
-| "Bias, drift, performance, and fairness monitoring" | monitoring | RFP requires monitoring and validated results | Need monitoring design, metrics, thresholds, sample reports, remediation evidence | missing |
-| "Audit-ready reporting" | audit evidence | RFP requires audit-ready reports and seven-year audit retention | Need report export, log schema, retention controls, access controls | missing |
-| "Security and privacy oversight" | security / privacy | RFP requires IAM, SSO, RBAC, data classification, data access, retention, and third-party AI risk support | Need architecture, data-flow, subprocessor list, RBAC/SSO docs, retention policy, third-party workflow | missing |
-| "Shadow AI discovery and generative-AI monitoring" | capability / security | RFP requires monitoring, prompt logging, usage analytics, DLP alignment | Need connector list, telemetry limits, privacy stance, false-positive handling, DLP integration proof | missing |
-| "Healthcare and higher education regulatory support" | regulatory alignment | RFP names HIPAA, FERPA, FDA considerations, state privacy laws, and emerging AI regulations | Need framework mapping, scope boundaries, proof that claims are evidence-ready and not legal conclusions | weak |
-| "Accessibility-ready platform" | accessibility | RFP names PDAA, VADSIR, ACR/VPAT/OpenACR and testing documentation | Need completed forms and testing evidence | missing |
-| "TX-RAMP Level II ready" | security certification | RFP requires TX-RAMP Level II before contract execution | Need certificate or credible path with dates and owner | missing |
+| Claim | Claim type | Evidence present | Source IDs | Evidence gap | Readiness |
+|---|---|---|---|---|---|
+| "Centralized AI inventory and lifecycle management" | capability | RFP requires it; no vendor packet assessed yet | S1 | Need data model, workflow proof, lifecycle-state examples, export/API evidence | missing |
+| "Risk classification for healthcare and higher education" | governance / risk | RFP names risk tiers and PHI/student-data triggers | S1, S6 | Need risk methodology, configuration proof, PHI/student-data scenario, human override logging | missing |
+| "Policy enforcement and control validation" | governance | RFP requires policy mapping, structured signoffs, approval requirements, and automated enforcement | S1, S2, S5 | Need control library, mapping examples, signoff/audit logs, limits of enforcement | missing |
+| "Bias, drift, performance, and fairness monitoring" | monitoring | RFP requires monitoring and validated results | S1, S6 | Need monitoring design, metrics, thresholds, sample reports, remediation evidence | missing |
+| "Audit-ready reporting" | audit evidence | RFP requires audit-ready reports and seven-year audit retention | S1, S4 | Need report export, log schema, retention controls, access controls | missing |
+| "Security and privacy oversight" | security / privacy | RFP requires IAM, SSO, RBAC, data classification, data access, retention, and third-party AI risk support | S1, S2, S3, S6 | Need architecture, data-flow, subprocessor list, RBAC/SSO docs, retention policy, third-party workflow | missing |
+| "Shadow AI discovery and generative-AI monitoring" | capability / security | RFP requires monitoring, prompt logging, usage analytics, DLP alignment | S1 | Need connector list, telemetry limits, privacy stance, false-positive handling, DLP integration proof | missing |
+| "Healthcare and higher education regulatory support" | regulatory alignment | RFP names HIPAA, FERPA, FDA considerations, state privacy laws, and emerging AI regulations | S1, S6 | Need framework mapping, scope boundaries, proof that claims are evidence-ready and not legal conclusions | weak |
+| "Accessibility-ready platform" | accessibility | RFP names PDAA, VADSIR, ACR/VPAT/OpenACR and testing documentation | S1 | Need completed forms and testing evidence | missing |
+| "TX-RAMP Level II ready" | security certification | RFP requires TX-RAMP Level II before contract execution | S1 | Need certificate or credible path with dates and owner | missing |
 
 ## Control and standard mapping
 

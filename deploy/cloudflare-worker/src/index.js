@@ -71,6 +71,10 @@ const GULF_MARITIME_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v
 const GULF_MARITIME_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/gulf-maritime-exposure.json`;
 const A2A_EXAMPLES_URL = `${REPOSITORY_URL}/tree/main/examples/a2a`;
 const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";
+const OKF_BUNDLE_URL = `${REPOSITORY_URL}/blob/main/okf/index.md`;
+const EVIDENCE_READINESS_PACK_URL = `${REPOSITORY_URL}/blob/main/docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md`;
+const SCHEMAS_URL = `${REPOSITORY_URL}/tree/main/schemas/v1`;
+const SOURCE_POLICY_URL = `${REPOSITORY_URL}/blob/main/SOURCE_POLICY.md`;
 
 const CA_CASPIAN_TERMS = [
   "central asia",
@@ -516,23 +520,25 @@ function jsonResponse(body, status = 200, extraHeaders = {}) {
   });
 }
 
-function textResponse(body, status = 200) {
+function textResponse(body, status = 200, extraHeaders = {}) {
   return new Response(body, {
     status,
     headers: {
       "content-type": "text/plain; charset=utf-8",
-      "access-control-allow-origin": "*"
+      "access-control-allow-origin": "*",
+      ...extraHeaders
     }
   });
 }
 
-function htmlResponse(body, status = 200) {
+function htmlResponse(body, status = 200, extraHeaders = {}) {
   return new Response(body, {
     status,
     headers: {
       "content-type": "text/html; charset=utf-8",
       "cache-control": "public, max-age=60",
-      "access-control-allow-origin": "*"
+      "access-control-allow-origin": "*",
+      ...extraHeaders
     }
   });
 }
@@ -554,6 +560,12 @@ function escapeHtml(value) {
 function originFromRequest(request) {
   const url = new URL(request.url);
   return `${url.protocol}//${url.host}`;
+}
+
+function aiCatalogHeaders(request) {
+  return {
+    Link: `<${originFromRequest(request)}/.well-known/ai-catalog.json>; rel="ai-catalog"`
+  };
 }
 
 function agentProfile(request, env = {}) {
@@ -876,6 +888,7 @@ function agentCard(request, env = {}) {
       hosted_wrapper: true,
       wrapper_scope: "A2A/JSON-RPC discovery, lightweight triage, and routing response only",
       jsonrpc_endpoint: `${origin}/message/send`,
+      ai_catalog: `${origin}/.well-known/ai-catalog.json`,
       repository: REPOSITORY_URL,
       package: PACKAGE_URL,
       mcp: {
@@ -892,6 +905,141 @@ function agentCard(request, env = {}) {
     }
   };
   return applyAgentProfile(card, request, env);
+}
+
+function aiCatalog(request, env = {}) {
+  const origin = originFromRequest(request);
+  const card = agentCard(request, env);
+  return {
+    schemaVersion: "agentic-resource-discovery.draft",
+    name: `${card.name} agentic resource catalog`,
+    description:
+      "Discovery catalog for Agenda Intelligence MD resources: A2A wrapper, MCP package, OKF knowledge bundle, evidence-readiness profile pack, schemas, and source-policy artifacts. Visibility in this catalog is not buyer traction or product-market-fit evidence.",
+    hostIdentifier: `did:web:${new URL(origin).host}`,
+    catalogUrl: `${origin}/.well-known/ai-catalog.json`,
+    provider: {
+      name: "Vassiliy Lakhonin",
+      url: "https://vassiliylakhonin.github.io/"
+    },
+    repository: REPOSITORY_URL,
+    package: PACKAGE_URL,
+    version: VERSION,
+    updated: "2026-06-29",
+    resources: [
+      {
+        id: "agenda-intelligence-a2a-agent",
+        type: "a2a-agent-card",
+        name: card.name,
+        description: card.description,
+        url: `${origin}/.well-known/agent-card.json`,
+        protocols: ["A2A", "JSON-RPC"],
+        representativeQueries: [
+          "screen sanctions and policy risk with explicit evidence gaps",
+          "route a strategic-risk question to the right evidence-readiness workflow",
+          "find the A2A agent card for Agenda Intelligence MD"
+        ],
+        boundaries: card.x_agenda_intelligence?.boundaries || [
+          "No factual-truth verification.",
+          "Human review required before commercial action."
+        ]
+      },
+      {
+        id: "agenda-intelligence-jsonrpc-endpoint",
+        type: "a2a-jsonrpc-endpoint",
+        name: "Agenda Intelligence MD message/send endpoint",
+        description: "JSON-RPC endpoint for lightweight hosted A2A triage and routing responses.",
+        url: `${origin}/message/send`,
+        protocols: ["JSON-RPC"],
+        representativeQueries: [
+          "send a strategic risk triage request to Agenda Intelligence MD",
+          "get evidence gaps and source planning for a policy-risk question"
+        ]
+      },
+      {
+        id: "agenda-intelligence-mcp-package",
+        type: "mcp-server-package",
+        name: "Agenda Intelligence MD MCP server",
+        description:
+          "Installable stdio MCP server exposing schema validation, evidence audit, source coverage, quote checks, and analysis prompt assembly.",
+        url: PACKAGE_URL,
+        documentationUrl: DOCS_URL,
+        protocols: ["MCP", "stdio"],
+        representativeQueries: [
+          "install an MCP server for claim evidence audit",
+          "validate an agenda memo against a JSON schema",
+          "check source coverage for a sanctions evidence pack"
+        ]
+      },
+      {
+        id: "agenda-intelligence-okf-bundle",
+        type: "knowledge-catalog",
+        name: "Agenda Intelligence MD OKF-style knowledge bundle",
+        description:
+          "Compact Markdown/YAML concept bundle for retrieval agents: evidence-readiness, human-review packets, evidence packs, claim audits, source policy, market gate, and repo stack.",
+        url: OKF_BUNDLE_URL,
+        protocols: ["Markdown", "OKF-style"],
+        representativeQueries: [
+          "what is Agenda Intelligence MD evidence-readiness",
+          "explain human-review packet and claim audit concepts",
+          "understand the Agenda Intelligence repository stack"
+        ]
+      },
+      {
+        id: "ai-vendor-evidence-readiness-pack",
+        type: "evidence-readiness-artifact",
+        name: "AI Vendor Evidence-Readiness Profile Pack",
+        description:
+          "Build-to-learn public discovery pack for regulated procurement and AI governance review. Not a product-market-fit claim.",
+        url: EVIDENCE_READINESS_PACK_URL,
+        protocols: ["Markdown"],
+        representativeQueries: [
+          "AI vendor evidence-readiness profile regulated procurement",
+          "build a human-review packet from an AI governance RFP",
+          "what evidence should an AI governance platform vendor provide for procurement review"
+        ],
+        successSignals: [
+          "redacted file",
+          "second profile request",
+          "paid concierge review interest",
+          "budget-owner intro",
+          "concrete workflow correction"
+        ]
+      },
+      {
+        id: "agenda-intelligence-schemas",
+        type: "schema-collection",
+        name: "Agenda Intelligence MD JSON schemas",
+        description:
+          "Schema contracts for agenda requests, memos, briefs, evidence packs, evidence audits, and vertical worker requests/responses.",
+        url: SCHEMAS_URL,
+        protocols: ["JSON Schema"],
+        representativeQueries: [
+          "find the evidence pack schema for Agenda Intelligence MD",
+          "find the evidence audit JSON schema",
+          "validate a strategic-risk memo contract"
+        ]
+      },
+      {
+        id: "agenda-intelligence-source-policy",
+        type: "source-policy",
+        name: "Agenda Intelligence MD source policy",
+        description:
+          "Source planning, coverage, quote-presence checks, provenance tags, and non-verification boundaries.",
+        url: SOURCE_POLICY_URL,
+        protocols: ["Markdown"],
+        representativeQueries: [
+          "how does Agenda Intelligence MD handle source coverage",
+          "does Agenda Intelligence MD verify factual truth",
+          "what source categories are required for evidence readiness"
+        ]
+      }
+    ],
+    boundaries: [
+      "This catalog advertises resources, not customer traction.",
+      "Agenda Intelligence MD routes evidence gaps to humans; it does not approve vendors or make autonomous decisions.",
+      "Hosted workers are portfolio/demo surfaces unless buyer behavior proves demand."
+    ]
+  };
 }
 
 function applyAgentProfile(card, request, env = {}) {
@@ -4955,6 +5103,7 @@ function healthInfo(request, env) {
     name: card.name,
     version: VERSION,
     profile: agentProfile(request, env),
+    ai_catalog: `${origin}/.well-known/ai-catalog.json`,
     agent_card: `${origin}/.well-known/agent-card.json`,
     message_send: `${origin}/message/send`,
     status: `${origin}/status`,
@@ -4977,6 +5126,7 @@ function statusInfo(request, env) {
     version: VERSION,
     profile,
     a2a_protocol_version: card.protocolVersion,
+    ai_catalog_url: `${origin}/.well-known/ai-catalog.json`,
     agent_card_url: `${origin}/.well-known/agent-card.json`,
     message_send_url: `${origin}/message/send`,
     repository: REPOSITORY_URL,
@@ -5014,6 +5164,15 @@ function statusInfo(request, env) {
     }
   }
   return status;
+}
+
+function robotsTxt(request) {
+  const origin = originFromRequest(request);
+  return [
+    "User-agent: *",
+    "Allow: /",
+    `Agentmap: ${origin}/.well-known/ai-catalog.json`
+  ].join("\n");
 }
 
 function landingHtml(request, env) {
@@ -5100,6 +5259,7 @@ function landingHtml(request, env) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title}</title>
 <meta name="description" content="${escapeHtml(tagline)}">
+<link rel="ai-catalog" href="${origin}/.well-known/ai-catalog.json">
 <style>
   :root {
     --fg: #1a1a1a; --muted: #4a4a4a; --line: #d8d8d8;
@@ -5154,6 +5314,7 @@ function landingHtml(request, env) {
 
   <h2>Endpoints</h2>
   <ul class="endpoints">
+    <li><span class="label">AI catalog:</span> <a href="${origin}/.well-known/ai-catalog.json">/.well-known/ai-catalog.json</a></li>
     <li><span class="label">Agent card:</span> <a href="${origin}/.well-known/agent-card.json">/.well-known/agent-card.json</a></li>
     <li><span class="label">JSON-RPC:</span> <code>POST ${origin}/message/send</code></li>
     <li><span class="label">Status:</span> <a href="${origin}/status">/status</a></li>
@@ -5194,28 +5355,40 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   if (request.method === "GET" && url.pathname === "/.well-known/agent-card.json") {
     const card = agentCard(request, env);
     const signed = await maybeSignCard(card, env);
-    return jsonResponse(signed);
+    return jsonResponse(signed, 200, aiCatalogHeaders(request));
+  }
+
+  if (request.method === "GET" && url.pathname === "/.well-known/ai-catalog.json") {
+    return jsonResponse(aiCatalog(request, env), 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
   }
 
   if (request.method === "GET" && url.pathname === "/.well-known/jwks.json") {
     return jsonResponse(buildJwks(env.AGENT_CARD_SIGNING_KEY || env.AGENT_CARD_PRIVATE_JWK), 200, {
-      "cache-control": "public, max-age=3600"
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
     });
   }
 
   if (request.method === "GET" && url.pathname === "/") {
     if (acceptsHtml(request)) {
-      return htmlResponse(landingHtml(request, env));
+      return htmlResponse(landingHtml(request, env), 200, aiCatalogHeaders(request));
     }
-    return jsonResponse(healthInfo(request, env));
+    return jsonResponse(healthInfo(request, env), 200, aiCatalogHeaders(request));
   }
 
   if (request.method === "GET" && url.pathname === "/health") {
-    return jsonResponse(healthInfo(request, env));
+    return jsonResponse(healthInfo(request, env), 200, aiCatalogHeaders(request));
   }
 
   if (request.method === "GET" && url.pathname === "/status") {
-    return jsonResponse(statusInfo(request, env));
+    return jsonResponse(statusInfo(request, env), 200, aiCatalogHeaders(request));
+  }
+
+  if (request.method === "GET" && url.pathname === "/robots.txt") {
+    return textResponse(robotsTxt(request), 200, aiCatalogHeaders(request));
   }
 
   if (request.method === "GET" && url.pathname === "/stats") {
@@ -5234,6 +5407,7 @@ export default {
 };
 
 export {
+  aiCatalog,
   agentCard,
   buildUsageEvent,
   dealRiskContractResponseForRequest,
@@ -5246,6 +5420,7 @@ export {
   rateLimitPerHour,
   landingHtml,
   recordUsageStats,
+  robotsTxt,
   routeModules,
   signalScreenForText,
   statusInfo,

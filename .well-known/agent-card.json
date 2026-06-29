@@ -156,6 +156,7 @@
   "x_agenda_intelligence": {
     "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
     "package": "https://pypi.org/project/agenda-intelligence-md/",
+    "ai_catalog": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
     "mcp": {
       "transport": "stdio",
       "server_command": "agenda-intelligence-mcp",

@@ -23,6 +23,7 @@ This pack tests whether that workflow is visible from public procurement artifac
 | [UTHSA AI Governance Platform evidence-readiness profile](uthsa-ai-governance-platform-profile-2026-06-28.md) | Healthcare / higher-ed AI governance platform procurement | Whether a healthcare/higher-ed RFP can be turned into missing-evidence rows for AI governance, security, privacy, accessibility, audit, and implementation reviewers | `not_decision_ready` |
 | [TXShare AI Governance Platform evidence-readiness profile](txshare-ai-governance-evidence-readiness-profile-2026-06-28.md) | Cooperative public-sector AI governance procurement | Whether a cooperative purchasing RFP can be turned into role-specific evidence gaps for policy workflow, risk scoring, public-records retention, PII controls, integrations, references, pricing, and roadmap disclosure | `not_decision_ready` |
 | [AI governance RFP corpus scan](ai-governance-rfp-corpus-scan-2026-06-28.md) | Cross-artifact public signal scan | Whether UTHSA and TXShare are isolated examples or part of a repeating procurement pattern | `explore` |
+| [AI-retrievable evidence-readiness profiles](ai-retrievable-evidence-profiles-2026-06-29.md) | Publication / retrieval discipline | Whether public profiles are easy for humans and AI agents to fetch, parse, cite, and challenge without turning retrieval into market validation | Method note |
 | [Reusable profile template](../templates/ai-vendor-evidence-readiness-profile.md) | Repeatable concierge/research format | Whether the same evidence-readiness structure can be reused without a new worker | Template only |
 
 ## How to read it
@@ -39,6 +40,18 @@ The profiles follow the same pattern:
 8. Preserve the boundary: no vendor approval, no legal/compliance/security/procurement advice, no factual-truth verification.
 
 The core output is not a market map. The core output is the missing-evidence table plus owner actions.
+
+## Retrieval discipline
+
+Publish each profile as crawlable Markdown or simple HTML before producing richer formats. The retrieval target should be the claim-level evidence packet, not a landing page, PDF-only artifact, or dashboard.
+
+Use the method note in [`ai-retrievable-evidence-profiles-2026-06-29.md`](ai-retrievable-evidence-profiles-2026-06-29.md) before sharing profiles publicly:
+
+- stable headings for source pack, claims, missing evidence, decision, boundary notes, and follow-up signal;
+- source IDs referenced from claim rows where possible;
+- clear separation between observed public signal, inference, unknowns, and buyer behavior;
+- explicit boundary language saying the profile is not vendor approval, legal/compliance/security/procurement advice, or factual-truth verification;
+- manual retrieval eval prompts that check whether AI systems fetch or cite the right artifact.
 
 ## Target reviewer
 

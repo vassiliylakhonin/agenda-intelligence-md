@@ -36,6 +36,17 @@ This profile uses a public cooperative-procurement RFP as the buyer artifact and
 | S4 | Georgia Technology Authority, Procurement of AI Tools Guidelines for Responsible Use | 2025 | public-sector procurement guidance | <https://gta-psg.georgia.gov/psg/procurement-ai-tools-guidelines-responsible-use-gs-25-002> | Public-sector AI vendor evaluation language |
 | S5 | AI governance RFP corpus scan | 2026-06-28 | internal public-signal scan | [`docs/discovery/ai-governance-rfp-corpus-scan-2026-06-28.md`](ai-governance-rfp-corpus-scan-2026-06-28.md) | Shows TXShare is part of a recurring procurement pattern, not an isolated artifact |
 
+## Retrieval and citation hints
+
+- Canonical public URL: repository path for this Markdown profile
+- Primary query phrase: public-sector AI governance RFP evidence gaps
+- Secondary query phrases: TXShare AI governance platform evidence readiness; AI procurement public records retention vendor evidence; cooperative procurement AI governance vendor claims
+- Related profile pack: [`ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md`](ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md)
+- Source IDs referenced from claim rows: yes
+- Crawlable text version available: yes
+- PDF-only dependency avoided: yes
+- Boundary notes present: yes
+
 ## Buyer questions implied by the artifact
 
 | Question | Why it matters | Evidence needed | Owner |
@@ -53,18 +64,18 @@ This profile uses a public cooperative-procurement RFP as the buyer artifact and
 
 ## Vendor or system claims
 
-| Claim | Claim type | Evidence present | Evidence gap | Readiness |
-|---|---|---|---|---|
-| "AI policy management across agencies" | governance / workflow | RFP requires policy creation, enforcement, approval workflows, and alignment with applicable frameworks | Need policy workflow proof, control mapping, approval logs, exception process, role model | missing |
-| "Real-time AI risk scoring and mitigation" | risk / monitoring | RFP asks for risk scoring, alerts, dashboards, and mitigation | Need risk taxonomy, scoring logic, alert examples, human-review escalation, limits of automation | missing |
-| "Public-records compliant AI activity capture" | records / audit | RFP requires capture and retention of AI-related activities and official records management | Need log schema, retention schedule mapping, export format, audit trail, records request workflow | missing |
-| "PII and confidential-data protection" | security / privacy | RFP asks for PII upload blocking, confidential-data scanning, and approved data environments | Need DLP/data-classification evidence, false-positive handling, test cases, data-flow and residency proof | missing |
-| "Shadow AI and experimental-tool monitoring" | capability / security | RFP asks for safeguards across approved, experimental, and shadow AI tools | Need supported telemetry/connectors, discovery limits, privacy posture, department/risk filters | missing |
-| "Secure public-sector deployment" | technical architecture | RFP names cloud/on-prem flexibility, encryption, kill-switch, digital signatures, IAM/SIEM/cloud-storage integration, secure APIs | Need architecture, integration screenshots/docs, secure API docs, deployment options, performance/scalability evidence | missing |
-| "Implementation with minimal disruption" | implementation | RFP asks for planning, pilot deployment, agency configurations, rollout, validation, training, support, and annual performance reviews | Need project plan, staffing model, SLA, training materials, governance configuration documentation, annual review template | missing |
-| "Government or regulated-environment experience" | vendor qualification | RFP asks for public-agency references and government/regulated AI governance experience | Need references, comparable projects, certification evidence, customer outcomes | missing |
-| "Catalog/pricing ready for cooperative purchasing" | procurement / pricing | RFP requires category pricing, catalog/list pricing, auditability, and completed exhibits | Need pricing exhibit, current catalog, category mapping, discount/unit structure, public pricing acknowledgement | missing |
-| "Roadmap-backed gap disclosure" | governance / trust | RFP asks vendors to disclose gaps and roadmap future capabilities | Need explicit current/planned matrix, dates, dependencies, owner, and no-overclaim statement | missing |
+| Claim | Claim type | Evidence present | Source IDs | Evidence gap | Readiness |
+|---|---|---|---|---|---|
+| "AI policy management across agencies" | governance / workflow | RFP requires policy creation, enforcement, approval workflows, and alignment with applicable frameworks | S1, S2, S3, S4 | Need policy workflow proof, control mapping, approval logs, exception process, role model | missing |
+| "Real-time AI risk scoring and mitigation" | risk / monitoring | RFP asks for risk scoring, alerts, dashboards, and mitigation | S1, S2 | Need risk taxonomy, scoring logic, alert examples, human-review escalation, limits of automation | missing |
+| "Public-records compliant AI activity capture" | records / audit | RFP requires capture and retention of AI-related activities and official records management | S1 | Need log schema, retention schedule mapping, export format, audit trail, records request workflow | missing |
+| "PII and confidential-data protection" | security / privacy | RFP asks for PII upload blocking, confidential-data scanning, and approved data environments | S1, S3, S4 | Need DLP/data-classification evidence, false-positive handling, test cases, data-flow and residency proof | missing |
+| "Shadow AI and experimental-tool monitoring" | capability / security | RFP asks for safeguards across approved, experimental, and shadow AI tools | S1 | Need supported telemetry/connectors, discovery limits, privacy posture, department/risk filters | missing |
+| "Secure public-sector deployment" | technical architecture | RFP names cloud/on-prem flexibility, encryption, kill-switch, digital signatures, IAM/SIEM/cloud-storage integration, secure APIs | S1 | Need architecture, integration screenshots/docs, secure API docs, deployment options, performance/scalability evidence | missing |
+| "Implementation with minimal disruption" | implementation | RFP asks for planning, pilot deployment, agency configurations, rollout, validation, training, support, and annual performance reviews | S1 | Need project plan, staffing model, SLA, training materials, governance configuration documentation, annual review template | missing |
+| "Government or regulated-environment experience" | vendor qualification | RFP asks for public-agency references and government/regulated AI governance experience | S1 | Need references, comparable projects, certification evidence, customer outcomes | missing |
+| "Catalog/pricing ready for cooperative purchasing" | procurement / pricing | RFP requires category pricing, catalog/list pricing, auditability, and completed exhibits | S1 | Need pricing exhibit, current catalog, category mapping, discount/unit structure, public pricing acknowledgement | missing |
+| "Roadmap-backed gap disclosure" | governance / trust | RFP asks vendors to disclose gaps and roadmap future capabilities | S1 | Need explicit current/planned matrix, dates, dependencies, owner, and no-overclaim statement | missing |
 
 ## Control and standard mapping
 

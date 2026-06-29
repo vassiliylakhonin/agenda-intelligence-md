@@ -39,6 +39,7 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightwei
 
 - Interactive browser demos: [Middle Corridor Deal Risk Gate](https://vassiliylakhonin.github.io/deal-risk-gate.html) · [CIS Secondary-Sanctions Exposure](https://vassiliylakhonin.github.io/cis-secondary-sanctions.html)
 - General wrapper: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev> · [agent card](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) · [JSON-RPC](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send) · [Agenstry](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev)
+- Agentic Resource Discovery catalog: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json>
 - Worked curl calls for every worker: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md) · repeatable Kazakhstan test: [`docs/agenstry/kazakhstan-live-test.md`](docs/agenstry/kazakhstan-live-test.md) · announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
 
 Try a live portfolio demo:
@@ -64,7 +65,11 @@ This is a `build-to-learn` wedge, not a claim of product-market fit. The smalles
 
 - [`docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md`](docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md)
 - [`docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md`](docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md)
+- [`docs/discovery/ai-retrievable-evidence-profiles-2026-06-29.md`](docs/discovery/ai-retrievable-evidence-profiles-2026-06-29.md)
 - [`docs/templates/ai-vendor-evidence-readiness-profile.md`](docs/templates/ai-vendor-evidence-readiness-profile.md)
+- [`okf/index.md`](okf/index.md) — compact agent-readable knowledge bundle
+- [`.well-known/ai-catalog.json`](.well-known/ai-catalog.json) — Agentic Resource Discovery catalog source
+- [`docs/agent-entity-map.md`](docs/agent-entity-map.md) — entity-first map for retrieval agents
 
 Success means buyer behavior: a redacted file, second artifact request, paid concierge review, budget-owner intro, or concrete workflow correction. Compliments and "interesting" are not traction.
 
@@ -393,6 +398,9 @@ Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-con
 | Confidential project workflow | [`docs/trust/confidential-project-workflow.md`](docs/trust/confidential-project-workflow.md) |
 | Strategic infrastructure readiness template | [`docs/templates/strategic-infrastructure-evidence-readiness-profile.md`](docs/templates/strategic-infrastructure-evidence-readiness-profile.md) |
 | Weekly status readiness delta template | [`docs/templates/weekly-status-decision-readiness-delta.md`](docs/templates/weekly-status-decision-readiness-delta.md) |
+| Agent-readable OKF bundle | [`okf/index.md`](okf/index.md) |
+| Agentic Resource Discovery catalog | [`.well-known/ai-catalog.json`](.well-known/ai-catalog.json) |
+| Agent entity map | [`docs/agent-entity-map.md`](docs/agent-entity-map.md) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |
 | Agenstry discovery | [`docs/integrations/agenstry.md`](docs/integrations/agenstry.md) |
 | Agenstry agent card copy | [`docs/agenstry/agent-card-copy.md`](docs/agenstry/agent-card-copy.md) |
@@ -414,6 +422,8 @@ agenda-intelligence-md/
 ├─ skills/                    # OpenClaw skill wrappers
 ├─ evals/                     # rubric, judge prompt, benchmark
 ├─ analysis-bank/             # agent persistent memory (memory-card schema, see schemas/v1/memory-card.schema.json)
+├─ okf/                       # compact agent-readable knowledge bundle
+├─ .well-known/               # agent card and Agentic Resource Discovery catalog source artifacts
 ├─ docs/                      # guides, integrations, use-cases
 ├─ scripts/                   # dev and CI helpers
 └─ tests/                     # pytest suite

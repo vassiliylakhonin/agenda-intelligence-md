@@ -1,9 +1,11 @@
 include README.md
 include LICENSE
+include .well-known/*.json
 recursive-include src/agenda_intelligence *
 recursive-include src/agenda_intelligence/data *
 recursive-include docs *.md
 recursive-include examples *.md
+recursive-include okf *.md
 recursive-include skills *.md
 recursive-include analysis-bank *.md
 recursive-include schemas *.json

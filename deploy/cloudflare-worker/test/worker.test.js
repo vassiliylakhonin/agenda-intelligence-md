@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  aiCatalog,
   agentCard,
   buildUsageEvent,
   checkRateLimit,
@@ -15,6 +16,7 @@ import {
   productionAuthKey,
   rateLimitPerHour,
   recordUsageStats,
+  robotsTxt,
   routeModules,
   signalScreenForText,
   statusInfo,
@@ -212,6 +214,88 @@ test("agent card uses request origin for live endpoints", () => {
     card.x_agenda_intelligence.wrapper_scope,
     "A2A/JSON-RPC discovery, lightweight triage, and routing response only"
   );
+});
+
+test("AI catalog advertises real agentic resources without traction claims", () => {
+  const catalog = aiCatalog(request);
+
+  assert.equal(catalog.schemaVersion, "agentic-resource-discovery.draft");
+  assert.equal(
+    catalog.catalogUrl,
+    "https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json"
+  );
+  assert.equal(catalog.hostIdentifier, "did:web:agenda-intelligence-a2a.example.workers.dev");
+  assert.equal(catalog.version, "1.1.0");
+  assert.deepEqual(
+    catalog.resources.map((resource) => resource.id),
+    [
+      "agenda-intelligence-a2a-agent",
+      "agenda-intelligence-jsonrpc-endpoint",
+      "agenda-intelligence-mcp-package",
+      "agenda-intelligence-okf-bundle",
+      "ai-vendor-evidence-readiness-pack",
+      "agenda-intelligence-schemas",
+      "agenda-intelligence-source-policy"
+    ]
+  );
+  assert.equal(
+    catalog.resources.find((resource) => resource.id === "agenda-intelligence-a2a-agent").url,
+    "https://agenda-intelligence-a2a.example.workers.dev/.well-known/agent-card.json"
+  );
+  assert.ok(
+    catalog.resources
+      .find((resource) => resource.id === "ai-vendor-evidence-readiness-pack")
+      .representativeQueries.includes("AI vendor evidence-readiness profile regulated procurement")
+  );
+  assert.ok(catalog.boundaries.includes("This catalog advertises resources, not customer traction."));
+});
+
+test("AI catalog route returns catalog JSON and discovery Link header", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json")
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.equal(
+    response.headers.get("link"),
+    '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json>; rel="ai-catalog"'
+  );
+  assert.equal(body.catalogUrl, "https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json");
+  assert.ok(body.resources.some((resource) => resource.id === "agenda-intelligence-mcp-package"));
+});
+
+test("landing HTML advertises AI catalog endpoint and Link header", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/", {
+      headers: { accept: "text/html" }
+    })
+  );
+  const body = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.equal(
+    response.headers.get("link"),
+    '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json>; rel="ai-catalog"'
+  );
+  assert.match(body, /AI catalog:/);
+  assert.match(body, /<link rel="ai-catalog" href="https:\/\/agenda-intelligence-a2a\.example\.workers\.dev\/\.well-known\/ai-catalog\.json">/);
+  assert.ok(body.includes("/.well-known/ai-catalog.json"));
+});
+
+test("robots.txt advertises Agentmap for the AI catalog", async () => {
+  const body = robotsTxt(request);
+  assert.match(body, /User-agent: \*/);
+  assert.match(body, /Agentmap: https:\/\/agenda-intelligence-a2a\.example\.workers\.dev\/\.well-known\/ai-catalog\.json/);
+
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/robots.txt")
+  );
+  const responseBody = await response.text();
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("content-type"), "text/plain; charset=utf-8");
+  assert.match(responseBody, /Agentmap:/);
 });
 
 test("agent card verifier accepts local Agenda and Middle Corridor cards", () => {

@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "agentic-resource-discovery.draft",
+  "name": "Agenda Intelligence MD agentic resource catalog",
+  "description": "Discovery catalog for Agenda Intelligence MD resources: A2A wrapper, MCP package, OKF knowledge bundle, evidence-readiness profile pack, schemas, and source-policy artifacts. Visibility in this catalog is not buyer traction or product-market-fit evidence.",
+  "hostIdentifier": "did:web:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev",
+  "catalogUrl": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
+  "provider": {
+    "name": "Vassiliy Lakhonin",
+    "url": "https://vassiliylakhonin.github.io/"
+  },
+  "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+  "version": "1.1.0",
+  "updated": "2026-06-29",
+  "resources": [
+    {
+      "id": "agenda-intelligence-a2a-agent",
+      "type": "a2a-agent-card",
+      "name": "Agenda Intelligence MD A2A wrapper",
+      "description": "Live A2A/JSON-RPC discovery and lightweight triage wrapper for Agenda Intelligence MD.",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+      "protocols": ["A2A", "JSON-RPC"],
+      "representativeQueries": [
+        "screen sanctions and policy risk with explicit evidence gaps",
+        "route a strategic-risk question to the right evidence-readiness workflow",
+        "find the A2A agent card for Agenda Intelligence MD"
+      ],
+      "boundaries": [
+        "No legal, compliance, financial, insurance, sanctions, or procurement advice.",
+        "No factual-truth verification.",
+        "Human review required before commercial action."
+      ]
+    },
+    {
+      "id": "agenda-intelligence-jsonrpc-endpoint",
+      "type": "a2a-jsonrpc-endpoint",
+      "name": "Agenda Intelligence MD message/send endpoint",
+      "description": "JSON-RPC endpoint for lightweight hosted A2A triage and routing responses.",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send",
+      "protocols": ["JSON-RPC"],
+      "representativeQueries": [
+        "send a strategic risk triage request to Agenda Intelligence MD",
+        "get evidence gaps and source planning for a policy-risk question"
+      ]
+    },
+    {
+      "id": "agenda-intelligence-mcp-package",
+      "type": "mcp-server-package",
+      "name": "Agenda Intelligence MD MCP server",
+      "description": "Installable stdio MCP server exposing schema validation, evidence audit, source coverage, quote checks, and analysis prompt assembly.",
+      "url": "https://pypi.org/project/agenda-intelligence-md/",
+      "documentationUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/MCP.md",
+      "protocols": ["MCP", "stdio"],
+      "representativeQueries": [
+        "install an MCP server for claim evidence audit",
+        "validate an agenda memo against a JSON schema",
+        "check source coverage for a sanctions evidence pack"
+      ]
+    },
+    {
+      "id": "agenda-intelligence-okf-bundle",
+      "type": "knowledge-catalog",
+      "name": "Agenda Intelligence MD OKF-style knowledge bundle",
+      "description": "Compact Markdown/YAML concept bundle for retrieval agents: evidence-readiness, human-review packets, evidence packs, claim audits, source policy, market gate, and repo stack.",
+      "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/okf/index.md",
+      "protocols": ["Markdown", "OKF-style"],
+      "representativeQueries": [
+        "what is Agenda Intelligence MD evidence-readiness",
+        "explain human-review packet and claim audit concepts",
+        "understand the Agenda Intelligence repository stack"
+      ]
+    },
+    {
+      "id": "ai-vendor-evidence-readiness-pack",
+      "type": "evidence-readiness-artifact",
+      "name": "AI Vendor Evidence-Readiness Profile Pack",
+      "description": "Build-to-learn public discovery pack for regulated procurement and AI governance review. Not a product-market-fit claim.",
+      "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md",
+      "protocols": ["Markdown"],
+      "representativeQueries": [
+        "AI vendor evidence-readiness profile regulated procurement",
+        "build a human-review packet from an AI governance RFP",
+        "what evidence should an AI governance platform vendor provide for procurement review"
+      ],
+      "successSignals": [
+        "redacted file",
+        "second profile request",
+        "paid concierge review interest",
+        "budget-owner intro",
+        "concrete workflow correction"
+      ]
+    },
+    {
+      "id": "agenda-intelligence-schemas",
+      "type": "schema-collection",
+      "name": "Agenda Intelligence MD JSON schemas",
+      "description": "Schema contracts for agenda requests, memos, briefs, evidence packs, evidence audits, and vertical worker requests/responses.",
+      "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/schemas/v1",
+      "protocols": ["JSON Schema"],
+      "representativeQueries": [
+        "find the evidence pack schema for Agenda Intelligence MD",
+        "find the evidence audit JSON schema",
+        "validate a strategic-risk memo contract"
+      ]
+    },
+    {
+      "id": "agenda-intelligence-source-policy",
+      "type": "source-policy",
+      "name": "Agenda Intelligence MD source policy",
+      "description": "Source planning, coverage, quote-presence checks, provenance tags, and non-verification boundaries.",
+      "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/SOURCE_POLICY.md",
+      "protocols": ["Markdown"],
+      "representativeQueries": [
+        "how does Agenda Intelligence MD handle source coverage",
+        "does Agenda Intelligence MD verify factual truth",
+        "what source categories are required for evidence readiness"
+      ]
+    }
+  ],
+  "boundaries": [
+    "This catalog advertises resources, not customer traction.",
+    "Agenda Intelligence MD routes evidence gaps to humans; it does not approve vendors or make autonomous decisions.",
+    "Hosted workers are portfolio/demo surfaces unless buyer behavior proves demand."
+  ]
+}

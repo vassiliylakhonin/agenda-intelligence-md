@@ -28,6 +28,17 @@ Use this template for the first regulated-procurement wedge. It is a research an
 |---|---|---:|---|---|---|
 | S1 |  |  | RFP / vendor page / standard / trust page / model card / policy / other |  |  |
 
+## Retrieval and citation hints
+
+- Canonical public URL:
+- Primary query phrase:
+- Secondary query phrases:
+- Related profile pack:
+- Source IDs referenced from claim rows: yes / no
+- Crawlable text version available: yes / no
+- PDF-only dependency avoided: yes / no
+- Boundary notes present: yes / no
+
 ## Buyer questions implied by the artifact
 
 | Question | Why it matters | Evidence needed | Owner |
@@ -36,9 +47,9 @@ Use this template for the first regulated-procurement wedge. It is a research an
 
 ## Vendor or system claims
 
-| Claim | Claim type | Evidence present | Evidence gap | Readiness |
-|---|---|---|---|---|
-|  | capability / governance / monitoring / human oversight / data / security / model performance / incident handling / third-party dependency |  |  | supported / weak / missing / not assessable |
+| Claim | Claim type | Evidence present | Source IDs | Evidence gap | Readiness |
+|---|---|---|---|---|---|
+|  | capability / governance / monitoring / human oversight / data / security / model performance / incident handling / third-party dependency |  | S1 |  | supported / weak / missing / not assessable |
 
 ## Control and standard mapping
 
