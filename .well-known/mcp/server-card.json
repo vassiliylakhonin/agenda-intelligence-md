@@ -21,7 +21,9 @@
     "entitymap": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json",
     "source_policy": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/SOURCE_POLICY.md",
     "okf_bundle": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/index.md",
-    "okf_repository_copy": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/okf/index.md"
+    "okf_repository_copy": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/okf/index.md",
+    "confidential_project_room_profile": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room",
+    "confidential_project_room_example": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room/redacted-example.json"
   },
   "capabilities": {
     "tools": true,

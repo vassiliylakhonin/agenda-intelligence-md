@@ -1,0 +1,163 @@
+{
+  "$schema": "../../schemas/v1/confidential-project-room-profile.schema.json",
+  "profile_id": "confidential-project-room.synthetic.2026-06-29",
+  "profile_type": "confidential_project_room",
+  "version": "0.1",
+  "status": "synthetic_redacted_example",
+  "classification": "portfolio-proof",
+  "review_context": {
+    "project_alias": "ProjectCo",
+    "artifact_type": "mixed_project_packet",
+    "decision_moment": "committee_review",
+    "evidence_mode": "redacted",
+    "confidentiality_mode": "synthetic"
+  },
+  "market_gate": {
+    "economic_buyer": "Project finance, procurement, AI governance, or investment committee owner who controls review process or data access.",
+    "painful_trigger": "A committee or procurement review is due this month, but key project claims are not evidence-ready.",
+    "current_workaround": "Shared folders, spreadsheets, email threads, adviser notes, and manual committee memo review.",
+    "observed_evidence": [
+      "No private buyer behavior is claimed by this synthetic example."
+    ],
+    "inference": [
+      "Confidential project teams often need alias-safe evidence readiness before sharing material externally."
+    ],
+    "kill_criteria": [
+      "No prospect provides even a redacted packet.",
+      "No second artifact is requested after a first profile.",
+      "No process owner corrects or adopts the workflow."
+    ]
+  },
+  "aliases": [
+    {
+      "alias": "ProjectCo",
+      "role": "project_company",
+      "original_value_retained": false
+    },
+    {
+      "alias": "SponsorCo",
+      "role": "sponsor",
+      "original_value_retained": false
+    },
+    {
+      "alias": "Vendor-A",
+      "role": "technology_vendor",
+      "original_value_retained": false
+    },
+    {
+      "alias": "Lender-1",
+      "role": "lender",
+      "original_value_retained": false
+    }
+  ],
+  "source_items": [
+    {
+      "source_id": "S1",
+      "source_role": "committee_memo",
+      "age": "current",
+      "confidentiality": "redacted",
+      "limitations": [
+        "Summarizes demand but does not include signed customer evidence."
+      ]
+    },
+    {
+      "source_id": "S2",
+      "source_role": "vendor_proposal",
+      "age": "current",
+      "confidentiality": "redacted",
+      "limitations": [
+        "Provides delivery scope but omits export-control conditions and warranty terms."
+      ]
+    },
+    {
+      "source_id": "S3",
+      "source_role": "lender_question_list",
+      "age": "unknown",
+      "confidentiality": "redacted",
+      "limitations": [
+        "Questions are available, but owner responses are not yet supplied."
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "C1",
+      "claim": "ProjectCo has sufficient demand evidence for committee review.",
+      "claim_type": "demand",
+      "evidence_ids": [
+        "S1"
+      ],
+      "support_level": "weak",
+      "evidence_gap": "No signed customer letter, term sheet, or redacted offtake evidence is included.",
+      "risk_if_wrong": "Committee memo may overstate revenue certainty.",
+      "safe_to_repeat": false
+    },
+    {
+      "claim_id": "C2",
+      "claim": "Vendor-A can deliver the required system within the review timetable.",
+      "claim_type": "vendor_delivery",
+      "evidence_ids": [
+        "S2"
+      ],
+      "support_level": "partial",
+      "evidence_gap": "Delivery assumptions are present, but warranty, export-control, and supply-chain conditions are missing.",
+      "risk_if_wrong": "Procurement path may slip after committee approval.",
+      "safe_to_repeat": true
+    },
+    {
+      "claim_id": "C3",
+      "claim": "The file is ready for Lender-1 diligence.",
+      "claim_type": "financing",
+      "evidence_ids": [
+        "S3"
+      ],
+      "support_level": "unsupported",
+      "evidence_gap": "The lender question list exists, but answers, ownership, and evidence attachments are missing.",
+      "risk_if_wrong": "The review may enter lender diligence with unresolved blocking questions.",
+      "safe_to_repeat": false
+    }
+  ],
+  "owner_actions": [
+    {
+      "action_id": "A1",
+      "owner": "commercial_owner",
+      "action": "Provide redacted customer evidence or mark the demand claim as unsafe to repeat.",
+      "priority": "P0",
+      "blocks_readiness": true
+    },
+    {
+      "action_id": "A2",
+      "owner": "procurement_owner",
+      "action": "Request Vendor-A delivery conditions, warranty terms, and export-control assumptions.",
+      "priority": "P1",
+      "blocks_readiness": true
+    },
+    {
+      "action_id": "A3",
+      "owner": "finance_owner",
+      "action": "Map each Lender-1 question to an owner, source item, and response status.",
+      "priority": "P0",
+      "blocks_readiness": true
+    }
+  ],
+  "readiness": {
+    "route": "escalate_before_committee",
+    "rationale": "Demand and financing claims are not evidence-ready; vendor delivery is only partially supported.",
+    "ready_for_public_reuse": false,
+    "human_review_required": true
+  },
+  "boundary_notes": [
+    "This profile does not approve or reject the project.",
+    "This profile does not provide legal, compliance, procurement, security, tax, customs, financial, insurance, sanctions, export-control, or investment advice.",
+    "This profile checks evidence readiness and owner actions using supplied or redacted source roles.",
+    "Factual truth, regulatory interpretation, technical due diligence, and investment decisions remain outside this artifact."
+  ],
+  "follow_up_signal": {
+    "redacted_file_offered": false,
+    "second_artifact_requested": false,
+    "paid_concierge_interest": false,
+    "budget_owner_intro": false,
+    "workflow_correction_received": false,
+    "notes": "Synthetic example only; no buyer traction is claimed."
+  }
+}

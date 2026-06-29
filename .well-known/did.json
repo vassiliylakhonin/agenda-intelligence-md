@@ -28,6 +28,11 @@
       "id": "did:web:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev#openapi",
       "type": "OpenAPI",
       "serviceEndpoint": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/api/openapi.json"
+    },
+    {
+      "id": "did:web:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev#confidential-project-room-profile",
+      "type": "EvidenceReadinessProfile",
+      "serviceEndpoint": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room"
     }
   ]
 }

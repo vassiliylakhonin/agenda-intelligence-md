@@ -1,0 +1,415 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/confidential-project-room-profile.schema.json",
+  "title": "ConfidentialProjectRoomProfile",
+  "description": "Alias-first evidence-readiness profile for confidential project-room reviews. It records source roles, claim support, evidence gaps, owner actions, and human-review routing without exposing private names or deal terms.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile_id",
+    "profile_type",
+    "version",
+    "status",
+    "classification",
+    "review_context",
+    "aliases",
+    "source_items",
+    "claims",
+    "owner_actions",
+    "readiness",
+    "boundary_notes"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "profile_type": {
+      "type": "string",
+      "const": "confidential_project_room"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "synthetic_redacted_example",
+        "redacted_draft",
+        "private_internal",
+        "ready_for_human_review",
+        "archived"
+      ]
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "build-to-learn",
+        "portfolio-proof",
+        "internal-ops"
+      ]
+    },
+    "review_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "project_alias",
+        "artifact_type",
+        "decision_moment",
+        "evidence_mode",
+        "confidentiality_mode"
+      ],
+      "properties": {
+        "project_alias": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact_type": {
+          "type": "string",
+          "enum": [
+            "rfp_packet",
+            "vendor_packet",
+            "financing_data_room",
+            "committee_memo",
+            "mixed_project_packet",
+            "model_card_or_ai_system_file",
+            "risk_memo"
+          ]
+        },
+        "decision_moment": {
+          "type": "string",
+          "enum": [
+            "rfp_shortlist",
+            "vendor_review",
+            "lender_review",
+            "committee_review",
+            "public_authority_review",
+            "fid",
+            "financial_close",
+            "phase_gate",
+            "pre_public_reuse"
+          ]
+        },
+        "evidence_mode": {
+          "type": "string",
+          "enum": [
+            "public_only",
+            "redacted",
+            "buyer_provided_private",
+            "mixed"
+          ]
+        },
+        "confidentiality_mode": {
+          "type": "string",
+          "enum": [
+            "synthetic",
+            "redacted",
+            "private_internal"
+          ]
+        }
+      }
+    },
+    "market_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "economic_buyer": {
+          "type": "string"
+        },
+        "painful_trigger": {
+          "type": "string"
+        },
+        "current_workaround": {
+          "type": "string"
+        },
+        "observed_evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inference": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "kill_criteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "aliases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/alias"
+      }
+    },
+    "source_items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/source_item"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    },
+    "owner_actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/owner_action"
+      }
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route",
+        "rationale",
+        "human_review_required"
+      ],
+      "properties": {
+        "route": {
+          "type": "string",
+          "enum": [
+            "ready_for_human_review",
+            "not_decision_ready",
+            "escalate_before_committee",
+            "escalate_before_fid",
+            "escalate_before_public_reuse",
+            "insufficient_public_evidence",
+            "insufficient_redacted_evidence"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ready_for_public_reuse": {
+          "type": "boolean"
+        },
+        "human_review_required": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "boundary_notes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "follow_up_signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "redacted_file_offered": {
+          "type": "boolean"
+        },
+        "second_artifact_requested": {
+          "type": "boolean"
+        },
+        "paid_concierge_interest": {
+          "type": "boolean"
+        },
+        "budget_owner_intro": {
+          "type": "boolean"
+        },
+        "workflow_correction_received": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "alias": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alias",
+        "role",
+        "original_value_retained"
+      ],
+      "properties": {
+        "alias": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "original_value_retained": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "source_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_role",
+        "age",
+        "confidentiality",
+        "limitations"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "pattern": "^S[0-9]+$"
+        },
+        "source_role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "age": {
+          "type": "string",
+          "enum": [
+            "current",
+            "stale",
+            "unknown"
+          ]
+        },
+        "confidentiality": {
+          "type": "string",
+          "enum": [
+            "public",
+            "redacted",
+            "confidential",
+            "synthetic"
+          ]
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "claim",
+        "claim_type",
+        "evidence_ids",
+        "support_level",
+        "evidence_gap",
+        "risk_if_wrong",
+        "safe_to_repeat"
+      ],
+      "properties": {
+        "claim_id": {
+          "type": "string",
+          "pattern": "^C[0-9]+$"
+        },
+        "claim": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claim_type": {
+          "type": "string",
+          "enum": [
+            "demand",
+            "vendor_delivery",
+            "site_power",
+            "financing",
+            "tax_customs",
+            "regulatory",
+            "governance",
+            "security",
+            "schedule",
+            "risk_mitigation",
+            "ai_system_capability",
+            "other"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^S[0-9]+$"
+          }
+        },
+        "support_level": {
+          "type": "string",
+          "enum": [
+            "direct",
+            "partial",
+            "weak",
+            "unsupported",
+            "not_assessable"
+          ]
+        },
+        "evidence_gap": {
+          "type": "string"
+        },
+        "risk_if_wrong": {
+          "type": "string"
+        },
+        "safe_to_repeat": {
+          "type": "boolean"
+        }
+      }
+    },
+    "owner_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_id",
+        "owner",
+        "action",
+        "priority",
+        "blocks_readiness"
+      ],
+      "properties": {
+        "action_id": {
+          "type": "string",
+          "pattern": "^A[0-9]+$"
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "P0",
+            "P1",
+            "P2"
+          ]
+        },
+        "blocks_readiness": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

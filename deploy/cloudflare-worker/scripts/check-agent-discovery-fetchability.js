@@ -13,6 +13,8 @@ const paths = [
   "/.well-known/did.json",
   "/entitymap.json",
   "/okf/index.md",
+  "/profiles/confidential-project-room",
+  "/profiles/confidential-project-room/redacted-example.json",
   "/robots.txt"
 ];
 

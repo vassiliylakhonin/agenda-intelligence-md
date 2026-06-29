@@ -20,6 +20,7 @@ import {
   mcpServerCard,
   okfMarkdown,
   openApiDocument,
+  profileContent,
   productionAuthKey,
   rateLimitPerHour,
   recordUsageStats,
@@ -32,7 +33,7 @@ import {
 } from "../src/index.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "../src/usage_constants.js";
 import { validateAgentCard } from "../scripts/verify-agent-card.js";
-import { OKF_CONTENT, OKF_PATHS } from "../src/okf_content.js";
+import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "../src/okf_content.js";
 import { matchCounterparty as matchCounterpartyAgainstWatchman } from "../src/upstream_watchman.js";
 import {
   matchCounterparty as matchCounterpartyAgainstSnapshot,
@@ -249,6 +250,7 @@ test("AI catalog advertises real agentic resources without traction claims", () 
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:knowledge:okf-bundle",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:entitymap:agenda-intelligence-md",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:artifact:ai-vendor-evidence-readiness-pack",
+      "urn:ai:agenda-intelligence-a2a.example.workers.dev:artifact:confidential-project-room-profile",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:schema:agenda-intelligence-v1",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:policy:source-policy"
     ]
@@ -277,6 +279,15 @@ test("AI catalog advertises real agentic resources without traction claims", () 
     catalog.entries
       .find((entry) => entry.identifier.endsWith(":artifact:ai-vendor-evidence-readiness-pack"))
       .representativeQueries.includes("AI vendor evidence-readiness profile regulated procurement")
+  );
+  assert.equal(
+    catalog.entries.find((entry) => entry.identifier.endsWith(":artifact:confidential-project-room-profile")).url,
+    "https://agenda-intelligence-a2a.example.workers.dev/profiles/confidential-project-room"
+  );
+  assert.ok(
+    catalog.entries
+      .find((entry) => entry.identifier.endsWith(":artifact:confidential-project-room-profile"))
+      .representativeQueries.includes("confidential project-room evidence-readiness profile")
   );
   assert.ok(catalog.boundaries.includes("This catalog advertises resources, not customer traction."));
 });
@@ -307,6 +318,8 @@ test("API catalog and OpenAPI routes advertise the public worker HTTP contract",
   assert.ok(openapi.paths["/message/send"].post);
   assert.ok(openapi.paths["/.well-known/ai-catalog.json"].get);
   assert.ok(openapi.paths["/okf/index.md"].get);
+  assert.ok(openapi.paths["/profiles/confidential-project-room"].get);
+  assert.ok(openapi.paths["/profiles/confidential-project-room/redacted-example.json"].get);
 
   const catalogResponse = await handleRequest(
     new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/api-catalog")
@@ -338,7 +351,12 @@ test("MCP server card and DID routes advertise installable MCP identity", async 
   assert.equal(did.id, "did:web:agenda-intelligence-a2a.example.workers.dev");
   assert.ok(did.service.some((service) => service.type === "MCPServer"));
   assert.ok(did.service.some((service) => service.type === "OpenAPI"));
+  assert.ok(did.service.some((service) => service.type === "EvidenceReadinessProfile"));
   assert.equal(card.related.openapi, "https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json");
+  assert.equal(
+    card.related.confidential_project_room_profile,
+    "https://agenda-intelligence-a2a.example.workers.dev/profiles/confidential-project-room"
+  );
 
   const cardResponse = await handleRequest(
     new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json")
@@ -367,11 +385,21 @@ test("entity map and OKF routes expose live domain knowledge artifacts", async (
   const map = entityMap(request);
   assert.equal(map.url, "https://agenda-intelligence-a2a.example.workers.dev/entitymap.json");
   assert.ok(map.entities.some((entity) => entity.slug === "human-review-packet"));
+  assert.equal(
+    map.entities.find((entity) => entity.slug === "confidential-project-room").url,
+    "https://agenda-intelligence-a2a.example.workers.dev/profiles/confidential-project-room"
+  );
   assert.ok(map.boundaries.includes("Not proof of buyer demand or product-market fit."));
 
   assert.match(okfMarkdown("/okf/index.md"), /Agenda Intelligence MD Knowledge Bundle/);
+  assert.match(okfMarkdown("/okf/confidential-project-room.md"), /Confidential Project-Room Workflow/);
   assert.match(okfMarkdown("/okf/"), /Agenda Intelligence MD Knowledge Bundle/);
   assert.equal(okfMarkdown("/okf/missing.md"), null);
+  assert.match(profileContent("/profiles/confidential-project-room"), /Confidential Project-Room Evidence-Readiness Profile/);
+  assert.match(
+    profileContent("/profiles/confidential-project-room/redacted-example.json"),
+    /confidential_project_room/
+  );
 
   const entityResponse = await handleRequest(
     new Request("https://agenda-intelligence-a2a.example.workers.dev/entitymap.json")
@@ -393,6 +421,24 @@ test("entity map and OKF routes expose live domain knowledge artifacts", async (
     new Request("https://agenda-intelligence-a2a.example.workers.dev/okf/")
   );
   assert.equal(okfAliasResponse.status, 200);
+
+  const profileResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/profiles/confidential-project-room")
+  );
+  const profileBody = await profileResponse.text();
+  assert.equal(profileResponse.status, 200);
+  assert.equal(profileResponse.headers.get("content-type"), "text/markdown; charset=utf-8");
+  assert.match(profileBody, /# Confidential Project-Room Evidence-Readiness Profile/);
+
+  const profileExampleResponse = await handleRequest(
+    new Request(
+      "https://agenda-intelligence-a2a.example.workers.dev/profiles/confidential-project-room/redacted-example.json"
+    )
+  );
+  const profileExampleBody = await profileExampleResponse.json();
+  assert.equal(profileExampleResponse.status, 200);
+  assert.equal(profileExampleResponse.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.equal(profileExampleBody.profile_type, "confidential_project_room");
 });
 
 test("generated OKF content matches repository OKF files", () => {
@@ -401,6 +447,13 @@ test("generated OKF content matches repository OKF files", () => {
     assert.equal(
       OKF_CONTENT[path],
       readFileSync(new URL(`../../../okf/${fileName}`, import.meta.url), "utf8")
+    );
+  }
+  for (const path of PROFILE_PATHS) {
+    const fileName = path.replace("/profiles/", "");
+    assert.equal(
+      PROFILE_CONTENT[path],
+      readFileSync(new URL(`../../../profiles/${fileName}`, import.meta.url), "utf8")
     );
   }
 });
@@ -422,8 +475,10 @@ test("landing HTML advertises AI catalog endpoint and Link header", async () => 
   assert.match(body, /OpenAPI:/);
   assert.match(body, /Entity map:/);
   assert.match(body, /OKF bundle:/);
+  assert.match(body, /Project room:/);
   assert.match(body, /<link rel="ai-catalog" href="https:\/\/agenda-intelligence-a2a\.example\.workers\.dev\/\.well-known\/ai-catalog\.json">/);
   assert.ok(body.includes("/.well-known/ai-catalog.json"));
+  assert.ok(body.includes("/profiles/confidential-project-room"));
 });
 
 test("robots.txt advertises Agentmap for the AI catalog", async () => {
@@ -1613,6 +1668,7 @@ test("GET /status returns JSON status with boundaries and links", async () => {
   assert.ok(body.version);
   assert.ok(body.agent_card_url);
   assert.ok(body.message_send_url);
+  assert.ok(body.confidential_project_room_profile_url.endsWith("/profiles/confidential-project-room"));
   assert.equal(body.boundaries.not_advice, true);
   assert.equal(body.boundaries.live_retrieval, false);
   assert.equal(body.boundaries.factual_verification, false);
@@ -1647,6 +1703,7 @@ test("healthInfo exposes status URL alongside agent_card and message_send", () =
   assert.ok(info.openapi.endsWith("/api/openapi.json"));
   assert.ok(info.entitymap.endsWith("/entitymap.json"));
   assert.ok(info.okf_bundle.endsWith("/okf/index.md"));
+  assert.ok(info.confidential_project_room_profile.endsWith("/profiles/confidential-project-room"));
   assert.ok(info.message_send.endsWith("/message/send"));
   assert.ok(info.status.endsWith("/status"));
 });

@@ -9,6 +9,8 @@ recursive-include src/agenda_intelligence/data *
 recursive-include docs *.md
 recursive-include examples *.md
 recursive-include okf *.md
+recursive-include profiles *.md
+recursive-include profiles *.json
 recursive-include skills *.md
 recursive-include analysis-bank *.md
 recursive-include schemas *.json

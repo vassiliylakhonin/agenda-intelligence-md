@@ -23,6 +23,7 @@ This OKF-style bundle is a compact, agent-readable map of Agenda Intelligence MD
 Use this bundle when an agent needs to understand the project before answering questions about:
 
 - AI vendor evidence-readiness for regulated procurement;
+- confidential project-room workflows;
 - human-review packets;
 - source packs and claim audits;
 - evidence gaps and owner actions;
@@ -33,6 +34,7 @@ Use this bundle when an agent needs to understand the project before answering q
 | Entry | Type | Use |
 |---|---|---|
 | [`ai-vendor-evidence-readiness.md`](ai-vendor-evidence-readiness.md) | concept | Current commercial discovery wedge and buyer-workflow boundaries |
+| [`confidential-project-room.md`](confidential-project-room.md) | concept | Alias-first workflow for private project-room evidence-readiness |
 | [`human-review-packet.md`](human-review-packet.md) | concept | Core output shape for evidence-readiness work |
 | [`evidence-pack.md`](evidence-pack.md) | concept | Source pack / evidence input discipline |
 | [`claim-audit.md`](claim-audit.md) | concept | Claim-level support, weakness, and missing-evidence routing |
@@ -45,6 +47,7 @@ Use this bundle when an agent needs to understand the project before answering q
 - Discovery pack: [`../docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md`](../docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md)
 - Retrieval discipline: [`../docs/discovery/ai-retrievable-evidence-profiles-2026-06-29.md`](../docs/discovery/ai-retrievable-evidence-profiles-2026-06-29.md)
 - Agentic Resource Discovery catalog: [`../.well-known/ai-catalog.json`](../.well-known/ai-catalog.json)
+- Confidential project-room profile: [`../profiles/confidential-project-room/index.md`](../profiles/confidential-project-room/index.md)
 - Profile template: [`../docs/templates/ai-vendor-evidence-readiness-profile.md`](../docs/templates/ai-vendor-evidence-readiness-profile.md)
 - Entity map: [`../docs/agent-entity-map.md`](../docs/agent-entity-map.md)
 

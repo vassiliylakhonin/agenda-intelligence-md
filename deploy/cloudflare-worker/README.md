@@ -28,6 +28,7 @@ This Worker is intentionally small:
 | GET | `/.well-known/did.json` | Always JSON | DID document linking AI catalog, A2A card, and MCP card |
 | GET | `/entitymap.json` | Always JSON | Machine-readable entity map for retrieval agents |
 | GET | `/okf/index.md`, `/okf/*.md` | Always Markdown | OKF-style concept bundle served from the worker domain |
+| GET | `/profiles/confidential-project-room`, `/profiles/confidential-project-room/redacted-example.json` | Markdown / JSON | Public alias-first confidential project-room profile contract and synthetic example |
 | GET | `/stats` | JSON (requires `x-stats-token`) | Private usage analytics |
 | POST | `/message/send`, `/` | JSON-RPC 2.0 | A2A `message/send` |
 
@@ -215,6 +216,8 @@ This checks:
 - `/.well-known/did.json`
 - `/entitymap.json`
 - `/okf/index.md`
+- `/profiles/confidential-project-room`
+- `/profiles/confidential-project-room/redacted-example.json`
 - `/robots.txt`
 
 Required user-agents are `curl/8.0`, a browser-like agent-readiness probe, `OAI-SearchBot`, and `GPTBot`. `Python-urllib/3.9` is diagnostic by default because Cloudflare Browser Integrity Check can block it before the Worker runs with `error code: 1010`. To make Python urllib a hard failure:

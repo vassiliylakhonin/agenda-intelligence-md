@@ -23,7 +23,7 @@ import {
 } from "./upstream_snapshot.js";
 
 import { buildJwks, maybeSignCard } from "./jws.js";
-import { OKF_CONTENT, OKF_PATHS } from "./okf_content.js";
+import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "./okf_content.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 
 const SUPPORT_CONTACT_EMAIL = "vassiliy.lakhonin@gmail.com";
@@ -74,6 +74,8 @@ const A2A_EXAMPLES_URL = `${REPOSITORY_URL}/tree/main/examples/a2a`;
 const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";
 const OKF_BUNDLE_REPO_URL = `${REPOSITORY_URL}/blob/main/okf/index.md`;
 const EVIDENCE_READINESS_PACK_URL = `${REPOSITORY_URL}/blob/main/docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md`;
+const CONFIDENTIAL_PROJECT_ROOM_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/trust/confidential-project-workflow.md`;
+const CONFIDENTIAL_PROJECT_ROOM_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/confidential-project-room-profile.schema.json`;
 const SCHEMAS_URL = `${REPOSITORY_URL}/tree/main/schemas/v1`;
 const SOURCE_POLICY_URL = `${REPOSITORY_URL}/blob/main/SOURCE_POLICY.md`;
 const DISCOVERY_UPDATED_AT = "2026-06-29";
@@ -584,6 +586,10 @@ function okfUrl(origin, path = "/okf/index.md") {
   return `${origin}${path}`;
 }
 
+function confidentialProjectRoomUrl(origin, path = "/profiles/confidential-project-room") {
+  return `${origin}${path}`;
+}
+
 function aiCatalogHeaders(request) {
   const origin = originFromRequest(request);
   return {
@@ -949,7 +955,7 @@ function aiCatalog(request, env = {}) {
     },
     displayName: `${card.name} AI resource catalog`,
     description:
-      "Discovery catalog for Agenda Intelligence MD resources: A2A wrapper, MCP server card, OKF knowledge bundle, evidence-readiness profile pack, schemas, and source-policy artifacts. Visibility in this catalog is not buyer traction or product-market-fit evidence.",
+      "Discovery catalog for Agenda Intelligence MD resources: A2A wrapper, MCP server card, OKF knowledge bundle, evidence-readiness profile packs, schemas, and source-policy artifacts. Visibility in this catalog is not buyer traction or product-market-fit evidence.",
     url: `${origin}/.well-known/ai-catalog.json`,
     version: VERSION,
     updatedAt: DISCOVERY_UPDATED_AT,
@@ -1071,6 +1077,23 @@ function aiCatalog(request, env = {}) {
         updatedAt: DISCOVERY_UPDATED_AT
       },
       {
+        identifier: `urn:ai:${host}:artifact:confidential-project-room-profile`,
+        displayName: "Confidential Project-Room Evidence-Readiness Profile",
+        type: "text/markdown",
+        url: confidentialProjectRoomUrl(origin),
+        description:
+          "Alias-first public contract and synthetic redacted example for confidential project-room evidence-readiness reviews. Not a secure data room, approval system, or customer-traction claim.",
+        capabilities: ["confidential-project-room", "redacted-profile", "alias-first-review", "owner-action-routing"],
+        tags: ["confidential-workflow", "redacted-example", "project-room", "evidence-readiness", "build-to-learn"],
+        representativeQueries: [
+          "confidential project-room evidence-readiness profile",
+          "how to review a private project packet without exposing client names",
+          "redacted source pack owner actions and human-review routing"
+        ],
+        version: VERSION,
+        updatedAt: DISCOVERY_UPDATED_AT
+      },
+      {
         identifier: `urn:ai:${host}:schema:agenda-intelligence-v1`,
         displayName: "Agenda Intelligence MD JSON schemas",
         type: "application/schema+json",
@@ -1151,7 +1174,12 @@ function mcpServerCard(request, env = {}) {
       entitymap: `${origin}/entitymap.json`,
       source_policy: SOURCE_POLICY_URL,
       okf_bundle: okfUrl(origin),
-      okf_repository_copy: OKF_BUNDLE_REPO_URL
+      okf_repository_copy: OKF_BUNDLE_REPO_URL,
+      confidential_project_room_profile: confidentialProjectRoomUrl(origin),
+      confidential_project_room_example: confidentialProjectRoomUrl(
+        origin,
+        "/profiles/confidential-project-room/redacted-example.json"
+      )
     },
     capabilities: {
       tools: true,
@@ -1206,6 +1234,11 @@ function didDocument(request) {
         id: `${id}#openapi`,
         type: "OpenAPI",
         serviceEndpoint: `${origin}/api/openapi.json`
+      },
+      {
+        id: `${id}#confidential-project-room-profile`,
+        type: "EvidenceReadinessProfile",
+        serviceEndpoint: confidentialProjectRoomUrl(origin)
       }
     ]
   };
@@ -1446,6 +1479,44 @@ function openApiDocument(request) {
           }
         }
       },
+      "/profiles/confidential-project-room": {
+        get: {
+          tags: ["knowledge"],
+          summary: "Confidential project-room profile contract",
+          description:
+            "Alias-first evidence-readiness profile contract for private project-room reviews. Public artifact only; it does not accept or store confidential data.",
+          responses: {
+            200: {
+              description: "Markdown profile contract for redacted confidential project-room reviews.",
+              content: { "text/markdown": { schema: { type: "string" } } }
+            }
+          }
+        }
+      },
+      "/profiles/confidential-project-room/index.md": {
+        get: {
+          tags: ["knowledge"],
+          summary: "Confidential project-room profile contract Markdown alias",
+          responses: {
+            200: {
+              description: "Markdown profile contract for redacted confidential project-room reviews.",
+              content: { "text/markdown": { schema: { type: "string" } } }
+            }
+          }
+        }
+      },
+      "/profiles/confidential-project-room/redacted-example.json": {
+        get: {
+          tags: ["knowledge"],
+          summary: "Synthetic redacted confidential project-room example",
+          responses: {
+            200: {
+              description: "Synthetic alias-only JSON profile example. No buyer traction or client data is claimed.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
       "/message/send": {
         post: {
           tags: ["jsonrpc"],
@@ -1502,6 +1573,7 @@ function openApiDocument(request) {
             did: { type: "string", format: "uri" },
             entitymap: { type: "string", format: "uri" },
             okf_bundle: { type: "string", format: "uri" },
+            confidential_project_room_profile: { type: "string", format: "uri" },
             message_send: { type: "string", format: "uri" },
             status: { type: "string", format: "uri" },
             repository: { type: "string", format: "uri" },
@@ -1543,6 +1615,7 @@ function entityMap(request) {
       ai_catalog: `${origin}/.well-known/ai-catalog.json`,
       did: `${origin}/.well-known/did.json`,
       okf_bundle: okfUrl(origin),
+      confidential_project_room_profile: confidentialProjectRoomUrl(origin),
       repository: REPOSITORY_URL,
       source_policy: SOURCE_POLICY_URL
     },
@@ -1574,6 +1647,7 @@ function entityMap(request) {
           "human-review-packet",
           "evidence-pack",
           "claim-audit",
+          "confidential-project-room",
           "source-policy",
           "market-gate"
         ],
@@ -1601,6 +1675,35 @@ function entityMap(request) {
           "concrete workflow correction"
         ],
         nonSignals: ["traffic", "AI citation", "compliments", "interesting feedback", "technical completion"]
+      },
+      {
+        id: entityUrl("confidential-project-room"),
+        slug: "confidential-project-room",
+        name: "Confidential Project-Room Workflow",
+        type: "private_review_workflow",
+        url: confidentialProjectRoomUrl(origin),
+        canonicalUrl: CONFIDENTIAL_PROJECT_ROOM_DOCS_URL,
+        description:
+          "Alias-first evidence-readiness workflow for private project, procurement, financing, vendor, or committee files. Public artifacts show the review contract and synthetic redacted example, not client data.",
+        relatedEntities: ["human-review-packet", "evidence-pack", "claim-audit", "source-policy", "market-gate"],
+        evidence: [
+          confidentialProjectRoomUrl(origin),
+          confidentialProjectRoomUrl(origin, "/profiles/confidential-project-room/redacted-example.json"),
+          CONFIDENTIAL_PROJECT_ROOM_SCHEMA_URL
+        ],
+        boundaries: [
+          "Not a secure data room.",
+          "Not a legal, compliance, procurement, security, tax, financial, insurance, export-control, or investment decision.",
+          "No client names or private source text in public examples."
+        ],
+        successSignals: [
+          "redacted file offered",
+          "second private-room profile requested",
+          "paid concierge review interest",
+          "process-owner introduction",
+          "concrete workflow correction"
+        ],
+        nonSignals: ["public catalog visibility", "technical completion", "generic praise"]
       },
       {
         id: entityUrl("human-review-packet"),
@@ -1672,6 +1775,18 @@ function entityMap(request) {
 function okfMarkdown(pathname) {
   if (pathname === "/okf" || pathname === "/okf/") return OKF_CONTENT["/okf/index.md"];
   return OKF_CONTENT[pathname] || null;
+}
+
+function profileContent(pathname) {
+  if (pathname === "/profiles/confidential-project-room" || pathname === "/profiles/confidential-project-room/") {
+    return PROFILE_CONTENT["/profiles/confidential-project-room/index.md"];
+  }
+  return PROFILE_CONTENT[pathname] || null;
+}
+
+function profileContentType(pathname) {
+  if (pathname.endsWith(".json")) return "application/json; charset=utf-8";
+  return "text/markdown; charset=utf-8";
 }
 
 function applyAgentProfile(card, request, env = {}) {
@@ -5743,6 +5858,7 @@ function healthInfo(request, env) {
     openapi: `${origin}/api/openapi.json`,
     entitymap: `${origin}/entitymap.json`,
     okf_bundle: okfUrl(origin),
+    confidential_project_room_profile: confidentialProjectRoomUrl(origin),
     message_send: `${origin}/message/send`,
     status: `${origin}/status`,
     stats: `${origin}/stats`,
@@ -5772,6 +5888,7 @@ function statusInfo(request, env) {
     openapi_url: `${origin}/api/openapi.json`,
     entitymap_url: `${origin}/entitymap.json`,
     okf_bundle_url: okfUrl(origin),
+    confidential_project_room_profile_url: confidentialProjectRoomUrl(origin),
     message_send_url: `${origin}/message/send`,
     repository: REPOSITORY_URL,
     package: PACKAGE_URL,
@@ -5980,6 +6097,7 @@ function landingHtml(request, env) {
     <li><span class="label">OpenAPI:</span> <a href="${origin}/api/openapi.json">/api/openapi.json</a></li>
     <li><span class="label">Entity map:</span> <a href="${origin}/entitymap.json">/entitymap.json</a></li>
     <li><span class="label">OKF bundle:</span> <a href="${origin}/okf/index.md">/okf/index.md</a></li>
+    <li><span class="label">Project room:</span> <a href="${origin}/profiles/confidential-project-room">/profiles/confidential-project-room</a></li>
     <li><span class="label">JSON-RPC:</span> <code>POST ${origin}/message/send</code></li>
     <li><span class="label">Status:</span> <a href="${origin}/status">/status</a></li>
     <li><span class="label">Health (JSON):</span> <a href="${origin}/health">/health</a></li>
@@ -6077,6 +6195,24 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return markdownResponse(okfMarkdown(url.pathname), 200, aiCatalogHeaders(request));
   }
 
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/profiles/confidential-project-room" ||
+      url.pathname === "/profiles/confidential-project-room/" ||
+      PROFILE_PATHS.includes(url.pathname))
+  ) {
+    const body = profileContent(url.pathname);
+    return new Response(body, {
+      status: 200,
+      headers: {
+        "content-type": profileContentType(url.pathname),
+        "cache-control": "public, max-age=3600",
+        "access-control-allow-origin": "*",
+        ...aiCatalogHeaders(request)
+      }
+    });
+  }
+
   if (request.method === "GET" && url.pathname === "/.well-known/jwks.json") {
     return jsonResponse(buildJwks(env.AGENT_CARD_SIGNING_KEY || env.AGENT_CARD_PRIVATE_JWK), 200, {
       "cache-control": "public, max-age=3600",
@@ -6134,6 +6270,7 @@ export {
   mcpServerCard,
   okfMarkdown,
   openApiDocument,
+  profileContent,
   productionAuthKey,
   rateLimitPerHour,
   landingHtml,

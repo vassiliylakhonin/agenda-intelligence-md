@@ -12,6 +12,7 @@
     "ai_catalog": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
     "did": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/did.json",
     "okf_bundle": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/index.md",
+    "confidential_project_room_profile": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room",
     "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
     "source_policy": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/SOURCE_POLICY.md"
   },
@@ -42,6 +43,7 @@
         "human-review-packet",
         "evidence-pack",
         "claim-audit",
+        "confidential-project-room",
         "source-policy",
         "market-gate"
       ],
@@ -78,6 +80,44 @@
         "compliments",
         "interesting feedback",
         "technical completion"
+      ]
+    },
+    {
+      "id": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json#confidential-project-room",
+      "slug": "confidential-project-room",
+      "name": "Confidential Project-Room Workflow",
+      "type": "private_review_workflow",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room",
+      "canonicalUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/trust/confidential-project-workflow.md",
+      "description": "Alias-first evidence-readiness workflow for private project, procurement, financing, vendor, or committee files. Public artifacts show the review contract and synthetic redacted example, not client data.",
+      "relatedEntities": [
+        "human-review-packet",
+        "evidence-pack",
+        "claim-audit",
+        "source-policy",
+        "market-gate"
+      ],
+      "evidence": [
+        "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room",
+        "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room/redacted-example.json",
+        "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/confidential-project-room-profile.schema.json"
+      ],
+      "boundaries": [
+        "Not a secure data room.",
+        "Not a legal, compliance, procurement, security, tax, financial, insurance, export-control, or investment decision.",
+        "No client names or private source text in public examples."
+      ],
+      "successSignals": [
+        "redacted file offered",
+        "second private-room profile requested",
+        "paid concierge review interest",
+        "process-owner introduction",
+        "concrete workflow correction"
+      ],
+      "nonSignals": [
+        "public catalog visibility",
+        "technical completion",
+        "generic praise"
       ]
     },
     {

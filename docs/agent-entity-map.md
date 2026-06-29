@@ -16,6 +16,7 @@ This entity-first map helps retrieval agents understand the main concepts in Age
 | Agenda Intelligence MD | product runtime | Evidence-readiness and trust-routing runtime for high-stakes AI-assisted decisions | [`../README.md`](../README.md) | AI Vendor Evidence-Readiness, Human-Review Packet, Evidence Pack |
 | AI Vendor Evidence-Readiness | commercial discovery wedge | Build-to-learn workflow for regulated procurement / AI governance vendor review | [`../docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md`](discovery/ai-vendor-evidence-readiness-2026-06-28.md) | Human-Review Packet, Market Gate |
 | AI Vendor Evidence-Readiness Profile | artifact | Public or redacted profile mapping RFP/vendor claims to evidence present, gaps, owners, and readiness route | [`../docs/templates/ai-vendor-evidence-readiness-profile.md`](templates/ai-vendor-evidence-readiness-profile.md) | Claim Audit, Source Pack |
+| Confidential Project-Room Workflow | private review workflow | Alias-first workflow for confidential project, procurement, financing, vendor, or committee files | [`../profiles/confidential-project-room/index.md`](../profiles/confidential-project-room/index.md) | Human-Review Packet, Evidence Pack, Claim Audit |
 | Human-Review Packet | output shape | Reviewer-facing packet showing supported claims, weak claims, missing evidence, owner actions, and readiness decision | [`../okf/human-review-packet.md`](../okf/human-review-packet.md) | Evidence Pack, Claim Audit |
 | Evidence Pack | input shape | Source set used to assess whether claims are review-ready | [`../schemas/v1/evidence-pack.schema.json`](../schemas/v1/evidence-pack.schema.json) | Source Policy, Claim Audit |
 | Claim Audit | evidence discipline | Claim-level mapping of support, weakness, missing proof, and readiness | [`../schemas/v1/evidence-audit.schema.json`](../schemas/v1/evidence-audit.schema.json) | Evidence Pack, Human-Review Packet |
@@ -31,6 +32,7 @@ This entity-first map helps retrieval agents understand the main concepts in Age
 |---|---|
 | Agenda Intelligence MD is a compliance tool | It is an evidence-readiness and trust-routing runtime; human review required |
 | AI vendor evidence-readiness is product-market fit | It is a build-to-learn wedge with public-signal evidence only |
+| Confidential project-room workflow is a secure data room | It is an alias-first evidence-readiness contract and redaction discipline, not storage or security certification |
 | Vertical workers prove buyer demand | They are portfolio/demo surfaces unless buyer behavior proves demand |
 | Source coverage verifies truth | Source coverage is diagnostic; missing coverage is an evidence gap |
 | Claim audit approves or rejects a vendor | Claim audit shows whether supplied evidence is ready for human review |
@@ -42,3 +44,4 @@ This entity-first map helps retrieval agents understand the main concepts in Age
 - Current discovery pack: [`discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md`](discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md)
 - AI-retrievable profile method: [`discovery/ai-retrievable-evidence-profiles-2026-06-29.md`](discovery/ai-retrievable-evidence-profiles-2026-06-29.md)
 - Profile template: [`templates/ai-vendor-evidence-readiness-profile.md`](templates/ai-vendor-evidence-readiness-profile.md)
+- Confidential project-room profile: [`../profiles/confidential-project-room/index.md`](../profiles/confidential-project-room/index.md)

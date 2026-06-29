@@ -342,6 +342,7 @@
               "type": "string",
               "enum": [
                 "ai-vendor-evidence-readiness.md",
+                "confidential-project-room.md",
                 "human-review-packet.md",
                 "evidence-pack.md",
                 "claim-audit.md",
@@ -365,6 +366,68 @@
           },
           "404": {
             "description": "Unknown OKF document."
+          }
+        }
+      }
+    },
+    "/profiles/confidential-project-room": {
+      "get": {
+        "tags": [
+          "knowledge"
+        ],
+        "summary": "Confidential project-room profile contract",
+        "description": "Alias-first evidence-readiness profile contract for private project-room reviews. Public artifact only; it does not accept or store confidential data.",
+        "responses": {
+          "200": {
+            "description": "Markdown profile contract for redacted confidential project-room reviews.",
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profiles/confidential-project-room/index.md": {
+      "get": {
+        "tags": [
+          "knowledge"
+        ],
+        "summary": "Confidential project-room profile contract Markdown alias",
+        "responses": {
+          "200": {
+            "description": "Markdown profile contract for redacted confidential project-room reviews.",
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profiles/confidential-project-room/redacted-example.json": {
+      "get": {
+        "tags": [
+          "knowledge"
+        ],
+        "summary": "Synthetic redacted confidential project-room example",
+        "responses": {
+          "200": {
+            "description": "Synthetic alias-only JSON profile example. No buyer traction or client data is claimed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
           }
         }
       }
@@ -489,6 +552,10 @@
             "format": "uri"
           },
           "okf_bundle": {
+            "type": "string",
+            "format": "uri"
+          },
+          "confidential_project_room_profile": {
             "type": "string",
             "format": "uri"
           },

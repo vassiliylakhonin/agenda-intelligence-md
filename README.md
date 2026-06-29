@@ -40,6 +40,7 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightwei
 - Interactive browser demos: [Middle Corridor Deal Risk Gate](https://vassiliylakhonin.github.io/deal-risk-gate.html) · [CIS Secondary-Sanctions Exposure](https://vassiliylakhonin.github.io/cis-secondary-sanctions.html)
 - General wrapper: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev> · [agent card](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) · [JSON-RPC](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send) · [Agenstry](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev)
 - Agentic Resource Discovery catalog: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json>
+- Confidential project-room profile contract: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room> · [synthetic redacted JSON](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room/redacted-example.json)
 - Worked curl calls for every worker: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md) · repeatable Kazakhstan test: [`docs/agenstry/kazakhstan-live-test.md`](docs/agenstry/kazakhstan-live-test.md) · announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
 
 Try a live portfolio demo:
@@ -75,7 +76,7 @@ Success means buyer behavior: a redacted file, second artifact request, paid con
 
 ## Confidential project-room workflow
 
-For confidential strategic-infrastructure and AI-compute project files, use the same evidence-readiness discipline without naming parties: [`docs/trust/confidential-project-workflow.md`](docs/trust/confidential-project-workflow.md), [`docs/templates/strategic-infrastructure-evidence-readiness-profile.md`](docs/templates/strategic-infrastructure-evidence-readiness-profile.md), [`docs/templates/weekly-status-decision-readiness-delta.md`](docs/templates/weekly-status-decision-readiness-delta.md), and the synthetic alias-only example pack at [`examples/strategic-infrastructure-bankability/`](examples/strategic-infrastructure-bankability/). This is also `build-to-learn`: no new worker, no case-study claims, and no client names.
+For confidential strategic-infrastructure and AI-compute project files, use the same evidence-readiness discipline without naming parties: [`docs/trust/confidential-project-workflow.md`](docs/trust/confidential-project-workflow.md), the public profile contract at [`profiles/confidential-project-room/index.md`](profiles/confidential-project-room/index.md), the schema at [`schemas/v1/confidential-project-room-profile.schema.json`](schemas/v1/confidential-project-room-profile.schema.json), [`docs/templates/strategic-infrastructure-evidence-readiness-profile.md`](docs/templates/strategic-infrastructure-evidence-readiness-profile.md), [`docs/templates/weekly-status-decision-readiness-delta.md`](docs/templates/weekly-status-decision-readiness-delta.md), and the synthetic alias-only example pack at [`examples/strategic-infrastructure-bankability/`](examples/strategic-infrastructure-bankability/). This is also `build-to-learn`: no new worker, no case-study claims, and no client names.
 
 The deterministic local shell is available now:
 
