@@ -39,7 +39,6 @@
         "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
       ],
       "relatedEntities": [
-        "ai-vendor-evidence-readiness",
         "human-review-packet",
         "evidence-pack",
         "claim-audit",
@@ -51,35 +50,6 @@
         "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
         "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
         "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/index.md"
-      ]
-    },
-    {
-      "id": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json#ai-vendor-evidence-readiness",
-      "slug": "ai-vendor-evidence-readiness",
-      "name": "AI Vendor Evidence-Readiness",
-      "type": "commercial_discovery_wedge",
-      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/ai-vendor-evidence-readiness.md",
-      "canonicalUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md",
-      "description": "Build-to-learn workflow for regulated procurement and AI governance review. It maps vendor or system claims to evidence present, weak, missing, or not assessable.",
-      "relatedEntities": [
-        "human-review-packet",
-        "claim-audit",
-        "evidence-pack",
-        "market-gate"
-      ],
-      "successSignals": [
-        "redacted evidence file",
-        "second profile request",
-        "paid concierge review interest",
-        "budget-owner introduction",
-        "concrete workflow correction"
-      ],
-      "nonSignals": [
-        "traffic",
-        "AI citation",
-        "compliments",
-        "interesting feedback",
-        "technical completion"
       ]
     },
     {
@@ -182,7 +152,7 @@
       "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/market-gate.md",
       "description": "Discipline that prevents technical artifacts, public listings, and deployed workers from being treated as buyer demand.",
       "relatedEntities": [
-        "ai-vendor-evidence-readiness"
+        "confidential-project-room"
       ]
     },
     {

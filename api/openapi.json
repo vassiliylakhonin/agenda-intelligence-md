@@ -341,7 +341,6 @@
             "schema": {
               "type": "string",
               "enum": [
-                "ai-vendor-evidence-readiness.md",
                 "confidential-project-room.md",
                 "human-review-packet.md",
                 "evidence-pack.md",

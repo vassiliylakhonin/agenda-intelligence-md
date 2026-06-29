@@ -4,14 +4,14 @@ title: Market Gate
 status: active
 updated: 2026-06-29
 related:
-  - ai-vendor-evidence-readiness.md
+  - confidential-project-room.md
 ---
 
 # Market Gate
 
 The market gate prevents technical completion from being treated as market validation.
 
-Agenda Intelligence MD's AI vendor evidence-readiness wedge is `build-to-learn`, not product-market fit.
+Agenda Intelligence MD public artifacts are `build-to-learn` or `portfolio-proof` unless buyer behavior proves otherwise.
 
 ## Required questions
 
@@ -23,9 +23,8 @@ Agenda Intelligence MD's AI vendor evidence-readiness wedge is `build-to-learn`,
 - Kill criteria: what would force a pivot or downgrade to portfolio-only?
 - Smallest learning test: what can produce real evidence within one week?
 
-## Current wedge decision
+## Current decision
 
-Do not build a new worker, dashboard, AI governance platform, landing page, or pricing page until buyer behavior appears.
+Do not build a new worker, dashboard, landing page, pricing page, or outreach surface until buyer behavior appears.
 
-Use public evidence-readiness profiles and concierge-service tests instead.
-
+Use redacted evidence-readiness profiles and concierge-service tests instead.

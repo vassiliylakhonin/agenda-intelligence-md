@@ -5,7 +5,7 @@ status: active
 updated: 2026-06-29
 canonical_doc: ../README.md
 related:
-  - ai-vendor-evidence-readiness.md
+  - confidential-project-room.md
   - source-policy.md
 ---
 
@@ -24,5 +24,4 @@ Agenda Intelligence MD is the product/runtime repository in a four-repo stack.
 
 The core commercial workflow is reusable evidence-readiness and trust-routing. The regional skills and vertical workers are modules or portfolio proofs, not proof that each vertical has buyer demand.
 
-For the next validation cycle, prioritize the AI vendor evidence-readiness wedge over new vertical workers.
-
+For the next validation cycle, prioritize redacted project-room evidence-readiness tests over new vertical workers.

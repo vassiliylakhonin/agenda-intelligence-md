@@ -6,7 +6,7 @@
     "documentationUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/MCP.md"
   },
   "displayName": "Agenda Intelligence MD AI resource catalog",
-  "description": "Discovery catalog for Agenda Intelligence MD resources: A2A wrapper, MCP server card, OKF knowledge bundle, evidence-readiness profile packs, schemas, and source-policy artifacts. Visibility in this catalog is not buyer traction or product-market-fit evidence.",
+  "description": "Discovery catalog for Agenda Intelligence MD resources: A2A wrapper, MCP server card, OKF knowledge bundle, confidential project-room profile contract, schemas, and source-policy artifacts. Visibility in this catalog is not buyer traction or product-market-fit evidence.",
   "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
   "version": "1.1.0",
   "updatedAt": "2026-06-29",
@@ -162,31 +162,6 @@
         "what are the core entities in Agenda Intelligence MD",
         "map Agenda Intelligence MD evidence-readiness concepts",
         "find the relationship between evidence pack, claim audit, and human-review packet"
-      ],
-      "version": "1.1.0",
-      "updatedAt": "2026-06-29"
-    },
-    {
-      "identifier": "urn:ai:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev:artifact:ai-vendor-evidence-readiness-pack",
-      "displayName": "AI Vendor Evidence-Readiness Profile Pack",
-      "type": "text/markdown",
-      "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md",
-      "description": "Build-to-learn public discovery pack for regulated procurement and AI governance review. Not a product-market-fit claim.",
-      "capabilities": [
-        "vendor-evidence-readiness",
-        "claim-audit",
-        "human-review-routing"
-      ],
-      "tags": [
-        "ai-procurement",
-        "ai-governance",
-        "evidence-readiness",
-        "build-to-learn"
-      ],
-      "representativeQueries": [
-        "AI vendor evidence-readiness profile regulated procurement",
-        "build a human-review packet from an AI governance RFP",
-        "what evidence should an AI governance platform vendor provide for procurement review"
       ],
       "version": "1.1.0",
       "updatedAt": "2026-06-29"

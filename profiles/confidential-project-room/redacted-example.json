@@ -13,7 +13,7 @@
     "confidentiality_mode": "synthetic"
   },
   "market_gate": {
-    "economic_buyer": "Project finance, procurement, AI governance, or investment committee owner who controls review process or data access.",
+    "economic_buyer": "Project finance, procurement, vendor-risk, or investment committee owner who controls review process or data access.",
     "painful_trigger": "A committee or procurement review is due this month, but key project claims are not evidence-ready.",
     "current_workaround": "Shared folders, spreadsheets, email threads, adviser notes, and manual committee memo review.",
     "observed_evidence": [

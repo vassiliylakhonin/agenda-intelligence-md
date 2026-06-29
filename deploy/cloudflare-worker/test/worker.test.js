@@ -249,7 +249,6 @@ test("AI catalog advertises real agentic resources without traction claims", () 
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:api:worker-openapi",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:knowledge:okf-bundle",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:entitymap:agenda-intelligence-md",
-      "urn:ai:agenda-intelligence-a2a.example.workers.dev:artifact:ai-vendor-evidence-readiness-pack",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:artifact:confidential-project-room-profile",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:schema:agenda-intelligence-v1",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:policy:source-policy"
@@ -274,11 +273,6 @@ test("AI catalog advertises real agentic resources without traction claims", () 
   assert.equal(
     catalog.entries.find((entry) => entry.identifier.endsWith(":knowledge:okf-bundle")).url,
     "https://agenda-intelligence-a2a.example.workers.dev/okf/index.md"
-  );
-  assert.ok(
-    catalog.entries
-      .find((entry) => entry.identifier.endsWith(":artifact:ai-vendor-evidence-readiness-pack"))
-      .representativeQueries.includes("AI vendor evidence-readiness profile regulated procurement")
   );
   assert.equal(
     catalog.entries.find((entry) => entry.identifier.endsWith(":artifact:confidential-project-room-profile")).url,

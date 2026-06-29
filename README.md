@@ -1,8 +1,8 @@
 # Agenda Intelligence MD
 
-Agenda Intelligence MD is an **evidence-readiness and trust-routing runtime for high-stakes AI-assisted decisions**. It turns incomplete source packs, RFP responses, vendor claims, model cards, risk files, and messy weekly status updates into structured human-review packets: what is supported, what is weak, what evidence is missing, who should act next, and whether the file is ready for review or must be escalated.
+Agenda Intelligence MD is an **evidence-readiness and trust-routing runtime for high-stakes AI-assisted decisions**. It turns incomplete source packs, risk files, project packets, model cards, and messy weekly status updates into structured human-review packets: what is supported, what is weak, what evidence is missing, who should act next, and whether the file is ready for review or must be escalated.
 
-It does not verify factual truth, approve vendors, clear sanctions risk, provide legal/compliance/financial advice, or make autonomous decisions. It routes evidence gaps to humans. The current commercial discovery wedge is **AI vendor evidence-readiness for regulated procurement**; a second `build-to-learn` workflow covers confidential strategic-infrastructure / AI-compute project rooms through alias-only templates and the deterministic `weekly-delta` CLI. Success means buyer behavior, not compliments.
+It does not verify factual truth, approve vendors, clear sanctions risk, provide legal/compliance/financial advice, or make autonomous decisions. It routes evidence gaps to humans. The current `build-to-learn` artifact is a confidential project-room workflow for strategic-infrastructure / AI-compute project files through alias-only templates and the deterministic `weekly-delta` CLI. Success means buyer behavior, not compliments.
 
 Technically, one core service layer sits behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — with structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Five deployed vertical profiles are available as portfolio/demo surfaces: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, and Kazakhstan Market-Entry Readiness Gate. Evaluate them with live curl calls: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md).
 
@@ -55,24 +55,6 @@ curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.worker
 Expected: JSON-RPC 2.0 with `triage_recommendation: "escalate_before_signature"`, route/cargo/value extraction, supplied-source detection, the minimum evidence still missing before go, and human-review escalation.
 
 The hosted wrapper is intentionally limited: no payments, no wallets, no factual-truth verification, and no legal/financial/compliance advice. Live retrieval is off by default and opt-in per vertical-worker profile; it is currently active only for `cis_secondary_sanctions`, via the $0 Snapshot upstream (see [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) / [ADR 0020](docs/adr/0020-activate-snapshot-upstream-cis-secondary-sanctions.md) and [SOURCE_POLICY.md](SOURCE_POLICY.md)). Private usage stats: [`deploy/cloudflare-worker/README.md`](deploy/cloudflare-worker/README.md). Core validation and product-shell behavior is available in the installable stdio MCP server; some deployed vertical profiles are HTTP/A2A-only.
-
-## Current commercial discovery wedge
-
-The current product bet is **AI vendor evidence-readiness for regulated procurement**:
-
-> RFP + vendor claims + public documentation + standards references -> a human-review packet showing claim support, missing evidence, unanswered buyer questions, and escalation-ready next actions.
-
-This is a `build-to-learn` wedge, not a claim of product-market fit. The smallest artifact is an AI Vendor Evidence-Readiness Profile, built from public RFP language, vendor pages, standards, and public documentation. See the discovery plan and template:
-
-- [`docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md`](docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md)
-- [`docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md`](docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md)
-- [`docs/discovery/ai-retrievable-evidence-profiles-2026-06-29.md`](docs/discovery/ai-retrievable-evidence-profiles-2026-06-29.md)
-- [`docs/templates/ai-vendor-evidence-readiness-profile.md`](docs/templates/ai-vendor-evidence-readiness-profile.md)
-- [`okf/index.md`](okf/index.md) — compact agent-readable knowledge bundle
-- [`.well-known/ai-catalog.json`](.well-known/ai-catalog.json) — Agentic Resource Discovery catalog source
-- [`docs/agent-entity-map.md`](docs/agent-entity-map.md) — entity-first map for retrieval agents
-
-Success means buyer behavior: a redacted file, second artifact request, paid concierge review, budget-owner intro, or concrete workflow correction. Compliments and "interesting" are not traction.
 
 ## Confidential project-room workflow
 
@@ -357,7 +339,6 @@ Stdio MCP server with 21 tools. Full docs and wire-protocol verification: [`MCP.
 | HTTP API shell | Shipped (self-host); contract early — see `docs/deployment/http-api.md` |
 | A2A adapter | Shipped (Cloudflare Worker baseline); contract in `docs/product/a2a-adapter-plan.md` |
 | Cloudflare Worker deployment | Live (6 workers: general triage + Middle Corridor Deal Risk Gate + CIS Secondary-Sanctions Exposure + Agentic Interaction Trust Gate + Gulf Maritime Exposure + Kazakhstan Market-Entry Readiness Gate) |
-| Current commercial discovery wedge | AI vendor evidence-readiness for regulated procurement; public-signal research and template stage, no worker |
 | Confidential infrastructure readiness workflow | Build-to-learn template + source plan + local CLI scaffold; no client names, no case-study claims |
 | Middle Corridor Deal Risk Gate (vertical worker) | Live portfolio/demo profile, no paying customers yet — illustrative usage only |
 | Kazakhstan Market-Entry Readiness Gate (vertical worker) | Live, no paying customers yet — illustrative usage only |

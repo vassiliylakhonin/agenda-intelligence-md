@@ -12,7 +12,7 @@ This is not legal, compliance, investment, insurance, or sanctions advice. It is
 
 ## Commercial status
 
-No paying customers or named pilots are claimed for this profile. Do not improve local-forwarder positioning, pilot pages, outreach copy, or public listings as a substitute for validating buyer demand. Current product discovery is focused on AI vendor evidence-readiness for regulated procurement; this profile remains useful as a concrete demonstration of the shared evidence-readiness runtime.
+No paying customers or named pilots are claimed for this profile. Do not improve local-forwarder positioning, pilot pages, outreach copy, or public listings as a substitute for validating buyer demand. This profile remains useful as a concrete demonstration of the shared evidence-readiness runtime.
 
 ## Target users
 

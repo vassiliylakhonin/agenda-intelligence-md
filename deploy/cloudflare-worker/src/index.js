@@ -73,7 +73,6 @@ const GULF_MARITIME_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-re
 const A2A_EXAMPLES_URL = `${REPOSITORY_URL}/tree/main/examples/a2a`;
 const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";
 const OKF_BUNDLE_REPO_URL = `${REPOSITORY_URL}/blob/main/okf/index.md`;
-const EVIDENCE_READINESS_PACK_URL = `${REPOSITORY_URL}/blob/main/docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md`;
 const CONFIDENTIAL_PROJECT_ROOM_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/trust/confidential-project-workflow.md`;
 const CONFIDENTIAL_PROJECT_ROOM_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/confidential-project-room-profile.schema.json`;
 const SCHEMAS_URL = `${REPOSITORY_URL}/tree/main/schemas/v1`;
@@ -955,7 +954,7 @@ function aiCatalog(request, env = {}) {
     },
     displayName: `${card.name} AI resource catalog`,
     description:
-      "Discovery catalog for Agenda Intelligence MD resources: A2A wrapper, MCP server card, OKF knowledge bundle, evidence-readiness profile packs, schemas, and source-policy artifacts. Visibility in this catalog is not buyer traction or product-market-fit evidence.",
+      "Discovery catalog for Agenda Intelligence MD resources: A2A wrapper, MCP server card, OKF knowledge bundle, confidential project-room profile contract, schemas, and source-policy artifacts. Visibility in this catalog is not buyer traction or product-market-fit evidence.",
     url: `${origin}/.well-known/ai-catalog.json`,
     version: VERSION,
     updatedAt: DISCOVERY_UPDATED_AT,
@@ -1055,23 +1054,6 @@ function aiCatalog(request, env = {}) {
           "what are the core entities in Agenda Intelligence MD",
           "map Agenda Intelligence MD evidence-readiness concepts",
           "find the relationship between evidence pack, claim audit, and human-review packet"
-        ],
-        version: VERSION,
-        updatedAt: DISCOVERY_UPDATED_AT
-      },
-      {
-        identifier: `urn:ai:${host}:artifact:ai-vendor-evidence-readiness-pack`,
-        displayName: "AI Vendor Evidence-Readiness Profile Pack",
-        type: "text/markdown",
-        url: EVIDENCE_READINESS_PACK_URL,
-        description:
-          "Build-to-learn public discovery pack for regulated procurement and AI governance review. Not a product-market-fit claim.",
-        capabilities: ["vendor-evidence-readiness", "claim-audit", "human-review-routing"],
-        tags: ["ai-procurement", "ai-governance", "evidence-readiness", "build-to-learn"],
-        representativeQueries: [
-          "AI vendor evidence-readiness profile regulated procurement",
-          "build a human-review packet from an AI governance RFP",
-          "what evidence should an AI governance platform vendor provide for procurement review"
         ],
         version: VERSION,
         updatedAt: DISCOVERY_UPDATED_AT
@@ -1643,7 +1625,6 @@ function entityMap(request) {
           "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
         ],
         relatedEntities: [
-          "ai-vendor-evidence-readiness",
           "human-review-packet",
           "evidence-pack",
           "claim-audit",
@@ -1656,25 +1637,6 @@ function entityMap(request) {
           `${origin}/.well-known/agent-card.json`,
           okfUrl(origin)
         ]
-      },
-      {
-        id: entityUrl("ai-vendor-evidence-readiness"),
-        slug: "ai-vendor-evidence-readiness",
-        name: "AI Vendor Evidence-Readiness",
-        type: "commercial_discovery_wedge",
-        url: okfUrl(origin, "/okf/ai-vendor-evidence-readiness.md"),
-        canonicalUrl: EVIDENCE_READINESS_PACK_URL,
-        description:
-          "Build-to-learn workflow for regulated procurement and AI governance review. It maps vendor or system claims to evidence present, weak, missing, or not assessable.",
-        relatedEntities: ["human-review-packet", "claim-audit", "evidence-pack", "market-gate"],
-        successSignals: [
-          "redacted evidence file",
-          "second profile request",
-          "paid concierge review interest",
-          "budget-owner introduction",
-          "concrete workflow correction"
-        ],
-        nonSignals: ["traffic", "AI citation", "compliments", "interesting feedback", "technical completion"]
       },
       {
         id: entityUrl("confidential-project-room"),
@@ -1756,7 +1718,7 @@ function entityMap(request) {
         url: okfUrl(origin, "/okf/market-gate.md"),
         description:
           "Discipline that prevents technical artifacts, public listings, and deployed workers from being treated as buyer demand.",
-        relatedEntities: ["ai-vendor-evidence-readiness"]
+        relatedEntities: ["confidential-project-room"]
       },
       {
         id: entityUrl("repo-stack"),

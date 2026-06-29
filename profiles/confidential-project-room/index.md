@@ -17,7 +17,7 @@ It is a redaction and evidence-readiness workflow. It is not a secure data-room 
 
 ## Economic buyer and trigger
 
-- Economic buyer: AI governance, procurement, vendor-risk, investment committee, project finance, infrastructure sponsor, or strategic-program owner who can authorize time, data access, or review process change.
+- Economic buyer: procurement, vendor-risk, investment committee, project finance, infrastructure sponsor, or strategic-program owner who can authorize time, data access, or review process change.
 - Painful trigger: a vendor, project, RFP, financing packet, or committee file needs human review this month, but the source pack is incomplete, inconsistent, or unsafe to repeat externally.
 - Current workaround: shared folders, spreadsheets, email threads, ad hoc analyst notes, legal/procurement review queues, or consultants.
 - Evidence status: inference plus public signals only unless a prospect provides a redacted file, asks for a second profile, pays for a concierge review, introduces a process owner, or corrects the workflow.
