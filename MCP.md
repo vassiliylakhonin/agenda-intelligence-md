@@ -309,13 +309,28 @@ Returns:
   "llm_invoked": true,
   "memo": { "meta": { ... }, "risk_summary": { ... }, "analysis": { ... }, ... },
   "memo_valid": true,
-  "memo_errors": []
+  "memo_errors": [],
+  "memo_quality_ok": true,
+  "memo_quality_errors": [],
+  "memo_quality_passed": [
+    "evidence_mode_discipline",
+    "no_approval_or_clearance_overreach",
+    "gaps_visible_when_unknowns_exist",
+    "owner_actions_are_actionable",
+    "watch_next_is_observable",
+    "unknowns_connected_to_actions"
+  ]
 }
 ```
 
 Without an API key, `llm_invoked` is `false` and `memo` is a clearly-marked
 skeleton (`validation_score: 0`) so a host model (e.g. Claude Desktop) can
 complete the analysis from the returned `system_prompt`.
+
+`memo_valid` is schema validity. `memo_quality_ok` is a separate post-hoc
+evidence-readiness quality guard. A memo can be schema-valid but quality-failed
+if it uses approval/clearance language, hides missing evidence, gives generic
+monitoring instead of owner actions, or fails evidence-mode discipline.
 
 Install the optional dependency for direct API calls:
 

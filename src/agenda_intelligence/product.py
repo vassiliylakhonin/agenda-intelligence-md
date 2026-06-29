@@ -39,6 +39,7 @@ from importlib import resources
 from typing import Any, Iterable, Optional
 
 from agenda_intelligence import __version__
+from agenda_intelligence.memo_quality import check_memo_quality
 
 PACKAGE_NAME = "agenda_intelligence"
 
@@ -372,6 +373,14 @@ def validate_memo(memo: dict) -> dict:
     return _validate(memo, "agenda-memo.schema.json")
 
 
+def _memo_quality_result(memo: dict | None, schema_valid: bool) -> dict:
+    if memo is None:
+        return {"ok": False, "errors": ["memo_missing"], "passed": []}
+    if not schema_valid:
+        return {"ok": False, "errors": ["schema_invalid"], "passed": []}
+    return check_memo_quality(memo)
+
+
 # ---------------------------------------------------------------------------
 # Skeleton memo (used when no LLM is available)
 # ---------------------------------------------------------------------------
@@ -641,6 +650,9 @@ def analyze(request: dict) -> dict:
         memo: dict | None       (valid against agenda-memo.schema.json when llm_invoked)
         memo_valid: bool | None
         memo_errors: list[str]
+        memo_quality_ok: bool
+        memo_quality_errors: list[str]
+        memo_quality_passed: list[str]
         rendered_memo: str | absent  (only when request.output_format == "markdown" and memo exists)
     """
     req_validation = validate_request(request)
@@ -649,6 +661,9 @@ def analyze(request: dict) -> dict:
             "implemented": True,
             "valid_request": False,
             "errors": req_validation.get("errors", []),
+            "memo_quality_ok": False,
+            "memo_quality_errors": ["request_invalid"],
+            "memo_quality_passed": [],
         }
 
     modules = route_modules(request.get("geography"), request.get("question", ""))
@@ -658,6 +673,7 @@ def analyze(request: dict) -> dict:
     llm_text = _call_anthropic(system_prompt, user_message)
     if llm_text is None:
         memo = _skeleton_memo(request, modules)
+        quality = _memo_quality_result(memo, False)
         response = {
             "implemented": True,
             "valid_request": True,
@@ -674,6 +690,9 @@ def analyze(request: dict) -> dict:
                 "set ANTHROPIC_API_KEY for server-side completion. The skeleton memo is a structure "
                 "placeholder, not a failure."
             ],
+            "memo_quality_ok": quality["ok"],
+            "memo_quality_errors": quality["errors"],
+            "memo_quality_passed": quality["passed"],
         }
         if request.get("output_format") == "markdown":
             response["rendered_memo"] = render_memo_markdown(memo)
@@ -692,6 +711,9 @@ def analyze(request: dict) -> dict:
             "memo": None,
             "memo_valid": False,
             "memo_errors": ["could not parse JSON from model response"],
+            "memo_quality_ok": False,
+            "memo_quality_errors": ["memo_missing"],
+            "memo_quality_passed": [],
             "raw_text": llm_text,
         }
 
@@ -707,6 +729,7 @@ def analyze(request: dict) -> dict:
         # the schema, but a follow-up check is cheap insurance against drift.
         mv = validate_memo(parsed)
         schema_valid = bool(mv.get("valid"))
+    quality = _memo_quality_result(parsed, schema_valid)
     response = {
         "implemented": True,
         "valid_request": True,
@@ -718,6 +741,9 @@ def analyze(request: dict) -> dict:
         "memo": parsed,
         "memo_valid": schema_valid,
         "memo_errors": mv.get("errors", []),
+        "memo_quality_ok": quality["ok"],
+        "memo_quality_errors": quality["errors"],
+        "memo_quality_passed": quality["passed"],
     }
     if request.get("output_format") == "markdown" and parsed is not None:
         response["rendered_memo"] = render_memo_markdown(parsed)

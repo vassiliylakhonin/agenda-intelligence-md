@@ -26,6 +26,7 @@ from agenda_intelligence import mcp_server, product
 
 ROOT = Path(__file__).resolve().parents[1]
 MEMO_SCHEMA = ROOT / "schemas" / "v1" / "agenda-memo.schema.json"
+MEMO_QUALITY_FIXTURES = ROOT / "tests" / "fixtures" / "memo_quality"
 
 
 @pytest.fixture(autouse=True)
@@ -37,6 +38,10 @@ def _no_api_key(monkeypatch):
 def _memo_example() -> dict:
     schema = json.loads(MEMO_SCHEMA.read_text(encoding="utf-8"))
     return schema["examples"][0]
+
+
+def _memo_quality_fixture(relative_path: str) -> dict:
+    return json.loads((MEMO_QUALITY_FIXTURES / relative_path).read_text(encoding="utf-8"))
 
 
 # ---------------------------------------------------------------------------
@@ -180,7 +185,7 @@ def test_validate_memo_rejects_unknown_top_level_field():
 
 def test_analyze_llm_invoked_branch_with_mock(monkeypatch):
     """Exercise the path where _call_anthropic returns content."""
-    fake_memo = _memo_example()
+    fake_memo = _memo_quality_fixture("golden/evidence-readiness-good.json")
 
     def _fake_call(system_prompt: str, user_message: str) -> str:  # noqa: ARG001
         return json.dumps(fake_memo)
@@ -198,7 +203,9 @@ def test_analyze_llm_invoked_branch_with_mock(monkeypatch):
 
     assert result["llm_invoked"] is True
     assert result["memo_valid"] is True, result["memo_errors"]
-    assert result["memo"]["risk_summary"]["short"].startswith("Secondary US sanctions")
+    assert result["memo_quality_ok"] is True, result["memo_quality_errors"]
+    assert "owner_actions_are_actionable" in result["memo_quality_passed"]
+    assert result["memo"]["risk_summary"]["short"].startswith("The file is not decision ready")
 
 
 def test_analyze_overrides_self_graded_audit_score(monkeypatch):
@@ -244,6 +251,20 @@ def test_analyze_overrides_self_graded_audit_score(monkeypatch):
     # Provenance is substantive content and must survive the rewrite.
     assert audit["provenance"] == [{"claim": "real claim", "basis": "assessment"}]
     assert result["memo_valid"] is True
+    assert result["memo_quality_ok"] is False
+    assert result["memo_quality_errors"]
+
+
+def test_analyze_reports_quality_failure_separately_from_schema_validity(monkeypatch):
+    fake_memo = _memo_quality_fixture("failure/overconfident-clearance.json")
+    monkeypatch.setattr(product, "_call_anthropic", lambda s, u: json.dumps(fake_memo))
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-used")
+
+    result = mcp_server.analyze({"question": "sanctions q", "geography": "Kazakhstan"})
+
+    assert result["memo_valid"] is True, result["memo_errors"]
+    assert result["memo_quality_ok"] is False
+    assert any("overreach" in error for error in result["memo_quality_errors"])
 
 
 def test_analyze_llm_branch_handles_non_json_response(monkeypatch):
@@ -254,6 +275,8 @@ def test_analyze_llm_branch_handles_non_json_response(monkeypatch):
     assert result["memo_valid"] is False
     assert result["memo"] is None
     assert "could not parse JSON" in " ".join(result["memo_errors"])
+    assert result["memo_quality_ok"] is False
+    assert result["memo_quality_errors"] == ["memo_missing"]
 
 
 # ---------------------------------------------------------------------------
@@ -437,6 +460,8 @@ def test_analyze_skeleton_mode_is_host_completion():
     # not as a crash.
     assert result["memo_valid"] is False
     assert any("host_completion" in e for e in result["memo_errors"])
+    assert result["memo_quality_ok"] is False
+    assert result["memo_quality_errors"] == ["schema_invalid"]
 
 
 def test_analyze_server_completed_mode_when_llm_runs(monkeypatch):
