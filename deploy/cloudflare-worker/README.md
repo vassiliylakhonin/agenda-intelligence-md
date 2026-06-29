@@ -187,6 +187,36 @@ npm run verify:agent-card -- https://your-worker.example/.well-known/agent-card.
 
 For the Middle Corridor cards, the verifier checks `product_profile`, product-contract schema links, source taxonomy link, required-before-go source categories, non-advice notice, and no-approval boundary.
 
+## Verify agent discovery fetchability
+
+After deploy, check that the public discovery documents are reachable by common agent and crawler user-agents:
+
+```bash
+cd deploy/cloudflare-worker
+npm run verify:agent-discovery
+```
+
+To verify another deployment:
+
+```bash
+npm run verify:agent-discovery -- https://your-worker.example
+```
+
+This checks:
+
+- `/.well-known/ai-catalog.json`
+- `/.well-known/mcp/server-card.json`
+- `/.well-known/did.json`
+- `/robots.txt`
+
+Required user-agents are `curl/8.0`, a browser-like agent-readiness probe, `OAI-SearchBot`, and `GPTBot`. `Python-urllib/3.9` is diagnostic by default because Cloudflare Browser Integrity Check can block it before the Worker runs with `error code: 1010`. To make Python urllib a hard failure:
+
+```bash
+npm run verify:agent-discovery -- --strict-python
+```
+
+If `Python-urllib/3.9` returns Cloudflare `1010`, fix it in Cloudflare security settings or with a security skip rule. The Worker handler cannot override a request that Cloudflare blocks before execution.
+
 ## Usage analytics
 
 This Worker uses Cloudflare's built-in free observability path:

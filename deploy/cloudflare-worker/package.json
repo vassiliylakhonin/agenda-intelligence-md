@@ -5,6 +5,7 @@
   "scripts": {
     "stats": "node scripts/stats.js",
     "test": "node --test",
-    "verify:agent-card": "node scripts/verify-agent-card.js"
+    "verify:agent-card": "node scripts/verify-agent-card.js",
+    "verify:agent-discovery": "node scripts/check-agent-discovery-fetchability.js"
   }
 }
