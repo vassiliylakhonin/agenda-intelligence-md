@@ -1268,6 +1268,10 @@ test("kazakhstan deal risk gate returns structured contract response from data p
     assert.equal(contract.risk_signal, "medium_high");
     assert.equal(contract.decision_readiness_score, 42);
     assert.equal(contract.decision_readiness_label, "not_decision_ready");
+    assert.equal(contract.readiness_contract.profile, "middle_corridor_deal_risk");
+    assert.equal(contract.readiness_contract.status, contract.decision_readiness_label);
+    assert.equal(contract.readiness_contract.score, contract.decision_readiness_score);
+    assert.deepEqual(contract.readiness_contract.signal, { field: "risk_signal", value: contract.risk_signal });
     assert.equal(contract.route, "Altynkol -> Aktau/Kuryk -> Baku -> Poti");
     assert.equal(contract.cargo, "industrial equipment");
     assert.equal(contract.shipment_value.amount, 2400000);
@@ -1295,6 +1299,7 @@ test("kazakhstan deal risk gate returns structured contract response from data p
     assert.equal(dataPart.mediaType, "application/json");
     assert.equal(dataPart.data.triage_recommendation, "escalate_before_signature");
     assert.equal(dataPart.data.decision_readiness_score, 42);
+    assert.deepEqual(dataPart.data.readiness_contract, contract.readiness_contract);
     assert.equal(dataPart.data.signal_screen, undefined);
   } finally {
     console.log = originalLog;
@@ -2068,6 +2073,9 @@ test("agentic_interaction_trust message/send dispatches to structured triage", a
     assert.equal(resp.triage_recommendation, "require_step_up");
     assert.equal(resp.trust_signal, "medium");
     assert.equal(resp.decision_readiness_score, 40);
+    assert.equal(resp.readiness_contract.profile, "agentic_interaction_trust");
+    assert.equal(resp.readiness_contract.status, resp.decision_readiness_label);
+    assert.deepEqual(resp.readiness_contract.signal, { field: "trust_signal", value: resp.trust_signal });
     assert.deepEqual(resp.minimum_sources_before_action, [
       "operator_or_principal_authorization",
       "agent_card_or_manifest",
@@ -2128,6 +2136,12 @@ test("cis_secondary_sanctions message/send dispatches to structured triage", asy
     assert.equal(result.metadata.human_review_required, true);
     const resp = result.metadata.response;
     assert.equal(resp.triage_recommendation, "escalate_before_onboarding");
+    assert.equal(resp.readiness_contract.profile, "cis_secondary_sanctions");
+    assert.equal(resp.readiness_contract.status, resp.decision_readiness_label);
+    assert.deepEqual(resp.readiness_contract.signal, {
+      field: "secondary_exposure_signal",
+      value: resp.secondary_exposure_signal
+    });
     assert.ok(Array.isArray(resp.minimum_sources_before_review));
     // Degrade note must be surfaced so the caller knows retrieval is off...
     assert.ok(resp.limitations.some((line) => line.includes("Live sanctions-list retrieval")));
@@ -2144,6 +2158,7 @@ test("cis_secondary_sanctions message/send dispatches to structured triage", asy
     assert.equal(dataPart.mediaType, "application/json");
     assert.equal(dataPart.data.triage_recommendation, "escalate_before_onboarding");
     assert.equal(dataPart.data.human_review_required, true);
+    assert.deepEqual(dataPart.data.readiness_contract, resp.readiness_contract);
   } finally {
     console.log = originalLog;
   }
@@ -2545,6 +2560,9 @@ test("gulf message/send escalates before fixture with high signal (Python parity
     assert.equal(resp.triage_recommendation, "escalate_before_fixture");
     assert.equal(resp.exposure_signal, "high");
     assert.equal(resp.human_review_required, true);
+    assert.equal(resp.readiness_contract.profile, "gulf_maritime_exposure");
+    assert.equal(resp.readiness_contract.status, resp.decision_readiness_label);
+    assert.deepEqual(resp.readiness_contract.signal, { field: "exposure_signal", value: resp.exposure_signal });
     assert.ok(resp.minimum_sources_before_review.includes("sanctions_list_extract"));
     assert.ok(resp.chokepoint_disruption_watch.some((w) => w.includes("Hormuz")));
   } finally {
@@ -2678,6 +2696,10 @@ test("market-entry message/send returns proceed_to_validation / validation_ready
   assert.equal(resp.gate_decision, "proceed_to_validation");
   assert.equal(resp.readiness_label, "validation_ready");
   assert.equal(resp.human_review_required, true);
+  assert.equal(resp.readiness_contract.profile, "kazakhstan_market_entry_readiness");
+  assert.equal(resp.readiness_contract.status, resp.readiness_label);
+  assert.equal(resp.readiness_contract.score, null);
+  assert.deepEqual(resp.readiness_contract.routing, { field: "gate_decision", value: resp.gate_decision });
   assert.ok(resp.evidence_gaps.some((g) => g.source_type === "law_firm_opinion"));
   assert.ok(resp.boundary_notice.includes("Not legal"));
 });

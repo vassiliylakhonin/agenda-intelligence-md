@@ -52,5 +52,39 @@
     "This response does not verify the identity of the actor, operator, or principal.",
     "This response does not authorize, approve, deny, or block the requested action."
   ],
-  "asset_or_resource": "order-123"
+  "asset_or_resource": "order-123",
+  "readiness_contract": {
+    "profile": "agentic_interaction_trust",
+    "status": "not_decision_ready",
+    "score": 40,
+    "routing": {
+      "field": "triage_recommendation",
+      "value": "require_step_up"
+    },
+    "signal": {
+      "field": "trust_signal",
+      "value": "medium"
+    },
+    "blocking_gaps": [
+      "No operator or principal authorization supplied.",
+      "No agent card or signed manifest supplied.",
+      "No tool-scope or permission evidence supplied.",
+      "No action-intent evidence supplied."
+    ],
+    "non_blocking_gaps": [],
+    "claim_audit": [],
+    "owner_actions": [],
+    "watch_next": [
+      "agent identity spoofing pattern",
+      "unexpected tool-scope expansion",
+      "checkout or transaction anomaly",
+      "account takeover signal",
+      "rate-limit or scraping burst",
+      "provider allowlist or policy change",
+      "mcp or a2a endpoint metadata change",
+      "credential leakage or secret exposure report"
+    ],
+    "human_review_required": true,
+    "boundary_notice": "Agentic interaction evidence triage only. Not cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice."
+  }
 }

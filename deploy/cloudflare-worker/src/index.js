@@ -2487,6 +2487,35 @@ function agenticTopRiskDimensions(request, supplied, missing) {
   return Array.from(new Set(dims));
 }
 
+function profileReadinessContract(response, {
+  profile,
+  statusField,
+  scoreField = "decision_readiness_score",
+  routingField = "triage_recommendation",
+  signalField = null,
+  boundaryField = "not_advice_notice"
+}) {
+  const namedValue = (field) => {
+    if (!field || !(field in response) || response[field] === null || response[field] === undefined) return null;
+    return { field, value: String(response[field]) };
+  };
+  const score = scoreField && Number.isInteger(response[scoreField]) ? response[scoreField] : null;
+  return {
+    profile,
+    status: String(response[statusField] || ""),
+    score,
+    routing: namedValue(routingField),
+    signal: namedValue(signalField),
+    blocking_gaps: Array.isArray(response.evidence_gaps) ? response.evidence_gaps.slice() : [],
+    non_blocking_gaps: [],
+    claim_audit: Array.isArray(response.claim_audit) ? response.claim_audit.slice() : [],
+    owner_actions: Array.isArray(response.owner_actions) ? response.owner_actions.slice() : [],
+    watch_next: Array.isArray(response.watch_next) ? response.watch_next.slice() : [],
+    human_review_required: Boolean(response.human_review_required ?? true),
+    boundary_notice: String(response[boundaryField] || response.not_advice_notice || "")
+  };
+}
+
 function agenticInteractionTrustResult(request) {
   const supplied = suppliedSourceTypes(request);
   const missing = AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION.filter((s) => !supplied.includes(s));
@@ -2521,6 +2550,11 @@ function agenticInteractionTrustResult(request) {
     ]
   };
   if (request.asset_or_resource) response.asset_or_resource = request.asset_or_resource;
+  response.readiness_contract = profileReadinessContract(response, {
+    profile: "agentic_interaction_trust",
+    statusField: "decision_readiness_label",
+    signalField: "trust_signal"
+  });
   return { response };
 }
 
@@ -2824,6 +2858,11 @@ function gulfMaritimeExposureResult(request) {
   };
   if (request.vessel) response.vessel = request.vessel;
   if (request.cargo) response.cargo = request.cargo;
+  response.readiness_contract = profileReadinessContract(response, {
+    profile: "gulf_maritime_exposure",
+    statusField: "decision_readiness_label",
+    signalField: "exposure_signal"
+  });
   return { response };
 }
 
@@ -3568,6 +3607,13 @@ function marketEntryReadinessResult(request) {
       "commitment until the flagged legal, customs, certification, landed-cost, service, lease, and " +
       "partner evidence gaps are closed.";
   }
+  response.readiness_contract = profileReadinessContract(response, {
+    profile: "kazakhstan_market_entry_readiness",
+    statusField: "readiness_label",
+    scoreField: null,
+    routingField: "gate_decision",
+    boundaryField: "boundary_notice"
+  });
   return { response };
 }
 
@@ -3876,6 +3922,11 @@ async function cisSecondarySanctionsResult(request, env) {
     not_advice_notice: NOT_ADVICE_NOTICE,
     limitations
   };
+  response.readiness_contract = profileReadinessContract(response, {
+    profile: "cis_secondary_sanctions",
+    statusField: "decision_readiness_label",
+    signalField: "secondary_exposure_signal"
+  });
 
   return {
     response,
@@ -4670,6 +4721,11 @@ function dealRiskContractResponseForRequest(request) {
   if (request.shipment_value) response.shipment_value = request.shipment_value;
   const linkIntegrityBlock = linkIntegrity(request.dated_sources);
   if (linkIntegrityBlock) response.link_integrity = linkIntegrityBlock;
+  response.readiness_contract = profileReadinessContract(response, {
+    profile: "middle_corridor_deal_risk",
+    statusField: "decision_readiness_label",
+    signalField: "risk_signal"
+  });
   return response;
 }
 

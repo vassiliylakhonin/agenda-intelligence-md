@@ -47,6 +47,41 @@ def _run_provenance(request_json: dict, response_schema_name: str) -> dict:
     }
 
 
+def _profile_readiness_contract(
+    profile: str,
+    response: dict,
+    *,
+    status_field: str,
+    score_field: str | None = "decision_readiness_score",
+    routing_field: str | None = "triage_recommendation",
+    signal_field: str | None = None,
+    boundary_field: str = "not_advice_notice",
+) -> dict:
+    """Additive normalized readiness view built only from existing response fields."""
+
+    def named_value(field: str | None) -> dict | None:
+        if not field or field not in response:
+            return None
+        value = response.get(field)
+        return {"field": field, "value": str(value)} if value is not None else None
+
+    score = response.get(score_field) if score_field else None
+    return {
+        "profile": profile,
+        "status": str(response.get(status_field, "")),
+        "score": score if isinstance(score, int) else None,
+        "routing": named_value(routing_field),
+        "signal": named_value(signal_field),
+        "blocking_gaps": list(response.get("evidence_gaps") or []),
+        "non_blocking_gaps": [],
+        "claim_audit": list(response.get("claim_audit") or []),
+        "owner_actions": list(response.get("owner_actions") or []),
+        "watch_next": list(response.get("watch_next") or []),
+        "human_review_required": bool(response.get("human_review_required", True)),
+        "boundary_notice": str(response.get(boundary_field) or response.get("not_advice_notice") or ""),
+    }
+
+
 MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO = [
     "counterparty_registry_extract",
     "beneficial_ownership_source",
@@ -1683,6 +1718,14 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
     if link_integrity is not None:
         response["link_integrity"] = link_integrity
 
+    response["readiness_contract"] = _profile_readiness_contract(
+        "middle_corridor_deal_risk",
+        response,
+        status_field="decision_readiness_label",
+        routing_field="triage_recommendation",
+        signal_field="risk_signal",
+    )
+
     response_validation = _validate_json(response, "middle-corridor-deal-risk-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -1841,6 +1884,14 @@ def agentic_interaction_trust(request_json: dict) -> dict:
     }
     if "asset_or_resource" in request_json:
         response["asset_or_resource"] = request_json["asset_or_resource"]
+
+    response["readiness_contract"] = _profile_readiness_contract(
+        "agentic_interaction_trust",
+        response,
+        status_field="decision_readiness_label",
+        routing_field="triage_recommendation",
+        signal_field="trust_signal",
+    )
 
     response_validation = _validate_json(response, "agentic-interaction-trust-response.schema.json")
     return {
@@ -2098,6 +2149,14 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
         "limitations": limitations,
     }
 
+    response["readiness_contract"] = _profile_readiness_contract(
+        "cis_secondary_sanctions",
+        response,
+        status_field="decision_readiness_label",
+        routing_field="triage_recommendation",
+        signal_field="secondary_exposure_signal",
+    )
+
     response_validation = _validate_json(response, "cis-secondary-sanctions-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -2287,6 +2346,14 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
         response["vessel"] = request_json["vessel"]
     if "cargo" in request_json:
         response["cargo"] = request_json["cargo"]
+
+    response["readiness_contract"] = _profile_readiness_contract(
+        "gulf_maritime_exposure",
+        response,
+        status_field="decision_readiness_label",
+        routing_field="triage_recommendation",
+        signal_field="exposure_signal",
+    )
 
     response_validation = _validate_json(response, "gulf-maritime-exposure-response.schema.json")
     return {
@@ -2769,6 +2836,15 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
             "commitment until the flagged legal, customs, certification, landed-cost, service, lease, and "
             "partner evidence gaps are closed."
         )
+
+    response["readiness_contract"] = _profile_readiness_contract(
+        "kazakhstan_market_entry_readiness",
+        response,
+        status_field="readiness_label",
+        score_field=None,
+        routing_field="gate_decision",
+        boundary_field="boundary_notice",
+    )
 
     response_validation = _validate_json(response, "market-entry-readiness-response.schema.json")
     return {
