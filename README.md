@@ -1,8 +1,8 @@
 # Agenda Intelligence MD
 
-Agenda Intelligence MD is an **evidence-readiness and trust-routing runtime for high-stakes AI-assisted decisions**. It turns incomplete source packs, RFP responses, vendor claims, model cards, and risk files into structured human-review packets: what is supported, what is weak, what evidence is missing, who should act next, and whether the file is ready for review or must be escalated.
+Agenda Intelligence MD is an **evidence-readiness and trust-routing runtime for high-stakes AI-assisted decisions**. It turns incomplete source packs, RFP responses, vendor claims, model cards, risk files, and messy weekly status updates into structured human-review packets: what is supported, what is weak, what evidence is missing, who should act next, and whether the file is ready for review or must be escalated.
 
-It does not verify factual truth, approve vendors, clear sanctions risk, provide legal/compliance/financial advice, or make autonomous decisions. It routes evidence gaps to humans. The current commercial discovery wedge is **AI vendor evidence-readiness for regulated procurement**, explored through public-signal research and evidence-readiness templates before any new worker is built: [`docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md`](docs/discovery/ai-vendor-evidence-readiness-2026-06-28.md). Success means buyer behavior, not compliments.
+It does not verify factual truth, approve vendors, clear sanctions risk, provide legal/compliance/financial advice, or make autonomous decisions. It routes evidence gaps to humans. The current commercial discovery wedge is **AI vendor evidence-readiness for regulated procurement**; a second `build-to-learn` workflow covers confidential strategic-infrastructure / AI-compute project rooms through alias-only templates and the deterministic `weekly-delta` CLI. Success means buyer behavior, not compliments.
 
 Technically, one core service layer sits behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — with structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Five deployed vertical profiles are available as portfolio/demo surfaces: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, and Kazakhstan Market-Entry Readiness Gate. Evaluate them with live curl calls: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md).
 
@@ -19,9 +19,10 @@ pip install agenda-intelligence-md
 agenda-intelligence doctor
 agenda-intelligence validate-brief examples/agenda-brief.json
 agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
+agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/status.synthetic.md
 ```
 
-`doctor` reports package and MCP-server status; `validate-brief` confirms a brief matches `agenda-brief.schema.json`; `score` returns a heuristic 0–100 number with a structure / evidence / decision-readiness breakdown. Full end-to-end analyze trace (request → routing → memo → validation → audit → score) with reproducibility script: [`examples/product-shell/full-analyze-trace/`](examples/product-shell/full-analyze-trace/).
+`doctor` reports package and MCP-server status; `validate-brief` confirms a brief matches `agenda-brief.schema.json`; `score` returns a heuristic 0–100 number with a structure / evidence / decision-readiness breakdown; `weekly-delta` turns a redacted weekly/status note into unsafe-to-repeat claims, source-plan gaps, owner actions, and a decision-readiness route. Full end-to-end analyze trace (request → routing → memo → validation → audit → score) with reproducibility script: [`examples/product-shell/full-analyze-trace/`](examples/product-shell/full-analyze-trace/).
 
 Optional, only if you want `analyze` to call the Anthropic API itself rather than letting your host model complete from the returned system prompt:
 
@@ -67,12 +68,26 @@ This is a `build-to-learn` wedge, not a claim of product-market fit. The smalles
 
 Success means buyer behavior: a redacted file, second artifact request, paid concierge review, budget-owner intro, or concrete workflow correction. Compliments and "interesting" are not traction.
 
+## Confidential project-room workflow
+
 For confidential strategic-infrastructure and AI-compute project files, use the same evidence-readiness discipline without naming parties: [`docs/trust/confidential-project-workflow.md`](docs/trust/confidential-project-workflow.md), [`docs/templates/strategic-infrastructure-evidence-readiness-profile.md`](docs/templates/strategic-infrastructure-evidence-readiness-profile.md), [`docs/templates/weekly-status-decision-readiness-delta.md`](docs/templates/weekly-status-decision-readiness-delta.md), and the synthetic alias-only example pack at [`examples/strategic-infrastructure-bankability/`](examples/strategic-infrastructure-bankability/). This is also `build-to-learn`: no new worker, no case-study claims, and no client names.
 
-Run the deterministic weekly/status shell locally:
+The deterministic local shell is available now:
 
 ```bash
+agenda-intelligence source-plan ai-infrastructure-bankability
 agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/status.synthetic.md
+```
+
+It converts status activity into a reviewer scaffold: status-to-evidence rows, new claim candidates, unsafe-to-repeat claims, owner actions, missing source-plan categories, and a route such as `escalate_before_committee`. It is keyword-based and deterministic, not full semantic analysis.
+
+Write a Markdown packet:
+
+```text
+agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/status.synthetic.md \
+  --project-alias ProjectCo \
+  --decision-moment "committee review" \
+  --out readiness-delta.md
 ```
 
 ## Live portfolio demo: Middle Corridor
@@ -190,9 +205,9 @@ The product runtime is the integration point: agents call `analyze` via any surf
 - **Vertical workers** — productized service functions with their own schemas + HTTP/A2A profiles; Cloudflare deployments exist where configured. Currently shipped in the runtime: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, Kazakhstan Market-Entry Readiness Gate. Local stdio MCP exposes the first four vertical workers; Kazakhstan Market-Entry Readiness is HTTP/A2A-only.
 - **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
 - **JSON schemas** — request/memo product contract + per-product contracts (e.g. `middle-corridor-deal-risk-*`) + validators for briefs, evidence packs, audits, signals, memory cards, lenses
-- **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `score`, `bench`, `doctor` (30+ commands)
+- **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `weekly-delta`, `score`, `bench`, `doctor` (30+ commands)
 - **Eval kit** — rubric, LLM-judge prompt, human checklist, benchmark harness, agent-eval methodology
-- **Source policy** — per-claim provenance tags (Axis A/B), source requirements for 12 categories
+- **Source policy** — per-claim provenance tags (Axis A/B), source requirements for 18 categories
 
 ## What this is not
 
@@ -248,6 +263,7 @@ The HTTP shell is portable but **not a hardened internet-facing server**. No bui
 ```bash
 agenda-intelligence bench examples/source-backed --strict --min-score 80
 agenda-intelligence audit-claims examples/source-backed/eu-ai-act.audit.json --strict
+agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/status.synthetic.md --format json
 agenda-intelligence mcp-config --client cursor
 ```
 
@@ -330,11 +346,13 @@ Stdio MCP server with 21 tools. Full docs and wire-protocol verification: [`MCP.
 |---|---|
 | Markdown protocol, JSON schemas | Stable |
 | CLI (validate, score, bench, audit, doctor) | Stable |
+| Weekly status readiness shell (`weekly-delta`) | Build-to-learn CLI scaffold; deterministic, local, no LLM, no source discovery |
 | MCP stdio server | Stable |
 | HTTP API shell | Shipped (self-host); contract early — see `docs/deployment/http-api.md` |
 | A2A adapter | Shipped (Cloudflare Worker baseline); contract in `docs/product/a2a-adapter-plan.md` |
 | Cloudflare Worker deployment | Live (6 workers: general triage + Middle Corridor Deal Risk Gate + CIS Secondary-Sanctions Exposure + Agentic Interaction Trust Gate + Gulf Maritime Exposure + Kazakhstan Market-Entry Readiness Gate) |
 | Current commercial discovery wedge | AI vendor evidence-readiness for regulated procurement; public-signal research and template stage, no worker |
+| Confidential infrastructure readiness workflow | Build-to-learn template + source plan + local CLI scaffold; no client names, no case-study claims |
 | Middle Corridor Deal Risk Gate (vertical worker) | Live portfolio/demo profile, no paying customers yet — illustrative usage only |
 | Kazakhstan Market-Entry Readiness Gate (vertical worker) | Live, no paying customers yet — illustrative usage only |
 | Evidence-audit schema (claim-level) | Stable |
@@ -373,6 +391,8 @@ Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-con
 | A2A adapter plan | [`docs/product/a2a-adapter-plan.md`](docs/product/a2a-adapter-plan.md) |
 | Data handling | [`docs/trust/data-handling.md`](docs/trust/data-handling.md) |
 | Confidential project workflow | [`docs/trust/confidential-project-workflow.md`](docs/trust/confidential-project-workflow.md) |
+| Strategic infrastructure readiness template | [`docs/templates/strategic-infrastructure-evidence-readiness-profile.md`](docs/templates/strategic-infrastructure-evidence-readiness-profile.md) |
+| Weekly status readiness delta template | [`docs/templates/weekly-status-decision-readiness-delta.md`](docs/templates/weekly-status-decision-readiness-delta.md) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |
 | Agenstry discovery | [`docs/integrations/agenstry.md`](docs/integrations/agenstry.md) |
 | Agenstry agent card copy | [`docs/agenstry/agent-card-copy.md`](docs/agenstry/agent-card-copy.md) |
