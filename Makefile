@@ -1,4 +1,4 @@
-.PHONY: install test lint format typecheck worker-test ci ci-fast verify-local clean build publish
+.PHONY: install test lint format typecheck worker-test update-contract-responses smoke-live ci ci-fast verify-local clean build publish
 
 # Python interpreter used by the test/CI targets. Override per invocation when
 # the default `python3` points at an interpreter without the dev deps installed
@@ -34,6 +34,14 @@ test:
 # Worker-side regression surface for the deployed A2A wrapper.
 worker-test:
 	cd deploy/cloudflare-worker && npm test
+
+# Regenerate public contract response fixtures from the Python service layer.
+update-contract-responses:
+	$(PYTHON) scripts/update_contract_responses.py
+
+# Networked post-deploy smoke. Kept out of CI because it depends on live Workers.
+smoke-live:
+	cd deploy/cloudflare-worker && npm run smoke:live
 
 # Python/package pre-push gate. Mirrors what GitHub Actions runs.
 # Run `make ci` before Python/package pushes to avoid the staircase of CI fixes.

@@ -66,6 +66,19 @@ cd deploy/cloudflare-worker
 wrangler deploy
 ```
 
+Recommended deploy checklist:
+
+```bash
+make verify-local
+cd deploy/cloudflare-worker
+npx wrangler deploy --env=""
+npm run smoke:live
+```
+
+Use the profile `--env` deploy commands below only when profile Worker runtime
+behavior changes. Documentation, schema, example, and base profile-route
+changes usually require only the top-level Worker deploy.
+
 Deploy the Kazakhstan / Middle Corridor Deal Risk Gate profile as a separate A2A listing:
 
 ```bash

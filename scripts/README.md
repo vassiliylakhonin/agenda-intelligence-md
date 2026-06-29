@@ -12,3 +12,8 @@ Development and CI helper scripts. Not part of the published package.
 | `validate_public_examples.py` | Validate all public examples against schemas |
 | `eval_before_after.py` | Before/after evaluation runner |
 | `install-hooks.sh` | Git hooks installer |
+
+Common wrappers:
+
+- `make update-contract-responses` regenerates all public contract response fixtures.
+- `make smoke-live` runs the networked post-deploy Worker smoke test.
