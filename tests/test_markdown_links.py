@@ -1,7 +1,6 @@
 import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 MARKDOWN_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 URI_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
@@ -17,11 +16,7 @@ SKIP_DIRS = {
 
 
 def _markdown_files() -> list[Path]:
-    return [
-        path
-        for path in ROOT.rglob("*.md")
-        if not any(part in SKIP_DIRS for part in path.relative_to(ROOT).parts)
-    ]
+    return [path for path in ROOT.rglob("*.md") if not any(part in SKIP_DIRS for part in path.relative_to(ROOT).parts)]
 
 
 def _local_markdown_target(raw_target: str) -> str | None:

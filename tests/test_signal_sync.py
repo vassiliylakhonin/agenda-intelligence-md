@@ -43,9 +43,8 @@ def test_signal_feed_content_matches_packaged_markdown():
         if item.get("content_text") != signal_path.read_text(encoding="utf-8"):
             mismatches.append(signal_name)
 
-    assert not mismatches, (
-        "data/signals/feed.json content_text drifted from packaged markdown: "
-        + ", ".join(mismatches)
+    assert not mismatches, "data/signals/feed.json content_text drifted from packaged markdown: " + ", ".join(
+        mismatches
     )
 
 
