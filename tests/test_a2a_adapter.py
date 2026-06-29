@@ -348,7 +348,8 @@ def test_jsonrpc_unknown_method_returns_method_not_found():
 
 
 def test_stdin_jsonrpc_shell_handles_message_send():
-    response = a2a_adapter.handle_stdin_jsonrpc("""
+    response = a2a_adapter.handle_stdin_jsonrpc(
+        """
         {
           "jsonrpc": "2.0",
           "id": "stdin-1",
@@ -392,7 +393,8 @@ def test_stdin_jsonrpc_shell_handles_message_send():
             }
           }
         }
-        """)
+        """
+    )
 
     assert response["id"] == "stdin-1"
     assert response["result"]["metadata"]["response"]["decision_readiness_score"] == 42

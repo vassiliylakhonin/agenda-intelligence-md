@@ -613,9 +613,7 @@ WEEKLY_DELTA_RULES: list[dict[str, Any]] = [
         "evidence_state": "activity-only",
         "claim_type": "governance",
         "unsafe_claim": "Public-authority support is resolved.",
-        "evidence_required": (
-            "Approved decision log, final comments, signed mandate, or source-backed position."
-        ),
+        "evidence_required": ("Approved decision log, final comments, signed mandate, or source-backed position."),
         "owner": "PMO / legal",
     },
     {
@@ -717,10 +715,7 @@ def _render_weekly_delta_markdown(payload: dict) -> str:
         "",
         table(
             ["Status update", "What it proves", "What it does not prove", "Evidence state"],
-            [
-                [row["status_update"], row["proves"], row["does_not_prove"], row["evidence_state"]]
-                for row in rows[:12]
-            ]
+            [[row["status_update"], row["proves"], row["does_not_prove"], row["evidence_state"]] for row in rows[:12]]
             or [["No matching status phrases found.", "Input was received.", "Decision readiness.", "insufficient"]],
         ),
         "",
@@ -764,10 +759,7 @@ def _render_weekly_delta_markdown(payload: dict) -> str:
         "",
         table(
             ["Priority", "Owner", "Action", "Evidence output expected"],
-            [
-                [item["priority"], item["owner"], item["action"], item["evidence_output_expected"]]
-                for item in actions
-            ],
+            [[item["priority"], item["owner"], item["action"], item["evidence_output_expected"]] for item in actions],
         ),
         "",
         "## Source-Plan Gaps",
@@ -866,8 +858,7 @@ def weekly_status_delta(
         {
             detected_source_terms[rule_id]
             for rule_id in matched_rule_ids
-            if rule_id in detected_source_terms
-            and detected_source_terms[rule_id] in (plan.get("must_check", []) or [])
+            if rule_id in detected_source_terms and detected_source_terms[rule_id] in (plan.get("must_check", []) or [])
         }
     )
     missing_required = [source for source in (plan.get("must_check", []) or []) if source not in covered_required]
