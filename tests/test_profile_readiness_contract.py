@@ -116,3 +116,21 @@ def test_market_entry_readiness_contract_is_additive():
     assert response["readiness_contract"]["signal"] is None
     assert response["readiness_contract"]["claim_audit"] == response["claim_audit"]
     assert response["readiness_contract"]["owner_actions"] == response["owner_actions"]
+
+
+def test_public_response_fixtures_include_readiness_contract():
+    fixture_dirs = [
+        ROOT / "examples" / "kazakhstan-middle-corridor" / "contract",
+        ROOT / "examples" / "agentic-interaction-trust" / "contract",
+        ROOT / "examples" / "cis-secondary-sanctions" / "contract",
+        ROOT / "examples" / "gulf-maritime-exposure" / "contract",
+        ROOT / "examples" / "kazakhstan-market-entry-readiness" / "contract",
+    ]
+
+    fixtures = [path for fixture_dir in fixture_dirs for path in sorted(fixture_dir.glob("*.response.json"))]
+    assert fixtures
+    for fixture_path in fixtures:
+        response = load_json(fixture_path)
+        assert "readiness_contract" in response, fixture_path
+        assert response["readiness_contract"]["profile"], fixture_path
+        assert response["readiness_contract"]["status"], fixture_path

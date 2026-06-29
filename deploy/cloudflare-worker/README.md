@@ -169,6 +169,20 @@ curl -X POST https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/messag
 
 Expected: HTTP 200 with a JSON-RPC 2.0 response, `status.state: "TASK_STATE_COMPLETED"`, and a routing note with `signal_screen`, suggested modules, source plan, quality gates, and next actions.
 
+After deploying the profile Workers, verify that each public profile returns a
+valid Agent Card and a `readiness_contract` in `message/send`:
+
+```bash
+cd deploy/cloudflare-worker
+npm run smoke:live
+```
+
+Set `WORKERS_SUBDOMAIN` when checking a non-default workers.dev account:
+
+```bash
+WORKERS_SUBDOMAIN=your-subdomain npm run smoke:live
+```
+
 ## Verify live Agent Cards
 
 After deploying, verify that Agenstry will see the expected product metadata:

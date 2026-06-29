@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "generate:okf": "node scripts/generate-okf-content.js",
+    "smoke:live": "node scripts/smoke-live-profile-contracts.js",
     "stats": "node scripts/stats.js",
     "test": "node --test",
     "verify:agent-card": "node scripts/verify-agent-card.js",

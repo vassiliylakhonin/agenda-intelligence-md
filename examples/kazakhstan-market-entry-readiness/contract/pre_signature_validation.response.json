@@ -97,11 +97,11 @@
     },
     {
       "source_type": "currency_control_and_repatriation_note",
-      "evidence_needed": "Note on currency-contract registration thresholds, repatriation reporting, and how supplier payments and profit repatriation will clear local banks.",
-      "why_it_matters": "Currency-control registration and repatriation reporting affect how, and how quickly, money can move in and out after commitment.",
+      "evidence_needed": "Note on currency-contract registration (mandatory at the USD 50,000 threshold for legal entities under the 2026 currency-control rules), repatriation reporting, and how supplier payments, intercompany flows, and profit repatriation will clear local banks.",
+      "why_it_matters": "Under the 2026 currency-control regime local banks can delay or refuse cross-border intercompany transfers (capital, shareholder loans, royalties, management fees) that lack demonstrable economic substance, so substance evidence affects how, and how quickly, money moves after commitment.",
       "owner": "Treasury / banking advisor",
-      "next_action": "Confirm currency-contract registration and repatriation steps with the servicing bank.",
-      "decision_blocked": "Cross-border payment and profit-repatriation planning."
+      "next_action": "Confirm currency-contract registration at the USD 50,000 threshold and prepare economic-substance evidence for intercompany flows with the servicing bank.",
+      "decision_blocked": "Cross-border payment, intercompany-flow, and profit-repatriation planning."
     },
     {
       "source_type": "work_permit_and_local_employment_quota_note",
@@ -196,5 +196,192 @@
   },
   "strongest_reason_to_proceed": "The Kazakhstan use case and commercial objective are specific enough to start advisor requests, quote collection, and partner validation.",
   "strongest_reason_to_pause": "The current evidence pack is not sufficient for signature, import, lease, first-batch order, advertising spend, or partner appointment.",
-  "management_note": "The opportunity can move at the level of its readiness label, but should not move to launch commitment until the flagged legal, customs, certification, landed-cost, service, lease, and partner evidence gaps are closed."
+  "management_note": "The opportunity can move at the level of its readiness label, but should not move to launch commitment until the flagged legal, customs, certification, landed-cost, service, lease, and partner evidence gaps are closed.",
+  "readiness_contract": {
+    "profile": "kazakhstan_market_entry_readiness",
+    "status": "validation_ready",
+    "score": null,
+    "routing": {
+      "field": "gate_decision",
+      "value": "proceed_to_validation"
+    },
+    "signal": null,
+    "blocking_gaps": [
+      {
+        "source_type": "law_firm_opinion",
+        "evidence_needed": "Written recommendation on branch, representative office, LLP, distributor, importer, or dealer structure.",
+        "why_it_matters": "The legal form affects sales, import, service, tax, contracting, and liability.",
+        "owner": "Kazakhstan legal counsel",
+        "next_action": "Request a short legal-structure memo.",
+        "decision_blocked": "Signature or entity setup."
+      },
+      {
+        "source_type": "counterparty_registry_extract",
+        "evidence_needed": "Current registry extract for the partner and any local counterparty (status, directors, address).",
+        "why_it_matters": "A live registry extract confirms the counterparty exists and who can bind it before any contract.",
+        "owner": "Legal counsel",
+        "next_action": "Pull a fresh registry extract for each named counterparty.",
+        "decision_blocked": "Partner appointment and signature."
+      },
+      {
+        "source_type": "beneficial_ownership_source",
+        "evidence_needed": "Beneficial-ownership record showing who ultimately owns and controls the counterparty.",
+        "why_it_matters": "Ownership drives integrity, sanctions, and conflict exposure; an unknown UBO is an unmanaged risk.",
+        "owner": "Compliance / legal counsel",
+        "next_action": "Obtain a UBO declaration or registry source for each counterparty.",
+        "decision_blocked": "Partner appointment and signature."
+      },
+      {
+        "source_type": "counterparty_integrity_due_diligence",
+        "evidence_needed": "Integrity / anti-corruption due diligence on the distributor, agents, and any government-facing intermediaries (ownership, embedded officials, adverse media, sanctions and PEP screening).",
+        "why_it_matters": "Under FCPA / UK Bribery Act the foreign parent can be liable for an intermediary's conduct; engaging a partner who touches customs, certification, or akimat without integrity DD is an unmanaged exposure.",
+        "owner": "Compliance / legal counsel",
+        "next_action": "Run integrity DD before appointing or contracting any local partner or agent.",
+        "decision_blocked": "Partner appointment and signature."
+      },
+      {
+        "source_type": "bank_account_and_kyc_onboarding",
+        "evidence_needed": "Bank-account opening readiness: full UBO pack (apostilled), source-of-funds and expected-turnover statement, and the presence / timeline the chosen bank requires.",
+        "why_it_matters": "Account opening for a foreign-owned entity is document-heavy and slow; until it clears, the entity cannot pay suppliers or receive revenue.",
+        "owner": "Finance lead",
+        "next_action": "Confirm the bank's KYC checklist and start onboarding in parallel with entity setup.",
+        "decision_blocked": "Supplier payment and revenue collection."
+      },
+      {
+        "source_type": "business_substance_evidence",
+        "evidence_needed": "Evidence the entry vehicle has real substance (office, staff, local decision-making) appropriate to the chosen model.",
+        "why_it_matters": "Thin substance undermines tax treatment, banking onboarding, and counterparty trust.",
+        "owner": "Operations lead",
+        "next_action": "Document the planned substance for the chosen entry model.",
+        "decision_blocked": "Entity model choice and signature."
+      },
+      {
+        "source_type": "authority_to_sign_evidence",
+        "evidence_needed": "Evidence that the individual signing for each counterparty has authority to bind it.",
+        "why_it_matters": "A contract signed without authority is unenforceable and a fraud vector.",
+        "owner": "Legal counsel",
+        "next_action": "Collect powers of attorney or board authorizations for the signatories.",
+        "decision_blocked": "Signature."
+      },
+      {
+        "source_type": "contract_or_term_sheet_draft",
+        "evidence_needed": "Draft contract or term sheet covering scope, pricing, territory, exclusivity, term, and exit.",
+        "why_it_matters": "Commercial terms must be on paper before signature so they can be reviewed and negotiated.",
+        "owner": "Commercial lead / legal counsel",
+        "next_action": "Produce a term sheet or draft contract for review.",
+        "decision_blocked": "Signature."
+      },
+      {
+        "source_type": "tax_accounting_note",
+        "evidence_needed": "Note on VAT, corporate tax, withholding, and accounting treatment for the chosen entry model.",
+        "why_it_matters": "Tax and accounting treatment change the real cost and reporting load of the entry model.",
+        "owner": "Tax advisor",
+        "next_action": "Request a tax and accounting memo for each candidate entry model.",
+        "decision_blocked": "Entity model choice and signature."
+      },
+      {
+        "source_type": "permanent_establishment_or_tax_residency_assessment",
+        "evidence_needed": "Assessment of whether the chosen entry model (branch, representative office, LLP, or direct contracting) creates a taxable permanent establishment or resident status.",
+        "why_it_matters": "Permanent-establishment and residency treatment drive tax registration, reporting load, and the real cost of the entry model.",
+        "owner": "Tax advisor",
+        "next_action": "Request a permanent-establishment and tax-residency memo for each candidate entry model.",
+        "decision_blocked": "Entity model choice and signature."
+      },
+      {
+        "source_type": "currency_control_and_repatriation_note",
+        "evidence_needed": "Note on currency-contract registration (mandatory at the USD 50,000 threshold for legal entities under the 2026 currency-control rules), repatriation reporting, and how supplier payments, intercompany flows, and profit repatriation will clear local banks.",
+        "why_it_matters": "Under the 2026 currency-control regime local banks can delay or refuse cross-border intercompany transfers (capital, shareholder loans, royalties, management fees) that lack demonstrable economic substance, so substance evidence affects how, and how quickly, money moves after commitment.",
+        "owner": "Treasury / banking advisor",
+        "next_action": "Confirm currency-contract registration at the USD 50,000 threshold and prepare economic-substance evidence for intercompany flows with the servicing bank.",
+        "decision_blocked": "Cross-border payment, intercompany-flow, and profit-repatriation planning."
+      },
+      {
+        "source_type": "work_permit_and_local_employment_quota_note",
+        "evidence_needed": "Note on work-permit requirements and local-employment ratio / quota obligations for the planned expatriate and local headcount.",
+        "why_it_matters": "Foreign-worker quotas and local-employment ratios constrain who can be deployed and when.",
+        "owner": "HR / legal counsel",
+        "next_action": "Confirm work-permit and local-employment quota requirements for the staffing plan.",
+        "decision_blocked": "Staffing and entity operation."
+      },
+      {
+        "source_type": "certification_pathway",
+        "evidence_needed": "Supply the certification pathway for this market-entry file.",
+        "why_it_matters": "The certification pathway is a required gate input that is not yet in the evidence pack.",
+        "owner": "Project lead",
+        "next_action": "Request or produce the certification pathway.",
+        "decision_blocked": "Progression to the next market-entry commitment."
+      },
+      {
+        "source_type": "service_partner_confirmation",
+        "evidence_needed": "Supply the service partner confirmation for this market-entry file.",
+        "why_it_matters": "The service partner confirmation is a required gate input that is not yet in the evidence pack.",
+        "owner": "Project lead",
+        "next_action": "Request or produce the service partner confirmation.",
+        "decision_blocked": "Progression to the next market-entry commitment."
+      },
+      {
+        "source_type": "spare_parts_price_list",
+        "evidence_needed": "Supply the spare parts price list for this market-entry file.",
+        "why_it_matters": "The spare parts price list is a required gate input that is not yet in the evidence pack.",
+        "owner": "Project lead",
+        "next_action": "Request or produce the spare parts price list.",
+        "decision_blocked": "Progression to the next market-entry commitment."
+      }
+    ],
+    "non_blocking_gaps": [],
+    "claim_audit": [
+      {
+        "claim": "The project can move into controlled validation.",
+        "status": "supported",
+        "how_to_use_now": "Use for advisor requests, quotes, and structured partner or customer interviews."
+      },
+      {
+        "claim": "The project is ready for launch commitment.",
+        "status": "unsupported",
+        "how_to_use_now": "Do not use. Replace with the current readiness label until the evidence gaps are closed."
+      },
+      {
+        "claim": "The blockers the caller named on this file are resolved.",
+        "status": "unsupported",
+        "how_to_use_now": "Do not treat as resolved: the caller listed 12 open blocker(s) (e.g. \"No law-firm opinion supplied.\"). Close each one and re-run the gate."
+      },
+      {
+        "claim": "The caller-supplied cost, price, and structure assumptions are decision-grade.",
+        "status": "assumption_only",
+        "how_to_use_now": "Treat the caller's assumptions as planning inputs only; confirm with signed quotes, landed-cost models, and local legal / tax review before any commitment."
+      }
+    ],
+    "owner_actions": [
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Send the missing-evidence request to the partner and named advisors.",
+        "output": "Evidence-request pack and missing-document checklist."
+      },
+      {
+        "timeframe": "7_days",
+        "owner": "Project lead",
+        "action": "Collect the legal, tax, banking, customs, certification, and operational inputs the gate flagged.",
+        "output": "Gate evidence pack."
+      },
+      {
+        "timeframe": "30_days",
+        "owner": "Project lead",
+        "action": "Convert the validation evidence into a committee-ready entry decision memo.",
+        "output": "Committee-ready gate memo."
+      }
+    ],
+    "watch_next": [
+      "certification requirement change",
+      "battery handling or insurance constraint",
+      "service capacity bottleneck",
+      "bank KYC or account-opening tightening for foreign-owned entities",
+      "tax or VAT treatment change",
+      "currency-control or profit-repatriation rule change",
+      "anti-corruption enforcement or third-party due-diligence expectation change",
+      "government or regulator signal"
+    ],
+    "human_review_required": true,
+    "boundary_notice": "Internal evidence triage only. Not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice."
+  }
 }

@@ -41,5 +41,31 @@
   "limitations": [
     "Triage is based on caller-supplied evidence only; this service does not retrieve sources, resolve vessel ownership, or verify vessel identity.",
     "A name match against a sanctions list is not legal-entity or vessel-identity verification. Human review is required."
-  ]
+  ],
+  "readiness_contract": {
+    "profile": "gulf_maritime_exposure",
+    "status": "review_ready",
+    "score": 90,
+    "routing": {
+      "field": "triage_recommendation",
+      "value": "ready_for_human_review"
+    },
+    "signal": {
+      "field": "exposure_signal",
+      "value": "low"
+    },
+    "blocking_gaps": [],
+    "non_blocking_gaps": [],
+    "claim_audit": [],
+    "owner_actions": [],
+    "watch_next": [
+      "new OFAC vessel or entity designation",
+      "new EU or UK OFSI shipping-related listing",
+      "P&I club cover withdrawal or confirmation change",
+      "flag-registry deregistration or flag-hopping report",
+      "AIS gap, spoofing, or dark-activity report on the vessel"
+    ],
+    "human_review_required": true,
+    "boundary_notice": "Maritime sanctions and chokepoint-disruption evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice. Does not resolve vessel ownership or verify identity."
+  }
 }

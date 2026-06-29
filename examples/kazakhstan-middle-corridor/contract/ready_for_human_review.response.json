@@ -1,14 +1,15 @@
 {
   "triage_recommendation": "ready_for_human_review",
-  "risk_signal": "medium",
+  "risk_signal": "low",
   "decision_readiness_score": 100,
   "decision_readiness_label": "review_ready",
+  "operational_decision": {
+    "decision": "proceed",
+    "applies_to": "accept the booking and release for loading",
+    "rationale": "Evidence set looks complete; you may accept the booking and release for loading, subject to human sign-off."
+  },
   "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
   "cargo": "industrial equipment",
-  "shipment_value": {
-    "amount": 2400000,
-    "currency": "USD"
-  },
   "counterparties": [
     {
       "role": "forwarder",
@@ -37,25 +38,151 @@
     "vessel_or_carrier_history"
   ],
   "minimum_sources_before_go": [],
-  "evidence_gaps": [
-    "No independent regional context source supplied.",
-    "No rail capacity or border wait source supplied."
-  ],
+  "evidence_gaps": [],
   "top_risks": [
+    "sanctions adjacency",
     "Caspian crossing capacity and draft exposure",
-    "documentation timing uncertainty",
-    "insurance term sensitivity"
+    "counterparty in a re-export / circumvention-watch jurisdiction"
   ],
+  "exposure_layers": {
+    "domestic_legal_layer": [
+      "Home-jurisdiction legal and licensing posture not assessed here (this product does not verify export-control licensing or documentation); confirm with qualified review."
+    ],
+    "foreign_sanctions_exposure_layer": [
+      "Secondary / extraterritorial sanctions adjacency present; exposure not adjudicated.",
+      "Counterparty in a re-export / circumvention-watch jurisdiction — verify end-use and onward destination."
+    ]
+  },
   "watch_next": [
+    "new sanctions designations",
     "Caspian ferry-slot, tonnage, or draft notice",
     "port delays or operator notices",
-    "rail capacity or border wait updates",
-    "customs enforcement changes",
+    "customs rule or enforcement changes",
+    "carrier or vessel history updates",
     "insurance term changes"
   ],
   "human_review_required": true,
   "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
+  "counterparty_readiness": {
+    "status": "complete_for_review",
+    "required_total": 6,
+    "supplied_count": 6,
+    "missing_count": 0,
+    "outstanding_documents": [],
+    "document_ledger": [
+      {
+        "source_type": "counterparty_registry_extract",
+        "status": "received",
+        "date_received": "2026-05-22"
+      },
+      {
+        "source_type": "beneficial_ownership_source",
+        "status": "received",
+        "date_received": "2026-05-22"
+      },
+      {
+        "source_type": "sanctions_list_extract",
+        "status": "received",
+        "date_received": "2026-05-21"
+      },
+      {
+        "source_type": "customs_or_regulatory_source",
+        "status": "received",
+        "date_received": "2026-05-22"
+      },
+      {
+        "source_type": "insurance_clause_or_underwriter_note",
+        "status": "received",
+        "date_received": "2026-05-22"
+      },
+      {
+        "source_type": "vessel_or_carrier_history",
+        "status": "received",
+        "date_received": "2026-05-22"
+      }
+    ],
+    "presentable_note": "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; it is not clearance, approval, a sanctions determination, or compliance advice. Human review is required before any commercial action."
+  },
+  "route_sanctions_exposure_indicators": [
+    "Iran transit legs (Rasht-Astara rail, Bandar Abbas / Chabahar sea): screen for OFAC Iran-program exposure.",
+    "Russia Northern Corridor overlaps (Russian rail or territory as a leg or fallback): screen for diversion.",
+    "Sanctioned Caspian ports, operators, or flagged vessels: screen operator and vessel against designations.",
+    "Onward connection into a sanctions-relevant jurisdiction: confirm ultimate consignee and destination first."
+  ],
+  "customs_harmonization_indicators": [
+    "Permitting clarity: confirm licenses and permits needed at each crossing; flag any unharmonized leg.",
+    "Harmonized transit: check which crossings run under eTIR or another harmonized digital-customs regime.",
+    "Document acceptance: confirm transit documents are accepted at all crossings without re-declaration.",
+    "Tariff consistency: confirm cargo tariff classification and duties are consistent across corridor states.",
+    "Customs-rule change watch: flag recent customs-rule or enforcement changes at any crossing on the route.",
+    "Rail gauge-change points: confirm transloading and gauge-change handling and capacity at Khorgos / Altynkol and at the Caspian rail-ferry interchange (the corridor is rail-dominant, not maritime).",
+    "Caspian dwell exposure: flag demurrage, wagon-detention, and ferry-slot risk at Aktau / Kuryk and onward Black Sea ports."
+  ],
+  "run_provenance": {
+    "contract_version": "1.1.0",
+    "schema_id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/middle-corridor-deal-risk-response.schema.json",
+    "input_digest": "sha256:6caa55b79a90d1677082acaf68e553b7d755bc5205ce60714f43cad248de81ee"
+  },
   "limitations": [
-    "The structured response is a decision-readiness gate for human review, not an authorization to proceed."
-  ]
+    "One or more counterparties are domiciled in a re-export / circumvention-watch jurisdiction (Georgian consignee (consignee, Georgia)); this is a diversion watch item for human review, not a sanctions determination. Verify end-use and onward destination before any commercial action."
+  ],
+  "reexport_control_indicators": [
+    "End-user statement: obtain a signed end-user / end-use statement naming the ultimate consignee.",
+    "No-re-export clause: confirm the counterparty accepts a no-re-export / no-diversion contract clause.",
+    "End-use consistency: check the stated end-use is consistent with the cargo type and the ordering party.",
+    "Onward destination: confirm disclosure of any onward destination beyond the first delivery point.",
+    "Order-vs-destination match: flag a stated end-user in a different country from the order origin."
+  ],
+  "source_of_funds_indicators": [
+    "Source of funds: obtain evidence of the funds used for this deal (bank statement, loan or sale proceeds).",
+    "Source of wealth: obtain evidence of the counterparty's overall wealth origin (business, prior trade).",
+    "Consistency: check the declared source of funds fits the counterparty profile and the deal size.",
+    "Payer match: confirm the paying entity and account match the contracting counterparty.",
+    "Funds-jurisdiction flag: flag funds routed through a high-risk or sanctions-relevant jurisdiction."
+  ],
+  "pep_screening_indicators": [
+    "PEP screening: screen each counterparty and its beneficial owners against PEP lists.",
+    "Family and close associates: extend screening to immediate family and known close associates.",
+    "Senior-management approval: confirm sign-off where a PEP relationship is identified.",
+    "Source of funds/wealth: apply enhanced SOF/SOW checks for any identified PEP.",
+    "Ongoing monitoring: apply enhanced monitoring for the duration of any PEP relationship."
+  ],
+  "front_company_indicators": [
+    "Business substance: confirm the counterparty is a real operating business, not a recently formed shell.",
+    "Web and registry footprint: check for a verifiable web presence and a registry record that predates the deal.",
+    "Address integrity: flag an address shared with multiple unrelated companies or with a sanctioned entity.",
+    "Line-of-business fit: confirm the goods or service fit the counterparty's stated line of business.",
+    "Representation: flag contact only via an intermediary with broad power of attorney, principals unavailable."
+  ],
+  "shipment_value": {
+    "amount": 2400000,
+    "currency": "USD"
+  },
+  "readiness_contract": {
+    "profile": "middle_corridor_deal_risk",
+    "status": "review_ready",
+    "score": 100,
+    "routing": {
+      "field": "triage_recommendation",
+      "value": "ready_for_human_review"
+    },
+    "signal": {
+      "field": "risk_signal",
+      "value": "low"
+    },
+    "blocking_gaps": [],
+    "non_blocking_gaps": [],
+    "claim_audit": [],
+    "owner_actions": [],
+    "watch_next": [
+      "new sanctions designations",
+      "Caspian ferry-slot, tonnage, or draft notice",
+      "port delays or operator notices",
+      "customs rule or enforcement changes",
+      "carrier or vessel history updates",
+      "insurance term changes"
+    ],
+    "human_review_required": true,
+    "boundary_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
+  }
 }

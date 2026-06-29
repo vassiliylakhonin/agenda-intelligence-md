@@ -3,6 +3,11 @@
   "risk_signal": "medium_high",
   "decision_readiness_score": 42,
   "decision_readiness_label": "not_decision_ready",
+  "operational_decision": {
+    "decision": "escalate",
+    "applies_to": "quote / sign the booking",
+    "rationale": "Route to compliance or legal before you quote / sign the booking."
+  },
   "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
   "cargo": "general electronic equipment",
   "counterparties": [
@@ -35,7 +40,7 @@
     "No beneficial ownership source supplied.",
     "No customs or regulatory source supplied.",
     "No insurance clause or underwriter note supplied.",
-    "No vessel or carrier history supplied."
+    "No carrier, vessel, or rail-operator history supplied."
   ],
   "top_risks": [
     "sanctions adjacency",
@@ -44,7 +49,7 @@
     "customs and documentation uncertainty",
     "insurance exclusions or coverage limitations",
     "counterparty and ownership uncertainty",
-    "carrier or vessel history gap"
+    "carrier / vessel / rail-operator history gap"
   ],
   "exposure_layers": {
     "domestic_legal_layer": [
@@ -53,8 +58,8 @@
     ],
     "foreign_sanctions_exposure_layer": [
       "Secondary / extraterritorial sanctions adjacency present; exposure not adjudicated.",
-      "Counterparty newly formed in a transshipment-risk jurisdiction (OFAC FFI advisory red flag) \u2014 escalation flag for human review, not a determination.",
-      "No beneficial ownership source \u2014 indirect / ownership-based exposure cannot be reviewed."
+      "Counterparty newly formed in a transshipment-risk jurisdiction (OFAC FFI advisory red flag) — escalation flag for human review, not a determination.",
+      "No beneficial ownership source — indirect / ownership-based exposure cannot be reviewed; the OFAC/EU 50 Percent Rule (aggregate blocked-person ownership) is a human-review step the file is not yet ready for."
     ]
   },
   "watch_next": [
@@ -108,6 +113,21 @@
     ],
     "presentable_note": "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; it is not clearance, approval, a sanctions determination, or compliance advice. Human review is required before any commercial action."
   },
+  "route_sanctions_exposure_indicators": [
+    "Iran transit legs (Rasht-Astara rail, Bandar Abbas / Chabahar sea): screen for OFAC Iran-program exposure.",
+    "Russia Northern Corridor overlaps (Russian rail or territory as a leg or fallback): screen for diversion.",
+    "Sanctioned Caspian ports, operators, or flagged vessels: screen operator and vessel against designations.",
+    "Onward connection into a sanctions-relevant jurisdiction: confirm ultimate consignee and destination first."
+  ],
+  "customs_harmonization_indicators": [
+    "Permitting clarity: confirm licenses and permits needed at each crossing; flag any unharmonized leg.",
+    "Harmonized transit: check which crossings run under eTIR or another harmonized digital-customs regime.",
+    "Document acceptance: confirm transit documents are accepted at all crossings without re-declaration.",
+    "Tariff consistency: confirm cargo tariff classification and duties are consistent across corridor states.",
+    "Customs-rule change watch: flag recent customs-rule or enforcement changes at any crossing on the route.",
+    "Rail gauge-change points: confirm transloading and gauge-change handling and capacity at Khorgos / Altynkol and at the Caspian rail-ferry interchange (the corridor is rail-dominant, not maritime).",
+    "Caspian dwell exposure: flag demurrage, wagon-detention, and ferry-slot risk at Aktau / Kuryk and onward Black Sea ports."
+  ],
   "run_provenance": {
     "contract_version": "1.1.0",
     "schema_id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/middle-corridor-deal-risk-response.schema.json",
@@ -154,5 +174,38 @@
   "shipment_value": {
     "amount": 950000,
     "currency": "USD"
+  },
+  "readiness_contract": {
+    "profile": "middle_corridor_deal_risk",
+    "status": "not_decision_ready",
+    "score": 42,
+    "routing": {
+      "field": "triage_recommendation",
+      "value": "escalate_before_signature"
+    },
+    "signal": {
+      "field": "risk_signal",
+      "value": "medium_high"
+    },
+    "blocking_gaps": [
+      "No counterparty registry extract supplied.",
+      "No beneficial ownership source supplied.",
+      "No customs or regulatory source supplied.",
+      "No insurance clause or underwriter note supplied.",
+      "No carrier, vessel, or rail-operator history supplied."
+    ],
+    "non_blocking_gaps": [],
+    "claim_audit": [],
+    "owner_actions": [],
+    "watch_next": [
+      "new sanctions designations",
+      "Caspian ferry-slot, tonnage, or draft notice",
+      "port delays or operator notices",
+      "customs rule or enforcement changes",
+      "carrier or vessel history updates",
+      "insurance term changes"
+    ],
+    "human_review_required": true,
+    "boundary_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
   }
 }

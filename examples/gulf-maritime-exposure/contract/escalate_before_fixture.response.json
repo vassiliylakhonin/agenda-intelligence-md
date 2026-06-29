@@ -60,5 +60,36 @@
     "flag": "Panama",
     "vessel_type": "crude oil tanker"
   },
-  "cargo": "crude oil"
+  "cargo": "crude oil",
+  "readiness_contract": {
+    "profile": "gulf_maritime_exposure",
+    "status": "not_decision_ready",
+    "score": 24,
+    "routing": {
+      "field": "triage_recommendation",
+      "value": "escalate_before_fixture"
+    },
+    "signal": {
+      "field": "exposure_signal",
+      "value": "high"
+    },
+    "blocking_gaps": [
+      "No vessel registry extract supplied.",
+      "No P&I insurance certificate supplied.",
+      "No ownership or control evidence supplied.",
+      "No sanctions list extract supplied."
+    ],
+    "non_blocking_gaps": [],
+    "claim_audit": [],
+    "owner_actions": [],
+    "watch_next": [
+      "new OFAC vessel or entity designation",
+      "new EU or UK OFSI shipping-related listing",
+      "P&I club cover withdrawal or confirmation change",
+      "flag-registry deregistration or flag-hopping report",
+      "AIS gap, spoofing, or dark-activity report on the vessel"
+    ],
+    "human_review_required": true,
+    "boundary_notice": "Maritime sanctions and chokepoint-disruption evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice. Does not resolve vessel ownership or verify identity."
+  }
 }

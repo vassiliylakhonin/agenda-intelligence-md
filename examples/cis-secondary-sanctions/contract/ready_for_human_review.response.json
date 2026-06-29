@@ -42,5 +42,32 @@
   "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
   "limitations": [
     "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
-  ]
+  ],
+  "readiness_contract": {
+    "profile": "cis_secondary_sanctions",
+    "status": "review_ready",
+    "score": 88,
+    "routing": {
+      "field": "triage_recommendation",
+      "value": "ready_for_human_review"
+    },
+    "signal": {
+      "field": "secondary_exposure_signal",
+      "value": "low"
+    },
+    "blocking_gaps": [],
+    "non_blocking_gaps": [],
+    "claim_audit": [],
+    "owner_actions": [],
+    "watch_next": [
+      "new OFAC SDN designations",
+      "new EU sanctions package",
+      "new UK OFSI listing",
+      "new EAG typology report",
+      "FATF grey-list or black-list update",
+      "national regulator enforcement update"
+    ],
+    "human_review_required": true,
+    "boundary_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
+  }
 }
