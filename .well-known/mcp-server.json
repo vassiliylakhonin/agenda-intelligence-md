@@ -14,6 +14,8 @@
   "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
   "related": {
     "ai_catalog": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
+    "api_catalog": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/api-catalog",
+    "openapi": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/api/openapi.json",
     "agent_card": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
     "did": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/did.json",
     "entitymap": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json",

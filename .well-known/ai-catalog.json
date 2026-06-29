@@ -91,6 +91,32 @@
       "updatedAt": "2026-06-29"
     },
     {
+      "identifier": "urn:ai:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev:api:worker-openapi",
+      "displayName": "Agenda Intelligence MD Worker OpenAPI",
+      "type": "application/vnd.oai.openapi+json",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/api/openapi.json",
+      "description": "OpenAPI 3.0 contract for the public Agenda Intelligence MD worker discovery, health, status, OKF, entity map, and JSON-RPC message/send surfaces.",
+      "capabilities": [
+        "openapi",
+        "http-contract",
+        "json-rpc",
+        "discovery"
+      ],
+      "tags": [
+        "openapi",
+        "http-api",
+        "service-description",
+        "worker"
+      ],
+      "representativeQueries": [
+        "find the OpenAPI contract for Agenda Intelligence MD",
+        "what HTTP endpoints does the Agenda Intelligence worker expose",
+        "discover the JSON-RPC message/send contract for Agenda Intelligence MD"
+      ],
+      "version": "1.1.0",
+      "updatedAt": "2026-06-29"
+    },
+    {
       "identifier": "urn:ai:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev:knowledge:okf-bundle",
       "displayName": "Agenda Intelligence MD OKF-style knowledge bundle",
       "type": "text/markdown",

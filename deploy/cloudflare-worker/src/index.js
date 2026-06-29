@@ -589,6 +589,8 @@ function aiCatalogHeaders(request) {
   return {
     Link: [
       `<${origin}/.well-known/ai-catalog.json>; rel="ai-catalog"`,
+      `<${origin}/.well-known/api-catalog>; rel="api-catalog"`,
+      `<${origin}/api/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"`,
       `<${origin}/.well-known/mcp/server-card.json>; rel="mcp-server-card"`,
       `<${origin}/.well-known/did.json>; rel="identity"`
     ].join(", ")
@@ -1001,6 +1003,23 @@ function aiCatalog(request, env = {}) {
         updatedAt: DISCOVERY_UPDATED_AT
       },
       {
+        identifier: `urn:ai:${host}:api:worker-openapi`,
+        displayName: "Agenda Intelligence MD Worker OpenAPI",
+        type: "application/vnd.oai.openapi+json",
+        url: `${origin}/api/openapi.json`,
+        description:
+          "OpenAPI 3.0 contract for the public Agenda Intelligence MD worker discovery, health, status, OKF, entity map, and JSON-RPC message/send surfaces.",
+        capabilities: ["openapi", "http-contract", "json-rpc", "discovery"],
+        tags: ["openapi", "http-api", "service-description", "worker"],
+        representativeQueries: [
+          "find the OpenAPI contract for Agenda Intelligence MD",
+          "what HTTP endpoints does the Agenda Intelligence worker expose",
+          "discover the JSON-RPC message/send contract for Agenda Intelligence MD"
+        ],
+        version: VERSION,
+        updatedAt: DISCOVERY_UPDATED_AT
+      },
+      {
         identifier: `urn:ai:${host}:knowledge:okf-bundle`,
         displayName: "Agenda Intelligence MD OKF-style knowledge bundle",
         type: "text/markdown",
@@ -1125,6 +1144,8 @@ function mcpServerCard(request, env = {}) {
     repository: REPOSITORY_URL,
     related: {
       ai_catalog: `${origin}/.well-known/ai-catalog.json`,
+      api_catalog: `${origin}/.well-known/api-catalog`,
+      openapi: `${origin}/api/openapi.json`,
       agent_card: `${origin}/.well-known/agent-card.json`,
       did: `${origin}/.well-known/did.json`,
       entitymap: `${origin}/entitymap.json`,
@@ -1175,8 +1196,332 @@ function didDocument(request) {
         id: `${id}#mcp`,
         type: "MCPServer",
         serviceEndpoint: `${origin}/.well-known/mcp/server-card.json`
+      },
+      {
+        id: `${id}#api-catalog`,
+        type: "APICatalog",
+        serviceEndpoint: `${origin}/.well-known/api-catalog`
+      },
+      {
+        id: `${id}#openapi`,
+        type: "OpenAPI",
+        serviceEndpoint: `${origin}/api/openapi.json`
       }
     ]
+  };
+}
+
+function apiCatalog(request) {
+  const origin = originFromRequest(request);
+  return {
+    linkset: [
+      {
+        anchor: `${origin}/`,
+        "service-desc": [
+          {
+            href: `${origin}/api/openapi.json`,
+            type: "application/vnd.oai.openapi+json;version=3.0",
+            title: "Agenda Intelligence MD Worker API (OpenAPI 3.0)"
+          }
+        ]
+      }
+    ]
+  };
+}
+
+function openApiDocument(request) {
+  const origin = originFromRequest(request);
+  return {
+    openapi: "3.0.3",
+    info: {
+      title: "Agenda Intelligence MD Worker API",
+      version: VERSION,
+      description:
+        "Public HTTP contract for the Agenda Intelligence MD worker: discovery documents, status endpoints, live OKF/entity-map artifacts, and JSON-RPC message/send. This API routes evidence-readiness and strategic-risk triage to human review; it is not legal, compliance, sanctions, financial, procurement, or factual-truth verification advice."
+    },
+    servers: [{ url: origin }],
+    tags: [
+      { name: "discovery", description: "Machine-readable discovery documents." },
+      { name: "status", description: "Health and status endpoints." },
+      { name: "knowledge", description: "OKF and entity-map artifacts for retrieval agents." },
+      { name: "jsonrpc", description: "A2A-compatible JSON-RPC endpoint." }
+    ],
+    paths: {
+      "/": {
+        get: {
+          tags: ["status"],
+          summary: "Landing page or health JSON",
+          description:
+            "Returns an HTML landing page when the request accepts text/html; otherwise returns the same JSON shape as /health.",
+          responses: {
+            200: {
+              description: "HTML landing page or JSON health object.",
+              content: {
+                "text/html": { schema: { type: "string" } },
+                "application/json": { schema: { $ref: "#/components/schemas/HealthInfo" } }
+              }
+            }
+          }
+        },
+        post: {
+          tags: ["jsonrpc"],
+          summary: "JSON-RPC message/send alias",
+          description: "Alias for POST /message/send.",
+          requestBody: { $ref: "#/components/requestBodies/JsonRpcRequest" },
+          responses: {
+            200: {
+              description: "JSON-RPC result or JSON-RPC error envelope.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
+      "/health": {
+        get: {
+          tags: ["status"],
+          summary: "Health check",
+          responses: {
+            200: {
+              description: "Health information.",
+              content: { "application/json": { schema: { $ref: "#/components/schemas/HealthInfo" } } }
+            }
+          }
+        }
+      },
+      "/status": {
+        get: {
+          tags: ["status"],
+          summary: "Worker status and boundaries",
+          responses: {
+            200: {
+              description: "Version, profile, boundary flags, and discovery links.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
+      "/robots.txt": {
+        get: {
+          tags: ["discovery"],
+          summary: "Robots and Agentmap policy",
+          responses: {
+            200: {
+              description: "Robots.txt including Agentmap and AI content signal policy.",
+              content: { "text/plain": { schema: { type: "string" } } }
+            }
+          }
+        }
+      },
+      "/.well-known/agent-card.json": {
+        get: {
+          tags: ["discovery"],
+          summary: "A2A agent card",
+          responses: {
+            200: {
+              description: "A2A agent card for the worker.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
+      "/.well-known/ai-catalog.json": {
+        get: {
+          tags: ["discovery"],
+          summary: "AI resource catalog",
+          responses: {
+            200: {
+              description: "Agentic resource discovery catalog.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
+      "/.well-known/api-catalog": {
+        get: {
+          tags: ["discovery"],
+          summary: "API catalog",
+          responses: {
+            200: {
+              description: "Linkset that points to the worker OpenAPI document.",
+              content: { "application/linkset+json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
+      "/api/openapi.json": {
+        get: {
+          tags: ["discovery"],
+          summary: "OpenAPI document",
+          responses: {
+            200: {
+              description: "OpenAPI 3.0 document for the worker.",
+              content: { "application/vnd.oai.openapi+json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
+      "/.well-known/mcp/server-card.json": {
+        get: {
+          tags: ["discovery"],
+          summary: "MCP server card",
+          responses: {
+            200: {
+              description: "MCP server card for the installable stdio package.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
+      "/.well-known/mcp-server.json": {
+        get: {
+          tags: ["discovery"],
+          summary: "Legacy MCP server card alias",
+          responses: {
+            200: {
+              description: "Legacy alias for /.well-known/mcp/server-card.json.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
+      "/.well-known/did.json": {
+        get: {
+          tags: ["discovery"],
+          summary: "DID document",
+          responses: {
+            200: {
+              description: "DID document linking AI catalog, A2A card, and MCP card.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
+      "/entitymap.json": {
+        get: {
+          tags: ["knowledge"],
+          summary: "Entity map",
+          responses: {
+            200: {
+              description: "Machine-readable entity map for Agenda Intelligence MD concepts and boundaries.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
+      "/okf/index.md": {
+        get: {
+          tags: ["knowledge"],
+          summary: "OKF bundle index",
+          responses: {
+            200: {
+              description: "OKF-style Markdown knowledge bundle index.",
+              content: { "text/markdown": { schema: { type: "string" } } }
+            }
+          }
+        }
+      },
+      "/okf/{file}": {
+        get: {
+          tags: ["knowledge"],
+          summary: "OKF bundle document",
+          parameters: [
+            {
+              name: "file",
+              in: "path",
+              required: true,
+              schema: {
+                type: "string",
+                enum: OKF_PATHS.map((path) => path.replace("/okf/", "")).filter((file) => file !== "index.md")
+              }
+            }
+          ],
+          responses: {
+            200: {
+              description: "OKF-style Markdown concept document.",
+              content: { "text/markdown": { schema: { type: "string" } } }
+            },
+            404: {
+              description: "Unknown OKF document."
+            }
+          }
+        }
+      },
+      "/message/send": {
+        post: {
+          tags: ["jsonrpc"],
+          summary: "A2A JSON-RPC message/send",
+          description:
+            "Accepts JSON-RPC 2.0 message/send style requests for lightweight hosted triage and routing. Full analysis remains in the installable stdio MCP package.",
+          requestBody: { $ref: "#/components/requestBodies/JsonRpcRequest" },
+          responses: {
+            200: {
+              description: "JSON-RPC result or JSON-RPC error envelope.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            },
+            401: {
+              description:
+                "Only returned when a per-profile production bearer key is configured and the request lacks a matching token."
+            }
+          }
+        }
+      }
+    },
+    components: {
+      requestBodies: {
+        JsonRpcRequest: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["jsonrpc", "method"],
+                properties: {
+                  jsonrpc: { type: "string", enum: ["2.0"] },
+                  id: { oneOf: [{ type: "string" }, { type: "number" }], nullable: true },
+                  method: { type: "string", example: "message/send" },
+                  params: { type: "object", additionalProperties: true }
+                },
+                additionalProperties: true
+              }
+            }
+          }
+        }
+      },
+      schemas: {
+        HealthInfo: {
+          type: "object",
+          required: ["ok", "name", "version", "profile", "ai_catalog", "agent_card", "message_send"],
+          properties: {
+            ok: { type: "boolean" },
+            name: { type: "string" },
+            version: { type: "string" },
+            profile: { type: "string" },
+            ai_catalog: { type: "string", format: "uri" },
+            agent_card: { type: "string", format: "uri" },
+            mcp_server_card: { type: "string", format: "uri" },
+            did: { type: "string", format: "uri" },
+            entitymap: { type: "string", format: "uri" },
+            okf_bundle: { type: "string", format: "uri" },
+            message_send: { type: "string", format: "uri" },
+            status: { type: "string", format: "uri" },
+            repository: { type: "string", format: "uri" },
+            payments: { type: "boolean" }
+          },
+          additionalProperties: true
+        }
+      }
+    },
+    "x-agenda-intelligence": {
+      boundaries: [
+        "No legal, compliance, sanctions, financial, procurement, investment, insurance, or trading advice.",
+        "No factual-truth verification.",
+        "No autonomous live source retrieval on the default hosted worker.",
+        "Human review required before commercial action.",
+        "OpenAPI discovery is not buyer traction or product-market-fit evidence."
+      ],
+      repository: REPOSITORY_URL,
+      package: PACKAGE_URL
+    }
   };
 }
 
@@ -5394,6 +5739,8 @@ function healthInfo(request, env) {
     agent_card: `${origin}/.well-known/agent-card.json`,
     mcp_server_card: `${origin}/.well-known/mcp/server-card.json`,
     did: `${origin}/.well-known/did.json`,
+    api_catalog: `${origin}/.well-known/api-catalog`,
+    openapi: `${origin}/api/openapi.json`,
     entitymap: `${origin}/entitymap.json`,
     okf_bundle: okfUrl(origin),
     message_send: `${origin}/message/send`,
@@ -5421,6 +5768,8 @@ function statusInfo(request, env) {
     agent_card_url: `${origin}/.well-known/agent-card.json`,
     mcp_server_card_url: `${origin}/.well-known/mcp/server-card.json`,
     did_url: `${origin}/.well-known/did.json`,
+    api_catalog_url: `${origin}/.well-known/api-catalog`,
+    openapi_url: `${origin}/api/openapi.json`,
     entitymap_url: `${origin}/entitymap.json`,
     okf_bundle_url: okfUrl(origin),
     message_send_url: `${origin}/message/send`,
@@ -5627,6 +5976,8 @@ function landingHtml(request, env) {
     <li><span class="label">Agent card:</span> <a href="${origin}/.well-known/agent-card.json">/.well-known/agent-card.json</a></li>
     <li><span class="label">MCP card:</span> <a href="${origin}/.well-known/mcp/server-card.json">/.well-known/mcp/server-card.json</a></li>
     <li><span class="label">DID:</span> <a href="${origin}/.well-known/did.json">/.well-known/did.json</a></li>
+    <li><span class="label">API catalog:</span> <a href="${origin}/.well-known/api-catalog">/.well-known/api-catalog</a></li>
+    <li><span class="label">OpenAPI:</span> <a href="${origin}/api/openapi.json">/api/openapi.json</a></li>
     <li><span class="label">Entity map:</span> <a href="${origin}/entitymap.json">/entitymap.json</a></li>
     <li><span class="label">OKF bundle:</span> <a href="${origin}/okf/index.md">/okf/index.md</a></li>
     <li><span class="label">JSON-RPC:</span> <code>POST ${origin}/message/send</code></li>
@@ -5660,7 +6011,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       headers: {
         "access-control-allow-origin": "*",
         "access-control-allow-methods": "GET, POST, OPTIONS",
-        "access-control-allow-headers": "content-type, x-client-id"
+        "access-control-allow-headers": "content-type, x-client-id, authorization"
       }
     });
   }
@@ -5673,6 +6024,22 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 
   if (request.method === "GET" && url.pathname === "/.well-known/ai-catalog.json") {
     return jsonResponse(aiCatalog(request, env), 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (request.method === "GET" && url.pathname === "/.well-known/api-catalog") {
+    return jsonResponse(apiCatalog(request), 200, {
+      "content-type": "application/linkset+json; charset=utf-8",
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/openapi.json") {
+    return jsonResponse(openApiDocument(request), 200, {
+      "content-type": "application/vnd.oai.openapi+json; charset=utf-8",
       "cache-control": "public, max-age=3600",
       ...aiCatalogHeaders(request)
     });
@@ -5753,6 +6120,7 @@ export default {
 
 export {
   aiCatalog,
+  apiCatalog,
   agentCard,
   buildUsageEvent,
   dealRiskContractResponseForRequest,
@@ -5765,6 +6133,7 @@ export {
   isStatsAuthorized,
   mcpServerCard,
   okfMarkdown,
+  openApiDocument,
   productionAuthKey,
   rateLimitPerHour,
   landingHtml,

@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   aiCatalog,
+  apiCatalog,
   agentCard,
   buildUsageEvent,
   checkRateLimit,
@@ -18,6 +19,7 @@ import {
   landingHtml,
   mcpServerCard,
   okfMarkdown,
+  openApiDocument,
   productionAuthKey,
   rateLimitPerHour,
   recordUsageStats,
@@ -41,6 +43,14 @@ const request = new Request("https://agenda-intelligence-a2a.example.workers.dev
   method: "POST",
   headers: { "user-agent": "node:test" }
 });
+
+const expectedDiscoveryLinkHeader = [
+  '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json>; rel="ai-catalog"',
+  '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/api-catalog>; rel="api-catalog"',
+  '<https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"',
+  '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json>; rel="mcp-server-card"',
+  '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/did.json>; rel="identity"'
+].join(", ");
 
 class MemoryKv {
   constructor() {
@@ -235,6 +245,7 @@ test("AI catalog advertises real agentic resources without traction claims", () 
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:agent:agenda-intelligence-md-a2a",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:server:agenda-intelligence-md-mcp",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:endpoint:message-send",
+      "urn:ai:agenda-intelligence-a2a.example.workers.dev:api:worker-openapi",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:knowledge:okf-bundle",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:entitymap:agenda-intelligence-md",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:artifact:ai-vendor-evidence-readiness-pack",
@@ -253,6 +264,10 @@ test("AI catalog advertises real agentic resources without traction claims", () 
   assert.equal(
     catalog.entries.find((entry) => entry.type === "application/entitymap+json").url,
     "https://agenda-intelligence-a2a.example.workers.dev/entitymap.json"
+  );
+  assert.equal(
+    catalog.entries.find((entry) => entry.type === "application/vnd.oai.openapi+json").url,
+    "https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json"
   );
   assert.equal(
     catalog.entries.find((entry) => entry.identifier.endsWith(":knowledge:okf-bundle")).url,
@@ -274,12 +289,42 @@ test("AI catalog route returns catalog JSON and discovery Link header", async ()
 
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
-  assert.equal(
-    response.headers.get("link"),
-    '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json>; rel="ai-catalog", <https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json>; rel="mcp-server-card", <https://agenda-intelligence-a2a.example.workers.dev/.well-known/did.json>; rel="identity"'
-  );
+  assert.equal(response.headers.get("link"), expectedDiscoveryLinkHeader);
   assert.equal(body.url, "https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json");
   assert.ok(body.entries.some((entry) => entry.type === "application/mcp-server-card+json"));
+});
+
+test("API catalog and OpenAPI routes advertise the public worker HTTP contract", async () => {
+  const catalog = apiCatalog(request);
+  const openapi = openApiDocument(request);
+
+  assert.equal(
+    catalog.linkset[0]["service-desc"][0].href,
+    "https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json"
+  );
+  assert.equal(openapi.openapi, "3.0.3");
+  assert.equal(openapi.info.version, "1.1.0");
+  assert.ok(openapi.paths["/message/send"].post);
+  assert.ok(openapi.paths["/.well-known/ai-catalog.json"].get);
+  assert.ok(openapi.paths["/okf/index.md"].get);
+
+  const catalogResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/api-catalog")
+  );
+  const catalogBody = await catalogResponse.json();
+  assert.equal(catalogResponse.status, 200);
+  assert.equal(catalogResponse.headers.get("content-type"), "application/linkset+json; charset=utf-8");
+  assert.equal(catalogResponse.headers.get("link"), expectedDiscoveryLinkHeader);
+  assert.equal(catalogBody.linkset[0]["service-desc"][0].title, "Agenda Intelligence MD Worker API (OpenAPI 3.0)");
+
+  const openapiResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json")
+  );
+  const openapiBody = await openapiResponse.json();
+  assert.equal(openapiResponse.status, 200);
+  assert.equal(openapiResponse.headers.get("content-type"), "application/vnd.oai.openapi+json; charset=utf-8");
+  assert.equal(openapiResponse.headers.get("link"), expectedDiscoveryLinkHeader);
+  assert.equal(openapiBody.servers[0].url, "https://agenda-intelligence-a2a.example.workers.dev");
 });
 
 test("MCP server card and DID routes advertise installable MCP identity", async () => {
@@ -292,6 +337,8 @@ test("MCP server card and DID routes advertise installable MCP identity", async 
   assert.ok(card.tools.some((tool) => tool.name === "audit_claims"));
   assert.equal(did.id, "did:web:agenda-intelligence-a2a.example.workers.dev");
   assert.ok(did.service.some((service) => service.type === "MCPServer"));
+  assert.ok(did.service.some((service) => service.type === "OpenAPI"));
+  assert.equal(card.related.openapi, "https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json");
 
   const cardResponse = await handleRequest(
     new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json")
@@ -367,13 +414,12 @@ test("landing HTML advertises AI catalog endpoint and Link header", async () => 
   const body = await response.text();
 
   assert.equal(response.status, 200);
-  assert.equal(
-    response.headers.get("link"),
-    '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json>; rel="ai-catalog", <https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json>; rel="mcp-server-card", <https://agenda-intelligence-a2a.example.workers.dev/.well-known/did.json>; rel="identity"'
-  );
+  assert.equal(response.headers.get("link"), expectedDiscoveryLinkHeader);
   assert.match(body, /AI catalog:/);
   assert.match(body, /MCP card:/);
   assert.match(body, /DID:/);
+  assert.match(body, /API catalog:/);
+  assert.match(body, /OpenAPI:/);
   assert.match(body, /Entity map:/);
   assert.match(body, /OKF bundle:/);
   assert.match(body, /<link rel="ai-catalog" href="https:\/\/agenda-intelligence-a2a\.example\.workers\.dev\/\.well-known\/ai-catalog\.json">/);
@@ -1597,6 +1643,8 @@ test("healthInfo exposes status URL alongside agent_card and message_send", () =
   assert.ok(info.agent_card.endsWith("/.well-known/agent-card.json"));
   assert.ok(info.mcp_server_card.endsWith("/.well-known/mcp/server-card.json"));
   assert.ok(info.did.endsWith("/.well-known/did.json"));
+  assert.ok(info.api_catalog.endsWith("/.well-known/api-catalog"));
+  assert.ok(info.openapi.endsWith("/api/openapi.json"));
   assert.ok(info.entitymap.endsWith("/entitymap.json"));
   assert.ok(info.okf_bundle.endsWith("/okf/index.md"));
   assert.ok(info.message_send.endsWith("/message/send"));

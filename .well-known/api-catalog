@@ -1,0 +1,14 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/",
+      "service-desc": [
+        {
+          "href": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/api/openapi.json",
+          "type": "application/vnd.oai.openapi+json;version=3.0",
+          "title": "Agenda Intelligence MD Worker API (OpenAPI 3.0)"
+        }
+      ]
+    }
+  ]
+}

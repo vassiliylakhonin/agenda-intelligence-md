@@ -400,6 +400,8 @@ Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-con
 | Weekly status readiness delta template | [`docs/templates/weekly-status-decision-readiness-delta.md`](docs/templates/weekly-status-decision-readiness-delta.md) |
 | Agent-readable OKF bundle | [`okf/index.md`](okf/index.md) |
 | Agentic Resource Discovery catalog | [`.well-known/ai-catalog.json`](.well-known/ai-catalog.json) |
+| Worker API catalog | [`.well-known/api-catalog`](.well-known/api-catalog) |
+| Worker OpenAPI contract | [`api/openapi.json`](api/openapi.json) |
 | Agent entity map JSON | [`entitymap.json`](entitymap.json) |
 | Agent entity map | [`docs/agent-entity-map.md`](docs/agent-entity-map.md) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |

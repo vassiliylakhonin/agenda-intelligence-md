@@ -18,6 +18,16 @@
       "id": "did:web:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev#mcp",
       "type": "MCPServer",
       "serviceEndpoint": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/mcp/server-card.json"
+    },
+    {
+      "id": "did:web:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev#api-catalog",
+      "type": "APICatalog",
+      "serviceEndpoint": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/api-catalog"
+    },
+    {
+      "id": "did:web:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev#openapi",
+      "type": "OpenAPI",
+      "serviceEndpoint": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/api/openapi.json"
     }
   ]
 }

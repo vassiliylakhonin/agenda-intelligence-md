@@ -1,7 +1,9 @@
 include README.md
 include LICENSE
 include entitymap.json
+include .well-known/api-catalog
 recursive-include .well-known *.json
+recursive-include api *.json
 recursive-include src/agenda_intelligence *
 recursive-include src/agenda_intelligence/data *
 recursive-include docs *.md

@@ -21,6 +21,8 @@ This Worker is intentionally small:
 | GET | `/status` | Always JSON | Status info for uptime monitors; includes version + boundary flags |
 | GET | `/.well-known/agent-card.json` | Always JSON | A2A agent card |
 | GET | `/.well-known/ai-catalog.json` | Always JSON | Agentic resource discovery catalog |
+| GET | `/.well-known/api-catalog` | Always JSON linkset | API catalog pointing to OpenAPI |
+| GET | `/api/openapi.json` | Always JSON | OpenAPI 3.0 worker contract |
 | GET | `/.well-known/mcp/server-card.json` | Always JSON | MCP server card for the installable stdio package |
 | GET | `/.well-known/mcp-server.json` | Always JSON | Legacy MCP server-card alias |
 | GET | `/.well-known/did.json` | Always JSON | DID document linking AI catalog, A2A card, and MCP card |
@@ -207,6 +209,8 @@ npm run verify:agent-discovery -- https://your-worker.example
 This checks:
 
 - `/.well-known/ai-catalog.json`
+- `/.well-known/api-catalog`
+- `/api/openapi.json`
 - `/.well-known/mcp/server-card.json`
 - `/.well-known/did.json`
 - `/entitymap.json`

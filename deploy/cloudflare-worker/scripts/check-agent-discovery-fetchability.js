@@ -7,6 +7,8 @@ const baseUrl = (baseUrlArg || DEFAULT_BASE_URL).replace(/\/+$/, "");
 
 const paths = [
   "/.well-known/ai-catalog.json",
+  "/.well-known/api-catalog",
+  "/api/openapi.json",
   "/.well-known/mcp/server-card.json",
   "/.well-known/did.json",
   "/entitymap.json",
