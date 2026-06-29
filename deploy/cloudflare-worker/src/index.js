@@ -25,34 +25,12 @@ import {
 import { buildJwks, maybeSignCard } from "./jws.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "./okf_content.js";
 import {
-  A2A_EXAMPLES_URL,
-  AGENTIC_INTERACTION_TRUST_DOCS_URL,
-  AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL,
-  AGENTIC_INTERACTION_TRUST_RESPONSE_SCHEMA_URL,
-  AGENTIC_INTERACTION_TRUST_SOURCE_TAXONOMY_URL,
   CANONICAL_INPUT_MODE,
   CIS_SECONDARY_SANCTIONS_ADR_URL,
-  CIS_SECONDARY_SANCTIONS_DOCS_URL,
-  CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL,
-  CIS_SECONDARY_SANCTIONS_RESPONSE_SCHEMA_URL,
-  CIS_SECONDARY_SANCTIONS_SOURCE_TAXONOMY_URL,
-  CONFIDENTIAL_PROJECT_ROOM_DOCS_URL,
-  CONFIDENTIAL_PROJECT_ROOM_SCHEMA_URL,
   DISCOVERY_UPDATED_AT,
   DOCS_URL,
-  GULF_MARITIME_DOCS_URL,
-  GULF_MARITIME_REQUEST_SCHEMA_URL,
-  GULF_MARITIME_RESPONSE_SCHEMA_URL,
-  GULF_MARITIME_SOURCE_TAXONOMY_URL,
-  MARKET_ENTRY_DOCS_URL,
-  MARKET_ENTRY_REQUEST_SCHEMA_URL,
-  MARKET_ENTRY_RESPONSE_SCHEMA_URL,
-  MARKET_ENTRY_SOURCE_TAXONOMY_URL,
   MIDDLE_CORRIDOR_AGENT_CONTRACT_VERSION,
   MIDDLE_CORRIDOR_DOCS_URL,
-  MIDDLE_CORRIDOR_REQUEST_SCHEMA_URL,
-  MIDDLE_CORRIDOR_RESPONSE_SCHEMA_URL,
-  MIDDLE_CORRIDOR_SOURCE_TAXONOMY_URL,
   MIDDLE_CORRIDOR_SUPPORTED_INTENTS,
   OKF_BUNDLE_REPO_URL,
   PACKAGE_URL,
@@ -63,7 +41,8 @@ import {
   SUPPORT_CONTACT_EMAIL,
   SUPPORT_HOURS_LOCAL,
   SUPPORT_TIMEZONE,
-  VERSION
+  VERSION,
+  profileDiscovery
 } from "./profiles.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 
@@ -1523,6 +1502,7 @@ function openApiDocument(request) {
 function entityMap(request) {
   const origin = originFromRequest(request);
   const entityUrl = (slug) => `${origin}/entitymap.json#${slug}`;
+  const confidentialProjectRoomDiscovery = profileDiscovery("confidential_project_room");
   return {
     version: "1.0",
     schema: "https://entitymap.org/spec/v1.0",
@@ -1585,14 +1565,14 @@ function entityMap(request) {
         name: "Confidential Project-Room Workflow",
         type: "private_review_workflow",
         url: confidentialProjectRoomUrl(origin),
-        canonicalUrl: CONFIDENTIAL_PROJECT_ROOM_DOCS_URL,
+        canonicalUrl: confidentialProjectRoomDiscovery.documentation_url,
         description:
           "Alias-first evidence-readiness workflow for private project, procurement, financing, vendor, or committee files. Public artifacts show the review contract and synthetic redacted example, not client data.",
         relatedEntities: ["human-review-packet", "evidence-pack", "claim-audit", "source-policy", "market-gate"],
         evidence: [
           confidentialProjectRoomUrl(origin),
           confidentialProjectRoomUrl(origin, "/profiles/confidential-project-room/redacted-example.json"),
-          CONFIDENTIAL_PROJECT_ROOM_SCHEMA_URL
+          confidentialProjectRoomDiscovery.profile_schema
         ],
         boundaries: [
           "Not a secure data room.",
@@ -1701,8 +1681,9 @@ function applyAgentProfile(card, request, env = {}) {
   if (profile !== "kazakhstan") return card;
 
   const origin = originFromRequest(request);
+  const discovery = profileDiscovery("kazakhstan");
   card.name = "Kazakhstan / Middle Corridor Deal Risk Gate";
-  card.documentationUrl = MIDDLE_CORRIDOR_DOCS_URL;
+  card.documentationUrl = discovery.documentation_url;
   card.description =
     "A2A-compatible evidence-readiness gate for Kazakhstan-Caspian / Middle Corridor logistics, trade-finance, procurement, and insurance-adjacent workflows. Bring route, cargo, counterparties, and dated sources; get structured deal-risk triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, risk signal, human-review routing, and named sanctions-exposure flags: OFAC named-sector (EO 14024/14114) and newly-formed-counterparty red flags, EU re-export / circumvention-watch jurisdictions (incl. the 20th-package measures on Kyrgyzstan), dual-use cargo screened against the EU/US Common High Priority List, a domestic-legal vs foreign-sanctions exposure decomposition, and a vessel deceptive-shipping-practice checklist. Deterministic rule-based logic, no model in the decision path. Presence-flagging and evidence triage only, not a sanctions determination.";
   card.provider.legalEntity.sameAs = [
@@ -1819,15 +1800,8 @@ function applyAgentProfile(card, request, env = {}) {
   card.x_agenda_intelligence.wrapper_scope =
     "A2A/JSON-RPC discovery, Kazakhstan and Middle Corridor deal-risk triage, evidence gating, source coverage, and routing response only";
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
-  card.x_agenda_intelligence.documentation = MIDDLE_CORRIDOR_DOCS_URL;
-  card.x_agenda_intelligence.product_contract = {
-    request_schema: MIDDLE_CORRIDOR_REQUEST_SCHEMA_URL,
-    response_schema: MIDDLE_CORRIDOR_RESPONSE_SCHEMA_URL,
-    source_taxonomy: MIDDLE_CORRIDOR_SOURCE_TAXONOMY_URL,
-    runnable_examples: A2A_EXAMPLES_URL,
-    canonical_input_mode: CANONICAL_INPUT_MODE,
-    demo_input_modes: ["structured_json", "text_prompt"]
-  };
+  card.x_agenda_intelligence.documentation = discovery.documentation_url;
+  card.x_agenda_intelligence.product_contract = discovery.product_contract;
   card.x_agenda_intelligence.required_before_go = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO;
   card.x_agenda_intelligence.helpful_context_sources = MIDDLE_CORRIDOR_HELPFUL_CONTEXT;
   card.x_agenda_intelligence.supported_contracts = [
@@ -1879,8 +1853,9 @@ function applyAgentProfile(card, request, env = {}) {
 
 function applyAgenticInteractionTrustProfile(card, request) {
   const origin = originFromRequest(request);
+  const discovery = profileDiscovery("agentic_interaction_trust");
   card.name = "Agentic Interaction Trust Gate";
-  card.documentationUrl = AGENTIC_INTERACTION_TRUST_DOCS_URL;
+  card.documentationUrl = discovery.documentation_url;
   card.description =
     "A2A-compatible evidence-readiness gate for agent-mediated actions across checkout, account, API, MCP tool, and A2A endpoint surfaces. Bring actor identity claims, target surface, requested action, and dated evidence; get trust-routing triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, trust signal, and human-review routing.";
   card.provider.legalEntity.sameAs = [
@@ -1917,15 +1892,8 @@ function applyAgenticInteractionTrustProfile(card, request) {
   card.x_agenda_intelligence.wrapper_scope =
     "A2A/JSON-RPC discovery, agentic interaction trust triage, evidence gating, and routing response only";
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
-  card.x_agenda_intelligence.documentation = AGENTIC_INTERACTION_TRUST_DOCS_URL;
-  card.x_agenda_intelligence.product_contract = {
-    request_schema: AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL,
-    response_schema: AGENTIC_INTERACTION_TRUST_RESPONSE_SCHEMA_URL,
-    source_taxonomy: AGENTIC_INTERACTION_TRUST_SOURCE_TAXONOMY_URL,
-    runnable_examples: `${REPOSITORY_URL}/tree/main/examples/agentic-interaction-trust`,
-    canonical_input_mode: CANONICAL_INPUT_MODE,
-    demo_input_modes: ["structured_json"]
-  };
+  card.x_agenda_intelligence.documentation = discovery.documentation_url;
+  card.x_agenda_intelligence.product_contract = discovery.product_contract;
   card.x_agenda_intelligence.required_before_action = AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION;
   card.x_agenda_intelligence.helpful_context_sources = AGENTIC_INTERACTION_TRUST_HELPFUL_CONTEXT;
   card.x_agenda_intelligence.supported_contracts = ["agentic_interaction_trust_contract"];
@@ -1960,8 +1928,9 @@ function applyAgenticInteractionTrustProfile(card, request) {
 
 function applyGulfMaritimeProfile(card, request) {
   const origin = originFromRequest(request);
+  const discovery = profileDiscovery("gulf_maritime_exposure");
   card.name = "Gulf Maritime Exposure Gate";
-  card.documentationUrl = GULF_MARITIME_DOCS_URL;
+  card.documentationUrl = discovery.documentation_url;
   card.description =
     "A2A-compatible evidence-readiness gate for maritime sanctions and chokepoint-disruption exposure on a vessel " +
     "or voyage transiting the Strait of Hormuz, Persian/Arabian Gulf, Gulf of Oman, Bab-el-Mandeb, or Red Sea. Bring " +
@@ -1995,15 +1964,8 @@ function applyGulfMaritimeProfile(card, request) {
   card.x_agenda_intelligence.wrapper_scope =
     "A2A/JSON-RPC discovery, maritime sanctions and chokepoint-disruption triage, evidence gating, and routing response only";
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
-  card.x_agenda_intelligence.documentation = GULF_MARITIME_DOCS_URL;
-  card.x_agenda_intelligence.product_contract = {
-    request_schema: GULF_MARITIME_REQUEST_SCHEMA_URL,
-    response_schema: GULF_MARITIME_RESPONSE_SCHEMA_URL,
-    source_taxonomy: GULF_MARITIME_SOURCE_TAXONOMY_URL,
-    runnable_examples: `${REPOSITORY_URL}/tree/main/examples/gulf-maritime-exposure`,
-    canonical_input_mode: CANONICAL_INPUT_MODE,
-    demo_input_modes: ["structured_json"]
-  };
+  card.x_agenda_intelligence.documentation = discovery.documentation_url;
+  card.x_agenda_intelligence.product_contract = discovery.product_contract;
   card.x_agenda_intelligence.required_before_review = GULF_MARITIME_REQUIRED_BEFORE_REVIEW;
   card.x_agenda_intelligence.helpful_context_sources = GULF_MARITIME_HELPFUL_CONTEXT;
   card.x_agenda_intelligence.supported_contracts = ["gulf_maritime_exposure_contract"];
@@ -2030,8 +1992,9 @@ function applyGulfMaritimeProfile(card, request) {
 function applyCisSecondarySanctionsProfile(card, request, env = {}) {
   const origin = originFromRequest(request);
   const activeOption = activeUpstreamOption("cis_secondary_sanctions", env);
+  const discovery = profileDiscovery("cis_secondary_sanctions");
   card.name = "CIS Secondary-Sanctions Exposure";
-  card.documentationUrl = CIS_SECONDARY_SANCTIONS_DOCS_URL;
+  card.documentationUrl = discovery.documentation_url;
   card.description =
     "A2A-compatible secondary-sanctions exposure evidence triage for CIS, Caucasus, and Central Asia counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Bring counterparty, exposure facets, and dated source extracts; get " +
     (activeOption ? `auto-fetched ${activeOption.name} name matches, ` : "") +
@@ -2076,15 +2039,8 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
   card.x_agenda_intelligence.wrapper_scope =
     "A2A/JSON-RPC discovery, CIS secondary-sanctions exposure triage, active server-side name screening against a public-list snapshot (Snapshot upstream; Watchman / OpenSanctions alternates), and routing response only";
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
-  card.x_agenda_intelligence.documentation = CIS_SECONDARY_SANCTIONS_DOCS_URL;
-  card.x_agenda_intelligence.product_contract = {
-    request_schema: CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL,
-    response_schema: CIS_SECONDARY_SANCTIONS_RESPONSE_SCHEMA_URL,
-    source_taxonomy: CIS_SECONDARY_SANCTIONS_SOURCE_TAXONOMY_URL,
-    runnable_examples: `${REPOSITORY_URL}/tree/main/examples/cis-secondary-sanctions`,
-    canonical_input_mode: CANONICAL_INPUT_MODE,
-    demo_input_modes: ["structured_json"]
-  };
+  card.x_agenda_intelligence.documentation = discovery.documentation_url;
+  card.x_agenda_intelligence.product_contract = discovery.product_contract;
   card.x_agenda_intelligence.required_before_review = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW;
   card.x_agenda_intelligence.helpful_context_sources = CIS_SECONDARY_SANCTIONS_HELPFUL_CONTEXT;
   card.x_agenda_intelligence.live_retrieval = {
@@ -3809,8 +3765,9 @@ function a2aResultForMarketEntryReadiness(params) {
 
 function applyMarketEntryReadinessProfile(card, request) {
   const origin = originFromRequest(request);
+  const discovery = profileDiscovery("market_entry_readiness");
   card.name = "Kazakhstan Market-Entry Readiness Gate";
-  card.documentationUrl = MARKET_ENTRY_DOCS_URL;
+  card.documentationUrl = discovery.documentation_url;
   card.description =
     "A2A-compatible evidence-readiness gate for a Kazakhstan market-entry file (distribution, import, service, " +
     "showroom, EPC, renewable-energy, infrastructure, technology-transfer, or partner-entry). Bring company, " +
@@ -3844,15 +3801,8 @@ function applyMarketEntryReadinessProfile(card, request) {
   card.x_agenda_intelligence.wrapper_scope =
     "A2A/JSON-RPC discovery, market-entry evidence triage, gate decision, and routing response only";
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
-  card.x_agenda_intelligence.documentation = MARKET_ENTRY_DOCS_URL;
-  card.x_agenda_intelligence.product_contract = {
-    request_schema: MARKET_ENTRY_REQUEST_SCHEMA_URL,
-    response_schema: MARKET_ENTRY_RESPONSE_SCHEMA_URL,
-    source_taxonomy: MARKET_ENTRY_SOURCE_TAXONOMY_URL,
-    runnable_examples: `${REPOSITORY_URL}/tree/main/examples/kazakhstan-market-entry-readiness`,
-    canonical_input_mode: CANONICAL_INPUT_MODE,
-    demo_input_modes: ["structured_json"]
-  };
+  card.x_agenda_intelligence.documentation = discovery.documentation_url;
+  card.x_agenda_intelligence.product_contract = discovery.product_contract;
   card.x_agenda_intelligence.required_before_validation = MARKET_ENTRY_REQUIRED_BEFORE_VALIDATION;
   card.x_agenda_intelligence.required_before_signature = MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE;
   card.x_agenda_intelligence.supported_contracts = ["kazakhstan_market_entry_readiness_contract"];

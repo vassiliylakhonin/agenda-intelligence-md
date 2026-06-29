@@ -32,6 +32,7 @@ import {
   usageStats
 } from "../src/index.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "../src/usage_constants.js";
+import { PROFILE_REGISTRY, profileDiscovery } from "../src/profiles.js";
 import { validateAgentCard } from "../scripts/verify-agent-card.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "../src/okf_content.js";
 import { matchCounterparty as matchCounterpartyAgainstWatchman } from "../src/upstream_watchman.js";
@@ -76,6 +77,38 @@ class MemoryKv {
     };
   }
 }
+
+test("profile registry is the single discovery contract source for deployed profiles", () => {
+  const deployedProfiles = [
+    "kazakhstan",
+    "cis_secondary_sanctions",
+    "agentic_interaction_trust",
+    "gulf_maritime_exposure",
+    "market_entry_readiness"
+  ];
+
+  for (const profile of deployedProfiles) {
+    const discovery = profileDiscovery(profile);
+    assert.equal(PROFILE_REGISTRY[profile].documentation_url, discovery.documentation_url);
+    assert.match(discovery.documentation_url, /^https:\/\/github\.com\/vassiliylakhonin\/agenda-intelligence-md\/blob\/main\//);
+    assert.match(discovery.product_contract.request_schema, /\/schemas\/v1\/.+-request\.schema\.json$/);
+    assert.match(discovery.product_contract.response_schema, /\/schemas\/v1\/.+-response\.schema\.json$/);
+    assert.match(discovery.product_contract.source_taxonomy, /\/source-requirements\/.+\.json$/);
+    assert.match(discovery.product_contract.runnable_examples, /\/tree\/main\/examples\//);
+    assert.equal(discovery.product_contract.canonical_input_mode, "structured_json");
+    assert.ok(discovery.product_contract.demo_input_modes.includes("structured_json"));
+  }
+
+  assert.equal(profileDiscovery("middle_corridor_deal_risk").documentation_url, profileDiscovery("kazakhstan").documentation_url);
+  assert.equal(
+    profileDiscovery("kazakhstan_market_entry_readiness").product_profile,
+    "kazakhstan_market_entry_readiness"
+  );
+  assert.match(
+    profileDiscovery("confidential_project_room").profile_schema,
+    /\/schemas\/v1\/confidential-project-room-profile\.schema\.json$/
+  );
+});
 
 test("Watchman adapter queries real /search path and normalizes grouped results", async () => {
   const originalFetch = globalThis.fetch;
