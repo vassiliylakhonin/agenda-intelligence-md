@@ -1,4 +1,4 @@
-.PHONY: install test lint format typecheck ci ci-fast clean build publish
+.PHONY: install test lint format typecheck worker-test ci ci-fast verify-local clean build publish
 
 # Python interpreter used by the test/CI targets. Override per invocation when
 # the default `python3` points at an interpreter without the dev deps installed
@@ -31,8 +31,12 @@ typecheck:
 test:
 	$(PYTHON) -m pytest --maxfail=1 --disable-warnings -q
 
-# Quick local pre-push gate. Mirrors what GitHub Actions runs.
-# Run `make ci` before every push to avoid the staircase of CI fixes.
+# Worker-side regression surface for the deployed A2A wrapper.
+worker-test:
+	cd deploy/cloudflare-worker && npm test
+
+# Python/package pre-push gate. Mirrors what GitHub Actions runs.
+# Run `make ci` before Python/package pushes to avoid the staircase of CI fixes.
 ci: lint typecheck test
 	$(PYTHON) -m compileall src scripts tests
 	$(PYTHON) -m agenda_intelligence.cli --help >/dev/null
@@ -45,6 +49,10 @@ ci: lint typecheck test
 
 # Subset for tight inner loop (lint + tests, no CLI smoke).
 ci-fast: lint typecheck test
+
+# Full local gate before pushing changes that touch Worker discovery/runtime,
+# package assets, examples, or validation guards.
+verify-local: ci worker-test
 
 clean:
 	find . -type f -name '*.pyc' -delete

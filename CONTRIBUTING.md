@@ -19,9 +19,10 @@ make install                  # editable install + lint/type tooling
 bash scripts/install-hooks.sh # pre-push hook running `make ci-fast`
 pytest                        # full test suite
 make ci-fast                  # what CI will run on your push
+make verify-local             # full local gate when Worker/discovery files changed
 ```
 
-If `make ci-fast` is green locally, your push will not red-CI on `main`.
+If `make ci-fast` is green locally, the Python lint/type/test surface should not red-CI on `main`. If you touched Worker discovery/runtime, packaged examples, or validation guards, run `make verify-local` before pushing.
 
 **3. Read one concrete artifact end-to-end:**
 
@@ -57,12 +58,15 @@ pytest
 ```bash
 make ci-fast   # flake8 + black --check + isort --check + ruff + mypy + pytest
 make ci        # full surface, also runs CLI smoke + scripts/validate*.py
+make verify-local # make ci + Cloudflare Worker tests
 make format    # auto-fix black + isort
 ```
 
 Run `make ci-fast` (or install the hook) before every push to avoid the
-staircase of fix-CI-fix-CI commits. Bypass the hook in emergencies with
-`git push --no-verify`.
+staircase of fix-CI-fix-CI commits. Run `make verify-local` before pushing
+changes to `deploy/cloudflare-worker/`, discovery metadata, examples, package
+mirrors, or validation tests. Bypass the hook in emergencies with `git push
+--no-verify`.
 
 ## Validation Commands
 ```bash
@@ -106,6 +110,7 @@ When editing any of these, update the paired copy in the same commit. Version bu
 
 ## Pull Request Checklist
 - [ ] `make ci-fast` passes locally (`flake8`, `black --check`, `isort --check`, `mypy`, `pytest`)
+- [ ] `make verify-local` passes locally when Worker/discovery/runtime or validation-guard files were touched
 - [ ] `make format` run if any Python files were touched
 - [ ] `python -m compileall .` passes
 - [ ] CLI validation commands succeed (`validate-manifest`, `validate-brief`, `validate-evidence`)

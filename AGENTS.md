@@ -164,6 +164,7 @@ Label clearly: illustrative, experimental, planned, or not yet implemented. Vert
 Validation is first-class in this repo. Before finalizing changes, run the relevant subset:
 
 - `make ci` — lint, typecheck, full test suite.
+- `make verify-local` — `make ci` plus Cloudflare Worker tests; use before pushing Worker/discovery/runtime or validation-guard changes.
 - `python3 -m agenda_intelligence.cli validate-manifest` — agent manifest contract.
 - `python3 -m agenda_intelligence.cli validate-brief <path>` — agenda brief schema.
 - `python3 -m agenda_intelligence.cli validate-evidence <path>` — evidence pack schema.
