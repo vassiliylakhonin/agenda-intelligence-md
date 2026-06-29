@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "evidence_mode": "mixed",
+    "confidence": "high",
+    "geography": "Kazakhstan",
+    "depth": "decision_pack",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      }
+    ],
+    "timestamp": "2026-06-30T09:00:00Z"
+  },
+  "risk_summary": {
+    "short": "The shipment is compliant and approved to proceed.",
+    "detailed": "The available documents are enough to treat the transaction as cleared. The team should continue to monitor developments."
+  },
+  "analysis": {
+    "facts": [
+      "The source pack includes a carrier note."
+    ],
+    "assessments": [
+      "The file can be treated as sanctions safe."
+    ],
+    "assumptions": [
+      "The missing documents will not change the conclusion."
+    ],
+    "unknowns": [
+      "Beneficial ownership is not supplied."
+    ]
+  },
+  "recommended_actions": [
+    {
+      "action": "Monitor developments.",
+      "priority": "low"
+    }
+  ],
+  "watch_next": [
+    {
+      "indicator": "Stay informed."
+    }
+  ],
+  "audit": {
+    "validation_score": 0.9,
+    "provenance": [
+      {
+        "claim": "The source pack includes a carrier note.",
+        "basis": "fact",
+        "source": "S1 carrier note"
+      },
+      {
+        "claim": "The file can be treated as sanctions safe.",
+        "basis": "assessment"
+      }
+    ]
+  }
+}

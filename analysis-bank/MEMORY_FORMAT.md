@@ -9,6 +9,17 @@ The memory is not a transcript, source archive, or full example. It is a reusabl
 ```md
 # Memory: <short title>
 
+## Lifecycle
+- lesson_id: <stable kebab-case id>
+- version: 1
+- status: active | stale | superseded | rejected
+- created_at: YYYY-MM-DD
+- last_validated_at: YYYY-MM-DD
+- stale_after_days: 365
+- supersedes: none | <lesson_id>
+- confidence: high | medium | low
+- evidence_basis: <what examples, reviews, failures, or tests support the lesson>
+
 ## Trigger
 When this memory should be considered.
 
@@ -38,3 +49,7 @@ A short before/after rewrite showing the improvement.
 - Do not copy one-off facts that will go stale.
 - Store both success and failure memories.
 - Keep each card short enough to retrieve with at most two other cards.
+- Do not apply stale, superseded, or rejected lessons as recommendation support
+  without revalidation.
+- Treat `stale_after_days` as an expiry guard: an active lesson must be
+  revalidated before that window closes.

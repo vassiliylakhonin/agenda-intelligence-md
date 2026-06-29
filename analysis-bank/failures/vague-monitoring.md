@@ -1,5 +1,16 @@
 # Memory: Replace vague monitoring with concrete indicators
 
+## Lifecycle
+- lesson_id: vague-monitoring
+- version: 1
+- status: active
+- created_at: 2026-05-20
+- last_validated_at: 2026-06-30
+- stale_after_days: 365
+- supersedes: none
+- confidence: high
+- evidence_basis: Derived from repeated output-quality failures where watch-next sections used generic monitoring instead of observable indicators.
+
 ## Trigger
 The output ends with “monitor developments,” “stay informed,” or similarly vague watch-next advice.
 

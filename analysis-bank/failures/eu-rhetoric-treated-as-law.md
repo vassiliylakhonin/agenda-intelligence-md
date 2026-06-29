@@ -1,5 +1,16 @@
 # Memory: Do not treat EU rhetoric as law
 
+## Lifecycle
+- lesson_id: eu-rhetoric-treated-as-law
+- version: 1
+- status: active
+- created_at: 2026-05-20
+- last_validated_at: 2026-06-30
+- stale_after_days: 365
+- supersedes: none
+- confidence: medium
+- evidence_basis: Derived from EU policy memo failure reviews where political statements were overread as binding legal obligations.
+
 ## Trigger
 EU agenda items involving Commission statements, Parliament resolutions, Council debates, summits, AI Act, DSA, DMA, sanctions, trade defense, climate policy, enlargement, or industrial policy.
 

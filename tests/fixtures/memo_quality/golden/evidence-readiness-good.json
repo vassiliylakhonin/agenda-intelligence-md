@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "evidence_mode": "mixed",
+    "confidence": {
+      "level": "medium",
+      "score": 0.62,
+      "reasoning": "The source pack supports the routing concern but leaves ownership and bank evidence incomplete."
+    },
+    "geography": [
+      "Kazakhstan",
+      "Caspian"
+    ],
+    "depth": "decision_pack",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      },
+      {
+        "module": "central-asia-caspian",
+        "role": "regional_specialist"
+      },
+      {
+        "module": "sanctions-sector",
+        "role": "sector_specialist"
+      }
+    ],
+    "timestamp": "2026-06-30T09:00:00Z"
+  },
+  "risk_summary": {
+    "short": "The file is not decision ready because ownership, bank, and customs evidence gaps still block human review.",
+    "detailed": "The supplied port note and carrier note support a corridor-disruption concern, but the memo should not be used as an approval or clearance artifact. The main evidence gaps are beneficial ownership, customs classification, correspondent-bank exposure, and insurance terms. Human review should focus on closing those gaps before any contract signature or external repeat of the strongest claims."
+  },
+  "decision_frame": {
+    "decision": "Decide whether the deal file can move to human review before signature.",
+    "stakeholders": [
+      "commercial owner",
+      "legal reviewer",
+      "trade-finance reviewer"
+    ],
+    "constraints": [
+      "No live sanctions screening was performed.",
+      "The evidence pack is partial."
+    ]
+  },
+  "analysis": {
+    "facts": [
+      "The supplied source pack includes a dated port note and a carrier note.",
+      "The source pack does not include a beneficial-ownership extract or bank-correspondent evidence."
+    ],
+    "assessments": [
+      "The routing claim is plausible but only partially supported by the supplied documents.",
+      "The decision should be routed to human review rather than treated as ready for signature."
+    ],
+    "assumptions": [
+      "The source pack is complete as supplied by the caller."
+    ],
+    "unknowns": [
+      "The ultimate beneficial owner is unknown from the supplied packet.",
+      "The bank-correspondent exposure is missing from the supplied packet."
+    ]
+  },
+  "recommended_actions": [
+    {
+      "action": "Request beneficial-ownership evidence and map it to each named counterparty before human review.",
+      "priority": "high",
+      "trigger": "Any request to move the file from evidence triage to signature review.",
+      "time_horizon": "Before signature review."
+    },
+    {
+      "action": "Ask the finance owner for bank-correspondent evidence or mark the bank-risk claim as unsupported.",
+      "priority": "high",
+      "trigger": "If the memo will be shared with a bank, insurer, or committee reviewer.",
+      "time_horizon": "Before external reuse."
+    }
+  ],
+  "watch_next": [
+    {
+      "indicator": "New source item resolving beneficial ownership for each counterparty.",
+      "trigger": "Upgrade only when the owner chain is documented.",
+      "source_type": "beneficial_ownership_source"
+    },
+    {
+      "indicator": "Bank-correspondent evidence naming the payment path.",
+      "trigger": "Keep bank exposure as a blocking gap until the payment path is evidenced.",
+      "source_type": "bank_correspondent_evidence"
+    }
+  ],
+  "audit": {
+    "validation_score": 0.82,
+    "provenance": [
+      {
+        "claim": "The source pack includes a dated port note and a carrier note.",
+        "basis": "fact",
+        "source": "S1/S2 supplied source pack"
+      },
+      {
+        "claim": "Beneficial ownership and bank-correspondent evidence are missing.",
+        "basis": "fact",
+        "source": "S3 source checklist"
+      },
+      {
+        "claim": "The file should route to human review before signature.",
+        "basis": "assessment"
+      }
+    ]
+  }
+}

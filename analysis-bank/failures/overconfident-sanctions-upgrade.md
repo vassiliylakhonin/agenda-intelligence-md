@@ -1,5 +1,16 @@
 # Memory: Do not upgrade sanctions rumors too early
 
+## Lifecycle
+- lesson_id: overconfident-sanctions-upgrade
+- version: 1
+- status: active
+- created_at: 2026-05-20
+- last_validated_at: 2026-06-30
+- stale_after_days: 365
+- supersedes: none
+- confidence: high
+- evidence_basis: Derived from sanctions-routing failure examples and the current memo-quality overreach guard.
+
 ## Trigger
 Sanctions, export controls, routing, intermediaries, evasion claims, beneficial ownership, banks, logistics, Central Asia, Middle East, EU/US/UK enforcement.
 

@@ -6,6 +6,15 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "lesson_id",
+    "version",
+    "status",
+    "created_at",
+    "last_validated_at",
+    "stale_after_days",
+    "supersedes",
+    "confidence",
+    "evidence_basis",
     "title",
     "trigger",
     "pattern",
@@ -16,6 +25,54 @@
     "example_rewrite"
   ],
   "properties": {
+    "lesson_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "stale",
+        "superseded",
+        "rejected"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "last_validated_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "stale_after_days": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "supersedes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Prior lesson_id superseded by this card, or null when this is not a replacement."
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "evidence_basis": {
+      "type": "string",
+      "minLength": 1
+    },
     "title": {
       "type": "string",
       "minLength": 1

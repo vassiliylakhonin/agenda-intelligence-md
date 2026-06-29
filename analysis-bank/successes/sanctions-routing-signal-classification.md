@@ -1,5 +1,16 @@
 # Memory: Classify sanctions routing through mechanisms, not geography
 
+## Lifecycle
+- lesson_id: sanctions-routing-signal-classification
+- version: 1
+- status: active
+- created_at: 2026-05-20
+- last_validated_at: 2026-06-30
+- stale_after_days: 365
+- supersedes: none
+- confidence: high
+- evidence_basis: Derived from source-backed sanctions-routing examples and current evidence-readiness contract fixtures.
+
 ## Trigger
 Sanctions routing, re-export, dual-use goods, Central Asia, Middle Corridor, UAE/Turkey/Caucasus, logistics hubs, banks, customs, intermediaries.
 

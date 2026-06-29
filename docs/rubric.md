@@ -9,6 +9,20 @@ Use this file when:
 
 **Not a CI gate in v0.9.** Scores from this rubric are logged as baseline only. Gating happens after calibration in v0.9.x+.
 
+## Minimal CI quality guard
+
+The full rubric is not a CI gate, but a small post-hoc `memo_quality` guard now
+checks whether a schema-valid memo is usable as an evidence-readiness artifact.
+It rejects common failures that schema validation cannot see:
+
+- approval, clearance, compliance, or "safe to proceed" overreach;
+- unknowns or missing evidence that are not surfaced as reader-visible gaps;
+- recommended actions that are generic monitoring rather than owner actions;
+- `watch_next` items that are not observable indicators;
+- source-backed modes that fail evidence-mode discipline.
+
+Golden and failure fixtures live under `tests/fixtures/memo_quality/`.
+
 ## Ten dimensions
 
 Each dimension is binary at the case level (passes / does not pass). Aggregation across a case set is left to the eval harness, not prescribed here.

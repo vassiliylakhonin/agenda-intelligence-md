@@ -1,0 +1,65 @@
+{
+  "meta": {
+    "evidence_mode": "user_provided",
+    "confidence": {
+      "level": "medium",
+      "score": 0.55
+    },
+    "geography": "Central Asia",
+    "depth": "standard",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      }
+    ],
+    "timestamp": "2026-06-30T09:00:00Z"
+  },
+  "risk_summary": {
+    "short": "The project can move forward for committee review.",
+    "detailed": "The materials are directionally positive and the team should keep the file moving."
+  },
+  "analysis": {
+    "facts": [
+      "The packet includes a committee memo and vendor proposal."
+    ],
+    "assessments": [
+      "The file appears broadly usable for the next discussion."
+    ],
+    "assumptions": [
+      "The missing annexes will arrive later."
+    ],
+    "unknowns": [
+      "Customer evidence is absent from the packet.",
+      "Warranty conditions are absent from the packet."
+    ]
+  },
+  "recommended_actions": [
+    {
+      "action": "Prepare the next committee discussion.",
+      "priority": "medium",
+      "trigger": "When the team schedules the next review."
+    }
+  ],
+  "watch_next": [
+    {
+      "indicator": "Next committee meeting date.",
+      "source_type": "committee_calendar"
+    }
+  ],
+  "audit": {
+    "validation_score": 0.78,
+    "provenance": [
+      {
+        "claim": "The packet includes a committee memo and vendor proposal.",
+        "basis": "fact",
+        "source": "S1/S2 supplied packet"
+      },
+      {
+        "claim": "Customer evidence and warranty conditions are absent.",
+        "basis": "fact",
+        "source": "S3 checklist"
+      }
+    ]
+  }
+}
