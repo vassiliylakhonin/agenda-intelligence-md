@@ -11,7 +11,7 @@ import hashlib
 import json
 import re
 from importlib import resources
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import urlparse
 
 from agenda_intelligence import __version__, upstream_opensanctions
@@ -518,7 +518,7 @@ def score_output(before_text: str, after_text: str) -> dict:
     return result
 
 
-WEEKLY_DELTA_RULES = [
+WEEKLY_DELTA_RULES: list[dict[str, Any]] = [
     {
         "id": "lender_follow_up",
         "workstream": "Financing / lenders",
@@ -528,7 +528,9 @@ WEEKLY_DELTA_RULES = [
         "evidence_state": "activity-only",
         "claim_type": "financing",
         "unsafe_claim": "Financing is progressing well.",
-        "evidence_required": "Lender requirements checklist, term-sheet path, conditions precedent, and next evidence requested.",
+        "evidence_required": (
+            "Lender requirements checklist, term-sheet path, conditions precedent, and next evidence requested."
+        ),
         "owner": "CFO / M&A",
     },
     {
@@ -540,7 +542,9 @@ WEEKLY_DELTA_RULES = [
         "evidence_state": "weak evidence",
         "claim_type": "demand",
         "unsafe_claim": "Demand is secured.",
-        "evidence_required": "Redacted customer evidence with volume, term, pricing logic, budget owner, and binding status.",
+        "evidence_required": (
+            "Redacted customer evidence with volume, term, pricing logic, budget owner, and binding status."
+        ),
         "owner": "Commercial / CFO",
     },
     {
@@ -552,19 +556,31 @@ WEEKLY_DELTA_RULES = [
         "evidence_state": "partial",
         "claim_type": "procurement",
         "unsafe_claim": "Procurement is ready for shortlist.",
-        "evidence_required": "Comparable proposal matrix, TCO, delivery terms, warranties, service model, and restriction review.",
+        "evidence_required": (
+            "Comparable proposal matrix, TCO, delivery terms, warranties, service model, and restriction review."
+        ),
         "owner": "Procurement / CTO",
     },
     {
         "id": "partner_jv",
         "workstream": "Vendor / partner diligence",
-        "keywords": ["partner", "jv", "joint venture", "localization", "lower capex", "cheaper", "cost reduction"],
+        "keywords": [
+            "partner",
+            "jv",
+            "joint venture",
+            "localization",
+            "lower capex",
+            "cheaper",
+            "cost reduction",
+        ],
         "proves": "A partner route or alternative structure was introduced.",
         "does_not_prove": "Deliverability, customer commitments, economics, references, or restriction clearance.",
         "evidence_state": "new weak evidence",
         "claim_type": "partner-diligence",
         "unsafe_claim": "The partner route improves economics or reduces CAPEX.",
-        "evidence_required": "Written offer, scope, exclusions, references, customer proof, TCO comparison, and restriction assumptions.",
+        "evidence_required": (
+            "Written offer, scope, exclusions, references, customer proof, TCO comparison, and restriction assumptions."
+        ),
         "owner": "PMO / procurement",
     },
     {
@@ -576,19 +592,30 @@ WEEKLY_DELTA_RULES = [
         "evidence_state": "unresolved",
         "claim_type": "tax-customs",
         "unsafe_claim": "Tax or customs treatment improves economics.",
-        "evidence_required": "Adviser-reviewed memo or official-source-backed applicability analysis plus model sensitivity.",
+        "evidence_required": (
+            "Adviser-reviewed memo or official-source-backed applicability analysis plus model sensitivity."
+        ),
         "owner": "Tax / legal",
     },
     {
         "id": "authority_governance",
         "workstream": "Governance / public authority",
-        "keywords": ["public authority", "public-authority", "ministry", "government", "resolution", "regulator"],
+        "keywords": [
+            "public authority",
+            "public-authority",
+            "ministry",
+            "government",
+            "resolution",
+            "regulator",
+        ],
         "proves": "Governance or public-authority engagement is active.",
         "does_not_prove": "Approved framework, final mandate, or resolved regulatory position.",
         "evidence_state": "activity-only",
         "claim_type": "governance",
         "unsafe_claim": "Public-authority support is resolved.",
-        "evidence_required": "Approved decision log, final comments, signed mandate, or source-backed position.",
+        "evidence_required": (
+            "Approved decision log, final comments, signed mandate, or source-backed position."
+        ),
         "owner": "PMO / legal",
     },
     {
@@ -600,7 +627,9 @@ WEEKLY_DELTA_RULES = [
         "evidence_state": "partial",
         "claim_type": "risk",
         "unsafe_claim": "Project risks are mitigated.",
-        "evidence_required": "Owner, trigger, mitigation, deadline, contingency, and evidence required for each material risk.",
+        "evidence_required": (
+            "Owner, trigger, mitigation, deadline, contingency, and evidence required for each material risk."
+        ),
         "owner": "PMO / risk owner",
     },
     {
@@ -612,7 +641,9 @@ WEEKLY_DELTA_RULES = [
         "evidence_state": "decision-pressure",
         "claim_type": "decision-readiness",
         "unsafe_claim": "The project is ready for committee or FID approval.",
-        "evidence_required": "Completed owner-action table, source pack, unresolved-blocker list, and unsafe-claims review.",
+        "evidence_required": (
+            "Completed owner-action table, source pack, unresolved-blocker list, and unsafe-claims review."
+        ),
         "owner": "PMO / committee secretary",
     },
 ]
@@ -649,7 +680,9 @@ def _weekly_delta_bucket(matched_rule_ids: set[str], missing_required_sources: l
         return "unclear_due_to_missing_evidence", "escalate_before_committee"
     if "committee_readiness" in matched_rule_ids:
         return "unclear_due_to_missing_evidence", "escalate_before_committee"
-    if "vendor_procurement" in matched_rule_ids and ("customer_interest" in matched_rule_ids or "partner_jv" in matched_rule_ids):
+    if "vendor_procurement" in matched_rule_ids and (
+        "customer_interest" in matched_rule_ids or "partner_jv" in matched_rule_ids
+    ):
         return "improved", "escalate_before_RFP_shortlist"
     if missing_required_sources:
         return "unchanged", "not_decision_ready"
@@ -705,7 +738,15 @@ def _render_weekly_delta_markdown(payload: dict) -> str:
                 ]
                 for claim in claims
             ]
-            or [["No claim candidates detected.", "unknown", "status text", "manual review required", "not assessable"]],
+            or [
+                [
+                    "No claim candidates detected.",
+                    "unknown",
+                    "status text",
+                    "manual review required",
+                    "not assessable",
+                ]
+            ],
         ),
         "",
         "## Unsafe-To-Repeat Claims",
@@ -723,7 +764,10 @@ def _render_weekly_delta_markdown(payload: dict) -> str:
         "",
         table(
             ["Priority", "Owner", "Action", "Evidence output expected"],
-            [[item["priority"], item["owner"], item["action"], item["evidence_output_expected"]] for item in actions],
+            [
+                [item["priority"], item["owner"], item["action"], item["evidence_output_expected"]]
+                for item in actions
+            ],
         ),
         "",
         "## Source-Plan Gaps",
@@ -740,7 +784,8 @@ def _render_weekly_delta_markdown(payload: dict) -> str:
             "",
             "- Deterministic pass: keyword-based status-to-evidence conversion, not full semantic analysis.",
             "- Use this as a reviewer scaffold before committee, lender, RFP, or FID decisions.",
-            "- Replace aliases and source IDs only inside private workflows; public examples must remain synthetic or redacted.",
+            "- Replace aliases and source IDs only inside private workflows; "
+            "public examples must remain synthetic or redacted.",
         ]
     )
     return "\n".join(parts)
@@ -821,7 +866,8 @@ def weekly_status_delta(
         {
             detected_source_terms[rule_id]
             for rule_id in matched_rule_ids
-            if rule_id in detected_source_terms and detected_source_terms[rule_id] in (plan.get("must_check", []) or [])
+            if rule_id in detected_source_terms
+            and detected_source_terms[rule_id] in (plan.get("must_check", []) or [])
         }
     )
     missing_required = [source for source in (plan.get("must_check", []) or []) if source not in covered_required]
@@ -833,7 +879,9 @@ def weekly_status_delta(
             continue
         owner_actions.append(
             {
-                "priority": "P0" if rule["id"] in {"customer_interest", "tax_customs", "committee_readiness"} else "P1",
+                "priority": (
+                    "P0" if rule["id"] in {"customer_interest", "tax_customs", "committee_readiness"} else "P1"
+                ),
                 "owner": rule["owner"],
                 "action": f"Convert {rule['workstream']} status into source-backed evidence.",
                 "evidence_output_expected": rule["evidence_required"],
@@ -845,7 +893,9 @@ def weekly_status_delta(
                 "priority": "P0",
                 "owner": "PMO",
                 "action": "Reformat the status note with explicit workstreams, source IDs, and owner actions.",
-                "evidence_output_expected": "Redacted source pack with claim, source, support level, evidence gap, and owner.",
+                "evidence_output_expected": (
+                    "Redacted source pack with claim, source, support level, evidence gap, and owner."
+                ),
             }
         )
 
