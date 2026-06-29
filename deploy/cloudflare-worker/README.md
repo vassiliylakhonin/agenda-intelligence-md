@@ -4,7 +4,7 @@ Free hosted A2A/JSON-RPC discovery and lightweight triage wrapper for Agenda Int
 
 This Worker is intentionally small:
 
-- serves a public Agent Card at `/.well-known/agent-card.json`;
+- serves public discovery documents at `/.well-known/agent-card.json`, `/.well-known/ai-catalog.json`, `/.well-known/mcp/server-card.json`, and `/.well-known/did.json`;
 - responds to JSON-RPC `message/send` and `tasks/send`;
 - returns a sanctions/policy signal screen, source-planning guidance, quality gates, routing metadata, and install instructions for the stdio MCP server;
 - serves a human-readable HTML landing page at `GET /` for browser visitors (clients with `Accept: text/html`), JSON for everything else;
@@ -20,6 +20,10 @@ This Worker is intentionally small:
 | GET | `/health` | Always JSON | Backward-compatible health check for scripts |
 | GET | `/status` | Always JSON | Status info for uptime monitors; includes version + boundary flags |
 | GET | `/.well-known/agent-card.json` | Always JSON | A2A agent card |
+| GET | `/.well-known/ai-catalog.json` | Always JSON | Agentic resource discovery catalog |
+| GET | `/.well-known/mcp/server-card.json` | Always JSON | MCP server card for the installable stdio package |
+| GET | `/.well-known/mcp-server.json` | Always JSON | Legacy MCP server-card alias |
+| GET | `/.well-known/did.json` | Always JSON | DID document linking AI catalog, A2A card, and MCP card |
 | GET | `/stats` | JSON (requires `x-stats-token`) | Private usage analytics |
 | POST | `/message/send`, `/` | JSON-RPC 2.0 | A2A `message/send` |
 

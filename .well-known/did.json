@@ -1,0 +1,23 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1"
+  ],
+  "id": "did:web:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev",
+  "service": [
+    {
+      "id": "did:web:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev#ai-catalog",
+      "type": "AICatalog",
+      "serviceEndpoint": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json"
+    },
+    {
+      "id": "did:web:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev#a2a",
+      "type": "A2AAgentCard",
+      "serviceEndpoint": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json"
+    },
+    {
+      "id": "did:web:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev#mcp",
+      "type": "MCPServer",
+      "serviceEndpoint": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/mcp/server-card.json"
+    }
+  ]
+}

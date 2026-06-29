@@ -75,6 +75,7 @@ const OKF_BUNDLE_URL = `${REPOSITORY_URL}/blob/main/okf/index.md`;
 const EVIDENCE_READINESS_PACK_URL = `${REPOSITORY_URL}/blob/main/docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md`;
 const SCHEMAS_URL = `${REPOSITORY_URL}/tree/main/schemas/v1`;
 const SOURCE_POLICY_URL = `${REPOSITORY_URL}/blob/main/SOURCE_POLICY.md`;
+const DISCOVERY_UPDATED_AT = "2026-06-29";
 
 const CA_CASPIAN_TERMS = [
   "central asia",
@@ -562,9 +563,18 @@ function originFromRequest(request) {
   return `${url.protocol}//${url.host}`;
 }
 
+function didIdentifierFromOrigin(origin) {
+  return `did:web:${new URL(origin).host}`;
+}
+
 function aiCatalogHeaders(request) {
+  const origin = originFromRequest(request);
   return {
-    Link: `<${originFromRequest(request)}/.well-known/ai-catalog.json>; rel="ai-catalog"`
+    Link: [
+      `<${origin}/.well-known/ai-catalog.json>; rel="ai-catalog"`,
+      `<${origin}/.well-known/mcp/server-card.json>; rel="mcp-server-card"`,
+      `<${origin}/.well-known/did.json>; rel="identity"`
+    ].join(", ")
   };
 }
 
@@ -909,135 +919,227 @@ function agentCard(request, env = {}) {
 
 function aiCatalog(request, env = {}) {
   const origin = originFromRequest(request);
+  const host = new URL(origin).host;
   const card = agentCard(request, env);
   return {
-    schemaVersion: "agentic-resource-discovery.draft",
-    name: `${card.name} agentic resource catalog`,
-    description:
-      "Discovery catalog for Agenda Intelligence MD resources: A2A wrapper, MCP package, OKF knowledge bundle, evidence-readiness profile pack, schemas, and source-policy artifacts. Visibility in this catalog is not buyer traction or product-market-fit evidence.",
-    hostIdentifier: `did:web:${new URL(origin).host}`,
-    catalogUrl: `${origin}/.well-known/ai-catalog.json`,
-    provider: {
-      name: "Vassiliy Lakhonin",
-      url: "https://vassiliylakhonin.github.io/"
+    specVersion: "1.0",
+    host: {
+      displayName: card.name,
+      identifier: didIdentifierFromOrigin(origin),
+      documentationUrl: DOCS_URL
     },
-    repository: REPOSITORY_URL,
-    package: PACKAGE_URL,
+    displayName: `${card.name} AI resource catalog`,
+    description:
+      "Discovery catalog for Agenda Intelligence MD resources: A2A wrapper, MCP server card, OKF knowledge bundle, evidence-readiness profile pack, schemas, and source-policy artifacts. Visibility in this catalog is not buyer traction or product-market-fit evidence.",
+    url: `${origin}/.well-known/ai-catalog.json`,
     version: VERSION,
-    updated: "2026-06-29",
-    resources: [
+    updatedAt: DISCOVERY_UPDATED_AT,
+    entries: [
       {
-        id: "agenda-intelligence-a2a-agent",
-        type: "a2a-agent-card",
-        name: card.name,
-        description: card.description,
+        identifier: `urn:ai:${host}:agent:agenda-intelligence-md-a2a`,
+        displayName: card.name,
+        type: "application/a2a-agent-card+json",
         url: `${origin}/.well-known/agent-card.json`,
-        protocols: ["A2A", "JSON-RPC"],
+        description: card.description,
+        capabilities: ["message/send", "strategic-risk-triage", "source-planning", "evidence-gap-routing"],
+        tags: ["a2a", "json-rpc", "evidence-readiness", "strategic-risk", "human-review"],
         representativeQueries: [
           "screen sanctions and policy risk with explicit evidence gaps",
           "route a strategic-risk question to the right evidence-readiness workflow",
           "find the A2A agent card for Agenda Intelligence MD"
         ],
-        boundaries: card.x_agenda_intelligence?.boundaries || [
-          "No factual-truth verification.",
-          "Human review required before commercial action."
-        ]
+        version: VERSION,
+        updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        id: "agenda-intelligence-jsonrpc-endpoint",
-        type: "a2a-jsonrpc-endpoint",
-        name: "Agenda Intelligence MD message/send endpoint",
-        description: "JSON-RPC endpoint for lightweight hosted A2A triage and routing responses.",
-        url: `${origin}/message/send`,
-        protocols: ["JSON-RPC"],
-        representativeQueries: [
-          "send a strategic risk triage request to Agenda Intelligence MD",
-          "get evidence gaps and source planning for a policy-risk question"
-        ]
-      },
-      {
-        id: "agenda-intelligence-mcp-package",
-        type: "mcp-server-package",
-        name: "Agenda Intelligence MD MCP server",
+        identifier: `urn:ai:${host}:server:agenda-intelligence-md-mcp`,
+        displayName: "Agenda Intelligence MD MCP server",
+        type: "application/mcp-server-card+json",
+        url: `${origin}/.well-known/mcp/server-card.json`,
         description:
           "Installable stdio MCP server exposing schema validation, evidence audit, source coverage, quote checks, and analysis prompt assembly.",
-        url: PACKAGE_URL,
-        documentationUrl: DOCS_URL,
-        protocols: ["MCP", "stdio"],
+        capabilities: ["validate_memo", "audit_claims", "source_coverage", "verify_quotes", "analyze"],
+        tags: ["mcp", "stdio", "claim-audit", "source-coverage", "schema-validation"],
         representativeQueries: [
           "install an MCP server for claim evidence audit",
           "validate an agenda memo against a JSON schema",
           "check source coverage for a sanctions evidence pack"
-        ]
+        ],
+        version: VERSION,
+        updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        id: "agenda-intelligence-okf-bundle",
-        type: "knowledge-catalog",
-        name: "Agenda Intelligence MD OKF-style knowledge bundle",
+        identifier: `urn:ai:${host}:endpoint:message-send`,
+        displayName: "Agenda Intelligence MD message/send endpoint",
+        type: "application/jsonrpc+json",
+        url: `${origin}/message/send`,
+        description: "JSON-RPC endpoint for lightweight hosted A2A triage and routing responses.",
+        capabilities: ["message/send", "risk-triage", "evidence-gaps", "watch-next-indicators"],
+        tags: ["json-rpc", "a2a-endpoint", "hosted-worker"],
+        representativeQueries: [
+          "send a strategic risk triage request to Agenda Intelligence MD",
+          "get evidence gaps and source planning for a policy-risk question"
+        ],
+        version: VERSION,
+        updatedAt: DISCOVERY_UPDATED_AT
+      },
+      {
+        identifier: `urn:ai:${host}:knowledge:okf-bundle`,
+        displayName: "Agenda Intelligence MD OKF-style knowledge bundle",
+        type: "text/markdown",
+        url: OKF_BUNDLE_URL,
         description:
           "Compact Markdown/YAML concept bundle for retrieval agents: evidence-readiness, human-review packets, evidence packs, claim audits, source policy, market gate, and repo stack.",
-        url: OKF_BUNDLE_URL,
-        protocols: ["Markdown", "OKF-style"],
+        capabilities: ["concept-retrieval", "evidence-readiness-definitions", "human-review-packet"],
+        tags: ["okf", "markdown", "knowledge-bundle", "evidence-readiness"],
         representativeQueries: [
           "what is Agenda Intelligence MD evidence-readiness",
           "explain human-review packet and claim audit concepts",
           "understand the Agenda Intelligence repository stack"
-        ]
+        ],
+        version: VERSION,
+        updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        id: "ai-vendor-evidence-readiness-pack",
-        type: "evidence-readiness-artifact",
-        name: "AI Vendor Evidence-Readiness Profile Pack",
+        identifier: `urn:ai:${host}:artifact:ai-vendor-evidence-readiness-pack`,
+        displayName: "AI Vendor Evidence-Readiness Profile Pack",
+        type: "text/markdown",
+        url: EVIDENCE_READINESS_PACK_URL,
         description:
           "Build-to-learn public discovery pack for regulated procurement and AI governance review. Not a product-market-fit claim.",
-        url: EVIDENCE_READINESS_PACK_URL,
-        protocols: ["Markdown"],
+        capabilities: ["vendor-evidence-readiness", "claim-audit", "human-review-routing"],
+        tags: ["ai-procurement", "ai-governance", "evidence-readiness", "build-to-learn"],
         representativeQueries: [
           "AI vendor evidence-readiness profile regulated procurement",
           "build a human-review packet from an AI governance RFP",
           "what evidence should an AI governance platform vendor provide for procurement review"
         ],
-        successSignals: [
-          "redacted file",
-          "second profile request",
-          "paid concierge review interest",
-          "budget-owner intro",
-          "concrete workflow correction"
-        ]
+        version: VERSION,
+        updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        id: "agenda-intelligence-schemas",
-        type: "schema-collection",
-        name: "Agenda Intelligence MD JSON schemas",
+        identifier: `urn:ai:${host}:schema:agenda-intelligence-v1`,
+        displayName: "Agenda Intelligence MD JSON schemas",
+        type: "application/schema+json",
+        url: SCHEMAS_URL,
         description:
           "Schema contracts for agenda requests, memos, briefs, evidence packs, evidence audits, and vertical worker requests/responses.",
-        url: SCHEMAS_URL,
-        protocols: ["JSON Schema"],
+        capabilities: ["json-schema", "contract-validation", "memo-validation", "evidence-pack-validation"],
+        tags: ["json-schema", "quality-gate", "contracts"],
         representativeQueries: [
           "find the evidence pack schema for Agenda Intelligence MD",
           "find the evidence audit JSON schema",
           "validate a strategic-risk memo contract"
-        ]
+        ],
+        version: VERSION,
+        updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        id: "agenda-intelligence-source-policy",
-        type: "source-policy",
-        name: "Agenda Intelligence MD source policy",
+        identifier: `urn:ai:${host}:policy:source-policy`,
+        displayName: "Agenda Intelligence MD source policy",
+        type: "text/markdown",
+        url: SOURCE_POLICY_URL,
         description:
           "Source planning, coverage, quote-presence checks, provenance tags, and non-verification boundaries.",
-        url: SOURCE_POLICY_URL,
-        protocols: ["Markdown"],
+        capabilities: ["source-planning", "source-coverage", "quote-presence", "provenance-discipline"],
+        tags: ["source-policy", "provenance", "non-verification-boundaries"],
         representativeQueries: [
           "how does Agenda Intelligence MD handle source coverage",
           "does Agenda Intelligence MD verify factual truth",
           "what source categories are required for evidence readiness"
-        ]
+        ],
+        version: VERSION,
+        updatedAt: DISCOVERY_UPDATED_AT
       }
     ],
     boundaries: [
       "This catalog advertises resources, not customer traction.",
       "Agenda Intelligence MD routes evidence gaps to humans; it does not approve vendors or make autonomous decisions.",
       "Hosted workers are portfolio/demo surfaces unless buyer behavior proves demand."
+    ]
+  };
+}
+
+function mcpTool(name, description) {
+  return {
+    name,
+    description,
+    inputSchema: {
+      type: "object",
+      additionalProperties: true
+    }
+  };
+}
+
+function mcpServerCard(request, env = {}) {
+  const origin = originFromRequest(request);
+  const card = agentCard(request, env);
+  return {
+    serverInfo: {
+      name: "Agenda Intelligence MD MCP Server",
+      version: VERSION
+    },
+    description:
+      "Installable stdio MCP server for evidence-readiness workflows: schema validation, claim audit, source coverage, quote-presence checks, and analysis prompt assembly. It routes evidence to human review; it does not provide legal, compliance, sanctions, financial, procurement, or factual-truth determinations.",
+    transport: {
+      type: "stdio",
+      command: "agenda-intelligence-mcp",
+      install: "pip install agenda-intelligence-md"
+    },
+    documentationUrl: DOCS_URL,
+    package: PACKAGE_URL,
+    repository: REPOSITORY_URL,
+    related: {
+      ai_catalog: `${origin}/.well-known/ai-catalog.json`,
+      agent_card: `${origin}/.well-known/agent-card.json`,
+      did: `${origin}/.well-known/did.json`,
+      source_policy: SOURCE_POLICY_URL,
+      okf_bundle: OKF_BUNDLE_URL
+    },
+    capabilities: {
+      tools: true,
+      resources: false,
+      prompts: false
+    },
+    tools: [
+      mcpTool("validate_memo", "Validate a strategic-risk memo against the agenda memo schema."),
+      mcpTool("audit_claims", "Audit claim-level evidence links, support levels, and unsupported claims."),
+      mcpTool("source_coverage", "Check whether an evidence pack covers required source categories."),
+      mcpTool("verify_quotes", "Check whether quoted fragments appear in caller-supplied source text."),
+      mcpTool("analyze", "Assemble an evidence-disciplined analysis prompt for human review."),
+      mcpTool("validate_evidence", "Validate an evidence pack contract before handoff."),
+      mcpTool("score_output", "Score output readiness against evidence and policy quality gates."),
+      mcpTool("list_source_categories", "List source categories used for coverage planning.")
+    ],
+    boundaries: card.x_agenda_intelligence?.boundaries || [
+      "No factual-truth verification.",
+      "Human review required before commercial action."
+    ]
+  };
+}
+
+function didDocument(request) {
+  const origin = originFromRequest(request);
+  const id = didIdentifierFromOrigin(origin);
+  return {
+    "@context": ["https://www.w3.org/ns/did/v1"],
+    id,
+    service: [
+      {
+        id: `${id}#ai-catalog`,
+        type: "AICatalog",
+        serviceEndpoint: `${origin}/.well-known/ai-catalog.json`
+      },
+      {
+        id: `${id}#a2a`,
+        type: "A2AAgentCard",
+        serviceEndpoint: `${origin}/.well-known/agent-card.json`
+      },
+      {
+        id: `${id}#mcp`,
+        type: "MCPServer",
+        serviceEndpoint: `${origin}/.well-known/mcp/server-card.json`
+      }
     ]
   };
 }
@@ -5105,6 +5207,8 @@ function healthInfo(request, env) {
     profile: agentProfile(request, env),
     ai_catalog: `${origin}/.well-known/ai-catalog.json`,
     agent_card: `${origin}/.well-known/agent-card.json`,
+    mcp_server_card: `${origin}/.well-known/mcp/server-card.json`,
+    did: `${origin}/.well-known/did.json`,
     message_send: `${origin}/message/send`,
     status: `${origin}/status`,
     stats: `${origin}/stats`,
@@ -5128,6 +5232,8 @@ function statusInfo(request, env) {
     a2a_protocol_version: card.protocolVersion,
     ai_catalog_url: `${origin}/.well-known/ai-catalog.json`,
     agent_card_url: `${origin}/.well-known/agent-card.json`,
+    mcp_server_card_url: `${origin}/.well-known/mcp/server-card.json`,
+    did_url: `${origin}/.well-known/did.json`,
     message_send_url: `${origin}/message/send`,
     repository: REPOSITORY_URL,
     package: PACKAGE_URL,
@@ -5171,6 +5277,20 @@ function robotsTxt(request) {
   return [
     "User-agent: *",
     "Allow: /",
+    "Content-Signal: ai-train=no, search=yes, ai-input=yes",
+    "",
+    "User-agent: GPTBot",
+    "Allow: /",
+    "",
+    "User-agent: OAI-SearchBot",
+    "Allow: /",
+    "",
+    "User-agent: ClaudeBot",
+    "Allow: /",
+    "",
+    "User-agent: PerplexityBot",
+    "Allow: /",
+    "",
     `Agentmap: ${origin}/.well-known/ai-catalog.json`
   ].join("\n");
 }
@@ -5316,6 +5436,8 @@ function landingHtml(request, env) {
   <ul class="endpoints">
     <li><span class="label">AI catalog:</span> <a href="${origin}/.well-known/ai-catalog.json">/.well-known/ai-catalog.json</a></li>
     <li><span class="label">Agent card:</span> <a href="${origin}/.well-known/agent-card.json">/.well-known/agent-card.json</a></li>
+    <li><span class="label">MCP card:</span> <a href="${origin}/.well-known/mcp/server-card.json">/.well-known/mcp/server-card.json</a></li>
+    <li><span class="label">DID:</span> <a href="${origin}/.well-known/did.json">/.well-known/did.json</a></li>
     <li><span class="label">JSON-RPC:</span> <code>POST ${origin}/message/send</code></li>
     <li><span class="label">Status:</span> <a href="${origin}/status">/status</a></li>
     <li><span class="label">Health (JSON):</span> <a href="${origin}/health">/health</a></li>
@@ -5360,6 +5482,24 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 
   if (request.method === "GET" && url.pathname === "/.well-known/ai-catalog.json") {
     return jsonResponse(aiCatalog(request, env), 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/mcp/server-card.json" ||
+      url.pathname === "/.well-known/mcp-server.json")
+  ) {
+    return jsonResponse(mcpServerCard(request, env), 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (request.method === "GET" && url.pathname === "/.well-known/did.json") {
+    return jsonResponse(didDocument(request), 200, {
       "cache-control": "public, max-age=3600",
       ...aiCatalogHeaders(request)
     });
@@ -5413,9 +5553,11 @@ export {
   dealRiskContractResponseForRequest,
   handleJsonRpc,
   healthInfo,
+  didDocument,
   checkRateLimit,
   isProductionAuthorized,
   isStatsAuthorized,
+  mcpServerCard,
   productionAuthKey,
   rateLimitPerHour,
   landingHtml,

@@ -1,0 +1,99 @@
+{
+  "serverInfo": {
+    "name": "Agenda Intelligence MD MCP Server",
+    "version": "1.1.0"
+  },
+  "description": "Installable stdio MCP server for evidence-readiness workflows: schema validation, claim audit, source coverage, quote-presence checks, and analysis prompt assembly. It routes evidence to human review; it does not provide legal, compliance, sanctions, financial, procurement, or factual-truth determinations.",
+  "transport": {
+    "type": "stdio",
+    "command": "agenda-intelligence-mcp",
+    "install": "pip install agenda-intelligence-md"
+  },
+  "documentationUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/MCP.md",
+  "package": "https://pypi.org/project/agenda-intelligence-md/",
+  "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+  "related": {
+    "ai_catalog": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
+    "agent_card": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+    "did": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/did.json",
+    "source_policy": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/SOURCE_POLICY.md",
+    "okf_bundle": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/okf/index.md"
+  },
+  "capabilities": {
+    "tools": true,
+    "resources": false,
+    "prompts": false
+  },
+  "tools": [
+    {
+      "name": "validate_memo",
+      "description": "Validate a strategic-risk memo against the agenda memo schema.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "audit_claims",
+      "description": "Audit claim-level evidence links, support levels, and unsupported claims.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "source_coverage",
+      "description": "Check whether an evidence pack covers required source categories.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "verify_quotes",
+      "description": "Check whether quoted fragments appear in caller-supplied source text.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "analyze",
+      "description": "Assemble an evidence-disciplined analysis prompt for human review.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "validate_evidence",
+      "description": "Validate an evidence pack contract before handoff.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "score_output",
+      "description": "Score output readiness against evidence and policy quality gates.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    {
+      "name": "list_source_categories",
+      "description": "List source categories used for coverage planning.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  ],
+  "boundaries": [
+    "No payments or wallet rails.",
+    "No autonomous live source retrieval.",
+    "No factual-truth verification.",
+    "No legal, financial, compliance, investment, or trading advice."
+  ]
+}

@@ -27,6 +27,8 @@ def collect_json_versions(path):
     versions = []
     if "version" in data:
         versions.append((f"{path.name}:version", data["version"]))
+    if isinstance(data.get("serverInfo"), dict) and "version" in data["serverInfo"]:
+        versions.append((f"{path.name}:serverInfo.version", data["serverInfo"]["version"]))
 
     for index, package in enumerate(data.get("packages", [])):
         if isinstance(package, dict) and "version" in package:
@@ -49,6 +51,9 @@ def test_release_version_fields_match_pyproject():
         "server.json",
         ".well-known/agent-card.json",
         ".well-known/ai-catalog.json",
+        ".well-known/did.json",
+        ".well-known/mcp-server.json",
+        ".well-known/mcp/server-card.json",
     ]:
         discovered.extend(collect_json_versions(ROOT / relative_path))
 

@@ -7,12 +7,14 @@ import {
   buildUsageEvent,
   checkRateLimit,
   dealRiskContractResponseForRequest,
+  didDocument,
   handleJsonRpc,
   handleRequest,
   healthInfo,
   isProductionAuthorized,
   isStatsAuthorized,
   landingHtml,
+  mcpServerCard,
   productionAuthKey,
   rateLimitPerHour,
   recordUsageStats,
@@ -219,32 +221,33 @@ test("agent card uses request origin for live endpoints", () => {
 test("AI catalog advertises real agentic resources without traction claims", () => {
   const catalog = aiCatalog(request);
 
-  assert.equal(catalog.schemaVersion, "agentic-resource-discovery.draft");
-  assert.equal(
-    catalog.catalogUrl,
-    "https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json"
-  );
-  assert.equal(catalog.hostIdentifier, "did:web:agenda-intelligence-a2a.example.workers.dev");
+  assert.equal(catalog.specVersion, "1.0");
+  assert.equal(catalog.url, "https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json");
+  assert.equal(catalog.host.identifier, "did:web:agenda-intelligence-a2a.example.workers.dev");
   assert.equal(catalog.version, "1.1.0");
   assert.deepEqual(
-    catalog.resources.map((resource) => resource.id),
+    catalog.entries.map((entry) => entry.identifier),
     [
-      "agenda-intelligence-a2a-agent",
-      "agenda-intelligence-jsonrpc-endpoint",
-      "agenda-intelligence-mcp-package",
-      "agenda-intelligence-okf-bundle",
-      "ai-vendor-evidence-readiness-pack",
-      "agenda-intelligence-schemas",
-      "agenda-intelligence-source-policy"
+      "urn:ai:agenda-intelligence-a2a.example.workers.dev:agent:agenda-intelligence-md-a2a",
+      "urn:ai:agenda-intelligence-a2a.example.workers.dev:server:agenda-intelligence-md-mcp",
+      "urn:ai:agenda-intelligence-a2a.example.workers.dev:endpoint:message-send",
+      "urn:ai:agenda-intelligence-a2a.example.workers.dev:knowledge:okf-bundle",
+      "urn:ai:agenda-intelligence-a2a.example.workers.dev:artifact:ai-vendor-evidence-readiness-pack",
+      "urn:ai:agenda-intelligence-a2a.example.workers.dev:schema:agenda-intelligence-v1",
+      "urn:ai:agenda-intelligence-a2a.example.workers.dev:policy:source-policy"
     ]
   );
   assert.equal(
-    catalog.resources.find((resource) => resource.id === "agenda-intelligence-a2a-agent").url,
+    catalog.entries.find((entry) => entry.type === "application/a2a-agent-card+json").url,
     "https://agenda-intelligence-a2a.example.workers.dev/.well-known/agent-card.json"
   );
+  assert.equal(
+    catalog.entries.find((entry) => entry.type === "application/mcp-server-card+json").url,
+    "https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json"
+  );
   assert.ok(
-    catalog.resources
-      .find((resource) => resource.id === "ai-vendor-evidence-readiness-pack")
+    catalog.entries
+      .find((entry) => entry.identifier.endsWith(":artifact:ai-vendor-evidence-readiness-pack"))
       .representativeQueries.includes("AI vendor evidence-readiness profile regulated procurement")
   );
   assert.ok(catalog.boundaries.includes("This catalog advertises resources, not customer traction."));
@@ -260,10 +263,41 @@ test("AI catalog route returns catalog JSON and discovery Link header", async ()
   assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
   assert.equal(
     response.headers.get("link"),
-    '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json>; rel="ai-catalog"'
+    '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json>; rel="ai-catalog", <https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json>; rel="mcp-server-card", <https://agenda-intelligence-a2a.example.workers.dev/.well-known/did.json>; rel="identity"'
   );
-  assert.equal(body.catalogUrl, "https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json");
-  assert.ok(body.resources.some((resource) => resource.id === "agenda-intelligence-mcp-package"));
+  assert.equal(body.url, "https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json");
+  assert.ok(body.entries.some((entry) => entry.type === "application/mcp-server-card+json"));
+});
+
+test("MCP server card and DID routes advertise installable MCP identity", async () => {
+  const card = mcpServerCard(request);
+  const did = didDocument(request);
+
+  assert.equal(card.serverInfo.name, "Agenda Intelligence MD MCP Server");
+  assert.equal(card.transport.type, "stdio");
+  assert.equal(card.transport.command, "agenda-intelligence-mcp");
+  assert.ok(card.tools.some((tool) => tool.name === "audit_claims"));
+  assert.equal(did.id, "did:web:agenda-intelligence-a2a.example.workers.dev");
+  assert.ok(did.service.some((service) => service.type === "MCPServer"));
+
+  const cardResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json")
+  );
+  const cardBody = await cardResponse.json();
+  assert.equal(cardResponse.status, 200);
+  assert.equal(cardBody.transport.command, "agenda-intelligence-mcp");
+
+  const legacyResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp-server.json")
+  );
+  assert.equal(legacyResponse.status, 200);
+
+  const didResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/did.json")
+  );
+  const didBody = await didResponse.json();
+  assert.equal(didResponse.status, 200);
+  assert.equal(didBody.service.find((service) => service.type === "AICatalog").serviceEndpoint, did.service[0].serviceEndpoint);
 });
 
 test("landing HTML advertises AI catalog endpoint and Link header", async () => {
@@ -277,9 +311,11 @@ test("landing HTML advertises AI catalog endpoint and Link header", async () => 
   assert.equal(response.status, 200);
   assert.equal(
     response.headers.get("link"),
-    '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json>; rel="ai-catalog"'
+    '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json>; rel="ai-catalog", <https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json>; rel="mcp-server-card", <https://agenda-intelligence-a2a.example.workers.dev/.well-known/did.json>; rel="identity"'
   );
   assert.match(body, /AI catalog:/);
+  assert.match(body, /MCP card:/);
+  assert.match(body, /DID:/);
   assert.match(body, /<link rel="ai-catalog" href="https:\/\/agenda-intelligence-a2a\.example\.workers\.dev\/\.well-known\/ai-catalog\.json">/);
   assert.ok(body.includes("/.well-known/ai-catalog.json"));
 });
@@ -287,6 +323,8 @@ test("landing HTML advertises AI catalog endpoint and Link header", async () => 
 test("robots.txt advertises Agentmap for the AI catalog", async () => {
   const body = robotsTxt(request);
   assert.match(body, /User-agent: \*/);
+  assert.match(body, /Content-Signal: ai-train=no, search=yes, ai-input=yes/);
+  assert.match(body, /User-agent: GPTBot/);
   assert.match(body, /Agentmap: https:\/\/agenda-intelligence-a2a\.example\.workers\.dev\/\.well-known\/ai-catalog\.json/);
 
   const response = await handleRequest(
@@ -1497,6 +1535,8 @@ test("landingHtml is profile-aware for kazakhstan worker", () => {
 test("healthInfo exposes status URL alongside agent_card and message_send", () => {
   const info = healthInfo(request, {});
   assert.ok(info.agent_card.endsWith("/.well-known/agent-card.json"));
+  assert.ok(info.mcp_server_card.endsWith("/.well-known/mcp/server-card.json"));
+  assert.ok(info.did.endsWith("/.well-known/did.json"));
   assert.ok(info.message_send.endsWith("/message/send"));
   assert.ok(info.status.endsWith("/status"));
 });
