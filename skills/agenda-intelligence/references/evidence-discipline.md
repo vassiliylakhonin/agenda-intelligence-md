@@ -56,7 +56,7 @@ The `basis` enum in `agenda-memo.schema.json` (`fact` / `assessment` / `assumpti
 - `basis=assumption` → `[analyst-judgment]`
 - `basis=unknown` → no provenance tag (no claim is being made)
 
-See [docs/adr/0010-basis-and-provenance-tags-are-orthogonal.md](../../../docs/adr/0010-basis-and-provenance-tags-are-orthogonal.md).
+See [ADR 0010 — basis and provenance tags are orthogonal](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/adr/0010-basis-and-provenance-tags-are-orthogonal.md).
 
 ## Source discipline
 

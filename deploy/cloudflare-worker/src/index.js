@@ -24,60 +24,48 @@ import {
 
 import { buildJwks, maybeSignCard } from "./jws.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "./okf_content.js";
+import {
+  A2A_EXAMPLES_URL,
+  AGENTIC_INTERACTION_TRUST_DOCS_URL,
+  AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL,
+  AGENTIC_INTERACTION_TRUST_RESPONSE_SCHEMA_URL,
+  AGENTIC_INTERACTION_TRUST_SOURCE_TAXONOMY_URL,
+  CANONICAL_INPUT_MODE,
+  CIS_SECONDARY_SANCTIONS_ADR_URL,
+  CIS_SECONDARY_SANCTIONS_DOCS_URL,
+  CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL,
+  CIS_SECONDARY_SANCTIONS_RESPONSE_SCHEMA_URL,
+  CIS_SECONDARY_SANCTIONS_SOURCE_TAXONOMY_URL,
+  CONFIDENTIAL_PROJECT_ROOM_DOCS_URL,
+  CONFIDENTIAL_PROJECT_ROOM_SCHEMA_URL,
+  DISCOVERY_UPDATED_AT,
+  DOCS_URL,
+  GULF_MARITIME_DOCS_URL,
+  GULF_MARITIME_REQUEST_SCHEMA_URL,
+  GULF_MARITIME_RESPONSE_SCHEMA_URL,
+  GULF_MARITIME_SOURCE_TAXONOMY_URL,
+  MARKET_ENTRY_DOCS_URL,
+  MARKET_ENTRY_REQUEST_SCHEMA_URL,
+  MARKET_ENTRY_RESPONSE_SCHEMA_URL,
+  MARKET_ENTRY_SOURCE_TAXONOMY_URL,
+  MIDDLE_CORRIDOR_AGENT_CONTRACT_VERSION,
+  MIDDLE_CORRIDOR_DOCS_URL,
+  MIDDLE_CORRIDOR_REQUEST_SCHEMA_URL,
+  MIDDLE_CORRIDOR_RESPONSE_SCHEMA_URL,
+  MIDDLE_CORRIDOR_SOURCE_TAXONOMY_URL,
+  MIDDLE_CORRIDOR_SUPPORTED_INTENTS,
+  OKF_BUNDLE_REPO_URL,
+  PACKAGE_URL,
+  PROFILE_LIVE_RETRIEVAL,
+  REPOSITORY_URL,
+  SCHEMAS_URL,
+  SOURCE_POLICY_URL,
+  SUPPORT_CONTACT_EMAIL,
+  SUPPORT_HOURS_LOCAL,
+  SUPPORT_TIMEZONE,
+  VERSION
+} from "./profiles.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
-
-const SUPPORT_CONTACT_EMAIL = "vassiliy.lakhonin@gmail.com";
-const SUPPORT_HOURS_LOCAL = "Mon–Fri 09:00–18:00 Asia/Almaty (UTC+5)";
-const SUPPORT_TIMEZONE = "Asia/Almaty";
-
-const VERSION = "1.1.0";
-// Canonical input mode shared by the per-profile product_contract blocks and the
-// top-level x_agent_contract discoverability extension. Single source of truth so
-// the two never drift.
-const CANONICAL_INPUT_MODE = "structured_json";
-// Versioned independently of the package/card VERSION: this is the discoverability
-// contract surfaced to catalogs and agents, not a package release.
-const MIDDLE_CORRIDOR_AGENT_CONTRACT_VERSION = "1.0";
-// Intent strings the Middle Corridor endpoint can actually emit. Mirrors
-// classifyIntent / classifyIntentForProfile / triageForText; verify-agent-card.js
-// asserts the primary intent so this list cannot silently drift from routing.
-const MIDDLE_CORRIDOR_SUPPORTED_INTENTS = [
-  "middle_corridor_deal_risk_contract",
-  "deal_risk_gate",
-  "sanctions_policy_signal_screen",
-  "source_coverage",
-  "evidence_audit",
-  "memo_validation",
-  "signal_monitoring",
-  "strategic_risk_triage"
-];
-const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
-const DOCS_URL = `${REPOSITORY_URL}/blob/main/MCP.md`;
-const MIDDLE_CORRIDOR_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/kazakhstan-middle-corridor.md`;
-const MIDDLE_CORRIDOR_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/middle-corridor-deal-risk-request.schema.json`;
-const MIDDLE_CORRIDOR_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/middle-corridor-deal-risk-response.schema.json`;
-const MIDDLE_CORRIDOR_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/middle-corridor-deal-risk.json`;
-const CIS_SECONDARY_SANCTIONS_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/cis-secondary-sanctions.md`;
-const CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/cis-secondary-sanctions-request.schema.json`;
-const CIS_SECONDARY_SANCTIONS_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/cis-secondary-sanctions-response.schema.json`;
-const CIS_SECONDARY_SANCTIONS_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/cis-secondary-sanctions.json`;
-const CIS_SECONDARY_SANCTIONS_ADR_URL = `${REPOSITORY_URL}/blob/main/docs/adr/0014-per-profile-live-retrieval.md`;
-const AGENTIC_INTERACTION_TRUST_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/agentic-interaction-trust.md`;
-const AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agentic-interaction-trust-request.schema.json`;
-const AGENTIC_INTERACTION_TRUST_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agentic-interaction-trust-response.schema.json`;
-const AGENTIC_INTERACTION_TRUST_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/agentic-interaction-trust.json`;
-const GULF_MARITIME_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/gulf-maritime-exposure.md`;
-const GULF_MARITIME_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/gulf-maritime-exposure-request.schema.json`;
-const GULF_MARITIME_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/gulf-maritime-exposure-response.schema.json`;
-const GULF_MARITIME_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/gulf-maritime-exposure.json`;
-const A2A_EXAMPLES_URL = `${REPOSITORY_URL}/tree/main/examples/a2a`;
-const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";
-const OKF_BUNDLE_REPO_URL = `${REPOSITORY_URL}/blob/main/okf/index.md`;
-const CONFIDENTIAL_PROJECT_ROOM_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/trust/confidential-project-workflow.md`;
-const CONFIDENTIAL_PROJECT_ROOM_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/confidential-project-room-profile.schema.json`;
-const SCHEMAS_URL = `${REPOSITORY_URL}/tree/main/schemas/v1`;
-const SOURCE_POLICY_URL = `${REPOSITORY_URL}/blob/main/SOURCE_POLICY.md`;
-const DISCOVERY_UPDATED_AT = "2026-06-29";
 
 const CA_CASPIAN_TERMS = [
   "central asia",
@@ -434,53 +422,6 @@ const GULF_MARITIME_HELPFUL_CONTEXT = [
   "cargo_or_bl_evidence",
   "adverse_media_evidence"
 ];
-
-// Per-profile live retrieval CAPABILITY declarations. Actual runtime
-// activation is env-derived via isLiveRetrievalActive(profile, env). Per the
-// 2026-05-27 update to ADR 0014, multiple upstreams can be configured per
-// profile and the dispatcher picks the first active one (free options before
-// paid). For `cis_secondary_sanctions` the order is:
-//   1. Watchman self-host (Apache-2.0, $0 if hosted on a free-tier container)
-//      — active when WATCHMAN_URL is set
-//   2. OpenSanctions hosted API (paid €0.10/call) — active when
-//      OPENSANCTIONS_API_KEY is set
-// If neither is configured, the profile degrades to user-supplied evidence
-// only and emits `live_retrieval_status: disabled` with a deferral_note.
-const PROFILE_LIVE_RETRIEVAL = {
-  agenda: { capability_declared: false, upstream_options: [] },
-  kazakhstan: { capability_declared: false, upstream_options: [] },
-  agentic_interaction_trust: { capability_declared: false, upstream_options: [] },
-  gulf_maritime_exposure: { capability_declared: false, upstream_options: [] },
-  cis_secondary_sanctions: {
-    capability_declared: true,
-    upstream_options: [
-      {
-        name: "Snapshot",
-        license: SNAPSHOT_LICENSE,
-        homepage: SNAPSHOT_PROJECT_URL,
-        activation_env_var: "SNAPSHOT_INDEX_URL",
-        disable_env_var: "SNAPSHOT_DISABLED",
-        cost_model: "static public-list snapshot fetched by the worker; $0, no external host"
-      },
-      {
-        name: "Watchman",
-        license: WATCHMAN_LICENSE,
-        homepage: WATCHMAN_PROJECT_URL,
-        activation_env_var: "WATCHMAN_URL",
-        disable_env_var: "WATCHMAN_DISABLED",
-        cost_model: "self-hosted (Apache-2.0); $0/month on free-tier container"
-      },
-      {
-        name: "OpenSanctions",
-        license: OPENSANCTIONS_LICENSE,
-        homepage: OPENSANCTIONS_HOMEPAGE,
-        activation_env_var: "OPENSANCTIONS_API_KEY",
-        disable_env_var: "OPENSANCTIONS_DISABLED",
-        cost_model: "paid €0.10/call (30-day business-email trial)"
-      }
-    ]
-  }
-};
 
 function isUpstreamOptionActive(option, env = {}) {
   if (!option) return false;
@@ -3080,11 +3021,6 @@ function a2aResultForGulfMaritimeExposure(params) {
 // run_provenance is intentionally omitted here (deferred, like the other
 // workers' worker-side provenance); the response schema makes it optional.
 // ---------------------------------------------------------------------------
-
-const MARKET_ENTRY_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/kazakhstan-market-entry-readiness.md`;
-const MARKET_ENTRY_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/market-entry-readiness-request.schema.json`;
-const MARKET_ENTRY_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/market-entry-readiness-response.schema.json`;
-const MARKET_ENTRY_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/kazakhstan-market-entry-readiness.json`;
 
 const MARKET_ENTRY_BOUNDARY_NOTICE =
   "Internal evidence triage only. Not legal, compliance, customs, tax, financial, investment, " +
@@ -5883,7 +5819,7 @@ function statusInfo(request, env) {
     };
     if (!liveRetrievalActive) {
       status.live_retrieval.deferral_note =
-        "Per the 2026-05-27 update to ADR 0014, live retrieval upstreams are declared but not activated. Set WATCHMAN_URL (free self-host of moov-io/watchman) or OPENSANCTIONS_API_KEY (paid €0.10/call) to activate. Profile currently operates on user-supplied evidence only.";
+        "Per ADR 0014 / ADR 0020, live retrieval upstreams are declared but not activated in this environment. Set SNAPSHOT_INDEX_URL ($0 static snapshot), WATCHMAN_URL (free self-host of moov-io/watchman), or OPENSANCTIONS_API_KEY (paid €0.10/call) to activate. Profile currently operates on user-supplied evidence only.";
     }
   }
   return status;

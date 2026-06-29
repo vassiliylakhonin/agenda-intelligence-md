@@ -9,7 +9,7 @@ It bundles four things in one repository:
 1. **Core package + service layer** — pure Python functions (`audit_claims`, `source_coverage`, `score_output`, `middle_corridor_deal_risk`, etc.) in [src/agenda_intelligence/services.py](src/agenda_intelligence/services.py). Vendor-neutral, no transport, no marketplace, no live retrieval.
 2. **MCP server** — exposes `analyze`, `validate_memo`, `list_signals`, `get_signal`, and `deep_dive` (stub) over stdio for desktop assistants. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography to the relevant regional reference, assembles a system prompt from the in-repo Global Think Tank Analyst method plus regional lenses, optionally calls the Anthropic API when `ANTHROPIC_API_KEY` is set, and returns a memo validated against `agenda-memo.schema.json`.
 3. **HTTP API shell** — thin transport over the service layer ([src/agenda_intelligence/http_api.py](src/agenda_intelligence/http_api.py)). Stateless, no auth opinion, no billing. Documented in [docs/deployment/http-api.md](docs/deployment/http-api.md).
-4. **A2A adapter** — routing and protocol layer over the HTTP/service layer ([src/agenda_intelligence/a2a_adapter.py](src/agenda_intelligence/a2a_adapter.py)). Emits A2A-compatible agent cards, accepts `message/send`, converts to service-request shape, returns A2A artifacts. Contract plan in [docs/product/a2a-adapter-plan.md](docs/product/a2a-adapter-plan.md). Live deployment baseline under [deploy/cloudflare-worker/](deploy/cloudflare-worker/).
+4. **A2A adapter** — routing and protocol layer over the HTTP/service layer ([src/agenda_intelligence/a2a_adapter.py](src/agenda_intelligence/a2a_adapter.py)). Emits A2A-compatible agent cards, accepts `message/send`, converts to service-request shape, returns A2A artifacts. Local shell behavior is documented in [docs/deployment/a2a-adapter.md](docs/deployment/a2a-adapter.md). Live deployment baseline lives under [deploy/cloudflare-worker/](deploy/cloudflare-worker/).
 
 Layering (channel concerns must not leak into core):
 
@@ -155,7 +155,7 @@ Do not claim:
 - autonomous decision-making
 - live source retrieval unless actually implemented
 - benchmark results without real benchmark cases and scores
-- customer traction, pilots, paid usage, named users, or revenue for vertical workers unless concretely verifiable — no fabricated pipeline, no aspirational customer counts in README/announcements/agent cards
+- customer traction, pilots, paid usage, named users, or revenue for vertical workers unless concretely verifiable — no fabricated pipeline, no aspirational customer counts in README, public docs, or agent cards
 
 Label clearly: illustrative, experimental, planned, or not yet implemented. Vertical workers must surface `human_review_required` and `not_advice_notice` in their service response and propagate them through HTTP and A2A.
 

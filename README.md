@@ -41,7 +41,7 @@ A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightwei
 - General wrapper: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev> · [agent card](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) · [JSON-RPC](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send) · [Agenstry](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev)
 - Agentic Resource Discovery catalog: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json>
 - Confidential project-room profile contract: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room> · [synthetic redacted JSON](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room/redacted-example.json)
-- Worked curl calls for every worker: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md) · repeatable Kazakhstan test: [`docs/agenstry/kazakhstan-live-test.md`](docs/agenstry/kazakhstan-live-test.md) · announcement: [`docs/announcements/live-a2a-wrapper.md`](docs/announcements/live-a2a-wrapper.md)
+- Worked curl calls for selected live workers: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md) · repeatable Kazakhstan test: [`docs/agenstry/kazakhstan-live-test.md`](docs/agenstry/kazakhstan-live-test.md)
 
 Try a live portfolio demo:
 
@@ -188,7 +188,7 @@ The product runtime is the integration point: agents call `analyze` via any surf
 - **Core service layer** — pure Python functions (`audit_claims`, `source_coverage`, `score_output`, `middle_corridor_deal_risk`, `agentic_interaction_trust`, etc.) vendor-neutral, no transport, no marketplace
 - **MCP server** — stdio server exposing 21 tools across the validation, product, and vertical worker layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
 - **HTTP API shell** — thin transport over the service layer; self-host with `docs/deployment/http-api.md`
-- **A2A adapter** — agent-card + JSON-RPC `message/send` over the HTTP/service layer; contract in `docs/product/a2a-adapter-plan.md`
+- **A2A adapter** — agent-card + JSON-RPC `message/send` over the HTTP/service layer; local shell documented in `docs/deployment/a2a-adapter.md`
 - **Cloudflare Worker baseline** — deployment config under `deploy/cloudflare-worker/`; six live workers (general triage + the five vertical workers below)
 - **Vertical workers** — productized service functions with their own schemas + HTTP/A2A profiles; Cloudflare deployments exist where configured. Currently shipped in the runtime: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, Kazakhstan Market-Entry Readiness Gate. Local stdio MCP exposes the first four vertical workers; Kazakhstan Market-Entry Readiness is HTTP/A2A-only.
 - **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
@@ -337,7 +337,7 @@ Stdio MCP server with 21 tools. Full docs and wire-protocol verification: [`MCP.
 | Weekly status readiness shell (`weekly-delta`) | Build-to-learn CLI scaffold; deterministic, local, no LLM, no source discovery |
 | MCP stdio server | Stable |
 | HTTP API shell | Shipped (self-host); contract early — see `docs/deployment/http-api.md` |
-| A2A adapter | Shipped (Cloudflare Worker baseline); contract in `docs/product/a2a-adapter-plan.md` |
+| A2A adapter | Shipped (Cloudflare Worker baseline); local shell documented in `docs/deployment/a2a-adapter.md` |
 | Cloudflare Worker deployment | Live (6 workers: general triage + Middle Corridor Deal Risk Gate + CIS Secondary-Sanctions Exposure + Agentic Interaction Trust Gate + Gulf Maritime Exposure + Kazakhstan Market-Entry Readiness Gate) |
 | Confidential infrastructure readiness workflow | Build-to-learn template + source plan + local CLI scaffold; no client names, no case-study claims |
 | Middle Corridor Deal Risk Gate (vertical worker) | Live portfolio/demo profile, no paying customers yet — illustrative usage only |
@@ -374,8 +374,6 @@ Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-con
 | Container deployment | [`docs/deployment/container.md`](docs/deployment/container.md) |
 | HTTP API shell | [`docs/deployment/http-api.md`](docs/deployment/http-api.md) |
 | A2A adapter shell | [`docs/deployment/a2a-adapter.md`](docs/deployment/a2a-adapter.md) |
-| Deployable architecture | [`docs/product/deployable-architecture.md`](docs/product/deployable-architecture.md) |
-| A2A adapter plan | [`docs/product/a2a-adapter-plan.md`](docs/product/a2a-adapter-plan.md) |
 | Data handling | [`docs/trust/data-handling.md`](docs/trust/data-handling.md) |
 | Confidential project workflow | [`docs/trust/confidential-project-workflow.md`](docs/trust/confidential-project-workflow.md) |
 | Strategic infrastructure readiness template | [`docs/templates/strategic-infrastructure-evidence-readiness-profile.md`](docs/templates/strategic-infrastructure-evidence-readiness-profile.md) |
@@ -388,7 +386,7 @@ Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-con
 | Agent entity map | [`docs/agent-entity-map.md`](docs/agent-entity-map.md) |
 | Integrations | [`docs/integrations/`](docs/integrations/) |
 | Agenstry discovery | [`docs/integrations/agenstry.md`](docs/integrations/agenstry.md) |
-| Agenstry agent card copy | [`docs/agenstry/agent-card-copy.md`](docs/agenstry/agent-card-copy.md) |
+| Live A2A demo pack | [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md) |
 | Use-cases | [`docs/use-cases/`](docs/use-cases/) |
 | Agent contract | [`AGENTS.md`](AGENTS.md) |
 | Adoption guide | [`ADOPTION.md`](ADOPTION.md) |

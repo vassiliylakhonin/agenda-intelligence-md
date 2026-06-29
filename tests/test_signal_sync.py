@@ -13,6 +13,7 @@ present (e.g. on CI without that repo cloned). Locally it enforces that
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -28,6 +29,24 @@ def _read(p: Path) -> str:
 
 def test_signals_packaged_index_present():
     assert (PACKAGED / "index.json").is_file(), "vendored signals/index.json missing"
+
+
+def test_signal_feed_content_matches_packaged_markdown():
+    feed = json.loads((PACKAGED / "feed.json").read_text(encoding="utf-8"))
+    mismatches = []
+    for item in feed.get("items", []):
+        signal_name = item["id"].rstrip("/").split("/")[-1]
+        signal_path = PACKAGED / "2026" / signal_name
+        if not signal_path.is_file():
+            mismatches.append(f"missing markdown for feed item: {signal_name}")
+            continue
+        if item.get("content_text") != signal_path.read_text(encoding="utf-8"):
+            mismatches.append(signal_name)
+
+    assert not mismatches, (
+        "data/signals/feed.json content_text drifted from packaged markdown: "
+        + ", ".join(mismatches)
+    )
 
 
 @pytest.mark.skipif(not LOCAL_SOURCE.is_dir(), reason="GTTA checkout not available")

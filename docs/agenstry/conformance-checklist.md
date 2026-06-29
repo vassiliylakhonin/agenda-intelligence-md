@@ -10,13 +10,15 @@ Workers (all on `*.vassiliy-lakhonin.workers.dev`):
 | Middle Corridor Deal Risk Gate | `middle-corridor-deal-risk-gate-a2a` | `kazakhstan` |
 | CIS Secondary-Sanctions Exposure | `cis-secondary-sanctions-a2a` | `cis_secondary_sanctions` |
 | Agentic Interaction Trust Gate | `agentic-interaction-trust-a2a` | `agentic_interaction_trust` |
+| Gulf Maritime Exposure | `gulf-maritime-exposure-a2a` | `gulf_maritime_exposure` |
+| Kazakhstan Market-Entry Readiness | `kazakhstan-market-entry-readiness-a2a` | `market_entry_readiness` |
 
 ## Criteria (weight) → status
 
 | Criterion | Weight | Status | Where |
 |---|---:|---|---|
 | `valid_card` — schema-validates against A2A v1.0 | 10 | ✅ | `/.well-known/agent-card.json` on each domain |
-| `live_jsonrpc` — `message/send` responds < 10s | 25 | ✅ | ~110–180ms observed; see [demo-pack.md](demo-pack.md) |
+| `live_jsonrpc` — `message/send` responds < 10s | 25 | ✅ | live smoke examples in [demo-pack.md](demo-pack.md) |
 | `protocol_version` — declares `"1.0"` (string) | 10 | ✅ | `protocolVersion: "1.0"`; response body is genuinely A2A v1.0-shaped (member-discriminated parts + `mediaType`, `TASK_STATE_*` enums) per [ADR 0017](../adr/0017-a2a-wire-contract-v1.md) — the score is earned, not just asserted |
 | `jws_signature` — card carries valid ES256 JWS | 10 | ✅ | detached JWS per RFC 7515 §3.1 + RFC 7797, JCS RFC 8785; public key at `/.well-known/jwks.json` (see [ADR 0014](../adr/0014-per-profile-live-retrieval.md) is unrelated; signing flow in [deploy/cloudflare-worker/README.md](../../deploy/cloudflare-worker/README.md)) |
 | `uptime_track` — ≥90% probe success / 30d | 15 | ⏳ accumulating | Cloudflare Workers; recovers automatically after the Agenstry probe-library gzip bug was fixed 2026-05-27 |
@@ -38,7 +40,7 @@ Per [Damiën / Agenstry, 2026-05-27], three ownership-proof methods:
 
 - `not_advice: true` — no legal / compliance / sanctions / financial / investment advice.
 - `factual_verification: false` — schemas enforce structure, not truth.
-- `live_retrieval: false` by default; per-profile opt-in for `cis_secondary_sanctions` (OpenSanctions / Watchman, currently deferred — see [ADR 0014](../adr/0014-per-profile-live-retrieval.md)).
+- `live_retrieval: false` by default; active only for `cis_secondary_sanctions` through the $0 Snapshot upstream, with Watchman / OpenSanctions as optional alternates — see [ADR 0014](../adr/0014-per-profile-live-retrieval.md), [ADR 0020](../adr/0020-activate-snapshot-upstream-cis-secondary-sanctions.md), and [SOURCE_POLICY.md](../../SOURCE_POLICY.md).
 - `human_review_required: true` on every vertical-worker response.
 
 ## Not done (deliberate)

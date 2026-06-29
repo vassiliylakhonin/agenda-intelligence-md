@@ -32,6 +32,10 @@ None of the spin-off triggers fire. The cost of three repos (triplicated CI, dua
 - A future worker that *does* trip a trigger (e.g. needs a heavy ML dependency, a different release cadence, or has a distinct paying buyer) re-opens this decision for that worker specifically — it does not force a retroactive split of the existing three.
 - ADR 0015's structural-triage boundary applies uniformly across all three workers, which is cleaner to maintain in one repo than across three.
 
+## Update 2026-06-29 — more profiles, same decision
+
+The repo now ships additional vertical profiles beyond the original three, including Gulf Maritime Exposure and Kazakhstan Market-Entry Readiness. This does not reopen the spin-off decision: the new profiles still share the same release cadence, dependency footprint, schema directory, A2A/Worker runtime, and no-paying-customer portfolio-proof status. Re-open this ADR only when a profile trips one of the concrete triggers below.
+
 ## Revisit triggers
 
 Re-open this ADR if any worker acquires: its own paying customer with a distinct SLA, a dependency the other two must not carry, a divergent release cadence, or a license/commercial reason to separate. Absent one of those, the workers stay together.

@@ -1,10 +1,10 @@
 # Evaluate this agent in 3 minutes
 
-A reviewer-facing demo pack: four live A2A `message/send` calls, one per vertical worker, with the expected response shape and an explicit pass/fail. The point is to show that these agents do **not** hallucinate an "approved" / "cleared" answer — they return structured routing (allow / step up / escalate / not-decision-ready) plus the missing evidence, and always require human review for high-stakes actions.
+A reviewer-facing demo pack: four selected live A2A `message/send` calls, with the expected response shape and an explicit pass/fail. The point is to show that these agents do **not** hallucinate an "approved" / "cleared" answer — they return structured routing (allow / step up / escalate / not-decision-ready) plus the missing evidence, and always require human review for high-stakes actions.
 
 No API key needed. Each worker serves a JWS-signed agent card at `/.well-known/agent-card.json` and the public key at `/.well-known/jwks.json` on the same domain.
 
-Boundaries shared by all three: no factual-truth verification, no legal/compliance/sanctions/financial advice, no autonomous decision. `human_review_required: true` in every response.
+Boundaries shared by these workers: no factual-truth verification, no legal/compliance/sanctions/financial advice, no autonomous decision. `human_review_required: true` in every response.
 
 ---
 

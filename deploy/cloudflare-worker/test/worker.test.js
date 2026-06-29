@@ -1857,8 +1857,8 @@ test("cis_secondary_sanctions profile is detected from host and env", () => {
   assert.ok(Array.isArray(card.skills) && card.skills.length === 1);
   assert.equal(card.skills[0].id, "cis-secondary-sanctions-exposure");
   assert.equal(card.x_agenda_intelligence.live_retrieval.capability_declared, true);
-  // Without either WATCHMAN_URL or OPENSANCTIONS_API_KEY in env, activation is
-  // deferred per ADR 0014 2026-05-27 update.
+  // Without SNAPSHOT_INDEX_URL, WATCHMAN_URL, or OPENSANCTIONS_API_KEY in env,
+  // activation is deferred per ADR 0014 / ADR 0020.
   assert.equal(card.x_agenda_intelligence.live_retrieval.active, false);
   assert.equal(card.x_agenda_intelligence.live_retrieval.active_upstream, null);
   const options = card.x_agenda_intelligence.live_retrieval.upstream_options;
@@ -1896,7 +1896,7 @@ test("agent card live_retrieval stays active=false when OPENSANCTIONS_DISABLED i
   assert.equal(card.x_agenda_intelligence.live_retrieval.active, false);
 });
 
-test("statusInfo exposes per-profile live_retrieval capability for cis_secondary_sanctions (deferred)", () => {
+test("statusInfo exposes inactive per-profile live_retrieval capability for cis_secondary_sanctions", () => {
   const status = statusInfo(cisRequest, {});
   assert.equal(status.profile, "cis_secondary_sanctions");
   // Capability is declared but activation is deferred until an upstream env var is set.
@@ -1911,6 +1911,7 @@ test("statusInfo exposes per-profile live_retrieval capability for cis_secondary
   assert.equal(status.live_retrieval.upstream_options[1].name, "Watchman");
   assert.equal(status.live_retrieval.upstream_options[2].name, "OpenSanctions");
   assert.ok(typeof status.live_retrieval.deferral_note === "string");
+  assert.match(status.live_retrieval.deferral_note, /SNAPSHOT_INDEX_URL/);
 });
 
 test("statusInfo flips live_retrieval boundary to true with Snapshot when SNAPSHOT_INDEX_URL is set", () => {

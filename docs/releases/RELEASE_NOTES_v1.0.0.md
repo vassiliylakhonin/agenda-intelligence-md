@@ -6,7 +6,7 @@ No new product behavior versus v1.0.0rc1; this release promotes the RC after end
 
 ## What is frozen
 
-The compatibility surface ([ADR 0003](../adr/0003-versioning-and-compatibility.md)) is the union of:
+The compatibility surface ([ADR 0003](../adr/0003-v1-compatibility-policy.md)) is the union of:
 
 1. **Schemas** — every file under `schemas/v1/` ([ADR 0011](../adr/0011-schema-id-urls-are-versioned-by-major.md)). The major-version segment is part of each schema's `$id`. A v2 of any schema ships under `/v2/`; `/v1/` continues to identify v1.0 unchanged.
 2. **MCP tool contracts** — the 16 tools listed in `agent-manifest.json` under `mcp.tools[*]` ([ADR 0012](../adr/0012-mcp-tool-contract-freeze-and-deprecation.md)). Names, input schemas, and ordering are mirrored by `tests/test_package_consistency.py` against the `TOOLS` dict in `src/agenda_intelligence/mcp_stdio.py`.
