@@ -5,6 +5,7 @@ Product entry point and evidence-discipline layer for strategic intelligence age
 Product MCP tools:
 - analyze — accepts an AgendaRequest (schemas/v1/agenda-request.schema.json), routes geography to bundled regional references, assembles a system prompt from the Global Think Tank Analyst method plus matched regional lenses, optionally calls the Anthropic API when ANTHROPIC_API_KEY is set, and returns a memo validated against schemas/v1/agenda-memo.schema.json.
 - validate_memo — validates a third-party memo against agenda-memo.schema.json and returns errors plus a score where implemented.
+- check_memo_quality — checks schema validity plus post-hoc evidence-readiness quality guardrails for a third-party memo; catches schema-valid approval/clearance overreach, hidden evidence gaps, generic monitoring, weak owner actions, and evidence-mode discipline failures.
 - list_signals / get_signal — read access to the vendored Global Think Tank Analyst signal archive.
 - deep_dive — reserved stub; returns a v2 placeholder pointing callers at `analyze` with depth: scenario or red_team.
 - middle_corridor_deal_risk — Kazakhstan / Middle Corridor deal-risk gate; structured deal_risk_request (middle-corridor-deal-risk-request.schema.json) in, triage recommendation + decision-readiness + evidence gaps out. Pre-compliance triage; human review required.

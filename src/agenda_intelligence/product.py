@@ -39,7 +39,7 @@ from importlib import resources
 from typing import Any, Iterable, Optional
 
 from agenda_intelligence import __version__
-from agenda_intelligence.memo_quality import check_memo_quality
+from agenda_intelligence.memo_quality import check_memo_quality as _check_memo_quality
 
 PACKAGE_NAME = "agenda_intelligence"
 
@@ -378,7 +378,21 @@ def _memo_quality_result(memo: dict | None, schema_valid: bool) -> dict:
         return {"ok": False, "errors": ["memo_missing"], "passed": []}
     if not schema_valid:
         return {"ok": False, "errors": ["schema_invalid"], "passed": []}
-    return check_memo_quality(memo)
+    return _check_memo_quality(memo)
+
+
+def check_memo_quality(memo_json: dict) -> dict:
+    """Check schema validity plus post-hoc evidence-readiness quality."""
+    schema = validate_memo(memo_json)
+    schema_valid = bool(schema.get("valid"))
+    quality = _memo_quality_result(memo_json, schema_valid)
+    return {
+        "schema_valid": schema_valid,
+        "schema_errors": schema.get("errors", []),
+        "ok": quality["ok"],
+        "errors": quality["errors"],
+        "passed": quality["passed"],
+    }
 
 
 # ---------------------------------------------------------------------------

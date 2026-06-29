@@ -576,6 +576,43 @@ def cmd_audit_claims(args):
         raise SystemExit(1)
 
 
+def cmd_check_memo_quality(args):
+    from agenda_intelligence.mcp_server import check_memo_quality
+
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"Not found: {path}")
+    try:
+        memo_json = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Invalid JSON: {e}")
+    if not isinstance(memo_json, dict):
+        raise SystemExit("Memo quality check expects a JSON object")
+
+    result = check_memo_quality(memo_json)
+    if args.format == "json":
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        status = "OK" if result["ok"] else "FAIL"
+        print(f"{status}: memo quality {'passes' if result['ok'] else 'fails'}")
+        print(f"  schema_valid: {result['schema_valid']}")
+        if result["passed"]:
+            print("  passed:")
+            for check in result["passed"]:
+                print(f"    - {check}")
+        if result["errors"]:
+            print("  errors:")
+            for error in result["errors"]:
+                print(f"    - {error}")
+        if result["schema_errors"]:
+            print("  schema_errors:")
+            for error in result["schema_errors"]:
+                print(f"    - {error}")
+
+    if not result["ok"]:
+        raise SystemExit(1)
+
+
 def cmd_deal_report(args):
     """Render a Middle Corridor deal-risk response as an evidence-readiness memo.
 
@@ -813,6 +850,7 @@ def _doctor_mcp_tools_check(command):
         "audit_claims",
         "score_output",
         "verify_quotes",
+        "check_memo_quality",
     }
     requests = [
         {
@@ -979,6 +1017,14 @@ def main():
     p.add_argument("--format", choices=["text", "json"], default="text")
     p.add_argument("--strict", action="store_true", help="Exit 1 on orphan evidence_id refs")
     p.set_defaults(func=cmd_audit_claims)
+    # check-memo-quality: post-hoc quality guard for Agenda memo JSON
+    p = sub.add_parser(
+        "check-memo-quality",
+        help="Check a memo JSON against post-hoc evidence-readiness quality guardrails",
+    )
+    p.add_argument("path")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.set_defaults(func=cmd_check_memo_quality)
     # bench
     p = sub.add_parser(
         "bench",

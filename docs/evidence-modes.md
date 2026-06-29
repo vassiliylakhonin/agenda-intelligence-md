@@ -25,7 +25,7 @@ The rule applies uniformly across domains. Sanctions designations, vessel SDN en
 
 This is still a declared-structure validator. It cannot detect an author who mislabels a factual assertion as `basis: "assessment"`, cannot determine whether a sourced or `[verify]`-marked claim is fabricated, and does not scan `reasoning_only` claim text for real-world facts. `[verify]` is a human-review flag, not a truth signal.
 
-As of this contract note, `check_evidence_mode_discipline` is an importable post-hoc validator used by tests and eval/rubric flows. It is not wired into `validate_memo`, the MCP server, the HTTP API, or the A2A adapter. Runtime enforcement is a separate product decision: either surface this as an additional post-hoc result alongside existing validation, or keep it eval-only and document that serving endpoints do not gate on it.
+`check_evidence_mode_discipline` remains an importable post-hoc validator, and it is also enforced through the broader memo-quality guard. `analyze` returns `memo_quality_ok`, `memo_quality_errors`, and `memo_quality_passed`; MCP and CLI callers can run the same guard directly with `check_memo_quality` / `check-memo-quality`. `validate_memo` stays schema-only so callers can distinguish structural validity from evidence-readiness quality.
 
 ## Fixtures
 
@@ -65,5 +65,5 @@ Each pair holds everything constant except `meta.evidence_mode` and `audit.prove
 
 - Not a factuality check. The rule cannot tell whether a sourced claim is true; only that the structural discipline is observed.
 - Not a schema. The enum stays in `agenda-memo.schema.json`; the rule is post-hoc.
-- Not an MCP tool or CLI subcommand. Importable Python function used by tests and (later) the bench and rubric pipelines.
-- Not a CI gate in v0.9. Scores from the eval suite are logged as baseline only.
+- Not a standalone MCP tool or CLI subcommand. It is exposed through the broader `check_memo_quality` guard, not as a separate public tool.
+- Not a factuality or truth gate. Scores from the eval suite remain structural quality signals, not factual verification.

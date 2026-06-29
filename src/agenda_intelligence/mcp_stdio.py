@@ -293,6 +293,25 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "handler": lambda args: mcp_server.validate_memo(args["memo_json"]),
     },
+    "check_memo_quality": {
+        "description": (
+            "Check a schema-shaped Agenda memo against post-hoc evidence-readiness quality "
+            "guardrails. Use after validate_memo or on any external model memo to catch "
+            "schema-valid but unsafe output: approval/clearance overreach, hidden evidence "
+            "gaps, generic monitoring, weak owner actions, or evidence-mode discipline "
+            "failures. Returns schema_valid separately from ok; it does not verify factual truth."
+        ),
+        "inputSchema": _schema(
+            {
+                "memo_json": {
+                    "type": "object",
+                    "description": "Parsed Agenda memo JSON object to check for evidence-readiness quality.",
+                }
+            },
+            ["memo_json"],
+        ),
+        "handler": lambda args: mcp_server.check_memo_quality(args["memo_json"]),
+    },
     "list_signals": {
         "description": (
             "List packaged strategic-risk signal records vendored from Global Think Tank "

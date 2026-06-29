@@ -178,6 +178,26 @@ def test_validate_memo_rejects_unknown_top_level_field():
     assert result["valid"] is False
 
 
+def test_check_memo_quality_accepts_good_memo():
+    memo = _memo_quality_fixture("golden/evidence-readiness-good.json")
+
+    result = product.check_memo_quality(memo)
+
+    assert result["schema_valid"] is True, result["schema_errors"]
+    assert result["ok"] is True, result["errors"]
+    assert "owner_actions_are_actionable" in result["passed"]
+
+
+def test_check_memo_quality_rejects_schema_valid_bad_memo():
+    memo = _memo_quality_fixture("failure/overconfident-clearance.json")
+
+    result = product.check_memo_quality(memo)
+
+    assert result["schema_valid"] is True, result["schema_errors"]
+    assert result["ok"] is False
+    assert any("overreach" in error for error in result["errors"])
+
+
 # ---------------------------------------------------------------------------
 # LLM-invocation branch (mocked)
 # ---------------------------------------------------------------------------

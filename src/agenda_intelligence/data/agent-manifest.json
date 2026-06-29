@@ -385,6 +385,23 @@
         }
       },
       {
+        "name": "check_memo_quality",
+        "since": "v1.1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "memo_json": {
+              "type": "object",
+              "description": "Parsed Agenda memo JSON object to check for evidence-readiness quality."
+            }
+          },
+          "required": [
+            "memo_json"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
         "name": "list_signals",
         "since": "v1.0",
         "input_schema": {

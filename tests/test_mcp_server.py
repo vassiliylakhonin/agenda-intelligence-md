@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from agenda_intelligence.mcp_server import (
+    check_memo_quality,
     get_lens,
     get_protocol,
     get_schema,
@@ -13,6 +14,8 @@ from agenda_intelligence.mcp_server import (
     validate_brief,
 )
 from agenda_intelligence.mcp_stdio import handle_message
+
+FIXTURES = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "memo_quality"
 
 
 def test_get_protocol_entrypoint_returns_markdown():
@@ -256,6 +259,7 @@ def test_mcp_stdio_tools_list_includes_protocol_tool():
         "source_plan",
         "source_coverage",
         "score_output",
+        "check_memo_quality",
     }
 
 
@@ -329,6 +333,16 @@ def test_mcp_stdio_tools_call_score_output_returns_score():
     assert '"after_score"' in response["result"]["content"][0]["text"]
 
 
+def test_check_memo_quality_tool_accepts_good_memo():
+    memo = json.loads((FIXTURES / "golden/evidence-readiness-good.json").read_text(encoding="utf-8"))
+
+    result = check_memo_quality(memo)
+
+    assert result["implemented"] is True
+    assert result["schema_valid"] is True
+    assert result["ok"] is True, result["errors"]
+
+
 _EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
 
@@ -350,6 +364,18 @@ def test_mcp_stdio_tools_list_includes_vertical_workers():
         "agentic_interaction_trust",
         "gulf_maritime_exposure",
     } <= names
+
+
+def test_mcp_stdio_check_memo_quality_tool_call_reports_bad_memo():
+    memo = json.loads((FIXTURES / "failure/overconfident-clearance.json").read_text(encoding="utf-8"))
+
+    result, payload = _call_tool("check_memo_quality", {"memo_json": memo})
+
+    assert result["isError"] is False
+    assert payload["implemented"] is True
+    assert payload["schema_valid"] is True
+    assert payload["ok"] is False
+    assert payload["errors"]
 
 
 def test_mcp_tool_middle_corridor_deal_risk_golden():

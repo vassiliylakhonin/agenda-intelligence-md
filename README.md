@@ -302,7 +302,7 @@ Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed
 
 ## MCP
 
-Stdio MCP server with 21 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
+Stdio MCP server with 22 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
 
 | Tool | What it does |
 |---|---|
@@ -320,6 +320,7 @@ Stdio MCP server with 21 tools. Full docs and wire-protocol verification: [`MCP.
 | `get_lens` | Return a specific lens pack by name |
 | `analyze` | Product-shell pipeline: validate request, route modules, assemble prompt, optionally call LLM, validate memo |
 | `validate_memo` | Validate an Agenda memo against `agenda-memo.schema.json` |
+| `check_memo_quality` | Check schema validity plus post-hoc memo quality guardrails for evidence-readiness |
 | `list_signals` | List vendored signal archive entries |
 | `get_signal` | Return a vendored signal markdown file by id |
 | `deep_dive` | Planned v2 placeholder directing callers to `analyze` depth modes |
@@ -333,7 +334,7 @@ Stdio MCP server with 21 tools. Full docs and wire-protocol verification: [`MCP.
 | Component | Status |
 |---|---|
 | Markdown protocol, JSON schemas | Stable |
-| CLI (validate, score, bench, audit, doctor) | Stable |
+| CLI (validate, score, bench, audit, check-memo-quality, doctor) | Stable |
 | Weekly status readiness shell (`weekly-delta`) | Build-to-learn CLI scaffold; deterministic, local, no LLM, no source discovery |
 | MCP stdio server | Stable |
 | HTTP API shell | Shipped (self-host); contract early — see `docs/deployment/http-api.md` |

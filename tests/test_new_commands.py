@@ -15,6 +15,8 @@ ENV = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
 FLAGSHIP_BRIEF = ROOT / "examples" / "source-backed" / "eu-ai-act.brief.json"
 FLAGSHIP_AUDIT = ROOT / "examples" / "source-backed" / "eu-ai-act.audit.json"
 SOURCE_BACKED_DIR = ROOT / "examples" / "source-backed"
+MEMO_QUALITY_GOOD = ROOT / "tests" / "fixtures" / "memo_quality" / "golden" / "evidence-readiness-good.json"
+MEMO_QUALITY_BAD = ROOT / "tests" / "fixtures" / "memo_quality" / "failure" / "overconfident-clearance.json"
 
 
 def run(*args: str, expect_zero: bool = True) -> subprocess.CompletedProcess[str]:
@@ -62,6 +64,28 @@ def test_audit_claims_strict_orphan(tmp_path: Path):
     # With --strict: exit 1
     res = run("audit-claims", str(p), "--strict", expect_zero=False)
     assert res.returncode == 1
+
+
+# ---------- check-memo-quality ----------
+
+
+def test_check_memo_quality_json_passes_on_good_memo():
+    res = run("check-memo-quality", str(MEMO_QUALITY_GOOD), "--format", "json")
+
+    payload = json.loads(res.stdout)
+    assert payload["implemented"] is True
+    assert payload["schema_valid"] is True
+    assert payload["ok"] is True
+    assert "owner_actions_are_actionable" in payload["passed"]
+
+
+def test_check_memo_quality_text_fails_on_schema_valid_bad_memo():
+    res = run("check-memo-quality", str(MEMO_QUALITY_BAD), expect_zero=False)
+
+    assert res.returncode == 1
+    assert "FAIL: memo quality fails" in res.stdout
+    assert "schema_valid: True" in res.stdout
+    assert "overreach" in res.stdout
 
 
 # ---------- bench ----------

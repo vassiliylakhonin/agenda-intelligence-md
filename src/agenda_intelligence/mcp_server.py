@@ -16,6 +16,8 @@ Implemented (return ``implemented=True``):
 - ``score_output``: heuristic before/after marker rubric.
 - ``verify_quotes``: checks that cited quote fragments appear in caller-supplied
   source texts. Local-text only; does not make outbound network requests.
+- ``check_memo_quality``: schema validity plus post-hoc evidence-readiness
+  quality guardrails for Agenda memos.
 
 Honest scope: schema-level only. None of these tools verify factual truth.
 """
@@ -403,6 +405,12 @@ def analyze(request: dict) -> dict:
 def validate_memo(memo_json: dict) -> dict:
     """Validate a memo dict against agenda-memo.schema.json."""
     result = _product.validate_memo(memo_json)
+    return {"implemented": True, **result}
+
+
+def check_memo_quality(memo_json: dict) -> dict:
+    """Check a memo against schema validity plus post-hoc quality guardrails."""
+    result = _product.check_memo_quality(memo_json)
     return {"implemented": True, **result}
 
 

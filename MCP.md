@@ -1,15 +1,16 @@
 # MCP
 
 `agenda-intelligence-mcp` is a real stdio MCP server shipping with the package.
-It exposes 21 tool functions implemented in `agenda_intelligence.mcp_server`.
+It exposes 22 tool functions implemented in `agenda_intelligence.mcp_server`.
 
 The tools split into three layers:
 
 - **Validation layer** (12 tools, this repo's original scope): schema checks,
   schema discovery (`get_schema`), evidence audit, lens and source-plan access,
   output scoring, quote verification.
-- **Product layer** (5 tools, Agenda Intelligence product shell): `analyze`,
-  `validate_memo`, `list_signals`, `get_signal`, `deep_dive` (reserved/planned, returns a v2 placeholder). These wrap the
+- **Product layer** (6 tools, Agenda Intelligence product shell): `analyze`,
+  `validate_memo`, `check_memo_quality`, `list_signals`, `get_signal`,
+  `deep_dive` (reserved/planned, returns a v2 placeholder). These wrap the
   validation layer with geography routing, system-prompt assembly, optional LLM
   invocation, and vendored signal access.
 - **Vertical worker layer** (4 local stdio tools): `middle_corridor_deal_risk`,
@@ -354,6 +355,24 @@ output of an external analyst or another model before accepting it.
 ```
 
 Returns `{ "implemented": true, "valid": true|false, "errors": [...] }`.
+
+---
+
+### `check_memo_quality`
+
+Check a memo dict against schema validity plus post-hoc evidence-readiness
+quality guardrails. Use this after `validate_memo` when a schema-valid memo
+still needs a decision-readiness quality check.
+
+```json
+{ "memo_json": { "meta": { ... }, "risk_summary": { ... }, "analysis": { ... }, "watch_next": [...], "audit": { ... } } }
+```
+
+Returns `{ "implemented": true, "schema_valid": true|false, "schema_errors": [...], "ok": true|false, "errors": [...], "passed": [...] }`.
+
+This guard catches schema-valid but unsafe output such as approval/clearance
+overreach, hidden evidence gaps, generic monitoring, weak owner actions, and
+evidence-mode discipline failures. It does not verify factual truth.
 
 ---
 
