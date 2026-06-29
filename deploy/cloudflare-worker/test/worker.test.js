@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -8,6 +9,7 @@ import {
   checkRateLimit,
   dealRiskContractResponseForRequest,
   didDocument,
+  entityMap,
   handleJsonRpc,
   handleRequest,
   healthInfo,
@@ -15,6 +17,7 @@ import {
   isStatsAuthorized,
   landingHtml,
   mcpServerCard,
+  okfMarkdown,
   productionAuthKey,
   rateLimitPerHour,
   recordUsageStats,
@@ -27,6 +30,7 @@ import {
 } from "../src/index.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "../src/usage_constants.js";
 import { validateAgentCard } from "../scripts/verify-agent-card.js";
+import { OKF_CONTENT, OKF_PATHS } from "../src/okf_content.js";
 import { matchCounterparty as matchCounterpartyAgainstWatchman } from "../src/upstream_watchman.js";
 import {
   matchCounterparty as matchCounterpartyAgainstSnapshot,
@@ -232,6 +236,7 @@ test("AI catalog advertises real agentic resources without traction claims", () 
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:server:agenda-intelligence-md-mcp",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:endpoint:message-send",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:knowledge:okf-bundle",
+      "urn:ai:agenda-intelligence-a2a.example.workers.dev:entitymap:agenda-intelligence-md",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:artifact:ai-vendor-evidence-readiness-pack",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:schema:agenda-intelligence-v1",
       "urn:ai:agenda-intelligence-a2a.example.workers.dev:policy:source-policy"
@@ -244,6 +249,14 @@ test("AI catalog advertises real agentic resources without traction claims", () 
   assert.equal(
     catalog.entries.find((entry) => entry.type === "application/mcp-server-card+json").url,
     "https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json"
+  );
+  assert.equal(
+    catalog.entries.find((entry) => entry.type === "application/entitymap+json").url,
+    "https://agenda-intelligence-a2a.example.workers.dev/entitymap.json"
+  );
+  assert.equal(
+    catalog.entries.find((entry) => entry.identifier.endsWith(":knowledge:okf-bundle")).url,
+    "https://agenda-intelligence-a2a.example.workers.dev/okf/index.md"
   );
   assert.ok(
     catalog.entries
@@ -297,7 +310,52 @@ test("MCP server card and DID routes advertise installable MCP identity", async 
   );
   const didBody = await didResponse.json();
   assert.equal(didResponse.status, 200);
-  assert.equal(didBody.service.find((service) => service.type === "AICatalog").serviceEndpoint, did.service[0].serviceEndpoint);
+  assert.equal(
+    didBody.service.find((service) => service.type === "AICatalog").serviceEndpoint,
+    did.service[0].serviceEndpoint
+  );
+});
+
+test("entity map and OKF routes expose live domain knowledge artifacts", async () => {
+  const map = entityMap(request);
+  assert.equal(map.url, "https://agenda-intelligence-a2a.example.workers.dev/entitymap.json");
+  assert.ok(map.entities.some((entity) => entity.slug === "human-review-packet"));
+  assert.ok(map.boundaries.includes("Not proof of buyer demand or product-market fit."));
+
+  assert.match(okfMarkdown("/okf/index.md"), /Agenda Intelligence MD Knowledge Bundle/);
+  assert.match(okfMarkdown("/okf/"), /Agenda Intelligence MD Knowledge Bundle/);
+  assert.equal(okfMarkdown("/okf/missing.md"), null);
+
+  const entityResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/entitymap.json")
+  );
+  const entityBody = await entityResponse.json();
+  assert.equal(entityResponse.status, 200);
+  assert.equal(entityResponse.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.ok(entityBody.entities.some((entity) => entity.slug === "claim-audit"));
+
+  const okfResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/okf/index.md")
+  );
+  const okfBody = await okfResponse.text();
+  assert.equal(okfResponse.status, 200);
+  assert.equal(okfResponse.headers.get("content-type"), "text/markdown; charset=utf-8");
+  assert.match(okfBody, /# Agenda Intelligence MD Knowledge Bundle/);
+
+  const okfAliasResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/okf/")
+  );
+  assert.equal(okfAliasResponse.status, 200);
+});
+
+test("generated OKF content matches repository OKF files", () => {
+  for (const path of OKF_PATHS) {
+    const fileName = path.replace("/okf/", "");
+    assert.equal(
+      OKF_CONTENT[path],
+      readFileSync(new URL(`../../../okf/${fileName}`, import.meta.url), "utf8")
+    );
+  }
 });
 
 test("landing HTML advertises AI catalog endpoint and Link header", async () => {
@@ -316,6 +374,8 @@ test("landing HTML advertises AI catalog endpoint and Link header", async () => 
   assert.match(body, /AI catalog:/);
   assert.match(body, /MCP card:/);
   assert.match(body, /DID:/);
+  assert.match(body, /Entity map:/);
+  assert.match(body, /OKF bundle:/);
   assert.match(body, /<link rel="ai-catalog" href="https:\/\/agenda-intelligence-a2a\.example\.workers\.dev\/\.well-known\/ai-catalog\.json">/);
   assert.ok(body.includes("/.well-known/ai-catalog.json"));
 });
@@ -1537,6 +1597,8 @@ test("healthInfo exposes status URL alongside agent_card and message_send", () =
   assert.ok(info.agent_card.endsWith("/.well-known/agent-card.json"));
   assert.ok(info.mcp_server_card.endsWith("/.well-known/mcp/server-card.json"));
   assert.ok(info.did.endsWith("/.well-known/did.json"));
+  assert.ok(info.entitymap.endsWith("/entitymap.json"));
+  assert.ok(info.okf_bundle.endsWith("/okf/index.md"));
   assert.ok(info.message_send.endsWith("/message/send"));
   assert.ok(info.status.endsWith("/status"));
 });

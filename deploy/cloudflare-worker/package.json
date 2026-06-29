@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "generate:okf": "node scripts/generate-okf-content.js",
     "stats": "node scripts/stats.js",
     "test": "node --test",
     "verify:agent-card": "node scripts/verify-agent-card.js",

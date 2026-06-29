@@ -23,6 +23,7 @@ import {
 } from "./upstream_snapshot.js";
 
 import { buildJwks, maybeSignCard } from "./jws.js";
+import { OKF_CONTENT, OKF_PATHS } from "./okf_content.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 
 const SUPPORT_CONTACT_EMAIL = "vassiliy.lakhonin@gmail.com";
@@ -71,7 +72,7 @@ const GULF_MARITIME_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v
 const GULF_MARITIME_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/gulf-maritime-exposure.json`;
 const A2A_EXAMPLES_URL = `${REPOSITORY_URL}/tree/main/examples/a2a`;
 const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";
-const OKF_BUNDLE_URL = `${REPOSITORY_URL}/blob/main/okf/index.md`;
+const OKF_BUNDLE_REPO_URL = `${REPOSITORY_URL}/blob/main/okf/index.md`;
 const EVIDENCE_READINESS_PACK_URL = `${REPOSITORY_URL}/blob/main/docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md`;
 const SCHEMAS_URL = `${REPOSITORY_URL}/tree/main/schemas/v1`;
 const SOURCE_POLICY_URL = `${REPOSITORY_URL}/blob/main/SOURCE_POLICY.md`;
@@ -544,6 +545,18 @@ function htmlResponse(body, status = 200, extraHeaders = {}) {
   });
 }
 
+function markdownResponse(body, status = 200, extraHeaders = {}) {
+  return new Response(body, {
+    status,
+    headers: {
+      "content-type": "text/markdown; charset=utf-8",
+      "cache-control": "public, max-age=3600",
+      "access-control-allow-origin": "*",
+      ...extraHeaders
+    }
+  });
+}
+
 function acceptsHtml(request) {
   const accept = request.headers.get("accept") || "";
   return accept.includes("text/html");
@@ -565,6 +578,10 @@ function originFromRequest(request) {
 
 function didIdentifierFromOrigin(origin) {
   return `did:web:${new URL(origin).host}`;
+}
+
+function okfUrl(origin, path = "/okf/index.md") {
+  return `${origin}${path}`;
 }
 
 function aiCatalogHeaders(request) {
@@ -987,7 +1004,7 @@ function aiCatalog(request, env = {}) {
         identifier: `urn:ai:${host}:knowledge:okf-bundle`,
         displayName: "Agenda Intelligence MD OKF-style knowledge bundle",
         type: "text/markdown",
-        url: OKF_BUNDLE_URL,
+        url: okfUrl(origin),
         description:
           "Compact Markdown/YAML concept bundle for retrieval agents: evidence-readiness, human-review packets, evidence packs, claim audits, source policy, market gate, and repo stack.",
         capabilities: ["concept-retrieval", "evidence-readiness-definitions", "human-review-packet"],
@@ -996,6 +1013,23 @@ function aiCatalog(request, env = {}) {
           "what is Agenda Intelligence MD evidence-readiness",
           "explain human-review packet and claim audit concepts",
           "understand the Agenda Intelligence repository stack"
+        ],
+        version: VERSION,
+        updatedAt: DISCOVERY_UPDATED_AT
+      },
+      {
+        identifier: `urn:ai:${host}:entitymap:agenda-intelligence-md`,
+        displayName: "Agenda Intelligence MD entity map",
+        type: "application/entitymap+json",
+        url: `${origin}/entitymap.json`,
+        description:
+          "Machine-readable map of Agenda Intelligence MD entities, boundaries, relationships, and canonical retrieval paths.",
+        capabilities: ["entity-discovery", "concept-navigation", "domain-boundary-routing"],
+        tags: ["entitymap", "knowledge-graph", "retrieval", "domain-map"],
+        representativeQueries: [
+          "what are the core entities in Agenda Intelligence MD",
+          "map Agenda Intelligence MD evidence-readiness concepts",
+          "find the relationship between evidence pack, claim audit, and human-review packet"
         ],
         version: VERSION,
         updatedAt: DISCOVERY_UPDATED_AT
@@ -1093,8 +1127,10 @@ function mcpServerCard(request, env = {}) {
       ai_catalog: `${origin}/.well-known/ai-catalog.json`,
       agent_card: `${origin}/.well-known/agent-card.json`,
       did: `${origin}/.well-known/did.json`,
+      entitymap: `${origin}/entitymap.json`,
       source_policy: SOURCE_POLICY_URL,
-      okf_bundle: OKF_BUNDLE_URL
+      okf_bundle: okfUrl(origin),
+      okf_repository_copy: OKF_BUNDLE_REPO_URL
     },
     capabilities: {
       tools: true,
@@ -1142,6 +1178,155 @@ function didDocument(request) {
       }
     ]
   };
+}
+
+function entityMap(request) {
+  const origin = originFromRequest(request);
+  const entityUrl = (slug) => `${origin}/entitymap.json#${slug}`;
+  return {
+    version: "1.0",
+    schema: "https://entitymap.org/spec/v1.0",
+    publisher: {
+      name: "Vassiliy Lakhonin",
+      url: "https://vassiliylakhonin.github.io/"
+    },
+    updatedAt: DISCOVERY_UPDATED_AT,
+    url: `${origin}/entitymap.json`,
+    description:
+      "Machine-readable entity map for Agenda Intelligence MD. It is a navigation aid for retrieval agents and technical evaluators, not a formal ontology, ranking asset, compliance claim, or market-validation claim.",
+    related: {
+      ai_catalog: `${origin}/.well-known/ai-catalog.json`,
+      did: `${origin}/.well-known/did.json`,
+      okf_bundle: okfUrl(origin),
+      repository: REPOSITORY_URL,
+      source_policy: SOURCE_POLICY_URL
+    },
+    boundaries: [
+      "Not legal advice.",
+      "Not compliance advice.",
+      "Not sanctions screening.",
+      "Not factual-truth verification.",
+      "Not autonomous decision-making.",
+      "Not proof of buyer demand or product-market fit."
+    ],
+    entities: [
+      {
+        id: entityUrl("agenda-intelligence-md"),
+        slug: "agenda-intelligence-md",
+        name: "Agenda Intelligence MD",
+        type: "software_project",
+        url: origin,
+        canonicalUrl: REPOSITORY_URL,
+        description:
+          "Evidence-readiness and trust-routing runtime for high-stakes AI-assisted or strategic-risk decisions. It routes claims, evidence gaps, owner actions, and human-review readiness rather than approving decisions.",
+        sameAs: [
+          REPOSITORY_URL,
+          PACKAGE_URL,
+          "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
+        ],
+        relatedEntities: [
+          "ai-vendor-evidence-readiness",
+          "human-review-packet",
+          "evidence-pack",
+          "claim-audit",
+          "source-policy",
+          "market-gate"
+        ],
+        evidence: [
+          `${origin}/.well-known/ai-catalog.json`,
+          `${origin}/.well-known/agent-card.json`,
+          okfUrl(origin)
+        ]
+      },
+      {
+        id: entityUrl("ai-vendor-evidence-readiness"),
+        slug: "ai-vendor-evidence-readiness",
+        name: "AI Vendor Evidence-Readiness",
+        type: "commercial_discovery_wedge",
+        url: okfUrl(origin, "/okf/ai-vendor-evidence-readiness.md"),
+        canonicalUrl: EVIDENCE_READINESS_PACK_URL,
+        description:
+          "Build-to-learn workflow for regulated procurement and AI governance review. It maps vendor or system claims to evidence present, weak, missing, or not assessable.",
+        relatedEntities: ["human-review-packet", "claim-audit", "evidence-pack", "market-gate"],
+        successSignals: [
+          "redacted evidence file",
+          "second profile request",
+          "paid concierge review interest",
+          "budget-owner introduction",
+          "concrete workflow correction"
+        ],
+        nonSignals: ["traffic", "AI citation", "compliments", "interesting feedback", "technical completion"]
+      },
+      {
+        id: entityUrl("human-review-packet"),
+        slug: "human-review-packet",
+        name: "Human-Review Packet",
+        type: "output_shape",
+        url: okfUrl(origin, "/okf/human-review-packet.md"),
+        description:
+          "Reviewer-facing packet showing supported claims, weak claims, missing evidence, likely owner action, and readiness route.",
+        relatedEntities: ["evidence-pack", "claim-audit", "source-policy"]
+      },
+      {
+        id: entityUrl("evidence-pack"),
+        slug: "evidence-pack",
+        name: "Evidence Pack",
+        type: "input_shape",
+        url: okfUrl(origin, "/okf/evidence-pack.md"),
+        canonicalUrl: `${REPOSITORY_URL}/blob/main/schemas/v1/evidence-pack.schema.json`,
+        description:
+          "Source set used to assess whether claims are ready for human review. External content is treated as data, not instructions.",
+        relatedEntities: ["source-policy", "claim-audit", "human-review-packet"]
+      },
+      {
+        id: entityUrl("claim-audit"),
+        slug: "claim-audit",
+        name: "Claim Audit",
+        type: "evidence_discipline",
+        url: okfUrl(origin, "/okf/claim-audit.md"),
+        canonicalUrl: `${REPOSITORY_URL}/blob/main/schemas/v1/evidence-audit.schema.json`,
+        description:
+          "Claim-level mapping of support, weakness, missing proof, source IDs, and readiness. It checks evidence sufficiency, not world-truth.",
+        relatedEntities: ["evidence-pack", "human-review-packet", "source-policy"]
+      },
+      {
+        id: entityUrl("source-policy"),
+        slug: "source-policy",
+        name: "Source Policy",
+        type: "boundary_discipline",
+        url: okfUrl(origin, "/okf/source-policy.md"),
+        canonicalUrl: SOURCE_POLICY_URL,
+        description:
+          "Rules for source planning, coverage, quote-presence checks, provenance tags, and non-verification boundaries.",
+        relatedEntities: ["evidence-pack", "claim-audit"]
+      },
+      {
+        id: entityUrl("market-gate"),
+        slug: "market-gate",
+        name: "Market Gate",
+        type: "market_discipline",
+        url: okfUrl(origin, "/okf/market-gate.md"),
+        description:
+          "Discipline that prevents technical artifacts, public listings, and deployed workers from being treated as buyer demand.",
+        relatedEntities: ["ai-vendor-evidence-readiness"]
+      },
+      {
+        id: entityUrl("repo-stack"),
+        slug: "repo-stack",
+        name: "Agenda Intelligence Repository Stack",
+        type: "repository_map",
+        url: okfUrl(origin, "/okf/repo-stack.md"),
+        description:
+          "Map of the product/runtime repository, reasoning method repository, and regional specialist skill repositories.",
+        relatedEntities: ["agenda-intelligence-md"]
+      }
+    ]
+  };
+}
+
+function okfMarkdown(pathname) {
+  if (pathname === "/okf" || pathname === "/okf/") return OKF_CONTENT["/okf/index.md"];
+  return OKF_CONTENT[pathname] || null;
 }
 
 function applyAgentProfile(card, request, env = {}) {
@@ -5209,6 +5394,8 @@ function healthInfo(request, env) {
     agent_card: `${origin}/.well-known/agent-card.json`,
     mcp_server_card: `${origin}/.well-known/mcp/server-card.json`,
     did: `${origin}/.well-known/did.json`,
+    entitymap: `${origin}/entitymap.json`,
+    okf_bundle: okfUrl(origin),
     message_send: `${origin}/message/send`,
     status: `${origin}/status`,
     stats: `${origin}/stats`,
@@ -5234,6 +5421,8 @@ function statusInfo(request, env) {
     agent_card_url: `${origin}/.well-known/agent-card.json`,
     mcp_server_card_url: `${origin}/.well-known/mcp/server-card.json`,
     did_url: `${origin}/.well-known/did.json`,
+    entitymap_url: `${origin}/entitymap.json`,
+    okf_bundle_url: okfUrl(origin),
     message_send_url: `${origin}/message/send`,
     repository: REPOSITORY_URL,
     package: PACKAGE_URL,
@@ -5438,6 +5627,8 @@ function landingHtml(request, env) {
     <li><span class="label">Agent card:</span> <a href="${origin}/.well-known/agent-card.json">/.well-known/agent-card.json</a></li>
     <li><span class="label">MCP card:</span> <a href="${origin}/.well-known/mcp/server-card.json">/.well-known/mcp/server-card.json</a></li>
     <li><span class="label">DID:</span> <a href="${origin}/.well-known/did.json">/.well-known/did.json</a></li>
+    <li><span class="label">Entity map:</span> <a href="${origin}/entitymap.json">/entitymap.json</a></li>
+    <li><span class="label">OKF bundle:</span> <a href="${origin}/okf/index.md">/okf/index.md</a></li>
     <li><span class="label">JSON-RPC:</span> <code>POST ${origin}/message/send</code></li>
     <li><span class="label">Status:</span> <a href="${origin}/status">/status</a></li>
     <li><span class="label">Health (JSON):</span> <a href="${origin}/health">/health</a></li>
@@ -5505,6 +5696,20 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     });
   }
 
+  if (request.method === "GET" && url.pathname === "/entitymap.json") {
+    return jsonResponse(entityMap(request), 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/okf" || url.pathname === "/okf/" || OKF_PATHS.includes(url.pathname))
+  ) {
+    return markdownResponse(okfMarkdown(url.pathname), 200, aiCatalogHeaders(request));
+  }
+
   if (request.method === "GET" && url.pathname === "/.well-known/jwks.json") {
     return jsonResponse(buildJwks(env.AGENT_CARD_SIGNING_KEY || env.AGENT_CARD_PRIVATE_JWK), 200, {
       "cache-control": "public, max-age=3600",
@@ -5551,6 +5756,7 @@ export {
   agentCard,
   buildUsageEvent,
   dealRiskContractResponseForRequest,
+  entityMap,
   handleJsonRpc,
   healthInfo,
   didDocument,
@@ -5558,6 +5764,7 @@ export {
   isProductionAuthorized,
   isStatsAuthorized,
   mcpServerCard,
+  okfMarkdown,
   productionAuthKey,
   rateLimitPerHour,
   landingHtml,

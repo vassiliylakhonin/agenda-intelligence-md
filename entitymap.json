@@ -1,0 +1,160 @@
+{
+  "version": "1.0",
+  "schema": "https://entitymap.org/spec/v1.0",
+  "publisher": {
+    "name": "Vassiliy Lakhonin",
+    "url": "https://vassiliylakhonin.github.io/"
+  },
+  "updatedAt": "2026-06-29",
+  "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json",
+  "description": "Machine-readable entity map for Agenda Intelligence MD. It is a navigation aid for retrieval agents and technical evaluators, not a formal ontology, ranking asset, compliance claim, or market-validation claim.",
+  "related": {
+    "ai_catalog": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
+    "did": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/did.json",
+    "okf_bundle": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/index.md",
+    "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+    "source_policy": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/SOURCE_POLICY.md"
+  },
+  "boundaries": [
+    "Not legal advice.",
+    "Not compliance advice.",
+    "Not sanctions screening.",
+    "Not factual-truth verification.",
+    "Not autonomous decision-making.",
+    "Not proof of buyer demand or product-market fit."
+  ],
+  "entities": [
+    {
+      "id": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json#agenda-intelligence-md",
+      "slug": "agenda-intelligence-md",
+      "name": "Agenda Intelligence MD",
+      "type": "software_project",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev",
+      "canonicalUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+      "description": "Evidence-readiness and trust-routing runtime for high-stakes AI-assisted or strategic-risk decisions. It routes claims, evidence gaps, owner actions, and human-review readiness rather than approving decisions.",
+      "sameAs": [
+        "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+        "https://pypi.org/project/agenda-intelligence-md/",
+        "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
+      ],
+      "relatedEntities": [
+        "ai-vendor-evidence-readiness",
+        "human-review-packet",
+        "evidence-pack",
+        "claim-audit",
+        "source-policy",
+        "market-gate"
+      ],
+      "evidence": [
+        "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
+        "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+        "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/index.md"
+      ]
+    },
+    {
+      "id": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json#ai-vendor-evidence-readiness",
+      "slug": "ai-vendor-evidence-readiness",
+      "name": "AI Vendor Evidence-Readiness",
+      "type": "commercial_discovery_wedge",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/ai-vendor-evidence-readiness.md",
+      "canonicalUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/discovery/ai-vendor-evidence-readiness-profile-pack-v0.1-2026-06-28.md",
+      "description": "Build-to-learn workflow for regulated procurement and AI governance review. It maps vendor or system claims to evidence present, weak, missing, or not assessable.",
+      "relatedEntities": [
+        "human-review-packet",
+        "claim-audit",
+        "evidence-pack",
+        "market-gate"
+      ],
+      "successSignals": [
+        "redacted evidence file",
+        "second profile request",
+        "paid concierge review interest",
+        "budget-owner introduction",
+        "concrete workflow correction"
+      ],
+      "nonSignals": [
+        "traffic",
+        "AI citation",
+        "compliments",
+        "interesting feedback",
+        "technical completion"
+      ]
+    },
+    {
+      "id": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json#human-review-packet",
+      "slug": "human-review-packet",
+      "name": "Human-Review Packet",
+      "type": "output_shape",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/human-review-packet.md",
+      "description": "Reviewer-facing packet showing supported claims, weak claims, missing evidence, likely owner action, and readiness route.",
+      "relatedEntities": [
+        "evidence-pack",
+        "claim-audit",
+        "source-policy"
+      ]
+    },
+    {
+      "id": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json#evidence-pack",
+      "slug": "evidence-pack",
+      "name": "Evidence Pack",
+      "type": "input_shape",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/evidence-pack.md",
+      "canonicalUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/evidence-pack.schema.json",
+      "description": "Source set used to assess whether claims are ready for human review. External content is treated as data, not instructions.",
+      "relatedEntities": [
+        "source-policy",
+        "claim-audit",
+        "human-review-packet"
+      ]
+    },
+    {
+      "id": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json#claim-audit",
+      "slug": "claim-audit",
+      "name": "Claim Audit",
+      "type": "evidence_discipline",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/claim-audit.md",
+      "canonicalUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/evidence-audit.schema.json",
+      "description": "Claim-level mapping of support, weakness, missing proof, source IDs, and readiness. It checks evidence sufficiency, not world-truth.",
+      "relatedEntities": [
+        "evidence-pack",
+        "human-review-packet",
+        "source-policy"
+      ]
+    },
+    {
+      "id": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json#source-policy",
+      "slug": "source-policy",
+      "name": "Source Policy",
+      "type": "boundary_discipline",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/source-policy.md",
+      "canonicalUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/SOURCE_POLICY.md",
+      "description": "Rules for source planning, coverage, quote-presence checks, provenance tags, and non-verification boundaries.",
+      "relatedEntities": [
+        "evidence-pack",
+        "claim-audit"
+      ]
+    },
+    {
+      "id": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json#market-gate",
+      "slug": "market-gate",
+      "name": "Market Gate",
+      "type": "market_discipline",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/market-gate.md",
+      "description": "Discipline that prevents technical artifacts, public listings, and deployed workers from being treated as buyer demand.",
+      "relatedEntities": [
+        "ai-vendor-evidence-readiness"
+      ]
+    },
+    {
+      "id": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json#repo-stack",
+      "slug": "repo-stack",
+      "name": "Agenda Intelligence Repository Stack",
+      "type": "repository_map",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/repo-stack.md",
+      "description": "Map of the product/runtime repository, reasoning method repository, and regional specialist skill repositories.",
+      "relatedEntities": [
+        "agenda-intelligence-md"
+      ]
+    }
+  ]
+}

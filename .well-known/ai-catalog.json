@@ -94,7 +94,7 @@
       "identifier": "urn:ai:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev:knowledge:okf-bundle",
       "displayName": "Agenda Intelligence MD OKF-style knowledge bundle",
       "type": "text/markdown",
-      "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/okf/index.md",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/index.md",
       "description": "Compact Markdown/YAML concept bundle for retrieval agents: evidence-readiness, human-review packets, evidence packs, claim audits, source policy, market gate, and repo stack.",
       "capabilities": [
         "concept-retrieval",
@@ -111,6 +111,31 @@
         "what is Agenda Intelligence MD evidence-readiness",
         "explain human-review packet and claim audit concepts",
         "understand the Agenda Intelligence repository stack"
+      ],
+      "version": "1.1.0",
+      "updatedAt": "2026-06-29"
+    },
+    {
+      "identifier": "urn:ai:agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev:entitymap:agenda-intelligence-md",
+      "displayName": "Agenda Intelligence MD entity map",
+      "type": "application/entitymap+json",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json",
+      "description": "Machine-readable map of Agenda Intelligence MD entities, boundaries, relationships, and canonical retrieval paths.",
+      "capabilities": [
+        "entity-discovery",
+        "concept-navigation",
+        "domain-boundary-routing"
+      ],
+      "tags": [
+        "entitymap",
+        "knowledge-graph",
+        "retrieval",
+        "domain-map"
+      ],
+      "representativeQueries": [
+        "what are the core entities in Agenda Intelligence MD",
+        "map Agenda Intelligence MD evidence-readiness concepts",
+        "find the relationship between evidence pack, claim audit, and human-review packet"
       ],
       "version": "1.1.0",
       "updatedAt": "2026-06-29"

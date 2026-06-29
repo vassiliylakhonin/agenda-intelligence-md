@@ -16,8 +16,10 @@
     "ai_catalog": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
     "agent_card": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
     "did": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/did.json",
+    "entitymap": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json",
     "source_policy": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/SOURCE_POLICY.md",
-    "okf_bundle": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/okf/index.md"
+    "okf_bundle": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/index.md",
+    "okf_repository_copy": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/okf/index.md"
   },
   "capabilities": {
     "tools": true,

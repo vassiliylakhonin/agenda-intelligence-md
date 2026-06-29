@@ -9,6 +9,8 @@ const paths = [
   "/.well-known/ai-catalog.json",
   "/.well-known/mcp/server-card.json",
   "/.well-known/did.json",
+  "/entitymap.json",
+  "/okf/index.md",
   "/robots.txt"
 ];
 
