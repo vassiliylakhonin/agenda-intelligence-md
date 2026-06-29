@@ -26,6 +26,14 @@ claim -> source item -> support level -> evidence gap -> owner action -> decisio
 
 This lets a reviewer see what is ready, weak, missing, or unsafe to repeat without exposing client identifiers.
 
+## Readiness contract
+
+The canonical profile includes `readiness_contract`, the same normalized
+cross-profile block used by the live profile Workers. For project-room reviews it
+summarizes the readiness route, blocking gaps, claim audit, owner actions, human
+review requirement, and boundary notice without exposing private names or source
+text.
+
 ## Public artifact rule
 
 Public examples must be synthetic or approved public-only. If a private review creates a reusable pattern, extract the workflow shape only:

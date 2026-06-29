@@ -46,8 +46,24 @@ Use aliases and source IDs by default.
 2. `claims`: claim text, evidence IDs, support level, gap, risk if wrong, and whether the claim is safe to repeat.
 3. `owner_actions`: next action, owner function, priority, and blocking status.
 4. `readiness`: route such as `not_decision_ready`, `escalate_before_committee`, or `ready_for_human_review`.
-5. `boundary_notes`: what the profile does not decide.
-6. `follow_up_signal`: observed buyer behavior after the profile is shown.
+5. `readiness_contract`: normalized cross-profile status for project-room and human-review routing.
+6. `boundary_notes`: what the profile does not decide.
+7. `follow_up_signal`: observed buyer behavior after the profile is shown.
+
+## Readiness contract
+
+`readiness_contract` is an additive summary built from the project-room fields, not a replacement for them.
+
+| Field | Project-room source |
+|---|---|
+| `profile` | `confidential_project_room` |
+| `status` | `readiness.route` |
+| `score` | `null` unless a separate scoring rubric is explicitly defined |
+| `routing` | `readiness.route` |
+| `blocking_gaps` | unsupported, weak, stale, or unsafe-to-repeat claim gaps |
+| `claim_audit` | compact claim support and repeatability view |
+| `owner_actions` | existing owner actions, preserving owner function and blocking status |
+| `boundary_notice` | compact boundary note for downstream agents and dashboards |
 
 ## Human-review packet
 

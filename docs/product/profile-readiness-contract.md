@@ -4,6 +4,10 @@
 responses. It exists so agents, dashboards, and project-room workflows can
 compare evidence-readiness outputs without flattening away profile detail.
 
+The confidential project-room profile also uses this shape in its synthetic
+redacted example. There, `status` mirrors `readiness.route`, `score` remains
+`null`, and owner actions come from the project-room owner-action list.
+
 It is not a replacement for the profile response. The profile-specific fields
 remain the source of truth for sector language, source requirements, claim
 audit detail, owner actions, watch indicators, limitations, and boundary
@@ -65,3 +69,7 @@ The field is optional in response schemas and is not listed in `required`.
 Consumers that already read profile-specific fields can continue doing so.
 New consumers can read `readiness_contract` as a stable navigation layer and
 then drill into the profile-specific fields for detail.
+
+For the confidential project-room profile schema, `readiness_contract` is part
+of the profile contract because the public example is itself the reusable
+workflow artifact rather than a live API response.

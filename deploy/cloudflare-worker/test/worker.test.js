@@ -471,6 +471,15 @@ test("entity map and OKF routes expose live domain knowledge artifacts", async (
   assert.equal(profileExampleResponse.status, 200);
   assert.equal(profileExampleResponse.headers.get("content-type"), "application/json; charset=utf-8");
   assert.equal(profileExampleBody.profile_type, "confidential_project_room");
+  assert.equal(profileExampleBody.readiness_contract.profile, "confidential_project_room");
+  assert.equal(profileExampleBody.readiness_contract.status, profileExampleBody.readiness.route);
+  assert.deepEqual(profileExampleBody.readiness_contract.routing, {
+    field: "readiness.route",
+    value: profileExampleBody.readiness.route
+  });
+  assert.equal(profileExampleBody.readiness_contract.human_review_required, true);
+  assert.equal(profileExampleBody.readiness_contract.owner_actions.length, profileExampleBody.owner_actions.length);
+  assert.match(profileExampleBody.readiness_contract.boundary_notice, /Not a secure data room/);
 });
 
 test("generated OKF content matches repository OKF files", () => {

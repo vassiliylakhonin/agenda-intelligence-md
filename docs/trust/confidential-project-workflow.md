@@ -58,6 +58,23 @@ Preserve what the reviewer needs:
 - Missing evidence.
 - Likely owner action.
 - Decision route.
+- Normalized `readiness_contract` for cross-profile routing.
+
+## Readiness contract
+
+For project-room outputs, include a `readiness_contract` block that mirrors the
+review state without adding a new decision.
+
+Use:
+
+- `profile: confidential_project_room`
+- `status`: the `readiness.route`
+- `score: null` unless a separate scoring rubric is explicitly defined
+- `routing`: the readiness route as a named value
+- `blocking_gaps`: claim gaps that block human review, committee review, public reuse, lender review, or procurement handoff
+- `claim_audit`: compact claim IDs, support levels, evidence IDs, and repeatability status
+- `owner_actions`: the existing owner-action list
+- `boundary_notice`: a short non-advice / non-approval notice
 
 ## Source item handling
 

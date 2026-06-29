@@ -146,6 +146,90 @@
     "ready_for_public_reuse": false,
     "human_review_required": true
   },
+  "readiness_contract": {
+    "profile": "confidential_project_room",
+    "status": "escalate_before_committee",
+    "score": null,
+    "routing": {
+      "field": "readiness.route",
+      "value": "escalate_before_committee"
+    },
+    "signal": null,
+    "blocking_gaps": [
+      {
+        "claim_id": "C1",
+        "evidence_gap": "No signed customer letter, term sheet, or redacted offtake evidence is included.",
+        "owner_action_id": "A1"
+      },
+      {
+        "claim_id": "C2",
+        "evidence_gap": "Delivery assumptions are present, but warranty, export-control, and supply-chain conditions are missing.",
+        "owner_action_id": "A2"
+      },
+      {
+        "claim_id": "C3",
+        "evidence_gap": "The lender question list exists, but answers, ownership, and evidence attachments are missing.",
+        "owner_action_id": "A3"
+      }
+    ],
+    "non_blocking_gaps": [],
+    "claim_audit": [
+      {
+        "claim_id": "C1",
+        "support_level": "weak",
+        "safe_to_repeat": false,
+        "evidence_ids": [
+          "S1"
+        ]
+      },
+      {
+        "claim_id": "C2",
+        "support_level": "partial",
+        "safe_to_repeat": true,
+        "evidence_ids": [
+          "S2"
+        ]
+      },
+      {
+        "claim_id": "C3",
+        "support_level": "unsupported",
+        "safe_to_repeat": false,
+        "evidence_ids": [
+          "S3"
+        ]
+      }
+    ],
+    "owner_actions": [
+      {
+        "action_id": "A1",
+        "owner": "commercial_owner",
+        "action": "Provide redacted customer evidence or mark the demand claim as unsafe to repeat.",
+        "priority": "P0",
+        "blocks_readiness": true
+      },
+      {
+        "action_id": "A2",
+        "owner": "procurement_owner",
+        "action": "Request Vendor-A delivery conditions, warranty terms, and export-control assumptions.",
+        "priority": "P1",
+        "blocks_readiness": true
+      },
+      {
+        "action_id": "A3",
+        "owner": "finance_owner",
+        "action": "Map each Lender-1 question to an owner, source item, and response status.",
+        "priority": "P0",
+        "blocks_readiness": true
+      }
+    ],
+    "watch_next": [
+      "redacted customer evidence",
+      "vendor delivery conditions",
+      "lender response owner map"
+    ],
+    "human_review_required": true,
+    "boundary_notice": "Alias-first evidence-readiness and human-review routing only. Not a secure data room, approval system, factual verification, legal review, compliance review, procurement approval, or investment recommendation."
+  },
   "boundary_notes": [
     "This profile does not approve or reject the project.",
     "This profile does not provide legal, compliance, procurement, security, tax, customs, financial, insurance, sanctions, export-control, or investment advice.",
