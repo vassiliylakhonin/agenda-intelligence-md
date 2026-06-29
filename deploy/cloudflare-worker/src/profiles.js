@@ -117,11 +117,45 @@ function productContract({ request_schema, response_schema, source_taxonomy, run
   });
 }
 
+function frozenArray(values) {
+  return Object.freeze([...values]);
+}
+
+const SHARED_PROVIDER_SAME_AS = frozenArray([
+  "https://github.com/vassiliylakhonin",
+  "https://pypi.org/project/agenda-intelligence-md/",
+  "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
+]);
+
 const middleCorridorProfile = Object.freeze({
   profile_key: "kazakhstan",
   product_profile: "middle_corridor_deal_risk",
   canonical_product_name: "Kazakhstan / Middle Corridor Deal Risk Gate",
   documentation_url: MIDDLE_CORRIDOR_DOCS_URL,
+  provider_same_as: frozenArray([
+    ...SHARED_PROVIDER_SAME_AS,
+    "https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev"
+  ]),
+  wrapper_scope:
+    "A2A/JSON-RPC discovery, Kazakhstan and Middle Corridor deal-risk triage, evidence gating, source coverage, and routing response only",
+  supported_contracts: frozenArray(["middle_corridor_deal_risk_contract", "lightweight_text_triage"]),
+  buyer_use_cases: frozenArray([
+    "pre-signature logistics deal review",
+    "pre-shipment evidence completeness check",
+    "trade-finance or compliance-adjacent file readiness",
+    "insurance-adjacent source-pack handoff",
+    "management or client risk-memo quality gate",
+    "counterparty dossier-completeness check before presenting evidence to a bank, insurer, or counterparty"
+  ]),
+  commercial_positioning:
+    "Pre-screening evidence triage: identifies which due-diligence documents are still missing before a deal's counterparties are committed to a sanctions-screening or network-intelligence tool. It complements those tools rather than replacing them, and performs no screening, name-matching, or data retrieval itself. Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation. The same evidence-gap picture is also returned outward as counterparty_readiness: a dossier-completeness view (status + supplied-vs-required counts + outstanding documents) for the party that must present enhanced-due-diligence evidence to a bank, insurer, or counterparty. Completeness only, not clearance or a sanctions determination.",
+  focus: frozenArray([
+    "Kazakhstan and Middle Corridor deal-risk triage",
+    "sanctions-adjacent evidence gates",
+    "source coverage for dated evidence packs",
+    "risk memo quality gates",
+    "human-review escalation before signature, committee review, insurer handoff, or client delivery"
+  ]),
   product_contract: productContract({
     request_schema: MIDDLE_CORRIDOR_REQUEST_SCHEMA_URL,
     response_schema: MIDDLE_CORRIDOR_RESPONSE_SCHEMA_URL,
@@ -137,6 +171,26 @@ const agenticInteractionTrustProfile = Object.freeze({
   product_profile: "agentic_interaction_trust",
   canonical_product_name: "Agentic Interaction Trust Gate",
   documentation_url: AGENTIC_INTERACTION_TRUST_DOCS_URL,
+  provider_same_as: SHARED_PROVIDER_SAME_AS,
+  wrapper_scope:
+    "A2A/JSON-RPC discovery, agentic interaction trust triage, evidence gating, and routing response only",
+  supported_contracts: frozenArray(["agentic_interaction_trust_contract"]),
+  buyer_use_cases: frozenArray([
+    "AI shopping-agent checkout step-up review",
+    "unknown A2A caller capability invocation review",
+    "MCP tool-scope and permission evidence triage",
+    "API partner delegated-action evidence readiness",
+    "trust-and-safety human-review queue preparation"
+  ]),
+  commercial_positioning:
+    "Actor + target surface + requested action + dated evidence -> auditable trust-routing triage with evidence gaps, decision-readiness score, watch-next indicators, and human-review escalation.",
+  focus: frozenArray([
+    "agent-mediated checkout and account action triage",
+    "A2A and MCP endpoint invocation evidence gates",
+    "delegated-action authority and permission evidence",
+    "trust-and-safety review readiness",
+    "human-review escalation for consequential agentic actions"
+  ]),
   product_contract: productContract({
     request_schema: AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL,
     response_schema: AGENTIC_INTERACTION_TRUST_RESPONSE_SCHEMA_URL,
@@ -152,6 +206,18 @@ const gulfMaritimeProfile = Object.freeze({
   product_profile: "gulf_maritime_exposure",
   canonical_product_name: "Gulf Maritime Exposure Gate",
   documentation_url: GULF_MARITIME_DOCS_URL,
+  provider_same_as: SHARED_PROVIDER_SAME_AS,
+  wrapper_scope:
+    "A2A/JSON-RPC discovery, maritime sanctions and chokepoint-disruption triage, evidence gating, and routing response only",
+  supported_contracts: frozenArray(["gulf_maritime_exposure_contract"]),
+  buyer_use_cases: frozenArray([
+    "marine and war-risk underwriting before binding cover",
+    "tanker chartering fixture clearance through the Gulf or Red Sea",
+    "shipowner/operator sanctions clearance before fixture",
+    "bunkering and ship-agency dark-fleet exposure triage"
+  ]),
+  commercial_positioning:
+    "Vessel + voyage + counterparties + exposure facets + dated evidence -> auditable exposure triage with evidence gaps, decision-readiness score, chokepoint disruption watch, and human-review escalation. Sits beside a vessel-screening or ownership-resolution tool, not instead of one.",
   product_contract: productContract({
     request_schema: GULF_MARITIME_REQUEST_SCHEMA_URL,
     response_schema: GULF_MARITIME_RESPONSE_SCHEMA_URL,
@@ -167,6 +233,26 @@ const cisSecondarySanctionsProfile = Object.freeze({
   product_profile: "cis_secondary_sanctions",
   canonical_product_name: "CIS Secondary-Sanctions Exposure",
   documentation_url: CIS_SECONDARY_SANCTIONS_DOCS_URL,
+  provider_same_as: SHARED_PROVIDER_SAME_AS,
+  wrapper_scope:
+    "A2A/JSON-RPC discovery, CIS secondary-sanctions exposure triage, active server-side name screening against a public-list snapshot (Snapshot upstream; Watchman / OpenSanctions alternates), and routing response only",
+  supported_contracts: frozenArray(["cis_secondary_sanctions_exposure_contract"]),
+  buyer_use_cases: frozenArray([
+    "EU / UK / UAE / Singapore enhanced due diligence on CIS counterparties",
+    "OFAC EO 14114 secondary-sanctions exposure screening",
+    "EU sanctions package transit / re-export risk triage",
+    "UK OFSI alignment for CIS-facing trade-finance files",
+    "FATF / EAG typology mapping for CIS-domiciled entities"
+  ]),
+  commercial_positioning:
+    "CIS / Caucasus / Central Asia counterparty + exposure facets + dated source extracts -> auditable secondary-sanctions exposure triage with optional sanctions-list name matches (when a list upstream is configured), evidence gaps, decision-readiness score, and mandatory human-review escalation.",
+  focus: frozenArray([
+    "CIS counterparty secondary-sanctions exposure triage",
+    "Public-list snapshot name matching (OFAC SDN / EU / UK)",
+    "ownership / transit / correspondent-banking exposure dimensions",
+    "FATF / EAG typology references",
+    "graceful degrade to user-supplied evidence on upstream failure"
+  ]),
   product_contract: productContract({
     request_schema: CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL,
     response_schema: CIS_SECONDARY_SANCTIONS_RESPONSE_SCHEMA_URL,
@@ -182,6 +268,18 @@ const marketEntryReadinessProfile = Object.freeze({
   product_profile: "kazakhstan_market_entry_readiness",
   canonical_product_name: "Kazakhstan Market-Entry Readiness Gate",
   documentation_url: MARKET_ENTRY_DOCS_URL,
+  provider_same_as: SHARED_PROVIDER_SAME_AS,
+  wrapper_scope:
+    "A2A/JSON-RPC discovery, market-entry evidence triage, gate decision, and routing response only",
+  supported_contracts: frozenArray(["kazakhstan_market_entry_readiness_contract"]),
+  buyer_use_cases: frozenArray([
+    "foreign company assessing a Kazakhstan distribution / import entry before signature",
+    "EPC, renewable-energy, or infrastructure entrant gating committee review",
+    "advisor or consultant triaging a client's Kazakhstan market-entry file",
+    "partner-entry / technology-transfer readiness before commitment"
+  ]),
+  commercial_positioning:
+    "Company + project + Kazakhstan objective + counterparties + supplied sources -> auditable market-entry triage with a gate decision, readiness label, evidence gaps, owner actions, and human-review escalation. Sits beside legal, tax, and customs advisors, not instead of them.",
   product_contract: productContract({
     request_schema: MARKET_ENTRY_REQUEST_SCHEMA_URL,
     response_schema: MARKET_ENTRY_RESPONSE_SCHEMA_URL,
@@ -222,6 +320,10 @@ export function profileDiscovery(profile) {
   const entry = PROFILE_REGISTRY[profile] || PROFILE_REGISTRY.agenda;
   return {
     ...entry,
+    provider_same_as: entry.provider_same_as ? [...entry.provider_same_as] : undefined,
+    supported_contracts: entry.supported_contracts ? [...entry.supported_contracts] : undefined,
+    buyer_use_cases: entry.buyer_use_cases ? [...entry.buyer_use_cases] : undefined,
+    focus: entry.focus ? [...entry.focus] : undefined,
     product_contract: entry.product_contract
       ? {
           ...entry.product_contract,

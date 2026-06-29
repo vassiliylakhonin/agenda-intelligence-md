@@ -1686,12 +1686,7 @@ function applyAgentProfile(card, request, env = {}) {
   card.documentationUrl = discovery.documentation_url;
   card.description =
     "A2A-compatible evidence-readiness gate for Kazakhstan-Caspian / Middle Corridor logistics, trade-finance, procurement, and insurance-adjacent workflows. Bring route, cargo, counterparties, and dated sources; get structured deal-risk triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, risk signal, human-review routing, and named sanctions-exposure flags: OFAC named-sector (EO 14024/14114) and newly-formed-counterparty red flags, EU re-export / circumvention-watch jurisdictions (incl. the 20th-package measures on Kyrgyzstan), dual-use cargo screened against the EU/US Common High Priority List, a domestic-legal vs foreign-sanctions exposure decomposition, and a vessel deceptive-shipping-practice checklist. Deterministic rule-based logic, no model in the decision path. Presence-flagging and evidence triage only, not a sanctions determination.";
-  card.provider.legalEntity.sameAs = [
-    "https://github.com/vassiliylakhonin",
-    "https://pypi.org/project/agenda-intelligence-md/",
-    "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md",
-    "https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev"
-  ];
+  card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
       id: "middle-corridor-deal-desk-triage",
@@ -1795,36 +1790,18 @@ function applyAgentProfile(card, request, env = {}) {
       outputModes: ["application/json", "text/markdown"]
     }
   ];
-  card.x_agenda_intelligence.product_profile = "middle_corridor_deal_risk";
-  card.x_agenda_intelligence.canonical_product_name = "Kazakhstan / Middle Corridor Deal Risk Gate";
-  card.x_agenda_intelligence.wrapper_scope =
-    "A2A/JSON-RPC discovery, Kazakhstan and Middle Corridor deal-risk triage, evidence gating, source coverage, and routing response only";
+  card.x_agenda_intelligence.product_profile = discovery.product_profile;
+  card.x_agenda_intelligence.canonical_product_name = discovery.canonical_product_name;
+  card.x_agenda_intelligence.wrapper_scope = discovery.wrapper_scope;
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
   card.x_agenda_intelligence.documentation = discovery.documentation_url;
   card.x_agenda_intelligence.product_contract = discovery.product_contract;
   card.x_agenda_intelligence.required_before_go = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO;
   card.x_agenda_intelligence.helpful_context_sources = MIDDLE_CORRIDOR_HELPFUL_CONTEXT;
-  card.x_agenda_intelligence.supported_contracts = [
-    "middle_corridor_deal_risk_contract",
-    "lightweight_text_triage"
-  ];
-  card.x_agenda_intelligence.buyer_use_cases = [
-    "pre-signature logistics deal review",
-    "pre-shipment evidence completeness check",
-    "trade-finance or compliance-adjacent file readiness",
-    "insurance-adjacent source-pack handoff",
-    "management or client risk-memo quality gate",
-    "counterparty dossier-completeness check before presenting evidence to a bank, insurer, or counterparty"
-  ];
-  card.x_agenda_intelligence.commercial_positioning =
-    "Pre-screening evidence triage: identifies which due-diligence documents are still missing before a deal's counterparties are committed to a sanctions-screening or network-intelligence tool. It complements those tools rather than replacing them, and performs no screening, name-matching, or data retrieval itself. Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation. The same evidence-gap picture is also returned outward as counterparty_readiness: a dossier-completeness view (status + supplied-vs-required counts + outstanding documents) for the party that must present enhanced-due-diligence evidence to a bank, insurer, or counterparty. Completeness only, not clearance or a sanctions determination.";
-  card.x_agenda_intelligence.focus = [
-    "Kazakhstan and Middle Corridor deal-risk triage",
-    "sanctions-adjacent evidence gates",
-    "source coverage for dated evidence packs",
-    "risk memo quality gates",
-    "human-review escalation before signature, committee review, insurer handoff, or client delivery"
-  ];
+  card.x_agenda_intelligence.supported_contracts = discovery.supported_contracts;
+  card.x_agenda_intelligence.buyer_use_cases = discovery.buyer_use_cases;
+  card.x_agenda_intelligence.commercial_positioning = discovery.commercial_positioning;
+  card.x_agenda_intelligence.focus = discovery.focus;
   card.x_agenda_intelligence.not_advice_notice = NOT_ADVICE_NOTICE;
   card.x_agenda_intelligence.boundaries = [
     "Pre-compliance evidence triage only.",
@@ -1858,11 +1835,7 @@ function applyAgenticInteractionTrustProfile(card, request) {
   card.documentationUrl = discovery.documentation_url;
   card.description =
     "A2A-compatible evidence-readiness gate for agent-mediated actions across checkout, account, API, MCP tool, and A2A endpoint surfaces. Bring actor identity claims, target surface, requested action, and dated evidence; get trust-routing triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, trust signal, and human-review routing.";
-  card.provider.legalEntity.sameAs = [
-    "https://github.com/vassiliylakhonin",
-    "https://pypi.org/project/agenda-intelligence-md/",
-    "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
-  ];
+  card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
       id: "agentic-interaction-trust-gate",
@@ -1887,32 +1860,18 @@ function applyAgenticInteractionTrustProfile(card, request) {
       outputModes: ["application/json", "text/markdown"]
     }
   ];
-  card.x_agenda_intelligence.product_profile = "agentic_interaction_trust";
-  card.x_agenda_intelligence.canonical_product_name = "Agentic Interaction Trust Gate";
-  card.x_agenda_intelligence.wrapper_scope =
-    "A2A/JSON-RPC discovery, agentic interaction trust triage, evidence gating, and routing response only";
+  card.x_agenda_intelligence.product_profile = discovery.product_profile;
+  card.x_agenda_intelligence.canonical_product_name = discovery.canonical_product_name;
+  card.x_agenda_intelligence.wrapper_scope = discovery.wrapper_scope;
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
   card.x_agenda_intelligence.documentation = discovery.documentation_url;
   card.x_agenda_intelligence.product_contract = discovery.product_contract;
   card.x_agenda_intelligence.required_before_action = AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION;
   card.x_agenda_intelligence.helpful_context_sources = AGENTIC_INTERACTION_TRUST_HELPFUL_CONTEXT;
-  card.x_agenda_intelligence.supported_contracts = ["agentic_interaction_trust_contract"];
-  card.x_agenda_intelligence.buyer_use_cases = [
-    "AI shopping-agent checkout step-up review",
-    "unknown A2A caller capability invocation review",
-    "MCP tool-scope and permission evidence triage",
-    "API partner delegated-action evidence readiness",
-    "trust-and-safety human-review queue preparation"
-  ];
-  card.x_agenda_intelligence.commercial_positioning =
-    "Actor + target surface + requested action + dated evidence -> auditable trust-routing triage with evidence gaps, decision-readiness score, watch-next indicators, and human-review escalation.";
-  card.x_agenda_intelligence.focus = [
-    "agent-mediated checkout and account action triage",
-    "A2A and MCP endpoint invocation evidence gates",
-    "delegated-action authority and permission evidence",
-    "trust-and-safety review readiness",
-    "human-review escalation for consequential agentic actions"
-  ];
+  card.x_agenda_intelligence.supported_contracts = discovery.supported_contracts;
+  card.x_agenda_intelligence.buyer_use_cases = discovery.buyer_use_cases;
+  card.x_agenda_intelligence.commercial_positioning = discovery.commercial_positioning;
+  card.x_agenda_intelligence.focus = discovery.focus;
   card.x_agenda_intelligence.not_advice_notice = AGENTIC_TRUST_NOT_ADVICE_NOTICE;
   card.x_agenda_intelligence.boundaries = [
     "Agentic interaction evidence triage only.",
@@ -1937,11 +1896,7 @@ function applyGulfMaritimeProfile(card, request) {
     "vessel, voyage, cargo, counterparties, exposure facets, and dated evidence; get exposure-routing triage, missing " +
     "source categories, evidence gaps, a chokepoint disruption watch, decision-readiness score, and human-review " +
     "routing. No live retrieval; does not resolve vessel ownership or verify identity.";
-  card.provider.legalEntity.sameAs = [
-    "https://github.com/vassiliylakhonin",
-    "https://pypi.org/project/agenda-intelligence-md/",
-    "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
-  ];
+  card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
       id: "gulf-maritime-exposure",
@@ -1959,26 +1914,17 @@ function applyGulfMaritimeProfile(card, request) {
       outputModes: ["application/json", "text/markdown"]
     }
   ];
-  card.x_agenda_intelligence.product_profile = "gulf_maritime_exposure";
-  card.x_agenda_intelligence.canonical_product_name = "Gulf Maritime Exposure Gate";
-  card.x_agenda_intelligence.wrapper_scope =
-    "A2A/JSON-RPC discovery, maritime sanctions and chokepoint-disruption triage, evidence gating, and routing response only";
+  card.x_agenda_intelligence.product_profile = discovery.product_profile;
+  card.x_agenda_intelligence.canonical_product_name = discovery.canonical_product_name;
+  card.x_agenda_intelligence.wrapper_scope = discovery.wrapper_scope;
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
   card.x_agenda_intelligence.documentation = discovery.documentation_url;
   card.x_agenda_intelligence.product_contract = discovery.product_contract;
   card.x_agenda_intelligence.required_before_review = GULF_MARITIME_REQUIRED_BEFORE_REVIEW;
   card.x_agenda_intelligence.helpful_context_sources = GULF_MARITIME_HELPFUL_CONTEXT;
-  card.x_agenda_intelligence.supported_contracts = ["gulf_maritime_exposure_contract"];
-  card.x_agenda_intelligence.buyer_use_cases = [
-    "marine and war-risk underwriting before binding cover",
-    "tanker chartering fixture clearance through the Gulf or Red Sea",
-    "shipowner/operator sanctions clearance before fixture",
-    "bunkering and ship-agency dark-fleet exposure triage"
-  ];
-  card.x_agenda_intelligence.commercial_positioning =
-    "Vessel + voyage + counterparties + exposure facets + dated evidence -> auditable exposure triage with evidence " +
-    "gaps, decision-readiness score, chokepoint disruption watch, and human-review escalation. Sits beside a " +
-    "vessel-screening or ownership-resolution tool, not instead of one.";
+  card.x_agenda_intelligence.supported_contracts = discovery.supported_contracts;
+  card.x_agenda_intelligence.buyer_use_cases = discovery.buyer_use_cases;
+  card.x_agenda_intelligence.commercial_positioning = discovery.commercial_positioning;
   card.x_agenda_intelligence.boundaries = [
     "No live source retrieval; caller-supplied evidence only.",
     "No vessel-ownership resolution, vessel-identity verification, or name screening.",
@@ -2003,11 +1949,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
       ? ""
       : "Sanctions-list name-match (Snapshot public-list snapshot, or Watchman / OpenSanctions) is wired but disabled in this deployment, which runs on user-supplied evidence only. ") +
     "Targets enhanced due diligence in EU / UK / UAE / Singapore institutions screening counterparties against OFAC EO 14114, EU sanctions package, UK OFSI, and FATF / EAG typologies.";
-  card.provider.legalEntity.sameAs = [
-    "https://github.com/vassiliylakhonin",
-    "https://pypi.org/project/agenda-intelligence-md/",
-    "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
-  ];
+  card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
       id: "cis-secondary-sanctions-exposure",
@@ -2034,10 +1976,9 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
       outputModes: ["application/json", "text/markdown"]
     }
   ];
-  card.x_agenda_intelligence.product_profile = "cis_secondary_sanctions";
-  card.x_agenda_intelligence.canonical_product_name = "CIS Secondary-Sanctions Exposure";
-  card.x_agenda_intelligence.wrapper_scope =
-    "A2A/JSON-RPC discovery, CIS secondary-sanctions exposure triage, active server-side name screening against a public-list snapshot (Snapshot upstream; Watchman / OpenSanctions alternates), and routing response only";
+  card.x_agenda_intelligence.product_profile = discovery.product_profile;
+  card.x_agenda_intelligence.canonical_product_name = discovery.canonical_product_name;
+  card.x_agenda_intelligence.wrapper_scope = discovery.wrapper_scope;
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
   card.x_agenda_intelligence.documentation = discovery.documentation_url;
   card.x_agenda_intelligence.product_contract = discovery.product_contract;
@@ -2082,23 +2023,10 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
       ? undefined
       : "Per the 2026-05-27 update to ADR 0014, live retrieval upstreams are declared but not activated. Set SNAPSHOT_INDEX_URL ($0 static snapshot, no host), WATCHMAN_URL (free self-host), or OPENSANCTIONS_API_KEY (paid) to activate. Profile currently operates on user-supplied evidence only."
   };
-  card.x_agenda_intelligence.supported_contracts = ["cis_secondary_sanctions_exposure_contract"];
-  card.x_agenda_intelligence.buyer_use_cases = [
-    "EU / UK / UAE / Singapore enhanced due diligence on CIS counterparties",
-    "OFAC EO 14114 secondary-sanctions exposure screening",
-    "EU sanctions package transit / re-export risk triage",
-    "UK OFSI alignment for CIS-facing trade-finance files",
-    "FATF / EAG typology mapping for CIS-domiciled entities"
-  ];
-  card.x_agenda_intelligence.commercial_positioning =
-    "CIS / Caucasus / Central Asia counterparty + exposure facets + dated source extracts -> auditable secondary-sanctions exposure triage with optional sanctions-list name matches (when a list upstream is configured), evidence gaps, decision-readiness score, and mandatory human-review escalation.";
-  card.x_agenda_intelligence.focus = [
-    "CIS counterparty secondary-sanctions exposure triage",
-    "Public-list snapshot name matching (OFAC SDN / EU / UK)",
-    "ownership / transit / correspondent-banking exposure dimensions",
-    "FATF / EAG typology references",
-    "graceful degrade to user-supplied evidence on upstream failure"
-  ];
+  card.x_agenda_intelligence.supported_contracts = discovery.supported_contracts;
+  card.x_agenda_intelligence.buyer_use_cases = discovery.buyer_use_cases;
+  card.x_agenda_intelligence.commercial_positioning = discovery.commercial_positioning;
+  card.x_agenda_intelligence.focus = discovery.focus;
   card.x_agenda_intelligence.not_advice_notice = NOT_ADVICE_NOTICE;
   card.x_agenda_intelligence.boundaries = [
     "Pre-compliance evidence triage only.",
@@ -3774,11 +3702,7 @@ function applyMarketEntryReadinessProfile(card, request) {
     "project, Kazakhstan objective, counterparties, and supplied sources; get a gate decision, readiness label, " +
     "evidence gaps, claim audit, owner actions, watch-next indicators, and mandatory human-review routing. No live " +
     "retrieval; not legal, compliance, customs, tax, sanctions, or launch-authorization advice.";
-  card.provider.legalEntity.sameAs = [
-    "https://github.com/vassiliylakhonin",
-    "https://pypi.org/project/agenda-intelligence-md/",
-    "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md"
-  ];
+  card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
       id: "kazakhstan-market-entry-readiness",
@@ -3796,26 +3720,17 @@ function applyMarketEntryReadinessProfile(card, request) {
       outputModes: ["application/json", "text/markdown"]
     }
   ];
-  card.x_agenda_intelligence.product_profile = "kazakhstan_market_entry_readiness";
-  card.x_agenda_intelligence.canonical_product_name = "Kazakhstan Market-Entry Readiness Gate";
-  card.x_agenda_intelligence.wrapper_scope =
-    "A2A/JSON-RPC discovery, market-entry evidence triage, gate decision, and routing response only";
+  card.x_agenda_intelligence.product_profile = discovery.product_profile;
+  card.x_agenda_intelligence.canonical_product_name = discovery.canonical_product_name;
+  card.x_agenda_intelligence.wrapper_scope = discovery.wrapper_scope;
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
   card.x_agenda_intelligence.documentation = discovery.documentation_url;
   card.x_agenda_intelligence.product_contract = discovery.product_contract;
   card.x_agenda_intelligence.required_before_validation = MARKET_ENTRY_REQUIRED_BEFORE_VALIDATION;
   card.x_agenda_intelligence.required_before_signature = MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE;
-  card.x_agenda_intelligence.supported_contracts = ["kazakhstan_market_entry_readiness_contract"];
-  card.x_agenda_intelligence.buyer_use_cases = [
-    "foreign company assessing a Kazakhstan distribution / import entry before signature",
-    "EPC, renewable-energy, or infrastructure entrant gating committee review",
-    "advisor or consultant triaging a client's Kazakhstan market-entry file",
-    "partner-entry / technology-transfer readiness before commitment"
-  ];
-  card.x_agenda_intelligence.commercial_positioning =
-    "Company + project + Kazakhstan objective + counterparties + supplied sources -> auditable market-entry triage " +
-    "with a gate decision, readiness label, evidence gaps, owner actions, and human-review escalation. Sits beside " +
-    "legal, tax, and customs advisors, not instead of them.";
+  card.x_agenda_intelligence.supported_contracts = discovery.supported_contracts;
+  card.x_agenda_intelligence.buyer_use_cases = discovery.buyer_use_cases;
+  card.x_agenda_intelligence.commercial_positioning = discovery.commercial_positioning;
   card.x_agenda_intelligence.boundaries = [
     "No live source retrieval; caller-supplied evidence only.",
     "No factual-truth verification.",

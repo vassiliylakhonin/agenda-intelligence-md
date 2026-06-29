@@ -97,6 +97,11 @@ test("profile registry is the single discovery contract source for deployed prof
     assert.match(discovery.product_contract.runnable_examples, /\/tree\/main\/examples\//);
     assert.equal(discovery.product_contract.canonical_input_mode, "structured_json");
     assert.ok(discovery.product_contract.demo_input_modes.includes("structured_json"));
+    assert.ok(discovery.provider_same_as.includes("https://github.com/vassiliylakhonin"));
+    assert.ok(discovery.wrapper_scope.includes("A2A/JSON-RPC discovery"));
+    assert.ok(discovery.supported_contracts.length > 0);
+    assert.ok(discovery.buyer_use_cases.length > 0);
+    assert.match(discovery.commercial_positioning, /evidence|triage|readiness/i);
   }
 
   assert.equal(profileDiscovery("middle_corridor_deal_risk").documentation_url, profileDiscovery("kazakhstan").documentation_url);
