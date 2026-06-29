@@ -218,6 +218,37 @@ def test_source_coverage_strict_exits_nonzero_on_missing_sources(tmp_path: Path)
     assert "missing required sources" in res.stdout
 
 
+def test_weekly_delta_command_markdown_on_synthetic_example():
+    res = run(
+        "weekly-delta",
+        "examples/strategic-infrastructure-bankability/status.synthetic.md",
+        "--project-alias",
+        "ProjectCo",
+        "--decision-moment",
+        "committee review",
+    )
+
+    assert "# Weekly Status Decision-Readiness Delta" in res.stdout
+    assert "Readiness delta: `unclear_due_to_missing_evidence`" in res.stdout
+    assert "Next decision route: `escalate_before_committee`" in res.stdout
+    assert "Demand is secured." in res.stdout
+
+
+def test_weekly_delta_command_json_on_synthetic_example():
+    res = run(
+        "weekly-delta",
+        "examples/strategic-infrastructure-bankability/status.synthetic.md",
+        "--format",
+        "json",
+    )
+    payload = json.loads(res.stdout)
+
+    assert payload["valid"] is True
+    assert payload["category"] == "ai-infrastructure-bankability"
+    assert payload["next_decision_route"] == "escalate_before_committee"
+    assert any(item["claim"] == "Procurement is ready for shortlist." for item in payload["unsafe_to_repeat_claims"])
+
+
 def test_source_coverage_detects_sanctions_sources(tmp_path: Path):
     pack = tmp_path / "pack.json"
     pack.write_text(

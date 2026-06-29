@@ -612,6 +612,41 @@ def cmd_deal_report(args):
         print(rendered)
 
 
+def cmd_weekly_delta(args):
+    """Render a confidential weekly/status update into a decision-readiness delta.
+
+    This is a deterministic scaffold: no LLM, no source discovery, no factual
+    verification, and no legal/compliance/financial advice.
+    """
+    from agenda_intelligence import services
+
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"Not found: {path}")
+    text = path.read_text(encoding="utf-8")
+    result = services.weekly_status_delta(
+        text,
+        category=args.category,
+        project_alias=args.project_alias,
+        decision_moment=args.decision_moment,
+        source_type=args.source_type,
+    )
+    if result.get("error"):
+        print(f"ERROR: {result['error']}", file=sys.stderr)
+        raise SystemExit(1)
+
+    if args.format == "json":
+        rendered = json.dumps(result, indent=2, ensure_ascii=False)
+    else:
+        rendered = result["markdown"]
+
+    if args.out:
+        Path(args.out).write_text(rendered, encoding="utf-8")
+        print(f"Wrote {args.out}")
+    else:
+        print(rendered)
+
+
 def cmd_report(args):
     """Generate a concise Markdown report combining schema check + heuristic
     structure scoring for an agenda brief JSON file.
@@ -859,6 +894,23 @@ def main():
     p.add_argument("--format", choices=["md", "html", "pdf"], default="md", help="Output format (default: md)")
     p.add_argument("--out", help="Write to this file instead of stdout (required for pdf)")
     p.set_defaults(func=cmd_deal_report)
+    # weekly-delta — render a confidential weekly/status note as a readiness packet
+    p = sub.add_parser(
+        "weekly-delta",
+        help="Render a weekly/status note into a confidential decision-readiness delta",
+    )
+    p.add_argument("path", help="Markdown/text status note")
+    p.add_argument(
+        "--category",
+        default="ai-infrastructure-bankability",
+        help="Source category (default: ai-infrastructure-bankability)",
+    )
+    p.add_argument("--project-alias", default="ProjectCo", help="Alias to use in output")
+    p.add_argument("--decision-moment", default="committee review", help="Decision moment being prepared")
+    p.add_argument("--source-type", default="weekly status", help="Input source type label")
+    p.add_argument("--format", choices=["md", "json"], default="md")
+    p.add_argument("--out", help="Write output to this file instead of stdout")
+    p.set_defaults(func=cmd_weekly_delta)
     # eval (alias of score)
     p = sub.add_parser("eval", help="Run the eval/scoring rubric (alias of score)")
     p.add_argument("path", nargs="?")

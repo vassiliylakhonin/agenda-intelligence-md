@@ -18,6 +18,7 @@ Use it to test whether Agenda Intelligence MD can turn a confidential or redacte
 
 | File | Purpose |
 |---|---|
+| [`status.synthetic.md`](status.synthetic.md) | Synthetic messy weekly/status input for the `weekly-delta` CLI |
 | [`synthetic-profile.md`](synthetic-profile.md) | Redacted-style evidence-readiness profile for a fictional project |
 | [`weekly-status-delta.synthetic.md`](weekly-status-delta.synthetic.md) | Synthetic weekly/status-call delta that turns activity into evidence state and owner actions |
 | [`claim.audit.json`](claim.audit.json) | Claim-level evidence audit using generic source IDs and aliases |

@@ -106,6 +106,30 @@ def test_services_score_output_matches_mcp_wrapper():
     assert services.score_output(before, after) == mcp_server.score_output(before, after)
 
 
+def test_services_weekly_status_delta_builds_readiness_scaffold():
+    status = """
+    RFP was sent to integrators and vendor proposals are pending.
+    Lender-1 requested customer evidence before discussing a term sheet.
+    Anchor-Customer-1 sent a non-binding LOI without volume, term, or pricing.
+    Partner-A proposed a JV route to lower CAPEX.
+    The tax team is reviewing a possible customs benefit.
+    PMO asked whether the project is ready for investment committee review.
+    """
+
+    result = services.weekly_status_delta(status, project_alias="ProjectCo", decision_moment="committee review")
+
+    assert result["implemented"] is True
+    assert result["valid"] is True
+    assert result["readiness_delta"] == "unclear_due_to_missing_evidence"
+    assert result["next_decision_route"] == "escalate_before_committee"
+    unsafe_claims = {item["claim"] for item in result["unsafe_to_repeat_claims"]}
+    assert "Demand is secured." in unsafe_claims
+    assert "Financing is progressing well." in unsafe_claims
+    assert "The project is ready for committee or FID approval." in unsafe_claims
+    assert "site_power_cooling_infrastructure" in result["missing_required_sources"]
+    assert "# Weekly Status Decision-Readiness Delta" in result["markdown"]
+
+
 def test_services_middle_corridor_deal_risk_builds_contract_response():
     request = {
         "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from importlib import resources
 from typing import Optional
 from urllib.parse import urlparse
@@ -515,6 +516,363 @@ def score_output(before_text: str, after_text: str) -> dict:
     result = score_before_after(before_text, after_text)
     result["error"] = None
     return result
+
+
+WEEKLY_DELTA_RULES = [
+    {
+        "id": "lender_follow_up",
+        "workstream": "Financing / lenders",
+        "keywords": ["lender", "bank", "financing", "follow-up", "follow up", "term sheet", "term-sheet"],
+        "proves": "Financing workstream activity or lender interaction is present.",
+        "does_not_prove": "Committed capital, term-sheet readiness, credit approval, or financial close.",
+        "evidence_state": "activity-only",
+        "claim_type": "financing",
+        "unsafe_claim": "Financing is progressing well.",
+        "evidence_required": "Lender requirements checklist, term-sheet path, conditions precedent, and next evidence requested.",
+        "owner": "CFO / M&A",
+    },
+    {
+        "id": "customer_interest",
+        "workstream": "Demand / offtake",
+        "keywords": ["loi", "letter of intent", "customer", "client", "offtake", "prepayment", "demand"],
+        "proves": "A demand signal or customer interaction exists.",
+        "does_not_prove": "Binding demand, volume, term, pricing, credit support, or budget-owner approval.",
+        "evidence_state": "weak evidence",
+        "claim_type": "demand",
+        "unsafe_claim": "Demand is secured.",
+        "evidence_required": "Redacted customer evidence with volume, term, pricing logic, budget owner, and binding status.",
+        "owner": "Commercial / CFO",
+    },
+    {
+        "id": "vendor_procurement",
+        "workstream": "Procurement / RFP",
+        "keywords": ["rfp", "proposal", "vendor", "integrator", "oem", "tco", "shortlist"],
+        "proves": "Procurement workstream activity or vendor evidence is present.",
+        "does_not_prove": "Comparable pricing, deliverability, warranty, service model, or restriction clearance.",
+        "evidence_state": "partial",
+        "claim_type": "procurement",
+        "unsafe_claim": "Procurement is ready for shortlist.",
+        "evidence_required": "Comparable proposal matrix, TCO, delivery terms, warranties, service model, and restriction review.",
+        "owner": "Procurement / CTO",
+    },
+    {
+        "id": "partner_jv",
+        "workstream": "Vendor / partner diligence",
+        "keywords": ["partner", "jv", "joint venture", "localization", "lower capex", "cheaper", "cost reduction"],
+        "proves": "A partner route or alternative structure was introduced.",
+        "does_not_prove": "Deliverability, customer commitments, economics, references, or restriction clearance.",
+        "evidence_state": "new weak evidence",
+        "claim_type": "partner-diligence",
+        "unsafe_claim": "The partner route improves economics or reduces CAPEX.",
+        "evidence_required": "Written offer, scope, exclusions, references, customer proof, TCO comparison, and restriction assumptions.",
+        "owner": "PMO / procurement",
+    },
+    {
+        "id": "tax_customs",
+        "workstream": "Tax / customs / incentives",
+        "keywords": ["tax", "customs", "vat", "import duty", "incentive", "exemption", "offset"],
+        "proves": "A tax, customs, or incentive workstream is active.",
+        "does_not_prove": "Applicability, clearance, final treatment, or model-ready benefit.",
+        "evidence_state": "unresolved",
+        "claim_type": "tax-customs",
+        "unsafe_claim": "Tax or customs treatment improves economics.",
+        "evidence_required": "Adviser-reviewed memo or official-source-backed applicability analysis plus model sensitivity.",
+        "owner": "Tax / legal",
+    },
+    {
+        "id": "authority_governance",
+        "workstream": "Governance / public authority",
+        "keywords": ["public authority", "public-authority", "ministry", "government", "resolution", "regulator"],
+        "proves": "Governance or public-authority engagement is active.",
+        "does_not_prove": "Approved framework, final mandate, or resolved regulatory position.",
+        "evidence_state": "activity-only",
+        "claim_type": "governance",
+        "unsafe_claim": "Public-authority support is resolved.",
+        "evidence_required": "Approved decision log, final comments, signed mandate, or source-backed position.",
+        "owner": "PMO / legal",
+    },
+    {
+        "id": "risk_register",
+        "workstream": "Risk register",
+        "keywords": ["risk", "risk register", "mitigation", "contingency", "cost increase", "delay"],
+        "proves": "A risk topic is visible.",
+        "does_not_prove": "Risk ownership, mitigation, trigger, contingency, or committee-ready treatment.",
+        "evidence_state": "partial",
+        "claim_type": "risk",
+        "unsafe_claim": "Project risks are mitigated.",
+        "evidence_required": "Owner, trigger, mitigation, deadline, contingency, and evidence required for each material risk.",
+        "owner": "PMO / risk owner",
+    },
+    {
+        "id": "committee_readiness",
+        "workstream": "Committee / FID readiness",
+        "keywords": ["committee", "fid", "ready for", "board", "investment committee"],
+        "proves": "A decision moment is being discussed.",
+        "does_not_prove": "Decision readiness or evidence sufficiency.",
+        "evidence_state": "decision-pressure",
+        "claim_type": "decision-readiness",
+        "unsafe_claim": "The project is ready for committee or FID approval.",
+        "evidence_required": "Completed owner-action table, source pack, unresolved-blocker list, and unsafe-claims review.",
+        "owner": "PMO / committee secretary",
+    },
+]
+
+
+def _status_lines(status_text: str) -> list[str]:
+    lines: list[str] = []
+    for raw in status_text.splitlines():
+        stripped = raw.strip(" \t-*•")
+        if not stripped:
+            continue
+        lowered = stripped.lower()
+        if "this input is synthetic" in lowered or "not based on a real project" in lowered:
+            continue
+        if len(stripped) > 220:
+            parts = re.split(r"(?<=[.!?])\s+", stripped)
+            lines.extend(part.strip() for part in parts if part.strip())
+        else:
+            lines.append(stripped)
+    if not lines and status_text.strip():
+        lines = [part.strip() for part in re.split(r"(?<=[.!?])\s+", status_text.strip()) if part.strip()]
+    return lines
+
+
+def _line_matches_rule(line: str, rule: dict) -> bool:
+    lowered = line.lower()
+    return any(keyword in lowered for keyword in rule["keywords"])
+
+
+def _weekly_delta_bucket(matched_rule_ids: set[str], missing_required_sources: list[str]) -> tuple[str, str]:
+    if not matched_rule_ids:
+        return "unclear_due_to_missing_evidence", "insufficient_redacted_evidence"
+    if {"committee_readiness", "customer_interest", "lender_follow_up"} <= matched_rule_ids:
+        return "unclear_due_to_missing_evidence", "escalate_before_committee"
+    if "committee_readiness" in matched_rule_ids:
+        return "unclear_due_to_missing_evidence", "escalate_before_committee"
+    if "vendor_procurement" in matched_rule_ids and ("customer_interest" in matched_rule_ids or "partner_jv" in matched_rule_ids):
+        return "improved", "escalate_before_RFP_shortlist"
+    if missing_required_sources:
+        return "unchanged", "not_decision_ready"
+    return "improved", "ready_for_human_review"
+
+
+def _render_weekly_delta_markdown(payload: dict) -> str:
+    def table(headers: list[str], rows: list[list[str]]) -> str:
+        out = ["| " + " | ".join(headers) + " |", "| " + " | ".join("---" for _ in headers) + " |"]
+        for row in rows:
+            out.append("| " + " | ".join(str(cell).replace("\n", " ") for cell in row) + " |")
+        return "\n".join(out)
+
+    rows = payload["status_to_evidence"]
+    claims = payload["new_claims"]
+    actions = payload["owner_actions"]
+    unsafe = payload["unsafe_to_repeat_claims"]
+
+    parts = [
+        "# Weekly Status Decision-Readiness Delta",
+        "",
+        f"Project alias: {payload['project_alias']}",
+        f"Decision moment: {payload['decision_moment']}",
+        f"Source category: {payload['category']}",
+        f"Readiness delta: `{payload['readiness_delta']}`",
+        f"Next decision route: `{payload['next_decision_route']}`",
+        "",
+        "Boundary: evidence-readiness only. Not legal, compliance, procurement, tax, customs, financial, "
+        "sanctions, export-control, or investment advice. Does not verify factual truth.",
+        "",
+        "## Status-To-Evidence Conversion",
+        "",
+        table(
+            ["Status update", "What it proves", "What it does not prove", "Evidence state"],
+            [
+                [row["status_update"], row["proves"], row["does_not_prove"], row["evidence_state"]]
+                for row in rows[:12]
+            ]
+            or [["No matching status phrases found.", "Input was received.", "Decision readiness.", "insufficient"]],
+        ),
+        "",
+        "## New Claims Introduced",
+        "",
+        table(
+            ["Claim", "Claim type", "Evidence present", "Evidence gap", "Readiness"],
+            [
+                [
+                    claim["claim"],
+                    claim["claim_type"],
+                    claim["evidence_present"],
+                    claim["evidence_gap"],
+                    claim["readiness"],
+                ]
+                for claim in claims
+            ]
+            or [["No claim candidates detected.", "unknown", "status text", "manual review required", "not assessable"]],
+        ),
+        "",
+        "## Unsafe-To-Repeat Claims",
+        "",
+        table(
+            ["Claim", "Why unsafe", "Evidence required before reuse", "Owner"],
+            [
+                [item["claim"], item["why_unsafe"], item["evidence_required_before_reuse"], item["owner"]]
+                for item in unsafe
+            ]
+            or [["No unsafe claim pattern detected.", "Manual review still required.", "Source pack.", "PMO"]],
+        ),
+        "",
+        "## Owner Actions",
+        "",
+        table(
+            ["Priority", "Owner", "Action", "Evidence output expected"],
+            [[item["priority"], item["owner"], item["action"], item["evidence_output_expected"]] for item in actions],
+        ),
+        "",
+        "## Source-Plan Gaps",
+        "",
+    ]
+    if payload["missing_required_sources"]:
+        parts.extend(f"- {source}" for source in payload["missing_required_sources"])
+    else:
+        parts.append("- No source-plan gaps detected by this deterministic pass.")
+    parts.extend(
+        [
+            "",
+            "## Notes",
+            "",
+            "- Deterministic pass: keyword-based status-to-evidence conversion, not full semantic analysis.",
+            "- Use this as a reviewer scaffold before committee, lender, RFP, or FID decisions.",
+            "- Replace aliases and source IDs only inside private workflows; public examples must remain synthetic or redacted.",
+        ]
+    )
+    return "\n".join(parts)
+
+
+def weekly_status_delta(
+    status_text: str,
+    category: str = "ai-infrastructure-bankability",
+    project_alias: str = "ProjectCo",
+    decision_moment: str = "committee review",
+    source_type: str = "weekly status",
+) -> dict:
+    """Convert a redacted weekly/status note into a decision-readiness scaffold.
+
+    Deterministic and stateless. It does not call an LLM, verify factual truth,
+    or decide whether the project should proceed.
+    """
+    if not status_text.strip():
+        return {"implemented": True, "valid": False, "error": "status_text must not be empty"}
+
+    plan_result = _source_plan(category)
+    if plan_result.get("error"):
+        return {"implemented": True, "valid": False, "error": plan_result["error"]}
+    plan = plan_result["plan"]
+
+    status_rows: list[dict] = []
+    claims_by_rule: dict[str, dict] = {}
+    unsafe_by_rule: dict[str, dict] = {}
+    matched_rule_ids: set[str] = set()
+
+    for line in _status_lines(status_text):
+        for rule in WEEKLY_DELTA_RULES:
+            if not _line_matches_rule(line, rule):
+                continue
+            matched_rule_ids.add(rule["id"])
+            status_rows.append(
+                {
+                    "status_update": line,
+                    "rule_id": rule["id"],
+                    "workstream": rule["workstream"],
+                    "proves": rule["proves"],
+                    "does_not_prove": rule["does_not_prove"],
+                    "evidence_state": rule["evidence_state"],
+                }
+            )
+            claims_by_rule.setdefault(
+                rule["id"],
+                {
+                    "claim": rule["unsafe_claim"],
+                    "claim_type": rule["claim_type"],
+                    "evidence_present": f"{source_type} phrase matched: {rule['id']}",
+                    "evidence_gap": rule["evidence_required"],
+                    "risk_if_repeated": rule["does_not_prove"],
+                    "readiness": "weak" if rule["evidence_state"] != "missing" else "missing",
+                    "owner": rule["owner"],
+                },
+            )
+            unsafe_by_rule.setdefault(
+                rule["id"],
+                {
+                    "claim": rule["unsafe_claim"],
+                    "why_unsafe": rule["does_not_prove"],
+                    "evidence_required_before_reuse": rule["evidence_required"],
+                    "owner": rule["owner"],
+                },
+            )
+
+    detected_source_terms = {
+        "lender_follow_up": "financing_or_lender_requirements",
+        "vendor_procurement": "procurement_or_rfp",
+        "partner_jv": "vendor_oem_integrator_delivery_evidence",
+        "customer_interest": "demand_or_offtake_evidence",
+        "tax_customs": "tax_customs_incentives",
+        "authority_governance": "project_mandate_or_decision_moment",
+        "risk_register": "risk_register",
+    }
+    covered_required = sorted(
+        {
+            detected_source_terms[rule_id]
+            for rule_id in matched_rule_ids
+            if rule_id in detected_source_terms and detected_source_terms[rule_id] in (plan.get("must_check", []) or [])
+        }
+    )
+    missing_required = [source for source in (plan.get("must_check", []) or []) if source not in covered_required]
+    readiness_delta, next_route = _weekly_delta_bucket(matched_rule_ids, missing_required)
+
+    owner_actions = []
+    for rule in WEEKLY_DELTA_RULES:
+        if rule["id"] not in matched_rule_ids:
+            continue
+        owner_actions.append(
+            {
+                "priority": "P0" if rule["id"] in {"customer_interest", "tax_customs", "committee_readiness"} else "P1",
+                "owner": rule["owner"],
+                "action": f"Convert {rule['workstream']} status into source-backed evidence.",
+                "evidence_output_expected": rule["evidence_required"],
+            }
+        )
+    if not owner_actions:
+        owner_actions.append(
+            {
+                "priority": "P0",
+                "owner": "PMO",
+                "action": "Reformat the status note with explicit workstreams, source IDs, and owner actions.",
+                "evidence_output_expected": "Redacted source pack with claim, source, support level, evidence gap, and owner.",
+            }
+        )
+
+    payload = {
+        "implemented": True,
+        "valid": True,
+        "error": None,
+        "project_alias": project_alias,
+        "decision_moment": decision_moment,
+        "source_type": source_type,
+        "category": category,
+        "readiness_delta": readiness_delta,
+        "next_decision_route": next_route,
+        "status_to_evidence": status_rows,
+        "new_claims": list(claims_by_rule.values()),
+        "unsafe_to_repeat_claims": list(unsafe_by_rule.values()),
+        "owner_actions": owner_actions,
+        "covered_required_sources": covered_required,
+        "missing_required_sources": missing_required,
+        "source_plan_red_flags": plan.get("red_flags", []),
+        "note": (
+            "Deterministic evidence-readiness scaffold only. Does not verify factual truth, "
+            "discover sources, or provide legal/compliance/procurement/tax/financial advice."
+        ),
+    }
+    payload["markdown"] = _render_weekly_delta_markdown(payload)
+    return payload
 
 
 def _supplied_source_types(request_json: dict) -> list[str]:
