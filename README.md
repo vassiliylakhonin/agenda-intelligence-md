@@ -313,7 +313,7 @@ agenda-intelligence memory-search-bench tests/fixtures/analysis_bank_retrieval/m
 agenda-intelligence memory-applicability-bench tests/fixtures/analysis_bank_applicability/manifest.json
 ```
 
-The retrieval bench checks representative queries against expected top lessons and forbidden top-N mistakes. The applicability bench checks positive and negative task contexts against each card's `Apply when` / `Do not apply when` boundary. They evaluate reasoning-memory routing discipline, not factual truth.
+The retrieval bench checks representative queries against expected top lessons and forbidden top-N mistakes. The applicability bench checks positive and negative task contexts against each card's `Apply when` / `Do not apply when` boundary. `analyze` uses the same guarded path before adding a bounded `REASONING MEMORY` section to the system prompt. These checks evaluate reasoning-memory routing discipline, not factual truth.
 
 ## MCP
 

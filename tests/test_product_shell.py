@@ -150,6 +150,84 @@ def test_analyze_prompt_includes_server_verified_request_context():
     assert "Do not upgrade reasoning_only or mixed analysis into live-source-backed analysis." in prompt
 
 
+def test_analyze_prompt_includes_applicable_reasoning_memory():
+    result = mcp_server.analyze(
+        {
+            "question": (
+                "Assess sanctions exposure from re-export trade flows, intermediaries, "
+                "payment chain, customs documentation, logistics, and insurance."
+            ),
+            "geography": "Kazakhstan",
+        }
+    )
+
+    memory_ids = [item["lesson_id"] for item in result["reasoning_memory_used"]]
+    assert memory_ids[:2] == ["sanctions-routing-signal-classification", "overconfident-sanctions-upgrade"]
+    assert "eu-rhetoric-treated-as-law" not in memory_ids
+    assert "===== REASONING MEMORY - SERVER SELECTED =====" in result["system_prompt"]
+    assert "They are not factual evidence" in result["system_prompt"]
+    assert "lesson_id: sanctions-routing-signal-classification" in result["system_prompt"]
+
+
+def test_analyze_memory_selector_blocks_pure_diplomacy_overapplication():
+    result = mcp_server.analyze(
+        {
+            "question": (
+                "Summarize a purely diplomatic sanctions summit statement with no goods, "
+                "no payments, no logistics, no ownership, and no enforcement mechanism."
+            ),
+            "geography": "global",
+        }
+    )
+
+    assert result["reasoning_memory_used"] == []
+    assert "sanctions-routing-signal-classification" not in result["system_prompt"]
+    assert "===== REASONING MEMORY - SERVER SELECTED =====" not in result["system_prompt"]
+
+
+def test_analyze_memory_selector_blocks_final_eu_legal_act_overapplication():
+    result = mcp_server.analyze(
+        {
+            "question": (
+                "Explain an already final EU legal act with binding guidance, compliance deadline, "
+                "regulator enforcement action, and court judgment."
+            ),
+            "geography": "EU",
+        }
+    )
+
+    memory_ids = [item["lesson_id"] for item in result["reasoning_memory_used"]]
+    assert "eu-rhetoric-treated-as-law" not in memory_ids
+
+
+def test_analyze_memory_selector_respects_headline_only_boundary():
+    result = mcp_server.analyze(
+        {
+            "question": "User explicitly wants only a short headline summary with no monitoring guidance.",
+            "geography": "global",
+        }
+    )
+
+    assert result["reasoning_memory_used"] == []
+    assert "vague-monitoring" not in result["system_prompt"]
+
+
+def test_analyze_memory_selector_includes_vague_monitoring_for_operational_watch_next():
+    result = mcp_server.analyze(
+        {
+            "question": (
+                "Improve a public-agenda analysis that says monitor developments but needs "
+                "concrete observable indicators, deadlines, regulator guidance, and owner actions."
+            ),
+            "geography": "global",
+        }
+    )
+
+    memory_ids = [item["lesson_id"] for item in result["reasoning_memory_used"]]
+    assert memory_ids == ["vague-monitoring"]
+    assert "lesson_id: vague-monitoring" in result["system_prompt"]
+
+
 # ---------------------------------------------------------------------------
 # Scenario 3: validate_memo on real and malformed memos
 # ---------------------------------------------------------------------------

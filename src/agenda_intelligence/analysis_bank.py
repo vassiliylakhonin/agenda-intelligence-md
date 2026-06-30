@@ -59,7 +59,7 @@ _APPLICABILITY_POSITIVE_FIELDS = {
 _APPLICABILITY_NEGATIVE_FIELDS = {
     "do_not_apply_when": 6,
 }
-_DEFAULT_APPLICABILITY_THRESHOLD = 1
+_DEFAULT_APPLICABILITY_THRESHOLD = 21
 
 
 @dataclass
@@ -215,6 +215,57 @@ def search_memory_cards(
                 }
             )
     return sorted(results, key=lambda item: (-item["score"], item["lesson_id"]))
+
+
+def select_applicable_memory(
+    bank_path: Path,
+    query: str,
+    *,
+    context: str | None = None,
+    max_cards: int = 3,
+    today: date | None = None,
+) -> list[dict[str, Any]]:
+    """Select bounded, usable Reasoning Memory cards for a task context.
+
+    Selection order is lifecycle filter -> retrieval rank -> applicability gate
+    -> max_cards. This keeps callers from separately reimplementing AnalysisBank
+    safeguards.
+    """
+    if max_cards < 1:
+        return []
+    context_text = context or query
+    selected: list[dict[str, Any]] = []
+    for path in discover_memory_cards(bank_path):
+        card = parse_memory_card(path, bank_path)
+        if not is_usable_lesson(card, today=today):
+            continue
+        retrieval_score = score_memory_card(card, query)
+        if retrieval_score <= 0:
+            continue
+        applicability = score_memory_applicability(card, context_text)
+        if not applicability["applicable"]:
+            continue
+        selected.append(
+            {
+                "lesson_id": card["lesson_id"],
+                "file": card["file"],
+                "title": card["title"],
+                "confidence": card["confidence"],
+                "retrieval_score": retrieval_score,
+                "applicability": applicability,
+                "better_reasoning": card["better_reasoning"],
+                "apply_when": card["apply_when"],
+                "do_not_apply_when": card["do_not_apply_when"],
+            }
+        )
+    selected.sort(
+        key=lambda item: (
+            -int(item["applicability"]["net_score"]),
+            -int(item["retrieval_score"]),
+            str(item["lesson_id"]),
+        )
+    )
+    return selected[:max_cards]
 
 
 def score_memory_card(card: dict[str, Any], query: str) -> int:

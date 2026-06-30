@@ -36,9 +36,11 @@ import os
 import re
 from datetime import datetime, timezone
 from importlib import resources
+from pathlib import Path
 from typing import Any, Iterable, Optional
 
 from agenda_intelligence import __version__
+from agenda_intelligence.analysis_bank import select_applicable_memory
 from agenda_intelligence.memo_quality import check_memo_quality as _check_memo_quality
 
 PACKAGE_NAME = "agenda_intelligence"
@@ -309,7 +311,68 @@ def _format_request_context(request: dict) -> str:
     return "\n".join(lines)
 
 
-def assemble_system_prompt(modules: list[dict], request: Optional[dict] = None) -> str:
+def _analysis_bank_root():
+    return Path(str(resources.files(PACKAGE_NAME) / "data" / "analysis-bank"))
+
+
+def _memory_task_text(request: dict) -> str:
+    fields = [
+        request.get("question"),
+        request.get("decision_context"),
+        request.get("geography"),
+        request.get("time_horizon"),
+        request.get("evidence_mode", "reasoning_only"),
+        request.get("depth", "standard"),
+    ]
+    parts: list[str] = []
+    for value in fields:
+        if value is None:
+            continue
+        if isinstance(value, list):
+            parts.extend(str(item) for item in value)
+        else:
+            parts.append(str(value))
+    return "\n".join(part for part in parts if part.strip())
+
+
+def select_reasoning_memory(request: dict, max_cards: int = 3) -> list[dict[str, Any]]:
+    bank_path = _analysis_bank_root()
+    if not bank_path.is_dir():
+        return []
+    task_text = _memory_task_text(request)
+    if not task_text:
+        return []
+    return select_applicable_memory(bank_path, task_text, context=task_text, max_cards=max_cards)
+
+
+def _format_reasoning_memory(memories: list[dict[str, Any]]) -> str:
+    if not memories:
+        return ""
+    lines = [
+        "\n\n===== REASONING MEMORY - SERVER SELECTED =====",
+        "",
+        "Use these reusable reasoning lessons only as analysis-quality guardrails.",
+        "They are not factual evidence, source support, legal advice, or live verification.",
+    ]
+    for memory in memories:
+        lines.extend(
+            [
+                "",
+                f"- lesson_id: {memory['lesson_id']}",
+                f"  confidence: {memory['confidence']}",
+                f"  retrieval_score: {memory['retrieval_score']}",
+                f"  applicability_net_score: {memory['applicability']['net_score']}",
+                f"  apply_when: {memory['apply_when']}",
+                f"  do_not_apply_when: {memory['do_not_apply_when']}",
+                f"  better_reasoning: {memory['better_reasoning']}",
+            ]
+        )
+    return "\n".join(lines)
+
+
+def assemble_system_prompt(
+    modules: list[dict], request: Optional[dict] = None, reasoning_memory: Optional[list[dict[str, Any]]] = None
+) -> str:
     """Concatenate the bundled SKILL.md / reference content into a system prompt.
 
     Structure: preamble → request context → each loaded module → strict
@@ -329,6 +392,8 @@ def assemble_system_prompt(modules: list[dict], request: Optional[dict] = None) 
     )
     if request is not None:
         sections.append(_format_request_context(request))
+    if reasoning_memory:
+        sections.append(_format_reasoning_memory(reasoning_memory))
     for m in modules:
         text = _load_module_text(m["module"])
         if text is None:
@@ -681,7 +746,8 @@ def analyze(request: dict) -> dict:
         }
 
     modules = route_modules(request.get("geography"), request.get("question", ""))
-    system_prompt = assemble_system_prompt(modules, request)
+    reasoning_memory = select_reasoning_memory(request)
+    system_prompt = assemble_system_prompt(modules, request, reasoning_memory=reasoning_memory)
     user_message = _build_user_message(request)
 
     llm_text = _call_anthropic(system_prompt, user_message)
@@ -693,6 +759,7 @@ def analyze(request: dict) -> dict:
             "valid_request": True,
             "errors": [],
             "modules_used": modules,
+            "reasoning_memory_used": reasoning_memory,
             "system_prompt": system_prompt,
             "llm_invoked": False,
             "mode": "host_completion",
@@ -719,6 +786,7 @@ def analyze(request: dict) -> dict:
             "valid_request": True,
             "errors": ["LLM returned non-JSON content"],
             "modules_used": modules,
+            "reasoning_memory_used": reasoning_memory,
             "system_prompt": system_prompt,
             "llm_invoked": True,
             "mode": "server_completed",
@@ -749,6 +817,7 @@ def analyze(request: dict) -> dict:
         "valid_request": True,
         "errors": [],
         "modules_used": modules,
+        "reasoning_memory_used": reasoning_memory,
         "system_prompt": system_prompt,
         "llm_invoked": True,
         "mode": "server_completed",

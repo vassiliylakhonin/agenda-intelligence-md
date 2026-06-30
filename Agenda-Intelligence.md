@@ -114,4 +114,9 @@ Before high-stakes or ambiguous analysis:
 3. Apply only if boundary conditions match.
 4. Prefer memories that prevent known failure modes.
 
+The packaged `analyze` pipeline performs this as a bounded Reasoning Memory
+selection step: lifecycle filter, retrieval rank, applicability gate, then at
+most three memory cards in the prompt. These memories are reasoning guardrails,
+not factual evidence or source support.
+
 Do not store raw private transcripts, stale facts, secrets, or full chain-of-thought.
