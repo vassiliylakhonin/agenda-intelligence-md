@@ -22,7 +22,7 @@ agenda-intelligence score examples/agenda-brief.json --evidence examples/source/
 agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/status.synthetic.md
 ```
 
-`doctor` reports package and MCP-server status; `validate-brief` confirms a brief matches `agenda-brief.schema.json`; `score` returns a heuristic 0–100 number with a structure / evidence / decision-readiness breakdown; `weekly-delta` turns a redacted weekly/status note into unsafe-to-repeat claims, source-plan gaps, owner actions, and a decision-readiness route. Full end-to-end analyze trace (request → routing → memo → validation → audit → score) with reproducibility script: [`examples/product-shell/full-analyze-trace/`](examples/product-shell/full-analyze-trace/).
+`doctor` reports package and MCP-server status; `validate-brief` confirms a brief matches `agenda-brief.schema.json`; `score` returns a heuristic 0–100 number with a structure / evidence / decision-readiness breakdown; `check-memo-quality` and `memo-quality-bench` catch schema-valid but unsafe memo output; `weekly-delta` turns a redacted weekly/status note into unsafe-to-repeat claims, source-plan gaps, owner actions, and a decision-readiness route. Full end-to-end analyze trace (request → routing → memo → validation → audit → score) with reproducibility script: [`examples/product-shell/full-analyze-trace/`](examples/product-shell/full-analyze-trace/).
 
 Optional, only if you want `analyze` to call the Anthropic API itself rather than letting your host model complete from the returned system prompt:
 
@@ -186,14 +186,14 @@ The product runtime is the integration point: agents call `analyze` via any surf
 ## What this is
 
 - **Core service layer** — pure Python functions (`audit_claims`, `source_coverage`, `score_output`, `middle_corridor_deal_risk`, `agentic_interaction_trust`, etc.) vendor-neutral, no transport, no marketplace
-- **MCP server** — stdio server exposing 21 tools across the validation, product, and vertical worker layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
+- **MCP server** — stdio server exposing 22 tools across the validation, product, and vertical worker layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
 - **HTTP API shell** — thin transport over the service layer; self-host with `docs/deployment/http-api.md`
 - **A2A adapter** — agent-card + JSON-RPC `message/send` over the HTTP/service layer; local shell documented in `docs/deployment/a2a-adapter.md`
 - **Cloudflare Worker baseline** — deployment config under `deploy/cloudflare-worker/`; six live workers (general triage + the five vertical workers below)
 - **Vertical workers** — productized service functions with their own schemas + HTTP/A2A profiles; Cloudflare deployments exist where configured. Currently shipped in the runtime: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, Kazakhstan Market-Entry Readiness Gate. Local stdio MCP exposes the first four vertical workers; Kazakhstan Market-Entry Readiness is HTTP/A2A-only.
 - **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
 - **JSON schemas** — request/memo product contract + per-product contracts (e.g. `middle-corridor-deal-risk-*`) + validators for briefs, evidence packs, audits, signals, memory cards, lenses
-- **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `weekly-delta`, `score`, `bench`, `doctor` (30+ commands)
+- **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `check-memo-quality`, `memo-quality-bench`, `weekly-delta`, `score`, `bench`, `doctor` (30+ commands)
 - **Eval kit** — rubric, LLM-judge prompt, human checklist, benchmark harness, agent-eval methodology
 - **Source policy** — per-claim provenance tags (Axis A/B), source requirements for 18 categories
 
@@ -250,6 +250,7 @@ The HTTP shell is portable but **not a hardened internet-facing server**. No bui
 
 ```bash
 agenda-intelligence bench examples/source-backed --strict --min-score 80
+agenda-intelligence memo-quality-bench tests/fixtures/memo_quality --format json
 agenda-intelligence audit-claims examples/source-backed/eu-ai-act.audit.json --strict
 agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/status.synthetic.md --format json
 agenda-intelligence mcp-config --client cursor

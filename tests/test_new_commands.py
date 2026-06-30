@@ -17,6 +17,7 @@ FLAGSHIP_AUDIT = ROOT / "examples" / "source-backed" / "eu-ai-act.audit.json"
 SOURCE_BACKED_DIR = ROOT / "examples" / "source-backed"
 MEMO_QUALITY_GOOD = ROOT / "tests" / "fixtures" / "memo_quality" / "golden" / "evidence-readiness-good.json"
 MEMO_QUALITY_BAD = ROOT / "tests" / "fixtures" / "memo_quality" / "failure" / "overconfident-clearance.json"
+MEMO_QUALITY_DIR = ROOT / "tests" / "fixtures" / "memo_quality"
 
 
 def run(*args: str, expect_zero: bool = True) -> subprocess.CompletedProcess[str]:
@@ -86,6 +87,31 @@ def test_check_memo_quality_text_fails_on_schema_valid_bad_memo():
     assert "FAIL: memo quality fails" in res.stdout
     assert "schema_valid: True" in res.stdout
     assert "overreach" in res.stdout
+
+
+def test_memo_quality_bench_json_passes_fixture_set():
+    res = run("memo-quality-bench", str(MEMO_QUALITY_DIR), "--format", "json")
+
+    payload = json.loads(res.stdout)
+    assert payload["summary"]["ok"] is True
+    assert payload["summary"]["golden_passed"] == payload["summary"]["golden_total"]
+    assert payload["summary"]["failure_failed_as_expected"] == payload["summary"]["failure_total"]
+    assert any(case["expected_class"] == "failure" and case["ok"] is False for case in payload["cases"])
+
+
+def test_memo_quality_bench_fails_on_golden_drift(tmp_path: Path):
+    golden = tmp_path / "golden"
+    failure = tmp_path / "failure"
+    golden.mkdir()
+    failure.mkdir()
+    (golden / "bad-golden.json").write_text(MEMO_QUALITY_BAD.read_text(encoding="utf-8"), encoding="utf-8")
+    (failure / "bad-fixture.json").write_text(MEMO_QUALITY_BAD.read_text(encoding="utf-8"), encoding="utf-8")
+
+    res = run("memo-quality-bench", str(tmp_path), expect_zero=False)
+
+    assert res.returncode == 1
+    assert "status: FAIL" in res.stdout
+    assert "`golden/bad-golden.json`" in res.stdout
 
 
 # ---------- bench ----------

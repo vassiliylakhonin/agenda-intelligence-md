@@ -21,7 +21,12 @@ It rejects common failures that schema validation cannot see:
 - `watch_next` items that are not observable indicators;
 - source-backed modes that fail evidence-mode discipline.
 
-Golden and failure fixtures live under `tests/fixtures/memo_quality/`.
+Golden and failure fixtures live under `tests/fixtures/memo_quality/` and can be
+checked as a batch with:
+
+```bash
+agenda-intelligence memo-quality-bench tests/fixtures/memo_quality
+```
 
 ## Ten dimensions
 
@@ -46,7 +51,7 @@ Six gates, all must pass. Sign as `Reviewer / Date` at the bottom of the memo's 
 
 1. **Read the decision frame and re-state it in one sentence.** If you can't, dimension 1 fails.
 2. **Open `audit.provenance` and walk every entry against the body.** Each entry should reference a claim you can find verbatim or near-verbatim in the body. Dimensions 4 and 8 live here.
-3. **Run `check_evidence_mode_discipline` and read its output.** Treat any `errors` list as a hard fail of dimension 3. Do not waive.
+3. **Run `check-memo-quality` and read its output.** Treat any `errors` list as a hard fail for the minimal quality guard. Do not waive.
 4. **Spot-check the mechanism.** Pick one risk statement and try to articulate the actor → action → effect chain without re-reading. If you can't, dimensions 5 and 6 fail.
 5. **Read `watch_next[]` aloud as monitoring instructions.** If a watch item could not be observed by a desk analyst with public data, it fails dimension 7.
 6. **Look for determinative language outside provenance.** Scan body prose for "is sanctioned", "was added to", "enters into force on", "court ruled" without a source or `[verify]`. Any such occurrence fails dimension 9.

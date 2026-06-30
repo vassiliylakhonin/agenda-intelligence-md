@@ -613,6 +613,129 @@ def cmd_check_memo_quality(args):
         raise SystemExit(1)
 
 
+def _memo_quality_bench_cases(root: Path) -> list[dict]:
+    from agenda_intelligence.mcp_server import check_memo_quality
+
+    cases: list[dict] = []
+    for expected_class in ("golden", "failure"):
+        directory = root / expected_class
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.glob("*.json")):
+            try:
+                memo_json = json.loads(path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as e:
+                result = {
+                    "implemented": True,
+                    "schema_valid": False,
+                    "schema_errors": [f"Invalid JSON: {e}"],
+                    "ok": False,
+                    "errors": ["invalid_json"],
+                    "passed": [],
+                }
+            else:
+                if not isinstance(memo_json, dict):
+                    result = {
+                        "implemented": True,
+                        "schema_valid": False,
+                        "schema_errors": ["Memo quality check expects a JSON object"],
+                        "ok": False,
+                        "errors": ["not_json_object"],
+                        "passed": [],
+                    }
+                else:
+                    result = check_memo_quality(memo_json)
+
+            expected_ok = expected_class == "golden"
+            expected_schema_valid = True
+            case_ok = result["schema_valid"] == expected_schema_valid and result["ok"] == expected_ok
+            cases.append(
+                {
+                    "case": path.stem,
+                    "path": str(path.relative_to(root)),
+                    "expected_class": expected_class,
+                    "expected_ok": expected_ok,
+                    "schema_valid": result["schema_valid"],
+                    "ok": result["ok"],
+                    "passed": result["passed"],
+                    "errors": result["errors"],
+                    "schema_errors": result["schema_errors"],
+                    "case_ok": case_ok,
+                }
+            )
+    return cases
+
+
+def _summarize_memo_quality_bench(cases: list[dict]) -> dict:
+    golden = [case for case in cases if case["expected_class"] == "golden"]
+    failure = [case for case in cases if case["expected_class"] == "failure"]
+    unexpected_failures = [case for case in golden if not case["case_ok"]]
+    unexpected_passes = [case for case in failure if not case["case_ok"]]
+    return {
+        "cases": len(cases),
+        "golden_total": len(golden),
+        "golden_passed": sum(1 for case in golden if case["case_ok"]),
+        "failure_total": len(failure),
+        "failure_failed_as_expected": sum(1 for case in failure if case["case_ok"]),
+        "unexpected_failures": [case["path"] for case in unexpected_failures],
+        "unexpected_passes": [case["path"] for case in unexpected_passes],
+        "ok": not unexpected_failures and not unexpected_passes,
+        "note": "Memo quality bench checks structural evidence-readiness guardrails; it does not verify factual truth.",
+    }
+
+
+def _render_memo_quality_bench_markdown(cases: list[dict], summary: dict) -> str:
+    lines = [
+        "# Memo Quality Bench",
+        "",
+        f"cases: {summary['cases']}",
+        f"golden passed: {summary['golden_passed']}/{summary['golden_total']}",
+        f"failure fixtures failed as expected: {summary['failure_failed_as_expected']}/{summary['failure_total']}",
+        f"status: {'PASS' if summary['ok'] else 'FAIL'}",
+        "",
+        "| case | class | schema | quality | expected | result |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+    for case in cases:
+        lines.append(
+            "| {case} | {klass} | {schema} | {quality} | {expected} | {result} |".format(
+                case=case["case"],
+                klass=case["expected_class"],
+                schema="PASS" if case["schema_valid"] else "FAIL",
+                quality="PASS" if case["ok"] else "FAIL",
+                expected="PASS" if case["expected_ok"] else "FAIL",
+                result="PASS" if case["case_ok"] else "FAIL",
+            )
+        )
+    failures = [case for case in cases if not case["case_ok"]]
+    if failures:
+        lines.extend(["", "## Drift"])
+        for case in failures:
+            details = case["errors"] or case["schema_errors"] or ["unexpected memo-quality result"]
+            lines.append(f"- `{case['path']}`: {', '.join(details)}")
+    lines.extend(["", f"note: {summary['note']}"])
+    return "\n".join(lines)
+
+
+def cmd_memo_quality_bench(args):
+    root = Path(args.path)
+    if not root.is_dir():
+        raise SystemExit(f"Not a directory: {root}")
+
+    cases = _memo_quality_bench_cases(root)
+    if not cases:
+        raise SystemExit(f"No memo-quality fixtures found under {root}/golden or {root}/failure")
+    summary = _summarize_memo_quality_bench(cases)
+
+    if args.format == "json":
+        print(json.dumps({"summary": summary, "cases": cases}, indent=2, ensure_ascii=False))
+    else:
+        print(_render_memo_quality_bench_markdown(cases, summary))
+
+    if not summary["ok"]:
+        raise SystemExit(1)
+
+
 def cmd_deal_report(args):
     """Render a Middle Corridor deal-risk response as an evidence-readiness memo.
 
@@ -1025,6 +1148,14 @@ def main():
     p.add_argument("path")
     p.add_argument("--format", choices=["text", "json"], default="text")
     p.set_defaults(func=cmd_check_memo_quality)
+    # memo-quality-bench: batch guard for golden/failure memo-quality fixtures
+    p = sub.add_parser(
+        "memo-quality-bench",
+        help="Run memo-quality golden/failure fixtures as a deterministic quality gate",
+    )
+    p.add_argument("path", help="Directory containing golden/*.json and failure/*.json memo fixtures")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.set_defaults(func=cmd_memo_quality_bench)
     # bench
     p = sub.add_parser(
         "bench",
