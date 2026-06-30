@@ -1,0 +1,77 @@
+{
+  "meta": {
+    "evidence_mode": "mixed",
+    "confidence": "medium",
+    "geography": "United Arab Emirates",
+    "depth": "decision_pack",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      }
+    ],
+    "timestamp": "2026-06-30T12:00:00Z"
+  },
+  "risk_summary": {
+    "short": "Acme Gulf Data Centers LLC is ready for investment committee review.",
+    "detailed": "The packet names Acme Gulf Data Centers LLC, First Emirates Bank, John Smith, the Al Mina site, and a USD 235 million facility. It still has missing evidence around customer demand and lender terms, but the memo repeats exact private identifiers instead of using aliases and source IDs."
+  },
+  "decision_frame": {
+    "decision": "Decide whether the named project can go to investment committee.",
+    "stakeholders": [
+      "John Smith",
+      "First Emirates Bank",
+      "Acme Gulf Data Centers LLC"
+    ],
+    "constraints": [
+      "The packet contains confidential commercial details."
+    ]
+  },
+  "analysis": {
+    "facts": [
+      "Acme Gulf Data Centers LLC says it has a USD 235 million financing path.",
+      "First Emirates Bank appears in the supplied financing note.",
+      "John Smith discussed the Al Mina site on 2026-06-18."
+    ],
+    "assessments": [
+      "The file is not decision ready because demand and financing evidence are still missing.",
+      "The named details should not be repeated externally."
+    ],
+    "assumptions": [
+      "The supplied confidential packet is complete."
+    ],
+    "unknowns": [
+      "The signed anchor-customer commitment is missing.",
+      "Binding lender terms are missing."
+    ]
+  },
+  "recommended_actions": [
+    {
+      "action": "Ask John Smith to send the customer commitment and First Emirates Bank term sheet.",
+      "priority": "high",
+      "trigger": "Before Acme Gulf Data Centers LLC goes to committee.",
+      "time_horizon": "Before the 2026-07-02 committee pack."
+    }
+  ],
+  "watch_next": [
+    {
+      "indicator": "Signed anchor-customer commitment for Acme Gulf Data Centers LLC.",
+      "trigger": "Upgrade demand only when the signed source is attached.",
+      "source_type": "customer_commitment"
+    }
+  ],
+  "audit": {
+    "validation_score": 0.72,
+    "provenance": [
+      {
+        "claim": "The packet names Acme Gulf Data Centers LLC, First Emirates Bank, and John Smith.",
+        "basis": "fact",
+        "source": "S1/S2 supplied confidential packet"
+      },
+      {
+        "claim": "Demand and lender terms remain missing.",
+        "basis": "assessment"
+      }
+    ]
+  }
+}

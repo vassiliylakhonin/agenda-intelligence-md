@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "evidence_mode": "mixed",
+    "confidence": {
+      "level": "medium",
+      "score": 0.58,
+      "reasoning": "The redacted source pack supports several workstream updates but leaves demand, financing, and delivery evidence incomplete."
+    },
+    "geography": [
+      "Jurisdiction-1"
+    ],
+    "depth": "decision_pack",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      }
+    ],
+    "timestamp": "2026-06-30T12:00:00Z"
+  },
+  "risk_summary": {
+    "short": "ProjectCo is not ready for committee review because the redacted packet leaves demand, financing, and delivery claims only partially supported.",
+    "detailed": "The packet should stay in evidence-readiness review. Source IDs S1 through S4 support that workstreams exist, but the missing evidence remains material: a signed customer commitment, lender terms, vendor-delivery conditions, and a current risk-owner table. Human review should focus on closing those gaps before the file is summarized externally."
+  },
+  "decision_frame": {
+    "decision": "Decide whether the alias-only project packet is ready for committee review.",
+    "stakeholders": [
+      "PMO owner",
+      "finance owner",
+      "technical owner",
+      "committee secretary"
+    ],
+    "constraints": [
+      "The packet uses aliases and source IDs only.",
+      "No private names, exact values, exact dates, or source excerpts are safe to repeat."
+    ]
+  },
+  "analysis": {
+    "facts": [
+      "S1 describes a feasibility update for ProjectCo.",
+      "S2 describes a vendor proposal but omits delivery timing and export-condition evidence.",
+      "S3 describes lender interest but does not include binding financing terms.",
+      "S4 records demand discussions without a signed customer commitment."
+    ],
+    "assessments": [
+      "The project-room file is useful for human triage but not ready for committee decision.",
+      "Demand and financing claims should be treated as partially supported until source IDs resolve the missing evidence."
+    ],
+    "assumptions": [
+      "The source list is complete as supplied by the operator.",
+      "Aliases are stable within this packet."
+    ],
+    "unknowns": [
+      "Whether Anchor-Customer-1 has supplied a signed commitment is unknown from the packet.",
+      "Whether Lender-1 terms are binding is unknown from the packet.",
+      "Whether OEM-A delivery conditions are current is unknown from the packet."
+    ]
+  },
+  "recommended_actions": [
+    {
+      "action": "Ask the commercial owner to attach a redacted customer commitment or mark the demand claim as unsafe to repeat.",
+      "priority": "high",
+      "trigger": "Before any committee packet describes demand as secured.",
+      "time_horizon": "Before committee review."
+    },
+    {
+      "action": "Ask the finance owner to map lender terms to source ID S3 or move financing status to a blocking gap.",
+      "priority": "high",
+      "trigger": "Before the file is routed as decision-ready.",
+      "time_horizon": "This review cycle."
+    }
+  ],
+  "watch_next": [
+    {
+      "indicator": "A new source ID showing signed demand evidence for Anchor-Customer-1.",
+      "trigger": "Upgrade demand only when the signed evidence is attached or the claim is downgraded.",
+      "source_type": "customer_commitment"
+    },
+    {
+      "indicator": "A current lender term source mapped to Lender-1.",
+      "trigger": "Keep financing as a blocking gap until binding terms are supplied.",
+      "source_type": "financing_terms"
+    }
+  ],
+  "audit": {
+    "validation_score": 0.78,
+    "provenance": [
+      {
+        "claim": "The file has feasibility, vendor, lender, and demand source IDs.",
+        "basis": "fact",
+        "source": "S1/S2/S3/S4 supplied source list"
+      },
+      {
+        "claim": "Demand, financing, and delivery claims are not committee-ready.",
+        "basis": "assessment"
+      },
+      {
+        "claim": "The output uses aliases and source IDs only.",
+        "basis": "fact",
+        "source": "confidential workflow redaction checklist"
+      }
+    ]
+  }
+}

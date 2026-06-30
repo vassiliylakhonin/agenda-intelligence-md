@@ -57,6 +57,10 @@
         "unknowns_connected_to_actions": {
           "type": "string",
           "minLength": 1
+        },
+        "confidential_alias_discipline": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },
@@ -96,7 +100,8 @@
                 "gaps_visible_when_unknowns_exist",
                 "owner_actions_are_actionable",
                 "watch_next_is_observable",
-                "unknowns_connected_to_actions"
+                "unknowns_connected_to_actions",
+                "confidential_alias_discipline"
               ]
             }
           },

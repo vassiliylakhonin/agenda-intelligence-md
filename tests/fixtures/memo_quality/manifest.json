@@ -7,9 +7,24 @@
     "gaps_visible_when_unknowns_exist": "Unknowns and missing evidence must be visible in reader-facing text.",
     "owner_actions_are_actionable": "Recommended actions must be concrete owner actions with trigger or time horizon.",
     "watch_next_is_observable": "Watch-next items must be observable indicators with trigger or source type.",
-    "unknowns_connected_to_actions": "Open unknowns must connect to recommended actions or watch indicators."
+    "unknowns_connected_to_actions": "Open unknowns must connect to recommended actions or watch indicators.",
+    "confidential_alias_discipline": "Confidential project-room memos must use aliases and source IDs instead of private names, exact values, exact dates, sites, or personal identifiers."
   },
   "fixtures": [
+    {
+      "path": "golden/confidential-project-room-good.json",
+      "expected_class": "golden",
+      "target_guardrails": [
+        "evidence_mode_discipline",
+        "no_approval_or_clearance_overreach",
+        "gaps_visible_when_unknowns_exist",
+        "owner_actions_are_actionable",
+        "watch_next_is_observable",
+        "unknowns_connected_to_actions",
+        "confidential_alias_discipline"
+      ],
+      "why_it_exists": "Good confidential project-room memo that uses aliases/source IDs, keeps committee readiness blocked, and routes demand/financing gaps to owner action."
+    },
     {
       "path": "golden/evidence-readiness-good.json",
       "expected_class": "golden",
@@ -61,6 +76,14 @@
         "unknowns_connected_to_actions"
       ],
       "why_it_exists": "Good user-provided procurement memo that treats model-card and data-processing gaps as review blockers."
+    },
+    {
+      "path": "failure/confidential-project-room-naming-leak.json",
+      "expected_class": "failure",
+      "target_guardrails": [
+        "confidential_alias_discipline"
+      ],
+      "why_it_exists": "Schema-valid confidential project-room memo that leaks named parties, exact dates, exact values, and site details instead of aliasing them."
     },
     {
       "path": "failure/decision-ready-with-open-unknowns.json",

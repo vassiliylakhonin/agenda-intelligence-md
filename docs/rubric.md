@@ -19,10 +19,12 @@ It rejects common failures that schema validation cannot see:
 - unknowns or missing evidence that are not surfaced as reader-visible gaps;
 - recommended actions that are generic monitoring rather than owner actions;
 - `watch_next` items that are not observable indicators;
+- confidential project-room outputs that leak named parties, personal names,
+  exact dates, or exact private values instead of aliases and source IDs;
 - source-backed modes that fail evidence-mode discipline.
 
 Golden and failure fixtures live under `tests/fixtures/memo_quality/`. The
-current regression set has 4 golden memos and 7 schema-valid failure memos,
+current regression set has 5 golden memos and 8 schema-valid failure memos,
 registered in `tests/fixtures/memo_quality/manifest.json`. The manifest maps
 each fixture to the guardrail it protects, validates against
 `schemas/v1/memo-quality-fixture-manifest.schema.json`, and

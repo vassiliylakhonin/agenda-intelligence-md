@@ -15,6 +15,7 @@ MEMO_QUALITY_GUARDRAILS = {
     "owner_actions_are_actionable",
     "watch_next_is_observable",
     "unknowns_connected_to_actions",
+    "confidential_alias_discipline",
 }
 
 
@@ -33,6 +34,8 @@ def failed_guardrails(result: dict[str, Any]) -> set[str]:
             failed.add("watch_next_is_observable")
         if error.startswith("unknowns are not connected"):
             failed.add("unknowns_connected_to_actions")
+        if error.startswith("confidential project-room memo leaks"):
+            failed.add("confidential_alias_discipline")
         if error in {"invalid_json", "not_json_object"}:
             failed.add("schema_validity")
     if not result.get("schema_valid", True):

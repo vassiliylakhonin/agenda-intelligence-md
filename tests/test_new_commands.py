@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -333,6 +334,35 @@ def test_weekly_delta_command_json_on_synthetic_example():
     assert payload["category"] == "ai-infrastructure-bankability"
     assert payload["next_decision_route"] == "escalate_before_committee"
     assert any(item["claim"] == "Procurement is ready for shortlist." for item in payload["unsafe_to_repeat_claims"])
+
+
+def test_weekly_delta_confidential_project_room_quality_on_synthetic_example():
+    res = run(
+        "weekly-delta",
+        "examples/strategic-infrastructure-bankability/status.synthetic.md",
+        "--project-alias",
+        "ProjectCo",
+        "--decision-moment",
+        "committee review",
+        "--format",
+        "json",
+    )
+    payload = json.loads(res.stdout)
+    rendered = json.dumps(payload, ensure_ascii=False)
+
+    assert payload["project_alias"] == "ProjectCo"
+    assert payload["readiness_delta"] == "unclear_due_to_missing_evidence"
+    assert len(payload["unsafe_to_repeat_claims"]) >= 3
+    assert any(item["claim"] == "Demand is secured." for item in payload["unsafe_to_repeat_claims"])
+    assert any(action["priority"] == "P0" for action in payload["owner_actions"])
+    assert all(action["evidence_output_expected"] for action in payload["owner_actions"])
+
+    assert "Anchor-Customer-1" in rendered
+    assert "Lender-1" in rendered
+    assert not re.search(r"\b(?:USD|EUR|GBP|AED|\$)\s?\d", rendered)
+    assert not re.search(r"\b20\d{2}-\d{2}-\d{2}\b", rendered)
+    assert "John Smith" not in rendered
+    assert "Acme" not in rendered
 
 
 def test_source_coverage_detects_sanctions_sources(tmp_path: Path):

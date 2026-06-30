@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **test(memo-quality): add confidential project-room quality regressions.**
+  Added a golden confidential project-room memo, a schema-valid naming-leak
+  failure memo, a new `confidential_alias_discipline` guardrail in
+  `memo-quality-bench`, and a `weekly-delta` regression that checks alias-only
+  synthetic output, unsafe-to-repeat claims, and owner-action coverage. This
+  raises the memo-quality fixture set to 5 golden / 8 failure cases without
+  changing the agenda-memo schema or factual-verification boundary.
+
 - **docs(analysis-bank): close the AnalysisBank hardening checkpoint.** Added
   release notes and an operator checkpoint for the reasoning-memory layer:
   before/after state, runtime path, edit checklist, quality gates, and a stop
