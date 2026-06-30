@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from agenda_intelligence.memo_quality import check_memo_quality
+from agenda_intelligence.memo_quality_bench import run_memo_quality_bench
 from agenda_intelligence.product import validate_memo
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "memo_quality"
@@ -18,6 +19,16 @@ def load_json(path: Path) -> dict:
 def test_fixture_sets_non_empty():
     assert GOLDEN, f"no golden fixtures under {FIXTURE_ROOT / 'golden'}"
     assert FAILURE, f"no failure fixtures under {FIXTURE_ROOT / 'failure'}"
+
+
+def test_memo_quality_bench_module_uses_fixture_manifest():
+    payload = run_memo_quality_bench(FIXTURE_ROOT)
+
+    assert payload["summary"]["ok"] is True
+    assert payload["summary"]["manifest_present"] is True
+    assert payload["summary"]["manifest_errors"] == []
+    assert payload["summary"]["golden_total"] == len(GOLDEN)
+    assert payload["summary"]["failure_total"] == len(FAILURE)
 
 
 @pytest.mark.parametrize("path", GOLDEN, ids=[p.stem for p in GOLDEN])
