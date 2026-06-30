@@ -370,6 +370,22 @@ def _format_reasoning_memory(memories: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def _reasoning_memory_trace(memories: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    trace: list[dict[str, Any]] = []
+    for memory in memories:
+        trace.append(
+            {
+                "lesson_id": memory["lesson_id"],
+                "file": memory["file"],
+                "title": memory["title"],
+                "confidence": memory["confidence"],
+                "retrieval_score": int(memory["retrieval_score"]),
+                "applicability_net_score": int(memory["applicability"]["net_score"]),
+            }
+        )
+    return trace
+
+
 def assemble_system_prompt(
     modules: list[dict], request: Optional[dict] = None, reasoning_memory: Optional[list[dict[str, Any]]] = None
 ) -> str:
@@ -465,13 +481,21 @@ def check_memo_quality(memo_json: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _skeleton_memo(request: dict, modules: list[dict]) -> dict:
+def _skeleton_memo(request: dict, modules: list[dict], reasoning_memory: Optional[list[dict[str, Any]]] = None) -> dict:
     """Return a minimally valid, clearly placeholder memo.
 
     Marked with validation_score=0 and a failed validation_detail so callers
     cannot mistake it for a real analytical output.
     """
     geography = request.get("geography")
+    audit = {
+        "validation_score": 0.0,
+        "validation_details": [{"check": "llm_invoked", "passed": False, "note": "skeleton-only response"}],
+    }
+    memory_trace = _reasoning_memory_trace(reasoning_memory or [])
+    if memory_trace:
+        audit["reasoning_memory"] = memory_trace
+
     return {
         "meta": {
             "evidence_mode": request.get("evidence_mode", "reasoning_only"),
@@ -498,10 +522,7 @@ def _skeleton_memo(request: dict, modules: list[dict]) -> dict:
             "unknowns": ["Real analytical output requires an LLM call."],
         },
         "watch_next": [{"indicator": "Caller decides whether to invoke an LLM with the returned system_prompt."}],
-        "audit": {
-            "validation_score": 0.0,
-            "validation_details": [{"check": "llm_invoked", "passed": False, "note": "skeleton-only response"}],
-        },
+        "audit": audit,
     }
 
 
@@ -510,7 +531,9 @@ def _skeleton_memo(request: dict, modules: list[dict]) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _run_machine_audit(memo: dict, modules: list[dict], schema_valid: bool) -> dict:
+def _run_machine_audit(
+    memo: dict, modules: list[dict], schema_valid: bool, reasoning_memory: Optional[list[dict[str, Any]]] = None
+) -> dict:
     """Compute the audit block from observable facts about the memo.
 
     The LLM's own values for ``audit.validation_score`` and
@@ -583,6 +606,9 @@ def _run_machine_audit(memo: dict, modules: list[dict], schema_valid: bool) -> d
     if isinstance(audit.get("validation_score"), (int, float)):
         # Keep the LLM's self-score in a clearly-labeled field for transparency.
         result["self_assessed_score"] = audit["validation_score"]
+    memory_trace = _reasoning_memory_trace(reasoning_memory or [])
+    if memory_trace:
+        result["reasoning_memory"] = memory_trace
     return result
 
 
@@ -752,7 +778,7 @@ def analyze(request: dict) -> dict:
 
     llm_text = _call_anthropic(system_prompt, user_message)
     if llm_text is None:
-        memo = _skeleton_memo(request, modules)
+        memo = _skeleton_memo(request, modules, reasoning_memory=reasoning_memory)
         quality = _memo_quality_result(memo, False)
         response = {
             "implemented": True,
@@ -806,7 +832,7 @@ def analyze(request: dict) -> dict:
     # validation_score / validation_details, but their provenance entries are
     # substantive content and are preserved.
     if isinstance(parsed, dict):
-        parsed["audit"] = _run_machine_audit(parsed, modules, schema_valid)
+        parsed["audit"] = _run_machine_audit(parsed, modules, schema_valid, reasoning_memory=reasoning_memory)
         # Re-validate after the audit rewrite; the rewrite should not violate
         # the schema, but a follow-up check is cheap insurance against drift.
         mv = validate_memo(parsed)

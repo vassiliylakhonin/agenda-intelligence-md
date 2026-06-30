@@ -485,6 +485,50 @@
               }
             }
           }
+        },
+        "reasoning_memory": {
+          "type": "array",
+          "description": "Server-selected AnalysisBank reasoning-memory trace. These entries are reusable reasoning guardrails, not factual evidence, source support, legal advice, or live verification.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lesson_id",
+              "file",
+              "confidence",
+              "retrieval_score",
+              "applicability_net_score"
+            ],
+            "properties": {
+              "lesson_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              },
+              "retrieval_score": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "applicability_net_score": {
+                "type": "integer"
+              }
+            }
+          }
         }
       }
     }

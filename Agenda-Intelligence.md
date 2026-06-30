@@ -119,4 +119,8 @@ selection step: lifecycle filter, retrieval rank, applicability gate, then at
 most three memory cards in the prompt. These memories are reasoning guardrails,
 not factual evidence or source support.
 
+When selected, the server records the same compact trace in
+`audit.reasoning_memory` so a memo can be reviewed separately from the response
+envelope without losing which reasoning guardrails were applied.
+
 Do not store raw private transcripts, stale facts, secrets, or full chain-of-thought.

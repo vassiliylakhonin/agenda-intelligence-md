@@ -86,7 +86,7 @@ AnalysisBank lifecycle lint: agenda-intelligence memory-lint
 AnalysisBank retrieval: agenda-intelligence memory-search <query> (active, unexpired lessons by default; use --include-inactive only for audits)
 AnalysisBank retrieval bench: agenda-intelligence memory-search-bench tests/fixtures/analysis_bank_retrieval/manifest.json
 AnalysisBank applicability bench: agenda-intelligence memory-applicability-bench tests/fixtures/analysis_bank_applicability/manifest.json
-Analyze Reasoning Memory: analyze selects at most 3 active, retrieval-ranked, applicability-gated AnalysisBank lessons into a bounded prompt section; they are guardrails, not factual evidence.
+Analyze Reasoning Memory: analyze selects at most 3 active, retrieval-ranked, applicability-gated AnalysisBank lessons into a bounded prompt section and memo audit.reasoning_memory trace; they are guardrails, not factual evidence.
 Eval script: scripts/eval_before_after.py
 
 Skills:

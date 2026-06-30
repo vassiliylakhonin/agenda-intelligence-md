@@ -167,6 +167,10 @@ def test_analyze_prompt_includes_applicable_reasoning_memory():
     assert "===== REASONING MEMORY - SERVER SELECTED =====" in result["system_prompt"]
     assert "They are not factual evidence" in result["system_prompt"]
     assert "lesson_id: sanctions-routing-signal-classification" in result["system_prompt"]
+    audit_memory = result["memo"]["audit"]["reasoning_memory"]
+    assert [item["lesson_id"] for item in audit_memory][:2] == memory_ids[:2]
+    assert audit_memory[0]["retrieval_score"] >= 1
+    assert audit_memory[0]["applicability_net_score"] >= 1
 
 
 def test_analyze_memory_selector_blocks_pure_diplomacy_overapplication():
@@ -181,6 +185,7 @@ def test_analyze_memory_selector_blocks_pure_diplomacy_overapplication():
     )
 
     assert result["reasoning_memory_used"] == []
+    assert "reasoning_memory" not in result["memo"]["audit"]
     assert "sanctions-routing-signal-classification" not in result["system_prompt"]
     assert "===== REASONING MEMORY - SERVER SELECTED =====" not in result["system_prompt"]
 
@@ -226,6 +231,30 @@ def test_analyze_memory_selector_includes_vague_monitoring_for_operational_watch
     memory_ids = [item["lesson_id"] for item in result["reasoning_memory_used"]]
     assert memory_ids == ["vague-monitoring"]
     assert "lesson_id: vague-monitoring" in result["system_prompt"]
+
+
+def test_analyze_llm_branch_preserves_server_selected_memory_trace(monkeypatch):
+    fake_memo = _memo_quality_fixture("golden/mixed-sanctions-exposure-gap.json")
+    monkeypatch.setattr(product, "_call_anthropic", lambda s, u: json.dumps(fake_memo))
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-used")
+
+    result = mcp_server.analyze(
+        {
+            "question": (
+                "Assess sanctions exposure from re-export trade flows, intermediaries, "
+                "payment chain, customs documentation, logistics, and insurance."
+            ),
+            "geography": "Kazakhstan",
+        }
+    )
+
+    audit = result["memo"]["audit"]
+    assert audit["machine_verified"] is True
+    assert [item["lesson_id"] for item in audit["reasoning_memory"]][:2] == [
+        "sanctions-routing-signal-classification",
+        "overconfident-sanctions-upgrade",
+    ]
+    assert "reasoning_memory" not in fake_memo["audit"]
 
 
 # ---------------------------------------------------------------------------
