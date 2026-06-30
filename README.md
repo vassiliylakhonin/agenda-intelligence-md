@@ -335,7 +335,7 @@ Stdio MCP server with 22 tools. Full docs and wire-protocol verification: [`MCP.
 | Component | Status |
 |---|---|
 | Markdown protocol, JSON schemas | Stable |
-| CLI (validate, score, bench, audit, check-memo-quality, doctor) | Stable |
+| CLI (validate, score, bench, audit, check-memo-quality, memo-quality-bench, doctor) | Stable |
 | Weekly status readiness shell (`weekly-delta`) | Build-to-learn CLI scaffold; deterministic, local, no LLM, no source discovery |
 | MCP stdio server | Stable |
 | HTTP API shell | Shipped (self-host); contract early — see `docs/deployment/http-api.md` |

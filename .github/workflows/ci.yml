@@ -59,6 +59,7 @@ jobs:
           python3 -m agenda_intelligence.cli validate-manifest
           python3 -m agenda_intelligence.cli validate-brief examples/agenda-brief.json
           python3 -m agenda_intelligence.cli validate-evidence examples/source/evidence-pack.json
+          python3 -m agenda_intelligence.cli memo-quality-bench tests/fixtures/memo_quality --format json
           python3 -m agenda_intelligence.cli doctor --mcp-command "python3 -m agenda_intelligence.mcp_stdio" --strict
 
       - name: Validate source-backed evidence examples
@@ -75,6 +76,7 @@ jobs:
           python3 -m agenda_intelligence.cli validate-evidence examples/source/evidence-pack.json
           python3 -m agenda_intelligence.cli source-plan technology-ai
           python3 -m agenda_intelligence.cli score examples/before-after/eu-ai-act.md
+          python3 -m agenda_intelligence.cli memo-quality-bench tests/fixtures/memo_quality
           python3 -m agenda_intelligence.cli doctor --mcp-command "python3 -m agenda_intelligence.mcp_stdio" --json --strict
           python3 scripts/smoke_mcp_config.py --command "python3 -m agenda_intelligence.cli"
           python3 scripts/smoke_mcp.py --command "python3 -m agenda_intelligence.mcp_stdio"

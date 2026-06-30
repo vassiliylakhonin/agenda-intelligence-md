@@ -30,6 +30,7 @@ MANUAL_DOC_COMMANDS = [
     "agenda-intelligence score examples/before-after/eu-ai-act.md",
     "agenda-intelligence score examples/before-after/sanctions-routing.md",
     "agenda-intelligence score examples/before-after/red-sea-shipping.md",
+    "agenda-intelligence memo-quality-bench tests/fixtures/memo_quality --format json",
 ]
 
 
