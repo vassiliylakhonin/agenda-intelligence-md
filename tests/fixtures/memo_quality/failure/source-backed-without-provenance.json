@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "evidence_mode": "user_provided",
+    "confidence": "low",
+    "geography": "European Union",
+    "depth": "standard",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      },
+      {
+        "module": "eu",
+        "role": "regional_specialist"
+      }
+    ],
+    "timestamp": "2026-06-30T09:00:00Z"
+  },
+  "risk_summary": {
+    "short": "The memo declares caller-provided evidence but does not expose provenance.",
+    "detailed": "A source-backed mode without provenance leaves reviewers unable to trace claims to the supplied packet. The file should stay in human review until claim-level source references are added."
+  },
+  "analysis": {
+    "facts": [
+      "The vendor response includes a governance section."
+    ],
+    "assessments": [
+      "The governance section appears incomplete."
+    ],
+    "assumptions": [
+      "The memo author intended to use caller-provided documents."
+    ],
+    "unknowns": []
+  },
+  "recommended_actions": [
+    {
+      "action": "Add claim-level provenance before any reviewer relies on the memo.",
+      "priority": "high",
+      "trigger": "Before committee circulation.",
+      "time_horizon": "Before external reuse."
+    }
+  ],
+  "watch_next": [
+    {
+      "indicator": "Completed provenance table mapping each fact to a supplied source ID.",
+      "trigger": "Treat the memo as traceable only after the table exists.",
+      "source_type": "claim_provenance_table"
+    }
+  ],
+  "audit": {
+    "validation_score": 0.6,
+    "provenance": []
+  }
+}

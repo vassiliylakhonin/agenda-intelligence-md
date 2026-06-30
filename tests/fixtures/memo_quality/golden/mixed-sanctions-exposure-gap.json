@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "evidence_mode": "mixed",
+    "confidence": {
+      "level": "medium",
+      "score": 0.58,
+      "reasoning": "The supplied counterparty note supports exposure triage, while screening and ownership facts remain incomplete."
+    },
+    "geography": [
+      "CIS",
+      "European Union"
+    ],
+    "depth": "decision_pack",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      },
+      {
+        "module": "sanctions-sector",
+        "role": "sector_specialist"
+      },
+      {
+        "module": "eu",
+        "role": "regional_specialist"
+      }
+    ],
+    "timestamp": "2026-06-30T09:00:00Z"
+  },
+  "risk_summary": {
+    "short": "The counterparty file is not decision ready because ownership, screening, and payment-path evidence gaps remain open.",
+    "detailed": "The supplied counterparty note supports the existence of a cross-border exposure question, but it does not establish screening status, ownership control, or the payment path. Human review should treat sanctions status and payment exposure as unresolved until the missing evidence is supplied."
+  },
+  "decision_frame": {
+    "decision": "Decide whether the counterparty packet can move to enhanced due-diligence review.",
+    "stakeholders": [
+      "trade-compliance owner",
+      "relationship manager",
+      "banking reviewer"
+    ],
+    "constraints": [
+      "No live sanctions-list retrieval was performed.",
+      "Some facts are caller-supplied while screening status requires downstream verification."
+    ]
+  },
+  "analysis": {
+    "facts": [
+      "The supplied counterparty note names the proposed buyer and shipping corridor.",
+      "The current sanctions-list status is not established by the supplied packet [verify]."
+    ],
+    "assessments": [
+      "The file should be routed to enhanced due-diligence review rather than treated as ready for onboarding.",
+      "The strongest exposure claim is the missing ownership and payment-path evidence, not a confirmed designation."
+    ],
+    "assumptions": [
+      "The caller has not supplied live screening output."
+    ],
+    "unknowns": [
+      "Beneficial ownership evidence is missing.",
+      "Payment-path evidence is missing.",
+      "Current sanctions-screening output remains an evidence gap."
+    ]
+  },
+  "recommended_actions": [
+    {
+      "action": "Request ownership evidence and keep the control-risk claim marked as a missing-evidence item until the owner chain is documented.",
+      "priority": "high",
+      "trigger": "Before enhanced due-diligence review is scheduled.",
+      "time_horizon": "Before onboarding review."
+    },
+    {
+      "action": "Ask the banking reviewer for payment-path evidence before repeating any payment-exposure assessment externally.",
+      "priority": "high",
+      "trigger": "If the file will be shared with a bank or insurer.",
+      "time_horizon": "Before external reuse."
+    }
+  ],
+  "watch_next": [
+    {
+      "indicator": "Caller-supplied screening output with list name, date, and matching rationale.",
+      "trigger": "Change the screening-status view only when a dated result is supplied.",
+      "source_type": "sanctions_screening_output"
+    },
+    {
+      "indicator": "Payment-path evidence naming originator bank, correspondent bank, and beneficiary bank.",
+      "trigger": "Keep payment exposure as a blocking gap until this evidence is present.",
+      "source_type": "bank_payment_path"
+    }
+  ],
+  "audit": {
+    "validation_score": 0.8,
+    "provenance": [
+      {
+        "claim": "The supplied counterparty note names the proposed buyer and shipping corridor.",
+        "basis": "fact",
+        "source": "S1 counterparty note"
+      },
+      {
+        "claim": "The current sanctions-list status is not established by the supplied packet [verify].",
+        "basis": "fact"
+      },
+      {
+        "claim": "The file should route to enhanced due-diligence review.",
+        "basis": "assessment"
+      }
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "meta": {
+    "evidence_mode": "mixed",
+    "confidence": "medium",
+    "geography": "Caspian",
+    "depth": "standard",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      },
+      {
+        "module": "central-asia-caspian",
+        "role": "regional_specialist"
+      }
+    ],
+    "timestamp": "2026-06-30T09:00:00Z"
+  },
+  "risk_summary": {
+    "short": "The file has a clear evidence gap but an unusable watch-next instruction.",
+    "detailed": "The memo points to missing route-capacity evidence and gives an owner action, but the watch-next item is generic rather than observable."
+  },
+  "analysis": {
+    "facts": [
+      "The packet includes a corridor note."
+    ],
+    "assessments": [
+      "Route-capacity evidence remains incomplete."
+    ],
+    "assumptions": [
+      "The logistics owner can supply the missing capacity evidence."
+    ],
+    "unknowns": [
+      "Port-capacity evidence is missing."
+    ]
+  },
+  "recommended_actions": [
+    {
+      "action": "Ask the logistics owner for port-capacity evidence before accepting the route-capacity claim.",
+      "priority": "high",
+      "trigger": "Before committee review.",
+      "time_horizon": "Before route approval meeting."
+    }
+  ],
+  "watch_next": [
+    {
+      "indicator": "Continue to monitor."
+    }
+  ],
+  "audit": {
+    "validation_score": 0.74,
+    "provenance": [
+      {
+        "claim": "The packet includes a corridor note.",
+        "basis": "fact",
+        "source": "S1 corridor note"
+      },
+      {
+        "claim": "Route-capacity evidence remains incomplete.",
+        "basis": "assessment"
+      }
+    ]
+  }
+}

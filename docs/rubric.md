@@ -21,8 +21,9 @@ It rejects common failures that schema validation cannot see:
 - `watch_next` items that are not observable indicators;
 - source-backed modes that fail evidence-mode discipline.
 
-Golden and failure fixtures live under `tests/fixtures/memo_quality/` and can be
-checked as a batch with:
+Golden and failure fixtures live under `tests/fixtures/memo_quality/`. The
+current regression set has 4 golden memos and 7 schema-valid failure memos. It
+can be checked as a batch with:
 
 ```bash
 agenda-intelligence memo-quality-bench tests/fixtures/memo_quality

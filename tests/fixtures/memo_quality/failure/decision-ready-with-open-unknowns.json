@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "evidence_mode": "mixed",
+    "confidence": "medium",
+    "geography": "Kazakhstan",
+    "depth": "decision_pack",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      },
+      {
+        "module": "central-asia-caspian",
+        "role": "regional_specialist"
+      }
+    ],
+    "timestamp": "2026-06-30T09:00:00Z"
+  },
+  "risk_summary": {
+    "short": "The project file is decision ready for the next committee step.",
+    "detailed": "The supplied packet is enough for the next step. The committee can use the current memo as its working view."
+  },
+  "analysis": {
+    "facts": [
+      "The supplied packet includes a project overview."
+    ],
+    "assessments": [
+      "The project can move to the next committee step."
+    ],
+    "assumptions": [
+      "The committee can request follow-up material later."
+    ],
+    "unknowns": [
+      "Ultimate ownership remains to be confirmed.",
+      "Signed offtake support remains to be confirmed."
+    ]
+  },
+  "recommended_actions": [
+    {
+      "action": "Prepare the committee pack for the next discussion.",
+      "priority": "medium",
+      "trigger": "When the committee calendar opens.",
+      "time_horizon": "This month."
+    }
+  ],
+  "watch_next": [
+    {
+      "indicator": "Committee calendar entry.",
+      "trigger": "Proceed when the meeting date is set.",
+      "source_type": "committee_calendar"
+    }
+  ],
+  "audit": {
+    "validation_score": 0.76,
+    "provenance": [
+      {
+        "claim": "The supplied packet includes a project overview.",
+        "basis": "fact",
+        "source": "S1 project overview"
+      },
+      {
+        "claim": "The project can move to the next committee step.",
+        "basis": "assessment"
+      }
+    ]
+  }
+}

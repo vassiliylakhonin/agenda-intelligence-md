@@ -1,0 +1,53 @@
+{
+  "meta": {
+    "evidence_mode": "mixed",
+    "confidence": "medium",
+    "geography": "Global",
+    "depth": "standard",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      }
+    ],
+    "timestamp": "2026-06-30T09:00:00Z"
+  },
+  "risk_summary": {
+    "short": "The file identifies evidence gaps but gives no owner action surface.",
+    "detailed": "The memo names a useful review issue, but it leaves the next step implicit. A reviewer cannot tell who should close the gap, what trigger matters, or when the file can move forward."
+  },
+  "analysis": {
+    "facts": [
+      "The supplied packet includes a vendor response."
+    ],
+    "assessments": [
+      "The packet is incomplete for decision review."
+    ],
+    "assumptions": [
+      "The owner can request additional evidence."
+    ],
+    "unknowns": []
+  },
+  "recommended_actions": [],
+  "watch_next": [
+    {
+      "indicator": "Additional vendor evidence mapped to the review checklist.",
+      "trigger": "Reassess when the missing evidence is supplied.",
+      "source_type": "vendor_evidence_packet"
+    }
+  ],
+  "audit": {
+    "validation_score": 0.68,
+    "provenance": [
+      {
+        "claim": "The supplied packet includes a vendor response.",
+        "basis": "fact",
+        "source": "S1 vendor response"
+      },
+      {
+        "claim": "The packet is incomplete for decision review.",
+        "basis": "assessment"
+      }
+    ]
+  }
+}

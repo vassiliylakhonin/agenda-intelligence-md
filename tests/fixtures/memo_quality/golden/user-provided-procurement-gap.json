@@ -1,0 +1,101 @@
+{
+  "meta": {
+    "evidence_mode": "user_provided",
+    "confidence": {
+      "level": "medium",
+      "score": 0.64,
+      "reasoning": "The supplied procurement packet supports the gap finding, but not a final award decision."
+    },
+    "geography": "European Union",
+    "depth": "decision_pack",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      },
+      {
+        "module": "eu",
+        "role": "regional_specialist"
+      }
+    ],
+    "timestamp": "2026-06-30T09:00:00Z"
+  },
+  "risk_summary": {
+    "short": "The procurement file is not decision ready because the vendor evidence packet is missing model-risk and data-handling support.",
+    "detailed": "The supplied RFP extract and vendor response establish the review question, but the evidence gaps are still material. Human review should focus on model-risk controls, data-processing boundaries, and whether the vendor can support each claim before the shortlist decision."
+  },
+  "decision_frame": {
+    "decision": "Decide whether the vendor file can move from evidence triage to shortlist review.",
+    "stakeholders": [
+      "procurement owner",
+      "AI governance reviewer",
+      "data-protection reviewer"
+    ],
+    "constraints": [
+      "Only caller-supplied documents were reviewed.",
+      "No live vendor due-diligence retrieval was performed."
+    ]
+  },
+  "analysis": {
+    "facts": [
+      "The supplied RFP extract asks vendors to describe model-risk controls.",
+      "The supplied vendor response does not include a model-card appendix or data-processing evidence."
+    ],
+    "assessments": [
+      "The vendor response is usable for gap triage but not for a shortlist recommendation.",
+      "The missing evidence should be closed before any committee-facing summary repeats the vendor's strongest claims."
+    ],
+    "assumptions": [
+      "The supplied source pack is the complete file available to the procurement owner."
+    ],
+    "unknowns": [
+      "The model-risk control evidence is missing from the supplied packet.",
+      "The data-processing boundary remains an evidence gap."
+    ]
+  },
+  "recommended_actions": [
+    {
+      "action": "Ask the procurement owner to request the model-card appendix and map it to the RFP control questions.",
+      "priority": "high",
+      "trigger": "Before moving the vendor from evidence triage to shortlist review.",
+      "time_horizon": "Before shortlist meeting."
+    },
+    {
+      "action": "Route the data-processing gap to the data-protection reviewer and keep the data-handling claim unsupported until evidence arrives.",
+      "priority": "high",
+      "trigger": "If the vendor response will be summarized for committee review.",
+      "time_horizon": "Before committee memo circulation."
+    }
+  ],
+  "watch_next": [
+    {
+      "indicator": "Vendor-supplied model-card appendix tied to the RFP control questions.",
+      "trigger": "Upgrade the model-risk claim only after the appendix is supplied.",
+      "source_type": "vendor_model_card"
+    },
+    {
+      "indicator": "Data-processing addendum naming processors, retention, and transfer boundaries.",
+      "trigger": "Keep data-handling readiness as a missing-evidence item until the addendum is supplied.",
+      "source_type": "data_processing_addendum"
+    }
+  ],
+  "audit": {
+    "validation_score": 0.83,
+    "provenance": [
+      {
+        "claim": "The supplied RFP extract asks vendors to describe model-risk controls.",
+        "basis": "fact",
+        "source": "S1 RFP extract"
+      },
+      {
+        "claim": "The vendor response does not include a model-card appendix or data-processing evidence.",
+        "basis": "fact",
+        "source": "S2 vendor response checklist"
+      },
+      {
+        "claim": "The file should remain in evidence triage before shortlist review.",
+        "basis": "assessment"
+      }
+    ]
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "meta": {
+    "evidence_mode": "user_provided",
+    "confidence": "medium",
+    "geography": "CIS",
+    "depth": "standard",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      },
+      {
+        "module": "sanctions-sector",
+        "role": "sector_specialist"
+      }
+    ],
+    "timestamp": "2026-06-30T09:00:00Z"
+  },
+  "risk_summary": {
+    "short": "The file should be routed to human review because a sanctions designation claim is not source-backed.",
+    "detailed": "The memo states a designation as a determinative fact, but the supplied packet does not attach the list extract. Human review should request source evidence before the claim is repeated."
+  },
+  "analysis": {
+    "facts": [
+      "Counterparty Alpha is listed on a sanctions list."
+    ],
+    "assessments": [
+      "The designation claim is material to the onboarding route."
+    ],
+    "assumptions": [
+      "The analyst intended to rely on caller-supplied evidence."
+    ],
+    "unknowns": []
+  },
+  "recommended_actions": [
+    {
+      "action": "Request the sanctions-list extract before repeating the designation claim.",
+      "priority": "high",
+      "trigger": "Before any onboarding or committee discussion.",
+      "time_horizon": "Before external reuse."
+    }
+  ],
+  "watch_next": [
+    {
+      "indicator": "Dated sanctions-list extract naming Counterparty Alpha.",
+      "trigger": "Do not repeat the designation claim until this source exists.",
+      "source_type": "sanctions_list_extract"
+    }
+  ],
+  "audit": {
+    "validation_score": 0.7,
+    "provenance": [
+      {
+        "claim": "Counterparty Alpha is listed on a sanctions list.",
+        "basis": "fact"
+      },
+      {
+        "claim": "The designation claim is material to the onboarding route.",
+        "basis": "assessment"
+      }
+    ]
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "meta": {
+    "evidence_mode": "reasoning_only",
+    "confidence": {
+      "level": "low",
+      "score": 0.42,
+      "reasoning": "This is a reasoning-only triage memo with no caller-supplied source pack."
+    },
+    "geography": "Global",
+    "depth": "quick_brief",
+    "modules_used": [
+      {
+        "module": "global-think-tank-analyst",
+        "role": "reasoning_method"
+      }
+    ],
+    "timestamp": "2026-06-30T09:00:00Z"
+  },
+  "risk_summary": {
+    "short": "The strategy question is not decision ready because the evidence pack is missing and the memo can only frame what to request next.",
+    "detailed": "This reasoning-only memo should be used as a planning aid, not as an evidence-backed conclusion. The core gap is that no source pack has been supplied, so human review should request dated evidence before any external or investment-facing claim is repeated."
+  },
+  "decision_frame": {
+    "decision": "Decide what evidence to request before commissioning a full strategic-risk memo.",
+    "stakeholders": [
+      "founder",
+      "analyst",
+      "external reviewer"
+    ],
+    "constraints": [
+      "No source pack was supplied.",
+      "No live retrieval was performed."
+    ]
+  },
+  "analysis": {
+    "facts": [],
+    "assessments": [
+      "The first useful output is an evidence request list, not a substantive conclusion.",
+      "The memo should route the owner toward source collection before decision review."
+    ],
+    "assumptions": [
+      "The user wants a triage frame before collecting sources."
+    ],
+    "unknowns": [
+      "The triggering event is missing from the file.",
+      "The economic buyer and decision deadline are unknown.",
+      "The source pack is missing."
+    ]
+  },
+  "recommended_actions": [
+    {
+      "action": "Ask the owner to close the missing trigger, missing decision deadline, and missing source-pack gaps before drafting a full memo.",
+      "priority": "high",
+      "trigger": "Before any substantive risk conclusion is written.",
+      "time_horizon": "Before full memo drafting."
+    }
+  ],
+  "watch_next": [
+    {
+      "indicator": "Arrival of the missing source pack with dated public signals and owner-supplied constraints.",
+      "trigger": "Move from reasoning-only triage to source-backed review only when the source pack exists.",
+      "source_type": "caller_supplied_source_pack"
+    }
+  ],
+  "audit": {
+    "validation_score": 0.72,
+    "provenance": [
+      {
+        "claim": "No evidence-backed factual finding is made in this memo.",
+        "basis": "assessment"
+      },
+      {
+        "claim": "The source pack is missing.",
+        "basis": "unknown"
+      }
+    ]
+  }
+}
