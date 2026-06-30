@@ -60,6 +60,7 @@ required = [
     "analysis-bank/memory_index.json",
     "docs/product/analysisbank-hardening-checkpoint.md",
     "docs/releases/RELEASE_NOTES_v1.1.0.md",
+    "docs/releases/RELEASE_NOTES_v1.1.1.md",
     "tests/fixtures/analysis_bank_applicability/manifest.json",
     "tests/fixtures/analysis_bank_retrieval/manifest.json",
     "tests/fixtures/weekly_delta/manifest.json",

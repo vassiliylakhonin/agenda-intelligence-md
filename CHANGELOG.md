@@ -4,6 +4,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **release: prepare v1.1.1 hardening checkpoint.** Bumped package,
+  manifest, and MCP registry metadata versions to `1.1.1`; added
+  `RELEASE_NOTES_v1.1.1.md`; corrected `RELEASE_NOTES_v1.1.0.md` to match the
+  already-published A2A / Worker parity release. No tag is pushed in this
+  commit because the current tag workflow publishes to PyPI on any `v*` tag.
+
 - **feat(weekly-delta): add confidential workflow golden/failure bench.**
   Added `weekly-delta-bench` for deterministic weekly/status fixtures. The
   bench checks route selection, unsafe-to-repeat claim extraction, owner-action

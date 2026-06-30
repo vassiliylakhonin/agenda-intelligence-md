@@ -1,41 +1,31 @@
-# v1.1.0 - AnalysisBank hardening
+# v1.1.0 - A2A protocol v1.0 wire + Worker parity + cost accounting
 
-v1.1.0 hardens AnalysisBank from a useful reasoning-memory folder into a
-guarded runtime path for `analyze`.
+v1.1.0 upgraded the A2A wire contract, brought the deployed Worker closer to
+Python service parity, and added per-task cost accounting. The schema freeze
+from ADR 0003 and the request/memo contract were unchanged.
 
 ## What changed
 
-- Added lifecycle linting for AnalysisBank cards: required metadata, schema
-  conformance, duplicate `lesson_id` detection, freshness checks, and
-  `memory_index.json` sync.
-- Packaged AnalysisBank docs and cards with the installed runtime so CLI and MCP
-  behavior can rely on the same memory bank that is reviewed in the repo.
-- Added deterministic retrieval ranking plus a retrieval bench for expected top
-  lessons and forbidden top-N mistakes.
-- Added an applicability bench for positive and negative task contexts against
-  each card's `Apply when` / `Do not apply when` boundaries.
-- Wired the guarded memory path into `analyze`: at most 3 active, unexpired,
-  retrieval-ranked, applicability-gated lessons are added to a bounded
-  `REASONING MEMORY` prompt section.
-- Added `audit.reasoning_memory` so selected memory cards remain visible to a
-  memo reviewer after the response envelope is removed.
+- Migrated the A2A wire contract to A2A protocol v1.0 per ADR 0017.
+- Preserved inbound parsing for both A2A v0.3 and v1.0.
+- Added Python agent-card `supportedInterfaces[]`.
+- Brought the Cloudflare Worker closer to Python service parity for Middle
+  Corridor jurisdiction flags, exposure decomposition, and the vessel
+  due-diligence checklist.
+- Added per-task cost accounting and budget thresholds in `/stats`.
+- Added Middle Corridor re-export / circumvention-watch jurisdiction flag,
+  `exposure_layers`, and vessel deceptive-shipping-practice checklist.
+- Tightened MCP category tool arguments to the packaged enum and corrected the
+  stale `energy-markets` slug to `energy`.
 
 ## What did not change
 
-- AnalysisBank is not factual memory, source storage, live retrieval, legal
-  advice, compliance advice, sanctions screening, or autonomous decision logic.
-- Memo schema changes are additive.
-- Existing evidence-readiness boundaries remain unchanged: memory can shape
-  reasoning discipline, but it cannot support factual claims.
+- No breaking change to the frozen request/memo contract.
+- No factual-verification, advice, or autonomous decision boundary changed.
+- Worker changes still required manual `wrangler deploy`; merge alone did not
+  deploy live Workers.
 
-## Operator gate
+## Reference
 
-Before editing or adding memory cards, use the checkpoint:
-[`docs/product/analysisbank-hardening-checkpoint.md`](../product/analysisbank-hardening-checkpoint.md).
-
-```bash
-agenda-intelligence memory-lint
-agenda-intelligence memory-search-bench tests/fixtures/analysis_bank_retrieval/manifest.json
-agenda-intelligence memory-applicability-bench tests/fixtures/analysis_bank_applicability/manifest.json
-make ci PYTHON=python3
-```
+GitHub release:
+<https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/tag/v1.1.0>

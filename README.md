@@ -238,8 +238,8 @@ curl -sS http://127.0.0.1:8080/v1/middle-corridor/deal-risk \
 Container build (`Dockerfile.api`):
 
 ```bash
-docker build -f Dockerfile.api -t agenda-intelligence-md-api:1.1.0 .
-docker run --rm -p 8080:8080 agenda-intelligence-md-api:1.1.0
+docker build -f Dockerfile.api -t agenda-intelligence-md-api:1.1.1 .
+docker run --rm -p 8080:8080 agenda-intelligence-md-api:1.1.1
 ```
 
 Full HTTP deployment guide, including environment defaults (`AGENDA_INTELLIGENCE_HTTP_HOST`, `AGENDA_INTELLIGENCE_HTTP_PORT`), logging discipline, and boundary statements: [`docs/deployment/http-api.md`](docs/deployment/http-api.md).
@@ -260,7 +260,7 @@ agenda-intelligence mcp-config --client cursor
 Pinned-wheel install (instead of PyPI):
 
 ```bash
-pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v1.1.0/agenda_intelligence_md-1.1.0-py3-none-any.whl
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v1.1.1/agenda_intelligence_md-1.1.1-py3-none-any.whl
 ```
 
 ## Benchmark baseline

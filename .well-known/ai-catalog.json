@@ -8,7 +8,7 @@
   "displayName": "Agenda Intelligence MD AI resource catalog",
   "description": "Discovery catalog for Agenda Intelligence MD resources: A2A wrapper, MCP server card, OKF knowledge bundle, confidential project-room profile contract, schemas, and source-policy artifacts. Visibility in this catalog is not buyer traction or product-market-fit evidence.",
   "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "updatedAt": "2026-06-29",
   "entries": [
     {
@@ -35,7 +35,7 @@
         "route a strategic-risk question to the right evidence-readiness workflow",
         "find the A2A agent card for Agenda Intelligence MD"
       ],
-      "version": "1.1.0",
+      "version": "1.1.1",
       "updatedAt": "2026-06-29"
     },
     {
@@ -63,7 +63,7 @@
         "validate an agenda memo against a JSON schema",
         "check source coverage for a sanctions evidence pack"
       ],
-      "version": "1.1.0",
+      "version": "1.1.1",
       "updatedAt": "2026-06-29"
     },
     {
@@ -87,7 +87,7 @@
         "send a strategic risk triage request to Agenda Intelligence MD",
         "get evidence gaps and source planning for a policy-risk question"
       ],
-      "version": "1.1.0",
+      "version": "1.1.1",
       "updatedAt": "2026-06-29"
     },
     {
@@ -113,7 +113,7 @@
         "what HTTP endpoints does the Agenda Intelligence worker expose",
         "discover the JSON-RPC message/send contract for Agenda Intelligence MD"
       ],
-      "version": "1.1.0",
+      "version": "1.1.1",
       "updatedAt": "2026-06-29"
     },
     {
@@ -138,7 +138,7 @@
         "explain human-review packet and claim audit concepts",
         "understand the Agenda Intelligence repository stack"
       ],
-      "version": "1.1.0",
+      "version": "1.1.1",
       "updatedAt": "2026-06-29"
     },
     {
@@ -163,7 +163,7 @@
         "map Agenda Intelligence MD evidence-readiness concepts",
         "find the relationship between evidence pack, claim audit, and human-review packet"
       ],
-      "version": "1.1.0",
+      "version": "1.1.1",
       "updatedAt": "2026-06-29"
     },
     {
@@ -190,7 +190,7 @@
         "how to review a private project packet without exposing client names",
         "redacted source pack owner actions and human-review routing"
       ],
-      "version": "1.1.0",
+      "version": "1.1.1",
       "updatedAt": "2026-06-29"
     },
     {
@@ -215,7 +215,7 @@
         "find the evidence audit JSON schema",
         "validate a strategic-risk memo contract"
       ],
-      "version": "1.1.0",
+      "version": "1.1.1",
       "updatedAt": "2026-06-29"
     },
     {
@@ -240,7 +240,7 @@
         "does Agenda Intelligence MD verify factual truth",
         "what source categories are required for evidence readiness"
       ],
-      "version": "1.1.0",
+      "version": "1.1.1",
       "updatedAt": "2026-06-29"
     }
   ],
