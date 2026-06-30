@@ -62,6 +62,7 @@ jobs:
           python3 -m agenda_intelligence.cli memory-lint --format json
           python3 -m agenda_intelligence.cli memory-search sanctions
           python3 -m agenda_intelligence.cli memory-search-bench tests/fixtures/analysis_bank_retrieval/manifest.json --format json
+          python3 -m agenda_intelligence.cli memory-applicability-bench tests/fixtures/analysis_bank_applicability/manifest.json --format json
           python3 -m agenda_intelligence.cli memo-quality-bench tests/fixtures/memo_quality --format json
           python3 -m agenda_intelligence.cli doctor --mcp-command "python3 -m agenda_intelligence.mcp_stdio" --strict
 
@@ -82,6 +83,7 @@ jobs:
           python3 -m agenda_intelligence.cli memory-lint
           python3 -m agenda_intelligence.cli memory-search sanctions
           python3 -m agenda_intelligence.cli memory-search-bench tests/fixtures/analysis_bank_retrieval/manifest.json
+          python3 -m agenda_intelligence.cli memory-applicability-bench tests/fixtures/analysis_bank_applicability/manifest.json
           python3 -m agenda_intelligence.cli memo-quality-bench tests/fixtures/memo_quality
           python3 -m agenda_intelligence.cli doctor --mcp-command "python3 -m agenda_intelligence.mcp_stdio" --json --strict
           python3 scripts/smoke_mcp_config.py --command "python3 -m agenda_intelligence.cli"

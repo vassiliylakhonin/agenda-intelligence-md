@@ -23,9 +23,11 @@ if str(SRC_ROOT) not in sys.path:
 
 from agenda_intelligence import __version__  # noqa: E402
 from agenda_intelligence.analysis_bank import (  # noqa: E402
+    format_applicability_bench_text,
     format_lint_text,
     format_retrieval_bench_text,
     lint_analysis_bank,
+    run_memory_applicability_bench,
     run_memory_retrieval_bench,
     search_memory_cards,
 )
@@ -328,6 +330,19 @@ def cmd_memory_search_bench(args):
         print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
     else:
         print(format_retrieval_bench_text(result))
+    if not result.ok:
+        raise SystemExit(1)
+
+
+def cmd_memory_applicability_bench(args):
+    """Evaluate whether AnalysisBank lessons apply to positive/negative contexts."""
+    bank_path = Path(args.bank) if args.bank else _default_analysis_bank_path()
+    manifest_path = Path(args.manifest)
+    result = run_memory_applicability_bench(bank_path, manifest_path)
+    if args.format == "json":
+        print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
+    else:
+        print(format_applicability_bench_text(result))
     if not result.ok:
         raise SystemExit(1)
 
@@ -1157,6 +1172,15 @@ def main():
     p.add_argument("--bank", help="AnalysisBank directory; defaults to repo source or packaged mirror")
     p.add_argument("--format", choices=["text", "json"], default="text")
     p.set_defaults(func=cmd_memory_search_bench)
+    # memory applicability bench – deterministic apply/do-not-apply fixture check
+    p = sub.add_parser(
+        "memory-applicability-bench",
+        help="Evaluate AnalysisBank lesson applicability against positive and negative contexts",
+    )
+    p.add_argument("manifest", help="Applicability fixture manifest JSON")
+    p.add_argument("--bank", help="AnalysisBank directory; defaults to repo source or packaged mirror")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.set_defaults(func=cmd_memory_applicability_bench)
     # fetch – legacy alias for source-plan; brief evidence fetching is not implemented.
     p = sub.add_parser("fetch", help="Print source plan for a category; brief evidence fetching is not implemented")
     p.add_argument("--category", help="Source category to print (e.g., technology-ai)")

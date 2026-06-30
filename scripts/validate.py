@@ -57,6 +57,7 @@ required = [
     "analysis-bank/MEMORY_FORMAT.md",
     "analysis-bank/README.md",
     "analysis-bank/memory_index.json",
+    "tests/fixtures/analysis_bank_applicability/manifest.json",
     "tests/fixtures/analysis_bank_retrieval/manifest.json",
     "examples/sector/sanctions-brief.md",
     "skills/agenda-intelligence/references/sector/sanctions.md",

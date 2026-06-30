@@ -49,6 +49,17 @@ _SEARCH_FIELD_WEIGHTS = {
     "watch_indicators": 2,
     "evidence_basis": 1,
 }
+_APPLICABILITY_POSITIVE_FIELDS = {
+    "trigger": 3,
+    "apply_when": 5,
+    "pattern": 2,
+    "better_reasoning": 2,
+    "watch_indicators": 1,
+}
+_APPLICABILITY_NEGATIVE_FIELDS = {
+    "do_not_apply_when": 6,
+}
+_DEFAULT_APPLICABILITY_THRESHOLD = 1
 
 
 @dataclass
@@ -77,6 +88,29 @@ class AnalysisBankLintResult:
 
 @dataclass
 class MemoryRetrievalBenchResult:
+    manifest_errors: list[str]
+    cases: list[dict[str, Any]]
+
+    @property
+    def ok(self) -> bool:
+        return not self.manifest_errors and all(case["ok"] for case in self.cases)
+
+    def to_dict(self) -> dict[str, Any]:
+        passed = sum(1 for case in self.cases if case["ok"])
+        return {
+            "ok": self.ok,
+            "summary": {
+                "cases": len(self.cases),
+                "passed": passed,
+                "failed": len(self.cases) - passed,
+                "manifest_errors": self.manifest_errors,
+            },
+            "cases": self.cases,
+        }
+
+
+@dataclass
+class MemoryApplicabilityBenchResult:
     manifest_errors: list[str]
     cases: list[dict[str, Any]]
 
@@ -205,6 +239,22 @@ def score_memory_card(card: dict[str, Any], query: str) -> int:
     return score
 
 
+def score_memory_applicability(card: dict[str, Any], context: str) -> dict[str, int | bool]:
+    context_tokens = _tokenize(context)
+    if not context_tokens:
+        return {"positive_score": 0, "negative_score": 0, "net_score": 0, "applicable": False}
+
+    positive_score = _weighted_token_score(card, context_tokens, _APPLICABILITY_POSITIVE_FIELDS)
+    negative_score = _weighted_token_score(card, context_tokens, _APPLICABILITY_NEGATIVE_FIELDS)
+    net_score = positive_score - negative_score
+    return {
+        "positive_score": positive_score,
+        "negative_score": negative_score,
+        "net_score": net_score,
+        "applicable": net_score >= _DEFAULT_APPLICABILITY_THRESHOLD and positive_score > 0,
+    }
+
+
 def run_memory_retrieval_bench(
     bank_path: Path, manifest_path: Path, *, today: date | None = None
 ) -> MemoryRetrievalBenchResult:
@@ -234,6 +284,33 @@ def run_memory_retrieval_bench(
         cases.append(case)
 
     return MemoryRetrievalBenchResult(manifest_errors, cases)
+
+
+def run_memory_applicability_bench(
+    bank_path: Path, manifest_path: Path, *, today: date | None = None
+) -> MemoryApplicabilityBenchResult:
+    manifest_errors: list[str] = []
+    manifest = _load_bench_manifest(manifest_path, manifest_errors, manifest_name="applicability")
+    if manifest is None:
+        return MemoryApplicabilityBenchResult(manifest_errors, [])
+
+    cases_value = manifest.get("cases")
+    if not isinstance(cases_value, list) or not cases_value:
+        manifest_errors.append("manifest.cases must be a non-empty list")
+        return MemoryApplicabilityBenchResult(manifest_errors, [])
+
+    cards_by_id = _load_usable_cards_by_id(bank_path, today=today)
+    cases: list[dict[str, Any]] = []
+    for raw_case in cases_value:
+        case_errors = _validate_applicability_case(raw_case)
+        if case_errors:
+            case_id = raw_case.get("case_id") if isinstance(raw_case, dict) else "<invalid>"
+            manifest_errors.extend(f"{case_id}: {error}" for error in case_errors)
+            continue
+        case = _run_applicability_case(cards_by_id, raw_case)
+        cases.append(case)
+
+    return MemoryApplicabilityBenchResult(manifest_errors, cases)
 
 
 def lint_analysis_bank(
@@ -314,6 +391,26 @@ def format_retrieval_bench_text(result: MemoryRetrievalBenchResult) -> str:
     return "\n".join(lines)
 
 
+def format_applicability_bench_text(result: MemoryApplicabilityBenchResult) -> str:
+    summary = result.to_dict()["summary"]
+    lines = [
+        f"AnalysisBank applicability bench: {'ok' if result.ok else 'failed'}",
+        f"Cases: {summary['passed']}/{summary['cases']} passed",
+    ]
+    if result.manifest_errors:
+        lines.append("Manifest errors:")
+        lines.extend(f"- {error}" for error in result.manifest_errors)
+    for case in result.cases:
+        status = "PASS" if case["ok"] else "FAIL"
+        lines.append(
+            f"- {status} {case['case_id']}: expected={case['expected_applicable']} "
+            f"actual={case['actual_applicable']} net={case['scores']['net_score']}"
+        )
+        if case["errors"]:
+            lines.extend(f"  - {error}" for error in case["errors"])
+    return "\n".join(lines)
+
+
 def _parse_title(markdown: str) -> str:
     for line in markdown.splitlines():
         if line.startswith("# "):
@@ -335,21 +432,42 @@ def _searchable_text(value: Any) -> str:
     return ""
 
 
-def _load_retrieval_manifest(manifest_path: Path, errors: list[str]) -> dict[str, Any] | None:
+def _weighted_token_score(card: dict[str, Any], context_tokens: list[str], field_weights: dict[str, int]) -> int:
+    score = 0
+    normalized_context = " ".join(context_tokens)
+    for field, weight in field_weights.items():
+        text = _searchable_text(card.get(field))
+        if not text:
+            continue
+        field_tokens = _tokenize(text)
+        if normalized_context and normalized_context in " ".join(field_tokens):
+            score += weight * 3
+        for token in context_tokens:
+            token_count = field_tokens.count(token)
+            if token_count:
+                score += weight * min(token_count, 3)
+    return score
+
+
+def _load_bench_manifest(manifest_path: Path, errors: list[str], *, manifest_name: str) -> dict[str, Any] | None:
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except FileNotFoundError:
-        errors.append(f"retrieval manifest not found: {manifest_path}")
+        errors.append(f"{manifest_name} manifest not found: {manifest_path}")
         return None
     except json.JSONDecodeError as exc:
-        errors.append(f"retrieval manifest is invalid JSON: {exc}")
+        errors.append(f"{manifest_name} manifest is invalid JSON: {exc}")
         return None
     if not isinstance(manifest, dict):
-        errors.append("retrieval manifest must be a JSON object")
+        errors.append(f"{manifest_name} manifest must be a JSON object")
         return None
     if manifest.get("version") != 1:
-        errors.append("retrieval manifest version must be 1")
+        errors.append(f"{manifest_name} manifest version must be 1")
     return manifest
+
+
+def _load_retrieval_manifest(manifest_path: Path, errors: list[str]) -> dict[str, Any] | None:
+    return _load_bench_manifest(manifest_path, errors, manifest_name="retrieval")
 
 
 def _validate_retrieval_case(raw_case: Any) -> list[str]:
@@ -399,6 +517,61 @@ def _run_retrieval_case(
         "top_n": top_n,
         "top_results": top_ids,
         "scores": {item["lesson_id"]: item["score"] for item in results[:top_n]},
+        "why_it_exists": case["why_it_exists"],
+    }
+
+
+def _load_usable_cards_by_id(bank_path: Path, *, today: date | None = None) -> dict[str, dict[str, Any]]:
+    cards: dict[str, dict[str, Any]] = {}
+    for path in discover_memory_cards(bank_path):
+        card = parse_memory_card(path, bank_path)
+        lesson_id = card.get("lesson_id")
+        if isinstance(lesson_id, str) and is_usable_lesson(card, today=today):
+            cards[lesson_id] = card
+    return cards
+
+
+def _validate_applicability_case(raw_case: Any) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(raw_case, dict):
+        return ["case must be an object"]
+    for key in ("case_id", "lesson_id", "context", "why_it_exists"):
+        if not isinstance(raw_case.get(key), str) or not raw_case.get(key):
+            errors.append(f"{key} must be a non-empty string")
+    if not isinstance(raw_case.get("expected_applicable"), bool):
+        errors.append("expected_applicable must be a boolean")
+    return errors
+
+
+def _run_applicability_case(cards_by_id: dict[str, dict[str, Any]], case: dict[str, Any]) -> dict[str, Any]:
+    lesson_id = case["lesson_id"]
+    card = cards_by_id.get(lesson_id)
+    errors: list[str] = []
+    if card is None:
+        scores: dict[str, int | bool] = {
+            "positive_score": 0,
+            "negative_score": 0,
+            "net_score": 0,
+            "applicable": False,
+        }
+        errors.append(f"lesson_id not found or not usable: {lesson_id}")
+    else:
+        scores = score_memory_applicability(card, case["context"])
+
+    expected_applicable = case["expected_applicable"]
+    actual_applicable = bool(scores["applicable"])
+    if actual_applicable != expected_applicable:
+        errors.append(f"expected applicable={expected_applicable}, got {actual_applicable}")
+
+    return {
+        "case_id": case["case_id"],
+        "lesson_id": lesson_id,
+        "context": case["context"],
+        "ok": not errors,
+        "errors": errors,
+        "expected_applicable": expected_applicable,
+        "actual_applicable": actual_applicable,
+        "scores": scores,
         "why_it_exists": case["why_it_exists"],
     }
 

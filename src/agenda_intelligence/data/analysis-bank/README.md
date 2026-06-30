@@ -79,6 +79,20 @@ Each case declares the expected top lesson, any lessons that must appear within
 top-N, and lessons that must not appear within top-N. Use it when adding or
 rewriting memory cards so retrieval quality does not drift.
 
+## Applicability guard
+
+Retrieval alone is not enough: a lesson can be found and still be wrong for the
+task. The applicability bench checks representative positive and negative
+contexts against each card's `Apply when` and `Do not apply when` sections:
+
+```bash
+agenda-intelligence memory-applicability-bench tests/fixtures/analysis_bank_applicability/manifest.json
+```
+
+This is a deterministic guard against obvious over-application. It does not
+replace human judgment; it only catches cases where a card's own boundary
+conditions would be ignored.
+
 ## Current memory cards
 
 Failures:

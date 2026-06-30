@@ -8,7 +8,10 @@ from pathlib import Path
 from agenda_intelligence.analysis_bank import (
     lifecycle_fields,
     lint_analysis_bank,
+    parse_memory_card,
+    run_memory_applicability_bench,
     run_memory_retrieval_bench,
+    score_memory_applicability,
     search_memory_cards,
 )
 
@@ -16,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MEMORY_DIRS = [ROOT / "analysis-bank" / "successes", ROOT / "analysis-bank" / "failures"]
 CLI = [sys.executable, "-m", "agenda_intelligence.cli"]
 ENV = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
+APPLICABILITY_MANIFEST = ROOT / "tests" / "fixtures" / "analysis_bank_applicability" / "manifest.json"
 RETRIEVAL_MANIFEST = ROOT / "tests" / "fixtures" / "analysis_bank_retrieval" / "manifest.json"
 REQUIRED_SECTIONS = [
     "Lifecycle",
@@ -228,3 +232,80 @@ def test_memory_search_bench_cli_json_smoke():
     payload = json.loads(res.stdout)
     assert payload["ok"] is True
     assert payload["summary"]["passed"] == 5
+
+
+def test_memory_applicability_scores_apply_and_do_not_apply_sections():
+    card_path = ROOT / "analysis-bank" / "successes" / "sanctions-routing-signal-classification.md"
+    card = parse_memory_card(card_path, ROOT / "analysis-bank")
+    blocked_context = (
+        "Summarize a purely diplomatic statement with no goods, no payments, "
+        "no logistics, and no enforcement mechanism."
+    )
+
+    applicable = score_memory_applicability(
+        card,
+        "Assess sanctions exposure from goods, payment chain, logistics documentation, customs, and intermediaries.",
+    )
+    blocked = score_memory_applicability(
+        card,
+        blocked_context,
+    )
+
+    assert applicable["applicable"] is True
+    assert applicable["net_score"] > 0
+    assert blocked["applicable"] is False
+    assert blocked["negative_score"] > blocked["positive_score"]
+
+
+def test_memory_applicability_bench_passes_fixture_manifest():
+    result = run_memory_applicability_bench(
+        ROOT / "analysis-bank",
+        APPLICABILITY_MANIFEST,
+        today=date(2026, 6, 30),
+    )
+
+    assert result.ok, result.to_dict()
+    payload = result.to_dict()
+    assert payload["summary"]["cases"] == 8
+    assert payload["summary"]["passed"] == 8
+
+
+def test_memory_applicability_bench_fails_on_wrong_expectation(tmp_path: Path):
+    manifest = json.loads(APPLICABILITY_MANIFEST.read_text(encoding="utf-8"))
+    manifest["cases"][0]["expected_applicable"] = False
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = run_memory_applicability_bench(
+        ROOT / "analysis-bank",
+        manifest_path,
+        today=date(2026, 6, 30),
+    )
+
+    assert not result.ok
+    assert "expected applicable=False" in result.cases[0]["errors"][0]
+
+
+def test_memory_applicability_bench_rejects_incomplete_manifest(tmp_path: Path):
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps({"version": 1, "cases": [{}]}), encoding="utf-8")
+
+    result = run_memory_applicability_bench(ROOT / "analysis-bank", manifest_path)
+
+    assert not result.ok
+    assert any("lesson_id must be a non-empty string" in error for error in result.manifest_errors)
+
+
+def test_memory_applicability_bench_cli_json_smoke():
+    res = subprocess.run(
+        CLI + ["memory-applicability-bench", str(APPLICABILITY_MANIFEST), "--format", "json"],
+        capture_output=True,
+        text=True,
+        cwd=ROOT,
+        env=ENV,
+    )
+
+    assert res.returncode == 0, f"{res.stderr}\n{res.stdout}"
+    payload = json.loads(res.stdout)
+    assert payload["ok"] is True
+    assert payload["summary"]["passed"] == 8

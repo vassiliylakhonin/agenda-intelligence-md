@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "case_id": "sanctions-routing-applies-to-goods-payments-logistics",
+      "lesson_id": "sanctions-routing-signal-classification",
+      "context": "Assess sanctions compliance exposure from re-export trade flows, intermediaries, payment chain, customs documentation, logistics, and insurance.",
+      "expected_applicable": true,
+      "why_it_exists": "The routing lesson should apply when goods, payments, logistics, or intermediary mechanisms create sanctions exposure."
+    },
+    {
+      "case_id": "sanctions-routing-does-not-apply-to-pure-diplomacy",
+      "lesson_id": "sanctions-routing-signal-classification",
+      "context": "Summarize a purely diplomatic summit statement with no goods, no payments, no logistics, no ownership, and no enforcement mechanism.",
+      "expected_applicable": false,
+      "why_it_exists": "The routing lesson must not be applied when the card's own boundary says the issue is purely diplomatic."
+    },
+    {
+      "case_id": "eu-rhetoric-applies-to-political-statement",
+      "lesson_id": "eu-rhetoric-treated-as-law",
+      "context": "Assess an EU Commission statement and Parliament resolution that may affect market access but has not become legal text or binding guidance.",
+      "expected_applicable": true,
+      "why_it_exists": "The EU rhetoric lesson should apply when institutional stage determines legal weight."
+    },
+    {
+      "case_id": "eu-rhetoric-does-not-apply-to-final-legal-act",
+      "lesson_id": "eu-rhetoric-treated-as-law",
+      "context": "Explain an already final EU legal act with binding guidance, compliance deadline, regulator enforcement action, and court judgment.",
+      "expected_applicable": false,
+      "why_it_exists": "The EU rhetoric lesson should not weaken analysis of already-final legal obligations."
+    },
+    {
+      "case_id": "sanctions-overconfidence-applies-to-rumor",
+      "lesson_id": "overconfident-sanctions-upgrade",
+      "context": "Evaluate alleged sanctions evasion based on rumors, media reports, future sanctions talk, and no official designation or enforcement action.",
+      "expected_applicable": true,
+      "why_it_exists": "The overconfidence lesson should apply before unsupported sanctions rumors are upgraded."
+    },
+    {
+      "case_id": "sanctions-overconfidence-does-not-apply-to-official-designation",
+      "lesson_id": "overconfident-sanctions-upgrade",
+      "context": "Assess an official legal text, designation, enforcement action, regulator guidance, license change, and delisting notice.",
+      "expected_applicable": false,
+      "why_it_exists": "The overconfidence lesson should not block analysis when official enforcement evidence already exists."
+    },
+    {
+      "case_id": "vague-monitoring-applies-to-operational-watch-next",
+      "lesson_id": "vague-monitoring",
+      "context": "Improve a public-agenda analysis that says monitor developments but needs concrete observable indicators, deadlines, regulator guidance, and owner actions.",
+      "expected_applicable": true,
+      "why_it_exists": "The vague-monitoring lesson should apply when output needs operational watch-next value."
+    },
+    {
+      "case_id": "vague-monitoring-does-not-apply-to-headline-only",
+      "lesson_id": "vague-monitoring",
+      "context": "User explicitly wants only a short headline summary with no monitoring guidance and no watch-next section.",
+      "expected_applicable": false,
+      "why_it_exists": "The vague-monitoring lesson should not expand output when the user explicitly asked for headline-only output."
+    }
+  ]
+}
