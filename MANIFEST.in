@@ -13,6 +13,7 @@ recursive-include profiles *.md
 recursive-include profiles *.json
 recursive-include skills *.md
 recursive-include analysis-bank *.md
+recursive-include analysis-bank *.json
 recursive-include schemas *.json
 recursive-include source-* *.json
 recursive-include source-requirements *.json

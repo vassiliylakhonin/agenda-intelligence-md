@@ -88,6 +88,7 @@ The repo keeps two copies of several files — top-level AND under `src/agenda_i
 - `schemas/v1/*.json` ↔ `src/agenda_intelligence/data/schemas/v1/*.json`
 - `skills/**` ↔ `src/agenda_intelligence/data/skills/**`
 - `source-requirements/*` ↔ `src/agenda_intelligence/data/source-requirements/*`
+- `analysis-bank/**` ↔ `src/agenda_intelligence/data/analysis-bank/**`
 
 When editing any of these, update the paired copy in the same commit. Version bumps must propagate to packaged copies or release CI fails.
 

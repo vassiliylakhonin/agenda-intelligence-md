@@ -86,6 +86,12 @@ def test_packaged_skill_assets_match_top_level_assets():
             assert_packaged_copy_matches_top_level(relative_path)
 
 
+def test_packaged_analysis_bank_assets_match_top_level_assets():
+    for relative_path in sorted(Path("analysis-bank").rglob("*")):
+        if relative_path.is_file():
+            assert_packaged_copy_matches_top_level(relative_path)
+
+
 # ADR 0012 + ADR 0013: manifest is the authoritative MCP and schema registry.
 
 

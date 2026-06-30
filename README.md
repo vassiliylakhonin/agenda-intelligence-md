@@ -302,6 +302,15 @@ Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed
 | [`signal-classification.schema.json`](schemas/v1/signal-classification.schema.json) | Signal taxonomy |
 | [`memo-quality-fixture-manifest.schema.json`](schemas/v1/memo-quality-fixture-manifest.schema.json) | Memo-quality fixture coverage map |
 
+## AnalysisBank
+
+AnalysisBank stores reusable reasoning memories, not factual state or source archives. `memory-search` retrieves only active, unexpired lessons by default; `memory-lint` validates lifecycle metadata, card schema conformance, and `memory_index.json` sync.
+
+```bash
+agenda-intelligence memory-lint
+agenda-intelligence memory-search sanctions
+```
+
 ## MCP
 
 Stdio MCP server with 22 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
@@ -419,7 +428,7 @@ agenda-intelligence-md/
 
 New contributors: [`CONTRIBUTING.md`](CONTRIBUTING.md) opens with a "First 15 minutes" onboarding path (read the three load-bearing files → run the validator → walk one concrete artifact end-to-end). The portfolio glossary at [`docs/glossary.md`](docs/glossary.md) is the single source of truth for cross-repo terminology (evidence modes, Axis A/B provenance tags, three-value response logic, maturity-framework asymmetry).
 
-Before editing any of the dual-copy files — `Agenda-Intelligence.md`, `SOURCE_POLICY.md`, `llms.txt`, `agent-manifest.json`, `schemas/`, `skills/`, `source-requirements/` — read the "Critical invariant: dual-copy sync" section in [`CONTRIBUTING.md`](CONTRIBUTING.md#critical-invariant-dual-copy-sync). Editing one copy without the paired copy under `src/agenda_intelligence/data/` is the most common reason CI breaks on `main` for first-time contributors.
+Before editing any of the dual-copy files — `Agenda-Intelligence.md`, `SOURCE_POLICY.md`, `llms.txt`, `agent-manifest.json`, `schemas/`, `skills/`, `source-requirements/`, `analysis-bank/` — read the "Critical invariant: dual-copy sync" section in [`CONTRIBUTING.md`](CONTRIBUTING.md#critical-invariant-dual-copy-sync). Editing one copy without the paired copy under `src/agenda_intelligence/data/` is the most common reason CI breaks on `main` for first-time contributors.
 
 ## Contact
 

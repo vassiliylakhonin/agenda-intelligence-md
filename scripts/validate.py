@@ -56,6 +56,7 @@ required = [
     "analysis-bank/failures/vague-monitoring.md",
     "analysis-bank/MEMORY_FORMAT.md",
     "analysis-bank/README.md",
+    "analysis-bank/memory_index.json",
     "examples/sector/sanctions-brief.md",
     "skills/agenda-intelligence/references/sector/sanctions.md",
     "ADOPTION.md",

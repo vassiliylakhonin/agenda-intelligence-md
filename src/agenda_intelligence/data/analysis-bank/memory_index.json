@@ -1,0 +1,80 @@
+{
+  "version": "2.0.0",
+  "lesson_lifecycle": {
+    "active_statuses": [
+      "active"
+    ],
+    "stale_statuses": [
+      "stale",
+      "superseded",
+      "rejected"
+    ],
+    "required_fields": [
+      "lesson_id",
+      "version",
+      "status",
+      "created_at",
+      "last_validated_at",
+      "stale_after_days",
+      "supersedes",
+      "confidence",
+      "evidence_basis"
+    ],
+    "rule": "Do not use stale, superseded, or rejected lessons as recommendation support without revalidation."
+  },
+  "entries": [
+    {
+      "file": "failures/eu-rhetoric-treated-as-law.md",
+      "lesson_id": "eu-rhetoric-treated-as-law",
+      "status": "active",
+      "last_validated_at": "2026-06-30",
+      "stale_after_days": 365,
+      "tags": [
+        "eu",
+        "regulation",
+        "legal-weight"
+      ],
+      "summary": "Do not treat EU political language as binding legal obligation before checking the institutional stage."
+    },
+    {
+      "file": "failures/overconfident-sanctions-upgrade.md",
+      "lesson_id": "overconfident-sanctions-upgrade",
+      "status": "active",
+      "last_validated_at": "2026-06-30",
+      "stale_after_days": 365,
+      "tags": [
+        "sanctions",
+        "signal-classification",
+        "evidence-quality"
+      ],
+      "summary": "Do not upgrade sanctions routing rumors without official or repeated evidence."
+    },
+    {
+      "file": "failures/vague-monitoring.md",
+      "lesson_id": "vague-monitoring",
+      "status": "active",
+      "last_validated_at": "2026-06-30",
+      "stale_after_days": 365,
+      "tags": [
+        "watch-next",
+        "output-quality",
+        "owner-actions"
+      ],
+      "summary": "Replace vague monitoring language with observable indicators."
+    },
+    {
+      "file": "successes/sanctions-routing-signal-classification.md",
+      "lesson_id": "sanctions-routing-signal-classification",
+      "status": "active",
+      "last_validated_at": "2026-06-30",
+      "stale_after_days": 365,
+      "tags": [
+        "sanctions",
+        "routing",
+        "mechanism"
+      ],
+      "summary": "Classify sanctions routing through mechanisms rather than geography alone."
+    }
+  ],
+  "comment": "Index of memory cards stored in successes/ and failures/. Lifecycle fields prevent stale lessons from being treated as durable recommendations."
+}

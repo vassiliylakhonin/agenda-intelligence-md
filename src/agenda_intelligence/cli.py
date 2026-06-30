@@ -22,6 +22,11 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from agenda_intelligence import __version__  # noqa: E402
+from agenda_intelligence.analysis_bank import (  # noqa: E402
+    format_lint_text,
+    lint_analysis_bank,
+    search_memory_cards,
+)
 
 
 def load_manifest():
@@ -286,26 +291,46 @@ def cmd_score(args):
 
 def cmd_memory_search(args):
     """Search in AnalysisBank memory cards."""
-    query = args.query.lower()
-    # Path to analysis-bank inside data
-    bank_path = resources.files(PACKAGE_NAME) / "data" / "analysis-bank"
-    if not bank_path.is_dir():
+    bank_path = _packaged_analysis_bank_path()
+    if bank_path is None:
         raise SystemExit("AnalysisBank directory not found in package data")
-    results = []
-    # Walk through the directory (works with importlib.resources on Python 3.9+)
-    # Traverse using Path if possible, otherwise fallback to os.listdir
-    try:
-        base = Path(bank_path.as_posix())
-    except Exception:
-        base = Path(str(bank_path))
-    for md_file in base.rglob("*.md"):
-        text = md_file.read_text(encoding="utf-8")
-        if query in text.lower():
-            results.append({"file": md_file.name, "path": str(md_file.relative_to(base))})
+    results = search_memory_cards(bank_path, args.query, include_inactive=args.include_inactive)
     if results:
         print(json.dumps(results, indent=2, ensure_ascii=False))
     else:
         print(f"No results for query: {args.query}")
+
+
+def cmd_memory_lint(args):
+    """Validate AnalysisBank lifecycle metadata and index sync."""
+    bank_path = Path(args.path) if args.path else _default_analysis_bank_path()
+    schema_path = ROOT / "schemas" / "v1" / "memory-card.schema.json"
+    if not schema_path.is_file():
+        schema_path = resources.files(PACKAGE_NAME) / "data" / "schemas" / "v1" / "memory-card.schema.json"
+        schema_path = Path(str(schema_path))
+    result = lint_analysis_bank(bank_path, schema_path=schema_path)
+    if args.format == "json":
+        print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
+    else:
+        print(format_lint_text(result))
+    if not result.ok:
+        raise SystemExit(1)
+
+
+def _packaged_analysis_bank_path() -> Path | None:
+    bank_path = resources.files(PACKAGE_NAME) / "data" / "analysis-bank"
+    path = Path(str(bank_path))
+    return path if path.is_dir() else None
+
+
+def _default_analysis_bank_path() -> Path:
+    repo_path = ROOT / "analysis-bank"
+    if repo_path.is_dir():
+        return repo_path
+    packaged_path = _packaged_analysis_bank_path()
+    if packaged_path is not None:
+        return packaged_path
+    return repo_path
 
 
 def _fetch_url_text(url: str, timeout: int = 10) -> str:
@@ -1100,7 +1125,17 @@ def main():
     # memory search – fuzzy search in analysis‑bank
     p = sub.add_parser("memory-search", help="Search compact descriptors in analysis‑bank")
     p.add_argument("query", help="Search query string")
+    p.add_argument(
+        "--include-inactive",
+        action="store_true",
+        help="Include stale, superseded, rejected, or date-expired lessons in results",
+    )
     p.set_defaults(func=cmd_memory_search)
+    # memory lint – lifecycle and packaged-memory validation
+    p = sub.add_parser("memory-lint", help="Validate AnalysisBank lifecycle metadata and index sync")
+    p.add_argument("path", nargs="?", help="AnalysisBank directory; defaults to repo source or packaged mirror")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.set_defaults(func=cmd_memory_lint)
     # fetch – legacy alias for source-plan; brief evidence fetching is not implemented.
     p = sub.add_parser("fetch", help="Print source plan for a category; brief evidence fetching is not implemented")
     p.add_argument("--category", help="Source category to print (e.g., technology-ai)")
