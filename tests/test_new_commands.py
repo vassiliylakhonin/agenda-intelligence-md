@@ -94,9 +94,13 @@ def test_memo_quality_bench_json_passes_fixture_set():
 
     payload = json.loads(res.stdout)
     assert payload["summary"]["ok"] is True
+    assert payload["summary"]["manifest_present"] is True
+    assert payload["summary"]["manifest_errors"] == []
     assert payload["summary"]["golden_passed"] == payload["summary"]["golden_total"]
     assert payload["summary"]["failure_failed_as_expected"] == payload["summary"]["failure_total"]
     assert any(case["expected_class"] == "failure" and case["ok"] is False for case in payload["cases"])
+    unsupported = next(case for case in payload["cases"] if case["case"] == "unsupported-sanctions-designation")
+    assert "evidence_mode_discipline" in unsupported["failed_guardrails"]
 
 
 def test_memo_quality_bench_fails_on_golden_drift(tmp_path: Path):
@@ -112,6 +116,38 @@ def test_memo_quality_bench_fails_on_golden_drift(tmp_path: Path):
     assert res.returncode == 1
     assert "status: FAIL" in res.stdout
     assert "`golden/bad-golden.json`" in res.stdout
+
+
+def test_memo_quality_bench_manifest_rejects_unregistered_fixture(tmp_path: Path):
+    golden = tmp_path / "golden"
+    failure = tmp_path / "failure"
+    golden.mkdir()
+    failure.mkdir()
+    (golden / "unregistered.json").write_text(MEMO_QUALITY_GOOD.read_text(encoding="utf-8"), encoding="utf-8")
+    (failure / "registered.json").write_text(MEMO_QUALITY_BAD.read_text(encoding="utf-8"), encoding="utf-8")
+    (tmp_path / "manifest.json").write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "fixtures": [
+                    {
+                        "path": "failure/registered.json",
+                        "expected_class": "failure",
+                        "target_guardrails": ["no_approval_or_clearance_overreach"],
+                        "why_it_exists": "Registered failure fixture.",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    res = run("memo-quality-bench", str(tmp_path), "--format", "json", expect_zero=False)
+
+    payload = json.loads(res.stdout)
+    assert res.returncode == 1
+    assert payload["summary"]["manifest_present"] is True
+    assert "fixture missing from manifest: golden/unregistered.json" in payload["summary"]["manifest_errors"]
 
 
 # ---------- bench ----------

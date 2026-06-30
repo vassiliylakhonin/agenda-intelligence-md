@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "description": "Coverage map for memo_quality golden/failure fixtures. These cases are structural evidence-readiness regressions, not factual-truth benchmarks.",
+  "guardrails": {
+    "evidence_mode_discipline": "Declared evidence mode must match provenance discipline.",
+    "no_approval_or_clearance_overreach": "Memo must not use approval, clearance, compliance, sanctions-safe, or safe-to-proceed language.",
+    "gaps_visible_when_unknowns_exist": "Unknowns and missing evidence must be visible in reader-facing text.",
+    "owner_actions_are_actionable": "Recommended actions must be concrete owner actions with trigger or time horizon.",
+    "watch_next_is_observable": "Watch-next items must be observable indicators with trigger or source type.",
+    "unknowns_connected_to_actions": "Open unknowns must connect to recommended actions or watch indicators."
+  },
+  "fixtures": [
+    {
+      "path": "golden/evidence-readiness-good.json",
+      "expected_class": "golden",
+      "target_guardrails": [
+        "evidence_mode_discipline",
+        "no_approval_or_clearance_overreach",
+        "gaps_visible_when_unknowns_exist",
+        "owner_actions_are_actionable",
+        "watch_next_is_observable",
+        "unknowns_connected_to_actions"
+      ],
+      "why_it_exists": "Canonical mixed-mode deal-file memo with visible evidence gaps, owner actions, and observable watch-next items."
+    },
+    {
+      "path": "golden/mixed-sanctions-exposure-gap.json",
+      "expected_class": "golden",
+      "target_guardrails": [
+        "evidence_mode_discipline",
+        "no_approval_or_clearance_overreach",
+        "gaps_visible_when_unknowns_exist",
+        "owner_actions_are_actionable",
+        "watch_next_is_observable",
+        "unknowns_connected_to_actions"
+      ],
+      "why_it_exists": "Good mixed sanctions-exposure memo that keeps screening status unresolved and routes missing ownership/payment evidence to action."
+    },
+    {
+      "path": "golden/reasoning-only-strategy-memo.json",
+      "expected_class": "golden",
+      "target_guardrails": [
+        "evidence_mode_discipline",
+        "no_approval_or_clearance_overreach",
+        "gaps_visible_when_unknowns_exist",
+        "owner_actions_are_actionable",
+        "watch_next_is_observable",
+        "unknowns_connected_to_actions"
+      ],
+      "why_it_exists": "Reasoning-only memo that makes no sourced factual claim and uses missing-source language to route the next action."
+    },
+    {
+      "path": "golden/user-provided-procurement-gap.json",
+      "expected_class": "golden",
+      "target_guardrails": [
+        "evidence_mode_discipline",
+        "no_approval_or_clearance_overreach",
+        "gaps_visible_when_unknowns_exist",
+        "owner_actions_are_actionable",
+        "watch_next_is_observable",
+        "unknowns_connected_to_actions"
+      ],
+      "why_it_exists": "Good user-provided procurement memo that treats model-card and data-processing gaps as review blockers."
+    },
+    {
+      "path": "failure/decision-ready-with-open-unknowns.json",
+      "expected_class": "failure",
+      "target_guardrails": [
+        "gaps_visible_when_unknowns_exist",
+        "unknowns_connected_to_actions"
+      ],
+      "why_it_exists": "Schema-valid memo that calls a file decision-ready while ownership and offtake unknowns remain unconnected to actions."
+    },
+    {
+      "path": "failure/generic-watch-next.json",
+      "expected_class": "failure",
+      "target_guardrails": [
+        "watch_next_is_observable",
+        "unknowns_connected_to_actions"
+      ],
+      "why_it_exists": "Schema-valid memo with a generic watch-next item instead of an observable indicator tied to the missing evidence."
+    },
+    {
+      "path": "failure/hides-evidence-gaps.json",
+      "expected_class": "failure",
+      "target_guardrails": [
+        "unknowns_connected_to_actions"
+      ],
+      "why_it_exists": "Schema-valid memo that names missing evidence but does not connect those unknowns to the recommended action or watch item."
+    },
+    {
+      "path": "failure/missing-owner-actions.json",
+      "expected_class": "failure",
+      "target_guardrails": [
+        "owner_actions_are_actionable"
+      ],
+      "why_it_exists": "Schema-valid memo with evidence gaps but no recommended_actions owner-action surface."
+    },
+    {
+      "path": "failure/overconfident-clearance.json",
+      "expected_class": "failure",
+      "target_guardrails": [
+        "no_approval_or_clearance_overreach",
+        "owner_actions_are_actionable",
+        "watch_next_is_observable",
+        "unknowns_connected_to_actions"
+      ],
+      "why_it_exists": "Schema-valid memo that uses compliance/clearance language, generic monitoring, and unconnected unknowns."
+    },
+    {
+      "path": "failure/source-backed-without-provenance.json",
+      "expected_class": "failure",
+      "target_guardrails": [
+        "evidence_mode_discipline"
+      ],
+      "why_it_exists": "Schema-valid user_provided memo with no provenance entries, contradicting source-backed evidence mode."
+    },
+    {
+      "path": "failure/unsupported-sanctions-designation.json",
+      "expected_class": "failure",
+      "target_guardrails": [
+        "evidence_mode_discipline"
+      ],
+      "why_it_exists": "Schema-valid user_provided memo with an unsupported determinative sanctions fact and no source or [verify] marker."
+    }
+  ]
+}
