@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "top_n": 2,
+  "cases": [
+    {
+      "case_id": "sanctions-routing-mechanism",
+      "query": "sanctions routing intermediaries bank customs mechanism",
+      "expected_top": "sanctions-routing-signal-classification",
+      "expected_within_top_n": [
+        "sanctions-routing-signal-classification",
+        "overconfident-sanctions-upgrade"
+      ],
+      "forbidden_within_top_n": [
+        "eu-rhetoric-treated-as-law",
+        "vague-monitoring"
+      ],
+      "why_it_exists": "Routing exposure should retrieve mechanism-based sanctions reasoning before generic sanctions caution."
+    },
+    {
+      "case_id": "sanctions-rumor-upgrade",
+      "query": "sanctions rumors official designation enforcement evidence",
+      "expected_top": "overconfident-sanctions-upgrade",
+      "expected_within_top_n": [
+        "overconfident-sanctions-upgrade"
+      ],
+      "forbidden_within_top_n": [
+        "eu-rhetoric-treated-as-law",
+        "vague-monitoring"
+      ],
+      "why_it_exists": "Rumor-to-enforcement escalation should retrieve the overconfidence failure lesson."
+    },
+    {
+      "case_id": "eu-rhetoric-legal-weight",
+      "query": "EU political statement legal obligation institutional stage",
+      "expected_top": "eu-rhetoric-treated-as-law",
+      "expected_within_top_n": [
+        "eu-rhetoric-treated-as-law"
+      ],
+      "forbidden_within_top_n": [
+        "sanctions-routing-signal-classification",
+        "vague-monitoring"
+      ],
+      "why_it_exists": "EU legal-weight ambiguity should route to the institutional-stage lesson."
+    },
+    {
+      "case_id": "vague-monitoring-watch-next",
+      "query": "monitor developments vague watch next observable indicators",
+      "expected_top": "vague-monitoring",
+      "expected_within_top_n": [
+        "vague-monitoring"
+      ],
+      "forbidden_within_top_n": [
+        "eu-rhetoric-treated-as-law",
+        "sanctions-routing-signal-classification"
+      ],
+      "why_it_exists": "Generic monitoring language should retrieve the concrete watch-indicator lesson."
+    },
+    {
+      "case_id": "customs-hscode-route-redesign",
+      "query": "HS code anomalies route redesign insurance withdrawal customs",
+      "expected_top": "sanctions-routing-signal-classification",
+      "expected_within_top_n": [
+        "sanctions-routing-signal-classification"
+      ],
+      "forbidden_within_top_n": [
+        "eu-rhetoric-treated-as-law"
+      ],
+      "why_it_exists": "Concrete routing indicators should prefer the sanctions-routing mechanism lesson."
+    }
+  ]
+}

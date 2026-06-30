@@ -8,6 +8,7 @@ from pathlib import Path
 from agenda_intelligence.analysis_bank import (
     lifecycle_fields,
     lint_analysis_bank,
+    run_memory_retrieval_bench,
     search_memory_cards,
 )
 
@@ -15,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MEMORY_DIRS = [ROOT / "analysis-bank" / "successes", ROOT / "analysis-bank" / "failures"]
 CLI = [sys.executable, "-m", "agenda_intelligence.cli"]
 ENV = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
+RETRIEVAL_MANIFEST = ROOT / "tests" / "fixtures" / "analysis_bank_retrieval" / "manifest.json"
 REQUIRED_SECTIONS = [
     "Lifecycle",
     "Trigger",
@@ -161,3 +163,68 @@ def test_memory_search_cli_uses_packaged_analysis_bank():
     assert res.returncode == 0, f"{res.stderr}\n{res.stdout}"
     payload = json.loads(res.stdout)
     assert any(item["lesson_id"] == "overconfident-sanctions-upgrade" for item in payload)
+
+
+def test_memory_search_ranks_most_relevant_lesson_first():
+    results = search_memory_cards(
+        ROOT / "analysis-bank",
+        "EU political statement legal obligation institutional stage",
+        today=date(2026, 6, 30),
+    )
+
+    assert results[0]["lesson_id"] == "eu-rhetoric-treated-as-law"
+    assert results[0]["score"] > results[1]["score"]
+
+
+def test_memory_retrieval_bench_passes_fixture_manifest():
+    result = run_memory_retrieval_bench(
+        ROOT / "analysis-bank",
+        RETRIEVAL_MANIFEST,
+        today=date(2026, 6, 30),
+    )
+
+    assert result.ok, result.to_dict()
+    payload = result.to_dict()
+    assert payload["summary"]["cases"] == 5
+    assert payload["summary"]["passed"] == 5
+
+
+def test_memory_retrieval_bench_fails_on_wrong_expected_top(tmp_path: Path):
+    manifest = json.loads(RETRIEVAL_MANIFEST.read_text(encoding="utf-8"))
+    manifest["cases"][0]["expected_top"] = "vague-monitoring"
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = run_memory_retrieval_bench(
+        ROOT / "analysis-bank",
+        manifest_path,
+        today=date(2026, 6, 30),
+    )
+
+    assert not result.ok
+    assert "expected top" in result.cases[0]["errors"][0]
+
+
+def test_memory_retrieval_bench_rejects_incomplete_manifest(tmp_path: Path):
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps({"version": 1, "top_n": 2, "cases": [{}]}), encoding="utf-8")
+
+    result = run_memory_retrieval_bench(ROOT / "analysis-bank", manifest_path)
+
+    assert not result.ok
+    assert any("case_id must be a non-empty string" in error for error in result.manifest_errors)
+
+
+def test_memory_search_bench_cli_json_smoke():
+    res = subprocess.run(
+        CLI + ["memory-search-bench", str(RETRIEVAL_MANIFEST), "--format", "json"],
+        capture_output=True,
+        text=True,
+        cwd=ROOT,
+        env=ENV,
+    )
+
+    assert res.returncode == 0, f"{res.stderr}\n{res.stdout}"
+    payload = json.loads(res.stdout)
+    assert payload["ok"] is True
+    assert payload["summary"]["passed"] == 5

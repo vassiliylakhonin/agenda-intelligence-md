@@ -309,7 +309,10 @@ AnalysisBank stores reusable reasoning memories, not factual state or source arc
 ```bash
 agenda-intelligence memory-lint
 agenda-intelligence memory-search sanctions
+agenda-intelligence memory-search-bench tests/fixtures/analysis_bank_retrieval/manifest.json
 ```
+
+The retrieval bench checks representative queries against expected top lessons and forbidden top-N mistakes. It evaluates routing quality for reusable reasoning memories, not factual truth.
 
 ## MCP
 

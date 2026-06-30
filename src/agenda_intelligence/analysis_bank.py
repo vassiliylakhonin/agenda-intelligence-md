@@ -37,6 +37,18 @@ REQUIRED_SECTIONS = [
 CARD_DIRECTORIES = ("successes", "failures")
 
 _LESSON_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+_TOKEN_RE = re.compile(r"[a-z0-9]+")
+_SEARCH_FIELD_WEIGHTS = {
+    "lesson_id": 4,
+    "title": 4,
+    "trigger": 5,
+    "pattern": 3,
+    "better_reasoning": 3,
+    "apply_when": 3,
+    "do_not_apply_when": 1,
+    "watch_indicators": 2,
+    "evidence_basis": 1,
+}
 
 
 @dataclass
@@ -60,6 +72,29 @@ class AnalysisBankLintResult:
                 "inactive_cards": sum(1 for card in self.cards if card.get("status") != "active"),
             },
             "cards": self.cards,
+        }
+
+
+@dataclass
+class MemoryRetrievalBenchResult:
+    manifest_errors: list[str]
+    cases: list[dict[str, Any]]
+
+    @property
+    def ok(self) -> bool:
+        return not self.manifest_errors and all(case["ok"] for case in self.cases)
+
+    def to_dict(self) -> dict[str, Any]:
+        passed = sum(1 for case in self.cases if case["ok"])
+        return {
+            "ok": self.ok,
+            "summary": {
+                "cases": len(self.cases),
+                "passed": passed,
+                "failed": len(self.cases) - passed,
+                "manifest_errors": self.manifest_errors,
+            },
+            "cases": self.cases,
         }
 
 
@@ -128,14 +163,11 @@ def is_usable_lesson(card: dict[str, Any], today: date | None = None) -> bool:
 def search_memory_cards(
     bank_path: Path, query: str, *, include_inactive: bool = False, today: date | None = None
 ) -> list[dict[str, Any]]:
-    normalized_query = query.lower()
     results: list[dict[str, Any]] = []
     for path in discover_memory_cards(bank_path):
-        text = path.read_text(encoding="utf-8")
-        if normalized_query not in text.lower():
-            continue
         card = parse_memory_card(path, bank_path)
-        if include_inactive or is_usable_lesson(card, today=today):
+        score = score_memory_card(card, query)
+        if score > 0 and (include_inactive or is_usable_lesson(card, today=today)):
             results.append(
                 {
                     "file": path.name,
@@ -145,9 +177,63 @@ def search_memory_cards(
                     "last_validated_at": card["last_validated_at"],
                     "confidence": card["confidence"],
                     "title": card["title"],
+                    "score": score,
                 }
             )
-    return results
+    return sorted(results, key=lambda item: (-item["score"], item["lesson_id"]))
+
+
+def score_memory_card(card: dict[str, Any], query: str) -> int:
+    query_tokens = _tokenize(query)
+    if not query_tokens:
+        return 0
+
+    score = 0
+    normalized_query = " ".join(query_tokens)
+    for field, weight in _SEARCH_FIELD_WEIGHTS.items():
+        value = card.get(field)
+        text = _searchable_text(value)
+        if not text:
+            continue
+        field_tokens = _tokenize(text)
+        if normalized_query and normalized_query in " ".join(field_tokens):
+            score += weight * 3
+        for token in query_tokens:
+            token_count = field_tokens.count(token)
+            if token_count:
+                score += weight * min(token_count, 3)
+    return score
+
+
+def run_memory_retrieval_bench(
+    bank_path: Path, manifest_path: Path, *, today: date | None = None
+) -> MemoryRetrievalBenchResult:
+    manifest_errors: list[str] = []
+    manifest = _load_retrieval_manifest(manifest_path, manifest_errors)
+    if manifest is None:
+        return MemoryRetrievalBenchResult(manifest_errors, [])
+
+    top_n = manifest.get("top_n", 3)
+    if not isinstance(top_n, int) or top_n < 1:
+        manifest_errors.append("manifest.top_n must be a positive integer")
+        top_n = 3
+
+    cases_value = manifest.get("cases")
+    if not isinstance(cases_value, list) or not cases_value:
+        manifest_errors.append("manifest.cases must be a non-empty list")
+        return MemoryRetrievalBenchResult(manifest_errors, [])
+
+    cases: list[dict[str, Any]] = []
+    for raw_case in cases_value:
+        case_errors = _validate_retrieval_case(raw_case)
+        if case_errors:
+            case_id = raw_case.get("case_id") if isinstance(raw_case, dict) else "<invalid>"
+            manifest_errors.extend(f"{case_id}: {error}" for error in case_errors)
+            continue
+        case = _run_retrieval_case(bank_path, raw_case, top_n=top_n, today=today)
+        cases.append(case)
+
+    return MemoryRetrievalBenchResult(manifest_errors, cases)
 
 
 def lint_analysis_bank(
@@ -211,11 +297,110 @@ def format_lint_text(result: AnalysisBankLintResult) -> str:
     return "\n".join(lines)
 
 
+def format_retrieval_bench_text(result: MemoryRetrievalBenchResult) -> str:
+    summary = result.to_dict()["summary"]
+    lines = [
+        f"AnalysisBank retrieval bench: {'ok' if result.ok else 'failed'}",
+        f"Cases: {summary['passed']}/{summary['cases']} passed",
+    ]
+    if result.manifest_errors:
+        lines.append("Manifest errors:")
+        lines.extend(f"- {error}" for error in result.manifest_errors)
+    for case in result.cases:
+        status = "PASS" if case["ok"] else "FAIL"
+        lines.append(f"- {status} {case['case_id']}: top={case['actual_top'] or 'none'}")
+        if case["errors"]:
+            lines.extend(f"  - {error}" for error in case["errors"])
+    return "\n".join(lines)
+
+
 def _parse_title(markdown: str) -> str:
     for line in markdown.splitlines():
         if line.startswith("# "):
             return line[2:].strip()
     return ""
+
+
+def _tokenize(value: str) -> list[str]:
+    return _TOKEN_RE.findall(value.lower())
+
+
+def _searchable_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return " ".join(str(item) for item in value)
+    if isinstance(value, dict):
+        return " ".join(str(item) for item in value.values())
+    return ""
+
+
+def _load_retrieval_manifest(manifest_path: Path, errors: list[str]) -> dict[str, Any] | None:
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        errors.append(f"retrieval manifest not found: {manifest_path}")
+        return None
+    except json.JSONDecodeError as exc:
+        errors.append(f"retrieval manifest is invalid JSON: {exc}")
+        return None
+    if not isinstance(manifest, dict):
+        errors.append("retrieval manifest must be a JSON object")
+        return None
+    if manifest.get("version") != 1:
+        errors.append("retrieval manifest version must be 1")
+    return manifest
+
+
+def _validate_retrieval_case(raw_case: Any) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(raw_case, dict):
+        return ["case must be an object"]
+    for key in ("case_id", "query", "expected_top", "why_it_exists"):
+        if not isinstance(raw_case.get(key), str) or not raw_case.get(key):
+            errors.append(f"{key} must be a non-empty string")
+    for key in ("expected_within_top_n", "forbidden_within_top_n"):
+        value = raw_case.get(key, [])
+        if not isinstance(value, list) or not all(isinstance(item, str) and item for item in value):
+            errors.append(f"{key} must be a list of non-empty strings")
+    return errors
+
+
+def _run_retrieval_case(
+    bank_path: Path, case: dict[str, Any], *, top_n: int, today: date | None = None
+) -> dict[str, Any]:
+    results = search_memory_cards(bank_path, case["query"], today=today)
+    result_ids = [item["lesson_id"] for item in results]
+    top_ids = result_ids[:top_n]
+    expected_top = case["expected_top"]
+    expected_within_top_n = case.get("expected_within_top_n", [])
+    forbidden_within_top_n = case.get("forbidden_within_top_n", [])
+
+    errors: list[str] = []
+    actual_top = result_ids[0] if result_ids else None
+    if actual_top != expected_top:
+        errors.append(f"expected top {expected_top!r}, got {actual_top!r}")
+
+    missing_expected = [lesson_id for lesson_id in expected_within_top_n if lesson_id not in top_ids]
+    if missing_expected:
+        errors.append(f"expected within top {top_n}: {missing_expected}")
+
+    present_forbidden = [lesson_id for lesson_id in forbidden_within_top_n if lesson_id in top_ids]
+    if present_forbidden:
+        errors.append(f"forbidden within top {top_n}: {present_forbidden}")
+
+    return {
+        "case_id": case["case_id"],
+        "query": case["query"],
+        "ok": not errors,
+        "errors": errors,
+        "expected_top": expected_top,
+        "actual_top": actual_top,
+        "top_n": top_n,
+        "top_results": top_ids,
+        "scores": {item["lesson_id"]: item["score"] for item in results[:top_n]},
+        "why_it_exists": case["why_it_exists"],
+    }
 
 
 def _parse_int(value: str) -> int | str:

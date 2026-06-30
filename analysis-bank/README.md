@@ -65,6 +65,20 @@ agenda-intelligence memory-lint
 The lint checks required sections, lifecycle freshness, schema validity,
 duplicate `lesson_id` values, and `memory_index.json` sync.
 
+## Retrieval quality bench
+
+AnalysisBank retrieval is deterministic keyword ranking, not semantic search or
+factual verification. The fixture bench checks whether representative queries
+route to the right reusable reasoning memory:
+
+```bash
+agenda-intelligence memory-search-bench tests/fixtures/analysis_bank_retrieval/manifest.json
+```
+
+Each case declares the expected top lesson, any lessons that must appear within
+top-N, and lessons that must not appear within top-N. Use it when adding or
+rewriting memory cards so retrieval quality does not drift.
+
 ## Current memory cards
 
 Failures:

@@ -84,6 +84,7 @@ AnalysisBank: analysis-bank/README.md
 Reasoning memory format: analysis-bank/MEMORY_FORMAT.md
 AnalysisBank lifecycle lint: agenda-intelligence memory-lint
 AnalysisBank retrieval: agenda-intelligence memory-search <query> (active, unexpired lessons by default; use --include-inactive only for audits)
+AnalysisBank retrieval bench: agenda-intelligence memory-search-bench tests/fixtures/analysis_bank_retrieval/manifest.json
 Eval script: scripts/eval_before_after.py
 
 Skills:

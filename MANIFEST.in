@@ -17,3 +17,5 @@ recursive-include analysis-bank *.json
 recursive-include schemas *.json
 recursive-include source-* *.json
 recursive-include source-requirements *.json
+global-exclude *.py[cod]
+recursive-exclude * __pycache__

@@ -53,6 +53,7 @@ ci: lint typecheck test
 	$(PYTHON) -m agenda_intelligence.cli validate-evidence examples/source/evidence-pack.json >/dev/null
 	$(PYTHON) -m agenda_intelligence.cli memory-lint --format json >/dev/null
 	$(PYTHON) -m agenda_intelligence.cli memory-search sanctions >/dev/null
+	$(PYTHON) -m agenda_intelligence.cli memory-search-bench tests/fixtures/analysis_bank_retrieval/manifest.json --format json >/dev/null
 	$(PYTHON) -m agenda_intelligence.cli memo-quality-bench tests/fixtures/memo_quality --format json >/dev/null
 	$(PYTHON) scripts/validate.py
 	$(PYTHON) scripts/validate_public_examples.py
