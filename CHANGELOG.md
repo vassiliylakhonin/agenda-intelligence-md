@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **docs(analysis-bank): close the AnalysisBank hardening checkpoint.** Added
+  release notes and an operator checkpoint for the reasoning-memory layer:
+  before/after state, runtime path, edit checklist, quality gates, and a stop
+  rule. This documents the current contract after lifecycle linting, packaged
+  memory parity, retrieval/applicability benches, guarded `analyze` prompt
+  injection, and `audit.reasoning_memory`. No runtime behavior changed in this
+  docs-only checkpoint.
+
 - **docs(discovery): remove the deprecated discovery wedge.** Deleted the deprecated teardown/profile docs, public-signal scans, profile template, OKF concept, catalog entry, entity-map node, and README / `llms.txt` positioning so the repository no longer advertises that removed discovery path. The remaining build-to-learn public artifact is the alias-first confidential project-room workflow.
 
 - **feat(worker): optional access controls on the CIS message/send route, both off by default.** Two independent levers, shipped dormant so live behavior is unchanged until activated (same "off by default — activation is the go-live step" pattern as the Snapshot upstream). (1) Wired `cis_secondary_sanctions` into the existing per-profile bearer gate (`productionAuthKey` now reads `CIS_SECONDARY_SANCTIONS_API_KEY`) — a hard paywall that closes the route (incl. the public demo) for the day a paying integration appears; agent-card discovery stays public. (2) Added a best-effort soft rate limit on `message/send` (`rateLimitPerHour` / `checkRateLimit`): when `RATE_LIMIT_PER_HOUR > 0` it buckets per profile + client IP (`cf-connecting-ip`) + UTC hour in the existing `AGENDA_USAGE` KV and returns JSON-RPC `-32002` / HTTP 429 over the cap, keeping the free browser demo usable while throttling bulk programmatic use. KV is eventually consistent so this deters scripting rather than being a hard control, and it fails open on any storage error. Both documented as commented `wrangler.toml` entries on the CIS env. New contract tests (CIS key scoping; `rateLimitPerHour` parsing; throttle-past-cap with per-IP isolation; no-op when unconfigured; fail-open on KV error); worker suite 121/121 green, `verify:agent-card` green. No schema, request/response shape, or dual-copy path touched. Deploy is manual `wrangler deploy --env cis-secondary-sanctions`; merging changes nothing live.

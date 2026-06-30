@@ -315,6 +315,8 @@ agenda-intelligence memory-applicability-bench tests/fixtures/analysis_bank_appl
 
 The retrieval bench checks representative queries against expected top lessons and forbidden top-N mistakes. The applicability bench checks positive and negative task contexts against each card's `Apply when` / `Do not apply when` boundary. `analyze` uses the same guarded path before adding a bounded `REASONING MEMORY` section to the system prompt and `audit.reasoning_memory` trace to the memo. These checks evaluate reasoning-memory routing discipline, not factual truth.
 
+Release/ops checkpoint: [`docs/product/analysisbank-hardening-checkpoint.md`](docs/product/analysisbank-hardening-checkpoint.md). It records the before/after state, runtime path, operator checklist, quality gates, and stop rule for future AnalysisBank changes.
+
 ## MCP
 
 Stdio MCP server with 22 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).

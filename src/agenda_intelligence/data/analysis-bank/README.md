@@ -93,6 +93,14 @@ This is a deterministic guard against obvious over-application. It does not
 replace human judgment; it only catches cases where a card's own boundary
 conditions would be ignored.
 
+## Hardening checkpoint
+
+The current release/ops checkpoint is
+`docs/product/analysisbank-hardening-checkpoint.md`.
+Use it before adding new memory mechanics or editing broad lessons. It records
+the before/after state, runtime path, operator checklist, quality gates, and
+stop rule for AnalysisBank changes.
+
 ## Current memory cards
 
 Failures:

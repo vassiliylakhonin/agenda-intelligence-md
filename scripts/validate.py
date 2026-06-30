@@ -57,6 +57,8 @@ required = [
     "analysis-bank/MEMORY_FORMAT.md",
     "analysis-bank/README.md",
     "analysis-bank/memory_index.json",
+    "docs/product/analysisbank-hardening-checkpoint.md",
+    "docs/releases/RELEASE_NOTES_v1.1.0.md",
     "tests/fixtures/analysis_bank_applicability/manifest.json",
     "tests/fixtures/analysis_bank_retrieval/manifest.json",
     "examples/sector/sanctions-brief.md",

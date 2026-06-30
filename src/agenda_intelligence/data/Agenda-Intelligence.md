@@ -123,4 +123,7 @@ When selected, the server records the same compact trace in
 `audit.reasoning_memory` so a memo can be reviewed separately from the response
 envelope without losing which reasoning guardrails were applied.
 
+Release/ops checkpoint:
+`docs/product/analysisbank-hardening-checkpoint.md`.
+
 Do not store raw private transcripts, stale facts, secrets, or full chain-of-thought.
