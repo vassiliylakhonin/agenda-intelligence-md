@@ -112,7 +112,7 @@ Source Planning Layer:
 - SOURCE_POLICY.md
 - source-taxonomy.json
 - source-requirements/*.json
-CLI source/eval commands: start, source-categories, source-plan, source-coverage, validate-evidence, audit-claims, verify-quotes, check-memo-quality, memo-quality-bench, score, bench, doctor, mcp-config
+CLI source/eval commands: start, source-categories, source-plan, source-coverage, validate-evidence, audit-claims, verify-quotes, check-memo-quality, memo-quality-bench, weekly-delta-bench, score, bench, doctor, mcp-config
 
 Boundary:
 - Source-plan coverage is diagnostic before v1.0.

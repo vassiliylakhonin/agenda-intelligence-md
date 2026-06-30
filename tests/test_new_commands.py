@@ -19,6 +19,7 @@ SOURCE_BACKED_DIR = ROOT / "examples" / "source-backed"
 MEMO_QUALITY_GOOD = ROOT / "tests" / "fixtures" / "memo_quality" / "golden" / "evidence-readiness-good.json"
 MEMO_QUALITY_BAD = ROOT / "tests" / "fixtures" / "memo_quality" / "failure" / "overconfident-clearance.json"
 MEMO_QUALITY_DIR = ROOT / "tests" / "fixtures" / "memo_quality"
+WEEKLY_DELTA_DIR = ROOT / "tests" / "fixtures" / "weekly_delta"
 
 
 def run(*args: str, expect_zero: bool = True) -> subprocess.CompletedProcess[str]:
@@ -363,6 +364,19 @@ def test_weekly_delta_confidential_project_room_quality_on_synthetic_example():
     assert not re.search(r"\b20\d{2}-\d{2}-\d{2}\b", rendered)
     assert "John Smith" not in rendered
     assert "Acme" not in rendered
+
+
+def test_weekly_delta_bench_json_passes_fixture_set():
+    res = run("weekly-delta-bench", str(WEEKLY_DELTA_DIR), "--format", "json")
+
+    payload = json.loads(res.stdout)
+    assert payload["summary"]["ok"] is True
+    assert payload["summary"]["manifest_present"] is True
+    assert payload["summary"]["manifest_errors"] == []
+    assert payload["summary"]["golden_passed"] == payload["summary"]["golden_total"]
+    assert payload["summary"]["failure_failed_as_expected"] == payload["summary"]["failure_total"]
+    named_leak = next(case for case in payload["cases"] if case["case"] == "named-project-leak")
+    assert "confidential_alias_discipline" in named_leak["failed_guardrails"]
 
 
 def test_source_coverage_detects_sanctions_sources(tmp_path: Path):

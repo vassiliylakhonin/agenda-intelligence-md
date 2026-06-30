@@ -17,6 +17,7 @@ implements today.
 | Before/after scoring | Marker-based before/after example harness | Implemented (`score path.md`) |
 | Batch evaluation | Validate + audit + source coverage diagnostic + score across a directory of cases | Implemented (`bench <dir>`) |
 | Memo-quality regression | Do golden memos pass and known bad memos fail the post-hoc evidence-readiness guard, including confidential alias discipline? | Implemented (`memo-quality-bench <dir>`) |
+| Weekly-delta regression | Do confidential weekly/status fixtures route correctly, surface unsafe claims, produce owner actions, preserve source-plan gaps, and catch alias leaks? | Implemented (`weekly-delta-bench <dir>`) |
 | Agent-eval delta | Does attaching the MCP layer materially change an agent's output shape on the same question? | Methodology + case template |
 | Skill-improvement eval | Does a proposed edit to a packaged `SKILL.md` improve validation cases without boundary regressions? | Methodology + cases |
 | Quote verification (local) | Is the cited fragment present in the source text file? | Implemented (`verify-quotes`, `verify_quotes` MCP) |

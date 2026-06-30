@@ -696,6 +696,32 @@ def cmd_memo_quality_bench(args):
         raise SystemExit(1)
 
 
+def cmd_weekly_delta_bench(args):
+    from agenda_intelligence.weekly_delta_bench import (
+        render_markdown,
+        run_weekly_delta_bench,
+    )
+
+    root = Path(args.path)
+    if not root.is_dir():
+        raise SystemExit(f"Not a directory: {root}")
+
+    try:
+        payload = run_weekly_delta_bench(root)
+    except ValueError as e:
+        raise SystemExit(str(e))
+    summary = payload["summary"]
+    cases = payload["cases"]
+
+    if args.format == "json":
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+    else:
+        print(render_markdown(cases, summary))
+
+    if not summary["ok"]:
+        raise SystemExit(1)
+
+
 def cmd_deal_report(args):
     """Render a Middle Corridor deal-risk response as an evidence-readiness memo.
 
@@ -1116,6 +1142,14 @@ def main():
     p.add_argument("path", help="Directory containing golden/*.json and failure/*.json memo fixtures")
     p.add_argument("--format", choices=["text", "json"], default="text")
     p.set_defaults(func=cmd_memo_quality_bench)
+    # weekly-delta-bench: batch guard for confidential weekly/status fixtures
+    p = sub.add_parser(
+        "weekly-delta-bench",
+        help="Run weekly-delta golden/failure fixtures as a deterministic confidential-workflow gate",
+    )
+    p.add_argument("path", help="Directory containing golden/*.md and failure/*.md weekly/status fixtures")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.set_defaults(func=cmd_weekly_delta_bench)
     # bench
     p = sub.add_parser(
         "bench",

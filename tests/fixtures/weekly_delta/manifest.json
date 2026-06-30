@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "description": "Coverage map for weekly-delta golden/failure fixtures. These cases test deterministic confidential project-room output quality, not factual truth.",
+  "guardrails": {
+    "route_matches_expected": "The readiness delta and next decision route must match the expected review path.",
+    "unsafe_claims_include_expected": "Unsafe-to-repeat claim extraction must include the expected blocked claims.",
+    "owner_actions_cover_expected": "Owner actions must include the expected owners and evidence outputs.",
+    "missing_sources_include_expected": "Source-plan gaps must include the expected missing source categories.",
+    "confidential_alias_discipline": "Output must not leak private names, exact values, exact dates, or site details in confidential project-room contexts.",
+    "boundary_notice_present": "Output must preserve the evidence-readiness only / no factual-verification / no advice boundary."
+  },
+  "fixtures": [
+    {
+      "path": "golden/committee-escalation.md",
+      "expected_class": "golden",
+      "target_guardrails": [
+        "route_matches_expected",
+        "unsafe_claims_include_expected",
+        "owner_actions_cover_expected",
+        "missing_sources_include_expected",
+        "confidential_alias_discipline",
+        "boundary_notice_present"
+      ],
+      "why_it_exists": "Canonical alias-only weekly update that should escalate before committee, surface unsafe demand/financing/readiness claims, and produce owner actions.",
+      "project_alias": "ProjectCo",
+      "decision_moment": "committee review",
+      "expected_readiness_delta": "unclear_due_to_missing_evidence",
+      "expected_next_decision_route": "escalate_before_committee",
+      "expected_unsafe_claims": [
+        "Demand is secured.",
+        "Financing is progressing well.",
+        "The project is ready for committee or FID approval."
+      ],
+      "expected_owner_actions": [
+        "Commercial / CFO",
+        "CFO / M&A",
+        "PMO / committee secretary"
+      ],
+      "expected_missing_sources": [
+        "feasibility_or_business_case",
+        "site_power_cooling_infrastructure"
+      ]
+    },
+    {
+      "path": "failure/named-project-leak.md",
+      "expected_class": "failure",
+      "target_guardrails": [
+        "confidential_alias_discipline"
+      ],
+      "why_it_exists": "Schema-free weekly status input that would make the deterministic renderer echo named parties, exact date, exact value, and site details unless alias discipline catches it.",
+      "project_alias": "ProjectCo",
+      "decision_moment": "committee review",
+      "expected_readiness_delta": "unclear_due_to_missing_evidence",
+      "expected_next_decision_route": "escalate_before_committee",
+      "expected_unsafe_claims": [
+        "Demand is secured.",
+        "Financing is progressing well.",
+        "The project is ready for committee or FID approval."
+      ],
+      "expected_owner_actions": [
+        "Commercial / CFO",
+        "CFO / M&A",
+        "PMO / committee secretary"
+      ],
+      "expected_missing_sources": [
+        "feasibility_or_business_case"
+      ],
+      "forbidden_patterns": [
+        "Acme Gulf Data Centers LLC",
+        "First Emirates Bank",
+        "John Smith",
+        "Al Mina",
+        "\\b20\\d{2}-\\d{2}-\\d{2}\\b",
+        "\\b(?:USD|EUR|GBP|AED|\\$)\\s?\\d"
+      ]
+    }
+  ]
+}

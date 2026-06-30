@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agenda-intelligence-md.local/schemas/v1/weekly-delta-fixture-manifest.schema.json",
+  "title": "WeeklyDeltaFixtureManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "description",
+    "guardrails",
+    "fixtures"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "guardrails": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "required": [
+        "route_matches_expected",
+        "unsafe_claims_include_expected",
+        "owner_actions_cover_expected",
+        "missing_sources_include_expected",
+        "confidential_alias_discipline",
+        "boundary_notice_present"
+      ],
+      "properties": {
+        "route_matches_expected": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unsafe_claims_include_expected": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_actions_cover_expected": {
+          "type": "string",
+          "minLength": 1
+        },
+        "missing_sources_include_expected": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confidential_alias_discipline": {
+          "type": "string",
+          "minLength": 1
+        },
+        "boundary_notice_present": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "expected_class",
+          "target_guardrails",
+          "why_it_exists",
+          "project_alias",
+          "decision_moment",
+          "expected_readiness_delta",
+          "expected_next_decision_route"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^(golden|failure)/[^/]+\\.md$"
+          },
+          "expected_class": {
+            "type": "string",
+            "enum": [
+              "golden",
+              "failure"
+            ]
+          },
+          "target_guardrails": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "route_matches_expected",
+                "unsafe_claims_include_expected",
+                "owner_actions_cover_expected",
+                "missing_sources_include_expected",
+                "confidential_alias_discipline",
+                "boundary_notice_present"
+              ]
+            }
+          },
+          "why_it_exists": {
+            "type": "string",
+            "minLength": 1
+          },
+          "project_alias": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision_moment": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_readiness_delta": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_next_decision_route": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_unsafe_claims": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "expected_owner_actions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "expected_missing_sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "forbidden_patterns": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -35,6 +35,15 @@ gate with:
 agenda-intelligence memo-quality-bench tests/fixtures/memo_quality
 ```
 
+For confidential weekly/status inputs, `weekly-delta-bench` applies the same
+quality discipline to the deterministic `weekly-delta` CLI output: route,
+unsafe-to-repeat claims, owner actions, missing source-plan categories,
+alias-only discipline, and boundary notice.
+
+```bash
+agenda-intelligence weekly-delta-bench tests/fixtures/weekly_delta
+```
+
 ## Ten dimensions
 
 Each dimension is binary at the case level (passes / does not pass). Aggregation across a case set is left to the eval harness, not prescribed here.

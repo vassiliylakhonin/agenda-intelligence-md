@@ -22,7 +22,7 @@ agenda-intelligence score examples/agenda-brief.json --evidence examples/source/
 agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/status.synthetic.md
 ```
 
-`doctor` reports package and MCP-server status; `validate-brief` confirms a brief matches `agenda-brief.schema.json`; `score` returns a heuristic 0–100 number with a structure / evidence / decision-readiness breakdown; `check-memo-quality` and `memo-quality-bench` catch schema-valid but unsafe memo output; `weekly-delta` turns a redacted weekly/status note into unsafe-to-repeat claims, source-plan gaps, owner actions, and a decision-readiness route. Full end-to-end analyze trace (request → routing → memo → validation → audit → score) with reproducibility script: [`examples/product-shell/full-analyze-trace/`](examples/product-shell/full-analyze-trace/).
+`doctor` reports package and MCP-server status; `validate-brief` confirms a brief matches `agenda-brief.schema.json`; `score` returns a heuristic 0–100 number with a structure / evidence / decision-readiness breakdown; `check-memo-quality` and `memo-quality-bench` catch schema-valid but unsafe memo output; `weekly-delta` turns a redacted weekly/status note into unsafe-to-repeat claims, source-plan gaps, owner actions, and a decision-readiness route; `weekly-delta-bench` regression-tests that confidential workflow output. Full end-to-end analyze trace (request → routing → memo → validation → audit → score) with reproducibility script: [`examples/product-shell/full-analyze-trace/`](examples/product-shell/full-analyze-trace/).
 
 Optional, only if you want `analyze` to call the Anthropic API itself rather than letting your host model complete from the returned system prompt:
 
@@ -251,6 +251,7 @@ The HTTP shell is portable but **not a hardened internet-facing server**. No bui
 ```bash
 agenda-intelligence bench examples/source-backed --strict --min-score 80
 agenda-intelligence memo-quality-bench tests/fixtures/memo_quality --format json
+agenda-intelligence weekly-delta-bench tests/fixtures/weekly_delta --format json
 agenda-intelligence audit-claims examples/source-backed/eu-ai-act.audit.json --strict
 agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/status.synthetic.md --format json
 agenda-intelligence mcp-config --client cursor
@@ -351,7 +352,7 @@ Stdio MCP server with 22 tools. Full docs and wire-protocol verification: [`MCP.
 | Component | Status |
 |---|---|
 | Markdown protocol, JSON schemas | Stable |
-| CLI (validate, score, bench, audit, check-memo-quality, memo-quality-bench, doctor) | Stable |
+| CLI (validate, score, bench, audit, check-memo-quality, memo-quality-bench, weekly-delta-bench, doctor) | Stable |
 | Weekly status readiness shell (`weekly-delta`) | Build-to-learn CLI scaffold; deterministic, local, no LLM, no source discovery |
 | MCP stdio server | Stable |
 | HTTP API shell | Shipped (self-host); contract early — see `docs/deployment/http-api.md` |

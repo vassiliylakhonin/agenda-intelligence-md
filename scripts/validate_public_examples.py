@@ -31,6 +31,7 @@ MANUAL_DOC_COMMANDS = [
     "agenda-intelligence score examples/before-after/sanctions-routing.md",
     "agenda-intelligence score examples/before-after/red-sea-shipping.md",
     "agenda-intelligence memo-quality-bench tests/fixtures/memo_quality --format json",
+    "agenda-intelligence weekly-delta-bench tests/fixtures/weekly_delta --format json",
 ]
 
 

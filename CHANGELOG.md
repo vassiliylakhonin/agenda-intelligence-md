@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(weekly-delta): add confidential workflow golden/failure bench.**
+  Added `weekly-delta-bench` for deterministic weekly/status fixtures. The
+  bench checks route selection, unsafe-to-repeat claim extraction, owner-action
+  coverage, missing source-plan categories, alias-only discipline, and boundary
+  notice. The initial fixture set includes one alias-only committee-escalation
+  golden case and one naming-leak failure case. No LLM, factual verification,
+  advice, or new worker surface added.
+
 - **test(memo-quality): add confidential project-room quality regressions.**
   Added a golden confidential project-room memo, a schema-valid naming-leak
   failure memo, a new `confidential_alias_discipline` guardrail in
