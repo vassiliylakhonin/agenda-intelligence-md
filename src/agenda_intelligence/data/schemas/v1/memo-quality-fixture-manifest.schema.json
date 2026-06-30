@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agenda-intelligence-md.local/schemas/v1/memo-quality-fixture-manifest.schema.json",
+  "title": "Memo Quality Fixture Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "description",
+    "guardrails",
+    "fixtures"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "guardrails": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "required": [
+        "evidence_mode_discipline",
+        "no_approval_or_clearance_overreach",
+        "gaps_visible_when_unknowns_exist",
+        "owner_actions_are_actionable",
+        "watch_next_is_observable",
+        "unknowns_connected_to_actions"
+      ],
+      "properties": {
+        "evidence_mode_discipline": {
+          "type": "string",
+          "minLength": 1
+        },
+        "no_approval_or_clearance_overreach": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gaps_visible_when_unknowns_exist": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_actions_are_actionable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "watch_next_is_observable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unknowns_connected_to_actions": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "expected_class",
+          "target_guardrails",
+          "why_it_exists"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^(golden|failure)/[^/]+\\.json$"
+          },
+          "expected_class": {
+            "type": "string",
+            "enum": [
+              "golden",
+              "failure"
+            ]
+          },
+          "target_guardrails": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "evidence_mode_discipline",
+                "no_approval_or_clearance_overreach",
+                "gaps_visible_when_unknowns_exist",
+                "owner_actions_are_actionable",
+                "watch_next_is_observable",
+                "unknowns_connected_to_actions"
+              ]
+            }
+          },
+          "why_it_exists": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

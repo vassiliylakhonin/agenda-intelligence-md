@@ -2,12 +2,15 @@ import json
 from pathlib import Path
 
 import pytest
+from jsonschema import validate
 
 from agenda_intelligence.memo_quality import check_memo_quality
 from agenda_intelligence.memo_quality_bench import run_memo_quality_bench
 from agenda_intelligence.product import validate_memo
 
+ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "memo_quality"
+MANIFEST_SCHEMA = ROOT / "schemas" / "v1" / "memo-quality-fixture-manifest.schema.json"
 GOLDEN = sorted((FIXTURE_ROOT / "golden").glob("*.json"))
 FAILURE = sorted((FIXTURE_ROOT / "failure").glob("*.json"))
 
@@ -19,6 +22,13 @@ def load_json(path: Path) -> dict:
 def test_fixture_sets_non_empty():
     assert GOLDEN, f"no golden fixtures under {FIXTURE_ROOT / 'golden'}"
     assert FAILURE, f"no failure fixtures under {FIXTURE_ROOT / 'failure'}"
+
+
+def test_memo_quality_fixture_manifest_validates_schema():
+    manifest = load_json(FIXTURE_ROOT / "manifest.json")
+    schema = load_json(MANIFEST_SCHEMA)
+
+    validate(manifest, schema)
 
 
 def test_memo_quality_bench_module_uses_fixture_manifest():

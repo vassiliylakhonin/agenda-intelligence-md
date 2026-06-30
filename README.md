@@ -300,6 +300,7 @@ Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed
 | [`memory-card.schema.json`](schemas/v1/memory-card.schema.json) | AnalysisBank cards |
 | [`lens-manifest.schema.json`](schemas/v1/lens-manifest.schema.json) | Lens manifest |
 | [`signal-classification.schema.json`](schemas/v1/signal-classification.schema.json) | Signal taxonomy |
+| [`memo-quality-fixture-manifest.schema.json`](schemas/v1/memo-quality-fixture-manifest.schema.json) | Memo-quality fixture coverage map |
 
 ## MCP
 
