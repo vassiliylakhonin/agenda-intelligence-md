@@ -1,10 +1,20 @@
 # Agenda Intelligence MD
 
-Agenda Intelligence MD is an **evidence-readiness and trust-routing runtime for high-stakes AI-assisted decisions**. It turns incomplete source packs, risk files, project packets, model cards, and messy weekly status updates into structured human-review packets: what is supported, what is weak, what evidence is missing, who should act next, and whether the file is ready for review or must be escalated.
+Agenda Intelligence MD is an **evidence-readiness and trust-routing runtime for high-stakes AI-assisted decisions**.
 
-It does not verify factual truth, approve vendors, clear sanctions risk, provide legal/compliance/financial advice, or make autonomous decisions. It routes evidence gaps to humans. The current `build-to-learn` artifact is a confidential project-room workflow for strategic-infrastructure / AI-compute project files through alias-only templates and the deterministic `weekly-delta` CLI. Success means buyer behavior, not compliments.
+The sharpest current wedge is **AI vendor evidence-readiness for regulated procurement**: given an RFP, vendor documentation, model card, source pack, risk memo, or weekly project note, it produces a human-review packet:
 
-Technically, one core service layer sits behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — with structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Five deployed vertical profiles are available as portfolio/demo surfaces: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, and Kazakhstan Market-Entry Readiness Gate. Evaluate them with live curl calls: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md).
+- what is supported
+- what is weak or unsafe to repeat
+- what evidence is missing
+- which owner action is next
+- whether the file is ready for human review or must be escalated
+
+Use it when an AI governance, procurement, third-party-risk, or analyst owner has to prepare a file for a near-term review and needs to know what cannot safely go to committee yet. The normal workaround is a manual checklist, spreadsheet, GRC ticket, consultant memo, or reviewer comments scattered across docs. Agenda Intelligence MD gives agents and local workflows a repeatable evidence-readiness contract around that work.
+
+It does **not** verify factual truth, approve vendors, clear sanctions risk, provide legal/compliance/financial advice, or make autonomous decisions. It routes evidence gaps to humans. Current commercial status: `build-to-learn` / `portfolio-proof`; no production traction is claimed. Success means buyer behavior such as a redacted file, second review request, workflow correction, budget-owner intro, pilot, or payment -- not compliments.
+
+Technically, one core service layer sits behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — with structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Five deployed vertical profiles are available as portfolio/demo surfaces; they are proofs of contract shape, not proof of product-market fit. Evaluate them with live curl calls: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md).
 
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![Agenstry A2A](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/protocol.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![Agenstry uptime](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/uptime.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -13,6 +23,8 @@ Technically, one core service layer sits behind four delivery surfaces — MCP s
 The skills under `skills/` and the canon docs are source, not documentation — a `SKILL.md` is instructions an agent loads and *executes*, the way a runtime loads a module. The Python in `src/` is the runtime that composes them: [`global-think-tank-analyst`](https://github.com/vassiliylakhonin/global-think-tank-analyst) as the reasoning method, [`central-asia-caspian`](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) and [`gulf-middle-east`](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) as regional layers (module roles in [`llms.txt`](llms.txt) / [`agent-manifest.json`](agent-manifest.json)). Both are version-controlled for the same reason — they're what runs.
 
 ## First run
+
+If you are evaluating from Glama or another MCP directory, start with the local stdio server and one source-backed packet. The quickest path is validation/audit first, not a live vertical worker.
 
 ```bash
 pip install agenda-intelligence-md
