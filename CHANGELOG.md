@@ -4,6 +4,18 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(distribution): package the repo as a Claude Code plugin marketplace.**
+  Added `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
+  (listing this runtime plugin plus `global-think-tank-analyst`) and
+  `.mcp.json` so the MCP server auto-loads on plugin install via
+  `uvx --from agenda-intelligence-md agenda-intelligence-mcp`. Added an
+  "Install in Claude Code" section to README. Verified locally with
+  `claude plugin install` from an isolated config (2 skills + 1 MCP server
+  discovered). The two regional specialist repos are deferred: their
+  `skills/{claude,codex,openclaw}/` runtime-overlay layout collides with
+  plugin skill auto-discovery (overlay dirs would install as junk-named
+  skills), so listing them waits on a packaging-convention decision.
+
 - **release: prepare v1.1.1 hardening checkpoint.** Bumped package,
   manifest, and MCP registry metadata versions to `1.1.1`; added
   `RELEASE_NOTES_v1.1.1.md`; corrected `RELEASE_NOTES_v1.1.0.md` to match the

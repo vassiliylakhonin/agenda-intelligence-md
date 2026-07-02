@@ -1,0 +1,19 @@
+{
+  "name": "agenda-intelligence",
+  "description": "Evidence-readiness and trust-routing toolkit for high-stakes AI-assisted decisions: MCP server (validate, audit, and score briefs, memos, and evidence packs) plus agenda-analysis skills. Routes evidence gaps to humans; does not verify factual truth or provide legal/compliance advice.",
+  "version": "1.1.1",
+  "author": {
+    "name": "Vassiliy Lakhonin",
+    "url": "https://github.com/vassiliylakhonin"
+  },
+  "homepage": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+  "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+  "license": "MIT",
+  "keywords": [
+    "evidence-readiness",
+    "strategic-risk",
+    "policy-analysis",
+    "memo-validation",
+    "mcp"
+  ]
+}

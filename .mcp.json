@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "agenda-intelligence": {
+      "command": "uvx",
+      "args": ["--from", "agenda-intelligence-md", "agenda-intelligence-mcp"]
+    }
+  }
+}

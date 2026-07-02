@@ -1,0 +1,26 @@
+{
+  "name": "agenda-intelligence",
+  "owner": {
+    "name": "Vassiliy Lakhonin",
+    "url": "https://github.com/vassiliylakhonin"
+  },
+  "metadata": {
+    "description": "Evidence-first strategic-risk and policy-analysis skills: agenda-analysis runtime with MCP server, horizontal think-tank reasoning method, and regional specialist layers.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "agenda-intelligence",
+      "source": "./",
+      "description": "Evidence-readiness runtime: MCP server for validating, auditing, and scoring briefs, memos, and evidence packs, plus agenda-analysis and source-ingest skills."
+    },
+    {
+      "name": "global-think-tank-analyst",
+      "source": {
+        "source": "github",
+        "repo": "vassiliylakhonin/global-think-tank-analyst"
+      },
+      "description": "Horizontal strategic-risk reasoning method: decision-grade memos on geopolitics, sanctions, trade, and regulation with explicit evidence boundaries, scenarios, and watch-next indicators."
+    }
+  ]
+}
