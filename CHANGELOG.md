@@ -4,6 +4,19 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(distribution): stage official MCP Registry publication metadata.**
+  Added `server.json` (registry name
+  `io.github.vassiliylakhonin/agenda-intelligence-md`, PyPI package entry,
+  stdio transport, `uvx` runtime hint) and an invisible `mcp-name:` HTML
+  comment marker at the top of README so the registry can verify PyPI
+  package ownership. Publication itself is a separate step: it requires a
+  v1.1.2 PyPI release (so the marker lands in the published README) and an
+  interactive `mcp-publisher login github` + `mcp-publisher publish`.
+  The planned v1.1.2 release should also add an `agenda-intelligence-md`
+  console-script alias for `agenda_intelligence.mcp_stdio:main`, because
+  registry clients construct `uvx agenda-intelligence-md` from the package
+  identifier and no script by that name exists today.
+
 - **feat(distribution): package the repo as a Claude Code plugin marketplace.**
   Added `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
   (listing this runtime plugin plus `global-think-tank-analyst`) and
