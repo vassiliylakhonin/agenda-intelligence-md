@@ -19,6 +19,8 @@ These tools can say that an evidence contract is present, incomplete, internally
 
 This is the *faithfulness* vs *factuality* distinction from the attribution literature: faithfulness means a claim is explicitly supported by the supplied evidence; factuality means it is true in the world. The two must not be conflated — a true claim can be unsupported by the supplied evidence, and a well-supported claim can still be false (cf. FRANQ, arXiv:2505.21072). Every tool in this repo measures faithfulness against supplied or fetched evidence. None measures factuality.
 
+The gap this boundary targets is now measured in the deep-research literature. A May 2026 evaluation of citation quality across 14 commercially deployed research agents found that surface validity and factual reliability diverge sharply: cited links resolved in over 94% of cases and topical relevance exceeded 80%, but factual accuracy — whether the cited source actually supports the specific claim — ranged from 39% to 77% depending on the model, and dropped by roughly 42% on average as tool calls per task grew from 2 to 150 (arXiv:2605.06635). A citation that resolves and looks relevant is not evidence that the claim is supported. That is exactly the faithfulness check `audit-claims` and `verify-quotes` operationalize, and why a working link is never treated as verification in this repo.
+
 Source-plan coverage is one step below factual verification. It can identify missing required source types for a category, but it still does not decide whether the claim is true. See [`source-plan-coverage.md`](source-plan-coverage.md).
 
 ## What Is Not Implemented
