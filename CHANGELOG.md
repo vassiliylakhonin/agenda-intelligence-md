@@ -4,6 +4,17 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## [1.1.2] – 2026-07-02
+
+- **release: v1.1.2 distribution checkpoint.** Bumped package, manifest,
+  registry, and plugin metadata versions to `1.1.2`. Added an
+  `agenda-intelligence-md` console-script alias for
+  `agenda_intelligence.mcp_stdio:main` so `uvx agenda-intelligence-md`
+  resolves (required by MCP Registry clients, which construct the launch
+  command from the package identifier). Listed `central-asia-caspian` and
+  `gulf-middle-east` in the plugin marketplace after their repos renamed
+  runtime overlays from `skills/` to `runtimes/` and added plugin packaging.
+
 - **feat(distribution): stage official MCP Registry publication metadata.**
   Added `server.json` (registry name
   `io.github.vassiliylakhonin/agenda-intelligence-md`, PyPI package entry,

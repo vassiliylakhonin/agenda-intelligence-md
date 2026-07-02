@@ -133,7 +133,7 @@
     "Caspian dwell exposure: flag demurrage, wagon-detention, and ferry-slot risk at Aktau / Kuryk and onward Black Sea ports."
   ],
   "run_provenance": {
-    "contract_version": "1.1.1",
+    "contract_version": "1.1.2",
     "schema_id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/middle-corridor-deal-risk-response.schema.json",
     "input_digest": "sha256:eb516c3b66273d19d48f20e387c0c7f4d8478926fe20f529f21dc0be5686188d"
   },

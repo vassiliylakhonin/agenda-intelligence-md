@@ -132,12 +132,12 @@ Treat this AGENTS.md as project-level rules; treat the SKILL.md files as runtime
 Skill files across the Agenda Intelligence portfolio follow this layout. Each skill repo SHOULD:
 
 - place a canonical `SKILL.md` at the repo root (the default contract that runtime-agnostic loaders consume), and
-- place runtime-specific overlays under `skills/<runtime>/SKILL.md` when behavior diverges per runtime (`claude`, `codex`, `openclaw`, etc.), and
+- place runtime-specific overlays under `runtimes/<runtime>/SKILL.md` when behavior diverges per runtime (`claude`, `codex`, `openclaw`, etc.), and
 - treat runtime overlays as additive: they layer onto the root `SKILL.md`, not replace its core contract.
 
-This repo (product runtime) is the exception: it packages multiple skills under `skills/<skill-name>/SKILL.md` (e.g. `agenda-intelligence`, `source-ingest`) because it vendors *several* skills rather than runtime variants of one. When `analyze` loads regional specialists it reads `skills/agenda-intelligence/references/regional/<region>.md`; canonical regional depth lives in the specialist repos.
+In skill repos, `skills/<skill-name>/SKILL.md` is reserved for Claude Code plugin packaging (a symlink to the root `SKILL.md`), because plugin installs auto-discover every `skills/*/SKILL.md` as a separate skill — runtime overlays living there would install as junk-named skills. This repo (product runtime) packages multiple real skills under `skills/<skill-name>/SKILL.md` (e.g. `agenda-intelligence`, `source-ingest`) because it vendors *several* skills rather than runtime variants of one; the same layout doubles as its plugin packaging. When `analyze` loads regional specialists it reads `skills/agenda-intelligence/references/regional/<region>.md`; canonical regional depth lives in the specialist repos.
 
-Current state across the portfolio is not yet fully unified — see each sibling repo. New skill files SHOULD follow the convention; physical reorganization of existing files is out of scope until a deliberate cross-repo refactor is done.
+The cross-repo rename to this layout was done on 2026-07-02 in both vertical specialist repos; `global-think-tank-analyst` keeps its codex overlay at top-level `codex/` (predates the convention). New skill files SHOULD follow the convention.
 
 ## Retrieved-content trust
 

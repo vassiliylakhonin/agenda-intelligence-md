@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Evidence-first strategic-risk and policy-analysis skills: agenda-analysis runtime with MCP server, horizontal think-tank reasoning method, and regional specialist layers.",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "plugins": [
     {
@@ -21,6 +21,22 @@
         "repo": "vassiliylakhonin/global-think-tank-analyst"
       },
       "description": "Horizontal strategic-risk reasoning method: decision-grade memos on geopolitics, sanctions, trade, and regulation with explicit evidence boundaries, scenarios, and watch-next indicators."
+    },
+    {
+      "name": "central-asia-caspian",
+      "source": {
+        "source": "github",
+        "repo": "vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill"
+      },
+      "description": "Regional specialist layer: Central Asia and Caspian cross-border risk, sanctions exposure, corridors, energy, and political economy."
+    },
+    {
+      "name": "gulf-middle-east",
+      "source": {
+        "source": "github",
+        "repo": "vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill"
+      },
+      "description": "Regional specialist layer: Gulf and Middle East strategic risk, Iran/GCC dynamics, maritime and energy exposure."
     }
   ]
 }
