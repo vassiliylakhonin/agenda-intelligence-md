@@ -22,6 +22,28 @@ Technically, one core service layer sits behind four delivery surfaces — MCP s
 
 The skills under `skills/` and the canon docs are source, not documentation — a `SKILL.md` is instructions an agent loads and *executes*, the way a runtime loads a module. The Python in `src/` is the runtime that composes them: [`global-think-tank-analyst`](https://github.com/vassiliylakhonin/global-think-tank-analyst) as the reasoning method, [`central-asia-caspian`](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) and [`gulf-middle-east`](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) as regional layers (module roles in [`llms.txt`](llms.txt) / [`agent-manifest.json`](agent-manifest.json)). Both are version-controlled for the same reason — they're what runs.
 
+## Install in Claude Code
+
+```text
+/plugin marketplace add vassiliylakhonin/agenda-intelligence-md
+/plugin install agenda-intelligence@agenda-intelligence
+```
+
+This installs the MCP server (runs `uvx --from agenda-intelligence-md agenda-intelligence-mcp`; requires [uv](https://docs.astral.sh/uv/)) plus the `agenda-intelligence` and `source-ingest` skills. The same marketplace also lists the horizontal reasoning-method plugin: `global-think-tank-analyst`. Regional specialist repos remain installable as plain skill repos (copy `SKILL.md`); plugin packaging for them is deferred until the runtime-overlay layout under their `skills/` directories is reconciled with plugin skill auto-discovery.
+
+For any other MCP client, add the server directly:
+
+```json
+{
+  "mcpServers": {
+    "agenda-intelligence": {
+      "command": "uvx",
+      "args": ["--from", "agenda-intelligence-md", "agenda-intelligence-mcp"]
+    }
+  }
+}
+```
+
 ## First run
 
 If you are evaluating from Glama or another MCP directory, start with the local stdio server and one source-backed packet. The quickest path is validation/audit first, not a live vertical worker.
