@@ -1,3 +1,5 @@
+<!-- mcp-name: io.github.vassiliylakhonin/agenda-intelligence-md -->
+
 # Agenda Intelligence MD
 
 Agenda Intelligence MD is an **evidence-readiness and trust-routing runtime for high-stakes AI-assisted decisions**.
