@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.vassiliylakhonin/agenda-intelligence-md",
-  "description": "Evidence-readiness MCP server: validate, audit, and score briefs, memos, and evidence packs for high-stakes AI-assisted decisions.",
+  "description": "Evidence-readiness MCP server: validate, audit, and score briefs, memos, and evidence packs.",
   "title": "Agenda Intelligence MD",
   "repository": {
     "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
