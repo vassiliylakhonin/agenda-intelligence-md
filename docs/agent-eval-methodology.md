@@ -116,6 +116,24 @@ The vertical skill repos (CA-Caspian, Gulf+ME) replace the human-review B2.2 wit
 
 If the skill repo's intended audience also includes domain practitioners (compliance, sanctions desks), keep the human-review criterion as a separate **B2.8 — Practitioner review (optional, audience-gated)**: at least one named domain practitioner has read at least one example and recorded "useful in their workflow" or "useful with these revisions" under `validated-cases/`. B2.8 is a trust layer, not the hard Bar 2 gate when the downstream consumer is an agent integrator.
 
+## Position in the skill-evaluation landscape
+
+Skill evaluation is now a named research area. A June 2026 survey (arXiv:2606.11435) groups skill-centric benchmarks into six categories. Mapped onto this portfolio's eval materials:
+
+| Category | Portfolio coverage |
+|---|---|
+| Skill utility | Covered — the agent-eval delta above (same model, with/without skill, binary structural rubric). |
+| Skill generation | Partial — `evals/skill-improvement/` in the skill repos gates proposed edits to runtime skill instructions. |
+| Skill retrieval & routing | Not covered — no test that an agent selects the right portfolio skill (GTTA vs a regional specialist) for a given question. Geography routing inside `analyze` is tested; description-based skill triggering at plugin-install level is not. |
+| Skill safety auditing | Partial — `evals/adversarial/` covers injection-in-sources and refusal cases at runtime; package-level supply-chain auditing is out of scope. |
+| Software engineering | Not applicable — these are analysis skills, not code skills. |
+| Real-world environment | Not covered by design — B2.8 practitioner review is the audience-gated substitute. |
+
+The survey's stated field-wide gaps apply here too:
+
+- **No longitudinal evolution benchmark.** Partially addressed: `evals/skill-improvement/` is a validation-gated evolution mechanism (execution-feedback paradigm), but its effect is not measured across skill versions.
+- **Binary pass/fail metrics overlook token cost, latency, and error type.** True of the 8-criterion rubric above. Error types are catalogued separately in `evals/failure-modes.md`; token cost and latency are not recorded. The binary criteria are kept deliberately — they constrain self-scoring drift (see Limitations below). Cost/latency columns are a candidate extension, not a current claim.
+
 ## Limitations of this methodology
 
 - The agent-eval is structural, not factual. A high-delta output that's structurally rich but factually wrong is still wrong.
