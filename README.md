@@ -31,7 +31,7 @@ The skills under `skills/` and the canon docs are source, not documentation — 
 /plugin install agenda-intelligence@agenda-intelligence
 ```
 
-This installs the MCP server (runs `uvx --from agenda-intelligence-md agenda-intelligence-mcp`; requires [uv](https://docs.astral.sh/uv/)) plus the `agenda-intelligence` and `source-ingest` skills. The same marketplace also lists the horizontal reasoning-method plugin: `global-think-tank-analyst`. Regional specialist repos remain installable as plain skill repos (copy `SKILL.md`); plugin packaging for them is deferred until the runtime-overlay layout under their `skills/` directories is reconciled with plugin skill auto-discovery.
+This installs the MCP server (runs `uvx --from agenda-intelligence-md agenda-intelligence-mcp`; requires [uv](https://docs.astral.sh/uv/)) plus the `agenda-intelligence` and `source-ingest` skills. The same marketplace also lists the method and regional skill plugins: `global-think-tank-analyst`, `central-asia-caspian`, `gulf-middle-east`.
 
 For any other MCP client, add the server directly:
 
@@ -296,7 +296,7 @@ agenda-intelligence mcp-config --client cursor
 Pinned-wheel install (instead of PyPI):
 
 ```bash
-pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v1.1.1/agenda_intelligence_md-1.1.1-py3-none-any.whl
+pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v1.1.2/agenda_intelligence_md-1.1.2-py3-none-any.whl
 ```
 
 ## Benchmark baseline

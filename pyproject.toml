@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agenda-intelligence-md"
-version = "1.1.1"
+version = "1.1.2"
 description = "CLI, MCP server, and JSON schemas for evidence-readiness checks on AI/vendor/procurement source packs"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -46,6 +46,7 @@ pdf = [
 [project.scripts]
 agenda-intelligence = "agenda_intelligence.cli:main"
 agenda-intelligence-mcp = "agenda_intelligence.mcp_stdio:main"
+agenda-intelligence-md = "agenda_intelligence.mcp_stdio:main"
 agenda-intelligence-http = "agenda_intelligence.http_api:main"
 agenda-intelligence-a2a = "agenda_intelligence.a2a_adapter:main"
 
