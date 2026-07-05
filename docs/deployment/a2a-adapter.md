@@ -170,6 +170,12 @@ Downstream wrappers should log only reduced operational fields such as request i
 - No compliance clearance, sanctions clearance, shipment authorization, investment recommendation, or insurance decision.
 - Human review is required for high-stakes decisions.
 
+## Protocol-level security is a gateway responsibility
+
+The shell is deliberately stateless with no auth opinion, no agent registry, and no token issuance. That is a scoping decision, not a security claim: structured threat modeling of the emerging agent-protocol ecosystem (MCP, A2A, Agora, ANP) identifies twelve protocol-level risk classes across the creation, operation, and update phases of the agent lifecycle, with a measured MCP case study showing wrong-provider tool execution under multi-server composition (arXiv:2602.11327). Agent identity, registration integrity, token scoping, and token lifetime are not enforced by this shell and must be handled at the deploying gateway or IAM layer.
+
+For deployments that need to *triage* exactly this class of evidence before a high-stakes action — caller identity, authorization, tool scope, session auth, action intent — the `agentic_interaction_trust` profile exists for that purpose; it produces an evidence-readiness verdict, not an enforcement decision.
+
 ## Future work
 
 Production A2A hosting, auth, metering, streaming, push notifications, and channel-specific marketplace packaging remain out of scope for this shell.
