@@ -71,11 +71,15 @@ A brief's JSON projection (e.g., `agenda-brief.json`) can pass schema validation
 
 Mitigation: always preserve the markdown memo as the canonical artifact; treat the projection as a structural surface for validators, not as the deliverable.
 
+This memo-first ordering is also the measured-performance ordering: format-constrained generation taxes reasoning quality (the "format tax", strongest in open-weight models; frontier closed-weight models largely resist it), and decoupling — reason freely first, then reformat into the schema — recovers most of the loss (arXiv:2604.03616). Producing the JSON projection first and treating it as the memo would pay that tax at the reasoning stage.
+
 ### 7. Prompt-injection inside processed content
 
 `AGENTS.md` declares the retrieved-content trust rule for agents using the toolkit, but the validators themselves do not detect prompt-injection material embedded in evidence-pack `excerpt` fields, `notes` fields, or in the brief's body text. A brief that has absorbed an injected directive (e.g., dropped caveats, inverted a conclusion) can still pass structural validation.
 
 Mitigation: enforce the trust rule at the consuming-agent layer; surface suspected injections in the brief's `data_integrity_notes` field when the analyst or agent notices them.
+
+Treat all data-instruction separation measures (delimiting, datamarking, instruction hierarchy) as risk reduction, never as a guarantee: the leading researchers on indirect injection argue that an adversary can always construct a context in which a blocked instruction flow appears legitimate, so contextual-manipulation attacks slip past separation-based defenses by design (arXiv:2605.17634, position paper). This is why `human_review_required` routing on high-stakes outputs is a standing contract obligation for vertical workers, not an optional courtesy.
 
 ### 8. Adversarial structural inputs
 
