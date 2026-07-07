@@ -1,7 +1,10 @@
-from agenda_intelligence.evidence_ledger import EvidenceLedger, guard_presentation_update
+from agenda_intelligence.evidence_ledger import (
+    EvidenceLedger,
+    guard_presentation_update,
+)
 from agenda_intelligence.services import (
-    _received_source_dates_from_ledger,
     _dated_source_ledger,
+    _received_source_dates_from_ledger,
     _supplied_source_types,
 )
 

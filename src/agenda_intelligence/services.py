@@ -15,8 +15,8 @@ from typing import Any, Optional
 from urllib.parse import urlparse
 
 from agenda_intelligence import __version__, upstream_opensanctions
-from agenda_intelligence.evidence_ledger import EvidenceLedger
 from agenda_intelligence.eval import score_before_after
+from agenda_intelligence.evidence_ledger import EvidenceLedger
 
 PACKAGE_NAME = "agenda_intelligence"
 
