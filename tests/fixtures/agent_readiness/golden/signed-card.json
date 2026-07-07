@@ -1,0 +1,66 @@
+{
+  "protocolVersion": "1.0",
+  "name": "Example Evidence-Readiness Agent",
+  "description": "Structured evidence triage for strategic-risk source packs. Returns readiness routing, evidence gaps, and mandatory human review before any commercial action. Not legal, compliance, financial, or investment advice; not an autonomous decision system.",
+  "url": "https://agent.example.com",
+  "version": "1.1.2",
+  "documentationUrl": "https://agent.example.com/docs",
+  "provider": {
+    "organization": "Example Operator",
+    "url": "https://operator.example.com",
+    "legalEntity": {
+      "type": "individual",
+      "name": "Example Operator",
+      "url": "https://operator.example.com/verification.json"
+    }
+  },
+  "supportedInterfaces": [
+    {
+      "url": "https://agent.example.com/message/send",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "protocolVersions": ["1.0"],
+  "securitySchemes": {
+    "productionBearer": {
+      "httpAuthSecurityScheme": {
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "Bearer access key for the production message/send route. While unset the route is an open free demo and no key is required."
+      }
+    }
+  },
+  "securityRequirements": [],
+  "security": [],
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false
+  },
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json", "text/markdown"],
+  "skills": [
+    {
+      "id": "evidence-triage",
+      "name": "Evidence triage",
+      "description": "Converts a source pack into readiness routing with evidence gaps and human-review escalation.",
+      "tags": ["evidence-readiness"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json", "text/markdown"]
+    },
+    {
+      "id": "source-plan",
+      "name": "Source planning",
+      "description": "Returns required source categories and watch-next indicators for a risk question.",
+      "tags": ["source-planning"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"]
+    }
+  ],
+  "signatures": [
+    {
+      "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImV4YW1wbGUifQ",
+      "signature": "c2lnbmF0dXJlLWV4YW1wbGU"
+    }
+  ]
+}

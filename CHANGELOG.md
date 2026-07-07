@@ -4,6 +4,20 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(agent-readiness): add agent-card readiness lint + canon checklist.**
+  New top-level `AGENT_READINESS.md` (delegation-readiness checklist:
+  identity attribution, capability scope, interface contract, security
+  declaration, autonomy boundary, payment permissions, operator contact;
+  stance MCP-first / A2A-later / payment-safe / human-escalated) and a new
+  CLI command `validate-agent-card` — a static lint of a published agent
+  card against that checklist plus the statically checkable subset of a
+  public registry 9-criterion conformance methodology (CC-BY-4.0,
+  attributed in the doc). No endpoint probing, no cryptographic signature
+  verification, no new worker surface, no MCP tool added. Contract:
+  `schemas/v1/agent-readiness-report.schema.json` (+ packaged copy);
+  tests cover one golden signed card and one failure card (unsigned,
+  payment surface without limits).
+
 ## [1.1.2] – 2026-07-02
 
 - **release: v1.1.2 distribution checkpoint.** Bumped package, manifest,
