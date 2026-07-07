@@ -24,6 +24,18 @@ _Avoid_: Full memo, canonical deliverable, complete analysis
 A collection of claim support records that links claims to sources, source limits, freshness, and unsupported claims.
 _Avoid_: Bibliography, source list, fact base
 
+**Evidence Ledger**:
+An internal accumulation layer that records authoritative evidence items, source references, claim-support rows, data-integrity notes, and helper-produced facts during a workflow so the final response does not depend on the model remembering every reference.
+_Avoid_: Second brain, hidden reasoning, source archive, factual verifier
+
+**Reference Normalizer**:
+A deterministic post-processing layer that canonicalizes, filters, de-duplicates, and safety-checks references before they are attached to a response or export.
+_Avoid_: Source discovery, model citation generation, factual verification
+
+**Presentation Formatter**:
+A bounded formatter that enforces visible output contracts without re-solving the analysis, changing the route/verdict, or inventing evidence.
+_Avoid_: Analyst, critic, evaluator, model rewriter
+
 **Evidence Mode**:
 The provenance label for how evidence was available during the analysis workflow.
 _Avoid_: Retrieval capability, source guarantee, factual truth status
@@ -193,6 +205,9 @@ _Avoid_: Refactor, cleanup, terminology fix
 - An **Agenda Brief** may be supported by one **Evidence Pack**.
 - An **Analytical Memo** may contain or be accompanied by one **Brief Projection**.
 - A **Brief Projection** captures the validation surface of an **Analytical Memo**, not necessarily every load-bearing analytical detail.
+- An **Evidence Ledger** may feed an **Evidence Pack**, **Evidence Audit**, response references, and **Data Integrity Notes**, but it is not itself a public factual-verification claim.
+- A **Reference Normalizer** operates after model/tool/helper work and before final response assembly.
+- A **Presentation Formatter** may change visible wording or format only; it must not change evidence, route, score, verdict, or support status.
 - An **Evidence Mode** describes the evidence conditions behind an **Agenda Brief** or **Evidence Pack**.
 - A **Source Plan** describes what sources an **Evidence Pack** should contain for a category.
 - The **Source Planning Layer** exposes **Source Plans** through files, CLI, and MCP surfaces.
@@ -258,6 +273,7 @@ _Avoid_: Refactor, cleanup, terminology fix
 - **AnalysisBank** must not store stale-prone world facts such as claims about a specific company, route, or enforcement state; store those in source-backed examples, evidence packs, or signal trackers instead.
 - **Signal Tracker** files belong in `signal-trackers/`; when a signal resolves, distill a separate **Reasoning Memory** into `analysis-bank/`.
 - **Benchmark** results must not be presented as proof of analytical correctness or factual truth; expert review and LLM-judge review are optional layers outside deterministic baseline numbers.
+- Keep evidence accumulation, reference normalization, and presentation formatting separate. Do not let final answer text become the only source of evidence references or service outcome.
 - **Agent-Eval Delta** is a per-case structural check from the agent-integrator perspective; it is not factual verification, not aggregate accuracy, and not a model-quality comparison.
 - **Practitioner Review** is optional and audience-gated; it does not replace **Benchmark** or **Agent-Eval Delta** and is not required for product-shell validation.
 - The historical `examples/source-backed/` directory contains **Source-Structured Examples**; do not imply every case is live-source-backed unless its evidence was actually checked.

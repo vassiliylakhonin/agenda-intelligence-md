@@ -16,6 +16,7 @@ Read only the smallest needed subset:
 - `references/analysis-protocol.md` — default reasoning protocol for agenda analysis.
 - `references/agenda-triage.md` — classify developments as noise, weak signal, signal, structural shift, or trigger event.
 - `references/evidence-discipline.md` — source handling, uncertainty labels, and live-verification limits.
+- `references/decision-workspace.md` — compact pre-action state for high-stakes analysis, source trust, and action routing.
 - `references/output-patterns.md` — compact brief, decision memo, red-team, and watchlist formats.
 - `references/signal-lifecycle.md` — lifecycle stages, transition rules, and update format for signals monitored across sessions.
 - `references/regional/central-asia-caspian.md` — regional lens for Central Asia and Caspian agenda analysis.
@@ -25,6 +26,7 @@ Read only the smallest needed subset:
 
 For normal agenda questions, read `analysis-protocol.md` and `agenda-triage.md`.
 For source-sensitive or current-event tasks, also read `evidence-discipline.md`.
+For high-stakes, source-contested, prompt-injection-sensitive, or action-routing tasks, also read `decision-workspace.md`.
 For a requested format, read `output-patterns.md`.
 For signals requiring monitoring across sessions (classification: signal, structural_shift, or trigger_event), also read `references/signal-lifecycle.md`.
 For Central Asia, Caspian, sanctions-routing, corridor, banking, energy, minerals, or regional political-economy questions, also read `references/regional/central-asia-caspian.md`.
@@ -45,6 +47,8 @@ Separate:
 - Indicator to watch
 
 Never make speculation sound like fact. Never imply live verification if none was performed.
+
+Before a high-stakes recommendation, source-sensitive judgment, escalation route, score, tool call, or public-facing output, externalize a short decision workspace. Do not reveal full chain-of-thought. State only the user goal, trusted evidence, suspected unreliable evidence, hidden assumptions, intended next action, and stop/escalation condition.
 
 Check the temporal premise of the question before analyzing. If the question asserts an elapsed time, an effective date, or a "since X" / "N-month effect"-style claim, verify it against the current date and known facts. If the premise is wrong or unverifiable, surface the correction and re-anchor the analysis to the actual timeline rather than silently adopting the caller's date.
 

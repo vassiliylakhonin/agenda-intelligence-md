@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 
 from agenda_intelligence import __version__, upstream_opensanctions
 from agenda_intelligence.eval import score_before_after
+from agenda_intelligence.evidence_ledger import EvidenceLedger
 
 PACKAGE_NAME = "agenda_intelligence"
 
@@ -951,15 +952,55 @@ def weekly_status_delta(
     return payload
 
 
-def _supplied_source_types(request_json: dict) -> list[str]:
-    source_types: list[str] = []
+def _dated_source_ledger(request_json: dict) -> EvidenceLedger:
+    """Accumulate caller-supplied dated sources before response assembly."""
+
+    ledger = EvidenceLedger()
     for source in request_json.get("dated_sources", []):
         if not isinstance(source, dict):
             continue
         source_type = source.get("source_type")
         if isinstance(source_type, str):
+            ledger.add_reference(
+                str(source.get("id") or source_type),
+                source_type=source_type,
+                title=str(source.get("title") or ""),
+                locator=str(source.get("url") or ""),
+                metadata={
+                    key: source[key]
+                    for key in ("date", "source_type")
+                    if key in source and source[key] not in ("", None)
+                },
+            )
+    return ledger
+
+
+def _supplied_source_types_from_ledger(source_ledger: EvidenceLedger) -> list[str]:
+    source_types: list[str] = []
+    for source in source_ledger.normalized_references():
+        source_type = source.get("source_type")
+        if isinstance(source_type, str):
             source_types.append(source_type)
     return list(dict.fromkeys(source_types))
+
+
+def _supplied_source_types(request_json: dict) -> list[str]:
+    return _supplied_source_types_from_ledger(_dated_source_ledger(request_json))
+
+
+def _received_source_dates_from_ledger(source_ledger: EvidenceLedger) -> dict[str, str]:
+    received_dates: dict[str, str] = {}
+    for source in source_ledger.normalized_references():
+        source_type = source.get("source_type")
+        metadata = source.get("metadata") or {}
+        date = metadata.get("date") if isinstance(metadata, dict) else None
+        if (
+            isinstance(source_type, str)
+            and isinstance(date, str)
+            and (source_type not in received_dates or date < received_dates[source_type])
+        ):
+            received_dates[source_type] = date
+    return received_dates
 
 
 def _evidence_gap_for_source(source_type: str) -> str:
@@ -1516,7 +1557,7 @@ def _middle_corridor_exposure_layers(
 
 
 def _middle_corridor_counterparty_readiness(
-    request_json: dict, supplied_sources: list[str], missing_sources: list[str]
+    request_json: dict, supplied_sources: list[str], missing_sources: list[str], source_ledger: EvidenceLedger
 ) -> dict:
     """Outward-facing reframe of the same evidence-gap picture, for the party that must
     PRESENT a due-diligence dossier to a bank, insurer, or counterparty under enhanced
@@ -1540,12 +1581,7 @@ def _middle_corridor_counterparty_readiness(
     # Per-document ledger: EDD guidance prescribes tracking each required item with the
     # date it was received (chain-of-custody / "date requested, date received" practice).
     # date_received is the earliest supplied dated_source of that type, when present.
-    received_dates: dict[str, str] = {}
-    for source in request_json.get("dated_sources") or []:
-        source_type = source.get("source_type")
-        date = source.get("date")
-        if source_type and date and (source_type not in received_dates or date < received_dates[source_type]):
-            received_dates[source_type] = date
+    received_dates = _received_source_dates_from_ledger(source_ledger)
     document_ledger = []
     for source_type in MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO:
         entry = {
@@ -1581,7 +1617,8 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
     if request_failure is not None:
         return request_failure
 
-    supplied_sources = _supplied_source_types(request_json)
+    source_ledger = _dated_source_ledger(request_json)
+    supplied_sources = _supplied_source_types_from_ledger(source_ledger)
     missing_sources = [
         source_type for source_type in MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO if source_type not in supplied_sources
     ]
@@ -1634,7 +1671,7 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         "human_review_required": True,
         "not_advice_notice": NOT_ADVICE_NOTICE,
         "counterparty_readiness": _middle_corridor_counterparty_readiness(
-            request_json, supplied_sources, missing_sources
+            request_json, supplied_sources, missing_sources, source_ledger
         ),
         "route_sanctions_exposure_indicators": list(MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_CONNECTIONS),
         "customs_harmonization_indicators": list(MIDDLE_CORRIDOR_CUSTOMS_HARMONIZATION_INDICATORS),

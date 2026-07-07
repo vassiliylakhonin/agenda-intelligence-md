@@ -65,6 +65,18 @@ Do not cite a source that was not checked.
 Do not hide weak evidence behind polished wording.
 Prefer primary sources when the claim is important: official releases, legal texts, regulator statements, sanctions lists, company filings, court documents, parliamentary records, treaty text.
 
+## Decision workspace handoff
+
+When the analysis depends on contested, stale, retrieved, or user-provided evidence, hand off a compact decision workspace before the final route or recommendation:
+
+- trusted evidence;
+- suspected unreliable evidence;
+- hidden assumptions;
+- intended next action;
+- stop or escalate condition.
+
+This is not chain-of-thought. It is the minimum external state a reviewer needs to see why an evidence-readiness route, claim audit, score, or owner action is safe to inspect.
+
 ## Confidence language
 
 Use:
