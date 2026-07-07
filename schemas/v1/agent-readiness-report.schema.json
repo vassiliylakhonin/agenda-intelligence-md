@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/agent-readiness-report.schema.json",
+  "title": "AgentReadinessReport",
+  "description": "Output contract of the `validate-agent-card` CLI command: a static lint of a published agent card against the AGENT_READINESS.md delegation-readiness checklist plus the statically checkable subset of a public registry conformance methodology. Structural lint only — no endpoint probing, no cryptographic signature verification, no factual-truth verification.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "card_name",
+    "preflight",
+    "readiness",
+    "summary",
+    "note"
+  ],
+  "properties": {
+    "card_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "preflight": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/preflightCheck"
+      }
+    },
+    "readiness": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/readinessCheck"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "preflight",
+        "readiness",
+        "strict_ok"
+      ],
+      "properties": {
+        "preflight": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pass",
+            "gap",
+            "skipped"
+          ],
+          "properties": {
+            "pass": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "gap": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "skipped": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "readiness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "covered",
+            "gap",
+            "not_applicable"
+          ],
+          "properties": {
+            "covered": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "gap": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "not_applicable": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "strict_ok": {
+          "type": "boolean"
+        }
+      }
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "preflightCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "detail"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "gap",
+            "skipped"
+          ]
+        },
+        "detail": {
+          "type": "string"
+        }
+      }
+    },
+    "readinessCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "detail"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "covered",
+            "gap",
+            "not_applicable"
+          ]
+        },
+        "detail": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

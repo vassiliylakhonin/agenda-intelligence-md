@@ -113,6 +113,7 @@ Source Planning Layer:
 - source-taxonomy.json
 - source-requirements/*.json
 CLI source/eval commands: start, source-categories, source-plan, source-coverage, validate-evidence, audit-claims, verify-quotes, check-memo-quality, memo-quality-bench, weekly-delta-bench, score, bench, doctor, mcp-config
+Agent readiness: AGENT_READINESS.md (delegation-readiness checklist, MCP-first / A2A-later / payment-safe / human-escalated) + CLI validate-agent-card (static agent-card lint vs schemas/v1/agent-readiness-report.schema.json; no probing, no signature verification)
 
 Boundary:
 - Source-plan coverage is diagnostic before v1.0.

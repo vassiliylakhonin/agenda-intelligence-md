@@ -1,0 +1,19 @@
+{
+  "protocolVersion": "1.0.0",
+  "name": "Unsigned Payment Agent",
+  "description": "Autonomous payments for anything.",
+  "url": "https://pay.example.com",
+  "version": "0.1",
+  "provider": {
+    "organization": "Anon"
+  },
+  "skills": [
+    {
+      "id": "pay",
+      "name": "Pay"
+    }
+  ],
+  "payments": {
+    "x402Wallet": "0xabc123"
+  }
+}

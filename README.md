@@ -229,7 +229,7 @@ The product runtime is the integration point: agents call `analyze` via any surf
 - **Vertical workers** — productized service functions with their own schemas + HTTP/A2A profiles; Cloudflare deployments exist where configured. Currently shipped in the runtime: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, Kazakhstan Market-Entry Readiness Gate. Local stdio MCP exposes the first four vertical workers; Kazakhstan Market-Entry Readiness is HTTP/A2A-only.
 - **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
 - **JSON schemas** — request/memo product contract + per-product contracts (e.g. `middle-corridor-deal-risk-*`) + validators for briefs, evidence packs, audits, signals, memory cards, lenses
-- **CLI** — `validate-brief`, `validate-evidence`, `source-categories`, `source-coverage`, `audit-claims`, `check-memo-quality`, `memo-quality-bench`, `weekly-delta`, `score`, `bench`, `doctor` (30+ commands)
+- **CLI** — `validate-brief`, `validate-evidence`, `validate-agent-card`, `source-categories`, `source-coverage`, `audit-claims`, `check-memo-quality`, `memo-quality-bench`, `weekly-delta`, `score`, `bench`, `doctor` (30+ commands). Agent-card readiness checklist: [`AGENT_READINESS.md`](AGENT_READINESS.md)
 - **Eval kit** — rubric, LLM-judge prompt, human checklist, benchmark harness, agent-eval methodology
 - **Source policy** — per-claim provenance tags (Axis A/B), source requirements for 18 categories
 

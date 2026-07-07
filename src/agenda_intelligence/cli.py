@@ -633,6 +633,38 @@ def cmd_audit_claims(args):
         raise SystemExit(1)
 
 
+def cmd_validate_agent_card(args):
+    """Static readiness lint of a published agent-card JSON file.
+
+    Checks the AGENT_READINESS.md delegation-readiness checklist plus the
+    statically checkable subset of a public registry conformance methodology.
+    No endpoint probing, no cryptographic signature verification, no
+    factual-truth verification; not a security audit or compliance advice.
+    """
+    from agenda_intelligence.agent_readiness import (
+        evaluate_agent_card,
+        format_report_text,
+    )
+
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"Not found: {path}")
+    try:
+        card = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Invalid JSON: {e}")
+    if not isinstance(card, dict):
+        raise SystemExit("Agent card lint expects a JSON object")
+
+    report = evaluate_agent_card(card)
+    if args.format == "json":
+        print(json.dumps(report, indent=2, ensure_ascii=False))
+    else:
+        print(format_report_text(report))
+    if args.strict and not report["summary"]["strict_ok"]:
+        raise SystemExit(1)
+
+
 def cmd_check_memo_quality(args):
     from agenda_intelligence.mcp_server import check_memo_quality
 
@@ -1126,6 +1158,15 @@ def main():
     p.add_argument("--format", choices=["text", "json"], default="text")
     p.add_argument("--strict", action="store_true", help="Exit 1 on orphan evidence_id refs")
     p.set_defaults(func=cmd_audit_claims)
+    # validate-agent-card: static readiness lint of a published agent card
+    p = sub.add_parser(
+        "validate-agent-card",
+        help="Static readiness lint of an agent-card JSON (no probing, no signature verification)",
+    )
+    p.add_argument("path", help="Agent card JSON file (e.g. a saved /.well-known/agent-card.json)")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.add_argument("--strict", action="store_true", help="Exit 1 on any preflight or readiness gap")
+    p.set_defaults(func=cmd_validate_agent_card)
     # check-memo-quality: post-hoc quality guard for Agenda memo JSON
     p = sub.add_parser(
         "check-memo-quality",
