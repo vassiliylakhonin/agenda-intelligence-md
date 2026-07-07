@@ -4,6 +4,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(evidence-ledger): add internal evidence assembly module.**
+  Added `agenda_intelligence.evidence_ledger` with an append-only
+  `EvidenceLedger`, deterministic reference normalization, protected-reference
+  filtering, claim-support/data-integrity channels, and a presentation-update
+  guard that rejects formatter changes to route, score, verdict, or references.
+  The shared service-layer dated-source intake now uses the ledger for
+  de-duplicated supplied-source typing. No schema, CLI, MCP, HTTP, A2A, or
+  public response contract change.
+
 - **feat(agent-readiness): add agent-card readiness lint + canon checklist.**
   New top-level `AGENT_READINESS.md` (delegation-readiness checklist:
   identity attribution, capability scope, interface contract, security

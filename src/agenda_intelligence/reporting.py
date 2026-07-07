@@ -19,10 +19,13 @@ so the core package stays dependency-light.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime as _datetime
 from datetime import timezone
 from html import escape
-from typing import Any
+from typing import Any, Callable
+
+from agenda_intelligence.evidence_ledger import guard_presentation_update
 
 # Brand-book identity (see Middle Corridor Deal Risk Gate brand book).
 BRAND_TEAL = "#0f766e"
@@ -462,14 +465,39 @@ def render_pdf(response: dict[str, Any]) -> bytes:
     return bytes(out)
 
 
+def _render_with_guard(
+    response: dict[str, Any], renderer: Callable[[dict[str, Any]], str | bytes], rendered_field: str
+) -> str | bytes:
+    """Render while proving the structured response channels did not mutate."""
+
+    original_response = deepcopy(response)
+    original_inner = deepcopy(_unwrap(response))
+    rendered = renderer(response)
+
+    mutation_guard = guard_presentation_update(original_inner, _unwrap(response), presentation_fields=())
+    if not mutation_guard["ok"]:
+        raise RuntimeError(f"Report renderer mutated structured response fields: {mutation_guard['forbidden_changes']}")
+
+    projection = {**original_inner, rendered_field: rendered}
+    projection_guard = guard_presentation_update(original_inner, projection, presentation_fields=(rendered_field,))
+    if not projection_guard["ok"]:
+        raise RuntimeError(f"Report renderer changed non-presentation fields: {projection_guard['forbidden_changes']}")
+
+    # Also catch mutation outside a service wrapper's inner response.
+    wrapper_guard = guard_presentation_update(original_response, response, presentation_fields=())
+    if not wrapper_guard["ok"]:
+        raise RuntimeError(f"Report renderer mutated wrapper fields: {wrapper_guard['forbidden_changes']}")
+    return rendered
+
+
 def render_report(response: dict[str, Any], fmt: str = "md") -> str | bytes:
     """Render a deal-risk response as ``md``, ``html``, or ``pdf``."""
     if fmt == "md":
-        return render_markdown(response)
+        return _render_with_guard(response, render_markdown, "markdown")
     if fmt == "html":
-        return render_html(response)
+        return _render_with_guard(response, render_html, "html")
     if fmt == "pdf":
-        return render_pdf(response)
+        return _render_with_guard(response, render_pdf, "pdf")
     raise ValueError(f"Unknown report format: {fmt!r} (expected md, html, or pdf)")
 
 

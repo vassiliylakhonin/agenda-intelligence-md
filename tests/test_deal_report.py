@@ -81,10 +81,25 @@ def test_service_result_wrapper_is_unwrapped():
 
 def test_render_report_dispatch_and_unknown_format():
     response = _load("pre_signature_escalate.response.json")
+    before = json.loads(json.dumps(response))
     assert reporting.render_report(response, "md") == reporting.render_markdown(response)
     assert reporting.render_report(response, "html") == reporting.render_html(response)
+    assert response == before
     with pytest.raises(ValueError):
         reporting.render_report(response, "docx")
+
+
+def test_render_report_guard_rejects_structured_response_mutation(monkeypatch):
+    response = _load("pre_signature_escalate.response.json")
+
+    def mutating_renderer(payload):
+        payload["decision_readiness_score"] = 100
+        return "changed"
+
+    monkeypatch.setattr(reporting, "render_markdown", mutating_renderer)
+
+    with pytest.raises(RuntimeError, match="mutated structured response fields"):
+        reporting.render_report(response, "md")
 
 
 def test_pdf_renders_when_extra_installed():
