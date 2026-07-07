@@ -38,6 +38,20 @@ python3 -m build
 python3 -m twine check dist/*
 ```
 
+## Evidence Assembly Release Check
+
+Before a release that changes response assembly, reports, validators, or
+packaged skills, confirm:
+
+- public endpoints and reports use the shared evidence assembly path when one
+  exists, rather than re-reading raw source arrays ad hoc;
+- protected or internal-only evidence cannot appear in public JSON, rendered
+  reports, package mirrors, or examples;
+- presentation renderers can add visible output fields but cannot mutate route,
+  score, verdict, evidence, or contract fields;
+- contract fixtures either remain byte-for-byte stable or are regenerated with
+  an explicit migration note.
+
 ## PyPI Publishing
 
 The release workflows currently publish with the GitHub secret `PYPI_API_TOKEN`.
