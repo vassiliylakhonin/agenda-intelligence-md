@@ -10,7 +10,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping, Sequence
 
-
 DEFAULT_PRESENTATION_FIELDS = frozenset({"message", "markdown", "rendered_memo", "human_readable"})
 
 
