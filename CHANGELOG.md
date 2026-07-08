@@ -4,6 +4,11 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(distribution): add Codex plugin manifest.** Added
+  `.codex-plugin/plugin.json` so Codex marketplace installs expose the bundled
+  `skills/` and `.mcp.json` MCP server instead of installing only legacy Claude
+  plugin metadata.
+
 - **feat(evidence-ledger): add internal evidence assembly module.**
   Added `agenda_intelligence.evidence_ledger` with an append-only
   `EvidenceLedger`, deterministic reference normalization, protected-reference

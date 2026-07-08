@@ -1,0 +1,40 @@
+{
+  "name": "agenda-intelligence",
+  "version": "1.1.2",
+  "description": "Evidence-readiness and trust-routing toolkit for high-stakes AI-assisted decisions: Codex skills plus an MCP server for validating, auditing, and scoring briefs, memos, and evidence packs.",
+  "author": {
+    "name": "Vassiliy Lakhonin",
+    "url": "https://github.com/vassiliylakhonin"
+  },
+  "homepage": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+  "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+  "license": "MIT",
+  "keywords": [
+    "evidence-readiness",
+    "strategic-risk",
+    "policy-analysis",
+    "memo-validation",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Agenda Intelligence",
+    "shortDescription": "Evidence-readiness skills and MCP tools for strategic-risk memos",
+    "longDescription": "Agenda Intelligence gives Codex reusable skills for source ingest and agenda analysis, plus an MCP server for validating, auditing, and scoring briefs, memos, and evidence packs. It routes evidence gaps to human reviewers; it does not verify factual truth or provide legal, compliance, sanctions, financial, investment, insurance, or trading advice.",
+    "developerName": "Vassiliy Lakhonin",
+    "category": "Engineering",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+    "brandColor": "#0F766E",
+    "defaultPrompt": [
+      "Use agenda-intelligence to analyze this strategic-risk question with explicit evidence boundaries.",
+      "Use source-ingest to normalize this document into a structured source record.",
+      "Use the Agenda Intelligence MCP tools to validate, audit, or score this memo."
+    ],
+    "screenshots": []
+  }
+}
