@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(worker): profile-as-funnel — point the structured gates at the
+  Corridor & Sanctions Risk Assistant front door.** Appended one factual
+  navigation line (`PROVIDER_FRONT_DOOR_POINTER`) to the Middle Corridor,
+  Gulf maritime, CIS secondary-sanctions, and Kazakhstan market-entry card
+  descriptions so a human landing on any gate is funnelled to the front
+  door and the free pre-deal screening memo instead of navigating nine
+  cards blind. No traction claim, no contract/schema/response change.
+
 - **feat(worker): sharpen Agentic Interaction Trust Gate positioning to
   counterparty-agent verification.** Reframed the `agentic_interaction_trust`
   agent card, skill, tags, examples, and use-case doc to lead with the

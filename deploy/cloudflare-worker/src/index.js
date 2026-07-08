@@ -1692,7 +1692,8 @@ function applyAgentProfile(card, request, env = {}) {
   card.name = "Kazakhstan / Middle Corridor Deal Risk Gate";
   card.documentationUrl = discovery.documentation_url;
   card.description =
-    "A2A-compatible evidence-readiness gate for Kazakhstan-Caspian / Middle Corridor logistics, trade-finance, procurement, and insurance-adjacent workflows. Bring route, cargo, counterparties, and dated sources; get structured deal-risk triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, risk signal, human-review routing, and named sanctions-exposure flags: OFAC named-sector (EO 14024/14114) and newly-formed-counterparty red flags, EU re-export / circumvention-watch jurisdictions (incl. the 20th-package measures on Kyrgyzstan), dual-use cargo screened against the EU/US Common High Priority List, a domestic-legal vs foreign-sanctions exposure decomposition, and a vessel deceptive-shipping-practice checklist. Deterministic rule-based logic, no model in the decision path. Presence-flagging and evidence triage only, not a sanctions determination.";
+    "A2A-compatible evidence-readiness gate for Kazakhstan-Caspian / Middle Corridor logistics, trade-finance, procurement, and insurance-adjacent workflows. Bring route, cargo, counterparties, and dated sources; get structured deal-risk triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, risk signal, human-review routing, and named sanctions-exposure flags: OFAC named-sector (EO 14024/14114) and newly-formed-counterparty red flags, EU re-export / circumvention-watch jurisdictions (incl. the 20th-package measures on Kyrgyzstan), dual-use cargo screened against the EU/US Common High Priority List, a domestic-legal vs foreign-sanctions exposure decomposition, and a vessel deceptive-shipping-practice checklist. Deterministic rule-based logic, no model in the decision path. Presence-flagging and evidence triage only, not a sanctions determination." +
+    PROVIDER_FRONT_DOOR_POINTER;
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
@@ -1898,6 +1899,15 @@ function applyAgenticInteractionTrustProfile(card, request) {
 // It orients a human, routes to the structured gates, and hands off a free
 // pre-deal screening memo. It performs no triage, scoring, screening, or
 // retrieval of its own; those live in the named gates below.
+
+// Appended to each structured gate's card description so a human landing on any
+// one gate is funnelled to the front door + the free pre-deal memo, rather than
+// navigating nine cards blind. One factual navigation line, no traction claim.
+const PROVIDER_FRONT_DOOR_POINTER =
+  " New to these gates? Start with the Corridor & Sanctions Risk Assistant " +
+  "(https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev) for plain-language orientation and a " +
+  "free one-off pre-deal screening memo.";
+
 const CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE =
   "Orientation and routing only. Not legal, compliance, sanctions, financial, investment, or insurance advice, " +
   "and not an autonomous decision system. The structured gates perform the triage; human review is required before " +
@@ -2053,7 +2063,8 @@ function applyGulfMaritimeProfile(card, request) {
     "or voyage transiting the Strait of Hormuz, Persian/Arabian Gulf, Gulf of Oman, Bab-el-Mandeb, or Red Sea. Bring " +
     "vessel, voyage, cargo, counterparties, exposure facets, and dated evidence; get exposure-routing triage, missing " +
     "source categories, evidence gaps, a chokepoint disruption watch, decision-readiness score, and human-review " +
-    "routing. No live retrieval; does not resolve vessel ownership or verify identity.";
+    "routing. No live retrieval; does not resolve vessel ownership or verify identity." +
+    PROVIDER_FRONT_DOOR_POINTER;
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
@@ -2106,7 +2117,8 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
     (activeOption
       ? ""
       : "Sanctions-list name-match (Snapshot public-list snapshot, or Watchman / OpenSanctions) is wired but disabled in this deployment, which runs on user-supplied evidence only. ") +
-    "Targets enhanced due diligence in EU / UK / UAE / Singapore institutions screening counterparties against OFAC EO 14114, EU sanctions package, UK OFSI, and FATF / EAG typologies.";
+    "Targets enhanced due diligence in EU / UK / UAE / Singapore institutions screening counterparties against OFAC EO 14114, EU sanctions package, UK OFSI, and FATF / EAG typologies." +
+    PROVIDER_FRONT_DOOR_POINTER;
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
@@ -3905,7 +3917,8 @@ function applyMarketEntryReadinessProfile(card, request) {
     "showroom, EPC, renewable-energy, infrastructure, technology-transfer, or partner-entry). Bring company, " +
     "project, Kazakhstan objective, counterparties, and supplied sources; get a gate decision, readiness label, " +
     "evidence gaps, claim audit, owner actions, watch-next indicators, and mandatory human-review routing. No live " +
-    "retrieval; not legal, compliance, customs, tax, sanctions, or launch-authorization advice.";
+    "retrieval; not legal, compliance, customs, tax, sanctions, or launch-authorization advice." +
+    PROVIDER_FRONT_DOOR_POINTER;
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
