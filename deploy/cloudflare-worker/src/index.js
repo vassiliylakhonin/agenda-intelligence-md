@@ -2118,6 +2118,9 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
   card.description =
     "A2A-compatible secondary-sanctions exposure evidence triage for CIS, Caucasus, and Central Asia counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Bring counterparty, exposure facets, and dated source extracts; get " +
     (activeOption ? `auto-fetched ${activeOption.name} name matches, ` : "") +
+    (gleifEnabled(env)
+      ? "auto-fetched disclosed LEI ownership (direct / ultimate parent, via GLEIF), "
+      : "") +
     "structured triage, evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review routing. " +
     (activeOption
       ? ""
@@ -2130,7 +2133,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
       id: "cis-secondary-sanctions-exposure",
       name: "CIS secondary-sanctions exposure triage",
       description:
-        "Turns a CIS / Caucasus / Central Asia counterparty + exposure facets + dated source extracts into a structured secondary-sanctions exposure triage with server-side name matches against a public-list snapshot (Snapshot upstream, with Watchman / OpenSanctions as alternates), evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review escalation. Name matches are possible string matches, not identity verification or a determination. It is an evidence-discipline and documented-determination layer beside a screening or ownership-resolution tool, not a replacement; it does not traverse multi-layer beneficial-ownership graphs.",
+        "Turns a CIS / Caucasus / Central Asia counterparty + exposure facets + dated source extracts into a structured secondary-sanctions exposure triage with server-side name matches against a public-list snapshot (Snapshot upstream, with Watchman / OpenSanctions as alternates), evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review escalation. When ownership enrichment is enabled, it also auto-fetches disclosed LEI ownership (direct / ultimate parent) from GLEIF (CC0) as ownership evidence — disclosed relationships only. Name matches are possible string matches, not identity verification or a determination. It is an evidence-discipline and documented-determination layer beside a screening or ownership-resolution tool, not a replacement; it does not traverse multi-layer beneficial-ownership graphs.",
       tags: [
         "cis",
         "kazakhstan",
