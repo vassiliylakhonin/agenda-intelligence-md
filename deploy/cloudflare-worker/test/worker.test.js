@@ -2119,6 +2119,63 @@ test("agentic_interaction_trust message/send fails on missing structured request
   }
 });
 
+// ---------------------------------------------------------------------------
+// Corridor & Sanctions Risk Assistant — discovery FRONT (Zee-pattern), not a gate
+// ---------------------------------------------------------------------------
+
+const corridorAssistantRequest = new Request(
+  "https://corridor-sanctions-assistant-a2a.example.workers.dev/message/send",
+  { method: "POST", headers: { "user-agent": "node:test" } }
+);
+
+test("corridor_sanctions_assistant profile is detected and is a routing front, not a gate", () => {
+  const card = agentCard(corridorAssistantRequest, {});
+  assert.equal(card.x_agenda_intelligence.product_profile, "corridor_sanctions_assistant");
+  assert.equal(card.name, "Corridor & Sanctions Risk Assistant");
+  assert.equal(card.skills.length, 1);
+  assert.equal(card.skills[0].id, "corridor-sanctions-orientation");
+  // Front, not a gate: no structured product contract or schema.
+  assert.equal(card.x_agenda_intelligence.product_contract, undefined);
+  assert.deepEqual(card.x_agenda_intelligence.supported_contracts, ["orientation_and_routing"]);
+  assert.equal(card.x_agenda_intelligence.routes_to.length, 4);
+  assert.equal(card.x_agenda_intelligence.engagement.contact_email, "vassiliy.lakhonin@gmail.com");
+  assert.ok(
+    card.x_agenda_intelligence.boundaries.includes("Human review is required before any commercial action.")
+  );
+});
+
+test("corridor_sanctions_assistant message/send returns a deterministic orientation, not triage", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "corridor-1",
+        method: "message/send",
+        params: { message: { parts: [{ kind: "text", text: "Steel Kazakhstan->EU via Middle Corridor next month" }] } }
+      },
+      corridorAssistantRequest,
+      {}
+    );
+
+    assert.equal(response.jsonrpc, "2.0");
+    assert.equal(response.id, "corridor-1");
+    const result = response.result;
+    assert.equal(result.status.state, "TASK_STATE_COMPLETED");
+    assert.equal(result.metadata.product_profile, "corridor_sanctions_assistant");
+    assert.equal(result.metadata.human_review_required, true);
+    const resp = result.metadata.response;
+    assert.equal(resp.kind, "orientation_and_routing");
+    assert.equal(resp.gates.length, 4);
+    assert.equal(resp.engagement.contact_email, "vassiliy.lakhonin@gmail.com");
+    assert.match(result.artifacts[0].parts[0].text, /Corridor & Sanctions Risk Assistant/);
+    assert.match(result.artifacts[0].parts[0].text, /vassiliy\.lakhonin@gmail\.com/);
+  } finally {
+    console.log = originalLog;
+  }
+});
+
 test("cis_secondary_sanctions message/send dispatches to structured triage", async () => {
   const originalLog = console.log;
   console.log = () => {};

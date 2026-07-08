@@ -4,9 +4,11 @@ Status: shipped 2026-05-29. Vertical worker service function `agentic_interactio
 
 ## Proposition
 
-Bring an agent-mediated action, its target surface, and dated evidence. Get an auditable trust-routing triage with evidence gaps, source coverage, watch-next indicators, and human-review escalation.
+Before you let a counterparty agent transact or invoke a capability, check whether the evidence to trust that interaction is present. Bring the actor's identity claim, its target surface, the requested action, and dated evidence. Get an auditable trust-routing triage with the missing evidence, source coverage, watch-next indicators, and human-review escalation.
 
-The point is not to decide whether the actor is a bot. The point is to decide whether the evidence is sufficient to route a specific automated or agentic action: allow low-risk, require step-up, escalate to human review, or block until verified.
+The primary case is agent-to-agent: an unknown A2A caller (or a delegated x402-style payment) wants to invoke a capability or settle a transaction, and you need to know — before it executes — whether there is enough evidence to allow it, step it up, escalate to a human, or block until verified. The same gate covers agent-mediated checkout, account, API, and MCP tool surfaces.
+
+The point is not to decide whether the actor is a bot, and not to verify its identity. The point is to decide whether the evidence is sufficient to route a specific automated or agentic action: allow low-risk, require step-up, escalate to human review, or block until verified.
 
 This is not cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice. It is an evidence-readiness gate for teams that already have logs, agent claims, policy data, and risk signals.
 
@@ -27,9 +29,10 @@ That matches the existing Agenda Intelligence pattern:
 
 ## Target users
 
+- Platform and agent teams exposing MCP tools or A2A endpoints to external agents, deciding whether to admit an unknown counterparty agent before it acts.
+- Teams building agent-to-agent commerce (x402 / delegated payments) that need a step-up check before a transaction executes.
 - Trust and safety teams designing policy for agent-mediated web traffic.
 - Fraud, risk, and abuse teams reviewing checkout, account, auth, or API actions.
-- Platform teams exposing MCP tools or A2A endpoints to external agents.
 - Product security teams that need a structured handoff between telemetry, policy, and human review.
 - Consultants writing agentic-risk operating procedures for clients.
 

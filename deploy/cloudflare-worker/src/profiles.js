@@ -40,6 +40,8 @@ export const GULF_MARITIME_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/sch
 export const GULF_MARITIME_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/gulf-maritime-exposure-response.schema.json`;
 export const GULF_MARITIME_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/gulf-maritime-exposure.json`;
 
+export const CORRIDOR_SANCTIONS_ASSISTANT_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/corridor-sanctions-assistant.md`;
+
 export const MARKET_ENTRY_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/kazakhstan-market-entry-readiness.md`;
 export const MARKET_ENTRY_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/market-entry-readiness-request.schema.json`;
 export const MARKET_ENTRY_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/market-entry-readiness-response.schema.json`;
@@ -173,22 +175,23 @@ const agenticInteractionTrustProfile = Object.freeze({
   documentation_url: AGENTIC_INTERACTION_TRUST_DOCS_URL,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
-    "A2A/JSON-RPC discovery, agentic interaction trust triage, evidence gating, and routing response only",
+    "A2A/JSON-RPC discovery, counterparty-agent trust triage before a delegated action or transaction, evidence gating, and routing response only",
   supported_contracts: frozenArray(["agentic_interaction_trust_contract"]),
   buyer_use_cases: frozenArray([
+    "verify an unknown A2A counterparty agent before granting a capability or settling a payment",
+    "agent-to-agent (x402 / delegated-payment) transaction step-up before it executes",
+    "MCP tool-scope and permission evidence triage before an external agent invokes a tool",
     "AI shopping-agent checkout step-up review",
-    "unknown A2A caller capability invocation review",
-    "MCP tool-scope and permission evidence triage",
     "API partner delegated-action evidence readiness",
     "trust-and-safety human-review queue preparation"
   ]),
   commercial_positioning:
-    "Actor + target surface + requested action + dated evidence -> auditable trust-routing triage with evidence gaps, decision-readiness score, watch-next indicators, and human-review escalation.",
+    "Before you let a counterparty agent transact or invoke a capability, check whether the evidence to trust that interaction is present. Actor identity claim + target surface + requested action + dated evidence -> auditable trust-routing triage with the missing evidence categories, a decision-readiness score, watch-next indicators, and human-review escalation. Evidence-readiness only: it surfaces what is missing before a policy engine or a human decides. It is not identity verification, authentication, or transaction authorization.",
   focus: frozenArray([
-    "agent-mediated checkout and account action triage",
+    "counterparty-agent trust triage before a delegated action or agent-to-agent transaction",
     "A2A and MCP endpoint invocation evidence gates",
     "delegated-action authority and permission evidence",
-    "trust-and-safety review readiness",
+    "agent-mediated checkout and account action triage",
     "human-review escalation for consequential agentic actions"
   ]),
   product_contract: productContract({
@@ -290,6 +293,49 @@ const marketEntryReadinessProfile = Object.freeze({
   live_retrieval: PROFILE_LIVE_RETRIEVAL.market_entry_readiness || { capability_declared: false, upstream_options: [] }
 });
 
+// Lightweight discovery FRONT profile (Zee-pattern), not a vertical worker: no
+// schema, no service function, no triage or retrieval of its own. Its job is a
+// human-facing agent card that orients a corridor/sanctions deal-risk question,
+// routes to the structured gates, and hands off a free pre-deal screening memo.
+// Modeled on the minimal `agenda` / `confidential_project_room` profiles.
+const corridorSanctionsAssistantProfile = Object.freeze({
+  profile_key: "corridor_sanctions_assistant",
+  product_profile: "corridor_sanctions_assistant",
+  canonical_product_name: "Corridor & Sanctions Risk Assistant",
+  documentation_url: CORRIDOR_SANCTIONS_ASSISTANT_DOCS_URL,
+  provider_same_as: SHARED_PROVIDER_SAME_AS,
+  wrapper_scope:
+    "A2A/JSON-RPC discovery front for corridor and sanctions deal-risk evidence readiness: orientation, routing to the structured gates, and a human pre-deal screening handoff. No triage, scoring, screening, or retrieval of its own.",
+  supported_contracts: frozenArray(["orientation_and_routing"]),
+  buyer_use_cases: frozenArray([
+    "first stop for a Kazakhstan / Middle Corridor deal — what evidence a bank, insurer, or compliance desk will ask for",
+    "first stop for CIS / Caucasus / Central Asia secondary-sanctions exposure on a counterparty",
+    "get a free one-off pre-deal screening memo on a real deal before committing to a tool or a lawyer",
+    "find which structured gate fits a specific deal, counterparty, vessel, or market-entry file"
+  ]),
+  commercial_positioning:
+    "Human-facing front door to the corridor and sanctions evidence-readiness gates. Ask about a specific deal or counterparty; get a plain-language read on what due-diligence evidence is still missing, a pointer to the structured gate that fits, and the option of one free one-off pre-deal screening memo produced by a human. Routing and orientation only — the structured triage, scoring, and any screening happen in the named gates, and human review is required before any commercial action.",
+  focus: frozenArray([
+    "orientation for corridor and sanctions deal-risk questions",
+    "routing to the Middle Corridor, CIS secondary-sanctions, Gulf maritime, and market-entry gates",
+    "free pre-deal screening memo handoff to a human",
+    "human-review escalation before signature, committee, insurer, or client delivery"
+  ]),
+  routes_to: frozenArray([
+    "middle_corridor_deal_risk",
+    "cis_secondary_sanctions",
+    "gulf_maritime_exposure",
+    "kazakhstan_market_entry_readiness"
+  ]),
+  engagement: Object.freeze({
+    offer: "One free pre-deal screening memo on a real, current deal or counterparty.",
+    contact_email: SUPPORT_CONTACT_EMAIL,
+    support_hours: SUPPORT_HOURS_LOCAL,
+    next_step: "Email a one-line deal (route or counterparty + the decision pending) to book the free memo."
+  }),
+  live_retrieval: PROFILE_LIVE_RETRIEVAL.agenda
+});
+
 const confidentialProjectRoomProfile = Object.freeze({
   profile_key: "confidential_project_room",
   product_profile: "confidential_project_room",
@@ -313,6 +359,7 @@ export const PROFILE_REGISTRY = Object.freeze({
   cis_secondary_sanctions: cisSecondarySanctionsProfile,
   market_entry_readiness: marketEntryReadinessProfile,
   kazakhstan_market_entry_readiness: marketEntryReadinessProfile,
+  corridor_sanctions_assistant: corridorSanctionsAssistantProfile,
   confidential_project_room: confidentialProjectRoomProfile
 });
 
