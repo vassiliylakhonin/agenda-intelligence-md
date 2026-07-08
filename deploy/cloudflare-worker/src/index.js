@@ -22,6 +22,11 @@ import {
   matchCounterparty as matchCounterpartyAgainstSnapshot
 } from "./upstream_snapshot.js";
 
+import {
+  fetchOwnership as fetchOwnershipFromGleif,
+  isEnabled as gleifEnabled
+} from "./upstream_gleif.js";
+
 import { buildJwks, maybeSignCard } from "./jws.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "./okf_content.js";
 import {
@@ -4021,6 +4026,33 @@ async function cisSecondarySanctionsResult(request, env) {
     });
   }
 
+  // Ownership enrichment (GLEIF), off by default, runs ALONGSIDE the sanctions
+  // match — never replaces it. Contributes disclosed direct/ultimate parent as
+  // ownership evidence per ADR 0022. Graceful degrade: any non-success status
+  // simply merges no ownership sources.
+  let ownershipResult = null;
+  if (gleifEnabled(env)) {
+    ownershipResult = await fetchOwnershipFromGleif(env, {
+      name: counterparty.name,
+      jurisdiction: counterparty.jurisdiction
+    });
+    for (const match of ownershipResult.matches || []) {
+      const sourceType = match.source_type || "ownership_chain_evidence";
+      if (!supplied.includes(sourceType)) supplied.push(sourceType);
+      autoFetched.push({
+        source_type: sourceType,
+        title: match.name || "GLEIF ownership record",
+        datasets: [],
+        lei: match.lei || null,
+        relationship_role: match.relationship_role || null,
+        score: match.score,
+        topics: [],
+        jurisdictions: match.jurisdictions || [],
+        notes: "Auto-fetched from GLEIF (disclosed LEI ownership); CC0-1.0 attribution appreciated."
+      });
+    }
+  }
+
   const missing = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW.filter((s) => !supplied.includes(s));
   const [score, label] = cisDecisionReadiness(request, supplied);
   const exposureSignal = cisExposureSignal(request, missing, autoFetched.length);
@@ -4032,7 +4064,12 @@ async function cisSecondarySanctionsResult(request, env) {
   // Attribution only when upstream data was actually merged (Python parity): on the
   // disabled / degraded / zero-match paths nothing was fetched, so the notice would
   // imply a sanctions-list match via the upstream that never happened.
-  if (upstreamResult.attribution && autoFetched.length) limitations.push(upstreamResult.attribution.notice);
+  const sanctionsMatchCount = (upstreamResult.matches || []).length;
+  if (upstreamResult.attribution && sanctionsMatchCount) limitations.push(upstreamResult.attribution.notice);
+  // Separate ownership-enrichment attribution (GLEIF), only when it merged records.
+  if (ownershipResult && ownershipResult.attribution && (ownershipResult.matches || []).length) {
+    limitations.push(ownershipResult.attribution.notice);
+  }
   // User-facing degrade note derived from status only — never echo internal
   // env-var names or upstream stack details (parity with the Python service;
   // degrade_reason is kept on live_retrieval_status for operators).

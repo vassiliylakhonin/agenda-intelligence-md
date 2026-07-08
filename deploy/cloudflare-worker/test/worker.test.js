@@ -36,6 +36,7 @@ import { PROFILE_REGISTRY, profileDiscovery } from "../src/profiles.js";
 import { validateAgentCard } from "../scripts/verify-agent-card.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "../src/okf_content.js";
 import { matchCounterparty as matchCounterpartyAgainstWatchman } from "../src/upstream_watchman.js";
+import { fetchOwnership as fetchOwnershipFromGleif } from "../src/upstream_gleif.js";
 import {
   matchCounterparty as matchCounterpartyAgainstSnapshot,
   __resetCache as resetSnapshotCache
@@ -171,6 +172,73 @@ test("Watchman adapter queries real /search path and normalizes grouped results"
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("GLEIF adapter resolves LEI, direct parent, and maps ownership source types", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    const u = new URL(url);
+    calls.push(u);
+    if (u.pathname.endsWith("/direct-parent")) {
+      return new Response(
+        JSON.stringify({
+          data: {
+            id: "PARENT0000000000LEI0",
+            attributes: { entity: { legalName: { name: "Meridian Holding LLP" }, legalAddress: { country: "KZ" } } }
+          }
+        }),
+        { status: 200, headers: { "content-type": "application/vnd.api+json" } }
+      );
+    }
+    if (u.pathname.endsWith("/ultimate-parent")) {
+      // Normal "no ultimate parent on file" case: GLEIF returns 404 + errors.
+      return new Response(JSON.stringify({ errors: [{ status: "404" }] }), {
+        status: 404,
+        headers: { "content-type": "application/vnd.api+json" }
+      });
+    }
+    // Name search.
+    return new Response(
+      JSON.stringify({
+        data: [
+          {
+            id: "MERIDIAN00000000LEI0",
+            attributes: { entity: { legalName: { name: "Meridian Freight Solutions LLP" }, legalAddress: { country: "KZ" } } }
+          }
+        ]
+      }),
+      { status: 200, headers: { "content-type": "application/vnd.api+json" } }
+    );
+  };
+  try {
+    const result = await fetchOwnershipFromGleif(
+      { GLEIF_ENABLED: "1", AGENDA_USAGE: new MemoryKv() },
+      { name: "Meridian Freight Solutions LLP", jurisdiction: "Kazakhstan" }
+    );
+    assert.equal(result.status, "success");
+    assert.deepEqual(
+      result.matches.map((m) => m.source_type),
+      ["ownership_chain_evidence", "ownership_chain_evidence"]
+    );
+    assert.deepEqual(
+      result.matches.map((m) => m.relationship_role),
+      ["resolved_entity", "direct_parent"]
+    );
+    assert.equal(result.matches[0].lei, "MERIDIAN00000000LEI0");
+    assert.equal(result.matches[1].name, "Meridian Holding LLP");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("GLEIF adapter is disabled unless GLEIF_ENABLED is set", async () => {
+  const result = await fetchOwnershipFromGleif(
+    { AGENDA_USAGE: new MemoryKv() },
+    { name: "Some Entity", jurisdiction: "KZ" }
+  );
+  assert.equal(result.status, "disabled");
+  assert.deepEqual(result.matches, []);
 });
 
 const SNAPSHOT_FIXTURE = JSON.stringify({
