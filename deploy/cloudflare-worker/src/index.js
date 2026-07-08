@@ -550,6 +550,12 @@ function agentProfile(request, env = {}) {
     return "market_entry_readiness";
   }
   if (
+    env.AGENT_PROFILE === "corridor_sanctions_assistant" ||
+    host.includes("corridor-sanctions-assistant-a2a")
+  ) {
+    return "corridor_sanctions_assistant";
+  }
+  if (
     env.AGENT_PROFILE === "kazakhstan" ||
     host.includes("middle-corridor-deal-risk-gate-a2a")
   ) {
@@ -1678,6 +1684,7 @@ function applyAgentProfile(card, request, env = {}) {
   if (profile === "agentic_interaction_trust") return applyAgenticInteractionTrustProfile(card, request);
   if (profile === "gulf_maritime_exposure") return applyGulfMaritimeProfile(card, request);
   if (profile === "market_entry_readiness") return applyMarketEntryReadinessProfile(card, request);
+  if (profile === "corridor_sanctions_assistant") return applyCorridorSanctionsAssistantProfile(card, request);
   if (profile !== "kazakhstan") return card;
 
   const origin = originFromRequest(request);
@@ -1834,27 +1841,29 @@ function applyAgenticInteractionTrustProfile(card, request) {
   card.name = "Agentic Interaction Trust Gate";
   card.documentationUrl = discovery.documentation_url;
   card.description =
-    "A2A-compatible evidence-readiness gate for agent-mediated actions across checkout, account, API, MCP tool, and A2A endpoint surfaces. Bring actor identity claims, target surface, requested action, and dated evidence; get trust-routing triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, trust signal, and human-review routing.";
+    "Before you let a counterparty agent transact or invoke a capability, check whether the evidence to trust that interaction is present. An A2A-compatible evidence-readiness gate for agent-to-agent and agent-mediated actions across A2A endpoint, MCP tool, checkout, account, and API surfaces. Bring the actor's identity claim, target surface, requested action, and dated evidence; get trust-routing triage, the missing source categories, evidence gaps, watch-next indicators, a decision-readiness score, a trust signal, and human-review routing. Evidence-readiness only — not identity verification, authentication, or transaction authorization.";
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
       id: "agentic-interaction-trust-gate",
-      name: "Agentic interaction trust gate",
+      name: "Counterparty-agent trust gate",
       description:
-        "Turns an agent-mediated action, target surface, actor claim, and dated evidence into a structured trust-routing recommendation with decision-readiness score, evidence gaps, and mandatory human-review routing.",
+        "Turns an unknown counterparty agent's requested action, target surface, identity claim, and dated evidence into a structured trust-routing recommendation — allow, step up, escalate to human review, or block until verified — with the evidence that is still missing, a decision-readiness score, and mandatory human-review routing. Evidence-readiness triage, not identity verification.",
       tags: [
         "agentic-ai",
-        "trust-and-safety",
-        "fraud-risk",
-        "mcp",
         "a2a",
+        "agent-to-agent",
+        "counterparty-agent",
+        "mcp",
+        "trust-and-safety",
         "evidence-readiness",
         "human-review",
         "free"
       ],
       examples: [
-        "Should this AI shopping agent checkout be allowed, stepped up, or escalated to human review?",
-        "Triage an unknown A2A caller requesting a sanctions-adjacent capability."
+        "An unknown A2A agent wants to invoke a capability or settle a payment — is there enough evidence to allow it, step it up, or escalate?",
+        "Triage an agent-to-agent transaction before it executes: what authorization and tool-scope evidence is missing?",
+        "Should this AI shopping-agent checkout be allowed, stepped up, or escalated to human review?"
       ],
       inputModes: ["application/json", "text/plain"],
       outputModes: ["application/json", "text/markdown"]
@@ -1881,6 +1890,155 @@ function applyAgenticInteractionTrustProfile(card, request) {
     "No legal, compliance, financial, investment, insurance, or trading advice.",
     "No approval, clearance, authorization, denial, blocking, or final decision.",
     "Human review is required for consequential decisions."
+  ];
+  return card;
+}
+
+// Corridor & Sanctions Risk Assistant — lightweight discovery FRONT (Zee-pattern).
+// It orients a human, routes to the structured gates, and hands off a free
+// pre-deal screening memo. It performs no triage, scoring, screening, or
+// retrieval of its own; those live in the named gates below.
+const CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE =
+  "Orientation and routing only. Not legal, compliance, sanctions, financial, investment, or insurance advice, " +
+  "and not an autonomous decision system. The structured gates perform the triage; human review is required before " +
+  "any commercial action.";
+
+const CORRIDOR_ASSISTANT_GATES = Object.freeze([
+  {
+    name: "Kazakhstan / Middle Corridor Deal Risk Gate",
+    use_when:
+      "a route/cargo/counterparties deal along the Middle Corridor needs a pre-signature evidence-completeness read",
+    a2a: "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev",
+    profile: "middle_corridor_deal_risk"
+  },
+  {
+    name: "CIS Secondary-Sanctions Exposure",
+    use_when:
+      "a CIS / Caucasus / Central Asia counterparty needs secondary-sanctions exposure triage for EU / UK / UAE / Singapore due diligence",
+    a2a: "https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev",
+    profile: "cis_secondary_sanctions"
+  },
+  {
+    name: "Gulf Maritime Exposure Gate",
+    use_when:
+      "a vessel/voyage through the Gulf, Strait of Hormuz, Bab-el-Mandeb, or Red Sea needs sanctions/chokepoint exposure triage",
+    a2a: "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev",
+    profile: "gulf_maritime_exposure"
+  },
+  {
+    name: "Kazakhstan Market-Entry Readiness Gate",
+    use_when:
+      "a Kazakhstan market-entry file (distribution, import, EPC, energy, infrastructure, partner) needs a readiness gate",
+    a2a: "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev",
+    profile: "kazakhstan_market_entry_readiness"
+  }
+]);
+
+function corridorAssistantMessageText() {
+  return [
+    "# Corridor & Sanctions Risk Assistant",
+    "",
+    "Front door to the corridor and sanctions evidence-readiness gates. I orient and route — I do not screen, score, or retrieve.",
+    "",
+    "## Which gate fits",
+    ...CORRIDOR_ASSISTANT_GATES.map((gate) => `- **${gate.name}** — use when ${gate.use_when}. A2A: ${gate.a2a}`),
+    "",
+    "## Free pre-deal screening memo",
+    "One free one-off pre-deal screening memo on a real, current deal or counterparty.",
+    `Email a one-line deal (route or counterparty + the decision pending) to ${SUPPORT_CONTACT_EMAIL} (${SUPPORT_HOURS_LOCAL}).`,
+    "",
+    "_Orientation and routing only. Not legal, compliance, sanctions, financial, investment, or insurance advice. " +
+      "Human review is required before any commercial action._"
+  ].join("\n");
+}
+
+function a2aResultForCorridorSanctionsAssistant(params) {
+  const text = extractText(params);
+  const response = {
+    kind: "orientation_and_routing",
+    message:
+      "Corridor & sanctions orientation — routing to the structured gates and a free pre-deal memo handoff. " +
+      "No triage or screening performed here.",
+    caller_text: text ? text.slice(0, 500) : "",
+    gates: CORRIDOR_ASSISTANT_GATES.map((gate) => ({ ...gate })),
+    engagement: {
+      offer: "One free pre-deal screening memo on a real, current deal or counterparty.",
+      contact_email: SUPPORT_CONTACT_EMAIL,
+      support_hours: SUPPORT_HOURS_LOCAL,
+      next_step: "Email a one-line deal (route or counterparty + the decision pending) to book the free memo."
+    },
+    human_review_required: true,
+    not_advice_notice: CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE
+  };
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "corridor-sanctions-assistant-orientation",
+        name: "Corridor & sanctions orientation",
+        parts: [
+          { text: corridorAssistantMessageText(), mediaType: "text/markdown" },
+          { data: response, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "corridor_sanctions_assistant",
+      human_review_required: true,
+      not_advice_notice: CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE,
+      response
+    }
+  };
+}
+
+function applyCorridorSanctionsAssistantProfile(card, request) {
+  const origin = originFromRequest(request);
+  const discovery = profileDiscovery("corridor_sanctions_assistant");
+  card.name = "Corridor & Sanctions Risk Assistant";
+  card.documentationUrl = discovery.documentation_url;
+  card.description =
+    "Front door to the corridor and sanctions evidence-readiness gates. Ask about a specific Kazakhstan / Middle " +
+    "Corridor deal or a CIS / Caucasus / Central Asia counterparty; get a plain-language read on what due-diligence " +
+    "evidence a bank, insurer, or compliance desk will still ask for, a pointer to the structured gate that fits, and " +
+    "the option of one free pre-deal screening memo on a real deal. Orientation and routing only — the structured " +
+    "triage, scoring, and any screening happen in the named gates, and human review is required before any commercial action.";
+  card.provider.legalEntity.sameAs = discovery.provider_same_as;
+  card.skills = [
+    {
+      id: "corridor-sanctions-orientation",
+      name: "Corridor & sanctions deal orientation",
+      description:
+        "Bring a one-line deal or counterparty (route, cargo, or entity + the decision pending). Get a plain-language " +
+        "read on the evidence gaps a bank/insurer/compliance desk will flag, which structured gate to run, and how to " +
+        "book a free one-off pre-deal screening memo from a human.",
+      tags: ["corridor", "sanctions", "kazakhstan", "cis", "deal-risk", "evidence-readiness", "human-review", "free"],
+      examples: [
+        "I'm shipping steel Kazakhstan->EU via the Middle Corridor next month — what will the bank ask for?",
+        "Counterparty is a trading house in Georgia — where do I check secondary-sanctions exposure?",
+        "Can you screen one real deal for free before I commit?"
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    }
+  ];
+  card.x_agenda_intelligence.product_profile = discovery.product_profile;
+  card.x_agenda_intelligence.canonical_product_name = discovery.canonical_product_name;
+  card.x_agenda_intelligence.wrapper_scope = discovery.wrapper_scope;
+  card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
+  card.x_agenda_intelligence.documentation = discovery.documentation_url;
+  card.x_agenda_intelligence.supported_contracts = discovery.supported_contracts;
+  card.x_agenda_intelligence.buyer_use_cases = discovery.buyer_use_cases;
+  card.x_agenda_intelligence.commercial_positioning = discovery.commercial_positioning;
+  card.x_agenda_intelligence.focus = discovery.focus;
+  card.x_agenda_intelligence.routes_to = discovery.routes_to;
+  card.x_agenda_intelligence.engagement = discovery.engagement;
+  card.x_agenda_intelligence.not_advice_notice = CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE;
+  card.x_agenda_intelligence.boundaries = [
+    "Orientation and routing only; no triage, scoring, screening, or retrieval of its own.",
+    "No legal, compliance, sanctions, financial, investment, or insurance advice.",
+    "No approval, clearance, authorization, denial, or final decision.",
+    "Human review is required before any commercial action."
   ];
   return card;
 }
@@ -5550,6 +5708,10 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
       const structured = structuredMarketEntryReadinessRequestFromParams(params);
       promptChars = structured && structured.decision_question ? structured.decision_question.length : 0;
       modulesUsed = ["market_entry_readiness"];
+    } else if (profile === "corridor_sanctions_assistant") {
+      result = a2aResultForCorridorSanctionsAssistant(params);
+      promptChars = extractText(params).length;
+      modulesUsed = ["corridor_sanctions_assistant"];
     } else {
       result = a2aResult(params, request, env);
       const structuredRequest = structuredDealRiskRequestFromParams(params);

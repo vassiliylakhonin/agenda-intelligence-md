@@ -4,6 +4,28 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(worker): sharpen Agentic Interaction Trust Gate positioning to
+  counterparty-agent verification.** Reframed the `agentic_interaction_trust`
+  agent card, skill, tags, examples, and use-case doc to lead with the
+  agent-to-agent case — "before you let a counterparty agent transact or
+  invoke a capability, check whether the evidence to trust that interaction
+  is present" — matching the A2A/x402 marketplace audience. No contract,
+  schema, service-function, or response change; boundary reaffirmed
+  (evidence-readiness only, not identity verification or authorization).
+
+- **feat(worker): add Corridor & Sanctions Risk Assistant discovery front.**
+  New lightweight A2A profile `corridor_sanctions_assistant` (Zee-pattern):
+  a human-facing front door that orients a corridor/sanctions deal-risk
+  question, routes to the four structured gates, and hands off a free
+  pre-deal screening memo. It is NOT a vertical worker — no schema, no
+  service function, no triage, scoring, screening, or retrieval of its own;
+  `message/send` returns a deterministic orientation artifact only.
+  Adds the profile (`deploy/cloudflare-worker/src/profiles.js`), card +
+  routing + deterministic responder (`src/index.js`), wrangler env
+  `corridor-sanctions-assistant`, worker tests, and a use-case doc. Going
+  live is an operator deploy (`wrangler deploy --env
+  corridor-sanctions-assistant`), a public-positioning step outside CI.
+
 - **feat(distribution): add Codex plugin manifest.** Added
   `.codex-plugin/plugin.json` so Codex marketplace installs expose the bundled
   `skills/` and `.mcp.json` MCP server instead of installing only legacy Claude
