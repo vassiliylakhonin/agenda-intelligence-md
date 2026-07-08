@@ -91,7 +91,7 @@ The product runtime defaults to `live_retrieval: false`. Specific vertical-worke
 
 Adding a new upstream requires a CHANGELOG entry and a row in this table. A new ADR is required only when the new upstream changes the license model, attribution model, or rate-limit shape materially.
 
-Ownership-enrichment upstreams (currently GLEIF, per [ADR 0022](docs/adr/0022-gleif-ownership-enrichment-cis-secondary-sanctions.md)) run **alongside** the sanctions-list upstream, not instead of it: the sanctions match and the ownership lookup are independent, and either may contribute auto-fetched evidence on its own. GLEIF changes the license model (CC0-1.0) and the retrieval kind (disclosed ownership rather than sanctions-list name matching), which is why it is recorded as its own ADR rather than a bare whitelist row.
+Ownership-enrichment upstreams (currently GLEIF, per ADR 0022) run **alongside** the sanctions-list upstream, not instead of it: the sanctions match and the ownership lookup are independent, and either may contribute auto-fetched evidence on its own. GLEIF changes the license model (CC0-1.0) and the retrieval kind (disclosed ownership rather than sanctions-list name matching), which is why it is recorded as its own ADR rather than a bare whitelist row.
 
 **Activation status** indicates whether the runtime actually consults the upstream. `Deferred` means the capability is wired in code and declared in the agent card, but the operator has not configured the relevant credential env var (e.g. `OPENSANCTIONS_API_KEY`). In that state the profile responds with `live_retrieval_status: disabled` and triage falls back to user-supplied evidence only — exactly as specified in the graceful-degrade requirements below.
 
