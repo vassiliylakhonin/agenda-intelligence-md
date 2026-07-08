@@ -12,6 +12,19 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   door and the free pre-deal screening memo instead of navigating nine
   cards blind. No traction claim, no contract/schema/response change.
 
+- **feat(worker): add GLEIF ownership enrichment for `cis_secondary_sanctions`
+  (ADR 0022).** New `deploy/cloudflare-worker/src/upstream_gleif.js` adapter
+  resolves a counterparty name against the free, no-key GLEIF LEI relationship
+  pool (`api.gleif.org`, CC0-1.0) and contributes disclosed direct/ultimate
+  parent as `ownership_chain_evidence` / `beneficial_ownership_source`. It runs
+  **alongside** the sanctions-list upstream (never replaces it) and is **off by
+  default** — activated only when the operator sets `GLEIF_ENABLED`, so merging
+  changes no live behavior. Disclosed relationships only; not hidden or
+  multi-layer beneficial ownership; boundaries unchanged (not advice,
+  human-review required, not identity verification). Adds a SOURCE_POLICY
+  whitelist row (dual-copy) and two worker tests. No schema or response-shape
+  change.
+
 - **feat(worker): sharpen Agentic Interaction Trust Gate positioning to
   counterparty-agent verification.** Reframed the `agentic_interaction_trust`
   agent card, skill, tags, examples, and use-case doc to lead with the
