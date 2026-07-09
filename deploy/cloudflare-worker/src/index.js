@@ -543,6 +543,12 @@ function agentProfile(request, env = {}) {
     return "agentic_interaction_trust";
   }
   if (
+    env.AGENT_PROFILE === "agent_output_verification" ||
+    host.includes("agent-output-verification-a2a")
+  ) {
+    return "agent_output_verification";
+  }
+  if (
     env.AGENT_PROFILE === "gulf_maritime_exposure" ||
     host.includes("gulf-maritime-exposure-a2a")
   ) {
@@ -1687,6 +1693,7 @@ function applyAgentProfile(card, request, env = {}) {
   const profile = agentProfile(request, env);
   if (profile === "cis_secondary_sanctions") return applyCisSecondarySanctionsProfile(card, request, env);
   if (profile === "agentic_interaction_trust") return applyAgenticInteractionTrustProfile(card, request);
+  if (profile === "agent_output_verification") return applyAgentOutputVerificationProfile(card, request);
   if (profile === "gulf_maritime_exposure") return applyGulfMaritimeProfile(card, request);
   if (profile === "market_entry_readiness") return applyMarketEntryReadinessProfile(card, request);
   if (profile === "corridor_sanctions_assistant") return applyCorridorSanctionsAssistantProfile(card, request);
@@ -1896,6 +1903,61 @@ function applyAgenticInteractionTrustProfile(card, request) {
     "No legal, compliance, financial, investment, insurance, or trading advice.",
     "No approval, clearance, authorization, denial, blocking, or final decision.",
     "Human review is required for consequential decisions."
+  ];
+  return card;
+}
+
+function applyAgentOutputVerificationProfile(card, request) {
+  const origin = originFromRequest(request);
+  const discovery = profileDiscovery("agent_output_verification");
+  card.name = "Agent Output Verification";
+  card.documentationUrl = discovery.documentation_url;
+  card.description =
+    "Before you relay or act on a claim-backed answer from another agent, check whether every claim is grounded. An A2A-compatible relay-readiness gate for agent-to-agent output hand-off: bring the claim set and its evidence; get a machine-actionable verdict — allow_relay, verify_before_relay, or block_unsafe_claims — with the unsafe and weak claims, evidence gaps, and owner actions. Schema-level and structural only — not factual-truth verification, source retrieval, or an approval.";
+  card.provider.legalEntity.sameAs = discovery.provider_same_as;
+  card.skills = [
+    {
+      id: "agent-output-verification",
+      name: "Agent output relay-readiness gate",
+      description:
+        "Turns another agent's claim set and evidence into a machine-actionable relay verdict — allow_relay, verify_before_relay, or block_unsafe_claims — with the ungrounded and weak claims, evidence gaps, and the owner actions needed before the output is safe to relay. Structural claim-support triage, not factual-truth verification.",
+      tags: [
+        "agentic-ai",
+        "a2a",
+        "agent-to-agent",
+        "claims",
+        "evidence-readiness",
+        "trust-and-safety",
+        "human-review",
+        "free"
+      ],
+      examples: [
+        "Another agent handed me an analysis with cited claims — is it safe to relay, or does it contain unsupported claims?",
+        "Verify this agent-drafted memo's claim set before publication.",
+        "Gate an orchestrated multi-agent output: which claims are ungrounded?"
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    }
+  ];
+  card.x_agenda_intelligence.product_profile = discovery.product_profile;
+  card.x_agenda_intelligence.canonical_product_name = discovery.canonical_product_name;
+  card.x_agenda_intelligence.wrapper_scope = discovery.wrapper_scope;
+  card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
+  card.x_agenda_intelligence.documentation = discovery.documentation_url;
+  card.x_agenda_intelligence.product_contract = discovery.product_contract;
+  card.x_agenda_intelligence.supported_contracts = discovery.supported_contracts;
+  card.x_agenda_intelligence.buyer_use_cases = discovery.buyer_use_cases;
+  card.x_agenda_intelligence.commercial_positioning = discovery.commercial_positioning;
+  card.x_agenda_intelligence.focus = discovery.focus;
+  card.x_agenda_intelligence.not_advice_notice = AGENT_OUTPUT_VERIFICATION_NOT_ADVICE_NOTICE;
+  card.x_agenda_intelligence.boundaries = [
+    "Claim-level relay-readiness evidence triage only.",
+    "Schema-level and structural: it does not verify that any claim or quote is factually true.",
+    "No live source retrieval; it does not fetch or validate cited sources.",
+    "No legal, compliance, financial, investment, insurance, or trading advice.",
+    "No approval, clearance, authorization, or final decision.",
+    "Human review is required for any verdict other than allow_relay."
   ];
   return card;
 }
@@ -2809,6 +2871,296 @@ function a2aResultForAgenticInteractionTrust(params) {
       product_profile: "agentic_interaction_trust",
       canonical_http_endpoint: "/v1/agentic-interaction/trust",
       schema: "schemas/v1/agentic-interaction-trust-request.schema.json",
+      human_review_required: result.response.human_review_required,
+      not_advice_notice: result.response.not_advice_notice,
+      response: result.response
+    }
+  };
+}
+
+const AGENT_OUTPUT_VERIFICATION_NOT_ADVICE_NOTICE =
+  "Agent-output relay-readiness triage only. Schema-level and structural: it does not verify that any " +
+  "claim or quote is factually true, does not fetch or validate cited sources, and does not authorize " +
+  "an action or provide legal, compliance, sanctions, financial, or investment advice. Human review is " +
+  "required before a consuming agent acts on any verdict other than allow_relay.";
+
+const AGENT_OUTPUT_VERIFICATION_SUPPORT_LEVELS = ["direct", "partial", "weak", "unsupported"];
+
+function isAgentOutputVerificationRequest(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    Array.isArray(value.claims) &&
+    value.claims.length > 0 &&
+    Array.isArray(value.evidence)
+  );
+}
+
+function structuredAgentOutputVerificationRequestFromParams(params) {
+  if (!params || typeof params !== "object") return null;
+  const candidates = [params.request, params.audit_json, params.input, params];
+  const message = params.message;
+  if (message && typeof message === "object") {
+    if (message.data && typeof message.data === "object") candidates.push(message.data);
+    if (Array.isArray(message.parts)) {
+      for (const part of message.parts) {
+        if (!part || typeof part !== "object") continue;
+        candidates.push(part.data, part.json, part.content);
+        const parsed = tryParseJsonObject(part.text);
+        if (parsed) candidates.push(parsed);
+      }
+    }
+  }
+  for (const candidate of candidates) {
+    if (isAgentOutputVerificationRequest(candidate)) return candidate;
+    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
+    if (parsed && isAgentOutputVerificationRequest(parsed)) return parsed;
+  }
+  return null;
+}
+
+function agentOutputVerificationEnumErrors(request) {
+  const errors = [];
+  const claims = Array.isArray(request.claims) ? request.claims : [];
+  claims.forEach((claim, index) => {
+    if (!claim || typeof claim !== "object") {
+      errors.push(`claims[${index}] must be an object`);
+      return;
+    }
+    if (!claim.claim_id) errors.push(`claims[${index}].claim_id is required`);
+    if (!claim.claim) errors.push(`claims[${index}].claim is required`);
+    if (!AGENT_OUTPUT_VERIFICATION_SUPPORT_LEVELS.includes(claim.support_level)) {
+      errors.push(`claims[${index}].support_level must be one of ${AGENT_OUTPUT_VERIFICATION_SUPPORT_LEVELS.join(", ")}`);
+    }
+  });
+  return errors;
+}
+
+function agentOutputAuditSummary(request) {
+  const claims = Array.isArray(request.claims) ? request.claims : [];
+  const evidence = Array.isArray(request.evidence) ? request.evidence : [];
+  const evidenceIds = new Set(evidence.map((item) => item && item.evidence_id));
+  const supportLevels = {};
+  const orphans = [];
+  const spanOrphans = [];
+  let grounded = 0;
+  for (const claim of claims) {
+    supportLevels[claim.support_level] = (supportLevels[claim.support_level] || 0) + 1;
+    const declared = Array.isArray(claim.evidence_ids) ? claim.evidence_ids : [];
+    const missing = declared.filter((eid) => !evidenceIds.has(eid));
+    if (missing.length) orphans.push({ claim_id: claim.claim_id, missing_evidence_ids: missing });
+    const quotes = Array.isArray(claim.supporting_quotes) ? claim.supporting_quotes : [];
+    if (quotes.length) grounded += 1;
+    const declaredSet = new Set(declared);
+    for (const sq of quotes) {
+      const eid = sq && sq.evidence_id;
+      if (!declaredSet.has(eid)) {
+        const reason = evidenceIds.has(eid) ? "evidence_id not in claim.evidence_ids" : "evidence_id not in evidence";
+        spanOrphans.push({ claim_id: claim.claim_id, evidence_id: eid, reason });
+      }
+    }
+  }
+  return { supportLevels, orphans, spanOrphans, grounded, claimCount: claims.length };
+}
+
+function agentOutputVerificationResult(request) {
+  const claims = Array.isArray(request.claims) ? request.claims : [];
+  const summary = agentOutputAuditSummary(request);
+  const unsupportedStatements = (Array.isArray(request.unsupported_claims) ? request.unsupported_claims : []).map(
+    (item) => String(item)
+  );
+  const claimCount = summary.claimCount;
+  const grounded = summary.grounded;
+
+  const unsafeClaims = [];
+  const weakClaims = [];
+  const seenUnsafe = new Set();
+  for (const claim of claims) {
+    if (claim.support_level === "unsupported") {
+      unsafeClaims.push({
+        claim_id: claim.claim_id,
+        claim: claim.claim,
+        reason: "claim declared with support_level unsupported"
+      });
+      seenUnsafe.add(claim.claim_id);
+    } else if (claim.support_level === "weak") {
+      weakClaims.push({ claim_id: claim.claim_id, claim: claim.claim });
+    }
+  }
+  for (const entry of summary.orphans) {
+    if (seenUnsafe.has(entry.claim_id)) continue;
+    const claimText = (claims.find((c) => c.claim_id === entry.claim_id) || {}).claim || "";
+    unsafeClaims.push({
+      claim_id: entry.claim_id,
+      claim: claimText,
+      reason: `cites evidence_id(s) not present: ${entry.missing_evidence_ids.join(", ")}`
+    });
+    seenUnsafe.add(entry.claim_id);
+  }
+
+  const evidenceGaps = [];
+  for (const entry of summary.orphans) {
+    evidenceGaps.push(`Claim ${entry.claim_id} cites evidence not supplied: ${entry.missing_evidence_ids.join(", ")}.`);
+  }
+  for (const entry of summary.spanOrphans) {
+    evidenceGaps.push(`Claim ${entry.claim_id} quote attributed to evidence ${entry.evidence_id} (${entry.reason}).`);
+  }
+
+  const direct = summary.supportLevels.direct || 0;
+  const partial = summary.supportLevels.partial || 0;
+  const weak = summary.supportLevels.weak || 0;
+  const rawScore = claimCount ? Math.round(((direct * 1.0 + partial * 0.6 + weak * 0.2) / claimCount) * 100) : 0;
+  let readinessScore = Math.max(0, rawScore - 10 * unsafeClaims.length - 5 * unsupportedStatements.length);
+
+  let verdict;
+  if (unsafeClaims.length || unsupportedStatements.length) {
+    verdict = "block_unsafe_claims";
+    readinessScore = Math.min(readinessScore, 49);
+  } else if (!claimCount) {
+    verdict = "insufficient_information";
+  } else if (weakClaims.length || summary.spanOrphans.length) {
+    verdict = "verify_before_relay";
+  } else if (grounded === claimCount) {
+    verdict = "allow_relay";
+  } else {
+    verdict = "verify_before_relay";
+  }
+
+  let readinessLabel;
+  if (!claimCount) {
+    readinessLabel = "insufficient_information";
+  } else if (verdict === "block_unsafe_claims") {
+    readinessLabel = "not_decision_ready";
+  } else if (readinessScore >= 85) {
+    readinessLabel = "review_ready";
+  } else if (readinessScore >= 50) {
+    readinessLabel = "partial";
+  } else {
+    readinessLabel = "not_decision_ready";
+  }
+
+  let trustSignal;
+  if (verdict === "block_unsafe_claims") {
+    trustSignal = "low";
+  } else if (verdict === "insufficient_information" || verdict === "not_decision_ready") {
+    trustSignal = "unknown";
+  } else if (verdict === "verify_before_relay") {
+    trustSignal = "medium";
+  } else if (grounded === claimCount) {
+    trustSignal = "high";
+  } else {
+    trustSignal = "medium_high";
+  }
+
+  const ownerActions = [];
+  for (const item of unsafeClaims) ownerActions.push(`Ground or remove claim ${item.claim_id}: ${item.reason}.`);
+  for (const statement of unsupportedStatements) {
+    ownerActions.push(`Supply source-backed evidence for the unsupported statement: ${statement}`);
+  }
+  for (const item of weakClaims) {
+    ownerActions.push(`Strengthen weak claim ${item.claim_id} with direct supporting evidence.`);
+  }
+
+  const response = {
+    verdict,
+    trust_signal: trustSignal,
+    readiness_score: readinessScore,
+    readiness_label: readinessLabel,
+    claim_count: claimCount,
+    grounded_claim_count: grounded,
+    unsafe_claims: unsafeClaims,
+    weak_claims: weakClaims,
+    unsupported_statements: unsupportedStatements,
+    evidence_gaps: evidenceGaps,
+    owner_actions: ownerActions,
+    watch_next: [
+      "producing agent revises claims after this verdict",
+      "new evidence supplied for previously unsupported or orphaned claims",
+      "cited source freshness or provenance change"
+    ],
+    human_review_required: verdict !== "allow_relay",
+    not_advice_notice: AGENT_OUTPUT_VERIFICATION_NOT_ADVICE_NOTICE,
+    limitations: [
+      "Schema-level and structural only. Does not verify that any claim or quote is factually true.",
+      "Does not fetch or validate cited sources; it checks declared support structure only."
+    ]
+  };
+  return { response };
+}
+
+function agentOutputVerificationArtifactText(response) {
+  const unsafe = response.unsafe_claims || [];
+  const unsafeText = unsafe.length ? unsafe.map((item) => `- ${item.claim_id}: ${item.reason}`).join("\n") : "- none";
+  const actions = response.owner_actions || [];
+  const actionsText = actions.length ? actions.map((item) => `- ${item}`).join("\n") : "- none";
+  return [
+    "Agent output verification response",
+    "",
+    `Verdict: ${response.verdict}`,
+    `Trust signal: ${response.trust_signal}`,
+    `Readiness: ${response.readiness_score}/100 (${response.readiness_label})`,
+    `Claims: ${response.grounded_claim_count}/${response.claim_count} grounded`,
+    `Human review required: ${String(response.human_review_required)}`,
+    "",
+    "Unsafe claims:",
+    unsafeText,
+    "",
+    "Owner actions:",
+    actionsText,
+    "",
+    response.not_advice_notice
+  ].join("\n");
+}
+
+function a2aResultForAgentOutputVerification(params) {
+  const structured = structuredAgentOutputVerificationRequestFromParams(params);
+  if (!structured) {
+    return {
+      id: crypto.randomUUID(),
+      status: { state: "TASK_STATE_FAILED", timestamp: new Date().toISOString() },
+      artifacts: [],
+      metadata: {
+        product_profile: "agent_output_verification",
+        canonical_http_endpoint: "/v1/agent-output/verification",
+        schema: "schemas/v1/evidence-audit.schema.json",
+        valid: false,
+        errors: ["Missing structured agent-output verification request"]
+      }
+    };
+  }
+  const enumErrors = agentOutputVerificationEnumErrors(structured);
+  if (enumErrors.length) {
+    return invalidRequestResult(
+      "agent_output_verification",
+      "/v1/agent-output/verification",
+      "schemas/v1/evidence-audit.schema.json",
+      enumErrors
+    );
+  }
+  const result = agentOutputVerificationResult(structured);
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "agent-output-verification-response",
+        name: "Agent output verification response",
+        parts: [
+          {
+            text: agentOutputVerificationArtifactText(result.response),
+            mediaType: "text/markdown"
+          },
+          {
+            data: result.response,
+            mediaType: "application/json"
+          }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "agent_output_verification",
+      canonical_http_endpoint: "/v1/agent-output/verification",
+      schema: "schemas/v1/evidence-audit.schema.json",
       human_review_required: result.response.human_review_required,
       not_advice_notice: result.response.not_advice_notice,
       response: result.response
@@ -5751,6 +6103,14 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
       const structured = structuredAgenticInteractionTrustRequestFromParams(params);
       promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
       modulesUsed = ["agentic_interaction_trust"];
+    } else if (profile === "agent_output_verification") {
+      result = a2aResultForAgentOutputVerification(params);
+      const structured = structuredAgentOutputVerificationRequestFromParams(params);
+      promptChars =
+        structured && Array.isArray(structured.claims)
+          ? structured.claims.reduce((total, claim) => total + String((claim && claim.claim) || "").length, 0)
+          : 0;
+      modulesUsed = ["agent_output_verification"];
     } else if (profile === "gulf_maritime_exposure") {
       result = a2aResultForGulfMaritimeExposure(params);
       const structured = structuredGulfMaritimeRequestFromParams(params);

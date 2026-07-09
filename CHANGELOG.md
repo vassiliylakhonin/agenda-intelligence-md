@@ -4,6 +4,17 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(worker): Cloudflare A2A parity + host for `agent_output_verification`.**
+  JS parity of the relay-readiness verdict in `deploy/cloudflare-worker`
+  (`src/index.js` result/card/parser, `src/profiles.js` discovery profile),
+  a dedicated wrangler env `agent-output-verification-a2a`
+  (`AGENT_PROFILE=agent_output_verification`), and worker contract tests
+  (grounded/allow, unsupported/block, orphan-evidence/block, weak/verify, invalid
+  shape, bad enum). `make verify-local` green (141 worker tests). The live
+  endpoint is not deployed by this change — `wrangler deploy --env
+  agent-output-verification` is the operator step. Build-to-learn: exposed as a
+  discoverable trust/verification node, no traction claim.
+
 - **feat(capability): `agent_output_verification` — A2A relay-readiness verdict
   over a claim set.** New composed service capability (tier of `audit_claims` /
   `score_output`, not a commercial vertical worker) that wraps a claim-level
