@@ -73,6 +73,7 @@ def handle_get(path: str) -> tuple[int, dict]:
                     "cis_secondary_sanctions_exposure",
                     "gulf_maritime_exposure",
                     "kazakhstan_market_entry_readiness",
+                    "agent_output_verification",
                 ],
                 "boundary": BOUNDARY_NOTICE,
             },
@@ -159,6 +160,18 @@ def handle_post(path: str, payload: dict) -> tuple[int, dict]:
                 "error": "Invalid Kazakhstan market-entry readiness request",
                 "errors": result["errors"],
             }
+        return 200, result["response"]
+
+    if path == "/v1/agent-output/verification":
+        audit_json = payload.get("audit_json", payload)
+        if not isinstance(audit_json, dict):
+            return 400, {"ok": False, "error": "audit_json must be a JSON object"}
+        result = services.agent_output_verification(audit_json)
+        unavailable = _validation_unavailable(result, "agent-output verification")
+        if unavailable is not None:
+            return unavailable
+        if not result.get("valid"):
+            return 400, {"ok": False, "error": "Invalid agent-output verification request", "errors": result["errors"]}
         return 200, result["response"]
 
     return 404, {"ok": False, "error": "Not found"}

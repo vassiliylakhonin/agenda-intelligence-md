@@ -27,6 +27,8 @@ MARKET_ENTRY_READINESS_ENDPOINT = "/v1/market-entry/readiness"
 AUDIT_CLAIMS_ENDPOINT = "/v1/audit-claims"
 SOURCE_COVERAGE_ENDPOINT = "/v1/source-coverage"
 SCORE_OUTPUT_ENDPOINT = "/v1/score"
+AGENT_OUTPUT_VERIFICATION_SCHEMA = "schemas/v1/evidence-audit.schema.json"
+AGENT_OUTPUT_VERIFICATION_ENDPOINT = "/v1/agent-output/verification"
 
 SUPPORTED_CAPABILITIES = [
     "middle_corridor_deal_risk",
@@ -37,6 +39,7 @@ SUPPORTED_CAPABILITIES = [
     "audit_claims",
     "source_coverage",
     "score_output",
+    "agent_output_verification",
 ]
 
 CAPABILITY_ALIASES = {
@@ -81,6 +84,14 @@ CAPABILITY_ALIASES = {
     "score_output": "score_output",
     "score-output": "score_output",
     "score": "score_output",
+    "agent_output_verification": "agent_output_verification",
+    "agent-output-verification": "agent_output_verification",
+    "agent_output_verifier": "agent_output_verification",
+    "agent-output-verifier": "agent_output_verification",
+    "output_verification": "agent_output_verification",
+    "output-verification": "agent_output_verification",
+    "verify_agent_output": "agent_output_verification",
+    "verify-agent-output": "agent_output_verification",
 }
 
 # Profiles that opt in to per-profile live retrieval per ADR 0014.
@@ -333,6 +344,20 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "inputModes": ["application/json"],
                 "outputModes": ["application/json", "text/markdown"],
             },
+            {
+                "id": "agent-output-verification",
+                "name": "Agent output verification",
+                "description": (
+                    "Verifies whether one agent's claim-backed output is ready for a consuming agent to relay "
+                    "or act on. Wraps a claim-level evidence audit and returns a machine-actionable relay "
+                    "verdict (allow_relay / verify_before_relay / block_unsafe_claims), unsafe and weak claims, "
+                    "evidence gaps, and owner actions. Schema-level and structural only: it does not verify "
+                    "factual truth, fetch cited sources, or authorize an action."
+                ),
+                "tags": ["agentic-ai", "a2a", "claims", "evidence-readiness", "trust-and-safety"],
+                "inputModes": ["application/json"],
+                "outputModes": ["application/json", "text/markdown"],
+            },
         ],
         "x_agenda_intelligence": {
             "repository": REPOSITORY_URL,
@@ -345,6 +370,7 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "cis_secondary_sanctions_exposure_contract",
                 "gulf_maritime_exposure_contract",
                 "kazakhstan_market_entry_readiness_contract",
+                "agent_output_verification_contract",
             ],
             "supported_capabilities": SUPPORTED_CAPABILITIES,
             "per_profile_live_retrieval": _build_per_profile_live_retrieval_block(),
@@ -569,6 +595,18 @@ def agentic_interaction_trust_request_from_params(params: dict) -> dict | None:
 
 def audit_claims_request_from_params(params: dict) -> dict | None:
     """Extract a structured audit_claims request without interpreting free text."""
+    candidates = _candidate_objects_from_params(params)
+    for candidate in candidates:
+        audit_json = candidate.get("audit_json")
+        if isinstance(audit_json, dict):
+            return audit_json
+        if isinstance(candidate.get("claims"), list) and isinstance(candidate.get("evidence"), list):
+            return candidate
+    return None
+
+
+def agent_output_verification_request_from_params(params: dict) -> dict | None:
+    """Extract a structured agent-output verification request (an evidence-audit payload)."""
     candidates = _candidate_objects_from_params(params)
     for candidate in candidates:
         audit_json = candidate.get("audit_json")
@@ -922,6 +960,70 @@ def a2a_result_for_agentic_interaction_trust(request_json: dict) -> dict:
     }
 
 
+def _agent_output_verification_artifact_text(response: dict) -> str:
+    unsafe = response.get("unsafe_claims", [])
+    unsafe_text = "\n".join(f"- {item['claim_id']}: {item['reason']}" for item in unsafe) if unsafe else "- none"
+    actions = response.get("owner_actions", [])
+    actions_text = "\n".join(f"- {item}" for item in actions) if actions else "- none"
+    return "\n".join(
+        [
+            "Agent output verification response",
+            "",
+            f"Verdict: {response['verdict']}",
+            f"Trust signal: {response['trust_signal']}",
+            f"Readiness: {response['readiness_score']}/100 ({response['readiness_label']})",
+            f"Claims: {response['grounded_claim_count']}/{response['claim_count']} grounded",
+            f"Human review required: {str(response['human_review_required']).lower()}",
+            "",
+            "Unsafe claims:",
+            unsafe_text,
+            "",
+            "Owner actions:",
+            actions_text,
+            "",
+            response["not_advice_notice"],
+        ]
+    )
+
+
+def a2a_result_for_agent_output_verification(request_json: dict) -> dict:
+    result = services.agent_output_verification(request_json)
+    if not result.get("valid"):
+        return {
+            "id": "agenda-intelligence-a2a-result",
+            "status": {"state": "TASK_STATE_FAILED"},
+            "artifacts": [],
+            "metadata": {
+                "product_profile": "agent_output_verification",
+                "canonical_http_endpoint": AGENT_OUTPUT_VERIFICATION_ENDPOINT,
+                "schema": AGENT_OUTPUT_VERIFICATION_SCHEMA,
+                "valid": result.get("valid"),
+                "errors": result.get("errors", []),
+            },
+        }
+
+    response = result["response"]
+    return {
+        "id": "agenda-intelligence-a2a-result",
+        "status": {"state": "TASK_STATE_COMPLETED"},
+        "artifacts": [
+            {
+                "artifactId": "agent-output-verification-response",
+                "name": "Agent output verification response",
+                "parts": [{"text": _agent_output_verification_artifact_text(response), "mediaType": "text/markdown"}],
+            }
+        ],
+        "metadata": {
+            "product_profile": "agent_output_verification",
+            "canonical_http_endpoint": AGENT_OUTPUT_VERIFICATION_ENDPOINT,
+            "schema": AGENT_OUTPUT_VERIFICATION_SCHEMA,
+            "human_review_required": response["human_review_required"],
+            "not_advice_notice": response["not_advice_notice"],
+            "response": response,
+        },
+    }
+
+
 def _service_artifact_text(title: str, result: dict) -> str:
     return "\n".join([title, "", "```json", json.dumps(result, indent=2, sort_keys=True), "```"])
 
@@ -1165,6 +1267,28 @@ def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> di
                 return jsonrpc_error(id_value, -32602, "Missing structured score_output request")
             before_text, after_text = score_request
             return {"jsonrpc": "2.0", "id": id_value, "result": a2a_result_for_score_output(before_text, after_text)}
+
+        if capability == "agent_output_verification":
+            request_json = agent_output_verification_request_from_params(params)
+            if request_json is None:
+                return jsonrpc_error(
+                    id_value,
+                    -32602,
+                    "Missing structured agent-output verification request",
+                    {
+                        "required_shape": {
+                            "claims": "array",
+                            "evidence": "array",
+                            "unsupported_claims": "array",
+                        },
+                        "schema": AGENT_OUTPUT_VERIFICATION_SCHEMA,
+                    },
+                )
+            return {
+                "jsonrpc": "2.0",
+                "id": id_value,
+                "result": a2a_result_for_agent_output_verification(request_json),
+            }
 
     return jsonrpc_error(
         id_value,
