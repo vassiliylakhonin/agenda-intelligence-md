@@ -47,6 +47,9 @@ export const MARKET_ENTRY_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/sche
 export const MARKET_ENTRY_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/market-entry-readiness-response.schema.json`;
 export const MARKET_ENTRY_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/kazakhstan-market-entry-readiness.json`;
 
+export const AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/evidence-audit.schema.json`;
+export const AGENT_OUTPUT_VERIFICATION_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agent-output-verification-response.schema.json`;
+
 // Canonical input mode shared by per-profile product_contract blocks and the
 // top-level x_agent_contract discoverability extension.
 export const CANONICAL_INPUT_MODE = "structured_json";
@@ -76,6 +79,7 @@ export const PROFILE_LIVE_RETRIEVAL = {
   agenda: { capability_declared: false, upstream_options: [] },
   kazakhstan: { capability_declared: false, upstream_options: [] },
   agentic_interaction_trust: { capability_declared: false, upstream_options: [] },
+  agent_output_verification: { capability_declared: false, upstream_options: [] },
   gulf_maritime_exposure: { capability_declared: false, upstream_options: [] },
   cis_secondary_sanctions: {
     capability_declared: true,
@@ -293,6 +297,39 @@ const marketEntryReadinessProfile = Object.freeze({
   live_retrieval: PROFILE_LIVE_RETRIEVAL.market_entry_readiness || { capability_declared: false, upstream_options: [] }
 });
 
+const agentOutputVerificationProfile = Object.freeze({
+  profile_key: "agent_output_verification",
+  product_profile: "agent_output_verification",
+  canonical_product_name: "Agent Output Verification",
+  documentation_url: SCHEMAS_URL,
+  provider_same_as: SHARED_PROVIDER_SAME_AS,
+  wrapper_scope:
+    "A2A/JSON-RPC discovery, claim-level relay-readiness triage of another agent's output, and routing response only",
+  supported_contracts: frozenArray(["agent_output_verification_contract"]),
+  buyer_use_cases: frozenArray([
+    "verify a claim-backed answer received from another agent before relaying or acting on it",
+    "gate an agent-to-agent hand-off when the upstream output may contain unsupported claims",
+    "pre-publication check that every claim in an agent-drafted memo is grounded",
+    "trust-and-safety triage of orchestrated multi-agent output"
+  ]),
+  commercial_positioning:
+    "Claim set + evidence -> auditable relay verdict (allow_relay / verify_before_relay / block_unsafe_claims) with unsafe and weak claims, evidence gaps, and owner actions. Schema-level and structural only: it flags which claims are ungrounded before a consuming agent relays them. Not factual-truth verification, not source retrieval, not an approval or authorization.",
+  focus: frozenArray([
+    "relay-readiness verdict for one agent verifying another agent's output",
+    "unsupported and orphaned claim detection",
+    "weak-support and span-grounding gaps",
+    "owner actions to make an output safe to relay"
+  ]),
+  product_contract: productContract({
+    request_schema: AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL,
+    response_schema: AGENT_OUTPUT_VERIFICATION_RESPONSE_SCHEMA_URL,
+    source_taxonomy: SCHEMAS_URL,
+    runnable_examples: A2A_EXAMPLES_URL,
+    demo_input_modes: ["structured_json"]
+  }),
+  live_retrieval: PROFILE_LIVE_RETRIEVAL.agent_output_verification
+});
+
 // Lightweight discovery FRONT profile (Zee-pattern), not a vertical worker: no
 // schema, no service function, no triage or retrieval of its own. Its job is a
 // human-facing agent card that orients a corridor/sanctions deal-risk question,
@@ -355,6 +392,7 @@ export const PROFILE_REGISTRY = Object.freeze({
   kazakhstan: middleCorridorProfile,
   middle_corridor_deal_risk: middleCorridorProfile,
   agentic_interaction_trust: agenticInteractionTrustProfile,
+  agent_output_verification: agentOutputVerificationProfile,
   gulf_maritime_exposure: gulfMaritimeProfile,
   cis_secondary_sanctions: cisSecondarySanctionsProfile,
   market_entry_readiness: marketEntryReadinessProfile,

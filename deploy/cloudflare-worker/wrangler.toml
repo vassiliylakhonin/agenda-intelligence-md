@@ -70,6 +70,20 @@ AGENT_PROFILE = "agentic_interaction_trust"
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
 
+# Agent Output Verification — relay-readiness triage of another agent's claim set.
+# Evidence-readiness only, no live retrieval. Open free demo (no API key). Deploy:
+#   wrangler deploy --env agent-output-verification
+[env.agent-output-verification]
+name = "agent-output-verification-a2a"
+workers_dev = true
+
+[env.agent-output-verification.vars]
+AGENT_PROFILE = "agent_output_verification"
+
+[[env.agent-output-verification.kv_namespaces]]
+binding = "AGENDA_USAGE"
+id = "d2228183999246ccbec8aa2d5f130bfc"
+
 [env.gulf-maritime-exposure]
 name = "gulf-maritime-exposure-a2a"
 workers_dev = true

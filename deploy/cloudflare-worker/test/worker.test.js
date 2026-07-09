@@ -2975,3 +2975,101 @@ test("market-entry complete file across all tiers escalates before signature (AD
   assert.equal(resp.readiness_label, "launch_commitment_ready");
   assert.equal(resp.gate_decision, "escalate_before_signature");
 });
+
+const AGENT_OUTPUT_VERIFICATION_ENV = { AGENT_PROFILE: "agent_output_verification" };
+const agentOutputVerificationRequest = new Request(
+  "https://agent-output-verification-a2a.example.workers.dev/message/send"
+);
+
+function groundedAuditFixture() {
+  return {
+    topic: "corridor status",
+    claims: [
+      {
+        claim_id: "c1",
+        claim: "The regulation entered into force on 1 May 2026.",
+        support_level: "direct",
+        evidence_ids: ["e1"],
+        supporting_quotes: [{ evidence_id: "e1", quote: "in force from 1 May 2026" }]
+      }
+    ],
+    evidence: [{ evidence_id: "e1", source_type: "official_document", name: "Official gazette" }]
+  };
+}
+
+async function agentOutputVerificationResponseFor(structured) {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    return await handleJsonRpc(
+      { jsonrpc: "2.0", id: "aov", method: "message/send", params: { request: structured } },
+      agentOutputVerificationRequest,
+      AGENT_OUTPUT_VERIFICATION_ENV
+    );
+  } finally {
+    console.log = originalLog;
+  }
+}
+
+test("agent-output-verification card exposes the verification skill", () => {
+  const card = agentCard(agentOutputVerificationRequest, AGENT_OUTPUT_VERIFICATION_ENV);
+  assert.equal(card.x_agenda_intelligence.product_profile, "agent_output_verification");
+  assert.ok(card.skills.some((skill) => skill.id === "agent-output-verification"));
+});
+
+test("agent-output-verification allows relay on a grounded claim set (Python parity)", async () => {
+  const response = await agentOutputVerificationResponseFor(groundedAuditFixture());
+  assert.equal(response.result.status.state, "TASK_STATE_COMPLETED");
+  const resp = response.result.metadata.response;
+  assert.equal(resp.verdict, "allow_relay");
+  assert.equal(resp.trust_signal, "high");
+  assert.equal(resp.human_review_required, false);
+  assert.deepEqual(resp.unsafe_claims, []);
+});
+
+test("agent-output-verification blocks relay on an unsupported claim (Python parity)", async () => {
+  const audit = groundedAuditFixture();
+  audit.claims.push({ claim_id: "c2", claim: "Volumes tripled last quarter.", support_level: "unsupported" });
+  const response = await agentOutputVerificationResponseFor(audit);
+  const resp = response.result.metadata.response;
+  assert.equal(resp.verdict, "block_unsafe_claims");
+  assert.equal(resp.trust_signal, "low");
+  assert.equal(resp.human_review_required, true);
+  assert.ok(resp.unsafe_claims.some((item) => item.claim_id === "c2"));
+  assert.ok(resp.readiness_score <= 49);
+});
+
+test("agent-output-verification flags an orphan evidence reference as unsafe (Python parity)", async () => {
+  const audit = groundedAuditFixture();
+  audit.claims[0].evidence_ids = ["e_missing"];
+  delete audit.claims[0].supporting_quotes;
+  const response = await agentOutputVerificationResponseFor(audit);
+  const resp = response.result.metadata.response;
+  assert.equal(resp.verdict, "block_unsafe_claims");
+  assert.ok(resp.unsafe_claims.some((item) => item.reason.includes("not present")));
+  assert.ok(resp.evidence_gaps.length > 0);
+});
+
+test("agent-output-verification requires verification for a weak claim (Python parity)", async () => {
+  const audit = groundedAuditFixture();
+  audit.claims[0].support_level = "weak";
+  const response = await agentOutputVerificationResponseFor(audit);
+  const resp = response.result.metadata.response;
+  assert.equal(resp.verdict, "verify_before_relay");
+  assert.equal(resp.human_review_required, true);
+  assert.ok(resp.weak_claims.some((item) => item.claim_id === "c1"));
+});
+
+test("agent-output-verification rejects a non-audit request shape", async () => {
+  const response = await agentOutputVerificationResponseFor({ not: "an audit" });
+  assert.equal(response.result.status.state, "TASK_STATE_FAILED");
+  assert.equal(response.result.metadata.valid, false);
+});
+
+test("agent-output-verification rejects a bad support_level enum", async () => {
+  const audit = groundedAuditFixture();
+  audit.claims[0].support_level = "definitely";
+  const response = await agentOutputVerificationResponseFor(audit);
+  assert.equal(response.result.status.state, "TASK_STATE_FAILED");
+  assert.equal(response.result.metadata.valid, false);
+});
