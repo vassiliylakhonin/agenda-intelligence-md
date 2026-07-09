@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/agent-output-verification-response.schema.json",
+  "title": "AgentOutputVerificationResponse",
+  "description": "Structured verdict for whether one agent's claim-backed output is ready for a consuming agent to relay or act on. Wraps a claim-level evidence audit (evidence-audit.schema.json) and returns a machine-actionable relay verdict, weak/unsafe claim triage, evidence gaps, and owner actions. Schema-level and structural only: it does not verify that any claim or quote is factually true, does not fetch or validate cited sources, and does not authorize an action or provide legal, compliance, sanctions, financial, or investment advice.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "verdict",
+    "trust_signal",
+    "readiness_score",
+    "readiness_label",
+    "claim_count",
+    "grounded_claim_count",
+    "unsafe_claims",
+    "weak_claims",
+    "unsupported_statements",
+    "evidence_gaps",
+    "owner_actions",
+    "watch_next",
+    "human_review_required",
+    "not_advice_notice",
+    "limitations"
+  ],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "allow_relay",
+        "verify_before_relay",
+        "block_unsafe_claims",
+        "not_decision_ready",
+        "insufficient_information"
+      ],
+      "description": "Machine-actionable relay verdict. allow_relay: every claim is grounded and none is unsupported. verify_before_relay: claims are declared-supported but carry weak support or span-grounding gaps. block_unsafe_claims: at least one claim is marked unsupported or cites evidence that is not present. not_decision_ready / insufficient_information: not enough structured claim material to verdict."
+    },
+    "trust_signal": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "medium_high",
+        "high",
+        "unknown"
+      ]
+    },
+    "readiness_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Heuristic 0-100 score for how ready the supplied claim set is for relay. Not approval, clearance, or factual verification."
+    },
+    "readiness_label": {
+      "type": "string",
+      "enum": [
+        "insufficient_information",
+        "not_decision_ready",
+        "partial",
+        "review_ready"
+      ]
+    },
+    "claim_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "grounded_claim_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of claims that carry at least one supporting quote span."
+    },
+    "unsafe_claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id",
+          "reason"
+        ],
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "claim": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "description": "Claims that must not be relayed as fact: marked unsupported, or citing evidence_ids absent from the supplied evidence."
+    },
+    "weak_claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id"
+        ],
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "claim": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Claims declared with weak support that should be strengthened before relay."
+    },
+    "unsupported_statements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Statements the producing agent itself flagged as unsupported (from evidence-audit unsupported_claims)."
+    },
+    "evidence_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "owner_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Concrete fixes the producing agent should make before the output is relayed."
+    },
+    "watch_next": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "human_review_required": {
+      "type": "boolean",
+      "description": "True for any verdict other than allow_relay: a human should review before the consuming agent acts."
+    },
+    "not_advice_notice": {
+      "type": "string",
+      "minLength": 1
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

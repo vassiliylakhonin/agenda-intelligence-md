@@ -106,6 +106,7 @@ def test_agent_card_exposes_middle_corridor_skill():
         "audit_claims",
         "source_coverage",
         "score_output",
+        "agent_output_verification",
     ]
     assert any(skill["id"] == "agentic-interaction-trust-gate" for skill in card["skills"])
 
@@ -324,6 +325,7 @@ def test_jsonrpc_message_send_rejects_unknown_capability():
         "audit_claims",
         "source_coverage",
         "score_output",
+        "agent_output_verification",
     ]
 
 
@@ -452,4 +454,5 @@ def test_a2a_agent_card_example_runs_through_stdin_shell():
         "audit_claims",
         "source_coverage",
         "score_output",
+        "agent_output_verification",
     ]

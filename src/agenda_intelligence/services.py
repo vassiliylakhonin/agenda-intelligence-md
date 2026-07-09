@@ -290,6 +290,165 @@ def audit_claims(audit_json: dict) -> dict:
     }
 
 
+AGENT_OUTPUT_VERIFICATION_NOT_ADVICE_NOTICE = (
+    "Agent-output relay-readiness triage only. Schema-level and structural: it does not verify that any "
+    "claim or quote is factually true, does not fetch or validate cited sources, and does not authorize "
+    "an action or provide legal, compliance, sanctions, financial, or investment advice. Human review is "
+    "required before a consuming agent acts on any verdict other than allow_relay."
+)
+
+
+def agent_output_verification(request_json: dict) -> dict:
+    """Verify whether one agent's claim-backed output is ready for another agent to relay.
+
+    Wraps :func:`audit_claims` (input follows ``evidence-audit.schema.json``) and turns its
+    structural summary into a machine-actionable relay verdict. This is evidence-readiness
+    triage for agent-to-agent output hand-off: it does not verify factual truth, fetch or
+    validate cited sources, or authorize an action.
+    """
+    audit = audit_claims(request_json)
+    if not audit.get("valid"):
+        return {
+            "implemented": audit.get("implemented", True),
+            "valid": audit.get("valid"),
+            "errors": audit.get("errors", []),
+            "response": None,
+        }
+
+    summary = audit["summary"]
+    claims = request_json.get("claims", []) or []
+    unsupported_statements = [str(item) for item in (request_json.get("unsupported_claims", []) or [])]
+    orphan_refs = summary.get("orphan_evidence_refs", []) or []
+    span_orphans = summary.get("span_orphans", []) or []
+
+    claim_count = len(claims)
+    grounded_claim_count = summary.get("grounded_claim_count", 0)
+
+    unsafe_claims: list[dict] = []
+    weak_claims: list[dict] = []
+    seen_unsafe: set = set()
+    for claim in claims:
+        claim_id = claim["claim_id"]
+        support_level = claim.get("support_level")
+        if support_level == "unsupported":
+            unsafe_claims.append(
+                {
+                    "claim_id": claim_id,
+                    "claim": claim["claim"],
+                    "reason": "claim declared with support_level unsupported",
+                }
+            )
+            seen_unsafe.add(claim_id)
+        elif support_level == "weak":
+            weak_claims.append({"claim_id": claim_id, "claim": claim["claim"]})
+
+    for entry in orphan_refs:
+        claim_id = entry.get("claim_id")
+        if claim_id in seen_unsafe:
+            continue
+        claim_text = next((c["claim"] for c in claims if c["claim_id"] == claim_id), "")
+        missing = ", ".join(entry.get("missing_evidence_ids", []) or [])
+        unsafe_claims.append(
+            {"claim_id": claim_id, "claim": claim_text, "reason": f"cites evidence_id(s) not present: {missing}"}
+        )
+        seen_unsafe.add(claim_id)
+
+    evidence_gaps: list[str] = []
+    for entry in orphan_refs:
+        missing = ", ".join(entry.get("missing_evidence_ids", []) or [])
+        evidence_gaps.append(f"Claim {entry.get('claim_id')} cites evidence not supplied: {missing}.")
+    for entry in span_orphans:
+        evidence_gaps.append(
+            f"Claim {entry.get('claim_id')} quote attributed to evidence {entry.get('evidence_id')} "
+            f"({entry.get('reason')})."
+        )
+
+    support_levels = summary.get("support_levels", {}) or {}
+    direct = support_levels.get("direct", 0)
+    partial = support_levels.get("partial", 0)
+    weak = support_levels.get("weak", 0)
+    if claim_count:
+        raw_score = round((direct * 1.0 + partial * 0.6 + weak * 0.2) / claim_count * 100)
+    else:
+        raw_score = 0
+    readiness_score = max(0, raw_score - 10 * len(unsafe_claims) - 5 * len(unsupported_statements))
+
+    if unsafe_claims or unsupported_statements:
+        verdict = "block_unsafe_claims"
+        readiness_score = min(readiness_score, 49)
+    elif not claim_count:
+        verdict = "insufficient_information"
+    elif weak_claims or span_orphans:
+        verdict = "verify_before_relay"
+    elif grounded_claim_count == claim_count:
+        verdict = "allow_relay"
+    else:
+        verdict = "verify_before_relay"
+
+    if not claim_count:
+        readiness_label = "insufficient_information"
+    elif verdict == "block_unsafe_claims":
+        readiness_label = "not_decision_ready"
+    elif readiness_score >= 85:
+        readiness_label = "review_ready"
+    elif readiness_score >= 50:
+        readiness_label = "partial"
+    else:
+        readiness_label = "not_decision_ready"
+
+    if verdict == "block_unsafe_claims":
+        trust_signal = "low"
+    elif verdict in {"insufficient_information", "not_decision_ready"}:
+        trust_signal = "unknown"
+    elif verdict == "verify_before_relay":
+        trust_signal = "medium"
+    elif grounded_claim_count == claim_count:
+        trust_signal = "high"
+    else:
+        trust_signal = "medium_high"
+
+    owner_actions: list[str] = []
+    for item in unsafe_claims:
+        owner_actions.append(f"Ground or remove claim {item['claim_id']}: {item['reason']}.")
+    for statement in unsupported_statements:
+        owner_actions.append(f"Supply source-backed evidence for the unsupported statement: {statement}")
+    for item in weak_claims:
+        owner_actions.append(f"Strengthen weak claim {item['claim_id']} with direct supporting evidence.")
+
+    response = {
+        "verdict": verdict,
+        "trust_signal": trust_signal,
+        "readiness_score": readiness_score,
+        "readiness_label": readiness_label,
+        "claim_count": claim_count,
+        "grounded_claim_count": grounded_claim_count,
+        "unsafe_claims": unsafe_claims,
+        "weak_claims": weak_claims,
+        "unsupported_statements": unsupported_statements,
+        "evidence_gaps": evidence_gaps,
+        "owner_actions": owner_actions,
+        "watch_next": [
+            "producing agent revises claims after this verdict",
+            "new evidence supplied for previously unsupported or orphaned claims",
+            "cited source freshness or provenance change",
+        ],
+        "human_review_required": verdict != "allow_relay",
+        "not_advice_notice": AGENT_OUTPUT_VERIFICATION_NOT_ADVICE_NOTICE,
+        "limitations": [
+            "Schema-level and structural only. Does not verify that any claim or quote is factually true.",
+            "Does not fetch or validate cited sources; it checks declared support structure only.",
+        ],
+    }
+
+    response_validation = _validate_json(response, "agent-output-verification-response.schema.json")
+    return {
+        "implemented": response_validation.get("implemented", True),
+        "valid": response_validation.get("valid"),
+        "errors": response_validation.get("errors", []),
+        "response": response,
+    }
+
+
 def _source_plan(category: str) -> dict:
     try:
         requirements = _load_manifest().get("source_acquisition", {}).get("requirements", {})

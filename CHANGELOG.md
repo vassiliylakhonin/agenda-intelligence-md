@@ -4,6 +4,21 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(capability): `agent_output_verification` — A2A relay-readiness verdict
+  over a claim set.** New composed service capability (tier of `audit_claims` /
+  `score_output`, not a commercial vertical worker) that wraps a claim-level
+  evidence audit (`evidence-audit.schema.json`) and returns a machine-actionable
+  relay verdict — `allow_relay` / `verify_before_relay` / `block_unsafe_claims` —
+  plus unsafe/weak claims, evidence gaps, and owner actions, for one agent
+  verifying another agent's output before relaying or acting on it. Ships behind
+  `schemas/v1/agent-output-verification-response.schema.json`, `POST
+  /v1/agent-output/verification`, the `agent_output_verification` A2A capability
+  and agent-card skill, and contract tests. Schema-level and structural only: no
+  factual-truth verification, no live retrieval, `human_review_required` is true
+  for any verdict other than `allow_relay`. Classification: build-to-learn — no
+  observed buyer or paid usage; exposed as a discovery/positioning capability,
+  not a revenue claim.
+
 - **feat(worker): profile-as-funnel — point the structured gates at the
   Corridor & Sanctions Risk Assistant front door.** Appended one factual
   navigation line (`PROVIDER_FRONT_DOOR_POINTER`) to the Middle Corridor,
