@@ -70,6 +70,8 @@ For each material claim in the document, produce one line:
 
 Limit to 5–10 claims most relevant to the user's task. Do not list everything.
 
+This table is the accountable claim inventory for the downstream memo. The analysis that consumes this record must account for every row: each claim ends as **used** (woven in, with its provenance tag), **flagged-but-not-used** ("I cannot verify [X]; it is not used"), **conflict-surfaced** (both positions named with provenance), or **out-of-scope** (explicitly excluded, with a one-line reason). Silently dropping a listed claim between this record and the memo is an honesty failure, not a length optimization.
+
 ### Key excerpts (quoted)
 
 > "[Direct quote from source, including enough context to be intelligible.]"
