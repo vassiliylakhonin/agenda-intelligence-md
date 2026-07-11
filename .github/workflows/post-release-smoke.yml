@@ -81,6 +81,22 @@ jobs:
           .smoke-venv/bin/agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
           .smoke-venv/bin/agenda-intelligence doctor --strict --mcp-command ".smoke-venv/bin/agenda-intelligence-mcp"
 
+      - name: Verify grounding and Claim Verdict capabilities
+        shell: bash
+        run: |
+          .smoke-venv/bin/agenda-intelligence grounded-check \
+            examples/grounded-check/request.json --format json > /tmp/grounded-check.json
+          .smoke-venv/bin/agenda-intelligence verify-claims \
+            examples/claim-verification/request.json --strict --format json > /tmp/claim-verdict.json
+          .smoke-venv/bin/python - <<'PY'
+          import json
+
+          grounded = json.load(open("/tmp/grounded-check.json"))
+          verdict = json.load(open("/tmp/claim-verdict.json"))
+          assert grounded["grounding_signal"] == "ungrounded", grounded
+          assert verdict["results"][0]["verdict"] == "verified", verdict
+          PY
+
       - name: Verify MCP stdio server
         shell: bash
         run: |
@@ -90,3 +106,9 @@ jobs:
           .smoke-venv/bin/python scripts/smoke_mcp.py \
             --command ".smoke-venv/bin/agenda-intelligence-mcp" \
             --expected-version "${{ steps.version.outputs.version }}"
+          .smoke-venv/bin/python - <<'PY'
+          from agenda_intelligence.mcp_stdio import TOOLS
+
+          assert "grounded_check" in TOOLS
+          assert "verify_claims" in TOOLS
+          PY
