@@ -1,0 +1,45 @@
+{
+  "as_of": "2026-07-11",
+  "claims": [
+    {
+      "claim_id": "pypi-release-1.2.0",
+      "claim_text": "PyPI lists agenda-intelligence-md version 1.2.0 as an available package release.",
+      "claim_kind": "world_fact",
+      "evidence_ids": ["pypi-json-1.2.0"],
+      "freshness_horizon_days": 3650,
+      "min_independent_sources": 1,
+      "subject_identifiers": ["pypi:agenda-intelligence-md"]
+    },
+    {
+      "claim_id": "github-release-1.2.0",
+      "claim_text": "GitHub lists v1.2.0 as a published stable release of vassiliylakhonin/agenda-intelligence-md on 2026-07-11.",
+      "claim_kind": "world_fact",
+      "evidence_ids": ["github-release-api-1.2.0"],
+      "freshness_horizon_days": 3650,
+      "min_independent_sources": 1,
+      "subject_identifiers": ["github:vassiliylakhonin/agenda-intelligence-md"]
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "pypi-json-1.2.0",
+      "stance": "supports",
+      "source_class": "authoritative_primary",
+      "source_group": "pypi-project-api",
+      "retrieved_at": "2026-07-11",
+      "subject_identifiers": ["pypi:agenda-intelligence-md"],
+      "source_url": "https://pypi.org/pypi/agenda-intelligence-md/1.2.0/json",
+      "summary": "PyPI project metadata returned name agenda-intelligence-md, version 1.2.0, and two distribution upload timestamps on 2026-07-11."
+    },
+    {
+      "evidence_id": "github-release-api-1.2.0",
+      "stance": "supports",
+      "source_class": "authoritative_primary",
+      "source_group": "github-release-api",
+      "retrieved_at": "2026-07-11",
+      "subject_identifiers": ["github:vassiliylakhonin/agenda-intelligence-md"],
+      "source_url": "https://api.github.com/repos/vassiliylakhonin/agenda-intelligence-md/releases/tags/v1.2.0",
+      "summary": "GitHub release metadata returned tag v1.2.0, published_at 2026-07-11T07:16:25Z, draft false, and prerelease false."
+    }
+  ]
+}

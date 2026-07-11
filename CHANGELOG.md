@@ -4,6 +4,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **docs(example): first live-source-backed Claim Verdict pack.** Records
+  authoritative PyPI and GitHub release metadata retrieved on 2026-07-11 for
+  `agenda-intelligence-md` `1.2.0`, with two bounded `verified` verdicts and an
+  explicit reminder that source stance is caller-supplied rather than fetched
+  or inferred by `verify-claims`.
+
 - **fix(release): serialize MCP Registry publication behind PyPI visibility.**
   The tag-triggered registry workflow now waits for the exact package version
   to become visible through the PyPI JSON API before publishing. This closes

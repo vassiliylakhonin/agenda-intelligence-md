@@ -8,6 +8,7 @@ from agenda_intelligence.services import verify_claims
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUEST = json.loads((ROOT / "examples/claim-verification/request.json").read_text())
+LIVE_RELEASE_REQUEST = json.loads((ROOT / "examples/claim-verification/live-release-1.2.0.request.json").read_text())
 
 
 def test_verified_with_fresh_independent_authoritative_sources():
@@ -66,3 +67,10 @@ def test_invalid_calendar_date_returns_validation_error():
 def test_mcp_surface_delegates_to_service():
     assert "verify_claims" in TOOLS
     assert mcp_server.verify_claims(REQUEST) == verify_claims(REQUEST)
+
+
+def test_live_release_example_has_verified_pypi_and_github_claims():
+    result = verify_claims(LIVE_RELEASE_REQUEST)
+
+    assert result["valid"] is True
+    assert [item["verdict"] for item in result["response"]["results"]] == ["verified", "verified"]

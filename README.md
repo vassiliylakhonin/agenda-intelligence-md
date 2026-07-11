@@ -330,6 +330,8 @@ Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed
 
 `verified` means the declared evidence threshold is met by the supplied evidence set as of the declared date. It is not absolute truth, source discovery, fuzzy entity resolution, or legal/compliance determination. Human review is required before any commercial action. See [`claim-verification-request.schema.json`](schemas/v1/claim-verification-request.schema.json), the [example request](examples/claim-verification/request.json), and [ADR 0023](docs/adr/0023-bounded-factual-verification-layer.md).
 
+Live-source-backed example: [`live-release-1.2.0.request.json`](examples/claim-verification/live-release-1.2.0.request.json) records PyPI and GitHub release metadata retrieved on 2026-07-11 and returns two `verified` verdicts. The evidence stance and metadata are recorded by the caller; `verify-claims` does not fetch or reinterpret either source.
+
 ## Schemas
 
 | Schema | Purpose |
