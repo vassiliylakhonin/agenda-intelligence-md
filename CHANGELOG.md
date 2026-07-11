@@ -4,6 +4,13 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(release): serialize MCP Registry publication behind PyPI visibility.**
+  The tag-triggered registry workflow now waits for the exact package version
+  to become visible through the PyPI JSON API before publishing. This closes
+  the observed `404` race between parallel release workflows. Post-release
+  smoke now executes `grounded-check` and `verify-claims` from the published
+  wheel and asserts that both MCP tools are present.
+
 - **feat(capability): bounded factual Claim Verdict (`verify_claims`).** Adds a
   separate deterministic layer over caller-supplied evidence records. It checks
   freshness, source authority, independent source groups, conflicts,

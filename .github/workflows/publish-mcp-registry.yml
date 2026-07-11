@@ -51,5 +51,23 @@ jobs:
       - name: Authenticate to MCP Registry (GitHub OIDC)
         run: ./mcp-publisher login github-oidc
 
+      - name: Wait for package version on PyPI
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          package_url="https://pypi.org/pypi/agenda-intelligence-md/${VERSION}/json"
+          for attempt in {1..10}; do
+            if curl --fail --silent --show-error "$package_url" >/dev/null; then
+              echo "agenda-intelligence-md ${VERSION} is visible on PyPI"
+              exit 0
+            fi
+            if [ "$attempt" -lt 10 ]; then
+              echo "PyPI version not visible yet (attempt ${attempt}/10); retrying in 15 seconds..."
+              sleep 15
+            fi
+          done
+          echo "::error::agenda-intelligence-md ${VERSION} was not visible on PyPI after 10 attempts"
+          exit 1
+
       - name: Publish server to MCP Registry
         run: ./mcp-publisher publish
