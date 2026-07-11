@@ -633,6 +633,48 @@ def cmd_audit_claims(args):
         raise SystemExit(1)
 
 
+def cmd_grounded_check(args):
+    """Check whether a caller-supplied corpus lexically supports each claim.
+
+    Reads a grounded-check request JSON file (claims + corpus texts, per
+    schemas/v1/grounded-check-request.schema.json) and prints per-claim
+    grounding status. Scope: claim-to-corpus consistency only — not "is the
+    claim true?" and not "is the source reputable?".
+    """
+    from agenda_intelligence import services
+
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"Not found: {path}")
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Invalid JSON: {e}")
+
+    result = services.grounded_check(data)
+    if not result.get("valid"):
+        for err in result.get("errors", []):
+            print(f"ERROR: {err}", file=sys.stderr)
+        raise SystemExit(1)
+
+    response = result["response"]
+    if args.format == "json":
+        print(json.dumps(response, indent=2, ensure_ascii=False))
+    else:
+        print(
+            f"grounding_signal={response['grounding_signal']} "
+            f"({response['grounded_claim_count']} grounded, "
+            f"{response['weakly_grounded_claim_count']} weak, "
+            f"{response['ungrounded_claim_count']} ungrounded of {response['claim_count']} claims)"
+        )
+        for item in response["results"]:
+            print(f"  {item['claim_id']}: {item['grounding_status']} (coverage={item['coverage']})")
+        for action in response["owner_actions"]:
+            print(f"ACTION: {action}", file=sys.stderr)
+    if args.strict and response["ungrounded_claim_count"]:
+        raise SystemExit(1)
+
+
 def cmd_validate_agent_card(args):
     """Static readiness lint of a published agent-card JSON file.
 
@@ -1223,6 +1265,15 @@ def main():
         help="Exit 1 on any absent, missing source text, or fetch error",
     )
     p.set_defaults(func=cmd_verify_quotes)
+    # grounded-check
+    p = sub.add_parser(
+        "grounded-check",
+        help="Check claim-to-corpus lexical grounding for supplied source texts; does not verify factual truth",
+    )
+    p.add_argument("path", help="Grounded-check request JSON file (claims + corpus texts)")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.add_argument("--strict", action="store_true", help="Exit 1 if any claim is ungrounded")
+    p.set_defaults(func=cmd_grounded_check)
     # start – guided workflow for new analysis
     p = sub.add_parser("start", help="Guided start for a new agenda analysis")
     p.add_argument("category", help="Source category (e.g., conflict-security)")

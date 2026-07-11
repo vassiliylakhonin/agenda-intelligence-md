@@ -69,6 +69,7 @@ def validate_examples() -> None:
     brief_schema = load_json(ROOT / "schemas" / "v1" / "agenda-brief.schema.json")
     audit_schema = load_json(ROOT / "schemas" / "v1" / "evidence-audit.schema.json")
     request_schema = load_json(ROOT / "schemas" / "v1" / "agenda-request.schema.json")
+    grounded_check_schema = load_json(ROOT / "schemas" / "v1" / "grounded-check-request.schema.json")
 
     json_files = sorted((ROOT / "examples").glob("**/*.json"))
     if not json_files:
@@ -109,6 +110,8 @@ def validate_examples() -> None:
             validate_with_schema(path, brief_schema, "agenda-brief")
         elif path.name.endswith(".audit.json"):
             validate_with_schema(path, audit_schema, "evidence-audit")
+        elif path.is_relative_to(ROOT / "examples" / "grounded-check"):
+            validate_with_schema(path, grounded_check_schema, "grounded-check-request")
         elif path.name == "agenda-request.json" or path.name.endswith(".request.json"):
             validate_with_schema(path, request_schema, "agenda-request")
         else:

@@ -252,6 +252,32 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "handler": lambda args: mcp_server.verify_quotes(args["pack_json"], args.get("texts")),
     },
+    "grounded_check": {
+        "description": (
+            "Check whether a caller-supplied corpus of source texts lexically supports each claim. "
+            "Use when you have claims plus the full text of the sources they should rest on and need "
+            "a deterministic grounded/weakly_grounded/ungrounded verdict per claim before human "
+            "review. Pass request_json matching grounded-check-request.schema.json (claims with "
+            "claim_id/claim_text and optional verbatim quotes, corpus documents with corpus_id/text). "
+            "Returns per-claim grounding status, coverage, best-matching passage, unmatched numeric "
+            "values, quote checks, and owner actions. Local-text only: no outbound requests, no source "
+            "discovery, no source-reliability scoring, and no factual-truth verification — grounding "
+            "in a wrong corpus does not make a claim true."
+        ),
+        "inputSchema": _schema(
+            {
+                "request_json": {
+                    "type": "object",
+                    "description": (
+                        "Grounded-check request: claims (claim_id, claim_text, optional quotes) "
+                        "plus corpus documents (corpus_id, text)."
+                    ),
+                }
+            },
+            ["request_json"],
+        ),
+        "handler": lambda args: mcp_server.grounded_check(args["request_json"]),
+    },
     "analyze": {
         "description": (
             "Generate an auditable strategic-risk memo from a structured Agenda request. "

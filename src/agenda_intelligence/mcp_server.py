@@ -378,6 +378,21 @@ def verify_quotes(pack_json: dict, texts: Optional[dict] = None) -> dict:
     return {"implemented": True, "summary": summary, "results": results}
 
 
+def grounded_check(request_json: dict) -> dict:
+    """Check whether a caller-supplied corpus lexically supports each claim.
+
+    Deterministic term-overlap and verbatim-quote matching against caller-provided
+    corpus documents (``grounded-check-request.schema.json``). Returns per-claim
+    grounding status (grounded / weakly_grounded / ungrounded), best-matching
+    passage, unmatched numeric values, quote checks, and owner actions.
+
+    Scope: local-text claim-to-corpus consistency only. No outbound requests, no
+    source discovery, no source-reliability scoring, no factual-truth
+    verification. Human review is required before acting on any result.
+    """
+    return _services.grounded_check(request_json)
+
+
 def score_output(before_text: str, after_text: str) -> dict:
     """Score a before/after output pair with the same marker rubric used by examples."""
     return _services.score_output(before_text, after_text)

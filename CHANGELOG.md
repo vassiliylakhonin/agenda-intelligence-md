@@ -4,6 +4,23 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(capability): `grounded_check` — claim-to-corpus grounding triage over
+  caller-supplied source texts.** New composed service capability (tier of
+  `audit_claims` / `verify_quotes`, not a commercial vertical worker) that takes
+  a claim set plus the full text of the sources the claims should rest on and
+  returns a deterministic per-claim grounding status (`grounded` /
+  `weakly_grounded` / `ungrounded`), term coverage against the best-matching
+  corpus document, a best-matching passage excerpt, numeric values not found
+  anywhere in the corpus, verbatim quote checks, owner actions, and an overall
+  `grounding_signal`. Ships behind `schemas/v1/grounded-check-request.schema.json`
+  + `grounded-check-response.schema.json`, the `grounded_check` MCP tool, the
+  `grounded-check` CLI subcommand, an example pack under
+  `examples/grounded-check/`, and contract tests. Lexical and local-text only:
+  no live retrieval, no source discovery, no source-reliability scoring, no
+  factual-truth verification — grounding in a wrong corpus does not make a claim
+  true; `human_review_required` is always true. Classification: reusable
+  runtime improvement; no traction claim.
+
 - **feat(worker): Cloudflare A2A parity + host for `agent_output_verification`.**
   JS parity of the relay-readiness verdict in `deploy/cloudflare-worker`
   (`src/index.js` result/card/parser, `src/profiles.js` discovery profile),
