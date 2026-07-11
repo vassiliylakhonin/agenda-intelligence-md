@@ -20,7 +20,16 @@ FROM python:3.11-slim
 # on every release — see the project release checklist.
 ARG AGENDA_INTELLIGENCE_VERSION=1.2.0
 
-RUN pip install --no-cache-dir "agenda-intelligence-md==${AGENDA_INTELLIGENCE_VERSION}"
+# Retry to tolerate PyPI CDN propagation lag. A release bumps this pin on the
+# same push that publishes the wheel, so a catalog rebuild (Glama and similar)
+# can fire before PyPI serves the new version. Mirrors the retry loop in
+# .github/workflows/post-release-smoke.yml (5 attempts, 20s apart).
+RUN for attempt in 1 2 3 4 5; do \
+        pip install --no-cache-dir "agenda-intelligence-md==${AGENDA_INTELLIGENCE_VERSION}" && break; \
+        echo "agenda-intelligence-md==${AGENDA_INTELLIGENCE_VERSION} not on PyPI yet; retry ${attempt}/5 in 20s..." >&2; \
+        sleep 20; \
+    done; \
+    pip show agenda-intelligence-md >/dev/null 2>&1 || { echo "install failed after 5 attempts" >&2; exit 1; }
 
 # The stdio MCP server is exposed as the `agenda-intelligence-mcp`
 # console script (defined in pyproject.toml [project.scripts]).
