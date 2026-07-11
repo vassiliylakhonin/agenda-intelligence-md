@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/claim-verification-request.schema.json",
+  "title": "Claim Verification Request",
+  "type": "object",
+  "required": ["as_of", "claims", "evidence"],
+  "properties": {
+    "as_of": {"type": "string", "format": "date"},
+    "claims": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["claim_id", "claim_text", "claim_kind", "evidence_ids", "freshness_horizon_days", "min_independent_sources"],
+        "properties": {
+          "claim_id": {"type": "string", "minLength": 1},
+          "claim_text": {"type": "string", "minLength": 1},
+          "claim_kind": {"enum": ["world_fact", "prediction", "judgment"]},
+          "evidence_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "freshness_horizon_days": {"type": "integer", "minimum": 0},
+          "min_independent_sources": {"type": "integer", "minimum": 1},
+          "subject_identifiers": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "jurisdiction": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["evidence_id", "stance", "source_class", "source_group", "retrieved_at"],
+        "properties": {
+          "evidence_id": {"type": "string", "minLength": 1},
+          "stance": {"enum": ["supports", "contradicts", "context_only"]},
+          "source_class": {"enum": ["authoritative_primary", "primary", "secondary", "user_provided"]},
+          "source_group": {"type": "string", "minLength": 1},
+          "retrieved_at": {"type": "string", "format": "date"},
+          "subject_identifiers": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "jurisdictions": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "source_url": {"type": "string", "format": "uri"},
+          "summary": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

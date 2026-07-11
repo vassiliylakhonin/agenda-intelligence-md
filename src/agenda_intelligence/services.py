@@ -11,6 +11,7 @@ import hashlib
 import json
 import re
 import unicodedata
+from datetime import date
 from importlib import resources
 from typing import Any, Optional
 from urllib.parse import urlparse
@@ -662,6 +663,130 @@ def grounded_check(request_json: dict) -> dict:
         "implemented": response_validation.get("implemented", True),
         "valid": response_validation.get("valid"),
         "errors": response_validation.get("errors", []),
+        "response": response,
+    }
+
+
+def verify_claims(request_json: dict) -> dict:
+    """Issue bounded factual verdicts from caller-supplied source records.
+
+    This is deliberately separate from lexical grounding. It evaluates source
+    freshness, authority, independence, conflicts, jurisdiction, and exact
+    subject identifiers as of a declared date; it does not discover sources.
+    """
+    base = _validate_json(request_json, "claim-verification-request.schema.json")
+    if not base.get("valid"):
+        return {"implemented": True, "valid": False, "errors": base.get("errors", []), "response": None}
+
+    evidence = {item["evidence_id"]: item for item in request_json["evidence"]}
+    if len(evidence) != len(request_json["evidence"]):
+        return {"implemented": True, "valid": False, "errors": ["duplicate evidence_id values"], "response": None}
+    claim_ids = [item["claim_id"] for item in request_json["claims"]]
+    if len(set(claim_ids)) != len(claim_ids):
+        return {"implemented": True, "valid": False, "errors": ["duplicate claim_id values"], "response": None}
+
+    try:
+        as_of = date.fromisoformat(request_json["as_of"])
+        retrieved_dates = {
+            item["evidence_id"]: date.fromisoformat(item["retrieved_at"]) for item in request_json["evidence"]
+        }
+    except ValueError as exc:
+        return {"implemented": True, "valid": False, "errors": [f"invalid ISO date: {exc}"], "response": None}
+    results = []
+    counts = {name: 0 for name in ("verified", "contradicted", "partially_supported", "unresolved", "not_verifiable")}
+    actions = []
+    for claim in request_json["claims"]:
+        reasons: list[str] = []
+        used: list[str] = []
+        stale: list[str] = []
+        excluded: list[dict] = []
+        if claim["claim_kind"] != "world_fact":
+            verdict = "not_verifiable"
+            reasons.append(f"claim_kind={claim['claim_kind']} requires judgment or future observation")
+        else:
+            candidates = []
+            for evidence_id in claim["evidence_ids"]:
+                item = evidence.get(evidence_id)
+                if item is None:
+                    excluded.append({"evidence_id": evidence_id, "reason": "missing_evidence"})
+                    continue
+                age = (as_of - retrieved_dates[evidence_id]).days
+                if age < 0:
+                    excluded.append({"evidence_id": evidence_id, "reason": "retrieved_after_as_of"})
+                    continue
+                if age > claim["freshness_horizon_days"]:
+                    stale.append(evidence_id)
+                    continue
+                claim_subjects = set(claim.get("subject_identifiers", []))
+                evidence_subjects = set(item.get("subject_identifiers", []))
+                if claim_subjects and not (claim_subjects & evidence_subjects):
+                    excluded.append({"evidence_id": evidence_id, "reason": "subject_identity_mismatch"})
+                    continue
+                jurisdiction = claim.get("jurisdiction")
+                if jurisdiction and jurisdiction not in item.get("jurisdictions", []):
+                    excluded.append({"evidence_id": evidence_id, "reason": "jurisdiction_mismatch"})
+                    continue
+                candidates.append(item)
+                used.append(evidence_id)
+
+            authoritative = [i for i in candidates if i["source_class"] in {"authoritative_primary", "primary"}]
+            support_groups = {i["source_group"] for i in authoritative if i["stance"] == "supports"}
+            contradict_groups = {i["source_group"] for i in authoritative if i["stance"] == "contradicts"}
+            if support_groups and contradict_groups:
+                verdict = "unresolved"
+                reasons.append("current authoritative sources conflict")
+            elif contradict_groups:
+                verdict = "contradicted"
+                reasons.append("current authoritative evidence contradicts the claim")
+            elif len(support_groups) >= claim["min_independent_sources"]:
+                verdict = "verified"
+                reasons.append("fresh independent authoritative support meets the declared threshold")
+            elif support_groups:
+                verdict = "partially_supported"
+                reasons.append("authoritative support exists but does not meet the independence threshold")
+            else:
+                verdict = "unresolved"
+                reasons.append("no fresh in-scope authoritative support or contradiction")
+            if stale:
+                reasons.append("one or more cited records are stale")
+            if excluded:
+                reasons.append("one or more cited records were excluded")
+
+        counts[verdict] += 1
+        if verdict != "verified":
+            actions.append(f"Review claim {claim['claim_id']}: {reasons[0]}.")
+        results.append(
+            {
+                "claim_id": claim["claim_id"],
+                "verdict": verdict,
+                "reasons": reasons,
+                "used_evidence_ids": used,
+                "stale_evidence_ids": stale,
+                "excluded_evidence": excluded,
+            }
+        )
+
+    response = {
+        "as_of": request_json["as_of"],
+        "verdict_basis": "supplied_evidence_as_of",
+        "claim_count": len(results),
+        "counts": counts,
+        "results": results,
+        "owner_actions": actions,
+        "human_review_required": True,
+        "limitations": [
+            "No source discovery or live retrieval; completeness of the evidence set is the caller's responsibility.",
+            "Identity matching uses exact caller-supplied identifiers; it is not entity resolution.",
+            "A verified verdict means the declared evidence threshold is met "
+            "as of the declared date, not absolute truth.",
+        ],
+        "provenance": _run_provenance(request_json, "claim-verification-response.schema.json"),
+    }
+    checked = _validate_json(response, "claim-verification-response.schema.json")
+    return {
+        "implemented": True,
+        "valid": checked.get("valid"),
+        "errors": checked.get("errors", []),
         "response": response,
     }
 

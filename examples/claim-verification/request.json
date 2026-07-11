@@ -1,0 +1,35 @@
+{
+  "as_of": "2026-07-11",
+  "claims": [
+    {
+      "claim_id": "claim-1",
+      "claim_text": "Example entity is registered in Kazakhstan.",
+      "claim_kind": "world_fact",
+      "evidence_ids": ["registry", "filing"],
+      "freshness_horizon_days": 30,
+      "min_independent_sources": 2,
+      "subject_identifiers": ["BIN:123456789012"],
+      "jurisdiction": "KZ"
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "registry",
+      "stance": "supports",
+      "source_class": "authoritative_primary",
+      "source_group": "state-registry",
+      "retrieved_at": "2026-07-10",
+      "subject_identifiers": ["BIN:123456789012"],
+      "jurisdictions": ["KZ"]
+    },
+    {
+      "evidence_id": "filing",
+      "stance": "supports",
+      "source_class": "primary",
+      "source_group": "company-filing",
+      "retrieved_at": "2026-07-09",
+      "subject_identifiers": ["BIN:123456789012"],
+      "jurisdictions": ["KZ"]
+    }
+  ]
+}
