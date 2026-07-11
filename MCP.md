@@ -252,6 +252,34 @@ The MCP tool does not fetch URLs. It only checks quote presence against text sup
 
 ---
 
+### `grounded_check`
+
+Check whether a caller-supplied corpus of source texts lexically supports each claim.
+
+```json
+{
+  "request_json": {
+    "topic": "example",
+    "claims": [
+      {
+        "claim_id": "c1",
+        "claim_text": "Freight volumes on the corridor grew 62 percent in 2024.",
+        "quotes": [{ "corpus_id": "doc1", "quote": "grew 62 percent in 2024" }]
+      }
+    ],
+    "corpus": [
+      { "corpus_id": "doc1", "title": "Annual report", "text": "..." }
+    ]
+  }
+}
+```
+
+Returns per-claim `grounding_status` (`grounded` / `weakly_grounded` / `ungrounded`), term coverage against the best-matching corpus document, a best-matching passage excerpt, numeric values not found anywhere in the corpus, verbatim quote checks, and owner actions, plus an overall `grounding_signal`.
+
+Deterministic and local-text only: term overlap plus verbatim quote presence. It does not fetch sources, score source reliability, or verify factual truth — grounding in a wrong corpus does not make a claim true, and paraphrased support can be under-detected. `human_review_required` is always `true`. Request contract: `schemas/v1/grounded-check-request.schema.json`; response contract: `schemas/v1/grounded-check-response.schema.json`.
+
+---
+
 ### `score_output`
 
 Score a before/after output pair with the marker rubric used in evals.

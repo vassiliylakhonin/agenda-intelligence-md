@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import unicodedata
 from importlib import resources
 from typing import Any, Optional
 from urllib.parse import urlparse
@@ -441,6 +442,222 @@ def agent_output_verification(request_json: dict) -> dict:
     }
 
     response_validation = _validate_json(response, "agent-output-verification-response.schema.json")
+    return {
+        "implemented": response_validation.get("implemented", True),
+        "valid": response_validation.get("valid"),
+        "errors": response_validation.get("errors", []),
+        "response": response,
+    }
+
+
+GROUNDED_CHECK_NOT_ADVICE_NOTICE = (
+    "Corpus-grounding triage only. Checks whether caller-supplied corpus text lexically supports "
+    "each claim. It does not verify that any claim is factually true in the world, does not fetch or "
+    "discover sources, does not score source reliability, and does not provide legal, compliance, "
+    "sanctions, financial, or investment advice. Human review is required before acting on any result."
+)
+
+_GROUNDED_CHECK_STOPWORDS = frozenset(
+    "a about after all also an and any are as at be been but by can could did do does for from had has "
+    "have how if in into is it its may more most no not of on or other our over per should so some such "
+    "than that the their them then there these they this to under was were what when where which while "
+    "who will with would".split()
+)
+
+
+def _grounded_normalize(text: str) -> str:
+    text = unicodedata.normalize("NFKC", text)
+    return re.sub(r"\s+", " ", text).strip().lower()
+
+
+def _grounded_content_terms(text: str) -> list[str]:
+    """Unique content-bearing terms of a normalized text, in first-seen order.
+
+    Keeps numeric tokens of any length; drops stopwords and alphabetic tokens
+    shorter than 3 characters.
+    """
+    tokens = re.findall(r"[a-z0-9][a-z0-9.\-%]*", _grounded_normalize(text))
+    terms: list[str] = []
+    seen: set[str] = set()
+    for token in tokens:
+        token = token.strip(".-")
+        if not token or token in seen or token in _GROUNDED_CHECK_STOPWORDS:
+            continue
+        if not any(ch.isdigit() for ch in token) and len(token) < 3:
+            continue
+        seen.add(token)
+        terms.append(token)
+    return terms
+
+
+def _grounded_sentences(text: str) -> list[str]:
+    parts = re.split(r"(?<=[.!?])\s+|\n+", text)
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _grounded_best_passage(sentences: list[str], claim_terms: set[str], window: int = 3) -> str:
+    """Window of consecutive sentences with the highest claim-term overlap."""
+    best_excerpt = ""
+    best_hits = 0
+    for start in range(len(sentences)):
+        chunk = " ".join(sentences[start : start + window])
+        chunk_terms = set(_grounded_content_terms(chunk))
+        hits = len(claim_terms & chunk_terms)
+        if hits > best_hits:
+            best_hits = hits
+            best_excerpt = chunk
+    if len(best_excerpt) > 300:
+        best_excerpt = best_excerpt[:297].rstrip() + "..."
+    return best_excerpt
+
+
+def grounded_check(request_json: dict) -> dict:
+    """Check whether a caller-supplied corpus lexically supports each claim.
+
+    Deterministic and local-text only: term overlap against each corpus document
+    plus verbatim presence checks for declared quotes. Honest scope: this is
+    claim-to-corpus consistency, not factual-truth verification — a claim can be
+    grounded in a corpus that is itself wrong, and a true claim phrased
+    differently from the corpus can score as ungrounded.
+    """
+    base = _validate_json(request_json, "grounded-check-request.schema.json")
+    if not base.get("valid"):
+        return {
+            "implemented": base.get("implemented", True),
+            "valid": base.get("valid"),
+            "errors": base.get("errors", []),
+            "response": None,
+        }
+
+    corpus_items = request_json.get("corpus", []) or []
+    corpus_ids = [doc["corpus_id"] for doc in corpus_items]
+    duplicate_ids = sorted({cid for cid in corpus_ids if corpus_ids.count(cid) > 1})
+    claim_ids = [claim["claim_id"] for claim in (request_json.get("claims", []) or [])]
+    duplicate_ids += sorted({cid for cid in claim_ids if claim_ids.count(cid) > 1})
+    if duplicate_ids:
+        return {
+            "implemented": True,
+            "valid": False,
+            "errors": [f"duplicate corpus_id/claim_id values: {', '.join(duplicate_ids)}"],
+            "response": None,
+        }
+
+    corpus_norm = {doc["corpus_id"]: _grounded_normalize(doc["text"]) for doc in corpus_items}
+    corpus_terms = {cid: set(_grounded_content_terms(text)) for cid, text in corpus_norm.items()}
+    corpus_sentences = {doc["corpus_id"]: _grounded_sentences(doc["text"]) for doc in corpus_items}
+    all_corpus_terms: set[str] = set().union(*corpus_terms.values()) if corpus_terms else set()
+
+    results: list[dict] = []
+    owner_actions: list[str] = []
+    status_counts = {"grounded": 0, "weakly_grounded": 0, "ungrounded": 0}
+
+    for claim in request_json.get("claims", []) or []:
+        claim_id = claim["claim_id"]
+        claim_terms = set(_grounded_content_terms(claim["claim_text"]))
+        numeric_terms = {t for t in claim_terms if any(ch.isdigit() for ch in t)}
+
+        best_corpus_id = None
+        best_coverage = 0.0
+        for cid, terms in corpus_terms.items():
+            coverage = len(claim_terms & terms) / len(claim_terms) if claim_terms else 0.0
+            if coverage > best_coverage or best_corpus_id is None:
+                best_coverage = coverage
+                best_corpus_id = cid
+
+        missing_terms = sorted(claim_terms - corpus_terms.get(best_corpus_id, set()))
+        unmatched_numbers = sorted(numeric_terms - all_corpus_terms)
+
+        quote_checks: list[dict] = []
+        quote_statuses: list[str] = []
+        for declared in claim.get("quotes", []) or []:
+            cid = declared["corpus_id"]
+            if cid not in corpus_norm:
+                status = "missing_corpus_text"
+            elif _grounded_normalize(declared["quote"]) in corpus_norm[cid]:
+                status = "present"
+            else:
+                status = "absent"
+            quote_checks.append({"corpus_id": cid, "status": status})
+            quote_statuses.append(status)
+
+        # Status rules, in order: coverage baseline; verbatim quotes upgrade;
+        # a misquote overrides everything; unmatched numbers cap at weak.
+        if best_coverage >= 0.75:
+            status = "grounded"
+        elif best_coverage >= 0.4:
+            status = "weakly_grounded"
+        else:
+            status = "ungrounded"
+        if quote_statuses and all(s == "present" for s in quote_statuses):
+            status = "grounded"
+        if "absent" in quote_statuses:
+            status = "ungrounded"
+        if unmatched_numbers and status == "grounded":
+            status = "weakly_grounded"
+
+        status_counts[status] += 1
+
+        best_passage = None
+        if best_corpus_id is not None and best_coverage > 0:
+            excerpt = _grounded_best_passage(corpus_sentences[best_corpus_id], claim_terms)
+            if excerpt:
+                best_passage = {"corpus_id": best_corpus_id, "excerpt": excerpt}
+
+        if "absent" in quote_statuses:
+            owner_actions.append(
+                f"Fix or remove misquoted fragment(s) cited by claim {claim_id}: "
+                "quote not found in the named corpus text."
+            )
+        if status == "ungrounded" and "absent" not in quote_statuses:
+            owner_actions.append(
+                f"Supply corpus text that supports claim {claim_id}, rephrase it to match the evidence, or remove it."
+            )
+        if unmatched_numbers:
+            owner_actions.append(
+                f"Verify numeric value(s) in claim {claim_id} against a source: "
+                f"{', '.join(unmatched_numbers)} not found anywhere in the supplied corpus."
+            )
+
+        results.append(
+            {
+                "claim_id": claim_id,
+                "grounding_status": status,
+                "coverage": round(best_coverage, 3),
+                "best_passage": best_passage,
+                "missing_terms": missing_terms,
+                "unmatched_numbers": unmatched_numbers,
+                "quote_checks": quote_checks,
+            }
+        )
+
+    if status_counts["ungrounded"]:
+        grounding_signal = "ungrounded"
+    elif status_counts["weakly_grounded"]:
+        grounding_signal = "partially_grounded"
+    else:
+        grounding_signal = "grounded"
+
+    response = {
+        "grounding_signal": grounding_signal,
+        "claim_count": len(results),
+        "corpus_count": len(corpus_items),
+        "grounded_claim_count": status_counts["grounded"],
+        "weakly_grounded_claim_count": status_counts["weakly_grounded"],
+        "ungrounded_claim_count": status_counts["ungrounded"],
+        "results": results,
+        "owner_actions": owner_actions,
+        "human_review_required": True,
+        "not_advice_notice": GROUNDED_CHECK_NOT_ADVICE_NOTICE,
+        "limitations": [
+            "Lexical matching only: paraphrased support can be under-detected (false ungrounded) and "
+            "topical overlap without actual support can be over-detected (false grounded).",
+            "Corpus quality and completeness are the caller's responsibility; grounding in a wrong "
+            "corpus does not make a claim true.",
+            "No live retrieval, no source discovery, no factual-truth verification.",
+        ],
+    }
+
+    response_validation = _validate_json(response, "grounded-check-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
         "valid": response_validation.get("valid"),

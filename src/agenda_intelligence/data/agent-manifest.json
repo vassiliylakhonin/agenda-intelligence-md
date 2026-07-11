@@ -351,6 +351,23 @@
         }
       },
       {
+        "name": "grounded_check",
+        "since": "v1.1",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "request_json": {
+              "type": "object",
+              "description": "Grounded-check request: claims (claim_id, claim_text, optional quotes) plus corpus documents (corpus_id, text)."
+            }
+          },
+          "required": [
+            "request_json"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
         "name": "analyze",
         "since": "v1.0",
         "input_schema": {

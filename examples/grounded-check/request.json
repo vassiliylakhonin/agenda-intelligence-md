@@ -1,0 +1,30 @@
+{
+  "topic": "Middle Corridor freight volumes (illustrative, synthetic)",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim_text": "Container transit on the Middle Corridor grew 62 percent in 2024 according to the operator association.",
+      "quotes": [
+        {
+          "corpus_id": "doc-association-note",
+          "quote": "container transit grew 62 percent in 2024"
+        }
+      ]
+    },
+    {
+      "claim_id": "c2",
+      "claim_text": "The corridor moved 4.5 million tonnes of cargo in 2024."
+    },
+    {
+      "claim_id": "c3",
+      "claim_text": "European Union regulators approved a dedicated corridor subsidy of 900 million euros."
+    }
+  ],
+  "corpus": [
+    {
+      "corpus_id": "doc-association-note",
+      "title": "Synthetic operator association note",
+      "text": "Synthetic illustrative text. The operator association reported that container transit grew 62 percent in 2024 across the Middle Corridor. Total cargo volume reached 4.5 million tonnes in 2024, up from 2.8 million tonnes the year before. Port handling capacity at Aktau and Kuryk remains a constraint."
+    }
+  ]
+}
