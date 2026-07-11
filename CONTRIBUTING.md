@@ -16,7 +16,7 @@ If you've just landed in this repo and want to understand it before editing, do 
 git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
 cd agenda-intelligence-md
 make install                  # editable install + lint/type tooling
-bash scripts/install-hooks.sh # pre-push hook running `make ci-fast`
+bash scripts/install-hooks.sh # pre-push package-consistency + `make ci-fast`
 pytest                        # full test suite
 make ci-fast                  # what CI will run on your push
 make verify-local             # full local gate when Worker/discovery files changed
@@ -47,7 +47,7 @@ If `make ci-fast` is green locally, the Python lint/type/test surface should not
 git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
 cd agenda-intelligence-md
 make install                  # editable install + lint/type tooling
-bash scripts/install-hooks.sh # strongly recommended: pre-push hook running `make ci-fast`
+bash scripts/install-hooks.sh # strongly recommended: package consistency + `make ci-fast`
                               # skipping this leads to fix-CI-fix-CI commit chains
 pytest
 ```
@@ -57,6 +57,7 @@ pytest
 
 ```bash
 make ci-fast   # flake8 + black --check + isort --check + ruff + mypy + pytest
+make package-consistency # fast README/package-version invariant
 make ci        # full surface, also runs CLI smoke + scripts/validate*.py
 make verify-local # make ci + Cloudflare Worker tests
 make format    # auto-fix black + isort

@@ -1,4 +1,4 @@
-.PHONY: install test lint format typecheck worker-test update-contract-responses smoke-live ci ci-fast verify-local clean build publish
+.PHONY: install test package-consistency lint format typecheck worker-test update-contract-responses smoke-live ci ci-fast verify-local clean build publish
 
 # Python interpreter used by the test/CI targets. Override per invocation when
 # the default `python3` points at an interpreter without the dev deps installed
@@ -30,6 +30,11 @@ typecheck:
 
 test:
 	$(PYTHON) -m pytest --maxfail=1 --disable-warnings -q
+
+# Fast documentation/package-version invariant. Run first in pre-push so stale
+# README install commands fail before the broader test suite starts.
+package-consistency:
+	$(PYTHON) -m pytest tests/test_package_consistency.py -q
 
 # Worker-side regression surface for the deployed A2A wrapper.
 worker-test:

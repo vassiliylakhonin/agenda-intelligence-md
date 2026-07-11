@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Install a local git pre-push hook that runs `make ci-fast`.
+# Install a local git pre-push hook that checks package/README consistency,
+# then runs `make ci-fast`.
 # Idempotent. Safe to re-run. Skip with `git push --no-verify`.
 set -euo pipefail
 
@@ -26,11 +27,13 @@ elif [ -d "venv/bin" ]; then
   export PATH="$(pwd)/venv/bin:$PATH"
 fi
 
+echo "pre-push: checking README/package consistency..."
+make package-consistency
 echo "pre-push: running 'make ci-fast' (lint + typecheck + tests)..."
 make ci-fast
 HOOK_EOF
 
 chmod +x "$HOOK"
 echo "Installed pre-push hook at $HOOK"
-echo "It runs: make ci-fast (flake8, black --check, isort --check, ruff, mypy, pytest)"
+echo "It runs: make package-consistency, then make ci-fast (flake8, black --check, isort --check, ruff, mypy, pytest)"
 echo "Bypass with: git push --no-verify"
