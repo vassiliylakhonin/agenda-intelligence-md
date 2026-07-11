@@ -73,7 +73,7 @@ Longer guided tutorial: [`docs/quickstart.md`](docs/quickstart.md). MCP client s
 
 A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightweight strategic-risk triage, and A2A/JSON-RPC routing. Six workers are deployed (general triage + the five vertical workers); per-worker endpoints live in each worker section below and in the [Status](#status) table.
 
-- Interactive browser demos: [Middle Corridor Deal Risk Gate](https://vassiliylakhonin.github.io/deal-risk-gate.html) · [CIS Secondary-Sanctions Exposure](https://vassiliylakhonin.github.io/cis-secondary-sanctions.html)
+- Interactive browser demos: [Middle Corridor Deal Risk Gate](https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/) · [CIS Secondary-Sanctions Exposure](https://vassiliylakhonin.github.io/cis-secondary-sanctions.html)
 - General wrapper: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev> · [agent card](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) · [JSON-RPC](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send) · [Agenstry](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev)
 - Agentic Resource Discovery catalog: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json>
 - Confidential project-room profile contract: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room> · [synthetic redacted JSON](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room/redacted-example.json)
@@ -293,10 +293,10 @@ agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/s
 agenda-intelligence mcp-config --client cursor
 ```
 
-Pinned-wheel install (instead of PyPI):
+Pinned PyPI install:
 
 ```bash
-pip install https://github.com/vassiliylakhonin/agenda-intelligence-md/releases/download/v1.1.2/agenda_intelligence_md-1.1.2-py3-none-any.whl
+pip install "agenda-intelligence-md==1.1.2"
 ```
 
 ## Benchmark baseline
@@ -478,7 +478,7 @@ Before editing any of the dual-copy files — `Agenda-Intelligence.md`, `SOURCE_
 **Vassiliy Lakhonin** — Almaty, Kazakhstan (UTC+5)
 
 [Portfolio](https://vassiliylakhonin.github.io/) ·
-[For analysts](https://vassiliylakhonin.github.io/for-analysts.html) ·
+[AI policy analyst profile](https://vassiliylakhonin.github.io/role-ai-policy-analyst.html) ·
 [Email](mailto:vassiliy.lakhonin@gmail.com) ·
 [LinkedIn](https://www.linkedin.com/in/vassiliy-lakhonin/) ·
 [GitHub](https://github.com/vassiliylakhonin)
