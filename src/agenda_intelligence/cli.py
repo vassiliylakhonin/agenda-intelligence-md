@@ -675,6 +675,36 @@ def cmd_grounded_check(args):
         raise SystemExit(1)
 
 
+def cmd_verify_claims(args):
+    """Issue bounded factual verdicts from a structured evidence set."""
+    from agenda_intelligence import services
+
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"Not found: {path}")
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Invalid JSON: {e}")
+    result = services.verify_claims(data)
+    if not result.get("valid"):
+        for err in result.get("errors", []):
+            print(f"ERROR: {err}", file=sys.stderr)
+        raise SystemExit(1)
+    response = result["response"]
+    counts = response["counts"]
+    if args.format == "json":
+        print(json.dumps(response, indent=2, ensure_ascii=False))
+    else:
+        print(
+            f"claim_verdicts={response['claim_count']} verified={counts['verified']} unresolved={counts['unresolved']}"
+        )
+        for item in response["results"]:
+            print(f"  {item['claim_id']}: {item['verdict']} — {item['reasons'][0]}")
+    if args.strict and counts["verified"] != response["claim_count"]:
+        raise SystemExit(1)
+
+
 def cmd_validate_agent_card(args):
     """Static readiness lint of a published agent-card JSON file.
 
@@ -1274,6 +1304,15 @@ def main():
     p.add_argument("--format", choices=["text", "json"], default="text")
     p.add_argument("--strict", action="store_true", help="Exit 1 if any claim is ungrounded")
     p.set_defaults(func=cmd_grounded_check)
+    # verify-claims
+    p = sub.add_parser(
+        "verify-claims",
+        help="Issue bounded factual verdicts from supplied evidence; no source discovery",
+    )
+    p.add_argument("path", help="Claim verification request JSON file")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.add_argument("--strict", action="store_true", help="Exit 1 unless every claim is verified")
+    p.set_defaults(func=cmd_verify_claims)
     # start – guided workflow for new analysis
     p = sub.add_parser("start", help="Guided start for a new agenda analysis")
     p.add_argument("category", help="Source category (e.g., conflict-security)")

@@ -1,6 +1,6 @@
 {
   "name": "Agenda Intelligence MD",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "_contract_fields": [
     "name",
     "version",
@@ -113,6 +113,14 @@
     },
     "market_entry_readiness_response": {
       "path": "schemas/v1/market-entry-readiness-response.schema.json",
+      "schema_version": "v1"
+    },
+    "claim_verification_request": {
+      "path": "schemas/v1/claim-verification-request.schema.json",
+      "schema_version": "v1"
+    },
+    "claim_verification_response": {
+      "path": "schemas/v1/claim-verification-response.schema.json",
       "schema_version": "v1"
     }
   },
@@ -364,6 +372,21 @@
           "required": [
             "request_json"
           ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "verify_claims",
+        "since": "v1.2",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "request_json": {
+              "type": "object",
+              "description": "Claim verification request matching claim-verification-request.schema.json."
+            }
+          },
+          "required": ["request_json"],
           "additionalProperties": false
         }
       },

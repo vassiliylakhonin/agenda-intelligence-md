@@ -278,6 +278,26 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "handler": lambda args: mcp_server.grounded_check(args["request_json"]),
     },
+    "verify_claims": {
+        "description": (
+            "Issue a bounded factual Claim Verdict from caller-supplied evidence records. "
+            "Evaluates freshness, authoritative source class, independent source groups, "
+            "conflicts, jurisdiction, and exact subject identifiers as of a declared date. "
+            "Returns verified, contradicted, partially_supported, unresolved, or not_verifiable. "
+            "No source discovery or live retrieval; verified means the declared evidence threshold "
+            "is met, not absolute truth. Human review remains required."
+        ),
+        "inputSchema": _schema(
+            {
+                "request_json": {
+                    "type": "object",
+                    "description": "Claim verification request matching claim-verification-request.schema.json.",
+                }
+            },
+            ["request_json"],
+        ),
+        "handler": lambda args: mcp_server.verify_claims(args["request_json"]),
+    },
     "analyze": {
         "description": (
             "Generate an auditable strategic-risk memo from a structured Agenda request. "

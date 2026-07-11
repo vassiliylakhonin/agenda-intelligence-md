@@ -4,6 +4,17 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(capability): bounded factual Claim Verdict (`verify_claims`).** Adds a
+  separate deterministic layer over caller-supplied evidence records. It checks
+  freshness, source authority, independent source groups, conflicts,
+  jurisdiction, and exact subject identifiers as of a declared date, then
+  returns `verified`, `contradicted`, `partially_supported`, `unresolved`, or
+  `not_verifiable`. Ships with request/response schemas, CLI and MCP surfaces,
+  an example request, ADR 0023, and contract tests. It does not discover or
+  fetch sources, perform fuzzy entity resolution, or make legal/compliance
+  determinations. `verified` means the declared evidence threshold is met by
+  the supplied set, not absolute truth; human review remains required.
+
 - **feat(capability): `grounded_check` — claim-to-corpus grounding triage over
   caller-supplied source texts.** New composed service capability (tier of
   `audit_claims` / `verify_quotes`, not a commercial vertical worker) that takes

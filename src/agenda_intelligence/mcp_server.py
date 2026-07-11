@@ -393,6 +393,11 @@ def grounded_check(request_json: dict) -> dict:
     return _services.grounded_check(request_json)
 
 
+def verify_claims(request_json: dict) -> dict:
+    """Return bounded factual verdicts from structured, supplied evidence."""
+    return _services.verify_claims(request_json)
+
+
 def score_output(before_text: str, after_text: str) -> dict:
     """Score a before/after output pair with the same marker rubric used by examples."""
     return _services.score_output(before_text, after_text)

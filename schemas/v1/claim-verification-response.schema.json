@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/claim-verification-response.schema.json",
+  "title": "Claim Verification Response",
+  "type": "object",
+  "required": ["as_of", "verdict_basis", "claim_count", "counts", "results", "owner_actions", "human_review_required", "limitations", "provenance"],
+  "properties": {
+    "as_of": {"type": "string", "format": "date"},
+    "verdict_basis": {"const": "supplied_evidence_as_of"},
+    "claim_count": {"type": "integer", "minimum": 1},
+    "counts": {
+      "type": "object",
+      "required": ["verified", "contradicted", "partially_supported", "unresolved", "not_verifiable"],
+      "properties": {
+        "verified": {"type": "integer", "minimum": 0}, "contradicted": {"type": "integer", "minimum": 0},
+        "partially_supported": {"type": "integer", "minimum": 0}, "unresolved": {"type": "integer", "minimum": 0},
+        "not_verifiable": {"type": "integer", "minimum": 0}
+      }, "additionalProperties": false
+    },
+    "results": {"type": "array", "items": {
+      "type": "object", "required": ["claim_id", "verdict", "reasons", "used_evidence_ids", "stale_evidence_ids", "excluded_evidence"],
+      "properties": {
+        "claim_id": {"type": "string"},
+        "verdict": {"enum": ["verified", "contradicted", "partially_supported", "unresolved", "not_verifiable"]},
+        "reasons": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "used_evidence_ids": {"type": "array", "items": {"type": "string"}},
+        "stale_evidence_ids": {"type": "array", "items": {"type": "string"}},
+        "excluded_evidence": {"type": "array", "items": {"type": "object", "required": ["evidence_id", "reason"], "properties": {"evidence_id": {"type": "string"}, "reason": {"type": "string"}}, "additionalProperties": false}}
+      }, "additionalProperties": false
+    }},
+    "owner_actions": {"type": "array", "items": {"type": "string"}},
+    "human_review_required": {"const": true},
+    "limitations": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "provenance": {"type": "object", "required": ["contract_version", "schema_id", "input_digest"], "properties": {"contract_version": {"type": "string"}, "schema_id": {"type": "string"}, "input_digest": {"type": "string"}}, "additionalProperties": false}
+  },
+  "additionalProperties": false
+}

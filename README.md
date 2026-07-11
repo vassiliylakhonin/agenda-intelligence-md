@@ -222,7 +222,7 @@ The product runtime is the integration point: agents call `analyze` via any surf
 ## What this is
 
 - **Core service layer** — pure Python functions (`audit_claims`, `source_coverage`, `score_output`, `middle_corridor_deal_risk`, `agentic_interaction_trust`, etc.) vendor-neutral, no transport, no marketplace
-- **MCP server** — stdio server exposing 22 tools across the validation, product, and vertical worker layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
+- **MCP server** — stdio server exposing 24 tools across the validation, product, and vertical worker layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
 - **HTTP API shell** — thin transport over the service layer; self-host with `docs/deployment/http-api.md`
 - **A2A adapter** — agent-card + JSON-RPC `message/send` over the HTTP/service layer; local shell documented in `docs/deployment/a2a-adapter.md`
 - **Cloudflare Worker baseline** — deployment config under `deploy/cloudflare-worker/`; six live workers (general triage + the five vertical workers below)
@@ -296,7 +296,7 @@ agenda-intelligence mcp-config --client cursor
 Pinned PyPI install:
 
 ```bash
-pip install "agenda-intelligence-md==1.1.2"
+pip install "agenda-intelligence-md==1.2.0"
 ```
 
 ## Benchmark baseline
@@ -324,7 +324,11 @@ Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed
 
 ## Verification Contract
 
-`verify-quotes` checks whether a cited quote or excerpt appears in supplied local text, or in text fetched from an already-specified URL when `--fetch` is used. It does not discover sources, score source reputation, gather live news, or decide whether a claim is true in the world.
+`verify-quotes` checks whether a cited quote or excerpt appears in supplied local text. `grounded-check` checks claim-to-corpus lexical consistency. Neither decides whether a claim is true.
+
+`verify-claims` is a separate bounded factual-verification layer. It evaluates caller-supplied evidence records for freshness, authoritative source class, independent source groups, conflicts, jurisdiction, and exact subject identifiers as of a declared date. Its Claim Verdict is `verified`, `contradicted`, `partially_supported`, `unresolved`, or `not_verifiable`.
+
+`verified` means the declared evidence threshold is met by the supplied evidence set as of the declared date. It is not absolute truth, source discovery, fuzzy entity resolution, or legal/compliance determination. Human review is required before any commercial action. See [`claim-verification-request.schema.json`](schemas/v1/claim-verification-request.schema.json), the [example request](examples/claim-verification/request.json), and [ADR 0023](docs/adr/0023-bounded-factual-verification-layer.md).
 
 ## Schemas
 
@@ -338,6 +342,8 @@ Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed
 | [`lens-manifest.schema.json`](schemas/v1/lens-manifest.schema.json) | Lens manifest |
 | [`signal-classification.schema.json`](schemas/v1/signal-classification.schema.json) | Signal taxonomy |
 | [`memo-quality-fixture-manifest.schema.json`](schemas/v1/memo-quality-fixture-manifest.schema.json) | Memo-quality fixture coverage map |
+| [`claim-verification-request.schema.json`](schemas/v1/claim-verification-request.schema.json) | Claims, evidence records, freshness and independence thresholds |
+| [`claim-verification-response.schema.json`](schemas/v1/claim-verification-response.schema.json) | Bounded Claim Verdict output |
 
 ## AnalysisBank
 
@@ -356,7 +362,7 @@ Release/ops checkpoint: [`docs/product/analysisbank-hardening-checkpoint.md`](do
 
 ## MCP
 
-Stdio MCP server with 22 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
+Stdio MCP server with 24 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
 
 | Tool | What it does |
 |---|---|
@@ -370,6 +376,8 @@ Stdio MCP server with 22 tools. Full docs and wire-protocol verification: [`MCP.
 | `source_plan` | Generate a source plan for a given topic |
 | `source_coverage` | Diagnose evidence-pack coverage against category source requirements |
 | `verify_quotes` | Check cited quote fragments in caller-provided text |
+| `grounded_check` | Check lexical claim-to-corpus consistency; not factual verification |
+| `verify_claims` | Issue a bounded Claim Verdict from caller-supplied evidence records |
 | `list_lenses` | List available lens packs |
 | `get_lens` | Return a specific lens pack by name |
 | `analyze` | Product-shell pipeline: validate request, route modules, assemble prompt, optionally call LLM, validate memo |
@@ -401,7 +409,7 @@ Stdio MCP server with 22 tools. Full docs and wire-protocol verification: [`MCP.
 | Signal-tracker schema (lifecycle) | Stable |
 | Heuristic scoring | Stable (uncalibrated) |
 | Live source retrieval | Default off; active only for `cis_secondary_sanctions` through the Snapshot upstream |
-| Factual-truth verification | Not in scope |
+| Bounded factual verification (`verify_claims`) | Available for caller-supplied evidence; no source discovery; human review required |
 
 ## Safety model
 
