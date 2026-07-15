@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Agenda Intelligence MD Worker API",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "description": "Public HTTP contract for the Agenda Intelligence MD worker: discovery documents, status endpoints, live OKF/entity-map artifacts, and JSON-RPC message/send. This API routes evidence-readiness and strategic-risk triage to human review; it is not legal, compliance, sanctions, financial, procurement, or factual-truth verification advice."
   },
   "servers": [

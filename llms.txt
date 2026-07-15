@@ -1,6 +1,8 @@
 # Agenda Intelligence MD
 
-Product entry point and evidence-discipline layer for strategic intelligence agents. One MCP server with structured request/memo contract, geography-routed reasoning, schema validation, evidence audit, and scoring. Reasoning content is bundled from sibling repos (Global Think Tank Analyst as the method; Central Asia + Caspian and Gulf + Middle East as regional specialists, activated automatically when query geography matches). No live retrieval, no factual verification — both are explicit non-goals before v1.0.
+Primary interface: a deterministic evidence-packet linter for claim-backed AI output. `agenda-intelligence check <packet.json>` validates claim/source references, checks declared quotes verbatim, reports lexical-support gaps and unmatched numbers, and returns `packet_complete`, `source_review_required`, or `packet_incomplete`. `factuality_status` is always `not_assessed`; human review is always required. Contracts: schemas/v1/evidence-packet-request.schema.json and schemas/v1/evidence-packet-response.schema.json.
+
+Compatibility surfaces remain available: the strategic-intelligence product shell, MCP server, HTTP API, A2A adapter, Cloudflare Workers, reasoning modules, and vertical profiles. They are not the primary product narrative and do not establish buyer traction.
 
 Product MCP tools:
 - analyze — accepts an AgendaRequest (schemas/v1/agenda-request.schema.json), routes geography to bundled regional references, assembles a system prompt from the Global Think Tank Analyst method plus matched regional lenses, optionally calls the Anthropic API when ANTHROPIC_API_KEY is set, and returns a memo validated against schemas/v1/agenda-memo.schema.json.

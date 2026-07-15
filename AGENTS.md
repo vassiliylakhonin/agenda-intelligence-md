@@ -2,11 +2,11 @@
 
 ## Project identity
 
-Agenda Intelligence MD is the product runtime and evidence-discipline layer for strategic intelligence agents.
+Agenda Intelligence MD is primarily a deterministic evidence-packet linter for claim-backed AI output. It keeps the older strategic-intelligence runtime, transports, and vertical workers as compatibility surfaces and inspectable examples.
 
 It bundles four things in one repository:
 
-1. **Core package + service layer** — pure Python functions (`audit_claims`, `source_coverage`, `score_output`, `middle_corridor_deal_risk`, etc.) in [src/agenda_intelligence/services.py](src/agenda_intelligence/services.py). Vendor-neutral, no transport, no marketplace, no live retrieval.
+1. **Core package + service layer** — pure Python functions (`check_evidence_packet`, `audit_claims`, `grounded_check`, `source_coverage`, and compatibility profile functions) in [src/agenda_intelligence/services.py](src/agenda_intelligence/services.py). Vendor-neutral, no transport, no marketplace, no default live retrieval.
 2. **MCP server** — exposes `analyze`, `validate_memo`, `list_signals`, `get_signal`, and `deep_dive` (stub) over stdio for desktop assistants. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography to the relevant regional reference, assembles a system prompt from the in-repo Global Think Tank Analyst method plus regional lenses, optionally calls the Anthropic API when `ANTHROPIC_API_KEY` is set, and returns a memo validated against `agenda-memo.schema.json`.
 3. **HTTP API shell** — thin transport over the service layer ([src/agenda_intelligence/http_api.py](src/agenda_intelligence/http_api.py)). Stateless, no auth opinion, no billing. Documented in [docs/deployment/http-api.md](docs/deployment/http-api.md).
 4. **A2A adapter** — routing and protocol layer over the HTTP/service layer ([src/agenda_intelligence/a2a_adapter.py](src/agenda_intelligence/a2a_adapter.py)). Emits A2A-compatible agent cards, accepts `message/send`, converts to service-request shape, returns A2A artifacts. Local shell behavior is documented in [docs/deployment/a2a-adapter.md](docs/deployment/a2a-adapter.md). Live deployment baseline lives under [deploy/cloudflare-worker/](deploy/cloudflare-worker/).
@@ -46,9 +46,11 @@ Do not duplicate canonical domain reasoning or canonical vertical-specialist dep
 
 ## Product focus and vertical workers inside this repo
 
-The commercial product is not the catalog of workers. The commercial product is the reusable evidence-readiness workflow behind them: given a source pack, claim set, RFP, vendor docs, deal file, model card, or risk memo, determine whether the evidence is ready for human review, what is missing, which claims are weak, which owner action is next, and what should be escalated.
+The primary repository product is the evidence-packet contract and deterministic preflight: given claims, source text, and optional quotes, report broken references, quote mismatches, lexical-support gaps, and owner actions before human review. It reports packet completeness, not factual truth, trust, authorization, or clearance.
 
-There is no active default commercial wedge in this repository. Do not rebuild removed discovery teardowns, profile packs, or public-signal corpora as a substitute for buyer evidence. Gulf maritime / trade-finance risk-file readiness remains a backup risk-intelligence hypothesis. Kazakhstan/local-forwarder / Middle Corridor positioning is not assumed to have product-market fit; treat it as disconfirmed unless fresh discovery evidence proves otherwise.
+The vertical workers are compatibility profiles and examples built on the same service layer. They are not the primary product narrative, and a new worker must not be used to avoid validating the evidence-packet workflow with external practitioners.
+
+Current classification is `portfolio-proof` plus `build-to-learn`. There is no active default commercial wedge in this repository. Do not rebuild removed discovery teardowns, profile packs, or public-signal corpora as a substitute for buyer evidence. Gulf maritime / trade-finance risk-file readiness remains a backup risk-intelligence hypothesis. Kazakhstan/local-forwarder / Middle Corridor positioning is not assumed to have product-market fit; treat it as disconfirmed unless fresh discovery evidence proves otherwise.
 
 Before adding or improving a buyer-facing surface, public listing, new vertical worker, pilot page, outreach copy, or monetization path, run the market gate: economic buyer, painful trigger this month, current workaround, observed evidence, inference, kill criteria, smallest 30-day test, and classification as `build-to-learn`, `build-to-earn`, `portfolio-proof`, `public-positioning`, or `internal-ops`.
 

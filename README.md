@@ -2,38 +2,115 @@
 
 # Agenda Intelligence MD
 
-Agenda Intelligence MD is an **evidence-readiness and trust-routing runtime for high-stakes AI-assisted decisions**.
+Agenda Intelligence MD is a deterministic evidence-packet linter for claim-backed AI output.
 
-The sharpest current wedge is **AI vendor evidence-readiness for regulated procurement**: given an RFP, vendor documentation, model card, source pack, risk memo, or weekly project note, it produces a human-review packet:
+Give it claims, the source IDs each claim relies on, optional quotations, and the supplied source text. It returns broken references, quote mismatches, lexical-support gaps, unmatched numbers, and the next reviewer actions.
 
-- what is supported
-- what is weak or unsafe to repeat
-- what evidence is missing
-- which owner action is next
-- whether the file is ready for human review or must be escalated
+It reports **packet completeness**, not whether a claim is true:
 
-Use it when an AI governance, procurement, third-party-risk, or analyst owner has to prepare a file for a near-term review and needs to know what cannot safely go to committee yet. The normal workaround is a manual checklist, spreadsheet, GRC ticket, consultant memo, or reviewer comments scattered across docs. Agenda Intelligence MD gives agents and local workflows a repeatable evidence-readiness contract around that work.
+- not a factuality verifier;
+- no autonomous live source retrieval;
+- no authorization, approval, or compliance decision;
+- human review is required for every result.
 
-It does **not** verify factual truth, approve vendors, clear sanctions risk, provide legal/compliance/financial advice, or make autonomous decisions. It routes evidence gaps to humans. Current commercial status: `build-to-learn` / `portfolio-proof`; no production traction is claimed. Success means buyer behavior such as a redacted file, second review request, workflow correction, budget-owner intro, pilot, or payment -- not compliments.
+[![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Technically, one core service layer sits behind four delivery surfaces — MCP server, HTTP API, A2A adapter, and a deployable Cloudflare Worker baseline — with structured per-product contracts, geography-routed reasoning, schema validation, evidence audit, and scoring. Five deployed vertical profiles are available as portfolio/demo surfaces; they are proofs of contract shape, not proof of product-market fit. Evaluate them with live curl calls: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md).
+## First run
 
-[![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![Agenstry A2A](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/protocol.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![Agenstry uptime](https://agenstry.com/badge/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/uptime.svg)](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+Run the canonical synthetic packet from a source checkout:
+
+```bash
+git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
+cd agenda-intelligence-md
+python -m venv .venv
+.venv/bin/python -m pip install -e .
+.venv/bin/agenda-intelligence check examples/evidence-packet/request.json
+```
+
+Expected shape:
+
+```text
+packet_status=packet_complete claims=2 sources=1 factuality=not_assessed
+  c1: packet_complete (lexical_support=supported, coverage=1.0)
+  c2: packet_complete (lexical_support=supported, coverage=1.0)
+```
+
+Use JSON for an agent loop or CI pipeline:
+
+```bash
+.venv/bin/agenda-intelligence check examples/evidence-packet/request.json --format json
+.venv/bin/agenda-intelligence check examples/evidence-packet/request.json --strict
+```
+
+`--strict` exits non-zero unless every claim is `packet_complete`.
+
+Install the pinned release without cloning the source and check your own packet:
+
+```text
+pip install "agenda-intelligence-md==1.3.0"
+agenda-intelligence check /path/to/evidence-packet.json --strict
+```
+
+## The evidence-packet contract
+
+The request has two required collections:
+
+- `claims`: a claim ID, claim text, declared `source_ids`, and optional verbatim quotes;
+- `sources`: a source ID and the text supplied by the caller.
+
+Request schema: [`schemas/v1/evidence-packet-request.schema.json`](schemas/v1/evidence-packet-request.schema.json)
+
+Response schema: [`schemas/v1/evidence-packet-response.schema.json`](schemas/v1/evidence-packet-response.schema.json)
+
+Runnable example: [`examples/evidence-packet/request.json`](examples/evidence-packet/request.json)
+
+The response has three packet statuses:
+
+| Status | Meaning |
+|---|---|
+| `packet_complete` | References resolve and the named source text has strong lexical overlap with the claim. |
+| `source_review_required` | References resolve, but lexical support is weak or a numeric value is not present. |
+| `packet_incomplete` | A source is missing, a quote is absent, or the claim has no source reference. |
+
+`factuality_status` is always `not_assessed`. A complete packet can still rely on a wrong, stale, biased, or irrelevant source.
+
+## Python API
+
+```python
+import json
+from pathlib import Path
+
+from agenda_intelligence.services import check_evidence_packet
+
+packet = json.loads(Path("examples/evidence-packet/request.json").read_text())
+result = check_evidence_packet(packet)
+print(result["response"]["packet_status"])
+```
+
+The service layer is stateless. It does not persist packet contents or fetch missing sources.
+
+## What this is
+
+- A small JSON contract for claim-backed AI output.
+- A deterministic preflight before human review.
+- A CLI and Python service suitable for local and CI use.
+- An inspectable base for domain-specific compatibility profiles.
+
+## What this is not
+
+- A general LLM evaluation platform.
+- A GRC, vendor-management, or document-storage system.
+- An agent authorization or policy-enforcement layer.
+- Legal, compliance, sanctions, financial, investment, insurance, or trading advice.
+- Proof that a source or claim is factually correct.
 
 ## Why a repo full of markdown?
 
-The skills under `skills/` and the canon docs are source, not documentation — a `SKILL.md` is instructions an agent loads and *executes*, the way a runtime loads a module. The Python in `src/` is the runtime that composes them: [`global-think-tank-analyst`](https://github.com/vassiliylakhonin/global-think-tank-analyst) as the reasoning method, [`central-asia-caspian`](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) and [`gulf-middle-east`](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) as regional layers (module roles in [`llms.txt`](llms.txt) / [`agent-manifest.json`](agent-manifest.json)). Both are version-controlled for the same reason — they're what runs.
+The repository predates the evidence-packet focus and also packages agent reasoning instructions. Files under `skills/` are executable instructions for compatible agent runtimes, not ordinary prose documentation. They remain available for compatibility, but they are not the primary product interface.
 
-## Install in Claude Code
+## MCP
 
-```text
-/plugin marketplace add vassiliylakhonin/agenda-intelligence-md
-/plugin install agenda-intelligence@agenda-intelligence
-```
-
-This installs the MCP server (runs `uvx --from agenda-intelligence-md agenda-intelligence-mcp`; requires [uv](https://docs.astral.sh/uv/)) plus the `agenda-intelligence` and `source-ingest` skills. The same marketplace also lists the method and regional skill plugins: `global-think-tank-analyst`, `central-asia-caspian`, `gulf-middle-east`.
-
-For any other MCP client, add the server directly:
+The packaged MCP server remains available for existing clients:
 
 ```json
 {
@@ -46,463 +123,125 @@ For any other MCP client, add the server directly:
 }
 ```
 
-## First run
+The canonical evidence-packet preflight is currently exposed through the CLI and Python service. Existing MCP tools such as `audit_claims`, `verify_quotes`, `grounded_check`, and `verify_claims` remain compatible; no tool was removed or renamed. See [`MCP.md`](MCP.md).
 
-If you are evaluating from Glama or another MCP directory, start with the local stdio server and one source-backed packet. The quickest path is validation/audit first, not a live vertical worker.
-
-```bash
-pip install agenda-intelligence-md
-agenda-intelligence doctor
-agenda-intelligence validate-brief examples/agenda-brief.json
-agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
-agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/status.synthetic.md
-```
-
-`doctor` reports package and MCP-server status; `validate-brief` confirms a brief matches `agenda-brief.schema.json`; `score` returns a heuristic 0–100 number with a structure / evidence / decision-readiness breakdown; `check-memo-quality` and `memo-quality-bench` catch schema-valid but unsafe memo output; `weekly-delta` turns a redacted weekly/status note into unsafe-to-repeat claims, source-plan gaps, owner actions, and a decision-readiness route; `weekly-delta-bench` regression-tests that confidential workflow output. Full end-to-end analyze trace (request → routing → memo → validation → audit → score) with reproducibility script: [`examples/product-shell/full-analyze-trace/`](examples/product-shell/full-analyze-trace/).
-
-Optional, only if you want `analyze` to call the Anthropic API itself rather than letting your host model complete from the returned system prompt:
-
-```bash
-pip install "agenda-intelligence-md[llm]"
-export ANTHROPIC_API_KEY=...
-```
-
-Longer guided tutorial: [`docs/quickstart.md`](docs/quickstart.md). MCP client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
-
-## Live A2A wrapper
-
-A free Cloudflare Workers wrapper is live for discovery, uptime checks, lightweight strategic-risk triage, and A2A/JSON-RPC routing. Six workers are deployed (general triage + the five vertical workers); per-worker endpoints live in each worker section below and in the [Status](#status) table.
-
-- Interactive browser demos: [Middle Corridor Deal Risk Gate](https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/) · [CIS Secondary-Sanctions Exposure](https://vassiliylakhonin.github.io/cis-secondary-sanctions.html)
-- General wrapper: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev> · [agent card](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) · [JSON-RPC](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/message/send) · [Agenstry](https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev)
-- Agentic Resource Discovery catalog: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json>
-- Confidential project-room profile contract: <https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room> · [synthetic redacted JSON](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room/redacted-example.json)
-- Worked curl calls for selected live workers: [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md) · repeatable Kazakhstan test: [`docs/agenstry/kazakhstan-live-test.md`](docs/agenstry/kazakhstan-live-test.md)
-
-Try a live portfolio demo:
-
-```bash
-curl -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send \
-  -H 'content-type: application/json' \
-  -H 'x-client-id: live-demo' \
-  -d @examples/kazakhstan-middle-corridor/live-agent-request.json
-```
-
-Expected: JSON-RPC 2.0 with `triage_recommendation: "escalate_before_signature"`, route/cargo/value extraction, supplied-source detection, the minimum evidence still missing before go, and human-review escalation.
-
-The hosted wrapper is intentionally limited: no payments, no wallets, no factual-truth verification, and no legal/financial/compliance advice. Live retrieval is off by default and opt-in per vertical-worker profile; it is currently active only for `cis_secondary_sanctions`, via the $0 Snapshot upstream (see [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) / [ADR 0020](docs/adr/0020-activate-snapshot-upstream-cis-secondary-sanctions.md) and [SOURCE_POLICY.md](SOURCE_POLICY.md)). Private usage stats: [`deploy/cloudflare-worker/README.md`](deploy/cloudflare-worker/README.md). Core validation and product-shell behavior is available in the installable stdio MCP server; some deployed vertical profiles are HTTP/A2A-only.
-
-## Confidential project-room workflow
-
-For confidential strategic-infrastructure and AI-compute project files, use the same evidence-readiness discipline without naming parties: [`docs/trust/confidential-project-workflow.md`](docs/trust/confidential-project-workflow.md), the public profile contract at [`profiles/confidential-project-room/index.md`](profiles/confidential-project-room/index.md), the schema at [`schemas/v1/confidential-project-room-profile.schema.json`](schemas/v1/confidential-project-room-profile.schema.json), [`docs/templates/strategic-infrastructure-evidence-readiness-profile.md`](docs/templates/strategic-infrastructure-evidence-readiness-profile.md), [`docs/templates/weekly-status-decision-readiness-delta.md`](docs/templates/weekly-status-decision-readiness-delta.md), and the synthetic alias-only example pack at [`examples/strategic-infrastructure-bankability/`](examples/strategic-infrastructure-bankability/). This is also `build-to-learn`: no new worker, no case-study claims, and no client names.
-
-The deterministic local shell is available now:
-
-```bash
-agenda-intelligence source-plan ai-infrastructure-bankability
-agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/status.synthetic.md
-```
-
-It converts status activity into a reviewer scaffold: status-to-evidence rows, new claim candidates, unsafe-to-repeat claims, owner actions, missing source-plan categories, and a route such as `escalate_before_committee`. It is keyword-based and deterministic, not full semantic analysis.
-
-Write a Markdown packet:
+Claude Code plugin installation also remains available:
 
 ```text
-agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/status.synthetic.md \
-  --project-alias ProjectCo \
-  --decision-moment "committee review" \
-  --out readiness-delta.md
+/plugin marketplace add vassiliylakhonin/agenda-intelligence-md
+/plugin install agenda-intelligence@agenda-intelligence
 ```
 
-## Live portfolio demo: Middle Corridor
+## Compatibility profiles and adapters
 
-**Kazakhstan / Middle Corridor Deal Risk Gate** is a live portfolio/demo profile for logistics, trade-finance, procurement, insurance, and compliance-adjacent workflows:
+The strategic-intelligence shell, HTTP API, A2A adapter, Cloudflare Workers, and five domain profiles remain in the repository. They demonstrate how the same service layer can be wrapped for different transports and domains. They are not the default commercial wedge and do not establish product-market fit.
 
-> Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation.
-
-The structured response also presence-flags sanctions-relevant / high-risk and re-export / circumvention-watch counterparty jurisdictions, decomposes risk into a domestic-legal vs foreign-sanctions exposure view, and surfaces a vessel deceptive-shipping-practice checklist for the maritime leg. All of this is presence-flagging and evidence triage routed to human review — not a sanctions determination. This profile is not assumed to be the commercial flagship; Kazakhstan/local-forwarder demand must be revalidated before further buyer-facing expansion.
-
-Live A2A listing:
-
-- Endpoint: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send>
-- Agent card: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
-- Agenstry: <https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
-- Use-case notes: [`docs/use-cases/kazakhstan-middle-corridor.md`](docs/use-cases/kazakhstan-middle-corridor.md)
-- Example pack: [`examples/kazakhstan-middle-corridor/`](examples/kazakhstan-middle-corridor/)
-- Repeatable live test: [`docs/agenstry/kazakhstan-live-test.md`](docs/agenstry/kazakhstan-live-test.md)
-
-This use case is a pre-compliance evidence and decision-readiness gate. It is not legal, compliance, sanctions, financial, investment, or insurance advice.
-
-The product-grade structured JSON contract is documented in [`docs/use-cases/kazakhstan-middle-corridor.md`](docs/use-cases/kazakhstan-middle-corridor.md#product-contract), with schemas and fixtures under [`examples/kazakhstan-middle-corridor/contract/`](examples/kazakhstan-middle-corridor/contract/).
-
-## Kazakhstan market-entry readiness contract
-
-**Kazakhstan Market Entry Readiness Gate** is a structured contract pack for distribution, import, service, showroom, EPC, renewable-energy, infrastructure, technology-transfer, and partner-entry files:
-
-> Company + project + Kazakhstan objective + counterparties + supplied sources -> gate decision, readiness label, evidence gaps, claim audit, owner actions, watch-next indicators, and human-review routing.
-
-It is a live vertical worker: a `kazakhstan_market_entry_readiness` service function, an HTTP route, an A2A profile, and a deployed Cloudflare Worker at <https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev>. It is HTTP/A2A-only in the current release, not exposed as a local stdio MCP tool. It is not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice.
-
-- Use-case notes: [`docs/use-cases/kazakhstan-market-entry-readiness.md`](docs/use-cases/kazakhstan-market-entry-readiness.md)
-- Request schema: [`schemas/v1/market-entry-readiness-request.schema.json`](schemas/v1/market-entry-readiness-request.schema.json)
-- Response schema: [`schemas/v1/market-entry-readiness-response.schema.json`](schemas/v1/market-entry-readiness-response.schema.json)
-- Source taxonomy: [`source-requirements/kazakhstan-market-entry-readiness.json`](source-requirements/kazakhstan-market-entry-readiness.json)
-- Example pack: [`examples/kazakhstan-market-entry-readiness/contract/`](examples/kazakhstan-market-entry-readiness/contract/)
-- HTTP: `POST /v1/market-entry/readiness`
-- A2A profile: `kazakhstan_market_entry_readiness`
-- Live endpoint: <https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev> · [agent card](https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json)
-
-## Second vertical worker: CIS secondary-sanctions exposure
-
-For EU / UK / UAE / Singapore enhanced due diligence on CIS, Caucasus, and Central Asia counterparties (Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan, Moldova). Structured secondary-sanctions exposure evidence triage against OFAC EO 14114, EU sanctions package, UK OFSI, UN, and FATF / EAG typologies.
-
-This profile runs **per-profile live retrieval** with three upstream options, tried in order (free before paid), per [ADR 0014](docs/adr/0014-per-profile-live-retrieval.md) / [ADR 0020](docs/adr/0020-activate-snapshot-upstream-cis-secondary-sanctions.md):
-
-1. **Snapshot** (active, $0, no host) — the worker fetches a compact public-list name index (OFAC SDN + consolidated, EU, UK FCDO) published by the portfolio site and matches the counterparty name in-worker (exact + token overlap). Activated via `SNAPSHOT_INDEX_URL`; deployed and live since 2026-06-26.
-2. **Watchman** (free self-host) — `moov-io/watchman` Apache-2.0 self-host on an always-on container. Set `WATCHMAN_URL` to use instead.
-3. **OpenSanctions** (paid) — hosted API at €0.10/call. Set `OPENSANCTIONS_API_KEY` (30-day business-email trial at https://www.opensanctions.org/api/, then per-call billing).
-
-The first active upstream wins (Snapshot, unless `SNAPSHOT_DISABLED=1`). When none is configured or the active one fails, the service degrades gracefully and triage is based on user-supplied evidence only — `live_retrieval_status: degraded` / `disabled` in the response. A match is a possible string match only, not identity verification or a sanctions determination; human review is required. No paying customers — illustrative usage only.
-
-- Live endpoint: <https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev> · [Agenstry](https://agenstry.com/agents/cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev)
-- HTTP: `POST /v1/cis-secondary-sanctions/exposure`
-- Schemas: [request](schemas/v1/cis-secondary-sanctions-request.schema.json) + [response](schemas/v1/cis-secondary-sanctions-response.schema.json)
-- A2A profile: `cis_secondary_sanctions`; capability `cis_secondary_sanctions_exposure`
-- Use-case notes: [`docs/use-cases/cis-secondary-sanctions.md`](docs/use-cases/cis-secondary-sanctions.md)
-- Example pack: [`examples/cis-secondary-sanctions/`](examples/cis-secondary-sanctions/)
-- Source-requirements taxonomy: [`source-requirements/cis-secondary-sanctions.json`](source-requirements/cis-secondary-sanctions.json)
-
-Honest traction: zero paying customers, zero named pilots. Shipped as a portfolio-grade vertical worker for technical evaluators and as a contract real practitioners can inspect, not as a claim of production traction. Boundaries unchanged from the rest of the runtime: `not_advice: true`, `factual_verification: false`, `human_review_required: true` always.
-
-The structured response includes a `decision_readiness_score` from 0-100, so a buyer can see whether the evidence pack is ready for human review or still missing required source categories.
-
-## Third vertical worker: Agentic Interaction Trust Gate
-
-For trust-and-safety, fraud-risk, product-security, and platform teams reviewing agent-mediated actions across checkout, account, API, MCP tool, and A2A endpoint surfaces.
-
-This worker does not decide whether an actor is a bot. It asks whether the supplied evidence is sufficient to route a specific automated or agentic action: `allow_low_risk`, `require_step_up`, `escalate_to_human_review`, `block_until_verified`, `not_decision_ready`, or `insufficient_information`.
-
-- Live endpoint: <https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev> · [Agenstry](https://agenstry.com/agents/agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev)
-- HTTP: `POST /v1/agentic-interaction/trust`
-- A2A capability: `agentic_interaction_trust`
-- Schemas: [request](schemas/v1/agentic-interaction-trust-request.schema.json) + [response](schemas/v1/agentic-interaction-trust-response.schema.json)
-- Use-case notes: [`docs/use-cases/agentic-interaction-trust.md`](docs/use-cases/agentic-interaction-trust.md)
-- Example pack: [`examples/agentic-interaction-trust/`](examples/agentic-interaction-trust/)
-- Source-requirements taxonomy: [`source-requirements/agentic-interaction-trust.json`](source-requirements/agentic-interaction-trust.json)
-
-Boundaries: no cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice. The worker returns evidence gaps, readiness scoring, watch-next indicators, and `human_review_required: true`.
-
-## Fourth vertical worker: Gulf Maritime Exposure Gate
-
-For trade-finance, marine-insurance, P&I, chartering, and compliance teams reviewing a vessel or voyage transiting the Strait of Hormuz, Persian/Arabian Gulf, Gulf of Oman, Bab-el-Mandeb, or Red Sea.
-
-Structured triage of maritime sanctions and chokepoint-disruption exposure — Iran-oil, Russia price-cap, dark-fleet, STS transfer, flag-hopping, P&I gap, AIS manipulation, ownership/control, dual-use cargo — into an evidence-sufficiency routing decision: `insufficient_information`, `escalate_before_fixture`, `escalate_before_voyage`, `not_decision_ready`, or `ready_for_human_review`.
-
-- HTTP: `POST /v1/gulf-maritime/exposure`
-- A2A capability: `gulf_maritime_exposure`
-- Live endpoint: <https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev> · [Agenstry](https://agenstry.com/agents/gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev)
-- Schemas: [request](schemas/v1/gulf-maritime-exposure-request.schema.json) + [response](schemas/v1/gulf-maritime-exposure-response.schema.json)
-- Use-case notes: [`docs/use-cases/gulf-maritime-exposure.md`](docs/use-cases/gulf-maritime-exposure.md)
-- Example pack: [`examples/gulf-maritime-exposure/`](examples/gulf-maritime-exposure/)
-- Source-requirements taxonomy: [`source-requirements/gulf-maritime-exposure.json`](source-requirements/gulf-maritime-exposure.json)
-
-Boundaries: no live retrieval, does not resolve vessel ownership or verify identity, no legal or sanctions advice. Returns exposure dimensions, evidence gaps, a chokepoint-disruption watch, `decision_readiness_score`, and `human_review_required: true`.
-
-## Where this fits in the Agenda Intelligence stack
-
-| Layer | Repo | Role |
-|---|---|---|
-| **Product runtime** (this repo) | **agenda-intelligence-md** | Core service layer + MCP / HTTP / A2A surfaces, request/memo schemas, geography routing, evidence audit, scoring, vertical workers |
-| Reasoning method | [global-think-tank-analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) | Strategic-risk reasoning contract; loaded by `analyze` as the default method |
-| Vertical specialist | [central-asia-caspian-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) | Central Asia / Caspian / Middle Corridor domain depth; routed by geography |
-| Vertical specialist | [gulf-middle-east-hybrid-intelligence-skill](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) | Iran / GCC / maritime chokepoint domain depth; routed by geography |
-
-The product runtime is the integration point: agents call `analyze` via any surface (MCP, HTTP, A2A), geography routes to the relevant specialist, and the GTTA method frames the reasoning. Each canonical repo (GTTA, vertical specialists) is also usable standalone (paste/attach into any agent). Vertical workers live inside this runtime as productized service functions with their own schemas and HTTP/A2A profiles; four are also exposed as local stdio MCP tools, while Kazakhstan Market-Entry Readiness is currently HTTP/A2A-only. See [`AGENTS.md`](AGENTS.md#vertical-workers-inside-this-repo) for the spin-off rule.
-
-## What this is
-
-- **Core service layer** — pure Python functions (`audit_claims`, `source_coverage`, `score_output`, `middle_corridor_deal_risk`, `agentic_interaction_trust`, etc.) vendor-neutral, no transport, no marketplace
-- **MCP server** — stdio server exposing 24 tools across the validation, product, and vertical worker layers. `analyze` accepts a structured request (`agenda-request.schema.json`), routes geography, assembles a system prompt, returns a memo validated against `agenda-memo.schema.json`
-- **HTTP API shell** — thin transport over the service layer; self-host with `docs/deployment/http-api.md`
-- **A2A adapter** — agent-card + JSON-RPC `message/send` over the HTTP/service layer; local shell documented in `docs/deployment/a2a-adapter.md`
-- **Cloudflare Worker baseline** — deployment config under `deploy/cloudflare-worker/`; six live workers (general triage + the five vertical workers below)
-- **Vertical workers** — productized service functions with their own schemas + HTTP/A2A profiles; Cloudflare deployments exist where configured. Currently shipped in the runtime: Middle Corridor Deal Risk Gate, CIS Secondary-Sanctions Exposure, Agentic Interaction Trust Gate, Gulf Maritime Exposure Gate, Kazakhstan Market-Entry Readiness Gate. Local stdio MCP exposes the first four vertical workers; Kazakhstan Market-Entry Readiness is HTTP/A2A-only.
-- **Markdown protocol** — structured reasoning workflow for agents (`Agenda-Intelligence.md`)
-- **JSON schemas** — request/memo product contract + per-product contracts (e.g. `middle-corridor-deal-risk-*`) + validators for briefs, evidence packs, audits, signals, memory cards, lenses
-- **CLI** — `validate-brief`, `validate-evidence`, `validate-agent-card`, `source-categories`, `source-coverage`, `audit-claims`, `check-memo-quality`, `memo-quality-bench`, `weekly-delta`, `score`, `bench`, `doctor` (30+ commands). Agent-card readiness checklist: [`AGENT_READINESS.md`](AGENT_READINESS.md)
-- **Eval kit** — rubric, LLM-judge prompt, human checklist, benchmark harness, agent-eval methodology
-- **Source policy** — per-claim provenance tags (Axis A/B), source requirements for 18 categories
-
-## What this is not
-
-- Not a factuality verifier — checks structure, not truth
-- Not an autonomous news agent or source retriever
-- Not a source reputation scorer or live news gatherer
-- Not a replacement for analyst judgment
-- Not a compliance, legal, or financial advisory product
-
-## Self-host via HTTP API (if your stack does not run MCP)
-
-If your environment cannot run an MCP / A2A server but can run a plain HTTP service, install the package and start the HTTP shell:
-
-```bash
-pip install agenda-intelligence-md
-agenda-intelligence-http --host 127.0.0.1 --port 8080
-```
-
-The HTTP API is a portable JSON wrapper over the same core service layer that the MCP, A2A, and Cloudflare Worker surfaces use — same `schemas/v1/` contract, same evidence audit, same source coverage logic, same Middle Corridor deal-risk gate. Switching surfaces does not change input/output shape.
-
-Endpoints:
-
-- `GET /healthz`, `GET /readyz` — liveness / readiness probes
-- `POST /v1/audit-claims` — claim-level evidence audit
-- `POST /v1/source-coverage` — evidence-pack diagnostics against category source requirements
-- `POST /v1/score` — heuristic before/after score
-- `POST /v1/middle-corridor/deal-risk` — Middle Corridor Deal Risk Gate (`middle-corridor-deal-risk-request.schema.json`)
-- `POST /v1/agentic-interaction/trust` — Agentic Interaction Trust Gate (`agentic-interaction-trust-request.schema.json`)
-- `POST /v1/cis-secondary-sanctions/exposure` — CIS Secondary-Sanctions Exposure triage (`cis-secondary-sanctions-request.schema.json`); live retrieval is active via the $0 Snapshot upstream (or set `WATCHMAN_URL` / `OPENSANCTIONS_API_KEY`), degrading gracefully to user-supplied evidence only if unavailable
-- `POST /v1/market-entry/readiness` — Kazakhstan Market-Entry Readiness Gate (`market-entry-readiness-request.schema.json`); HTTP/A2A-only in the current release
-
-One-call probe:
-
-```bash
-curl -sS http://127.0.0.1:8080/v1/middle-corridor/deal-risk \
-  -H 'content-type: application/json' \
-  -d @examples/kazakhstan-middle-corridor/contract/pre_signature_escalate.request.json
-```
-
-Container build (`Dockerfile.api`):
-
-```bash
-docker build -f Dockerfile.api -t agenda-intelligence-md-api:1.1.1 .
-docker run --rm -p 8080:8080 agenda-intelligence-md-api:1.1.1
-```
-
-Full HTTP deployment guide, including environment defaults (`AGENDA_INTELLIGENCE_HTTP_HOST`, `AGENDA_INTELLIGENCE_HTTP_PORT`), logging discipline, and boundary statements: [`docs/deployment/http-api.md`](docs/deployment/http-api.md).
-
-The HTTP shell is portable but **not a hardened internet-facing server**. No built-in authentication, rate limiting, or TLS — front it with a reverse proxy (nginx, Caddy, Cloudflare Tunnel) and your existing auth layer before exposing it beyond localhost / private network.
-
-## More CLI examples
-
-```bash
-agenda-intelligence bench examples/source-backed --strict --min-score 80
-agenda-intelligence memo-quality-bench tests/fixtures/memo_quality --format json
-agenda-intelligence weekly-delta-bench tests/fixtures/weekly_delta --format json
-agenda-intelligence audit-claims examples/source-backed/eu-ai-act.audit.json --strict
-agenda-intelligence weekly-delta examples/strategic-infrastructure-bankability/status.synthetic.md --format json
-agenda-intelligence mcp-config --client cursor
-```
-
-Pinned PyPI install:
-
-```bash
-pip install "agenda-intelligence-md==1.2.0"
-```
-
-## Benchmark baseline
-
-20 source-backed cases, reproduced with `agenda-intelligence bench examples/source-backed/`. The score below measures **structural completeness** — schema validity, evidence labeling, source-coverage diagnostics, and decision-readiness — **not factual accuracy**. A high score means a brief is well-formed and audit-ready, not that its claims are true in the world.
-
-| Metric | Value |
+| Compatibility surface | Reference |
 |---|---|
-| Cases | 20 |
-| Mean structural-completeness score | 87.6 / 100 |
-| Min / max | 84 / 91 |
-| Schema-valid | 100% |
-| With evidence pack | 100% |
-| With claim-level audit | 100% |
-| With source category | 100% |
-| Mean source coverage | 14.8% |
-| Source coverage gap cases | 20 |
-| Orphan evidence refs | 0 |
+| Strategic agenda analysis | [`Agenda-Intelligence.md`](Agenda-Intelligence.md) |
+| HTTP API | [`docs/deployment/http-api.md`](docs/deployment/http-api.md) |
+| A2A adapter | [`docs/deployment/a2a-adapter.md`](docs/deployment/a2a-adapter.md) |
+| Middle Corridor example | [`docs/use-cases/kazakhstan-middle-corridor.md`](docs/use-cases/kazakhstan-middle-corridor.md) |
+| CIS secondary-sanctions example | [`docs/use-cases/cis-secondary-sanctions.md`](docs/use-cases/cis-secondary-sanctions.md) |
+| Agentic interaction example | [`docs/use-cases/agentic-interaction-trust.md`](docs/use-cases/agentic-interaction-trust.md) |
+| Gulf maritime example | [`docs/use-cases/gulf-maritime-exposure.md`](docs/use-cases/gulf-maritime-exposure.md) |
+| Kazakhstan market-entry example | [`docs/use-cases/kazakhstan-market-entry-readiness.md`](docs/use-cases/kazakhstan-market-entry-readiness.md) |
+| Live A2A demo pack | [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md) |
 
-Heuristic scores are uncalibrated and not validated against expert judgment. They evaluate structure, evidence labeling, source-coverage diagnostics, and decision-readiness — not factual truth.
-
-**Benchmark your own output.** The same harness scores *your* agent's briefs and compares them to this baseline — point `bench` at a directory of your `<name>.brief.json` cases. No LLM, no network: [`docs/benchmark-your-output.md`](docs/benchmark-your-output.md).
-
-Flagship example: [`examples/source-backed/eu-ai-act.md`](examples/source-backed/eu-ai-act.md) — brief + evidence pack + claim-level audit using illustrative sources. Before / after pairs: [`examples/before-after/`](examples/before-after/).
+The compatibility profiles are evidence-routing examples only. They do not provide legal, compliance, sanctions, financial, investment, insurance, or trading advice. Human review is required before any commercial action.
 
 ## Verification Contract
 
-`verify-quotes` checks whether a cited quote or excerpt appears in supplied local text. `grounded-check` checks claim-to-corpus lexical consistency. Neither decides whether a claim is true.
+The repository keeps three checks separate:
 
-`verify-claims` is a separate bounded factual-verification layer. It evaluates caller-supplied evidence records for freshness, authoritative source class, independent source groups, conflicts, jurisdiction, and exact subject identifiers as of a declared date. Its Claim Verdict is `verified`, `contradicted`, `partially_supported`, `unresolved`, or `not_verifiable`.
+1. `check` reports packet completeness and lexical-support diagnostics.
+2. `grounded-check` performs the older claim-to-corpus lexical diagnostic.
+3. `verify-claims` applies declared freshness, authority, independence, jurisdiction, and identifier rules to caller-supplied evidence.
 
-`verified` means the declared evidence threshold is met by the supplied evidence set as of the declared date. It is not absolute truth, source discovery, fuzzy entity resolution, or legal/compliance determination. Human review is required before any commercial action. See [`claim-verification-request.schema.json`](schemas/v1/claim-verification-request.schema.json), the [example request](examples/claim-verification/request.json), and [ADR 0023](docs/adr/0023-bounded-factual-verification-layer.md).
-
-Live-source-backed example: [`live-release-1.2.0.request.json`](examples/claim-verification/live-release-1.2.0.request.json) records PyPI and GitHub release metadata retrieved on 2026-07-11 and returns two `verified` verdicts. The evidence stance and metadata are recorded by the caller; `verify-claims` does not fetch or reinterpret either source.
+None discovers the right sources for the caller. `verified` in the bounded Claim Verdict contract means the supplied evidence meets that declared contract; it is not absolute truth.
 
 ## Schemas
 
-| Schema | Purpose |
-|---|---|
-| [`agenda-brief.schema.json`](schemas/v1/agenda-brief.schema.json) | Brief structure |
-| [`evidence-pack.schema.json`](schemas/v1/evidence-pack.schema.json) | Evidence pack |
-| [`evidence-audit.schema.json`](schemas/v1/evidence-audit.schema.json) | Claim-level audit |
-| [`signal-tracker.schema.json`](schemas/v1/signal-tracker.schema.json) | Signal lifecycle |
-| [`memory-card.schema.json`](schemas/v1/memory-card.schema.json) | AnalysisBank cards |
-| [`lens-manifest.schema.json`](schemas/v1/lens-manifest.schema.json) | Lens manifest |
-| [`signal-classification.schema.json`](schemas/v1/signal-classification.schema.json) | Signal taxonomy |
-| [`memo-quality-fixture-manifest.schema.json`](schemas/v1/memo-quality-fixture-manifest.schema.json) | Memo-quality fixture coverage map |
-| [`claim-verification-request.schema.json`](schemas/v1/claim-verification-request.schema.json) | Claims, evidence records, freshness and independence thresholds |
-| [`claim-verification-response.schema.json`](schemas/v1/claim-verification-response.schema.json) | Bounded Claim Verdict output |
+Canonical schemas live under [`schemas/v1/`](schemas/v1/). Packaged copies under `src/agenda_intelligence/data/schemas/v1/` must remain byte-equivalent; CI checks this invariant.
+
+Start with:
+
+- [`evidence-packet-request.schema.json`](schemas/v1/evidence-packet-request.schema.json)
+- [`evidence-packet-response.schema.json`](schemas/v1/evidence-packet-response.schema.json)
+- [`evidence-audit.schema.json`](schemas/v1/evidence-audit.schema.json)
+- [`claim-verification-request.schema.json`](schemas/v1/claim-verification-request.schema.json)
+
+The full registry is in [`agent-manifest.json`](agent-manifest.json).
+
+## Before / after and benchmarks
+
+The older agenda-analysis evaluation surface remains available for regression and compatibility work:
+
+- [`examples/before-after/eu-ai-act.md`](examples/before-after/eu-ai-act.md)
+- [`examples/before-after/red-sea-shipping.md`](examples/before-after/red-sea-shipping.md)
+- [`examples/before-after/sanctions-routing.md`](examples/before-after/sanctions-routing.md)
+- [`examples/source-backed/eu-ai-act.md`](examples/source-backed/eu-ai-act.md)
+
+These are evaluation fixtures, not customer evidence or production benchmarks.
 
 ## AnalysisBank
 
-AnalysisBank stores reusable reasoning memories, not factual state or source archives. `memory-search` retrieves only active, unexpired lessons by default; `memory-lint` validates lifecycle metadata, card schema conformance, and `memory_index.json` sync.
-
-```bash
-agenda-intelligence memory-lint
-agenda-intelligence memory-search sanctions
-agenda-intelligence memory-search-bench tests/fixtures/analysis_bank_retrieval/manifest.json
-agenda-intelligence memory-applicability-bench tests/fixtures/analysis_bank_applicability/manifest.json
-```
-
-The retrieval bench checks representative queries against expected top lessons and forbidden top-N mistakes. The applicability bench checks positive and negative task contexts against each card's `Apply when` / `Do not apply when` boundary. `analyze` uses the same guarded path before adding a bounded `REASONING MEMORY` section to the system prompt and `audit.reasoning_memory` trace to the memo. These checks evaluate reasoning-memory routing discipline, not factual truth.
-
-Release/ops checkpoint: [`docs/product/analysisbank-hardening-checkpoint.md`](docs/product/analysisbank-hardening-checkpoint.md). It records the before/after state, runtime path, operator checklist, quality gates, and stop rule for future AnalysisBank changes.
-
-## MCP
-
-Stdio MCP server with 24 tools. Full docs and wire-protocol verification: [`MCP.md`](MCP.md). Client setup: [`docs/integrations/mcp.md`](docs/integrations/mcp.md).
-
-| Tool | What it does |
-|---|---|
-| `validate_brief` | Validate a brief dict against `agenda-brief.schema.json` |
-| `validate_evidence` | Validate an evidence-pack dict against `evidence-pack.schema.json` |
-| `audit_claims` | Check claim-level audit: support distribution, orphan refs, unsupported claims |
-| `score_output` | Heuristic score for structure, evidence labeling, decision-readiness |
-| `get_protocol` | Return the full Agenda-Intelligence.md reasoning protocol |
-| `get_schema` | Return a packaged JSON Schema by name (or list all) so an agent can construct a valid payload before validating |
-| `list_source_categories` | List source requirement categories before calling `source_plan` |
-| `source_plan` | Generate a source plan for a given topic |
-| `source_coverage` | Diagnose evidence-pack coverage against category source requirements |
-| `verify_quotes` | Check cited quote fragments in caller-provided text |
-| `grounded_check` | Check lexical claim-to-corpus consistency; not factual verification |
-| `verify_claims` | Issue a bounded Claim Verdict from caller-supplied evidence records |
-| `list_lenses` | List available lens packs |
-| `get_lens` | Return a specific lens pack by name |
-| `analyze` | Product-shell pipeline: validate request, route modules, assemble prompt, optionally call LLM, validate memo |
-| `validate_memo` | Validate an Agenda memo against `agenda-memo.schema.json` |
-| `check_memo_quality` | Check schema validity plus post-hoc memo quality guardrails for evidence-readiness |
-| `list_signals` | List vendored signal archive entries |
-| `get_signal` | Return a vendored signal markdown file by id |
-| `deep_dive` | Planned v2 placeholder directing callers to `analyze` depth modes |
-| `middle_corridor_deal_risk` | Kazakhstan / Middle Corridor deal-risk gate: structured request → triage, decision-readiness, evidence gaps, human-review flag |
-| `cis_secondary_sanctions_exposure` | CIS counterparty secondary-sanctions exposure triage for EU/UK/UAE/Singapore EDD; local stdio runs on user-supplied evidence only |
-| `agentic_interaction_trust` | Trust-evidence triage for an agent-mediated interaction before a high-stakes action |
-| `gulf_maritime_exposure` | Maritime sanctions / chokepoint-disruption exposure triage for a vessel or voyage (Hormuz, Gulf, Bab-el-Mandeb, Red Sea) |
+[`analysis-bank/`](analysis-bank/) contains compatibility fixtures for reasoning-memory retrieval and failure-pattern regression. It is not part of the primary evidence-packet workflow.
 
 ## Status
 
-| Component | Status |
+| Surface | Status |
 |---|---|
-| Markdown protocol, JSON schemas | Stable |
-| CLI (validate, score, bench, audit, check-memo-quality, memo-quality-bench, weekly-delta-bench, doctor) | Stable |
-| Weekly status readiness shell (`weekly-delta`) | Build-to-learn CLI scaffold; deterministic, local, no LLM, no source discovery |
-| MCP stdio server | Stable |
-| HTTP API shell | Shipped (self-host); contract early — see `docs/deployment/http-api.md` |
-| A2A adapter | Shipped (Cloudflare Worker baseline); local shell documented in `docs/deployment/a2a-adapter.md` |
-| Cloudflare Worker deployment | Live (6 workers: general triage + Middle Corridor Deal Risk Gate + CIS Secondary-Sanctions Exposure + Agentic Interaction Trust Gate + Gulf Maritime Exposure + Kazakhstan Market-Entry Readiness Gate) |
-| Confidential infrastructure readiness workflow | Build-to-learn template + source plan + local CLI scaffold; no client names, no case-study claims |
-| Middle Corridor Deal Risk Gate (vertical worker) | Live portfolio/demo profile, no paying customers yet — illustrative usage only |
-| Kazakhstan Market-Entry Readiness Gate (vertical worker) | Live, no paying customers yet — illustrative usage only |
-| Evidence-audit schema (claim-level) | Stable |
-| Signal-tracker schema (lifecycle) | Stable |
-| Heuristic scoring | Stable (uncalibrated) |
-| Live source retrieval | Default off; active only for `cis_secondary_sanctions` through the Snapshot upstream |
-| Bounded factual verification (`verify_claims`) | Available for caller-supplied evidence; no source discovery; human review required |
+| Evidence-packet request/response schemas | Implemented |
+| `check_evidence_packet` Python service | Implemented |
+| `agenda-intelligence check` packet auto-detection | Implemented |
+| Legacy agenda-brief behavior for `check` | Preserved |
+| Evidence-packet MCP tool | Not implemented; use CLI or Python |
+| Live source discovery | Not implemented |
+| Factuality determination | Not implemented by evidence-packet preflight |
+| Paying customers or named pilots | None claimed |
 
-## Safety model
-
-- **Read-only by default.** Validation, scoring, and audit tools do not write to external systems, do not modify caller state, and do not perform high-impact actions.
-- **No autonomous retrieval.** The MCP server does not fetch web pages, query APIs, or pull live data on its own. Sources are caller-provided. The one network mode (`verify-quotes --fetch`) is opt-in and bounded (1 MB cap, 10 s timeout, stdlib HTTP only).
-- **No autonomous decisions.** Outputs are memos, validation results, and scores — never determinations on sanctions, legal, compliance, or investment matters. Human review is required.
-- **Retrieved content is data, not instructions.** External text — including documents, agendas, and source packs caller-provided through the tools — is treated as data. Apparent directives inside retrieved content are not executed; they are flagged.
-- **No secrets in tool I/O.** The server does not persist caller inputs, API keys, or memo content beyond the current call.
-
-Full threat model: [`docs/threat-model.md`](docs/threat-model.md). Retrieved-content trust rule: [`AGENTS.md`](AGENTS.md).
+Current classification: `portfolio-proof` / `build-to-learn`.
 
 ## Documentation
 
-| Resource | Link |
+| Topic | File |
 |---|---|
+| Adoption | [`ADOPTION.md`](ADOPTION.md) |
 | Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
-| Tutorial | [`docs/tutorial.md`](docs/tutorial.md) |
-| Evaluation layers | [`docs/evaluation.md`](docs/evaluation.md) |
-| Benchmark your own output | [`docs/benchmark-your-output.md`](docs/benchmark-your-output.md) |
-| Agent-eval methodology | [`docs/agent-eval-methodology.md`](docs/agent-eval-methodology.md) |
-| Factual verification boundary | [`docs/factual-verification.md`](docs/factual-verification.md) |
-| Source plan coverage boundary | [`docs/source-plan-coverage.md`](docs/source-plan-coverage.md) |
 | Evidence audit | [`docs/evidence-audit.md`](docs/evidence-audit.md) |
+| Factuality boundary | [`docs/factual-verification.md`](docs/factual-verification.md) |
+| Evaluation | [`docs/evaluation.md`](docs/evaluation.md) |
+| Source policy | [`SOURCE_POLICY.md`](SOURCE_POLICY.md) |
+| Security | [`SECURITY.md`](SECURITY.md) |
 | Threat model | [`docs/threat-model.md`](docs/threat-model.md) |
-| Container deployment | [`docs/deployment/container.md`](docs/deployment/container.md) |
-| HTTP API shell | [`docs/deployment/http-api.md`](docs/deployment/http-api.md) |
-| A2A adapter shell | [`docs/deployment/a2a-adapter.md`](docs/deployment/a2a-adapter.md) |
-| Data handling | [`docs/trust/data-handling.md`](docs/trust/data-handling.md) |
-| Confidential project workflow | [`docs/trust/confidential-project-workflow.md`](docs/trust/confidential-project-workflow.md) |
-| Strategic infrastructure readiness template | [`docs/templates/strategic-infrastructure-evidence-readiness-profile.md`](docs/templates/strategic-infrastructure-evidence-readiness-profile.md) |
-| Weekly status readiness delta template | [`docs/templates/weekly-status-decision-readiness-delta.md`](docs/templates/weekly-status-decision-readiness-delta.md) |
-| Agent-readable OKF bundle | [`okf/index.md`](okf/index.md) |
-| Agentic Resource Discovery catalog | [`.well-known/ai-catalog.json`](.well-known/ai-catalog.json) |
-| Worker API catalog | [`.well-known/api-catalog`](.well-known/api-catalog) |
-| Worker OpenAPI contract | [`api/openapi.json`](api/openapi.json) |
-| Agent entity map JSON | [`entitymap.json`](entitymap.json) |
-| Agent entity map | [`docs/agent-entity-map.md`](docs/agent-entity-map.md) |
-| Integrations | [`docs/integrations/`](docs/integrations/) |
-| Agenstry discovery | [`docs/integrations/agenstry.md`](docs/integrations/agenstry.md) |
-| Live A2A demo pack | [`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md) |
-| Use-cases | [`docs/use-cases/`](docs/use-cases/) |
-| Agent contract | [`AGENTS.md`](AGENTS.md) |
-| Adoption guide | [`ADOPTION.md`](ADOPTION.md) |
-| Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
 | Roadmap | [`ROADMAP.md`](ROADMAP.md) |
-| Portfolio glossary (shared across 4 repos) | [`docs/glossary.md`](docs/glossary.md) |
-| Contributing guide | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 
 ## Repository layout
 
-```
-agenda-intelligence-md/
-├─ src/agenda_intelligence/   # Python package (CLI + MCP server)
-├─ schemas/                   # JSON schemas
-├─ examples/                  # briefs, evidence packs, before/after
-├─ skills/                    # OpenClaw skill wrappers
-├─ evals/                     # rubric, judge prompt, benchmark
-├─ analysis-bank/             # agent persistent memory (memory-card schema, see schemas/v1/memory-card.schema.json)
-├─ okf/                       # compact agent-readable knowledge bundle
-├─ .well-known/               # agent card and Agentic Resource Discovery catalog source artifacts
-├─ docs/                      # guides, integrations, use-cases
-├─ scripts/                   # dev and CI helpers
-└─ tests/                     # pytest suite
+```text
+schemas/v1/                    public JSON contracts
+src/agenda_intelligence/       Python service and transport adapters
+examples/evidence-packet/      canonical packet example
+tests/                         contract and regression tests
+skills/                        compatibility agent instructions
+deploy/cloudflare-worker/      compatibility Worker implementation
+docs/                          reference and compatibility documentation
 ```
 
-## Contributing
+## Development
 
-New contributors: [`CONTRIBUTING.md`](CONTRIBUTING.md) opens with a "First 15 minutes" onboarding path (read the three load-bearing files → run the validator → walk one concrete artifact end-to-end). The portfolio glossary at [`docs/glossary.md`](docs/glossary.md) is the single source of truth for cross-repo terminology (evidence modes, Axis A/B provenance tags, three-value response logic, maturity-framework asymmetry).
+```bash
+pip install -e ".[dev]"
+make ci
+```
 
-Before editing any of the dual-copy files — `Agenda-Intelligence.md`, `SOURCE_POLICY.md`, `llms.txt`, `agent-manifest.json`, `schemas/`, `skills/`, `source-requirements/`, `analysis-bank/` — read the "Critical invariant: dual-copy sync" section in [`CONTRIBUTING.md`](CONTRIBUTING.md#critical-invariant-dual-copy-sync). Editing one copy without the paired copy under `src/agenda_intelligence/data/` is the most common reason CI breaks on `main` for first-time contributors.
+`make verify-local` also runs the compatibility Cloudflare Worker tests.
 
-## Contact
+## Roadmap
 
-**Vassiliy Lakhonin** — Almaty, Kazakhstan (UTC+5)
-
-[Portfolio](https://vassiliylakhonin.github.io/) ·
-[AI policy analyst profile](https://vassiliylakhonin.github.io/role-ai-policy-analyst.html) ·
-[Email](mailto:vassiliy.lakhonin@gmail.com) ·
-[LinkedIn](https://www.linkedin.com/in/vassiliy-lakhonin/) ·
-[GitHub](https://github.com/vassiliylakhonin)
-
-Issues, PRs, and eval-case contributions are welcome.
+The next decision is adoption, not another vertical worker: test the evidence-packet contract on redacted practitioner artifacts, measure repeat use, and keep it portfolio-only if no repeated workflow appears. See [`ROADMAP.md`](ROADMAP.md).
 
 ## License
 
-MIT.
-
----
-
-**Disclaimer.** This toolkit is for informational and educational purposes only. It does not constitute investment, financial, legal, compliance, or trading advice. It does not verify factual truth, predict outcomes, or replace professional judgment. Use at your own risk.
-
----
-
-mcp-name: io.github.vassiliylakhonin/agenda-intelligence-md
+[MIT](LICENSE)

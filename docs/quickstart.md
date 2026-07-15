@@ -1,168 +1,128 @@
-# Quickstart — End‑to‑End “Aha” Moment
+# Quickstart: evidence-packet preflight
 
-This guide walks you through a **complete workflow** in about 10 minutes using the `technology‑ai` source plan.  
-You will go from a fresh install to a validated, scored brief plus a scored
-before/after example — the moment the protocol “clicks”.
+This guide runs the primary Agenda Intelligence workflow: check whether claim-backed AI output is structurally ready for human review.
 
-## Prerequisites
+The check does not determine factual truth, source authority, compliance, or authorization. It does not fetch missing sources. Human review is required for every result.
 
-* Python 3.9+ environment (virtualenv, conda, etc.)
-* `pip` (or `git` to clone the repo)
-* Internet access only if you choose the PyPI or GitHub install path
-
----
-
-## 1️⃣ Install the package
+## 1. Install
 
 ```bash
-# From PyPI (recommended)
 pip install agenda-intelligence-md
+```
 
-# Or, editable install from source
-git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
-cd agenda-intelligence-md
+For a source checkout:
+
+```bash
 pip install -e .
 ```
 
-Verify the CLI works:
+Verify the CLI:
 
 ```bash
 agenda-intelligence --help
 ```
 
----
+## 2. Get the example packet
 
-## 2️⃣ Get the source plan & brief template
-
-The **`start`** command is the fastest way to onboard:
+The bundled example paths below assume a source checkout:
 
 ```bash
-agenda-intelligence start technology-ai
+git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
+cd agenda-intelligence-md
 ```
 
-**What you’ll see:**
+The runnable example is [`examples/evidence-packet/request.json`](../examples/evidence-packet/request.json). It contains:
+
+- claims with stable IDs;
+- the source IDs each claim names;
+- an optional verbatim quote;
+- the caller-supplied source text.
+
+The request contract is [`schemas/v1/evidence-packet-request.schema.json`](../schemas/v1/evidence-packet-request.schema.json).
+
+## 3. Run the preflight
+
+```bash
+agenda-intelligence check examples/evidence-packet/request.json
+```
+
+Expected summary:
 
 ```text
-=== Trimmed source plan ===
-{
-  "must_check": ["tech-release", "policy‑update", "market‑data"],
-  "watch_indicators": ["regulation draft", "enforcement action"]
-}
-
-=== Brief template (fill in) ===
-{
-  "bottom_line": "<summary>",
-  "signal_classification": "<noise|weak_signal|signal|structural_shift|trigger_event>",
-  "signal_markers": ["<optional marker>"],
-  "what_changed": "<what changed>",
-  "main_uncertainty": "<main uncertainty>",
-  "watch_next": ["<indicator 1>", "<indicator 2>"]
-}
+packet_status=packet_complete claims=2 sources=1 factuality=not_assessed
+  c1: packet_complete (lexical_support=supported, coverage=1.0)
+  c2: packet_complete (lexical_support=supported, coverage=1.0)
 ```
 
-Copy the template into a file, e.g. `brief.json`, and fill in the fields with your actual findings.
+The result is `packet_complete` because both claims name an existing source, the declared quote is present, and the named source text has strong lexical overlap with each claim.
 
-Use `signal_classification` for signal strength and `signal_markers` for
-practical qualifiers:
+This is still not a factuality verdict. A structurally complete packet can contain wrong or low-quality source material.
 
-```json
-{
-  "signal_classification": "signal",
-  "signal_markers": ["compliance_relevant_development"]
-}
-```
-
-Marker values such as `compliance_relevant_development`,
-`enforcement_marker`, and `escalation_marker` remain valid in
-`signal_classification` for backward compatibility, but new examples should use
-`signal_markers`.
-
-> **Tip:** The source plan tells you exactly which files under `source-requirements/technology-ai.json` you should consult before making claims.
-
----
-
-## 3️⃣ (Optional) Validate an evidence pack
-
-If you want to validate that every claim is backed by a source, start from the bundled runnable example:
+## 4. Use JSON in an agent loop
 
 ```bash
-cp examples/source/evidence-pack.json evidence-pack.json
+agenda-intelligence check examples/evidence-packet/request.json --format json
 ```
 
-The example follows `schemas/v1/evidence-pack.schema.json`: it has a `topic`, an `evidence_mode`, optional `source_category`, claim-level `sources`, `unsupported_claims`, and a `source_plan`.
+The response contract is [`schemas/v1/evidence-packet-response.schema.json`](../schemas/v1/evidence-packet-response.schema.json). Stable machine-readable fields include:
 
-Validate it:
+- `packet_status`;
+- `factuality_status`;
+- per-claim missing source IDs and quote checks;
+- lexical-support status and coverage;
+- unmatched numbers;
+- `owner_actions`;
+- `human_review_required`.
+
+## 5. Gate CI on packet completeness
 
 ```bash
-agenda-intelligence validate-evidence evidence-pack.json
+agenda-intelligence check examples/evidence-packet/request.json --strict
 ```
 
----
+`--strict` exits non-zero for `source_review_required` and `packet_incomplete`. Schema-invalid input also exits non-zero.
 
-## 4️⃣ Validate the brief
+Use the default non-strict mode when you want a valid diagnostic report even if the packet still has gaps.
+
+## 6. Call the Python service
+
+```python
+import json
+from pathlib import Path
+
+from agenda_intelligence.services import check_evidence_packet
+
+packet = json.loads(Path("examples/evidence-packet/request.json").read_text())
+result = check_evidence_packet(packet)
+
+if not result["valid"]:
+    raise ValueError(result["errors"])
+
+print(result["response"]["packet_status"])
+```
+
+## Status meanings
+
+| Status | Meaning |
+|---|---|
+| `packet_complete` | References resolve and lexical support is strong. |
+| `source_review_required` | References resolve, but lexical support is weak or numbers are missing. |
+| `packet_incomplete` | A source reference or quote is structurally broken. |
+
+All statuses keep `human_review_required: true` and `factuality_status: not_assessed`.
+
+## Compatibility workflows
+
+The original agenda-analysis, evidence-audit, scoring, MCP, HTTP, A2A, and vertical-profile workflows remain available. They are compatibility surfaces, not the primary quickstart.
+
+Common commands:
 
 ```bash
 agenda-intelligence validate-brief examples/agenda-brief.json
+agenda-intelligence validate-evidence examples/source/evidence-pack.json
+agenda-intelligence audit-claims examples/source-backed/eu-ai-act.audit.json
+agenda-intelligence grounded-check examples/grounded-check/request.json
+agenda-intelligence verify-claims examples/claim-verification/request.json
 ```
 
-A green check means the JSON conforms to the schema and all required fields are present. Replace the example path with your own `brief.json` after you fill the template.
-
----
-
-## 5️⃣ Score the brief (heuristic protocol check)
-
-```bash
-agenda-intelligence score examples/agenda-brief.json
-```
-
-You’ll get a heuristic 0‑100 protocol score with dimension feedback for structure, evidence discipline, and decision-readiness signals.
-It does not verify factual truthfulness.
-
----
-
-## 6️⃣ Add evidence-pack scoring
-
-```bash
-agenda-intelligence score examples/agenda-brief.json --evidence examples/source/evidence-pack.json
-```
-
-This adds claim-level evidence feedback: supported claims, unsupported claims,
-missing sources, contradicting sources, and source-backed mode hygiene.
-
----
-
-## 7️⃣ Score a before/after example
-
-```bash
-agenda-intelligence score examples/before-after/eu-ai-act.md
-```
-
-You’ll get the before/after evaluation harness output for that example. The
-before/after scorer checks protocol markers such as signal classification,
-uncertainty, falsifiability, and watch-next indicators.
-
----
-
-## ✨ Aha Moment Recap
-
-| Step | What you did | Why it matters |
-|------|---------------|----------------|
-| 1 | Installed the package | One‑liner, no prior knowledge needed |
-| 2 | Ran `start technology‑ai` | Got a trimmed source plan + ready‑to‑fill brief template |
-| 3 | (Optional) Built an evidence pack | Ensures every claim is source‑backed |
-| 4 | Validated the brief | Confirms structural correctness |
-| 5 | Scored the brief | Checks decision-readiness signals |
-
-**Total time:** < 10 minutes.  
-**Result:** You’ve turned raw source requirements into a **decision‑ready brief** that explicitly lists watch‑next indicators — no generic “monitor developments” fluff.
-
----
-
-## Next steps
-
-- Explore more source plans: `agenda-intelligence source-plan sanctions`, `agenda-intelligence source-plan conflict-security`, etc.
-- Read the full [tutorial](tutorial.md) for a deeper dive.
-- Check [example briefs](../examples/) to see the protocol in action.
-- See the [evaluation rubric](../evals/rubric.md) to understand how the heuristic score is computed.
-
-> **Bottom line:** The protocol forces the agent (or you) to answer *what changed, why it matters, who is affected, and which three indicators to watch*. That’s the “aha” moment.
+See [`ADOPTION.md`](../ADOPTION.md) for integration notes and [`MCP.md`](../MCP.md) for the compatibility MCP surface.

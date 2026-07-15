@@ -667,6 +667,178 @@ def grounded_check(request_json: dict) -> dict:
     }
 
 
+def check_evidence_packet(request_json: dict) -> dict:
+    """Check an AI-output evidence packet before human review.
+
+    The check is deterministic and deliberately narrow: it validates claim to
+    source references, verifies declared quotes verbatim, and reports lexical
+    overlap against the sources each claim names. It does not assess source
+    authority, factual truth, or whether an action should be allowed.
+    """
+    base = _validate_json(request_json, "evidence-packet-request.schema.json")
+    if not base.get("valid"):
+        return {
+            "implemented": base.get("implemented", True),
+            "valid": base.get("valid"),
+            "errors": base.get("errors", []),
+            "response": None,
+        }
+
+    source_items = request_json.get("sources", []) or []
+    source_ids = [source["source_id"] for source in source_items]
+    claim_ids = [claim["claim_id"] for claim in request_json.get("claims", []) or []]
+    duplicate_source_ids = sorted({source_id for source_id in source_ids if source_ids.count(source_id) > 1})
+    duplicate_claim_ids = sorted({claim_id for claim_id in claim_ids if claim_ids.count(claim_id) > 1})
+    if duplicate_source_ids or duplicate_claim_ids:
+        errors = []
+        if duplicate_source_ids:
+            errors.append(f"duplicate source_id values: {', '.join(duplicate_source_ids)}")
+        if duplicate_claim_ids:
+            errors.append(f"duplicate claim_id values: {', '.join(duplicate_claim_ids)}")
+        return {"implemented": True, "valid": False, "errors": errors, "response": None}
+
+    sources = {source["source_id"]: source for source in source_items}
+    normalized_sources = {source_id: _grounded_normalize(source["text"]) for source_id, source in sources.items()}
+    source_terms = {source_id: set(_grounded_content_terms(source["text"])) for source_id, source in sources.items()}
+
+    results: list[dict] = []
+    owner_actions: list[str] = []
+    seen_actions: set[str] = set()
+    counts = {name: 0 for name in ("packet_complete", "source_review_required", "packet_incomplete")}
+
+    def add_action(action: str) -> None:
+        if action not in seen_actions:
+            seen_actions.add(action)
+            owner_actions.append(action)
+
+    for claim in request_json.get("claims", []) or []:
+        claim_id = claim["claim_id"]
+        referenced_source_ids = list(claim.get("source_ids", []) or [])
+        referenced_source_set = set(referenced_source_ids)
+        missing_source_ids = sorted(source_id for source_id in referenced_source_ids if source_id not in sources)
+        valid_source_ids = [source_id for source_id in referenced_source_ids if source_id in sources]
+        structural_issues: list[str] = []
+        review_issues: list[str] = []
+
+        if not referenced_source_ids:
+            structural_issues.append("no_source_reference")
+            add_action(f"Add at least one source reference for claim {claim_id}.")
+        if missing_source_ids:
+            structural_issues.extend(f"missing_source:{source_id}" for source_id in missing_source_ids)
+            add_action(f"Supply source(s) referenced by claim {claim_id}: {', '.join(missing_source_ids)}.")
+
+        quote_checks: list[dict] = []
+        for quote in claim.get("quotes", []) or []:
+            source_id = quote["source_id"]
+            if source_id not in sources:
+                status = "missing_source"
+                structural_issues.append(f"quote_source_missing:{source_id}")
+                add_action(f"Supply source {source_id} used by a quote in claim {claim_id}.")
+            elif source_id not in referenced_source_set:
+                status = "source_not_declared"
+                structural_issues.append(f"quote_source_not_declared:{source_id}")
+                add_action(f"Add source {source_id} to claim {claim_id}.source_ids or remove its quote.")
+            elif _grounded_normalize(quote["text"]) in normalized_sources[source_id]:
+                status = "present"
+            else:
+                status = "absent"
+                structural_issues.append(f"quote_absent:{source_id}")
+                add_action(f"Fix or remove the quote from source {source_id} in claim {claim_id}.")
+            quote_checks.append({"source_id": source_id, "status": status})
+
+        claim_terms = set(_grounded_content_terms(claim["text"]))
+        numeric_terms = {term for term in claim_terms if any(character.isdigit() for character in term)}
+        referenced_terms: set[str] = set()
+        best_source_id = None
+        best_coverage = 0.0
+        for source_id in valid_source_ids:
+            terms = source_terms[source_id]
+            referenced_terms.update(terms)
+            coverage = len(claim_terms & terms) / len(claim_terms) if claim_terms else 0.0
+            if coverage > best_coverage or best_source_id is None:
+                best_source_id = source_id
+                best_coverage = coverage
+
+        unmatched_numbers = sorted(numeric_terms - referenced_terms)
+        if best_coverage >= 0.75:
+            lexical_status = "supported"
+        elif best_coverage >= 0.4:
+            lexical_status = "weak"
+        else:
+            lexical_status = "unsupported"
+        if unmatched_numbers and lexical_status == "supported":
+            lexical_status = "weak"
+
+        if lexical_status == "weak":
+            review_issues.append("lexical_support_weak")
+            add_action(f"Review the claim-to-source mapping for claim {claim_id}; lexical support is weak.")
+        elif lexical_status == "unsupported" and valid_source_ids:
+            review_issues.append("lexical_support_unsupported")
+            add_action(f"Revise claim {claim_id} or supply a source whose text supports it.")
+        if unmatched_numbers:
+            review_issues.append("unmatched_numbers")
+            add_action(
+                f"Verify numeric value(s) in claim {claim_id}: "
+                f"{', '.join(unmatched_numbers)} not found in its referenced sources."
+            )
+
+        if structural_issues:
+            packet_status = "packet_incomplete"
+        elif review_issues:
+            packet_status = "source_review_required"
+        else:
+            packet_status = "packet_complete"
+        counts[packet_status] += 1
+
+        results.append(
+            {
+                "claim_id": claim_id,
+                "packet_status": packet_status,
+                "referenced_source_ids": referenced_source_ids,
+                "missing_source_ids": missing_source_ids,
+                "quote_checks": quote_checks,
+                "lexical_support": {
+                    "status": lexical_status,
+                    "coverage": round(best_coverage, 3),
+                    "best_source_id": best_source_id,
+                    "unmatched_numbers": unmatched_numbers,
+                },
+                "issues": structural_issues + review_issues,
+            }
+        )
+
+    if counts["packet_incomplete"]:
+        packet_status = "packet_incomplete"
+    elif counts["source_review_required"]:
+        packet_status = "source_review_required"
+    else:
+        packet_status = "packet_complete"
+
+    response = {
+        "packet_status": packet_status,
+        "factuality_status": "not_assessed",
+        "claim_count": len(results),
+        "source_count": len(source_items),
+        "counts": counts,
+        "claims": results,
+        "owner_actions": owner_actions,
+        "human_review_required": True,
+        "limitations": [
+            "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+            "Lexical matching can miss valid paraphrases and can overstate support when terms overlap "
+            "without entailment.",
+            "No source discovery or live retrieval is performed; the caller controls the supplied source set.",
+        ],
+    }
+    response_validation = _validate_json(response, "evidence-packet-response.schema.json")
+    return {
+        "implemented": response_validation.get("implemented", True),
+        "valid": response_validation.get("valid"),
+        "errors": response_validation.get("errors", []),
+        "response": response,
+    }
+
+
 def verify_claims(request_json: dict) -> dict:
     """Issue bounded factual verdicts from caller-supplied source records.
 

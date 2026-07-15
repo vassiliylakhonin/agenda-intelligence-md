@@ -155,3 +155,21 @@ Additive change under the AGENTS.md "`< 3` vertical workers in this repo" rule. 
 - Open-domain factuality verification.
 - A monolithic agent framework. The package stays a small contract layer.
 - Replacing analyst judgment.
+
+## Commercial operating gate
+
+Status: `portfolio-proof` and `build-to-learn`. The shipped runtime and public workers demonstrate implementation capability; they do not demonstrate a budget, buyer, pilot, or product-market fit.
+
+The current commercial risk is the same one faced by technically useful verification products: people may value better evidence discipline without paying for a separate evidence layer. Therefore the next milestone is not another worker, protocol, hosted surface, or factual-verification subsystem.
+
+Before further product expansion, test one complete paid job:
+
+- **Economic buyer:** a named owner of a near-term high-stakes review.
+- **Trigger:** a real source pack, vendor file, RFP, risk file, or model evidence packet due for human sign-off within 3–10 working days.
+- **Current workaround:** analyst review, spreadsheets or GRC tickets, reviewer comments, and consultant memos.
+- **Past-payment evidence:** none recorded for Agenda Intelligence MD.
+- **Smallest test:** deliver one review-ready evidence packet using Agenda Intelligence invisibly behind the workflow; compare it with the buyer's ordinary process.
+
+Measure material unsupported claims, missed evidence requirements, reviewer edit minutes, corrections, and whether the buyer pays for the next packet. Compliments, GitHub activity, demo traffic, endpoint calls, and self-scored evals are not purchase evidence.
+
+Do not add a buyer-facing worker or surface unless a live case cannot be served by the existing core. Park expansion if there is no paid continuation after 10 qualified case offers, reviewer time falls by less than 40%, or a material fabricated figure survives the review pack. If no standalone budget emerges, keep Agenda Intelligence as portfolio infrastructure or an internal layer behind a paid deliverable.
