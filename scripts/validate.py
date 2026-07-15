@@ -102,7 +102,9 @@ for token in ["name: agenda-intelligence", "description:", "references/analysis-
 
 readme = (root / "README.md").read_text()
 for token in [
-    "evidence-readiness and trust-routing runtime",
+    "deterministic evidence-packet linter",
+    "The evidence-packet contract",
+    "Compatibility profiles and adapters",
     "What this is",
     "What this is not",
     "First run",

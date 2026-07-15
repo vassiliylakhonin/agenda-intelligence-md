@@ -21,7 +21,7 @@
     "eval",
     "source_acquisition"
   ],
-  "description": "CLI, MCP server, and JSON schemas for validating and auditing strategic-risk AI agent output. Evidence and eval infrastructure layer for reasoning skills.",
+  "description": "Deterministic evidence-packet linter for claim-backed AI output, with compatibility adapters and profiles.",
   "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
   "entrypoint": "Agenda-Intelligence.md",
   "adoption": "ADOPTION.md",
@@ -61,6 +61,14 @@
     },
     "evidence_audit": {
       "path": "schemas/v1/evidence-audit.schema.json",
+      "schema_version": "v1"
+    },
+    "evidence_packet_request": {
+      "path": "schemas/v1/evidence-packet-request.schema.json",
+      "schema_version": "v1"
+    },
+    "evidence_packet_response": {
+      "path": "schemas/v1/evidence-packet-response.schema.json",
       "schema_version": "v1"
     },
     "signal_tracker": {

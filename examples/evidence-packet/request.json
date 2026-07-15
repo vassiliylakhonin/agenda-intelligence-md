@@ -1,0 +1,29 @@
+{
+  "packet_id": "synthetic-ai-review-001",
+  "topic": "Synthetic AI assistant review packet",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "text": "Acme Assistant version 3.2 uses human review for all high-impact recommendations.",
+      "source_ids": ["model-card"],
+      "quotes": [
+        {
+          "source_id": "model-card",
+          "text": "Acme Assistant version 3.2 uses human review for all high-impact recommendations"
+        }
+      ]
+    },
+    {
+      "claim_id": "c2",
+      "text": "The evaluation was completed on 2026-06-30 across 120 test cases.",
+      "source_ids": ["model-card"]
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "model-card",
+      "title": "Synthetic model card",
+      "text": "Synthetic example. Acme Assistant version 3.2 uses human review for all high-impact recommendations. The evaluation was completed on 2026-06-30 across 120 test cases. This source is illustrative and does not describe a real system."
+    }
+  ]
+}

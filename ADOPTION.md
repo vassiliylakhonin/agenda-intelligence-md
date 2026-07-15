@@ -1,16 +1,35 @@
 # ADOPTION.md
 
-How to use Agenda Intelligence MD in agent projects.
-
-This repo is two things:
-1. **A markdown protocol** (`Agenda-Intelligence.md`) — drop this file into any agent repo to improve agenda reasoning.
-2. **A CLI + MCP server + JSON schemas** (`pip install agenda-intelligence-md`) — use these to validate, score, and audit agent output in CI pipelines or agent loops.
-
-The sections below cover both. Start with whichever fits your setup.
+How to check claim-backed AI output before it reaches a reviewer.
 
 ## Fastest setup
 
-Copy the top-level file into your repo:
+Install the package and run the canonical evidence packet:
+
+```bash
+pip install agenda-intelligence-md
+agenda-intelligence check examples/evidence-packet/request.json
+```
+
+The input contract is [`schemas/v1/evidence-packet-request.schema.json`](schemas/v1/evidence-packet-request.schema.json). It contains claims, the source IDs each claim relies on, optional quotes, and the supplied source text.
+
+The result is one of:
+
+- `packet_complete` — references resolve and the named source text has strong lexical overlap with each claim;
+- `source_review_required` — references resolve, but lexical support is weak or a numeric value is missing;
+- `packet_incomplete` — a source is missing, a quote is absent, or a claim has no source reference.
+
+All three statuses require human review. `factuality_status` is always `not_assessed`: packet completeness is not proof that a claim is true.
+
+Use `--strict` in CI when only a complete packet should pass:
+
+```bash
+agenda-intelligence check evidence-packet.json --strict
+```
+
+## Legacy agenda-analysis compatibility
+
+The original markdown protocol and agenda-analysis commands remain available. For conditional public-agenda reasoning, copy the top-level file into your repo:
 
 ```text
 Agenda-Intelligence.md

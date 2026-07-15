@@ -4,6 +4,18 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(focus): evidence-packet preflight as the primary repo workflow.**
+  Adds additive `evidence-packet-request` and `evidence-packet-response` v1
+  schemas plus `services.check_evidence_packet`. The existing `check` CLI now
+  auto-detects this packet shape and returns `packet_complete`,
+  `source_review_required`, or `packet_incomplete`, with claim/source reference
+  checks, verbatim quote checks, lexical-support diagnostics, unmatched-number
+  flags, and owner actions. `factuality_status` is always `not_assessed` and
+  human review is always required. Legacy `check <agenda-brief.json>` behavior
+  remains compatible. Existing vertical workers and MCP/A2A/HTTP contracts are
+  unchanged and are now documented as compatibility profiles rather than the
+  repository's primary product narrative.
+
 - **docs(example): first live-source-backed Claim Verdict pack.** Records
   authoritative PyPI and GitHub release metadata retrieved on 2026-07-11 for
   `agenda-intelligence-md` `1.2.0`, with two bounded `verified` verdicts and an

@@ -89,6 +89,55 @@ def cmd_validate_evidence(args):
     validate_json_file(args.path, "evidence-pack.schema.json", "evidence pack")
 
 
+def cmd_check(args):
+    """Preflight an evidence packet while preserving the legacy brief alias.
+
+    Evidence packets are discriminated by their ``claims`` or ``sources``
+    fields, neither of which belongs to the agenda-brief contract. Other JSON
+    input keeps the historical ``check`` behavior and is validated as a brief.
+    """
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"Not found: {path}")
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid JSON: {exc}")
+
+    is_evidence_packet = isinstance(data, dict) and ("claims" in data or "sources" in data)
+    if not is_evidence_packet:
+        validate_json_file(args.path, "agenda-brief.schema.json", "agenda brief")
+        return
+
+    from agenda_intelligence import services
+
+    result = services.check_evidence_packet(data)
+    if not result.get("valid"):
+        for error in result.get("errors", []):
+            print(f"ERROR: {error}", file=sys.stderr)
+        raise SystemExit(1)
+
+    response = result["response"]
+    if args.format == "json":
+        print(json.dumps(response, indent=2, ensure_ascii=False))
+    else:
+        print(
+            f"packet_status={response['packet_status']} "
+            f"claims={response['claim_count']} sources={response['source_count']} "
+            f"factuality={response['factuality_status']}"
+        )
+        for claim in response["claims"]:
+            print(
+                f"  {claim['claim_id']}: {claim['packet_status']} "
+                f"(lexical_support={claim['lexical_support']['status']}, "
+                f"coverage={claim['lexical_support']['coverage']})"
+            )
+        for action in response["owner_actions"]:
+            print(f"ACTION: {action}", file=sys.stderr)
+    if args.strict and response["packet_status"] != "packet_complete":
+        raise SystemExit(1)
+
+
 def cmd_validate_manifest(args):
     # Validate agent-manifest.json against its schema.
     from jsonschema import ValidationError, validate
@@ -1127,10 +1176,12 @@ def main():
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("manifest", help="Print agent-manifest.json").set_defaults(func=cmd_manifest)
-    # check (alias of validate-brief)
-    p = sub.add_parser("check", help="Validate a brief (alias of validate-brief)")
-    p.add_argument("path")
-    p.set_defaults(func=cmd_validate_brief)
+    # check: evidence-packet preflight, with legacy agenda-brief auto-detection
+    p = sub.add_parser("check", help="Preflight an evidence packet; agenda briefs keep legacy validation behavior")
+    p.add_argument("path", help="Evidence-packet or legacy agenda-brief JSON file")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.add_argument("--strict", action="store_true", help="Exit 1 unless every packet claim is complete")
+    p.set_defaults(func=cmd_check)
     # audit (alias of validate-evidence)
     p = sub.add_parser("audit", help="Audit an evidence pack (alias of validate-evidence)")
     p.add_argument("path")

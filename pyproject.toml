@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agenda-intelligence-md"
 version = "1.2.0"
-description = "CLI, MCP server, and JSON schemas for evidence-readiness checks on AI/vendor/procurement source packs"
+description = "Deterministic evidence-packet linter for claim-backed AI output"
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
