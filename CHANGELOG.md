@@ -4,6 +4,11 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **release: prepare v1.3.0 evidence-packet preflight.** Syncs package,
+  manifest, discovery, container, registry, and plugin versions; adds a
+  published-wheel smoke check for the evidence-packet command; and replaces
+  the stale `1.2.0` first-run path with a coherent editable-source workflow.
+
 - **feat(focus): evidence-packet preflight as the primary repo workflow.**
   Adds additive `evidence-packet-request` and `evidence-packet-response` v1
   schemas plus `services.check_evidence_packet`. The existing `check` CLI now

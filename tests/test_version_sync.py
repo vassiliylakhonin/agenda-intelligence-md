@@ -31,6 +31,8 @@ def collect_json_versions(path):
         versions.append((f"{path.name}:serverInfo.version", data["serverInfo"]["version"]))
     if isinstance(data.get("info"), dict) and "version" in data["info"]:
         versions.append((f"{path.name}:info.version", data["info"]["version"]))
+    if isinstance(data.get("metadata"), dict) and "version" in data["metadata"]:
+        versions.append((f"{path.name}:metadata.version", data["metadata"]["version"]))
 
     for index, package in enumerate(data.get("packages", [])):
         if isinstance(package, dict) and "version" in package:
@@ -51,6 +53,9 @@ def test_release_version_fields_match_pyproject():
         "agent-manifest.json",
         "src/agenda_intelligence/data/agent-manifest.json",
         "server.json",
+        ".claude-plugin/plugin.json",
+        ".claude-plugin/marketplace.json",
+        ".codex-plugin/plugin.json",
         ".well-known/agent-card.json",
         ".well-known/ai-catalog.json",
         ".well-known/did.json",

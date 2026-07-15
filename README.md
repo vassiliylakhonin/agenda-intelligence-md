@@ -17,21 +17,14 @@ It reports **packet completeness**, not whether a claim is true:
 
 ## First run
 
-Install the pinned release:
-
-```bash
-pip install "agenda-intelligence-md==1.2.0"
-```
-
-From a source checkout, run the canonical synthetic packet:
+Run the canonical synthetic packet from a source checkout:
 
 ```bash
 git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
 cd agenda-intelligence-md
-```
-
-```bash
-agenda-intelligence check examples/evidence-packet/request.json
+python -m venv .venv
+.venv/bin/python -m pip install -e .
+.venv/bin/agenda-intelligence check examples/evidence-packet/request.json
 ```
 
 Expected shape:
@@ -45,11 +38,18 @@ packet_status=packet_complete claims=2 sources=1 factuality=not_assessed
 Use JSON for an agent loop or CI pipeline:
 
 ```bash
-agenda-intelligence check examples/evidence-packet/request.json --format json
-agenda-intelligence check examples/evidence-packet/request.json --strict
+.venv/bin/agenda-intelligence check examples/evidence-packet/request.json --format json
+.venv/bin/agenda-intelligence check examples/evidence-packet/request.json --strict
 ```
 
 `--strict` exits non-zero unless every claim is `packet_complete`.
+
+Install the pinned release without cloning the source and check your own packet:
+
+```text
+pip install "agenda-intelligence-md==1.3.0"
+agenda-intelligence check /path/to/evidence-packet.json --strict
+```
 
 ## The evidence-packet contract
 
