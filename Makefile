@@ -1,4 +1,4 @@
-.PHONY: install test package-consistency lint format typecheck worker-test update-contract-responses smoke-live ci ci-fast verify-local clean build publish
+.PHONY: install test package-consistency lint format typecheck worker-test update-contract-responses smoke-live ci ci-fast verify-local verification-report clean build publish
 
 # Python interpreter used by the test/CI targets. Override per invocation when
 # the default `python3` points at an interpreter without the dev deps installed
@@ -7,6 +7,7 @@
 #   make ci PYTHON=.venv/bin/python
 #   make test PYTHON=python3.12
 PYTHON ?= python3
+export PYTHONPATH := $(CURDIR)/src:$(PYTHONPATH)
 
 install:
 	pip install -e ".[dev]"
@@ -72,6 +73,11 @@ ci-fast: lint typecheck test
 # Full local gate before pushing changes that touch Worker discovery/runtime,
 # package assets, examples, or validation guards.
 verify-local: ci worker-test
+
+# Run both local verification surfaces and write deterministic, machine-readable
+# evidence. The report intentionally excludes timestamps, durations, and host paths.
+verification-report:
+	$(PYTHON) scripts/verify_repository.py --output .verification/results.json
 
 clean:
 	find . -type f -name '*.pyc' -delete

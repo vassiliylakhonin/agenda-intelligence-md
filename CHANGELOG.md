@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **chore(verification): reproducible repository evidence.** Adds
+  `make verification-report`, which runs the existing Python/package and
+  Cloudflare Worker gates and writes a deterministic JSON result with hashed
+  contract files. The report records zero paid API calls and explicitly limits
+  its claim to internal technical verification. The Makefile now pins local
+  `src/` ahead of stale editable installs so documentation smoke tests exercise
+  the checked-out code.
+
 - **release: prepare v1.3.0 evidence-packet preflight.** Syncs package,
   manifest, discovery, container, registry, and plugin versions; adds a
   published-wheel smoke check for the evidence-packet command; and replaces

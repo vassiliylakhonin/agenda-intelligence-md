@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -12,6 +13,10 @@ from pathlib import Path
 from jsonschema import ValidationError, validate
 
 ROOT = Path(__file__).resolve().parents[1]
+LOCAL_ENV = {
+    **os.environ,
+    "PYTHONPATH": os.pathsep.join(part for part in [str(ROOT / "src"), os.environ.get("PYTHONPATH", "")] if part),
+}
 NON_ASCII_HYPHENS = "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"
 DOCS_WITH_COMMANDS = [
     ROOT / "README.md",
@@ -187,6 +192,7 @@ def run_command(command: str) -> subprocess.CompletedProcess[str]:
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            env=LOCAL_ENV,
             check=False,
         )
     return subprocess.run(
@@ -195,6 +201,7 @@ def run_command(command: str) -> subprocess.CompletedProcess[str]:
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        env=LOCAL_ENV,
         shell=True,
         check=False,
     )
