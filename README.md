@@ -234,9 +234,14 @@ docs/                          reference and compatibility documentation
 ```bash
 pip install -e ".[dev]"
 make ci
+make verification-report
 ```
 
 `make verify-local` also runs the compatibility Cloudflare Worker tests.
+`make verification-report` runs both verification surfaces and writes
+`.verification/results.json`: a deterministic, machine-readable record of the
+checks and hashed contracts. It uses no paid APIs and deliberately makes no
+claim about factual truth, live deployment health, adoption, or market value.
 
 ## Roadmap
 
