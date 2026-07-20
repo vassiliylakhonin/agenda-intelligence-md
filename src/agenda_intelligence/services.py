@@ -7,6 +7,7 @@ other. They are stateless and do not persist caller payloads.
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import re
@@ -3562,4 +3563,189 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
         "valid": response_validation.get("valid"),
         "errors": response_validation.get("errors", []),
         "response": response,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Authoring helpers (protocol-compliant document assembly)
+# ---------------------------------------------------------------------------
+
+_BRIEF_REQUIRED_FIELDS = (
+    "bottom_line",
+    "signal_classification",
+    "what_changed",
+    "main_uncertainty",
+    "watch_next",
+)
+
+_BRIEF_OPTIONAL_FIELDS = (
+    "why_it_matters",
+    "affected_actors",
+    "scenarios",
+    "signal_markers",
+    "data_integrity_notes",
+    "confidence",
+)
+
+_SUPPORT_STATUSES = ("supported", "partially_supported", "unsupported")
+
+_AUTHORING_NOTE = (
+    "Deterministic document assembly only. Returns the document to the caller; it does not write "
+    "files, retrieve sources, draft prose, score source reliability, or verify factual truth."
+)
+
+
+def create_brief(fields: Optional[dict] = None) -> dict:
+    """Assemble an agenda brief from supplied fields and report what is missing.
+
+    Copies known brief fields into a brief object, validates it against
+    ``agenda-brief.schema.json``, and reports which required fields are still
+    empty. Called with no fields it returns an empty scaffold plus the full
+    required-field list, so an agent can discover the contract and fill it in
+    over several turns rather than guessing the shape.
+
+    ``evidence_mode`` defaults to ``reasoning_only`` — the honest default for a
+    runtime with no live retrieval. Callers that actually supplied sources must
+    set it explicitly.
+
+    Scope: structure only. Does not write files, retrieve sources, draft
+    content, or verify factual truth.
+    """
+    supplied = fields or {}
+    known = _BRIEF_REQUIRED_FIELDS + _BRIEF_OPTIONAL_FIELDS + ("evidence_mode",)
+
+    brief: dict = {}
+    for key in _BRIEF_REQUIRED_FIELDS + _BRIEF_OPTIONAL_FIELDS:
+        value = supplied.get(key)
+        if value is None or value == "" or value == []:
+            continue
+        brief[key] = value
+    brief["evidence_mode"] = supplied.get("evidence_mode") or "reasoning_only"
+
+    missing_required = [key for key in _BRIEF_REQUIRED_FIELDS if key not in brief]
+    ignored_fields = sorted(key for key in supplied if key not in known)
+
+    validation = _validate_json(brief, "agenda-brief.schema.json")
+    return {
+        "implemented": True,
+        "valid": validation.get("valid"),
+        "errors": validation.get("errors", []),
+        "complete": not missing_required and bool(validation.get("valid")),
+        "missing_required": missing_required,
+        "ignored_fields": ignored_fields,
+        "brief": brief,
+        "note": _AUTHORING_NOTE,
+    }
+
+
+def _authoring_failure(errors: list[str]) -> dict:
+    return {
+        "implemented": True,
+        "valid": False,
+        "errors": errors,
+        "pack": None,
+        "note": _AUTHORING_NOTE,
+    }
+
+
+def _sync_unsupported_claims(pack: dict) -> None:
+    """Mirror ``support_status == "unsupported"`` claims into ``unsupported_claims``.
+
+    Free-text entries that do not correspond to a claim record are preserved in
+    their original order; the runtime owns only the derived part of the list.
+    """
+    claim_texts = {claim.get("claim") for claim in pack.get("claims", [])}
+    manual = [text for text in pack.get("unsupported_claims", []) or [] if text not in claim_texts]
+    derived = [
+        claim["claim"]
+        for claim in pack.get("claims", [])
+        if claim.get("support_status") == "unsupported" and claim.get("claim")
+    ]
+    pack["unsupported_claims"] = manual + [text for text in derived if text not in manual]
+
+
+def append_evidence(request_json: Optional[dict] = None) -> dict:
+    """Append a claim and its sources to an evidence pack, then re-validate.
+
+    Creates a new pack when ``pack_json`` is omitted (``topic`` is then
+    required). When a claim with the same text already exists, sources are
+    appended to it and de-duplicated on ``(name, url)`` rather than creating a
+    duplicate claim record. ``unsupported_claims`` is kept consistent with the
+    per-claim ``support_status`` values on every call.
+
+    ``support_status`` is never inferred as ``supported``: when omitted it
+    defaults to ``unsupported`` (no sources supplied) or ``partially_supported``
+    (sources supplied). Upgrading a claim to ``supported`` is an analyst
+    judgement and must be passed explicitly. When appending to an existing claim
+    without an explicit ``support_status``, the stored status is left unchanged.
+
+    Scope: structure only. Does not fetch URLs, verify quotes, score source
+    reliability, or verify factual truth.
+    """
+    request = request_json or {}
+
+    claim_text = request.get("claim")
+    if not isinstance(claim_text, str) or not claim_text.strip():
+        return _authoring_failure(["claim is required and must be a non-empty string"])
+
+    explicit_status = request.get("support_status")
+    if explicit_status is not None and explicit_status not in _SUPPORT_STATUSES:
+        return _authoring_failure([f"support_status must be one of {list(_SUPPORT_STATUSES)}"])
+
+    sources = request.get("sources") or []
+    if not isinstance(sources, list):
+        return _authoring_failure(["sources must be an array of source objects"])
+
+    supplied_pack = request.get("pack_json")
+    created_pack = supplied_pack is None
+    if created_pack:
+        topic = request.get("topic")
+        if not isinstance(topic, str) or not topic.strip():
+            return _authoring_failure(["topic is required when pack_json is omitted"])
+        pack: dict = {
+            "topic": topic,
+            "evidence_mode": request.get("evidence_mode") or "reasoning_only",
+            "claims": [],
+            "unsupported_claims": [],
+        }
+    else:
+        if not isinstance(supplied_pack, dict):
+            return _authoring_failure(["pack_json must be an evidence-pack object"])
+        pack = copy.deepcopy(supplied_pack)
+        pack.setdefault("claims", [])
+        pack.setdefault("unsupported_claims", [])
+        if request.get("evidence_mode"):
+            pack["evidence_mode"] = request["evidence_mode"]
+
+    support_status = explicit_status or ("partially_supported" if sources else "unsupported")
+
+    existing = next((claim for claim in pack["claims"] if claim.get("claim") == claim_text), None)
+    if existing is None:
+        pack["claims"].append({"claim": claim_text, "support_status": support_status, "sources": list(sources)})
+        action = "claim_added"
+        appended_sources = len(sources)
+    else:
+        existing.setdefault("sources", [])
+        seen = {(source.get("name"), source.get("url")) for source in existing["sources"]}
+        new_sources = [source for source in sources if (source.get("name"), source.get("url")) not in seen]
+        existing["sources"].extend(new_sources)
+        if explicit_status is not None:
+            existing["support_status"] = explicit_status
+        action = "sources_appended"
+        appended_sources = len(new_sources)
+
+    _sync_unsupported_claims(pack)
+
+    validation = _validate_json(pack, "evidence-pack.schema.json")
+    return {
+        "implemented": True,
+        "valid": validation.get("valid"),
+        "errors": validation.get("errors", []),
+        "action": action,
+        "created_pack": created_pack,
+        "appended_sources": appended_sources,
+        "claim_count": len(pack["claims"]),
+        "unsupported_claim_count": len(pack["unsupported_claims"]),
+        "pack": pack,
+        "note": _AUTHORING_NOTE,
     }

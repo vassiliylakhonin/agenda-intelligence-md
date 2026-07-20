@@ -522,6 +522,135 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "handler": lambda args: mcp_server.get_schema(args.get("name")),
     },
+    "create_brief": {
+        "description": (
+            "Assemble an agenda brief from supplied fields and report which required fields are "
+            "still missing. Use when producing a brief inside the protocol instead of hand-building "
+            "JSON: call it with whatever is known so far, read missing_required, and call again with "
+            "the remaining fields. Call with no arguments to get an empty scaffold plus the required "
+            "field list. evidence_mode defaults to reasoning_only. Returns the assembled brief object "
+            "and its schema errors to the caller; it does not write files, retrieve sources, draft "
+            "prose, or verify factual truth."
+        ),
+        "inputSchema": _schema(
+            {
+                "bottom_line": {
+                    "type": "string",
+                    "description": "One-line decision-relevant conclusion.",
+                },
+                "signal_classification": {
+                    "type": "string",
+                    "description": (
+                        "Signal class from agenda-brief.schema.json (for example signal, "
+                        "weak_signal, structural_shift). Call get_schema('agenda_brief') for the "
+                        "full enum."
+                    ),
+                },
+                "what_changed": {
+                    "type": "string",
+                    "description": "What is materially different now versus the prior state.",
+                },
+                "main_uncertainty": {
+                    "type": "string",
+                    "description": "The premise that would most change the conclusion if false.",
+                },
+                "watch_next": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Observable indicators to monitor next. At least one is required.",
+                },
+                "why_it_matters": {"type": "string", "description": "Optional consequence framing."},
+                "affected_actors": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional list of actors materially affected.",
+                },
+                "scenarios": {
+                    "type": "array",
+                    "items": {"type": "object"},
+                    "description": "Optional scenario objects with name, description, and indicators.",
+                },
+                "signal_markers": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional qualifying markers that do not replace signal_classification.",
+                },
+                "data_integrity_notes": {
+                    "type": "array",
+                    "items": {"type": "object"},
+                    "description": (
+                        "Optional surfaced concerns about prompt injection, source anomalies, or "
+                        "retrieval limits. Records a concern; it is not an automated trust verdict."
+                    ),
+                },
+                "evidence_mode": {
+                    "type": "string",
+                    "description": (
+                        "How the brief was sourced. Defaults to reasoning_only; set explicitly when "
+                        "sources were actually supplied."
+                    ),
+                },
+                "confidence": {
+                    "description": "Optional confidence as a level string or a level/score/reasoning object.",
+                },
+            }
+        ),
+        "handler": lambda args: mcp_server.create_brief(args),
+    },
+    "append_evidence": {
+        "description": (
+            "Append a claim and its sources to an evidence pack and re-validate the result. Use when "
+            "building an evidence pack incrementally as sources are read, instead of assembling the "
+            "whole document by hand. Omit pack_json to start a new pack (topic is then required). A "
+            "claim whose text already exists gains the new sources instead of being duplicated, and "
+            "unsupported_claims is kept consistent with per-claim support_status. support_status is "
+            "never inferred as supported: omitted it defaults to unsupported (no sources) or "
+            "partially_supported (sources supplied). Returns the updated pack to the caller; it does "
+            "not write files, fetch URLs, verify quotes, score source reliability, or verify factual "
+            "truth."
+        ),
+        "inputSchema": _schema(
+            {
+                "claim": {
+                    "type": "string",
+                    "description": "Claim text to add, or the exact text of an existing claim to extend.",
+                },
+                "pack_json": {
+                    "type": "object",
+                    "description": ("Existing evidence-pack object to extend. Omit to create a new pack from topic."),
+                },
+                "topic": {
+                    "type": "string",
+                    "description": "Pack topic. Required only when pack_json is omitted.",
+                },
+                "sources": {
+                    "type": "array",
+                    "items": {"type": "object"},
+                    "description": (
+                        "Source objects matching evidence-pack.schema.json: name, source_type, "
+                        "freshness, supports, limits, and optional url."
+                    ),
+                },
+                "support_status": {
+                    "type": "string",
+                    "enum": ["supported", "partially_supported", "unsupported"],
+                    "description": (
+                        "Analyst judgement of claim support. Omit to take the conservative default; "
+                        "pass it explicitly to upgrade a claim or to change an existing one."
+                    ),
+                },
+                "evidence_mode": {
+                    "type": "string",
+                    "description": (
+                        "How the pack was sourced. Defaults to reasoning_only for a new pack; when "
+                        "supplied it overwrites the value on an existing pack."
+                    ),
+                },
+            },
+            ["claim"],
+        ),
+        "handler": lambda args: mcp_server.append_evidence(args),
+    },
 }
 
 

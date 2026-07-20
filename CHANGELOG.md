@@ -4,6 +4,23 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(mcp): authoring tools `create_brief` and `append_evidence`.** Adds two
+  MCP tools (`since: v1.4`) that let an agent produce protocol documents inside
+  the contract instead of hand-building JSON and validating it afterwards.
+  `create_brief` assembles a brief from supplied fields, reports
+  `missing_required` so an agent can fill it in over several turns, defaults
+  `evidence_mode` to `reasoning_only`, and surfaces unknown keys in
+  `ignored_fields` rather than dropping them. `append_evidence` appends a claim
+  and its sources to an evidence pack, de-duplicates sources on `(name, url)`
+  when the claim already exists, keeps `unsupported_claims` consistent with
+  per-claim `support_status`, and never infers `supported` — an omitted status
+  defaults to `unsupported` or `partially_supported`, and extending a claim
+  without an explicit status leaves the stored one unchanged. Both are
+  deterministic and stateless: they return the document to the caller and do not
+  write files, fetch URLs, verify quotes, score source reliability, or assess
+  factual truth. Additive per ADR 0012; no existing tool, schema, or response
+  shape changed.
+
 - **chore(verification): reproducible repository evidence.** Adds
   `make verification-report`, which runs the existing Python/package and
   Cloudflare Worker gates and writes a deterministic JSON result with hashed

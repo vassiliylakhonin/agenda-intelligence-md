@@ -18,6 +18,9 @@ Implemented (return ``implemented=True``):
   source texts. Local-text only; does not make outbound network requests.
 - ``check_memo_quality``: schema validity plus post-hoc evidence-readiness
   quality guardrails for Agenda memos.
+- ``create_brief`` / ``append_evidence``: deterministic assembly of a brief or
+  evidence pack from caller-supplied fields, validated on every call. They
+  return the document to the caller and write nothing to disk.
 
 Honest scope: schema-level only. None of these tools verify factual truth.
 """
@@ -401,6 +404,24 @@ def verify_claims(request_json: dict) -> dict:
 def score_output(before_text: str, after_text: str) -> dict:
     """Score a before/after output pair with the same marker rubric used by examples."""
     return _services.score_output(before_text, after_text)
+
+
+def create_brief(fields: Optional[dict] = None) -> dict:
+    """Assemble an agenda brief from supplied fields and report what is still missing.
+
+    Returns the assembled document to the caller. It does not write files,
+    retrieve sources, draft content, or verify factual truth.
+    """
+    return _services.create_brief(fields)
+
+
+def append_evidence(request_json: Optional[dict] = None) -> dict:
+    """Append a claim and its sources to an evidence pack, then re-validate.
+
+    Returns the updated pack to the caller. It does not write files, fetch URLs,
+    verify quotes, score source reliability, or verify factual truth.
+    """
+    return _services.append_evidence(request_json)
 
 
 # ---------------------------------------------------------------------------
