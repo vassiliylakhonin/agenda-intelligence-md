@@ -1,13 +1,18 @@
 # MCP
 
 `agenda-intelligence-mcp` is a real stdio MCP server shipping with the package.
-It exposes 22 tool functions implemented in `agenda_intelligence.mcp_server`.
+It exposes 26 tool functions implemented in `agenda_intelligence.mcp_server`.
 
-The tools split into three layers:
+The tools split into four layers:
 
-- **Validation layer** (12 tools, this repo's original scope): schema checks,
+- **Validation layer** (14 tools, this repo's original scope): schema checks,
   schema discovery (`get_schema`), evidence audit, lens and source-plan access,
-  output scoring, quote verification.
+  output scoring, quote verification, grounding and claim-verdict checks.
+- **Authoring layer** (2 tools): `create_brief`, `append_evidence` — assemble a
+  protocol-compliant brief or evidence pack step by step instead of hand-building
+  JSON, and validate the result on every call. They return the document to the
+  caller: no filesystem writes, no retrieval, no drafting of prose, no
+  factual-truth verification. See [Authoring tools](#authoring-tools).
 - **Product layer** (6 tools, Agenda Intelligence product shell): `analyze`,
   `validate_memo`, `check_memo_quality`, `list_signals`, `get_signal`,
   `deep_dive` (reserved/planned, returns a v2 placeholder). These wrap the
@@ -291,6 +296,78 @@ Score a before/after output pair with the marker rubric used in evals.
 Returns `{ "implemented": true, "score": 72, "dimensions": { ... }, "error": null }`.
 
 ---
+
+## Authoring tools
+
+These two tools let an agent produce protocol documents inside the contract
+rather than validating one it already assembled by hand. Both are deterministic
+and stateless: they take what the caller supplies, return the resulting
+document, and never touch the filesystem, the network, or a live source.
+
+### `create_brief`
+
+Assemble an agenda brief from supplied fields and report what is still missing.
+
+```json
+{
+  "bottom_line": "...",
+  "signal_classification": "compliance_relevant_development",
+  "what_changed": "...",
+  "main_uncertainty": "...",
+  "watch_next": ["..."]
+}
+```
+
+Call it with no arguments to get an empty scaffold plus the required-field list,
+then call again as fields are filled in. `evidence_mode` defaults to
+`reasoning_only` — the honest default for a runtime with no live retrieval;
+callers that actually supplied sources must set it explicitly.
+
+Returns `{ "implemented": true, "valid": true, "complete": true,
+"missing_required": [], "ignored_fields": [], "brief": { ... }, "errors": [] }`.
+
+Unknown keys are reported in `ignored_fields` rather than silently dropped.
+
+### `append_evidence`
+
+Append a claim and its sources to an evidence pack, then re-validate the pack.
+
+```json
+{
+  "topic": "EU implementing act timing",
+  "claim": "The effective date moved to 2026-09-01.",
+  "sources": [
+    {
+      "name": "Official journal notice",
+      "url": "https://example.org/journal/2026-114",
+      "source_type": "official",
+      "freshness": "current",
+      "supports": ["The effective date is 2026-09-01."],
+      "limits": ["Does not address transition relief."]
+    }
+  ],
+  "support_status": "supported"
+}
+```
+
+Omit `pack_json` to create a new pack (`topic` is then required); pass the pack
+back on each subsequent call to extend it. A claim whose text already exists
+gains the new sources — de-duplicated on `(name, url)` — instead of being
+duplicated, and `unsupported_claims` is kept consistent with the per-claim
+`support_status` on every call. Free-text entries in `unsupported_claims` that
+have no claim record of their own are preserved.
+
+`support_status` is never inferred as `supported`. When omitted it defaults to
+`unsupported` (no sources supplied) or `partially_supported` (sources supplied);
+upgrading a claim is an analyst judgement and must be passed explicitly. When
+extending an existing claim without an explicit `support_status`, the stored
+status is left unchanged.
+
+Returns `{ "implemented": true, "valid": true, "action": "claim_added",
+"created_pack": true, "appended_sources": 1, "claim_count": 1,
+"unsupported_claim_count": 0, "pack": { ... }, "errors": [] }`.
+
+The caller's `pack_json` is never mutated in place.
 
 ---
 
