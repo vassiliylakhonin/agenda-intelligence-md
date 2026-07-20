@@ -125,6 +125,8 @@ The packaged MCP server remains available for existing clients:
 
 The canonical evidence-packet preflight is currently exposed through the CLI and Python service. Existing MCP tools such as `audit_claims`, `verify_quotes`, `grounded_check`, and `verify_claims` remain compatible; no tool was removed or renamed. See [`MCP.md`](MCP.md).
 
+Two authoring tools, `create_brief` and `append_evidence`, let an agent assemble a brief or an evidence pack step by step inside the contract instead of hand-building JSON and validating it afterwards. Both are deterministic and stateless: they validate on every call and return the document to the caller. They do not write files, retrieve sources, draft prose, or assess factual truth, and `append_evidence` never infers a `supported` claim status on its own.
+
 Claude Code plugin installation also remains available:
 
 ```text
