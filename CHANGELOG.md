@@ -4,6 +4,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- No unreleased changes.
+
+## 1.4.0 — 2026-07-22
+
+- **release: publish the MCP evidence-packet workflow.** Synchronizes the
+  package and discovery surfaces at `1.4.0`, adds a focused runnable stdio
+  example for `check_evidence_packet`, and documents the decision-workspace
+  boundary before high-stakes or irreversible action.
+
 - **feat(mcp): expose the primary evidence-packet preflight.** Adds
   `check_evidence_packet` to the local stdio MCP contract so an agent can run
   the repository's primary claim/source packet check without dropping to the
@@ -35,6 +44,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   its claim to internal technical verification. The Makefile now pins local
   `src/` ahead of stale editable installs so documentation smoke tests exercise
   the checked-out code.
+
+## 1.3.0 — 2026-07-15
 
 - **release: prepare v1.3.0 evidence-packet preflight.** Syncs package,
   manifest, discovery, container, registry, and plugin versions; adds a

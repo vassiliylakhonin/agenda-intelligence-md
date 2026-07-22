@@ -15,6 +15,7 @@ from agenda_intelligence.services import check_evidence_packet
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLE = ROOT / "examples" / "evidence-packet" / "request.json"
+MCP_EXAMPLE = ROOT / "examples" / "evidence-packet" / "mcp_client.py"
 CLI = [sys.executable, "-m", "agenda_intelligence.cli"]
 ENV = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
 
@@ -142,3 +143,31 @@ def test_primary_packet_preflight_is_registered_and_callable_over_mcp():
 
     transported = spec["handler"]({"packet_json": example_request()})
     assert transported == result
+
+
+def test_focused_mcp_example_runs_against_checkout():
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(MCP_EXAMPLE),
+            "--command",
+            f"{sys.executable} -m agenda_intelligence.mcp_stdio",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=ROOT,
+        env=ENV,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "human_review_required": True,
+        "counts": {
+            "packet_complete": 2,
+            "source_review_required": 0,
+            "packet_incomplete": 0,
+        },
+    }

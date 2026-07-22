@@ -99,6 +99,11 @@ lexical-support gaps, unmatched numbers, and owner actions. It uses only text
 supplied in the call: no retrieval, source-authority scoring, factuality
 determination, or action authorization. Human review remains required.
 
+Focused runnable example:
+[`examples/evidence-packet/mcp_client.py`](examples/evidence-packet/mcp_client.py).
+It starts the stdio server, sends the canonical synthetic packet, and prints
+the packet status, factuality boundary, review requirement, and status counts.
+
 ---
 
 ### `audit_claims`

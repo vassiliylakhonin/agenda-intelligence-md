@@ -47,7 +47,7 @@ Use JSON for an agent loop or CI pipeline:
 Install the pinned release without cloning the source and check your own packet:
 
 ```text
-pip install "agenda-intelligence-md==1.3.0"
+pip install "agenda-intelligence-md==1.4.0"
 agenda-intelligence check /path/to/evidence-packet.json --strict
 ```
 
@@ -110,7 +110,8 @@ The repository predates the evidence-packet focus and also packages agent reason
 
 ## MCP
 
-The packaged MCP server remains available for existing clients:
+The packaged MCP server exposes the same evidence-packet preflight to agent
+clients:
 
 ```json
 {
@@ -123,7 +124,25 @@ The packaged MCP server remains available for existing clients:
 }
 ```
 
-The canonical evidence-packet preflight is currently exposed through the CLI and Python service. Existing MCP tools such as `audit_claims`, `verify_quotes`, `grounded_check`, and `verify_claims` remain compatible; no tool was removed or renamed. See [`MCP.md`](MCP.md).
+Run a focused stdio example against an editable install:
+
+```bash
+.venv/bin/python examples/evidence-packet/mcp_client.py \
+  --command ".venv/bin/agenda-intelligence-mcp"
+```
+
+The example initializes the MCP server, calls `check_evidence_packet` with the
+synthetic packet, and prints only the review summary. See
+[`examples/evidence-packet/mcp_client.py`](examples/evidence-packet/mcp_client.py)
+and [`MCP.md`](MCP.md).
+
+Before using the result for an irreversible or high-stakes action, record the
+goal, supplied evidence, suspected unreliable evidence, assumptions, intended
+action, and stop/escalation conditions. The tool checks packet structure, not
+whether a claim is true or an action is authorized.
+
+Existing MCP tools such as `audit_claims`, `verify_quotes`, `grounded_check`,
+and `verify_claims` remain compatible; no tool was removed or renamed.
 
 Two authoring tools, `create_brief` and `append_evidence`, let an agent assemble a brief or an evidence pack step by step inside the contract instead of hand-building JSON and validating it afterwards. Both are deterministic and stateless: they validate on every call and return the document to the caller. They do not write files, retrieve sources, draft prose, or assess factual truth, and `append_evidence` never infers a `supported` claim status on its own.
 
