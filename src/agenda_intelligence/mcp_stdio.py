@@ -60,6 +60,29 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "handler": lambda args: mcp_server.validate_evidence(args["evidence_json"]),
     },
+    "check_evidence_packet": {
+        "description": (
+            "Check a caller-provided evidence packet before human review. Use when an AI output "
+            "declares claims, source IDs, optional verbatim quotes, and the full supplied source "
+            "text. Returns packet_complete, source_review_required, or packet_incomplete per claim "
+            "and overall, with broken references, quote mismatches, lexical-support gaps, unmatched "
+            "numbers, and owner actions. Deterministic and local-text only: it does not retrieve "
+            "sources, score source authority, assess factual truth, or authorize an action."
+        ),
+        "inputSchema": _schema(
+            {
+                "packet_json": {
+                    "type": "object",
+                    "description": (
+                        "Parsed object matching evidence-packet-request.schema.json: claims plus "
+                        "the complete source texts those claims reference."
+                    ),
+                }
+            },
+            ["packet_json"],
+        ),
+        "handler": lambda args: mcp_server.check_evidence_packet(args["packet_json"]),
+    },
     "audit_claims": {
         "description": (
             "Validate a claim-level evidence audit and summarize support quality. "

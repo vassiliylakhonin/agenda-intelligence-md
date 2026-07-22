@@ -4,6 +4,13 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(mcp): expose the primary evidence-packet preflight.** Adds
+  `check_evidence_packet` to the local stdio MCP contract so an agent can run
+  the repository's primary claim/source packet check without dropping to the
+  CLI or importing Python. The tool preserves the existing deterministic,
+  caller-supplied-text boundary: it reports reference, quote, lexical-support,
+  and unmatched-number diagnostics, never factual truth or authorization.
+
 - **feat(mcp): authoring tools `create_brief` and `append_evidence`.** Adds two
   MCP tools (`since: v1.4`) that let an agent produce protocol documents inside
   the contract instead of hand-building JSON and validating it afterwards.

@@ -18,6 +18,8 @@ Implemented (return ``implemented=True``):
   source texts. Local-text only; does not make outbound network requests.
 - ``check_memo_quality``: schema validity plus post-hoc evidence-readiness
   quality guardrails for Agenda memos.
+- ``check_evidence_packet``: deterministic claim/source packet preflight with
+  verbatim-quote and lexical-support diagnostics.
 - ``create_brief`` / ``append_evidence``: deterministic assembly of a brief or
   evidence pack from caller-supplied fields, validated on every call. They
   return the document to the caller and write nothing to disk.
@@ -108,6 +110,16 @@ def validate_brief(brief_json: dict) -> dict:
 def validate_evidence(evidence_json: dict) -> dict:
     """Validate an evidence‑pack dict against evidence‑pack.schema.json."""
     return _validate_json(evidence_json, "evidence-pack.schema.json")
+
+
+def check_evidence_packet(packet_json: dict) -> dict:
+    """Run the primary evidence-packet preflight over caller-supplied text.
+
+    The result reports packet completeness, quote mismatches, lexical-support
+    gaps, and unmatched numbers. It does not retrieve sources or assess factual
+    truth, and every result still requires human review.
+    """
+    return _services.check_evidence_packet(packet_json)
 
 
 def audit_claims(audit_json: dict) -> dict:

@@ -197,6 +197,23 @@
         }
       },
       {
+        "name": "check_evidence_packet",
+        "since": "v1.4",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "packet_json": {
+              "type": "object",
+              "description": "Parsed object matching evidence-packet-request.schema.json: claims plus the complete source texts those claims reference."
+            }
+          },
+          "required": [
+            "packet_json"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
         "name": "audit_claims",
         "since": "v1.0",
         "input_schema": {

@@ -198,7 +198,7 @@ These are evaluation fixtures, not customer evidence or production benchmarks.
 | `check_evidence_packet` Python service | Implemented |
 | `agenda-intelligence check` packet auto-detection | Implemented |
 | Legacy agenda-brief behavior for `check` | Preserved |
-| Evidence-packet MCP tool | Not implemented; use CLI or Python |
+| `check_evidence_packet` MCP tool | Implemented |
 | Live source discovery | Not implemented |
 | Factuality determination | Not implemented by evidence-packet preflight |
 | Paying customers or named pilots | None claimed |

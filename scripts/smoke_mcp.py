@@ -106,6 +106,32 @@ REQUESTS = [
             },
         },
     },
+    {
+        "jsonrpc": "2.0",
+        "id": 8,
+        "method": "tools/call",
+        "params": {
+            "name": "check_evidence_packet",
+            "arguments": {
+                "packet_json": {
+                    "claims": [
+                        {
+                            "claim_id": "c1",
+                            "text": "The test source says hello world.",
+                            "source_ids": ["s1"],
+                            "quotes": [{"source_id": "s1", "text": "hello world"}],
+                        }
+                    ],
+                    "sources": [
+                        {
+                            "source_id": "s1",
+                            "text": "The test source says hello world clearly.",
+                        }
+                    ],
+                }
+            },
+        },
+    },
 ]
 
 
@@ -121,8 +147,8 @@ def run_server(command: list[str]) -> list[dict]:
 
 
 def assert_response_shape(responses: list[dict], expected_version: str | None) -> None:
-    if len(responses) != 7:
-        raise SystemExit(f"Expected 7 MCP responses, got {len(responses)}: {responses}")
+    if len(responses) != 8:
+        raise SystemExit(f"Expected 8 MCP responses, got {len(responses)}: {responses}")
 
     initialize = responses[0]["result"]
     server_info = initialize["serverInfo"]
@@ -135,6 +161,7 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
     expected_tools = {
         "validate_brief",
         "validate_evidence",
+        "check_evidence_packet",
         "audit_claims",
         "get_protocol",
         "list_lenses",
@@ -197,6 +224,15 @@ def assert_response_shape(responses: list[dict], expected_version: str | None) -
         raise SystemExit(f"audit_claims summary unexpected: {summary}")
     if summary.get("orphan_evidence_refs"):
         raise SystemExit(f"audit_claims found unexpected orphans: {summary}")
+
+    packet_result = responses[7]["result"]
+    if packet_result.get("isError"):
+        raise SystemExit(f"MCP check_evidence_packet returned tool error: {packet_result}")
+    packet_payload = json.loads(packet_result["content"][0]["text"])
+    if packet_payload.get("response", {}).get("packet_status") != "packet_complete":
+        raise SystemExit(f"check_evidence_packet did not complete the smoke packet: {packet_payload}")
+    if packet_payload.get("response", {}).get("factuality_status") != "not_assessed":
+        raise SystemExit(f"check_evidence_packet overstated factuality: {packet_payload}")
 
 
 def parse_args() -> argparse.Namespace:
