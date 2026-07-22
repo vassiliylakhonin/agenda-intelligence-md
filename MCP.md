@@ -1,11 +1,11 @@
 # MCP
 
 `agenda-intelligence-mcp` is a real stdio MCP server shipping with the package.
-It exposes 26 tool functions implemented in `agenda_intelligence.mcp_server`.
+It exposes 27 tool functions implemented in `agenda_intelligence.mcp_server`.
 
 The tools split into four layers:
 
-- **Validation layer** (14 tools, this repo's original scope): schema checks,
+- **Validation layer** (15 tools, this repo's original scope): schema checks,
   schema discovery (`get_schema`), evidence audit, lens and source-plan access,
   output scoring, quote verification, grounding and claim-verdict checks.
 - **Authoring layer** (2 tools): `create_brief`, `append_evidence` — assemble a
@@ -31,7 +31,7 @@ The tools split into four layers:
 function, HTTP route, A2A profile, and deployed Cloudflare Worker, but it is not
 exposed as a local stdio MCP tool in this release.
 
-**Verification status**: wire-protocol verified — `scripts/smoke_mcp.py` exercises the full JSON-RPC cycle (initialize → tools/list → tools/call) against the running stdio server, including `list_source_categories` and `audit_claims`.
+**Verification status**: wire-protocol verified — `scripts/smoke_mcp.py` exercises the full JSON-RPC cycle (initialize → tools/list → tools/call) against the running stdio server, including `check_evidence_packet`, `list_source_categories`, and `audit_claims`.
 
 Live source retrieval is **not implemented in the local stdio MCP transport**.
 
@@ -77,6 +77,27 @@ Validate an evidence-pack dict against `evidence-pack.schema.json`.
 ```
 
 Returns `{ "implemented": true, "valid": true|false, "errors": [...] }`.
+
+---
+
+### `check_evidence_packet`
+
+Run the primary deterministic evidence-packet preflight from an MCP agent loop:
+
+```json
+{
+  "packet_json": {
+    "claims": [{"claim_id": "c1", "text": "...", "source_ids": ["s1"]}],
+    "sources": [{"source_id": "s1", "text": "..."}]
+  }
+}
+```
+
+Returns claim-level and overall `packet_complete`, `source_review_required`, or
+`packet_incomplete` status, plus broken references, quote checks,
+lexical-support gaps, unmatched numbers, and owner actions. It uses only text
+supplied in the call: no retrieval, source-authority scoring, factuality
+determination, or action authorization. Human review remains required.
 
 ---
 

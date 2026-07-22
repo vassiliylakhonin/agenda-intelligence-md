@@ -9,6 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from agenda_intelligence import mcp_server
+from agenda_intelligence.mcp_stdio import TOOLS
 from agenda_intelligence.services import check_evidence_packet
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -125,3 +127,18 @@ def test_cli_check_preserves_legacy_agenda_brief_validation():
     result = run("check", "examples/agenda-brief.json")
 
     assert "OK: agenda brief validates" in result.stdout
+
+
+def test_primary_packet_preflight_is_registered_and_callable_over_mcp():
+    assert "check_evidence_packet" in TOOLS
+    spec = TOOLS["check_evidence_packet"]
+    assert spec["inputSchema"]["required"] == ["packet_json"]
+    assert spec["inputSchema"]["additionalProperties"] is False
+
+    result = mcp_server.check_evidence_packet(example_request())
+    assert result["valid"] is True
+    assert result["response"]["packet_status"] == "packet_complete"
+    assert result["response"]["factuality_status"] == "not_assessed"
+
+    transported = spec["handler"]({"packet_json": example_request()})
+    assert transported == result
