@@ -3,7 +3,7 @@
   "name": "Example Evidence-Readiness Agent",
   "description": "Structured evidence triage for strategic-risk source packs. Returns readiness routing, evidence gaps, and mandatory human review before any commercial action. Not legal, compliance, financial, or investment advice; not an autonomous decision system.",
   "url": "https://agent.example.com",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "documentationUrl": "https://agent.example.com/docs",
   "provider": {
     "organization": "Example Operator",
