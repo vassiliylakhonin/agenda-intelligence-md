@@ -17,7 +17,20 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   OpenSanctions adapter and has no snapshot path; no request/response schema,
   enum, endpoint, or profile change, so ADR 0003 / ADR 0015 are untouched. New
   worker test asserts the date is surfaced with the upstream on and is `null`
-  with it off. Worker suite 143/143. **Activation:**
+  with it off. Worker suite 142/142. **Activation:**
+  `wrangler deploy --env cis-secondary-sanctions`.
+
+- **chore(cis worker): agent-card prose said "screening" for what is dated
+  snapshot name matching.** Companion to the provenance-date change above. The
+  card's `wrapper_scope` described "active server-side name screening against a
+  public-list snapshot" and one buyer use case read "OFAC EO 14114
+  secondary-sanctions exposure screening" — the product's own landing page FAQ
+  says in as many words that this is *not* sanctions screening, so the card was
+  the surface where the claim leaked, and it is the surface agents and
+  marketplaces read. Reworded to "name matching against a dated public-list
+  snapshot rebuilt on an operator cadence, not a live list feed" and "exposure
+  triage before screening". Card free-string text only; no schema, enum,
+  endpoint, or profile change. Worker suite 142/142. **Activation:**
   `wrangler deploy --env cis-secondary-sanctions`.
 
 ## 1.4.0 — 2026-07-22
