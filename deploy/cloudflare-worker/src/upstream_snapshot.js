@@ -15,7 +15,10 @@
 // Boundary discipline:
 //   - Only fetches the operator-configured SNAPSHOT_INDEX_URL.
 //   - Parsed index cached in module-global scope, reused across requests in the
-//     same isolate; re-fetched after SNAPSHOT_CACHE_TTL_MS.
+//     same isolate; re-fetched after SNAPSHOT_CACHE_TTL_MS. That TTL is the only
+//     staleness this adapter owns — the fetch adds no `cf` cache override, so a
+//     republished index is never pinned at the edge past the origin's own
+//     cache headers.
 //   - Graceful degrade: unset URL, network failure, non-200, timeout, or a
 //     malformed/oversized index returns status !== "success" with no matches;
 //     the caller MUST NOT fail the user request on this.
@@ -253,8 +256,13 @@ export async function matchCounterparty(env, options = {}) {
           headers: {
             accept: "application/json",
             "user-agent": "agenda-intelligence-md/cis_secondary_sanctions (+https://github.com/vassiliylakhonin/agenda-intelligence-md)"
-          },
-          cf: { cacheTtl: 3600, cacheEverything: true }
+          }
+          // Deliberately no `cf` cache override: the module-global TTL
+          // (`cacheTtlMs`) is the single freshness regulator. A
+          // `cacheEverything` edge cache used to pin a stale index body for an
+          // hour independently of that TTL, and it survived isolate restarts,
+          // so a republished index could not be forced through at all. The
+          // origin's own cache headers still absorb the request load.
         },
         timeoutMs
       );

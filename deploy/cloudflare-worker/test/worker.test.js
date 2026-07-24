@@ -260,8 +260,10 @@ test("Snapshot adapter matches exact + token overlap against the compact index",
   resetSnapshotCache();
   const originalFetch = globalThis.fetch;
   const calls = [];
-  globalThis.fetch = async (url) => {
+  const inits = [];
+  globalThis.fetch = async (url, init) => {
     calls.push(new URL(url));
+    inits.push(init);
     return new Response(SNAPSHOT_FIXTURE, { status: 200, headers: { "content-type": "application/json" } });
   };
   try {
@@ -273,6 +275,11 @@ test("Snapshot adapter matches exact + token overlap against the compact index",
     assert.equal(exact.matches[0].name, "GAZPROM EXPORT");
     assert.equal(exact.matches[0].score, 1);
     assert.equal(exact.matches[0].source_type, "ofac_sdn_extract");
+
+    // No `cf` cache override: an edge cache would pin a stale index body
+    // independently of this adapter's own TTL and survive isolate restarts,
+    // leaving a republished index unreachable.
+    assert.equal(inits[0].cf, undefined);
 
     // Second call reuses the module-global cache (no new fetch).
     const token = await matchCounterpartyAgainstSnapshot(env, { name: "Gazprom Neft" });
