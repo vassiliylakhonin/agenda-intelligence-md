@@ -1931,6 +1931,36 @@ test("cis worker flags EU country-level anti-circumvention for Kyrgyzstan (Pytho
   }
 });
 
+test("cis worker surfaces the snapshot provenance date in A2A metadata", async () => {
+  resetSnapshotCache();
+  const originalLog = console.log;
+  const originalFetch = globalThis.fetch;
+  console.log = () => {};
+  globalThis.fetch = async () =>
+    new Response(SNAPSHOT_FIXTURE, { status: 200, headers: { "content-type": "application/json" } });
+  try {
+    const withSnapshot = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "cis-snap", method: "message/send", params: { message: { data: cisSampleStructuredRequest } } },
+      cisRequest,
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" }
+    );
+    assert.equal(withSnapshot.result.metadata.live_retrieval_upstream, "Snapshot");
+    assert.equal(withSnapshot.result.metadata.live_retrieval_snapshot_generated_at, "2026-06-26T05:36:01+00:00");
+
+    // Upstream off: the field is present but null, never a stale leftover.
+    const withoutSnapshot = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "cis-snap-neg", method: "message/send", params: { message: { data: cisSampleStructuredRequest } } },
+      cisRequest,
+      { OPENSANCTIONS_DISABLED: "1" }
+    );
+    assert.equal(withoutSnapshot.result.metadata.live_retrieval_snapshot_generated_at, null);
+  } finally {
+    console.log = originalLog;
+    globalThis.fetch = originalFetch;
+    resetSnapshotCache();
+  }
+});
+
 test("cis worker rejects an off-enum field like the canonical schema (validation parity)", async () => {
   const originalLog = console.log;
   console.log = () => {};
