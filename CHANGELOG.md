@@ -4,6 +4,37 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(worker analytics): `modules_used` was recorded as `unknown` for every
+  vertical worker.** `buildUsageEvent` normalised the field with
+  `details.modules_used.map((item) => item.module)`, which is correct only for
+  the routed `analyze` path (`[{ module, role }, ...]`). The six single-profile
+  branches pass plain strings (`["cis_secondary_sanctions"]`), so the map read
+  `.module` off a string, produced `[undefined]`, persisted `[null]` in KV, and
+  aggregated as `unknown`. Measured over 2026-04-26..2026-07-24: 649 of 1329
+  logged calls reported no modules — exactly the sum of the six affected
+  profiles (310 + 134 + 97 + 95 + 12 + 1), confirming the cause. The new
+  `normalizeModules` helper accepts both shapes and drops empty entries.
+  Analytics-only; no request/response schema, enum, endpoint, or profile
+  change. Regression test covers the string shape.
+
+- **feat(worker analytics): name the caller that the coarse client class
+  cannot.** `buildUsageEvent` already derived `referrer_host` and `cf.colo`,
+  but `recordUsageStats` dropped both before writing to KV, so `/stats` could
+  report only country and a five-bucket client class — every unrecognised
+  caller aggregated as `unknown` from an unknown source. The reduced event now
+  also persists the referrer host, the Cloudflare colo, the network operator
+  (`cf.asOrganization`), and the user-agent truncated to 120 characters, and
+  `/stats` gains `networks`, `referrers`, and `user_agents` breakdowns
+  (`user_agents` capped at the top 15 rows/day — crawlers each ship their own
+  string). `event_version` goes 1 → 2. Still no IP address, cookie,
+  authorization header, or prompt text: the privacy guarantee documented in the
+  worker README is unchanged in kind, and the README field list is updated.
+  `scripts/stats.js` prints the three new rows. Worker suite 145/145, Python
+  suite 506/506. **Activation:** redeploy each published env (`wrangler deploy`
+  plus `--env` for the seven profile envs); until then `/stats` keeps returning
+  the old shape for previously stored days, which remain readable — the new
+  breakdowns simply read `unknown`/`none` for events written before the deploy.
+
 - **feat(cis worker): surface the snapshot provenance date in A2A metadata.**
   The Snapshot upstream (ADR 0014) already computed
   `snapshot_generated_at` from the static public-list index it matches

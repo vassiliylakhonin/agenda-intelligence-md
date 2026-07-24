@@ -272,8 +272,9 @@ The custom usage event is privacy-safe by design. It does not log IP addresses, 
 - prompt character count;
 - selected Agenda modules;
 - coarse client class, such as `agenstry`, `curl`, `browser`, or `automation`;
+- the user-agent string, truncated to 120 characters;
 - referrer hostname, when present;
-- Cloudflare colo and country, when Cloudflare provides them.
+- Cloudflare colo, country, and network operator (`asOrganization`), when Cloudflare provides them.
 
 Note: Cloudflare's raw `wrangler tail` envelope can include request headers and other platform metadata around the custom event. Treat raw tail output as operational logs and avoid sharing or exporting it unless you have reviewed what your Cloudflare account includes there. The `agenda_intelligence_a2a_usage` event itself keeps only the reduced fields listed above.
 
@@ -326,6 +327,14 @@ curl 'https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/stats?date=20
 ```
 
 The `/stats` response includes approximate daily totals, likely probes, non-probe calls, prompt character counts, client classes, per-host counts (`hosts` — every published worker shares one KV namespace, so this is the only way to attribute calls to a specific worker), countries, JSON-RPC methods, and selected Agenda modules. The counters are intentionally coarse and are not a billing or audit ledger.
+
+Three of those breakdowns exist to identify a caller the coarse client class cannot name — every unrecognised agent otherwise lands in `unknown`:
+
+- `networks` — the network operator behind the request (`Google LLC`, `Amazon`, a residential ISP), which usually separates a crawler from a person;
+- `referrers` — the referring hostname, i.e. which listing or page sent the caller;
+- `user_agents` — the truncated user-agent, capped at the top 15 rows per day because crawlers each ship their own string.
+
+No IP address is stored in any of them.
 
 A `message/send` call is counted as a likely probe when the client is `agenstry` or the prompt payload is shorter than `PROBE_PROMPT_CHAR_THRESHOLD` (24 characters) — this filters untagged uptime pings from monitor colos that do not announce themselves in the user-agent. Inspect `non_probe` for genuine usage.
 

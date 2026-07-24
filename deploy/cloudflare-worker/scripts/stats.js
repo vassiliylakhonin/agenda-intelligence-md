@@ -80,6 +80,9 @@ async function main() {
   console.log(`Agent profiles: ${formatRows(body.agent_profiles)}`);
   console.log(`Clients: ${formatRows(body.clients)}`);
   console.log(`Countries: ${formatRows(body.countries)}`);
+  console.log(`Networks: ${formatRows(body.networks)}`);
+  console.log(`Referrers: ${formatRows(body.referrers)}`);
+  console.log(`User agents: ${formatRows(body.user_agents)}`);
   console.log(`Methods: ${formatRows(body.methods)}`);
   console.log(`Modules: ${formatRows(body.modules)}`);
 }
