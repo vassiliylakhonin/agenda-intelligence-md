@@ -5643,6 +5643,31 @@ function safeClientId(value) {
   return normalized.slice(0, 64) || "unknown";
 }
 
+// The raw user-agent, truncated. classifyClient() collapses it into a handful
+// of buckets, which is enough for volume but not for answering "who was that
+// one caller from Singapore" — every unrecognised agent lands in "unknown".
+// Kept deliberately coarse: no IP, no cookie, no header dump.
+const USER_AGENT_MAX_CHARS = 120;
+const USER_AGENT_STAT_ROWS = 15;
+
+function userAgentSummary(request) {
+  const raw = (request.headers.get("user-agent") || "").trim();
+  return raw ? raw.slice(0, USER_AGENT_MAX_CHARS) : null;
+}
+
+// modules_used reaches this function in two shapes: the routed analyze path
+// passes result.metadata entries ([{ module, role }, ...]), while the
+// single-profile worker branches pass plain strings (["cis_secondary_sanctions"]).
+// Reading .module off a string yielded [undefined], which persisted as [null]
+// and aggregated as "unknown" — i.e. every profile except the routed one
+// reported no modules at all. Accept both shapes.
+function normalizeModules(modulesUsed) {
+  if (!Array.isArray(modulesUsed)) return [];
+  return modulesUsed
+    .map((item) => (typeof item === "string" ? item : item?.module))
+    .filter((name) => typeof name === "string" && name.length > 0);
+}
+
 // Billable upstreams (per ADR 0014). OpenSanctions hosted API is the only
 // paid live-retrieval upstream (€0.10/call); Watchman self-host and the
 // deterministic triage path cost €0. Used for per-task cost accounting in
@@ -5676,7 +5701,7 @@ function buildUsageEvent(request, details = {}) {
 
   return {
     event: "agenda_intelligence_a2a_usage",
-    event_version: 1,
+    event_version: 2,
     timestamp: new Date().toISOString(),
     source: "cloudflare_worker",
     method: request.method,
@@ -5686,13 +5711,15 @@ function buildUsageEvent(request, details = {}) {
     jsonrpc_id_present: Boolean(details.jsonrpc_id_present),
     agent_profile: details.agent_profile || agentProfile(request),
     prompt_chars: promptChars,
-    modules_used: Array.isArray(details.modules_used) ? details.modules_used.map((item) => item.module) : [],
+    modules_used: normalizeModules(details.modules_used),
     live_retrieval: details.live_retrieval || { status: null, upstream: null, billable: false, cost_eur: 0 },
     client: classifyClient(request),
+    user_agent: userAgentSummary(request),
     referrer_host: headerHost(request, "referer"),
     cf: {
       colo: cf.colo || null,
-      country: cf.country || null
+      country: cf.country || null,
+      as_org: cf.asOrganization || null
     },
     likely_probe: Boolean(details.likely_probe)
   };
@@ -5743,7 +5770,11 @@ async function recordUsageStats(env, event) {
       prompt_chars: event.prompt_chars || 0,
       likely_probe: Boolean(event.likely_probe),
       client: event.client || "unknown",
+      user_agent: event.user_agent || "unknown",
+      referrer_host: event.referrer_host || "none",
       country: event.cf?.country || "unknown",
+      colo: event.cf?.colo || "unknown",
+      as_org: event.cf?.as_org || "unknown",
       modules_used: Array.isArray(event.modules_used) ? event.modules_used : [],
       live_retrieval: event.live_retrieval || { status: null, upstream: null, billable: false, cost_eur: 0 }
     })
@@ -5755,10 +5786,11 @@ function incrementMap(map, key) {
   map.set(safeKey, (map.get(safeKey) || 0) + 1);
 }
 
-function sortedMap(map) {
-  return [...map.entries()]
+function sortedMap(map, limit = 0) {
+  const rows = [...map.entries()]
     .map(([name, count]) => ({ name, count }))
     .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name));
+  return limit > 0 ? rows.slice(0, limit) : rows;
 }
 
 function listOrNone(items) {
@@ -5807,6 +5839,9 @@ async function usageStats(env, date) {
   const agentProfiles = new Map();
   const hosts = new Map();
   const upstreams = new Map();
+  const referrers = new Map();
+  const networks = new Map();
+  const userAgents = new Map();
   let likelyProbe = 0;
   let promptChars = 0;
   let billableCalls = 0;
@@ -5826,6 +5861,9 @@ async function usageStats(env, date) {
     incrementMap(clients, event.client);
     incrementMap(countries, event.country);
     incrementMap(methods, event.jsonrpc_method);
+    incrementMap(referrers, event.referrer_host);
+    incrementMap(networks, event.as_org);
+    incrementMap(userAgents, event.user_agent);
     for (const moduleName of Array.isArray(event.modules_used) ? event.modules_used : []) {
       incrementMap(modules, moduleName);
     }
@@ -5856,6 +5894,11 @@ async function usageStats(env, date) {
     agent_profiles: sortedMap(agentProfiles),
     hosts: sortedMap(hosts),
     countries: sortedMap(countries),
+    networks: sortedMap(networks),
+    referrers: sortedMap(referrers),
+    // High-cardinality by nature (every crawler ships its own string), so this
+    // one is capped — it exists to name unrecognised callers, not to be complete.
+    user_agents: sortedMap(userAgents, USER_AGENT_STAT_ROWS),
     methods: sortedMap(methods),
     modules: sortedMap(modules)
   };

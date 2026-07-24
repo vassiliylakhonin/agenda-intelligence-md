@@ -1479,6 +1479,89 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   assert.equal(event.ip, undefined);
 });
 
+test("usage analytics records modules for single-profile worker branches", () => {
+  // The vertical worker branches pass plain strings rather than the
+  // [{ module, role }] shape the routed analyze path emits. Both must survive
+  // into the event — reading .module off a string used to yield [undefined],
+  // so every profile except the routed one reported no modules at all.
+  const event = buildUsageEvent(
+    new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/message/send", { method: "POST" }),
+    {
+      jsonrpc_method: "message/send",
+      jsonrpc_id_present: true,
+      prompt_chars: 640,
+      modules_used: ["cis_secondary_sanctions"]
+    }
+  );
+
+  assert.deepEqual(event.modules_used, ["cis_secondary_sanctions"]);
+});
+
+test("usage analytics keeps the caller network and user agent for unrecognised clients", () => {
+  const event = buildUsageEvent(
+    {
+      url: "https://cis-secondary-sanctions-a2a.example.workers.dev/message/send",
+      method: "POST",
+      headers: new Headers({ "user-agent": "acme-agent-runtime/0.4 (+https://example.org/agent)" }),
+      cf: { country: "SG", colo: "SIN", asOrganization: "Example Cloud Ltd" }
+    },
+    {
+      jsonrpc_method: "message/send",
+      jsonrpc_id_present: true,
+      prompt_chars: 512
+    }
+  );
+
+  assert.equal(event.client, "unknown");
+  assert.equal(event.user_agent, "acme-agent-runtime/0.4 (+https://example.org/agent)");
+  assert.equal(event.cf.as_org, "Example Cloud Ltd");
+  assert.equal(event.cf.colo, "SIN");
+  assert.equal(event.ip, undefined);
+});
+
+test("usage stats aggregates caller network, referrer and user agent", async () => {
+  const kv = new MemoryKv();
+  const env = { AGENDA_USAGE: kv };
+  const base = {
+    event: "agenda_intelligence_a2a_usage",
+    timestamp: "2026-07-24T09:00:00.000Z",
+    jsonrpc_method: "message/send",
+    agent_profile: "cis_secondary_sanctions",
+    likely_probe: false,
+    client: "unknown",
+    user_agent: "SomeResearchBot/2.1",
+    referrer_host: "agenstry.com",
+    cf: { country: "SG", colo: "SIN", as_org: "Example Cloud Ltd" },
+    modules_used: ["cis_secondary_sanctions"]
+  };
+
+  await recordUsageStats(env, base);
+  await recordUsageStats(env, { ...base, timestamp: "2026-07-24T09:01:00.000Z" });
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-07-24T09:02:00.000Z",
+    user_agent: null,
+    referrer_host: null,
+    cf: { country: "KZ", colo: "ALA", as_org: null }
+  });
+
+  const stats = await usageStats(env, "2026-07-24");
+
+  assert.deepEqual(stats.networks, [
+    { name: "Example Cloud Ltd", count: 2 },
+    { name: "unknown", count: 1 }
+  ]);
+  assert.deepEqual(stats.referrers, [
+    { name: "agenstry.com", count: 2 },
+    { name: "none", count: 1 }
+  ]);
+  assert.deepEqual(stats.user_agents, [
+    { name: "SomeResearchBot/2.1", count: 2 },
+    { name: "unknown", count: 1 }
+  ]);
+  assert.deepEqual(stats.modules, [{ name: "cis_secondary_sanctions", count: 3 }]);
+});
+
 test("usage analytics accepts a privacy-safe optional client id header", () => {
   const analyticsRequest = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
     method: "POST",
