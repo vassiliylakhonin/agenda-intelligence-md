@@ -518,3 +518,21 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
     ownership or verify identity. Human review required.
     """
     return _services.gulf_maritime_exposure(request_json)
+
+
+def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
+    """Grade a Kazakhstan market-entry file against the staged source taxonomy.
+
+    Evidence triage only: not legal, compliance, customs, tax, sanctions, or
+    launch-authorization advice, and no live retrieval. Human review required.
+    """
+    return _services.kazakhstan_market_entry_readiness(request_json)
+
+
+def agent_output_verification(request_json: dict) -> dict:
+    """Decide whether another agent's claim-backed output is safe to relay.
+
+    Evidence-readiness triage for agent-to-agent hand-off: it does not verify
+    factual truth, fetch or validate cited sources, or authorize an action.
+    """
+    return _services.agent_output_verification(request_json)

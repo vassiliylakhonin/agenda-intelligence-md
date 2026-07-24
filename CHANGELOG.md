@@ -4,6 +4,35 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(mcp): two live workers had no MCP tool, and the rest could not be
+  called without guessing.** Two defects in what an agent can act on.
+
+  First, `kazakhstan_market_entry_readiness` and `agent_output_verification`
+  shipped as service functions, HTTP routes, A2A profiles, and deployed
+  Cloudflare Workers, but never as MCP tools — an MCP client could reach four of
+  the six live vertical workers. Both are now exposed through `mcp_server`
+  wrappers and the `TOOLS` registry, with golden and failure contract tests.
+  `tests/test_mcp_tool_callability.py` now fails if any deployed worker has no
+  MCP tool, so the surfaces cannot drift apart again.
+
+  Second, every tool taking a structured payload declared it as a bare
+  `{"type": "object"}` whose description named a schema file the caller has
+  never read. An agent selecting from `tools/list` had to guess the payload,
+  fail validation, and drop the tool. Nine constructive parameters now inline
+  the request shape — field names, types, enum values, required list, local
+  `$defs` references resolved, plus the schema's own worked example — generated
+  from the bundled schema at import time rather than hand-copied, so it cannot
+  drift. `get_schema` still serves the full nested contract, and each
+  description names the exact key to ask for. Cost, measured: the `tools/list`
+  payload grows from 23,313 bytes over 27 tools to 37,002 over 29 — roughly 3.4k
+  extra tokens per connected session. The shapes are capped at two levels for
+  that reason.
+
+  `agent-manifest.json` and its packaged copy are regenerated to match (ADR 0012
+  keeps them mirrored), and `llms.txt`, its packaged copy, and `MCP.md` no
+  longer say market-entry is A2A-only. Python suite 515/515, lint and typecheck
+  clean. No schema, endpoint, or A2A profile change; no worker redeploy needed.
+
 - **fix(worker analytics): `modules_used` was recorded as `unknown` for every
   vertical worker.** `buildUsageEvent` normalised the field with
   `details.modules_used.map((item) => item.module)`, which is correct only for

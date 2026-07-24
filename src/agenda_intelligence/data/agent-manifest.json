@@ -204,7 +204,34 @@
           "properties": {
             "packet_json": {
               "type": "object",
-              "description": "Parsed object matching evidence-packet-request.schema.json: claims plus the complete source texts those claims reference."
+              "properties": {
+                "packet_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "topic": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "claims": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              },
+              "required": [
+                "claims",
+                "sources"
+              ],
+              "description": "Claims plus the complete source texts those claims reference. Call get_schema('evidence_packet_request') for the full nested contract."
             }
           },
           "required": [
@@ -408,10 +435,36 @@
           "properties": {
             "request_json": {
               "type": "object",
-              "description": "Claim verification request matching claim-verification-request.schema.json."
+              "properties": {
+                "as_of": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "claims": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "evidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              },
+              "required": [
+                "as_of",
+                "claims",
+                "evidence"
+              ],
+              "description": "Claim verification request. Call get_schema('claim_verification_request') for the full nested contract."
             }
           },
-          "required": ["request_json"],
+          "required": [
+            "request_json"
+          ],
           "additionalProperties": false
         }
       },
@@ -423,7 +476,75 @@
           "properties": {
             "request": {
               "type": "object",
-              "description": "Agenda request with question, geography, audience, depth, evidence mode, and output format."
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "decision_context": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "audience": {
+                  "type": "string",
+                  "enum": [
+                    "founder",
+                    "analyst",
+                    "policymaker",
+                    "investor"
+                  ]
+                },
+                "audience_detail": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "geography": {},
+                "time_horizon": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "evidence_mode": {
+                  "type": "string",
+                  "enum": [
+                    "reasoning_only",
+                    "user_provided",
+                    "mixed"
+                  ]
+                },
+                "depth": {
+                  "type": "string",
+                  "enum": [
+                    "quick_brief",
+                    "standard",
+                    "scenario",
+                    "red_team",
+                    "decision_pack"
+                  ]
+                },
+                "output_format": {
+                  "type": "string",
+                  "enum": [
+                    "structured_json",
+                    "markdown"
+                  ]
+                }
+              },
+              "required": [
+                "question"
+              ],
+              "description": "Agenda request with question, geography, audience, depth, evidence mode, and output format. Call get_schema('agenda_request') for the full nested contract.",
+              "examples": [
+                {
+                  "question": "How exposed is a Kazakhstan-incorporated payments fintech to secondary US sanctions risk over the next 12 months?",
+                  "decision_context": "Whether to open a USD correspondent banking relationship in Almaty in Q3.",
+                  "audience": "founder",
+                  "geography": "Kazakhstan",
+                  "time_horizon": "12 months",
+                  "evidence_mode": "reasoning_only",
+                  "depth": "decision_pack",
+                  "output_format": "structured_json"
+                }
+              ]
             }
           },
           "required": [
@@ -506,8 +627,7 @@
           },
           "required": [],
           "additionalProperties": false
-        },
-        "status": "reserved"
+        }
       },
       {
         "name": "middle_corridor_deal_risk",
@@ -517,7 +637,120 @@
           "properties": {
             "deal_risk_request": {
               "type": "object",
-              "description": "Structured Middle Corridor deal-risk request matching middle-corridor-deal-risk-request.schema.json."
+              "properties": {
+                "route": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "cargo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "shipment_value": {
+                  "type": "object",
+                  "properties": {
+                    "amount": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": [
+                        "USD",
+                        "EUR",
+                        "GBP",
+                        "KZT",
+                        "CNY",
+                        "TRY",
+                        "AED",
+                        "other"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ]
+                },
+                "counterparties": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "dated_sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "risk_question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "decision_stage": {
+                  "type": "string",
+                  "enum": [
+                    "pre_signature",
+                    "pre_shipment",
+                    "in_transit",
+                    "post_incident",
+                    "committee_review",
+                    "other"
+                  ]
+                },
+                "notes": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requested_output": {
+                  "type": "string",
+                  "enum": [
+                    "structured_json",
+                    "markdown_summary",
+                    "both"
+                  ]
+                }
+              },
+              "required": [
+                "route",
+                "cargo",
+                "counterparties",
+                "dated_sources",
+                "risk_question",
+                "decision_stage"
+              ],
+              "description": "Structured Middle Corridor deal-risk request. Call get_schema('middle_corridor_deal_risk_request') for the full nested contract.",
+              "examples": [
+                {
+                  "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+                  "cargo": "industrial equipment",
+                  "shipment_value": {
+                    "amount": 2400000,
+                    "currency": "USD"
+                  },
+                  "counterparties": [
+                    {
+                      "role": "forwarder",
+                      "name": "Kazakhstan forwarder",
+                      "jurisdiction": "Kazakhstan"
+                    }
+                  ],
+                  "dated_sources": [
+                    {
+                      "id": "e1",
+                      "source_type": "port_operator_notice",
+                      "title": "Port operator notice",
+                      "date": "2026-05-20",
+                      "url": "https://example.com/port-notice"
+                    }
+                  ],
+                  "risk_question": "Should this be escalated before contract signature?",
+                  "decision_stage": "pre_signature",
+                  "requested_output": "structured_json"
+                }
+              ]
             }
           },
           "required": [
@@ -534,7 +767,165 @@
           "properties": {
             "exposure_request": {
               "type": "object",
-              "description": "Structured CIS secondary-sanctions exposure request matching cis-secondary-sanctions-request.schema.json."
+              "properties": {
+                "counterparty": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "jurisdiction": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sector": {
+                      "type": "string",
+                      "enum": [
+                        "trading_house",
+                        "logistics_forwarder",
+                        "bank",
+                        "fintech",
+                        "broker_dealer",
+                        "manufacturer",
+                        "ict_or_electronics",
+                        "metals_or_mining",
+                        "energy_or_petrochem",
+                        "agribusiness_or_grain",
+                        "construction",
+                        "professional_services",
+                        "holding_or_spv",
+                        "unknown",
+                        "other"
+                      ]
+                    },
+                    "ownership_layers": {
+                      "type": "array"
+                    },
+                    "registered_identifiers": {
+                      "type": "array"
+                    },
+                    "notes": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "jurisdiction"
+                  ]
+                },
+                "exposure_facets": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "ownership_or_control",
+                      "financial_flows",
+                      "ict_or_dual_use_goods",
+                      "metals_or_mining",
+                      "energy_or_petrochem",
+                      "agribusiness_or_grain",
+                      "transit_or_re_export",
+                      "correspondent_banking",
+                      "professional_enablers",
+                      "shell_or_layered_structure",
+                      "other"
+                    ]
+                  }
+                },
+                "jurisdiction_review_scope": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "ofac",
+                      "eu",
+                      "uk_ofsi",
+                      "un",
+                      "fatf",
+                      "eag",
+                      "national_regulator",
+                      "other"
+                    ]
+                  }
+                },
+                "dated_sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "risk_question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "decision_stage": {
+                  "type": "string",
+                  "enum": [
+                    "onboarding",
+                    "periodic_review",
+                    "pre_transaction",
+                    "post_alert",
+                    "committee_review",
+                    "other"
+                  ]
+                },
+                "notes": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requested_output": {
+                  "type": "string",
+                  "enum": [
+                    "structured_json",
+                    "markdown_summary",
+                    "both"
+                  ]
+                }
+              },
+              "required": [
+                "counterparty",
+                "exposure_facets",
+                "dated_sources",
+                "risk_question",
+                "decision_stage"
+              ],
+              "description": "Structured CIS secondary-sanctions exposure request. Call get_schema('cis_secondary_sanctions_request') for the full nested contract.",
+              "examples": [
+                {
+                  "counterparty": {
+                    "name": "Example Kazakhstan Trading LLP",
+                    "jurisdiction": "Kazakhstan",
+                    "sector": "trading_house",
+                    "ownership_layers": [
+                      "Holding A (KZ)",
+                      "Holding B (UAE)"
+                    ]
+                  },
+                  "exposure_facets": [
+                    "ownership_or_control",
+                    "ict_or_dual_use_goods",
+                    "transit_or_re_export"
+                  ],
+                  "jurisdiction_review_scope": [
+                    "ofac",
+                    "eu",
+                    "uk_ofsi"
+                  ],
+                  "dated_sources": [
+                    {
+                      "id": "s1",
+                      "source_type": "ofac_sdn_extract",
+                      "title": "OFAC SDN list excerpt",
+                      "date": "2026-05-20"
+                    }
+                  ],
+                  "risk_question": "Does the disclosed ownership chain create indirect exposure under OFAC EO 14114 or EU sanctions package?",
+                  "decision_stage": "onboarding"
+                }
+              ]
             }
           },
           "required": [
@@ -551,7 +942,147 @@
           "properties": {
             "trust_request": {
               "type": "object",
-              "description": "Structured agentic interaction trust request matching agentic-interaction-trust-request.schema.json."
+              "properties": {
+                "actor": {
+                  "type": "object",
+                  "properties": {
+                    "declared_type": {
+                      "type": "string",
+                      "enum": [
+                        "ai_agent",
+                        "automation_script",
+                        "api_client",
+                        "browser_bot",
+                        "human_delegated_agent",
+                        "unknown",
+                        "other"
+                      ]
+                    },
+                    "declared_name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "operator": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "declared_agent_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "declared_user_agent": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "authentication_context": {
+                      "type": "string",
+                      "enum": [
+                        "anonymous",
+                        "session_cookie",
+                        "api_key",
+                        "oauth",
+                        "mTLS",
+                        "signed_agent_manifest",
+                        "unknown",
+                        "other"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "declared_type",
+                    "declared_name"
+                  ]
+                },
+                "target_surface": {
+                  "type": "string",
+                  "enum": [
+                    "checkout",
+                    "account",
+                    "api",
+                    "mcp_tool",
+                    "a2a_endpoint",
+                    "content_or_catalog",
+                    "auth_flow",
+                    "support_or_messaging",
+                    "other"
+                  ]
+                },
+                "requested_action": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "asset_or_resource": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "decision_stage": {
+                  "type": "string",
+                  "enum": [
+                    "pre_execution",
+                    "in_session",
+                    "post_alert",
+                    "policy_review",
+                    "committee_review",
+                    "other"
+                  ]
+                },
+                "dated_sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "risk_question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "notes": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requested_output": {
+                  "type": "string",
+                  "enum": [
+                    "structured_json",
+                    "markdown_summary",
+                    "both"
+                  ]
+                }
+              },
+              "required": [
+                "actor",
+                "target_surface",
+                "requested_action",
+                "decision_stage",
+                "dated_sources",
+                "risk_question"
+              ],
+              "description": "Structured agentic interaction trust request. Call get_schema('agentic_interaction_trust_request') for the full nested contract.",
+              "examples": [
+                {
+                  "actor": {
+                    "declared_type": "ai_agent",
+                    "declared_name": "Example Shopping Agent",
+                    "operator": "Example Consumer",
+                    "declared_user_agent": "ExampleShoppingAgent/1.0",
+                    "authentication_context": "session_cookie"
+                  },
+                  "target_surface": "checkout",
+                  "requested_action": "complete purchase of two restricted-delivery items",
+                  "asset_or_resource": "order-123",
+                  "decision_stage": "pre_execution",
+                  "dated_sources": [
+                    {
+                      "id": "ait-1",
+                      "source_type": "agent_identity_claim",
+                      "title": "Declared agent identity header",
+                      "date": "2026-05-28"
+                    }
+                  ],
+                  "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?",
+                  "requested_output": "structured_json"
+                }
+              ]
             }
           },
           "required": [
@@ -568,11 +1099,352 @@
           "properties": {
             "exposure_request": {
               "type": "object",
-              "description": "Structured Gulf maritime exposure request matching gulf-maritime-exposure-request.schema.json."
+              "properties": {
+                "vessel": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "imo": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "flag": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "vessel_type": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "voyage": {
+                  "type": "object",
+                  "properties": {
+                    "chokepoint": {
+                      "type": "string",
+                      "enum": [
+                        "strait_of_hormuz",
+                        "persian_gulf",
+                        "gulf_of_oman",
+                        "bab_el_mandeb",
+                        "red_sea",
+                        "suez_canal",
+                        "other"
+                      ]
+                    },
+                    "origin": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "destination": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "route_note": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "chokepoint"
+                  ]
+                },
+                "cargo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "counterparties": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "exposure_facets": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "iran_oil_exposure",
+                      "russia_oil_price_cap",
+                      "dark_fleet_indicators",
+                      "sts_transfer",
+                      "flag_hopping",
+                      "insurance_or_pi_gap",
+                      "ais_manipulation",
+                      "ownership_or_control",
+                      "dual_use_cargo",
+                      "chokepoint_disruption"
+                    ]
+                  }
+                },
+                "jurisdictions_in_scope": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "OFAC",
+                      "EU",
+                      "UK_OFSI",
+                      "UN",
+                      "OTHER"
+                    ]
+                  }
+                },
+                "decision_stage": {
+                  "type": "string",
+                  "enum": [
+                    "pre_fixture",
+                    "pre_voyage",
+                    "pre_port_call",
+                    "post_alert",
+                    "committee_review",
+                    "other"
+                  ]
+                },
+                "dated_sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "risk_question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "notes": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requested_output": {
+                  "type": "string",
+                  "enum": [
+                    "structured_json",
+                    "markdown_summary",
+                    "both"
+                  ]
+                }
+              },
+              "required": [
+                "voyage",
+                "exposure_facets",
+                "decision_stage",
+                "dated_sources",
+                "risk_question"
+              ],
+              "description": "Structured Gulf maritime exposure request. Call get_schema('gulf_maritime_exposure_request') for the full nested contract.",
+              "examples": [
+                {
+                  "vessel": {
+                    "name": "Example Tanker",
+                    "flag": "Panama",
+                    "vessel_type": "crude oil tanker"
+                  },
+                  "voyage": {
+                    "chokepoint": "strait_of_hormuz",
+                    "origin": "undisclosed Gulf terminal",
+                    "destination": "ship-to-ship area, Gulf of Oman"
+                  },
+                  "cargo": "crude oil",
+                  "counterparties": [
+                    {
+                      "role": "registered_owner",
+                      "name": "Example Holding Ltd",
+                      "jurisdiction": "Marshall Islands"
+                    },
+                    {
+                      "role": "insurer_or_pi_club",
+                      "name": "Unknown"
+                    }
+                  ],
+                  "exposure_facets": [
+                    "iran_oil_exposure",
+                    "dark_fleet_indicators",
+                    "sts_transfer",
+                    "insurance_or_pi_gap"
+                  ],
+                  "jurisdictions_in_scope": [
+                    "OFAC",
+                    "EU",
+                    "UK_OFSI"
+                  ],
+                  "decision_stage": "pre_fixture",
+                  "dated_sources": [
+                    {
+                      "id": "g1",
+                      "source_type": "ais_track_record",
+                      "title": "AIS track extract",
+                      "date": "2026-05-28"
+                    }
+                  ],
+                  "risk_question": "Is this Hormuz transit ready to fix, or should it be escalated before fixture?",
+                  "requested_output": "structured_json"
+                }
+              ]
             }
           },
           "required": [
             "exposure_request"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "kazakhstan_market_entry_readiness",
+        "since": "v1.5",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "readiness_request": {
+              "type": "object",
+              "properties": {
+                "project_name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "partner_or_company": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "market": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sector": {
+                  "type": "string",
+                  "enum": [
+                    "mobility",
+                    "renewable_energy",
+                    "epc",
+                    "infrastructure",
+                    "data_center",
+                    "technology_transfer",
+                    "distribution",
+                    "real_estate_or_land",
+                    "other"
+                  ]
+                },
+                "commercial_objective": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "decision_question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "decision_stage": {
+                  "type": "string",
+                  "enum": [
+                    "concept_review",
+                    "pre_entity_setup",
+                    "pre_signature",
+                    "pre_import",
+                    "pre_certification",
+                    "pre_showroom_lease",
+                    "pre_first_batch_order",
+                    "pre_ad_spend",
+                    "pre_dealer_contract",
+                    "committee_review",
+                    "other"
+                  ]
+                },
+                "counterparties": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "supplied_sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "known_assumptions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "known_blockers": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "requested_output": {
+                  "type": "string",
+                  "enum": [
+                    "management_summary",
+                    "structured_json",
+                    "both"
+                  ]
+                }
+              },
+              "required": [
+                "project_name",
+                "partner_or_company",
+                "market",
+                "decision_question",
+                "decision_stage",
+                "supplied_sources"
+              ],
+              "description": "Structured Kazakhstan market-entry readiness request. Call get_schema('market_entry_readiness_request') for the full nested contract."
+            }
+          },
+          "required": [
+            "readiness_request"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "agent_output_verification",
+        "since": "v1.5",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "audit_json": {
+              "type": "object",
+              "properties": {
+                "topic": {
+                  "type": "string"
+                },
+                "claims": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "evidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "unsupported_claims": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "claims",
+                "evidence"
+              ],
+              "description": "Claim-level evidence audit of the output being relayed. Call get_schema('evidence_audit') for the full nested contract."
+            }
+          },
+          "required": [
+            "audit_json"
           ],
           "additionalProperties": false
         }
