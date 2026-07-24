@@ -4,7 +4,21 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
-- No unreleased changes.
+- **feat(cis worker): surface the snapshot provenance date in A2A metadata.**
+  The Snapshot upstream (ADR 0014) already computed
+  `snapshot_generated_at` from the static public-list index it matches
+  against, but the worker dropped the value before assembling the response, so
+  a caller saw `live_retrieval_status: "success"` with no way to tell whether a
+  "no match" reflected the current lists or a hand-rebuilt index that had gone
+  stale. The A2A metadata block now carries
+  `live_retrieval_snapshot_generated_at` (the index build date under the
+  Snapshot upstream, `null` for Watchman / OpenSanctions, which query live).
+  Additive metadata field, worker-only — the Python service uses the
+  OpenSanctions adapter and has no snapshot path; no request/response schema,
+  enum, endpoint, or profile change, so ADR 0003 / ADR 0015 are untouched. New
+  worker test asserts the date is surfaced with the upstream on and is `null`
+  with it off. Worker suite 143/143. **Activation:**
+  `wrangler deploy --env cis-secondary-sanctions`.
 
 ## 1.4.0 — 2026-07-22
 

@@ -4495,6 +4495,11 @@ async function cisSecondarySanctionsResult(request, env) {
     response,
     live_retrieval_status: upstreamResult.status,
     live_retrieval_upstream: upstream_name,
+    // Provenance date of the public-list index the match ran against (Snapshot
+    // upstream only; null for Watchman / OpenSanctions, which query live). The
+    // snapshot is a static file rebuilt by hand, so a caller cannot otherwise
+    // tell whether a "no match" reflects the current lists or a stale index.
+    live_retrieval_snapshot_generated_at: upstreamResult.snapshot_generated_at ?? null,
     auto_fetched_sources: autoFetched,
     upstream_attribution: upstreamResult.attribution
   };
@@ -4575,6 +4580,7 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
       schema: "schemas/v1/cis-secondary-sanctions-request.schema.json",
       live_retrieval_status: result.live_retrieval_status,
       live_retrieval_upstream: result.live_retrieval_upstream,
+      live_retrieval_snapshot_generated_at: result.live_retrieval_snapshot_generated_at,
       auto_fetched_sources: result.auto_fetched_sources,
       upstream_attribution: result.upstream_attribution,
       human_review_required: result.response.human_review_required,
