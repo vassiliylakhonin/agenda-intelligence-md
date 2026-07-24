@@ -18,18 +18,23 @@ The tools split into four layers:
   `deep_dive` (reserved/planned, returns a v2 placeholder). These wrap the
   validation layer with geography routing, system-prompt assembly, optional LLM
   invocation, and vendored signal access.
-- **Vertical worker layer** (4 local stdio tools): `middle_corridor_deal_risk`,
+- **Vertical worker layer** (6 local stdio tools): `middle_corridor_deal_risk`,
   `cis_secondary_sanctions_exposure`, `agentic_interaction_trust`,
-  `gulf_maritime_exposure` — the productized
+  `gulf_maritime_exposure`, `kazakhstan_market_entry_readiness`,
+  `agent_output_verification` — the productized
   service functions (also exposed over HTTP and A2A) as MCP tools. Each takes a
   structured request matching its `schemas/v1/` contract and returns a triage
   recommendation, decision-readiness score, evidence gaps, and a mandatory
   human-review flag. Pre-compliance evidence triage only: no live retrieval in the
   local stdio transport, no factual-truth verification, no advice.
 
-`kazakhstan_market_entry_readiness` is also shipped in the runtime as a service
-function, HTTP route, A2A profile, and deployed Cloudflare Worker, but it is not
-exposed as a local stdio MCP tool in this release.
+Every vertical worker with a live A2A endpoint is reachable over local stdio MCP;
+`tests/test_mcp_tool_callability.py` fails if a deployed worker has no MCP tool.
+
+Each of those tools declares its request shape inline — field names, types, enum
+values, the required list, and the schema's own worked example — so a caller can
+build a first payload from the tool listing alone. `get_schema` returns the full
+nested contract when the inline shape is not enough.
 
 **Verification status**: wire-protocol verified — `scripts/smoke_mcp.py` exercises the full JSON-RPC cycle (initialize → tools/list → tools/call) against the running stdio server, including `check_evidence_packet`, `list_source_categories`, and `audit_claims`.
 

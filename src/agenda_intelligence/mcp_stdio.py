@@ -21,6 +21,83 @@ def _schema(properties: JsonDict, required: Optional[list[str]] = None) -> JsonD
     }
 
 
+# How many levels of a bundled request schema to inline in the tool listing.
+# Two keeps the field names, their types, enum values, and the required list —
+# enough to build a first payload — while leaving deep nesting to get_schema.
+_REQUEST_SHAPE_DEPTH = 2
+_SHAPE_KEYWORDS = ("type", "enum", "format", "minimum", "maximum", "minItems", "minLength")
+
+
+def _resolve_ref(node: Any, root: JsonDict) -> Any:
+    """Follow local #/$defs/... references so the shape shows real fields.
+
+    The request schemas keep their object definitions in $defs and reference
+    them from the top level. Leaving the $ref unresolved renders as an empty
+    object — exactly the guessing game this whole helper exists to remove.
+    """
+    for _ in range(5):
+        if not isinstance(node, dict) or "$ref" not in node:
+            return node
+        ref = node["$ref"]
+        if not isinstance(ref, str) or not ref.startswith("#/"):
+            return node
+        target: Any = root
+        for part in ref[2:].split("/"):
+            if not isinstance(target, dict) or part not in target:
+                return node
+            target = target[part]
+        node = target
+    return node
+
+
+def _prune_schema_node(node: Any, depth: int, root: JsonDict) -> JsonDict:
+    """Copy a schema node, keeping structure only down to *depth* levels."""
+    node = _resolve_ref(node, root)
+    if not isinstance(node, dict):
+        return {}
+    pruned: JsonDict = {key: node[key] for key in _SHAPE_KEYWORDS if key in node}
+    if depth <= 0:
+        return pruned
+    if isinstance(node.get("properties"), dict):
+        pruned["properties"] = {
+            name: _prune_schema_node(value, depth - 1, root) for name, value in node["properties"].items()
+        }
+        if node.get("required"):
+            pruned["required"] = list(node["required"])
+    if "items" in node:
+        pruned["items"] = _prune_schema_node(node["items"], depth - 1, root)
+    return pruned
+
+
+def _request_shape(schema_name: str, description: str) -> JsonDict:
+    """Inline a bundled request schema's shape into a tool parameter.
+
+    An agent chooses and fills a tool from the listing alone. A bare
+    {"type": "object"} that points at a schema file name the agent has never
+    read forces it to guess the payload, fail validation, and drop the tool for
+    good. Inlining the full schema is not an option either — the vertical
+    request schemas are 6-7 KB each and every connected session would pay for
+    all of them. So the listing carries the top two levels (field names, types,
+    enum values, required list) and get_schema serves the rest on demand.
+
+    Falls back to the opaque object if the packaged schema cannot be read, so a
+    packaging problem degrades the hint rather than breaking the server.
+    """
+    result = mcp_server.get_schema(schema_name)
+    schema = result.get("schema") if isinstance(result, dict) else None
+    if not isinstance(schema, dict):
+        return {"type": "object", "description": description}
+    shape = _prune_schema_node(schema, _REQUEST_SHAPE_DEPTH, schema)
+    shape["type"] = "object"
+    shape["description"] = f"{description} Call get_schema('{schema_name}') for the full nested contract."
+    # The bundled schemas carry a worked example. A payload the caller can copy
+    # and adapt beats any field list, so it travels with the tool definition.
+    examples = schema.get("examples")
+    if isinstance(examples, list) and examples:
+        shape["examples"] = [examples[0]]
+    return shape
+
+
 TOOLS: dict[str, dict[str, Any]] = {
     "validate_brief": {
         "description": (
@@ -71,13 +148,10 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "inputSchema": _schema(
             {
-                "packet_json": {
-                    "type": "object",
-                    "description": (
-                        "Parsed object matching evidence-packet-request.schema.json: claims plus "
-                        "the complete source texts those claims reference."
-                    ),
-                }
+                "packet_json": _request_shape(
+                    "evidence_packet_request",
+                    "Claims plus the complete source texts those claims reference.",
+                )
             },
             ["packet_json"],
         ),
@@ -312,10 +386,10 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "inputSchema": _schema(
             {
-                "request_json": {
-                    "type": "object",
-                    "description": "Claim verification request matching claim-verification-request.schema.json.",
-                }
+                "request_json": _request_shape(
+                    "claim_verification_request",
+                    "Claim verification request.",
+                )
             },
             ["request_json"],
         ),
@@ -333,12 +407,10 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "inputSchema": _schema(
             {
-                "request": {
-                    "type": "object",
-                    "description": (
-                        "Agenda request with question, geography, audience, depth, " "evidence mode, and output format."
-                    ),
-                }
+                "request": _request_shape(
+                    "agenda_request",
+                    "Agenda request with question, geography, audience, depth, evidence mode, and output format.",
+                )
             },
             ["request"],
         ),
@@ -439,13 +511,10 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "inputSchema": _schema(
             {
-                "deal_risk_request": {
-                    "type": "object",
-                    "description": (
-                        "Structured Middle Corridor deal-risk request matching "
-                        "middle-corridor-deal-risk-request.schema.json."
-                    ),
-                }
+                "deal_risk_request": _request_shape(
+                    "middle_corridor_deal_risk_request",
+                    "Structured Middle Corridor deal-risk request.",
+                )
             },
             ["deal_risk_request"],
         ),
@@ -465,13 +534,10 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "inputSchema": _schema(
             {
-                "exposure_request": {
-                    "type": "object",
-                    "description": (
-                        "Structured CIS secondary-sanctions exposure request matching "
-                        "cis-secondary-sanctions-request.schema.json."
-                    ),
-                }
+                "exposure_request": _request_shape(
+                    "cis_secondary_sanctions_request",
+                    "Structured CIS secondary-sanctions exposure request.",
+                )
             },
             ["exposure_request"],
         ),
@@ -489,13 +555,10 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "inputSchema": _schema(
             {
-                "trust_request": {
-                    "type": "object",
-                    "description": (
-                        "Structured agentic interaction trust request matching "
-                        "agentic-interaction-trust-request.schema.json."
-                    ),
-                }
+                "trust_request": _request_shape(
+                    "agentic_interaction_trust_request",
+                    "Structured agentic interaction trust request.",
+                )
             },
             ["trust_request"],
         ),
@@ -514,17 +577,57 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "inputSchema": _schema(
             {
-                "exposure_request": {
-                    "type": "object",
-                    "description": (
-                        "Structured Gulf maritime exposure request matching "
-                        "gulf-maritime-exposure-request.schema.json."
-                    ),
-                }
+                "exposure_request": _request_shape(
+                    "gulf_maritime_exposure_request",
+                    "Structured Gulf maritime exposure request.",
+                )
             },
             ["exposure_request"],
         ),
         "handler": lambda args: mcp_server.gulf_maritime_exposure(args["exposure_request"]),
+    },
+    "kazakhstan_market_entry_readiness": {
+        "description": (
+            "Grade a Kazakhstan market-entry file (distribution, import, service, showroom, EPC, "
+            "renewable-energy, infrastructure, technology-transfer, or partner-entry) against a staged "
+            "source-requirement taxonomy before a launch, budget, or partner commitment. Pass a structured "
+            "readiness_request (entry_mode, sector, market_entry_file, dated_sources, decision_stage) "
+            "matching market-entry-readiness-request.schema.json. Returns a gate decision, readiness label, "
+            "evidence gaps, claim audit, owner actions, and watch-next indicators. Evidence triage only: not "
+            "legal, compliance, customs, tax, sanctions, or launch-authorization advice; no live retrieval; "
+            "human review is required."
+        ),
+        "inputSchema": _schema(
+            {
+                "readiness_request": _request_shape(
+                    "market_entry_readiness_request",
+                    "Structured Kazakhstan market-entry readiness request.",
+                )
+            },
+            ["readiness_request"],
+        ),
+        "handler": lambda args: mcp_server.kazakhstan_market_entry_readiness(args["readiness_request"]),
+    },
+    "agent_output_verification": {
+        "description": (
+            "Decide whether another agent's claim-backed output is safe to relay onward. Use before "
+            "forwarding, publishing, or acting on a downstream agent's answer that cites evidence: it "
+            "reports which claims are grounded, which are unsafe to relay, and which evidence references "
+            "are orphaned. Pass audit_json matching evidence-audit.schema.json (claims, evidence records, "
+            "optional unsupported_claims). Returns a relay verdict with per-claim findings and owner "
+            "actions. Evidence-readiness only: it does not verify factual truth, fetch or validate cited "
+            "sources, or authorize an action."
+        ),
+        "inputSchema": _schema(
+            {
+                "audit_json": _request_shape(
+                    "evidence_audit",
+                    "Claim-level evidence audit of the output being relayed.",
+                )
+            },
+            ["audit_json"],
+        ),
+        "handler": lambda args: mcp_server.agent_output_verification(args["audit_json"]),
     },
     "get_schema": {
         "description": (
