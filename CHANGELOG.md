@@ -20,6 +20,20 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   with it off. Worker suite 142/142. **Activation:**
   `wrangler deploy --env cis-secondary-sanctions`.
 
+- **fix(cis worker): drop the edge-cache override that pinned a stale
+  sanctions index.** The Snapshot fetch passed
+  `cf: { cacheTtl: 3600, cacheEverything: true }`, so Cloudflare held the index
+  body at the edge for an hour independently of the adapter's own six-hour
+  module TTL — and unlike the module cache, the edge copy survived isolate
+  restarts and a `wrangler deploy`. Observed on 2026-07-24: the refreshed index
+  was live on the site, the worker had been redeployed, and callers were still
+  served the 2026-06-26 build with no operator lever to force the new one. The
+  fetch now sets no `cf` override, leaving the module TTL as the single
+  freshness regulator; the origin's own cache headers still absorb request
+  load. Regression assertion added to the existing Snapshot adapter test.
+  Worker suite 142/142. **Activation:**
+  `wrangler deploy --env cis-secondary-sanctions`.
+
 - **chore(cis worker): agent-card prose said "screening" for what is dated
   snapshot name matching.** Companion to the provenance-date change above. The
   card's `wrapper_scope` described "active server-side name screening against a
