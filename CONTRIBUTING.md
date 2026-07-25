@@ -7,7 +7,7 @@ If you've just landed in this repo and want to understand it before editing, do 
 **1. Read these three files, in order:**
 
 1. [`README.md`](README.md) — what this is (product shell + evidence-discipline layer), the four-repo stack, and the non-goals (no live retrieval, no factual verification).
-2. [`AGENTS.md`](AGENTS.md) — canonical project rules: identity, geography routing terms, honesty rules, retrieved-content trust. Everything else in this file inherits from there.
+2. [`AGENTS.md`](AGENTS.md) — canonical project rules: identity, honesty rules, retrieved-content trust, change discipline. Everything else in this file inherits from there. It points to [`docs/vertical-workers.md`](docs/vertical-workers.md), [`docs/geography-routing.md`](docs/geography-routing.md) (the routing term sets, which moved out of `AGENTS.md`), and [`docs/local-checks.md`](docs/local-checks.md).
 3. [`ROADMAP.md`](ROADMAP.md) — what's shipping vs explicitly deferred. The version targets here are how this repo signals maturity (this repo does **not** use the Bar 1 / Bar 2 framework — that belongs to the vertical specialists).
 
 **2. Get the validator running locally:**
@@ -68,6 +68,12 @@ staircase of fix-CI-fix-CI commits. Run `make verify-local` before pushing
 changes to `deploy/cloudflare-worker/`, discovery metadata, examples, package
 mirrors, or validation tests. Bypass the hook in emergencies with `git push
 --no-verify`.
+
+## Where a new rule goes
+
+`AGENTS.md` is the contract and stays short; detail that grows with the product lives in `docs/` and is reached from it by a pointer — see AGENTS.md "Where a new rule goes". A rule belongs inline only if it is needed before any output.
+
+Two of those files are load-bearing for tests. Adding a routing term means editing [`docs/geography-routing.md`](docs/geography-routing.md) and `llms.txt`: `tests/test_product_shell.py::test_routing_terms_documented_in_canon` reads those two and no longer reads `AGENTS.md`.
 
 ## Validation Commands
 ```bash

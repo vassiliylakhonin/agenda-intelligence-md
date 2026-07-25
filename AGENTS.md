@@ -134,6 +134,19 @@ Do not claim:
 
 Label clearly: illustrative, experimental, planned, or not yet implemented. Vertical workers must surface `human_review_required` and `not_advice_notice` in their service response and propagate them through HTTP and A2A.
 
+## Where a new rule goes
+
+This file is the contract, deliberately short. Detail that grows with the product lives in `docs/` and is reached from here by a pointer:
+
+- shipped workers, the artifact ladder, requirements for a new one → [`docs/vertical-workers.md`](docs/vertical-workers.md)
+- routing term sets → [`docs/geography-routing.md`](docs/geography-routing.md), which with `llms.txt` is one of the two mirrors the routing guard checks
+- what to run before push and the dual-copy invariant → [`docs/local-checks.md`](docs/local-checks.md)
+- operational behavior for agents executing the packaged skills → the `SKILL.md` files, not this one
+
+Add a rule here only if it is needed before any output — identity, scope, honesty rules, retrieved-content trust, change discipline, the decision-workspace and evidence-assembly rules. Everything else goes in the file above that owns it, with a one-line summary here at most. Do not move detail back inline so that "the agent sees it"; the pointer is the mechanism, and re-inlining is how this file grew to 2,700 words before 2026-07-25.
+
+Two of those files are load-bearing for tests, not just for readers: adding a routing term means editing `docs/geography-routing.md` and `llms.txt`, because `tests/test_product_shell.py::test_routing_terms_documented_in_canon` reads those two and no longer reads this file.
+
 ## Validation and CI checks
 
 Validation is first-class in this repo. What to run locally, in what order, and the dual-copy invariant are in [`docs/local-checks.md`](docs/local-checks.md). `make ci` is sufficient before most pushes.
