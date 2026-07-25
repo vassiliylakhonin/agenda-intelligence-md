@@ -2,76 +2,26 @@
 
 # Claude Code working rules
 
-AGENTS.md is the canonical project contract: identity, scope, boundaries, honesty rules, relationship to Global Think Tank Analyst and vertical specialists, retrieved-content trust. Follow it. Do not re-derive or restate those rules — apply them.
+`AGENTS.md` is the canonical project contract — apply it, do not restate it. It points to the detail files, loaded when the task needs them:
 
-Runtime skill contracts live in [skills/agenda-intelligence/SKILL.md](skills/agenda-intelligence/SKILL.md) and [skills/source-ingest/SKILL.md](skills/source-ingest/SKILL.md).
+- [docs/vertical-workers.md](docs/vertical-workers.md) — shipped workers, the artifact ladder, hard requirements for a new one.
+- [docs/geography-routing.md](docs/geography-routing.md) — routing term sets; one of the two canon mirrors the routing guard checks.
+- [docs/local-checks.md](docs/local-checks.md) — what to run before push, in what order, plus the dual-copy invariant.
 
-This file (CLAUDE.md) contains only Claude-Code-specific working rules for this repo, on top of the global ~/.claude/CLAUDE.md.
+Runtime skill contracts: [skills/agenda-intelligence/SKILL.md](skills/agenda-intelligence/SKILL.md) and [skills/source-ingest/SKILL.md](skills/source-ingest/SKILL.md).
 
-## Project-specific paths to inspect
-
-In addition to the global pre-edit checklist:
-- pyproject.toml
-- Makefile
-- scripts/
-- schemas/
-- examples/
-- evals/
-- tests/
-- skills/
-- src/agenda_intelligence/
-- source-requirements/
-- .github/workflows/
-
-## Critical invariant: dual-copy data/ sync
-
-The repo keeps two copies of several files — top-level AND under `src/agenda_intelligence/data/`. These MUST stay in sync or CI breaks (enforced by `tests/test_package_consistency.py`):
-
-- `Agenda-Intelligence.md` ↔ `src/agenda_intelligence/data/Agenda-Intelligence.md`
-- `SOURCE_POLICY.md` ↔ `src/agenda_intelligence/data/SOURCE_POLICY.md`
-- `llms.txt` ↔ `src/agenda_intelligence/data/llms.txt`
-- `agent-manifest.json` ↔ `src/agenda_intelligence/data/agent-manifest.json`
-- `schemas/v1/*.json` ↔ `src/agenda_intelligence/data/schemas/v1/*.json`
-- `skills/**` ↔ `src/agenda_intelligence/data/skills/**`
-- `source-requirements/*` ↔ `src/agenda_intelligence/data/source-requirements/*`
-
-When changing any of these, change the paired copy in the same commit. Version bumps in particular must propagate to packaged copies or release CI fails.
-
-## Validators before push
-
-TL;DR: `make ci` is sufficient before push — it runs lint, typecheck, and the full test suite. The list below is for debugging which specific step failed, not a sequence to run by hand every time.
-
-Mirror the CI checks locally before pushing:
+## Before push
 
 ```
-black --check --line-length=120 src/ tests/ scripts/
-flake8 src/ tests/ scripts/ --max-line-length=120 --ignore=E203,W503
 make ci
-python3 -m agenda_intelligence.cli validate-manifest
-python3 -m agenda_intelligence.cli validate-brief examples/agenda-brief.json
-python3 -m agenda_intelligence.cli validate-evidence examples/source/evidence-pack.json
-python3 scripts/validate.py
-python3 scripts/validate_public_examples.py
 ```
 
-`black --check` is the first line because CI's Lint job runs it as the very first step and fails the whole pipeline on any formatting drift. If `--check` fails, run `black --line-length=120 src/ tests/ scripts/` to auto-fix.
+Sufficient for most changes — lint, typecheck, full test suite. Everything else, including which step failed and why, is in [docs/local-checks.md](docs/local-checks.md). Do not keep a second copy of that list here.
 
-`flake8` runs immediately after `black` in CI's Lint job and catches things `black` leaves alone — most often long string literals in dict/tuple positions where `black` cannot split. There is no auto-fixer; reformat the line by hand (parenthesized string concatenation, dedicated constant, etc.).
-
-For MCP smoke check:
-
-```
-python3 -m agenda_intelligence.cli doctor --mcp-command "python3 -m agenda_intelligence.mcp_stdio" --strict
-```
-
-## PR workflow
-
-PRs auto-merge on green CI per branch protection — no need to wait for manual approval after `gh pr create`. Standing permission to use `gh pr merge --auto --squash --delete-branch` on docs and CI-green code changes. Pause only for irreversible / schema-breaking / public-positioning changes (those need an ADR and explicit approval, per AGENTS.md change discipline).
+Two traps worth naming up front: `black --check` runs first in CI and fails the whole pipeline on formatting drift, and the dual-copy paths under `src/agenda_intelligence/data/` must change in the same commit as their top-level twins.
 
 ## Working style in this repo
 
-Small, reviewable changes. Do not rewrite the project unless I explicitly ask.
+Follow existing schema, CLI, and MCP patterns instead of inventing new ones. Additive changes are allowed without prior approval under the change-discipline rules in AGENTS.md — behind a stable contract, with a contract test and a CHANGELOG entry.
 
-Follow existing schema, CLI, and MCP patterns instead of inventing new ones. New schemas, validators, MCP tools, CLI subcommands, or workflow files require explicit approval — see AGENTS.md "Honesty rules" and the global "Code and repository changes" rule.
-
-If a change touches release artifacts (version, packaged data, wheels) or any of the dual-copy paths above, verify the invariant before committing.
+Breaking v1 schema changes, removing MCP tools, and renaming public HTTP endpoints or A2A profiles need an ADR and a version bump. The v1.0.x contract freeze (ADR 0003) is still in force.

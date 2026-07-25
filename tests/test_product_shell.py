@@ -542,8 +542,13 @@ TERM_EXEMPT_DOCS: set[str] = set()
 
 
 def _doc_mirrors() -> dict[str, str]:
+    """The two canon mirrors of the routing term sets.
+
+    The terms live in docs/geography-routing.md rather than AGENTS.md so the
+    project contract stays readable; AGENTS.md points at it.
+    """
     return {
-        "AGENTS.md": (ROOT / "AGENTS.md").read_text(encoding="utf-8").lower(),
+        "docs/geography-routing.md": (ROOT / "docs" / "geography-routing.md").read_text(encoding="utf-8").lower(),
         "llms.txt": (ROOT / "llms.txt").read_text(encoding="utf-8").lower(),
     }
 
@@ -565,8 +570,8 @@ def test_routing_terms_documented_in_canon(term_set_name: str):
             if term not in doc_text:
                 missing.append(f"{term_set_name}:{term!r} missing from {doc_name}")
     assert not missing, (
-        "Routing term set drifted from canon docs. Update AGENTS.md "
-        "Geography routing section and llms.txt Geography routing terms "
+        "Routing term set drifted from canon docs. Update "
+        "docs/geography-routing.md and llms.txt Geography routing terms "
         "to mention each term verbatim (or add to TERM_EXEMPT_DOCS with a "
         "comment). Missing:\n  " + "\n  ".join(missing)
     )

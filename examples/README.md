@@ -11,7 +11,7 @@ Most contributors want one of the four loops below. Skim them in order to see th
 1. **The schema contract** (5 min) — open [`agenda-request.json`](agenda-request.json) and [`agenda-brief.json`](agenda-brief.json), then run `agenda-intelligence validate-brief examples/agenda-brief.json`. Smallest complete loop: request → memo → schema validation.
 2. **The protocol value-prop** (10 min) — read [`before-after/`](before-after/) (`eu-ai-act.md`, `red-sea-shipping.md`, `sanctions-routing.md`). Each shows the same question handled without the protocol vs with it, plus a scoring rubric. This is the clearest demonstration of *why* the project exists.
 3. **A full source-anchored memo + JSON projection** (10 min) — read [`source-backed/critical-minerals-export-controls.md`](source-backed/critical-minerals-export-controls.md) alongside its paired files: `.brief.json` (JSON projection), `.evidence.json` (evidence pack), `.audit.json` (audit output). Then run `agenda-intelligence validate-brief` and `validate-evidence` on the JSON files. This is what `live_source_backed` mode looks like end-to-end.
-4. **Geography routing in practice** (5 min) — read [`central-asia-caspian-brief.md`](central-asia-caspian-brief.md), [`middle-east-brief.md`](middle-east-brief.md), [`eu-brief.md`](eu-brief.md), [`hormuz_strait_brief.md`](hormuz_strait_brief.md). Each is a brief produced for one of the routed regions; compare to the term sets in [`AGENTS.md`](../AGENTS.md) "Geography routing" and the regional references vendored under `skills/agenda-intelligence/references/regional/`.
+4. **Geography routing in practice** (5 min) — read [`central-asia-caspian-brief.md`](central-asia-caspian-brief.md), [`middle-east-brief.md`](middle-east-brief.md), [`eu-brief.md`](eu-brief.md), [`hormuz_strait_brief.md`](hormuz_strait_brief.md). Each is a brief produced for one of the routed regions; compare to the term sets in [`docs/geography-routing.md`](../docs/geography-routing.md) and the regional references vendored under `skills/agenda-intelligence/references/regional/`.
 
 ## Index by purpose
 
@@ -45,7 +45,7 @@ Other JSON-only briefs under `source-backed/` (us-china tariffs, EU CSRD, EU DSA
 
 ### 4. Geography routing demonstrators
 
-Each of these is a brief produced for one of the routed regions in `analyze`. Compare against the term sets in [`AGENTS.md`](../AGENTS.md) "Geography routing".
+Each of these is a brief produced for one of the routed regions in `analyze`. Compare against the term sets in [`docs/geography-routing.md`](../docs/geography-routing.md).
 
 | Region | Example |
 |---|---|

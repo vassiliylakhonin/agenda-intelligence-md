@@ -5,7 +5,7 @@ Date: 2026-05-29
 
 ## Context
 
-AGENTS.md "Rule for adding the next vertical worker" requires an explicit spin-off decision when the **third** vertical worker is proposed. That threshold is now reached. Three workers are shipped in this repo:
+`docs/vertical-workers.md` "Rule for adding the next vertical worker" requires an explicit spin-off decision when the **third** vertical worker is proposed. That threshold is now reached. Three workers are shipped in this repo:
 
 1. `middle_corridor_deal_risk` — Kazakhstan / Middle Corridor deal-risk gate (flagship).
 2. `cis_secondary_sanctions` — CIS-counterparty secondary-sanctions exposure triage.
