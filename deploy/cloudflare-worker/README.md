@@ -31,6 +31,29 @@ This Worker is intentionally small:
 | GET | `/profiles/confidential-project-room`, `/profiles/confidential-project-room/redacted-example.json` | Markdown / JSON | Public alias-first confidential project-room profile contract and synthetic example |
 | GET | `/stats` | JSON (requires `x-stats-token`) | Private usage analytics |
 | POST | `/message/send`, `/` | JSON-RPC 2.0 | A2A `message/send` |
+| POST | `/mcp` | JSON-RPC 2.0 | MCP over Streamable HTTP, stateless |
+
+### MCP endpoint
+
+`POST /mcp` speaks MCP **2026-07-28**. That revision removed protocol sessions,
+the `initialize` handshake, and stream resumability, which is what makes MCP fit
+a Worker at all — there is no per-client state to keep, so no Durable Object.
+
+It serves `server/discover`, `tools/list`, and `tools/call`. One deployment
+serves one profile, so it exposes exactly one tool: that profile's triage
+contract, named identically to its stdio twin.
+
+```bash
+curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"server/discover"}'
+```
+
+`tools/call` routes through the same dispatch as `message/send`, so both
+transports return the same verdict for the same payload, and it inherits the same
+Bearer gate, rate limit, and usage logging. `server/discover` and `tools/list`
+stay open, like `agent/card`. Older revisions (`initialize`, `ping`) are still
+answered. Rationale: [ADR 0024](../../docs/adr/0024-mcp-2026-07-28-stateless-core.md).
 
 The full product layer remains:
 

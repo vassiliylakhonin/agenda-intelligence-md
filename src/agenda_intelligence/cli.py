@@ -21,7 +21,7 @@ SRC_ROOT = Path(__file__).resolve().parents[1]
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from agenda_intelligence import __version__  # noqa: E402
+from agenda_intelligence import __version__, mcp_stdio  # noqa: E402
 from agenda_intelligence.analysis_bank import (  # noqa: E402
     format_applicability_bench_text,
     format_lint_text,
@@ -1114,15 +1114,17 @@ def _doctor_mcp_tools_check(command):
         "verify_quotes",
         "check_memo_quality",
     }
+    # Probes the way a 2026-07-28 client does: discover first, then list, with the
+    # protocol version stated per request instead of negotiated in a handshake.
+    request_meta = {
+        "_meta": {
+            "io.modelcontextprotocol/protocolVersion": mcp_stdio.PROTOCOL_VERSION,
+            "io.modelcontextprotocol/clientInfo": {"name": "doctor", "version": __version__},
+        }
+    }
     requests = [
-        {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "initialize",
-            "params": {"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "doctor"}},
-        },
-        {"jsonrpc": "2.0", "method": "notifications/initialized"},
-        {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+        {"jsonrpc": "2.0", "id": 1, "method": "server/discover", "params": request_meta},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": request_meta},
     ]
     stdin = "\n".join(json.dumps(request) for request in requests) + "\n"
     try:

@@ -12,6 +12,7 @@ import {
   didDocument,
   entityMap,
   handleJsonRpc,
+  handleMcpJsonRpc,
   handleRequest,
   healthInfo,
   isProductionAuthorized,
@@ -3192,4 +3193,140 @@ test("agent-output-verification rejects a bad support_level enum", async () => {
   const response = await agentOutputVerificationResponseFor(audit);
   assert.equal(response.result.status.state, "TASK_STATE_FAILED");
   assert.equal(response.result.metadata.valid, false);
+});
+
+// --- MCP over Streamable HTTP (2026-07-28 stateless core) ---------------------
+
+const MCP_ENV = { AGENT_PROFILE: "agent_output_verification" };
+const mcpRequest = new Request("https://agent-output-verification-a2a.example.workers.dev/mcp", {
+  method: "POST",
+  headers: { "user-agent": "node:test" }
+});
+
+async function mcpCall(payload, request = mcpRequest, env = MCP_ENV) {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    return await handleMcpJsonRpc(payload, request, env);
+  } finally {
+    console.log = originalLog;
+  }
+}
+
+test("mcp server/discover advertises the stateless revision and identity", async () => {
+  const response = await mcpCall({ jsonrpc: "2.0", id: 1, method: "server/discover" });
+  const result = response.result;
+  assert.equal(result.protocolVersions[0], "2026-07-28");
+  assert.equal(result.serverInfo.name, "agenda-intelligence-md");
+  assert.equal(result.resultType, "complete");
+  assert.equal(result._meta["io.modelcontextprotocol/serverInfo"].name, "agenda-intelligence-md");
+});
+
+test("mcp tools/list is cacheable and profile-scoped", async () => {
+  const response = await mcpCall({ jsonrpc: "2.0", id: 2, method: "tools/list" });
+  const result = response.result;
+  assert.equal(result.cacheScope, "public");
+  assert.ok(result.ttlMs > 0);
+  assert.deepEqual(
+    result.tools.map((tool) => tool.name),
+    ["agent_output_verification"]
+  );
+  assert.ok(result.tools[0].description.includes("Human review is required"));
+});
+
+test("mcp tools/call returns the same verdict as the A2A route", async () => {
+  const audit = groundedAuditFixture();
+  const mcp = await mcpCall({
+    jsonrpc: "2.0",
+    id: 3,
+    method: "tools/call",
+    params: { name: "agent_output_verification", arguments: { request: audit } }
+  });
+  const a2a = await agentOutputVerificationResponseFor(groundedAuditFixture());
+
+  const viaMcp = mcp.result.structuredContent.metadata.response;
+  assert.equal(mcp.result.isError, false);
+  assert.equal(viaMcp.verdict, "allow_relay");
+  assert.deepEqual(viaMcp, a2a.result.metadata.response);
+  assert.equal(JSON.parse(mcp.result.content[0].text).metadata.response.verdict, "allow_relay");
+});
+
+test("mcp tools/call on an unsupported claim blocks relay", async () => {
+  const audit = groundedAuditFixture();
+  audit.claims.push({ claim_id: "c2", claim: "Volumes tripled last quarter.", support_level: "unsupported" });
+  const response = await mcpCall({
+    jsonrpc: "2.0",
+    id: 4,
+    method: "tools/call",
+    params: { name: "agent_output_verification", arguments: { request: audit } }
+  });
+  assert.equal(response.result.structuredContent.metadata.response.verdict, "block_unsafe_claims");
+});
+
+test("mcp tools/call rejects an unknown tool as a tool error, not a protocol error", async () => {
+  const response = await mcpCall({
+    jsonrpc: "2.0",
+    id: 5,
+    method: "tools/call",
+    params: { name: "not_a_tool", arguments: {} }
+  });
+  assert.equal(response.result.isError, true);
+  assert.ok(response.result.structuredContent.error.includes("Unknown tool"));
+});
+
+test("mcp rejects an unsupported protocol version stated in _meta", async () => {
+  const response = await mcpCall({
+    jsonrpc: "2.0",
+    id: 6,
+    method: "tools/list",
+    params: { _meta: { "io.modelcontextprotocol/protocolVersion": "1999-01-01" } }
+  });
+  assert.equal(response.error.code, -32022);
+  assert.ok(response.error.data.supported.includes("2026-07-28"));
+});
+
+test("mcp still answers the removed initialize handshake for older clients", async () => {
+  const response = await mcpCall({
+    jsonrpc: "2.0",
+    id: 7,
+    method: "initialize",
+    params: { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "legacy" } }
+  });
+  assert.equal(response.result.protocolVersion, "2025-03-26");
+  assert.equal(await mcpCall({ jsonrpc: "2.0", method: "notifications/initialized" }), null);
+});
+
+test("mcp endpoint is routed and served without a session header", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  let response;
+  try {
+    response = await handleRequest(
+      new Request("https://agent-output-verification-a2a.example.workers.dev/mcp", {
+        method: "POST",
+        headers: { "content-type": "application/json", "user-agent": "node:test" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 8, method: "server/discover" })
+      }),
+      MCP_ENV,
+      {}
+    );
+  } finally {
+    console.log = originalLog;
+  }
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.result.protocolVersions[0], "2026-07-28");
+});
+
+test("mcp server card advertises the hosted streamable-http transport", () => {
+  const card = mcpServerCard(
+    new Request("https://agent-output-verification-a2a.example.workers.dev/.well-known/mcp/server-card.json"),
+    MCP_ENV
+  );
+  assert.equal(card.protocolVersion, "2026-07-28");
+  const hosted = card.transports.find((entry) => entry.type === "streamable-http");
+  assert.equal(hosted.url, "https://agent-output-verification-a2a.example.workers.dev/mcp");
+  assert.equal(hosted.stateless, true);
+  assert.deepEqual(hosted.tools, ["agent_output_verification"]);
+  assert.equal(card.transport.type, "stdio");
 });

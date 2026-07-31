@@ -42,6 +42,51 @@ Live source retrieval is **not implemented in the local stdio MCP transport**.
 
 ---
 
+## Protocol revision
+
+The server declares **2026-07-28**, the stateless core. In practice that means:
+
+- No session and no handshake. Each request states its own protocol version in
+  `_meta["io.modelcontextprotocol/protocolVersion"]`; each result names the
+  server in `_meta["io.modelcontextprotocol/serverInfo"]`.
+- `server/discover` returns the supported revisions, capabilities, and identity.
+  A client may call it first instead of `initialize`.
+- Every result carries `resultType: "complete"`. This server never returns the
+  `"input_required"` interim result — no tool here has to stop and ask the human
+  mid-call.
+- `tools/list` returns `ttlMs` and `cacheScope: "public"` in a fixed tool order,
+  so a client can cache the listing for an hour instead of re-listing per turn.
+
+Earlier revisions are still served: `2025-11-25`, `2025-06-18`, and `2025-03-26`,
+with `initialize`, `notifications/initialized`, and `ping` answered for clients
+that still send them. A version stated in `_meta` and outside that set is rejected
+with `-32022`. Roots, Sampling, and Logging were deprecated in this revision and
+were never used here.
+
+Design rationale and what was deliberately not adopted (MCP Apps, the Tasks
+extension) are in
+[ADR 0024](docs/adr/0024-mcp-2026-07-28-stateless-core.md).
+
+### Hosted endpoint
+
+The deployed Cloudflare workers also speak MCP over Streamable HTTP at
+`POST /mcp` — possible only because 2026-07-28 removed per-client session state.
+
+One deployment serves one profile and exposes exactly one tool: that profile's
+triage contract, named identically to its stdio twin. For example:
+
+```bash
+curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+`tools/call` runs through the same dispatch as the A2A `message/send` route and
+inherits its access gate, rate limit, and usage logging. `server/discover` and
+`tools/list` stay open. The full local catalog below is stdio only.
+
+---
+
 ## Running the server
 
 ```bash
