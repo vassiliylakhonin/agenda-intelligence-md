@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from agenda_intelligence import mcp_stdio
 from agenda_intelligence.mcp_server import (
     check_memo_quality,
     get_lens,
@@ -465,3 +466,79 @@ def test_mcp_stdio_get_schema_tool_call_returns_schema():
     assert result["isError"] is False
     assert payload["name"] == "evidence_pack"
     assert isinstance(payload["schema"], dict)
+
+
+# --- 2026-07-28 stateless core -------------------------------------------------
+
+
+def test_server_discover_advertises_versions_and_identity():
+    response = handle_message({"jsonrpc": "2.0", "id": 1, "method": "server/discover"})
+
+    result = response["result"]
+    assert result["protocolVersions"][0] == mcp_stdio.PROTOCOL_VERSION == "2026-07-28"
+    assert "tools" in result["capabilities"]
+    assert result["serverInfo"]["name"] == "agenda-intelligence-md"
+    assert result["instructions"]
+
+
+def test_every_result_declares_result_type_and_server_identity():
+    """Identity moved into per-result _meta when the handshake was removed, so a
+    client that never calls initialize still learns who answered."""
+    for method in ("server/discover", "tools/list", "ping"):
+        response = handle_message({"jsonrpc": "2.0", "id": 1, "method": method})
+        result = response["result"]
+        assert result["resultType"] == "complete", method
+        assert result["_meta"][mcp_stdio.META_SERVER_INFO]["name"] == "agenda-intelligence-md", method
+
+
+def test_tools_list_is_cacheable_and_stable():
+    first = handle_message({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})["result"]
+    second = handle_message({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})["result"]
+
+    assert first["ttlMs"] > 0
+    assert first["cacheScope"] == "public"
+    assert [tool["name"] for tool in first["tools"]] == [tool["name"] for tool in second["tools"]]
+
+
+def test_supported_protocol_version_in_meta_is_accepted():
+    response = handle_message(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/list",
+            "params": {"_meta": {mcp_stdio.META_PROTOCOL_VERSION: "2026-07-28"}},
+        }
+    )
+
+    assert "error" not in response
+    assert response["result"]["tools"]
+
+
+def test_unsupported_protocol_version_in_meta_is_rejected():
+    response = handle_message(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/list",
+            "params": {"_meta": {mcp_stdio.META_PROTOCOL_VERSION: "1999-01-01"}},
+        }
+    )
+
+    assert response["error"]["code"] == mcp_stdio.UNSUPPORTED_PROTOCOL_VERSION == -32022
+    assert "2026-07-28" in response["error"]["data"]["supported"]
+
+
+def test_legacy_handshake_still_answered_for_older_clients():
+    """initialize left the protocol in 2026-07-28; clients that still send it
+    must keep working, because the server holds no session state either way."""
+    response = handle_message(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "test"}},
+        }
+    )
+
+    assert response["result"]["protocolVersion"] == "2025-03-26"
+    assert handle_message({"jsonrpc": "2.0", "method": "notifications/initialized"}) is None

@@ -4,6 +4,30 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(mcp): adopt the 2026-07-28 stateless core, and serve MCP from the
+  deployed workers.** The stdio server still declared `2025-03-26`, three
+  revisions behind. The 2026-07-28 revision removed sessions, the `initialize`
+  handshake, and SSE resumability; added the mandatory `server/discover`; made
+  every result carry `resultType`; and made `tools/list` cacheable via `ttlMs` /
+  `cacheScope`. All of that is now implemented. Older revisions keep working —
+  `initialize`, `notifications/initialized`, and `ping` are still answered, and a
+  request that states no version in `_meta` is treated as compatible. A version
+  stated in `_meta` and outside the supported set is rejected with `-32022`.
+
+  Because sessions are gone, MCP over HTTP no longer needs per-client state, so
+  the Cloudflare workers now serve `POST /mcp` on the same request/response path
+  they already use for A2A — no Durable Objects, no new binding. One deployment
+  serves one profile and therefore exposes exactly one tool, named identically to
+  its stdio twin. `tools/call` and `message/send` share one dispatch
+  (`runProfileRequest`), so the two transports cannot return different verdicts
+  for the same payload, and `tools/call` inherits the same Bearer gate, rate
+  limit, and usage logging. `server/discover` and `tools/list` stay open, like
+  `agent/card`. The MCP server card advertises both transports.
+
+  Roots, Sampling, and Logging were deprecated in the same revision; none were
+  ever used here. MCP Apps and the Tasks extension are deliberately not adopted.
+  See [ADR 0024](docs/adr/0024-mcp-2026-07-28-stateless-core.md).
+
 - **feat(mcp): two live workers had no MCP tool, and the rest could not be
   called without guessing.** Two defects in what an agent can act on.
 

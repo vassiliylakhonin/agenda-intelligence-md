@@ -1,4 +1,10 @@
-"""Minimal stdio MCP transport for Agenda Intelligence tools."""
+"""Minimal stdio MCP transport for Agenda Intelligence tools.
+
+Speaks the 2026-07-28 stateless core: no session, no initialize handshake, per
+request protocol version in `_meta`, `server/discover` for capability discovery.
+The removed handshake methods are still answered so that clients on earlier
+revisions keep working — see SUPPORTED_PROTOCOL_VERSIONS.
+"""
 
 import copy
 import json
@@ -7,7 +13,33 @@ from typing import Any, Callable, Optional
 
 from agenda_intelligence import __version__, mcp_server
 
-PROTOCOL_VERSION = "2025-03-26"
+PROTOCOL_VERSION = "2026-07-28"
+
+# Revisions this server still answers. 2026-07-28 made the protocol stateless and
+# dropped the initialize handshake, sessions, and ping — but shipped clients still
+# open with them, so the legacy methods stay served until those clients move. The
+# tool surface is identical across revisions because every tool here is a pure
+# function over its arguments: there is no per-connection state to negotiate.
+SUPPORTED_PROTOCOL_VERSIONS = ("2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26")
+
+# _meta keys defined by the 2026-07-28 core. The client states its protocol
+# version on every request instead of once at handshake time; the server states
+# its identity on every result.
+META_PROTOCOL_VERSION = "io.modelcontextprotocol/protocolVersion"
+META_CLIENT_INFO = "io.modelcontextprotocol/clientInfo"
+META_SERVER_INFO = "io.modelcontextprotocol/serverInfo"
+
+# -32020..-32099 is the range the spec reserved for itself in 2026-07-28.
+UNSUPPORTED_PROTOCOL_VERSION = -32022
+
+SERVER_NAME = "agenda-intelligence-md"
+INSTRUCTIONS = "Use these tools for agenda-analysis protocol, evidence discipline, lenses, and schemas."
+
+# The listing is assembled from packaged data that cannot change while the process
+# runs, so a client may hold it for an hour rather than re-listing per turn. The
+# scope is public because the listing carries no caller data.
+TOOL_LIST_TTL_MS = 3_600_000
+TOOL_LIST_CACHE_SCOPE = "public"
 
 JsonDict = dict[str, Any]
 
@@ -796,6 +828,13 @@ def _source_category_enum() -> list[str]:
 
 
 def _tool_definitions() -> list[JsonDict]:
+    """Tool listing in a fixed order.
+
+    2026-07-28 asks servers to keep tools/list stable across calls so clients can
+    cache it and so the LLM prompt prefix stays byte-identical between turns. The
+    order here is the TOOLS insertion order, which is source order — stable as
+    long as nobody rebuilds the dict from an unordered set.
+    """
     category_enum = _source_category_enum()
     tools = []
     for name, spec in TOOLS.items():
@@ -818,8 +857,25 @@ def _tool_definitions() -> list[JsonDict]:
     return tools
 
 
+def _server_info() -> JsonDict:
+    return {"name": SERVER_NAME, "version": __version__}
+
+
 def _response(message_id: Any, result: JsonDict) -> JsonDict:
-    return {"jsonrpc": "2.0", "id": message_id, "result": result}
+    """Wrap a result in the 2026-07-28 envelope.
+
+    Every result carries `resultType` (this server never returns the
+    `input_required` interim result — no tool here needs to ask the human
+    anything mid-call) and identifies the server in `_meta`, which is where
+    identity moved once the initialize handshake was removed. Clients on older
+    revisions ignore both fields.
+    """
+    enveloped: JsonDict = dict(result)
+    enveloped.setdefault("resultType", "complete")
+    meta = dict(enveloped.get("_meta") or {})
+    meta.setdefault(META_SERVER_INFO, _server_info())
+    enveloped["_meta"] = meta
+    return {"jsonrpc": "2.0", "id": message_id, "result": enveloped}
 
 
 def _error(message_id: Any, code: int, message: str, data: Any = None) -> JsonDict:
@@ -836,22 +892,82 @@ def _tool_result(payload: JsonDict, is_error: bool = False) -> JsonDict:
     }
 
 
+def _capabilities() -> JsonDict:
+    # No listChanged: the tool set is fixed at import time from packaged data, so
+    # there is nothing to subscribe to via subscriptions/listen.
+    return {"tools": {"listChanged": False}}
+
+
+def _handle_discover(message_id: Any) -> JsonDict:
+    """Answer `server/discover`, mandatory since 2026-07-28.
+
+    This is also the backward-compatibility probe on stdio: a client that gets a
+    result here knows it is talking to a stateless server and can skip initialize.
+    """
+    return _response(
+        message_id,
+        {
+            "protocolVersions": list(SUPPORTED_PROTOCOL_VERSIONS),
+            "capabilities": _capabilities(),
+            "serverInfo": _server_info(),
+            "instructions": INSTRUCTIONS,
+        },
+    )
+
+
 def _handle_initialize(message_id: Any, params: JsonDict) -> JsonDict:
+    """Legacy handshake, kept for clients that predate the stateless core.
+
+    Removed from the protocol in 2026-07-28. It is still answered because the
+    server holds no session state either way — echoing the client's revision costs
+    nothing and keeps older desktop hosts working.
+    """
     requested_version = params.get("protocolVersion")
     protocol_version = requested_version if isinstance(requested_version, str) else PROTOCOL_VERSION
     return _response(
         message_id,
         {
             "protocolVersion": protocol_version,
-            "capabilities": {"tools": {"listChanged": False}},
-            "serverInfo": {"name": "agenda-intelligence-md", "version": __version__},
-            "instructions": "Use these tools for agenda-analysis protocol, evidence discipline, lenses, and schemas.",
+            "capabilities": _capabilities(),
+            "serverInfo": _server_info(),
+            "instructions": INSTRUCTIONS,
         },
     )
 
 
 def _handle_tools_list(message_id: Any) -> JsonDict:
-    return _response(message_id, {"tools": _tool_definitions()})
+    return _response(
+        message_id,
+        {
+            "tools": _tool_definitions(),
+            "ttlMs": TOOL_LIST_TTL_MS,
+            "cacheScope": TOOL_LIST_CACHE_SCOPE,
+        },
+    )
+
+
+def _protocol_version_error(message_id: Any, requested: str) -> JsonDict:
+    return _error(
+        message_id,
+        UNSUPPORTED_PROTOCOL_VERSION,
+        f"Unsupported protocol version: {requested}",
+        {"supported": list(SUPPORTED_PROTOCOL_VERSIONS)},
+    )
+
+
+def _requested_protocol_version(params: JsonDict) -> Optional[str]:
+    """Read the per-request protocol version from `_meta`.
+
+    Since the handshake was removed there is no negotiated version to remember,
+    so each request states its own. Absent means an older client that never sends
+    it — treated as compatible rather than rejected.
+    """
+    meta = params.get("_meta")
+    if isinstance(meta, dict):
+        requested = meta.get(META_PROTOCOL_VERSION)
+        if isinstance(requested, str):
+            return requested
+    return None
 
 
 def _handle_tools_call(message_id: Any, params: JsonDict) -> JsonDict:
@@ -884,8 +1000,14 @@ def handle_message(message: JsonDict) -> Optional[JsonDict]:
     if params and not isinstance(params, dict):
         return _error(message_id, -32602, "Request params must be an object.")
 
+    requested_version = _requested_protocol_version(params)
+    if requested_version is not None and requested_version not in SUPPORTED_PROTOCOL_VERSIONS:
+        return _protocol_version_error(message_id, requested_version)
+
     if method == "notifications/initialized":
         return None
+    if method == "server/discover":
+        return _handle_discover(message_id)
     if method == "initialize":
         return _handle_initialize(message_id, params)
     if method == "ping":

@@ -49,6 +49,19 @@ import {
   VERSION,
   profileDiscovery
 } from "./profiles.js";
+import {
+  MCP_ENDPOINT_PATH,
+  MCP_META_PROTOCOL_VERSION,
+  MCP_META_SERVER_INFO,
+  MCP_PROTOCOL_VERSION,
+  MCP_SUPPORTED_PROTOCOL_VERSIONS,
+  MCP_TOOL_LIST_CACHE_SCOPE,
+  MCP_TOOL_LIST_TTL_MS,
+  MCP_UNSUPPORTED_PROTOCOL_VERSION,
+  mcpArgumentsToParams,
+  mcpToolSpecForProfile,
+  mcpToolsForProfile
+} from "./mcp.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 
 const CA_CASPIAN_TERMS = [
@@ -1076,11 +1089,31 @@ function mcpServerCard(request, env = {}) {
     },
     description:
       "Installable stdio MCP server for evidence-readiness workflows: schema validation, claim audit, source coverage, quote-presence checks, and analysis prompt assembly. It routes evidence to human review; it does not provide legal, compliance, sanctions, financial, procurement, or factual-truth determinations.",
+    // `transport` stays the stdio singular for clients that read the old shape.
+    // `transports` is the current list: since 2026-07-28 dropped sessions, this
+    // worker can serve MCP over plain Streamable HTTP alongside the local server.
     transport: {
       type: "stdio",
       command: "agenda-intelligence-mcp",
       install: "pip install agenda-intelligence-md"
     },
+    protocolVersion: MCP_PROTOCOL_VERSION,
+    protocolVersions: [...MCP_SUPPORTED_PROTOCOL_VERSIONS],
+    transports: [
+      {
+        type: "stdio",
+        command: "agenda-intelligence-mcp",
+        install: "pip install agenda-intelligence-md",
+        tools_note: "Full local catalog: schema validation, claim audit, coverage, quote checks, prompt assembly."
+      },
+      {
+        type: "streamable-http",
+        url: `${origin}${MCP_ENDPOINT_PATH}`,
+        stateless: true,
+        tools: mcpToolsForProfile(agentProfile(request, env)).map((tool) => tool.name),
+        tools_note: "Hosted endpoint exposes this deployment's triage contract only, not the local catalog."
+      }
+    ],
     documentationUrl: DOCS_URL,
     package: PACKAGE_URL,
     repository: REPOSITORY_URL,
@@ -6139,6 +6172,218 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
   if (payload.method === "message/send" || payload.method === "tasks/send" || payload.method === "SendMessage") {
     const params = payload.params ?? {};
     const profile = agentProfile(request, env);
+    const { result, promptChars, modulesUsed } = await runProfileRequest(profile, params, request, env);
+    const likelyProbe =
+      classifyClient(request) === "agenstry" || promptChars < PROBE_PROMPT_CHAR_THRESHOLD;
+    const event = logUsageEvent(request, {
+      jsonrpc_method: payload.method,
+      jsonrpc_id_present: payload.id !== undefined,
+      agent_profile: result.metadata.product_profile,
+      prompt_chars: promptChars,
+      modules_used: modulesUsed,
+      live_retrieval: billableUpstreamCost(result),
+      likely_probe: likelyProbe
+    });
+    const statsPromise = recordUsageStats(env, event).catch((error) => {
+      console.warn("usage stats write failed", error);
+    });
+    if (typeof ctx.waitUntil === "function") {
+      ctx.waitUntil(statsPromise);
+    }
+
+    return {
+      jsonrpc: "2.0",
+      id,
+      result
+    };
+  }
+
+  if (payload.method === "agent/card" || payload.method === "agentCard" || payload.method === "GetExtendedAgentCard") {
+    return {
+      jsonrpc: "2.0",
+      id,
+      result: agentCard(request, env)
+    };
+  }
+
+  return jsonRpcError(id, -32601, "Method not found", {
+    supported_methods: ["message/send", "tasks/send", "agent/card"]
+  });
+}
+
+function mcpServerIdentity() {
+  return { name: "agenda-intelligence-md", version: VERSION };
+}
+
+function mcpResponse(id, result) {
+  return {
+    jsonrpc: "2.0",
+    id: id ?? null,
+    result: {
+      ...result,
+      // Required since 2026-07-28. This server never returns the
+      // "input_required" interim result: triage is a pure function of the
+      // supplied evidence, so it never has to stop and ask the human mid-call.
+      resultType: "complete",
+      _meta: { [MCP_META_SERVER_INFO]: mcpServerIdentity() }
+    }
+  };
+}
+
+function mcpRequestedProtocolVersion(params) {
+  const meta = params && typeof params === "object" ? params._meta : null;
+  if (meta && typeof meta === "object" && typeof meta[MCP_META_PROTOCOL_VERSION] === "string") {
+    return meta[MCP_META_PROTOCOL_VERSION];
+  }
+  return null;
+}
+
+function mcpToolResult(payload, isError = false) {
+  return {
+    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+    structuredContent: payload,
+    isError
+  };
+}
+
+// Streamable HTTP MCP, stateless. No session id, no initialize handshake, no
+// resumable stream — every request stands alone, which is the only reason this
+// fits on a Worker at all.
+async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return jsonRpcError(null, -32600, "Invalid Request");
+  }
+  const id = payload.id ?? null;
+  if (payload.jsonrpc !== "2.0" || typeof payload.method !== "string") {
+    return jsonRpcError(id, -32600, "Invalid Request");
+  }
+
+  const params = payload.params ?? {};
+  const requestedVersion = mcpRequestedProtocolVersion(params);
+  if (requestedVersion && !MCP_SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)) {
+    return jsonRpcError(id, MCP_UNSUPPORTED_PROTOCOL_VERSION, `Unsupported protocol version: ${requestedVersion}`, {
+      supported: [...MCP_SUPPORTED_PROTOCOL_VERSIONS]
+    });
+  }
+
+  const profile = agentProfile(request, env);
+
+  if (payload.method === "notifications/initialized") return null;
+
+  if (payload.method === "server/discover") {
+    return mcpResponse(id, {
+      protocolVersions: [...MCP_SUPPORTED_PROTOCOL_VERSIONS],
+      capabilities: { tools: { listChanged: false } },
+      serverInfo: mcpServerIdentity(),
+      instructions: profileInstructions(profile)
+    });
+  }
+
+  // Removed from the protocol in 2026-07-28, still answered for clients that
+  // have not moved. There is no session to create, so this costs nothing.
+  if (payload.method === "initialize") {
+    const echoed = typeof params.protocolVersion === "string" ? params.protocolVersion : MCP_PROTOCOL_VERSION;
+    return mcpResponse(id, {
+      protocolVersion: echoed,
+      capabilities: { tools: { listChanged: false } },
+      serverInfo: mcpServerIdentity(),
+      instructions: profileInstructions(profile)
+    });
+  }
+
+  if (payload.method === "ping") return mcpResponse(id, {});
+
+  if (payload.method === "tools/list") {
+    return mcpResponse(id, {
+      tools: mcpToolsForProfile(profile),
+      ttlMs: MCP_TOOL_LIST_TTL_MS,
+      cacheScope: MCP_TOOL_LIST_CACHE_SCOPE
+    });
+  }
+
+  if (payload.method === "tools/call") {
+    const name = params.name;
+    const spec = mcpToolSpecForProfile(profile);
+    if (typeof name !== "string") {
+      return jsonRpcError(id, -32602, "tools/call requires a string tool name");
+    }
+    if (name !== spec.name) {
+      return mcpResponse(id, mcpToolResult({ error: `Unknown tool: ${name}`, available: [spec.name] }, true));
+    }
+    const callParams = mcpArgumentsToParams(profile, params.arguments ?? {});
+    const { result, promptChars, modulesUsed } = await runProfileRequest(profile, callParams, request, env);
+    const event = logUsageEvent(request, {
+      jsonrpc_method: "tools/call",
+      jsonrpc_id_present: payload.id !== undefined,
+      agent_profile: result.metadata.product_profile,
+      prompt_chars: promptChars,
+      modules_used: modulesUsed,
+      live_retrieval: billableUpstreamCost(result),
+      likely_probe: classifyClient(request) === "agenstry" || promptChars < PROBE_PROMPT_CHAR_THRESHOLD
+    });
+    const statsPromise = recordUsageStats(env, event).catch((error) => {
+      console.warn("usage stats write failed", error);
+    });
+    if (typeof ctx.waitUntil === "function") ctx.waitUntil(statsPromise);
+    return mcpResponse(id, mcpToolResult(result, Boolean(result && result.error)));
+  }
+
+  return jsonRpcError(id, -32601, "Method not found", {
+    supported_methods: ["server/discover", "tools/list", "tools/call"]
+  });
+}
+
+function profileInstructions(profile) {
+  const spec = mcpToolSpecForProfile(profile);
+  return (
+    `Call ${spec.name} with the structured evidence you already hold. ` +
+    "It reports what the file is missing before human review; it does not retrieve sources or decide the outcome."
+  );
+}
+
+async function handleMcpPost(request, env, ctx) {
+  let payload;
+  try {
+    payload = await request.json();
+  } catch (_error) {
+    return jsonResponse(jsonRpcError(null, -32700, "Parse error"), 200);
+  }
+  // tools/call is the production route, so it inherits the same access gate and
+  // throttle as message/send. Discovery and listing stay open, like agent/card.
+  if (payload && typeof payload === "object" && payload.method === "tools/call") {
+    const profile = agentProfile(request, env);
+    if (!isProductionAuthorized(request, env, profile)) {
+      return jsonResponse(
+        jsonRpcError(payload.id ?? null, -32001, "Unauthorized: the production route requires a valid Bearer access key", {
+          security_scheme: "productionBearer",
+          profile
+        }),
+        401,
+        { "www-authenticate": "Bearer", "cache-control": "no-store" }
+      );
+    }
+    const rate = await checkRateLimit(request, env, profile);
+    if (rate.limited) {
+      return jsonResponse(
+        jsonRpcError(payload.id ?? null, -32002, "Rate limit exceeded: too many requests from this client.", {
+          limit_per_hour: rate.limit,
+          profile
+        }),
+        429,
+        { "retry-after": "3600", "cache-control": "no-store" }
+      );
+    }
+  }
+  const response = await handleMcpJsonRpc(payload, request, env, ctx);
+  if (response === null) return new Response(null, { status: 202 });
+  return jsonResponse(response, 200, { "cache-control": "no-store" });
+}
+
+// Single dispatch from a deployed profile to its triage result. Shared by the
+// A2A message/send route and the MCP tools/call route so the two transports
+// cannot drift into different verdicts for the same payload.
+async function runProfileRequest(profile, params, request, env = {}) {
+  {
     let result;
     let promptChars;
     let modulesUsed;
@@ -6181,42 +6426,8 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
       promptChars = text.length;
       modulesUsed = result.metadata.modules_used;
     }
-    const likelyProbe =
-      classifyClient(request) === "agenstry" || promptChars < PROBE_PROMPT_CHAR_THRESHOLD;
-    const event = logUsageEvent(request, {
-      jsonrpc_method: payload.method,
-      jsonrpc_id_present: payload.id !== undefined,
-      agent_profile: result.metadata.product_profile,
-      prompt_chars: promptChars,
-      modules_used: modulesUsed,
-      live_retrieval: billableUpstreamCost(result),
-      likely_probe: likelyProbe
-    });
-    const statsPromise = recordUsageStats(env, event).catch((error) => {
-      console.warn("usage stats write failed", error);
-    });
-    if (typeof ctx.waitUntil === "function") {
-      ctx.waitUntil(statsPromise);
-    }
-
-    return {
-      jsonrpc: "2.0",
-      id,
-      result
-    };
+    return { result, promptChars, modulesUsed };
   }
-
-  if (payload.method === "agent/card" || payload.method === "agentCard" || payload.method === "GetExtendedAgentCard") {
-    return {
-      jsonrpc: "2.0",
-      id,
-      result: agentCard(request, env)
-    };
-  }
-
-  return jsonRpcError(id, -32601, "Method not found", {
-    supported_methods: ["message/send", "tasks/send", "agent/card"]
-  });
 }
 
 async function handlePost(request, env, ctx) {
@@ -6686,6 +6897,10 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return handleStats(request, env);
   }
 
+  if (request.method === "POST" && url.pathname === MCP_ENDPOINT_PATH) {
+    return handleMcpPost(request, env, ctx);
+  }
+
   if (request.method === "POST" && (url.pathname === "/message/send" || url.pathname === "/")) {
     return handlePost(request, env, ctx);
   }
@@ -6705,6 +6920,8 @@ export {
   dealRiskContractResponseForRequest,
   entityMap,
   handleJsonRpc,
+  handleMcpJsonRpc,
+  handleMcpPost,
   healthInfo,
   didDocument,
   checkRateLimit,
