@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "funnel": "node scripts/funnel.js",
     "generate:okf": "node scripts/generate-okf-content.js",
     "smoke:live": "node scripts/smoke-live-profile-contracts.js",
     "stats": "node scripts/stats.js",
