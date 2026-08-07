@@ -4,6 +4,23 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(worker tooling): `npm run funnel` reads the funnel events, and works
+  around Cloudflare's silent sampling.** The events shipped in the previous
+  entry could only be read by hand. `deploy/cloudflare-worker/scripts/funnel.js`
+  now queries the Workers Observability API with `CF_API_TOKEN` from `.env` and
+  prints steps, networks, user agents, referrers, and a plain list of visits
+  that are not self-identified automation — crawlers are split out for display
+  rather than dropped, since a crawler visit is still a fact about who found the
+  endpoint.
+
+  The trap it works around: this dataset is sampled on wider timeframes.
+  Measured 2026-08-07 against five known events — a 6-hour query returned all
+  five at `abr_level` 1, a 24-hour query returned one at `abr_level` 10. A naive
+  72-hour query undercounts by an order of magnitude with no error and no
+  warning. The script walks the window in 6-hour slices, merges them, and prints
+  a warning if a slice still comes back sampled. Tooling only: no worker code,
+  schema, or deployment change.
+
 - **feat(worker analytics): instrument the steps before a call, and what the
   caller left with.** The KV log records `message/send` and `tools/call` only,
   so with single-digit weekly visitors the drop-off was invisible: someone who

@@ -294,7 +294,16 @@ The KV usage log records calls only, so with a handful of visitors a week the dr
 
 These go to Workers Logs rather than KV on purpose. The free KV tier allows 1,000 writes per day; discovery GETs already run 250-480, on a namespace shared with the rate limiter and the sanctions-snapshot cache. Workers Logs takes 200,000 events per day at no cost, with 3-day retention on the free plan.
 
-Reading them needs an API token with Account Analytics and Workers Observability read scopes — the Wrangler OAuth token does not carry those. Without it, `wrangler tail` shows the same events live.
+Reading them needs an API token with Account Analytics and Workers Observability read scopes — the Wrangler OAuth token does not carry those. Put it in `.env` as `CF_API_TOKEN` and run:
+
+```bash
+npm run funnel          # last 72h, the free-plan retention
+npm run funnel -- 12    # last 12h
+```
+
+Without the token, `wrangler tail` shows the same events live.
+
+One trap the script works around: Cloudflare samples this dataset on wider timeframes. Measured 2026-08-07 — a 6-hour query ran at `abr_level` 1 (every row), a 24-hour query at `abr_level` 10, which reported five real events as one. `npm run funnel` therefore walks the window in 6-hour slices and merges them, and prints a warning if a slice comes back sampled anyway. A raw wide-window query against this dataset will quietly undercount.
 
 The custom usage event is privacy-safe by design. It does not log IP addresses, cookies, authorization headers, or full prompt text. It keeps only:
 
