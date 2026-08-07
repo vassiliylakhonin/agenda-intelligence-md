@@ -4,6 +4,33 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(worker analytics): instrument the steps before a call, and what the
+  caller left with.** The KV log records `message/send` and `tools/call` only,
+  so with single-digit weekly visitors the drop-off was invisible: someone who
+  opened the agent card and left produced no record anywhere, and a call that
+  returned `insufficient_information` was indistinguishable from one that
+  returned a usable verdict.
+
+  Two additions. Each discovery GET now emits an
+  `agenda_intelligence_a2a_funnel` event with a `step` of `landing`, `card`,
+  `discovery`, or `docs`, carrying the same privacy-safe caller fields as the
+  usage event. `/health`, `/status`, `/robots.txt`, `/stats`, and the JWKS route
+  stay silent so monitoring traffic does not bury real visits. These go to
+  Workers Logs, not KV: the free KV tier allows 1,000 writes a day against
+  250-480 discovery GETs on a namespace already shared with the rate limiter
+  and the snapshot cache, while Workers Logs takes 200,000 a day at no cost.
+
+  Second, every logged call now carries a uniform `outcome` — the routing
+  decision the caller received, its status, and its score — read from the
+  profile's `readiness_contract`. `/stats` gains an `outcomes` breakdown and
+  `counters.empty_handed`, the number of calls that ended in
+  `insufficient_information` or `invalid_request`. That ratio, not the raw call
+  count, is what says whether people who arrive can use the thing.
+
+  No IP address, cookie, authorization header, or prompt text is stored, in
+  either event. Additive: no schema, endpoint, or A2A profile change. Worker
+  suite 158/158. **Activation:** redeploy each published env.
+
 - **feat(mcp): adopt the 2026-07-28 stateless core, and serve MCP from the
   deployed workers.** The stdio server still declared `2025-03-26`, three
   revisions behind. The 2026-07-28 revision removed sessions, the `initialize`

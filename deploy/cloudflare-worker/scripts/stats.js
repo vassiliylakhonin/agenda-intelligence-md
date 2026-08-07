@@ -77,6 +77,8 @@ async function main() {
       console.log(`Billable upstreams: ${formatRows(body.cost.billable_upstreams)}`);
     }
   }
+  console.log(`Empty-handed: ${body.counters.empty_handed} of ${body.counters.non_probe} non-probe calls`);
+  console.log(`Outcomes: ${formatRows(body.outcomes)}`);
   console.log(`Agent profiles: ${formatRows(body.agent_profiles)}`);
   console.log(`Clients: ${formatRows(body.clients)}`);
   console.log(`Countries: ${formatRows(body.countries)}`);

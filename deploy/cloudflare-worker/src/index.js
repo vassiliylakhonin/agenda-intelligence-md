@@ -5754,6 +5754,7 @@ function buildUsageEvent(request, details = {}) {
       country: cf.country || null,
       as_org: cf.asOrganization || null
     },
+    outcome: details.outcome || { decision: null, status: null, score: null },
     likely_probe: Boolean(details.likely_probe)
   };
 }
@@ -5762,6 +5763,73 @@ function logUsageEvent(request, details) {
   const event = buildUsageEvent(request, details);
   console.log(event);
   return event;
+}
+
+// The KV usage log only records message/send, so the steps before a call —
+// someone opening the card, the landing page, the docs — are invisible, and
+// with a handful of visitors a week that is exactly where the drop-off is.
+// These go to Workers Logs via console.log rather than KV: the free KV tier
+// allows 1,000 writes a day and discovery GETs already run 250-480, on a
+// namespace shared with the rate limiter and the sanctions-snapshot cache.
+// Workers Logs takes 200,000 events a day at no cost.
+const FUNNEL_SILENT_PATHS = new Set([
+  "/health",
+  "/status",
+  "/robots.txt",
+  "/stats",
+  "/.well-known/jwks.json"
+]);
+
+function funnelStepForPath(pathname) {
+  if (FUNNEL_SILENT_PATHS.has(pathname)) return null;
+  if (pathname === "/") return "landing";
+  if (pathname === "/.well-known/agent-card.json") return "card";
+  if (pathname.startsWith("/okf") || pathname.startsWith("/profiles/")) return "docs";
+  if (pathname.startsWith("/.well-known/") || pathname === "/entitymap.json" || pathname === "/api/openapi.json") {
+    return "discovery";
+  }
+  return null;
+}
+
+function logFunnelEvent(request, step) {
+  if (!step) return null;
+  const url = new URL(request.url);
+  const cf = request.cf || {};
+  const event = {
+    event: "agenda_intelligence_a2a_funnel",
+    event_version: 1,
+    timestamp: new Date().toISOString(),
+    step,
+    method: request.method,
+    path: url.pathname,
+    host: url.hostname,
+    client: classifyClient(request),
+    user_agent: userAgentSummary(request),
+    referrer_host: headerHost(request, "referer"),
+    country: cf.country || null,
+    as_org: cf.asOrganization || null,
+    colo: cf.colo || null
+  };
+  console.log(event);
+  return event;
+}
+
+// Uniform per-call outcome, so /stats can answer "of the real calls, how many
+// ended with nothing usable". Every vertical profile carries a
+// readiness_contract; the base signal-screen profile does not.
+function callOutcome(result) {
+  if (result?.status?.state === "TASK_STATE_FAILED") {
+    return { decision: "invalid_request", status: "invalid_request", score: null };
+  }
+  const contract = result?.metadata?.response?.readiness_contract;
+  if (contract && typeof contract === "object") {
+    return {
+      decision: contract.routing?.value || contract.status || "unknown",
+      status: contract.status || "unknown",
+      score: Number.isInteger(contract.score) ? contract.score : null
+    };
+  }
+  return { decision: "completed", status: "completed", score: null };
 }
 
 function dateKeyFromTimestamp(timestamp) {
@@ -5808,6 +5876,8 @@ async function recordUsageStats(env, event) {
       country: event.cf?.country || "unknown",
       colo: event.cf?.colo || "unknown",
       as_org: event.cf?.as_org || "unknown",
+      outcome: event.outcome?.decision || "unknown",
+      outcome_score: Number.isInteger(event.outcome?.score) ? event.outcome.score : null,
       modules_used: Array.isArray(event.modules_used) ? event.modules_used : [],
       live_retrieval: event.live_retrieval || { status: null, upstream: null, billable: false, cost_eur: 0 }
     })
@@ -5875,6 +5945,8 @@ async function usageStats(env, date) {
   const referrers = new Map();
   const networks = new Map();
   const userAgents = new Map();
+  const outcomes = new Map();
+  let emptyHanded = 0;
   let likelyProbe = 0;
   let promptChars = 0;
   let billableCalls = 0;
@@ -5897,6 +5969,12 @@ async function usageStats(env, date) {
     incrementMap(referrers, event.referrer_host);
     incrementMap(networks, event.as_org);
     incrementMap(userAgents, event.user_agent);
+    incrementMap(outcomes, event.outcome);
+    // A caller who supplied nothing usable: the gate could not act on the
+    // request. This is the drop-off number to watch, not the raw call count.
+    if (event.outcome === "insufficient_information" || event.outcome === "invalid_request") {
+      emptyHanded += 1;
+    }
     for (const moduleName of Array.isArray(event.modules_used) ? event.modules_used : []) {
       incrementMap(modules, moduleName);
     }
@@ -5916,7 +5994,8 @@ async function usageStats(env, date) {
       likely_probe: likelyProbe,
       prompt_chars_total: promptChars,
       prompt_chars_avg: total > 0 ? Math.round(promptChars / total) : 0,
-      billable_calls: billableCalls
+      billable_calls: billableCalls,
+      empty_handed: emptyHanded
     },
     cost: {
       estimated_cost_eur: round2(estimatedCostEur),
@@ -5924,6 +6003,7 @@ async function usageStats(env, date) {
       budget: budgetStatus(env, estimatedCostEur)
     },
     clients: sortedMap(clients),
+    outcomes: sortedMap(outcomes),
     agent_profiles: sortedMap(agentProfiles),
     hosts: sortedMap(hosts),
     countries: sortedMap(countries),
@@ -6182,7 +6262,8 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
       prompt_chars: promptChars,
       modules_used: modulesUsed,
       live_retrieval: billableUpstreamCost(result),
-      likely_probe: likelyProbe
+      likely_probe: likelyProbe,
+      outcome: callOutcome(result)
     });
     const statsPromise = recordUsageStats(env, event).catch((error) => {
       console.warn("usage stats write failed", error);
@@ -6319,7 +6400,8 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
       prompt_chars: promptChars,
       modules_used: modulesUsed,
       live_retrieval: billableUpstreamCost(result),
-      likely_probe: classifyClient(request) === "agenstry" || promptChars < PROBE_PROMPT_CHAR_THRESHOLD
+      likely_probe: classifyClient(request) === "agenstry" || promptChars < PROBE_PROMPT_CHAR_THRESHOLD,
+      outcome: callOutcome(result)
     });
     const statsPromise = recordUsageStats(env, event).catch((error) => {
       console.warn("usage stats write failed", error);
@@ -6777,6 +6859,10 @@ function landingHtml(request, env) {
 export async function handleRequest(request, env = {}, ctx = {}) {
   const url = new URL(request.url);
 
+  if (request.method === "GET") {
+    logFunnelEvent(request, funnelStepForPath(url.pathname));
+  }
+
   if (request.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -6917,8 +7003,11 @@ export {
   apiCatalog,
   agentCard,
   buildUsageEvent,
+  callOutcome,
   dealRiskContractResponseForRequest,
   entityMap,
+  funnelStepForPath,
+  logFunnelEvent,
   handleJsonRpc,
   handleMcpJsonRpc,
   handleMcpPost,

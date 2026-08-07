@@ -7,10 +7,12 @@ import {
   apiCatalog,
   agentCard,
   buildUsageEvent,
+  callOutcome,
   checkRateLimit,
   dealRiskContractResponseForRequest,
   didDocument,
   entityMap,
+  funnelStepForPath,
   handleJsonRpc,
   handleMcpJsonRpc,
   handleRequest,
@@ -18,6 +20,7 @@ import {
   isProductionAuthorized,
   isStatsAuthorized,
   landingHtml,
+  logFunnelEvent,
   mcpServerCard,
   okfMarkdown,
   openApiDocument,
@@ -1518,6 +1521,105 @@ test("usage analytics keeps the caller network and user agent for unrecognised c
   assert.equal(event.cf.as_org, "Example Cloud Ltd");
   assert.equal(event.cf.colo, "SIN");
   assert.equal(event.ip, undefined);
+});
+
+test("funnel events cover the steps before a call and skip operational noise", () => {
+  const step = (path) =>
+    funnelStepForPath(new URL(`https://cis-secondary-sanctions-a2a.example.workers.dev${path}`).pathname);
+
+  assert.equal(step("/"), "landing");
+  assert.equal(step("/.well-known/agent-card.json"), "card");
+  assert.equal(step("/.well-known/ai-catalog.json"), "discovery");
+  assert.equal(step("/entitymap.json"), "discovery");
+  assert.equal(step("/okf/index.md"), "docs");
+  // Health checks and the private stats read are not funnel steps: they would
+  // bury the handful of real visits under monitoring traffic.
+  assert.equal(step("/health"), null);
+  assert.equal(step("/stats"), null);
+  assert.equal(step("/robots.txt"), null);
+});
+
+test("funnel event names the visitor without storing an address", () => {
+  const event = logFunnelEvent(
+    {
+      url: "https://cis-secondary-sanctions-a2a.example.workers.dev/.well-known/agent-card.json",
+      method: "GET",
+      headers: new Headers({ "user-agent": "acme-agent-runtime/0.4", referer: "https://agenstry.com/agents/x" }),
+      cf: { country: "SG", colo: "SIN", asOrganization: "Example Cloud Ltd" }
+    },
+    "card"
+  );
+
+  assert.equal(event.event, "agenda_intelligence_a2a_funnel");
+  assert.equal(event.step, "card");
+  assert.equal(event.as_org, "Example Cloud Ltd");
+  assert.equal(event.referrer_host, "agenstry.com");
+  assert.equal(event.user_agent, "acme-agent-runtime/0.4");
+  assert.equal(event.ip, undefined);
+});
+
+test("call outcome reports the routing decision the caller received", () => {
+  const gated = callOutcome({
+    status: { state: "TASK_STATE_COMPLETED" },
+    metadata: {
+      response: {
+        readiness_contract: {
+          status: "insufficient_information",
+          score: 0,
+          routing: { field: "triage_recommendation", value: "insufficient_information" }
+        }
+      }
+    }
+  });
+  assert.deepEqual(gated, { decision: "insufficient_information", status: "insufficient_information", score: 0 });
+
+  const rejected = callOutcome({ status: { state: "TASK_STATE_FAILED" }, metadata: {} });
+  assert.equal(rejected.decision, "invalid_request");
+
+  // The base signal-screen profile carries no readiness contract.
+  const plain = callOutcome({ status: { state: "TASK_STATE_COMPLETED" }, metadata: { response: {} } });
+  assert.equal(plain.decision, "completed");
+});
+
+test("usage stats counts callers who got nothing usable", async () => {
+  const kv = new MemoryKv();
+  const env = { AGENDA_USAGE: kv };
+  const base = {
+    event: "agenda_intelligence_a2a_usage",
+    timestamp: "2026-08-07T09:00:00.000Z",
+    jsonrpc_method: "message/send",
+    agent_profile: "cis_secondary_sanctions",
+    likely_probe: false,
+    client: "browser",
+    modules_used: ["cis_secondary_sanctions"]
+  };
+
+  await recordUsageStats(env, { ...base, outcome: { decision: "insufficient_information", score: 0 } });
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-08-07T09:01:00.000Z",
+    outcome: { decision: "insufficient_information", score: 0 }
+  });
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-08-07T09:02:00.000Z",
+    outcome: { decision: "ready_for_human_review", score: 80 }
+  });
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-08-07T09:03:00.000Z",
+    outcome: { decision: "invalid_request", score: null }
+  });
+
+  const stats = await usageStats(env, "2026-08-07");
+
+  assert.equal(stats.counters.total, 4);
+  assert.equal(stats.counters.empty_handed, 3);
+  assert.deepEqual(stats.outcomes, [
+    { name: "insufficient_information", count: 2 },
+    { name: "invalid_request", count: 1 },
+    { name: "ready_for_human_review", count: 1 }
+  ]);
 });
 
 test("usage stats aggregates caller network, referrer and user agent", async () => {
