@@ -285,7 +285,16 @@ This Worker uses Cloudflare's built-in free observability path:
 - Cloudflare Workers Metrics show total requests, successful requests, errors, CPU time, and latency.
 - Workers Logs capture one structured `agenda_intelligence_a2a_usage` event for each JSON-RPC `message/send`, `tasks/send`, or `SendMessage` call.
 - Cloudflare KV stores one reduced usage event per call for the public `/stats` endpoint.
+- Workers Logs also capture an `agenda_intelligence_a2a_funnel` event for each discovery GET — the steps before a call.
 - Agenstry's public listing can show marketplace-side usage, but only for traffic Agenstry can observe.
+
+### Funnel events (the steps before a call)
+
+The KV usage log records calls only, so with a handful of visitors a week the drop-off is invisible: someone who opens the agent card and leaves produces no record at all. Each discovery GET therefore emits an `agenda_intelligence_a2a_funnel` event to Workers Logs with a `step` of `landing`, `card`, `discovery`, or `docs`, plus the same privacy-safe caller fields as the usage event. `/health`, `/status`, `/robots.txt`, `/stats`, and the JWKS route are deliberately silent — monitoring traffic would bury the real visits.
+
+These go to Workers Logs rather than KV on purpose. The free KV tier allows 1,000 writes per day; discovery GETs already run 250-480, on a namespace shared with the rate limiter and the sanctions-snapshot cache. Workers Logs takes 200,000 events per day at no cost, with 3-day retention on the free plan.
+
+Reading them needs an API token with Account Analytics and Workers Observability read scopes — the Wrangler OAuth token does not carry those. Without it, `wrangler tail` shows the same events live.
 
 The custom usage event is privacy-safe by design. It does not log IP addresses, cookies, authorization headers, or full prompt text. It keeps only:
 
@@ -358,6 +367,8 @@ Three of those breakdowns exist to identify a caller the coarse client class can
 - `user_agents` — the truncated user-agent, capped at the top 15 rows per day because crawlers each ship their own string.
 
 No IP address is stored in any of them.
+
+`outcomes` and `counters.empty_handed` report what the caller actually received. `empty_handed` counts calls that ended in `insufficient_information` or `invalid_request` — the gate could not act on what was supplied. At this traffic level that ratio is the useful number: a caller who reaches the endpoint and leaves with nothing is a different failure from one who never arrives.
 
 A `message/send` call is counted as a likely probe when the client is `agenstry` or the prompt payload is shorter than `PROBE_PROMPT_CHAR_THRESHOLD` (24 characters) — this filters untagged uptime pings from monitor colos that do not announce themselves in the user-agent. Inspect `non_probe` for genuine usage.
 
