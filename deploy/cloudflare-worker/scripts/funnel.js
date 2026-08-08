@@ -57,6 +57,12 @@ function hoursArg() {
 
 function isCrawler(userAgent) {
   const value = (userAgent || "").toLowerCase();
+  // A user-agent that advertises a homepage in parentheses is the long-standing
+  // crawler convention, and it catches the ones that never say "bot" — the two
+  // agent directories found on 2026-08-08 identified themselves only as
+  // "agent-tools.cloud-a2a/0.1 (+https://agent-tools.cloud)" and
+  // "Waggle/1.0 (+https://waggle.zone)", and landed in the human list without it.
+  if (value.includes("(+http")) return true;
   return CRAWLER_HINTS.some((hint) => value.includes(hint));
 }
 
