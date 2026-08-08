@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "agenda-intelligence": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--from", "agenda-intelligence-md", "agenda-intelligence-mcp"]
+    }
+  }
+}
