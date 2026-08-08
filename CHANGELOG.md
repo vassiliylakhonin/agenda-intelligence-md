@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **chore(packaging): conform to the Agent Plugins 1.0.0 layout.** Added a root
+  `plugin.json` and a root `mcp.json` carrying the `$schema` identifiers from
+  <https://agent-plugins.org>. The existing `.claude-plugin/`, `.codex-plugin/`
+  and `.mcp.json` files are unchanged; the specification ignores them, so no
+  installer loses its manifest. `skills/` already matched the spec's discovery
+  rule (one skill per immediate child directory holding a `SKILL.md`).
+  Both new files validate against the published Draft 2020-12 schemas.
+
 - **feat(worker tooling): `npm run funnel` reads the funnel events, and works
   around Cloudflare's silent sampling.** The events shipped in the previous
   entry could only be read by hand. `deploy/cloudflare-worker/scripts/funnel.js`

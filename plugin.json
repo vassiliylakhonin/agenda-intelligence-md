@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "agenda-intelligence",
+  "version": "1.4.0",
+  "description": "Deterministic evidence-packet linter for claim-backed AI output, with compatibility agenda-analysis skills and MCP tools. Reports packet completeness, not factual truth.",
+  "author": {
+    "name": "Vassiliy Lakhonin",
+    "url": "https://github.com/vassiliylakhonin"
+  },
+  "homepage": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+  "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+  "license": "MIT",
+  "keywords": [
+    "evidence-readiness",
+    "strategic-risk",
+    "policy-analysis",
+    "memo-validation",
+    "mcp"
+  ]
+}
