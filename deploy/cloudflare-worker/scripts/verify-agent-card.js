@@ -72,6 +72,13 @@ function validateProfileExpectation(card, sourceUrl) {
   if (!card.skills.some((skill) => skill.id === expectation.skill)) {
     errors.push(`expected ${expectation.skill} skill`);
   }
+  if (expectation.profile === "agent_output_verification") {
+    for (const skillId of ["pre-action-check", "evidence-gap-analysis"]) {
+      if (!card.skills.some((skill) => skill.id === skillId)) {
+        errors.push(`expected ${skillId} skill`);
+      }
+    }
+  }
   return errors;
 }
 

@@ -4,6 +4,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **docs(a2a): declare the existing evidence-gap analysis on the Agent Output
+  Verification card.** The Worker already returns missing evidence ids,
+  quote-to-reference mismatches, unsupported statements, weak claims, evidence
+  gaps, and owner actions through the relay-readiness contract. Its public
+  Agent Card now exposes that behavior as a third structured skill, alongside
+  relay readiness and the pre-action evidence check. This is metadata parity,
+  not a new endpoint, model call, retrieval capability, security scheme, or
+  factuality claim.
+
 - **feat(worker tooling): gate the Agent Output Verification deployment through
   Vizier.** The local deployment command binds the fixed Worker target to the
   current clean Git commit, validates the decision and receipt hash, and runs

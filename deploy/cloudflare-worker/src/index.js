@@ -2122,6 +2122,22 @@ function applyAgentOutputVerificationProfile(card, request) {
       ],
       inputModes: ["application/json"],
       outputModes: ["application/json", "text/markdown"]
+    },
+    {
+      id: "evidence-gap-analysis",
+      name: "Evidence gap and orphan-reference analysis",
+      description:
+        "Finds missing evidence ids, quote-to-reference mismatches, unsupported statements, and weak claims in " +
+        "a caller-supplied claim set. Returns the evidence gaps and owner actions already produced by the relay-readiness " +
+        "contract. Structural only: it does not retrieve sources or verify factual truth.",
+      tags: ["agentic-ai", "a2a", "evidence-gaps", "orphan-references", "claim-support", "human-review"],
+      examples: [
+        "Which claims cite evidence ids that were not supplied?",
+        "Find quote references that do not match the claim's declared evidence.",
+        "List the evidence gaps and owner actions before another agent relays this output."
+      ],
+      inputModes: ["application/json"],
+      outputModes: ["application/json", "text/markdown"]
     }
   ];
   card.x_agenda_intelligence.product_profile = discovery.product_profile;

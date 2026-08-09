@@ -3399,11 +3399,13 @@ async function agentOutputVerificationResponseFor(structured) {
   }
 }
 
-test("agent-output-verification card exposes the verification skill", () => {
+test("agent-output-verification card exposes its three existing contracts as skills", () => {
   const card = agentCard(agentOutputVerificationRequest, AGENT_OUTPUT_VERIFICATION_ENV);
   assert.equal(card.x_agenda_intelligence.product_profile, "agent_output_verification");
   assert.ok(card.skills.some((skill) => skill.id === "agent-output-verification"));
   assert.ok(card.skills.some((skill) => skill.id === "pre-action-check"));
+  assert.ok(card.skills.some((skill) => skill.id === "evidence-gap-analysis"));
+  assert.equal(card.skills.length, 3);
 });
 
 function preActionCheckFixture(riskTier = "low") {
