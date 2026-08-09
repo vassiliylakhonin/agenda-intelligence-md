@@ -103,6 +103,25 @@ Use the profile `--env` deploy commands below only when profile Worker runtime
 behavior changes. Documentation, schema, example, and base profile-route
 changes usually require only the top-level Worker deploy.
 
+The local operator can route the `agent-output-verification` profile deployment
+through Vizier:
+
+```bash
+cd deploy/cloudflare-worker
+npm run deploy:agent-output-verification:gated
+```
+
+The script accepts no arguments. It requires a clean Git commit, reads the
+Vizier integration credential from macOS Keychain service
+`com.vizier.gated-deploy`, and submits the fixed `deploy_worker` action for
+`worker:agent-output-verification-a2a`. Wrangler runs only after a validated
+`ALLOW` receipt. `REVIEW`, `BLOCK`, timeout, malformed output, or a missing
+credential stops the deployment.
+
+This is an operator-side deployment check, not an operating-system security
+boundary. A process with unrestricted shell access and Cloudflare credentials
+can still invoke Wrangler directly.
+
 ### Agenstry domain-ownership proof
 
 The shared Worker serves `GET /.well-known/agenstry-verify` only when that

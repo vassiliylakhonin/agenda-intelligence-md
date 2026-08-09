@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(worker tooling): gate the Agent Output Verification deployment through
+  Vizier.** The local deployment command binds the fixed Worker target to the
+  current clean Git commit, validates the decision and receipt hash, and runs
+  Wrangler only after `ALLOW`. The Vizier credential stays in macOS Keychain.
+  This operator-side check is bypassable by a process that already has general
+  shell and Cloudflare credential access. No Worker request, response, Agent
+  Card, or public API contract changes.
+
 - **fix(worker): support Agenstry HTTP ownership verification.** Worker
   deployments can now serve `GET /.well-known/agenstry-verify` from a
   per-environment `AGENSTRY_VERIFY_TOKEN` secret. The route returns `404` when
