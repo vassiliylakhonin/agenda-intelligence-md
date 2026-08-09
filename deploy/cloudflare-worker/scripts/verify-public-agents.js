@@ -71,6 +71,7 @@ const ACTIVE_AGENTS = [
   {
     key: "portfolio-discovery-alias",
     origin: "https://vassiliylakhonin.github.io",
+    healthOrigin: workerOrigin("agenda-intelligence-a2a"),
     representative: { text: "Route a strategic-risk question with explicit evidence gaps." }
   }
 ];
@@ -151,7 +152,7 @@ async function verifyAgent(agent) {
   assert(primary.protocolBinding === "JSONRPC", "primary interface is not JSONRPC");
   assert(primary.protocolVersion === "1.0", "primary interface is not A2A 1.0");
 
-  const health = await responseJson(`${agent.origin}/health`, {
+  const health = await responseJson(`${agent.healthOrigin || agent.origin}/health`, {
     headers: { accept: "application/json" }
   });
   assert(health.response.status === 200 && health.body.ok === true, "health check failed");
