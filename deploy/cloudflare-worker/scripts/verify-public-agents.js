@@ -197,6 +197,8 @@ async function verifyAgent(agent) {
   assert(invalidParams.body.error?.code === -32602, "invalid params did not return -32602");
 
   return {
+    cardStatus: cardResult.response.status,
+    rpcStatus: rpc.response.status,
     cardLatencyMs: cardResult.latencyMs,
     rpcLatencyMs: rpc.latencyMs,
     contentType: rpc.response.headers.get("content-type"),
@@ -209,7 +211,9 @@ for (const agent of agentsToVerify) {
   try {
     const result = await verifyAgent(agent);
     console.log(
-      `PASS ${agent.key} card=${result.cardLatencyMs}ms rpc=${result.rpcLatencyMs}ms state=${result.state}`
+      `PASS ${agent.key} card_http=${result.cardStatus} card=${result.cardLatencyMs}ms ` +
+        `rpc_http=${result.rpcStatus} rpc=${result.rpcLatencyMs}ms ` +
+        `content_type=${result.contentType} state=${result.state}`
     );
   } catch (error) {
     failed += 1;
