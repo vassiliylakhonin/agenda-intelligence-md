@@ -310,7 +310,7 @@ test("Snapshot adapter degrades to disabled when SNAPSHOT_INDEX_URL is unset", a
 test("agent card uses request origin for live endpoints", () => {
   const card = agentCard(request);
 
-  assert.equal(card.version, "1.1.0");
+  assert.equal(card.version, "1.2.0");
   assert.equal(card.protocolVersion, undefined);
   assert.equal(card.url, undefined);
   assert.equal(card.protocolVersions, undefined);
@@ -359,7 +359,7 @@ test("AI catalog advertises real agentic resources without traction claims", () 
   assert.equal(catalog.specVersion, "1.0");
   assert.equal(catalog.url, "https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json");
   assert.equal(catalog.host.identifier, "did:web:agenda-intelligence-a2a.example.workers.dev");
-  assert.equal(catalog.version, "1.1.0");
+  assert.equal(catalog.version, "1.2.0");
   assert.deepEqual(
     catalog.entries.map((entry) => entry.identifier),
     [
@@ -428,7 +428,7 @@ test("API catalog and OpenAPI routes advertise the public worker HTTP contract",
     "https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json"
   );
   assert.equal(openapi.openapi, "3.0.3");
-  assert.equal(openapi.info.version, "1.1.0");
+  assert.equal(openapi.info.version, "1.2.0");
   assert.ok(openapi.paths["/message/send"].post);
   assert.ok(openapi.paths["/.well-known/ai-catalog.json"].get);
   assert.ok(openapi.paths["/okf/index.md"].get);
@@ -743,6 +743,126 @@ test("message/send returns JSON-RPC result with routing metadata", async () => {
         "sanctions authority pages and list entries, such as OFAC, EU, UK OFSI, UN, or relevant national regulators"
       )
     );
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("A2A 1.0 SendMessage returns the required task result wrapper for every active profile", async () => {
+  const profiles = [
+    ["agenda-intelligence-a2a", "agenda"],
+    ["middle-corridor-deal-risk-gate-a2a", "kazakhstan"],
+    ["cis-secondary-sanctions-a2a", "cis_secondary_sanctions"],
+    ["agentic-interaction-trust-a2a", "agentic_interaction_trust"],
+    ["gulf-maritime-exposure-a2a", "gulf_maritime_exposure"],
+    ["kazakhstan-market-entry-readiness-a2a", "market_entry_readiness"],
+    ["agent-output-verification-a2a", "agent_output_verification"],
+    ["corridor-sanctions-assistant-a2a", "corridor_sanctions_assistant"]
+  ];
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    for (const [host, profile] of profiles) {
+      const rpcRequest = new Request(`https://${host}.example.workers.dev/message/send`, {
+        method: "POST",
+        headers: { "a2a-version": "1.0", "content-type": "application/json" }
+      });
+      const response = await handleJsonRpc(
+        {
+          jsonrpc: "2.0",
+          id: `v1-${profile}`,
+          method: "SendMessage",
+          params: {
+            message: {
+              messageId: `heartbeat-${profile}`,
+              role: "ROLE_USER",
+              parts: [{ text: "A2A conformance heartbeat" }]
+            }
+          }
+        },
+        rpcRequest,
+        { AGENT_PROFILE: profile }
+      );
+      assert.equal(response.jsonrpc, "2.0");
+      assert.equal(response.id, `v1-${profile}`);
+      assert.equal(response.result.status, undefined);
+      assert.ok(response.result.task.id);
+      assert.ok(response.result.task.contextId);
+      assert.ok(response.result.task.status.state.startsWith("TASK_STATE_"));
+      assert.ok(Array.isArray(response.result.task.artifacts));
+    }
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("A2A 1.0 SendMessage rejects malformed params and unsupported versions", async () => {
+  const v1Request = new Request(request.url, {
+    method: "POST",
+    headers: { "a2a-version": "1.0", "content-type": "application/json" }
+  });
+  const invalid = await handleJsonRpc(
+    { jsonrpc: "2.0", id: "invalid", method: "SendMessage", params: {} },
+    v1Request
+  );
+  assert.equal(invalid.error.code, -32602);
+  assert.equal(invalid.error.data[0]["@type"], "type.googleapis.com/google.rpc.BadRequest");
+
+  const unsupportedRequest = new Request(request.url, {
+    method: "POST",
+    headers: { "a2a-version": "9.9", "content-type": "application/json" }
+  });
+  const unsupported = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "unsupported",
+      method: "SendMessage",
+      params: {
+        message: {
+          messageId: "m-unsupported",
+          role: "ROLE_USER",
+          parts: [{ text: "ping" }]
+        }
+      }
+    },
+    unsupportedRequest
+  );
+  assert.equal(unsupported.error.code, -32009);
+});
+
+test("A2A POST returns structured protocol errors for invalid JSON, media type, and oversized bodies", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const invalidJson = await handleRequest(
+      new Request(request.url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{"
+      })
+    );
+    assert.equal(invalidJson.status, 200);
+    assert.equal((await invalidJson.json()).error.code, -32700);
+
+    const wrongMedia = await handleRequest(
+      new Request(request.url, {
+        method: "POST",
+        headers: { "content-type": "text/plain" },
+        body: "{}"
+      })
+    );
+    assert.equal(wrongMedia.status, 415);
+    assert.equal((await wrongMedia.json()).error.code, -32005);
+
+    const oversized = await handleRequest(
+      new Request(request.url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ payload: "x".repeat(1024 * 1024) })
+      })
+    );
+    assert.equal(oversized.status, 413);
+    assert.equal((await oversized.json()).error.code, -32602);
   } finally {
     console.log = originalLog;
   }

@@ -5,7 +5,7 @@ Free hosted A2A/JSON-RPC discovery and lightweight triage wrapper for Agenda Int
 This Worker is intentionally small:
 
 - serves public discovery documents at `/.well-known/agent-card.json`, `/.well-known/ai-catalog.json`, `/.well-known/mcp/server-card.json`, and `/.well-known/did.json`;
-- responds to JSON-RPC `message/send` and `tasks/send`;
+- responds to A2A 1.0 JSON-RPC `SendMessage`; legacy `message/send` and `tasks/send` aliases remain for A2A 0.3 clients;
 - returns a sanctions/policy signal screen, source-planning guidance, quality gates, routing metadata, and install instructions for the stdio MCP server;
 - serves a human-readable HTML landing page at `GET /` for browser visitors (clients with `Accept: text/html`), JSON for everything else;
 - exposes a public JSON status endpoint at `GET /status` suitable for uptime monitoring (UptimeRobot, Better Stack, etc.) — includes version, profile, A2A protocol version, boundary flags;
@@ -30,7 +30,7 @@ This Worker is intentionally small:
 | GET | `/okf/index.md`, `/okf/*.md` | Always Markdown | OKF-style concept bundle served from the worker domain |
 | GET | `/profiles/confidential-project-room`, `/profiles/confidential-project-room/redacted-example.json` | Markdown / JSON | Public alias-first confidential project-room profile contract and synthetic example |
 | GET | `/stats` | JSON (requires `x-stats-token`) | Private usage analytics |
-| POST | `/message/send`, `/` | JSON-RPC 2.0 | A2A `message/send` |
+| POST | `/message/send`, `/` | JSON-RPC 2.0 | A2A 1.0 `SendMessage` |
 | POST | `/mcp` | JSON-RPC 2.0 | MCP over Streamable HTTP, stateless |
 
 ### MCP endpoint
@@ -49,7 +49,7 @@ curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.de
   -d '{"jsonrpc":"2.0","id":1,"method":"server/discover"}'
 ```
 
-`tools/call` routes through the same dispatch as `message/send`, so both
+`tools/call` routes through the same dispatch as `SendMessage`, so both
 transports return the same verdict for the same payload, and it inherits the same
 Bearer gate, rate limit, and usage logging. `server/discover` and `tools/list`
 stay open, like `agent/card`. Older revisions (`initialize`, `ping`) are still
@@ -186,16 +186,18 @@ curl https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/.well-known/ag
 ```bash
 curl -X POST https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/message/send \
   -H 'content-type: application/json' \
+  -H 'A2A-Version: 1.0' \
   -d '{
     "jsonrpc": "2.0",
     "id": "probe-1",
-    "method": "message/send",
+    "method": "SendMessage",
     "params": {
       "message": {
+        "messageId": "message-probe-1",
+        "role": "ROLE_USER",
         "parts": [
           {
-            "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure.",
-            "mediaType": "text/plain"
+            "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure."
           }
         ]
       }
@@ -203,14 +205,15 @@ curl -X POST https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/messag
   }'
 ```
 
-Expected: HTTP 200 with a JSON-RPC 2.0 response, `status.state: "TASK_STATE_COMPLETED"`, and a routing note with `signal_screen`, suggested modules, source plan, quality gates, and next actions.
+Expected: HTTP 200 with a JSON-RPC 2.0 response, an unchanged request `id`, `result.task.status.state: "TASK_STATE_COMPLETED"`, and a routing note with `signal_screen`, suggested modules, source plan, quality gates, and next actions. A successful HTTP 200 is not sufficient evidence of A2A conformance.
 
 After deploying the profile Workers, verify that each public profile returns a
-valid Agent Card and a `readiness_contract` in `message/send`:
+valid Agent Card and a `readiness_contract` in `SendMessage`:
 
 ```bash
 cd deploy/cloudflare-worker
 npm run smoke:live
+npm run verify:public-agents
 ```
 
 Set `WORKERS_SUBDOMAIN` when checking a non-default workers.dev account:
@@ -338,7 +341,7 @@ Useful filters in Workers Logs:
 
 ```text
 event = "agenda_intelligence_a2a_usage"
-jsonrpc_method = "message/send"
+jsonrpc_method = "SendMessage"
 client = "agenstry"
 likely_probe = false
 ```
@@ -381,7 +384,7 @@ No IP address is stored in any of them.
 
 `outcomes` and `counters.empty_handed` report what the caller actually received. `empty_handed` counts calls that ended in `insufficient_information` or `invalid_request` — the gate could not act on what was supplied. At this traffic level that ratio is the useful number: a caller who reaches the endpoint and leaves with nothing is a different failure from one who never arrives.
 
-A `message/send` call is counted as a likely probe when the client is `agenstry` or the prompt payload is shorter than `PROBE_PROMPT_CHAR_THRESHOLD` (24 characters) — this filters untagged uptime pings from monitor colos that do not announce themselves in the user-agent. Inspect `non_probe` for genuine usage.
+An A2A request is counted as a likely probe when the client is `agenstry` or the prompt payload is shorter than `PROBE_PROMPT_CHAR_THRESHOLD` (24 characters) — this filters untagged uptime pings from monitor colos that do not announce themselves in the user-agent. Inspect `non_probe` for genuine usage.
 
 ### Cost accounting
 

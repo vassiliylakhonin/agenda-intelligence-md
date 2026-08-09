@@ -8,7 +8,9 @@ const DEFAULT_AGENT_CARD_URLS = [
   "https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
   "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
   "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
-  "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json"
+  "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+  "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+  "https://vassiliylakhonin.github.io/.well-known/agent-card.json"
 ];
 
 function agentCardUrl(value) {
@@ -48,6 +50,12 @@ const PROFILE_EXPECTATIONS = [
     name: "Agent Output Verification",
     profile: "agent_output_verification",
     skill: "agent-output-verification"
+  },
+  {
+    host: "corridor-sanctions-assistant-a2a",
+    name: "Corridor & Sanctions Risk Assistant",
+    profile: "corridor_sanctions_assistant",
+    skill: "corridor-sanctions-orientation"
   }
 ];
 
