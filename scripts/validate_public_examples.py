@@ -77,6 +77,7 @@ def validate_examples() -> None:
     grounded_check_schema = load_json(ROOT / "schemas" / "v1" / "grounded-check-request.schema.json")
     claim_verification_schema = load_json(ROOT / "schemas" / "v1" / "claim-verification-request.schema.json")
     evidence_packet_schema = load_json(ROOT / "schemas" / "v1" / "evidence-packet-request.schema.json")
+    pre_action_check_schema = load_json(ROOT / "schemas" / "v1" / "pre-action-check-request.schema.json")
 
     json_files = sorted((ROOT / "examples").glob("**/*.json"))
     if not json_files:
@@ -99,6 +100,7 @@ def validate_examples() -> None:
         ROOT / "examples" / "gulf-maritime-exposure",
     }
     a2a_fixture_dir = ROOT / "examples" / "a2a"
+    pre_action_fixture_dir = ROOT / "examples" / "pre-action-check"
 
     for path in json_files:
         load_json(path)
@@ -123,6 +125,23 @@ def validate_examples() -> None:
             validate_with_schema(path, claim_verification_schema, "claim-verification-request")
         elif path.is_relative_to(ROOT / "examples" / "evidence-packet"):
             validate_with_schema(path, evidence_packet_schema, "evidence-packet-request")
+        elif path.is_relative_to(pre_action_fixture_dir):
+            if path.name == "replay-cases.json":
+                replay = load_json(path)
+                if not isinstance(replay, dict) or not isinstance(replay.get("base_request"), dict):
+                    raise SystemExit(f"{path.relative_to(ROOT)} must contain a base_request object")
+                try:
+                    validate(replay["base_request"], pre_action_check_schema)
+                except ValidationError as exc:
+                    where = "/".join(str(part) for part in exc.absolute_path) or "<root>"
+                    raise SystemExit(
+                        f"{path.relative_to(ROOT)} base_request failed pre-action-check-request schema "
+                        f"at {where}: {exc.message}"
+                    ) from exc
+                if not isinstance(replay.get("cases"), list) or len(replay["cases"]) != 20:
+                    raise SystemExit(f"{path.relative_to(ROOT)} must contain exactly 20 replay cases")
+            else:
+                validate_with_schema(path, pre_action_check_schema, "pre-action-check-request")
         elif path.name == "agenda-request.json" or path.name.endswith(".request.json"):
             validate_with_schema(path, request_schema, "agenda-request")
         else:

@@ -47,6 +47,10 @@ agenda-intelligence-http --host 0.0.0.0 --port 8080
 - `POST /v1/middle-corridor/deal-risk`
 - `POST /v1/agentic-interaction/trust`
 - `POST /v1/cis-secondary-sanctions/exposure`
+- `POST /v1/gulf-maritime/exposure`
+- `POST /v1/market-entry/readiness`
+- `POST /v1/agent-output/verification`
+- `POST /v1/agent-output/pre-action-check`
 
 ## Examples
 
@@ -89,6 +93,18 @@ curl -sS http://127.0.0.1:8080/v1/agentic-interaction/trust \
   -H 'content-type: application/json' \
   -d @examples/agentic-interaction-trust/contract/checkout_step_up.request.json
 ```
+
+Pre-action check:
+
+```bash
+curl -sS http://127.0.0.1:8080/v1/agent-output/pre-action-check \
+  -H 'content-type: application/json' \
+  -d @examples/pre-action-check/low-risk-continue.request.json
+```
+
+The response is a routing instruction for the caller: `continue`,
+`request_evidence`, `require_approval`, or `stop`. The shell does not enforce
+the instruction or perform the action.
 
 ## Data handling
 

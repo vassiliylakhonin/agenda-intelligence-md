@@ -661,6 +661,24 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "handler": lambda args: mcp_server.agent_output_verification(args["audit_json"]),
     },
+    "pre_action_check": {
+        "description": (
+            "Route a caller-controlled action to continue, request_evidence, require_approval, or stop using "
+            "caller-supplied claim evidence, risk tier, policy checks, and an optional external approval "
+            "reference. Resubmit the same run_id after adding evidence or approval. Readiness only: the tool "
+            "does not authenticate, authorize, enforce, persist state, or perform the action."
+        ),
+        "inputSchema": _schema(
+            {
+                "action_request": _request_shape(
+                    "pre_action_check_request",
+                    "Structured pre-action check request.",
+                )
+            },
+            ["action_request"],
+        ),
+        "handler": lambda args: mcp_server.pre_action_check(args["action_request"]),
+    },
     "get_schema": {
         "description": (
             "Return a packaged Agenda Intelligence JSON Schema so an agent can construct a valid payload "

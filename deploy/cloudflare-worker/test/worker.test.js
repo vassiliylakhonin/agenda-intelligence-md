@@ -3379,6 +3379,89 @@ test("agent-output-verification card exposes the verification skill", () => {
   const card = agentCard(agentOutputVerificationRequest, AGENT_OUTPUT_VERIFICATION_ENV);
   assert.equal(card.x_agenda_intelligence.product_profile, "agent_output_verification");
   assert.ok(card.skills.some((skill) => skill.id === "agent-output-verification"));
+  assert.ok(card.skills.some((skill) => skill.id === "pre-action-check"));
+});
+
+function preActionCheckFixture(riskTier = "low") {
+  return {
+    run_id: "run-123",
+    actor: { id: "procurement-agent", type: "ai_agent", operator: "Example buyer" },
+    requested_action: "send supplier recommendation",
+    target: { id: "supplier-456", type: "counterparty" },
+    risk_tier: riskTier,
+    ...groundedAuditFixture()
+  };
+}
+
+test("agent-output-verification pre-action check continues a grounded low-risk action", async () => {
+  const response = await agentOutputVerificationResponseFor(preActionCheckFixture());
+  const result = response.result.metadata.response;
+  assert.equal(result.decision, "continue");
+  assert.equal(result.reason_code, "evidence_ready");
+  assert.equal(result.run_id, "run-123");
+});
+
+test("agent-output-verification pre-action check stops an unsupported action", async () => {
+  const request = preActionCheckFixture();
+  request.claims[0].support_level = "unsupported";
+  const response = await agentOutputVerificationResponseFor(request);
+  const result = response.result.metadata.response;
+  assert.equal(result.decision, "stop");
+  assert.equal(result.reason_code, "unsafe_claims");
+  assert.ok(result.blocking_gaps.length > 0);
+});
+
+test("agent-output-verification pre-action check requires approval for high risk and accepts resubmission", async () => {
+  const request = preActionCheckFixture("high");
+  const first = (await agentOutputVerificationResponseFor(request)).result.metadata.response;
+  assert.equal(first.decision, "require_approval");
+  assert.equal(first.approval_required, true);
+
+  request.approval = { status: "approved", reference: "approval-record-1" };
+  const resumed = (await agentOutputVerificationResponseFor(request)).result.metadata.response;
+  assert.equal(resumed.decision, "continue");
+  assert.equal(resumed.run_id, "run-123");
+});
+
+const PRE_ACTION_REPLAY_CASES = JSON.parse(
+  readFileSync(new URL("../../../examples/pre-action-check/replay-cases.json", import.meta.url), "utf8")
+);
+
+function workerReplayRequest(testCase) {
+  const request = structuredClone(PRE_ACTION_REPLAY_CASES.base_request);
+  request.run_id = `replay-${testCase.name}`;
+  if (testCase.risk_tier) request.risk_tier = testCase.risk_tier;
+  if (testCase.support_level) request.claims[0].support_level = testCase.support_level;
+  if (testCase.evidence_ids) request.claims[0].evidence_ids = testCase.evidence_ids;
+  if (testCase.drop_supporting_quotes) delete request.claims[0].supporting_quotes;
+  if (testCase.quote_evidence_id) request.claims[0].supporting_quotes[0].evidence_id = testCase.quote_evidence_id;
+  if (testCase.unsupported_claims) request.unsupported_claims = testCase.unsupported_claims;
+  if (testCase.approval_status) {
+    request.approval = { status: testCase.approval_status, reference: `approval-${testCase.name}` };
+  }
+  if (testCase.policy_profile || testCase.policy_check_status) {
+    request.policy_context = { profile: testCase.policy_profile || "default" };
+    if (testCase.policy_check_status) {
+      request.policy_context.checks = [
+        {
+          check_id: "delegated-authority",
+          status: testCase.policy_check_status,
+          evidence_gap: "No principal authorization supplied."
+        }
+      ];
+    }
+  }
+  return request;
+}
+
+test("agent-output-verification keeps Python parity across twenty pre-action replay cases", async () => {
+  assert.equal(PRE_ACTION_REPLAY_CASES.cases.length, 20);
+  for (const testCase of PRE_ACTION_REPLAY_CASES.cases) {
+    const response = await agentOutputVerificationResponseFor(workerReplayRequest(testCase));
+    const result = response.result.metadata.response;
+    assert.equal(result.decision, testCase.expected_decision, testCase.name);
+    assert.equal(result.reason_code, testCase.expected_reason, testCase.name);
+  }
 });
 
 test("agent-output-verification allows relay on a grounded claim set (Python parity)", async () => {
@@ -3472,9 +3555,10 @@ test("mcp tools/list is cacheable and profile-scoped", async () => {
   assert.ok(result.ttlMs > 0);
   assert.deepEqual(
     result.tools.map((tool) => tool.name),
-    ["agent_output_verification"]
+    ["agent_output_verification", "pre_action_check"]
   );
   assert.ok(result.tools[0].description.includes("Human review is required"));
+  assert.ok(result.tools[1].inputSchema.properties.request.description.includes("pre-action-check-request"));
 });
 
 test("mcp tools/call returns the same verdict as the A2A route", async () => {
@@ -3504,6 +3588,23 @@ test("mcp tools/call on an unsupported claim blocks relay", async () => {
     params: { name: "agent_output_verification", arguments: { request: audit } }
   });
   assert.equal(response.result.structuredContent.metadata.response.verdict, "block_unsafe_claims");
+});
+
+test("mcp pre_action_check uses the same action decision as the A2A route", async () => {
+  const request = preActionCheckFixture("high");
+  const mcp = await mcpCall({
+    jsonrpc: "2.0",
+    id: "pre-action-mcp",
+    method: "tools/call",
+    params: { name: "pre_action_check", arguments: { request } }
+  });
+  const a2a = await agentOutputVerificationResponseFor(request);
+
+  const viaMcp = mcp.result.structuredContent.metadata.response;
+  assert.equal(mcp.result.isError, false);
+  assert.equal(viaMcp.decision, "require_approval");
+  assert.equal(viaMcp.decision, a2a.result.metadata.response.decision);
+  assert.equal(viaMcp.reason_code, a2a.result.metadata.response.reason_code);
 });
 
 test("mcp tools/call rejects an unknown tool as a tool error, not a protocol error", async () => {
@@ -3570,6 +3671,6 @@ test("mcp server card advertises the hosted streamable-http transport", () => {
   const hosted = card.transports.find((entry) => entry.type === "streamable-http");
   assert.equal(hosted.url, "https://agent-output-verification-a2a.example.workers.dev/mcp");
   assert.equal(hosted.stateless, true);
-  assert.deepEqual(hosted.tools, ["agent_output_verification"]);
+  assert.deepEqual(hosted.tools, ["agent_output_verification", "pre_action_check"]);
   assert.equal(card.transport.type, "stdio");
 });

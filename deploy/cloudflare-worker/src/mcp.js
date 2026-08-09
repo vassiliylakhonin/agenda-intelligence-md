@@ -73,14 +73,26 @@ const PROFILE_TOOLS = {
       "authorization, tool scope, session authentication, action intent) before a high-stakes action executes. " +
       "Returns a triage recommendation, trust signal, and the specific missing trust evidence."
   },
-  agent_output_verification: {
-    name: "agent_output_verification",
-    argKey: "request",
-    summary:
-      "Decide whether another agent's claim-backed output is safe to relay onward. Returns a relay verdict with " +
-      "per-claim findings, orphaned evidence references, and owner actions. It does not fetch or validate the " +
-      "cited sources."
-  },
+  agent_output_verification: [
+    {
+      name: "agent_output_verification",
+      argKey: "request",
+      summary:
+        "Decide whether another agent's claim-backed output is safe to relay onward. Returns a relay verdict with " +
+        "per-claim findings, orphaned evidence references, and owner actions. It does not fetch or validate the " +
+        "cited sources."
+    },
+    {
+      name: "pre_action_check",
+      argKey: "request",
+      requestSchema:
+        "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/pre-action-check-request.schema.json",
+      summary:
+        "Route a caller-controlled action to continue, request_evidence, require_approval, or stop using supplied " +
+        "claim evidence, risk tier, policy checks, and an optional external approval reference. Resubmit the same " +
+        "run_id after adding evidence or approval. The caller remains responsible for enforcement."
+    }
+  ],
   gulf_maritime_exposure: {
     name: "gulf_maritime_exposure",
     argKey: "request",
@@ -132,7 +144,7 @@ function inputSchemaFor(spec, profile) {
       additionalProperties: false
     };
   }
-  const schemaUrl = requestSchemaUrl(profile);
+  const schemaUrl = spec.requestSchema || requestSchemaUrl(profile);
   return {
     type: "object",
     properties: {
@@ -149,25 +161,29 @@ function inputSchemaFor(spec, profile) {
   };
 }
 
-export function mcpToolSpecForProfile(profile) {
-  return PROFILE_TOOLS[profile] || PROFILE_TOOLS.agenda;
+function toolSpecsForProfile(profile) {
+  const value = PROFILE_TOOLS[profile] || PROFILE_TOOLS.agenda;
+  return Array.isArray(value) ? value : [value];
+}
+
+export function mcpToolSpecForProfile(profile, name) {
+  const specs = toolSpecsForProfile(profile);
+  return name ? specs.find((spec) => spec.name === name) : specs[0];
 }
 
 export function mcpToolsForProfile(profile) {
-  const spec = mcpToolSpecForProfile(profile);
-  return [
-    {
+  return toolSpecsForProfile(profile).map((spec) => ({
       name: spec.name,
       description: `${spec.summary} ${NOT_ADVICE}`,
       inputSchema: inputSchemaFor(spec, profile)
-    }
-  ];
+    }));
 }
 
 // tools/call arguments -> the params shape the A2A dispatch already accepts, so
 // an MCP call and an A2A call of the same payload land on identical code.
-export function mcpArgumentsToParams(profile, args) {
-  const spec = mcpToolSpecForProfile(profile);
+export function mcpArgumentsToParams(profile, args, name) {
+  const spec = mcpToolSpecForProfile(profile, name) || mcpToolSpecForProfile(profile);
   const value = args && typeof args === "object" ? args[spec.argKey] : undefined;
-  return spec.argKey === "text" ? { text: typeof value === "string" ? value : "" } : { request: value };
+  const params = spec.argKey === "text" ? { text: typeof value === "string" ? value : "" } : { request: value };
+  return name ? { ...params, capability: name } : params;
 }

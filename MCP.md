@@ -1,7 +1,7 @@
 # MCP
 
 `agenda-intelligence-mcp` is a real stdio MCP server shipping with the package.
-It exposes 27 tool functions implemented in `agenda_intelligence.mcp_server`.
+It exposes 30 tool functions implemented in `agenda_intelligence.mcp_server`.
 
 The tools split into four layers:
 
@@ -18,15 +18,16 @@ The tools split into four layers:
   `deep_dive` (reserved/planned, returns a v2 placeholder). These wrap the
   validation layer with geography routing, system-prompt assembly, optional LLM
   invocation, and vendored signal access.
-- **Vertical worker layer** (6 local stdio tools): `middle_corridor_deal_risk`,
+- **Worker and action-gate layer** (7 local stdio tools): `middle_corridor_deal_risk`,
   `cis_secondary_sanctions_exposure`, `agentic_interaction_trust`,
   `gulf_maritime_exposure`, `kazakhstan_market_entry_readiness`,
-  `agent_output_verification` — the productized
-  service functions (also exposed over HTTP and A2A) as MCP tools. Each takes a
-  structured request matching its `schemas/v1/` contract and returns a triage
-  recommendation, decision-readiness score, evidence gaps, and a mandatory
-  human-review flag. Pre-compliance evidence triage only: no live retrieval in the
-  local stdio transport, no factual-truth verification, no advice.
+  `agent_output_verification`, and `pre_action_check`. The first six expose the
+  existing profile contracts. `pre_action_check` returns `continue`,
+  `request_evidence`, `require_approval`, or `stop` before a caller performs an
+  external action. All seven take structured requests under `schemas/v1/`.
+  They do not retrieve sources or verify factual truth. The caller remains
+  responsible for authentication, authorization, enforcement, approval
+  storage, and the action itself.
 
 Every vertical worker with a live A2A endpoint is reachable over local stdio MCP;
 `tests/test_mcp_tool_callability.py` fails if a deployed worker has no MCP tool.

@@ -1,0 +1,60 @@
+{
+  "description": "Twenty deterministic pre-action routing cases. Illustrative caller-supplied evidence only; not factual verification or authorization.",
+  "base_request": {
+    "run_id": "replay-run",
+    "actor": {
+      "id": "procurement-agent",
+      "type": "ai_agent",
+      "operator": "Example buyer"
+    },
+    "requested_action": "send supplier recommendation",
+    "target": {
+      "id": "supplier-456",
+      "type": "counterparty"
+    },
+    "risk_tier": "low",
+    "claims": [
+      {
+        "claim_id": "c1",
+        "claim": "The supplier holds the declared registration.",
+        "support_level": "direct",
+        "evidence_ids": ["e1"],
+        "supporting_quotes": [
+          {
+            "evidence_id": "e1",
+            "quote": "Registration active"
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "evidence_id": "e1",
+        "source_type": "official_document",
+        "name": "Registry extract"
+      }
+    ]
+  },
+  "cases": [
+    {"name": "low_direct", "expected_decision": "continue", "expected_reason": "evidence_ready"},
+    {"name": "medium_direct", "risk_tier": "medium", "expected_decision": "continue", "expected_reason": "evidence_ready"},
+    {"name": "high_needs_approval", "risk_tier": "high", "expected_decision": "require_approval", "expected_reason": "approval_required_for_risk"},
+    {"name": "critical_needs_approval", "risk_tier": "critical", "expected_decision": "require_approval", "expected_reason": "approval_required_for_risk"},
+    {"name": "high_approved", "risk_tier": "high", "approval_status": "approved", "expected_decision": "continue", "expected_reason": "evidence_ready"},
+    {"name": "critical_approved", "risk_tier": "critical", "approval_status": "approved", "expected_decision": "continue", "expected_reason": "evidence_ready"},
+    {"name": "high_rejected", "risk_tier": "high", "approval_status": "rejected", "expected_decision": "stop", "expected_reason": "approval_rejected"},
+    {"name": "weak_claim", "support_level": "weak", "expected_decision": "request_evidence", "expected_reason": "evidence_gaps"},
+    {"name": "partial_without_quote", "support_level": "partial", "drop_supporting_quotes": true, "expected_decision": "request_evidence", "expected_reason": "evidence_gaps"},
+    {"name": "direct_without_quote", "drop_supporting_quotes": true, "expected_decision": "request_evidence", "expected_reason": "evidence_gaps"},
+    {"name": "unsupported_claim", "support_level": "unsupported", "expected_decision": "stop", "expected_reason": "unsafe_claims"},
+    {"name": "orphan_evidence", "evidence_ids": ["missing"], "drop_supporting_quotes": true, "expected_decision": "stop", "expected_reason": "unsafe_claims"},
+    {"name": "unsupported_statement", "unsupported_claims": ["The supplier is risk-free."], "expected_decision": "stop", "expected_reason": "unsafe_claims"},
+    {"name": "span_orphan", "quote_evidence_id": "missing", "expected_decision": "request_evidence", "expected_reason": "evidence_gaps"},
+    {"name": "policy_needs_evidence", "policy_check_status": "needs_evidence", "expected_decision": "request_evidence", "expected_reason": "evidence_gaps"},
+    {"name": "policy_failed", "policy_check_status": "failed", "expected_decision": "stop", "expected_reason": "policy_check_failed"},
+    {"name": "counterparty_medium_needs_approval", "risk_tier": "medium", "policy_profile": "agentic_interaction_trust", "expected_decision": "require_approval", "expected_reason": "approval_required_for_risk"},
+    {"name": "counterparty_medium_approved", "risk_tier": "medium", "policy_profile": "agentic_interaction_trust", "approval_status": "approved", "expected_decision": "continue", "expected_reason": "evidence_ready"},
+    {"name": "low_policy_failed", "policy_profile": "agentic_interaction_trust", "policy_check_status": "failed", "expected_decision": "stop", "expected_reason": "policy_check_failed"},
+    {"name": "low_policy_passed", "policy_profile": "agentic_interaction_trust", "policy_check_status": "passed", "expected_decision": "continue", "expected_reason": "evidence_ready"}
+  ]
+}
