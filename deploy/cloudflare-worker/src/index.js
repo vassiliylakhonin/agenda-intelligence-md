@@ -64,6 +64,8 @@ import {
 } from "./mcp.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 
+const AGENSTRY_VERIFICATION_PATH = "/.well-known/agenstry-verify";
+
 const CA_CASPIAN_TERMS = [
   "central asia",
   "caspian",
@@ -470,6 +472,11 @@ function textResponse(body, status = 200, extraHeaders = {}) {
       ...extraHeaders
     }
   });
+}
+
+function agenstryVerificationToken(env = {}) {
+  const token = typeof env.AGENSTRY_VERIFY_TOKEN === "string" ? env.AGENSTRY_VERIFY_TOKEN.trim() : "";
+  return /^af-verify-[A-Za-z0-9_-]+$/.test(token) ? token : null;
 }
 
 function htmlResponse(body, status = 200, extraHeaders = {}) {
@@ -1373,6 +1380,22 @@ function openApiDocument(request) {
               description: "A2A agent card for the worker.",
               content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
             }
+          }
+        }
+      },
+      "/.well-known/agenstry-verify": {
+        get: {
+          tags: ["discovery"],
+          summary: "Agenstry domain ownership proof",
+          description: "Returns the configured Agenstry verification token as plain text. Returns 404 when unset.",
+          responses: {
+            200: {
+              description: "Single-line Agenstry verification token.",
+              content: {
+                "text/plain": { schema: { type: "string", pattern: "^af-verify-[A-Za-z0-9_-]+$" } }
+              }
+            },
+            404: { description: "No valid verification token is configured." }
           }
         }
       },
@@ -6104,7 +6127,8 @@ const FUNNEL_SILENT_PATHS = new Set([
   "/status",
   "/robots.txt",
   "/stats",
-  "/.well-known/jwks.json"
+  "/.well-known/jwks.json",
+  AGENSTRY_VERIFICATION_PATH
 ]);
 
 function funnelStepForPath(pathname) {
@@ -7344,6 +7368,11 @@ export async function handleRequest(request, env = {}, ctx = {}) {
         "access-control-allow-headers": "content-type, x-client-id, authorization"
       }
     });
+  }
+
+  if (request.method === "GET" && url.pathname === AGENSTRY_VERIFICATION_PATH) {
+    const token = agenstryVerificationToken(env);
+    return token ? textResponse(token, 200, { "cache-control": "no-store" }) : textResponse("Not found", 404);
   }
 
   if (request.method === "GET" && url.pathname === "/.well-known/agent-card.json") {
