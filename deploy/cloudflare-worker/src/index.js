@@ -679,7 +679,7 @@ function productionAuthKey(profile, env = {}) {
   return "";
 }
 
-// Best-effort soft rate limit on the message/send route. Off by default: when
+// Best-effort soft rate limit on the A2A request route. Off by default: when
 // RATE_LIMIT_PER_HOUR is unset or <= 0 the route is unthrottled (current state).
 // Set it per-env to cap free programmatic use while keeping the browser demo
 // usable — a human clicking the demo issues only a handful of calls/hour. KV is
@@ -773,8 +773,7 @@ function agentCard(request, env = {}) {
               httpAuthSecurityScheme: {
                 scheme: "bearer",
                 bearerFormat: "opaque",
-                description:
-                    "Bearer access key required by this deployment's SendMessage route."
+                description: "Bearer access key required by this deployment's SendMessage route."
               }
             }
           },
@@ -1540,9 +1539,18 @@ function openApiDocument(request) {
       "/message/send": {
         post: {
           tags: ["jsonrpc"],
-          summary: "A2A JSON-RPC message/send",
+          summary: "A2A 1.0 JSON-RPC SendMessage",
           description:
-            "Accepts JSON-RPC 2.0 message/send style requests for lightweight hosted triage and routing. Full analysis remains in the installable stdio MCP package.",
+            "Accepts A2A 1.0 JSON-RPC SendMessage requests for lightweight hosted triage and routing. The unadvertised message/send and tasks/send aliases remain available only for A2A 0.3 compatibility. Full analysis remains in the installable stdio MCP package.",
+          parameters: [
+            {
+              name: "A2A-Version",
+              in: "header",
+              required: false,
+              description: "A2A protocol version. Defaults to 1.0 for SendMessage.",
+              schema: { type: "string", enum: ["1.0"], default: "1.0" }
+            }
+          ],
           requestBody: { $ref: "#/components/requestBodies/JsonRpcRequest" },
           responses: {
             200: {
@@ -1552,6 +1560,12 @@ function openApiDocument(request) {
             401: {
               description:
                 "Only returned when a per-profile production bearer key is configured and the request lacks a matching token."
+            },
+            413: {
+              description: "The JSON request body exceeds 1 MiB."
+            },
+            415: {
+              description: "The request Content-Type is not application/json."
             }
           }
         }
@@ -1565,14 +1579,44 @@ function openApiDocument(request) {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["jsonrpc", "method"],
+                required: ["jsonrpc", "id", "method", "params"],
                 properties: {
                   jsonrpc: { type: "string", enum: ["2.0"] },
-                  id: { oneOf: [{ type: "string" }, { type: "number" }], nullable: true },
-                  method: { type: "string", example: "message/send" },
-                  params: { type: "object", additionalProperties: true }
+                  id: { oneOf: [{ type: "string" }, { type: "number" }] },
+                  method: { type: "string", enum: ["SendMessage"] },
+                  params: {
+                    type: "object",
+                    required: ["message"],
+                    properties: {
+                      message: {
+                        type: "object",
+                        required: ["messageId", "role", "parts"],
+                        properties: {
+                          messageId: { type: "string", minLength: 1 },
+                          role: { type: "string", enum: ["ROLE_USER", "ROLE_AGENT"] },
+                          parts: {
+                            type: "array",
+                            minItems: 1,
+                            items: { type: "object", additionalProperties: true }
+                          }
+                        }
+                      }
+                    }
+                  }
                 },
                 additionalProperties: true
+              },
+              example: {
+                jsonrpc: "2.0",
+                id: "request-1",
+                method: "SendMessage",
+                params: {
+                  message: {
+                    messageId: "message-1",
+                    role: "ROLE_USER",
+                    parts: [{ text: "Route this question and identify evidence gaps." }]
+                  }
+                }
               }
             }
           }
@@ -6904,14 +6948,17 @@ function landingHtml(request, env) {
   const tryItCurl = isKazakhstan
     ? `curl -X POST ${origin}/message/send \\
   -H 'content-type: application/json' \\
+  -H 'A2A-Version: 1.0' \\
   -d '{
     "jsonrpc": "2.0",
     "id": "demo-1",
-    "method": "message/send",
+    "method": "SendMessage",
     "params": {
       "message": {
+        "messageId": "message-demo-1",
+        "role": "ROLE_USER",
         "parts": [
-          { "text": "Screen Kazakhstan Middle Corridor sanctions exposure for a logistics route.", "mediaType": "text/plain" }
+          { "text": "Screen Kazakhstan Middle Corridor sanctions exposure for a logistics route." }
         ]
       }
     }
@@ -6919,43 +6966,51 @@ function landingHtml(request, env) {
     : isAgentic
       ? `curl -X POST ${origin}/message/send \\
   -H 'content-type: application/json' \\
+  -H 'A2A-Version: 1.0' \\
   -d '{
     "jsonrpc": "2.0",
     "id": "agentic-demo-1",
-    "method": "message/send",
+    "method": "SendMessage",
     "params": {
-      "request": {
-        "actor": {"declared_type": "ai_agent", "declared_name": "Example Shopping Agent", "operator": "Example Consumer", "authentication_context": "session_cookie"},
-        "target_surface": "checkout",
-        "requested_action": "complete purchase of two restricted-delivery items",
-        "asset_or_resource": "order-123",
-        "decision_stage": "pre_execution",
-        "dated_sources": [
-          {"id": "ait-1", "source_type": "agent_identity_claim", "title": "Declared agent identity header", "date": "2026-05-28"},
-          {"id": "ait-2", "source_type": "session_authentication_evidence", "title": "Authenticated checkout session", "date": "2026-05-28"},
-          {"id": "ait-3", "source_type": "transaction_or_target_action_evidence", "title": "Order summary", "date": "2026-05-28"}
-        ],
-        "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?"
+      "message": {
+        "messageId": "message-agentic-demo-1",
+        "role": "ROLE_USER",
+        "parts": [{"data": {
+          "actor": {"declared_type": "ai_agent", "declared_name": "Example Shopping Agent", "operator": "Example Consumer", "authentication_context": "session_cookie"},
+          "target_surface": "checkout",
+          "requested_action": "complete purchase of two restricted-delivery items",
+          "asset_or_resource": "order-123",
+          "decision_stage": "pre_execution",
+          "dated_sources": [
+            {"id": "ait-1", "source_type": "agent_identity_claim", "title": "Declared agent identity header", "date": "2026-05-28"},
+            {"id": "ait-2", "source_type": "session_authentication_evidence", "title": "Authenticated checkout session", "date": "2026-05-28"},
+            {"id": "ait-3", "source_type": "transaction_or_target_action_evidence", "title": "Order summary", "date": "2026-05-28"}
+          ],
+          "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?"
+        }}]
       }
     }
   }'`
     : `curl -X POST ${origin}/message/send \\
   -H 'content-type: application/json' \\
+  -H 'A2A-Version: 1.0' \\
   -d '{
     "jsonrpc": "2.0",
     "id": "demo-1",
-    "method": "message/send",
+    "method": "SendMessage",
     "params": {
       "message": {
+        "messageId": "message-demo-1",
+        "role": "ROLE_USER",
         "parts": [
-          { "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure.", "mediaType": "text/plain" }
+          { "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure." }
         ]
       }
     }
   }'`;
 
   const flagshipBlock = isKazakhstan
-    ? `<p>This worker is the live Kazakhstan / Middle Corridor Deal Risk Gate — the flagship commercial use case of the Agenda Intelligence runtime. It accepts route + cargo + counterparties + dated sources and returns an auditable triage with evidence gaps, missing source categories, decision-readiness score, and a three-value recommendation (insufficient_information, pre_signature_escalate, ready_for_human_review). Human review is required before any commercial action.</p>`
+    ? `<p>This worker is a live Kazakhstan / Middle Corridor Deal Risk Gate demo. It accepts route + cargo + counterparties + dated sources and returns an auditable triage with evidence gaps, missing source categories, decision-readiness score, and a three-value recommendation (insufficient_information, pre_signature_escalate, ready_for_human_review). It has no paying customers yet; usage is illustrative. Human review is required before any commercial action.</p>`
     : isAgentic
       ? `<p>This worker is the live Agentic Interaction Trust Gate. It accepts actor + target surface + requested action + dated evidence and returns an auditable trust-routing triage with evidence gaps, missing source categories, decision-readiness score, trust signal, and mandatory human-review routing. It is not a detection engine and does not authorize, deny, or block actions.</p>`
     : `<p>This worker is the general Agenda Intelligence A2A wrapper — discovery, uptime checks, lightweight strategic-risk triage, and JSON-RPC routing across geography-aware modules. For deeper Kazakhstan / Middle Corridor deal-risk screening, use the dedicated <a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">deal-risk-gate worker</a>.</p>`;

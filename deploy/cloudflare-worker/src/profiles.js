@@ -6,7 +6,7 @@ export const SUPPORT_CONTACT_EMAIL = "vassiliy.lakhonin@gmail.com";
 export const SUPPORT_HOURS_LOCAL = "Mon–Fri 09:00–18:00 Asia/Almaty (UTC+5)";
 export const SUPPORT_TIMEZONE = "Asia/Almaty";
 
-export const VERSION = "1.1.0";
+export const VERSION = "1.2.0";
 export const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
 export const DOCS_URL = `${REPOSITORY_URL}/blob/main/MCP.md`;
 export const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";
@@ -14,7 +14,7 @@ export const A2A_EXAMPLES_URL = `${REPOSITORY_URL}/tree/main/examples/a2a`;
 export const OKF_BUNDLE_REPO_URL = `${REPOSITORY_URL}/blob/main/okf/index.md`;
 export const SCHEMAS_URL = `${REPOSITORY_URL}/tree/main/schemas/v1`;
 export const SOURCE_POLICY_URL = `${REPOSITORY_URL}/blob/main/SOURCE_POLICY.md`;
-export const DISCOVERY_UPDATED_AT = "2026-06-29";
+export const DISCOVERY_UPDATED_AT = "2026-08-09";
 
 export const CONFIDENTIAL_PROJECT_ROOM_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/trust/confidential-project-workflow.md`;
 export const CONFIDENTIAL_PROJECT_ROOM_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/confidential-project-room-profile.schema.json`;

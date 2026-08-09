@@ -4,6 +4,19 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(a2a): align all eight Worker profiles with the A2A 1.0 JSON-RPC
+  contract.** Agent Cards now advertise the protocol only through
+  `supportedInterfaces`; public deployments no longer misrepresent the
+  optional `X-Client-Id` observability header as authentication. `SendMessage`
+  validates the v1 Message shape, rejects unsupported versions, preserves the
+  JSON-RPC request id, and returns the required `result.task` wrapper. The
+  legacy `message/send` and `tasks/send` forms remain available as unadvertised
+  A2A 0.3 aliases. Added local tests and an eight-endpoint public conformance
+  matrix covering cards, representative calls, result envelopes, content
+  types, and JSON-RPC errors. Operational inventory, signing state, staged
+  deployment, and rollback-sensitive key guidance are recorded in
+  [A2A-MAINTENANCE.md](A2A-MAINTENANCE.md).
+
 - **chore(packaging): conform to the Agent Plugins 1.0.0 layout.** Added a root
   `plugin.json` and a root `mcp.json` carrying the `$schema` identifiers from
   <https://agent-plugins.org>. The existing `.claude-plugin/`, `.codex-plugin/`
