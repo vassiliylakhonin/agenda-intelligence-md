@@ -71,6 +71,7 @@ const ACTIVE_AGENTS = [
   {
     key: "portfolio-discovery-alias",
     origin: "https://vassiliylakhonin.github.io",
+    healthOrigin: workerOrigin("agenda-intelligence-a2a"),
     representative: { text: "Route a strategic-risk question with explicit evidence gaps." }
   }
 ];
@@ -151,7 +152,7 @@ async function verifyAgent(agent) {
   assert(primary.protocolBinding === "JSONRPC", "primary interface is not JSONRPC");
   assert(primary.protocolVersion === "1.0", "primary interface is not A2A 1.0");
 
-  const health = await responseJson(`${agent.origin}/health`, {
+  const health = await responseJson(`${agent.healthOrigin || agent.origin}/health`, {
     headers: { accept: "application/json" }
   });
   assert(health.response.status === 200 && health.body.ok === true, "health check failed");
@@ -196,6 +197,8 @@ async function verifyAgent(agent) {
   assert(invalidParams.body.error?.code === -32602, "invalid params did not return -32602");
 
   return {
+    cardStatus: cardResult.response.status,
+    rpcStatus: rpc.response.status,
     cardLatencyMs: cardResult.latencyMs,
     rpcLatencyMs: rpc.latencyMs,
     contentType: rpc.response.headers.get("content-type"),
@@ -208,7 +211,9 @@ for (const agent of agentsToVerify) {
   try {
     const result = await verifyAgent(agent);
     console.log(
-      `PASS ${agent.key} card=${result.cardLatencyMs}ms rpc=${result.rpcLatencyMs}ms state=${result.state}`
+      `PASS ${agent.key} card_http=${result.cardStatus} card=${result.cardLatencyMs}ms ` +
+        `rpc_http=${result.rpcStatus} rpc=${result.rpcLatencyMs}ms ` +
+        `content_type=${result.contentType} state=${result.state}`
     );
   } catch (error) {
     failed += 1;
