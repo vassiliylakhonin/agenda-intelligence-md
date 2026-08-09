@@ -7,8 +7,11 @@
 // Usage: npm run funnel            (last 72h, the free-plan retention)
 //        npm run funnel -- 12      (last 12h)
 //
-// Needs CF_API_TOKEN in .env with Account Analytics Read + Workers
-// Observability Read. Without it, `wrangler tail` shows the same events live.
+// Needs AGENDA_OBSERVABILITY_TOKEN in .env with Account Analytics Read +
+// Workers Observability Read. Deliberately NOT named CF_API_TOKEN: wrangler
+// auto-loads .env and would authenticate deploys with it, and a read-only
+// token fails every `wrangler deploy` with an opaque 'Authentication error'.
+// Without the token, `wrangler tail` shows the same events live.
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -160,9 +163,9 @@ async function fetchFunnelEvents(token, hours) {
 
 async function main() {
   loadDotEnv();
-  const token = process.env.CF_API_TOKEN;
+  const token = process.env.AGENDA_OBSERVABILITY_TOKEN;
   if (!token) {
-    throw new Error("CF_API_TOKEN is missing. Add it to .env or export it in the shell.");
+    throw new Error("AGENDA_OBSERVABILITY_TOKEN is missing. Add it to .env or export it in the shell.");
   }
 
   const hours = hoursArg();

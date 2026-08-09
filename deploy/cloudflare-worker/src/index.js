@@ -588,9 +588,79 @@ function agentProfile(request, env = {}) {
   return "agenda";
 }
 
-// JSON-RPC methods that hit the production triage route (as opposed to the
-// public agent/card discovery method, which always stays open).
-const MESSAGE_SEND_METHODS = new Set(["message/send", "tasks/send", "SendMessage"]);
+const A2A_PROTOCOL_VERSION = "1.0";
+const A2A_LEGACY_PROTOCOL_VERSION = "0.3";
+const MAX_JSON_RPC_BODY_BYTES = 1024 * 1024;
+
+// SendMessage is the A2A 1.0 JSON-RPC method. The slash-style methods remain
+// accepted as unadvertised compatibility aliases for existing 0.x clients.
+const V1_MESSAGE_SEND_METHODS = new Set(["SendMessage"]);
+const LEGACY_MESSAGE_SEND_METHODS = new Set(["message/send", "tasks/send"]);
+const MESSAGE_SEND_METHODS = new Set([
+  ...V1_MESSAGE_SEND_METHODS,
+  ...LEGACY_MESSAGE_SEND_METHODS
+]);
+
+function normalizedA2aVersion(value) {
+  if (typeof value !== "string") return "";
+  const match = /^(\d+)\.(\d+)(?:\.\d+)?$/.exec(value.trim());
+  return match ? `${match[1]}.${match[2]}` : "";
+}
+
+function requestedA2aVersion(request, payload) {
+  const header = request.headers.get("a2a-version");
+  const parameter = payload?.params?.["A2A-Version"] || payload?.params?.a2aVersion;
+  const raw = header || parameter;
+  if (raw !== null && raw !== undefined && String(raw).trim()) {
+    return normalizedA2aVersion(String(raw)) || null;
+  }
+  return V1_MESSAGE_SEND_METHODS.has(payload?.method)
+    ? A2A_PROTOCOL_VERSION
+    : A2A_LEGACY_PROTOCOL_VERSION;
+}
+
+function v1MessageViolations(params) {
+  const violations = [];
+  if (!params || typeof params !== "object" || Array.isArray(params)) {
+    return [{ field: "params", description: "SendMessage params must be an object" }];
+  }
+  const message = params.message;
+  if (!message || typeof message !== "object" || Array.isArray(message)) {
+    return [{ field: "message", description: "A Message object is required" }];
+  }
+  if (typeof message.messageId !== "string" || !message.messageId.trim()) {
+    violations.push({ field: "message.messageId", description: "A non-empty messageId is required" });
+  }
+  if (message.role !== "ROLE_USER" && message.role !== "ROLE_AGENT") {
+    violations.push({
+      field: "message.role",
+      description: "role must be ROLE_USER or ROLE_AGENT"
+    });
+  }
+  if (!Array.isArray(message.parts) || message.parts.length === 0) {
+    violations.push({ field: "message.parts", description: "At least one part is required" });
+  } else {
+    message.parts.forEach((part, index) => {
+      if (!part || typeof part !== "object" || Array.isArray(part)) {
+        violations.push({
+          field: `message.parts[${index}]`,
+          description: "Part must be an object"
+        });
+        return;
+      }
+      const contentFields = ["text", "raw", "url", "data"].filter((field) =>
+        Object.prototype.hasOwnProperty.call(part, field)
+      );
+      if (contentFields.length !== 1) {
+        violations.push({
+          field: `message.parts[${index}]`,
+          description: "Part must contain exactly one of text, raw, url, or data"
+        });
+      }
+    });
+  }
+  return violations;
+}
 
 // Per-profile production access key. Profiles that graduate to an explicit
 // Bearer model read a per-profile secret; when the secret is unset the route is
@@ -669,11 +739,9 @@ function agentCard(request, env = {}) {
   const origin = originFromRequest(request);
   const productionKey = productionAuthKey(agentProfile(request, env), env);
   const card = {
-    protocolVersion: "1.0",
     name: "Agenda Intelligence MD",
     description:
       "Live A2A wrapper for Agenda Intelligence MD, an evidence-discipline MCP layer for strategic-risk agents. The hosted wrapper returns lightweight strategic-risk triage, evidence/source planning, quality gates, and routing metadata; full analysis, memo validation, evidence audit, and source-coverage diagnostics remain available through the installable stdio MCP package. Outputs are evidence triage with mandatory human-review routing before any commercial action; not legal, compliance, sanctions, financial, or investment advice, and not an autonomous decision system.",
-    url: origin,
     provider: {
       organization: "Vassiliy Lakhonin",
       url: "https://vassiliylakhonin.github.io/",
@@ -698,31 +766,24 @@ function agentCard(request, env = {}) {
         protocolVersion: "1.0"
       }
     ],
-    protocolVersions: ["1.0"],
-    securitySchemes: {
-      optionalClientId: {
-        apiKeySecurityScheme: {
-          location: "header",
-          name: "X-Client-Id",
-          description:
-            "Optional caller identifier for observability and abuse triage. Not an access credential."
+    ...(productionKey
+      ? {
+          securitySchemes: {
+            productionBearer: {
+              httpAuthSecurityScheme: {
+                scheme: "bearer",
+                bearerFormat: "opaque",
+                description:
+                    "Bearer access key required by this deployment's SendMessage route."
+              }
+            }
+          },
+          securityRequirements: [{ schemes: ["productionBearer"] }]
         }
-      },
-      productionBearer: {
-        httpAuthSecurityScheme: {
-          scheme: "bearer",
-          bearerFormat: "opaque",
-          description:
-            "Bearer access key for the production message/send route. Enforced only when the operator configures an access key on this deployment; while unset the route is an open free demo and no key is required."
-        }
-      }
-    },
-    securityRequirements: productionKey ? [{ schemes: ["productionBearer"] }] : [],
-    security: productionKey ? [{ productionBearer: [] }] : [],
+        : { securityRequirements: [] }),
     capabilities: {
       streaming: false,
       pushNotifications: false,
-      stateTransitionHistory: false,
       extendedAgentCard: false
     },
     defaultInputModes: ["application/json", "text/plain", "text/markdown"],
@@ -872,6 +933,9 @@ function agentCard(request, env = {}) {
       hosted_wrapper: true,
       wrapper_scope: "A2A/JSON-RPC discovery, lightweight triage, and routing response only",
       jsonrpc_endpoint: `${origin}/message/send`,
+      protocol_version: "1.0",
+      public_endpoint: !productionKey,
+      optional_client_identifier_header: "X-Client-Id",
       ai_catalog: `${origin}/.well-known/ai-catalog.json`,
       repository: REPOSITORY_URL,
       package: PACKAGE_URL,
@@ -889,6 +953,10 @@ function agentCard(request, env = {}) {
     }
   };
   return applyAgentProfile(card, request, env);
+}
+
+function agentCardProtocolVersion(card) {
+  return card?.supportedInterfaces?.[0]?.protocolVersion || null;
 }
 
 function aiCatalog(request, env = {}) {
@@ -6243,17 +6311,67 @@ function jsonRpcError(id, code, message, data) {
   return { jsonrpc: "2.0", id: id ?? null, error };
 }
 
+function invalidParamsError(id, violations) {
+  return jsonRpcError(id, -32602, "Invalid parameters", [
+    {
+      "@type": "type.googleapis.com/google.rpc.BadRequest",
+      fieldViolations: violations
+    }
+  ]);
+}
+
+function versionNotSupportedError(id, requestedVersion) {
+  return jsonRpcError(id, -32009, "A2A protocol version not supported", [
+    {
+      "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+      reason: "VERSION_NOT_SUPPORTED",
+      domain: "a2a-protocol.org",
+      metadata: {
+        requestedVersion: requestedVersion || "invalid",
+        supportedVersions: A2A_PROTOCOL_VERSION
+      }
+    }
+  ]);
+}
+
+function v1SendMessageResponse(task) {
+  return {
+    task: {
+      ...task,
+      contextId: task.contextId || crypto.randomUUID()
+    }
+  };
+}
+
 async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    return jsonRpcError(null, -32600, "Invalid Request");
+    return jsonRpcError(null, -32600, "Request payload validation error");
   }
 
   const id = payload.id ?? null;
   if (payload.jsonrpc !== "2.0" || typeof payload.method !== "string") {
-    return jsonRpcError(id, -32600, "Invalid Request");
+    return jsonRpcError(id, -32600, "Request payload validation error");
   }
 
-  if (payload.method === "message/send" || payload.method === "tasks/send" || payload.method === "SendMessage") {
+  const version = requestedA2aVersion(request, payload);
+  if (
+    version === null ||
+    (version !== A2A_PROTOCOL_VERSION && version !== A2A_LEGACY_PROTOCOL_VERSION)
+  ) {
+    return versionNotSupportedError(id, version || request.headers.get("a2a-version"));
+  }
+
+  const isV1SendMessage = V1_MESSAGE_SEND_METHODS.has(payload.method);
+  const isLegacySendMessage = LEGACY_MESSAGE_SEND_METHODS.has(payload.method);
+  const methodMatchesVersion =
+    (version === A2A_PROTOCOL_VERSION && isV1SendMessage) ||
+    (version === A2A_LEGACY_PROTOCOL_VERSION && isLegacySendMessage);
+
+  if ((isV1SendMessage || isLegacySendMessage) && methodMatchesVersion) {
+    if (isV1SendMessage) {
+      const violations = v1MessageViolations(payload.params);
+      if (violations.length) return invalidParamsError(id, violations);
+    }
     const params = payload.params ?? {};
     const profile = agentProfile(request, env);
     const { result, promptChars, modulesUsed } = await runProfileRequest(profile, params, request, env);
@@ -6279,11 +6397,24 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
     return {
       jsonrpc: "2.0",
       id,
-      result
+      result: isV1SendMessage ? v1SendMessageResponse(result) : result
     };
   }
 
-  if (payload.method === "agent/card" || payload.method === "agentCard" || payload.method === "GetExtendedAgentCard") {
+  if (payload.method === "GetExtendedAgentCard") {
+    return jsonRpcError(id, -32004, "Operation not supported", [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        reason: "UNSUPPORTED_OPERATION",
+        domain: "a2a-protocol.org"
+      }
+    ]);
+  }
+
+  if (
+    version === A2A_LEGACY_PROTOCOL_VERSION &&
+    (payload.method === "agent/card" || payload.method === "agentCard")
+  ) {
     return {
       jsonrpc: "2.0",
       id,
@@ -6292,7 +6423,10 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
   }
 
   return jsonRpcError(id, -32601, "Method not found", {
-    supported_methods: ["message/send", "tasks/send", "agent/card"]
+    supported_methods:
+      version === A2A_PROTOCOL_VERSION
+        ? ["SendMessage"]
+        : ["message/send", "tasks/send", "agent/card"]
   });
 }
 
@@ -6517,42 +6651,105 @@ async function runProfileRequest(profile, params, request, env = {}) {
 }
 
 async function handlePost(request, env, ctx) {
+  const startedAt = Date.now();
+  const contentType = request.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    const error = jsonRpcError(null, -32005, "Content type not supported", [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        reason: "CONTENT_TYPE_NOT_SUPPORTED",
+        domain: "a2a-protocol.org",
+        metadata: { expected: "application/json" }
+      }
+    ]);
+    logProtocolEvent(request, env, null, null, error, startedAt);
+    return jsonResponse(error, 415);
+  }
+
+  const declaredLength = Number.parseInt(request.headers.get("content-length") || "0", 10);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_JSON_RPC_BODY_BYTES) {
+    const error = invalidParamsError(null, [
+      {
+        field: "body",
+        description: `JSON-RPC body exceeds ${MAX_JSON_RPC_BODY_BYTES} bytes`
+      }
+    ]);
+    logProtocolEvent(request, env, null, null, error, startedAt);
+    return jsonResponse(error, 413);
+  }
+
+  const rawBody = await request.text();
+  if (new TextEncoder().encode(rawBody).byteLength > MAX_JSON_RPC_BODY_BYTES) {
+    const error = invalidParamsError(null, [
+      {
+        field: "body",
+        description: `JSON-RPC body exceeds ${MAX_JSON_RPC_BODY_BYTES} bytes`
+      }
+    ]);
+    logProtocolEvent(request, env, null, null, error, startedAt);
+    return jsonResponse(error, 413);
+  }
+
   let payload;
   try {
-    payload = await request.json();
+    payload = JSON.parse(rawBody);
   } catch (_error) {
-    return jsonResponse(jsonRpcError(null, -32700, "Parse error"), 200);
+    const error = jsonRpcError(null, -32700, "Invalid JSON payload");
+    logProtocolEvent(request, env, null, null, error, startedAt);
+    return jsonResponse(error, 200);
   }
   const method = payload && typeof payload === "object" ? payload.method : null;
   if (MESSAGE_SEND_METHODS.has(method)) {
     const profile = agentProfile(request, env);
     if (!isProductionAuthorized(request, env, profile)) {
-      return jsonResponse(
-        jsonRpcError(
+      const error = jsonRpcError(
           payload.id ?? null,
           -32001,
           "Unauthorized: the production route requires a valid Bearer access key",
           { security_scheme: "productionBearer", profile }
-        ),
-        401,
-        { "www-authenticate": "Bearer", "cache-control": "no-store" }
       );
+      logProtocolEvent(request, env, payload.id, method, error, startedAt);
+      return jsonResponse(error, 401, {
+        "www-authenticate": "Bearer",
+        "cache-control": "no-store"
+      });
     }
     const rate = await checkRateLimit(request, env, profile);
     if (rate.limited) {
-      return jsonResponse(
-        jsonRpcError(
+      const error = jsonRpcError(
           payload.id ?? null,
           -32002,
           "Rate limit exceeded: too many requests from this client. Request API access for higher limits.",
           { limit_per_hour: rate.limit, profile }
-        ),
-        429,
-        { "retry-after": "3600", "cache-control": "no-store" }
       );
+      logProtocolEvent(request, env, payload.id, method, error, startedAt);
+      return jsonResponse(error, 429, {
+        "retry-after": "3600",
+        "cache-control": "no-store"
+      });
     }
   }
-  return jsonResponse(await handleJsonRpc(payload, request, env, ctx));
+  const response = await handleJsonRpc(payload, request, env, ctx);
+  logProtocolEvent(request, env, payload?.id, method, response, startedAt);
+  return jsonResponse(response);
+}
+
+function logProtocolEvent(request, env, requestId, method, response, startedAt) {
+  const safeRequestId =
+    typeof requestId === "string" || typeof requestId === "number"
+      ? String(requestId).slice(0, 80)
+      : null;
+  console.log(
+    JSON.stringify({
+      event: "a2a_jsonrpc",
+      worker: agentProfile(request, env),
+      request_id: safeRequestId,
+      method: typeof method === "string" ? method.slice(0, 80) : null,
+      success: Boolean(response && !response.error),
+      protocol_error_code: response?.error?.code ?? null,
+      latency_ms: Math.max(0, Date.now() - startedAt)
+    })
+  );
 }
 
 async function handleStats(request, env) {
@@ -6619,7 +6816,7 @@ function statusInfo(request, env) {
     name: card.name,
     version: VERSION,
     profile,
-    a2a_protocol_version: card.protocolVersion,
+    a2a_protocol_version: agentCardProtocolVersion(card),
     ai_catalog_url: `${origin}/.well-known/ai-catalog.json`,
     agent_card_url: `${origin}/.well-known/agent-card.json`,
     mcp_server_card_url: `${origin}/.well-known/mcp/server-card.json`,
@@ -6816,7 +7013,7 @@ function landingHtml(request, env) {
   <div class="status-row">
     <span class="badge badge-live">Live</span>
     <span class="badge">v${escapeHtml(VERSION)}</span>
-    <span class="badge">A2A ${escapeHtml(card.protocolVersion)}</span>
+    <span class="badge">A2A ${escapeHtml(agentCardProtocolVersion(card))}</span>
     <span class="badge">Profile: ${escapeHtml(profile)}</span>
   </div>
 

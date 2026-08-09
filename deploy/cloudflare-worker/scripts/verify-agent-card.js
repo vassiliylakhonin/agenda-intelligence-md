@@ -4,7 +4,11 @@ import { pathToFileURL } from "node:url";
 const DEFAULT_AGENT_CARD_URLS = [
   "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
   "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
-  "https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json"
+  "https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+  "https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+  "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+  "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+  "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json"
 ];
 
 function agentCardUrl(value) {
@@ -18,6 +22,49 @@ function agentCardUrl(value) {
 function hasBoundary(card, expected) {
   const boundaries = card?.x_agenda_intelligence?.boundaries;
   return Array.isArray(boundaries) && boundaries.includes(expected);
+}
+
+const PROFILE_EXPECTATIONS = [
+  {
+    host: "cis-secondary-sanctions-a2a",
+    name: "CIS Secondary-Sanctions Exposure",
+    profile: "cis_secondary_sanctions",
+    skill: "cis-secondary-sanctions-exposure"
+  },
+  {
+    host: "gulf-maritime-exposure-a2a",
+    name: "Gulf Maritime Exposure Gate",
+    profile: "gulf_maritime_exposure",
+    skill: "gulf-maritime-exposure"
+  },
+  {
+    host: "kazakhstan-market-entry-readiness-a2a",
+    name: "Kazakhstan Market-Entry Readiness Gate",
+    profile: "kazakhstan_market_entry_readiness",
+    skill: "kazakhstan-market-entry-readiness"
+  },
+  {
+    host: "agent-output-verification-a2a",
+    name: "Agent Output Verification",
+    profile: "agent_output_verification",
+    skill: "agent-output-verification"
+  }
+];
+
+function validateProfileExpectation(card, sourceUrl) {
+  const expectation = PROFILE_EXPECTATIONS.find(
+    (entry) => sourceUrl.includes(entry.host) || card.name === entry.name
+  );
+  if (!expectation) return [];
+  const errors = [];
+  if (card.name !== expectation.name) errors.push(`expected name=${expectation.name}`);
+  if (card?.x_agenda_intelligence?.product_profile !== expectation.profile) {
+    errors.push(`expected x_agenda_intelligence.product_profile=${expectation.profile}`);
+  }
+  if (!card.skills.some((skill) => skill.id === expectation.skill)) {
+    errors.push(`expected ${expectation.skill} skill`);
+  }
+  return errors;
 }
 
 function validateAgendaCard(card) {
@@ -136,10 +183,70 @@ function validateAgenticInteractionTrustCard(card) {
 export function validateAgentCard(card, sourceUrl = "") {
   if (!card || typeof card !== "object") return ["agent card is not a JSON object"];
   const errors = [];
-  if (card.protocolVersion !== "1.0") errors.push("expected protocolVersion=1.0");
-  if (!card.url) errors.push("expected card.url");
+  for (const field of ["name", "description", "version"]) {
+    if (typeof card[field] !== "string" || !card[field].trim()) {
+      errors.push(`expected non-empty ${field}`);
+    }
+  }
+  if (!card.provider || typeof card.provider !== "object") {
+    errors.push("expected provider");
+  } else {
+    if (typeof card.provider.organization !== "string" || !card.provider.organization.trim()) {
+      errors.push("expected provider.organization");
+    }
+    if (!String(card.provider.url || "").startsWith("https://")) {
+      errors.push("expected HTTPS provider.url");
+    }
+  }
+  if (!card.capabilities || typeof card.capabilities !== "object") {
+    errors.push("expected capabilities");
+  }
   if (!Array.isArray(card.supportedInterfaces) || card.supportedInterfaces.length === 0) {
     errors.push("expected supportedInterfaces");
+  } else {
+    for (const [index, entry] of card.supportedInterfaces.entries()) {
+      if (!String(entry?.url || "").startsWith("https://")) {
+        errors.push(`supportedInterfaces[${index}].url must be HTTPS`);
+      }
+      if (entry?.protocolBinding !== "JSONRPC") {
+        errors.push(`supportedInterfaces[${index}].protocolBinding must be JSONRPC`);
+      }
+      if (entry?.protocolVersion !== "1.0") {
+        errors.push(`supportedInterfaces[${index}].protocolVersion must be 1.0`);
+      }
+    }
+  }
+  for (const field of ["defaultInputModes", "defaultOutputModes", "skills"]) {
+    if (!Array.isArray(card[field]) || card[field].length === 0) {
+      errors.push(`expected non-empty ${field}`);
+    }
+  }
+  for (const [index, skill] of (card.skills || []).entries()) {
+    for (const field of ["id", "name", "description"]) {
+      if (typeof skill?.[field] !== "string" || !skill[field].trim()) {
+        errors.push(`skills[${index}].${field} must be non-empty`);
+      }
+    }
+    if (!Array.isArray(skill?.tags) || skill.tags.length === 0) {
+      errors.push(`skills[${index}].tags must be non-empty`);
+    }
+  }
+  for (const obsoleteField of [
+    "protocolVersion",
+    "protocolVersions",
+    "url",
+    "preferredTransport",
+    "additionalInterfaces",
+    "security"
+  ]) {
+    if (Object.prototype.hasOwnProperty.call(card, obsoleteField)) {
+      errors.push(`obsolete A2A 1.0 field present: ${obsoleteField}`);
+    }
+  }
+  if (card.securitySchemes && Object.keys(card.securitySchemes).length > 0) {
+    if (!Array.isArray(card.securityRequirements) || card.securityRequirements.length === 0) {
+      errors.push("securitySchemes are declared but securityRequirements are empty");
+    }
   }
 
   const isMiddleCorridor =
@@ -151,8 +258,13 @@ export function validateAgentCard(card, sourceUrl = "") {
     errors.push(...validateMiddleCorridorCard(card));
   } else if (isAgenticInteractionTrust) {
     errors.push(...validateAgenticInteractionTrustCard(card));
-  } else {
+  } else if (
+    card.name === "Agenda Intelligence MD" ||
+    sourceUrl.includes("agenda-intelligence-a2a")
+  ) {
     errors.push(...validateAgendaCard(card));
+  } else {
+    errors.push(...validateProfileExpectation(card, sourceUrl));
   }
   return errors;
 }

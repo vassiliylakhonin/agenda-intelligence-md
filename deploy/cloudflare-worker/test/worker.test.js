@@ -310,9 +310,10 @@ test("Snapshot adapter degrades to disabled when SNAPSHOT_INDEX_URL is unset", a
 test("agent card uses request origin for live endpoints", () => {
   const card = agentCard(request);
 
-  assert.equal(card.protocolVersion, "1.0");
   assert.equal(card.version, "1.1.0");
-  assert.equal(card.url, "https://agenda-intelligence-a2a.example.workers.dev");
+  assert.equal(card.protocolVersion, undefined);
+  assert.equal(card.url, undefined);
+  assert.equal(card.protocolVersions, undefined);
   assert.deepEqual(card.supportedInterfaces, [
     {
       url: "https://agenda-intelligence-a2a.example.workers.dev/message/send",
@@ -327,9 +328,11 @@ test("agent card uses request origin for live endpoints", () => {
   assert.equal(card.x_agenda_intelligence.hosted_wrapper, true);
   assert.equal(card.x_agenda_intelligence.mcp.server_command, "agenda-intelligence-mcp");
   assert.equal(card.capabilities.extendedAgentCard, false);
+  assert.equal(card.capabilities.stateTransitionHistory, undefined);
   assert.equal(card.provider.legalEntity.type, "individual");
-  assert.equal(card.securitySchemes.optionalClientId.apiKeySecurityScheme.name, "X-Client-Id");
+  assert.equal(card.securitySchemes, undefined);
   assert.deepEqual(card.securityRequirements, []);
+  assert.equal(card.x_agenda_intelligence.optional_client_identifier_header, "X-Client-Id");
   assert.deepEqual(
     card.skills.map((skill) => skill.id),
     [
@@ -649,7 +652,10 @@ test("kazakhstan profile exposes focused corridor-risk agent card", () => {
   const card = agentCard(kazakhstanRequest, { AGENT_PROFILE: "kazakhstan" });
 
   assert.equal(card.name, "Kazakhstan / Middle Corridor Deal Risk Gate");
-  assert.equal(card.url, "https://middle-corridor-deal-risk-gate-a2a.example.workers.dev");
+  assert.equal(
+    card.supportedInterfaces[0].url,
+    "https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send"
+  );
   assert.equal(
     card.documentationUrl,
     "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/use-cases/kazakhstan-middle-corridor.md"
@@ -2824,12 +2830,12 @@ test("isProductionAuthorized requires a matching Bearer token when key is config
   assert.equal(isProductionAuthorized(messageSendRequest(KAZAKHSTAN_ORIGIN, { token: "secret" }), env, "kazakhstan"), true);
 });
 
-test("kazakhstan card advertises productionBearer scheme but no requirement when key is unset", () => {
+test("public kazakhstan card does not pretend optional observability is authentication", () => {
   const card = agentCard(new Request(KAZAKHSTAN_ORIGIN), { AGENT_PROFILE: "kazakhstan" });
-  assert.ok(card.securitySchemes.optionalClientId, "optionalClientId remains defined");
-  assert.equal(card.securitySchemes.productionBearer.httpAuthSecurityScheme.scheme, "bearer");
-  assert.deepEqual(card.security, []);
+  assert.equal(card.securitySchemes, undefined);
+  assert.equal(card.security, undefined);
   assert.deepEqual(card.securityRequirements, []);
+  assert.equal(card.x_agenda_intelligence.public_endpoint, true);
 });
 
 test("kazakhstan card advertises productionBearer requirement when key is set", () => {
@@ -2837,13 +2843,16 @@ test("kazakhstan card advertises productionBearer requirement when key is set", 
     AGENT_PROFILE: "kazakhstan",
     MIDDLE_CORRIDOR_API_KEY: "secret"
   });
-  assert.deepEqual(card.security, [{ productionBearer: [] }]);
+  assert.equal(card.securitySchemes.productionBearer.httpAuthSecurityScheme.scheme, "bearer");
+  assert.equal(card.security, undefined);
   assert.deepEqual(card.securityRequirements, [{ schemes: ["productionBearer"] }]);
+  assert.equal(card.x_agenda_intelligence.public_endpoint, false);
 });
 
 test("agenda card never advertises a production requirement even if the secret leaks into env", () => {
   const card = agentCard(request, { MIDDLE_CORRIDOR_API_KEY: "secret" });
-  assert.deepEqual(card.security, []);
+  assert.equal(card.security, undefined);
+  assert.equal(card.securitySchemes, undefined);
   assert.deepEqual(card.securityRequirements, []);
 });
 
