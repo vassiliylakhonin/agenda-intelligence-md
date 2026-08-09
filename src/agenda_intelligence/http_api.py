@@ -74,6 +74,7 @@ def handle_get(path: str) -> tuple[int, dict]:
                     "gulf_maritime_exposure",
                     "kazakhstan_market_entry_readiness",
                     "agent_output_verification",
+                    "pre_action_check",
                 ],
                 "boundary": BOUNDARY_NOTICE,
             },
@@ -172,6 +173,15 @@ def handle_post(path: str, payload: dict) -> tuple[int, dict]:
             return unavailable
         if not result.get("valid"):
             return 400, {"ok": False, "error": "Invalid agent-output verification request", "errors": result["errors"]}
+        return 200, result["response"]
+
+    if path == "/v1/agent-output/pre-action-check":
+        result = services.pre_action_check(payload)
+        unavailable = _validation_unavailable(result, "pre-action check")
+        if unavailable is not None:
+            return unavailable
+        if not result.get("valid"):
+            return 400, {"ok": False, "error": "Invalid pre-action check request", "errors": result["errors"]}
         return 200, result["response"]
 
     return 404, {"ok": False, "error": "Not found"}

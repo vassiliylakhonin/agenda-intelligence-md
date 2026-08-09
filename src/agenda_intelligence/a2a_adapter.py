@@ -29,6 +29,8 @@ SOURCE_COVERAGE_ENDPOINT = "/v1/source-coverage"
 SCORE_OUTPUT_ENDPOINT = "/v1/score"
 AGENT_OUTPUT_VERIFICATION_SCHEMA = "schemas/v1/evidence-audit.schema.json"
 AGENT_OUTPUT_VERIFICATION_ENDPOINT = "/v1/agent-output/verification"
+PRE_ACTION_CHECK_SCHEMA = "schemas/v1/pre-action-check-request.schema.json"
+PRE_ACTION_CHECK_ENDPOINT = "/v1/agent-output/pre-action-check"
 
 SUPPORTED_CAPABILITIES = [
     "middle_corridor_deal_risk",
@@ -40,6 +42,7 @@ SUPPORTED_CAPABILITIES = [
     "source_coverage",
     "score_output",
     "agent_output_verification",
+    "pre_action_check",
 ]
 
 CAPABILITY_ALIASES = {
@@ -92,6 +95,10 @@ CAPABILITY_ALIASES = {
     "output-verification": "agent_output_verification",
     "verify_agent_output": "agent_output_verification",
     "verify-agent-output": "agent_output_verification",
+    "pre_action_check": "pre_action_check",
+    "pre-action-check": "pre_action_check",
+    "action_readiness": "pre_action_check",
+    "action-readiness": "pre_action_check",
 }
 
 # Profiles that opt in to per-profile live retrieval per ADR 0014.
@@ -358,6 +365,18 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "inputModes": ["application/json"],
                 "outputModes": ["application/json", "text/markdown"],
             },
+            {
+                "id": "pre-action-check",
+                "name": "Pre-action evidence gate",
+                "description": (
+                    "Routes a caller-controlled action to continue, request_evidence, require_approval, or stop "
+                    "using the supplied claim evidence, risk tier, policy checks, and external approval status. "
+                    "It reports readiness only and does not authenticate, authorize, enforce, or perform the action."
+                ),
+                "tags": ["agentic-ai", "a2a", "guardrails", "evidence-readiness", "human-approval"],
+                "inputModes": ["application/json"],
+                "outputModes": ["application/json", "text/markdown"],
+            },
         ],
         "x_agenda_intelligence": {
             "repository": REPOSITORY_URL,
@@ -371,6 +390,7 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "gulf_maritime_exposure_contract",
                 "kazakhstan_market_entry_readiness_contract",
                 "agent_output_verification_contract",
+                "pre_action_check_contract",
             ],
             "supported_capabilities": SUPPORTED_CAPABILITIES,
             "per_profile_live_retrieval": _build_per_profile_live_retrieval_block(),
@@ -613,6 +633,19 @@ def agent_output_verification_request_from_params(params: dict) -> dict | None:
         if isinstance(audit_json, dict):
             return audit_json
         if isinstance(candidate.get("claims"), list) and isinstance(candidate.get("evidence"), list):
+            return candidate
+    return None
+
+
+def pre_action_check_request_from_params(params: dict) -> dict | None:
+    """Extract a structured pre-action check request without interpreting text."""
+    candidates = _candidate_objects_from_params(params)
+    for candidate in candidates:
+        action_request = candidate.get("action_request")
+        if isinstance(action_request, dict):
+            return action_request
+        required = {"run_id", "actor", "requested_action", "target", "risk_tier", "claims", "evidence"}
+        if required.issubset(candidate):
             return candidate
     return None
 
@@ -1024,6 +1057,71 @@ def a2a_result_for_agent_output_verification(request_json: dict) -> dict:
     }
 
 
+def _pre_action_check_artifact_text(response: dict) -> str:
+    gaps = response.get("blocking_gaps", [])
+    gap_text = "\n".join(f"- {item}" for item in gaps) if gaps else "- none"
+    requests = response.get("evidence_requests", [])
+    request_text = "\n".join(f"- {item}" for item in requests) if requests else "- none"
+    return "\n".join(
+        [
+            "Pre-action check response",
+            "",
+            f"Decision: {response['decision']}",
+            f"Reason: {response['reason_code']}",
+            f"Run: {response['run_id']}",
+            f"Human review required: {str(response['human_review_required']).lower()}",
+            "",
+            "Blocking gaps:",
+            gap_text,
+            "",
+            "Evidence requests:",
+            request_text,
+            "",
+            response["not_authorization_notice"],
+        ]
+    )
+
+
+def a2a_result_for_pre_action_check(request_json: dict) -> dict:
+    result = services.pre_action_check(request_json)
+    if not result.get("valid"):
+        return {
+            "id": "agenda-intelligence-a2a-result",
+            "status": {"state": "TASK_STATE_FAILED"},
+            "artifacts": [],
+            "metadata": {
+                "product_profile": "agent_output_verification",
+                "capability": "pre_action_check",
+                "canonical_http_endpoint": PRE_ACTION_CHECK_ENDPOINT,
+                "schema": PRE_ACTION_CHECK_SCHEMA,
+                "valid": result.get("valid"),
+                "errors": result.get("errors", []),
+            },
+        }
+
+    response = result["response"]
+    return {
+        "id": "agenda-intelligence-a2a-result",
+        "status": {"state": "TASK_STATE_COMPLETED"},
+        "artifacts": [
+            {
+                "artifactId": "pre-action-check-response",
+                "name": "Pre-action check response",
+                "parts": [{"text": _pre_action_check_artifact_text(response), "mediaType": "text/markdown"}],
+            }
+        ],
+        "metadata": {
+            "product_profile": "agent_output_verification",
+            "capability": "pre_action_check",
+            "canonical_http_endpoint": PRE_ACTION_CHECK_ENDPOINT,
+            "schema": PRE_ACTION_CHECK_SCHEMA,
+            "human_review_required": response["human_review_required"],
+            "not_authorization_notice": response["not_authorization_notice"],
+            "response": response,
+        },
+    }
+
+
 def _service_artifact_text(title: str, result: dict) -> str:
     return "\n".join([title, "", "```json", json.dumps(result, indent=2, sort_keys=True), "```"])
 
@@ -1288,6 +1386,32 @@ def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> di
                 "jsonrpc": "2.0",
                 "id": id_value,
                 "result": a2a_result_for_agent_output_verification(request_json),
+            }
+
+        if capability == "pre_action_check":
+            request_json = pre_action_check_request_from_params(params)
+            if request_json is None:
+                return jsonrpc_error(
+                    id_value,
+                    -32602,
+                    "Missing structured pre-action check request",
+                    {
+                        "required_shape": {
+                            "run_id": "string",
+                            "actor": "object",
+                            "requested_action": "string",
+                            "target": "object",
+                            "risk_tier": "string",
+                            "claims": "array",
+                            "evidence": "array",
+                        },
+                        "schema": PRE_ACTION_CHECK_SCHEMA,
+                    },
+                )
+            return {
+                "jsonrpc": "2.0",
+                "id": id_value,
+                "result": a2a_result_for_pre_action_check(request_json),
             }
 
     return jsonrpc_error(

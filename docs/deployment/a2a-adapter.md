@@ -55,9 +55,15 @@ Aliases accepted by the adapter:
 `message/send` accepts structured JSON for these capabilities:
 
 - `middle_corridor_deal_risk`
+- `agentic_interaction_trust`
+- `cis_secondary_sanctions_exposure`
+- `gulf_maritime_exposure`
+- `kazakhstan_market_entry_readiness`
 - `audit_claims`
 - `source_coverage`
 - `score_output`
+- `agent_output_verification`
+- `pre_action_check`
 
 The capability can be supplied as `params.capability`, `params.tool`, `params.skill`, or `params.message.metadata.capability`.
 
@@ -93,11 +99,19 @@ The adapter accepts the structured request in:
 }
 ```
 
+`pre_action_check` accepts the structured object in
+`schemas/v1/pre-action-check-request.schema.json`. The caller supplies a
+`run_id`, actor, requested action, target, risk tier, claim evidence, optional
+policy checks, and optional external approval reference. Resubmit the same
+`run_id` after adding evidence or approval.
+
 These generic routes expose the same service-layer behavior as the HTTP shell:
 
 - `audit_claims` -> `/v1/audit-claims`
 - `source_coverage` -> `/v1/source-coverage`
 - `score_output` -> `/v1/score`
+- `agent_output_verification` -> `/v1/agent-output/verification`
+- `pre_action_check` -> `/v1/agent-output/pre-action-check`
 
 They do not add live retrieval, factual verification, or advice/clearance behavior.
 

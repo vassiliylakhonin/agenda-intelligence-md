@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/pre-action-check-response.schema.json",
+  "title": "PreActionCheckResponse",
+  "description": "Deterministic routing result for a caller-controlled action boundary. The response reports readiness; the caller remains responsible for enforcement, authentication, authorization, approval storage, and the action itself.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision_id",
+    "run_id",
+    "policy_version",
+    "decision",
+    "reason_code",
+    "blocking_gaps",
+    "evidence_requests",
+    "approval_required",
+    "human_review_required",
+    "verification",
+    "not_authorization_notice",
+    "limitations"
+  ],
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policy_version": {
+      "type": "string",
+      "const": "pre-action-check.v1"
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["continue", "request_evidence", "require_approval", "stop"]
+    },
+    "reason_code": {
+      "type": "string",
+      "enum": [
+        "evidence_ready",
+        "evidence_gaps",
+        "unsafe_claims",
+        "policy_check_failed",
+        "approval_required_for_risk",
+        "approval_rejected"
+      ]
+    },
+    "blocking_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_requests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "approval_required": {
+      "type": "boolean"
+    },
+    "human_review_required": {
+      "type": "boolean"
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["verdict", "evidence_gaps", "owner_actions"]
+    },
+    "policy_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["check_id", "status"],
+        "properties": {
+          "check_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": ["passed", "needs_evidence", "failed"]
+          },
+          "evidence_gap": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "not_authorization_notice": {
+      "type": "string",
+      "minLength": 1
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

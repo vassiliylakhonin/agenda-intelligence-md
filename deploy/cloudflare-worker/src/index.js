@@ -2083,6 +2083,22 @@ function applyAgentOutputVerificationProfile(card, request) {
       ],
       inputModes: ["application/json", "text/plain"],
       outputModes: ["application/json", "text/markdown"]
+    },
+    {
+      id: "pre-action-check",
+      name: "Pre-action evidence gate",
+      description:
+        "Routes a caller-controlled action to continue, request_evidence, require_approval, or stop using " +
+        "supplied claim evidence, risk tier, policy checks, and external approval status. It reports readiness " +
+        "only and does not authenticate, authorize, enforce, or perform the action.",
+      tags: ["agentic-ai", "a2a", "guardrails", "evidence-readiness", "human-approval"],
+      examples: [
+        "Check whether this low-risk agent action has enough claim evidence to continue.",
+        "Pause this high-risk tool action until a human approval reference is supplied.",
+        "Stop this action because its supporting claims or policy checks failed."
+      ],
+      inputModes: ["application/json"],
+      outputModes: ["application/json", "text/markdown"]
     }
   ];
   card.x_agenda_intelligence.product_profile = discovery.product_profile;
@@ -2091,6 +2107,7 @@ function applyAgentOutputVerificationProfile(card, request) {
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
   card.x_agenda_intelligence.documentation = discovery.documentation_url;
   card.x_agenda_intelligence.product_contract = discovery.product_contract;
+  card.x_agenda_intelligence.pre_action_check_contract = discovery.pre_action_check_contract;
   card.x_agenda_intelligence.supported_contracts = discovery.supported_contracts;
   card.x_agenda_intelligence.buyer_use_cases = discovery.buyer_use_cases;
   card.x_agenda_intelligence.commercial_positioning = discovery.commercial_positioning;
@@ -3233,6 +3250,157 @@ function agentOutputVerificationResult(request) {
   return { response };
 }
 
+const PRE_ACTION_POLICY_VERSION = "pre-action-check.v1";
+const PRE_ACTION_RISK_TIERS = ["low", "medium", "high", "critical"];
+const PRE_ACTION_APPROVAL_STATUSES = ["not_requested", "approved", "rejected"];
+const PRE_ACTION_POLICY_PROFILES = ["default", "agentic_interaction_trust"];
+const PRE_ACTION_POLICY_CHECK_STATUSES = ["passed", "needs_evidence", "failed"];
+const PRE_ACTION_NOT_AUTHORIZATION_NOTICE =
+  "Pre-action evidence-readiness routing only. The caller remains responsible for authenticating the actor, " +
+  "enforcing the returned decision, storing and validating any approval record, and authorizing or performing " +
+  "the action. A continue decision is not approval, clearance, authorization, or factual verification.";
+
+function isPreActionCheckRequest(request) {
+  return Boolean(
+    request &&
+      typeof request === "object" &&
+      typeof request.run_id === "string" &&
+      request.actor &&
+      typeof request.actor === "object" &&
+      typeof request.requested_action === "string" &&
+      request.target &&
+      typeof request.target === "object" &&
+      typeof request.risk_tier === "string" &&
+      Array.isArray(request.claims) &&
+      Array.isArray(request.evidence)
+  );
+}
+
+function preActionCheckErrors(request) {
+  const errors = agentOutputVerificationEnumErrors(request);
+  if (!request.run_id) errors.push("run_id is required");
+  if (!request.actor || typeof request.actor !== "object") errors.push("actor must be an object");
+  if (!request.requested_action) errors.push("requested_action is required");
+  if (!request.target || typeof request.target !== "object") errors.push("target must be an object");
+  if (!PRE_ACTION_RISK_TIERS.includes(request.risk_tier)) {
+    errors.push(`risk_tier must be one of ${PRE_ACTION_RISK_TIERS.join(", ")}`);
+  }
+  const policyContext = request.policy_context;
+  if (policyContext && !PRE_ACTION_POLICY_PROFILES.includes(policyContext.profile || "default")) {
+    errors.push(`policy_context.profile must be one of ${PRE_ACTION_POLICY_PROFILES.join(", ")}`);
+  }
+  const checks = policyContext && Array.isArray(policyContext.checks) ? policyContext.checks : [];
+  checks.forEach((check, index) => {
+    if (!check || typeof check !== "object") {
+      errors.push(`policy_context.checks[${index}] must be an object`);
+      return;
+    }
+    if (!check.check_id) errors.push(`policy_context.checks[${index}].check_id is required`);
+    if (!PRE_ACTION_POLICY_CHECK_STATUSES.includes(check.status)) {
+      errors.push(
+        `policy_context.checks[${index}].status must be one of ${PRE_ACTION_POLICY_CHECK_STATUSES.join(", ")}`
+      );
+    }
+  });
+  const approval = request.approval;
+  if (approval && !PRE_ACTION_APPROVAL_STATUSES.includes(approval.status)) {
+    errors.push(`approval.status must be one of ${PRE_ACTION_APPROVAL_STATUSES.join(", ")}`);
+  }
+  return errors;
+}
+
+function deduplicatedStrings(items) {
+  const result = [];
+  const seen = new Set();
+  for (const item of items) {
+    const text = String(item || "").trim();
+    if (text && !seen.has(text)) {
+      seen.add(text);
+      result.push(text);
+    }
+  }
+  return result;
+}
+
+function preActionCheckResult(request) {
+  const verification = agentOutputVerificationResult(request).response;
+  const policyContext = request.policy_context || {};
+  const policyProfile = policyContext.profile || "default";
+  const policyChecks = Array.isArray(policyContext.checks) ? policyContext.checks : [];
+  const failedChecks = policyChecks.filter((item) => item.status === "failed");
+  const evidenceChecks = policyChecks.filter((item) => item.status === "needs_evidence");
+  const approvalStatus = (request.approval && request.approval.status) || "not_requested";
+
+  const verificationGaps = verification.evidence_gaps || [];
+  const unsafeGaps = (verification.unsafe_claims || []).map(
+    (item) => `Claim ${item.claim_id}: ${item.reason}`
+  );
+  const unsupportedGaps = (verification.unsupported_statements || []).map(
+    (item) => `Unsupported statement: ${item}`
+  );
+  const failedPolicyGaps = failedChecks.map(
+    (item) => item.evidence_gap || `Policy check ${item.check_id} failed.`
+  );
+  const policyEvidenceGaps = evidenceChecks.map(
+    (item) => item.evidence_gap || `Policy check ${item.check_id} needs evidence.`
+  );
+  const blockingGaps = deduplicatedStrings([
+    ...verificationGaps,
+    ...unsafeGaps,
+    ...unsupportedGaps,
+    ...failedPolicyGaps
+  ]);
+  const evidenceRequests = deduplicatedStrings([...(verification.owner_actions || []), ...policyEvidenceGaps]);
+
+  let decision;
+  let reasonCode;
+  if (approvalStatus === "rejected") {
+    decision = "stop";
+    reasonCode = "approval_rejected";
+  } else if (failedChecks.length) {
+    decision = "stop";
+    reasonCode = "policy_check_failed";
+  } else if (verification.verdict === "block_unsafe_claims") {
+    decision = "stop";
+    reasonCode = "unsafe_claims";
+  } else if (evidenceChecks.length || verification.verdict !== "allow_relay") {
+    decision = "request_evidence";
+    reasonCode = "evidence_gaps";
+  } else {
+    const approvalRiskTiers = new Set(["high", "critical"]);
+    if (policyProfile === "agentic_interaction_trust") approvalRiskTiers.add("medium");
+    if (approvalRiskTiers.has(request.risk_tier) && approvalStatus !== "approved") {
+      decision = "require_approval";
+      reasonCode = "approval_required_for_risk";
+    } else {
+      decision = "continue";
+      reasonCode = "evidence_ready";
+    }
+  }
+
+  return {
+    response: {
+      decision_id: crypto.randomUUID(),
+      run_id: request.run_id,
+      policy_version: PRE_ACTION_POLICY_VERSION,
+      decision,
+      reason_code: reasonCode,
+      blocking_gaps: blockingGaps,
+      evidence_requests: evidenceRequests,
+      approval_required: decision === "require_approval",
+      human_review_required: decision === "require_approval",
+      verification,
+      policy_checks: policyChecks,
+      not_authorization_notice: PRE_ACTION_NOT_AUTHORIZATION_NOTICE,
+      limitations: [
+        "Uses caller-supplied claims, evidence, policy-check results, risk tier, and approval reference.",
+        "Does not authenticate the actor, inspect the target system, store state, or perform the action.",
+        "Does not sign the decision receipt; decision_id is a correlation identifier only."
+      ]
+    }
+  };
+}
+
 function agentOutputVerificationArtifactText(response) {
   const unsafe = response.unsafe_claims || [];
   const unsafeText = unsafe.length ? unsafe.map((item) => `- ${item.claim_id}: ${item.reason}`).join("\n") : "- none";
@@ -3270,6 +3438,53 @@ function a2aResultForAgentOutputVerification(params) {
         schema: "schemas/v1/evidence-audit.schema.json",
         valid: false,
         errors: ["Missing structured agent-output verification request"]
+      }
+    };
+  }
+  if (isPreActionCheckRequest(structured)) {
+    const actionErrors = preActionCheckErrors(structured);
+    if (actionErrors.length) {
+      return invalidRequestResult(
+        "agent_output_verification",
+        "/v1/agent-output/pre-action-check",
+        "schemas/v1/pre-action-check-request.schema.json",
+        actionErrors
+      );
+    }
+    const result = preActionCheckResult(structured);
+    return {
+      id: crypto.randomUUID(),
+      status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+      artifacts: [
+        {
+          artifactId: "pre-action-check-response",
+          name: "Pre-action check response",
+          parts: [
+            {
+              text: [
+                "Pre-action check response",
+                "",
+                `Decision: ${result.response.decision}`,
+                `Reason: ${result.response.reason_code}`,
+                `Run: ${result.response.run_id}`,
+                `Human review required: ${String(result.response.human_review_required)}`,
+                "",
+                result.response.not_authorization_notice
+              ].join("\n"),
+              mediaType: "text/markdown"
+            },
+            { data: result.response, mediaType: "application/json" }
+          ]
+        }
+      ],
+      metadata: {
+        product_profile: "agent_output_verification",
+        capability: "pre_action_check",
+        canonical_http_endpoint: "/v1/agent-output/pre-action-check",
+        schema: "schemas/v1/pre-action-check-request.schema.json",
+        human_review_required: result.response.human_review_required,
+        not_authorization_notice: result.response.not_authorization_notice,
+        response: result.response
       }
     };
   }
@@ -6566,14 +6781,15 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
 
   if (payload.method === "tools/call") {
     const name = params.name;
-    const spec = mcpToolSpecForProfile(profile);
     if (typeof name !== "string") {
       return jsonRpcError(id, -32602, "tools/call requires a string tool name");
     }
-    if (name !== spec.name) {
-      return mcpResponse(id, mcpToolResult({ error: `Unknown tool: ${name}`, available: [spec.name] }, true));
+    const spec = mcpToolSpecForProfile(profile, name);
+    if (!spec) {
+      const available = mcpToolsForProfile(profile).map((tool) => tool.name);
+      return mcpResponse(id, mcpToolResult({ error: `Unknown tool: ${name}`, available }, true));
     }
-    const callParams = mcpArgumentsToParams(profile, params.arguments ?? {});
+    const callParams = mcpArgumentsToParams(profile, params.arguments ?? {}, name);
     const { result, promptChars, modulesUsed } = await runProfileRequest(profile, callParams, request, env);
     const event = logUsageEvent(request, {
       jsonrpc_method: "tools/call",
@@ -6598,9 +6814,9 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
 }
 
 function profileInstructions(profile) {
-  const spec = mcpToolSpecForProfile(profile);
+  const names = mcpToolsForProfile(profile).map((tool) => tool.name).join(" or ");
   return (
-    `Call ${spec.name} with the structured evidence you already hold. ` +
+    `Call ${names} with the structured evidence you already hold. ` +
     "It reports what the file is missing before human review; it does not retrieve sources or decide the outcome."
   );
 }

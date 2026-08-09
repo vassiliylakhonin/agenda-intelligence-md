@@ -130,6 +130,14 @@
     "claim_verification_response": {
       "path": "schemas/v1/claim-verification-response.schema.json",
       "schema_version": "v1"
+    },
+    "pre_action_check_request": {
+      "path": "schemas/v1/pre-action-check-request.schema.json",
+      "schema_version": "v1"
+    },
+    "pre_action_check_response": {
+      "path": "schemas/v1/pre-action-check-response.schema.json",
+      "schema_version": "v1"
     }
   },
   "product": {
@@ -1445,6 +1453,150 @@
           },
           "required": [
             "audit_json"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "pre_action_check",
+        "since": "v1.5",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "action_request": {
+              "type": "object",
+              "properties": {
+                "run_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "actor": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "ai_agent",
+                        "automation",
+                        "api_client",
+                        "human_delegated_agent",
+                        "unknown",
+                        "other"
+                      ]
+                    },
+                    "operator": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "type"
+                  ]
+                },
+                "requested_action": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "target": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "type": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "type"
+                  ]
+                },
+                "risk_tier": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "claims": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "evidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "unsupported_claims": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "policy_context": {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "type": "string",
+                      "enum": [
+                        "default",
+                        "agentic_interaction_trust"
+                      ]
+                    },
+                    "checks": {
+                      "type": "array"
+                    }
+                  }
+                },
+                "approval": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "not_requested",
+                        "approved",
+                        "rejected"
+                      ]
+                    },
+                    "reference": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              },
+              "required": [
+                "run_id",
+                "actor",
+                "requested_action",
+                "target",
+                "risk_tier",
+                "claims",
+                "evidence"
+              ],
+              "description": "Structured pre-action check request. Call get_schema('pre_action_check_request') for the full nested contract."
+            }
+          },
+          "required": [
+            "action_request"
           ],
           "additionalProperties": false
         }

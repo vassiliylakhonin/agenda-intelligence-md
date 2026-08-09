@@ -536,3 +536,12 @@ def agent_output_verification(request_json: dict) -> dict:
     factual truth, fetch or validate cited sources, or authorize an action.
     """
     return _services.agent_output_verification(request_json)
+
+
+def pre_action_check(request_json: dict) -> dict:
+    """Route an action using supplied evidence, policy checks, risk, and approval.
+
+    Readiness routing only: the caller remains responsible for authentication,
+    authorization, enforcement, approval storage, and performing the action.
+    """
+    return _services.pre_action_check(request_json)

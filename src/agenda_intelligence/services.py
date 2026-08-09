@@ -12,6 +12,7 @@ import hashlib
 import json
 import re
 import unicodedata
+import uuid
 from datetime import date
 from importlib import resources
 from typing import Any, Optional
@@ -444,6 +445,129 @@ def agent_output_verification(request_json: dict) -> dict:
     }
 
     response_validation = _validate_json(response, "agent-output-verification-response.schema.json")
+    return {
+        "implemented": response_validation.get("implemented", True),
+        "valid": response_validation.get("valid"),
+        "errors": response_validation.get("errors", []),
+        "response": response,
+    }
+
+
+PRE_ACTION_POLICY_VERSION = "pre-action-check.v1"
+PRE_ACTION_NOT_AUTHORIZATION_NOTICE = (
+    "Pre-action evidence-readiness routing only. The caller remains responsible for authenticating the actor, "
+    "enforcing the returned decision, storing and validating any approval record, and authorizing or performing "
+    "the action. A continue decision is not approval, clearance, authorization, or factual verification."
+)
+
+
+def _deduplicated_strings(items: list[str]) -> list[str]:
+    """Return non-empty strings once, preserving their first-seen order."""
+    result: list[str] = []
+    seen: set[str] = set()
+    for item in items:
+        text = str(item).strip()
+        if text and text not in seen:
+            seen.add(text)
+            result.append(text)
+    return result
+
+
+def pre_action_check(request_json: dict) -> dict:
+    """Route a caller-controlled action using evidence, policy checks, and risk.
+
+    The function is stateless. A caller can resubmit the same ``run_id`` after
+    adding evidence or an externally stored approval reference. It reports
+    readiness only and never authenticates, authorizes, enforces, or performs
+    the requested action.
+    """
+    request_validation = _validate_json(request_json, "pre-action-check-request.schema.json")
+    if not request_validation.get("valid"):
+        return {
+            "implemented": request_validation.get("implemented", True),
+            "valid": request_validation.get("valid"),
+            "errors": request_validation.get("errors", []),
+            "response": None,
+        }
+
+    audit_request = {
+        key: request_json[key] for key in ("claims", "evidence", "unsupported_claims") if key in request_json
+    }
+    verification_result = agent_output_verification(audit_request)
+    if not verification_result.get("valid"):
+        return {
+            "implemented": verification_result.get("implemented", True),
+            "valid": verification_result.get("valid"),
+            "errors": verification_result.get("errors", []),
+            "response": None,
+        }
+
+    verification = verification_result["response"]
+    policy_context = request_json.get("policy_context") or {}
+    policy_profile = policy_context.get("profile", "default")
+    policy_checks = list(policy_context.get("checks") or [])
+    failed_checks = [item for item in policy_checks if item.get("status") == "failed"]
+    evidence_checks = [item for item in policy_checks if item.get("status") == "needs_evidence"]
+    approval = request_json.get("approval") or {"status": "not_requested"}
+    approval_status = approval.get("status", "not_requested")
+
+    verification_gaps = list(verification.get("evidence_gaps") or [])
+    unsafe_gaps = [
+        f"Claim {item.get('claim_id')}: {item.get('reason')}" for item in verification.get("unsafe_claims", [])
+    ]
+    unsupported_gaps = [f"Unsupported statement: {item}" for item in verification.get("unsupported_statements", [])]
+    failed_policy_gaps = [
+        item.get("evidence_gap") or f"Policy check {item.get('check_id')} failed." for item in failed_checks
+    ]
+    policy_evidence_gaps = [
+        item.get("evidence_gap") or f"Policy check {item.get('check_id')} needs evidence." for item in evidence_checks
+    ]
+    blocking_gaps = _deduplicated_strings(verification_gaps + unsafe_gaps + unsupported_gaps + failed_policy_gaps)
+    evidence_requests = _deduplicated_strings(list(verification.get("owner_actions") or []) + policy_evidence_gaps)
+
+    if approval_status == "rejected":
+        decision = "stop"
+        reason_code = "approval_rejected"
+    elif failed_checks:
+        decision = "stop"
+        reason_code = "policy_check_failed"
+    elif verification.get("verdict") == "block_unsafe_claims":
+        decision = "stop"
+        reason_code = "unsafe_claims"
+    elif evidence_checks or verification.get("verdict") != "allow_relay":
+        decision = "request_evidence"
+        reason_code = "evidence_gaps"
+    else:
+        approval_risk_tiers = {"high", "critical"}
+        if policy_profile == "agentic_interaction_trust":
+            approval_risk_tiers.add("medium")
+        if request_json["risk_tier"] in approval_risk_tiers and approval_status != "approved":
+            decision = "require_approval"
+            reason_code = "approval_required_for_risk"
+        else:
+            decision = "continue"
+            reason_code = "evidence_ready"
+
+    response = {
+        "decision_id": str(uuid.uuid4()),
+        "run_id": request_json["run_id"],
+        "policy_version": PRE_ACTION_POLICY_VERSION,
+        "decision": decision,
+        "reason_code": reason_code,
+        "blocking_gaps": blocking_gaps,
+        "evidence_requests": evidence_requests,
+        "approval_required": decision == "require_approval",
+        "human_review_required": decision == "require_approval",
+        "verification": verification,
+        "policy_checks": policy_checks,
+        "not_authorization_notice": PRE_ACTION_NOT_AUTHORIZATION_NOTICE,
+        "limitations": [
+            "Uses caller-supplied claims, evidence, policy-check results, risk tier, and approval reference.",
+            "Does not authenticate the actor, inspect the target system, store state, or perform the action.",
+            "Does not sign the decision receipt; decision_id is a correlation identifier only.",
+        ],
+    }
+    response_validation = _validate_json(response, "pre-action-check-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
         "valid": response_validation.get("valid"),

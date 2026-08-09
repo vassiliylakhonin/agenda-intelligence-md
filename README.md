@@ -144,6 +144,18 @@ whether a claim is true or an action is authorized.
 Existing MCP tools such as `audit_claims`, `verify_quotes`, `grounded_check`,
 and `verify_claims` remain compatible; no tool was removed or renamed.
 
+`pre_action_check` adds a stateless action boundary on top of the existing
+claim audit. It returns `continue`, `request_evidence`, `require_approval`, or
+`stop` from caller-supplied evidence, risk, policy-check results, and an
+optional external approval reference. The caller still authenticates the
+actor, stores approvals, enforces the result, and performs the action. The
+request and response contracts are
+[`pre-action-check-request.schema.json`](schemas/v1/pre-action-check-request.schema.json)
+and
+[`pre-action-check-response.schema.json`](schemas/v1/pre-action-check-response.schema.json).
+Twenty illustrative replay cases are in
+[`examples/pre-action-check/replay-cases.json`](examples/pre-action-check/replay-cases.json).
+
 Two authoring tools, `create_brief` and `append_evidence`, let an agent assemble a brief or an evidence pack step by step inside the contract instead of hand-building JSON and validating it afterwards. Both are deterministic and stateless: they validate on every call and return the document to the caller. They do not write files, retrieve sources, draft prose, or assess factual truth, and `append_evidence` never infers a `supported` claim status on its own.
 
 Claude Code plugin installation also remains available:

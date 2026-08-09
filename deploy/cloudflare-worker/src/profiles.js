@@ -49,6 +49,8 @@ export const MARKET_ENTRY_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/sou
 
 export const AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/evidence-audit.schema.json`;
 export const AGENT_OUTPUT_VERIFICATION_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agent-output-verification-response.schema.json`;
+export const PRE_ACTION_CHECK_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/pre-action-check-request.schema.json`;
+export const PRE_ACTION_CHECK_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/pre-action-check-response.schema.json`;
 
 // Canonical input mode shared by per-profile product_contract blocks and the
 // top-level x_agent_contract discoverability extension.
@@ -304,22 +306,27 @@ const agentOutputVerificationProfile = Object.freeze({
   documentation_url: SCHEMAS_URL,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
-    "A2A/JSON-RPC discovery, claim-level relay-readiness triage of another agent's output, and routing response only",
-  supported_contracts: frozenArray(["agent_output_verification_contract"]),
+    "A2A/JSON-RPC discovery, claim-level relay-readiness checks, pre-action routing, and response assembly only",
+  supported_contracts: frozenArray(["agent_output_verification_contract", "pre_action_check_contract"]),
   buyer_use_cases: frozenArray([
     "verify a claim-backed answer received from another agent before relaying or acting on it",
     "gate an agent-to-agent hand-off when the upstream output may contain unsupported claims",
     "pre-publication check that every claim in an agent-drafted memo is grounded",
-    "trust-and-safety triage of orchestrated multi-agent output"
+    "route an agent action to continue, request evidence, require approval, or stop before a tool call"
   ]),
   commercial_positioning:
-    "Claim set + evidence -> auditable relay verdict (allow_relay / verify_before_relay / block_unsafe_claims) with unsafe and weak claims, evidence gaps, and owner actions. Schema-level and structural only: it flags which claims are ungrounded before a consuming agent relays them. Not factual-truth verification, not source retrieval, not an approval or authorization.",
+    "Claim set + action context -> relay verdict or pre-action route with evidence gaps and owner actions. The check uses caller-supplied evidence and policy results. It does not verify factual truth, retrieve sources, authenticate an actor, authorize an action, or enforce the result.",
   focus: frozenArray([
     "relay-readiness verdict for one agent verifying another agent's output",
+    "pre-action routing before an external tool call or hand-off",
     "unsupported and orphaned claim detection",
-    "weak-support and span-grounding gaps",
-    "owner actions to make an output safe to relay"
+    "risk-based human approval routing"
   ]),
+  pre_action_check_contract: Object.freeze({
+    request_schema: PRE_ACTION_CHECK_REQUEST_SCHEMA_URL,
+    response_schema: PRE_ACTION_CHECK_RESPONSE_SCHEMA_URL,
+    replay_cases: `${REPOSITORY_URL}/blob/main/examples/pre-action-check/replay-cases.json`
+  }),
   product_contract: productContract({
     request_schema: AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL,
     response_schema: AGENT_OUTPUT_VERIFICATION_RESPONSE_SCHEMA_URL,

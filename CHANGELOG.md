@@ -4,6 +4,17 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(action gate): add `pre_action_check` to the existing Agent Output
+  Verification surface.** The additive request and response contracts route a
+  caller-controlled action to `continue`, `request_evidence`,
+  `require_approval`, or `stop` using supplied claim evidence, risk tier,
+  policy-check results, and an optional external approval reference. The same
+  behavior is exposed through Python services, HTTP, stdio MCP, the A2A
+  adapter, and the existing Cloudflare Worker profile. Twenty replay cases run
+  against both Python and Worker implementations. The function is stateless;
+  it does not authenticate, authorize, enforce, sign a receipt, store an
+  approval, or perform an action. No new Worker or deployment is included.
+
 - **fix(a2a): align all eight Worker profiles with the A2A 1.0 JSON-RPC
   contract.** Agent Cards now advertise the protocol only through
   `supportedInterfaces`; public deployments no longer misrepresent the

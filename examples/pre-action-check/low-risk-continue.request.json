@@ -1,0 +1,35 @@
+{
+  "run_id": "example-low-risk-1",
+  "actor": {
+    "id": "procurement-agent",
+    "type": "ai_agent",
+    "operator": "Example buyer"
+  },
+  "requested_action": "send supplier recommendation",
+  "target": {
+    "id": "supplier-456",
+    "type": "counterparty"
+  },
+  "risk_tier": "low",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "claim": "The supplier holds the declared registration.",
+      "support_level": "direct",
+      "evidence_ids": ["e1"],
+      "supporting_quotes": [
+        {
+          "evidence_id": "e1",
+          "quote": "Registration active"
+        }
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "source_type": "official_document",
+      "name": "Registry extract"
+    }
+  ]
+}
