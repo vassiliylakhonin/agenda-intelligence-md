@@ -4,6 +4,13 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(worker): support Agenstry HTTP ownership verification.** Worker
+  deployments can now serve `GET /.well-known/agenstry-verify` from a
+  per-environment `AGENSTRY_VERIFY_TOKEN` secret. The route returns `404` when
+  the binding is absent or malformed, disables caching, and is excluded from
+  funnel telemetry. Verification tokens remain outside source and Wrangler
+  configuration.
+
 - **feat(action gate): add `pre_action_check` to the existing Agent Output
   Verification surface.** The additive request and response contracts route a
   caller-controlled action to `continue`, `request_evidence`,

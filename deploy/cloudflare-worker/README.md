@@ -20,6 +20,7 @@ This Worker is intentionally small:
 | GET | `/health` | Always JSON | Backward-compatible health check for scripts |
 | GET | `/status` | Always JSON | Status info for uptime monitors; includes version + boundary flags |
 | GET | `/.well-known/agent-card.json` | Always JSON | A2A agent card |
+| GET | `/.well-known/agenstry-verify` | Plain text or 404 | Optional Agenstry domain-ownership proof |
 | GET | `/.well-known/ai-catalog.json` | Always JSON | Agentic resource discovery catalog |
 | GET | `/.well-known/api-catalog` | Always JSON linkset | API catalog pointing to OpenAPI |
 | GET | `/api/openapi.json` | Always JSON | OpenAPI 3.0 worker contract |
@@ -101,6 +102,22 @@ npm run smoke:live
 Use the profile `--env` deploy commands below only when profile Worker runtime
 behavior changes. Documentation, schema, example, and base profile-route
 changes usually require only the top-level Worker deploy.
+
+### Agenstry domain-ownership proof
+
+The shared Worker serves `GET /.well-known/agenstry-verify` only when that
+deployment has a valid `AGENSTRY_VERIFY_TOKEN` secret. Set the token
+interactively for the profile Agenstry is checking; do not put the value in
+source or `wrangler.toml`:
+
+```bash
+cd deploy/cloudflare-worker
+npx wrangler secret put AGENSTRY_VERIFY_TOKEN --env kazakhstan-market-entry-readiness
+```
+
+The route returns the single-line `af-verify-...` value with `Cache-Control:
+no-store`. It returns `404` when the binding is missing or malformed. Each
+profile has a separate secret because Agenstry issues a token per domain.
 
 Deploy the Kazakhstan / Middle Corridor Deal Risk Gate profile as a separate A2A listing:
 

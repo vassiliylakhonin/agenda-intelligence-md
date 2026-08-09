@@ -419,6 +419,28 @@ test("AI catalog route returns catalog JSON and discovery Link header", async ()
   assert.ok(body.entries.some((entry) => entry.type === "application/mcp-server-card+json"));
 });
 
+test("Agenstry ownership proof route serves only a valid configured token", async () => {
+  const url = "https://agenda-intelligence-a2a.example.workers.dev/.well-known/agenstry-verify";
+  const configured = await handleRequest(new Request(url), {
+    AGENSTRY_VERIFY_TOKEN: "  af-verify-test_token-123  "
+  });
+  assert.equal(configured.status, 200);
+  assert.equal(configured.headers.get("content-type"), "text/plain; charset=utf-8");
+  assert.equal(configured.headers.get("cache-control"), "no-store");
+  assert.equal(await configured.text(), "af-verify-test_token-123");
+
+  for (const env of [{}, { AGENSTRY_VERIFY_TOKEN: "not-an-agenstry-token" }]) {
+    const missing = await handleRequest(new Request(url), env);
+    assert.equal(missing.status, 404);
+    assert.equal(await missing.text(), "Not found");
+  }
+
+  const wrongMethod = await handleRequest(new Request(url, { method: "POST" }), {
+    AGENSTRY_VERIFY_TOKEN: "af-verify-test_token-123"
+  });
+  assert.equal(wrongMethod.status, 404);
+});
+
 test("API catalog and OpenAPI routes advertise the public worker HTTP contract", async () => {
   const catalog = apiCatalog(request);
   const openapi = openApiDocument(request);
@@ -431,6 +453,7 @@ test("API catalog and OpenAPI routes advertise the public worker HTTP contract",
   assert.equal(openapi.info.version, "1.2.0");
   assert.ok(openapi.paths["/message/send"].post);
   assert.ok(openapi.paths["/.well-known/ai-catalog.json"].get);
+  assert.ok(openapi.paths["/.well-known/agenstry-verify"].get);
   assert.ok(openapi.paths["/okf/index.md"].get);
   assert.ok(openapi.paths["/profiles/confidential-project-room"].get);
   assert.ok(openapi.paths["/profiles/confidential-project-room/redacted-example.json"].get);
@@ -1663,6 +1686,7 @@ test("funnel events cover the steps before a call and skip operational noise", (
   assert.equal(step("/health"), null);
   assert.equal(step("/stats"), null);
   assert.equal(step("/robots.txt"), null);
+  assert.equal(step("/.well-known/agenstry-verify"), null);
 });
 
 test("funnel event names the visitor without storing an address", () => {
