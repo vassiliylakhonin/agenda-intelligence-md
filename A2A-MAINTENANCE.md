@@ -110,21 +110,17 @@ and publishes its public key at `/.well-known/jwks.json`. Do not rotate an
 existing signing key merely because card content changed; the Worker signs the
 current card at request time.
 
-As of 2026-08-09, five Worker deployments have signing secrets configured.
-These three do not:
+As of 2026-08-09, all eight Worker deployments have signing secrets configured
+and their detached JWS signatures verify against their public JWKS. The
+Kazakhstan Market Entry, Agent Output Verification, and Corridor & Sanctions
+Assistant environments share one ES256 key created for that deployment group;
+the five earlier deployments retain their existing keys.
 
-- `kazakhstan-market-entry-readiness`
-- `agent-output-verification`
-- `corridor-sanctions-assistant`
-
-Signing those cards requires operator-provided Cloudflare secrets. Do not
-generate or substitute a key without an explicit key-management decision:
-
-```bash
-npx wrangler secret put AGENT_CARD_SIGNING_KEY --env kazakhstan-market-entry-readiness
-npx wrangler secret put AGENT_CARD_SIGNING_KEY --env agent-output-verification
-npx wrangler secret put AGENT_CARD_SIGNING_KEY --env corridor-sanctions-assistant
-```
+The new private key was passed directly from a permission-restricted temporary
+file into Cloudflare secrets and was not retained locally. If any of those
+three secrets must be recreated, treat it as a coordinated rotation: generate
+one replacement key, update all three environments, redeploy them, and verify
+all three signatures before considering the rotation complete.
 
 If a separate key identifier is required, set `AGENT_CARD_SIGNING_KID` for the
 same environment. Verify both the card signature and JWKS after any key change.
