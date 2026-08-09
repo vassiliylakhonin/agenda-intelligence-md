@@ -29,6 +29,8 @@ const CRAWLER_HINTS = [
   "semrush",
   "ahrefs",
   "bingpreview",
+  "scanner",
+  "registry",
   "python-httpx",
   "python-requests",
   "go-http-client",

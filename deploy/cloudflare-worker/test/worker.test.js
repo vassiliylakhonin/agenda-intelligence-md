@@ -1610,14 +1610,26 @@ test("usage stats counts callers who got nothing usable", async () => {
     timestamp: "2026-08-07T09:03:00.000Z",
     outcome: { decision: "invalid_request", score: null }
   });
+  // A monitor sending a deliberately empty payload is not a caller who left
+  // empty-handed. Counting it made the ratio read "5 of 1 non-probe calls".
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-08-07T09:04:00.000Z",
+    likely_probe: true,
+    client: "agenstry",
+    outcome: { decision: "invalid_request", score: null }
+  });
 
   const stats = await usageStats(env, "2026-08-07");
 
-  assert.equal(stats.counters.total, 4);
+  assert.equal(stats.counters.total, 5);
+  assert.equal(stats.counters.non_probe, 4);
   assert.equal(stats.counters.empty_handed, 3);
+  assert.ok(stats.counters.empty_handed <= stats.counters.non_probe);
+  // outcomes covers every call; only empty_handed is restricted to non-probes.
   assert.deepEqual(stats.outcomes, [
     { name: "insufficient_information", count: 2 },
-    { name: "invalid_request", count: 1 },
+    { name: "invalid_request", count: 2 },
     { name: "ready_for_human_review", count: 1 }
   ]);
 });

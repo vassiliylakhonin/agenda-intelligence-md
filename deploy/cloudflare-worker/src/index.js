@@ -5971,8 +5971,12 @@ async function usageStats(env, date) {
     incrementMap(userAgents, event.user_agent);
     incrementMap(outcomes, event.outcome);
     // A caller who supplied nothing usable: the gate could not act on the
-    // request. This is the drop-off number to watch, not the raw call count.
-    if (event.outcome === "insufficient_information" || event.outcome === "invalid_request") {
+    // request. Counted among non-probe calls only — monitors send deliberately
+    // empty payloads, so including them made the ratio read "5 of 1".
+    if (
+      !event.likely_probe &&
+      (event.outcome === "insufficient_information" || event.outcome === "invalid_request")
+    ) {
       emptyHanded += 1;
     }
     for (const moduleName of Array.isArray(event.modules_used) ? event.modules_used : []) {
