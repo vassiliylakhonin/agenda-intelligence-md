@@ -9,12 +9,15 @@
 //   - `jcs(value)`             — RFC 8785 JSON canonicalization
 //   - `signCardDetached(card, privateJwkString, kid)` — returns compact
 //                                detached JWS `<header>..<signature>` for
-//                                embedding in `card.signature`
+//                                embedding in `card.signature`; the protected
+//                                header carries `jku` for the card host's JWKS
 //   - `publicJwkFromPrivate(privateJwk)` — strips `d` and returns the public
 //                                portion ready for `/.well-known/jwks.json`
 //
 // The signing pipeline uses Cloudflare Worker's built-in WebCrypto
 // (ECDSA P-256 + SHA-256). No external dependencies.
+// `jku` semantics and TLS requirements: RFC 7515 section 4.1.2.
+// https://www.rfc-editor.org/rfc/rfc7515#section-4.1.2
 
 // ---------------------------------------------------------------------------
 // JCS — RFC 8785 JSON Canonicalization Scheme
@@ -77,6 +80,20 @@ function readPrivateJwk(input) {
   return input;
 }
 
+export function jwksUrlFromCard(card) {
+  const interfaceUrl = card?.supportedInterfaces?.find(
+    (entry) => typeof entry?.url === "string" && entry.url.length > 0
+  )?.url;
+  if (!interfaceUrl) {
+    throw new Error("jwksUrlFromCard: card must declare a supported interface URL");
+  }
+  const url = new URL(interfaceUrl);
+  if (url.protocol !== "https:") {
+    throw new Error("jwksUrlFromCard: supported interface URL must use HTTPS");
+  }
+  return new URL("/.well-known/jwks.json", url).toString();
+}
+
 /**
  * Sign an agent card with a detached JWS (RFC 7515 §A.5, RFC 7797).
  *
@@ -104,7 +121,12 @@ export async function signCardDetached(card, privateJwkInput, kid = null) {
 
   const payloadBytes = TEXT_ENCODER.encode(jcs(cardWithoutSignature));
 
-  const header = { alg: "ES256", b64: false, crit: ["b64"] };
+  const header = {
+    alg: "ES256",
+    b64: false,
+    crit: ["b64"],
+    jku: jwksUrlFromCard(card)
+  };
   if (effectiveKid) header.kid = effectiveKid;
   const headerB64 = base64urlEncode(TEXT_ENCODER.encode(JSON.stringify(header)));
 
