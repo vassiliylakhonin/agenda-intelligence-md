@@ -2713,6 +2713,7 @@ import {
   base64urlEncode,
   buildJwks,
   jcs,
+  jwksUrlFromCard,
   maybeSignCard,
   publicJwkFromPrivate,
   signCardDetached
@@ -2772,7 +2773,14 @@ test("signCardDetached produces a compact detached JWS that verifies against JWK
     name: "Test agent",
     version: "1.0.0",
     skills: [{ id: "a", name: "A" }],
-    nested: { z: 1, a: [3, 2, 1] }
+    nested: { z: 1, a: [3, 2, 1] },
+    supportedInterfaces: [
+      {
+        url: "https://test-agent.example/message/send",
+        protocolBinding: "JSONRPC",
+        protocolVersion: "1.0"
+      }
+    ]
   };
   const signature = await signCardDetached(card, privJwk);
 
@@ -2814,11 +2822,16 @@ test("signCardDetached produces a compact detached JWS that verifies against JWK
   assert.equal(headerJson.b64, false);
   assert.deepEqual(headerJson.crit, ["b64"]);
   assert.equal(headerJson.kid, "test-kid");
+  assert.equal(headerJson.jku, "https://test-agent.example/.well-known/jwks.json");
 });
 
 test("signCardDetached strips an existing signature field before signing", async () => {
   const privJwk = await generateTestKey();
-  const card = { name: "Test", skills: [] };
+  const card = {
+    name: "Test",
+    skills: [],
+    supportedInterfaces: [{ url: "https://test-agent.example/message/send" }]
+  };
   const sig1 = await signCardDetached(card, privJwk);
   const sig2 = await signCardDetached({ ...card, signature: "previous" }, privJwk);
   // ECDSA signatures are non-deterministic, so the signature segment may differ
@@ -2835,11 +2848,26 @@ test("maybeSignCard is a no-op when no signing key is configured", async () => {
 
 test("maybeSignCard adds a signature when AGENT_CARD_SIGNING_KEY is set", async () => {
   const privJwk = await generateTestKey();
-  const card = { name: "Test", skills: [] };
+  const card = {
+    name: "Test",
+    skills: [],
+    supportedInterfaces: [{ url: "https://test-agent.example/message/send" }]
+  };
   const result = await maybeSignCard(card, { AGENT_CARD_SIGNING_KEY: JSON.stringify(privJwk) });
   assert.match(result.signature, /^[A-Za-z0-9_-]+\.\.[A-Za-z0-9_-]+$/);
   // Original card content preserved
   assert.equal(result.name, "Test");
+  const [headerB64] = result.signature.split(".");
+  const header = JSON.parse(Buffer.from(headerB64, "base64url").toString("utf8"));
+  assert.equal(header.jku, "https://test-agent.example/.well-known/jwks.json");
+});
+
+test("jwksUrlFromCard rejects missing or non-HTTPS interface URLs", () => {
+  assert.throws(() => jwksUrlFromCard({}), /supported interface URL/);
+  assert.throws(
+    () => jwksUrlFromCard({ supportedInterfaces: [{ url: "http://test-agent.example/message/send" }] }),
+    /must use HTTPS/
+  );
 });
 
 test("agent card includes support block with hours/contact", () => {

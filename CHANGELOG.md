@@ -4,6 +4,13 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(a2a): publish each Worker's JWKS location inside its protected JWS
+  header.** Signed Agent Cards now include an RFC 7515 `jku` value derived from
+  the card's own HTTPS `supportedInterfaces` origin and pointing to that
+  deployment's `/.well-known/jwks.json`. This removes provider-level key lookup
+  ambiguity without changing keys, endpoints, skills, authentication, or
+  payload contracts.
+
 - **docs(a2a): declare the existing evidence-gap analysis on the Agent Output
   Verification card.** The Worker already returns missing evidence ids,
   quote-to-reference mismatches, unsupported statements, weak claims, evidence

@@ -26,6 +26,27 @@ function hasBoundary(card, expected) {
   return Array.isArray(boundaries) && boundaries.includes(expected);
 }
 
+function validateProtectedJwsHeader(card, sourceUrl) {
+  if (typeof card.signature !== "string") return [];
+  const errors = [];
+  const parts = card.signature.split(".");
+  if (parts.length !== 3 || parts[1] !== "") {
+    return ["signature must be a compact detached JWS"];
+  }
+  try {
+    const header = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8"));
+    const cardUrl = new URL(agentCardUrl(sourceUrl));
+    const expectedJku = new URL("/.well-known/jwks.json", cardUrl).toString();
+    const requiresJku = cardUrl.hostname.endsWith(".workers.dev");
+    if ((requiresJku || header.jku !== undefined) && header.jku !== expectedJku) {
+      errors.push(`protected JWS header jku must equal ${expectedJku}`);
+    }
+  } catch (_error) {
+    errors.push("signature protected header must be valid base64url JSON");
+  }
+  return errors;
+}
+
 const PROFILE_EXPECTATIONS = [
   {
     host: "cis-secondary-sanctions-a2a",
@@ -262,6 +283,9 @@ export function validateAgentCard(card, sourceUrl = "") {
     if (!Array.isArray(card.securityRequirements) || card.securityRequirements.length === 0) {
       errors.push("securitySchemes are declared but securityRequirements are empty");
     }
+  }
+  if (sourceUrl) {
+    errors.push(...validateProtectedJwsHeader(card, sourceUrl));
   }
 
   const isMiddleCorridor =
