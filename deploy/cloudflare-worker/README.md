@@ -31,6 +31,8 @@ This Worker is intentionally small:
 | GET | `/okf/index.md`, `/okf/*.md` | Always Markdown | OKF-style concept bundle served from the worker domain |
 | GET | `/profiles/confidential-project-room`, `/profiles/confidential-project-room/redacted-example.json` | Markdown / JSON | Public alias-first confidential project-room profile contract and synthetic example |
 | GET | `/stats` | JSON (requires `x-stats-token`) | Private usage analytics |
+| POST | `/intake/cis-review` | JSON, CIS profile only | Store a validated redacted service request for 30 days |
+| GET | `/intake/cis-review` | JSON (requires `x-stats-token`) | Read retained CIS service requests |
 | POST | `/message/send`, `/` | JSON-RPC 2.0 | A2A 1.0 `SendMessage` |
 | POST | `/mcp` | JSON-RPC 2.0 | MCP over Streamable HTTP, stateless |
 
@@ -394,6 +396,21 @@ View product-level daily counters:
 ```bash
 npm run stats
 ```
+
+Read retained CIS review requests with the same private token:
+
+```bash
+npm run intake
+```
+
+The intake endpoint accepts workflow context only: work email, role and deal type,
+what is blocked, evidence already held, the reviewer's request, and deadline. It
+rejects untrusted browser origins and oversized or incomplete requests, includes a
+honeypot field for basic bot filtering, limits each hashed network address to five
+submissions per hour, stores no attachments, and expires each
+record from KV after 30 days. It does not send an email notification; connect an
+onboarded sender domain or another transactional notification transport before
+promising immediate notification.
 
 For a specific UTC date:
 

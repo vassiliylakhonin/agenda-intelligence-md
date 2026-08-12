@@ -65,6 +65,10 @@ import {
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 
 const AGENSTRY_VERIFICATION_PATH = "/.well-known/agenstry-verify";
+const CIS_REVIEW_INTAKE_PATH = "/intake/cis-review";
+const CIS_REVIEW_INTAKE_ORIGIN = "https://vassiliylakhonin.github.io";
+const CIS_REVIEW_INTAKE_RETENTION_SECONDS = 30 * 24 * 60 * 60;
+const CIS_REVIEW_INTAKE_MAX_BYTES = 16 * 1024;
 
 const CA_CASPIAN_TERMS = [
   "central asia",
@@ -461,6 +465,26 @@ function jsonResponse(body, status = 200, extraHeaders = {}) {
       ...extraHeaders
     }
   });
+}
+
+function intakeCorsHeaders(request) {
+  const origin = request.headers.get("origin") || "";
+  const allowed =
+    origin === CIS_REVIEW_INTAKE_ORIGIN || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+  return {
+    "access-control-allow-origin": allowed ? origin : CIS_REVIEW_INTAKE_ORIGIN,
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-headers": "content-type, x-stats-token",
+    "cache-control": "no-store",
+    vary: "Origin"
+  };
+}
+
+function isAllowedIntakeOrigin(request) {
+  const origin = request.headers.get("origin") || "";
+  return (
+    origin === CIS_REVIEW_INTAKE_ORIGIN || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+  );
 }
 
 function textResponse(body, status = 200, extraHeaders = {}) {
@@ -7079,6 +7103,156 @@ async function handleStats(request, env) {
   return jsonResponse(stats, stats.configured ? 200 : 503);
 }
 
+function normalizedIntakeText(value, maxLength) {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function validIntakeEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;
+}
+
+async function checkIntakeRateLimit(request, env) {
+  const kv = env?.AGENDA_USAGE;
+  if (!kv) return { limited: false, limit: 5 };
+  const ip = clientIpFromRequest(request);
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
+  const token = [...new Uint8Array(digest)]
+    .slice(0, 12)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  const hour = new Date().toISOString().slice(0, 13);
+  const key = `rate:cis-review-intake:${token}:${hour}`;
+  try {
+    const current = Number.parseInt((await kv.get(key)) || "0", 10) || 0;
+    if (current >= 5) return { limited: true, limit: 5 };
+    await kv.put(key, String(current + 1), { expirationTtl: 7200 });
+    return { limited: false, limit: 5 };
+  } catch (_error) {
+    return { limited: false, limit: 5 };
+  }
+}
+
+async function handleCisReviewIntake(request, env) {
+  const headers = intakeCorsHeaders(request);
+  if (agentProfile(request, env) !== "cis_secondary_sanctions") {
+    return jsonResponse({ error: "Not found" }, 404, headers);
+  }
+  if (!isAllowedIntakeOrigin(request)) {
+    return jsonResponse({ error: "Origin is not allowed" }, 403, headers);
+  }
+  if (!env.AGENDA_USAGE || typeof env.AGENDA_USAGE.put !== "function") {
+    return jsonResponse({ error: "Intake storage is unavailable" }, 503, headers);
+  }
+  const rate = await checkIntakeRateLimit(request, env);
+  if (rate.limited) {
+    return jsonResponse({ error: "Too many requests. Try again in one hour." }, 429, {
+      ...headers,
+      "retry-after": "3600"
+    });
+  }
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (contentLength > CIS_REVIEW_INTAKE_MAX_BYTES) {
+    return jsonResponse({ error: "Request is too large" }, 413, headers);
+  }
+
+  let payload;
+  try {
+    payload = await request.json();
+  } catch (_error) {
+    return jsonResponse({ error: "Request must be valid JSON" }, 400, headers);
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return jsonResponse({ error: "Request must be a JSON object" }, 400, headers);
+  }
+  if (JSON.stringify(payload).length > CIS_REVIEW_INTAKE_MAX_BYTES) {
+    return jsonResponse({ error: "Request is too large" }, 413, headers);
+  }
+
+  const requestId = crypto.randomUUID();
+  if (normalizedIntakeText(payload.website, 200)) {
+    return jsonResponse({ received: true, request_id: requestId }, 202, headers);
+  }
+
+  const email = normalizedIntakeText(payload.email, 254);
+  const roleDealType = normalizedIntakeText(payload.role_deal_type, 240);
+  const blocked = normalizedIntakeText(payload.blocked, 120);
+  const evidenceHeld = normalizedIntakeText(payload.evidence_held, 1800);
+  const reviewerRequest = normalizedIntakeText(payload.reviewer_request, 1800);
+  const deadline = normalizedIntakeText(payload.deadline, 240);
+  const locale = payload.locale === "ru" ? "ru" : "en";
+  const errors = [];
+  if (!validIntakeEmail(email)) errors.push("email must be a valid work email");
+  if (!roleDealType) errors.push("role_deal_type is required");
+  if (!blocked) errors.push("blocked is required");
+  if (!reviewerRequest) errors.push("reviewer_request is required");
+  if (payload.consent !== true) errors.push("consent is required");
+  if (errors.length) {
+    return jsonResponse({ error: "Invalid intake", fields: errors }, 422, headers);
+  }
+
+  const submittedAt = new Date().toISOString();
+  const retentionUntil = new Date(Date.now() + CIS_REVIEW_INTAKE_RETENTION_SECONDS * 1000).toISOString();
+  const key = `intake:cis-review:${submittedAt.slice(0, 10).replaceAll("-", "")}:${requestId}`;
+  const record = {
+    schema_version: "1.0",
+    request_id: requestId,
+    submitted_at: submittedAt,
+    retention_until: retentionUntil,
+    locale,
+    email,
+    role_deal_type: roleDealType,
+    blocked,
+    evidence_held: evidenceHeld,
+    reviewer_request: reviewerRequest,
+    deadline,
+    source: "cis-secondary-sanctions-service-page"
+  };
+  await env.AGENDA_USAGE.put(key, JSON.stringify(record), {
+    expirationTtl: CIS_REVIEW_INTAKE_RETENTION_SECONDS
+  });
+
+  return jsonResponse(
+    {
+      received: true,
+      request_id: requestId,
+      retention_until: retentionUntil,
+      response_window: "one business day"
+    },
+    201,
+    headers
+  );
+}
+
+async function handleCisReviewIntakeList(request, env) {
+  const headers = intakeCorsHeaders(request);
+  if (agentProfile(request, env) !== "cis_secondary_sanctions") {
+    return jsonResponse({ error: "Not found" }, 404, headers);
+  }
+  if (!isStatsAuthorized(request, env)) {
+    return jsonResponse({ error: "Unauthorized" }, 401, headers);
+  }
+  if (!env.AGENDA_USAGE || typeof env.AGENDA_USAGE.list !== "function") {
+    return jsonResponse({ error: "Intake storage is unavailable" }, 503, headers);
+  }
+  const listed = await env.AGENDA_USAGE.list({ prefix: "intake:cis-review:", limit: 50 });
+  const records = (
+    await Promise.all(
+      listed.keys.map(async ({ name }) => {
+        const value = await env.AGENDA_USAGE.get(name);
+        if (!value) return null;
+        try {
+          return JSON.parse(value);
+        } catch (_error) {
+          return null;
+        }
+      })
+    )
+  )
+    .filter(Boolean)
+    .sort((left, right) => right.submitted_at.localeCompare(left.submitted_at));
+  return jsonResponse({ count: records.length, records }, 200, headers);
+}
+
 function healthInfo(request, env) {
   const card = agentCard(request, env);
   const origin = originFromRequest(request);
@@ -7375,6 +7549,18 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     logFunnelEvent(request, funnelStepForPath(url.pathname));
   }
 
+  if (url.pathname === CIS_REVIEW_INTAKE_PATH && request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: intakeCorsHeaders(request) });
+  }
+
+  if (url.pathname === CIS_REVIEW_INTAKE_PATH && request.method === "POST") {
+    return handleCisReviewIntake(request, env);
+  }
+
+  if (url.pathname === CIS_REVIEW_INTAKE_PATH && request.method === "GET") {
+    return handleCisReviewIntakeList(request, env);
+  }
+
   if (request.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -7524,6 +7710,8 @@ export {
   dealRiskContractResponseForRequest,
   entityMap,
   funnelStepForPath,
+  handleCisReviewIntake,
+  handleCisReviewIntakeList,
   logFunnelEvent,
   handleJsonRpc,
   handleMcpJsonRpc,

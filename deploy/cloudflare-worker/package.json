@@ -6,6 +6,7 @@
     "deploy:agent-output-verification:gated": "node scripts/vizier-gated-deploy.js",
     "funnel": "node scripts/funnel.js",
     "generate:okf": "node scripts/generate-okf-content.js",
+    "intake": "node scripts/intake.js",
     "smoke:live": "node scripts/smoke-live-profile-contracts.js",
     "stats": "node scripts/stats.js",
     "test": "node --test",
