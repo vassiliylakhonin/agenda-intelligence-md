@@ -7111,6 +7111,76 @@ function validIntakeEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;
 }
 
+function hexBytes(bytes) {
+  return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function cisReviewEmailSignature(secret, timestamp, payload) {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  return hexBytes(await crypto.subtle.sign("HMAC", key, encoder.encode(`${timestamp}.${payload}`)));
+}
+
+async function sendCisReviewEmailNotification(record, env, fetcher = fetch) {
+  const webhookUrl = normalizedIntakeText(env?.CIS_REVIEW_EMAIL_WEBHOOK_URL, 1000);
+  const webhookSecret = normalizedIntakeText(env?.CIS_REVIEW_EMAIL_WEBHOOK_SECRET, 500);
+  if (!webhookUrl || !webhookSecret) return { sent: false, reason: "not_configured" };
+
+  let endpoint;
+  try {
+    endpoint = new URL(webhookUrl);
+  } catch (_error) {
+    return { sent: false, reason: "invalid_url" };
+  }
+  if (endpoint.protocol !== "https:" || endpoint.hostname !== "script.google.com") {
+    return { sent: false, reason: "invalid_url" };
+  }
+
+  try {
+    const payload = JSON.stringify({
+      event: "cis_review_request_received",
+      request: record
+    });
+    const timestamp = String(Date.now());
+    const signature = await cisReviewEmailSignature(webhookSecret, timestamp, payload);
+    const response = await fetcher(endpoint.href, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ timestamp, payload, signature }),
+      redirect: "follow",
+      signal: AbortSignal.timeout(8000)
+    });
+    const responseBody = await response.text();
+    if (!response.ok || responseBody.trim() !== "OK") {
+      throw new Error(`notification rejected with ${response.status}`);
+    }
+    console.log(
+      JSON.stringify({
+        event: "cis_review_email_notification",
+        request_id: record.request_id,
+        status: "sent"
+      })
+    );
+    return { sent: true, reason: null };
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        event: "cis_review_email_notification",
+        request_id: record.request_id,
+        status: "failed",
+        error_type: error instanceof Error ? error.name : "Error"
+      })
+    );
+    return { sent: false, reason: "delivery_failed" };
+  }
+}
+
 async function checkIntakeRateLimit(request, env) {
   const kv = env?.AGENDA_USAGE;
   if (!kv) return { limited: false, limit: 5 };
@@ -7132,7 +7202,7 @@ async function checkIntakeRateLimit(request, env) {
   }
 }
 
-async function handleCisReviewIntake(request, env) {
+async function handleCisReviewIntake(request, env, ctx, notificationFetcher = fetch) {
   const headers = intakeCorsHeaders(request);
   if (agentProfile(request, env) !== "cis_secondary_sanctions") {
     return jsonResponse({ error: "Not found" }, 404, headers);
@@ -7210,6 +7280,13 @@ async function handleCisReviewIntake(request, env) {
   await env.AGENDA_USAGE.put(key, JSON.stringify(record), {
     expirationTtl: CIS_REVIEW_INTAKE_RETENTION_SECONDS
   });
+
+  const notification = sendCisReviewEmailNotification(record, env, notificationFetcher);
+  if (ctx && typeof ctx.waitUntil === "function") {
+    ctx.waitUntil(notification);
+  } else {
+    await notification;
+  }
 
   return jsonResponse(
     {
@@ -7554,7 +7631,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   }
 
   if (url.pathname === CIS_REVIEW_INTAKE_PATH && request.method === "POST") {
-    return handleCisReviewIntake(request, env);
+    return handleCisReviewIntake(request, env, ctx);
   }
 
   if (url.pathname === CIS_REVIEW_INTAKE_PATH && request.method === "GET") {
@@ -7712,6 +7789,7 @@ export {
   funnelStepForPath,
   handleCisReviewIntake,
   handleCisReviewIntakeList,
+  sendCisReviewEmailNotification,
   logFunnelEvent,
   handleJsonRpc,
   handleMcpJsonRpc,

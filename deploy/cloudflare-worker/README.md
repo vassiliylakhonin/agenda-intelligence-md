@@ -408,9 +408,17 @@ what is blocked, evidence already held, the reviewer's request, and deadline. It
 rejects untrusted browser origins and oversized or incomplete requests, includes a
 honeypot field for basic bot filtering, limits each hashed network address to five
 submissions per hour, stores no attachments, and expires each
-record from KV after 30 days. It does not send an email notification; connect an
-onboarded sender domain or another transactional notification transport before
-promising immediate notification.
+record from KV after 30 days. By default, it does not send an email
+notification; the optional relay below must be configured before promising
+email delivery.
+
+An optional Gmail notification relay is available under
+`deploy/google-apps-script/cis-review-email/`. When both
+`CIS_REVIEW_EMAIL_WEBHOOK_URL` and `CIS_REVIEW_EMAIL_WEBHOOK_SECRET` are set as
+Worker secrets, the Worker schedules a signed Google Apps Script webhook after
+KV storage. Delivery failure is logged but never changes the successful intake
+response. The operational email copy contains the same redacted fields; the
+public form must disclose that transfer before the relay is enabled.
 
 For a specific UTC date:
 

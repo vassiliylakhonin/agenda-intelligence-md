@@ -32,6 +32,7 @@ import {
   recordUsageStats,
   robotsTxt,
   routeModules,
+  sendCisReviewEmailNotification,
   signalScreenForText,
   statusInfo,
   triageForText,
@@ -125,6 +126,81 @@ test("CIS review intake stores a validated redacted request with a 30-day retent
   assert.equal(stored.locale, "en");
   assert.equal(stored.source, "cis-secondary-sanctions-service-page");
   assert.ok(Date.parse(stored.retention_until) > Date.parse(stored.submitted_at));
+});
+
+test("CIS review email relay receives a signed redacted payload", async () => {
+  const record = {
+    request_id: "request-123",
+    submitted_at: "2026-08-12T08:00:00.000Z",
+    retention_until: "2026-09-11T08:00:00.000Z",
+    locale: "en",
+    email: "finance@example.com",
+    role_deal_type: "CFO, equipment export",
+    blocked: "Payment release",
+    evidence_held: "Invoice",
+    reviewer_request: "Evidence for ownership and end use",
+    deadline: "Friday",
+    source: "cis-secondary-sanctions-service-page"
+  };
+  const secret = "test-webhook-secret";
+  let receivedEnvelope;
+  const result = await sendCisReviewEmailNotification(
+    record,
+    {
+      CIS_REVIEW_EMAIL_WEBHOOK_URL: "https://script.google.com/macros/s/test-deployment/exec",
+      CIS_REVIEW_EMAIL_WEBHOOK_SECRET: secret
+    },
+    async (_url, options) => {
+      receivedEnvelope = JSON.parse(options.body);
+      return new Response("OK", { status: 200 });
+    }
+  );
+
+  assert.equal(result.sent, true);
+  assert.equal(JSON.parse(receivedEnvelope.payload).request.email, "finance@example.com");
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"]
+  );
+  const signature = Uint8Array.from(receivedEnvelope.signature.match(/.{2}/g), (pair) => Number.parseInt(pair, 16));
+  assert.equal(
+    await crypto.subtle.verify(
+      "HMAC",
+      key,
+      signature,
+      new TextEncoder().encode(`${receivedEnvelope.timestamp}.${receivedEnvelope.payload}`)
+    ),
+    true
+  );
+});
+
+test("CIS review intake succeeds when the email relay rejects the notification", async () => {
+  const kv = new MemoryKv();
+  let backgroundNotification;
+  const originalConsoleError = console.error;
+  console.error = () => {};
+  try {
+    const response = await handleCisReviewIntake(
+      cisIntakeRequest(validCisIntake),
+      {
+        AGENT_PROFILE: "cis_secondary_sanctions",
+        AGENDA_USAGE: kv,
+        CIS_REVIEW_EMAIL_WEBHOOK_URL: "https://script.google.com/macros/s/test-deployment/exec",
+        CIS_REVIEW_EMAIL_WEBHOOK_SECRET: "test-webhook-secret"
+      },
+      { waitUntil(promise) { backgroundNotification = promise; } },
+      async () => new Response("ERROR", { status: 200 })
+    );
+
+    assert.equal(response.status, 201);
+    assert.equal((await backgroundNotification).sent, false);
+    assert.equal([...kv.store.keys()].filter((key) => key.startsWith("intake:cis-review:")).length, 1);
+  } finally {
+    console.error = originalConsoleError;
+  }
 });
 
 test("CIS review intake rejects untrusted origins and missing required fields", async () => {
