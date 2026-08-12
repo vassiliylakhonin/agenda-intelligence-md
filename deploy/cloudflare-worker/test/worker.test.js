@@ -13,6 +13,8 @@ import {
   didDocument,
   entityMap,
   funnelStepForPath,
+  handleCisReviewIntake,
+  handleCisReviewIntakeList,
   handleJsonRpc,
   handleMcpJsonRpc,
   handleRequest,
@@ -82,6 +84,117 @@ class MemoryKv {
     };
   }
 }
+
+function cisIntakeRequest(payload, origin = "https://vassiliylakhonin.github.io") {
+  return new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/intake/cis-review", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin },
+    body: JSON.stringify(payload)
+  });
+}
+
+const validCisIntake = {
+  email: "finance@example.com",
+  role_deal_type: "CFO, equipment export",
+  blocked: "Payment release",
+  evidence_held: "Invoice and a dated OFAC extract",
+  reviewer_request: "Evidence for ownership and end use",
+  deadline: "Friday",
+  locale: "en",
+  consent: true,
+  website: ""
+};
+
+test("CIS review intake stores a validated redacted request with a 30-day retention date", async () => {
+  const kv = new MemoryKv();
+  const response = await handleCisReviewIntake(cisIntakeRequest(validCisIntake), {
+    AGENT_PROFILE: "cis_secondary_sanctions",
+    AGENDA_USAGE: kv
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 201);
+  assert.equal(body.received, true);
+  assert.match(body.request_id, /^[0-9a-f-]{36}$/);
+  const intakeEntries = [...kv.store.entries()].filter(([key]) => key.startsWith("intake:cis-review:"));
+  assert.equal(intakeEntries.length, 1);
+  const [[key, raw]] = intakeEntries;
+  const stored = JSON.parse(raw);
+  assert.match(key, /^intake:cis-review:\d{8}:/);
+  assert.equal(stored.email, "finance@example.com");
+  assert.equal(stored.locale, "en");
+  assert.equal(stored.source, "cis-secondary-sanctions-service-page");
+  assert.ok(Date.parse(stored.retention_until) > Date.parse(stored.submitted_at));
+});
+
+test("CIS review intake rejects untrusted origins and missing required fields", async () => {
+  const kv = new MemoryKv();
+  const badOrigin = await handleCisReviewIntake(cisIntakeRequest(validCisIntake, "https://example.net"), {
+    AGENT_PROFILE: "cis_secondary_sanctions",
+    AGENDA_USAGE: kv
+  });
+  const missingField = await handleCisReviewIntake(
+    cisIntakeRequest({ ...validCisIntake, reviewer_request: "" }),
+    { AGENT_PROFILE: "cis_secondary_sanctions", AGENDA_USAGE: kv }
+  );
+
+  assert.equal(badOrigin.status, 403);
+  assert.equal(missingField.status, 422);
+  assert.equal([...kv.store.keys()].filter((key) => key.startsWith("intake:cis-review:")).length, 0);
+});
+
+test("CIS review intake honeypot returns success without storing spam", async () => {
+  const kv = new MemoryKv();
+  const response = await handleCisReviewIntake(cisIntakeRequest({ ...validCisIntake, website: "spam" }), {
+    AGENT_PROFILE: "cis_secondary_sanctions",
+    AGENDA_USAGE: kv
+  });
+
+  assert.equal(response.status, 202);
+  assert.equal([...kv.store.keys()].filter((key) => key.startsWith("intake:cis-review:")).length, 0);
+});
+
+test("CIS review intake rate-limits the sixth request from one address", async () => {
+  const kv = new MemoryKv();
+  const env = { AGENT_PROFILE: "cis_secondary_sanctions", AGENDA_USAGE: kv };
+  let response;
+  for (let index = 0; index < 6; index += 1) {
+    response = await handleCisReviewIntake(cisIntakeRequest({ ...validCisIntake, email: `cfo${index}@example.com` }), env);
+  }
+  assert.equal(response.status, 429);
+  assert.equal(response.headers.get("retry-after"), "3600");
+});
+
+test("CIS review intake list requires the existing stats token", async () => {
+  const kv = new MemoryKv();
+  await handleCisReviewIntake(cisIntakeRequest(validCisIntake), {
+    AGENT_PROFILE: "cis_secondary_sanctions",
+    AGENDA_USAGE: kv
+  });
+  const unauthorized = await handleCisReviewIntakeList(
+    new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/intake/cis-review"),
+    { AGENT_PROFILE: "cis_secondary_sanctions", AGENDA_USAGE: kv, STATS_TOKEN: "secret" }
+  );
+  const authorized = await handleCisReviewIntakeList(
+    new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/intake/cis-review", {
+      headers: { "x-stats-token": "secret" }
+    }),
+    { AGENT_PROFILE: "cis_secondary_sanctions", AGENDA_USAGE: kv, STATS_TOKEN: "secret" }
+  );
+  const wrongProfile = await handleCisReviewIntakeList(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/intake/cis-review", {
+      headers: { "x-stats-token": "secret" }
+    }),
+    { AGENT_PROFILE: "agenda_intelligence", AGENDA_USAGE: kv, STATS_TOKEN: "secret" }
+  );
+
+  assert.equal(unauthorized.status, 401);
+  assert.equal(authorized.status, 200);
+  assert.equal(wrongProfile.status, 404);
+  const body = await authorized.json();
+  assert.equal(body.count, 1);
+  assert.equal(body.records[0].email, "finance@example.com");
+});
 
 test("profile registry is the single discovery contract source for deployed profiles", () => {
   const deployedProfiles = [

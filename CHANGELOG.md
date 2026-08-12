@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(worker): add a durable redacted intake endpoint for the CIS review service page.** The `cis_secondary_sanctions` Worker now accepts `POST /intake/cis-review` from the portfolio origin, validates a bounded JSON payload, drops honeypot submissions, rate-limits repeated requests, and stores the request in the existing `AGENDA_USAGE` KV namespace with a 30-day TTL. `GET /intake/cis-review` reuses the existing private `STATS_TOKEN` authorization, and `npm run intake` prints retained requests for the operator. Five Worker tests cover storage, validation and origin rejection, honeypot handling, rate limiting, and authenticated retrieval. No email-delivery claim is made: the endpoint persists the request but does not notify until a sender domain or transactional transport is configured.
+
 - **fix(a2a): publish each Worker's JWKS location inside its protected JWS
   header.** Signed Agent Cards now include an RFC 7515 `jku` value derived from
   the card's own HTTPS `supportedInterfaces` origin and pointing to that
