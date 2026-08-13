@@ -1,0 +1,99 @@
+name: Deploy Agent Output Verification
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/deploy-agent-output-verification.yml
+      - deploy/cloudflare-worker/package.json
+      - deploy/cloudflare-worker/scripts/vizier-gated-deploy.js
+      - deploy/cloudflare-worker/src/**
+      - deploy/cloudflare-worker/wrangler.toml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-output-verification-production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test Worker and gate contract
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: deploy/cloudflare-worker
+
+    steps:
+      - name: Checkout the immutable triggering commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Use the tested Node.js runtime
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Verify the immutable main commit
+        shell: bash
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+
+      - name: Test the Worker and deployment gate
+        run: npm test
+
+  deploy:
+    name: Vizier-gated production deploy
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: agent-output-verification-production
+      url: https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev
+
+    defaults:
+      run:
+        working-directory: deploy/cloudflare-worker
+
+    steps:
+      - name: Fresh checkout of the tested commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Use the tested Node.js runtime
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Record the external decision workspace
+        shell: bash
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+          {
+            echo "goal=Deploy Agent Output Verification from main"
+            echo "trusted_evidence=GitHub commit $GITHUB_SHA; repository tests; Vizier receipt"
+            echo "suspected_unreliable_evidence=Caller-supplied authority outside the fixed gate contract"
+            echo "hidden_assumptions=GitHub Environment and Cloudflare token remain administrator-controlled"
+            echo "intended_next_action=Deploy worker:agent-output-verification-a2a only after Vizier ALLOW"
+            echo "stop_or_escalate_if=Dirty checkout, invalid receipt, REVIEW, BLOCK, timeout, or failed tests"
+          } | tee "$RUNNER_TEMP/vizier-decision-workspace.txt"
+
+      - name: Verify with Vizier and deploy
+        env:
+          VIZIER_API_KEY: ${{ secrets.VIZIER_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run deploy:agent-output-verification:gated

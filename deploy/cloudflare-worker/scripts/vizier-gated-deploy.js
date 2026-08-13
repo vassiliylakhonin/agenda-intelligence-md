@@ -8,6 +8,7 @@ const VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev";
 const KEYCHAIN_ACCOUNT = "VIZIER_API_KEY";
 const KEYCHAIN_SERVICE = "com.vizier.gated-deploy";
 const WORKER_TARGET = "worker:agent-output-verification-a2a";
+const WRANGLER_VERSION = "4.122.0";
 const VERIFY_TIMEOUT_MS = 10_000;
 const MAX_RESPONSE_BYTES = 256 * 1024;
 
@@ -232,15 +233,26 @@ async function collectDeployMetadata() {
   return { commit, dirty: worktree.length > 0 };
 }
 
-async function readKeychainSecret() {
-  const secret = await readCommand("/usr/bin/security", [
-    "find-generic-password",
-    "-a",
-    KEYCHAIN_ACCOUNT,
-    "-s",
-    KEYCHAIN_SERVICE,
-    "-w"
-  ]);
+export async function readVizierCredential({ environment = process.env, readKeychain = null } = {}) {
+  const environmentSecret = environment.VIZIER_API_KEY;
+  if (environmentSecret !== undefined) {
+    if (environmentSecret.trim().length === 0) {
+      throw new Error("VIZIER_API_KEY is empty.");
+    }
+    return environmentSecret;
+  }
+  const loadKeychain =
+    readKeychain ??
+    (() =>
+      readCommand("/usr/bin/security", [
+        "find-generic-password",
+        "-a",
+        KEYCHAIN_ACCOUNT,
+        "-s",
+        KEYCHAIN_SERVICE,
+        "-w"
+      ]));
+  const secret = await loadKeychain();
   if (secret.length === 0) {
     throw new Error("Vizier credential is empty in macOS Keychain.");
   }
@@ -252,7 +264,8 @@ function executeWranglerDeploy(receiptId) {
     const child = spawn(
       "npx",
       [
-        "wrangler",
+        "--yes",
+        `wrangler@${WRANGLER_VERSION}`,
         "deploy",
         "--env",
         "agent-output-verification",
@@ -277,7 +290,7 @@ async function main() {
   if (process.argv.length > 2) {
     throw new Error("vizier-gated-deploy does not accept command arguments.");
   }
-  const [metadata, apiKey] = await Promise.all([collectDeployMetadata(), readKeychainSecret()]);
+  const [metadata, apiKey] = await Promise.all([collectDeployMetadata(), readVizierCredential()]);
   const result = await runGatedDeploy({ metadata, apiKey, execute: executeWranglerDeploy });
   console.log(
     JSON.stringify({
