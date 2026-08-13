@@ -105,8 +105,8 @@ Use the profile `--env` deploy commands below only when profile Worker runtime
 behavior changes. Documentation, schema, example, and base profile-route
 changes usually require only the top-level Worker deploy.
 
-The local operator can route the `agent-output-verification` profile deployment
-through Vizier:
+The supported production path for the `agent-output-verification` profile runs
+the same Vizier gate locally or through the protected GitHub Actions environment:
 
 ```bash
 cd deploy/cloudflare-worker
@@ -114,15 +114,21 @@ npm run deploy:agent-output-verification:gated
 ```
 
 The script accepts no arguments. It requires a clean Git commit, reads the
-Vizier integration credential from macOS Keychain service
-`com.vizier.gated-deploy`, and submits the fixed `deploy_worker` action for
-`worker:agent-output-verification-a2a`. Wrangler runs only after a validated
-`ALLOW` receipt. `REVIEW`, `BLOCK`, timeout, malformed output, or a missing
-credential stops the deployment.
+Vizier integration credential from `VIZIER_API_KEY` in CI or macOS Keychain
+service `com.vizier.gated-deploy` locally, and submits the fixed `deploy_worker`
+action for `worker:agent-output-verification-a2a`. Wrangler runs only after a
+validated `ALLOW` receipt. `REVIEW`, `BLOCK`, timeout, malformed output, or a
+missing credential stops the deployment.
 
-This is an operator-side deployment check, not an operating-system security
-boundary. A process with unrestricted shell access and Cloudflare credentials
-can still invoke Wrangler directly.
+The GitHub workflow uses the `agent-output-verification-production` Environment,
+which is restricted to `main`. Its `VIZIER_API_KEY`, `CLOUDFLARE_API_TOKEN`, and
+`CLOUDFLARE_ACCOUNT_ID` secrets are available only to the deployment job. The
+Cloudflare token must carry only the account-scoped `Workers Scripts Write`
+permission. A relevant push to `main` runs the gate automatically; an operator
+can also start it with `workflow_dispatch`. An administrator who can rewrite
+workflows, change Environment rules, or mint Cloudflare credentials can still
+bypass this application-level gate; autonomous agents should receive neither
+that authority nor local Cloudflare credentials.
 
 ### Agenstry domain-ownership proof
 

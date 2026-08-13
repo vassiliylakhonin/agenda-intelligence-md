@@ -4,6 +4,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(worker tooling): require the Vizier gate in GitHub Actions before the
+  Agent Output Verification production deploy.** A secret-free job tests an
+  immutable `main` commit first. A fresh protected job then records its external
+  decision workspace, validates a Vizier `ALLOW` receipt bound to that commit and
+  fixed Worker target, and invokes pinned Wrangler. Deployment credentials live
+  in a branch-restricted GitHub Environment; local Keychain operation stays
+  available. Repository and Cloudflare administrators remain able to bypass the
+  application-level gate and must not be delegated to action-taking agents.
+
 - **feat(worker): add an optional signed Gmail notification after CIS review intake.** The Worker can now schedule a timestamped HMAC-SHA-256 webhook after KV storage, while keeping email delivery outside the form's success path. A Google Apps Script relay verifies the signature, suppresses duplicate request IDs, and sends the redacted request to the operator's Gmail. Both the deployment URL and shared secret remain encrypted Worker secrets.
 
 - **feat(worker): add a durable redacted intake endpoint for the CIS review service page.** The `cis_secondary_sanctions` Worker now accepts `POST /intake/cis-review` from the portfolio origin, validates a bounded JSON payload, drops honeypot submissions, rate-limits repeated requests, and stores the request in the existing `AGENDA_USAGE` KV namespace with a 30-day TTL. `GET /intake/cis-review` reuses the existing private `STATS_TOKEN` authorization, and `npm run intake` prints retained requests for the operator. Five Worker tests cover storage, validation and origin rejection, honeypot handling, rate limiting, and authenticated retrieval. Intake storage remains independent from the optional notification transport.
