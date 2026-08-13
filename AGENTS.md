@@ -54,6 +54,8 @@ Current classification is `portfolio-proof` plus `build-to-learn`. There is no a
 
 Before adding or improving a buyer-facing surface, public listing, new vertical worker, pilot page, outreach copy, or monetization path, run the market gate: economic buyer, painful trigger this month, current workaround, observed evidence, inference, kill criteria, smallest 30-day test, and classification as `build-to-learn`, `build-to-earn`, `portfolio-proof`, `public-positioning`, or `internal-ops`.
 
+The gate has an exit, and the exit is a person. A gate run is finished only when it names the next action toward a named human outside this portfolio — who is approached, through which channel, and which past-behaviour question is asked ("who produces this for you today, and what does a comparable piece cost"). A classification on its own does not finish it: the sibling repos route every commercial request here, so a gate that ends in a verdict is where commercial work stops rather than where it starts. When the honest outcome is that no such person can be named yet, record that as the gate's result — it is a finding about the wedge, not a pass.
+
 The shipped workers, the artifact ladder to try before adding another, and the hard requirements for a new one are in [`docs/vertical-workers.md`](docs/vertical-workers.md). Do not add a worker because a domain is interesting or because the runtime can support it.
 
 ## Geography routing
