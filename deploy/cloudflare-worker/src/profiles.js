@@ -247,14 +247,13 @@ const cisSecondarySanctionsProfile = Object.freeze({
     "A2A/JSON-RPC discovery, CIS secondary-sanctions exposure triage, active server-side name matching against a dated public-list snapshot rebuilt on an operator cadence, not a live list feed (Snapshot upstream; Watchman / OpenSanctions alternates), and routing response only",
   supported_contracts: frozenArray(["cis_secondary_sanctions_exposure_contract"]),
   buyer_use_cases: frozenArray([
-    "EU / UK / UAE / Singapore enhanced due diligence on CIS counterparties",
-    "OFAC EO 14114 secondary-sanctions exposure triage before screening",
-    "EU sanctions package transit / re-export risk triage",
-    "UK OFSI alignment for CIS-facing trade-finance files",
-    "FATF / EAG typology mapping for CIS-domiciled entities"
+    "exporter or importer preparing a returned trade file for resubmission",
+    "trader or freight forwarder responding to bank, counsel, insurer, or compliance questions",
+    "finance lead documenting missing evidence before the next human review",
+    "pre-shipment file preparation scoped separately from the returned-file pilot"
   ]),
   commercial_positioning:
-    "CIS / Caucasus / Central Asia counterparty + exposure facets + dated source extracts -> auditable secondary-sanctions exposure triage with optional sanctions-list name matches (when a list upstream is configured), evidence gaps, decision-readiness score, and mandatory human-review escalation.",
+    "Structured API triage for caller-supplied CIS / Caucasus / Central Asia counterparty evidence, with optional public-list name matches, evidence gaps, exposure dimensions, and mandatory human review. The separate browser intake accepts redacted context from the exporter, importer, trader, freight forwarder, or finance lead who owns the file and routes it to person-led file preparation. The USD 99 pilot applies only to a returned file; pre-deal work is quoted separately. No sanctions clearance or transaction approval.",
   focus: frozenArray([
     "CIS counterparty secondary-sanctions exposure triage",
     "Public-list snapshot name matching (OFAC SDN / EU / UK)",

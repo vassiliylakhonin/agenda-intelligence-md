@@ -63,7 +63,7 @@ const PROFILE_TOOLS = {
     summary:
       "Triage secondary-sanctions exposure for a CIS-domiciled counterparty against OFAC EO 14114, the EU " +
       "sanctions package, UK OFSI, and FATF / EAG typologies. Returns a triage recommendation, exposure " +
-      "dimensions, decision-readiness score, and the missing evidence. A name match is not identity verification."
+      "dimensions, missing evidence, and mandatory human-review routing. A name match is not identity verification."
   },
   agentic_interaction_trust: {
     name: "agentic_interaction_trust",

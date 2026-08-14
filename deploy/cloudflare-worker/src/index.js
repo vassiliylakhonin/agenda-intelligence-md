@@ -2205,6 +2205,11 @@ const PROVIDER_FRONT_DOOR_POINTER =
   "(https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev) for plain-language orientation and a " +
   "free one-off pre-deal screening memo.";
 
+const CIS_FILE_PREPARATION_POINTER =
+  " For person-led preparation of a company-owned trade file, use the redacted intake at " +
+  "https://vassiliylakhonin.github.io/cis-secondary-sanctions.html. The USD 99 pilot applies only to a returned " +
+  "file; pre-deal work is quoted separately.";
+
 const CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE =
   "Orientation and routing only. Not legal, compliance, sanctions, financial, investment, or insurance advice, " +
   "and not an autonomous decision system. The structured gates perform the triage; human review is required before " +
@@ -2413,19 +2418,19 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
     (gleifEnabled(env)
       ? "auto-fetched disclosed LEI ownership (direct / ultimate parent, via GLEIF), "
       : "") +
-    "structured triage, evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review routing. " +
+    "structured evidence gaps, exposure dimensions, and mandatory human-review routing. " +
     (activeOption
       ? ""
       : "Sanctions-list name-match (Snapshot public-list snapshot, or Watchman / OpenSanctions) is wired but disabled in this deployment, which runs on user-supplied evidence only. ") +
-    "Targets enhanced due diligence in EU / UK / UAE / Singapore institutions screening counterparties against OFAC EO 14114, EU sanctions package, UK OFSI, and FATF / EAG typologies." +
-    PROVIDER_FRONT_DOOR_POINTER;
+    "The separate browser intake is for the exporter, importer, trader, freight forwarder, or finance lead who owns the file. It accepts redacted context and routes it to person-led file preparation, not a compliance determination." +
+    CIS_FILE_PREPARATION_POINTER;
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
       id: "cis-secondary-sanctions-exposure",
       name: "CIS secondary-sanctions exposure triage",
       description:
-        "Turns a CIS / Caucasus / Central Asia counterparty + exposure facets + dated source extracts into a structured secondary-sanctions exposure triage with server-side name matches against a public-list snapshot (Snapshot upstream, with Watchman / OpenSanctions as alternates), evidence gaps, decision-readiness score, exposure dimensions, and mandatory human-review escalation. When ownership enrichment is enabled, it also auto-fetches disclosed LEI ownership (direct / ultimate parent) from GLEIF (CC0) as ownership evidence — disclosed relationships only. Name matches are possible string matches, not identity verification or a determination. It is an evidence-discipline and documented-determination layer beside a screening or ownership-resolution tool, not a replacement; it does not traverse multi-layer beneficial-ownership graphs.",
+        "Turns a CIS / Caucasus / Central Asia counterparty, exposure facets, and dated source extracts into structured evidence gaps, exposure dimensions, and mandatory human-review routing, with server-side name matches against a public-list snapshot (Snapshot upstream, with Watchman / OpenSanctions as alternates). When ownership enrichment is enabled, it also fetches disclosed LEI ownership (direct / ultimate parent, via GLEIF) as ownership evidence. Name matches are possible string matches, not identity verification or a determination. The API sits beside a screening or ownership-resolution tool and does not traverse multi-layer beneficial-ownership graphs.",
       tags: [
         "cis",
         "kazakhstan",
