@@ -1861,6 +1861,31 @@ test("usage analytics keeps the caller network and user agent for unrecognised c
   assert.equal(event.ip, undefined);
 });
 
+test("every landing page offers a human a way to make contact", () => {
+  // The agent card always carried `support.email`, so machines could reach a
+  // person. The HTML page could not — measured 2026-08-14 across all eight
+  // profiles, which made every human visit a dead end.
+  for (const host of [
+    "agenda-intelligence-a2a",
+    "cis-secondary-sanctions-a2a",
+    "middle-corridor-deal-risk-gate-a2a",
+    "agent-output-verification-a2a"
+  ]) {
+    const html = landingHtml(new Request(`https://${host}.example.workers.dev/`), {});
+    assert.ok(html.includes("Talk to a person"), `${host}: no contact section`);
+    assert.ok(html.includes("mailto:vassiliy.lakhonin@gmail.com"), `${host}: no email`);
+    assert.ok(html.includes("https://vassiliylakhonin.github.io"), `${host}: no provider link`);
+  }
+});
+
+test("the contact link names the profile so replies can be attributed", () => {
+  const html = landingHtml(new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/"), {
+    AGENT_PROFILE: "cis_secondary_sanctions"
+  });
+
+  assert.ok(html.includes("subject=CIS%20Secondary-Sanctions%20Exposure"));
+});
+
 test("funnel events cover the steps before a call and skip operational noise", () => {
   const step = (path) =>
     funnelStepForPath(new URL(`https://cis-secondary-sanctions-a2a.example.workers.dev${path}`).pathname);

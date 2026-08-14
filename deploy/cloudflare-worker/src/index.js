@@ -67,6 +67,11 @@ import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 const AGENSTRY_VERIFICATION_PATH = "/.well-known/agenstry-verify";
 const CIS_REVIEW_INTAKE_PATH = "/intake/cis-review";
 const CIS_REVIEW_INTAKE_ORIGIN = "https://vassiliylakhonin.github.io";
+// The agent card already carries the contact under `support`, so machines could
+// always find a person. The HTML landing page could not: measured 2026-08-14,
+// none of the eight profiles offered a human any way to make contact, which made
+// every human visit a dead end.
+const PROVIDER_SITE_URL = "https://vassiliylakhonin.github.io";
 const CIS_REVIEW_INTAKE_RETENTION_SECONDS = 30 * 24 * 60 * 60;
 const CIS_REVIEW_INTAKE_MAX_BYTES = 16 * 1024;
 
@@ -7608,6 +7613,13 @@ function landingHtml(request, env) {
     <li>Install: <a href="${PACKAGE_URL}">PyPI — agenda-intelligence-md</a></li>
     <li>Agenstry listing: <a href="${agenstryListing}">${agenstryListing.replace("https://", "")}</a></li>
     <li>${isKazakhstan ? `Use case: <a href="${MIDDLE_CORRIDOR_DOCS_URL}">Kazakhstan / Middle Corridor</a>` : `Docs: <a href="${DOCS_URL}">MCP integration</a>`}</li>
+  </ul>
+
+  <h2>Talk to a person</h2>
+  <p>${escapeHtml(SUPPORT_HOURS_LOCAL)}. If you have a live file, say what decision it feeds and when it is due — that is enough to start.</p>
+  <ul>
+    <li><span class="label">Email:</span> <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent(card.name)}">${SUPPORT_CONTACT_EMAIL}</a></li>
+    <li><span class="label">Who runs this:</span> <a href="${PROVIDER_SITE_URL}">${PROVIDER_SITE_URL.replace("https://", "")}</a></li>
   </ul>
 
   <footer>
