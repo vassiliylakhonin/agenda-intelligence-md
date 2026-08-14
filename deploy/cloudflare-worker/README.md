@@ -105,6 +105,21 @@ Use the profile `--env` deploy commands below only when profile Worker runtime
 behavior changes. Documentation, schema, example, and base profile-route
 changes usually require only the top-level Worker deploy.
 
+To deploy everything at once, use the script rather than a hand-rolled loop:
+
+```bash
+cd deploy/cloudflare-worker
+npm run deploy:all            # seven envs plainly, the gated one through Vizier
+npm run deploy:all -- --check # verify only, deploy nothing
+```
+
+It ends by reading the live deployment list for `agent-output-verification` and
+fails if the newest deployment carries no ALLOW receipt. That is detection, not
+prevention — anyone can still call wrangler directly — but the drift is then
+reported instead of going unnoticed. Observed 2026-08-14: a manual "deploy all
+eight" loop overwrote two gated deployments with ungated ones within ninety
+seconds of each, leaving the live version without a receipt.
+
 The supported production path for the `agent-output-verification` profile runs
 the same Vizier gate locally or through the protected GitHub Actions environment:
 

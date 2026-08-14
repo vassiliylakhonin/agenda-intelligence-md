@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "deploy:agent-output-verification:gated": "node scripts/vizier-gated-deploy.js",
+    "deploy:all": "node scripts/deploy-all.js",
     "funnel": "node scripts/funnel.js",
     "generate:okf": "node scripts/generate-okf-content.js",
     "intake": "node scripts/intake.js",
