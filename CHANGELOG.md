@@ -4,6 +4,27 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(worker discovery): two directory listings showed a bare name because
+  the origin root carries no description.** `GET /` returned a link index —
+  `ok`, `name`, `version`, and pointers to every discovery document. Directories
+  that register the root as the card URL and never follow `agent_card` therefore
+  had nothing to copy.
+
+  Observed 2026-08-14 on agent-tools.cloud, which lists three of the workers.
+  The entry whose `card_url` pointed at `/.well-known/agent-card.json` read
+  correctly: description, provider, skills, conformance `pass`. The two whose
+  `card_url` was the origin root came back `description: null`,
+  `provider_name: null`, `skills: []`, conformance `partial`, and had
+  `protocol_version` filled from the card `version` (`1.2.0`) because the root
+  JSON offers nothing better. Their public entries were a name and nothing else.
+
+  The root now repeats `description`, `provider`, `documentation_url`, and a
+  compact `skills` list (id, name, description) alongside the existing keys. All
+  previous fields and links are unchanged, so nothing that reads the root today
+  breaks. Additive only: no schema, endpoint, profile, or response change.
+  Worker suite 187/187. **Activation:** redeploy each published env; directories
+  pick it up on their next crawl.
+
 - **fix(worker landing): the HTML page gave a human no way to make contact.**
   The agent card has always carried `support.email` and `support_hours`, so any
   machine reading the card could find a person. The landing page served to

@@ -1861,6 +1861,26 @@ test("usage analytics keeps the caller network and user agent for unrecognised c
   assert.equal(event.ip, undefined);
 });
 
+test("the origin root carries the descriptive fields a directory copies", () => {
+  // Directories that register the root as the card URL never follow the
+  // agent_card link, and their public entry ends up as a bare name. Observed
+  // 2026-08-14 on agent-tools.cloud for two of the listed workers.
+  for (const profile of ["agenda", "corridor_sanctions_assistant", "cis_secondary_sanctions"]) {
+    const info = healthInfo(new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/"), {
+      AGENT_PROFILE: profile
+    });
+
+    assert.ok(info.description && info.description.length > 80, `${profile}: root has no usable description`);
+    assert.ok(info.provider?.organization, `${profile}: root names no provider`);
+    assert.ok(Array.isArray(info.skills) && info.skills.length > 0, `${profile}: root declares no skills`);
+    for (const skill of info.skills) {
+      assert.ok(skill.id && skill.name, `${profile}: skill entry missing id or name`);
+    }
+    // The links stay: a crawler that does follow them must still find them.
+    assert.match(info.agent_card, /\/\.well-known\/agent-card\.json$/);
+  }
+});
+
 test("every landing page offers a human a way to make contact", () => {
   // The agent card always carried `support.email`, so machines could reach a
   // person. The HTML page could not — measured 2026-08-14 across all eight
