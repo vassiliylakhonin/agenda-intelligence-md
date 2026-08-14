@@ -3962,3 +3962,25 @@ test("mcp server card advertises the hosted streamable-http transport", () => {
   assert.deepEqual(hosted.tools, ["agent_output_verification", "pre_action_check"]);
   assert.equal(card.transport.type, "stdio");
 });
+
+test("deploy drift check reads only the newest deployment", async () => {
+  const { newestReceipt } = await import("../scripts/deploy-all.js");
+
+  // Shape of `wrangler deployments list`, oldest first. This is the real
+  // 2026-08-14 sequence: the gate ran, then a plain deploy overwrote it.
+  const drifted = [
+    "Created:     2026-08-14T05:43:30.490Z",
+    "Message:     Vizier ALLOW receipt vrf_a281519b",
+    "Created:     2026-08-14T05:44:29.457Z",
+    "Message:     -"
+  ].join("\n");
+  assert.equal(newestReceipt(drifted), null, "a superseded receipt must not count as live");
+
+  const clean = [
+    "Created:     2026-08-14T05:44:29.457Z",
+    "Message:     -",
+    "Created:     2026-08-14T06:22:24.359Z",
+    "Message:     Vizier ALLOW receipt vrf_6bf1ffee"
+  ].join("\n");
+  assert.equal(newestReceipt(clean), "vrf_6bf1ffee");
+});

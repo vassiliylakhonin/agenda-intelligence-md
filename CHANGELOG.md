@@ -4,6 +4,27 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(deploy): a manual deploy loop overwrote two Vizier-gated deployments.**
+  On 2026-08-14 the `agent-output-verification` worker was shipped four times:
+  the protected workflow deployed it at 05:23:51 and 05:43:30, each carrying an
+  ALLOW receipt, and a hand-rolled "deploy all eight" loop overwrote both at
+  05:25:20 and 05:44:29 with plain `wrangler deploy --env`. Same commit, so the
+  running code never diverged — but the live version lost its receipt, which is
+  the whole reason the gate exists. The trail was restored by dispatching the
+  workflow (`vrf_6bf1ffee-29d8-4566-b2ff-2e9b3e75039f`).
+
+  `npm run deploy:all` now ships the seven ungated envs plainly and routes
+  `agent-output-verification` through `deploy:agent-output-verification:gated`,
+  refusing to fall back to a direct deploy if the gate declines. It finishes by
+  reading the live deployment list and failing when the newest deployment has no
+  receipt — detection rather than prevention, since wrangler remains callable
+  directly, but the drift is then reported rather than silent.
+
+  The receipt check reads only the final block of `wrangler deployments list`:
+  a receipt earlier in the list is exactly the overwritten case, so scanning the
+  whole output would have reported success on the drifted worker. A unit test
+  covers both sequences. Worker suite 188/188.
+
 - **fix(worker discovery): two directory listings showed a bare name because
   the origin root carries no description.** `GET /` returned a link index —
   `ok`, `name`, `version`, and pointers to every discovery document. Directories
