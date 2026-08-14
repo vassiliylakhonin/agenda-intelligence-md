@@ -4,6 +4,11 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(CIS discovery): align the public Worker metadata with the paid file-preparation intake.** The CIS card and
+  MCP summary now route exporters, importers, traders, freight forwarders, and finance leads who own the file to
+  the redacted intake. The public description no longer targets institutional compliance teams, advertises a free
+  pre-deal memo, or leads with the internal readiness score. The structured API contract and response are unchanged.
+
 - **fix(deploy): a manual deploy loop overwrote two Vizier-gated deployments.**
   On 2026-08-14 the `agent-output-verification` worker was shipped four times:
   the protected workflow deployed it at 05:23:51 and 05:43:30, each carrying an

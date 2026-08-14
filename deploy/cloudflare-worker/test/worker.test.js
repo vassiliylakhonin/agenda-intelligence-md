@@ -2595,6 +2595,12 @@ test("cis_secondary_sanctions profile is detected from host and env", () => {
   assert.equal(card.name, "CIS Secondary-Sanctions Exposure");
   assert.ok(Array.isArray(card.skills) && card.skills.length === 1);
   assert.equal(card.skills[0].id, "cis-secondary-sanctions-exposure");
+  assert.match(card.description, /exporter, importer, trader, freight forwarder, or finance lead/);
+  assert.match(card.description, /vassiliylakhonin\.github\.io\/cis-secondary-sanctions\.html/);
+  assert.doesNotMatch(card.description, /free one-off pre-deal screening memo/);
+  assert.doesNotMatch(card.description, /Targets enhanced due diligence/);
+  assert.doesNotMatch(card.description, /decision-readiness score/);
+  assert.doesNotMatch(card.skills[0].description, /decision-readiness score/);
   assert.equal(card.x_agenda_intelligence.live_retrieval.capability_declared, true);
   // Without SNAPSHOT_INDEX_URL, WATCHMAN_URL, or OPENSANCTIONS_API_KEY in env,
   // activation is deferred per ADR 0014 / ADR 0020.
