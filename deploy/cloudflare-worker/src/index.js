@@ -7341,6 +7341,22 @@ function healthInfo(request, env) {
   return {
     ok: true,
     name: card.name,
+    // Some directories register the origin root as the card URL and never
+    // follow the agent_card link below. Observed 2026-08-14 on
+    // agent-tools.cloud: two of the listed workers had card_url set to the
+    // root, so their public entries carried a name, a version and nothing
+    // else — no description, no provider, no skills — while the one entry
+    // whose card_url pointed at /.well-known/agent-card.json read correctly.
+    // Repeating the descriptive fields here costs a few hundred bytes and
+    // makes the root usable by a crawler that stops at it.
+    description: card.description,
+    provider: card.provider,
+    documentation_url: card.documentationUrl,
+    skills: (card.skills || []).map((skill) => ({
+      id: skill.id,
+      name: skill.name,
+      description: skill.description
+    })),
     version: VERSION,
     profile: agentProfile(request, env),
     ai_catalog: `${origin}/.well-known/ai-catalog.json`,
