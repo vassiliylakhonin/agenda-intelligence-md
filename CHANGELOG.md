@@ -4,6 +4,27 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(worker landing): the HTML page gave a human no way to make contact.**
+  The agent card has always carried `support.email` and `support_hours`, so any
+  machine reading the card could find a person. The landing page served to
+  browsers carried neither. Measured 2026-08-14 across all eight live profiles:
+  no mailto, no provider link, no contact of any kind — a human who arrived
+  could read the page and nothing else. Three weeks of funnel instrumentation
+  recorded a handful of such visits a week and no calls, and this is at least
+  part of why: there was no next step to take.
+
+  The page now ends with a short contact block using the existing
+  `SUPPORT_CONTACT_EMAIL` and `SUPPORT_HOURS_LOCAL` constants, plus a link to
+  the provider site already declared in the card. The mailto subject carries the
+  profile name, so a reply can be attributed to the page that produced it —
+  which also makes this the first place where machine discovery could turn into
+  something countable.
+
+  Presentation only: no schema, endpoint, profile, or response change, and no
+  new claim about the product. Two tests assert every profile's page carries the
+  contact and that the subject names the profile. Worker suite 186/186.
+  **Activation:** redeploy each published env.
+
 - **feat(worker tooling): require the Vizier gate in GitHub Actions before the
   Agent Output Verification production deploy.** A secret-free job tests an
   immutable `main` commit first. A fresh protected job then records its external
