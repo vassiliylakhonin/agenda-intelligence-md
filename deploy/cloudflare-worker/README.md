@@ -332,13 +332,26 @@ This checks:
 - `/profiles/confidential-project-room/redacted-example.json`
 - `/robots.txt`
 
-Required user-agents are `curl/8.0`, a browser-like agent-readiness probe, `OAI-SearchBot`, and `GPTBot`. `Python-urllib/3.9` is diagnostic by default because Cloudflare Browser Integrity Check can block it before the Worker runs with `error code: 1010`. To make Python urllib a hard failure:
+Required user-agents are `curl/8.0`, a browser-like agent-readiness probe, `OAI-SearchBot`, and `GPTBot`. `Python-urllib/3.9` and `libwww-perl/6.72` are diagnostic, because Cloudflare blocks both by user-agent on `*.workers.dev` before the Worker runs. To make Python urllib a hard failure:
 
 ```bash
 npm run verify:agent-discovery -- --strict-python
 ```
 
-If `Python-urllib/3.9` returns Cloudflare `1010`, fix it in Cloudflare security settings or with a security skip rule. The Worker handler cannot override a request that Cloudflare blocks before execution.
+### What the `error code: 1010` block actually is
+
+Measured 2026-08-18 against `gulf-maritime-exposure-a2a`, one request per client, same URL and body:
+
+| Client user-agent | Result |
+| --- | --- |
+| `Python-urllib/3.14`, `Python-urllib/2.1`, `libwww-perl/6.72` | 403, `error code: 1010` |
+| `curl/8.7.1`, no user-agent header at all, `python-requests/2.32.3`, `python-httpx/0.27.0`, `node`, `Go-http-client/2.0`, `axios/1.7.2`, `Java/17.0.1`, `okhttp/4.12.0`, `PostmanRuntime/7.39`, `Wget/1.24` | 200 |
+
+It is the user-agent string alone: `curl` sending `-A 'Python-urllib/3.14'` is blocked, and Python urllib sending `User-Agent: curl/8.7.1` is served. A request marked with a unique query parameter and the urllib user-agent produced **no** Workers Logs event, while the same URL over curl did — the block happens at Cloudflare's edge, before the Worker executes, so no handler change can answer it.
+
+It is also not ours to switch off. Browser Integrity Check and WAF skip rules are zone settings; `workers.dev` is Cloudflare's zone, and this account holds no zones of its own (`GET /zones` returns 0). The only remedy that removes the block is putting these Workers on a custom domain in a zone we control.
+
+Practical exposure is narrow: every mainstream HTTP client passes, including a request with no user-agent at all. A caller stuck on stdlib `urllib` only has to set any user-agent header. Both Python clients in this repo — `upstream_opensanctions.py` and `cli.py` — already send an explicit one.
 
 ## Usage analytics
 

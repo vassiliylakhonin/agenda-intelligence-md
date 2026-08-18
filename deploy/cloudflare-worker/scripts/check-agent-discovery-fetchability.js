@@ -23,7 +23,8 @@ const userAgents = [
   { label: "browser-like", value: "Mozilla/5.0 AgentReadinessTest/1.0", required: true },
   { label: "OAI-SearchBot", value: "OAI-SearchBot", required: true },
   { label: "GPTBot", value: "GPTBot", required: true },
-  { label: "Python urllib", value: "Python-urllib/3.9", required: strictPython }
+  { label: "Python urllib", value: "Python-urllib/3.9", required: strictPython },
+  { label: "libwww-perl", value: "libwww-perl/6.72", required: false }
 ];
 
 async function fetchWithUserAgent(url, userAgent) {
@@ -83,10 +84,10 @@ for (const path of paths) {
 
 if (warnings) {
   console.log(
-    "\nWarnings are expected when Cloudflare Browser Integrity Check blocks simple script clients such as Python urllib before the Worker runs."
+    "\nWarnings are expected: Cloudflare blocks `Python-urllib/*` and `libwww-perl/*` by user-agent on *.workers.dev, before the Worker runs."
   );
   console.log(
-    "If Python urllib must be supported, disable Browser Integrity Check or add a Cloudflare security skip rule at the zone/account layer; Worker code cannot override Cloudflare 1010 blocks."
+    "Measured 2026-08-18: it is the user-agent string alone — curl sending a urllib user-agent is blocked, urllib sending a curl one is served, and a blocked request writes no Workers Logs event. Worker code cannot answer a request Cloudflare stops at the edge, and the skip rule that would lift it is a zone setting this account has no zone for. Removing it means a custom domain."
   );
 }
 
