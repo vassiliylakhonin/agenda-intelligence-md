@@ -6,6 +6,7 @@ import {
   aiCatalog,
   apiCatalog,
   agentCard,
+  GATE_REQUEST_GUIDES,
   buildUsageEvent,
   callOutcome,
   checkRateLimit,
@@ -3989,4 +3990,65 @@ test("deploy drift check reads only the newest deployment", async () => {
     "Message:     Vizier ALLOW receipt vrf_6bf1ffee"
   ].join("\n");
   assert.equal(newestReceipt(clean), "vrf_6bf1ffee");
+});
+
+// Measured 2026-08-18 on the live workers: a plain-language probe made five of
+// the eight gates answer TASK_STATE_FAILED with `artifacts: []` — no required
+// field, no example, no human to write to. The refusal is correct; the silence
+// was not. Both halves are asserted here, including that the example shipped in
+// the refusal is one the same gate accepts.
+test("a gate that refuses a request says what it needs, and its own example works", async () => {
+  const gates = [
+    ["cis_secondary_sanctions", "cis_secondary_sanctions"],
+    ["agentic_interaction_trust", "agentic_interaction_trust"],
+    ["agent_output_verification", "agent_output_verification"],
+    ["gulf_maritime_exposure", "gulf_maritime_exposure"],
+    ["kazakhstan_market_entry_readiness", "market_entry_readiness"]
+  ];
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    for (const [productProfile, envProfile] of gates) {
+      const rpcRequest = new Request("https://gate.example.workers.dev/message/send", {
+        method: "POST",
+        headers: { "content-type": "application/json" }
+      });
+      const send = (parts) =>
+        handleJsonRpc(
+          {
+            jsonrpc: "2.0",
+            id: `guidance-${productProfile}`,
+            method: "message/send",
+            params: { message: { messageId: `m-${productProfile}`, role: "ROLE_USER", parts } }
+          },
+          rpcRequest,
+          { AGENT_PROFILE: envProfile }
+        );
+
+      const refused = (await send([{ kind: "text", text: "hi" }])).result;
+      assert.equal(refused.status.state, "TASK_STATE_FAILED");
+      assert.equal(refused.metadata.product_profile, productProfile);
+
+      const artifact = refused.artifacts[0];
+      assert.ok(artifact, `${productProfile} must return guidance, not an empty artifacts[]`);
+      const [markdown, json] = artifact.parts;
+      assert.equal(markdown.mediaType, "text/markdown");
+      assert.match(markdown.text, /## What it needs/);
+      assert.match(markdown.text, /## A request that works/);
+      assert.match(markdown.text, /corridor-sanctions-assistant-a2a/);
+      assert.match(markdown.text, /vassiliy\.lakhonin@gmail\.com/);
+      assert.ok(json.data.required_fields.length > 0);
+      assert.deepEqual(json.data.example_request, GATE_REQUEST_GUIDES[productProfile].example);
+      assert.deepEqual(refused.metadata.example_request, GATE_REQUEST_GUIDES[productProfile].example);
+
+      const accepted = (await send([{ data: GATE_REQUEST_GUIDES[productProfile].example }])).result;
+      assert.equal(
+        accepted.status.state,
+        "TASK_STATE_COMPLETED",
+        `${productProfile} rejected the example it hands out: ${JSON.stringify(accepted.metadata?.errors)}`
+      );
+    }
+  } finally {
+    console.log = originalLog;
+  }
 });

@@ -2674,12 +2674,218 @@ function agenticEnumErrors(r) {
   return errors;
 }
 
+// A caller who pokes a structured gate with a plain-language question — a
+// directory crawler, another agent, or a human with curl — used to get
+// TASK_STATE_FAILED with an empty artifacts[] and a schema filename. Measured
+// 2026-08-18 against the live workers: five of the eight gates answered that
+// way to every probe, and the reply named no required field, carried no
+// example, and pointed at no human. The gate still refuses the request; it now
+// says what it needs, shows one request that works, and names the front door.
+const GATE_REQUEST_GUIDES = Object.freeze({
+  cis_secondary_sanctions: {
+    title: "CIS Secondary-Sanctions Exposure Gate",
+    required: [
+      "counterparty — object with name and jurisdiction",
+      "exposure_facets — array, e.g. ownership_or_control, transit_or_re_export",
+      "dated_sources — array of { id, source_type, title, date }",
+      "risk_question — one sentence naming the decision",
+      "decision_stage — onboarding, periodic_review, pre_transaction, post_alert, committee_review, other"
+    ],
+    example: {
+      counterparty: { name: "Example Trading LLP", jurisdiction: "KZ", sector: "trading_house" },
+      exposure_facets: ["ownership_or_control", "transit_or_re_export"],
+      dated_sources: [
+        { id: "cis-1", source_type: "ofac_sdn_extract", title: "OFAC SDN extract", date: "2026-08-01" },
+        { id: "cis-2", source_type: "ownership_chain_evidence", title: "Ownership chain memo", date: "2026-08-04" }
+      ],
+      risk_question: "Is this counterparty ready for onboarding review under secondary-sanctions exposure?",
+      decision_stage: "onboarding"
+    }
+  },
+  agentic_interaction_trust: {
+    title: "Agentic Interaction Trust Gate",
+    required: [
+      "actor — object with declared_type and declared_name",
+      "target_surface — checkout, account, api, mcp_tool, a2a_endpoint, content_or_catalog, auth_flow, support_or_messaging, other",
+      "requested_action — what the actor is asking to do",
+      "dated_sources — array of { id, source_type, title, date }",
+      "risk_question — one sentence naming the decision",
+      "decision_stage — pre_execution, in_session, post_alert, policy_review, committee_review, other"
+    ],
+    example: {
+      actor: {
+        declared_type: "ai_agent",
+        declared_name: "Example Shopping Agent",
+        operator: "Example Consumer",
+        authentication_context: "session_cookie"
+      },
+      target_surface: "checkout",
+      requested_action: "complete purchase of two restricted-delivery items",
+      dated_sources: [
+        { id: "ait-1", source_type: "agent_identity_claim", title: "Declared agent identity header", date: "2026-08-01" },
+        { id: "ait-2", source_type: "session_authentication_evidence", title: "Authenticated checkout session", date: "2026-08-01" }
+      ],
+      risk_question: "Is this agent-mediated checkout ready to allow, step up, or route to human review?",
+      decision_stage: "pre_execution"
+    }
+  },
+  agent_output_verification: {
+    title: "Agent Output Verification Gate",
+    required: [
+      "claims — non-empty array of { claim_id, claim, support_level, evidence_ids }",
+      "support_level — direct, partial, weak, unsupported",
+      "evidence — array of { evidence_id, title, date }"
+    ],
+    example: {
+      claims: [
+        {
+          claim_id: "c1",
+          claim: "The counterparty is not on the OFAC SDN list as of 2026-08-01.",
+          support_level: "direct",
+          evidence_ids: ["e1"]
+        }
+      ],
+      evidence: [{ evidence_id: "e1", title: "OFAC SDN extract", date: "2026-08-01" }]
+    }
+  },
+  gulf_maritime_exposure: {
+    title: "Gulf Maritime Exposure Gate",
+    required: [
+      "voyage — object, chokepoint one of strait_of_hormuz, persian_gulf, gulf_of_oman, bab_el_mandeb, red_sea, suez_canal, other",
+      "exposure_facets — array, e.g. dark_fleet_indicators, insurance_or_pi_gap",
+      "dated_sources — array of { id, source_type, title, date }",
+      "risk_question — one sentence naming the decision",
+      "decision_stage — pre_fixture, pre_voyage, pre_port_call, post_alert, committee_review, other"
+    ],
+    example: {
+      voyage: { vessel: "Example Carrier", chokepoint: "strait_of_hormuz", cargo: "crude oil" },
+      exposure_facets: ["dark_fleet_indicators", "insurance_or_pi_gap"],
+      dated_sources: [
+        { id: "gme-1", source_type: "vessel_registry_extract", title: "Vessel registry extract", date: "2026-08-01" },
+        { id: "gme-2", source_type: "pi_insurance_certificate", title: "P&I certificate", date: "2026-07-28" }
+      ],
+      risk_question: "Is this voyage ready for pre-fixture human review?",
+      decision_stage: "pre_fixture"
+    }
+  },
+  kazakhstan_market_entry_readiness: {
+    title: "Kazakhstan Market-Entry Readiness Gate",
+    required: [
+      "project_name — the entry project",
+      "partner_or_company — the entering company or partner",
+      "market — target market",
+      "decision_question — one sentence naming the decision",
+      "decision_stage — concept_review, pre_entity_setup, pre_signature, pre_import, pre_certification, pre_showroom_lease, other",
+      "supplied_sources — array of { id, source_type, title, date }"
+    ],
+    example: {
+      project_name: "Example EV distribution entry",
+      partner_or_company: "Example Motors Ltd",
+      market: "Kazakhstan",
+      decision_question: "Is this entry ready for a pre-signature human review?",
+      decision_stage: "pre_signature",
+      supplied_sources: [
+        { id: "me-1", source_type: "user_provided_note", title: "Partner background note", date: "2026-08-01" }
+      ]
+    }
+  },
+  kazakhstan: {
+    title: "Kazakhstan / Middle Corridor Deal Risk Gate",
+    required: [
+      "route — the corridor leg",
+      "cargo — what moves",
+      "counterparties — array of { role, name, jurisdiction }",
+      "dated_sources — array of { id, source_type, title, date }",
+      "risk_question — one sentence naming the decision",
+      "decision_stage — pre_signature, pre_shipment, in_transit, post_incident, committee_review, other"
+    ],
+    example: {
+      route: "Aktau — Baku — Poti",
+      cargo: "industrial equipment",
+      counterparties: [{ role: "forwarder", name: "Example Forwarding", jurisdiction: "KZ" }],
+      dated_sources: [
+        { id: "mc-1", source_type: "port_operator_notice", title: "Aktau port notice", date: "2026-08-01" },
+        { id: "mc-2", source_type: "sanctions_list_extract", title: "EU consolidated extract", date: "2026-08-02" }
+      ],
+      risk_question: "Is this shipment ready for a pre-signature human review?",
+      decision_stage: "pre_signature"
+    }
+  }
+});
+
+function invalidRequestArtifact(profile, endpoint, schema, errors) {
+  const guide = GATE_REQUEST_GUIDES[profile];
+  if (!guide) return null;
+  const text = [
+    `# ${guide.title} — request not accepted`,
+    "",
+    "Nothing was screened. This gate reads a structured request, not a plain-language question.",
+    "",
+    "## Why it stopped",
+    ...errors.map((error) => `- ${error}`),
+    "",
+    "## What it needs",
+    ...guide.required.map((field) => `- ${field}`),
+    "",
+    "## A request that works",
+    "```json",
+    JSON.stringify(guide.example, null, 2),
+    "```",
+    "",
+    `Send it as \`params.message.parts[0].data\` to \`message/send\`, or POST it to \`${endpoint}\`.`,
+    `Full field list: \`${schema}\`.`,
+    "",
+    "## If you would rather talk to a person",
+    "Start with the Corridor & Sanctions Risk Assistant",
+    "(https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev) for plain-language orientation",
+    `and a free one-off pre-deal screening memo, or email ${SUPPORT_CONTACT_EMAIL}.`,
+    "",
+    "The gate triages evidence readiness. It does not verify facts, retrieve live sources, or replace human review."
+  ].join("\n");
+  return {
+    artifactId: `${profile.replace(/_/g, "-")}-request-guidance`,
+    name: `${guide.title} — how to send a request this gate accepts`,
+    parts: [
+      { text, mediaType: "text/markdown" },
+      {
+        data: {
+          valid: false,
+          errors,
+          required_fields: guide.required,
+          example_request: guide.example,
+          canonical_http_endpoint: endpoint,
+          schema,
+          front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+          support_contact: SUPPORT_CONTACT_EMAIL
+        },
+        mediaType: "application/json"
+      }
+    ]
+  };
+}
+
 function invalidRequestResult(profile, endpoint, schema, errors) {
+  const artifact = invalidRequestArtifact(profile, endpoint, schema, errors);
+  const guide = GATE_REQUEST_GUIDES[profile];
   return {
     id: crypto.randomUUID(),
     status: { state: "TASK_STATE_FAILED", timestamp: new Date().toISOString() },
-    artifacts: [],
-    metadata: { product_profile: profile, canonical_http_endpoint: endpoint, schema, valid: false, errors }
+    artifacts: artifact ? [artifact] : [],
+    metadata: {
+      product_profile: profile,
+      canonical_http_endpoint: endpoint,
+      schema,
+      valid: false,
+      errors,
+      ...(guide
+        ? {
+            required_fields: guide.required,
+            example_request: guide.example,
+            front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+            support_contact: SUPPORT_CONTACT_EMAIL
+          }
+        : {})
+    }
   };
 }
 
@@ -3060,18 +3266,12 @@ function agenticArtifactText(response) {
 function a2aResultForAgenticInteractionTrust(params) {
   const structured = structuredAgenticInteractionTrustRequestFromParams(params);
   if (!structured) {
-    return {
-      id: crypto.randomUUID(),
-      status: { state: "TASK_STATE_FAILED", timestamp: new Date().toISOString() },
-      artifacts: [],
-      metadata: {
-        product_profile: "agentic_interaction_trust",
-        canonical_http_endpoint: "/v1/agentic-interaction/trust",
-        schema: "schemas/v1/agentic-interaction-trust-request.schema.json",
-        valid: false,
-        errors: ["Missing structured agentic interaction trust request"]
-      }
-    };
+    return invalidRequestResult(
+      "agentic_interaction_trust",
+      "/v1/agentic-interaction/trust",
+      "schemas/v1/agentic-interaction-trust-request.schema.json",
+      ["Missing structured agentic interaction trust request"]
+    );
   }
   const enumErrors = agenticEnumErrors(structured);
   if (enumErrors.length) {
@@ -3501,18 +3701,12 @@ function agentOutputVerificationArtifactText(response) {
 function a2aResultForAgentOutputVerification(params) {
   const structured = structuredAgentOutputVerificationRequestFromParams(params);
   if (!structured) {
-    return {
-      id: crypto.randomUUID(),
-      status: { state: "TASK_STATE_FAILED", timestamp: new Date().toISOString() },
-      artifacts: [],
-      metadata: {
-        product_profile: "agent_output_verification",
-        canonical_http_endpoint: "/v1/agent-output/verification",
-        schema: "schemas/v1/evidence-audit.schema.json",
-        valid: false,
-        errors: ["Missing structured agent-output verification request"]
-      }
-    };
+    return invalidRequestResult(
+      "agent_output_verification",
+      "/v1/agent-output/verification",
+      "schemas/v1/evidence-audit.schema.json",
+      ["Missing structured agent-output verification request"]
+    );
   }
   if (isPreActionCheckRequest(structured)) {
     const actionErrors = preActionCheckErrors(structured);
@@ -4965,18 +5159,12 @@ function cisArtifactText(response, liveRetrievalStatus) {
 async function a2aResultForCisSecondarySanctions(params, request, env) {
   const structured = structuredCisSecondarySanctionsRequestFromParams(params);
   if (!structured) {
-    return {
-      id: crypto.randomUUID(),
-      status: { state: "TASK_STATE_FAILED", timestamp: new Date().toISOString() },
-      artifacts: [],
-      metadata: {
-        product_profile: "cis_secondary_sanctions",
-        canonical_http_endpoint: "/v1/cis-secondary-sanctions/exposure",
-        schema: "schemas/v1/cis-secondary-sanctions-request.schema.json",
-        valid: false,
-        errors: ["Missing structured CIS secondary-sanctions exposure request"]
-      }
-    };
+    return invalidRequestResult(
+      "cis_secondary_sanctions",
+      "/v1/cis-secondary-sanctions/exposure",
+      "schemas/v1/cis-secondary-sanctions-request.schema.json",
+      ["Missing structured CIS secondary-sanctions exposure request"]
+    );
   }
   const enumErrors = cisEnumErrors(structured);
   if (enumErrors.length) {
@@ -7815,6 +8003,7 @@ export {
   aiCatalog,
   apiCatalog,
   agentCard,
+  GATE_REQUEST_GUIDES,
   buildUsageEvent,
   callOutcome,
   dealRiskContractResponseForRequest,
