@@ -2207,8 +2207,8 @@ const PROVIDER_FRONT_DOOR_POINTER =
 
 const CIS_FILE_PREPARATION_POINTER =
   " For person-led preparation of a company-owned trade file, use the redacted intake at " +
-  "https://vassiliylakhonin.github.io/cis-secondary-sanctions.html. The USD 99 pilot applies only to a returned " +
-  "file; pre-deal work is quoted separately.";
+  "https://vassiliylakhonin.github.io/cis-secondary-sanctions.html. One fixed fee per file is agreed before " +
+  "work starts; scope, fee and timing are confirmed within one business day.";
 
 const CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE =
   "Orientation and routing only. Not legal, compliance, sanctions, financial, investment, or insurance advice, " +

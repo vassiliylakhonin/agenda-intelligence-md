@@ -4,6 +4,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(CIS discovery): remove the published price from the worker service text.** The agent-card description, the
+  skill-list entry, and the corridor-assistant intake notice carried a USD 99 returned-file pilot price. They now
+  state the pricing shape only: one fixed fee per file, agreed before work starts, with scope, fee and timing
+  confirmed within one business day. Mirrors the site removal of 2026-08-19. Worker deploys are manual, so the live
+  card keeps the old text until it is redeployed.
+
 - **fix(CIS discovery): align the public Worker metadata with the paid file-preparation intake.** The CIS card and
   MCP summary now route exporters, importers, traders, freight forwarders, and finance leads who own the file to
   the redacted intake. The public description no longer targets institutional compliance teams, advertises a free

@@ -250,10 +250,10 @@ const cisSecondarySanctionsProfile = Object.freeze({
     "exporter or importer preparing a returned trade file for resubmission",
     "trader or freight forwarder responding to bank, counsel, insurer, or compliance questions",
     "finance lead documenting missing evidence before the next human review",
-    "pre-shipment file preparation scoped separately from the returned-file pilot"
+    "pre-shipment file preparation scoped separately from a returned file"
   ]),
   commercial_positioning:
-    "Structured API triage for caller-supplied CIS / Caucasus / Central Asia counterparty evidence, with optional public-list name matches, evidence gaps, exposure dimensions, and mandatory human review. The separate browser intake accepts redacted context from the exporter, importer, trader, freight forwarder, or finance lead who owns the file and routes it to person-led file preparation. The USD 99 pilot applies only to a returned file; pre-deal work is quoted separately. No sanctions clearance or transaction approval.",
+    "Structured API triage for caller-supplied CIS / Caucasus / Central Asia counterparty evidence, with optional public-list name matches, evidence gaps, exposure dimensions, and mandatory human review. The separate browser intake accepts redacted context from the exporter, importer, trader, freight forwarder, or finance lead who owns the file and routes it to person-led file preparation. One fixed fee per file is agreed before work starts; scope, fee and timing are confirmed within one business day. No sanctions clearance or transaction approval.",
   focus: frozenArray([
     "CIS counterparty secondary-sanctions exposure triage",
     "Public-list snapshot name matching (OFAC SDN / EU / UK)",
