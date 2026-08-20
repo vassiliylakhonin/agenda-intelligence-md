@@ -2193,17 +2193,19 @@ function applyAgentOutputVerificationProfile(card, request) {
 }
 
 // Corridor & Sanctions Risk Assistant — lightweight discovery FRONT (Zee-pattern).
-// It orients a human, routes to the structured gates, and hands off a free
-// pre-deal screening memo. It performs no triage, scoring, screening, or
-// retrieval of its own; those live in the named gates below.
+// It orients a human, routes to the structured gates, and hands off to
+// person-led work after fit, scope, fee, and timing are confirmed. It performs
+// no triage, scoring, screening, or retrieval of its own; those live in the
+// named gates below.
 
 // Appended to each structured gate's card description so a human landing on any
-// one gate is funnelled to the front door + the free pre-deal memo, rather than
+// one gate is routed to the same front door and commercial process rather than
 // navigating nine cards blind. One factual navigation line, no traction claim.
 const PROVIDER_FRONT_DOOR_POINTER =
   " New to these gates? Start with the Corridor & Sanctions Risk Assistant " +
-  "(https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev) for plain-language orientation and a " +
-  "free one-off pre-deal screening memo.";
+  "(https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev) for plain-language orientation. " +
+  "Describe the route or counterparty and the next decision or review; fit, scope, fee, and timing are confirmed " +
+  "before work starts.";
 
 const CIS_FILE_PREPARATION_POINTER =
   " For person-led preparation of a company-owned trade file, use the redacted intake at " +
@@ -2250,14 +2252,14 @@ function corridorAssistantMessageText() {
   return [
     "# Corridor & Sanctions Risk Assistant",
     "",
-    "Front door to the corridor and sanctions evidence-readiness gates. I orient and route — I do not screen, score, or retrieve.",
+    "Front door to the corridor and sanctions evidence-readiness gates. I orient and route. I do not screen, score, or retrieve.",
     "",
     "## Which gate fits",
-    ...CORRIDOR_ASSISTANT_GATES.map((gate) => `- **${gate.name}** — use when ${gate.use_when}. A2A: ${gate.a2a}`),
+    ...CORRIDOR_ASSISTANT_GATES.map((gate) => `- **${gate.name}**: use when ${gate.use_when}. A2A: ${gate.a2a}`),
     "",
-    "## Free pre-deal screening memo",
-    "One free one-off pre-deal screening memo on a real, current deal or counterparty.",
-    `Email a one-line deal (route or counterparty + the decision pending) to ${SUPPORT_CONTACT_EMAIL} (${SUPPORT_HOURS_LOCAL}).`,
+    "## If you need person-led work",
+    `Email a one-line description of the route or counterparty and the next decision or review to ${SUPPORT_CONTACT_EMAIL} (${SUPPORT_HOURS_LOCAL}).`,
+    "I confirm fit, scope, fee, and timing before work starts.",
     "",
     "_Orientation and routing only. Not legal, compliance, sanctions, financial, investment, or insurance advice. " +
       "Human review is required before any commercial action._"
@@ -2269,15 +2271,16 @@ function a2aResultForCorridorSanctionsAssistant(params) {
   const response = {
     kind: "orientation_and_routing",
     message:
-      "Corridor & sanctions orientation — routing to the structured gates and a free pre-deal memo handoff. " +
+      "Corridor & sanctions orientation: routing to the structured gates and person-led work. " +
       "No triage or screening performed here.",
     caller_text: text ? text.slice(0, 500) : "",
     gates: CORRIDOR_ASSISTANT_GATES.map((gate) => ({ ...gate })),
     engagement: {
-      offer: "One free pre-deal screening memo on a real, current deal or counterparty.",
+      offer: "Person-led review of a current deal or counterparty, scoped and quoted before work starts.",
       contact_email: SUPPORT_CONTACT_EMAIL,
       support_hours: SUPPORT_HOURS_LOCAL,
-      next_step: "Email a one-line deal (route or counterparty + the decision pending) to book the free memo."
+      next_step:
+        "Email a one-line description (route or counterparty + the next decision or review). Fit, scope, fee, and timing are confirmed before work starts."
     },
     human_review_required: true,
     not_advice_notice: CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE
@@ -2312,8 +2315,9 @@ function applyCorridorSanctionsAssistantProfile(card, request) {
   card.description =
     "Front door to the corridor and sanctions evidence-readiness gates. Ask about a specific Kazakhstan / Middle " +
     "Corridor deal or a CIS / Caucasus / Central Asia counterparty; get a plain-language read on what due-diligence " +
-    "evidence a bank, insurer, or compliance desk will still ask for, a pointer to the structured gate that fits, and " +
-    "the option of one free pre-deal screening memo on a real deal. Orientation and routing only — the structured " +
+    "evidence a bank, insurer, or compliance desk will still ask for, and a pointer to the structured gate that fits. " +
+    "For person-led work, email a one-line description of the route or counterparty and the next decision or review. " +
+    "Fit, scope, fee, and timing are confirmed before work starts. Orientation and routing only. The structured " +
     "triage, scoring, and any screening happen in the named gates, and human review is required before any commercial action.";
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
@@ -2322,13 +2326,13 @@ function applyCorridorSanctionsAssistantProfile(card, request) {
       name: "Corridor & sanctions deal orientation",
       description:
         "Bring a one-line deal or counterparty (route, cargo, or entity + the decision pending). Get a plain-language " +
-        "read on the evidence gaps a bank/insurer/compliance desk will flag, which structured gate to run, and how to " +
-        "book a free one-off pre-deal screening memo from a human.",
+        "read on the evidence gaps a bank/insurer/compliance desk will flag, which structured gate to run, and what " +
+        "to send for person-led work. Fit, scope, fee, and timing are confirmed before work starts.",
       tags: ["corridor", "sanctions", "kazakhstan", "cis", "deal-risk", "evidence-readiness", "human-review", "free"],
       examples: [
         "I'm shipping steel Kazakhstan->EU via the Middle Corridor next month — what will the bank ask for?",
         "Counterparty is a trading house in Georgia — where do I check secondary-sanctions exposure?",
-        "Can you screen one real deal for free before I commit?"
+        "I have a live deal. What do you need to scope the review and quote it?"
       ],
       inputModes: ["application/json", "text/plain"],
       outputModes: ["application/json", "text/markdown"]
@@ -2837,8 +2841,9 @@ function invalidRequestArtifact(profile, endpoint, schema, errors) {
     "",
     "## If you would rather talk to a person",
     "Start with the Corridor & Sanctions Risk Assistant",
-    "(https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev) for plain-language orientation",
-    `and a free one-off pre-deal screening memo, or email ${SUPPORT_CONTACT_EMAIL}.`,
+    "(https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev) for plain-language orientation,",
+    `or email ${SUPPORT_CONTACT_EMAIL} with a one-line route or counterparty and the next decision or review.`,
+    "Fit, scope, fee, and timing are confirmed before work starts.",
     "",
     "The gate triages evidence readiness. It does not verify facts, retrieve live sources, or replace human review."
   ].join("\n");

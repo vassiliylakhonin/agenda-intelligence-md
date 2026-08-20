@@ -2833,9 +2833,34 @@ test("corridor_sanctions_assistant profile is detected and is a routing front, n
   assert.deepEqual(card.x_agenda_intelligence.supported_contracts, ["orientation_and_routing"]);
   assert.equal(card.x_agenda_intelligence.routes_to.length, 4);
   assert.equal(card.x_agenda_intelligence.engagement.contact_email, "vassiliy.lakhonin@gmail.com");
+  assert.match(card.x_agenda_intelligence.engagement.offer, /scoped and quoted before work starts/);
+  assert.match(card.x_agenda_intelligence.engagement.next_step, /Fit, scope, fee, and timing/);
+  assert.doesNotMatch(
+    JSON.stringify({
+      description: card.description,
+      skill: card.skills[0],
+      positioning: card.x_agenda_intelligence.commercial_positioning,
+      focus: card.x_agenda_intelligence.focus,
+      engagement: card.x_agenda_intelligence.engagement
+    }),
+    /free.{0,30}(memo|screening)|(?:memo|screening).{0,30}free/i
+  );
   assert.ok(
     card.x_agenda_intelligence.boundaries.includes("Human review is required before any commercial action.")
   );
+});
+
+test("structured gate cards route to the current person-led scope and quote process", () => {
+  const cards = [
+    agentCard(new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send"), {}),
+    agentCard(new Request("https://gulf-maritime-exposure-a2a.example.workers.dev/message/send"), {}),
+    agentCard(new Request("https://kazakhstan-market-entry-readiness-a2a.example.workers.dev/message/send"), {})
+  ];
+  for (const card of cards) {
+    assert.match(card.description, /Corridor & Sanctions Risk Assistant/);
+    assert.match(card.description, /fit, scope, fee, and timing/);
+    assert.doesNotMatch(card.description, /free.{0,30}(memo|screening)|(?:memo|screening).{0,30}free/i);
+  }
 });
 
 test("corridor_sanctions_assistant message/send returns a deterministic orientation, not triage", async () => {
@@ -2863,8 +2888,15 @@ test("corridor_sanctions_assistant message/send returns a deterministic orientat
     assert.equal(resp.kind, "orientation_and_routing");
     assert.equal(resp.gates.length, 4);
     assert.equal(resp.engagement.contact_email, "vassiliy.lakhonin@gmail.com");
+    assert.match(resp.engagement.offer, /scoped and quoted before work starts/);
+    assert.match(resp.engagement.next_step, /Fit, scope, fee, and timing/);
+    assert.doesNotMatch(
+      JSON.stringify({ response: resp, text: result.artifacts[0].parts[0].text }),
+      /free.{0,30}(memo|screening)|(?:memo|screening).{0,30}free/i
+    );
     assert.match(result.artifacts[0].parts[0].text, /Corridor & Sanctions Risk Assistant/);
     assert.match(result.artifacts[0].parts[0].text, /vassiliy\.lakhonin@gmail\.com/);
+    assert.match(result.artifacts[0].parts[0].text, /confirm fit, scope, fee, and timing before work starts/);
   } finally {
     console.log = originalLog;
   }

@@ -4,6 +4,13 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(worker positioning): remove the stale free-memo promise from the corridor front door.** The Corridor &
+  Sanctions Risk Assistant, the three structured gate pointers, and invalid-request guidance now use the current
+  person-led route: send a one-line description of the route or counterparty and the next decision or review; fit,
+  scope, fee, and timing are confirmed before work starts. No price, new product, protocol, schema, or response shape
+  was added. Worker deploys remain manual, so the live cards keep the old copy until the affected environments are
+  redeployed.
+
 - **fix(CIS discovery): remove the published price from the worker service text.** The agent-card description, the
   skill-list entry, and the corridor-assistant intake notice carried a USD 99 returned-file pilot price. They now
   state the pricing shape only: one fixed fee per file, agreed before work starts, with scope, fee and timing
