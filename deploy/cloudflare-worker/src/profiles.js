@@ -339,7 +339,8 @@ const agentOutputVerificationProfile = Object.freeze({
 // Lightweight discovery FRONT profile (Zee-pattern), not a vertical worker: no
 // schema, no service function, no triage or retrieval of its own. Its job is a
 // human-facing agent card that orients a corridor/sanctions deal-risk question,
-// routes to the structured gates, and hands off a free pre-deal screening memo.
+// routes to the structured gates, and hands off to person-led work after fit,
+// scope, fee, and timing are confirmed.
 // Modeled on the minimal `agenda` / `confidential_project_room` profiles.
 const corridorSanctionsAssistantProfile = Object.freeze({
   profile_key: "corridor_sanctions_assistant",
@@ -353,15 +354,15 @@ const corridorSanctionsAssistantProfile = Object.freeze({
   buyer_use_cases: frozenArray([
     "first stop for a Kazakhstan / Middle Corridor deal — what evidence a bank, insurer, or compliance desk will ask for",
     "first stop for CIS / Caucasus / Central Asia secondary-sanctions exposure on a counterparty",
-    "get a free one-off pre-deal screening memo on a real deal before committing to a tool or a lawyer",
+    "scope person-led review of a current deal or counterparty before work starts",
     "find which structured gate fits a specific deal, counterparty, vessel, or market-entry file"
   ]),
   commercial_positioning:
-    "Human-facing front door to the corridor and sanctions evidence-readiness gates. Ask about a specific deal or counterparty; get a plain-language read on what due-diligence evidence is still missing, a pointer to the structured gate that fits, and the option of one free one-off pre-deal screening memo produced by a human. Routing and orientation only — the structured triage, scoring, and any screening happen in the named gates, and human review is required before any commercial action.",
+    "Human-facing front door to the corridor and sanctions evidence-readiness gates. Ask about a specific deal or counterparty; get a plain-language read on what due-diligence evidence is still missing, a pointer to the structured gate that fits, and a path to person-led work. Send a one-line description of the route or counterparty and the next decision or review. Fit, scope, fee, and timing are confirmed before work starts. Routing and orientation only. The structured triage, scoring, and any screening happen in the named gates, and human review is required before any commercial action.",
   focus: frozenArray([
     "orientation for corridor and sanctions deal-risk questions",
     "routing to the Middle Corridor, CIS secondary-sanctions, Gulf maritime, and market-entry gates",
-    "free pre-deal screening memo handoff to a human",
+    "person-led review scoped and quoted before work starts",
     "human-review escalation before signature, committee, insurer, or client delivery"
   ]),
   routes_to: frozenArray([
@@ -371,10 +372,11 @@ const corridorSanctionsAssistantProfile = Object.freeze({
     "kazakhstan_market_entry_readiness"
   ]),
   engagement: Object.freeze({
-    offer: "One free pre-deal screening memo on a real, current deal or counterparty.",
+    offer: "Person-led review of a current deal or counterparty, scoped and quoted before work starts.",
     contact_email: SUPPORT_CONTACT_EMAIL,
     support_hours: SUPPORT_HOURS_LOCAL,
-    next_step: "Email a one-line deal (route or counterparty + the decision pending) to book the free memo."
+    next_step:
+      "Email a one-line description (route or counterparty + the next decision or review). Fit, scope, fee, and timing are confirmed before work starts."
   }),
   live_retrieval: PROFILE_LIVE_RETRIEVAL.agenda
 });

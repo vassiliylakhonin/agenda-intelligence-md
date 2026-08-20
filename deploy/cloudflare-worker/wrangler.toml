@@ -111,8 +111,8 @@ id = "d2228183999246ccbec8aa2d5f130bfc"
 
 # Corridor & Sanctions Risk Assistant — lightweight discovery FRONT (Zee-pattern),
 # not a vertical worker. Orients a human, routes to the structured gates, and
-# hands off a free pre-deal screening memo. No triage, scoring, screening, or
-# retrieval of its own. Open free demo (no API key). Deploy with:
+# hands off to person-led work after fit, scope, fee, and timing are confirmed.
+# No triage, scoring, screening, or retrieval of its own. Open free demo (no API key). Deploy with:
 #   wrangler deploy --env corridor-sanctions-assistant
 [env.corridor-sanctions-assistant]
 name = "corridor-sanctions-assistant-a2a"

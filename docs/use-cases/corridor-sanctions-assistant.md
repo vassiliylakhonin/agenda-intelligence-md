@@ -1,12 +1,12 @@
 # Corridor & Sanctions Risk Assistant
 
-Status: shipped 2026-07-08. Lightweight discovery **front** profile `corridor_sanctions_assistant`. Not a vertical worker: no schema, no service function, no triage, scoring, screening, or retrieval of its own. It orients a human, routes to the structured gates, and hands off a free pre-deal screening memo.
+Status: shipped 2026-07-08. Lightweight discovery **front** profile `corridor_sanctions_assistant`. Not a vertical worker: no schema, no service function, no triage, scoring, screening, or retrieval of its own. It orients a human, routes to the structured gates, and supplies a path to person-led work after fit, scope, fee, and timing are confirmed.
 
 ## Why a front, not another gate
 
-The portfolio already ships structured evidence-readiness gates (Middle Corridor deal risk, CIS secondary-sanctions, Gulf maritime, Kazakhstan market-entry). What was missing was a human-facing front door: a first stop that takes a plain-language deal or counterparty question, says which gate fits, and offers a concrete next step — a free one-off pre-deal screening memo produced by a human.
+The portfolio already ships structured evidence-readiness gates (Middle Corridor deal risk, CIS secondary-sanctions, Gulf maritime, Kazakhstan market-entry). The human-facing front door takes a plain-language deal or counterparty question, says which gate fits, and explains what to send for person-led work. Fit, scope, fee, and timing are confirmed before work starts.
 
-This is the "Zee pattern": an agent whose job is orientation and a booked next step, not the analysis itself. The analysis, scoring, and any screening stay in the named gates. Marketplace discovery (an indexed A2A agent card) is used for what it is good at — being found and read by a human — not as a place that earns per-call.
+This is the "Zee pattern": an agent whose job is orientation and a clear next step, not the analysis itself. The analysis, scoring, and any screening stay in the named gates. Marketplace discovery lets a human find the card and follow the route to person-led work. It is not treated as a per-call revenue channel.
 
 ## Boundary (honesty rules apply)
 
@@ -21,7 +21,7 @@ This is the "Zee pattern": an agent whose job is orientation and a booked next s
 `message/send` returns a deterministic orientation artifact (`text/markdown` + `application/json`), never an LLM answer:
 
 - a short "which gate fits" map to the four structured gates, each with its live A2A endpoint and when to use it;
-- an `engagement` block: the free pre-deal screening memo offer, the contact email, support hours, and the exact next step;
+- an `engagement` block: the person-led review route, the contact email, support hours, and the exact next step;
 - `human_review_required: true` and a `not_advice_notice`.
 
 ## Routes to
@@ -33,9 +33,9 @@ This is the "Zee pattern": an agent whose job is orientation and a booked next s
 | Gulf Maritime Exposure Gate | a vessel/voyage through the Gulf, Strait of Hormuz, Bab-el-Mandeb, or Red Sea needs sanctions/chokepoint exposure triage |
 | Kazakhstan Market-Entry Readiness Gate | a Kazakhstan market-entry file needs a staged readiness gate |
 
-## The paid step this front feeds
+## The person-led step this front feeds
 
-The front captures a human; the revenue is a human-invoiced deliverable, not an on-chain per-call payment. The offered next step is one free pre-deal screening memo on a real, current deal or counterparty, emailed to the support contact. The paid follow-on (per-memo or a corridor-watch retainer) is a separate human agreement and is not represented on the agent card.
+The agent routes a caller to person-led work, not an on-chain per-call payment. The caller emails a one-line description of the route or counterparty and the next decision or review. Fit, scope, fee, and timing are confirmed before work starts. The card publishes no service price and promises no free deliverable.
 
 ## Deploy
 
