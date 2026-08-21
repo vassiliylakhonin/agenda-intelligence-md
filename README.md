@@ -47,7 +47,7 @@ Use JSON for an agent loop or CI pipeline:
 Install the pinned release without cloning the source and check your own packet:
 
 ```text
-pip install "agenda-intelligence-md==1.4.0"
+pip install "agenda-intelligence-md==1.5.0"
 agenda-intelligence check /path/to/evidence-packet.json --strict
 ```
 

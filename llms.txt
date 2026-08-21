@@ -5,7 +5,7 @@ Primary interface: a deterministic evidence-packet linter for claim-backed AI ou
 Compatibility surfaces remain available: the strategic-intelligence product shell, MCP server, HTTP API, A2A adapter, Cloudflare Workers, reasoning modules, and vertical profiles. They are not the primary product narrative and do not establish buyer traction.
 
 Product MCP tools:
-- check_evidence_packet — primary deterministic preflight for claim/source packets; checks references, declared quotes, lexical support, and unmatched numbers over caller-supplied source text. No retrieval or factuality determination; human review required.
+- check_evidence_packet — primary deterministic preflight for claim/source packets; checks references, declared quotes, lexical support, unmatched numbers, and claims that negate the source sentence they cite, over caller-supplied source text. No retrieval or factuality determination; human review required.
 - analyze — accepts an AgendaRequest (schemas/v1/agenda-request.schema.json), routes geography to bundled regional references, assembles a system prompt from the Global Think Tank Analyst method plus matched regional lenses, optionally calls the Anthropic API when ANTHROPIC_API_KEY is set, and returns a memo validated against schemas/v1/agenda-memo.schema.json.
 - validate_memo — validates a third-party memo against agenda-memo.schema.json and returns errors plus a score where implemented.
 - check_memo_quality — checks schema validity plus post-hoc evidence-readiness quality guardrails for a third-party memo; catches schema-valid approval/clearance overreach, hidden evidence gaps, generic monitoring, weak owner actions, confidential project-room alias leaks, and evidence-mode discipline failures.

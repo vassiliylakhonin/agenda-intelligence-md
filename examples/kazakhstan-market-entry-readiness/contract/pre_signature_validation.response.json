@@ -190,7 +190,7 @@
   ],
   "boundary_notice": "Internal evidence triage only. Not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice.",
   "run_provenance": {
-    "contract_version": "1.4.0",
+    "contract_version": "1.5.0",
     "schema_id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/market-entry-readiness-response.schema.json",
     "input_digest": "sha256:441f105b9e734f34bf816c29d2bac07c29b359383b959b99163877c57d5019d9"
   },
