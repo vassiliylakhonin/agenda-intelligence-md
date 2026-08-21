@@ -4,7 +4,7 @@
 
 Agenda Intelligence MD is a deterministic evidence-packet linter for claim-backed AI output.
 
-Give it claims, the source IDs each claim relies on, optional quotations, and the supplied source text. It returns broken references, quote mismatches, lexical-support gaps, unmatched numbers, and the next reviewer actions.
+Give it claims, the source IDs each claim relies on, optional quotations, and the supplied source text. It returns broken references, quote mismatches, lexical-support gaps, unmatched numbers, claims that negate the source they cite, and the next reviewer actions.
 
 It reports **packet completeness**, not whether a claim is true:
 
@@ -69,10 +69,18 @@ The response has three packet statuses:
 | Status | Meaning |
 |---|---|
 | `packet_complete` | References resolve and the named source text has strong lexical overlap with the claim. |
-| `source_review_required` | References resolve, but lexical support is weak or a numeric value is not present. |
+| `source_review_required` | References resolve, but lexical support is weak, a numeric value is not present, or the claim and its closest source sentence disagree on negation. |
 | `packet_incomplete` | A source is missing, a quote is absent, or the claim has no source reference. |
 
 `factuality_status` is always `not_assessed`. A complete packet can still rely on a wrong, stale, biased, or irrelevant source.
+
+### What term overlap can and cannot see
+
+Lexical support is the share of a claim's content terms that appear in the source it names. That ratio is blind to two things, so both are handled separately.
+
+**Negation is checked.** `not` and `no` are stopwords and never reach the ratio, so "the board approved it" and "the board did not approve it" score the same against the same source. Where a claim and its closest sentence in the cited source disagree on negation or denial, the claim is downgraded to `weak` and carries `lexical_support_polarity_mismatch`. Polarity is read at sentence scope: a negation elsewhere in the same document does not flag an unrelated claim.
+
+**Reversed roles are not checked, and are not claimed to be.** "A approved a facility for B" and "B approved a facility for A" contain the same terms and both score `supported`. Deciding who did what to whom is not something term overlap can do, and no heuristic here pretends otherwise. A reviewer still has to read the sentence. The limit is pinned by a test (`test_polarity_check_does_not_claim_to_catch_reversed_roles`) so it stays visible.
 
 ## Python API
 

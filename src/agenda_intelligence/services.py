@@ -616,6 +616,41 @@ def _grounded_content_terms(text: str) -> list[str]:
     return terms
 
 
+_POLARITY_CUE_PATTERN = re.compile(
+    r"\b(?:not|no|never|none|neither|nor|without|cannot|can't|won't|doesn't|don't|didn't"
+    r"|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't|shouldn't|wouldn't|couldn't"
+    r"|denied|rejected|refused|declined|lacks|lacked|absent|ceased|suspended|terminated"
+    r"|failed to|unable to|no longer)\b"
+)
+
+
+def _grounded_best_sentence(sentences: list[str], claim_terms: set[str]) -> str:
+    """The single sentence with the highest claim-term overlap.
+
+    Polarity is compared at sentence scope, not over the multi-sentence excerpt
+    window: a neighbouring sentence that negates something else in the same
+    document must not be read as negating this claim.
+    """
+    best_sentence = ""
+    best_hits = 0
+    for sentence in sentences:
+        hits = len(claim_terms & set(_grounded_content_terms(sentence)))
+        if hits > best_hits:
+            best_hits = hits
+            best_sentence = sentence
+    return best_sentence
+
+
+def _polarity_cues(text: str) -> set[str]:
+    """Negation and denial cues in a text.
+
+    Read on the normalized text rather than on content terms: the tokenizer
+    treats ``not`` and ``no`` as stopwords and drops them, so a claim and its
+    source can share every content term while asserting opposite things.
+    """
+    return set(_POLARITY_CUE_PATTERN.findall(_grounded_normalize(text)))
+
+
 def _grounded_sentences(text: str) -> list[str]:
     parts = re.split(r"(?<=[.!?])\s+|\n+", text)
     return [p.strip() for p in parts if p.strip()]
@@ -721,6 +756,18 @@ def grounded_check(request_json: dict) -> dict:
         if unmatched_numbers and status == "grounded":
             status = "weakly_grounded"
 
+        # Same blind spot as the evidence-packet check: negation cues are stopwords
+        # and never reach the coverage ratio, so a claim can contradict the corpus
+        # sentence it matches and still score as grounded.
+        polarity_conflict: list[str] = []
+        if status == "grounded" and best_corpus_id is not None:
+            sentence = _grounded_best_sentence(corpus_sentences[best_corpus_id], claim_terms)
+            claim_cues = _polarity_cues(claim["claim_text"])
+            corpus_cues = _polarity_cues(sentence or corpus_norm[best_corpus_id])
+            if bool(claim_cues) != bool(corpus_cues):
+                status = "weakly_grounded"
+                polarity_conflict = sorted(claim_cues | corpus_cues)
+
         status_counts[status] += 1
 
         best_passage = None
@@ -742,6 +789,11 @@ def grounded_check(request_json: dict) -> dict:
             owner_actions.append(
                 f"Verify numeric value(s) in claim {claim_id} against a source: "
                 f"{', '.join(unmatched_numbers)} not found anywhere in the supplied corpus."
+            )
+        if polarity_conflict:
+            owner_actions.append(
+                f"Claim {claim_id} and its closest sentence in corpus {best_corpus_id} disagree on "
+                f"negation ({', '.join(polarity_conflict)}); confirm the claim asserts what the corpus asserts."
             )
 
         results.append(
@@ -825,6 +877,7 @@ def check_evidence_packet(request_json: dict) -> dict:
     sources = {source["source_id"]: source for source in source_items}
     normalized_sources = {source_id: _grounded_normalize(source["text"]) for source_id, source in sources.items()}
     source_terms = {source_id: set(_grounded_content_terms(source["text"])) for source_id, source in sources.items()}
+    source_sentences = {source_id: _grounded_sentences(source["text"]) for source_id, source in sources.items()}
 
     results: list[dict] = []
     owner_actions: list[str] = []
@@ -894,7 +947,27 @@ def check_evidence_packet(request_json: dict) -> dict:
         if unmatched_numbers and lexical_status == "supported":
             lexical_status = "weak"
 
-        if lexical_status == "weak":
+        # Term overlap cannot tell "the board approved it" from "the board did not
+        # approve it": the cue is a stopword and never reaches the coverage ratio.
+        # Where the claim and its best-matching passage disagree on negation, the
+        # packet is not complete, whatever the overlap says.
+        polarity_conflict: list[str] = []
+        if lexical_status == "supported" and best_source_id:
+            sentence = _grounded_best_sentence(source_sentences[best_source_id], claim_terms)
+            claim_cues = _polarity_cues(claim["text"])
+            passage_cues = _polarity_cues(sentence or sources[best_source_id]["text"])
+            if bool(claim_cues) != bool(passage_cues):
+                lexical_status = "weak"
+                polarity_conflict = sorted(claim_cues | passage_cues)
+
+        if polarity_conflict:
+            review_issues.append("lexical_support_polarity_mismatch")
+            add_action(
+                f"Claim {claim_id} and its closest sentence in source {best_source_id} "
+                f"disagree on negation ({', '.join(polarity_conflict)}); confirm the claim "
+                f"asserts what the source asserts."
+            )
+        elif lexical_status == "weak":
             review_issues.append("lexical_support_weak")
             add_action(f"Review the claim-to-source mapping for claim {claim_id}; lexical support is weak.")
         elif lexical_status == "unsupported" and valid_source_ids:
