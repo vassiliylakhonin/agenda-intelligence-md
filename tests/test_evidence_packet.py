@@ -171,3 +171,97 @@ def test_focused_mcp_example_runs_against_checkout():
             "packet_incomplete": 0,
         },
     }
+
+
+def _packet(claim_text: str, source_text: str) -> dict:
+    return {
+        "claims": [{"claim_id": "c1", "text": claim_text, "source_ids": ["s1"]}],
+        "sources": [{"source_id": "s1", "text": source_text}],
+    }
+
+
+def _claim(claim_text: str, source_text: str) -> dict:
+    result = check_evidence_packet(_packet(claim_text, source_text))
+    assert result["valid"], result.get("errors")
+    return result["response"]["claims"][0]
+
+
+def test_claim_negating_its_source_is_not_packet_complete():
+    """Term overlap alone passes a claim that asserts the opposite of its source."""
+    claim = _claim(
+        "The EBRD did not approve the loan facility in March 2024.",
+        "The EBRD approved the loan facility in March 2024.",
+    )
+    assert claim["lexical_support"]["status"] == "weak"
+    assert "lexical_support_polarity_mismatch" in claim["issues"]
+    assert claim["packet_status"] == "source_review_required"
+
+
+def test_positive_claim_against_a_negated_source_is_flagged_too():
+    claim = _claim(
+        "The committee approved the tariff schedule for 2025.",
+        "The committee did not approve the tariff schedule for 2025.",
+    )
+    assert "lexical_support_polarity_mismatch" in claim["issues"]
+
+
+def test_matching_polarity_is_left_alone():
+    claim = _claim(
+        "The committee did not approve the tariff schedule for 2025.",
+        "The committee did not approve the tariff schedule for 2025.",
+    )
+    assert claim["lexical_support"]["status"] == "supported"
+    assert claim["packet_status"] == "packet_complete"
+    assert not claim["issues"]
+
+
+def test_negation_elsewhere_in_the_source_does_not_flag_the_claim():
+    """Polarity is read at sentence scope, so an unrelated negation stays unrelated."""
+    claim = _claim(
+        "The port handled 210000 containers in 2024.",
+        "The operator published its annual figures. "
+        "The port handled 210000 containers in 2024. "
+        "Separately, the ministry did not confirm the dredging budget.",
+    )
+    assert claim["lexical_support"]["status"] == "supported"
+    assert claim["packet_status"] == "packet_complete"
+
+
+def test_polarity_check_does_not_claim_to_catch_reversed_roles():
+    """Documented blind spot: term overlap cannot see who did what to whom.
+
+    Kept as a test so the limit stays visible and a later change that closes it
+    fails here loudly instead of drifting in unannounced.
+    """
+    claim = _claim(
+        "The Aktau terminal approved a loan facility for the EBRD in March 2024.",
+        "The EBRD approved a loan facility for the Aktau terminal in March 2024.",
+    )
+    assert claim["lexical_support"]["status"] == "supported"
+    assert claim["packet_status"] == "packet_complete"
+
+
+def test_grounded_check_also_flags_a_claim_that_negates_its_corpus():
+    """The compatibility surface carries the same blind spot, so it gets the same guard."""
+    from agenda_intelligence.services import grounded_check
+
+    result = grounded_check(
+        {
+            "claims": [
+                {
+                    "claim_id": "g1",
+                    "claim_text": "The committee did not approve the tariff schedule for 2025.",
+                }
+            ],
+            "corpus": [
+                {
+                    "corpus_id": "k1",
+                    "text": "The committee approved the tariff schedule for 2025.",
+                }
+            ],
+        }
+    )
+    assert result["valid"], result.get("errors")
+    claim = result["response"]["results"][0]
+    assert claim["grounding_status"] == "weakly_grounded"
+    assert any("disagree on negation" in action for action in result["response"]["owner_actions"])
