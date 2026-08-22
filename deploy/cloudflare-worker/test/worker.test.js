@@ -1959,7 +1959,20 @@ test("caller classification separates our own runs, probes, and callers who sign
   assert.equal(kindFor({ "user-agent": "AgenstryBot/0.3.0 (+https://agenstry.com/bot)" }), "service_probe");
   assert.equal(kindFor({ "user-agent": "ProofBench/0.1 (+https://proofbench.dev/about/probe)" }), "service_probe");
   assert.equal(kindFor({ "user-agent": "mcpqueen-grader/0.3 (+https://mcpqueen.com)" }), "service_probe");
+  // Self-identification by convention, not vocabulary. These two are the
+  // highest-volume crawlers against these endpoints and neither says "bot",
+  // "crawler" or anything else the keyword list looks for: measured
+  // 2026-08-20..22, 411 requests reached `external` this way, 224 of them from
+  // the first one alone.
+  assert.equal(kindFor({ "user-agent": "agent-tools.cloud-a2a/0.1 (+https://agent-tools.cloud)" }), "service_probe");
+  assert.equal(kindFor({ "user-agent": "Waggle/1.0 (+https://waggle.zone)" }), "service_probe");
+  assert.equal(kindFor({ "user-agent": "MCPWatch/0.1.0 (+mcpwatch@iyre.com) MCP security research" }), "service_probe");
   assert.equal(kindFor({ "user-agent": "Java-http-client/25.0.2" }), "external");
+  // A generic HTTP library says nothing about itself and must stay external:
+  // `external` means unidentified, and collapsing it into "probe" would hide
+  // the callers this classification exists to find.
+  assert.equal(kindFor({ "user-agent": "python-httpx/0.28.1" }), "external");
+  assert.equal(kindFor({ "user-agent": "node" }), "external");
   // The bucket the whole classification exists for: no user agent at all. The
   // one external non-probe call observed 2026-08-19 arrived exactly like this.
   assert.equal(kindFor({}), "unsigned_external");
