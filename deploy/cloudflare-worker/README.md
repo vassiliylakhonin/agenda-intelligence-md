@@ -391,6 +391,8 @@ The custom usage event is privacy-safe by design. It does not log IP addresses, 
 - selected Agenda modules;
 - coarse client class, such as `agenstry`, `curl`, `browser`, or `automation`;
 - the user-agent string, truncated to 120 characters;
+- `caller_kind` — `self_test`, `service_probe`, `external`, or `unsigned_external`;
+- `caller_zone` — the calling Cloudflare Worker zone from the `cf-worker` header, when present;
 - referrer hostname, when present;
 - Cloudflare colo, country, and network operator (`asOrganization`), when Cloudflare provides them.
 
@@ -409,6 +411,18 @@ cd deploy/cloudflare-worker
 npx --yes wrangler tail agenda-intelligence-a2a --format=json
 ```
 
+### Who the caller was
+
+Two fields exist to stop the traffic count from reading as usage.
+
+`caller_kind` splits every request four ways. `self_test` is this repository's own conformance and smoke scripts, which name themselves in the user agent. `service_probe` is a directory crawler, registry health check, grader, or security auditor — in the population observed so far, every one of them says so in its user agent. `external` is everything else that sent a user agent, which includes an ad-hoc `curl` from an operator's shell; read it as "not identified as ours or as a probe", not as "a stranger". `unsigned_external` is a caller that sent no user agent at all.
+
+That last bucket is the one worth reading. Measured across 12,155 raw log rows over 2026-08-19..22: 55 requests arrived unsigned, and the only one of them that was not a probe was the single external non-probe call in the whole window.
+
+`caller_zone` carries the `cf-worker` header, which a request arriving from another Cloudflare Worker sets to the calling zone. Over the same window 50 rows carried it, and 49 were probes that already name themselves — ProofBench, mcpqueen-grader, x402-observatory, and Cloudflare's own infrastructure. The fiftieth sent no user agent and was that one external call. So this field is not a new layer of data: it is a signature on the rare row where nothing else identifies the caller, and it is worth keeping only because Workers Logs is destroyed after three days.
+
+Neither field is evidence of demand. A high count of `external` or `unsigned_external` requests means machines arrived, and nothing more.
+
 Useful filters in Workers Logs:
 
 ```text
@@ -416,6 +430,7 @@ event = "agenda_intelligence_a2a_usage"
 jsonrpc_method = "SendMessage"
 client = "agenstry"
 likely_probe = false
+caller_kind = "unsigned_external"
 ```
 
 Set a stats token once:

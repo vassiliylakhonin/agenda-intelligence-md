@@ -1943,6 +1943,59 @@ test("funnel event names the visitor without storing an address", () => {
   assert.equal(event.ip, undefined);
 });
 
+// The four caller kinds and the calling-zone header. What makes these worth a
+// contract test rather than a comment: the classification decides which number
+// gets reported as usage, and the previous version of that number was wrong in
+// exactly this way — service probes counted as real callers for weeks.
+test("caller classification separates our own runs, probes, and callers who sign nothing", () => {
+  const kindFor = (headers) =>
+    buildUsageEvent(
+      new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST", headers }),
+      { jsonrpc_method: "message/send" }
+    ).caller_kind;
+
+  assert.equal(kindFor({ "user-agent": "agenda-intelligence-live-smoke" }), "self_test");
+  assert.equal(kindFor({ "user-agent": "agenda-intelligence-a2a-conformance/1.0" }), "self_test");
+  assert.equal(kindFor({ "user-agent": "AgenstryBot/0.3.0 (+https://agenstry.com/bot)" }), "service_probe");
+  assert.equal(kindFor({ "user-agent": "ProofBench/0.1 (+https://proofbench.dev/about/probe)" }), "service_probe");
+  assert.equal(kindFor({ "user-agent": "mcpqueen-grader/0.3 (+https://mcpqueen.com)" }), "service_probe");
+  assert.equal(kindFor({ "user-agent": "Java-http-client/25.0.2" }), "external");
+  // The bucket the whole classification exists for: no user agent at all. The
+  // one external non-probe call observed 2026-08-19 arrived exactly like this.
+  assert.equal(kindFor({}), "unsigned_external");
+});
+
+test("calling Worker zone is recorded from cf-worker and nothing else is", () => {
+  const eventFor = (headers) =>
+    buildUsageEvent(
+      new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST", headers }),
+      { jsonrpc_method: "message/send" }
+    );
+
+  const fromWorker = eventFor({ "cf-worker": "app-builder.example" });
+  assert.equal(fromWorker.caller_zone, "app-builder.example");
+  assert.equal(fromWorker.caller_kind, "unsigned_external");
+
+  assert.equal(eventFor({ "cf-worker": "APP-BUILDER.EXAMPLE" }).caller_zone, "app-builder.example");
+  assert.equal(eventFor({}).caller_zone, null);
+  // Recorded rather than dropped, so a caller putting something else in the
+  // header stays visible instead of looking like an ordinary request.
+  assert.equal(eventFor({ "cf-worker": "not a hostname" }).caller_zone, "malformed");
+
+  const funnel = logFunnelEvent(
+    {
+      url: "https://agenda-intelligence-a2a.example.workers.dev/.well-known/agent-card.json",
+      method: "GET",
+      headers: new Headers({ "cf-worker": "app-builder.example" }),
+      cf: { country: "SE", colo: "AMS", asOrganization: "Cloudflare, Inc." }
+    },
+    "card"
+  );
+  assert.equal(funnel.caller_zone, "app-builder.example");
+  assert.equal(funnel.caller_kind, "unsigned_external");
+  assert.equal(funnel.ip, undefined);
+});
+
 test("call outcome reports the routing decision the caller received", () => {
   const gated = callOutcome({
     status: { state: "TASK_STATE_COMPLETED" },
@@ -2016,6 +2069,52 @@ test("usage stats counts callers who got nothing usable", async () => {
     { name: "insufficient_information", count: 2 },
     { name: "invalid_request", count: 2 },
     { name: "ready_for_human_review", count: 1 }
+  ]);
+});
+
+test("usage stats reports caller kinds and calling Worker zones", async () => {
+  const kv = new MemoryKv();
+  const env = { AGENDA_USAGE: kv };
+  const base = {
+    event: "agenda_intelligence_a2a_usage",
+    agent_profile: "agenda",
+    host: "agenda-intelligence-a2a.example.workers.dev",
+    jsonrpc_method: "message/send",
+    prompt_chars: 40,
+    outcome: { decision: "ready_for_human_review", score: 70 }
+  };
+
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-08-19T13:14:50.000Z",
+    caller_kind: "unsigned_external",
+    caller_zone: "app-builder.example"
+  });
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-08-19T13:20:00.000Z",
+    caller_kind: "service_probe",
+    caller_zone: "shadetreerocketsurgeon84.workers.dev"
+  });
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-08-19T13:25:00.000Z",
+    caller_kind: "self_test",
+    caller_zone: null
+  });
+
+  const stats = await usageStats(env, "2026-08-19");
+
+  assert.deepEqual(stats.caller_kinds, [
+    { name: "self_test", count: 1 },
+    { name: "service_probe", count: 1 },
+    { name: "unsigned_external", count: 1 }
+  ]);
+  // Only callers that actually sent the header appear. Without this the map is
+  // one "none" row the size of the whole day and the few real zones vanish.
+  assert.deepEqual(stats.caller_zones, [
+    { name: "app-builder.example", count: 1 },
+    { name: "shadetreerocketsurgeon84.workers.dev", count: 1 }
   ]);
 });
 
