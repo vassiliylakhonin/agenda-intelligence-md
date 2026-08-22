@@ -1947,6 +1947,36 @@ test("funnel event names the visitor without storing an address", () => {
 // contract test rather than a comment: the classification decides which number
 // gets reported as usage, and the previous version of that number was wrong in
 // exactly this way — service probes counted as real callers for weeks.
+// The gap this closes: measured 2026-08-22 against the live endpoint, a
+// successful message/send to the base profile returned agent_card, repository,
+// package, mcp_transport, modules_used and triage, and no contact anywhere in
+// the payload. The only external non-probe caller on record took exactly that
+// path, from another Worker, with no user agent, referer or origin —
+// unidentifiable from the logs and never going to render an HTML page.
+test("a successful response hands the caller a way to reach a person", async () => {
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "1",
+      method: "message/send",
+      params: { message: { role: "user", parts: [{ kind: "text", text: "Kazakhstan corridor sanctions exposure" }] } }
+    },
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST" })
+  );
+
+  const engagement = response.result.metadata.engagement;
+  assert.equal(engagement.contact_email, "vassiliy.lakhonin@gmail.com");
+  assert.equal(engagement.human_page, "https://agenda-intelligence-a2a.example.workers.dev");
+  assert.ok(engagement.offer.length > 0);
+  assert.ok(engagement.next_step.includes("before work starts"));
+  // No price, and no claim about who already uses this. Both are the failure
+  // mode this repository's honesty rules name, and both are easy to add later
+  // without noticing, so the build fails on them rather than a reviewer.
+  const text = JSON.stringify(engagement);
+  assert.ok(!/[$\u20ac\u00a3]\s?\d|\bUSD\b|\bEUR\b/.test(text), `engagement block must not quote a price: ${text}`);
+  assert.ok(!/trusted by|customers|clients use|join \d/i.test(text), "engagement block must not claim traction");
+});
+
 test("caller classification separates our own runs, probes, and callers who sign nothing", () => {
   const kindFor = (headers) =>
     buildUsageEvent(

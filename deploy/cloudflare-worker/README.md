@@ -353,6 +353,26 @@ It is also not ours to switch off. Browser Integrity Check and WAF skip rules ar
 
 Practical exposure is narrow: every mainstream HTTP client passes, including a request with no user-agent at all. A caller stuck on stdlib `urllib` only has to set any user-agent header. Both Python clients in this repo — `upstream_opensanctions.py` and `cli.py` — already send an explicit one.
 
+## Reaching a person from a machine response
+
+Every successful `message/send` carries an `engagement` block in `metadata`:
+`offer`, `contact_email`, `support_hours`, `next_step`, and `human_page`.
+
+It exists because the earlier surfaces do not reach the caller that matters.
+The agent card carries `support`, the landing page carries a mailto, and the
+corridor assistant already puts the same block in its orientation response —
+but measured 2026-08-22 against the live endpoint, a successful call to the
+base profile returned `agent_card`, `repository`, `package`, `mcp_transport`,
+`modules_used` and `triage`, and no contact anywhere in the payload. The only
+external non-probe call on record took exactly that path: it arrived from
+another Cloudflare Worker with no user agent, no referer and no origin, which
+makes it unidentifiable from the logs and unlikely ever to render an HTML page.
+The response is the only surface that can hand such a caller a way back.
+
+The block carries no price, no customer claim, and no urgency, and a contract
+test fails the build if one is added. It is not a measurement of anything: no
+inbound contact has arrived through it.
+
 ## Usage analytics
 
 This Worker uses Cloudflare's built-in free observability path:
