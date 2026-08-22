@@ -415,7 +415,9 @@ npx --yes wrangler tail agenda-intelligence-a2a --format=json
 
 Two fields exist to stop the traffic count from reading as usage.
 
-`caller_kind` splits every request four ways. `self_test` is this repository's own conformance and smoke scripts, which name themselves in the user agent. `service_probe` is a directory crawler, registry health check, grader, or security auditor — in the population observed so far, every one of them says so in its user agent. `external` is everything else that sent a user agent, which includes an ad-hoc `curl` from an operator's shell; read it as "not identified as ours or as a probe", not as "a stranger". `unsigned_external` is a caller that sent no user agent at all.
+`caller_kind` splits every request four ways. `self_test` is this repository's own conformance and smoke scripts, which name themselves in the user agent. `service_probe` is a directory crawler, registry health check, grader, or security auditor. `external` is everything else that sent a user agent, which includes an ad-hoc `curl` from an operator's shell and any generic HTTP library; read it as "not identified as ours or as a probe", not as "a stranger". `unsigned_external` is a caller that sent no user agent at all.
+
+A probe is recognised two ways, and both are needed. The first is a keyword — `bot`, `crawler`, `probe`, `audit`, `registry`, and so on. The second is the self-identification convention: a parenthesised contact prefixed with `+`, as in `(+https://example.com/bot)` or `(+someone@example.com)`. The keyword list alone is not enough — measured 2026-08-20..22, the two highest-volume crawlers against these endpoints name neither a role nor a bot suffix, and 411 requests over three days landed in `external` because of it, 224 of them from a single scheduled crawler.
 
 That last bucket is the one worth reading. Measured across 12,155 raw log rows over 2026-08-19..22: 55 requests arrived unsigned, and the only one of them that was not a probe was the single external non-probe call in the whole window.
 

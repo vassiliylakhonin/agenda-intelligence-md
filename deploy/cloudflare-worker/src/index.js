@@ -6312,14 +6312,30 @@ function callerZone(request) {
 // the scripted paths set their own agent, an ad-hoc shell call does not. Read
 // `external` as "not identified as ours or as a probe", not as "a stranger".
 const SELF_TEST_USER_AGENT = /^agenda-intelligence-(a2a-conformance|live-smoke)/i;
-const SERVICE_PROBE_USER_AGENT =
+
+// Two ways an automated caller declares itself, and both are needed.
+//
+// The keyword list catches an agent that says what it does. It is not enough on
+// its own: measured across 2026-08-20..22, the two highest-volume crawlers here
+// name neither a role nor a bot suffix — `agent-tools.cloud-a2a/0.1` and
+// `Waggle/1.0` — and 411 requests over those three days landed in `external`,
+// the bucket that is supposed to mean "not a probe". The largest single
+// contributor was 224 requests from one scheduled crawler.
+//
+// The second rule reads the convention instead of the vocabulary: a
+// parenthesised contact prefixed with `+`, as in `(+https://example.com/bot)`
+// or `(+someone@example.com)`. Anything shipping that has published a way to be
+// contacted about its crawling, which is what "self-identified" means. Every
+// crawler in the observed population that the keywords missed carries it.
+const SERVICE_PROBE_KEYWORD =
   /audit|probe|scan|liveness|registry|monitor|census|health|grader|bot\b|crawler|spider|beat\//i;
+const SERVICE_PROBE_SELF_ID = /\(\+/;
 
 function callerKind(request) {
   const raw = (request.headers.get("user-agent") || "").trim();
   if (!raw) return "unsigned_external";
   if (SELF_TEST_USER_AGENT.test(raw)) return "self_test";
-  if (SERVICE_PROBE_USER_AGENT.test(raw)) return "service_probe";
+  if (SERVICE_PROBE_KEYWORD.test(raw) || SERVICE_PROBE_SELF_ID.test(raw)) return "service_probe";
   return "external";
 }
 
