@@ -192,6 +192,12 @@ async function main() {
   const rest = events.filter((event) => !isCrawler(event.user_agent));
 
   console.log(`\nSelf-identified automation: ${crawlers.length} of ${events.length}`);
+  // caller_kind lands in the event from event_version 2 onward. Older rows in a
+  // window that straddles the deploy have none, so they tally as "unrecorded"
+  // rather than silently joining a real bucket.
+  printTally("Caller kind", events, (event) => event.caller_kind || "unrecorded");
+  const zoned = events.filter((event) => event.caller_zone);
+  if (zoned.length) printTally("Calling Worker zones (cf-worker)", zoned, (event) => event.caller_zone);
   printTally("Networks (everything else)", rest, (event) => event.as_org);
   printTally("User agents (everything else)", rest, (event) => (event.user_agent || "none").slice(0, 60));
   printTally("Referrers", events, (event) => event.referrer_host || "none");

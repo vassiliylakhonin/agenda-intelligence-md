@@ -6281,6 +6281,48 @@ function userAgentSummary(request) {
   return raw ? raw.slice(0, USER_AGENT_MAX_CHARS) : null;
 }
 
+// A request that arrives from another Cloudflare Worker carries `cf-worker`
+// with the calling zone. It is the only handle on a caller that sends no user
+// agent, and the whole reason for recording it is one measurement: over
+// 2026-08-19..22, of 12,155 raw log rows, 50 carried a `cf-worker` zone and 49
+// of those were probes that already name themselves in the user agent
+// (ProofBench, mcpqueen-grader, x402-observatory, Cloudflare's own
+// infrastructure). The fiftieth sent no user agent at all and was the single
+// external non-probe call in the window. So this field is not a new layer of
+// data — it is a signature on the one row a year where nothing else identifies
+// the caller. Kept because the source it came from, Workers Logs, is destroyed
+// after three days.
+function callerZone(request) {
+  const raw = (request.headers.get("cf-worker") || "").trim().toLowerCase();
+  if (!raw) return null;
+  // Header shape is a hostname. Anything else is either a mistake or someone
+  // testing what this endpoint stores, and is recorded as such rather than
+  // dropped, so the anomaly stays visible.
+  return /^[a-z0-9]([a-z0-9.-]{0,62}[a-z0-9])?$/.test(raw) ? raw : "malformed";
+}
+
+// Our own conformance and smoke runs name themselves in the user agent, and so
+// does every directory probe, auditor and census bot observed so far. That
+// makes the classification cheap to read, but it also means only one of these
+// buckets carries information that was not already available: `unsigned_external`,
+// a caller that sent no user agent. Measured over the same window: 55 requests
+// of 12,155, and the only non-probe among them was the one that mattered.
+//
+// A manual `curl` run by the operator lands in `external`, not `self_test` —
+// the scripted paths set their own agent, an ad-hoc shell call does not. Read
+// `external` as "not identified as ours or as a probe", not as "a stranger".
+const SELF_TEST_USER_AGENT = /^agenda-intelligence-(a2a-conformance|live-smoke)/i;
+const SERVICE_PROBE_USER_AGENT =
+  /audit|probe|scan|liveness|registry|monitor|census|health|grader|bot\b|crawler|spider|beat\//i;
+
+function callerKind(request) {
+  const raw = (request.headers.get("user-agent") || "").trim();
+  if (!raw) return "unsigned_external";
+  if (SELF_TEST_USER_AGENT.test(raw)) return "self_test";
+  if (SERVICE_PROBE_USER_AGENT.test(raw)) return "service_probe";
+  return "external";
+}
+
 // modules_used reaches this function in two shapes: the routed analyze path
 // passes result.metadata entries ([{ module, role }, ...]), while the
 // single-profile worker branches pass plain strings (["cis_secondary_sanctions"]).
@@ -6327,7 +6369,7 @@ function buildUsageEvent(request, details = {}) {
 
   return {
     event: "agenda_intelligence_a2a_usage",
-    event_version: 2,
+    event_version: 3,
     timestamp: new Date().toISOString(),
     source: "cloudflare_worker",
     method: request.method,
@@ -6341,6 +6383,8 @@ function buildUsageEvent(request, details = {}) {
     live_retrieval: details.live_retrieval || { status: null, upstream: null, billable: false, cost_eur: 0 },
     client: classifyClient(request),
     user_agent: userAgentSummary(request),
+    caller_kind: callerKind(request),
+    caller_zone: callerZone(request),
     referrer_host: headerHost(request, "referer"),
     cf: {
       colo: cf.colo || null,
@@ -6391,7 +6435,7 @@ function logFunnelEvent(request, step) {
   const cf = request.cf || {};
   const event = {
     event: "agenda_intelligence_a2a_funnel",
-    event_version: 1,
+    event_version: 2,
     timestamp: new Date().toISOString(),
     step,
     method: request.method,
@@ -6399,6 +6443,8 @@ function logFunnelEvent(request, step) {
     host: url.hostname,
     client: classifyClient(request),
     user_agent: userAgentSummary(request),
+    caller_kind: callerKind(request),
+    caller_zone: callerZone(request),
     referrer_host: headerHost(request, "referer"),
     country: cf.country || null,
     as_org: cf.asOrganization || null,
@@ -6466,6 +6512,8 @@ async function recordUsageStats(env, event) {
       likely_probe: Boolean(event.likely_probe),
       client: event.client || "unknown",
       user_agent: event.user_agent || "unknown",
+      caller_kind: event.caller_kind || "external",
+      caller_zone: event.caller_zone || "none",
       referrer_host: event.referrer_host || "none",
       country: event.cf?.country || "unknown",
       colo: event.cf?.colo || "unknown",
@@ -6539,6 +6587,8 @@ async function usageStats(env, date) {
   const referrers = new Map();
   const networks = new Map();
   const userAgents = new Map();
+  const callerKinds = new Map();
+  const callerZones = new Map();
   const outcomes = new Map();
   let emptyHanded = 0;
   let likelyProbe = 0;
@@ -6563,6 +6613,10 @@ async function usageStats(env, date) {
     incrementMap(referrers, event.referrer_host);
     incrementMap(networks, event.as_org);
     incrementMap(userAgents, event.user_agent);
+    incrementMap(callerKinds, event.caller_kind);
+    // Only zones that actually sent one: "none" is every ordinary caller and
+    // would bury the handful of rows this map exists to show.
+    if (event.caller_zone && event.caller_zone !== "none") incrementMap(callerZones, event.caller_zone);
     incrementMap(outcomes, event.outcome);
     // A caller who supplied nothing usable: the gate could not act on the
     // request. Counted among non-probe calls only — monitors send deliberately
@@ -6601,6 +6655,14 @@ async function usageStats(env, date) {
       budget: budgetStatus(env, estimatedCostEur)
     },
     clients: sortedMap(clients),
+    // Who called, in the only split that separates real traffic from noise.
+    // `unsigned_external` is the one worth reading: a caller that identified
+    // itself with nothing at all. `external` means "not ours and not a
+    // self-declared probe", which includes an ad-hoc curl from this desk.
+    caller_kinds: sortedMap(callerKinds),
+    // Calling Cloudflare Worker zones, from the `cf-worker` header. Empty on
+    // most days by design — see callerZone() for what this is for.
+    caller_zones: sortedMap(callerZones),
     outcomes: sortedMap(outcomes),
     agent_profiles: sortedMap(agentProfiles),
     hosts: sortedMap(hosts),
