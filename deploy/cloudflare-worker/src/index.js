@@ -6904,8 +6904,39 @@ function a2aResult(params, request, env = {}) {
         profile === "kazakhstan"
           ? "Kazakhstan and Middle Corridor deal-risk triage, evidence gating, and routing response only"
           : "discovery, lightweight triage, and routing response only",
-      product_profile: profile
+      product_profile: profile,
+      engagement: engagementBlock(request)
     }
+  };
+}
+
+// A machine that called this endpoint has no way to reach a person.
+//
+// The agent card carries `support`, the landing page carries a mailto, and the
+// corridor assistant puts an `engagement` block in its orientation response.
+// The base profile's successful response carries none of that: measured
+// 2026-08-22 against the live endpoint, a `message/send` to agenda-intelligence
+// returns agent_card, repository, package, mcp_transport, modules_used and
+// triage, and no contact anywhere in the payload.
+//
+// That is the exact path the only external non-probe caller in the observed
+// record took, arriving from another Cloudflare Worker with no user agent, no
+// referer and no origin. Such a caller cannot be identified from the logs and
+// will never render an HTML page — so the response itself is the only surface
+// that can hand it a way back. This block is that surface and nothing more: no
+// price, no customer claim, no urgency.
+function engagementBlock(request) {
+  return {
+    offer:
+      "Person-led review of a corridor, counterparty, or evidence pack, scoped and quoted before work starts.",
+    contact_email: SUPPORT_CONTACT_EMAIL,
+    support_hours: SUPPORT_HOURS_LOCAL,
+    next_step:
+      "Email a one-line description of the route, counterparty, or document and the next decision it feeds. " +
+      "Fit, scope, fee, and timing are confirmed before work starts.",
+    // The landing page, not the agent card: the card is already in this
+    // metadata, and the person behind an integration needs a page they can read.
+    human_page: originFromRequest(request)
   };
 }
 
