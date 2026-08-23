@@ -532,13 +532,17 @@ The `/stats` response also includes a `cost` block. No LLM is called on the Work
 npm test
 ```
 
-## JWS-signed agent cards (Agenstry conformance criterion `jws_signature`)
+## JWS-signed agent cards
 
-The worker can serve agent cards with an ES256 detached JWS signature
-(per Agenstry's 9-criterion conformance scoring at
-<https://agenstry.com/api/schemas/conformance.json>). The public key is
-exposed at `/.well-known/jwks.json` so any verifier can fetch it without
-out-of-band coordination.
+The worker serves agent cards with an ES256 signature in `signatures`, the
+shape A2A v1 section 8.4.2 defines: a list of `{protected, signature}`, both
+base64url. The public key is exposed at `/.well-known/jwks.json` so any
+verifier can fetch it without out-of-band coordination.
+
+Until 2026-08-23 this was a compact detached JWS (`<header>..<signature>`,
+RFC 7797 unencoded payload) in a top-level `signature` field, written to satisfy
+Agenstry's `jws_signature` criterion. `signature` is not a field the A2A schema
+defines, so a card carrying it failed official schema validation.
 
 ### One-time setup (operator hands)
 
@@ -563,18 +567,19 @@ npx wrangler deploy --env agentic-interaction-trust
 
 # 4. Verify.
 curl https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/jwks.json
-curl https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json | jq .signature
+curl https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json | jq .signatures
 ```
 
 ### What the verifier does
 
-1. `GET /.well-known/agent-card.json` → reads the `signature` field
-   (compact detached JWS: `<headerB64>..<signatureB64>`).
-2. Strip `signature` from the card, JCS-canonicalise (RFC 8785) the
-   rest → raw payload bytes.
-3. Reconstruct signing input = `base64url(header) + "." + payloadBytes`.
+1. `GET /.well-known/agent-card.json` → read one entry of `signatures`
+   (`{protected, signature}`, both base64url).
+2. Remove `signatures` from the card, JCS-canonicalise (RFC 8785) the
+   rest → payload bytes.
+3. Reconstruct signing input = `protected + "." + base64url(payload)`.
+   Ordinary JWS: unlike the earlier detached form, the payload is encoded.
 4. `GET /.well-known/jwks.json` → fetch the public JWK whose `kid`
-   matches the header.
+   matches the protected header.
 5. ECDSA P-256 + SHA-256 verify the signature.
 
 ### Rotation

@@ -202,6 +202,80 @@ def _build_per_profile_live_retrieval_block() -> dict[str, Any]:
     return block
 
 
+# A2A v1 AgentCard (specification/a2a.proto, message AgentCard) and
+# AgentProvider define a closed field set, and the one extension mechanism the
+# spec defines is capabilities.extensions[], whose params is an arbitrary JSON
+# Struct. An independent conformance scan on 2026-08-23 rejected every card the
+# hosted Workers served for carrying vendor blocks at the card root; this
+# adapter builds a card the same way, so it carried the same defect.
+#
+# agent_card() keeps the root shape its callers and tests read. Normalisation
+# happens on the way out, in the JSON-RPC card result.
+CARD_EXTENSION_URI = "https://vassiliylakhonin.github.io/a2a/extensions/agenda-intelligence/v1"
+CARD_EXTENSION_DESCRIPTION = (
+    "Wrapper scope, product contract, boundaries and capability declarations for this agent. "
+    "Descriptive only: reading it is never required to call the agent."
+)
+_A2A_CARD_FIELDS = frozenset(
+    {
+        "name",
+        "description",
+        "supportedInterfaces",
+        "provider",
+        "version",
+        "documentationUrl",
+        "capabilities",
+        "securitySchemes",
+        "securityRequirements",
+        "defaultInputModes",
+        "defaultOutputModes",
+        "skills",
+        "signatures",
+        "iconUrl",
+    }
+)
+_A2A_PROVIDER_FIELDS = frozenset({"organization", "url"})
+
+
+def to_spec_wire_card(card: dict) -> dict:
+    """Return the card in the shape the A2A v1 schema defines.
+
+    Anything the schema does not define moves into capabilities.extensions[],
+    provider is trimmed to its two schema fields, and the moved data stays
+    readable under the extension's params. The field list is an allow-list, so
+    a block added later stays conformant without touching this.
+    """
+    wire: dict = {}
+    params: dict = {}
+    for key, value in card.items():
+        if key in _A2A_CARD_FIELDS:
+            wire[key] = value
+        else:
+            params[key] = value
+
+    provider = wire.get("provider")
+    if isinstance(provider, dict):
+        wire["provider"] = {k: v for k, v in provider.items() if k in _A2A_PROVIDER_FIELDS}
+        extras = {k: v for k, v in provider.items() if k not in _A2A_PROVIDER_FIELDS}
+        if extras:
+            params["provider"] = extras
+
+    if not params:
+        return wire
+
+    capabilities = dict(wire.get("capabilities") or {})
+    capabilities["extensions"] = list(capabilities.get("extensions") or []) + [
+        {
+            "uri": CARD_EXTENSION_URI,
+            "description": CARD_EXTENSION_DESCRIPTION,
+            "required": False,
+            "params": params,
+        }
+    ]
+    wire["capabilities"] = capabilities
+    return wire
+
+
 def agent_card(base_url: str = "http://localhost:8080") -> dict:
     """Return a minimal A2A-compatible agent card."""
     return {
@@ -1212,7 +1286,7 @@ def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> di
     id_value = payload.get("id")
     method = payload.get("method")
     if method in {"agent/card", "agentCard", "GetExtendedAgentCard"}:
-        return {"jsonrpc": "2.0", "id": id_value, "result": agent_card(base_url)}
+        return {"jsonrpc": "2.0", "id": id_value, "result": to_spec_wire_card(agent_card(base_url))}
 
     if method in {"message/send", "tasks/send", "SendMessage"}:
         params = payload.get("params") or {}

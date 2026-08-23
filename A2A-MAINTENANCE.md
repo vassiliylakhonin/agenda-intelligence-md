@@ -105,13 +105,16 @@ Wrangler auto-loads `.env`. Do not name an observability-only token
 
 ## Agent Card signing
 
-The runtime preserves the existing detached compact ES256 JWS in `signature`
-and publishes its public key at `/.well-known/jwks.json`. Do not rotate an
-existing signing key merely because card content changed; the Worker signs the
-current card at request time.
+The runtime signs the card with ES256 and publishes the public key at
+`/.well-known/jwks.json`. The signature travels in `signatures` as A2A v1
+section 8.4.2 defines it — a list of `{protected, signature}` — not in the
+top-level `signature` field used until 2026-08-23, which is not a schema field.
+Do not rotate an existing signing key merely because card content or signature
+shape changed; the Worker signs the current card at request time, so an existing
+key keeps working.
 
 As of 2026-08-09, all eight Worker deployments have signing secrets configured
-and their detached JWS signatures verify against their public JWKS. The
+and their signatures verify against their public JWKS. The
 Kazakhstan Market Entry, Agent Output Verification, and Corridor & Sanctions
 Assistant environments share one ES256 key created for that deployment group;
 the five earlier deployments retain their existing keys.

@@ -1,16 +1,26 @@
-// JWS (RFC 7515) detached signature helpers for A2A agent cards.
+// JWS (RFC 7515) signature helpers for A2A agent cards.
 //
-// Per the Agenstry conformance criterion `jws_signature`, agent cards may
-// carry an ES256 detached JWS that the verifier reconstructs by stripping the
-// `signature` field, JCS-canonicalising (RFC 8785) the remaining card, and
+// The card carries an ES256 signature that a verifier reconstructs by removing
+// the `signatures` field, JCS-canonicalising (RFC 8785) the remaining card, and
 // verifying against the public JWKS hosted at `/.well-known/jwks.json`.
+//
+// The wire shape follows A2A v1 section 8.4.2 `AgentCardSignature`: `protected`
+// holds the base64url protected header, `signature` holds the base64url
+// signature, and the signing input is
+// `BASE64URL(protected) || "." || BASE64URL(payload)`.
+//
+// This replaced an earlier detached form that put a compact
+// `<header>..<signature>` string in a top-level `signature` field with an
+// RFC 7797 unencoded payload (`b64: false`). That shape satisfied the Agenstry
+// `jws_signature` criterion but is not a field the A2A schema defines, so a
+// card carrying it failed official schema validation.
 //
 // This module provides:
 //   - `jcs(value)`             — RFC 8785 JSON canonicalization
-//   - `signCardDetached(card, privateJwkString, kid)` — returns compact
-//                                detached JWS `<header>..<signature>` for
-//                                embedding in `card.signature`; the protected
-//                                header carries `jku` for the card host's JWKS
+//   - `signCard(card, privateJwkString, kid)` — returns one
+//                                `AgentCardSignature` for `card.signatures`;
+//                                the protected header carries `jku` for the
+//                                card host's JWKS
 //   - `publicJwkFromPrivate(privateJwk)` — strips `d` and returns the public
 //                                portion ready for `/.well-known/jwks.json`
 //
@@ -95,47 +105,41 @@ export function jwksUrlFromCard(card) {
 }
 
 /**
- * Sign an agent card with a detached JWS (RFC 7515 §A.5, RFC 7797).
+ * Sign an agent card and return one `AgentCardSignature` (A2A v1 §8.4.2).
  *
- * The signature input is `base64url(header) + "." + payload` where payload is
- * the raw JCS canonical bytes of the card with `signature` stripped (since the
- * signature is what we're producing). The output is compact JWS with empty
- * payload field: `<headerB64>..<signatureB64>`.
+ * Signing input is `BASE64URL(protected) + "." + BASE64URL(payload)` where the
+ * payload is the JCS canonical bytes of the card with `signatures` removed.
+ * Both halves are base64url-encoded: this is ordinary JWS, not the RFC 7797
+ * unencoded-payload variant the earlier detached form used.
  *
  * Verifier:
- *   1. Read card.signature → split on "."
- *   2. base64url-decode header, assert alg=ES256
- *   3. Strip signature from card, JCS-canonicalise the rest
- *   4. Reconstruct signing input = base64url(header) + "." + payloadBytes
+ *   1. Read one entry of card.signatures
+ *   2. base64url-decode `protected`, assert alg=ES256
+ *   3. Remove `signatures` from the card, JCS-canonicalise the rest
+ *   4. Reconstruct signing input = protected + "." + base64url(payload)
  *   5. Verify ECDSA over signingInput against public JWKS key matching `kid`
  */
-export async function signCardDetached(card, privateJwkInput, kid = null) {
+export async function signCard(card, privateJwkInput, kid = null) {
   const privateJwk = readPrivateJwk(privateJwkInput);
   if (privateJwk.kty !== "EC" || privateJwk.crv !== "P-256") {
-    throw new Error("signCardDetached: private JWK must be EC P-256");
+    throw new Error("signCard: private JWK must be EC P-256");
   }
   const effectiveKid = kid || privateJwk.kid || null;
 
-  const cardWithoutSignature = { ...card };
-  delete cardWithoutSignature.signature;
+  const cardWithoutSignatures = { ...card };
+  delete cardWithoutSignatures.signatures;
 
-  const payloadBytes = TEXT_ENCODER.encode(jcs(cardWithoutSignature));
+  const payloadB64 = base64urlEncode(TEXT_ENCODER.encode(jcs(cardWithoutSignatures)));
 
   const header = {
     alg: "ES256",
-    b64: false,
-    crit: ["b64"],
+    typ: "JOSE",
     jku: jwksUrlFromCard(card)
   };
   if (effectiveKid) header.kid = effectiveKid;
   const headerB64 = base64urlEncode(TEXT_ENCODER.encode(JSON.stringify(header)));
 
-  const dotBytes = TEXT_ENCODER.encode(".");
-  const headerBytes = TEXT_ENCODER.encode(headerB64);
-  const signingInput = new Uint8Array(headerBytes.length + dotBytes.length + payloadBytes.length);
-  signingInput.set(headerBytes, 0);
-  signingInput.set(dotBytes, headerBytes.length);
-  signingInput.set(payloadBytes, headerBytes.length + dotBytes.length);
+  const signingInput = TEXT_ENCODER.encode(`${headerB64}.${payloadB64}`);
 
   const cryptoKey = await crypto.subtle.importKey(
     "jwk",
@@ -149,9 +153,11 @@ export async function signCardDetached(card, privateJwkInput, kid = null) {
     cryptoKey,
     signingInput
   );
-  const signatureB64 = base64urlEncode(new Uint8Array(signatureBuffer));
 
-  return `${headerB64}..${signatureB64}`;
+  return {
+    protected: headerB64,
+    signature: base64urlEncode(new Uint8Array(signatureBuffer))
+  };
 }
 
 /**
@@ -185,17 +191,18 @@ export function buildJwks(privateJwkInput) {
 }
 
 /**
- * Convenience: produce both the signed card and the JWKS in one call.
+ * Attach a signature to the card if a signing key is configured.
  * Used by the /.well-known/agent-card.json HTTP handler. Returns the original
- * card unchanged (no `signature` field) when no signing key is configured.
+ * card unchanged (no `signatures` field) when no signing key is configured;
+ * `signatures` is optional in the schema, so an unsigned card still validates.
  */
 export async function maybeSignCard(card, env = {}) {
   const privateJwkString = env.AGENT_CARD_SIGNING_KEY || env.AGENT_CARD_PRIVATE_JWK;
   if (!privateJwkString) return card;
   const kid = env.AGENT_CARD_SIGNING_KID || null;
   try {
-    const signature = await signCardDetached(card, privateJwkString, kid);
-    return { ...card, signature };
+    const signature = await signCard(card, privateJwkString, kid);
+    return { ...card, signatures: [signature] };
   } catch (_error) {
     // Signing failure must not break the card response. Return unsigned card.
     return card;
