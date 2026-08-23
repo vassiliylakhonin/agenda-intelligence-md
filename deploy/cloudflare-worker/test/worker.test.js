@@ -834,12 +834,17 @@ test("robots.txt advertises Agentmap for the AI catalog", async () => {
   assert.match(responseBody, /Agentmap:/);
 });
 
-test("agent card verifier accepts local Agenda and Middle Corridor cards", () => {
-  const agendaCard = agentCard(request);
+// The verifier reads a card off the wire, so it must be handed the wire shape.
+// Passing `agentCard()` directly hid a real defect: after vendor blocks moved
+// into capabilities.extensions[], the verifier still read `x_agent_contract`
+// from the card root, and every local test passed while the live check failed
+// against the deployed Middle Corridor card on 2026-08-23.
+test("agent card verifier accepts the cards as they are actually served", () => {
+  const agendaCard = toSpecWireCard(agentCard(request));
   const kazakhstanRequest = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send");
-  const kazakhstanCard = agentCard(kazakhstanRequest, { AGENT_PROFILE: "kazakhstan" });
+  const kazakhstanCard = toSpecWireCard(agentCard(kazakhstanRequest, { AGENT_PROFILE: "kazakhstan" }));
   const agenticRequest = new Request("https://agentic-interaction-trust-a2a.example.workers.dev/message/send");
-  const agenticCard = agentCard(agenticRequest, { AGENT_PROFILE: "agentic_interaction_trust" });
+  const agenticCard = toSpecWireCard(agentCard(agenticRequest, { AGENT_PROFILE: "agentic_interaction_trust" }));
 
   assert.deepEqual(
     validateAgentCard(agendaCard, "https://agenda-intelligence-a2a.example.workers.dev/.well-known/agent-card.json"),
