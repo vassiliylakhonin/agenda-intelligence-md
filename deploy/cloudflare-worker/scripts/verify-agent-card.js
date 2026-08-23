@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { pathToFileURL } from "node:url";
 
+import { cardExtensionParams } from "../src/card-extension.js";
+
 const DEFAULT_AGENT_CARD_URLS = [
   "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
   "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
@@ -22,19 +24,26 @@ function agentCardUrl(value) {
 }
 
 function hasBoundary(card, expected) {
-  const boundaries = card?.x_agenda_intelligence?.boundaries;
+  const boundaries = cardExtensionParams(card)?.x_agenda_intelligence?.boundaries;
   return Array.isArray(boundaries) && boundaries.includes(expected);
 }
 
+// A2A v1 section 8.4.2: `signatures` is a list of `{protected, signature}`,
+// both base64url. The earlier shape put a compact `<header>..<signature>`
+// string in a top-level `signature` field, which is not a schema field.
 function validateProtectedJwsHeader(card, sourceUrl) {
-  if (typeof card.signature !== "string") return [];
+  const signatures = card.signatures;
+  if (signatures === undefined) return [];
+  if (!Array.isArray(signatures) || signatures.length === 0) {
+    return ["signatures must be a non-empty array of AgentCardSignature"];
+  }
   const errors = [];
-  const parts = card.signature.split(".");
-  if (parts.length !== 3 || parts[1] !== "") {
-    return ["signature must be a compact detached JWS"];
+  const first = signatures[0];
+  if (typeof first?.protected !== "string" || typeof first?.signature !== "string") {
+    return ["each signature must carry base64url `protected` and `signature`"];
   }
   try {
-    const header = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8"));
+    const header = JSON.parse(Buffer.from(first.protected, "base64url").toString("utf8"));
     const cardUrl = new URL(agentCardUrl(sourceUrl));
     const expectedJku = new URL("/.well-known/jwks.json", cardUrl).toString();
     const requiresJku = cardUrl.hostname.endsWith(".workers.dev");
@@ -80,6 +89,43 @@ const PROFILE_EXPECTATIONS = [
   }
 ];
 
+// A2A v1 AgentCard and AgentProvider define closed field sets. A card that
+// carries anything else fails official schema validation — which is how an
+// independent scan graded every one of these endpoints down on 2026-08-23.
+// Checked here as well as in the unit tests, because this script is the only
+// thing that reads what the deployed Workers actually serve.
+const A2A_V1_CARD_FIELDS = new Set([
+  "name",
+  "description",
+  "supportedInterfaces",
+  "provider",
+  "version",
+  "documentationUrl",
+  "capabilities",
+  "securitySchemes",
+  "securityRequirements",
+  "defaultInputModes",
+  "defaultOutputModes",
+  "skills",
+  "signatures",
+  "iconUrl"
+]);
+
+function validateSchemaFieldSet(card) {
+  const errors = [];
+  const unexpected = Object.keys(card).filter((key) => !A2A_V1_CARD_FIELDS.has(key));
+  if (unexpected.length > 0) {
+    errors.push(`root fields outside the A2A v1 AgentCard schema: ${unexpected.join(", ")}`);
+  }
+  const providerExtras = Object.keys(card.provider || {}).filter(
+    (key) => key !== "organization" && key !== "url"
+  );
+  if (providerExtras.length > 0) {
+    errors.push(`provider fields outside AgentProvider: ${providerExtras.join(", ")}`);
+  }
+  return errors;
+}
+
 function validateProfileExpectation(card, sourceUrl) {
   const expectation = PROFILE_EXPECTATIONS.find(
     (entry) => sourceUrl.includes(entry.host) || card.name === entry.name
@@ -87,7 +133,7 @@ function validateProfileExpectation(card, sourceUrl) {
   if (!expectation) return [];
   const errors = [];
   if (card.name !== expectation.name) errors.push(`expected name=${expectation.name}`);
-  if (card?.x_agenda_intelligence?.product_profile !== expectation.profile) {
+  if (cardExtensionParams(card)?.x_agenda_intelligence?.product_profile !== expectation.profile) {
     errors.push(`expected x_agenda_intelligence.product_profile=${expectation.profile}`);
   }
   if (!card.skills.some((skill) => skill.id === expectation.skill)) {
@@ -108,10 +154,10 @@ function validateAgendaCard(card) {
   if (card.name !== "Agenda Intelligence MD") {
     errors.push(`expected Agenda Intelligence MD name, got ${JSON.stringify(card.name)}`);
   }
-  if (card?.x_agenda_intelligence?.hosted_wrapper !== true) {
+  if (cardExtensionParams(card)?.x_agenda_intelligence?.hosted_wrapper !== true) {
     errors.push("expected x_agenda_intelligence.hosted_wrapper=true");
   }
-  if (card?.x_agenda_intelligence?.mcp?.server_command !== "agenda-intelligence-mcp") {
+  if (cardExtensionParams(card)?.x_agenda_intelligence?.mcp?.server_command !== "agenda-intelligence-mcp") {
     errors.push("expected MCP server command agenda-intelligence-mcp");
   }
   if (!Array.isArray(card.skills) || !card.skills.some((skill) => skill.id === "agenda-audit-claims")) {
@@ -125,13 +171,13 @@ function validateMiddleCorridorCard(card) {
   if (card.name !== "Kazakhstan / Middle Corridor Deal Risk Gate") {
     errors.push(`expected Kazakhstan / Middle Corridor Deal Risk Gate name, got ${JSON.stringify(card.name)}`);
   }
-  if (card?.x_agenda_intelligence?.product_profile !== "middle_corridor_deal_risk") {
+  if (cardExtensionParams(card)?.x_agenda_intelligence?.product_profile !== "middle_corridor_deal_risk") {
     errors.push("expected x_agenda_intelligence.product_profile=middle_corridor_deal_risk");
   }
-  if (card?.x_agenda_intelligence?.canonical_product_name !== "Kazakhstan / Middle Corridor Deal Risk Gate") {
+  if (cardExtensionParams(card)?.x_agenda_intelligence?.canonical_product_name !== "Kazakhstan / Middle Corridor Deal Risk Gate") {
     errors.push("expected canonical product name");
   }
-  const contract = card?.x_agenda_intelligence?.product_contract;
+  const contract = cardExtensionParams(card)?.x_agenda_intelligence?.product_contract;
   if (contract?.canonical_input_mode !== "structured_json") {
     errors.push("expected product_contract.canonical_input_mode=structured_json");
   }
@@ -144,11 +190,11 @@ function validateMiddleCorridorCard(card) {
   if (!String(contract?.source_taxonomy || "").includes("middle-corridor-deal-risk.json")) {
     errors.push("expected Middle Corridor source taxonomy URL");
   }
-  const requiredBeforeGo = card?.x_agenda_intelligence?.required_before_go;
+  const requiredBeforeGo = cardExtensionParams(card)?.x_agenda_intelligence?.required_before_go;
   if (!Array.isArray(requiredBeforeGo) || !requiredBeforeGo.includes("beneficial_ownership_source")) {
     errors.push("expected beneficial_ownership_source in required_before_go");
   }
-  if (!String(card?.x_agenda_intelligence?.not_advice_notice || "").includes("Not legal")) {
+  if (!String(cardExtensionParams(card)?.x_agenda_intelligence?.not_advice_notice || "").includes("Not legal")) {
     errors.push("expected non-advice notice");
   }
   if (!hasBoundary(card, "No approval, clearance, authorization, or final decision.")) {
@@ -178,13 +224,13 @@ function validateAgenticInteractionTrustCard(card) {
   if (card.name !== "Agentic Interaction Trust Gate") {
     errors.push(`expected Agentic Interaction Trust Gate name, got ${JSON.stringify(card.name)}`);
   }
-  if (card?.x_agenda_intelligence?.product_profile !== "agentic_interaction_trust") {
+  if (cardExtensionParams(card)?.x_agenda_intelligence?.product_profile !== "agentic_interaction_trust") {
     errors.push("expected x_agenda_intelligence.product_profile=agentic_interaction_trust");
   }
-  if (card?.x_agenda_intelligence?.canonical_product_name !== "Agentic Interaction Trust Gate") {
+  if (cardExtensionParams(card)?.x_agenda_intelligence?.canonical_product_name !== "Agentic Interaction Trust Gate") {
     errors.push("expected canonical product name");
   }
-  const contract = card?.x_agenda_intelligence?.product_contract;
+  const contract = cardExtensionParams(card)?.x_agenda_intelligence?.product_contract;
   if (contract?.canonical_input_mode !== "structured_json") {
     errors.push("expected product_contract.canonical_input_mode=structured_json");
   }
@@ -197,14 +243,14 @@ function validateAgenticInteractionTrustCard(card) {
   if (!String(contract?.source_taxonomy || "").includes("agentic-interaction-trust.json")) {
     errors.push("expected Agentic Interaction Trust source taxonomy URL");
   }
-  const requiredBeforeAction = card?.x_agenda_intelligence?.required_before_action;
+  const requiredBeforeAction = cardExtensionParams(card)?.x_agenda_intelligence?.required_before_action;
   if (
     !Array.isArray(requiredBeforeAction) ||
     !requiredBeforeAction.includes("operator_or_principal_authorization")
   ) {
     errors.push("expected operator_or_principal_authorization in required_before_action");
   }
-  if (!String(card?.x_agenda_intelligence?.not_advice_notice || "").includes("Not cybersecurity monitoring")) {
+  if (!String(cardExtensionParams(card)?.x_agenda_intelligence?.not_advice_notice || "").includes("Not cybersecurity monitoring")) {
     errors.push("expected non-advice notice");
   }
   if (!hasBoundary(card, "No approval, clearance, authorization, denial, blocking, or final decision.")) {
@@ -285,6 +331,7 @@ export function validateAgentCard(card, sourceUrl = "") {
     }
   }
   if (sourceUrl) {
+    errors.push(...validateSchemaFieldSet(card));
     errors.push(...validateProtectedJwsHeader(card, sourceUrl));
   }
 

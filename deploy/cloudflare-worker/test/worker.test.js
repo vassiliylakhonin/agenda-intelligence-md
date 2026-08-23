@@ -36,6 +36,7 @@ import {
   sendCisReviewEmailNotification,
   signalScreenForText,
   statusInfo,
+  toSpecWireCard,
   triageForText,
   usageStats
 } from "../src/index.js";
@@ -3131,7 +3132,7 @@ import {
   jwksUrlFromCard,
   maybeSignCard,
   publicJwkFromPrivate,
-  signCardDetached
+  signCard
 } from "../src/jws.js";
 
 async function generateTestKey() {
@@ -3182,7 +3183,7 @@ test("buildJwks returns empty when no key is provided", () => {
   assert.deepEqual(buildJwks(""), { keys: [] });
 });
 
-test("signCardDetached produces a compact detached JWS that verifies against JWKS", async () => {
+test("signCard produces an AgentCardSignature that verifies against JWKS", async () => {
   const privJwk = await generateTestKey();
   const card = {
     name: "Test agent",
@@ -3197,20 +3198,18 @@ test("signCardDetached produces a compact detached JWS that verifies against JWK
       }
     ]
   };
-  const signature = await signCardDetached(card, privJwk);
+  const signature = await signCard(card, privJwk);
 
-  // Format: <headerB64>..<signatureB64>
-  assert.match(signature, /^[A-Za-z0-9_-]+\.\.[A-Za-z0-9_-]+$/);
+  // A2A v1 section 8.4.2: `protected` and `signature`, both base64url.
+  assert.match(signature.protected, /^[A-Za-z0-9_-]+$/);
+  assert.match(signature.signature, /^[A-Za-z0-9_-]+$/);
 
-  // Verify roundtrip against the public JWK
-  const [headerB64, , sigB64] = signature.split(".");
-  const payloadBytes = new TextEncoder().encode(jcs(card));
-  const headerBytes = new TextEncoder().encode(headerB64);
-  const dotBytes = new TextEncoder().encode(".");
-  const signingInput = new Uint8Array(headerBytes.length + 1 + payloadBytes.length);
-  signingInput.set(headerBytes, 0);
-  signingInput.set(dotBytes, headerBytes.length);
-  signingInput.set(payloadBytes, headerBytes.length + 1);
+  // Verify roundtrip against the public JWK. Signing input is
+  // BASE64URL(protected) + "." + BASE64URL(payload) — ordinary JWS.
+  const headerB64 = signature.protected;
+  const sigB64 = signature.signature;
+  const payloadB64 = base64urlEncode(new TextEncoder().encode(jcs(card)));
+  const signingInput = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
 
   const pubJwk = publicJwkFromPrivate(privJwk);
   const verifyKey = await webcrypto.subtle.importKey(
@@ -3229,35 +3228,37 @@ test("signCardDetached produces a compact detached JWS that verifies against JWK
   );
   assert.equal(ok, true);
 
-  // Header must declare alg=ES256 and the detached payload convention (b64=false, crit=["b64"]).
+  // Header must declare alg=ES256 and typ=JOSE, and must NOT carry the RFC 7797
+  // unencoded-payload convention the earlier detached form used.
   const headerJson = JSON.parse(
     new TextDecoder().decode(Uint8Array.from(Buffer.from(headerB64.replace(/-/g, "+").replace(/_/g, "/"), "base64")))
   );
   assert.equal(headerJson.alg, "ES256");
-  assert.equal(headerJson.b64, false);
-  assert.deepEqual(headerJson.crit, ["b64"]);
+  assert.equal(headerJson.typ, "JOSE");
+  assert.equal(headerJson.b64, undefined);
+  assert.equal(headerJson.crit, undefined);
   assert.equal(headerJson.kid, "test-kid");
   assert.equal(headerJson.jku, "https://test-agent.example/.well-known/jwks.json");
 });
 
-test("signCardDetached strips an existing signature field before signing", async () => {
+test("signCard removes an existing signatures field before signing", async () => {
   const privJwk = await generateTestKey();
   const card = {
     name: "Test",
     skills: [],
     supportedInterfaces: [{ url: "https://test-agent.example/message/send" }]
   };
-  const sig1 = await signCardDetached(card, privJwk);
-  const sig2 = await signCardDetached({ ...card, signature: "previous" }, privJwk);
-  // ECDSA signatures are non-deterministic, so the signature segment may differ
+  const sig1 = await signCard(card, privJwk);
+  const sig2 = await signCard({ ...card, signatures: [{ protected: "x", signature: "y" }] }, privJwk);
+  // ECDSA signatures are non-deterministic, so the signature value may differ
   // even when the payload is identical. What MUST be identical is the header.
-  assert.equal(sig1.split(".")[0], sig2.split(".")[0]);
+  assert.equal(sig1.protected, sig2.protected);
 });
 
 test("maybeSignCard is a no-op when no signing key is configured", async () => {
   const card = { name: "Test", skills: [] };
   const result = await maybeSignCard(card, {});
-  assert.equal(result.signature, undefined);
+  assert.equal(result.signatures, undefined);
   assert.equal(result.name, "Test");
 });
 
@@ -3269,10 +3270,12 @@ test("maybeSignCard adds a signature when AGENT_CARD_SIGNING_KEY is set", async 
     supportedInterfaces: [{ url: "https://test-agent.example/message/send" }]
   };
   const result = await maybeSignCard(card, { AGENT_CARD_SIGNING_KEY: JSON.stringify(privJwk) });
-  assert.match(result.signature, /^[A-Za-z0-9_-]+\.\.[A-Za-z0-9_-]+$/);
+  assert.equal(result.signatures.length, 1);
+  assert.match(result.signatures[0].protected, /^[A-Za-z0-9_-]+$/);
+  assert.match(result.signatures[0].signature, /^[A-Za-z0-9_-]+$/);
   // Original card content preserved
   assert.equal(result.name, "Test");
-  const [headerB64] = result.signature.split(".");
+  const headerB64 = result.signatures[0].protected;
   const header = JSON.parse(Buffer.from(headerB64, "base64url").toString("utf8"));
   assert.equal(header.jku, "https://test-agent.example/.well-known/jwks.json");
 });
@@ -4225,4 +4228,89 @@ test("a gate that refuses a request says what it needs, and its own example work
   } finally {
     console.log = originalLog;
   }
+});
+
+// A2A v1 AgentCard (specification/a2a.proto message AgentCard) and
+// AgentProvider define a closed field set. An independent conformance scan on
+// 2026-08-23 failed every card this Worker serves on exactly this: `support`,
+// `x_agenda_intelligence`, `x_agent_contract` and a top-level `signature` at
+// the root, plus `provider.legalEntity`. Nothing but `capabilities.extensions`
+// may carry vendor data.
+const A2A_V1_CARD_FIELDS = new Set([
+  "name",
+  "description",
+  "supportedInterfaces",
+  "provider",
+  "version",
+  "documentationUrl",
+  "capabilities",
+  "securitySchemes",
+  "securityRequirements",
+  "defaultInputModes",
+  "defaultOutputModes",
+  "skills",
+  "signatures",
+  "iconUrl"
+]);
+
+test("the served agent card carries no field the A2A v1 schema does not define", async () => {
+  for (const host of [
+    "agenda-intelligence-a2a.example.workers.dev",
+    "middle-corridor-deal-risk-gate-a2a.example.workers.dev",
+    "cis-secondary-sanctions-a2a.example.workers.dev",
+    "agentic-interaction-trust-a2a.example.workers.dev"
+  ]) {
+    const response = await handleRequest(
+      new Request(`https://${host}/.well-known/agent-card.json`),
+      {}
+    );
+    const card = await response.json();
+
+    const unexpected = Object.keys(card).filter((key) => !A2A_V1_CARD_FIELDS.has(key));
+    assert.deepEqual(unexpected, [], `${host} served non-schema root fields: ${unexpected}`);
+
+    assert.deepEqual(
+      Object.keys(card.provider).sort(),
+      ["organization", "url"],
+      `${host} served a provider with fields outside AgentProvider`
+    );
+  }
+});
+
+test("card data outside the schema survives inside capabilities.extensions", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/agent-card.json"),
+    {}
+  );
+  const card = await response.json();
+  const extension = card.capabilities.extensions.find(
+    (entry) => entry.uri === "https://vassiliylakhonin.github.io/a2a/extensions/agenda-intelligence/v1"
+  );
+
+  assert.ok(extension, "the vendor extension must be present");
+  assert.equal(extension.required, false, "reading vendor metadata must never be required");
+  assert.ok(extension.params.x_agenda_intelligence, "wrapper metadata must survive the move");
+  assert.equal(extension.params.support.email, "vassiliy.lakhonin@gmail.com");
+  assert.equal(extension.params.provider.legalEntity.type, "individual");
+});
+
+test("toSpecWireCard moves anything it does not recognise, not a fixed list", () => {
+  const wire = toSpecWireCard({
+    name: "Test",
+    skills: [],
+    provider: { organization: "Someone", url: "https://example.test/", contact: "mailto:a@example.test" },
+    x_future_field: { added: "by a profile that did not exist when this was written" }
+  });
+
+  assert.deepEqual(Object.keys(wire.provider).sort(), ["organization", "url"]);
+  const params = wire.capabilities.extensions[0].params;
+  assert.equal(params.x_future_field.added, "by a profile that did not exist when this was written");
+  assert.equal(params.provider.contact, "mailto:a@example.test");
+});
+
+test("agentCard keeps its internal shape so profile and adapter readers are untouched", () => {
+  const card = agentCard(request, {});
+  assert.ok(card.x_agenda_intelligence, "internal readers use card.x_agenda_intelligence");
+  assert.ok(card.support, "internal readers use card.support");
+  assert.equal(card.provider.legalEntity.type, "individual");
 });

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { cardExtensionParams } from "../src/card-extension.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../..");
@@ -104,7 +105,7 @@ for (const testCase of cases) {
     headers: { "user-agent": "agenda-intelligence-live-smoke" }
   });
   assertEqual(
-    card.x_agenda_intelligence?.product_profile,
+    cardExtensionParams(card)?.x_agenda_intelligence?.product_profile,
     testCase.expectedCardProfile,
     `${testCase.name} agent-card profile`
   );

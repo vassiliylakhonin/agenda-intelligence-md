@@ -17,24 +17,26 @@ Workers (all on `*.vassiliy-lakhonin.workers.dev`):
 
 | Criterion | Weight | Status | Where |
 |---|---:|---|---|
-| `valid_card` — schema-validates against A2A v1.0 | 10 | ✅ | `/.well-known/agent-card.json` on each domain |
-| `live_jsonrpc` — `message/send` responds < 10s | 25 | ✅ | live smoke examples in [demo-pack.md](demo-pack.md) |
-| `protocol_version` — declares `"1.0"` (string) | 10 | ✅ | `protocolVersion: "1.0"`; response body is genuinely A2A v1.0-shaped (member-discriminated parts + `mediaType`, `TASK_STATE_*` enums) per [ADR 0017](../adr/0017-a2a-wire-contract-v1.md) — the score is earned, not just asserted |
-| `jws_signature` — card carries valid ES256 JWS | 10 | ✅ | detached JWS per RFC 7515 §3.1 + RFC 7797, JCS RFC 8785; public key at `/.well-known/jwks.json` (see [ADR 0014](../adr/0014-per-profile-live-retrieval.md) is unrelated; signing flow in [deploy/cloudflare-worker/README.md](../../deploy/cloudflare-worker/README.md)) |
-| `uptime_track` — ≥90% probe success / 30d | 15 | ⏳ accumulating | Cloudflare Workers; recovers automatically after the Agenstry probe-library gzip bug was fixed 2026-05-27 |
-| `skills_declared` — non-empty `skills[]` with id+name | 10 | ✅ | each card declares its product skill(s) |
-| `provider_attribution` — `provider.name` + `provider.url` | 10 | ✅ | Vassiliy Lakhonin / vassiliylakhonin.github.io |
-| `freshness` — last probe < 24h | 5 | ✅ | continuous probing |
-| `business_identity` — LEI / KvK / Companies House matched | 5 | ❌ | individual publisher, no legal-entity registration; not pursued |
+| `valid_card` — schema-validates against A2A v1.0 | 10 | ✅ since 2026-08-23 | Failed until then: the card carried `support`, `x_agenda_intelligence` and a top-level `signature` at the root plus `provider.legalEntity`, none of which the A2A v1 `AgentCard` schema defines. An independent scan on 2026-08-23 caught it. Vendor data now travels in `capabilities.extensions[]`; checked by `npm run verify:agent-card` and by unit test against the closed field set |
+| `live_responds` — answers its version-negotiated A2A message method | 25 | ✅ | live smoke examples in [demo-pack.md](demo-pack.md) |
+| `protocol_version` — declares `protocolVersion = "1.0"` (string) | 10 | ⚠ see note | The A2A v1 `AgentCard` schema has no root `protocolVersion`; version is declared per interface in `supportedInterfaces[].protocolVersion`, which every card sets to `"1.0"`. A root field cannot be added back without failing `valid_card` |
+| `signature` — JWS signature that verifies against the published JWKS | 10 | ✅ | `signatures` per A2A v1 §8.4.2 (JWS RFC 7515, JCS RFC 8785); public key at `/.well-known/jwks.json`; signing flow in [deploy/cloudflare-worker/README.md](../../deploy/cloudflare-worker/README.md) |
+| `uptime` — share of Agenstry probes succeeding over 30d | 15 | ⏳ accumulating | Cloudflare Workers; recovers automatically after the Agenstry probe-library gzip bug was fixed 2026-05-27 |
+| `skills` — non-empty `skills[]` with id + name | 10 | ✅ | each card declares its product skill(s) |
+| `verified_identity` — provider attribution plus authoritative-registry match | 10 | ❌ | individual publisher, no legal-entity registration; not pursued |
+| `freshness` — recent upstream sighting plus capability flags | 5 | ✅ | continuous probing |
+| `security` — declared security scheme | 5 | partial | `securityRequirements: []` — deliberately public, which the criterion scores 2 of 5 |
 
-**Expected grade:** ~B (≈80–95/100 depending on uptime window). The only structural miss is `business_identity` (−5), which is intentional — published as an individual, not a company.
+Criterion ids and weights above were re-read from the live schema (version 1.1) on 2026-08-23. An earlier version of this table used ids Agenstry no longer publishes (`jws_signature`, `provider_attribution`, `business_identity`, `uptime_track`) and asserted `valid_card` as met when it was not.
+
+**Expected grade:** not computed here. Five of the nine criteria are scored from Agenstry's own measurement record rather than from the card, so a total worked out from this table would not match theirs. The one deliberate structural miss is `verified_identity` (−10): published as an individual, not a company.
 
 ## Ownership verification
 
 Per [Damiën / Agenstry, 2026-05-27], three ownership-proof methods:
 
 - `vassiliylakhonin.github.io` — verified via `well_known` (`/.well-known/agenstry-verify`). ✅
-- Worker domains — verified via `jws` (JWKS round-trip against the card signature; no token, no file). The strongest method.
+- Worker domains — verified via `jws` (JWKS round-trip against the card signature in `signatures`; no token, no file). The strongest method.
 
 ## Boundaries (declared on every card / `/status`)
 

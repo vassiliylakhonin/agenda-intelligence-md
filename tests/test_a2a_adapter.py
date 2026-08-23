@@ -3,6 +3,15 @@ from pathlib import Path
 
 from agenda_intelligence import a2a_adapter
 
+
+def _card_extension(card):
+    """Vendor params from a wire card (A2A v1 puts them in capabilities.extensions)."""
+    for entry in card["capabilities"]["extensions"]:
+        if entry["uri"] == a2a_adapter.CARD_EXTENSION_URI:
+            return entry["params"]
+    raise AssertionError("vendor extension missing from the served card")
+
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 A2A_EXAMPLES = REPO_ROOT / "examples" / "a2a"
 
@@ -119,7 +128,50 @@ def test_jsonrpc_agent_card_method():
     )
 
     assert response["id"] == "card-1"
-    assert response["result"]["url"] == "https://example.com"
+    # `url` is not an A2A v1 AgentCard field, so it travels in the extension.
+    assert _card_extension(response["result"])["url"] == "https://example.com"
+    assert response["result"]["supportedInterfaces"][0]["url"] == "https://example.com/message/send"
+
+
+def test_jsonrpc_agent_card_carries_no_field_outside_the_a2a_schema():
+    """The card the adapter puts on the wire must validate as an A2A v1 AgentCard.
+
+    An independent conformance scan on 2026-08-23 failed every hosted card this
+    project serves for exactly this. The adapter had the same defect.
+    """
+    a2a_v1_card_fields = {
+        "name",
+        "description",
+        "supportedInterfaces",
+        "provider",
+        "version",
+        "documentationUrl",
+        "capabilities",
+        "securitySchemes",
+        "securityRequirements",
+        "defaultInputModes",
+        "defaultOutputModes",
+        "skills",
+        "signatures",
+        "iconUrl",
+    }
+    response = a2a_adapter.handle_jsonrpc(
+        {"jsonrpc": "2.0", "id": "card-2", "method": "agent/card"},
+        "https://example.com",
+    )
+    card = response["result"]
+
+    assert set(card) <= a2a_v1_card_fields, f"non-schema root fields: {set(card) - a2a_v1_card_fields}"
+    assert set(card["provider"]) <= {"organization", "url"}
+    # And the moved data is still there, not dropped.
+    assert _card_extension(card)["x_agenda_intelligence"]["product_profile"] == "middle_corridor_deal_risk"
+
+
+def test_agent_card_keeps_its_internal_shape_for_callers_that_read_it_directly():
+    card = a2a_adapter.agent_card("https://example.com")
+
+    assert card["x_agenda_intelligence"]["product_profile"] == "middle_corridor_deal_risk"
+    assert card["url"] == "https://example.com"
 
 
 def test_jsonrpc_message_send_routes_structured_request_from_params_request():
@@ -447,7 +499,7 @@ def test_a2a_agent_card_example_runs_through_stdin_shell():
     response = a2a_adapter.handle_stdin_jsonrpc((A2A_EXAMPLES / "agent-card.request.json").read_text())
 
     assert "error" not in response
-    assert response["result"]["x_agenda_intelligence"]["supported_capabilities"] == [
+    assert _card_extension(response["result"])["x_agenda_intelligence"]["supported_capabilities"] == [
         "middle_corridor_deal_risk",
         "agentic_interaction_trust",
         "cis_secondary_sanctions_exposure",

@@ -27,6 +27,7 @@ import {
   isEnabled as gleifEnabled
 } from "./upstream_gleif.js";
 
+import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "./okf_content.js";
 import {
@@ -992,6 +993,73 @@ function agentCard(request, env = {}) {
 
 function agentCardProtocolVersion(card) {
   return card?.supportedInterfaces?.[0]?.protocolVersion || null;
+}
+
+// The A2A v1 AgentCard schema (specification/a2a.proto, message AgentCard)
+// defines exactly the fields below, and AgentProvider exactly two. An
+// independent conformance scan on 2026-08-23 rejected every card this Worker
+// serves, because the card carried `support`, `x_agenda_intelligence`,
+// `x_agent_contract` and a top-level `signature` at the root, plus
+// `provider.legalEntity`. Verified against the proto: none of those are card
+// fields, and the one extension mechanism the spec defines is
+// `capabilities.extensions[]`, whose `params` is an arbitrary JSON Struct.
+//
+// This normalises at the wire boundary rather than in `agentCard()`, so
+// `profiles.js`, the Python adapter, the contract tests and every internal
+// reader keep reading `card.x_agenda_intelligence` unchanged; only the served
+// JSON moves. The field list is an allow-list, not a list of known offenders,
+// so a profile that adds a new key stays conformant without touching this.
+const A2A_CARD_FIELDS = new Set([
+  "name",
+  "description",
+  "supportedInterfaces",
+  "provider",
+  "version",
+  "documentationUrl",
+  "capabilities",
+  "securitySchemes",
+  "securityRequirements",
+  "defaultInputModes",
+  "defaultOutputModes",
+  "skills",
+  "signatures",
+  "iconUrl"
+]);
+const A2A_PROVIDER_FIELDS = new Set(["organization", "url"]);
+const CARD_EXTENSION_DESCRIPTION =
+  "Wrapper scope, product contract, boundaries, support channel and provider identity for this agent. " +
+  "Descriptive only: reading it is never required to call the agent.";
+
+function toSpecWireCard(card) {
+  const wire = {};
+  const params = {};
+  for (const [key, value] of Object.entries(card)) {
+    if (A2A_CARD_FIELDS.has(key)) wire[key] = value;
+    else params[key] = value;
+  }
+  if (wire.provider && typeof wire.provider === "object") {
+    const provider = {};
+    const providerExtras = {};
+    for (const [key, value] of Object.entries(wire.provider)) {
+      if (A2A_PROVIDER_FIELDS.has(key)) provider[key] = value;
+      else providerExtras[key] = value;
+    }
+    wire.provider = provider;
+    if (Object.keys(providerExtras).length > 0) params.provider = providerExtras;
+  }
+  if (Object.keys(params).length === 0) return wire;
+  const capabilities = { ...(wire.capabilities || {}) };
+  capabilities.extensions = [
+    ...(capabilities.extensions || []),
+    {
+      uri: CARD_EXTENSION_URI,
+      description: CARD_EXTENSION_DESCRIPTION,
+      required: false,
+      params
+    }
+  ];
+  wire.capabilities = capabilities;
+  return wire;
 }
 
 function aiCatalog(request, env = {}) {
@@ -7053,7 +7121,7 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
     return {
       jsonrpc: "2.0",
       id,
-      result: agentCard(request, env)
+      result: toSpecWireCard(agentCard(request, env))
     };
   }
 
@@ -7990,7 +8058,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   }
 
   if (request.method === "GET" && url.pathname === "/.well-known/agent-card.json") {
-    const card = agentCard(request, env);
+    const card = toSpecWireCard(agentCard(request, env));
     const signed = await maybeSignCard(card, env);
     return jsonResponse(signed, 200, aiCatalogHeaders(request));
   }
@@ -8147,6 +8215,7 @@ export {
   routeModules,
   signalScreenForText,
   statusInfo,
+  toSpecWireCard,
   triageForText,
   usageStats
 };
