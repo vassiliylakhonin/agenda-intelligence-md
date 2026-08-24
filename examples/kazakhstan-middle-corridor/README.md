@@ -37,6 +37,7 @@ the deal-risk contract empty:
 curl --fail-with-body --show-error --silent \
   -X POST https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send \
   -H 'content-type: application/json' \
+  -H 'A2A-Version: 1.0' \
   -H 'x-client-id: live-demo' \
   -H "x-request-id: demo-$(date +%s)" \
   --data-binary @examples/kazakhstan-middle-corridor/live-agent-request.json

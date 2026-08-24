@@ -61,7 +61,8 @@ import {
   MCP_UNSUPPORTED_PROTOCOL_VERSION,
   mcpArgumentsToParams,
   mcpToolSpecForProfile,
-  mcpToolsForProfile
+  mcpToolsForProfile,
+  mcpUsesLegacyRequestWrapper
 } from "./mcp.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 
@@ -467,7 +468,7 @@ function jsonResponse(body, status = 200, extraHeaders = {}) {
       "content-type": "application/json; charset=utf-8",
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET, POST, OPTIONS",
-      "access-control-allow-headers": "content-type, x-client-id, authorization",
+      "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name",
       ...extraHeaders
     }
   });
@@ -7160,7 +7161,70 @@ function mcpRequestedProtocolVersion(params) {
   return null;
 }
 
+function mcpTaskFailed(result) {
+  return result?.status?.state === "TASK_STATE_FAILED";
+}
+
+function mcpPayloadForResult(result) {
+  if (!result || typeof result !== "object") {
+    return { error: "EMPTY_TOOL_RESULT", message: "The worker returned no result." };
+  }
+  if (mcpTaskFailed(result)) {
+    return {
+      error: "INVALID_TOOL_INPUT",
+      message: "The supplied arguments do not satisfy this tool's input contract.",
+      details: result.metadata?.errors || result.metadata?.required_fields || []
+    };
+  }
+  if (result.metadata?.response && typeof result.metadata.response === "object") {
+    return result.metadata.response;
+  }
+  for (const artifact of result.artifacts || []) {
+    for (const part of artifact.parts || []) {
+      if (part?.data && typeof part.data === "object") return part.data;
+    }
+  }
+  return {
+    status: result.status?.state || "TASK_STATE_COMPLETED",
+    product_profile: result.metadata?.product_profile || "unknown"
+  };
+}
+
+function mcpResultSummary(payload, isError) {
+  if (isError) {
+    return `${payload.error || "TOOL_ERROR"}: ${payload.message || "The tool could not complete the request."}`;
+  }
+  const fields = [
+    "verdict",
+    "decision",
+    "reason_code",
+    "triage_recommendation",
+    "gate_decision",
+    "risk_signal",
+    "secondary_exposure_signal",
+    "exposure_signal",
+    "trust_signal",
+    "readiness_score",
+    "decision_readiness_score",
+    "readiness_label",
+    "decision_readiness_label",
+    "human_review_required"
+  ];
+  const values = fields
+    .filter((field) => ["string", "number", "boolean"].includes(typeof payload[field]))
+    .map((field) => `${field}=${payload[field]}`);
+  return `${values.join("; ") || "Tool call completed"}. See structuredContent for the complete result.`;
+}
+
 function mcpToolResult(payload, isError = false) {
+  return {
+    content: [{ type: "text", text: mcpResultSummary(payload, isError) }],
+    structuredContent: payload,
+    isError
+  };
+}
+
+function mcpLegacyToolResult(payload, isError = false) {
   return {
     content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
     structuredContent: payload,
@@ -7233,7 +7297,9 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
       const available = mcpToolsForProfile(profile).map((tool) => tool.name);
       return mcpResponse(id, mcpToolResult({ error: `Unknown tool: ${name}`, available }, true));
     }
-    const callParams = mcpArgumentsToParams(profile, params.arguments ?? {}, name);
+    const toolArguments = params.arguments ?? {};
+    const legacyRequestWrapper = mcpUsesLegacyRequestWrapper(profile, toolArguments, name);
+    const callParams = mcpArgumentsToParams(profile, toolArguments, name);
     const { result, promptChars, modulesUsed } = await runProfileRequest(profile, callParams, request, env);
     const event = logUsageEvent(request, {
       jsonrpc_method: "tools/call",
@@ -7249,7 +7315,11 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
       console.warn("usage stats write failed", error);
     });
     if (typeof ctx.waitUntil === "function") ctx.waitUntil(statsPromise);
-    return mcpResponse(id, mcpToolResult(result, Boolean(result && result.error)));
+    if (legacyRequestWrapper) {
+      return mcpResponse(id, mcpLegacyToolResult(result, Boolean(result.error)));
+    }
+    const toolPayload = mcpPayloadForResult(result);
+    return mcpResponse(id, mcpToolResult(toolPayload, mcpTaskFailed(result) || Boolean(result.error)));
   }
 
   return jsonRpcError(id, -32601, "Method not found", {
@@ -8047,7 +8117,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       headers: {
         "access-control-allow-origin": "*",
         "access-control-allow-methods": "GET, POST, OPTIONS",
-        "access-control-allow-headers": "content-type, x-client-id, authorization"
+        "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name"
       }
     });
   }

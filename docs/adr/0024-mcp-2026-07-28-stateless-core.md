@@ -57,8 +57,17 @@ Stdio server (`src/agenda_intelligence/mcp_stdio.py`):
 Worker (`deploy/cloudflare-worker/src/mcp.js`, `src/index.js`):
 
 - `POST /mcp` serves `server/discover`, `tools/list`, and `tools/call`.
-- One deployment serves one profile, so it exposes exactly one tool: that
-  profile's triage contract, named identically to its stdio twin.
+- One deployment serves one profile and a fixed profile-scoped tool set, named
+  identically to its stdio twin. Most profiles expose one tool; Agent Output
+  Verification exposes two related tools.
+- `tools/list` embeds the complete input and output JSON Schemas generated from
+  `schemas/v1`, plus read-only, non-destructive, idempotent behavior hints.
+- `tools/call.arguments` accepts the request schema directly. The earlier
+  `{request: ...}` wrapper remains a compatibility shim and keeps its earlier
+  A2A task-shaped result.
+- Successful direct-schema calls return the service response once in
+  `structuredContent` and a bounded text summary rather than duplicating the
+  full A2A task in both result channels.
 - `tools/call` and `message/send` both go through `runProfileRequest`, so the two
   transports cannot drift into different verdicts for the same payload.
 - `tools/call` inherits the production Bearer gate, the rate limit, and the usage
@@ -86,6 +95,7 @@ Worker (`deploy/cloudflare-worker/src/mcp.js`, `src/index.js`):
 - The hosted endpoint exposes the deployment's triage contract only, not the full
   local catalog. That difference is stated on the server card so a caller does not
   expect the stdio tool set from a worker.
-- Adding a worker profile now means adding its MCP tool spec in `src/mcp.js`
-  alongside the A2A dispatch, or the hosted endpoint silently falls back to the
-  default profile's tool.
+- Adding a structured worker profile now means adding its MCP tool spec in
+  `src/mcp.js` and its schema source mapping in
+  `scripts/generate-mcp-tool-contracts.js` alongside the A2A dispatch, or the
+  hosted endpoint silently falls back to the default profile's tool.

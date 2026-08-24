@@ -42,6 +42,7 @@ import {
 } from "../src/index.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "../src/usage_constants.js";
 import { PROFILE_REGISTRY, profileDiscovery } from "../src/profiles.js";
+import { mcpToolsForProfile } from "../src/mcp.js";
 import { validateAgentCard } from "../scripts/verify-agent-card.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "../src/okf_content.js";
 import { matchCounterparty as matchCounterpartyAgainstWatchman } from "../src/upstream_watchman.js";
@@ -1013,6 +1014,25 @@ test("A2A 1.0 SendMessage returns the required task result wrapper for every act
   } finally {
     console.log = originalLog;
   }
+});
+
+test("the published Middle Corridor live fixture is a valid A2A 1.0 SendMessage request", async () => {
+  const payload = JSON.parse(
+    readFileSync(new URL("../../../examples/kazakhstan-middle-corridor/live-agent-request.json", import.meta.url), "utf8")
+  );
+  const response = await handleJsonRpc(
+    payload,
+    new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send", {
+      method: "POST",
+      headers: { "A2A-Version": "1.0" }
+    }),
+    { AGENT_PROFILE: "kazakhstan" }
+  );
+
+  assert.equal(payload.method, "SendMessage");
+  assert.ok(payload.params.message.messageId);
+  assert.equal(response.result.task.status.state, "TASK_STATE_COMPLETED");
+  assert.equal(response.result.task.metadata.product_profile, "kazakhstan");
 });
 
 test("A2A 1.0 SendMessage rejects malformed params and unsupported versions", async () => {
@@ -4035,7 +4055,42 @@ test("mcp tools/list is cacheable and profile-scoped", async () => {
     ["agent_output_verification", "pre_action_check"]
   );
   assert.ok(result.tools[0].description.includes("Human review is required"));
-  assert.ok(result.tools[1].inputSchema.properties.request.description.includes("pre-action-check-request"));
+  assert.deepEqual(result.tools[0].inputSchema.required, ["claims", "evidence"]);
+  assert.ok(!("request" in result.tools[0].inputSchema.properties));
+  assert.ok(result.tools[0].outputSchema.required.includes("verdict"));
+  assert.ok(result.tools[1].inputSchema.required.includes("run_id"));
+  assert.ok(result.tools[1].outputSchema.required.includes("decision"));
+  for (const tool of result.tools) {
+    assert.deepEqual(tool.annotations, {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false
+    });
+  }
+});
+
+test("mcp tools/list embeds complete input and output schemas for every structured worker", () => {
+  const profiles = [
+    "kazakhstan",
+    "cis_secondary_sanctions",
+    "agentic_interaction_trust",
+    "agent_output_verification",
+    "gulf_maritime_exposure",
+    "market_entry_readiness"
+  ];
+  for (const profile of profiles) {
+    for (const tool of mcpToolsForProfile(profile)) {
+      assert.equal(tool.inputSchema.$schema, "https://json-schema.org/draft/2020-12/schema", tool.name);
+      assert.equal(tool.inputSchema.type, "object", tool.name);
+      assert.ok(Array.isArray(tool.inputSchema.required), tool.name);
+      assert.ok(tool.inputSchema.required.length > 0, tool.name);
+      assert.equal(tool.outputSchema.$schema, "https://json-schema.org/draft/2020-12/schema", tool.name);
+      assert.equal(tool.outputSchema.type, "object", tool.name);
+      assert.ok(Array.isArray(tool.outputSchema.required), tool.name);
+      assert.ok(tool.outputSchema.required.length > 0, tool.name);
+    }
+  }
 });
 
 test("mcp tools/call returns the same verdict as the A2A route", async () => {
@@ -4044,15 +4099,29 @@ test("mcp tools/call returns the same verdict as the A2A route", async () => {
     jsonrpc: "2.0",
     id: 3,
     method: "tools/call",
-    params: { name: "agent_output_verification", arguments: { request: audit } }
+    params: { name: "agent_output_verification", arguments: audit }
   });
   const a2a = await agentOutputVerificationResponseFor(groundedAuditFixture());
 
-  const viaMcp = mcp.result.structuredContent.metadata.response;
+  const viaMcp = mcp.result.structuredContent;
   assert.equal(mcp.result.isError, false);
   assert.equal(viaMcp.verdict, "allow_relay");
   assert.deepEqual(viaMcp, a2a.result.metadata.response);
-  assert.equal(JSON.parse(mcp.result.content[0].text).metadata.response.verdict, "allow_relay");
+  assert.match(mcp.result.content[0].text, /verdict=allow_relay/);
+  assert.ok(mcp.result.content[0].text.length < 500);
+  assert.ok(!("artifacts" in viaMcp));
+  assert.ok(Buffer.byteLength(JSON.stringify(mcp)) < 12_000);
+});
+
+test("mcp tools/call keeps the legacy request wrapper as an input compatibility shim", async () => {
+  const response = await mcpCall({
+    jsonrpc: "2.0",
+    id: "legacy-wrapper",
+    method: "tools/call",
+    params: { name: "agent_output_verification", arguments: { request: groundedAuditFixture() } }
+  });
+  assert.equal(response.result.structuredContent.metadata.response.verdict, "allow_relay");
+  assert.equal(JSON.parse(response.result.content[0].text).metadata.response.verdict, "allow_relay");
 });
 
 test("mcp tools/call on an unsupported claim blocks relay", async () => {
@@ -4062,9 +4131,9 @@ test("mcp tools/call on an unsupported claim blocks relay", async () => {
     jsonrpc: "2.0",
     id: 4,
     method: "tools/call",
-    params: { name: "agent_output_verification", arguments: { request: audit } }
+    params: { name: "agent_output_verification", arguments: audit }
   });
-  assert.equal(response.result.structuredContent.metadata.response.verdict, "block_unsafe_claims");
+  assert.equal(response.result.structuredContent.verdict, "block_unsafe_claims");
 });
 
 test("mcp pre_action_check uses the same action decision as the A2A route", async () => {
@@ -4073,15 +4142,37 @@ test("mcp pre_action_check uses the same action decision as the A2A route", asyn
     jsonrpc: "2.0",
     id: "pre-action-mcp",
     method: "tools/call",
-    params: { name: "pre_action_check", arguments: { request } }
+    params: { name: "pre_action_check", arguments: request }
   });
   const a2a = await agentOutputVerificationResponseFor(request);
 
-  const viaMcp = mcp.result.structuredContent.metadata.response;
+  const viaMcp = mcp.result.structuredContent;
   assert.equal(mcp.result.isError, false);
   assert.equal(viaMcp.decision, "require_approval");
   assert.equal(viaMcp.decision, a2a.result.metadata.response.decision);
   assert.equal(viaMcp.reason_code, a2a.result.metadata.response.reason_code);
+});
+
+test("mcp tools/call keeps the largest worker result below a bounded context cost", async () => {
+  const liveRequest = JSON.parse(
+    readFileSync(new URL("../../../examples/kazakhstan-middle-corridor/live-agent-request.json", import.meta.url), "utf8")
+  );
+  const structuredRequest = liveRequest.params.message.parts[0].data;
+  const response = await mcpCall(
+    {
+      jsonrpc: "2.0",
+      id: "compact-middle-corridor",
+      method: "tools/call",
+      params: { name: "middle_corridor_deal_risk", arguments: structuredRequest }
+    },
+    new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/mcp"),
+    { AGENT_PROFILE: "kazakhstan" }
+  );
+
+  assert.equal(response.result.structuredContent.triage_recommendation, "escalate_before_signature");
+  assert.ok(!("artifacts" in response.result.structuredContent));
+  assert.ok(response.result.content[0].text.length < 500);
+  assert.ok(Buffer.byteLength(JSON.stringify(response)) < 15_000);
 });
 
 test("mcp tools/call rejects an unknown tool as a tool error, not a protocol error", async () => {
@@ -4137,6 +4228,17 @@ test("mcp endpoint is routed and served without a session header", async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.result.protocolVersions[0], "2026-07-28");
+});
+
+test("mcp endpoint permits the 2026-07-28 routing headers in browser preflight", async () => {
+  const response = await handleRequest(
+    new Request("https://agent-output-verification-a2a.example.workers.dev/mcp", { method: "OPTIONS" }),
+    MCP_ENV
+  );
+  const allowed = response.headers.get("access-control-allow-headers");
+  assert.equal(response.status, 204);
+  assert.match(allowed, /mcp-method/);
+  assert.match(allowed, /mcp-name/);
 });
 
 test("mcp server card advertises the hosted streamable-http transport", () => {
