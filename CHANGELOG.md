@@ -2,7 +2,12 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
-## Unreleased
+## 1.6.0 — 2026-08-24
+
+- **fix(release): align the Cloudflare Worker version with the Python release.** The live Workers and Worker source
+  still reported `1.2.0` while PyPI and the repository reported `1.5.0`. The Worker now reports `1.6.0`, its contract
+  tests are updated, and the Python version-sync test covers the Worker constant so the two release surfaces cannot
+  drift silently again. This changes version metadata only; the local-file review command remains Python/CLI-only.
 
 - **feat(evidence review): add a bounded local-file review workflow and Unicode lexical support.**
   `agenda-intelligence review <manifest>` now loads caller-selected UTF-8, Markdown, DOCX, or optional PDF
