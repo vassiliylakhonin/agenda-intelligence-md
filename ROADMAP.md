@@ -143,6 +143,24 @@ Additive change under the `docs/vertical-workers.md` "`< 3` vertical workers in 
 - **Cloudflare Worker JS-side OpenSanctions live retrieval** for the `cis_secondary_sanctions` profile. Mirrors the Python adapter for the Workers runtime. New JS module `deploy/cloudflare-worker/src/upstream_opensanctions.js`. Cache reuses the existing `AGENDA_USAGE` KV namespace with the `opensanctions:` prefix. New `env.cis-secondary-sanctions` stanza in `wrangler.toml` for the `cis-secondary-sanctions-a2a` subdomain. Worker JS detects the new profile from host/env, emits a per-profile agent card with the `live_retrieval` block, exposes `live_retrieval: true` in `/status` for this profile only, and dispatches structured `cis_secondary_sanctions_exposure` requests through the OpenSanctions live-retrieval path with graceful degrade. `handleJsonRpc` is now async. `agenda` and `kazakhstan` profile boundaries (`live_retrieval: false`) preserved. 6 new worker tests added.
 - **ADR 0014 update 2026-05-27 — runtime activation deferred.** Discovered after shipping that the OpenSanctions hosted API is paid (€0.10/call). With zero confirmed buyers for the profile, per-call vendor fees are a sunk-cost trap. The architectural pattern (per-profile capability + env-derived activation + graceful degrade) stays in place; runtime activation flips to deferred. `LIVE_RETRIEVAL_PROFILES` now declares `capability_declared` with `activation_env_var` / `disable_env_var`. New `is_live_retrieval_active(profile)` helper (Python + JS) is env-derived and currently always returns `False`. Agent cards / `/status` now expose `{capability_declared, active, ...}` and include a `deferral_note` when inactive. `boundaries.live_retrieval` honestly reflects actual activation (currently `false`). Re-activation is one `wrangler secret put OPENSANCTIONS_API_KEY` away — no code change. Self-host of bulk OpenSanctions CC-BY data was considered and parked as an option: technically feasible but undermines positioning (compliance buyers distrust homebrew matching) and has sunk-cost risk without a confirmed buyer.
 
+## v1.6.0 — multilingual local evidence review (shipped on `main` 2026-08-24)
+
+- `agenda-intelligence review <manifest>` loads caller-selected UTF-8, Markdown, DOCX, and optional PDF files,
+  hydrates the evidence-packet request, and writes reviewer-facing Markdown or JSON without repeating full source
+  text in the result.
+- The file boundary is explicit: paths must remain inside the manifest directory; individual source size,
+  extracted text, and PDF page count are capped. The workflow makes no network or model call.
+- Unicode tokenization retains Cyrillic and Arabic words, preserves percentages, and checks common English,
+  Russian, and Arabic negation cues. It does not provide morphology, translation, semantic-role resolution,
+  factuality, or source-authority assessment.
+- The new request contract is additive (`schemas/v1/evidence-review-request.schema.json`). The frozen v1 request/memo
+  family, MCP tool names, HTTP routes, and A2A profiles are unchanged.
+- The workflow is a local Python-package/CLI capability. Cloudflare Workers cannot read caller-local files and do
+  not expose a document-upload endpoint; redeploying them activates the accumulated Worker fixes and version
+  alignment, not the local-file review command.
+- Release and Worker versions are aligned at 1.6.0 and guarded by tests. Publishing and deployment demonstrate
+  availability only; they are not evidence of buyer demand, adoption, or revenue.
+
 ## Post-v1 — factual verification layer
 
 - Define a separate Claim Verdict contract for real-world claim assessment.

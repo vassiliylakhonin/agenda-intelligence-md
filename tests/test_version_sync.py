@@ -19,6 +19,13 @@ def parse_dockerfile_version(relative_path):
     return match.group(1).strip('"')
 
 
+def parse_worker_version():
+    text = (ROOT / "deploy/cloudflare-worker/src/profiles.js").read_text()
+    match = re.search(r'(?m)^export const VERSION\s*=\s*"([^"]+)";', text)
+    assert match, "Cloudflare Worker source is missing VERSION"
+    return match.group(1)
+
+
 def collect_json_versions(path):
     if not path.exists():
         return []
@@ -47,6 +54,7 @@ def test_release_version_fields_match_pyproject():
         ("Dockerfile:ARG AGENDA_INTELLIGENCE_VERSION", parse_dockerfile_version("Dockerfile")),
         ("Dockerfile.api:ARG AGENDA_INTELLIGENCE_VERSION", parse_dockerfile_version("Dockerfile.api")),
         ("Dockerfile.a2a:ARG AGENDA_INTELLIGENCE_VERSION", parse_dockerfile_version("Dockerfile.a2a")),
+        ("deploy/cloudflare-worker/src/profiles.js:VERSION", parse_worker_version()),
     ]
 
     for relative_path in [

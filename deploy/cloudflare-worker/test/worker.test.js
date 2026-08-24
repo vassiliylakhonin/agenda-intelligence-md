@@ -501,7 +501,7 @@ test("Snapshot adapter degrades to disabled when SNAPSHOT_INDEX_URL is unset", a
 test("agent card uses request origin for live endpoints", () => {
   const card = agentCard(request);
 
-  assert.equal(card.version, "1.2.0");
+  assert.equal(card.version, "1.6.0");
   assert.equal(card.protocolVersion, undefined);
   assert.equal(card.url, undefined);
   assert.equal(card.protocolVersions, undefined);
@@ -550,7 +550,7 @@ test("AI catalog advertises real agentic resources without traction claims", () 
   assert.equal(catalog.specVersion, "1.0");
   assert.equal(catalog.url, "https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json");
   assert.equal(catalog.host.identifier, "did:web:agenda-intelligence-a2a.example.workers.dev");
-  assert.equal(catalog.version, "1.2.0");
+  assert.equal(catalog.version, "1.6.0");
   assert.deepEqual(
     catalog.entries.map((entry) => entry.identifier),
     [
@@ -641,7 +641,7 @@ test("API catalog and OpenAPI routes advertise the public worker HTTP contract",
     "https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json"
   );
   assert.equal(openapi.openapi, "3.0.3");
-  assert.equal(openapi.info.version, "1.2.0");
+  assert.equal(openapi.info.version, "1.6.0");
   assert.ok(openapi.paths["/message/send"].post);
   assert.ok(openapi.paths["/.well-known/ai-catalog.json"].get);
   assert.ok(openapi.paths["/.well-known/agenstry-verify"].get);

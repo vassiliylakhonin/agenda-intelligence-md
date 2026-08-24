@@ -18,7 +18,7 @@ FROM python:3.11-slim
 # Pin to the current published release so introspection is reproducible.
 # Bump in lockstep with pyproject.toml, agent-manifest.json, server.json
 # on every release — see the project release checklist.
-ARG AGENDA_INTELLIGENCE_VERSION=1.5.0
+ARG AGENDA_INTELLIGENCE_VERSION=1.6.0
 
 # Retry to tolerate PyPI CDN propagation lag. A release bumps this pin on the
 # same push that publishes the wheel, so a catalog rebuild (Glama and similar)
