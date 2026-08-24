@@ -4052,7 +4052,13 @@ test("mcp tools/list is cacheable and profile-scoped", async () => {
   assert.ok(result.ttlMs > 0);
   assert.deepEqual(
     result.tools.map((tool) => tool.name),
-    ["agent_output_verification", "pre_action_check"]
+    [
+      "agent_output_verification",
+      "pre_action_check",
+      "decision_policies_list",
+      "decision_check",
+      "decision_verify"
+    ]
   );
   assert.ok(result.tools[0].description.includes("Human review is required"));
   assert.deepEqual(result.tools[0].inputSchema.required, ["claims", "evidence"]);
@@ -4060,7 +4066,7 @@ test("mcp tools/list is cacheable and profile-scoped", async () => {
   assert.ok(result.tools[0].outputSchema.required.includes("verdict"));
   assert.ok(result.tools[1].inputSchema.required.includes("run_id"));
   assert.ok(result.tools[1].outputSchema.required.includes("decision"));
-  for (const tool of result.tools) {
+  for (const tool of result.tools.filter((tool) => tool.name !== "decision_check")) {
     assert.deepEqual(tool.annotations, {
       readOnlyHint: true,
       destructiveHint: false,
@@ -4068,6 +4074,12 @@ test("mcp tools/list is cacheable and profile-scoped", async () => {
       openWorldHint: false
     });
   }
+  assert.deepEqual(result.tools.find((tool) => tool.name === "decision_check").annotations, {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false
+  });
 });
 
 test("mcp tools/list embeds complete input and output schemas for every structured worker", () => {
@@ -4083,8 +4095,12 @@ test("mcp tools/list embeds complete input and output schemas for every structur
     for (const tool of mcpToolsForProfile(profile)) {
       assert.equal(tool.inputSchema.$schema, "https://json-schema.org/draft/2020-12/schema", tool.name);
       assert.equal(tool.inputSchema.type, "object", tool.name);
-      assert.ok(Array.isArray(tool.inputSchema.required), tool.name);
-      assert.ok(tool.inputSchema.required.length > 0, tool.name);
+      if (tool.name === "decision_policies_list") {
+        assert.equal(tool.inputSchema.additionalProperties, false, tool.name);
+      } else {
+        assert.ok(Array.isArray(tool.inputSchema.required), tool.name);
+        assert.ok(tool.inputSchema.required.length > 0, tool.name);
+      }
       assert.equal(tool.outputSchema.$schema, "https://json-schema.org/draft/2020-12/schema", tool.name);
       assert.equal(tool.outputSchema.type, "object", tool.name);
       assert.ok(Array.isArray(tool.outputSchema.required), tool.name);
@@ -4151,6 +4167,94 @@ test("mcp pre_action_check uses the same action decision as the A2A route", asyn
   assert.equal(viaMcp.decision, "require_approval");
   assert.equal(viaMcp.decision, a2a.result.metadata.response.decision);
   assert.equal(viaMcp.reason_code, a2a.result.metadata.response.reason_code);
+});
+
+test("mcp decision gate lists its bounded policy and signs an exact-request receipt", async () => {
+  const privateJwk = await generateTestKey();
+  const env = {
+    ...MCP_ENV,
+    AGENT_CARD_SIGNING_KEY: JSON.stringify(privateJwk),
+    AGENT_CARD_SIGNING_KID: privateJwk.kid
+  };
+  const listed = await mcpCall(
+    {
+      jsonrpc: "2.0",
+      id: "decision-policies",
+      method: "tools/call",
+      params: { name: "decision_policies_list", arguments: {} }
+    },
+    mcpRequest,
+    env
+  );
+  assert.equal(listed.result.isError, false);
+  assert.equal(listed.result.structuredContent.policies.length, 1);
+  assert.equal(listed.result.structuredContent.policies[0].policy_id, "pre-action-check.v1");
+
+  const invalidList = await mcpCall(
+    {
+      jsonrpc: "2.0",
+      id: "decision-policies-invalid",
+      method: "tools/call",
+      params: { name: "decision_policies_list", arguments: { unexpected: true } }
+    },
+    mcpRequest,
+    env
+  );
+  assert.equal(invalidList.result.isError, true);
+  assert.equal(invalidList.result.structuredContent.error, "INVALID_TOOL_INPUT");
+
+  const checked = await mcpCall(
+    {
+      jsonrpc: "2.0",
+      id: "decision-check",
+      method: "tools/call",
+      params: { name: "decision_check", arguments: preActionCheckFixture() }
+    },
+    mcpRequest,
+    env
+  );
+  const decision = checked.result.structuredContent;
+  assert.equal(checked.result.isError, false);
+  assert.equal(decision.decision, "continue");
+  assert.equal(decision.receipt_status, "signed");
+  assert.equal(decision.receipt.format, "agenda-readiness-receipt+jws");
+  assert.equal(decision.receipt.token.split(".").length, 3);
+  assert.match(decision.receipt.request_hash, /^sha256:[a-f0-9]{64}$/);
+  assert.match(decision.receipt.action_hash, /^sha256:[a-f0-9]{64}$/);
+
+  const verified = await mcpCall(
+    {
+      jsonrpc: "2.0",
+      id: "decision-verify",
+      method: "tools/call",
+      params: {
+        name: "decision_verify",
+        arguments: {
+          receipt: decision.receipt.token,
+          expected_request_hash: decision.receipt.request_hash,
+          expected_action_hash: decision.receipt.action_hash
+        }
+      }
+    },
+    mcpRequest,
+    env
+  );
+  assert.equal(verified.result.isError, false);
+  assert.equal(verified.result.structuredContent.signature_valid, true);
+  assert.equal(verified.result.structuredContent.binding_matches, true);
+  assert.equal(verified.result.structuredContent.gate_passed, true);
+});
+
+test("mcp decision gate fails closed when a signing key is unavailable", async () => {
+  const checked = await mcpCall({
+    jsonrpc: "2.0",
+    id: "decision-check-no-key",
+    method: "tools/call",
+    params: { name: "decision_check", arguments: preActionCheckFixture() }
+  });
+  assert.equal(checked.result.isError, true);
+  assert.equal(checked.result.structuredContent.receipt_status, "unavailable");
+  assert.equal(checked.result.structuredContent.receipt, null);
 });
 
 test("mcp tools/call keeps the largest worker result below a bounded context cost", async () => {
@@ -4250,7 +4354,13 @@ test("mcp server card advertises the hosted streamable-http transport", () => {
   const hosted = card.transports.find((entry) => entry.type === "streamable-http");
   assert.equal(hosted.url, "https://agent-output-verification-a2a.example.workers.dev/mcp");
   assert.equal(hosted.stateless, true);
-  assert.deepEqual(hosted.tools, ["agent_output_verification", "pre_action_check"]);
+  assert.deepEqual(hosted.tools, [
+    "agent_output_verification",
+    "pre_action_check",
+    "decision_policies_list",
+    "decision_check",
+    "decision_verify"
+  ]);
   assert.equal(card.transport.type, "stdio");
 });
 

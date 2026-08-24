@@ -44,8 +44,9 @@ a Worker at all — there is no per-client state to keep, so no Durable Object.
 
 It serves `server/discover`, `tools/list`, and `tools/call`. One deployment
 serves one profile and a fixed profile-scoped tool set. Most profiles expose one
-tool; Agent Output Verification exposes both `agent_output_verification` and
-`pre_action_check`.
+tool. Agent Output Verification exposes the existing `agent_output_verification`
+and `pre_action_check` tools plus the hosted Decision Gate:
+`decision_policies_list`, `decision_check`, and `decision_verify`.
 
 ```bash
 curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp \
@@ -53,17 +54,33 @@ curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.de
   -d '{"jsonrpc":"2.0","id":1,"method":"server/discover"}'
 ```
 
-`tools/call` routes through the same dispatch as `SendMessage`, so both
-transports return the same verdict for the same payload, and it inherits the same
-Bearer gate, rate limit, and usage logging. `server/discover` and `tools/list`
-stay open, like `agent/card`. `tools/list` embeds the complete JSON Schema for
-both input and output. `tools/call.arguments` is the request object itself; the
-older `{ "request": { ... } }` wrapper remains accepted as a compatibility
-shim and preserves its former A2A task-shaped result. Direct-schema calls return
-the service response once in `structuredContent` and a short text summary, not a
-duplicate A2A task envelope. Older revisions (`initialize`, `ping`) are still
-answered. Rationale:
+Existing profile tools route through the same dispatch as `SendMessage`, so both
+transports return the same verdict for the same payload. The three Decision Gate
+tools are hosted-MCP-only: they list the one bounded policy, attach a five-minute
+ES256 readiness receipt to the existing pre-action result, and verify that the
+receipt is current and bound to the caller's expected request and action hashes.
+`gate_passed` requires a valid `continue` receipt; it is not authorization and
+the caller still enforces and performs the action. An enforcing caller computes
+the expected hashes from its own request copy; echoing hashes copied from the
+receipt response does not establish that the intended action matches. The Gate
+is stateless, so an exactly bound receipt may be reused during its five-minute
+lifetime; callers that require one-time execution must prevent replay at their
+own execution boundary.
+
+`tools/call` inherits the same Bearer gate, rate limit, and usage logging.
+`server/discover` and `tools/list` stay open, like `agent/card`. `tools/list`
+embeds the complete JSON Schema for both input and output. Tools are read-only
+and non-destructive; `decision_check` is marked non-idempotent because every
+receipt has a new identifier and timestamps. `tools/call.arguments` is the
+request object itself; the older `{ "request": { ... } }` wrapper remains
+accepted for the two pre-existing tools as a compatibility shim and preserves
+their former A2A task-shaped result. Decision Gate tools accept only their
+published direct schemas. Direct-schema calls return the service response once
+in `structuredContent` and a short text summary, not a duplicate A2A task envelope.
+Older revisions (`initialize`, `ping`) are still answered. Rationale:
 [ADR 0024](../../docs/adr/0024-mcp-2026-07-28-stateless-core.md).
+Signed-receipt decision:
+[ADR 0025](../../docs/adr/0025-signed-readiness-receipts.md).
 
 The full product layer remains:
 

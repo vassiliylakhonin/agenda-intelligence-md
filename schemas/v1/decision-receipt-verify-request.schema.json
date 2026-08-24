@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/decision-receipt-verify-request.schema.json",
+  "title": "DecisionReceiptVerifyRequest",
+  "description": "A signed readiness receipt plus the request and action hashes expected by the enforcing caller.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["receipt", "expected_request_hash", "expected_action_hash"],
+  "properties": {
+    "receipt": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+    },
+    "expected_request_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "SHA-256 JCS hash computed from the enforcing caller's own copy of the complete request; do not copy it blindly from the receipt response."
+    },
+    "expected_action_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "SHA-256 JCS hash computed from the enforcing caller's own actor, requested_action, target, and risk_tier object."
+    }
+  }
+}

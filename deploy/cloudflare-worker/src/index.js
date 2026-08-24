@@ -29,6 +29,12 @@ import {
 
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
+import {
+  DECISION_NOT_AUTHORIZATION_NOTICE,
+  decisionPolicyCatalog,
+  signDecisionReceipt,
+  verifyDecisionReceipt
+} from "./decision-receipt.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "./okf_content.js";
 import {
   CANONICAL_INPUT_MODE,
@@ -3748,6 +3754,180 @@ function preActionCheckResult(request) {
   };
 }
 
+function decisionGateTask(capability, response, { error = false } = {}) {
+  const outcome = response.decision || response.reason_code || "complete";
+  const result = {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: `${capability.replace(/_/gu, "-")}-response`,
+        name: `${capability.replace(/_/gu, " ")} response`,
+        parts: [
+          {
+            text: [
+              "Agenda Decision Gate response",
+              "",
+              `Capability: ${capability}`,
+              `Outcome: ${outcome}`,
+              `Gate passed: ${String(response.gate_passed === true)}`,
+              "",
+              DECISION_NOT_AUTHORIZATION_NOTICE
+            ].join("\n"),
+            mediaType: "text/markdown"
+          },
+          { data: response, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "agent_output_verification",
+      capability,
+      human_review_required:
+        typeof response.human_review_required === "boolean"
+          ? response.human_review_required
+          : response.gate_passed !== true,
+      not_authorization_notice: DECISION_NOT_AUTHORIZATION_NOTICE,
+      response
+    }
+  };
+  if (error) result.error = true;
+  return result;
+}
+
+function a2aResultForDecisionPoliciesList(params) {
+  if (params.request && Object.keys(params.request).length > 0) {
+    return invalidRequestResult(
+      "agent_output_verification",
+      "/mcp#decision_policies_list",
+      "schemas/v1/decision-policies-list-request.schema.json",
+      ["The decision policy list request does not accept arguments"]
+    );
+  }
+  return decisionGateTask("decision_policies_list", decisionPolicyCatalog());
+}
+
+async function a2aResultForDecisionCheck(params, request, env = {}) {
+  const structured = structuredAgentOutputVerificationRequestFromParams(params);
+  if (!structured || !isPreActionCheckRequest(structured)) {
+    return invalidRequestResult(
+      "agent_output_verification",
+      "/mcp#decision_check",
+      "schemas/v1/pre-action-check-request.schema.json",
+      ["Missing structured pre-action check request"]
+    );
+  }
+  const errors = preActionCheckErrors(structured);
+  if (errors.length) {
+    return invalidRequestResult(
+      "agent_output_verification",
+      "/mcp#decision_check",
+      "schemas/v1/pre-action-check-request.schema.json",
+      errors
+    );
+  }
+
+  const baseResponse = preActionCheckResult(structured).response;
+  const signingKey = env.AGENT_CARD_SIGNING_KEY || env.AGENT_CARD_PRIVATE_JWK;
+  if (!signingKey) {
+    return decisionGateTask(
+      "decision_check",
+      {
+        ...baseResponse,
+        receipt_status: "unavailable",
+        receipt: null,
+        limitations: [
+          ...baseResponse.limitations,
+          "Receipt signing is unavailable; do not treat this diagnostic decision as a signed Gate pass."
+        ]
+      },
+      { error: true }
+    );
+  }
+
+  try {
+    const receipt = await signDecisionReceipt({
+      request: structured,
+      decision: baseResponse,
+      privateJwk: signingKey,
+      kid: env.AGENT_CARD_SIGNING_KID || null,
+      issuer: originFromRequest(request)
+    });
+    const limitations = baseResponse.limitations.filter(
+      (item) => !item.startsWith("Does not sign the decision receipt")
+    );
+    limitations.push(
+      "The attached receipt proves this Worker's readiness result and request binding only; it is not authorization."
+    );
+    return decisionGateTask("decision_check", {
+      ...baseResponse,
+      receipt_status: "signed",
+      receipt,
+      limitations
+    });
+  } catch (_error) {
+    return decisionGateTask(
+      "decision_check",
+      {
+        ...baseResponse,
+        receipt_status: "unavailable",
+        receipt: null,
+        limitations: [
+          ...baseResponse.limitations,
+          "Receipt signing failed; do not treat this diagnostic decision as a signed Gate pass."
+        ]
+      },
+      { error: true }
+    );
+  }
+}
+
+function decisionVerifyErrors(value) {
+  const errors = [];
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return ["decision_verify arguments must be an object"];
+  }
+  const allowed = new Set(["receipt", "expected_request_hash", "expected_action_hash"]);
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) errors.push(`Unexpected field: ${key}`);
+  }
+  if (typeof value.receipt !== "string" || value.receipt.split(".").length !== 3) {
+    errors.push("receipt must be a compact JWS string");
+  }
+  const hashPattern = /^sha256:[a-f0-9]{64}$/u;
+  if (!hashPattern.test(value.expected_request_hash || "")) {
+    errors.push("expected_request_hash must be a sha256-prefixed lowercase hex digest");
+  }
+  if (!hashPattern.test(value.expected_action_hash || "")) {
+    errors.push("expected_action_hash must be a sha256-prefixed lowercase hex digest");
+  }
+  return errors;
+}
+
+async function a2aResultForDecisionVerify(params, request, env = {}) {
+  const structured = params && typeof params === "object" ? params.request : null;
+  const errors = decisionVerifyErrors(structured);
+  if (errors.length) {
+    return invalidRequestResult(
+      "agent_output_verification",
+      "/mcp#decision_verify",
+      "schemas/v1/decision-receipt-verify-request.schema.json",
+      errors
+    );
+  }
+  const signingKey = env.AGENT_CARD_SIGNING_KEY || env.AGENT_CARD_PRIVATE_JWK;
+  const response = await verifyDecisionReceipt({
+    token: structured.receipt,
+    publicJwk: signingKey,
+    expectedRequestHash: structured.expected_request_hash,
+    expectedActionHash: structured.expected_action_hash,
+    expectedIssuer: originFromRequest(request)
+  });
+  return decisionGateTask("decision_verify", response, {
+    error: response.reason_code === "signing_key_unavailable"
+  });
+}
+
 function agentOutputVerificationArtifactText(response) {
   const unsafe = response.unsafe_claims || [];
   const unsafeText = unsafe.length ? unsafe.map((item) => `- ${item.claim_id}: ${item.reason}`).join("\n") : "- none";
@@ -7392,13 +7572,31 @@ async function runProfileRequest(profile, params, request, env = {}) {
       promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
       modulesUsed = ["agentic_interaction_trust"];
     } else if (profile === "agent_output_verification") {
-      result = a2aResultForAgentOutputVerification(params);
-      const structured = structuredAgentOutputVerificationRequestFromParams(params);
-      promptChars =
-        structured && Array.isArray(structured.claims)
-          ? structured.claims.reduce((total, claim) => total + String((claim && claim.claim) || "").length, 0)
-          : 0;
-      modulesUsed = ["agent_output_verification"];
+      if (params.capability === "decision_policies_list") {
+        result = a2aResultForDecisionPoliciesList(params);
+        promptChars = 0;
+        modulesUsed = ["decision_gate"];
+      } else if (params.capability === "decision_check") {
+        result = await a2aResultForDecisionCheck(params, request, env);
+        const structured = structuredAgentOutputVerificationRequestFromParams(params);
+        promptChars =
+          structured && Array.isArray(structured.claims)
+            ? structured.claims.reduce((total, claim) => total + String((claim && claim.claim) || "").length, 0)
+            : 0;
+        modulesUsed = ["agent_output_verification", "decision_gate"];
+      } else if (params.capability === "decision_verify") {
+        result = await a2aResultForDecisionVerify(params, request, env);
+        promptChars = String((params.request && params.request.receipt) || "").length;
+        modulesUsed = ["decision_gate"];
+      } else {
+        result = a2aResultForAgentOutputVerification(params);
+        const structured = structuredAgentOutputVerificationRequestFromParams(params);
+        promptChars =
+          structured && Array.isArray(structured.claims)
+            ? structured.claims.reduce((total, claim) => total + String((claim && claim.claim) || "").length, 0)
+            : 0;
+        modulesUsed = ["agent_output_verification"];
+      }
     } else if (profile === "gulf_maritime_exposure") {
       result = a2aResultForGulfMaritimeExposure(params);
       const structured = structuredGulfMaritimeRequestFromParams(params);

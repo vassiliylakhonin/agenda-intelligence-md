@@ -75,8 +75,10 @@ The deployed Cloudflare workers also speak MCP over Streamable HTTP at
 
 One deployment serves one profile and exposes a fixed profile-scoped tool set,
 named identically to its stdio twin. Most profiles expose one tool; Agent Output
-Verification exposes `agent_output_verification` and `pre_action_check`. For
-example:
+Verification exposes `agent_output_verification` and `pre_action_check` plus
+three hosted-only Decision Gate tools: `decision_policies_list`,
+`decision_check`, and `decision_verify`. The local stdio catalog remains
+unchanged. For example:
 
 ```bash
 curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp \
@@ -84,16 +86,32 @@ curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.de
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-`tools/call` runs through the same dispatch as the A2A `message/send` route and
-inherits its access gate, rate limit, and usage logging. `server/discover` and
-`tools/list` stay open. Hosted `tools/list` entries include complete inline input
-and output JSON Schemas plus read-only, non-destructive, idempotent annotations.
+Existing profile tools run through the same dispatch as the A2A `message/send`
+route. The Decision Gate tools are hosted-MCP-only: they expose the existing
+`pre_action_check` policy through a signed, short-lived result that an enforcing
+caller can verify against exact request and action hashes. A verified
+`gate_passed` means only that the Worker signed a current `continue` readiness
+result; it is not actor authentication, external approval, factual verification,
+or authorization. Because the Gate is stateless, an exactly bound receipt may
+be presented more than once during its five-minute lifetime; one-time execution
+remains the caller's responsibility.
+
+`tools/call` inherits the profile's access gate, rate limit, and usage logging.
+`server/discover` and `tools/list` stay open. Hosted `tools/list` entries include
+complete inline input and output JSON Schemas plus read-only and non-destructive
+annotations. All are idempotent except `decision_check`, whose receipt id and
+timestamps change on every call.
 Pass the published request object directly as `tools/call.params.arguments`;
-the former `{ "request": { ... } }` wrapper remains accepted and keeps its
-former A2A task-shaped result for compatibility. A direct-schema call contains
-the service response once in `structuredContent` and only a short text summary,
+the former `{ "request": { ... } }` wrapper remains accepted only by the two
+pre-existing tools and keeps its former A2A task-shaped result for compatibility.
+Decision Gate tools accept only their published direct schemas. A direct-schema
+call contains the service response once in `structuredContent` and only a short text summary,
 so a current MCP client does not pay the context cost of a duplicated A2A task.
 The full local catalog below is stdio only.
+
+The receipt format, five-minute lifetime, fail-closed behavior, and deliberate
+non-authorization boundary are recorded in
+[ADR 0025](docs/adr/0025-signed-readiness-receipts.md).
 
 ---
 

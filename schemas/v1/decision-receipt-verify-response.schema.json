@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/decision-receipt-verify-response.schema.json",
+  "title": "DecisionReceiptVerifyResponse",
+  "description": "Verification result for a signed readiness receipt. gate_passed is not authorization.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "signature_valid",
+    "binding_matches",
+    "expired",
+    "gate_passed",
+    "reason_code",
+    "receipt",
+    "not_authorization_notice"
+  ],
+  "properties": {
+    "signature_valid": { "type": "boolean" },
+    "binding_matches": { "type": "boolean" },
+    "expired": { "type": "boolean" },
+    "gate_passed": { "type": "boolean" },
+    "reason_code": {
+      "type": "string",
+      "enum": [
+        "valid_continue_receipt",
+        "decision_not_continue",
+        "binding_mismatch",
+        "receipt_expired",
+        "invalid_signature",
+        "invalid_receipt_format",
+        "signing_key_unavailable"
+      ]
+    },
+    "receipt": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "receipt_id",
+            "decision_id",
+            "run_id",
+            "policy_version",
+            "decision",
+            "reason_code",
+            "request_hash",
+            "action_hash",
+            "issued_at",
+            "expires_at",
+            "issuer",
+            "not_authorization"
+          ],
+          "properties": {
+            "receipt_id": { "type": "string", "minLength": 1 },
+            "decision_id": { "type": "string", "minLength": 1 },
+            "run_id": { "type": "string", "minLength": 1 },
+            "policy_version": { "type": "string", "const": "pre-action-check.v1" },
+            "decision": {
+              "type": "string",
+              "enum": ["continue", "request_evidence", "require_approval", "stop"]
+            },
+            "reason_code": { "type": "string", "minLength": 1 },
+            "request_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "action_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "issued_at": { "type": "string", "format": "date-time" },
+            "expires_at": { "type": "string", "format": "date-time" },
+            "issuer": { "type": "string", "format": "uri" },
+            "not_authorization": { "type": "boolean", "const": true }
+          }
+        }
+      ]
+    },
+    "not_authorization_notice": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

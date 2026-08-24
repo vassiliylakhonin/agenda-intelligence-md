@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/decision-policies-list-request.schema.json",
+  "title": "DecisionPoliciesListRequest",
+  "description": "Empty request for the hosted decision-gate policy catalog.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false
+}
