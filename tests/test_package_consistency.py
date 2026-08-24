@@ -82,9 +82,35 @@ def test_packaged_json_assets_match_top_level_assets():
 
 
 def test_packaged_skill_assets_match_top_level_assets():
-    for relative_path in sorted(Path("skills/agenda-intelligence").rglob("*")):
+    for relative_path in sorted(Path("skills").rglob("*")):
         if relative_path.is_file():
             assert_packaged_copy_matches_top_level(relative_path)
+
+
+def test_source_ingest_skill_uses_schema_evidence_modes_and_resolvable_routes():
+    skill_path = ROOT / "skills/source-ingest/SKILL.md"
+    skill = skill_path.read_text()
+
+    packet_modes = load_json(ROOT / "schemas/v1/evidence-pack.schema.json")["properties"]["evidence_mode"]["enum"]
+    memo_modes = load_json(ROOT / "schemas/v1/agenda-memo.schema.json")["properties"]["meta"]["properties"][
+        "evidence_mode"
+    ]["enum"]
+    for mode in sorted(set(packet_modes) | set(memo_modes)):
+        assert f"`{mode}`" in skill, f"source-ingest omits schema evidence mode {mode!r}"
+
+    normalized_skill = " ".join(skill.split())
+    assert "product shell does not accept `live_source_backed`" in normalized_skill
+    assert "`reasoning-only`" not in skill
+    assert "[live-source-backed | user-provided | illustrative source packet | reasoning-only | mixed]" not in skill
+
+    for target in [
+        "../../SOURCE_POLICY.md",
+        "../../schemas/v1/agenda-memo.schema.json",
+        "../../source-requirements/sanctions.json",
+        "../agenda-intelligence/references/sector/sanctions.md",
+    ]:
+        assert target in skill, f"source-ingest omits local route {target}"
+        assert (skill_path.parent / target).is_file(), f"source-ingest route does not resolve: {target}"
 
 
 def test_packaged_analysis_bank_assets_match_top_level_assets():

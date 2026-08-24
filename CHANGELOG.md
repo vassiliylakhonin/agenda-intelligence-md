@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(skill packaging): ship and validate the complete `source-ingest` contract.** The plugin exposed the skill,
+  and packaged `llms.txt` advertised it, but the Python package data carried only `agenda-intelligence`; the
+  dual-copy test also checked only that one skill despite the documented `skills/**` invariant. `source-ingest` is
+  now mirrored into package data, every packaged skill is parity-checked, its downstream routes resolve from the
+  skill directory, and its evidence-mode handoff names the exact values accepted by the evidence-pack and
+  agenda-memo schemas. The Claude marketplace description of the sibling Global Think Tank Analyst also drops the
+  unsupported `decision-grade` wording, with a metadata test preventing that grade claim from returning.
+
 - **fix(agent card verifier): the live check still read `x_agent_contract` from the card root.** The extension move rewrote every `card?.x_agenda_intelligence` read in `verify-agent-card.js` but missed `card?.x_agent_contract`, so after the 2026-08-23 deploy the Middle Corridor card reported three false failures while the card itself validated against the official schema. The unit test that covers this verifier passed throughout, because it handed the verifier `agentCard()` — the internal shape — instead of what the endpoint serves. It now passes the wire shape, which reproduces the defect when the fix is reverted.
 
 - **fix(agent card): the card carried fields the A2A v1 schema does not define.** An independent conformance scan published 2026-08-23 (`msavdert/a2a-scorecard`, 2,479 endpoints) failed every card this project serves on schema validation, and the finding checks out against `a2aproject/A2A` `specification/a2a.proto`: `AgentCard` defines a closed field set and `AgentProvider` exactly two fields, `organization` and `url`. The Workers were serving `support`, `x_agenda_intelligence`, `x_agent_contract` and a top-level `signature` at the card root plus `provider.legalEntity`; the published alias added `remote_mcp`, `resources`, `updated_at`, `x_identity`, `x_profile_mcp`, `x_profile_resources` and `x_security_posture`, plus `provider.name` and `provider.contact`; the Python adapter card added `url`, `protocolVersion` and `protocolVersions`. None of those are card fields, and the one extension mechanism the spec defines is `capabilities.extensions[]`, whose `params` is an arbitrary JSON Struct.
