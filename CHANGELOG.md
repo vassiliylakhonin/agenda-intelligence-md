@@ -4,6 +4,30 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(cis): stop reporting a listed ship as a match on the counterparty.** OFAC SDN carries
+  `NURSULTAN NAZARBAYEV` as a `Vessel` — IMO 9842217, linked to Joint Stock Company Rosnefteflot,
+  designated under EO 14024. It is a Russian supply vessel named after a former head of state, not
+  the person. Two defects turned that into a wrong statement in the gate's output. The Snapshot
+  upstream hardcoded `schema: "Company"` on every match, so a designated person, a company, a ship
+  and an aircraft were reported identically; and `cisTopExposureDimensions` turned any match count
+  above zero into `direct or near-direct match in OpenSanctions consolidated dataset`, which both
+  overstated what matched and misattributed provenance whenever Snapshot or Watchman was the active
+  upstream. `upstream_snapshot.js` now reads the entity type published in compact index v2
+  (`types` table plus a third element per row, added by the portfolio site's
+  `scripts/sanctions_name_index.py`) and maps it onto the FollowTheMoney vocabulary the other
+  upstreams already return — `individual` → `Person`, `entity` → `Company`, `vessel` → `Vessel`,
+  `aircraft` → `Airplane`. A v1 index has no types; those rows resolve to `unknown` / `LegalEntity`
+  rather than being dressed up as companies. The type travels to the caller on both `match.schema`
+  and a new `entity_type` on each `auto_fetched_sources` entry, and the dimension now separates a
+  match on something that could be the counterparty from a listing on a vessel or aircraft carrying
+  the same name, naming the datasets that actually answered. Mirrored in `services.py` for parity,
+  where OpenSanctions matches are classified from the schema the API returns. **Risk thresholds are
+  deliberately unchanged**: a vessel listing still contributes to the exposure signal exactly as
+  before, because whether it should is a policy decision, not a defect. Contract tests both sides:
+  vessel / company / individual typing, v1 fallback without guessing, the vessel-only dimension, the
+  company-match positive control, and upstream labelling. No schema, endpoint, profile, or tool
+  changed.
+
 - **feat(hosted decision gate): sign and verify exact-request readiness receipts.** The existing
   `pre_action_check` already returned `continue`, `request_evidence`, `require_approval`, or `stop`, but its
   `decision_id` was only a correlation identifier and a downstream machine could not verify that the result was

@@ -492,6 +492,72 @@ test("Snapshot adapter matches exact + token overlap against the compact index",
   }
 });
 
+// Compact index v2: each row carries a type index into `types`. OFAC SDN really
+// does list a Russian supply vessel named after a former head of state, which is
+// why a bare name and source list is not enough to act on.
+const SNAPSHOT_FIXTURE_V2 = JSON.stringify({
+  schema_version: "sanctions-name-index-compact.v2",
+  generated_at_utc: "2026-08-24T12:36:26+00:00",
+  entry_format: ["name", "source_index", "type_index"],
+  summary: { source_count: 2, name_count: 3 },
+  src: [
+    ["US OFAC", "SDN"],
+    ["European Union", "EU consolidated financial sanctions"]
+  ],
+  types: ["entity", "vessel", "individual"],
+  entries: [
+    ["GAZPROM NEFT PJSC", 0, 0],
+    ["EXAMPLE KZ TRADING LLP", 0, 1],
+    ["SOME LISTED PERSON", 1, 2]
+  ]
+});
+
+test("Snapshot adapter reports the entity type the authority published, not Company for everything", async () => {
+  resetSnapshotCache();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(SNAPSHOT_FIXTURE_V2, { status: 200, headers: { "content-type": "application/json" } });
+  try {
+    const env = { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" };
+
+    const vessel = await matchCounterpartyAgainstSnapshot(env, { name: "Example KZ Trading LLP" });
+    assert.equal(vessel.matches[0].entity_type, "vessel");
+    assert.equal(vessel.matches[0].schema, "Vessel");
+
+    resetSnapshotCache();
+    const company = await matchCounterpartyAgainstSnapshot(env, { name: "Gazprom Neft PJSC" });
+    assert.equal(company.matches[0].entity_type, "entity");
+    assert.equal(company.matches[0].schema, "Company");
+
+    resetSnapshotCache();
+    const person = await matchCounterpartyAgainstSnapshot(env, { name: "Some Listed Person" });
+    assert.equal(person.matches[0].entity_type, "individual");
+    assert.equal(person.matches[0].schema, "Person");
+  } finally {
+    globalThis.fetch = originalFetch;
+    resetSnapshotCache();
+  }
+});
+
+test("Snapshot adapter says unknown rather than guessing when the index has no types (v1)", async () => {
+  resetSnapshotCache();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(SNAPSHOT_FIXTURE, { status: 200, headers: { "content-type": "application/json" } });
+  try {
+    const result = await matchCounterpartyAgainstSnapshot(
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" },
+      { name: "Gazprom Export" }
+    );
+    assert.equal(result.matches[0].entity_type, "unknown");
+    // Not "Company": an unknown type must not be dressed up as a known one.
+    assert.equal(result.matches[0].schema, "LegalEntity");
+  } finally {
+    globalThis.fetch = originalFetch;
+    resetSnapshotCache();
+  }
+});
+
 test("Snapshot adapter degrades to disabled when SNAPSHOT_INDEX_URL is unset", async () => {
   resetSnapshotCache();
   const result = await matchCounterpartyAgainstSnapshot({}, { name: "Gazprom" });
@@ -2712,6 +2778,79 @@ test("cis worker surfaces the snapshot provenance date in A2A metadata", async (
       { OPENSANCTIONS_DISABLED: "1" }
     );
     assert.equal(withoutSnapshot.result.metadata.live_retrieval_snapshot_generated_at, null);
+  } finally {
+    console.log = originalLog;
+    globalThis.fetch = originalFetch;
+    resetSnapshotCache();
+  }
+});
+
+test("cis worker does not call a listed ship a match on the counterparty", async () => {
+  resetSnapshotCache();
+  const originalLog = console.log;
+  const originalFetch = globalThis.fetch;
+  console.log = () => {};
+  globalThis.fetch = async () =>
+    new Response(SNAPSHOT_FIXTURE_V2, { status: 200, headers: { "content-type": "application/json" } });
+  try {
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "cis-vessel", method: "message/send", params: { message: { data: cisSampleStructuredRequest } } },
+      cisRequest,
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" }
+    );
+    const body = response.result.metadata.response;
+    const dims = body.top_exposure_dimensions;
+
+    // The only listing bearing this name is a vessel. Reporting that as a
+    // direct match states something the record does not support.
+    assert.ok(
+      !dims.some((d) => d.startsWith("direct or near-direct match")),
+      `expected no direct-match dimension, got ${JSON.stringify(dims)}`
+    );
+    // It is still surfaced, named for what it is.
+    assert.ok(
+      dims.some((d) => d.includes("listed vessel or aircraft") && d.includes("not a match on the counterparty itself")),
+      `expected the vessel dimension, got ${JSON.stringify(dims)}`
+    );
+    // Provenance names the list that answered, not OpenSanctions by default.
+    assert.ok(
+      dims.some((d) => d.includes("US OFAC / SDN")),
+      `expected the real dataset in the dimension, got ${JSON.stringify(dims)}`
+    );
+    assert.ok(!dims.some((d) => d.includes("OpenSanctions")), "Snapshot matches must not be attributed to OpenSanctions");
+
+    // The type travels with the auto-fetched source so a reader can see it.
+    assert.equal(response.result.metadata.auto_fetched_sources[0].entity_type, "vessel");
+  } finally {
+    console.log = originalLog;
+    globalThis.fetch = originalFetch;
+    resetSnapshotCache();
+  }
+});
+
+test("cis worker still reports a real company match as a direct match", async () => {
+  resetSnapshotCache();
+  const originalLog = console.log;
+  const originalFetch = globalThis.fetch;
+  console.log = () => {};
+  globalThis.fetch = async () =>
+    new Response(SNAPSHOT_FIXTURE_V2, { status: 200, headers: { "content-type": "application/json" } });
+  try {
+    const request = {
+      ...cisSampleStructuredRequest,
+      counterparty: { ...cisSampleStructuredRequest.counterparty, name: "Gazprom Neft PJSC" }
+    };
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "cis-company", method: "message/send", params: { message: { data: request } } },
+      cisRequest,
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" }
+    );
+    const dims = response.result.metadata.response.top_exposure_dimensions;
+    assert.ok(
+      dims.some((d) => d.startsWith("direct or near-direct match") && d.includes("US OFAC / SDN")),
+      `expected a direct match on a listed company, got ${JSON.stringify(dims)}`
+    );
+    assert.ok(!dims.some((d) => d.includes("listed vessel or aircraft")), "no vessel line when nothing vessel matched");
   } finally {
     console.log = originalLog;
     globalThis.fetch = originalFetch;
