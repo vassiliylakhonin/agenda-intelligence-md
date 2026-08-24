@@ -92,6 +92,35 @@ const PROFILE_TOOLS = {
         "Route a caller-controlled action to continue, request_evidence, require_approval, or stop using supplied " +
         "claim evidence, risk tier, policy checks, and an optional external approval reference. Resubmit the same " +
         "run_id after adding evidence or approval. The caller remains responsible for enforcement."
+    },
+    {
+      name: "decision_policies_list",
+      argKey: "none",
+      summary:
+        "List the bounded readiness policies exposed by the hosted decision Gate, including the decision and " +
+        "verification tools, possible outcomes, positive outcome, input schema, receipt lifetime, and exact " +
+        "machine-readable request/action hash binding."
+    },
+    {
+      name: "decision_check",
+      argKey: "request",
+      legacyWrapper: false,
+      idempotent: false,
+      requestSchema:
+        "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/pre-action-check-request.schema.json",
+      summary:
+        "Run pre_action_check and attach a short-lived ES256 readiness receipt bound to the exact request and " +
+        "action hashes. The receipt is evidence of this Gate result, not authorization. Require decision_verify " +
+        "to return gate_passed before using it in an enforcement path."
+    },
+    {
+      name: "decision_verify",
+      argKey: "request",
+      legacyWrapper: false,
+      summary:
+        "Verify a signed readiness receipt against the caller's expected request and action hashes. Returns " +
+        "gate_passed only for a valid, unexpired, exactly bound continue decision. This does not authorize or " +
+        "perform the action."
     }
   ],
   gulf_maritime_exposure: {
@@ -188,7 +217,7 @@ export function mcpToolsForProfile(profile) {
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
-        idempotentHint: true,
+        idempotentHint: spec.idempotent !== false,
         openWorldHint: profile === "cis_secondary_sanctions"
       }
     };
@@ -204,6 +233,7 @@ export function mcpUsesLegacyRequestWrapper(profile, args, name) {
   const objectArgs = args && typeof args === "object" && !Array.isArray(args) ? args : {};
   return Boolean(
     spec.argKey === "request" &&
+      spec.legacyWrapper !== false &&
       Object.keys(objectArgs).length === 1 &&
       objectArgs.request &&
       typeof objectArgs.request === "object" &&
@@ -216,11 +246,18 @@ export function mcpArgumentsToParams(profile, args, name) {
   const objectArgs = args && typeof args === "object" && !Array.isArray(args) ? args : {};
   const isLegacyRequestWrapper = mcpUsesLegacyRequestWrapper(profile, objectArgs, name);
   const value =
-    spec.argKey === "text"
+    spec.argKey === "none"
+      ? null
+      : spec.argKey === "text"
       ? objectArgs.text
       : isLegacyRequestWrapper
         ? objectArgs.request
         : objectArgs;
-  const params = spec.argKey === "text" ? { text: typeof value === "string" ? value : "" } : { request: value };
+  const params =
+    spec.argKey === "none"
+      ? { request: objectArgs }
+      : spec.argKey === "text"
+        ? { text: typeof value === "string" ? value : "" }
+        : { request: value };
   return name ? { ...params, capability: name } : params;
 }

@@ -142,6 +142,22 @@
     "pre_action_check_response": {
       "path": "schemas/v1/pre-action-check-response.schema.json",
       "schema_version": "v1"
+    },
+    "decision_policies_list_request": {
+      "path": "schemas/v1/decision-policies-list-request.schema.json",
+      "schema_version": "v1"
+    },
+    "decision_policies_list_response": {
+      "path": "schemas/v1/decision-policies-list-response.schema.json",
+      "schema_version": "v1"
+    },
+    "decision_receipt_verify_request": {
+      "path": "schemas/v1/decision-receipt-verify-request.schema.json",
+      "schema_version": "v1"
+    },
+    "decision_receipt_verify_response": {
+      "path": "schemas/v1/decision-receipt-verify-response.schema.json",
+      "schema_version": "v1"
     }
   },
   "product": {

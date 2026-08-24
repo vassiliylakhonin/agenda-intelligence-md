@@ -2,6 +2,20 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
+## Unreleased
+
+- **feat(hosted decision gate): sign and verify exact-request readiness receipts.** The existing
+  `pre_action_check` already returned `continue`, `request_evidence`, `require_approval`, or `stop`, but its
+  `decision_id` was only a correlation identifier and a downstream machine could not verify that the result was
+  current or bound to the action it was about to perform. The Agent Output Verification Worker now adds three
+  hosted MCP tools: `decision_policies_list`, `decision_check`, and `decision_verify`. `decision_check` attaches a
+  five-minute ES256 compact-JWS receipt containing no claim text, only decision metadata and SHA-256 hashes of the
+  full request and action identity; `decision_verify` fails closed for a bad signature, expiry, hash mismatch, or
+  any decision other than `continue`. The receipt reuses the profile's existing Agent Card P-256 key with a distinct
+  JWS type for this initial bounded scope. It proves the Worker's readiness result, not identity, delegated
+  authority, factual truth, external approval, legal clearance, or authorization. No new Worker, storage, payment,
+  policy pack, A2A response, local stdio tool, or external action executor is added.
+
 ## 1.6.0 — 2026-08-24
 
 - **fix(hosted MCP): publish complete contracts and stop duplicating A2A tasks in model context.** Hosted

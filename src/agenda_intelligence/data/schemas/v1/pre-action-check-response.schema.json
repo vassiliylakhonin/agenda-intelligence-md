@@ -93,6 +93,50 @@
         }
       }
     },
+    "receipt_status": {
+      "type": "string",
+      "enum": ["signed", "unavailable"],
+      "description": "Present on decision_check. unavailable fails the signed Gate path closed."
+    },
+    "receipt": {
+      "description": "Short-lived readiness receipt attached by decision_check. The legacy pre_action_check response omits it.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "format",
+            "token",
+            "receipt_id",
+            "issued_at",
+            "expires_at",
+            "request_hash",
+            "action_hash",
+            "verification_tool"
+          ],
+          "properties": {
+            "format": {
+              "type": "string",
+              "const": "agenda-readiness-receipt+jws"
+            },
+            "token": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+            },
+            "receipt_id": { "type": "string", "minLength": 1 },
+            "issued_at": { "type": "string", "format": "date-time" },
+            "expires_at": { "type": "string", "format": "date-time" },
+            "request_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "action_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "verification_tool": {
+              "type": "string",
+              "const": "decision_verify"
+            }
+          }
+        }
+      ]
+    },
     "not_authorization_notice": {
       "type": "string",
       "minLength": 1

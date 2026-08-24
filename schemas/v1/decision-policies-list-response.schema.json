@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/decision-policies-list-response.schema.json",
+  "title": "DecisionPoliciesListResponse",
+  "description": "Stable catalog of readiness policies exposed by the hosted decision gate.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["policies", "receipt_format", "binding", "not_authorization_notice"],
+  "properties": {
+    "policies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "policy_id",
+          "policy_version",
+          "decision_tool",
+          "verify_tool",
+          "input_schema",
+          "decisions",
+          "positive_decision",
+          "receipt_ttl_seconds"
+        ],
+        "properties": {
+          "policy_id": {
+            "type": "string",
+            "const": "pre-action-check.v1"
+          },
+          "policy_version": {
+            "type": "string",
+            "const": "pre-action-check.v1"
+          },
+          "decision_tool": {
+            "type": "string",
+            "const": "decision_check"
+          },
+          "verify_tool": {
+            "type": "string",
+            "const": "decision_verify"
+          },
+          "input_schema": {
+            "type": "string",
+            "format": "uri"
+          },
+          "decisions": {
+            "type": "array",
+            "prefixItems": [
+              { "const": "continue" },
+              { "const": "request_evidence" },
+              { "const": "require_approval" },
+              { "const": "stop" }
+            ],
+            "items": false
+          },
+          "positive_decision": {
+            "type": "string",
+            "const": "continue"
+          },
+          "receipt_ttl_seconds": {
+            "type": "integer",
+            "const": 300
+          }
+        }
+      }
+    },
+    "receipt_format": {
+      "type": "string",
+      "const": "agenda-readiness-receipt+jws"
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["request_hash", "action_hash"],
+      "properties": {
+        "request_hash": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "canonicalization", "input"],
+          "properties": {
+            "algorithm": { "const": "SHA-256" },
+            "canonicalization": { "const": "RFC8785-JCS" },
+            "input": { "const": "complete_request" }
+          }
+        },
+        "action_hash": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "canonicalization", "fields"],
+          "properties": {
+            "algorithm": { "const": "SHA-256" },
+            "canonicalization": { "const": "RFC8785-JCS" },
+            "fields": {
+              "type": "array",
+              "prefixItems": [
+                { "const": "actor" },
+                { "const": "requested_action" },
+                { "const": "target" },
+                { "const": "risk_tier" }
+              ],
+              "items": false
+            }
+          }
+        }
+      }
+    },
+    "not_authorization_notice": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

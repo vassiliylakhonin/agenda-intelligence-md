@@ -2761,6 +2761,70 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               }
             }
           },
+          "receipt_status": {
+            "type": "string",
+            "enum": [
+              "signed",
+              "unavailable"
+            ],
+            "description": "Present on decision_check. unavailable fails the signed Gate path closed."
+          },
+          "receipt": {
+            "description": "Short-lived readiness receipt attached by decision_check. The legacy pre_action_check response omits it.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "format",
+                  "token",
+                  "receipt_id",
+                  "issued_at",
+                  "expires_at",
+                  "request_hash",
+                  "action_hash",
+                  "verification_tool"
+                ],
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "const": "agenda-readiness-receipt+jws"
+                  },
+                  "token": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+                  },
+                  "receipt_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "issued_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "request_hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[a-f0-9]{64}$"
+                  },
+                  "action_hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[a-f0-9]{64}$"
+                  },
+                  "verification_tool": {
+                    "type": "string",
+                    "const": "decision_verify"
+                  }
+                }
+              }
+            ]
+          },
           "not_authorization_notice": {
             "type": "string",
             "minLength": 1
@@ -2770,6 +2834,817 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
             "items": {
               "type": "string"
             }
+          }
+        }
+      }
+    },
+    "decision_policies_list": {
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/decision-policies-list-request.schema.json",
+        "title": "DecisionPoliciesListRequest",
+        "description": "Empty request for the hosted decision-gate policy catalog.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/decision-policies-list-response.schema.json",
+        "title": "DecisionPoliciesListResponse",
+        "description": "Stable catalog of readiness policies exposed by the hosted decision gate.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "policies",
+          "receipt_format",
+          "binding",
+          "not_authorization_notice"
+        ],
+        "properties": {
+          "policies": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "policy_id",
+                "policy_version",
+                "decision_tool",
+                "verify_tool",
+                "input_schema",
+                "decisions",
+                "positive_decision",
+                "receipt_ttl_seconds"
+              ],
+              "properties": {
+                "policy_id": {
+                  "type": "string",
+                  "const": "pre-action-check.v1"
+                },
+                "policy_version": {
+                  "type": "string",
+                  "const": "pre-action-check.v1"
+                },
+                "decision_tool": {
+                  "type": "string",
+                  "const": "decision_check"
+                },
+                "verify_tool": {
+                  "type": "string",
+                  "const": "decision_verify"
+                },
+                "input_schema": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "decisions": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "const": "continue"
+                    },
+                    {
+                      "const": "request_evidence"
+                    },
+                    {
+                      "const": "require_approval"
+                    },
+                    {
+                      "const": "stop"
+                    }
+                  ],
+                  "items": false
+                },
+                "positive_decision": {
+                  "type": "string",
+                  "const": "continue"
+                },
+                "receipt_ttl_seconds": {
+                  "type": "integer",
+                  "const": 300
+                }
+              }
+            }
+          },
+          "receipt_format": {
+            "type": "string",
+            "const": "agenda-readiness-receipt+jws"
+          },
+          "binding": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "request_hash",
+              "action_hash"
+            ],
+            "properties": {
+              "request_hash": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "algorithm",
+                  "canonicalization",
+                  "input"
+                ],
+                "properties": {
+                  "algorithm": {
+                    "const": "SHA-256"
+                  },
+                  "canonicalization": {
+                    "const": "RFC8785-JCS"
+                  },
+                  "input": {
+                    "const": "complete_request"
+                  }
+                }
+              },
+              "action_hash": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "algorithm",
+                  "canonicalization",
+                  "fields"
+                ],
+                "properties": {
+                  "algorithm": {
+                    "const": "SHA-256"
+                  },
+                  "canonicalization": {
+                    "const": "RFC8785-JCS"
+                  },
+                  "fields": {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "const": "actor"
+                      },
+                      {
+                        "const": "requested_action"
+                      },
+                      {
+                        "const": "target"
+                      },
+                      {
+                        "const": "risk_tier"
+                      }
+                    ],
+                    "items": false
+                  }
+                }
+              }
+            }
+          },
+          "not_authorization_notice": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "decision_check": {
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/pre-action-check-request.schema.json",
+        "title": "PreActionCheckRequest",
+        "description": "Caller-supplied action context and claim evidence for deterministic pre-action routing. The check can continue, request evidence, require human approval, or stop. It does not authenticate the actor, verify factual truth, enforce the decision, or authorize the action.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "actor",
+          "requested_action",
+          "target",
+          "risk_tier",
+          "claims",
+          "evidence"
+        ],
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Caller-generated correlation identifier. Resubmit the same run_id after adding evidence or approval."
+          },
+          "actor": {
+            "$ref": "#/$defs/actor"
+          },
+          "requested_action": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target": {
+            "$ref": "#/$defs/target"
+          },
+          "risk_tier": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "claims": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/claim"
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/evidence_item"
+            }
+          },
+          "unsupported_claims": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "policy_context": {
+            "$ref": "#/$defs/policy_context"
+          },
+          "approval": {
+            "$ref": "#/$defs/approval"
+          }
+        },
+        "$defs": {
+          "actor": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "type"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "ai_agent",
+                  "automation",
+                  "api_client",
+                  "human_delegated_agent",
+                  "unknown",
+                  "other"
+                ]
+              },
+              "operator": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "target": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "type"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "claim": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "claim_id",
+              "claim",
+              "support_level"
+            ],
+            "properties": {
+              "claim_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "claim": {
+                "type": "string",
+                "minLength": 1
+              },
+              "claim_type": {
+                "type": "string",
+                "enum": [
+                  "regulatory_change",
+                  "regulatory_gap",
+                  "sanctions_event",
+                  "geopolitical_event",
+                  "market_event",
+                  "industry_response",
+                  "corporate_disclosure",
+                  "capability_claim"
+                ]
+              },
+              "evidence_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "support_level": {
+                "type": "string",
+                "enum": [
+                  "direct",
+                  "partial",
+                  "weak",
+                  "unsupported"
+                ]
+              },
+              "uncertainty": {
+                "type": "string"
+              },
+              "risk_if_wrong": {
+                "type": "string"
+              },
+              "supporting_quotes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "evidence_id",
+                    "quote"
+                  ],
+                  "properties": {
+                    "evidence_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "quote": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "evidence_item": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "evidence_id",
+              "source_type"
+            ],
+            "properties": {
+              "evidence_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "source_type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "freshness": {
+                "type": "string"
+              },
+              "supports": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "limits": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "policy_context": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "profile": {
+                "type": "string",
+                "enum": [
+                  "default",
+                  "agentic_interaction_trust"
+                ]
+              },
+              "checks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "check_id",
+                    "status"
+                  ],
+                  "properties": {
+                    "check_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "passed",
+                        "needs_evidence",
+                        "failed"
+                      ]
+                    },
+                    "evidence_gap": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "approval": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "not_requested",
+                  "approved",
+                  "rejected"
+                ]
+              },
+              "reference": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Opaque caller-held reference to an external approval record."
+              }
+            }
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/pre-action-check-response.schema.json",
+        "title": "PreActionCheckResponse",
+        "description": "Deterministic routing result for a caller-controlled action boundary. The response reports readiness; the caller remains responsible for enforcement, authentication, authorization, approval storage, and the action itself.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "decision_id",
+          "run_id",
+          "policy_version",
+          "decision",
+          "reason_code",
+          "blocking_gaps",
+          "evidence_requests",
+          "approval_required",
+          "human_review_required",
+          "verification",
+          "not_authorization_notice",
+          "limitations"
+        ],
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "policy_version": {
+            "type": "string",
+            "const": "pre-action-check.v1"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "continue",
+              "request_evidence",
+              "require_approval",
+              "stop"
+            ]
+          },
+          "reason_code": {
+            "type": "string",
+            "enum": [
+              "evidence_ready",
+              "evidence_gaps",
+              "unsafe_claims",
+              "policy_check_failed",
+              "approval_required_for_risk",
+              "approval_rejected"
+            ]
+          },
+          "blocking_gaps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence_requests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "approval_required": {
+            "type": "boolean"
+          },
+          "human_review_required": {
+            "type": "boolean"
+          },
+          "verification": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "verdict",
+              "evidence_gaps",
+              "owner_actions"
+            ]
+          },
+          "policy_checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "check_id",
+                "status"
+              ],
+              "properties": {
+                "check_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "passed",
+                    "needs_evidence",
+                    "failed"
+                  ]
+                },
+                "evidence_gap": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "receipt_status": {
+            "type": "string",
+            "enum": [
+              "signed",
+              "unavailable"
+            ],
+            "description": "Present on decision_check. unavailable fails the signed Gate path closed."
+          },
+          "receipt": {
+            "description": "Short-lived readiness receipt attached by decision_check. The legacy pre_action_check response omits it.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "format",
+                  "token",
+                  "receipt_id",
+                  "issued_at",
+                  "expires_at",
+                  "request_hash",
+                  "action_hash",
+                  "verification_tool"
+                ],
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "const": "agenda-readiness-receipt+jws"
+                  },
+                  "token": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+                  },
+                  "receipt_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "issued_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "request_hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[a-f0-9]{64}$"
+                  },
+                  "action_hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[a-f0-9]{64}$"
+                  },
+                  "verification_tool": {
+                    "type": "string",
+                    "const": "decision_verify"
+                  }
+                }
+              }
+            ]
+          },
+          "not_authorization_notice": {
+            "type": "string",
+            "minLength": 1
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "decision_verify": {
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/decision-receipt-verify-request.schema.json",
+        "title": "DecisionReceiptVerifyRequest",
+        "description": "A signed readiness receipt plus the request and action hashes expected by the enforcing caller.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "receipt",
+          "expected_request_hash",
+          "expected_action_hash"
+        ],
+        "properties": {
+          "receipt": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+          },
+          "expected_request_hash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$",
+            "description": "SHA-256 JCS hash computed from the enforcing caller's own copy of the complete request; do not copy it blindly from the receipt response."
+          },
+          "expected_action_hash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$",
+            "description": "SHA-256 JCS hash computed from the enforcing caller's own actor, requested_action, target, and risk_tier object."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/decision-receipt-verify-response.schema.json",
+        "title": "DecisionReceiptVerifyResponse",
+        "description": "Verification result for a signed readiness receipt. gate_passed is not authorization.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "signature_valid",
+          "binding_matches",
+          "expired",
+          "gate_passed",
+          "reason_code",
+          "receipt",
+          "not_authorization_notice"
+        ],
+        "properties": {
+          "signature_valid": {
+            "type": "boolean"
+          },
+          "binding_matches": {
+            "type": "boolean"
+          },
+          "expired": {
+            "type": "boolean"
+          },
+          "gate_passed": {
+            "type": "boolean"
+          },
+          "reason_code": {
+            "type": "string",
+            "enum": [
+              "valid_continue_receipt",
+              "decision_not_continue",
+              "binding_mismatch",
+              "receipt_expired",
+              "invalid_signature",
+              "invalid_receipt_format",
+              "signing_key_unavailable"
+            ]
+          },
+          "receipt": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "receipt_id",
+                  "decision_id",
+                  "run_id",
+                  "policy_version",
+                  "decision",
+                  "reason_code",
+                  "request_hash",
+                  "action_hash",
+                  "issued_at",
+                  "expires_at",
+                  "issuer",
+                  "not_authorization"
+                ],
+                "properties": {
+                  "receipt_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "decision_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "run_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "policy_version": {
+                    "type": "string",
+                    "const": "pre-action-check.v1"
+                  },
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "continue",
+                      "request_evidence",
+                      "require_approval",
+                      "stop"
+                    ]
+                  },
+                  "reason_code": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "request_hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[a-f0-9]{64}$"
+                  },
+                  "action_hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[a-f0-9]{64}$"
+                  },
+                  "issued_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "issuer": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "not_authorization": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                }
+              }
+            ]
+          },
+          "not_authorization_notice": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }

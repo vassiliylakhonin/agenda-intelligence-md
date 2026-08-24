@@ -38,6 +38,24 @@ const contractSources = [
     output: "schemas/v1/pre-action-check-response.schema.json"
   },
   {
+    profile: "agent_output_verification",
+    tool: "decision_policies_list",
+    input: "schemas/v1/decision-policies-list-request.schema.json",
+    output: "schemas/v1/decision-policies-list-response.schema.json"
+  },
+  {
+    profile: "agent_output_verification",
+    tool: "decision_check",
+    input: "schemas/v1/pre-action-check-request.schema.json",
+    output: "schemas/v1/pre-action-check-response.schema.json"
+  },
+  {
+    profile: "agent_output_verification",
+    tool: "decision_verify",
+    input: "schemas/v1/decision-receipt-verify-request.schema.json",
+    output: "schemas/v1/decision-receipt-verify-response.schema.json"
+  },
+  {
     profile: "gulf_maritime_exposure",
     tool: "gulf_maritime_exposure",
     input: "schemas/v1/gulf-maritime-exposure-request.schema.json",
