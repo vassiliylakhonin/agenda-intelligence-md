@@ -19,15 +19,17 @@ Workers (all on `*.vassiliy-lakhonin.workers.dev`):
 |---|---:|---|---|
 | `valid_card` — schema-validates against A2A v1.0 | 10 | ✅ since 2026-08-23 | Failed until then: the card carried `support`, `x_agenda_intelligence` and a top-level `signature` at the root plus `provider.legalEntity`, none of which the A2A v1 `AgentCard` schema defines. An independent scan on 2026-08-23 caught it. Vendor data now travels in `capabilities.extensions[]`; checked by `npm run verify:agent-card` and by unit test against the closed field set |
 | `live_responds` — answers its version-negotiated A2A message method | 25 | ✅ | live smoke examples in [demo-pack.md](demo-pack.md) |
-| `protocol_version` — declares `protocolVersion = "1.0"` (string) | 10 | ⚠ see note | The A2A v1 `AgentCard` schema has no root `protocolVersion`; version is declared per interface in `supportedInterfaces[].protocolVersion`, which every card sets to `"1.0"`. A root field cannot be added back without failing `valid_card` |
+| `protocol_version` — declares `protocolVersion = "1.0"` (string) | 10 | ✅ | The A2A v1 `AgentCard` schema has no root `protocolVersion`; version is declared per interface in `supportedInterfaces[].protocolVersion`, which every card sets to `"1.0"`. Agenstry reads it from there: on 2026-08-24 its record for `agenda-intelligence-a2a` reported `protocol_version: "1.0"` while the served card carried no root field. No trade-off against `valid_card` exists |
 | `signature` — JWS signature that verifies against the published JWKS | 10 | ✅ | `signatures` per A2A v1 §8.4.2 (JWS RFC 7515, JCS RFC 8785); public key at `/.well-known/jwks.json`; signing flow in [deploy/cloudflare-worker/README.md](../../deploy/cloudflare-worker/README.md) |
-| `uptime` — share of Agenstry probes succeeding over 30d | 15 | ⏳ accumulating | Cloudflare Workers; recovers automatically after the Agenstry probe-library gzip bug was fixed 2026-05-27 |
+| `uptime` — share of Agenstry probes succeeding over 30d | 15 | ✅ | No longer accumulating: on 2026-08-24 Agenstry reported `uptime_pct: 100` over 27 probes in the trailing 30 days, past the 5-probe minimum the criterion needs before it scores. Recovered on its own after the Agenstry probe-library gzip bug was fixed 2026-05-27 |
 | `skills` — non-empty `skills[]` with id + name | 10 | ✅ | each card declares its product skill(s) |
 | `verified_identity` — provider attribution plus authoritative-registry match | 10 | ❌ | individual publisher, no legal-entity registration; not pursued |
 | `freshness` — recent upstream sighting plus capability flags | 5 | ✅ | continuous probing |
 | `security` — declared security scheme | 5 | partial | `securityRequirements: []` — deliberately public, which the criterion scores 2 of 5 |
 
 Criterion ids and weights above were re-read from the live schema (version 1.1) on 2026-08-23. An earlier version of this table used ids Agenstry no longer publishes (`jws_signature`, `provider_attribution`, `business_identity`, `uptime_track`) and asserted `valid_card` as met when it was not.
+
+Agenstry re-probed the restructured card on 2026-08-24 at 01:09 UTC. Its record for `agenda-intelligence-a2a` reports `card_format: current`, `card_findings: []`, `signed: true` and `signature_valid: true`, so the move of vendor data into `capabilities.extensions[]` and the change from a root `signature` to A2A v1 `signatures[]` both survive an independent verifier.
 
 **Expected grade:** not computed here. Five of the nine criteria are scored from Agenstry's own measurement record rather than from the card, so a total worked out from this table would not match theirs. The one deliberate structural miss is `verified_identity` (−10): published as an individual, not a company.
 
