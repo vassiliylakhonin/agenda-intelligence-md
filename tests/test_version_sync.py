@@ -67,3 +67,22 @@ def test_release_version_fields_match_pyproject():
 
     mismatches = [f"{name}={version!r} expected {expected!r}" for name, version in discovered if version != expected]
     assert not mismatches, "Version drift detected: " + "; ".join(mismatches)
+
+
+def test_public_plugin_metadata_avoids_unsupported_grade_claims():
+    public_metadata = [
+        ".claude-plugin/marketplace.json",
+        ".claude-plugin/plugin.json",
+        ".codex-plugin/plugin.json",
+        "plugin.json",
+        "mcp.json",
+        "server.json",
+    ]
+    forbidden = ("decision-grade", "production-grade", "enterprise-grade")
+    hits = []
+
+    for relative_path in public_metadata:
+        text = (ROOT / relative_path).read_text().lower()
+        hits.extend(f"{relative_path}: {phrase}" for phrase in forbidden if phrase in text)
+
+    assert not hits, "Unsupported grade claim in public plugin metadata: " + "; ".join(hits)
