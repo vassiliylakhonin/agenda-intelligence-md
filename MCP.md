@@ -73,8 +73,10 @@ extension) are in
 The deployed Cloudflare workers also speak MCP over Streamable HTTP at
 `POST /mcp` — possible only because 2026-07-28 removed per-client session state.
 
-One deployment serves one profile and exposes exactly one tool: that profile's
-triage contract, named identically to its stdio twin. For example:
+One deployment serves one profile and exposes a fixed profile-scoped tool set,
+named identically to its stdio twin. Most profiles expose one tool; Agent Output
+Verification exposes `agent_output_verification` and `pre_action_check`. For
+example:
 
 ```bash
 curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp \
@@ -84,7 +86,14 @@ curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.de
 
 `tools/call` runs through the same dispatch as the A2A `message/send` route and
 inherits its access gate, rate limit, and usage logging. `server/discover` and
-`tools/list` stay open. The full local catalog below is stdio only.
+`tools/list` stay open. Hosted `tools/list` entries include complete inline input
+and output JSON Schemas plus read-only, non-destructive, idempotent annotations.
+Pass the published request object directly as `tools/call.params.arguments`;
+the former `{ "request": { ... } }` wrapper remains accepted and keeps its
+former A2A task-shaped result for compatibility. A direct-schema call contains
+the service response once in `structuredContent` and only a short text summary,
+so a current MCP client does not pay the context cost of a duplicated A2A task.
+The full local catalog below is stdio only.
 
 ---
 

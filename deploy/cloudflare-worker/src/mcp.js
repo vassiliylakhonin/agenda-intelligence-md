@@ -12,6 +12,7 @@
 // Execution stays in index.js so both transports go through one dispatch.
 
 import { PROFILE_REGISTRY } from "./profiles.js";
+import { MCP_TOOL_CONTRACTS } from "./mcp-tool-contracts.js";
 
 export const MCP_PROTOCOL_VERSION = "2026-07-28";
 
@@ -45,9 +46,9 @@ const NOT_ADVICE =
   "Evidence triage only: no factual-truth verification, no legal, compliance, sanctions, or financial advice. " +
   "Human review is required before any commercial action.";
 
-// One deployment serves one profile, so one worker exposes one tool. The names
-// match the stdio server's tool names for the same contract, so an agent that
-// learned the tool locally can call the hosted one without relearning it.
+// One deployment serves one profile and a fixed, small tool set. The names match
+// the stdio server's tool names for the same contract, so an agent that learned
+// the tool locally can call the hosted one without relearning it.
 const PROFILE_TOOLS = {
   kazakhstan: {
     name: "middle_corridor_deal_risk",
@@ -130,7 +131,13 @@ function requestSchemaUrl(profile) {
   return (entry && entry.product_contract && entry.product_contract.request_schema) || null;
 }
 
+function contractFor(spec, profile) {
+  return MCP_TOOL_CONTRACTS[profile]?.[spec.name] || null;
+}
+
 function inputSchemaFor(spec, profile) {
+  const contract = contractFor(spec, profile);
+  if (contract) return contract.inputSchema;
   if (spec.argKey === "text") {
     return {
       type: "object",
@@ -172,18 +179,48 @@ export function mcpToolSpecForProfile(profile, name) {
 }
 
 export function mcpToolsForProfile(profile) {
-  return toolSpecsForProfile(profile).map((spec) => ({
+  return toolSpecsForProfile(profile).map((spec) => {
+    const contract = contractFor(spec, profile);
+    const tool = {
       name: spec.name,
       description: `${spec.summary} ${NOT_ADVICE}`,
-      inputSchema: inputSchemaFor(spec, profile)
-    }));
+      inputSchema: inputSchemaFor(spec, profile),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: profile === "cis_secondary_sanctions"
+      }
+    };
+    if (contract) tool.outputSchema = contract.outputSchema;
+    return tool;
+  });
 }
 
 // tools/call arguments -> the params shape the A2A dispatch already accepts, so
 // an MCP call and an A2A call of the same payload land on identical code.
+export function mcpUsesLegacyRequestWrapper(profile, args, name) {
+  const spec = mcpToolSpecForProfile(profile, name) || mcpToolSpecForProfile(profile);
+  const objectArgs = args && typeof args === "object" && !Array.isArray(args) ? args : {};
+  return Boolean(
+    spec.argKey === "request" &&
+      Object.keys(objectArgs).length === 1 &&
+      objectArgs.request &&
+      typeof objectArgs.request === "object" &&
+      !Array.isArray(objectArgs.request)
+  );
+}
+
 export function mcpArgumentsToParams(profile, args, name) {
   const spec = mcpToolSpecForProfile(profile, name) || mcpToolSpecForProfile(profile);
-  const value = args && typeof args === "object" ? args[spec.argKey] : undefined;
+  const objectArgs = args && typeof args === "object" && !Array.isArray(args) ? args : {};
+  const isLegacyRequestWrapper = mcpUsesLegacyRequestWrapper(profile, objectArgs, name);
+  const value =
+    spec.argKey === "text"
+      ? objectArgs.text
+      : isLegacyRequestWrapper
+        ? objectArgs.request
+        : objectArgs;
   const params = spec.argKey === "text" ? { text: typeof value === "string" ? value : "" } : { request: value };
   return name ? { ...params, capability: name } : params;
 }

@@ -43,8 +43,9 @@ the `initialize` handshake, and stream resumability, which is what makes MCP fit
 a Worker at all — there is no per-client state to keep, so no Durable Object.
 
 It serves `server/discover`, `tools/list`, and `tools/call`. One deployment
-serves one profile, so it exposes exactly one tool: that profile's triage
-contract, named identically to its stdio twin.
+serves one profile and a fixed profile-scoped tool set. Most profiles expose one
+tool; Agent Output Verification exposes both `agent_output_verification` and
+`pre_action_check`.
 
 ```bash
 curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp \
@@ -55,8 +56,14 @@ curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.de
 `tools/call` routes through the same dispatch as `SendMessage`, so both
 transports return the same verdict for the same payload, and it inherits the same
 Bearer gate, rate limit, and usage logging. `server/discover` and `tools/list`
-stay open, like `agent/card`. Older revisions (`initialize`, `ping`) are still
-answered. Rationale: [ADR 0024](../../docs/adr/0024-mcp-2026-07-28-stateless-core.md).
+stay open, like `agent/card`. `tools/list` embeds the complete JSON Schema for
+both input and output. `tools/call.arguments` is the request object itself; the
+older `{ "request": { ... } }` wrapper remains accepted as a compatibility
+shim and preserves its former A2A task-shaped result. Direct-schema calls return
+the service response once in `structuredContent` and a short text summary, not a
+duplicate A2A task envelope. Older revisions (`initialize`, `ping`) are still
+answered. Rationale:
+[ADR 0024](../../docs/adr/0024-mcp-2026-07-28-stateless-core.md).
 
 The full product layer remains:
 

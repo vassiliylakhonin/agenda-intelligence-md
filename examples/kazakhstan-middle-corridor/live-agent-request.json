@@ -1,9 +1,10 @@
 {
   "jsonrpc": "2.0",
   "id": "kazakhstan-live-demo-1",
-  "method": "message/send",
+  "method": "SendMessage",
   "params": {
     "message": {
+      "messageId": "kazakhstan-live-demo-message-1",
       "role": "ROLE_USER",
       "parts": [
         {

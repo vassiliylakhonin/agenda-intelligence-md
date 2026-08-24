@@ -4,6 +4,19 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## 1.6.0 — 2026-08-24
 
+- **fix(hosted MCP): publish complete contracts and stop duplicating A2A tasks in model context.** Hosted
+  `tools/list` previously described every structured request as an open `{request: object}` shell, omitted
+  `outputSchema` and behavior annotations, and `tools/call` serialized the full A2A task twice: pretty-printed in
+  `content` and again in `structuredContent`. A local Middle Corridor fixture measured 91,861 bytes for one MCP
+  response. The Worker now generates complete input and output schemas from the versioned `schemas/v1` contracts,
+  accepts the request object directly while preserving the old wrapper and its A2A task-shaped result as a
+  compatibility shim, advertises read-only/non-destructive/idempotent hints, and returns the service result once plus
+  a short summary for direct-schema calls. The same fixture is contract-tested below 15,000 bytes. A generation-drift
+  check runs before the Worker tests, and browser preflight now permits the MCP 2026-07-28 `Mcp-Method` and `Mcp-Name`
+  routing headers. A2A response shapes and existing tool names are unchanged. The A2A 1.0 live fixture also now uses
+  `SendMessage` and includes the required `messageId`; it previously combined legacy `message/send` with an A2A 1.0
+  header in live use.
+
 - **fix(release): align the Cloudflare Worker version with the Python release.** The live Workers and Worker source
   still reported `1.2.0` while PyPI and the repository reported `1.5.0`. The Worker now reports `1.6.0`, its contract
   tests are updated, and the Python version-sync test covers the Worker constant so the two release surfaces cannot
