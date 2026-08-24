@@ -71,6 +71,10 @@
       "path": "schemas/v1/evidence-packet-response.schema.json",
       "schema_version": "v1"
     },
+    "evidence_review_request": {
+      "path": "schemas/v1/evidence-review-request.schema.json",
+      "schema_version": "v1"
+    },
     "signal_tracker": {
       "path": "schemas/v1/signal-tracker.schema.json",
       "schema_version": "v1"

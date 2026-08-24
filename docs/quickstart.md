@@ -84,7 +84,23 @@ agenda-intelligence check examples/evidence-packet/request.json --strict
 
 Use the default non-strict mode when you want a valid diagnostic report even if the packet still has gaps.
 
-## 6. Call the Python service
+## 6. Review local source files
+
+Use the local-file manifest when the source text should remain in its original
+UTF-8, Markdown, DOCX, or PDF files:
+
+```bash
+agenda-intelligence review examples/evidence-review/manifest.json --out evidence-review.md --strict
+```
+
+The manifest contract is
+[`evidence-review-request.schema.json`](../schemas/v1/evidence-review-request.schema.json).
+The command resolves sources inside the manifest directory and returns the same
+evidence-packet statuses. It does not extract claims, call a model, use the
+network, or repeat source text in the result. See
+[`docs/evidence-review.md`](evidence-review.md).
+
+## 7. Call the Python service
 
 ```python
 import json

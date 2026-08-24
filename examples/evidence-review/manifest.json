@@ -1,0 +1,28 @@
+{
+  "packet_id": "multilingual-board-review",
+  "topic": "Проверка решения и бюджета проекта",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "text": "Совет директоров одобрил проект.",
+      "source_ids": ["decision"]
+    },
+    {
+      "claim_id": "c2",
+      "text": "Бюджет проекта составляет 20 миллионов евро.",
+      "source_ids": ["budget"]
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "decision",
+      "title": "Решение совета директоров",
+      "path": "sources/decision.md"
+    },
+    {
+      "source_id": "budget",
+      "title": "Бюджетная записка",
+      "path": "sources/budget.txt"
+    }
+  ]
+}
