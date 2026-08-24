@@ -44,6 +44,20 @@ Use JSON for an agent loop or CI pipeline:
 
 `--strict` exits non-zero unless every claim is `packet_complete`.
 
+Review local source files without copying their full text into JSON:
+
+```bash
+.venv/bin/agenda-intelligence review examples/evidence-review/manifest.json \
+  --out evidence-review.md --strict
+```
+
+The manifest keeps claims explicit and points to local UTF-8, Markdown, DOCX,
+or PDF sources. Paths are resolved inside the manifest directory. DOCX support
+uses the Python standard library; PDF extraction requires
+`pip install -e ".[documents]"`. The command makes no network or model call and
+does not include source text in its JSON or Markdown result. See
+[`docs/evidence-review.md`](docs/evidence-review.md).
+
 Install the pinned release without cloning the source and check your own packet:
 
 ```text
@@ -82,6 +96,12 @@ Lexical support is the share of a claim's content terms that appear in the sourc
 
 **Reversed roles are not checked, and are not claimed to be.** "A approved a facility for B" and "B approved a facility for A" contain the same terms and both score `supported`. Deciding who did what to whom is not something term overlap can do, and no heuristic here pretends otherwise. A reviewer still has to read the sentence. The limit is pinned by a test (`test_polarity_check_does_not_claim_to_catch_reversed_roles`) so it stays visible.
 
+**Unicode text is tokenized, but language understanding is not claimed.**
+Cyrillic and Arabic words are no longer discarded, and common English,
+Russian, and Arabic negation cues are checked. The deterministic check still
+does not resolve morphology, translation, cross-language support, paraphrases,
+or semantic roles. Those remain model or reviewer tasks.
+
 ## Python API
 
 ```python
@@ -102,6 +122,7 @@ The service layer is stateless. It does not persist packet contents or fetch mis
 - A small JSON contract for claim-backed AI output.
 - A deterministic preflight before human review.
 - A CLI and Python service suitable for local and CI use.
+- A local-file review adapter that returns a reviewer-facing Markdown or JSON result.
 - An inspectable base for domain-specific compatibility profiles.
 
 ## What this is not
@@ -209,6 +230,7 @@ Start with:
 
 - [`evidence-packet-request.schema.json`](schemas/v1/evidence-packet-request.schema.json)
 - [`evidence-packet-response.schema.json`](schemas/v1/evidence-packet-response.schema.json)
+- [`evidence-review-request.schema.json`](schemas/v1/evidence-review-request.schema.json)
 - [`evidence-audit.schema.json`](schemas/v1/evidence-audit.schema.json)
 - [`claim-verification-request.schema.json`](schemas/v1/claim-verification-request.schema.json)
 
@@ -236,6 +258,7 @@ These are evaluation fixtures, not customer evidence or production benchmarks.
 | Evidence-packet request/response schemas | Implemented |
 | `check_evidence_packet` Python service | Implemented |
 | `agenda-intelligence check` packet auto-detection | Implemented |
+| `agenda-intelligence review` local-file workflow | Implemented for UTF-8, Markdown, DOCX, and optional PDF input |
 | Legacy agenda-brief behavior for `check` | Preserved |
 | `check_evidence_packet` MCP tool | Implemented |
 | Live source discovery | Not implemented |
@@ -251,6 +274,7 @@ Current classification: `portfolio-proof` / `build-to-learn`.
 | Adoption | [`ADOPTION.md`](ADOPTION.md) |
 | Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
 | Evidence audit | [`docs/evidence-audit.md`](docs/evidence-audit.md) |
+| Local evidence review | [`docs/evidence-review.md`](docs/evidence-review.md) |
 | Factuality boundary | [`docs/factual-verification.md`](docs/factual-verification.md) |
 | Evaluation | [`docs/evaluation.md`](docs/evaluation.md) |
 | Source policy | [`SOURCE_POLICY.md`](SOURCE_POLICY.md) |

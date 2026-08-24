@@ -207,3 +207,4 @@ The `evidence-audit.schema.json` enforces a stable `claim_type` enum derived fro
 - `verify-quotes --fetch` reports presence of a text fragment at a URL, not whether the source is reputable or the claim is true.
 - Benchmark numbers above cover 20 cases. Broader coverage requires more domains and adversarial cases.
 - Heuristic score weights (25, 25, 20, 15, 15) are hand-tuned and not calibrated against expert judgment. Do not treat scores as authoritative quality ratings.
+- Cyrillic and Arabic exact-match cases are regression tests for Unicode tokenization, not language-quality benchmarks. Morphology, translation, cross-language entailment, and unfamiliar language coverage are not measured.

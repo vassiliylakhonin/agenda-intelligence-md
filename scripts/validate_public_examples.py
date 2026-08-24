@@ -77,6 +77,7 @@ def validate_examples() -> None:
     grounded_check_schema = load_json(ROOT / "schemas" / "v1" / "grounded-check-request.schema.json")
     claim_verification_schema = load_json(ROOT / "schemas" / "v1" / "claim-verification-request.schema.json")
     evidence_packet_schema = load_json(ROOT / "schemas" / "v1" / "evidence-packet-request.schema.json")
+    evidence_review_schema = load_json(ROOT / "schemas" / "v1" / "evidence-review-request.schema.json")
     pre_action_check_schema = load_json(ROOT / "schemas" / "v1" / "pre-action-check-request.schema.json")
 
     json_files = sorted((ROOT / "examples").glob("**/*.json"))
@@ -125,6 +126,8 @@ def validate_examples() -> None:
             validate_with_schema(path, claim_verification_schema, "claim-verification-request")
         elif path.is_relative_to(ROOT / "examples" / "evidence-packet"):
             validate_with_schema(path, evidence_packet_schema, "evidence-packet-request")
+        elif path.is_relative_to(ROOT / "examples" / "evidence-review"):
+            validate_with_schema(path, evidence_review_schema, "evidence-review-request")
         elif path.is_relative_to(pre_action_fixture_dir):
             if path.name == "replay-cases.json":
                 replay = load_json(path)
@@ -240,7 +243,7 @@ def smoke_markdown_commands() -> None:
     if not runnable:
         raise SystemExit("No runnable agenda-intelligence commands found in docs")
 
-    cleanup_paths = [ROOT / "evidence-pack.json"]
+    cleanup_paths = [ROOT / "evidence-pack.json", ROOT / "evidence-review.md"]
     try:
         for path, command in runnable:
             result = run_command(command)

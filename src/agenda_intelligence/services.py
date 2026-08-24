@@ -593,7 +593,7 @@ _GROUNDED_CHECK_STOPWORDS = frozenset(
 
 def _grounded_normalize(text: str) -> str:
     text = unicodedata.normalize("NFKC", text)
-    return re.sub(r"\s+", " ", text).strip().lower()
+    return re.sub(r"\s+", " ", text).strip().casefold()
 
 
 def _grounded_content_terms(text: str) -> list[str]:
@@ -602,7 +602,12 @@ def _grounded_content_terms(text: str) -> list[str]:
     Keeps numeric tokens of any length; drops stopwords and alphabetic tokens
     shorter than 3 characters.
     """
-    tokens = re.findall(r"[a-z0-9][a-z0-9.\-%]*", _grounded_normalize(text))
+    # ``[^\W_]`` is the Unicode-aware equivalent of an alphanumeric token
+    # character without underscore. The previous ASCII-only expression silently
+    # discarded Cyrillic and Arabic text, making even a verbatim claim/source
+    # pair score 0.0. Keep punctuation only when it joins token characters so
+    # values such as ``9.9`` and ``62%`` retain the existing numeric behavior.
+    tokens = re.findall(r"[^\W_]+(?:[.\-][^\W_]+)*(?:%)?", _grounded_normalize(text), flags=re.UNICODE)
     terms: list[str] = []
     seen: set[str] = set()
     for token in tokens:
@@ -620,7 +625,10 @@ _POLARITY_CUE_PATTERN = re.compile(
     r"\b(?:not|no|never|none|neither|nor|without|cannot|can't|won't|doesn't|don't|didn't"
     r"|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't|shouldn't|wouldn't|couldn't"
     r"|denied|rejected|refused|declined|lacks|lacked|absent|ceased|suspended|terminated"
-    r"|failed to|unable to|no longer)\b"
+    r"|failed to|unable to|no longer"
+    r"|не|нет|никогда|без|нельзя|невозможно|отклонил|отклонила|отклонили|отклонено"
+    r"|отказал|отказала|отказали|приостановил|приостановила|приостановили|прекратил|прекратили"
+    r"|لا|لم|لن|ليس|ليست|بدون|رفض|رفضت|رفضوا)\b"
 )
 
 
@@ -652,7 +660,7 @@ def _polarity_cues(text: str) -> set[str]:
 
 
 def _grounded_sentences(text: str) -> list[str]:
-    parts = re.split(r"(?<=[.!?])\s+|\n+", text)
+    parts = re.split(r"(?<=[.!?؟])\s+|\n+", text)
     return [p.strip() for p in parts if p.strip()]
 
 
@@ -1025,6 +1033,8 @@ def check_evidence_packet(request_json: dict) -> dict:
             "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
             "Lexical matching can miss valid paraphrases and can overstate support when terms overlap "
             "without entailment.",
+            "Unicode tokenization supports whitespace-delimited scripts, but does not assess morphology, "
+            "translation, or cross-language entailment.",
             "No source discovery or live retrieval is performed; the caller controls the supplied source set.",
         ],
     }

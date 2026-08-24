@@ -129,6 +129,22 @@ When in doubt, choose `user-provided` and note that the original source type sho
 - If the document contains quantitative data (tables, statistics, XLSX), extract the most relevant figures as claims with their table/sheet reference.
 - If the document is a transcript, extract direct statements by named speakers; label speaker role.
 
+## Local evidence review handoff
+
+When the downstream task is to review explicit claims against local source
+files, produce a manifest matching
+[`evidence-review-request.schema.json`](../../schemas/v1/evidence-review-request.schema.json).
+
+- Keep each claim explicit; do not infer claims by splitting paragraphs or using keyword rules.
+- Give every source a stable `source_id` and a `path` relative to the manifest.
+- Keep source files inside the manifest directory.
+- Run `agenda-intelligence review <manifest.json> --out review.md --strict`.
+- Treat `packet_complete` as structural and lexical readiness only. Human review remains required.
+
+The CLI reads UTF-8, Markdown, and DOCX directly. PDF input requires the optional
+`documents` package extra. It makes no network or model call and does not repeat
+full source text in the review result.
+
 ## Ingest decision workspace
 
 Before handing a normalized source to downstream analysis, surface the minimum state that affects source trust:

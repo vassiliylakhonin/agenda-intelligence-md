@@ -4,6 +4,16 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(evidence review): add a bounded local-file review workflow and Unicode lexical support.**
+  `agenda-intelligence review <manifest>` now loads caller-selected UTF-8, Markdown, DOCX, or optional PDF
+  sources, hydrates the stable evidence-packet request, and returns a reviewer-facing Markdown or JSON result
+  without repeating full source text. Paths stay inside the manifest directory; source size, extracted text, and
+  PDF page count are bounded. The deterministic tokenizer now retains Unicode words instead of silently dropping
+  Cyrillic and Arabic text, preserves numeric percentages, and checks common English, Russian, and Arabic negation
+  cues. Exact-match Cyrillic and Arabic fixtures and a Russian polarity-conflict fixture pin the behavior. This is
+  not claim extraction, translation, semantic entailment, source discovery, or factual verification; those limits
+  remain visible in every result and human review remains required.
+
 - **fix(skill packaging): ship and validate the complete `source-ingest` contract.** The plugin exposed the skill,
   and packaged `llms.txt` advertised it, but the Python package data carried only `agenda-intelligence`; the
   dual-copy test also checked only that one skill despite the documented `skills/**` invariant. `source-ingest` is

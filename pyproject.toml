@@ -42,6 +42,9 @@ llm = [
 pdf = [
     "fpdf2>=2.7",
 ]
+documents = [
+    "pypdf>=5,<7",
+]
 
 [project.scripts]
 agenda-intelligence = "agenda_intelligence.cli:main"
