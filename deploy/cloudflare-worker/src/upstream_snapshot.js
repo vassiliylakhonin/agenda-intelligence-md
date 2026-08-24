@@ -127,9 +127,14 @@ let INDEX_CACHE = null;
 
 function buildIndex(raw) {
   const src = Array.isArray(raw.src) ? raw.src : [];
+  // `types` and the third element of each row arrive with compact index v2.
+  // A v1 index has neither; those rows resolve to "unknown" rather than being
+  // labelled, because the wrong type is worse than an absent one.
+  const types = Array.isArray(raw.types) ? raw.types : [];
   const entries = Array.isArray(raw.entries) ? raw.entries : [];
   const names = new Array(entries.length);
   const srcIdx = new Int16Array(entries.length);
+  const typeIdx = new Int16Array(entries.length);
   const tokenCount = new Uint8Array(entries.length);
   const exact = new Map();
   const postings = new Map();
@@ -138,6 +143,7 @@ function buildIndex(raw) {
     const name = row[0];
     names[i] = name;
     srcIdx[i] = row[1] | 0;
+    typeIdx[i] = row.length > 2 ? row[2] | 0 : -1;
     const norm = normalizeName(name);
     if (!exact.has(norm)) exact.set(norm, i);
     const toks = significantTokens(norm);
@@ -162,8 +168,10 @@ function buildIndex(raw) {
     generated_at_utc: raw.generated_at_utc || null,
     name_count: entries.length,
     src,
+    types,
     names,
     srcIdx,
+    typeIdx,
     tokenCount,
     exact,
     postings
@@ -211,13 +219,35 @@ function matchInIndex(index, name, maxMatches) {
   return out.slice(0, maxMatches);
 }
 
+// The index publishes the entity type each authority assigned. Map it onto the
+// FollowTheMoney schema names the other upstreams already return, so a caller
+// reading `schema` gets the same vocabulary whichever upstream answered.
+const TYPE_TO_SCHEMA = {
+  individual: "Person",
+  entity: "Company",
+  vessel: "Vessel",
+  aircraft: "Airplane"
+};
+
+function entityTypeFor(index, idx) {
+  const position = index.typeIdx ? index.typeIdx[idx] : -1;
+  if (position < 0) return "unknown";
+  const value = (index.types || [])[position];
+  return typeof value === "string" && value ? value : "unknown";
+}
+
 function makeMatch(index, idx, score) {
   const pair = index.src[index.srcIdx[idx]] || ["", ""];
   const authority = pair[0];
   const list = pair[1];
+  const entityType = entityTypeFor(index, idx);
   return {
     name: index.names[idx],
-    schema: "Company",
+    entity_type: entityType,
+    // Was hardcoded "Company", which labelled every designated person, ship and
+    // aircraft a company. OFAC SDN lists a Russian supply vessel named after a
+    // former head of state; a caller had no way to see that was what matched.
+    schema: TYPE_TO_SCHEMA[entityType] || "LegalEntity",
     datasets: [list ? `${authority} / ${list}` : authority],
     source_type: sourceTypeFor(authority, list),
     score: Math.round(score * 100) / 100,

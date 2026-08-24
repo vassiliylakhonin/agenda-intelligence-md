@@ -3094,10 +3094,61 @@ function cisHasUndisclosedUbo(request) {
   );
 }
 
-function cisTopExposureDimensions(facets, missing, openSanctionsMatchCount, undisclosedUbo = false) {
+// FollowTheMoney schema -> the vocabulary the compact index publishes, for
+// upstreams that return a schema but no entity type of their own.
+function schemaToEntityType(schema) {
+  switch (schema) {
+    case "Person":
+      return "individual";
+    case "Company":
+    case "Organization":
+    case "LegalEntity":
+      return "entity";
+    case "Vessel":
+      return "vessel";
+    case "Airplane":
+      return "aircraft";
+    default:
+      return "unknown";
+  }
+}
+
+const NON_COUNTERPARTY_TYPES = ["vessel", "aircraft"];
+
+// Name the lists that actually answered. The dimension used to say
+// "OpenSanctions consolidated dataset" whichever upstream produced the match,
+// which misstated provenance whenever the Snapshot or Watchman upstream was the
+// active one.
+function matchUpstreamLabel(matches) {
+  const datasets = [];
+  for (const match of matches || []) {
+    for (const dataset of (match && match.datasets) || []) {
+      const value = String(dataset).trim();
+      if (value && !datasets.includes(value)) datasets.push(value);
+    }
+  }
+  if (datasets.length === 0) return "the active sanctions-list upstream";
+  if (datasets.length <= 3) return datasets.join(", ");
+  return `${datasets.slice(0, 3).join(", ")} and ${datasets.length - 3} more`;
+}
+
+// A match is reported as a match on the counterparty only when the listed thing
+// could be the counterparty. A ship or an aircraft named after a person is not
+// that person, and saying "direct match" about one states something the record
+// does not support. Such a listing is still surfaced — it can matter to a file —
+// but it is named for what it is.
+function cisTopExposureDimensions(facets, missing, matches, undisclosedUbo = false) {
   const dims = [];
-  if (openSanctionsMatchCount > 0) {
-    dims.push("direct or near-direct match in OpenSanctions consolidated dataset");
+  const list = Array.isArray(matches) ? matches : [];
+  const craft = list.filter((m) => NON_COUNTERPARTY_TYPES.includes(m && m.entity_type));
+  const direct = list.filter((m) => !NON_COUNTERPARTY_TYPES.includes(m && m.entity_type));
+  if (direct.length > 0) {
+    dims.push(`direct or near-direct match in ${matchUpstreamLabel(list)}`);
+  }
+  if (craft.length > 0) {
+    dims.push(
+      `listed vessel or aircraft carrying a matching name in ${matchUpstreamLabel(craft)} — not a match on the counterparty itself`
+    );
   }
   if (undisclosedUbo) dims.push("undisclosed or unverified ultimate beneficial owner");
   if (facets.includes("ownership_or_control")) dims.push("indirect ownership or control exposure");
@@ -5250,6 +5301,7 @@ async function cisSecondarySanctionsResult(request, env) {
     autoFetched.push({
       source_type: sourceType,
       title: match.name || `${upstream_name || "upstream"} match`,
+      entity_type: match.entity_type || schemaToEntityType(match.schema),
       datasets: match.datasets || [],
       opensanctions_id: match.opensanctions_id,
       watchman_source_id: match.watchman_source_id || null,
@@ -5353,7 +5405,7 @@ async function cisSecondarySanctionsResult(request, env) {
     supplied_sources: supplied,
     minimum_sources_before_review: missing,
     evidence_gaps: missing.map(cisEvidenceGapForSource),
-    top_exposure_dimensions: cisTopExposureDimensions(facets, missing, autoFetched.length, undisclosedUbo),
+    top_exposure_dimensions: cisTopExposureDimensions(facets, missing, autoFetched, undisclosedUbo),
     watch_next: [
       "new OFAC SDN designations",
       "new EU sanctions package",

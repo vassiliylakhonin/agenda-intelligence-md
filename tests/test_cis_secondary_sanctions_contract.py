@@ -290,3 +290,45 @@ def test_cis_limitations_do_not_leak_env_var_names(monkeypatch):
         assert leak not in joined, f"limitations leaked internal token: {leak}"
     # But the degrade is still communicated in user-safe language
     assert any("not currently enabled" in line or "was unavailable" in line for line in resp["limitations"])
+
+
+def test_cis_vessel_match_is_not_reported_as_a_counterparty_match():
+    """A ship or aircraft named after a person is not that person.
+
+    OFAC SDN carries a Russian supply vessel named after a former head of state.
+    Reporting a hit on it as a direct match on the counterparty states something
+    the record does not support. It is still surfaced, named for what it is.
+    Parity with the worker (deploy/cloudflare-worker/src/index.js).
+    """
+    vessel = [{"entity_type": "vessel", "datasets": ["US OFAC / SDN"]}]
+    dims = services._cis_top_exposure_dimensions([], [], vessel)
+    assert not any(d.startswith("direct or near-direct match") for d in dims)
+    assert any("listed vessel or aircraft" in d and "not a match on the counterparty itself" in d for d in dims)
+    assert any("US OFAC / SDN" in d for d in dims)
+
+    company = [{"entity_type": "entity", "datasets": ["US OFAC / SDN"]}]
+    dims = services._cis_top_exposure_dimensions([], [], company)
+    assert any(d.startswith("direct or near-direct match") and "US OFAC / SDN" in d for d in dims)
+    assert not any("listed vessel or aircraft" in d for d in dims)
+
+
+def test_cis_dimension_names_the_upstream_that_answered():
+    """The dimension used to say OpenSanctions whichever upstream produced the
+    match, which misstated provenance once Snapshot or Watchman was active."""
+    matches = [{"entity_type": "entity", "datasets": ["United Kingdom FCDO / UK Sanctions List"]}]
+    dims = services._cis_top_exposure_dimensions([], [], matches)
+    assert any("United Kingdom FCDO / UK Sanctions List" in d for d in dims)
+    assert not any("OpenSanctions" in d for d in dims)
+
+    unlabelled = [{"entity_type": "entity"}]
+    dims = services._cis_top_exposure_dimensions([], [], unlabelled)
+    assert any("the active sanctions-list upstream" in d for d in dims)
+
+
+def test_cis_entity_type_mapping_does_not_guess():
+    assert services._entity_type_for_schema("Person") == "individual"
+    assert services._entity_type_for_schema("Vessel") == "vessel"
+    assert services._entity_type_for_schema("Airplane") == "aircraft"
+    assert services._entity_type_for_schema("Company") == "entity"
+    assert services._entity_type_for_schema(None) == "unknown"
+    assert services._entity_type_for_schema("SomethingNew") == "unknown"

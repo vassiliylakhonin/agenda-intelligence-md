@@ -2923,12 +2923,53 @@ def _cis_has_undisclosed_ubo(request_json: dict) -> bool:
     return False
 
 
+# FollowTheMoney schema -> the vocabulary the compact public-list index publishes.
+_SCHEMA_TO_ENTITY_TYPE = {
+    "Person": "individual",
+    "Company": "entity",
+    "Organization": "entity",
+    "LegalEntity": "entity",
+    "Vessel": "vessel",
+    "Airplane": "aircraft",
+}
+
+# A ship or an aircraft named after a person is not that person. A listing on one
+# is reported, but never as a match on the counterparty.
+_NON_COUNTERPARTY_TYPES = ("vessel", "aircraft")
+
+
+def _entity_type_for_schema(schema: str | None) -> str:
+    return _SCHEMA_TO_ENTITY_TYPE.get(schema or "", "unknown")
+
+
+def _match_upstream_label(matches: list[dict]) -> str:
+    """Name the lists that answered, rather than assuming one upstream."""
+    datasets: list[str] = []
+    for match in matches:
+        for dataset in match.get("datasets") or []:
+            value = str(dataset).strip()
+            if value and value not in datasets:
+                datasets.append(value)
+    if not datasets:
+        return "the active sanctions-list upstream"
+    if len(datasets) <= 3:
+        return ", ".join(datasets)
+    return f"{', '.join(datasets[:3])} and {len(datasets) - 3} more"
+
+
 def _cis_top_exposure_dimensions(
     facets: list[str], missing_sources: list[str], opensanctions_matches: list[dict], undisclosed_ubo: bool = False
 ) -> list[str]:
     dims: list[str] = []
-    if opensanctions_matches:
-        dims.append("direct or near-direct match in OpenSanctions consolidated dataset")
+    craft = [m for m in opensanctions_matches if m.get("entity_type") in _NON_COUNTERPARTY_TYPES]
+    direct = [m for m in opensanctions_matches if m.get("entity_type") not in _NON_COUNTERPARTY_TYPES]
+    if direct:
+        dims.append(f"direct or near-direct match in {_match_upstream_label(opensanctions_matches)}")
+    if craft:
+        dims.append(
+            f"listed vessel or aircraft carrying a matching name in {_match_upstream_label(craft)}"
+            " — not a match on the counterparty itself"
+        )
     if undisclosed_ubo:
         dims.append("undisclosed or unverified ultimate beneficial owner")
     if "ownership_or_control" in facets:
@@ -2986,6 +3027,7 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
                 {
                     "source_type": mapped_type,
                     "title": match.get("name") or "OpenSanctions match",
+                    "entity_type": _entity_type_for_schema(match.get("schema")),
                     "datasets": match.get("datasets", []),
                     "opensanctions_id": match.get("opensanctions_id"),
                     "score": match.get("score"),
