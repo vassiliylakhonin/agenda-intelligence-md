@@ -2101,6 +2101,113 @@ test("the response text part carries the same contact as the metadata", async ()
   );
 });
 
+// Measured 2026-08-25 against the live endpoint by calling it the way a
+// machine does: `params: {}` and `parts: []` both came back
+// TASK_STATE_COMPLETED with a full routing note. Every structured gate refuses
+// that input and says what it needs; the base profile told the caller its
+// malformed request had worked, and logged it as a completed call.
+test("a request with nothing in it is refused, not completed", async () => {
+  for (const params of [{}, { message: { role: "user", parts: [] } }, { message: { role: "user", parts: [{ kind: "text", text: "   " }] } }]) {
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "1", method: "message/send", params },
+      new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST" })
+    );
+
+    const task = response.result;
+    assert.equal(task.status.state, "TASK_STATE_FAILED", `empty params must not complete: ${JSON.stringify(params)}`);
+    const data = task.artifacts[0].parts.find((part) => part.mediaType === "application/json").data;
+    assert.equal(data.valid, false);
+    assert.ok(data.errors.length > 0, "a refusal must say why it stopped");
+    assert.ok(data.required_fields.length > 0, "a refusal must say what it needs");
+    // The example it hands back has to be a request this endpoint accepts,
+    // otherwise the guidance sends the caller round the same loop.
+    const retry = await handleJsonRpc(
+      { ...data.example_request },
+      new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST" })
+    );
+    assert.equal(retry.result.status.state, "TASK_STATE_COMPLETED", "the example request must work");
+  }
+});
+
+// An agent that cannot serve the request should hand back the ones that can.
+test("the routing note names the sibling gates and never itself", async () => {
+  const call = async (host) =>
+    handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "1",
+        method: "message/send",
+        params: { message: { role: "user", parts: [{ kind: "text", text: "Aktau to Jebel Ali, sanctions exposure" }] } }
+      },
+      new Request(`https://${host}.example.workers.dev/message/send`, { method: "POST" })
+    );
+
+  const base = await call("agenda-intelligence-a2a");
+  const related = base.result.metadata.related_agents;
+  assert.ok(related.length >= 3, "the base profile must point at the structured gates");
+  const markdown = base.result.artifacts[0].parts.find((part) => part.mediaType === "text/markdown").text;
+  for (const gate of related) {
+    assert.ok(markdown.includes(gate.a2a), `text part must carry the address of ${gate.name}`);
+  }
+
+  // The Middle Corridor gate runs under product profile "kazakhstan", so a
+  // filter on the profile string would have left it advertising itself.
+  const corridor = await call("middle-corridor-deal-risk-gate-a2a");
+  const own = "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev";
+  assert.ok(
+    !corridor.result.metadata.related_agents.some((gate) => gate.a2a === own),
+    "a gate must not list itself as a related agent"
+  );
+});
+
+// Measured 2026-08-25 against the live endpoint: the note recommended
+// audit_claims while the hosted /mcp endpoint on the same host served only
+// strategic_risk_triage, so a caller that followed the recommendation got
+// "Unknown tool". The two lists are read from one source here.
+test("a recommended MCP tool the host does not serve says where it runs", async () => {
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "1",
+      method: "message/send",
+      params: { message: { role: "user", parts: [{ kind: "text", text: "audit this evidence pack for gaps" }] } }
+    },
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST" })
+  );
+
+  const markdown = response.result.artifacts[0].parts.find((part) => part.mediaType === "text/markdown").text;
+  const hosted = response.result.metadata.hosted_mcp_tools;
+  const recommended = response.result.metadata.signal_screen.recommended_mcp_tool;
+  assert.ok(hosted.length > 0, "the response must say which tools this host serves");
+  if (!hosted.includes(recommended)) {
+    assert.ok(
+      markdown.includes("installable stdio server"),
+      "a tool this host does not serve must say where it does run"
+    );
+    for (const tool of hosted) {
+      assert.ok(markdown.includes(tool), `the note must name the hosted tool ${tool}`);
+    }
+  }
+});
+
+// The text part is what a caller prints. Empty blocks used to leave runs of
+// three and four newlines mid-note, which reads as a rendering fault.
+test("the routing note has no stray blank-line runs", async () => {
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "1",
+      method: "message/send",
+      params: { message: { role: "user", parts: [{ kind: "text", text: "Gulf sanctions exposure" }] } }
+    },
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST" })
+  );
+
+  const markdown = response.result.artifacts[0].parts.find((part) => part.mediaType === "text/markdown").text;
+  const runs = markdown.match(/\n{3,}/g) || [];
+  assert.equal(runs.length, 0, `text part must not contain blank-line runs: found ${runs.length}`);
+});
+
 test("caller classification separates our own runs, probes, and callers who sign nothing", () => {
   const kindFor = (headers) =>
     buildUsageEvent(
