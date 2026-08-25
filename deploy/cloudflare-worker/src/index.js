@@ -6612,7 +6612,21 @@ function callerZone(request) {
 // A manual `curl` run by the operator lands in `external`, not `self_test` —
 // the scripted paths set their own agent, an ad-hoc shell call does not. Read
 // `external` as "not identified as ours or as a probe", not as "a stranger".
-const SELF_TEST_USER_AGENT = /^agenda-intelligence-(a2a-conformance|live-smoke)/i;
+//
+// The rule reads the `agenda-intelligence-` prefix rather than a list of tool
+// names. It used to name two, `a2a-conformance` and `live-smoke`. On
+// 2026-08-24 a third scripted path appeared, `agenda-intelligence-post-deploy-verifier`,
+// which followed the same naming convention and was still counted as
+// `external` because it was not on the list. A list has to be edited from a
+// second repository every time a tool is added; a prefix does not.
+//
+// This does not make `external` mean "a stranger". The same day, that bucket
+// held 36 non-probe calls: 5 genuinely outside, 3 from the verifier this
+// change reclassifies, and 28 from the operator's own `curl`, which stays in
+// `external` by the rule above and cannot be told apart from anyone else's
+// `curl` at this layer. Separating those needs the calling network, which the
+// Worker does not judge on and the archive does.
+const SELF_TEST_USER_AGENT = /^agenda-intelligence-/i;
 
 // Two ways an automated caller declares itself, and both are needed.
 //

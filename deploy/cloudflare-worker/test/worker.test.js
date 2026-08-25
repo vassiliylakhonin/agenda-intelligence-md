@@ -2078,6 +2078,14 @@ test("caller classification separates our own runs, probes, and callers who sign
 
   assert.equal(kindFor({ "user-agent": "agenda-intelligence-live-smoke" }), "self_test");
   assert.equal(kindFor({ "user-agent": "agenda-intelligence-a2a-conformance/1.0" }), "self_test");
+  // Read by prefix, not by a list of names. This third tool appeared on
+  // 2026-08-24 following the same convention and was counted as `external`
+  // for a day because the rule enumerated the two above. A tool named by the
+  // convention is ours whether or not anyone remembered to add it here.
+  assert.equal(kindFor({ "user-agent": "agenda-intelligence-post-deploy-verifier" }), "self_test");
+  assert.equal(kindFor({ "user-agent": "agenda-intelligence-anything-we-name-later/2" }), "self_test");
+  // The prefix is ours, not a substring anyone can carry mid-string.
+  assert.equal(kindFor({ "user-agent": "curl/8.7.1 agenda-intelligence-live-smoke" }), "external");
   assert.equal(kindFor({ "user-agent": "AgenstryBot/0.3.0 (+https://agenstry.com/bot)" }), "service_probe");
   assert.equal(kindFor({ "user-agent": "ProofBench/0.1 (+https://proofbench.dev/about/probe)" }), "service_probe");
   assert.equal(kindFor({ "user-agent": "mcpqueen-grader/0.3 (+https://mcpqueen.com)" }), "service_probe");
