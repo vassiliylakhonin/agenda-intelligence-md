@@ -2069,6 +2069,38 @@ test("a successful response hands the caller a way to reach a person", async () 
   assert.ok(!/trusted by|customers|clients use|join \d/i.test(text), "engagement block must not claim traction");
 });
 
+// The gap the metadata block still left open: a caller that reads only the
+// text part never sees `metadata.engagement`. Measured 2026-08-25, the one
+// external caller that came back on a second day posts plain HTTP and takes
+// the markdown part, so the contact has to be in the prose too — and has to
+// stay the same string as the metadata, which is why both are asserted here
+// against one source.
+test("the response text part carries the same contact as the metadata", async () => {
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "1",
+      method: "message/send",
+      params: { message: { role: "user", parts: [{ kind: "text", text: "Gulf sanctions exposure on a cargo" }] } }
+    },
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST" })
+  );
+
+  const engagement = response.result.metadata.engagement;
+  const markdown = response.result.artifacts[0].parts.find((part) => part.mediaType === "text/markdown").text;
+
+  assert.ok(markdown.includes(engagement.contact_email), "text part must carry the contact email");
+  assert.ok(markdown.includes(engagement.offer), "text part must carry the same offer wording as the metadata");
+  assert.ok(markdown.includes(engagement.next_step), "text part must carry the same next step as the metadata");
+  assert.ok(markdown.includes(engagement.human_page), "text part must point at a page a person can read");
+  // Same honesty rules as the metadata block: no price, no claimed traction.
+  assert.ok(!/[$\u20ac\u00a3]\s?\d|\bUSD\b|\bEUR\b/.test(markdown), "response text must not quote a price");
+  assert.ok(
+    !/trusted by|customers|clients use|join \d/i.test(markdown),
+    "response text must not claim traction"
+  );
+});
+
 test("caller classification separates our own runs, probes, and callers who sign nothing", () => {
   const kindFor = (headers) =>
     buildUsageEvent(

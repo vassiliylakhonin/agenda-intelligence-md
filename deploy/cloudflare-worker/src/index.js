@@ -7031,7 +7031,7 @@ function budgetStatus(env, estimatedCostEur) {
   };
 }
 
-function routingMarkdown(text, modules, profile = "agenda", triageOverride = null) {
+function routingMarkdown(text, modules, profile = "agenda", triageOverride = null, engagement = null) {
   const triageText =
     profile === "kazakhstan"
       ? `${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`
@@ -7155,7 +7155,27 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
     actionList,
     "",
     "Boundaries: no live retrieval, no factual-truth verification, no legal/financial/compliance advice.",
+    engagementMarkdown(engagement),
     promptLine
+  ].join("\n");
+}
+
+// The same contact the metadata carries, repeated in the text part.
+//
+// A caller that reads only the markdown part — measured 2026-08-25, the one
+// external caller that returned on a second day sends a plain HTTP POST and
+// gets back two parts, of which the text one is what a person would print —
+// never sees `metadata.engagement`. Both parts are built from one object here
+// so the two cannot drift apart.
+function engagementMarkdown(engagement) {
+  if (!engagement) return "";
+  return [
+    "",
+    "Person-led work:",
+    engagement.offer,
+    engagement.next_step,
+    `Contact: ${engagement.contact_email} (${engagement.support_hours}). ` +
+      `Page for a person to read: ${engagement.human_page}`
   ].join("\n");
 }
 
@@ -7180,6 +7200,7 @@ function a2aResult(params, request, env = {}) {
       : text;
   const modules = routeModulesForProfile(text, profile);
   const triage = triageForText(triageText, modules, profile, structuredRequest);
+  const engagement = engagementBlock(request);
   return {
     id: crypto.randomUUID(),
     status: {
@@ -7192,7 +7213,7 @@ function a2aResult(params, request, env = {}) {
         name: "Agenda Intelligence routing note",
         parts: [
           {
-            text: routingMarkdown(text, modules, profile, triage),
+            text: routingMarkdown(text, modules, profile, triage, engagement),
             mediaType: "text/markdown"
           },
           {
@@ -7220,7 +7241,7 @@ function a2aResult(params, request, env = {}) {
           ? "Kazakhstan and Middle Corridor deal-risk triage, evidence gating, and routing response only"
           : "discovery, lightweight triage, and routing response only",
       product_profile: profile,
-      engagement: engagementBlock(request)
+      engagement
     }
   };
 }
