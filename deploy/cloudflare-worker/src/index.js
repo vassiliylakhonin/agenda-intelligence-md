@@ -7031,7 +7031,8 @@ function budgetStatus(env, estimatedCostEur) {
   };
 }
 
-function routingMarkdown(text, modules, profile = "agenda", triageOverride = null, engagement = null) {
+function routingMarkdown(text, modules, profile = "agenda", triageOverride = null, extras = {}) {
+  const { engagement = null, relatedAgents = [], hostedMcpTools = [] } = extras;
   const triageText =
     profile === "kazakhstan"
       ? `${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`
@@ -7140,7 +7141,7 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
     "Watch next:",
     watchList,
     "",
-    `Recommended MCP tool: ${screen.recommended_mcp_tool}`,
+    recommendedToolLine(screen.recommended_mcp_tool, hostedMcpTools),
     "",
     "Suggested modules:",
     moduleList,
@@ -7155,9 +7156,75 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
     actionList,
     "",
     "Boundaries: no live retrieval, no factual-truth verification, no legal/financial/compliance advice.",
+    relatedAgentsMarkdown(relatedAgents),
     engagementMarkdown(engagement),
     promptLine
+  ]
+    // dealGateBlock, dealContractBlock and the engagement block are empty
+    // strings on the profiles that do not produce them. Joined as-is they left
+    // runs of three and four newlines in the middle of the note, which reads as
+    // a rendering fault to anyone printing the text part.
+    .filter((block) => block !== "")
+    .join("\n")
+    // The prompt echo carries its own leading blank line, so filtering empty
+    // blocks is not enough on its own; collapse whatever is left.
+    .replace(/\n{3,}/g, "\n\n");
+}
+
+// An agent that cannot serve the request should hand back the ones that can.
+//
+// The signal screen already names the affected regions, but the response
+// carried no address for any sibling gate: a caller asking about a corridor
+// deal got a taxonomy and no way to act on it without reading the site. The
+// four rows are returned unfiltered rather than matched to the detected
+// regions on purpose — a keyword-to-gate map is the kind of rule that scores
+// well on the cases it was written against and transfers badly, and a calling
+// model can pick from four one-line descriptions itself.
+// The recommended tool is a dead end unless the caller is told where it runs.
+//
+// Measured 2026-08-25 against the live endpoint: the note recommends
+// audit_claims, source_coverage or analyze, and the hosted /mcp endpoint on the
+// same host serves none of them — a caller that follows the recommendation gets
+// "Unknown tool". Those three live in the installable stdio server. The hosted
+// list is read from the same source that serves tools/list so the two cannot
+// disagree.
+function recommendedToolLine(recommended, hostedMcpTools) {
+  const base = `Recommended MCP tool: ${recommended}`;
+  if (!hostedMcpTools.length) return base;
+  if (hostedMcpTools.includes(recommended)) return `${base} (served by this host at /mcp).`;
+  return (
+    `${base} — runs in the installable stdio server (pip install agenda-intelligence-md). ` +
+    `This host's /mcp endpoint serves: ${hostedMcpTools.join(", ")}.`
+  );
+}
+
+function relatedAgentsMarkdown(gates) {
+  if (!Array.isArray(gates) || !gates.length) return "";
+  return [
+    "",
+    "Gates that take a structured request on this subject:",
+    ...gates.map((gate) => `- ${gate.name} — use when ${gate.use_when}. A2A: ${gate.a2a}`)
   ].join("\n");
+}
+
+// Excluded by address, not by profile name: the Middle Corridor gate is served
+// under product profile "kazakhstan", so filtering on the profile string would
+// have left that worker advertising itself to its own callers.
+function relatedAgentsFor(request) {
+  const own = workerNameFromUrl(originFromRequest(request));
+  return CORRIDOR_ASSISTANT_GATES.filter((gate) => workerNameFromUrl(gate.a2a) !== own).map((gate) => ({ ...gate }));
+}
+
+// The worker name is the first label of the host. Comparing whole origins
+// breaks the moment the request arrives on any host but the canonical one —
+// a preview deployment, a custom domain, or a test — and the failure is silent:
+// the gate quietly starts advertising itself.
+function workerNameFromUrl(value) {
+  try {
+    return new URL(value).hostname.split(".")[0];
+  } catch {
+    return "";
+  }
 }
 
 // The same contact the metadata carries, repeated in the text part.
@@ -7179,6 +7246,114 @@ function engagementMarkdown(engagement) {
   ].join("\n");
 }
 
+// A request with nothing in it used to come back TASK_STATE_COMPLETED.
+//
+// Measured 2026-08-25 against the live endpoint: `params: {}` and an empty
+// `parts: []` both returned a full routing note and a completed task. Every
+// structured gate refuses the same input and says what it needs, so the base
+// profile was the one surface that told a machine caller its malformed request
+// had worked. It also logged as a completed call with zero prompt characters,
+// which is the same shape a real call has in the usage record.
+//
+// The Middle Corridor profile already has a request guide, so it reuses the
+// gate refusal. The base profile takes plain text, not a structured request,
+// and needs its own wording.
+function emptyRequestResult(profile, request) {
+  if (GATE_REQUEST_GUIDES[profile]) {
+    return invalidRequestResult(
+      profile,
+      "/v1/middle-corridor/deal-risk",
+      "schemas/v1/middle-corridor-deal-risk-request.schema.json",
+      ["No structured deal-risk request and no text in params.message.parts."]
+    );
+  }
+
+  const gates = relatedAgentsFor(request);
+  const example = {
+    jsonrpc: "2.0",
+    id: "1",
+    method: "message/send",
+    params: {
+      message: {
+        role: "user",
+        parts: [
+          {
+            kind: "text",
+            text:
+              "Aluminium extrusions, Aktau to Jebel Ali via Baku and Poti. Buyer is a UAE company " +
+              "incorporated in 2025, payment through a Georgian bank. What evidence will a bank ask " +
+              "for before this moves?"
+          }
+        ]
+      }
+    }
+  };
+  const errors = ["No text and no structured request in params.message.parts."];
+  const text = [
+    "# Nothing to route",
+    "",
+    "This endpoint read the request and found no question in it. Nothing was screened.",
+    "",
+    "## Why it stopped",
+    ...errors.map((error) => `- ${error}`),
+    "",
+    "## What it needs",
+    "- one text part naming the route, counterparty, or document, and the decision it feeds",
+    "- or a structured Middle Corridor deal-risk request, which the Kazakhstan profile also accepts",
+    "",
+    "## A request that works",
+    "```json",
+    JSON.stringify(example, null, 2),
+    "```",
+    "",
+    "## Gates that take a structured request",
+    ...gates.map((gate) => `- ${gate.name} — use when ${gate.use_when}. A2A: ${gate.a2a}`),
+    "",
+    "## If you would rather talk to a person",
+    `Email ${SUPPORT_CONTACT_EMAIL} with a one-line route or counterparty and the next decision or review.`,
+    "Fit, scope, fee, and timing are confirmed before work starts.",
+    "",
+    "This endpoint triages evidence readiness. It does not verify facts, retrieve live sources, or replace human review."
+  ].join("\n");
+
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_FAILED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "agenda-intelligence-request-guidance",
+        name: "Agenda Intelligence — how to send a request this endpoint can route",
+        parts: [
+          { text, mediaType: "text/markdown" },
+          {
+            data: {
+              valid: false,
+              errors,
+              required_fields: [
+                "params.message.parts — at least one text part with the question, route, counterparty, or document",
+                "or params.message.parts[0].data — a structured Middle Corridor deal-risk request"
+              ],
+              example_request: example,
+              related_agents: gates,
+              front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+              support_contact: SUPPORT_CONTACT_EMAIL
+            },
+            mediaType: "application/json"
+          }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: profile,
+      valid: false,
+      errors,
+      related_agents: gates,
+      support_contact: SUPPORT_CONTACT_EMAIL,
+      engagement: engagementBlock(request)
+    }
+  };
+}
+
 function a2aResult(params, request, env = {}) {
   const structuredRequest = structuredDealRiskRequestFromParams(params);
   if (structuredRequest) {
@@ -7194,6 +7369,9 @@ function a2aResult(params, request, env = {}) {
   }
   const text = structuredRequest ? textFromStructuredDealRiskRequest(structuredRequest) : extractText(params);
   const profile = agentProfile(request, env);
+  if (!structuredRequest && !text.trim()) {
+    return emptyRequestResult(profile, request);
+  }
   const triageText =
     profile === "kazakhstan"
       ? `${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`
@@ -7201,6 +7379,8 @@ function a2aResult(params, request, env = {}) {
   const modules = routeModulesForProfile(text, profile);
   const triage = triageForText(triageText, modules, profile, structuredRequest);
   const engagement = engagementBlock(request);
+  const relatedAgents = relatedAgentsFor(request);
+  const hostedMcpTools = mcpToolsForProfile(profile).map((tool) => tool.name);
   return {
     id: crypto.randomUUID(),
     status: {
@@ -7213,7 +7393,7 @@ function a2aResult(params, request, env = {}) {
         name: "Agenda Intelligence routing note",
         parts: [
           {
-            text: routingMarkdown(text, modules, profile, triage, engagement),
+            text: routingMarkdown(text, modules, profile, triage, { engagement, relatedAgents, hostedMcpTools }),
             mediaType: "text/markdown"
           },
           {
@@ -7241,6 +7421,8 @@ function a2aResult(params, request, env = {}) {
           ? "Kazakhstan and Middle Corridor deal-risk triage, evidence gating, and routing response only"
           : "discovery, lightweight triage, and routing response only",
       product_profile: profile,
+      related_agents: relatedAgents,
+      hosted_mcp_tools: hostedMcpTools,
       engagement
     }
   };
