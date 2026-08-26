@@ -6395,6 +6395,320 @@ function watchNextForModules(modules) {
   return [...new Set(items)];
 }
 
+// What the caller actually named, read back to them.
+//
+// Measured 2026-08-26 by replaying an external-shaped call against the live
+// endpoint: a 472-byte question naming a UAE counterparty, Fujairah, refined
+// products and Kazakhstan transit came back in 20,864 bytes that contained
+// none of those words. The note opened with "live wrapper is responding" and
+// a pip install line, and the only trace of the question was two template
+// region names. Over the 30 days to that date ten external calls carried a
+// real prompt, from three callers, and none of the three returned after their
+// first day. A screen that cannot repeat the subject back cannot show that it
+// read the subject.
+//
+// Detection is vocabulary lookup over the same term lists that route the
+// modules, so the subject line can never name a jurisdiction the router did
+// not see. Nothing here asserts anything ABOUT the named party: this is a
+// receipt of what was read, not a finding.
+const SUBJECT_JURISDICTIONS = [
+  ["United Arab Emirates", ["uae", "united arab emirates", "dubai", "abu dhabi", "fujairah", "sharjah", "jebel ali"]],
+  ["Kazakhstan", ["kazakhstan", "almaty", "astana", "aktau", "kuryk", "khorgos"]],
+  ["Iran", ["iran", "bandar abbas", "chabahar", "rasht-astara"]],
+  ["Russia", ["russia", "russian federation", "novorossiysk"]],
+  ["Kyrgyzstan", ["kyrgyzstan", "bishkek"]],
+  ["Uzbekistan", ["uzbekistan", "tashkent"]],
+  ["Turkmenistan", ["turkmenistan", "turkmenbashi"]],
+  ["Azerbaijan", ["azerbaijan", "baku"]],
+  ["Georgia", ["georgia", "poti", "batumi"]],
+  ["Türkiye", ["turkey", "türkiye", "turkiye", "istanbul", "mersin"]],
+  ["China", ["china", "xinjiang", "urumqi"]],
+  ["European Union", ["european union", "eu sanctions", "european commission"]],
+  ["United Kingdom", ["united kingdom", "uk sanctions", "ofsi"]],
+  ["Singapore", ["singapore"]],
+  ["Saudi Arabia", ["saudi arabia", "ksa", "jeddah", "ras tanura"]],
+  ["Oman", ["oman", "sohar", "duqm"]],
+  ["Qatar", ["qatar", "doha"]],
+  ["Iraq", ["iraq", "basra"]],
+  ["Yemen", ["yemen", "aden"]]
+];
+
+const SUBJECT_CHOKEPOINTS = [
+  ["Strait of Hormuz", ["hormuz", "strait of hormuz"]],
+  ["Bab-el-Mandeb", ["bab-el-mandeb", "bab el mandeb"]],
+  ["Red Sea", ["red sea"]],
+  ["Suez Canal", ["suez"]],
+  ["Caspian Sea crossing", ["caspian", "trans-caspian", "middle corridor", "tcitr", "tcita"]],
+  ["Bosphorus", ["bosphorus", "bosporus", "turkish straits"]]
+];
+
+// One decision-relevant fact per named port.
+//
+// A caller who writes "Fujairah" has told the screen something specific, and
+// the first version answered as if they had written "a port": the note named
+// the UAE and stopped. Fujairah's whole significance to a sanctions or
+// war-risk question is that it sits outside the Strait of Hormuz. Each line
+// below is a stable geographic or institutional fact about the place, not a
+// claim about the caller's cargo, counterparty, or voyage.
+const PORT_NOTES = [
+  [
+    "Fujairah",
+    ["fujairah"],
+    "bunkering and storage hub on the Gulf of Oman, outside the Strait of Hormuz — loading here avoids a Hormuz transit, which moves the war-risk question without touching the counterparty question"
+  ],
+  [
+    "Jebel Ali",
+    ["jebel ali", "jafza"],
+    "free-zone port — the operating entity is licensed by the zone authority, so the registry extract to ask for is the zone's, not the mainland DED's"
+  ],
+  [
+    "Aktau / Kuryk",
+    ["aktau", "kuryk"],
+    "Caspian ferry ports — vessel and slot availability, not customs, is what usually moves Middle Corridor transit times"
+  ],
+  [
+    "Bandar Abbas / Chabahar",
+    ["bandar abbas", "chabahar"],
+    "Iranian ports — any leg through them makes this a US-nexus question before it is a routing question"
+  ],
+  [
+    "Novorossiysk",
+    ["novorossiysk"],
+    "Russian Black Sea port — origin and price-cap attestation questions attach to cargo loaded here"
+  ],
+  [
+    "Khorgos",
+    ["khorgos"],
+    "China–Kazakhstan land crossing — the gauge change and customs clearance there are documented separately from the sea legs"
+  ],
+  [
+    "Poti / Batumi",
+    ["poti", "batumi"],
+    "Georgian Black Sea ports — the western handover of the Middle Corridor, where corridor paperwork changes hands"
+  ]
+];
+
+const SUBJECT_COMMODITIES = [
+  ["refined petroleum products", ["refined product", "refined products", "gasoil", "diesel", "jet fuel", "naphtha", "fuel oil"]],
+  ["crude oil", ["crude oil", "crude"]],
+  ["LNG or gas", ["lng", "natural gas", "gas condensate"]],
+  ["grain or agricultural cargo", ["grain", "wheat", "barley", "agricultural cargo"]],
+  ["metals or ore", ["copper", "aluminium", "aluminum", "uranium", "ferroalloy", "ore"]],
+  ["dual-use or electronics", ["dual-use", "dual use", "semiconductor", "electronics", "machine tool", "cnc"]],
+  ["fertiliser or chemicals", ["fertiliser", "fertilizer", "ammonia", "urea", "petrochemical"]]
+];
+
+// A caller-facing verb: what the request wants done, in their own words rather
+// than the internal intent slug. `Detected intent: sanctions_policy_signal_screen`
+// is a machine label that told the reader nothing they had not just typed.
+const SUBJECT_ACTIONS = [
+  ["screen a counterparty before onboarding", ["onboard", "onboarding", "supplier", "counterparty", "kyc", "due diligence"]],
+  ["screen a route or shipment", ["route", "transit", "shipment", "voyage", "vessel", "cargo"]],
+  ["check exposure before a signature or payment", ["before signature", "pre-signature", "payment", "trade finance", "letter of credit"]],
+  ["build an evidence pack for review", ["evidence pack", "evidence", "audit", "provenance", "memo"]]
+];
+
+// Whole-word matching, and the reason is a real miss.
+//
+// The first version used String.includes and the replayed UAE/Fujairah call
+// came back tagged "cargo metals or ore" — because the caller wrote "before
+// onboarding", and "before" ends in "ore". A screen that hallucinates a cargo
+// class out of a preposition is worse than one that names no cargo at all:
+// the whole point of the subject line is that it proves the request was read.
+//
+// Compiled once at module load, not per request. The tables are fixed and the
+// worker's CPU budget is the scarce resource here (p50 3.9 ms measured
+// 2026-08-26 across 44k calls); rebuilding ~130 regexes on every invocation
+// would spend it on nothing.
+function compileVocabulary(table) {
+  return table.map(([label, terms]) => [
+    label,
+    terms.map((term) => new RegExp(`(?:^|[^a-z0-9])${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:[^a-z0-9]|$)`, "i"))
+  ]);
+}
+
+const COMPILED_SUBJECT_JURISDICTIONS = compileVocabulary(SUBJECT_JURISDICTIONS);
+const COMPILED_SUBJECT_CHOKEPOINTS = compileVocabulary(SUBJECT_CHOKEPOINTS);
+const COMPILED_SUBJECT_COMMODITIES = compileVocabulary(SUBJECT_COMMODITIES);
+const COMPILED_SUBJECT_ACTIONS = compileVocabulary(SUBJECT_ACTIONS);
+const COMPILED_PORT_NOTES = PORT_NOTES.map(([label, terms, note]) => [
+  label,
+  compileVocabulary([[label, terms]])[0][1],
+  note
+]);
+
+function portNotesFor(text) {
+  const lower = (text || "").toLowerCase();
+  return COMPILED_PORT_NOTES.filter(([, patterns]) => patterns.some((pattern) => pattern.test(lower))).map(
+    ([label, , note]) => `${label}: ${note}`
+  );
+}
+
+function matchVocabulary(lower, compiledTable) {
+  const found = [];
+  for (const [label, patterns] of compiledTable) {
+    if (patterns.some((pattern) => pattern.test(lower))) found.push(label);
+  }
+  return found;
+}
+
+function subjectForText(text) {
+  const lower = (text || "").toLowerCase();
+  return {
+    jurisdictions: matchVocabulary(lower, COMPILED_SUBJECT_JURISDICTIONS),
+    chokepoints: matchVocabulary(lower, COMPILED_SUBJECT_CHOKEPOINTS),
+    commodities: matchVocabulary(lower, COMPILED_SUBJECT_COMMODITIES),
+    actions: matchVocabulary(lower, COMPILED_SUBJECT_ACTIONS)
+  };
+}
+
+// Named regimes and lists to check, keyed by what the caller named.
+//
+// This is the half of a screening answer a caller cannot get from a taxonomy:
+// not "sanctions authority" as a source category, but which authority, which
+// list, and what that list settles. Every row names a public regime or a
+// public list. None of them says the named party appears on anything — the
+// worker holds no live retrieval on this profile, and a presence claim would
+// be a sanctions determination, which this endpoint does not make.
+const JURISDICTION_REGIMES = {
+  "United Arab Emirates": [
+    "OFAC SDN and Non-SDN Menu-Based lists — US designation status of the counterparty and its owners",
+    "UAE Executive Office for Control & Non-Proliferation local list and guidance — the UAE's own re-export and diversion controls",
+    "UAE trade licence and free-zone registry extract (DED, JAFZA, DMCC or the relevant zone) — legal identity, activity scope, incorporation date"
+  ],
+  Kazakhstan: [
+    "OFAC EO 14024 / EO 14114 named-sector and correspondent-banking exposure — the route's secondary-sanctions surface",
+    "EU circumvention-watch measures on Central Asia re-export flows — whether the transit leg is itself the flagged step",
+    "KZ State Revenue Committee customs declaration and transit paperwork — that the declared route is the route"
+  ],
+  Iran: [
+    "OFAC Iran programs (including EO 13902 and the petroleum-sector authorities) — any Iran leg is a US-nexus question before it is a routing question"
+  ],
+  Russia: [
+    "OFAC EO 14024 / EO 14114, EU sanctions packages, UK OFSI consolidated list — direct and 50-percent-rule ownership exposure"
+  ],
+  Kyrgyzstan: [
+    "EU circumvention measures covering Kyrgyz entities — the jurisdiction is on the EU's re-export watch, so a Kyrgyz leg needs its own evidence"
+  ],
+  "European Union": [
+    "EU consolidated financial sanctions list and the Official Journal text of the applicable package — the measure as written, not as reported"
+  ],
+  "United Kingdom": ["UK OFSI consolidated list and the relevant UK statutory instrument"],
+  China: ["US Entity List and Unverified List, plus EU/US Common High Priority List for dual-use cargo"],
+  "Saudi Arabia": ["OFAC SDN and EU/UK consolidated lists for counterparty and ownership screening"],
+  Türkiye: ["OFAC SDN and EU/UK consolidated lists, plus re-export and circumvention guidance for Turkish intermediaries"],
+  Singapore: ["OFAC SDN and EU/UK consolidated lists, plus MAS and Singapore Customs guidance on transhipment"],
+  Iraq: ["OFAC SDN and EU/UK consolidated lists for counterparty and ownership screening"],
+  Yemen: ["UN Security Council consolidated list and OFAC Yemen-related designations"],
+  Qatar: ["OFAC SDN and EU/UK consolidated lists for counterparty and ownership screening"],
+  Oman: ["OFAC SDN and EU/UK consolidated lists for counterparty and ownership screening"],
+  Uzbekistan: ["OFAC SDN and EU/UK consolidated lists, plus EU circumvention-watch guidance on Central Asia re-export"],
+  Turkmenistan: ["OFAC SDN and EU/UK consolidated lists for counterparty and ownership screening"],
+  Azerbaijan: ["OFAC SDN and EU/UK consolidated lists for counterparty and ownership screening"],
+  Georgia: ["OFAC SDN and EU/UK consolidated lists, plus EU circumvention-watch guidance on Caucasus transit"]
+};
+
+const CHOKEPOINT_REGIMES = {
+  "Strait of Hormuz": [
+    "Joint War Committee listed-areas notice and the vessel's war-risk cover — whether the voyage is inside a listed area and who pays the premium",
+    "UKMTO and IMO security advisories current at the voyage date"
+  ],
+  "Bab-el-Mandeb": [
+    "Joint War Committee listed areas and current war-risk premium terms",
+    "UKMTO advisories and carrier routing notices for the transit window"
+  ],
+  "Red Sea": [
+    "Joint War Committee listed areas and war-risk cover for the transit window",
+    "Carrier routing notice — Suez versus Cape of Good Hope, and who bears the diversion cost"
+  ],
+  "Suez Canal": ["Suez Canal Authority circulars and the carrier's routing notice for the transit window"],
+  "Caspian Sea crossing": [
+    "Port of Aktau or Kuryk operator notice and the ferry or feeder schedule — the leg where Middle Corridor transit times actually move"
+  ],
+  Bosphorus: ["Turkish Straits transit rules and any Montreux-related notices current at the voyage date"]
+};
+
+const COMMODITY_REGIMES = {
+  "refined petroleum products": [
+    "G7 oil price-cap attestation chain, if any leg touches Russian-origin product — the attestation, not the assurance that one exists",
+    "Product origin documents: refinery certificate, bill of lading, cargo blending history"
+  ],
+  "crude oil": [
+    "G7 oil price-cap attestation chain for Russian-origin crude",
+    "Cargo origin and ship-to-ship transfer history — the deceptive-shipping-practice checklist applies here"
+  ],
+  "LNG or gas": ["Origin and offtake documentation, plus any project-level designation affecting the loading terminal"],
+  "dual-use or electronics": [
+    "EU/US Common High Priority List classification of the specific goods — the item-level question that decides whether this is an export-control file at all",
+    "End-user statement and end-use documentation"
+  ],
+  "metals or ore": ["Origin certificates and any metals-specific designations or import bans applying at the destination"],
+  "grain or agricultural cargo": ["Origin certificates and port-of-loading documentation"],
+  "fertiliser or chemicals": ["Origin certificates plus any chemical-specific control listing for the goods"]
+};
+
+// What to collect, and what each item settles.
+//
+// The previous note answered this with five lines of "No caller-supplied
+// <category> evidence in this live A2A request" — the same sentence five
+// times, phrased as the caller's failure, naming nothing they could go and
+// fetch. A caller who has just been told their request was incomplete needs
+// the next action, not the complaint.
+const EVIDENCE_REQUESTS = {
+  "primary official source": "the rule, designation or notice as published by the body that issued it — settles what the measure actually says",
+  "independent context source": "one independent report on the same fact — settles whether the primary source is being read the way the market reads it",
+  "dated retrieval note": "the date each source was retrieved — settles how stale this screen is when someone reads it next month",
+  "sanctions authority": "list extracts from the authorities named above, with list version and date — settles designation status at a point in time",
+  "trade finance": "the bank's or insurer's own clause on this transaction — settles whether the money leg survives the risk, which is where these deals actually fail",
+  "ownership/counterparty": "registry extract and beneficial-ownership chain — settles the 50-percent-rule question that direct-name screening cannot",
+  "shipping or logistics": "carrier routing note and vessel history, including any ship-to-ship transfers — settles what the cargo did between the two ports on the paperwork",
+  "corridor operator": "port or corridor operator notice for the transit window — settles whether the declared route was open",
+  "customs/transport authority": "customs declaration and transit documents — settles that the declared route is the route",
+  "state-company or IFI source": "state-company or development-bank documentation where the counterparty is state-linked",
+  "maritime security": "security advisories current at the voyage date — settles the routing and insurance assumptions",
+  "energy/shipping market": "freight and premium data for the transit window — settles the cost side of a diversion",
+  "regional official statement": "the official statement from the regional authority involved",
+  "EU institution": "the Official Journal text of the applicable package",
+  "national regulator": "the national regulator's own guidance or implementing act",
+  "Official Journal or court source": "the Official Journal entry or court decision, not a summary of it"
+};
+
+function evidenceRequestLine(category) {
+  const detail = EVIDENCE_REQUESTS[category];
+  return detail ? `${category} — ${detail}` : category;
+}
+
+// The named-regime block, assembled from whatever the caller named.
+//
+// Order matters: jurisdiction first (who can designate), then chokepoint (what
+// the voyage runs through), then commodity (what the goods themselves trigger).
+// Deduplicated because two jurisdictions frequently point at the same list.
+function regimesForSubject(subject) {
+  const rows = [];
+  for (const jurisdiction of subject.jurisdictions) {
+    for (const row of JURISDICTION_REGIMES[jurisdiction] || []) rows.push(`${jurisdiction}: ${row}`);
+  }
+  for (const chokepoint of subject.chokepoints) {
+    for (const row of CHOKEPOINT_REGIMES[chokepoint] || []) rows.push(`${chokepoint}: ${row}`);
+  }
+  for (const commodity of subject.commodities) {
+    for (const row of COMMODITY_REGIMES[commodity] || []) rows.push(`${commodity}: ${row}`);
+  }
+  return [...new Set(rows)];
+}
+
+// One line naming what the request was read as. Empty when the caller named
+// nothing recognisable — an empty subject line is honest, an invented one is
+// not.
+function subjectLine(subject) {
+  const parts = [];
+  if (subject.jurisdictions.length) parts.push(`jurisdictions ${subject.jurisdictions.join(", ")}`);
+  if (subject.chokepoints.length) parts.push(`transit ${subject.chokepoints.join(", ")}`);
+  if (subject.commodities.length) parts.push(`cargo ${subject.commodities.join(", ")}`);
+  if (subject.actions.length) parts.push(`asked to ${subject.actions.join("; ")}`);
+  return parts.length ? parts.join(" | ") : "";
+}
+
 function signalScreenForText(text, modules, intent) {
   const moduleNames = new Set(modules.map((item) => item.module));
   const lower = text.toLowerCase();
@@ -6423,14 +6737,32 @@ function signalScreenForText(text, modules, intent) {
   const missingSourceCategories = sourceCategories.filter(
     (category) => !hasSuppliedSourceForCategory(category, suppliedSources, text)
   );
+  const subject = subjectForText(text);
+  // The risk signal named the same four nouns for every corridor question.
+  // Naming what the caller named costs nothing and is the difference between
+  // a sentence about their deal and a sentence about the category.
+  const namedSubject = [...subject.jurisdictions, ...subject.chokepoints].slice(0, 4);
+  const subjectQualifier = namedSubject.length ? ` Named in this request: ${namedSubject.join(", ")}.` : "";
   return {
     intent,
-    risk_signal: riskSignal,
+    risk_signal: `${riskSignal}${subjectQualifier}`,
+    subject,
+    subject_line: subjectLine(subject),
+    applicable_regimes: regimesForSubject(subject),
+    port_notes: portNotesFor(text),
     affected_regions: affectedRegionsForModules(modules),
     source_categories_required: sourceCategories,
+    // Kept in the shape older callers parse; the note now renders
+    // evidence_requests instead, which says what each item settles.
     evidence_gaps: missingSourceCategories
       .slice(0, 5)
       .map((category) => `No caller-supplied ${category} evidence in this live A2A request.`),
+    evidence_requests: missingSourceCategories.slice(0, 6).map((category) => evidenceRequestLine(category)),
+    // The bare category names, for the person-led offer. Feeding it the
+    // sentence form put "No caller-supplied primary official source evidence
+    // in this live A2A request" inside the offer twice over, which read as the
+    // endpoint scolding the caller in the one paragraph meant to invite them.
+    open_items: missingSourceCategories.slice(0, 6),
     watch_next: watchNextForModules(modules),
     recommended_mcp_tool:
       intent === "source_coverage"
@@ -7038,15 +7370,15 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
       ? `${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`
       : text;
   const triage = triageOverride || triageForText(triageText, modules, profile);
-  const moduleList = modules.map((item) => `- ${item.module}: ${item.role}`).join("\n");
   const screen = triage.signal_screen;
   const sourceList = triage.source_plan.map((item) => `- ${item}`).join("\n");
   const qualityList = triage.quality_gates.map((item) => `- ${item}`).join("\n");
   const actionList = triage.next_actions.map((item) => `- ${item}`).join("\n");
   const regionList = screen.affected_regions.map((item) => `- ${item}`).join("\n");
   const requiredSourceList = screen.source_categories_required.map((item) => `- ${item}`).join("\n");
-  const gapList = screen.evidence_gaps.map((item) => `- ${item}`).join("\n");
+  const gapList = (screen.evidence_requests || screen.evidence_gaps).map((item) => `- ${item}`).join("\n");
   const watchList = screen.watch_next.map((item) => `- ${item}`).join("\n");
+  const regimeList = (screen.applicable_regimes || []).map((item) => `- ${item}`).join("\n");
   const dealGateBlock =
     triage.deal_risk_gate && profile === "kazakhstan"
       ? [
@@ -7104,25 +7436,32 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
         ].join("\n")
       : "";
   const promptLine = text ? `\n\nReceived prompt excerpt:\n\n> ${text.slice(0, 500)}` : "";
-  const title =
-    profile === "kazakhstan"
-      ? "Kazakhstan / Middle Corridor Deal Risk Gate live wrapper is responding."
-      : "Agenda Intelligence MD live wrapper is responding.";
-  const scope =
-    profile === "kazakhstan"
-      ? "This endpoint is a free, no-payment A2A/JSON-RPC wrapper for Kazakhstan and Middle Corridor deal-risk triage, sanctions-adjacent evidence gating, source coverage, memo quality gates, and routing. Full product behavior is in the installable MCP server:"
-      : "This endpoint is a free, no-payment A2A/JSON-RPC wrapper for discovery, uptime, lightweight strategic-risk triage, and routing. Full product behavior is in the installable MCP server:";
+  // The first line is a receipt for the caller's own question, not a greeting
+  // from the server. When the caller named nothing this vocabulary knows, it
+  // says so plainly rather than inventing a subject.
+  //
+  // The gate still names itself, because a caller that fanned a question out
+  // across several endpoints has to be able to tell the answers apart. What it
+  // no longer does is spend the first three lines on itself.
+  const responder =
+    profile === "kazakhstan" ? "Kazakhstan / Middle Corridor Deal Risk Gate" : "Agenda Intelligence MD";
+  const subjectHeading = screen.subject_line
+    ? `${responder} read this as: ${screen.subject_line}.`
+    : `${responder} read this as a strategic-risk question with no jurisdiction, transit leg, or cargo named — the screen below stays generic until one is.`;
+  const regimeBlock = regimeList ? ["Regimes and lists that apply to what you named:", regimeList, ""].join("\n") : "";
+  const portBlock = (screen.port_notes || []).length
+    ? ["Places you named:", screen.port_notes.map((item) => `- ${item}`).join("\n"), ""].join("\n")
+    : "";
+  // Order is the fix, not decoration.
+  //
+  // Measured 2026-08-26 against the live endpoint: the note opened with the
+  // server describing itself and a `pip install` line, and reached anything
+  // about the caller's subject on line 12. A reader deciding in three seconds
+  // whether this endpoint understood them saw a brochure. The answer now runs
+  // first — what was read, what applies, what to collect — and the packaging
+  // sits at the bottom where a caller who already wants more will look for it.
   return [
-    title,
-    "",
-    scope,
-    "",
-    "```bash",
-    "pip install agenda-intelligence-md",
-    "agenda-intelligence-mcp",
-    "```",
-    "",
-    `Detected intent: ${triage.intent}`,
+    subjectHeading,
     "",
     dealGateBlock,
     dealContractBlock,
@@ -7132,22 +7471,13 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
     "Affected regions:",
     regionList,
     "",
-    "Required source categories:",
-    requiredSourceList,
-    "",
-    "Evidence gaps:",
+    portBlock,
+    regimeBlock,
+    "Collect next (each line says what it settles):",
     gapList,
     "",
     "Watch next:",
     watchList,
-    "",
-    recommendedToolLine(screen.recommended_mcp_tool, hostedMcpTools),
-    "",
-    "Suggested modules:",
-    moduleList,
-    "",
-    "Evidence/source plan:",
-    sourceList,
     "",
     "Quality gates:",
     qualityList,
@@ -7155,9 +7485,23 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
     "Next actions:",
     actionList,
     "",
+    "Full source-category checklist:",
+    requiredSourceList,
+    "",
+    "Evidence/source plan:",
+    sourceList,
+    "",
     "Boundaries: no live retrieval, no factual-truth verification, no legal/financial/compliance advice.",
     relatedAgentsMarkdown(relatedAgents),
     engagementMarkdown(engagement),
+    "",
+    "Deeper analysis runs in the installable MCP server:",
+    "```bash",
+    "pip install agenda-intelligence-md",
+    "agenda-intelligence-mcp",
+    "```",
+    recommendedToolLine(screen.recommended_mcp_tool, hostedMcpTools),
+    `Modules applied: ${modules.map((item) => item.module).join(", ")}. Intent read as: ${triage.intent}.`,
     promptLine
   ]
     // dealGateBlock, dealContractBlock and the engagement block are empty
@@ -7492,6 +7836,7 @@ const ENGAGEMENT_SUBJECTS = Object.freeze({
 // and still offering the generic sentence, because it names them in neither of
 // the two fields the first version knew about.
 const ENGAGEMENT_OPEN_ITEM_FIELDS = Object.freeze([
+  "open_items",
   "minimum_sources_before_review",
   "minimum_sources_before_action",
   "minimum_sources_before_go",
