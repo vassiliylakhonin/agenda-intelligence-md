@@ -645,6 +645,10 @@ const MESSAGE_SEND_METHODS = new Set([
   ...LEGACY_MESSAGE_SEND_METHODS
 ]);
 
+// Both spellings of the two Message roles. See v1MessageViolations below for
+// why the JSON-RPC spelling has to be here.
+const V1_MESSAGE_ROLES = new Set(["ROLE_USER", "ROLE_AGENT", "user", "agent"]);
+
 function normalizedA2aVersion(value) {
   if (typeof value !== "string") return "";
   const match = /^(\d+)\.(\d+)(?:\.\d+)?$/.exec(value.trim());
@@ -675,10 +679,18 @@ function v1MessageViolations(params) {
   if (typeof message.messageId !== "string" || !message.messageId.trim()) {
     violations.push({ field: "message.messageId", description: "A non-empty messageId is required" });
   }
-  if (message.role !== "ROLE_USER" && message.role !== "ROLE_AGENT") {
+  // A2A spells this role two ways: ROLE_USER in the protobuf definition and
+  // "user" in the JSON-RPC representation. Both are the same value, and real
+  // callers send both. Requiring only the protobuf spelling on the v1 method
+  // refused a quarter of every call this fleet received: measured 2026-08-18..26,
+  // AgenstryBot — the directory that health-checks the listing — sent
+  // SendMessage with role "user" and had 30 of its 60 calls rejected, five a
+  // day, every day, while the same payload on message/send was accepted. The
+  // role is never read after this check, so accepting both costs nothing.
+  if (!V1_MESSAGE_ROLES.has(message.role)) {
     violations.push({
       field: "message.role",
-      description: "role must be ROLE_USER or ROLE_AGENT"
+      description: "role must be ROLE_USER or ROLE_AGENT (\"user\" and \"agent\" are accepted as the JSON-RPC spelling)"
     });
   }
   if (!Array.isArray(message.parts) || message.parts.length === 0) {

@@ -1135,6 +1135,56 @@ test("A2A 1.0 SendMessage rejects malformed params and unsupported versions", as
   assert.equal(unsupported.error.code, -32009);
 });
 
+// AgenstryBot health-checks this fleet's listing with SendMessage and the
+// JSON-RPC spelling of the role. Until 2026-08-26 that combination alone was
+// rejected — 30 of its 60 calls over nine days, five a day — while the very
+// same payload on message/send was accepted. The role is never read after
+// validation, so the refusal bought nothing and cost half the directory's
+// probes.
+test("A2A 1.0 SendMessage accepts both spellings of the message role", async () => {
+  const v1Request = new Request(request.url, {
+    method: "POST",
+    headers: { "a2a-version": "1.0", "content-type": "application/json" }
+  });
+
+  for (const role of ["ROLE_USER", "user", "ROLE_AGENT", "agent"]) {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: `role-${role}`,
+        method: "SendMessage",
+        params: {
+          message: {
+            messageId: `m-role-${role}`,
+            role,
+            parts: [{ text: "Assess exposure on a Kazakhstan corridor deal." }]
+          }
+        }
+      },
+      v1Request
+    );
+    assert.equal(response.error, undefined, `role ${role} must be accepted`);
+    assert.equal(response.result.task.status.state, "TASK_STATE_COMPLETED");
+  }
+
+  const bogus = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "role-bogus",
+      method: "SendMessage",
+      params: {
+        message: { messageId: "m-role-bogus", role: "operator", parts: [{ text: "ping" }] }
+      }
+    },
+    v1Request
+  );
+  assert.equal(bogus.error.code, -32602);
+  assert.ok(
+    bogus.error.data[0].fieldViolations.some((v) => v.field === "message.role"),
+    "an unknown role must still be refused"
+  );
+});
+
 test("A2A POST returns structured protocol errors for invalid JSON, media type, and oversized bodies", async () => {
   const originalLog = console.log;
   console.log = () => {};
