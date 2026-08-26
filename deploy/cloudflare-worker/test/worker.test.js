@@ -3849,6 +3849,104 @@ test("gulf message/send escalates before fixture with high signal (Python parity
   }
 });
 
+// The offer that reaches a caller whose request worked.
+//
+// #262 put a contact in the base profile's response text. It did not reach the
+// seven vertical gates, and it was the same generic sentence for everyone.
+// Measured 2026-08-18..26: twelve substantive external calls from one caller,
+// every one TASK_STATE_COMPLETED, no reply — while the failure paths, which
+// nobody who succeeds ever sees, carried a contact the whole time.
+//
+// This asserts the offer names the run's own verdict and the run's own open
+// items, so a later edit back to a generic signature fails here rather than
+// going out quietly.
+test("a completed gate offers person-led work on the caller's own open items", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "g-engage", method: "message/send", params: { capability: "gulf_maritime_exposure", request: GULF_GOLDEN } },
+      gulfRequest(),
+      GULF_ENV
+    );
+
+    const payload = response.result.metadata.response;
+    const engagement = response.result.metadata.engagement;
+    const markdown = response.result.artifacts[0].parts.find((part) => part.mediaType === "text/markdown").text;
+
+    assert.ok(engagement, "a completed gate must carry an engagement block");
+    assert.ok(
+      engagement.offer.includes(payload.triage_recommendation),
+      "the offer must name the verdict this run returned"
+    );
+    assert.ok(
+      payload.minimum_sources_before_review.some((source) => engagement.offer.includes(source)),
+      "the offer must name at least one source this run is still short of, not a generic invitation"
+    );
+    // Both parts from one object, same rule as the base profile: a caller that
+    // prints only the markdown must see exactly what the metadata carries.
+    assert.ok(markdown.includes(engagement.offer), "text part must carry the same offer as the metadata");
+    assert.ok(markdown.includes(engagement.next_step), "text part must carry the same next step as the metadata");
+    assert.ok(markdown.includes(engagement.contact_email), "text part must carry the contact email");
+    assert.ok(!/[$\u20ac\u00a3]\s?\d|\bUSD\b|\bEUR\b/.test(markdown), "offer must not quote a price");
+    assert.ok(!/trusted by|customers|clients use|join \d/i.test(markdown), "offer must not claim traction");
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+// The failure case. A caller whose request did not parse needs the request
+// fixed, not a scoping conversation, and `invalidRequestResult` already hands
+// it a contact. Offering person-led work there would read as a sales reply to
+// a validation error.
+test("a rejected request gets a contact but no offer of person-led work", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "g-engage-invalid", method: "message/send", params: { capability: "gulf_maritime_exposure", request: { foo: "bar" } } },
+      gulfRequest(),
+      GULF_ENV
+    );
+    assert.equal(response.result.status.state, "TASK_STATE_FAILED");
+    assert.equal(response.result.metadata.engagement, undefined, "a failed task must not carry an engagement block");
+    assert.equal(
+      response.result.metadata.support_contact,
+      "vassiliy.lakhonin@gmail.com",
+      "a failed task must still say how to reach a person"
+    );
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+// The base profile builds its own offer into the routing note. The dispatch
+// wrapper must leave that one alone rather than appending a second copy.
+test("the base profile is not stamped twice with the same offer", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "engage-once",
+        method: "message/send",
+        params: { message: { role: "user", parts: [{ kind: "text", text: "Aktau to Jebel Ali, UAE buyer, Georgian bank" }] } }
+      },
+      new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST" }),
+      {}
+    );
+    const markdown = response.result.artifacts[0].parts.find((part) => part.mediaType === "text/markdown").text;
+    assert.equal(markdown.split("Person-led work:").length - 1, 1, "the offer must appear exactly once");
+    assert.ok(
+      response.result.metadata.engagement.offer.includes("open before a human can decide"),
+      "the base profile's offer must name its own gaps too"
+    );
+  } finally {
+    console.log = originalLog;
+  }
+});
+
 test("gulf message/send rejects a non-gulf request shape", async () => {
   const originalLog = console.log;
   console.log = () => {};
