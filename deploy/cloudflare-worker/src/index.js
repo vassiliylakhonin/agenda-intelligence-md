@@ -833,7 +833,14 @@ function agentCard(request, env = {}) {
               }
             }
           },
-          securityRequirements: [{ schemes: ["productionBearer"] }]
+          // SecurityRequirement.schemes is a map of scheme name to a StringList
+          // of scopes, not a list of names. A bare array validates as long as
+          // nobody configures a key — which nobody has, so this shipped unseen.
+          // Checked 2026-08-26 against the vendored A2A v1.0.1 schema: the array
+          // form fails with "schemes: must be object", the map form passes. The
+          // first deployment to set a production key would have started serving
+          // an invalid card.
+          securityRequirements: [{ schemes: { productionBearer: { list: [] } } }]
         }
         : { securityRequirements: [] }),
     capabilities: {
@@ -1005,6 +1012,32 @@ function agentCard(request, env = {}) {
         "No factual-truth verification.",
         "No legal, financial, compliance, investment, or trading advice."
       ]
+    },
+    // An empty securityRequirements is the honest declaration for an open
+    // deployment, and it stays empty: declaring a scheme this Worker does not
+    // enforce would be a false claim in a card it signs. But empty is also
+    // silent. A directory scoring this card on 2026-08-26 read it as "declares
+    // no security information" and could not tell a deliberate open endpoint
+    // from an oversight — the same reading an agent deciding whether to call
+    // would make. The remedy is to say so, not to invent an auth model.
+    //
+    // The site card at vassiliylakhonin.github.io has carried exactly this
+    // block since before the fleet did; this brings the eight Workers in line
+    // with it rather than inventing a second vocabulary. Everything here is
+    // checkable against the deployment: required_authentication follows the
+    // configured key, and the usage log records prompt_chars, never the prompt.
+    x_security_posture: {
+      transport: "https",
+      public_endpoint: !productionKey,
+      required_authentication: Boolean(productionKey),
+      optional_client_identifier_header: "X-Client-Id",
+      data_handling: [
+        "No payment credentials accepted.",
+        "No wallet rails.",
+        "No caller prompt text stored in aggregate stats.",
+        "Usage analytics are aggregate operational counters."
+      ],
+      abuse_contact: `mailto:${SUPPORT_CONTACT_EMAIL}`
     }
   };
   return applyAgentProfile(card, request, env);

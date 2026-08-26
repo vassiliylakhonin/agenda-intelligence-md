@@ -3787,6 +3787,13 @@ test("public kazakhstan card does not pretend optional observability is authenti
   assert.equal(card.security, undefined);
   assert.deepEqual(card.securityRequirements, []);
   assert.equal(card.x_agenda_intelligence.public_endpoint, true);
+  // Empty stays empty, but no longer silent: an open endpoint says it is open
+  // on purpose, so a reader cannot mistake the absence of a scheme for an
+  // oversight. X-Client-Id is named here as what it is, not as a credential.
+  assert.equal(card.x_security_posture.required_authentication, false);
+  assert.equal(card.x_security_posture.public_endpoint, true);
+  assert.equal(card.x_security_posture.optional_client_identifier_header, "X-Client-Id");
+  assert.equal(card.securitySchemes, undefined);
 });
 
 test("kazakhstan card advertises productionBearer requirement when key is set", () => {
@@ -3796,7 +3803,16 @@ test("kazakhstan card advertises productionBearer requirement when key is set", 
   });
   assert.equal(card.securitySchemes.productionBearer.httpAuthSecurityScheme.scheme, "bearer");
   assert.equal(card.security, undefined);
-  assert.deepEqual(card.securityRequirements, [{ schemes: ["productionBearer"] }]);
+  // The declared posture follows the deployment, not a constant.
+  assert.equal(card.x_security_posture.required_authentication, true);
+  assert.equal(card.x_security_posture.public_endpoint, false);
+  // schemes is a map of scheme name to its StringList of scopes. The array
+  // form this asserted until 2026-08-26 fails the official v1 schema with
+  // "schemes: must be object", and no deployment had a key set, so the
+  // invalid card was never served and never noticed.
+  assert.deepEqual(card.securityRequirements, [
+    { schemes: { productionBearer: { list: [] } } }
+  ]);
   assert.equal(card.x_agenda_intelligence.public_endpoint, false);
 });
 
