@@ -5669,6 +5669,73 @@ function cleanExtractedDealField(value) {
     : null;
 }
 
+// Place names a route is written out of, for the fallback below. Kept apart
+// from SUBJECT_JURISDICTIONS because that table answers "which country's
+// authorities apply" and collapses Baku into Azerbaijan — correct there, and
+// useless for printing a route back.
+const ROUTE_PLACES = [
+  ["Aktau", ["aktau"]],
+  ["Kuryk", ["kuryk"]],
+  ["Baku", ["baku"]],
+  ["Poti", ["poti"]],
+  ["Batumi", ["batumi"]],
+  ["Khorgos", ["khorgos"]],
+  ["Almaty", ["almaty"]],
+  ["Astana", ["astana"]],
+  ["Tashkent", ["tashkent"]],
+  ["Turkmenbashi", ["turkmenbashi"]],
+  ["Jebel Ali", ["jebel ali", "jafza"]],
+  ["Dubai", ["dubai"]],
+  ["Abu Dhabi", ["abu dhabi"]],
+  ["Fujairah", ["fujairah"]],
+  ["Sharjah", ["sharjah"]],
+  ["Bandar Abbas", ["bandar abbas"]],
+  ["Chabahar", ["chabahar"]],
+  ["Novorossiysk", ["novorossiysk"]],
+  ["Istanbul", ["istanbul"]],
+  ["Mersin", ["mersin"]],
+  ["Jeddah", ["jeddah"]],
+  ["Ras Tanura", ["ras tanura"]],
+  ["Sohar", ["sohar"]],
+  ["Duqm", ["duqm"]],
+  ["Basra", ["basra"]],
+  ["Aden", ["aden"]],
+  ["Singapore", ["singapore"]],
+  ["Urumqi", ["urumqi"]]
+];
+
+const COMPILED_ROUTE_PLACES = compileVocabulary(ROUTE_PLACES);
+
+// Place names in the order the caller wrote them.
+//
+// Deliberately reports the written order and says so, rather than inferring
+// direction. "Aktau to Jebel Ali via Baku and Poti" and "Jebel Ali from Aktau"
+// both name the same four places; only the first states a sequence, and a
+// worker that guesses which is which on a deal file is guessing about the
+// thing the caller is paying attention to.
+function namedPlacesInOrder(text) {
+  const lower = (text || "").toLowerCase();
+  const hits = [];
+  for (const [label, patterns] of COMPILED_ROUTE_PLACES) {
+    let earliest = -1;
+    for (const pattern of patterns) {
+      const match = pattern.exec(lower);
+      if (match && (earliest === -1 || match.index < earliest)) earliest = match.index;
+    }
+    if (earliest !== -1) hits.push([earliest, label]);
+  }
+  return hits.sort((left, right) => left[0] - right[0]).map(([, label]) => label);
+}
+
+// Route extraction, three passes.
+//
+// Measured live 2026-08-26 on the Middle Corridor gate: "Aluminium extrusions
+// from Aktau to Jebel Ali via Baku and Poti" returned `Route: not supplied`
+// while the subject line directly above it named all four places out of the
+// same sentence. Two lines apart, the note said it had read the route and
+// that no route was supplied. The label pass and the "route <x>" keyword pass
+// both need the caller to use the schema's own vocabulary; ordinary English
+// does not.
 function extractDealRoute(text) {
   const labelled = extractAfterLabel(text, ["Route"]);
   if (labelled) return labelled;
@@ -5676,8 +5743,34 @@ function extractDealRoute(text) {
   const match = text.match(
     /\broute\s+(.+?)(?=(?:\.\s+(?:Counterparties|Sources|Dated sources|Should|Question)\b)|(?:\s+with\s+(?:cargo|counterparties)\b)|$)/is
   );
-  return match ? cleanExtractedDealField(match[1]) : null;
+  if (match) return cleanExtractedDealField(match[1]);
+
+  // "from X to Y" runs to the end of the sentence, and a deal file rarely ends
+  // the sentence at the destination. On the live example it swallowed "buyer
+  // is a UAE company incorporated in 2025, payment through a Georgian bank"
+  // into the route field. A capture that reaches a party, a payment or a
+  // valuation clause is not a route, so it is dropped in favour of the place
+  // names — which for that same sentence give the four ports in written order.
+  const fromTo = text.match(/\bfrom\s+(.+?)\s+to\s+(.+?)(?=[.;]|$)/is);
+  const places = namedPlacesInOrder(text);
+  if (fromTo) {
+    const candidate = cleanExtractedDealField(`${fromTo[1]} to ${fromTo[2]}`);
+    const overreached =
+      !candidate ||
+      candidate.length > ROUTE_CAPTURE_MAX_CHARS ||
+      /\b(?:buyer|seller|payment|counterpart(?:y|ies)|bank|value|incorporated|invoice|insurer)\b/i.test(candidate);
+    if (!overreached) return candidate;
+  }
+
+  if (places.length >= 2) {
+    return `${places.join(", ")} (place names in the order written; send a Route: field for the parsed leg order)`;
+  }
+  return null;
 }
+
+// A route reads "Aktau to Jebel Ali via Baku and Poti" — 44 characters. Past
+// this, the capture has run into the next clause.
+const ROUTE_CAPTURE_MAX_CHARS = 90;
 
 function extractDealCargo(text) {
   const labelled = extractAfterLabel(text, ["Cargo"]);
@@ -5687,7 +5780,18 @@ function extractDealCargo(text) {
   if (shipmentMatch) return cleanExtractedDealField(shipmentMatch[1]);
 
   const cargoMatch = text.match(/\bcargo\s+(?:is|of|:)?\s*(.+?)(?=(?:\s+on\s+route\b)|[.;]|$)/is);
-  return cargoMatch ? cleanExtractedDealField(cargoMatch[1]) : null;
+  if (cargoMatch) return cleanExtractedDealField(cargoMatch[1]);
+
+  // Same failure as the route: "Aluminium extrusions from Aktau..." names the
+  // cargo in the first two words and matched none of the keyword patterns,
+  // because the caller never wrote "cargo" or "shipment of". The commodity
+  // vocabulary already classified it for the subject line; report the class
+  // and say it is a class, so nobody reads it as the caller's own wording.
+  const classes = matchVocabulary((text || "").toLowerCase(), COMPILED_SUBJECT_COMMODITIES);
+  if (classes.length) {
+    return `${classes.join(", ")} (cargo class read from the wording; send a Cargo: field for the exact description)`;
+  }
+  return null;
 }
 
 function extractDealValue(text) {
@@ -7375,7 +7479,6 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
   const qualityList = triage.quality_gates.map((item) => `- ${item}`).join("\n");
   const actionList = triage.next_actions.map((item) => `- ${item}`).join("\n");
   const regionList = screen.affected_regions.map((item) => `- ${item}`).join("\n");
-  const requiredSourceList = screen.source_categories_required.map((item) => `- ${item}`).join("\n");
   const gapList = (screen.evidence_requests || screen.evidence_gaps).map((item) => `- ${item}`).join("\n");
   const watchList = screen.watch_next.map((item) => `- ${item}`).join("\n");
   const regimeList = (screen.applicable_regimes || []).map((item) => `- ${item}`).join("\n");
@@ -7485,9 +7588,12 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
     "Next actions:",
     actionList,
     "",
-    "Full source-category checklist:",
-    requiredSourceList,
-    "",
+    // The full source-category checklist used to print here too. Measured on
+    // the live note 2026-08-26: all six categories in "Collect next" were
+    // repeated verbatim in the checklist, 1,059 bytes of the 7,442-byte note
+    // saying a second and third time what the caller had already read. The
+    // machine-readable part still carries the complete list under
+    // signal_screen.source_categories_required for a caller that wants it.
     "Evidence/source plan:",
     sourceList,
     "",

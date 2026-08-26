@@ -4,6 +4,38 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(worker): the deal-risk gate no longer contradicts the subject line two rows above it.**
+  Measured live on the Middle Corridor gate right after #266 deployed: "Aluminium extrusions from
+  Aktau to Jebel Ali via Baku and Poti" produced a subject line naming all four places and a cargo
+  class, and directly beneath it `Route: not supplied` and `Cargo: not supplied`. The gate's
+  extractors only fire on the schema's own vocabulary (a `Route:` label, or the literal word
+  "route"), so ordinary English missed them; the defect predates #266, which made it visible by
+  printing what had in fact been read. Route extraction now falls back to a `from X to Y` capture
+  and then to the named places in written order, and cargo to the commodity class, each labelled as
+  read from the wording rather than supplied as a field. The `from X to Y` capture is dropped when
+  it overruns into a party, payment or valuation clause — on the live example it had swallowed
+  "buyer is a UAE company incorporated in 2025, payment through a Georgian bank" into the route.
+  Place names are matched from a route vocabulary kept separate from the jurisdiction table, which
+  collapses Baku into Azerbaijan and is right to.
+
+- **fix(worker): drop the duplicated source-category checklist from the routing note.** All six
+  categories under "Collect next" were repeated verbatim under "Full source-category checklist" —
+  1,059 bytes of a 7,442-byte note restating what the caller had just read. The complete list stays
+  in the machine-readable part under `signal_screen.source_categories_required`.
+
+- **fix(worker): answer the caller's question before describing the server (#266).** Missing from
+  this file when that PR merged; recorded here. A replayed external-shaped call naming a UAE
+  counterparty, Fujairah, refined products and Kazakhstan transit came back with none of those
+  words: the note opened with "live wrapper is responding" and `pip install`, reached the subject on
+  line 12, and gave five copies of "No caller-supplied <category> evidence in this live A2A
+  request". Over the preceding 30 days ten external calls carried a real prompt, from three callers,
+  and none returned after their first day. The note now opens with what was read, then the named
+  regimes and lists that apply to it, one decision-relevant fact per named port, and what to collect
+  with what each item settles; packaging moved to the bottom. Correction to that PR's own claim: the
+  note **grew**, 5,586 to 7,442 bytes (7,036 after the checklist above came out) — the original
+  "20,864 to ~7,400" compared a whole JSON body against a single text part and was wrong in both
+  size and direction. What changed is the order and the content, not the length.
+
 - **fix(worker): the deal-risk gate names its own missing sources in the offer.** Found live after
   the previous change deployed, not in review. The Middle Corridor deal-risk gate — the busiest host
   in the funnel — answered `escalate_before_signature` with seven named gaps and still returned the
