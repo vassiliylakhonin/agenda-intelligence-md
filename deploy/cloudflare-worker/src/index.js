@@ -7378,7 +7378,12 @@ function a2aResult(params, request, env = {}) {
       : text;
   const modules = routeModulesForProfile(text, profile);
   const triage = triageForText(triageText, modules, profile, structuredRequest);
-  const engagement = engagementBlock(request);
+  const engagement = engagementBlock(request, {
+    profile,
+    // The same payload the JSON part exposes, so the offer can only name items
+    // the caller can also see.
+    response: triage.deal_risk_contract || triage.deal_risk_gate || triage
+  });
   const relatedAgents = relatedAgentsFor(request);
   const hostedMcpTools = mcpToolsForProfile(profile).map((tool) => tool.name);
   return {
@@ -7443,19 +7448,145 @@ function a2aResult(params, request, env = {}) {
 // will never render an HTML page — so the response itself is the only surface
 // that can hand it a way back. This block is that surface and nothing more: no
 // price, no customer claim, no urgency.
-function engagementBlock(request) {
+function engagementBlock(request, { profile = "agenda", response = null } = {}) {
+  const subject = ENGAGEMENT_SUBJECTS[profile] || ENGAGEMENT_SUBJECTS.agenda;
+  const open = engagementOpenItems(response);
+  const outcome = engagementOutcome(response);
   return {
-    offer:
-      "Person-led review of a corridor, counterparty, or evidence pack, scoped and quoted before work starts.",
+    offer: engagementOffer(subject, outcome, open),
     contact_email: SUPPORT_CONTACT_EMAIL,
     support_hours: SUPPORT_HOURS_LOCAL,
     next_step:
-      "Email a one-line description of the route, counterparty, or document and the next decision it feeds. " +
+      `Email a one-line description of ${subject} and the decision or review it feeds. ` +
       "Fit, scope, fee, and timing are confirmed before work starts.",
     // The landing page, not the agent card: the card is already in this
     // metadata, and the person behind an integration needs a page they can read.
     human_page: originFromRequest(request)
   };
+}
+
+// What this profile actually looked at, in the caller's words rather than the
+// registry's. Used in both the offer and the next step so the two name the same
+// thing.
+const ENGAGEMENT_SUBJECTS = Object.freeze({
+  agenda: "this corridor, counterparty, or evidence pack",
+  kazakhstan: "this Middle Corridor deal file",
+  middle_corridor_deal_risk: "this Middle Corridor deal file",
+  cis_secondary_sanctions: "this counterparty's secondary-sanctions exposure",
+  gulf_maritime_exposure: "this voyage's Gulf chokepoint exposure",
+  market_entry_readiness: "this Kazakhstan market-entry file",
+  kazakhstan_market_entry_readiness: "this Kazakhstan market-entry file",
+  agentic_interaction_trust: "this agent-to-agent interaction",
+  agent_output_verification: "this evidence pack",
+  corridor_sanctions_assistant: "this corridor or sanctions file"
+});
+
+// Every profile names the things standing between its verdict and a human
+// decision, and each one names them in its own field.
+const ENGAGEMENT_OPEN_ITEM_FIELDS = Object.freeze([
+  "minimum_sources_before_review",
+  "minimum_sources_before_action",
+  "evidence_gaps",
+  "blocking_gaps",
+  "owner_actions"
+]);
+
+const ENGAGEMENT_OUTCOME_FIELDS = Object.freeze([
+  "triage_recommendation",
+  "gate_decision",
+  "decision",
+  "readiness_label",
+  "decision_readiness_label",
+  "reason_code"
+]);
+
+// Descends one level, because the profiles do not agree on where the gaps sit:
+// the vertical gates put them at the top of the response, the base profile puts
+// them under `signal_screen`. One level covers every shipped payload and cannot
+// wander into an unrelated array the way a full walk could.
+function engagementOpenItems(response) {
+  const direct = engagementOpenItemsIn(response);
+  if (direct.length) return direct;
+  if (!response || typeof response !== "object") return [];
+  for (const value of Object.values(response)) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    const nested = engagementOpenItemsIn(value);
+    if (nested.length) return nested;
+  }
+  return [];
+}
+
+function engagementOpenItemsIn(source) {
+  if (!source || typeof source !== "object") return [];
+  for (const field of ENGAGEMENT_OPEN_ITEM_FIELDS) {
+    const value = source[field];
+    if (!Array.isArray(value) || value.length === 0) continue;
+    const items = value.map(engagementItemLabel).filter(Boolean);
+    if (items.length) return items;
+  }
+  return [];
+}
+
+const ENGAGEMENT_ITEM_MAX_CHARS = 90;
+
+function engagementItemLabel(item) {
+  const label =
+    typeof item === "string"
+      ? item.trim()
+      : item && typeof item === "object"
+        ? [item.source_type || item.gap || item.owner_function || "", item.next_action || item.description || ""]
+            .filter(Boolean)
+            .join(": ")
+            .trim()
+        : "";
+  // Gaps arrive both as bare nouns ("vessel_registry_extract") and as full
+  // sentences; the trailing stop has to go or the joined list reads as broken
+  // punctuation. One verbose gap must not turn the offer into a wall of text.
+  const trimmed = label.replace(/[.\s]+$/u, "");
+  return trimmed.length > ENGAGEMENT_ITEM_MAX_CHARS
+    ? `${trimmed.slice(0, ENGAGEMENT_ITEM_MAX_CHARS - 1).trimEnd()}\u2026`
+    : trimmed;
+}
+
+function engagementOutcome(response) {
+  const direct = engagementOutcomeIn(response);
+  if (direct) return direct;
+  if (!response || typeof response !== "object") return "";
+  for (const value of Object.values(response)) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    const nested = engagementOutcomeIn(value);
+    if (nested) return nested;
+  }
+  return "";
+}
+
+function engagementOutcomeIn(source) {
+  if (!source || typeof source !== "object") return "";
+  for (const field of ENGAGEMENT_OUTCOME_FIELDS) {
+    if (typeof source[field] === "string" && source[field].trim()) return source[field].trim();
+  }
+  return "";
+}
+
+// A generic "email us" line is a signature, and a signature gets skipped like
+// one. Measured 2026-08-18..26: twelve substantive external calls from one
+// caller, every one TASK_STATE_COMPLETED, and no reply to a contact that was
+// already in the agent card, on the landing page, and — from 2026-08-25 — in
+// the base profile's own response text. So the offer names this caller's own
+// unfinished business: the verdict it just got and the items its file is still
+// short of. Nothing else changes; there is still no price and no traction claim.
+function engagementOffer(subject, outcome, open) {
+  if (!open.length) {
+    return `Person-led review of ${subject}, scoped and quoted before work starts.`;
+  }
+  const named = open.slice(0, 2).join(", ");
+  const rest = open.length > 2 ? `, and ${open.length - 2} more` : "";
+  const count = open.length === 1 ? "one item" : `${open.length} items`;
+  const verdict = outcome ? `came back ${outcome} and ` : "";
+  return (
+    `This run ${verdict}left ${count} open before a human can decide on ${subject}: ${named}${rest}. ` +
+    "Closing those is person-led work, scoped and quoted before it starts."
+  );
 }
 
 function jsonRpcError(id, code, message, data) {
@@ -7887,8 +8018,63 @@ async function runProfileRequest(profile, params, request, env = {}) {
       promptChars = text.length;
       modulesUsed = result.metadata.modules_used;
     }
-    return { result, promptChars, modulesUsed };
+    return { result: withEngagementOffer(result, profile, request), promptChars, modulesUsed };
   }
+}
+
+// The offer is attached here, at the one point every profile passes through,
+// rather than inside each result builder.
+//
+// Per builder it would be seven edits now and an eighth one forgotten when the
+// next profile ships. Here a new profile cannot ship without it. Two rules keep
+// it from firing where it does not belong: only a completed task gets an offer,
+// because the failure paths already carry `support_contact` and a caller whose
+// request did not parse needs a different next step than one whose file is
+// merely short of evidence; and a result that already carries an engagement —
+// the base profile builds its own into the routing note, the corridor assistant
+// into its orientation payload — is left exactly as it is.
+function withEngagementOffer(result, profile, request) {
+  if (!result || result.status?.state !== "TASK_STATE_COMPLETED") return result;
+  if (hasEngagement(result)) return result;
+  const artifacts = Array.isArray(result.artifacts) ? result.artifacts : [];
+  const engagement = engagementBlock(request, {
+    profile,
+    response: engagementResponsePayload(result, artifacts)
+  });
+  return {
+    ...result,
+    artifacts: artifacts.map((artifact, index) =>
+      index === 0 ? { ...artifact, parts: partsWithEngagement(artifact.parts, engagement) } : artifact
+    ),
+    metadata: { ...(result.metadata || {}), engagement }
+  };
+}
+
+function hasEngagement(result) {
+  if (result.metadata && result.metadata.engagement) return true;
+  return Boolean(result.metadata && result.metadata.response && result.metadata.response.engagement);
+}
+
+// The offer may only name items the caller can also see, so it reads the same
+// payload the JSON part carries.
+function engagementResponsePayload(result, artifacts) {
+  if (result.metadata && result.metadata.response) return result.metadata.response;
+  for (const artifact of artifacts) {
+    for (const part of Array.isArray(artifact.parts) ? artifact.parts : []) {
+      if (part && part.mediaType === "application/json" && part.data) return part.data;
+    }
+  }
+  return null;
+}
+
+function partsWithEngagement(parts, engagement) {
+  if (!Array.isArray(parts)) return parts;
+  let stamped = false;
+  return parts.map((part) => {
+    if (stamped || !part || part.mediaType !== "text/markdown" || typeof part.text !== "string") return part;
+    stamped = true;
+    return { ...part, text: `${part.text}\n${engagementMarkdown(engagement)}` };
+  });
 }
 
 async function handlePost(request, env, ctx) {

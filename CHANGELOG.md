@@ -4,6 +4,24 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(worker): offer person-led work on the caller's own open items, on every completed profile.**
+  The contact reached the failure paths and, from #262, the base profile's routing note. It never
+  reached the seven vertical gates, and everywhere it appeared it was the same generic sentence.
+  Measured over the 2026-08-18..26 archive: twelve substantive external calls from a single caller,
+  every one `TASK_STATE_COMPLETED`, no reply — while `invalidRequestResult` and the "nothing to
+  route" path, which nobody whose request works ever sees, carried a contact throughout. The offer
+  is now built at `runProfileRequest`, the one point every profile passes through, so a new profile
+  cannot ship without it, and it names this run's own verdict and the items its file is still short
+  of (`minimum_sources_before_review`, `minimum_sources_before_action`, `evidence_gaps`,
+  `blocking_gaps`, `owner_actions`, found at the top of the response or one level down under
+  `signal_screen`). Two results are left untouched: a `TASK_STATE_FAILED` task, which already
+  carries `support_contact` and needs its request fixed rather than a scoping conversation, and any
+  result that already carries an engagement — the base profile's routing note and the corridor
+  assistant's orientation payload. No new response field and no schema change: `metadata.engagement`
+  is the block #262 already defined, and the markdown gains the same lines it already gained there.
+  No price and no traction claim. Three contract tests cover a golden gate response, a rejected
+  request, and double-stamping; reverting the offer to a generic sentence fails two of them.
+
 - **fix(cis): stop reporting a listed ship as a match on the counterparty.** OFAC SDN carries
   `NURSULTAN NAZARBAYEV` as a `Vessel` — IMO 9842217, linked to Joint Stock Company Rosnefteflot,
   designated under EO 14024. It is a Russian supply vessel named after a former head of state, not
