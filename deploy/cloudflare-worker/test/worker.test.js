@@ -1135,12 +1135,15 @@ test("A2A 1.0 SendMessage rejects malformed params and unsupported versions", as
   assert.equal(unsupported.error.code, -32009);
 });
 
-// AgenstryBot health-checks this fleet's listing with SendMessage and the
-// JSON-RPC spelling of the role. Until 2026-08-26 that combination alone was
-// rejected — 30 of its 60 calls over nine days, five a day — while the very
-// same payload on message/send was accepted. The role is never read after
-// validation, so the refusal bought nothing and cost half the directory's
-// probes.
+// A2A allows either spelling of the role: ROLE_USER from the protobuf
+// definition, "user" from the JSON-RPC representation. Until 2026-08-26 the v1
+// path accepted only the first, so a client speaking the JSON-RPC form was
+// refused over a field that is never read after validation.
+//
+// This was first attributed to AgenstryBot's daily failures. That attribution
+// was wrong — those are the gates refusing a four-character plain-text probe,
+// and both spellings fail there identically — so this test asserts the
+// conformance property on its own terms and claims no caller behind it.
 test("A2A 1.0 SendMessage accepts both spellings of the message role", async () => {
   const v1Request = new Request(request.url, {
     method: "POST",

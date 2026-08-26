@@ -680,13 +680,18 @@ function v1MessageViolations(params) {
     violations.push({ field: "message.messageId", description: "A non-empty messageId is required" });
   }
   // A2A spells this role two ways: ROLE_USER in the protobuf definition and
-  // "user" in the JSON-RPC representation. Both are the same value, and real
-  // callers send both. Requiring only the protobuf spelling on the v1 method
-  // refused a quarter of every call this fleet received: measured 2026-08-18..26,
-  // AgenstryBot — the directory that health-checks the listing — sent
-  // SendMessage with role "user" and had 30 of its 60 calls rejected, five a
-  // day, every day, while the same payload on message/send was accepted. The
-  // role is never read after this check, so accepting both costs nothing.
+  // "user" in the JSON-RPC representation. Both are the same value, and the
+  // spec allows either. Accepting only the protobuf spelling would refuse any
+  // client that speaks the JSON-RPC form, for a field that is never read after
+  // this check.
+  //
+  // No caller in the 2026-08-18..26 logs is known to have been rejected this
+  // way; the change is conformance, not a repair. An earlier version of this
+  // comment blamed AgenstryBot's daily failures on the spelling. That was
+  // wrong, and the correction is worth keeping: those failures are the five
+  // gates refusing a four-character plain-text probe because they need a
+  // structured payload, which they answer with a request-guidance artifact.
+  // Both spellings behave identically on that path, before and after.
   if (!V1_MESSAGE_ROLES.has(message.role)) {
     violations.push({
       field: "message.role",
