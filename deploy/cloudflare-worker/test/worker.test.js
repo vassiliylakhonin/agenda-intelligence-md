@@ -4955,3 +4955,74 @@ test("agentCard keeps its internal shape so profile and adapter readers are unto
   assert.ok(card.support, "internal readers use card.support");
   assert.equal(card.provider.legalEntity.type, "individual");
 });
+
+// The subject line is the whole point of the 2026-08-26 rewrite: a replayed
+// external call naming UAE, Fujairah, refined products and Kazakhstan came
+// back with none of those words in 20,864 bytes of note. These four tests pin
+// the properties that failure violated.
+async function routingNoteFor(text, id = "subject-probe") {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id,
+        method: "message/send",
+        params: { message: { parts: [{ kind: "text", text }] } }
+      },
+      request
+    );
+    return response.result.artifacts[0].parts[0].text;
+  } finally {
+    console.log = originalLog;
+  }
+}
+
+test("the note reads the caller's own subject back to them", async () => {
+  const note = await routingNoteFor(
+    "We are evaluating a UAE-based trading counterparty that ships refined products through Fujairah " +
+      "and books transit via Kazakhstan. Screen the secondary-sanctions exposure before onboarding them."
+  );
+
+  assert.match(note, /read this as:/);
+  assert.match(note, /United Arab Emirates/);
+  assert.match(note, /Kazakhstan/);
+  assert.match(note, /refined petroleum products/);
+  // Fujairah's significance is that it sits outside the strait; naming the
+  // country alone loses the fact the caller was paying for.
+  assert.match(note, /Fujairah: bunkering and storage hub on the Gulf of Oman, outside the Strait of Hormuz/);
+});
+
+test("subject detection matches whole words, so 'before' is not the cargo class 'ore'", async () => {
+  const note = await routingNoteFor("Screen this counterparty before onboarding them as a supplier.", "ore-probe");
+
+  assert.doesNotMatch(note, /metals or ore/);
+});
+
+test("the note names the authorities to check, not just the source category", async () => {
+  const note = await routingNoteFor(
+    "Screen a UAE counterparty for secondary-sanctions exposure on a Kazakhstan transit route.",
+    "regime-probe"
+  );
+
+  assert.match(note, /Regimes and lists that apply to what you named:/);
+  assert.match(note, /OFAC SDN and Non-SDN Menu-Based lists/);
+  assert.match(note, /UAE Executive Office for Control & Non-Proliferation/);
+  assert.match(note, /OFAC EO 14024 \/ EO 14114/);
+});
+
+test("the answer precedes the packaging, and open items are named as work not as caller error", async () => {
+  const note = await routingNoteFor(
+    "Screen sanctions exposure for a Kazakhstan corridor shipment before signature.",
+    "order-probe"
+  );
+
+  // Everything the caller came for has to appear before the install block.
+  assert.ok(note.indexOf("Signal screen:") < note.indexOf("pip install agenda-intelligence-md"));
+  assert.ok(note.indexOf("Collect next") < note.indexOf("pip install agenda-intelligence-md"));
+  // The five identical "No caller-supplied ..." lines are gone from the note.
+  assert.doesNotMatch(note, /No caller-supplied .* evidence in this live A2A request/);
+  assert.match(note, /Collect next \(each line says what it settles\):/);
+  assert.match(note, /settles designation status at a point in time/);
+});
