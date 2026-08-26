@@ -4876,6 +4876,34 @@ test("deploy drift check reads only the newest deployment", async () => {
   assert.equal(newestReceipt(clean), "vrf_6bf1ffee");
 });
 
+// A valid receipt on an old version looks identical to a healthy fleet, which
+// is how agent-output-verification sat eighty-five minutes behind the other
+// seven on 2026-08-26 while `--check` reported success. The date of the newest
+// deployment is the part that catches it.
+test("deploy freshness check dates only the newest deployment", async () => {
+  const { newestDeployedAt } = await import("../scripts/deploy-all.js");
+
+  const listing = [
+    "Created:     2026-08-26T10:24:42.521Z",
+    "Message:     Vizier ALLOW receipt vrf_974b26ef",
+    "Version(s):  (100%) 0ee4804d-d6a8-4a9d-8c2d-44b70fd79b5e",
+    "                 Created:  2026-08-26T10:24:40.100Z",
+    "Created:     2026-08-26T12:09:32.084Z",
+    "Message:     Vizier ALLOW receipt vrf_7bdb60fb",
+    "Version(s):  (100%) 246af187-9366-49a9-bd2f-2cc10aed2105",
+    "                 Created:  2026-08-26T12:09:30.941Z"
+  ].join("\n");
+
+  assert.equal(
+    newestDeployedAt(listing),
+    Date.parse("2026-08-26T12:09:32.084Z"),
+    "the indented per-version Created lines must not be mistaken for deployments"
+  );
+
+  assert.equal(newestDeployedAt(""), null, "no deployments must read as unknown, not as epoch zero");
+  assert.equal(newestDeployedAt("Created:     not-a-date\n"), null);
+});
+
 // Measured 2026-08-18 on the live workers: a plain-language probe made five of
 // the eight gates answer TASK_STATE_FAILED with `artifacts: []` — no required
 // field, no example, no human to write to. The refusal is correct; the silence
