@@ -5026,3 +5026,61 @@ test("the answer precedes the packaging, and open items are named as work not as
   assert.match(note, /Collect next \(each line says what it settles\):/);
   assert.match(note, /settles designation status at a point in time/);
 });
+
+// Found live on the Middle Corridor gate minutes after the subject line
+// shipped: the note named four places and a cargo class, then said the route
+// and cargo were not supplied. The extractors only fired on the schema's own
+// vocabulary.
+test("the deal-risk gate reads the route and cargo the subject line already found", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  let response;
+  try {
+    response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "route-probe",
+        method: "message/send",
+        params: {
+          message: {
+            parts: [
+              {
+                kind: "text",
+                text:
+                  "Aluminium extrusions from Aktau to Jebel Ali via Baku and Poti, buyer is a UAE " +
+                  "company incorporated in 2025, payment through a Georgian bank. What evidence " +
+                  "will a bank ask for before signature?"
+              }
+            ]
+          }
+        }
+      },
+      new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send", {
+        method: "POST",
+        headers: { "content-type": "application/json" }
+      })
+    );
+  } finally {
+    console.log = originalLog;
+  }
+
+  const note = response.result.artifacts[0].parts[0].text;
+  assert.doesNotMatch(note, /Route: not supplied/);
+  assert.doesNotMatch(note, /Cargo: not supplied/);
+  assert.match(note, /Route: Aktau, Jebel Ali, Baku, Poti/);
+  assert.match(note, /Cargo: metals or ore \(cargo class read from the wording/);
+  // The from/to capture ran to the end of the sentence and took the buyer and
+  // payment clauses with it; the place-name path is used instead.
+  assert.doesNotMatch(note, /Route:[^\n]*payment through a Georgian bank/);
+});
+
+test("the routing note states each source category once", async () => {
+  const note = await routingNoteFor(
+    "Screen sanctions exposure for a Kazakhstan corridor shipment before signature.",
+    "dedupe-probe"
+  );
+
+  assert.doesNotMatch(note, /Full source-category checklist:/);
+  const occurrences = note.split("\n").filter((line) => line.trim() === "- ownership/counterparty").length;
+  assert.equal(occurrences, 0, "the bare category list should not reappear after Collect next");
+});
