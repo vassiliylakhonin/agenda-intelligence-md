@@ -3895,6 +3895,46 @@ test("a completed gate offers person-led work on the caller's own open items", a
   }
 });
 
+// Found live, not in review: after the 2026-08-26 deploy the Middle Corridor
+// deal-risk gate — the busiest host in the funnel — answered
+// escalate_before_signature with seven named gaps and still offered the generic
+// sentence, because it names them in `minimum_sources_before_go` and
+// `missing_sources` rather than the fields the first version knew. This asserts
+// the gate's own verdict and its own gaps reach the offer.
+test("the deal-risk gate offers work on the sources it says are missing", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "dr-engage",
+        method: "message/send",
+        params: {
+          message: {
+            role: "user",
+            parts: [{ kind: "text", text: "Aktau to Jebel Ali, UAE buyer incorporated 2025, Georgian bank. Evidence before signature?" }]
+          }
+        }
+      },
+      new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send", { method: "POST" }),
+      { AGENT_PROFILE: "kazakhstan" }
+    );
+
+    const payload = response.result.artifacts[0].parts.find((part) => part.mediaType === "application/json").data;
+    const offer = response.result.metadata.engagement.offer;
+
+    assert.ok(payload.minimum_sources_before_go.length > 0, "fixture must produce a gate with named gaps");
+    assert.ok(offer.includes(payload.triage_recommendation), "the offer must name the gate's verdict");
+    assert.ok(
+      payload.minimum_sources_before_go.some((source) => offer.includes(source)),
+      "the offer must name a source the gate says is missing"
+    );
+  } finally {
+    console.log = originalLog;
+  }
+});
+
 // The failure case. A caller whose request did not parse needs the request
 // fixed, not a scoping conversation, and `invalidRequestResult` already hands
 // it a contact. Offering person-led work there would read as a sales reply to

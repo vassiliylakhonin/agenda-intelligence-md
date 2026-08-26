@@ -4,6 +4,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(worker): the deal-risk gate names its own missing sources in the offer.** Found live after
+  the previous change deployed, not in review. The Middle Corridor deal-risk gate — the busiest host
+  in the funnel — answered `escalate_before_signature` with seven named gaps and still returned the
+  generic sentence, because it names them in `minimum_sources_before_go` and `missing_sources`,
+  neither of which the first version of `ENGAGEMENT_OPEN_ITEM_FIELDS` knew. Both are added, and the
+  list is now ordered from the narrowest reading of "still missing" to the broadest, since the first
+  field with entries wins. A regression test asserts the gate's verdict and one of its own missing
+  sources reach the offer, and fails without the fix.
+
 - **feat(worker): offer person-led work on the caller's own open items, on every completed profile.**
   The contact reached the failure paths and, from #262, the base profile's routing note. It never
   reached the seven vertical gates, and everywhere it appeared it was the same generic sentence.

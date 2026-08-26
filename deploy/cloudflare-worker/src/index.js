@@ -7482,13 +7482,23 @@ const ENGAGEMENT_SUBJECTS = Object.freeze({
 });
 
 // Every profile names the things standing between its verdict and a human
-// decision, and each one names them in its own field.
+// decision, and each one names them in its own field. The list is ordered from
+// the narrowest reading of "still missing" to the broadest, because the first
+// field that has entries wins.
+//
+// `minimum_sources_before_go` and `missing_sources` were found absent after the
+// 2026-08-26 deploy: the Middle Corridor deal-risk gate — the busiest host in
+// the funnel — was returning `escalate_before_signature` with seven named gaps
+// and still offering the generic sentence, because it names them in neither of
+// the two fields the first version knew about.
 const ENGAGEMENT_OPEN_ITEM_FIELDS = Object.freeze([
   "minimum_sources_before_review",
   "minimum_sources_before_action",
+  "minimum_sources_before_go",
   "evidence_gaps",
   "blocking_gaps",
-  "owner_actions"
+  "owner_actions",
+  "missing_sources"
 ]);
 
 const ENGAGEMENT_OUTCOME_FIELDS = Object.freeze([
