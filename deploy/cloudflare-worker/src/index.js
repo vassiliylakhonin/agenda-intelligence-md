@@ -645,6 +645,10 @@ const MESSAGE_SEND_METHODS = new Set([
   ...LEGACY_MESSAGE_SEND_METHODS
 ]);
 
+// Both spellings of the two Message roles. See v1MessageViolations below for
+// why the JSON-RPC spelling has to be here.
+const V1_MESSAGE_ROLES = new Set(["ROLE_USER", "ROLE_AGENT", "user", "agent"]);
+
 function normalizedA2aVersion(value) {
   if (typeof value !== "string") return "";
   const match = /^(\d+)\.(\d+)(?:\.\d+)?$/.exec(value.trim());
@@ -675,10 +679,23 @@ function v1MessageViolations(params) {
   if (typeof message.messageId !== "string" || !message.messageId.trim()) {
     violations.push({ field: "message.messageId", description: "A non-empty messageId is required" });
   }
-  if (message.role !== "ROLE_USER" && message.role !== "ROLE_AGENT") {
+  // A2A spells this role two ways: ROLE_USER in the protobuf definition and
+  // "user" in the JSON-RPC representation. Both are the same value, and the
+  // spec allows either. Accepting only the protobuf spelling would refuse any
+  // client that speaks the JSON-RPC form, for a field that is never read after
+  // this check.
+  //
+  // No caller in the 2026-08-18..26 logs is known to have been rejected this
+  // way; the change is conformance, not a repair. An earlier version of this
+  // comment blamed AgenstryBot's daily failures on the spelling. That was
+  // wrong, and the correction is worth keeping: those failures are the five
+  // gates refusing a four-character plain-text probe because they need a
+  // structured payload, which they answer with a request-guidance artifact.
+  // Both spellings behave identically on that path, before and after.
+  if (!V1_MESSAGE_ROLES.has(message.role)) {
     violations.push({
       field: "message.role",
-      description: "role must be ROLE_USER or ROLE_AGENT"
+      description: "role must be ROLE_USER or ROLE_AGENT (\"user\" and \"agent\" are accepted as the JSON-RPC spelling)"
     });
   }
   if (!Array.isArray(message.parts) || message.parts.length === 0) {
@@ -821,7 +838,14 @@ function agentCard(request, env = {}) {
               }
             }
           },
-          securityRequirements: [{ schemes: ["productionBearer"] }]
+          // SecurityRequirement.schemes is a map of scheme name to a StringList
+          // of scopes, not a list of names. A bare array validates as long as
+          // nobody configures a key — which nobody has, so this shipped unseen.
+          // Checked 2026-08-26 against the vendored A2A v1.0.1 schema: the array
+          // form fails with "schemes: must be object", the map form passes. The
+          // first deployment to set a production key would have started serving
+          // an invalid card.
+          securityRequirements: [{ schemes: { productionBearer: { list: [] } } }]
         }
         : { securityRequirements: [] }),
     capabilities: {
@@ -993,6 +1017,32 @@ function agentCard(request, env = {}) {
         "No factual-truth verification.",
         "No legal, financial, compliance, investment, or trading advice."
       ]
+    },
+    // An empty securityRequirements is the honest declaration for an open
+    // deployment, and it stays empty: declaring a scheme this Worker does not
+    // enforce would be a false claim in a card it signs. But empty is also
+    // silent. A directory scoring this card on 2026-08-26 read it as "declares
+    // no security information" and could not tell a deliberate open endpoint
+    // from an oversight — the same reading an agent deciding whether to call
+    // would make. The remedy is to say so, not to invent an auth model.
+    //
+    // The site card at vassiliylakhonin.github.io has carried exactly this
+    // block since before the fleet did; this brings the eight Workers in line
+    // with it rather than inventing a second vocabulary. Everything here is
+    // checkable against the deployment: required_authentication follows the
+    // configured key, and the usage log records prompt_chars, never the prompt.
+    x_security_posture: {
+      transport: "https",
+      public_endpoint: !productionKey,
+      required_authentication: Boolean(productionKey),
+      optional_client_identifier_header: "X-Client-Id",
+      data_handling: [
+        "No payment credentials accepted.",
+        "No wallet rails.",
+        "No caller prompt text stored in aggregate stats.",
+        "Usage analytics are aggregate operational counters."
+      ],
+      abuse_contact: `mailto:${SUPPORT_CONTACT_EMAIL}`
     }
   };
   return applyAgentProfile(card, request, env);

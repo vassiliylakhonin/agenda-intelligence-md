@@ -1135,6 +1135,59 @@ test("A2A 1.0 SendMessage rejects malformed params and unsupported versions", as
   assert.equal(unsupported.error.code, -32009);
 });
 
+// A2A allows either spelling of the role: ROLE_USER from the protobuf
+// definition, "user" from the JSON-RPC representation. Until 2026-08-26 the v1
+// path accepted only the first, so a client speaking the JSON-RPC form was
+// refused over a field that is never read after validation.
+//
+// This was first attributed to AgenstryBot's daily failures. That attribution
+// was wrong — those are the gates refusing a four-character plain-text probe,
+// and both spellings fail there identically — so this test asserts the
+// conformance property on its own terms and claims no caller behind it.
+test("A2A 1.0 SendMessage accepts both spellings of the message role", async () => {
+  const v1Request = new Request(request.url, {
+    method: "POST",
+    headers: { "a2a-version": "1.0", "content-type": "application/json" }
+  });
+
+  for (const role of ["ROLE_USER", "user", "ROLE_AGENT", "agent"]) {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: `role-${role}`,
+        method: "SendMessage",
+        params: {
+          message: {
+            messageId: `m-role-${role}`,
+            role,
+            parts: [{ text: "Assess exposure on a Kazakhstan corridor deal." }]
+          }
+        }
+      },
+      v1Request
+    );
+    assert.equal(response.error, undefined, `role ${role} must be accepted`);
+    assert.equal(response.result.task.status.state, "TASK_STATE_COMPLETED");
+  }
+
+  const bogus = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "role-bogus",
+      method: "SendMessage",
+      params: {
+        message: { messageId: "m-role-bogus", role: "operator", parts: [{ text: "ping" }] }
+      }
+    },
+    v1Request
+  );
+  assert.equal(bogus.error.code, -32602);
+  assert.ok(
+    bogus.error.data[0].fieldViolations.some((v) => v.field === "message.role"),
+    "an unknown role must still be refused"
+  );
+});
+
 test("A2A POST returns structured protocol errors for invalid JSON, media type, and oversized bodies", async () => {
   const originalLog = console.log;
   console.log = () => {};
@@ -3737,6 +3790,13 @@ test("public kazakhstan card does not pretend optional observability is authenti
   assert.equal(card.security, undefined);
   assert.deepEqual(card.securityRequirements, []);
   assert.equal(card.x_agenda_intelligence.public_endpoint, true);
+  // Empty stays empty, but no longer silent: an open endpoint says it is open
+  // on purpose, so a reader cannot mistake the absence of a scheme for an
+  // oversight. X-Client-Id is named here as what it is, not as a credential.
+  assert.equal(card.x_security_posture.required_authentication, false);
+  assert.equal(card.x_security_posture.public_endpoint, true);
+  assert.equal(card.x_security_posture.optional_client_identifier_header, "X-Client-Id");
+  assert.equal(card.securitySchemes, undefined);
 });
 
 test("kazakhstan card advertises productionBearer requirement when key is set", () => {
@@ -3746,7 +3806,16 @@ test("kazakhstan card advertises productionBearer requirement when key is set", 
   });
   assert.equal(card.securitySchemes.productionBearer.httpAuthSecurityScheme.scheme, "bearer");
   assert.equal(card.security, undefined);
-  assert.deepEqual(card.securityRequirements, [{ schemes: ["productionBearer"] }]);
+  // The declared posture follows the deployment, not a constant.
+  assert.equal(card.x_security_posture.required_authentication, true);
+  assert.equal(card.x_security_posture.public_endpoint, false);
+  // schemes is a map of scheme name to its StringList of scopes. The array
+  // form this asserted until 2026-08-26 fails the official v1 schema with
+  // "schemes: must be object", and no deployment had a key set, so the
+  // invalid card was never served and never noticed.
+  assert.deepEqual(card.securityRequirements, [
+    { schemes: { productionBearer: { list: [] } } }
+  ]);
   assert.equal(card.x_agenda_intelligence.public_endpoint, false);
 });
 
@@ -4808,6 +4877,34 @@ test("deploy drift check reads only the newest deployment", async () => {
     "Message:     Vizier ALLOW receipt vrf_6bf1ffee"
   ].join("\n");
   assert.equal(newestReceipt(clean), "vrf_6bf1ffee");
+});
+
+// A valid receipt on an old version looks identical to a healthy fleet, which
+// is how agent-output-verification sat eighty-five minutes behind the other
+// seven on 2026-08-26 while `--check` reported success. The date of the newest
+// deployment is the part that catches it.
+test("deploy freshness check dates only the newest deployment", async () => {
+  const { newestDeployedAt } = await import("../scripts/deploy-all.js");
+
+  const listing = [
+    "Created:     2026-08-26T10:24:42.521Z",
+    "Message:     Vizier ALLOW receipt vrf_974b26ef",
+    "Version(s):  (100%) 0ee4804d-d6a8-4a9d-8c2d-44b70fd79b5e",
+    "                 Created:  2026-08-26T10:24:40.100Z",
+    "Created:     2026-08-26T12:09:32.084Z",
+    "Message:     Vizier ALLOW receipt vrf_7bdb60fb",
+    "Version(s):  (100%) 246af187-9366-49a9-bd2f-2cc10aed2105",
+    "                 Created:  2026-08-26T12:09:30.941Z"
+  ].join("\n");
+
+  assert.equal(
+    newestDeployedAt(listing),
+    Date.parse("2026-08-26T12:09:32.084Z"),
+    "the indented per-version Created lines must not be mistaken for deployments"
+  );
+
+  assert.equal(newestDeployedAt(""), null, "no deployments must read as unknown, not as epoch zero");
+  assert.equal(newestDeployedAt("Created:     not-a-date\n"), null);
 });
 
 // Measured 2026-08-18 on the live workers: a plain-language probe made five of

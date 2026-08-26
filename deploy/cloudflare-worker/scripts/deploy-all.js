@@ -13,8 +13,17 @@
 // worker's newest deployment carries no receipt. That is detection, not
 // prevention: anyone can still call wrangler directly. It means the next run
 // says so out loud instead of the drift going unnoticed for a week.
+//
+// It also fails if any environment is live on a deployment older than the last
+// commit that touched the bundled source. On 2026-08-26 a `--check` run printed
+// "receipt ok" while agent-output-verification had been sitting on the previous
+// code for eighty-five minutes: the receipt was valid, it was just a receipt for
+// an older version. A per-environment check would have caught it at once, and a
+// receipt on stale code is the more dangerous shape of the two, because it looks
+// exactly like a healthy fleet.
 
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 // Everything that ships with a plain `wrangler deploy`.
 const UNGATED_ENVS = [
@@ -30,9 +39,9 @@ const UNGATED_ENVS = [
 const GATED_ENV = "agent-output-verification";
 const RECEIPT_MARKER = "Vizier ALLOW receipt";
 
-function run(command, args) {
+function run(command, args, options = {}) {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"], ...options });
     let output = "";
     child.stdout.on("data", (chunk) => {
       output += chunk;
@@ -90,6 +99,91 @@ export function newestReceipt(output) {
   return new RegExp(`${RECEIPT_MARKER}\\s+(\\S+)`).exec(newest)?.[1] ?? "(unnamed)";
 }
 
+// The files that end up in the bundle. A README or a test change moves HEAD
+// without changing what is deployed, so measuring staleness against every
+// commit would cry wolf until the warning stopped being read.
+const BUNDLED_PATHS = ["src", "wrangler.toml", "package.json"];
+
+// Same block-splitting rule as newestReceipt: only the final block is live, and
+// each block opens with its own creation timestamp.
+export function newestDeployedAt(output) {
+  const blocks = String(output).split(/\nCreated:\s+/).slice(1);
+  const newest = blocks[blocks.length - 1] ?? "";
+  const stamp = /^(\S+)/.exec(newest)?.[1];
+  const at = stamp ? Date.parse(stamp) : NaN;
+  return Number.isNaN(at) ? null : at;
+}
+
+// Returns null rather than throwing when git cannot answer — outside a checkout,
+// or a shallow clone with no history for these paths. An unknown baseline must
+// not fail the fleet; it just means this particular check abstains.
+async function lastSourceChange() {
+  const repoDir = fileURLToPath(new URL("..", import.meta.url));
+  const log = await run("git", ["log", "-1", "--format=%h %cI", "--", ...BUNDLED_PATHS], { cwd: repoDir });
+  if (log.code !== 0) return null;
+  const [commit, iso] = log.output.trim().split(/\s+/);
+  const at = Date.parse(iso ?? "");
+  if (!commit || Number.isNaN(at)) return null;
+
+  // A deploy from a dirty tree ships code that is in no commit at all, so the
+  // commit time understates how new the live version really is. Say so instead
+  // of reporting a confident answer built on the wrong baseline.
+  const dirty = await run("git", ["status", "--porcelain", "--", ...BUNDLED_PATHS], { cwd: repoDir });
+  return { commit, at, iso, dirty: dirty.code === 0 && dirty.output.trim().length > 0 };
+}
+
+const shortTime = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+
+function ageLabel(ms) {
+  const minutes = Math.round(ms / 60000);
+  if (minutes < 60) return `${minutes}m`;
+  return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, "0")}m`;
+}
+
+async function checkFreshness() {
+  const source = await lastSourceChange();
+  if (!source) {
+    console.log("\nfreshness  skipped — git could not date the bundled source.");
+    return true;
+  }
+  console.log(`\nlast source commit  ${source.commit}  ${shortTime(source.at)}`);
+  if (source.dirty) {
+    console.log("            (working tree is dirty; a deploy from it carries code that is in no commit)");
+  }
+
+  let allFresh = true;
+  for (const env of [...UNGATED_ENVS, GATED_ENV]) {
+    const args = env
+      ? ["--yes", "wrangler", "deployments", "list", "--env", env]
+      : ["--yes", "wrangler", "deployments", "list"];
+    const { code, output } = await run("npx", args);
+    const label = env || "(top-level)";
+    const deployedAt = code === 0 ? newestDeployedAt(output) : null;
+    if (deployedAt === null) {
+      console.error(`unknown  ${label.padEnd(36)} could not read the deployment list`);
+      allFresh = false;
+      continue;
+    }
+    if (deployedAt >= source.at) {
+      console.log(`fresh    ${label.padEnd(36)} ${shortTime(deployedAt)}`);
+      continue;
+    }
+    console.error(
+      `STALE    ${label.padEnd(36)} ${shortTime(deployedAt)}  ` +
+        `${ageLabel(source.at - deployedAt)} behind ${source.commit}`
+    );
+    allFresh = false;
+  }
+  if (!allFresh) {
+    console.error(
+      "\nAn environment is live on code older than the last source commit.\n" +
+        "Run `npm run deploy:all` to bring the fleet up, or deploy the named env alone.\n" +
+        `For ${GATED_ENV} use the gate, never wrangler directly.`
+    );
+  }
+  return allFresh;
+}
+
 async function checkReceipt() {
   const { code, output } = await run("npx", ["--yes", "wrangler", "deployments", "list", "--env", GATED_ENV]);
   if (code !== 0) {
@@ -125,7 +219,12 @@ async function main() {
     }
   }
 
-  if (!(await checkReceipt())) {
+  // Both checks always run, and the failure of one does not skip the other:
+  // a fleet can be stale and ungated at the same time, and a run that reported
+  // only the first problem would need a second run to reveal the second.
+  const receiptOk = await checkReceipt();
+  const freshOk = await checkFreshness();
+  if (!receiptOk || !freshOk) {
     process.exitCode = 1;
   }
 }
