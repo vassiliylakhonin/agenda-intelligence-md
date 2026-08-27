@@ -35,7 +35,7 @@ async function registerToAgenstry(cardUrl) {
 async function main() {
   const toml = fs.readFileSync(wranglerPath, 'utf8');
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-  
+
   // Extract all environments from wrangler.toml
   const envRegex = /\[env\.([a-zA-Z0-9\-]+)\]/g;
   let match;
@@ -78,13 +78,13 @@ async function main() {
 
     const cardUrl = `https://${hostname}/.well-known/agent-card.json`;
     const result = await fetchCard(cardUrl);
-    
+
     if (result.status === 'ok') {
       const profile = result.data.name || env;
       console.log(`✅ [OK] ${profile.padEnd(45)} -> ${cardUrl}`);
       markdown += `| **${profile}** | ✅ Online | [agent-card.json](${cardUrl}) |\n`;
       alive++;
-      
+
       // Auto-register
       await registerToAgenstry(cardUrl);
     } else {

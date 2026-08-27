@@ -25,7 +25,7 @@
 //   - Attribution surfaced via SNAPSHOT_ATTRIBUTION on every response that
 //     includes upstream data.
 
-export const SNAPSHOT_PROJECT_URL = "https://vassiliylakhonin.github.io/cis-secondary-sanctions.html";
+export const SNAPSHOT_PROJECT_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
 export const SNAPSHOT_LICENSE = "Public official sanctions lists (OFAC / EU / UK)";
 export const SNAPSHOT_ATTRIBUTION =
   "Possible name matches via a static public-list snapshot (OFAC SDN + consolidated, EU consolidated, UK FCDO). " +

@@ -190,18 +190,20 @@ def match_counterparty(
     if api_key is None:
         simulated_matches = []
         if name:
-            simulated_matches.append({
-                "name": name,
-                "schema": schema,
-                "datasets": ["us_ofac_sdn"],
-                "source_type": "us_ofac_extract",
-                "score": 0.99,
-                "opensanctions_id": "simulated-" + name.replace(" ", "-").lower(),
-                "topics": ["sanction"],
-                "jurisdictions": [jurisdiction] if jurisdiction else []
-            })
+            simulated_matches.append(
+                {
+                    "name": name,
+                    "schema": schema,
+                    "datasets": ["us_ofac_sdn"],
+                    "source_type": "ofac_sdn_extract",
+                    "score": 0.99,
+                    "opensanctions_id": "simulated-" + name.replace(" ", "-").lower(),
+                    "topics": ["sanction"],
+                    "jurisdictions": [jurisdiction] if jurisdiction else [],
+                }
+            )
         return {
-            "status": "success",
+            "status": "degraded",
             "matches": simulated_matches,
             "attribution": attribution,
             "queried_at": queried_at,

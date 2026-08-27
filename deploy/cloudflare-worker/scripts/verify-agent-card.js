@@ -12,6 +12,8 @@ const DEFAULT_AGENT_CARD_URLS = [
   "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
   "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
   "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+  "https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+  "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
   "https://vassiliylakhonin.github.io/.well-known/agent-card.json"
 ];
 
@@ -74,6 +76,18 @@ const PROFILE_EXPECTATIONS = [
     name: "Kazakhstan Market-Entry Readiness Gate",
     profile: "kazakhstan_market_entry_readiness",
     skill: "kazakhstan-market-entry-readiness"
+  },
+  {
+    host: "critical-minerals-due-diligence-a2a",
+    name: "Critical Minerals & Strategic Raw Materials Due Diligence Gate",
+    profile: "critical_minerals_due_diligence",
+    skill: "critical-minerals-due-diligence"
+  },
+  {
+    host: "dual-use-technology-export-a2a",
+    name: "Dual-Use Technology & Export Controls Gate",
+    profile: "dual_use_technology_export",
+    skill: "dual-use-technology-export-controls"
   },
   {
     host: "agent-output-verification-a2a",

@@ -13,13 +13,13 @@ function generateHtmlDashboard(profile, response) {
   let actions = '';
   const ownerActions = response.owner_actions || [];
   if (ownerActions.length > 0) {
-    actions = ownerActions.map(action => 
+    actions = ownerActions.map(action =>
       '<li class="flex items-start"><span class="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 text-red-600 flex items-center justify-center mr-3 mt-0.5 text-xs">!</span><span class="text-sm text-gray-700">' + action + '</span></li>'
     ).join('');
   } else {
     actions = '<p class="text-sm text-gray-500 italic">No pending actions. Packet is fully grounded.</p>';
   }
-  
+
   const statusStr = String(response.packet_status || response.decision || 'completed').toUpperCase();
   const profileName = String(profile).replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase());
 
@@ -76,22 +76,22 @@ function generateHtmlDashboard(profile, response) {
 
 async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
   const response = await _handleJsonRpcInner(payload, request, env, ctx);
-  
+
   try {
     const method = payload && payload.method;
     if (method && (method === "message/send" || method === "tasks/send" || method === "SendMessage")) {
       const params = payload.params || {};
       const requestedOutput = params.requested_output || "markdown";
-      
+
       if ((requestedOutput === "html" || requestedOutput === "both") && response && response.result) {
         const result = response.result;
         const state = result.status && result.status.state;
-        
+
         if (state === "TASK_STATE_COMPLETED" || state === "TASK_STATE_FAILED") {
           const metadata = result.metadata || {};
           const profile = metadata.product_profile || "agenda";
           const innerResponse = metadata.response;
-          
+
           if (innerResponse) {
             const htmlContent = generateHtmlDashboard(profile, innerResponse);
             if (!result.artifacts) result.artifacts = [];
@@ -109,7 +109,7 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
   } catch (err) {
     console.error("Failed to generate HTML dashboard wrapper:", err);
   }
-  
+
   return response;
 }
 `;

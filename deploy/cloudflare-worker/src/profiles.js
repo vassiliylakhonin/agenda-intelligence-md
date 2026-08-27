@@ -426,10 +426,10 @@ const dualUseExportProfile = Object.freeze({
   profile_key: "dual_use_technology_export",
   product_profile: "dual_use_technology_export",
   canonical_product_name: "Dual-Use Technology & Export Controls Gate",
-  documentation_url: "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/use-cases/dual-use-technology-export.md",
+  documentation_url: "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/vertical-workers.md#shipped-vertical-workers",
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
-    "A2A/JSON-RPC discovery, dual-use technology screening, export control risk evaluation (ECCN/HS Codes), routing response only",
+    "A2A/JSON-RPC discovery and structural evidence-readiness triage for caller-supplied HS codes, optional ECCNs, transit routes, end-user sectors, and dated sources",
   supported_contracts: frozenArray(["dual_use_technology_export_contract"]),
   buyer_use_cases: frozenArray([
     "technology and semiconductor supply chain screening",
@@ -438,7 +438,7 @@ const dualUseExportProfile = Object.freeze({
     "validating end-user statements for military-civilian fusion risk"
   ]),
   commercial_positioning:
-    "Shipment details (HS code/ECCN) + transit route + end-user + sources -> deterministic export control risk triage, highlighting unauthorized diversion risks and missing licenses. Sits beside trade compliance officers.",
+    "Shipment details (HS code, optional caller-supplied ECCN, transit route, end-user sector, and dated sources) -> deterministic file-completeness triage before human export-control review. No classification, licensing, clearance, or authorization determination.",
   product_contract: productContract({
     request_schema: "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/dual-use-technology-export-request.schema.json",
     response_schema: "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/dual-use-technology-export-response.schema.json",
@@ -492,4 +492,3 @@ export function profileDiscovery(profile) {
       : undefined
   };
 }
-

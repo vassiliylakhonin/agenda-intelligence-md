@@ -17,4 +17,3 @@ These cases are **not a benchmark**, **not a factual verification**, and **not a
 | [gtta-global-policy.md](gtta-global-policy.md) | GTTA / global | global-think-tank-analyst | complete (delta +4.5) |
 | [ca-caspian-sanctions.md](ca-caspian-sanctions.md) | CA + Caspian + sanctions | central-asia-caspian-hybrid-intelligence-skill | complete (delta +4.5) |
 | [gulf-me-hormuz-shipping.md](gulf-me-hormuz-shipping.md) | Gulf + ME | gulf-middle-east-hybrid-intelligence-skill | complete (delta +4.0) |
-

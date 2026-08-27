@@ -34,4 +34,3 @@
 
 1-2 paragraphs: where the MCP materially changed the shape of the output, where
 it did not, and what surprised you. Be explicit when the delta is small.
-
