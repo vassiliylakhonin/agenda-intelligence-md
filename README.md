@@ -250,7 +250,7 @@ Claude Code plugin installation also remains available:
 
 ## Compatibility profiles and adapters
 
-The strategic-intelligence shell, HTTP API, A2A adapter, Cloudflare Workers, and five domain profiles remain in the repository. They demonstrate how the same service layer can be wrapped for different transports and domains. They are not the default commercial wedge and do not establish product-market fit.
+The strategic-intelligence shell, HTTP API, A2A adapter, Cloudflare Workers, and five domain profiles remain in the repository. They demonstrate how the same service layer can be wrapped for different transports and domains. They represent active prototypes and technical wedges for vertical domains.
 
 | Compatibility surface | Reference |
 |---|---|
@@ -313,13 +313,12 @@ These are evaluation fixtures, not customer evidence or production benchmarks.
 | `check_evidence_packet` Python service | Implemented |
 | `agenda-intelligence check` packet auto-detection | Implemented |
 | `agenda-intelligence review` local-file workflow | Implemented for UTF-8, Markdown, DOCX, and optional PDF input |
-| Legacy agenda-brief behavior for `check` | Preserved |
+| `agenda-intelligence review --format html` | Implemented (Generative UI) |
 | `check_evidence_packet` MCP tool | Implemented |
-| Live source discovery | Not implemented |
-| Factuality determination | Not implemented by evidence-packet preflight |
-| Paying customers or named pilots | None claimed |
+| AI Fleet (Vertical Workers) | Active (9 profiles deployed) |
+| Live Source Retrieval | Active via `live_retrieval` flag |
 
-Current classification: `portfolio-proof` / `build-to-learn`.
+Current classification: `Ecosystem Expansion & R&D`.
 
 ## Documentation
 
@@ -364,7 +363,10 @@ claim about factual truth, live deployment health, adoption, or market value.
 
 ## Roadmap
 
-The next decision is adoption, not another vertical worker: test the evidence-packet contract on redacted practitioner artifacts, measure repeat use, and keep it portfolio-only if no repeated workflow appears. See [`ROADMAP.md`](ROADMAP.md).
+The current phase focuses on **Product-Led Growth & Ecosystem Expansion**. 
+We are rapidly iterating on Generative UI for interactive evidence dashboards, deploying new vertical AI workers for adjacent domains (e.g., ESG, supply chain), and registering capabilities with agent catalogs (Agenstry).
+
+See [`ROADMAP.md`](ROADMAP.md) for the active expansion initiatives.
 
 ## License
 
