@@ -12,6 +12,7 @@ import sys
 from typing import Any
 
 from agenda_intelligence import __version__, services
+from agenda_intelligence.html_dashboard import generate_html_dashboard
 
 REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md"
 MIDDLE_CORRIDOR_SCHEMA = "schemas/v1/middle-corridor-deal-risk-request.schema.json"
@@ -1656,39 +1657,34 @@ if __name__ == "__main__":
     main()
 
 
-from agenda_intelligence.html_dashboard import generate_html_dashboard
-
 def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> dict:
     """Handle the first A2A JSON-RPC slice, with optional HTML dashboard rendering."""
     response = _handle_jsonrpc_inner(payload, base_url)
-    
+
     # If the request asked for HTML output, and the response was successful
     method = payload.get("method")
     if method in {"message/send", "tasks/send", "SendMessage"} and "result" in response:
         params = payload.get("params") or {}
         requested_output = params.get("requested_output", "markdown")
-        
+
         if requested_output in ("html", "both"):
             result = response["result"]
             if result.get("status", {}).get("state") in ("TASK_STATE_COMPLETED", "TASK_STATE_FAILED"):
                 metadata = result.get("metadata", {})
                 profile = metadata.get("product_profile", "agenda")
                 inner_response = metadata.get("response", {})
-                
+
                 # We can generate the dashboard if there's a response payload
                 if inner_response:
                     html_content = generate_html_dashboard(profile, inner_response)
-                    
+
                     if "artifacts" not in result:
                         result["artifacts"] = []
-                    
+
                     if len(result["artifacts"]) > 0:
                         # Append to the first artifact
                         if "parts" not in result["artifacts"][0]:
                             result["artifacts"][0]["parts"] = []
-                        result["artifacts"][0]["parts"].append({
-                            "text": html_content,
-                            "mediaType": "text/html"
-                        })
-                        
+                        result["artifacts"][0]["parts"].append({"text": html_content, "mediaType": "text/html"})
+
     return response
