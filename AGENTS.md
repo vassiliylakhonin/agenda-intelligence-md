@@ -46,17 +46,17 @@ Do not duplicate canonical domain reasoning or canonical vertical-specialist dep
 
 ## Product focus and vertical workers inside this repo
 
-The primary repository product is the evidence-packet contract and deterministic preflight: given claims, source text, and optional quotes, report broken references, quote mismatches, lexical-support gaps, and owner actions before human review. It reports packet completeness, not factual truth, trust, authorization, or clearance.
+The core framework is the evidence-packet contract and deterministic preflight: given claims, source text, and optional quotes, report broken references, quote mismatches, and evidence gaps.
 
-The vertical workers are compatibility profiles and examples built on the same service layer. They are not the primary product narrative, and a new worker must not be used to avoid validating the evidence-packet workflow with external practitioners.
+The vertical workers (e.g. `cis_secondary_sanctions`, `dual_use_technology_export`) are productized instances of this framework. We are in the **Ecosystem Expansion & R&D** phase. 
 
-Current classification is `portfolio-proof` plus `build-to-learn`. There is no active default commercial wedge in this repository. Do not rebuild removed discovery teardowns, profile packs, or public-signal corpora as a substitute for buyer evidence. Gulf maritime / trade-finance risk-file readiness remains a backup risk-intelligence hypothesis. Kazakhstan/local-forwarder / Middle Corridor positioning is not assumed to have product-market fit; treat it as disconfirmed unless fresh discovery evidence proves otherwise.
+**Our new mandate is to scale the AI fleet rapidly:**
+- Vertical workers *are* a primary product narrative to demonstrate the framework's versatility.
+- We actively encourage building new workers for adjacent domains (ESG, supply chain, real estate, OSINT).
+- "Build-to-learn" and "portfolio-proof" are sufficient justifications to experiment and deploy new AI catalog listings.
+- We aim to distribute these workers widely across AI catalogs (Agenstry, etc.) to drive adoption of the underlying evidence contract.
 
-Before adding or improving a buyer-facing surface, public listing, new vertical worker, pilot page, outreach copy, or monetization path, run the market gate: economic buyer, painful trigger this month, current workaround, observed evidence, inference, kill criteria, smallest 30-day test, and classification as `build-to-learn`, `build-to-earn`, `portfolio-proof`, `public-positioning`, or `internal-ops`.
-
-The gate has an exit, and the exit is a person. A gate run is finished only when it names the next action toward a named human outside this portfolio — who is approached, through which channel, and which past-behaviour question is asked ("who produces this for you today, and what does a comparable piece cost"). A classification on its own does not finish it: the sibling repos route every commercial request here, so a gate that ends in a verdict is where commercial work stops rather than where it starts. When the honest outcome is that no such person can be named yet, record that as the gate's result — it is a finding about the wedge, not a pass.
-
-The shipped workers, the artifact ladder to try before adding another, and the hard requirements for a new one are in [`docs/vertical-workers.md`](docs/vertical-workers.md). Do not add a worker because a domain is interesting or because the runtime can support it.
+For details on the active fleet, see [`docs/vertical-workers.md`](docs/vertical-workers.md). You do not need to run a strict commercial gate before prototyping a new worker — prioritize technical demonstration and utility first.
 
 ## Geography routing
 

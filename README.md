@@ -315,7 +315,7 @@ These are evaluation fixtures, not customer evidence or production benchmarks.
 | `agenda-intelligence review` local-file workflow | Implemented for UTF-8, Markdown, DOCX, and optional PDF input |
 | `agenda-intelligence review --format html` | Implemented (Generative UI) |
 | `check_evidence_packet` MCP tool | Implemented |
-| AI Fleet (Vertical Workers) | Active (9 profiles deployed) |
+| AI Fleet (Vertical Workers) | Active (10 profiles deployed) |
 | Live Source Retrieval | Active via `live_retrieval` flag |
 
 Current classification: `Ecosystem Expansion & R&D`.
