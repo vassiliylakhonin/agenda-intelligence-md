@@ -188,7 +188,7 @@ export async function matchCounterparty(env, options = {}) {
       });
     }
     return {
-      status: "success",
+      status: "degraded",
       matches,
       attribution: attributionBlock(),
       queried_at: nowIso(),
