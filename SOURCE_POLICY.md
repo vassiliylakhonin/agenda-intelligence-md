@@ -43,16 +43,8 @@ Tag claims inline in markdown output using the provenance system from `reference
 
 Tags are additive to document-level evidence mode. Use both.
 
-## Do not claim without evidence
+## Analytical Inference ## Do not claim without evidence Claim Discipline
 
-- Binding legal obligation without legal text or regulator guidance.
-- Sanctions designation without official list or legal instrument.
-- Enforcement trend without enforcement actions, penalties, seizures, customs detentions, or regulator statements.
-- Market impact without price, filing, company behavior, tender/procurement, or transaction evidence.
-- Election outcome or legitimacy shift without official results, polling methodology, legal challenge, or observer reporting.
-- Conflict escalation without credible operational indicators.
-- Energy disruption without production, shipping, pipeline, inventory, OPEC+, or market data.
-- AI/technology policy implementation without legal text, budget, procurement, standards, infrastructure, or deployment evidence.
 
 ## Source plan workflow
 

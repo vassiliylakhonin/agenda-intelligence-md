@@ -184,20 +184,15 @@ Additive change under the `docs/vertical-workers.md` "`< 3` vertical workers in 
 - A monolithic agent framework. The package stays a small contract layer.
 - Replacing analyst judgment.
 
-## Commercial operating gate
 
-Status: `portfolio-proof` and `build-to-learn`. The shipped runtime and public workers demonstrate implementation capability; they do not demonstrate a budget, buyer, pilot, or product-market fit.
+## Expansion & Capabilities (Current Phase)
 
-The current commercial risk is the same one faced by technically useful verification products: people may value better evidence discipline without paying for a separate evidence layer. Therefore the next milestone is not another worker, protocol, hosted surface, or factual-verification subsystem.
+Status: `Product-Led Growth & Ecosystem Expansion`. The shipped runtime, MCP capabilities, and public workers demonstrate a solid technical foundation. The next phase focuses on scaling use cases, improving the analytical experience, and extending reach.
 
-Before further product expansion, test one complete paid job:
+**Key Initiatives:**
+1. **Interactive Reviewer Experiences (Generative UI)**: Build dynamic, interactive HTML dashboards for evidence review to make the output immediately usable and visually impressive for analysts.
+2. **Live Data Integration**: Move `live_retrieval` capabilities (e.g. OpenSanctions, OSINT sources) from "deferred" to active experiments to demonstrate live factual grounding.
+3. **AI Fleet Scaling**: Rapidly prototype and deploy new vertical workers for adjacent domains (e.g., ESG compliance, supply chain auditing, real estate due diligence).
+4. **Catalog Distribution**: Register all deployed workers in AI catalogs (Agenstry, etc.) to increase discoverability and test A2A (agent-to-agent) interaction patterns.
 
-- **Economic buyer:** a named owner of a near-term high-stakes review.
-- **Trigger:** a real source pack, vendor file, RFP, risk file, or model evidence packet due for human sign-off within 3–10 working days.
-- **Current workaround:** analyst review, spreadsheets or GRC tickets, reviewer comments, and consultant memos.
-- **Past-payment evidence:** none recorded for Agenda Intelligence MD.
-- **Smallest test:** deliver one review-ready evidence packet using Agenda Intelligence invisibly behind the workflow; compare it with the buyer's ordinary process.
-
-Measure material unsupported claims, missed evidence requirements, reviewer edit minutes, corrections, and whether the buyer pays for the next packet. Compliments, GitHub activity, demo traffic, endpoint calls, and self-scored evals are not purchase evidence.
-
-Do not add a buyer-facing worker or surface unless a live case cannot be served by the existing core. Park expansion if there is no paid continuation after 10 qualified case offers, reviewer time falls by less than 40%, or a material fabricated figure survives the review pack. If no standalone budget emerges, keep Agenda Intelligence as portfolio infrastructure or an internal layer behind a paid deliverable.
+*We are actively encouraging R&D, experimentation, and additive features that showcase the power of the Agenda Intelligence framework.*
