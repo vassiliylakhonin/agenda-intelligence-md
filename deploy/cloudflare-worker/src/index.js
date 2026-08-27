@@ -625,6 +625,12 @@ function agentProfile(request, env = {}) {
     return "critical_minerals_due_diligence";
   }
   if (
+    env.AGENT_PROFILE === "dual_use_technology_export" ||
+    host.includes("dual-use-technology-export-a2a")
+  ) {
+    return "dual_use_technology_export";
+  }
+  if (
     env.AGENT_PROFILE === "corridor_sanctions_assistant" ||
     host.includes("corridor-sanctions-assistant-a2a")
   ) {
@@ -2026,6 +2032,7 @@ function applyAgentProfile(card, request, env = {}) {
   if (profile === "gulf_maritime_exposure") return applyGulfMaritimeProfile(card, request);
   if (profile === "market_entry_readiness") return applyMarketEntryReadinessProfile(card, request);
   if (profile === "critical_minerals_due_diligence") return applyCriticalMineralsProfile(card, request);
+  if (profile === "dual_use_technology_export") return applyDualUseTechnologyExportProfile(card, request);
   if (profile === "corridor_sanctions_assistant") return applyCorridorSanctionsAssistantProfile(card, request);
   if (profile !== "kazakhstan") return card;
 
@@ -2970,6 +2977,32 @@ const GATE_REQUEST_GUIDES = Object.freeze({
         { id: "cm-1", source_type: "mining_concession_or_license_extract", title: "Concession extract", date: "2026-08-01" },
         { id: "cm-2", source_type: "certified_ore_assay_report", title: "Certified assay", date: "2026-08-02" }
       ]
+    }
+  },
+  dual_use_technology_export: {
+    title: "Dual-Use Technology & Export Controls Gate",
+    required: [
+      "shipment — object with hs_code, description, origin, and destination",
+      "dated_sources — array of { id, source_type, title, date }",
+      "risk_question — one sentence naming the decision",
+      "shipment.eccn — optional classification supplied by the caller",
+      "shipment.end_user_sector — optional sector: military, civilian, aerospace, semiconductor, or unknown"
+    ],
+    example: {
+      shipment: {
+        hs_code: "854231",
+        eccn: "3A001",
+        description: "Example integrated circuits",
+        origin: "DE",
+        destination: "KZ",
+        transit_countries: ["TR"],
+        end_user_sector: "civilian"
+      },
+      dated_sources: [
+        { id: "du-1", source_type: "classification_note", title: "Exporter classification note", date: "2026-08-01" },
+        { id: "du-2", source_type: "end_user_statement", title: "Signed end-user statement", date: "2026-08-02" }
+      ],
+      risk_question: "Is this file complete enough for export-control human review?"
     }
   }
 });
@@ -5719,6 +5752,212 @@ function applyCriticalMineralsProfile(card, request) {
     "No factual-truth verification or mineral assay testing.",
     "No legal, compliance, sanctions, ESG certification, or investment advice.",
     "Human review is required before any commercial action."
+  ];
+  return card;
+}
+
+function isDualUseTechnologyExportRequest(value) {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      value.shipment &&
+      typeof value.shipment === "object" &&
+      typeof value.shipment.hs_code === "string" &&
+      typeof value.shipment.description === "string" &&
+      typeof value.shipment.origin === "string" &&
+      typeof value.shipment.destination === "string" &&
+      Array.isArray(value.dated_sources) &&
+      typeof value.risk_question === "string"
+  );
+}
+
+function dualUseTechnologyExportErrors(request) {
+  const errors = [];
+  if (!request || typeof request !== "object") return ["request must be an object"];
+  if (!request.shipment || typeof request.shipment !== "object") {
+    errors.push("shipment must be an object");
+  } else {
+    for (const field of ["hs_code", "description", "origin", "destination"]) {
+      if (typeof request.shipment[field] !== "string" || !request.shipment[field].trim()) {
+        errors.push(`shipment.${field} is required`);
+      }
+    }
+  }
+  if (!Array.isArray(request.dated_sources)) errors.push("dated_sources must be an array");
+  if (typeof request.risk_question !== "string" || !request.risk_question.trim()) {
+    errors.push("risk_question is required");
+  }
+  return errors;
+}
+
+function structuredDualUseTechnologyExportRequestFromParams(params) {
+  if (!params || typeof params !== "object") return null;
+  const candidates = [params.request, params.dual_use_technology_export_request, params.input, params];
+  const message = params.message;
+  if (message && typeof message === "object") {
+    if (message.data && typeof message.data === "object") candidates.push(message.data);
+    if (Array.isArray(message.parts)) {
+      for (const part of message.parts) {
+        if (!part || typeof part !== "object") continue;
+        candidates.push(part.data, part.json, part.content);
+        const parsed = tryParseJsonObject(part.text);
+        if (parsed) candidates.push(parsed);
+      }
+    }
+  }
+  for (const candidate of candidates) {
+    if (isDualUseTechnologyExportRequest(candidate)) return candidate;
+    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
+    if (parsed && isDualUseTechnologyExportRequest(parsed)) return parsed;
+  }
+  return null;
+}
+
+function dualUseTechnologyExportResult(request) {
+  const shipment = request.shipment;
+  const sources = request.dated_sources;
+  const riskVectors = [];
+  let score = 40;
+
+  if (typeof shipment.eccn === "string" && shipment.eccn.trim()) score += 20;
+  else riskVectors.push("No caller-supplied ECCN classification; obtain a classification note before human review.");
+
+  if (shipment.end_user_sector && shipment.end_user_sector !== "unknown") score += 20;
+  else riskVectors.push("End-user sector is missing or unknown; end-use evidence is incomplete.");
+
+  if (sources.length > 0) score += 20;
+  else riskVectors.push("No dated supporting sources were supplied.");
+
+  if (shipment.end_user_sector === "military") {
+    riskVectors.push("Caller declared a military end-user sector; escalate to export-control counsel or the responsible authority.");
+  }
+  if (Array.isArray(shipment.transit_countries) && shipment.transit_countries.length > 0) {
+    riskVectors.push("Transit countries are present; human review must assess diversion and re-export controls for each leg.");
+  }
+
+  const hasMissingEvidence = riskVectors.some(
+    (item) => item.startsWith("No ") || item.startsWith("End-user")
+  );
+  const status =
+    shipment.end_user_sector === "military"
+      ? "escalate"
+      : hasMissingEvidence
+        ? "not_decision_ready"
+        : "decision_ready";
+
+  return {
+    contract_version: VERSION,
+    profile: "dual_use_technology_export",
+    export_risk_triage: {
+      status,
+      score,
+      primary_risk_vectors: riskVectors,
+      evidence_ledger: sources.map(
+        (source) =>
+          `${String(source?.id || "source")}: ${String(source?.source_type || "unspecified")} — ${String(source?.title || "untitled")} (${String(source?.date || "undated")})`
+      )
+    }
+  };
+}
+
+function dualUseTechnologyExportArtifactText(response) {
+  const triage = response.export_risk_triage;
+  const risks = triage.primary_risk_vectors.length
+    ? triage.primary_risk_vectors.map((risk) => `- ${risk}`).join("\n")
+    : "- No structural risk vector was triggered by the supplied fields.";
+  return [
+    "Dual-Use Technology & Export Controls Gate response",
+    "",
+    `Evidence-readiness status: ${triage.status}`,
+    `Structural completeness score: ${triage.score}/100`,
+    "",
+    "Primary risk vectors:",
+    risks,
+    "",
+    "Caller-supplied evidence triage only. No live list retrieval, ECCN/HS classification, license determination, clearance, or legal advice. Human review is required before export or shipment."
+  ].join("\n");
+}
+
+function a2aResultForDualUseTechnologyExport(params) {
+  const structured = structuredDualUseTechnologyExportRequestFromParams(params);
+  if (!structured) {
+    return invalidRequestResult(
+      "dual_use_technology_export",
+      "/message/send",
+      "schemas/v1/dual-use-technology-export-request.schema.json",
+      ["Missing structured dual-use technology export request"]
+    );
+  }
+  const errors = dualUseTechnologyExportErrors(structured);
+  if (errors.length) {
+    return invalidRequestResult(
+      "dual_use_technology_export",
+      "/message/send",
+      "schemas/v1/dual-use-technology-export-request.schema.json",
+      errors
+    );
+  }
+  const response = dualUseTechnologyExportResult(structured);
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "dual-use-technology-export-response",
+        name: "Dual-use technology export controls response",
+        parts: [
+          { text: dualUseTechnologyExportArtifactText(response), mediaType: "text/markdown" },
+          { data: response, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "dual_use_technology_export",
+      schema: "schemas/v1/dual-use-technology-export-request.schema.json",
+      human_review_required: true,
+      response
+    }
+  };
+}
+
+function applyDualUseTechnologyExportProfile(card, request) {
+  const origin = originFromRequest(request);
+  const discovery = profileDiscovery("dual_use_technology_export");
+  card.name = discovery.canonical_product_name;
+  card.documentationUrl = discovery.documentation_url;
+  card.description =
+    "A2A-compatible evidence-readiness gate for dual-use technology export files. Bring the HS code, optional caller-supplied ECCN, origin, destination, transit route, end-user sector, and dated sources; get structural completeness triage and human-review routing. It does not classify goods, retrieve control lists, determine licensing, or authorize an export." +
+    PROVIDER_FRONT_DOOR_POINTER;
+  card.provider.legalEntity.sameAs = discovery.provider_same_as;
+  card.skills = [
+    {
+      id: "dual-use-technology-export-controls",
+      name: "Dual-use technology export-controls evidence gate",
+      description:
+        "Checks whether a caller-supplied technology shipment file contains the classification, route, end-user, and dated-source fields needed for export-control human review.",
+      tags: ["dual-use", "export-controls", "eccn", "hs-code", "end-user", "evidence-readiness", "human-review"],
+      examples: [
+        "Is this semiconductor shipment file complete enough for export-control review?",
+        "Which classification or end-user evidence is missing before this hardware export proceeds?"
+      ],
+      inputModes: ["application/json"],
+      outputModes: ["application/json", "text/markdown"]
+    }
+  ];
+  card.x_agenda_intelligence.product_profile = discovery.product_profile;
+  card.x_agenda_intelligence.canonical_product_name = discovery.canonical_product_name;
+  card.x_agenda_intelligence.wrapper_scope = discovery.wrapper_scope;
+  card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
+  card.x_agenda_intelligence.documentation = discovery.documentation_url;
+  card.x_agenda_intelligence.product_contract = discovery.product_contract;
+  card.x_agenda_intelligence.supported_contracts = discovery.supported_contracts;
+  card.x_agenda_intelligence.buyer_use_cases = discovery.buyer_use_cases;
+  card.x_agenda_intelligence.commercial_positioning = discovery.commercial_positioning;
+  card.x_agenda_intelligence.boundaries = [
+    "No live source or control-list retrieval; caller-supplied evidence only.",
+    "No ECCN, HS-code, sanctions, license, end-use, or destination determination.",
+    "No legal, trade-compliance, customs, sanctions, or investment advice.",
+    "Human review is required before any export, shipment, sale, or commercial action."
   ];
   return card;
 }
@@ -9266,6 +9505,11 @@ async function runProfileRequest(profile, params, request, env = {}) {
       const structured = structuredCriticalMineralsRequestFromParams(params);
       promptChars = structured && structured.decision_question ? structured.decision_question.length : 0;
       modulesUsed = ["critical_minerals_due_diligence"];
+    } else if (profile === "dual_use_technology_export") {
+      result = a2aResultForDualUseTechnologyExport(params);
+      const structured = structuredDualUseTechnologyExportRequestFromParams(params);
+      promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
+      modulesUsed = ["dual_use_technology_export"];
     } else if (profile === "corridor_sanctions_assistant") {
       result = a2aResultForCorridorSanctionsAssistant(params);
       promptChars = extractText(params).length;
@@ -10331,4 +10575,3 @@ export {
   triageForText,
   usageStats
 };
-

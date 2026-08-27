@@ -5407,6 +5407,60 @@ test("critical_minerals_due_diligence profile over A2A and MCP", async () => {
   assert.equal(respPayload.triage_recommendation, "insufficient_information");
 });
 
+test("dual-use technology deployment serves its own signed-card payload", async () => {
+  const env = { AGENT_PROFILE: "dual_use_technology_export" };
+  const cardRequest = new Request(
+    "https://dual-use-technology-export-a2a.example.workers.dev/.well-known/agent-card.json"
+  );
+
+  const response = await handleRequest(cardRequest, env);
+
+  assert.equal(response.status, 200);
+  const card = await response.json();
+  assert.equal(card.name, "Dual-Use Technology & Export Controls Gate");
+  assert.equal(
+    card.capabilities.extensions[0].params.x_agenda_intelligence.product_profile,
+    "dual_use_technology_export"
+  );
+  assert.deepEqual(card.skills.map((skill) => skill.id), ["dual-use-technology-export-controls"]);
+});
+
+test("dual-use technology profile routes structured MCP requests to its declared contract", async () => {
+  const env = { AGENT_PROFILE: "dual_use_technology_export" };
+  const request = new Request("https://dual-use-technology-export-a2a.example.workers.dev/mcp");
+  const response = await handleMcpJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "dual-use-1",
+      method: "tools/call",
+      params: {
+        name: "dual_use_technology_export",
+        arguments: {
+          shipment: {
+            hs_code: "854231",
+            eccn: "3A001",
+            description: "Example integrated circuits",
+            origin: "DE",
+            destination: "KZ",
+            end_user_sector: "civilian"
+          },
+          dated_sources: [
+            { id: "du-1", source_type: "classification_note", title: "Exporter note", date: "2026-08-01" }
+          ],
+          risk_question: "Is this file complete enough for export-control human review?"
+        }
+      }
+    },
+    request,
+    env
+  );
+
+  assert.equal(response.result.isError, false);
+  assert.equal(response.result.structuredContent.profile, "dual_use_technology_export");
+  assert.equal(response.result.structuredContent.export_risk_triage.status, "decision_ready");
+  assert.equal(response.result.structuredContent.export_risk_triage.score, 100);
+});
+
 test("remote MCP HTTP transport handles resources and prompts", async () => {
   const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/mcp");
 
@@ -5448,4 +5502,3 @@ test("remote MCP HTTP transport handles resources and prompts", async () => {
   );
   assert.match(pGet.result.messages[0].content.text, /Critical Minerals Supply/);
 });
-

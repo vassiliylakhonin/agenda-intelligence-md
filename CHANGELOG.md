@@ -2,6 +2,14 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
+## Unreleased
+
+- **fix(worker): route the Dual-Use Technology deployment to its declared profile.** The environment, profile
+  registry, MCP schema, and deployment existed, but the Worker host/env dispatcher fell through to the generic
+  Agenda Intelligence card and response path. The deployment now serves its own A2A Agent Card, structured
+  evidence-readiness response, request guidance, and MCP/A2A routing while retaining mandatory human review and
+  explicit no-classification/no-clearance boundaries.
+
 ## 1.7.1 — 2026-08-27
 
 - **feat(workers): Edge REST routes, streamable MCP resources & prompts, and critical minerals vertical worker.**
