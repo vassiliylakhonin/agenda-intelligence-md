@@ -493,6 +493,7 @@ def test_a2a_example_requests_run_through_stdin_shell():
 
         assert "error" not in response, filename
         result = response["result"]
+        print("RESULT:", result)
         assert result["status"]["state"] == "TASK_STATE_COMPLETED", filename
         assert result["metadata"]["product_profile"] == expected_profile, filename
 

@@ -17,5 +17,3 @@ These cases are **not a benchmark**, **not a factual verification**, and **not a
 | [gtta-global-policy.md](gtta-global-policy.md) | GTTA / global | global-think-tank-analyst | complete (delta +4.5) |
 | [ca-caspian-sanctions.md](ca-caspian-sanctions.md) | CA + Caspian + sanctions | central-asia-caspian-hybrid-intelligence-skill | complete (delta +4.5) |
 | [gulf-me-hormuz-shipping.md](gulf-me-hormuz-shipping.md) | Gulf + ME | gulf-middle-east-hybrid-intelligence-skill | complete (delta +4.0) |
-
-All three v0.9 scaffold cases are now complete. Same model (Claude Sonnet 4.6 adaptive) in every condition. Two cases score +4.5 delta, one scores +4.0 — the variance is from baseline strength (Gulf+ME's Condition A carried a final "not legal advice" disclaimer the others did not), not from Condition B regression. B scores 8/8 in all three. Pattern: structural shell delta consistent in the +4.0 to +4.5 range on this rubric with this model.
