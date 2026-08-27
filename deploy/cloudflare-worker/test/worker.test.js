@@ -2085,7 +2085,7 @@ test("every landing page offers a human a way to make contact", () => {
     const html = landingHtml(new Request(`https://${host}.example.workers.dev/`), {});
     assert.ok(html.includes("Talk to a person"), `${host}: no contact section`);
     assert.ok(html.includes("mailto:vassiliy.lakhonin@gmail.com"), `${host}: no email`);
-    assert.ok(html.includes("https://vassiliylakhonin.github.io"), `${host}: no provider link`);
+    assert.ok(html.includes("https://github.com/vassiliylakhonin"), `${host}: no provider link`);
   }
 });
 
@@ -3149,7 +3149,7 @@ test("cis_secondary_sanctions profile is detected from host and env", () => {
   assert.ok(Array.isArray(card.skills) && card.skills.length === 1);
   assert.equal(card.skills[0].id, "cis-secondary-sanctions-exposure");
   assert.match(card.description, /exporter, importer, trader, freight forwarder, or finance lead/);
-  assert.match(card.description, /vassiliylakhonin\.github\.io\/cis-secondary-sanctions\.html/);
+  assert.match(card.description, /request the redacted intake by email at \S+@\S+/);
   assert.doesNotMatch(card.description, /free one-off pre-deal screening memo/);
   assert.doesNotMatch(card.description, /Targets enhanced due diligence/);
   assert.doesNotMatch(card.description, /decision-readiness score/);

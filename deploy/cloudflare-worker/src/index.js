@@ -79,7 +79,7 @@ const CIS_REVIEW_INTAKE_ORIGIN = "https://vassiliylakhonin.github.io";
 // always find a person. The HTML landing page could not: measured 2026-08-14,
 // none of the eight profiles offered a human any way to make contact, which made
 // every human visit a dead end.
-const PROVIDER_SITE_URL = "https://vassiliylakhonin.github.io";
+const PROVIDER_SITE_URL = "https://github.com/vassiliylakhonin";
 const CIS_REVIEW_INTAKE_RETENTION_SECONDS = 30 * 24 * 60 * 60;
 const CIS_REVIEW_INTAKE_MAX_BYTES = 16 * 1024;
 
@@ -825,11 +825,10 @@ function agentCard(request, env = {}) {
       "Live A2A wrapper for Agenda Intelligence MD, an evidence-discipline MCP layer for strategic-risk agents. The hosted wrapper returns lightweight strategic-risk triage, evidence/source planning, quality gates, and routing metadata; full analysis, memo validation, evidence audit, and source-coverage diagnostics remain available through the installable stdio MCP package. Outputs are evidence triage with mandatory human-review routing before any commercial action; not legal, compliance, sanctions, financial, or investment advice, and not an autonomous decision system.",
     provider: {
       organization: "Vassiliy Lakhonin",
-      url: "https://vassiliylakhonin.github.io/",
+      url: PROVIDER_SITE_URL,
       legalEntity: {
         type: "individual",
         name: "Vassiliy Lakhonin",
-        url: "https://vassiliylakhonin.github.io/verification.json",
         sameAs: [
           "https://github.com/vassiliylakhonin",
           "https://pypi.org/project/agenda-intelligence-md/",
@@ -1867,7 +1866,7 @@ function entityMap(request) {
     schema: "https://entitymap.org/spec/v1.0",
     publisher: {
       name: "Vassiliy Lakhonin",
-      url: "https://vassiliylakhonin.github.io/"
+      url: PROVIDER_SITE_URL
     },
     updatedAt: DISCOVERY_UPDATED_AT,
     url: `${origin}/entitymap.json`,
@@ -2355,8 +2354,8 @@ const PROVIDER_FRONT_DOOR_POINTER =
   "before work starts.";
 
 const CIS_FILE_PREPARATION_POINTER =
-  " For person-led preparation of a company-owned trade file, use the redacted intake at " +
-  "https://vassiliylakhonin.github.io/cis-secondary-sanctions.html. One fixed fee per file is agreed before " +
+  " For person-led preparation of a company-owned trade file, request the redacted intake by email at " +
+  `${SUPPORT_CONTACT_EMAIL}. One fixed fee per file is agreed before ` +
   "work starts; scope, fee and timing are confirmed within one business day.";
 
 const CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE =
@@ -2573,7 +2572,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
     (activeOption
       ? ""
       : "Sanctions-list name-match (Snapshot public-list snapshot, or Watchman / OpenSanctions) is wired but disabled in this deployment, which runs on user-supplied evidence only. ") +
-    "The separate browser intake is for the exporter, importer, trader, freight forwarder, or finance lead who owns the file. It accepts redacted context and routes it to person-led file preparation, not a compliance determination." +
+    "Person-led file preparation is for the exporter, importer, trader, freight forwarder, or finance lead who owns the file. It accepts redacted context and is not a compliance determination." +
     CIS_FILE_PREPARATION_POINTER;
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
