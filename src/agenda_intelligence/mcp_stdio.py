@@ -931,7 +931,11 @@ def _tool_result(payload: JsonDict, is_error: bool = False) -> JsonDict:
 def _capabilities() -> JsonDict:
     # No listChanged: the tool set is fixed at import time from packaged data, so
     # there is nothing to subscribe to via subscriptions/listen.
-    return {"tools": {"listChanged": False}}
+    return {
+        "tools": {"listChanged": False},
+        "resources": {"subscribe": False, "listChanged": False},
+        "prompts": {"listChanged": False},
+    }
 
 
 def _handle_discover(message_id: Any) -> JsonDict:
@@ -980,6 +984,43 @@ def _handle_tools_list(message_id: Any) -> JsonDict:
             "cacheScope": TOOL_LIST_CACHE_SCOPE,
         },
     )
+
+
+def _handle_resources_list(message_id: Any) -> JsonDict:
+    return _response(message_id, {"resources": mcp_server.list_resources()})
+
+
+def _handle_resources_read(message_id: Any, params: JsonDict) -> JsonDict:
+    uri = params.get("uri")
+    if not isinstance(uri, str):
+        return _error(message_id, -32602, "resources/read requires a string uri.")
+    try:
+        content = mcp_server.read_resource(uri)
+        return _response(message_id, {"contents": [content]})
+    except ValueError as exc:
+        return _error(message_id, -32602, str(exc))
+    except Exception as exc:
+        return _error(message_id, -32603, f"Internal error reading resource: {exc}")
+
+
+def _handle_prompts_list(message_id: Any) -> JsonDict:
+    return _response(message_id, {"prompts": mcp_server.list_prompts()})
+
+
+def _handle_prompts_get(message_id: Any, params: JsonDict) -> JsonDict:
+    name = params.get("name")
+    args = params.get("arguments") or {}
+    if not isinstance(name, str):
+        return _error(message_id, -32602, "prompts/get requires a string prompt name.")
+    if not isinstance(args, dict):
+        return _error(message_id, -32602, "prompts/get arguments must be an object.")
+    try:
+        prompt_res = mcp_server.get_prompt(name, args)
+        return _response(message_id, prompt_res)
+    except ValueError as exc:
+        return _error(message_id, -32602, str(exc))
+    except Exception as exc:
+        return _error(message_id, -32603, f"Internal error generating prompt: {exc}")
 
 
 def _protocol_version_error(message_id: Any, requested: str) -> JsonDict:
@@ -1052,6 +1093,14 @@ def handle_message(message: JsonDict) -> Optional[JsonDict]:
         return _handle_tools_list(message_id)
     if method == "tools/call":
         return _handle_tools_call(message_id, params)
+    if method == "resources/list":
+        return _handle_resources_list(message_id)
+    if method == "resources/read":
+        return _handle_resources_read(message_id, params)
+    if method == "prompts/list":
+        return _handle_prompts_list(message_id)
+    if method == "prompts/get":
+        return _handle_prompts_get(message_id, params)
     return _error(message_id, -32601, f"Method not found: {method}")
 
 

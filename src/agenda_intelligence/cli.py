@@ -145,6 +145,7 @@ def cmd_review(args):
     from agenda_intelligence.evidence_review import (
         EvidenceReviewError,
         load_review_manifest,
+        render_review_html,
         render_review_markdown,
     )
 
@@ -162,6 +163,8 @@ def cmd_review(args):
     response = result["response"]
     if args.format == "json":
         rendered = json.dumps(response, indent=2, ensure_ascii=False) + "\n"
+    elif args.format == "html":
+        rendered = render_review_html(packet, response)
     else:
         rendered = render_review_markdown(packet, response)
 
@@ -1247,7 +1250,7 @@ def main():
         help="Review explicit claims against local UTF-8, Markdown, DOCX, or PDF sources",
     )
     p.add_argument("path", help="Evidence review manifest JSON file")
-    p.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    p.add_argument("--format", choices=["markdown", "json", "html"], default="markdown")
     p.add_argument("--out", help="Write output to this file instead of stdout")
     p.add_argument("--strict", action="store_true", help="Exit 1 unless every packet claim is complete")
     p.set_defaults(func=cmd_review)
