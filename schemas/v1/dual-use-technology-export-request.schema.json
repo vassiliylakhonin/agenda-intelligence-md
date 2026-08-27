@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/dual-use-technology-export-request.schema.json",
+  "title": "DualUseTechnologyExportRequest",
+  "description": "Product-grade structured request contract for dual-use technology export control screening.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "shipment",
+    "dated_sources",
+    "risk_question"
+  ],
+  "properties": {
+    "shipment": {
+      "type": "object",
+      "required": ["hs_code", "description", "origin", "destination"],
+      "properties": {
+        "hs_code": { "type": "string" },
+        "eccn": { "type": "string" },
+        "description": { "type": "string" },
+        "origin": { "type": "string" },
+        "destination": { "type": "string" },
+        "transit_countries": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "end_user_sector": {
+          "type": "string",
+          "enum": ["military", "civilian", "aerospace", "semiconductor", "unknown"]
+        }
+      }
+    },
+    "dated_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "source_type", "title", "date"],
+        "properties": {
+          "id": { "type": "string" },
+          "source_type": { "type": "string" },
+          "title": { "type": "string" },
+          "date": { "type": "string", "format": "date" }
+        }
+      }
+    },
+    "risk_question": { "type": "string" }
+  }
+}

@@ -66,6 +66,18 @@ const contractSources = [
     tool: "kazakhstan_market_entry_readiness",
     input: "schemas/v1/market-entry-readiness-request.schema.json",
     output: "schemas/v1/market-entry-readiness-response.schema.json"
+  },
+  {
+    profile: "critical_minerals_due_diligence",
+    tool: "critical_minerals_due_diligence",
+    input: "schemas/v1/critical-minerals-due-diligence-request.schema.json",
+    output: "schemas/v1/critical-minerals-due-diligence-response.schema.json"
+  },
+  {
+    profile: "dual_use_technology_export",
+    tool: "dual_use_technology_export",
+    input: "schemas/v1/dual-use-technology-export-request.schema.json",
+    output: "schemas/v1/dual-use-technology-export-response.schema.json"
   }
 ];
 

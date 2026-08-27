@@ -166,6 +166,14 @@
     "decision_receipt_verify_response": {
       "path": "schemas/v1/decision-receipt-verify-response.schema.json",
       "schema_version": "v1"
+    },
+    "dual_use_technology_export_request": {
+      "path": "schemas/v1/dual-use-technology-export-request.schema.json",
+      "schema_version": "v1"
+    },
+    "dual_use_technology_export_response": {
+      "path": "schemas/v1/dual-use-technology-export-response.schema.json",
+      "schema_version": "v1"
     }
   },
   "product": {
@@ -1829,4 +1837,4 @@
       "trade": "source-requirements/trade.json"
     }
   }
-}
+}\n

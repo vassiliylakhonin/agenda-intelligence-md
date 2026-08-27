@@ -148,6 +148,13 @@ const PROFILE_TOOLS = {
       "or investment commitment. Returns origin traceability status, export quota flags, top supply-chain risks, " +
       "and evidence gaps."
   },
+  dual_use_technology_export: {
+    name: "dual_use_technology_export",
+    argKey: "request",
+    summary:
+      "Triage dual-use technology export controls, ECCN/HS Codes, and transit route risks for unauthorized diversion."
+  },
+
   corridor_sanctions_assistant: {
     name: "corridor_sanctions_assistant",
     argKey: "text",

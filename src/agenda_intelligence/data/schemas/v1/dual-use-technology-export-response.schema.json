@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/dual-use-technology-export-response.schema.json",
+  "title": "DualUseTechnologyExportResponse",
+  "description": "Product-grade structured response contract for dual-use export control screening.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "profile",
+    "export_risk_triage"
+  ],
+  "properties": {
+    "contract_version": { "type": "string", "const": "1.7.1" },
+    "profile": { "type": "string", "const": "dual_use_technology_export" },
+    "export_risk_triage": {
+      "type": "object",
+      "required": ["status", "score", "evidence_ledger"],
+      "properties": {
+        "status": { "type": "string", "enum": ["decision_ready", "not_decision_ready", "escalate"] },
+        "score": { "type": "integer" },
+        "primary_risk_vectors": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "evidence_ledger": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

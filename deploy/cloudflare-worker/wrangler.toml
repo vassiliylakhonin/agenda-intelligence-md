@@ -139,3 +139,17 @@ AGENT_PROFILE = "critical_minerals_due_diligence"
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
 
+
+# Dual-Use Technology & Export Controls Gate - ECCN/HS Code screening.
+# Evidence triage only, no live retrieval. Open free demo (no API key). Deploy with:
+#   wrangler deploy --env dual-use-technology-export
+[env.dual-use-technology-export]
+name = "dual-use-technology-export-a2a"
+workers_dev = true
+
+[env.dual-use-technology-export.vars]
+AGENT_PROFILE = "dual_use_technology_export"
+
+[[env.dual-use-technology-export.kv_namespaces]]
+binding = "AGENDA_USAGE"
+id = "d2228183999246ccbec8aa2d5f130bfc"

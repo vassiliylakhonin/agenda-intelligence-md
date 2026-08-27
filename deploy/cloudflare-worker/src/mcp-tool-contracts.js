@@ -4779,5 +4779,707 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
         }
       }
     }
+  },
+  "critical_minerals_due_diligence": {
+    "critical_minerals_due_diligence": {
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-request.schema.json",
+        "title": "CriticalMineralsDueDiligenceRequest",
+        "description": "Product-grade structured request contract for Critical Minerals & Strategic Raw Materials evidence triage (EU Critical Raw Materials Act, EU CSDDD, US Inflation Reduction Act, and export-control compliance). This schema describes caller-supplied mineral commodity, extraction jurisdiction, processing route, counterparty, and decision-stage inputs. It does not enable live retrieval, factual-truth verification, legal advice, compliance advice, sanctions advice, or ESG certification.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "project_name",
+          "commodity",
+          "origin_jurisdiction",
+          "decision_question",
+          "decision_stage",
+          "supplied_sources"
+        ],
+        "properties": {
+          "project_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "commodity": {
+            "type": "string",
+            "enum": [
+              "lithium",
+              "rare_earth_elements",
+              "nickel",
+              "cobalt",
+              "copper",
+              "graphite",
+              "manganese",
+              "tungsten",
+              "gallium_germanium",
+              "other_critical_mineral"
+            ]
+          },
+          "origin_jurisdiction": {
+            "type": "string",
+            "minLength": 1
+          },
+          "processing_jurisdiction": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target_market": {
+            "type": "string",
+            "enum": [
+              "eu",
+              "us",
+              "uk",
+              "japan_korea",
+              "global",
+              "domestic"
+            ],
+            "default": "global"
+          },
+          "decision_question": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision_stage": {
+            "type": "string",
+            "enum": [
+              "pre_exploration",
+              "pre_offtake_agreement",
+              "pre_processing_contract",
+              "pre_export_shipment",
+              "pre_investment_decision"
+            ]
+          },
+          "counterparties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "role",
+                "jurisdiction"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "mine_operator",
+                    "concession_holder",
+                    "refinery_processor",
+                    "trading_intermediary",
+                    "offtake_buyer",
+                    "transport_logistics_carrier",
+                    "government_entity"
+                  ]
+                },
+                "jurisdiction": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "state_owned_or_affiliated": {
+                  "type": "boolean"
+                },
+                "beneficial_owners": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "sanctions_screening_ref": {
+                  "type": "string"
+                }
+              }
+            },
+            "default": []
+          },
+          "supplied_sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "source_type"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "source_type": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "title": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string"
+                },
+                "issuing_authority": {
+                  "type": "string"
+                },
+                "verified_by_counsel": {
+                  "type": "boolean"
+                },
+                "summary": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "dated_sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "source_type"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "source_type": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "title": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string"
+                },
+                "issuing_authority": {
+                  "type": "string"
+                },
+                "verified_by_counsel": {
+                  "type": "boolean"
+                },
+                "summary": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "assumptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-response.schema.json",
+        "title": "CriticalMineralsDueDiligenceResponse",
+        "description": "Product-grade structured response contract for Critical Minerals & Strategic Raw Materials evidence triage. Provides deterministic evaluation of origin tracing, export-control flags, beneficiation bottleneck risks, and CSDDD compliance gaps. It does not provide legal advice, sanctions advice, compliance advice, financial advice, ESG certification, live retrieval, or factual-truth verification.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "triage_recommendation",
+          "risk_signal",
+          "decision_readiness_score",
+          "decision_readiness_label",
+          "operational_decision",
+          "commodity",
+          "origin_jurisdiction",
+          "traceability_status",
+          "supplied_sources",
+          "minimum_sources_before_go",
+          "evidence_gaps",
+          "watch_next",
+          "human_review_required",
+          "not_advice_notice"
+        ],
+        "properties": {
+          "triage_recommendation": {
+            "type": "string",
+            "enum": [
+              "not_decision_ready",
+              "escalate_before_offtake",
+              "escalate_before_shipment",
+              "escalate_before_investment",
+              "ready_for_human_review",
+              "insufficient_information"
+            ]
+          },
+          "risk_signal": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "medium_high",
+              "high",
+              "unknown"
+            ]
+          },
+          "decision_readiness_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "decision_readiness_label": {
+            "type": "string",
+            "enum": [
+              "insufficient_information",
+              "not_decision_ready",
+              "partial",
+              "review_ready"
+            ]
+          },
+          "operational_decision": {
+            "type": "object",
+            "required": [
+              "decision",
+              "reason_code",
+              "blocking_gaps"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "decision": {
+                "type": "string",
+                "enum": [
+                  "stop",
+                  "request_evidence",
+                  "require_approval",
+                  "continue"
+                ]
+              },
+              "reason_code": {
+                "type": "string"
+              },
+              "blocking_gaps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "next_permitted_action": {
+                "type": "string"
+              }
+            }
+          },
+          "commodity": {
+            "type": "string"
+          },
+          "origin_jurisdiction": {
+            "type": "string"
+          },
+          "processing_jurisdiction": {
+            "type": "string"
+          },
+          "target_market": {
+            "type": "string"
+          },
+          "traceability_status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "partial",
+              "unverified",
+              "obfuscated"
+            ]
+          },
+          "export_control_exposure": {
+            "type": "object",
+            "required": [
+              "quota_restricted",
+              "jurisdiction_risk_flags"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "quota_restricted": {
+                "type": "boolean"
+              },
+              "processing_monopoly_risk": {
+                "type": "boolean"
+              },
+              "jurisdiction_risk_flags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "supplied_sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "minimum_sources_before_go": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence_gaps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "top_risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "category",
+                "severity",
+                "description"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "category": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "high",
+                    "medium",
+                    "low"
+                  ]
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "exposure_layers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "layer",
+                "level",
+                "summary"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "layer": {
+                  "type": "string"
+                },
+                "level": {
+                  "type": "string"
+                },
+                "summary": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "watch_next": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "human_review_required": {
+            "type": "boolean"
+          },
+          "not_advice_notice": {
+            "type": "string"
+          },
+          "readiness_contract": {
+            "$ref": "#/$defs/readiness_contract"
+          },
+          "run_provenance": {
+            "type": "object",
+            "required": [
+              "contract_version",
+              "input_digest",
+              "schema_uri"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "contract_version": {
+                "type": "string"
+              },
+              "input_digest": {
+                "type": "string"
+              },
+              "schema_uri": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "$defs": {
+          "readiness_named_value": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "readiness_contract": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Additive normalized readiness view for cross-profile human-review routing.",
+            "required": [
+              "profile",
+              "status",
+              "score",
+              "routing",
+              "signal",
+              "blocking_gaps",
+              "non_blocking_gaps",
+              "claim_audit",
+              "owner_actions",
+              "watch_next",
+              "human_review_required",
+              "boundary_notice"
+            ],
+            "properties": {
+              "profile": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "type": "string",
+                "minLength": 1
+              },
+              "score": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100
+              },
+              "routing": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/readiness_named_value"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "signal": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/readiness_named_value"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "blocking_gaps": {
+                "type": "array",
+                "items": {}
+              },
+              "non_blocking_gaps": {
+                "type": "array",
+                "items": {}
+              },
+              "claim_audit": {
+                "type": "array",
+                "items": {}
+              },
+              "owner_actions": {
+                "type": "array",
+                "items": {}
+              },
+              "watch_next": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "human_review_required": {
+                "type": "boolean"
+              },
+              "boundary_notice": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "dual_use_technology_export": {
+    "dual_use_technology_export": {
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/dual-use-technology-export-request.schema.json",
+        "title": "DualUseTechnologyExportRequest",
+        "description": "Product-grade structured request contract for dual-use technology export control screening.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "shipment",
+          "dated_sources",
+          "risk_question"
+        ],
+        "properties": {
+          "shipment": {
+            "type": "object",
+            "required": [
+              "hs_code",
+              "description",
+              "origin",
+              "destination"
+            ],
+            "properties": {
+              "hs_code": {
+                "type": "string"
+              },
+              "eccn": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "origin": {
+                "type": "string"
+              },
+              "destination": {
+                "type": "string"
+              },
+              "transit_countries": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "end_user_sector": {
+                "type": "string",
+                "enum": [
+                  "military",
+                  "civilian",
+                  "aerospace",
+                  "semiconductor",
+                  "unknown"
+                ]
+              }
+            }
+          },
+          "dated_sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "source_type",
+                "title",
+                "date"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "source_type": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              }
+            }
+          },
+          "risk_question": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/dual-use-technology-export-response.schema.json",
+        "title": "DualUseTechnologyExportResponse",
+        "description": "Product-grade structured response contract for dual-use export control screening.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contract_version",
+          "profile",
+          "export_risk_triage"
+        ],
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "const": "1.7.1"
+          },
+          "profile": {
+            "type": "string",
+            "const": "dual_use_technology_export"
+          },
+          "export_risk_triage": {
+            "type": "object",
+            "required": [
+              "status",
+              "score",
+              "evidence_ledger"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "decision_ready",
+                  "not_decision_ready",
+                  "escalate"
+                ]
+              },
+              "score": {
+                "type": "integer"
+              },
+              "primary_risk_vectors": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "evidence_ledger": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 });

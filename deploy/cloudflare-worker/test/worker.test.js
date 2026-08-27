@@ -1043,7 +1043,8 @@ test("A2A 1.0 SendMessage returns the required task result wrapper for every act
     ["gulf-maritime-exposure-a2a", "gulf_maritime_exposure"],
     ["kazakhstan-market-entry-readiness-a2a", "market_entry_readiness"],
     ["agent-output-verification-a2a", "agent_output_verification"],
-    ["corridor-sanctions-assistant-a2a", "corridor_sanctions_assistant"]
+    ["corridor-sanctions-assistant-a2a", "corridor_sanctions_assistant"],
+    ["dual-use-technology-export-a2a", "dual_use_technology_export"]
   ];
   const originalLog = console.log;
   console.log = () => {};
@@ -4626,7 +4627,8 @@ test("mcp tools/list embeds complete input and output schemas for every structur
     "agentic_interaction_trust",
     "agent_output_verification",
     "gulf_maritime_exposure",
-    "market_entry_readiness"
+    "market_entry_readiness",
+    "dual_use_technology_export"
   ];
   for (const profile of profiles) {
     for (const tool of mcpToolsForProfile(profile)) {

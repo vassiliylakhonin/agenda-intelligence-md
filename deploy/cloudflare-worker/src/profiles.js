@@ -421,6 +421,32 @@ const criticalMineralsProfile = Object.freeze({
   live_retrieval: PROFILE_LIVE_RETRIEVAL.critical_minerals_due_diligence || { capability_declared: false, upstream_options: [] }
 });
 
+
+const dualUseExportProfile = Object.freeze({
+  profile_key: "dual_use_technology_export",
+  product_profile: "dual_use_technology_export",
+  canonical_product_name: "Dual-Use Technology & Export Controls Gate",
+  documentation_url: "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/use-cases/dual-use-technology-export.md",
+  provider_same_as: SHARED_PROVIDER_SAME_AS,
+  wrapper_scope:
+    "A2A/JSON-RPC discovery, dual-use technology screening, export control risk evaluation (ECCN/HS Codes), routing response only",
+  supported_contracts: frozenArray(["dual_use_technology_export_contract"]),
+  buyer_use_cases: frozenArray([
+    "technology and semiconductor supply chain screening",
+    "export control compliance for cross-border hardware sales",
+    "identification of high-risk transit jurisdictions for dual-use items",
+    "validating end-user statements for military-civilian fusion risk"
+  ]),
+  commercial_positioning:
+    "Shipment details (HS code/ECCN) + transit route + end-user + sources -> deterministic export control risk triage, highlighting unauthorized diversion risks and missing licenses. Sits beside trade compliance officers.",
+  product_contract: productContract({
+    request_schema: "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/dual-use-technology-export-request.schema.json",
+    response_schema: "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/dual-use-technology-export-response.schema.json",
+    demo_input_modes: ["structured_json"]
+  }),
+  live_retrieval: { capability_declared: false, upstream_options: [] }
+});
+
 export const PROFILE_REGISTRY = Object.freeze({
   agenda: Object.freeze({
     profile_key: "agenda",
@@ -439,6 +465,7 @@ export const PROFILE_REGISTRY = Object.freeze({
   kazakhstan_market_entry_readiness: marketEntryReadinessProfile,
   critical_minerals_due_diligence: criticalMineralsProfile,
   critical_minerals: criticalMineralsProfile,
+  dual_use_technology_export: dualUseExportProfile,
   corridor_sanctions_assistant: corridorSanctionsAssistantProfile,
   confidential_project_room: confidentialProjectRoomProfile
 });
@@ -465,3 +492,4 @@ export function profileDiscovery(profile) {
       : undefined
   };
 }
+

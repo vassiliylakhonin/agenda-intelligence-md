@@ -43,7 +43,8 @@ const UNGATED_ENVS = [
   "gulf-maritime-exposure",
   "kazakhstan-market-entry-readiness",
   "critical-minerals-due-diligence",
-  "corridor-sanctions-assistant"
+  "corridor-sanctions-assistant",
+  "dual-use-technology-export"
 ];
 
 const GATED_ENV = "agent-output-verification";
