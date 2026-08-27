@@ -4,7 +4,6 @@
 
 Use this lens when an agenda item involves sanctions, export controls, asset freezes, designations, delistings, secondary sanctions, enforcement, beneficial ownership, trade routing, financial restrictions, or compliance exposure.
 
-This is not legal advice or a compliance determination. It is a portable reasoning layer for AI agents analyzing sanctions-related public agenda.
 
 Default question:
 

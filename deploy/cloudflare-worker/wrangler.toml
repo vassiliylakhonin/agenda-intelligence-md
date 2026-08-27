@@ -42,6 +42,7 @@ name = "cis-secondary-sanctions-a2a"
 workers_dev = true
 
 [env.cis-secondary-sanctions.vars]
+
 AGENT_PROFILE = "cis_secondary_sanctions"
 # Snapshot upstream activation (ADR 0014): $0 server-side name screening against
 # the published compact public-list index. Not a secret (public URL), so kept as

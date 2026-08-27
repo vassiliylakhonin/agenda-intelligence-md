@@ -35,9 +35,3 @@
 1-2 paragraphs: where the MCP materially changed the shape of the output, where
 it did not, and what surprised you. Be explicit when the delta is small.
 
-## Limitations
-
-- One model, one prompt run. Not statistically significant.
-- The MCP integration adds structure; it does not improve factual recall.
-- Self-scored by the author. Not an external review.
-

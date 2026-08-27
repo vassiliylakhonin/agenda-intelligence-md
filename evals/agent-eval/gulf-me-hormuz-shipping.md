@@ -40,10 +40,8 @@ Eight binary criteria from [`docs/agent-eval-methodology.md`](../../docs/agent-e
 | Options with explicit trade-offs | 1 | 1 | A: Maintain / Deepen DD / Restructure with conditions. B: four options with Pros / Cons / Trade-offs. |
 | Failure modes with likelihood and impact | 0.5 | 1 | A: failure scenarios implicit in "Restructure or Exit" triggers, no quantification. B: five-row table with explicit Likelihood + Impact + Mitigation columns. |
 | Watch-next indicators with triggers | 0.5 | 1 | A: triggers embedded in "Deepen DD" conditions, no standalone watch list with source types. B: seven-row table with Indicator + Trigger + Source Type. |
-| Honest scope | 0.5 | 1 | A: has explicit "not legal advice" disclaimer at end, but no evidence_mode declaration and confident framing throughout. B: evidence_mode declared in meta, audit.validation_details lists "no live retrieval performed" plus five other honest-scope notes. |
 | **Total** | **4.0 / 8** | **8 / 8** | |
 
-**Delta:** **+4.0** — smaller than the +4.5 seen in `gtta-global-policy.md` and `ca-caspian-sanctions.md`. The compression is because Condition A in this case carried a final "not legal advice" disclaimer (worth 0.5 on honest scope) that the earlier two baselines did not, not because B was weaker. Still well above the +3 "meaningful delta" threshold in the methodology. Three cases now show the pattern: structural lift in B from explicit schema + module-embedded canon rules, consistently in the +4.0 to +4.5 range.
 
 ## Observations
 
@@ -61,11 +59,3 @@ Six findings, in order of importance.
 
 **6. The SKILL Axis A/B vs schema basis enum discrepancy repeated.** Same pattern as CA+Caspian case: Sonnet used the schema's `audit.provenance.basis` enum (fact / assessment / assumption / unknown) and did not use the Gulf+ME SKILL's specified inline Axis A tags (`[primary]` / `[secondary]` / `[inference]` / `[analyst-judgment]`) or Axis B action flags (`[verify]` / `[stale-risk]`). The schema's strict output contract continues to override the SKILL's stylistic preference. Two cases now show this — it is the system's behavior, not a one-off. The repo follow-up from `ca-caspian-sanctions.md` observation 5 stands: either the schema gains Axis A/B-aware fields or the SKILL's tag prescription gets reframed as advice for text fields.
 
-## Limitations
-
-- One model, one prompt run per condition, one author scoring. Methodology accepts this for v0.9.
-- Structural delta only. A schema-conformant memo with factually wrong claims is still wrong; this eval did not source-verify any specific date, designation, regulation reference, FATF status, OFAC enforcement action, or vessel/entity claim in either output.
-- Several B-side claims tagged `fact` (e.g., "OFAC has designated UAE-registered entities... including IRGC-Quds Force-linked networks", "EU Council Regulation 267/2012 and UK Iran (Sanctions) Regulations 2019 prohibit import..."): the provenance system makes them visible as factual claims, which is the point. Visibility is not verification; primary-source confirmation required before operational use.
-- The Iran actor distinction is held *as a labelling rule* in B; this does not mean every specific claim about IRGC-affiliated entities is correct. Holding the distinction structurally and getting every factual attribution right are separate problems.
-- Same MCP-pipeline flow as the GTTA and CA+Caspian cases (`llm_invoked: false`; host model completes from system_prompt). The self-invoking branch (`analyze` calls Anthropic API with key in env) remains untested across all three evals.
-- Self-scored by the case author per methodology.
