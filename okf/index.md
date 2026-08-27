@@ -10,8 +10,6 @@ audience:
   - technical evaluators
   - project-room and strategic-risk reviewers
 boundaries:
-  - not legal advice
-  - not compliance advice
   - not factual-truth verification
   - not autonomous decision-making
 ---

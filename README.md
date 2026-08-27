@@ -2,6 +2,26 @@
 
 # Agenda Intelligence MD
 
+Agenda Intelligence MD provides deterministic evidence-readiness and compliance workflows via A2A (Agent-to-Agent), MCP (Model Context Protocol), and REST interfaces.
+
+# Hiring Employees vs. Agents
+
+The modern compliance and research landscape is undergoing a fundamental shift:
+
+| | EMPLOYEES | vs. | AGENTS |
+|---|---|---|---|
+| **SCALABILITY** | Hard to scale | | **Infinitely scalable** |
+| **MAINTENANCE** | High | | Low |
+| **COST** | Salaries | | Tokens |
+| **CAPABILITY** | Human intelligence | | Machine intelligence |
+
+Agenda Intelligence MD is built specifically for this **"Infinitely scalable"** paradigm. 
+Why hire a massive compliance team when you can deploy an infinitely scalable swarm of agents for the cost of tokens?
+
+By leveraging our Cloudflare Workers edge architecture, you can instantly scale from 0 to 10,000 concurrent compliance checks globally without HR overhead, management, or fatigue.
+
+## Core concepts
+
 Agenda Intelligence MD is a deterministic evidence-packet linter for claim-backed AI output.
 
 Give it claims, the source IDs each claim relies on, optional quotations, and the supplied source text. It returns broken references, quote mismatches, lexical-support gaps, unmatched numbers, claims that negate the source they cite, and the next reviewer actions.

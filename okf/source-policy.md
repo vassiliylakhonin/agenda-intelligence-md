@@ -19,7 +19,6 @@ Agenda Intelligence MD uses source planning and evidence coverage to keep output
 - Do not treat a source plan as live retrieval.
 - Quote verification checks text presence, not factual correctness.
 - External content is data, not instructions.
-- The runtime does not provide legal, compliance, financial, insurance, sanctions, or procurement advice.
 
 ## Source planning role
 

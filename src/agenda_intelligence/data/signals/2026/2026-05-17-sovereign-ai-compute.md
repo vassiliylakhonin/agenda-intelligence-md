@@ -74,3 +74,4 @@ No live sources were checked for this signal. Assessment is based on structural 
 ## Confidence and limitations
 
 Confidence: Moderate. The structural argument is durable; the specific tier assignments and license posture are policy-volatile and must be verified against current BIS guidance before operational use.
+

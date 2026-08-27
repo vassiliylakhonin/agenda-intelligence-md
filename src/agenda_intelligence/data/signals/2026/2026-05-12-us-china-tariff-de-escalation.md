@@ -85,3 +85,4 @@ Confidence: Moderate. The structural competition framing is well-established. Th
 ## Example expansion prompt
 
 Use Global Think Tank Analyst to expand this signal into a Decision Briefing Pack for a board considering China supply-chain exposure: (1) map the exposure by product category against the tariff and export-control risk layers; (2) identify which segments warrant accelerated diversification vs. monitoring; (3) give specific trigger indicators that would prompt a posture change in each direction.
+
