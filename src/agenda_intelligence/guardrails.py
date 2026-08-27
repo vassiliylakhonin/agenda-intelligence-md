@@ -1,9 +1,9 @@
-
 import json
-import logging
+
 
 class GuardrailViolation(Exception):
     pass
+
 
 class GuardrailEngine:
     def __init__(self):
@@ -25,8 +25,8 @@ class GuardrailEngine:
             payload = json.loads(json_string)
         except json.JSONDecodeError:
             raise GuardrailViolation("Output is not valid JSON.")
-        
+
         for rule in self.rules:
             rule(payload)
-            
+
         return payload
