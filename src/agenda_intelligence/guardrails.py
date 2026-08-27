@@ -7,10 +7,7 @@ class GuardrailViolation(Exception):
 
 class GuardrailEngine:
     def __init__(self):
-        self.rules = [
-            self._rule_no_human_review,
-            self._rule_confidence_threshold
-        ]
+        self.rules = [self._rule_no_human_review, self._rule_confidence_threshold]
 
     def _rule_no_human_review(self, payload: dict):
         if "markdown" in payload or "human" in str(payload).lower():
