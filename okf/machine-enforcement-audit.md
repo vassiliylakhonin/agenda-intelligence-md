@@ -1,18 +1,18 @@
 ---
 type: okf.concept
-title: Claim Audit
+title: Machine Enforcement Audit
 status: active
 updated: 2026-06-29
 canonical_schema: ../schemas/v1/evidence-audit.schema.json
 related:
   - evidence-pack.md
   - source-policy.md
-  - human-review-packet.md
+  - machine-enforcement-audit.md
 ---
 
-# Claim Audit
+# Machine Enforcement Audit
 
-A claim audit maps a claim to the evidence supplied for it and records whether the claim is supported, weak, missing, or not assessable. It is the part of an evidence-readiness packet that can become a reviewer checklist or concierge-service output.
+A claim audit maps a claim to the evidence supplied for it and records whether the claim is supported, weak, missing, or not assessable. It is the part of an evidence-readiness packet that can become a API payload or concierge-service output.
 
 ## Recommended columns
 
@@ -27,4 +27,4 @@ A claim audit maps a claim to the evidence supplied for it and records whether t
 
 ## Boundary
 
-A claim audit does not prove world-truth. It shows whether the available source pack is sufficient for human review.
+A claim audit does not prove world-truth. It shows whether the available source pack is sufficient for machine enforcement.

@@ -391,3 +391,10 @@ See [`ROADMAP.md`](ROADMAP.md) for the active expansion initiatives.
 ## License
 
 [MIT](LICENSE)
+
+
+## Paradigm: Dark Factories (Stage 4)
+This orchestration layer enforces the Stage 4 paradigm across the fleet:
+- **Lingua Franca:** Guardrails
+- **UI:** No human review (Headless A2A Engine)
+- **Agent to Human Ratio:** ∞

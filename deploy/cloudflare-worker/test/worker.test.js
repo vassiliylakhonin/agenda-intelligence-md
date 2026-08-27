@@ -779,7 +779,7 @@ test("MCP server card and DID routes advertise installable MCP identity", async 
 test("entity map and OKF routes expose live domain knowledge artifacts", async () => {
   const map = entityMap(request);
   assert.equal(map.url, "https://agenda-intelligence-a2a.example.workers.dev/entitymap.json");
-  assert.ok(map.entities.some((entity) => entity.slug === "human-review-packet"));
+  assert.ok(map.entities.some((entity) => entity.slug === "machine-enforcement-audit"));
   assert.equal(
     map.entities.find((entity) => entity.slug === "confidential-project-room").url,
     "https://agenda-intelligence-a2a.example.workers.dev/profiles/confidential-project-room"
@@ -802,7 +802,7 @@ test("entity map and OKF routes expose live domain knowledge artifacts", async (
   const entityBody = await entityResponse.json();
   assert.equal(entityResponse.status, 200);
   assert.equal(entityResponse.headers.get("content-type"), "application/json; charset=utf-8");
-  assert.ok(entityBody.entities.some((entity) => entity.slug === "claim-audit"));
+  assert.ok(entityBody.entities.some((entity) => entity.slug === "machine-enforcement-audit"));
 
   const okfResponse = await handleRequest(
     new Request("https://agenda-intelligence-a2a.example.workers.dev/okf/index.md")

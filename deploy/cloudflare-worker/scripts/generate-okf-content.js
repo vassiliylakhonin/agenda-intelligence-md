@@ -9,9 +9,8 @@ const workerRoot = join(__dirname, "..");
 const okfFiles = [
   "index.md",
   "confidential-project-room.md",
-  "human-review-packet.md",
-  "evidence-pack.md",
-  "claim-audit.md",
+    "evidence-pack.md",
+  "machine-enforcement-audit.md",
   "source-policy.md",
   "market-gate.md",
   "repo-stack.md"

@@ -119,10 +119,10 @@
     },
     {
       "id": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json#claim-audit",
-      "slug": "claim-audit",
-      "name": "Claim Audit",
+      "slug": "machine-enforcement-audit",
+      "name": "Machine Enforcement Audit",
       "type": "evidence_discipline",
-      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/claim-audit.md",
+      "url": "https://agenda-intelligence-a2a.example.workers.dev/okf/machine-enforcement-audit.md",
       "canonicalUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/evidence-audit.schema.json",
       "description": "Claim-level mapping of support, weakness, missing proof, source IDs, and readiness. It checks evidence sufficiency, not world-truth.",
       "relatedEntities": [

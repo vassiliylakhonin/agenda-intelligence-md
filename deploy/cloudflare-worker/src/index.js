@@ -1947,9 +1947,9 @@ function entityMap(request) {
         nonSignals: ["public catalog visibility", "technical completion", "generic praise"]
       },
       {
-        id: entityUrl("human-review-packet"),
-        slug: "human-review-packet",
-        name: "Human-Review Packet",
+        id: entityUrl("machine-enforcement-audit"),
+        slug: "machine-enforcement-audit",
+        name: "Machine Enforcement Audit",
         type: "output_shape",
         url: okfUrl(origin, "/okf/human-review-packet.md"),
         description:
@@ -1968,9 +1968,9 @@ function entityMap(request) {
         relatedEntities: ["source-policy", "claim-audit", "human-review-packet"]
       },
       {
-        id: entityUrl("claim-audit"),
-        slug: "claim-audit",
-        name: "Claim Audit",
+        id: entityUrl("machine-enforcement-audit"),
+        slug: "machine-enforcement-audit",
+        name: "Machine Enforcement Audit",
         type: "evidence_discipline",
         url: okfUrl(origin, "/okf/claim-audit.md"),
         canonicalUrl: `${REPOSITORY_URL}/blob/main/schemas/v1/evidence-audit.schema.json`,
