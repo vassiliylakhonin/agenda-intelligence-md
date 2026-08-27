@@ -195,7 +195,7 @@ def match_counterparty(
                     "name": name,
                     "schema": schema,
                     "datasets": ["us_ofac_sdn"],
-                    "source_type": "us_ofac_extract",
+                    "source_type": "ofac_sdn_extract",
                     "score": 0.99,
                     "opensanctions_id": "simulated-" + name.replace(" ", "-").lower(),
                     "topics": ["sanction"],
@@ -203,7 +203,7 @@ def match_counterparty(
                 }
             )
         return {
-            "status": "success",
+            "status": "degraded",
             "matches": simulated_matches,
             "attribution": attribution,
             "queried_at": queried_at,

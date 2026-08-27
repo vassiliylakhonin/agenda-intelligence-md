@@ -3193,7 +3193,11 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
         os_result = upstream_opensanctions.match_counterparty(name=name, jurisdiction=jurisdiction)
         live_retrieval_status = os_result["status"]
         upstream_attribution = os_result.get("attribution")
-        for match in os_result.get("matches", []):
+        # Only a real, successful fetch produces auto-fetched sources. A degraded
+        # or disabled run may still carry matches (the keyless simulation does),
+        # but nothing was retrieved, so there is no CC-BY attribution obligation
+        # and no match to imply to a reviewer.
+        for match in os_result.get("matches", []) if live_retrieval_status == "success" else []:
             mapped_type = match.get("source_type") or "user_provided_note"
             if mapped_type not in supplied_sources:
                 supplied_sources.append(mapped_type)
