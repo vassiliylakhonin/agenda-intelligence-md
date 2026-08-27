@@ -4907,6 +4907,34 @@ test("deploy freshness check dates only the newest deployment", async () => {
   assert.equal(newestDeployedAt("Created:     not-a-date\n"), null);
 });
 
+// Dates were the first answer here and the wrong one: a squash merge writes a
+// new commit with a new date and identical content, and the first one after
+// that check shipped reported all eight environments stale while the tree was
+// byte-identical. The deployment now carries a digest of what was deployed, so
+// rebases and squashes move dates and leave the comparison alone.
+test("deploy freshness reads the content stamp from the newest deployment only", async () => {
+  const { newestDeployedDigest } = await import("../scripts/deploy-all.js");
+
+  const listing = [
+    "Created:     2026-08-26T12:09:32.084Z",
+    "Message:     Vizier ALLOW receipt vrf_974b26ef src aaaaaaaaaaaa",
+    "Created:     2026-08-27T09:00:00.000Z",
+    "Message:     Vizier ALLOW receipt vrf_7bdb60fb src 4f2a91c0d3e8"
+  ].join("\n");
+  assert.equal(newestDeployedDigest(listing), "4f2a91c0d3e8", "a superseded stamp must not count as live");
+
+  // Deployments made before the stamp existed. Unknown is not stale: reporting
+  // drift on them would condemn the whole fleet until the next deploy.
+  assert.equal(newestDeployedDigest("Created:     2026-08-26T12:09:32.084Z\nMessage:     -\n"), null);
+  assert.equal(newestDeployedDigest(""), null);
+
+  // The receipt and the digest share one message and must not consume each
+  // other: the gate is the only path allowed to ship that environment, so a
+  // reader that could see only one of the two would always be missing one.
+  const { newestReceipt } = await import("../scripts/deploy-all.js");
+  assert.equal(newestReceipt(listing), "vrf_7bdb60fb");
+});
+
 // Measured 2026-08-18 on the live workers: a plain-language probe made five of
 // the eight gates answer TASK_STATE_FAILED with `artifacts: []` — no required
 // field, no example, no human to write to. The refusal is correct; the silence

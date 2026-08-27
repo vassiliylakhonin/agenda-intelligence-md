@@ -14,15 +14,24 @@
 // prevention: anyone can still call wrangler directly. It means the next run
 // says so out loud instead of the drift going unnoticed for a week.
 //
-// It also fails if any environment is live on a deployment older than the last
-// commit that touched the bundled source. On 2026-08-26 a `--check` run printed
-// "receipt ok" while agent-output-verification had been sitting on the previous
-// code for eighty-five minutes: the receipt was valid, it was just a receipt for
-// an older version. A per-environment check would have caught it at once, and a
-// receipt on stale code is the more dangerous shape of the two, because it looks
-// exactly like a healthy fleet.
+// It also fails if any environment is live on something other than the current
+// bundled source. On 2026-08-26 a `--check` run printed "receipt ok" while
+// agent-output-verification had been sitting on the previous code for
+// eighty-five minutes: the receipt was valid, it was just a receipt for an older
+// version. A receipt on stale code is the more dangerous of the two shapes,
+// because it looks exactly like a healthy fleet.
+//
+// The comparison is by content, not by clock. The first version of this check
+// compared the deployment date against the last commit touching the bundle, and
+// the first squash merge after it shipped reported all eight environments stale
+// while the tree was byte-identical: a squash writes a new commit with a new
+// date and the same content. So each deploy now stamps the digest of the
+// bundled files into the deployment message, and the check compares digests.
+// Rebases, squashes and cherry-picks move dates and leave the digest alone,
+// which is the property wanted.
 
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 // Everything that ships with a plain `wrangler deploy`.
@@ -57,8 +66,12 @@ function versionFrom(output) {
   return /Current Version ID:\s*(\S+)/.exec(output)?.[1] ?? null;
 }
 
-async function deployUngated(env) {
+async function deployUngated(env, digest) {
   const args = env ? ["--yes", "wrangler", "deploy", "--env", env] : ["--yes", "wrangler", "deploy"];
+  // What the check reads back. Skipped on a dirty tree, where there is no
+  // honest digest to claim — an unstamped deployment reports as unknown, which
+  // is true, rather than as matching a digest it does not have.
+  if (digest) args.push("--message", `${DIGEST_PREFIX} ${digest}`);
   const { code, output } = await run("npx", args);
   const label = env || "(top-level)";
   if (code !== 0) {
@@ -99,10 +112,13 @@ export function newestReceipt(output) {
   return new RegExp(`${RECEIPT_MARKER}\\s+(\\S+)`).exec(newest)?.[1] ?? "(unnamed)";
 }
 
-// The files that end up in the bundle. A README or a test change moves HEAD
-// without changing what is deployed, so measuring staleness against every
-// commit would cry wolf until the warning stopped being read.
+// The files that end up in the bundle. A README or a test change must not read
+// as a stale deployment, so the digest covers these and nothing else.
 const BUNDLED_PATHS = ["src", "wrangler.toml", "package.json"];
+
+// Marks the deployed content in the deployment message, e.g. `src 4f2a91c0d3e8`.
+export const DIGEST_PREFIX = "src";
+const DIGEST_PATTERN = new RegExp(`\\b${DIGEST_PREFIX}\\s+([0-9a-f]{12})\\b`);
 
 // Same block-splitting rule as newestReceipt: only the final block is live, and
 // each block opens with its own creation timestamp.
@@ -115,73 +131,93 @@ export function newestDeployedAt(output) {
 }
 
 // Returns null rather than throwing when git cannot answer — outside a checkout,
-// or a shallow clone with no history for these paths. An unknown baseline must
-// not fail the fleet; it just means this particular check abstains.
-async function lastSourceChange() {
+// or a worktree with no history for these paths. An unknown baseline must not
+// fail the fleet; it means this check abstains.
+//
+// A dirty tree has no digest at all. The bytes being deployed are then in no
+// commit, so any digest computed from HEAD would describe something else, and a
+// confident answer built on the wrong baseline is worse than no answer.
+export async function bundleDigest() {
   const repoDir = fileURLToPath(new URL("..", import.meta.url));
-  const log = await run("git", ["log", "-1", "--format=%h %cI", "--", ...BUNDLED_PATHS], { cwd: repoDir });
-  if (log.code !== 0) return null;
-  const [commit, iso] = log.output.trim().split(/\s+/);
-  const at = Date.parse(iso ?? "");
-  if (!commit || Number.isNaN(at)) return null;
-
-  // A deploy from a dirty tree ships code that is in no commit at all, so the
-  // commit time understates how new the live version really is. Say so instead
-  // of reporting a confident answer built on the wrong baseline.
   const dirty = await run("git", ["status", "--porcelain", "--", ...BUNDLED_PATHS], { cwd: repoDir });
-  return { commit, at, iso, dirty: dirty.code === 0 && dirty.output.trim().length > 0 };
+  if (dirty.code !== 0) return { digest: null, reason: "git could not read the working tree" };
+  if (dirty.output.trim()) return { digest: null, reason: "the working tree is dirty" };
+
+  // ls-tree prints mode, type, object id and path per entry, so its output is a
+  // faithful description of the bundled content and of nothing else.
+  const listed = await run("git", ["ls-tree", "-r", "HEAD", "--", ...BUNDLED_PATHS], { cwd: repoDir });
+  if (listed.code !== 0 || !listed.output.trim()) {
+    return { digest: null, reason: "git could not list the bundled files" };
+  }
+  return { digest: createHash("sha256").update(listed.output).digest("hex").slice(0, 12), reason: null };
 }
 
 const shortTime = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
 
-function ageLabel(ms) {
-  const minutes = Math.round(ms / 60000);
-  if (minutes < 60) return `${minutes}m`;
-  return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, "0")}m`;
+// The digest a deployment message claims, or null when it predates the stamp.
+export function newestDeployedDigest(output) {
+  const blocks = String(output).split(/\nCreated:\s+/).slice(1);
+  const newest = blocks[blocks.length - 1] ?? "";
+  return DIGEST_PATTERN.exec(newest)?.[1] ?? null;
 }
 
 async function checkFreshness() {
-  const source = await lastSourceChange();
-  if (!source) {
-    console.log("\nfreshness  skipped — git could not date the bundled source.");
+  const { digest, reason } = await bundleDigest();
+  if (!digest) {
+    console.log(`\nfreshness  skipped — ${reason}.`);
     return true;
   }
-  console.log(`\nlast source commit  ${source.commit}  ${shortTime(source.at)}`);
-  if (source.dirty) {
-    console.log("            (working tree is dirty; a deploy from it carries code that is in no commit)");
-  }
+  console.log(`\nbundled source  ${DIGEST_PREFIX} ${digest}`);
 
-  let allFresh = true;
+  let allCurrent = true;
+  let unstamped = 0;
   for (const env of [...UNGATED_ENVS, GATED_ENV]) {
     const args = env
       ? ["--yes", "wrangler", "deployments", "list", "--env", env]
       : ["--yes", "wrangler", "deployments", "list"];
     const { code, output } = await run("npx", args);
     const label = env || "(top-level)";
-    const deployedAt = code === 0 ? newestDeployedAt(output) : null;
-    if (deployedAt === null) {
+    if (code !== 0) {
       console.error(`unknown  ${label.padEnd(36)} could not read the deployment list`);
-      allFresh = false;
+      allCurrent = false;
       continue;
     }
-    if (deployedAt >= source.at) {
-      console.log(`fresh    ${label.padEnd(36)} ${shortTime(deployedAt)}`);
+    const live = newestDeployedDigest(output);
+    const at = newestDeployedAt(output);
+    const when = at === null ? "" : `  ${shortTime(at)}`;
+
+    // A deployment made before this stamp existed carries no digest. That is
+    // unknown, not stale: reporting it as drift would condemn every environment
+    // until the next deploy, and a check that always fails is a check nobody
+    // reads. It is still said out loud once, because an unstamped fleet is not
+    // being checked.
+    if (live === null) {
+      console.log(`unstamped ${label.padEnd(35)}${when}`);
+      unstamped += 1;
       continue;
     }
-    console.error(
-      `STALE    ${label.padEnd(36)} ${shortTime(deployedAt)}  ` +
-        `${ageLabel(source.at - deployedAt)} behind ${source.commit}`
-    );
-    allFresh = false;
+    if (live === digest) {
+      console.log(`current  ${label.padEnd(36)}${when}`);
+      continue;
+    }
+    console.error(`STALE    ${label.padEnd(36)}${when}  live ${DIGEST_PREFIX} ${live}`);
+    allCurrent = false;
   }
-  if (!allFresh) {
+
+  if (unstamped) {
+    console.log(
+      `\n${unstamped} environment(s) were deployed before the content stamp existed, ` +
+        "so their code was not checked.\nThe next `npm run deploy:all` stamps them."
+    );
+  }
+  if (!allCurrent) {
     console.error(
-      "\nAn environment is live on code older than the last source commit.\n" +
+      "\nAn environment is live on different code from the current bundle.\n" +
         "Run `npm run deploy:all` to bring the fleet up, or deploy the named env alone.\n" +
         `For ${GATED_ENV} use the gate, never wrangler directly.`
     );
   }
-  return allFresh;
+  return allCurrent;
 }
 
 async function checkReceipt() {
@@ -207,8 +243,10 @@ async function main() {
   const checkOnly = process.argv.slice(2).includes("--check");
 
   if (!checkOnly) {
+    const { digest, reason } = await bundleDigest();
+    if (!digest) console.warn(`Deploying without a content stamp: ${reason}.`);
     for (const env of UNGATED_ENVS) {
-      if (!(await deployUngated(env))) {
+      if (!(await deployUngated(env, digest))) {
         process.exitCode = 1;
         return;
       }
