@@ -1,0 +1,2210 @@
+{
+  "metadata": {
+    "title": "Agenda Intelligence MD - Infinite Fleet Catalog",
+    "generated_at": "2026-08-27T17:14:24Z",
+    "total_agents": 100,
+    "theme": "Hiring Agents, Not Employees"
+  },
+  "agents": [
+    {
+      "name": "global_esg_auditor",
+      "description": "Autonomously evaluates Global ESG Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_esg_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global ESG Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_esg_auditor",
+      "description": "Autonomously evaluates EU ESG Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_esg_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU ESG Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_esg_auditor",
+      "description": "Autonomously evaluates US ESG Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_esg_auditor_request": {
+            "type": "object",
+            "description": "Payload for US ESG Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_esg_auditor",
+      "description": "Autonomously evaluates APAC ESG Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_esg_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC ESG Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_esg_auditor",
+      "description": "Autonomously evaluates LATAM ESG Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_esg_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM ESG Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_crypto_aml_auditor",
+      "description": "Autonomously evaluates Global Crypto AML Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_crypto_aml_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Crypto AML Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_crypto_aml_auditor",
+      "description": "Autonomously evaluates EU Crypto AML Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_crypto_aml_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Crypto AML Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_crypto_aml_auditor",
+      "description": "Autonomously evaluates US Crypto AML Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_crypto_aml_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Crypto AML Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_crypto_aml_auditor",
+      "description": "Autonomously evaluates APAC Crypto AML Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_crypto_aml_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Crypto AML Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_crypto_aml_auditor",
+      "description": "Autonomously evaluates LATAM Crypto AML Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_crypto_aml_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Crypto AML Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_real_estate_dd_auditor",
+      "description": "Autonomously evaluates Global Real Estate DD Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_real_estate_dd_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Real Estate DD Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_real_estate_dd_auditor",
+      "description": "Autonomously evaluates EU Real Estate DD Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_real_estate_dd_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Real Estate DD Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_real_estate_dd_auditor",
+      "description": "Autonomously evaluates US Real Estate DD Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_real_estate_dd_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Real Estate DD Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_real_estate_dd_auditor",
+      "description": "Autonomously evaluates APAC Real Estate DD Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_real_estate_dd_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Real Estate DD Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_real_estate_dd_auditor",
+      "description": "Autonomously evaluates LATAM Real Estate DD Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_real_estate_dd_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Real Estate DD Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_supply_chain_auditor",
+      "description": "Autonomously evaluates Global Supply Chain Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_supply_chain_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Supply Chain Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_supply_chain_auditor",
+      "description": "Autonomously evaluates EU Supply Chain Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_supply_chain_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Supply Chain Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_supply_chain_auditor",
+      "description": "Autonomously evaluates US Supply Chain Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_supply_chain_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Supply Chain Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_supply_chain_auditor",
+      "description": "Autonomously evaluates APAC Supply Chain Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_supply_chain_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Supply Chain Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_supply_chain_auditor",
+      "description": "Autonomously evaluates LATAM Supply Chain Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_supply_chain_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Supply Chain Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_maritime_shipping_auditor",
+      "description": "Autonomously evaluates Global Maritime Shipping Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_maritime_shipping_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Maritime Shipping Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_maritime_shipping_auditor",
+      "description": "Autonomously evaluates EU Maritime Shipping Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_maritime_shipping_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Maritime Shipping Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_maritime_shipping_auditor",
+      "description": "Autonomously evaluates US Maritime Shipping Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_maritime_shipping_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Maritime Shipping Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_maritime_shipping_auditor",
+      "description": "Autonomously evaluates APAC Maritime Shipping Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_maritime_shipping_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Maritime Shipping Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_maritime_shipping_auditor",
+      "description": "Autonomously evaluates LATAM Maritime Shipping Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_maritime_shipping_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Maritime Shipping Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_aviation_auditor",
+      "description": "Autonomously evaluates Global Aviation Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_aviation_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Aviation Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_aviation_auditor",
+      "description": "Autonomously evaluates EU Aviation Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_aviation_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Aviation Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_aviation_auditor",
+      "description": "Autonomously evaluates US Aviation Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_aviation_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Aviation Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_aviation_auditor",
+      "description": "Autonomously evaluates APAC Aviation Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_aviation_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Aviation Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_aviation_auditor",
+      "description": "Autonomously evaluates LATAM Aviation Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_aviation_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Aviation Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_healthcare_auditor",
+      "description": "Autonomously evaluates Global Healthcare Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_healthcare_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Healthcare Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_healthcare_auditor",
+      "description": "Autonomously evaluates EU Healthcare Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_healthcare_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Healthcare Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_healthcare_auditor",
+      "description": "Autonomously evaluates US Healthcare Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_healthcare_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Healthcare Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_healthcare_auditor",
+      "description": "Autonomously evaluates APAC Healthcare Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_healthcare_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Healthcare Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_healthcare_auditor",
+      "description": "Autonomously evaluates LATAM Healthcare Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_healthcare_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Healthcare Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_pharmaceutical_auditor",
+      "description": "Autonomously evaluates Global Pharmaceutical Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_pharmaceutical_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Pharmaceutical Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_pharmaceutical_auditor",
+      "description": "Autonomously evaluates EU Pharmaceutical Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_pharmaceutical_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Pharmaceutical Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_pharmaceutical_auditor",
+      "description": "Autonomously evaluates US Pharmaceutical Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_pharmaceutical_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Pharmaceutical Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_pharmaceutical_auditor",
+      "description": "Autonomously evaluates APAC Pharmaceutical Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_pharmaceutical_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Pharmaceutical Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_pharmaceutical_auditor",
+      "description": "Autonomously evaluates LATAM Pharmaceutical Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_pharmaceutical_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Pharmaceutical Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_defense_auditor",
+      "description": "Autonomously evaluates Global Defense Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_defense_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Defense Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_defense_auditor",
+      "description": "Autonomously evaluates EU Defense Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_defense_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Defense Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_defense_auditor",
+      "description": "Autonomously evaluates US Defense Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_defense_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Defense Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_defense_auditor",
+      "description": "Autonomously evaluates APAC Defense Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_defense_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Defense Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_defense_auditor",
+      "description": "Autonomously evaluates LATAM Defense Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_defense_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Defense Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_energy_auditor",
+      "description": "Autonomously evaluates Global Energy Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_energy_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Energy Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_energy_auditor",
+      "description": "Autonomously evaluates EU Energy Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_energy_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Energy Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_energy_auditor",
+      "description": "Autonomously evaluates US Energy Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_energy_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Energy Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_energy_auditor",
+      "description": "Autonomously evaluates APAC Energy Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_energy_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Energy Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_energy_auditor",
+      "description": "Autonomously evaluates LATAM Energy Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_energy_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Energy Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_agriculture_auditor",
+      "description": "Autonomously evaluates Global Agriculture Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_agriculture_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Agriculture Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_agriculture_auditor",
+      "description": "Autonomously evaluates EU Agriculture Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_agriculture_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Agriculture Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_agriculture_auditor",
+      "description": "Autonomously evaluates US Agriculture Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_agriculture_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Agriculture Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_agriculture_auditor",
+      "description": "Autonomously evaluates APAC Agriculture Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_agriculture_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Agriculture Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_agriculture_auditor",
+      "description": "Autonomously evaluates LATAM Agriculture Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_agriculture_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Agriculture Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_fintech_auditor",
+      "description": "Autonomously evaluates Global Fintech Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_fintech_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Fintech Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_fintech_auditor",
+      "description": "Autonomously evaluates EU Fintech Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_fintech_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Fintech Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_fintech_auditor",
+      "description": "Autonomously evaluates US Fintech Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_fintech_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Fintech Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_fintech_auditor",
+      "description": "Autonomously evaluates APAC Fintech Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_fintech_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Fintech Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_fintech_auditor",
+      "description": "Autonomously evaluates LATAM Fintech Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_fintech_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Fintech Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_telecom_auditor",
+      "description": "Autonomously evaluates Global Telecom Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_telecom_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Telecom Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_telecom_auditor",
+      "description": "Autonomously evaluates EU Telecom Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_telecom_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Telecom Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_telecom_auditor",
+      "description": "Autonomously evaluates US Telecom Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_telecom_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Telecom Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_telecom_auditor",
+      "description": "Autonomously evaluates APAC Telecom Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_telecom_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Telecom Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_telecom_auditor",
+      "description": "Autonomously evaluates LATAM Telecom Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_telecom_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Telecom Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_media_auditor",
+      "description": "Autonomously evaluates Global Media Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_media_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Media Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_media_auditor",
+      "description": "Autonomously evaluates EU Media Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_media_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Media Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_media_auditor",
+      "description": "Autonomously evaluates US Media Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_media_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Media Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_media_auditor",
+      "description": "Autonomously evaluates APAC Media Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_media_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Media Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_media_auditor",
+      "description": "Autonomously evaluates LATAM Media Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_media_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Media Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_automotive_auditor",
+      "description": "Autonomously evaluates Global Automotive Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_automotive_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Automotive Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_automotive_auditor",
+      "description": "Autonomously evaluates EU Automotive Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_automotive_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Automotive Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_automotive_auditor",
+      "description": "Autonomously evaluates US Automotive Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_automotive_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Automotive Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_automotive_auditor",
+      "description": "Autonomously evaluates APAC Automotive Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_automotive_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Automotive Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_automotive_auditor",
+      "description": "Autonomously evaluates LATAM Automotive Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_automotive_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Automotive Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_logistics_auditor",
+      "description": "Autonomously evaluates Global Logistics Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_logistics_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Logistics Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_logistics_auditor",
+      "description": "Autonomously evaluates EU Logistics Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_logistics_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Logistics Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_logistics_auditor",
+      "description": "Autonomously evaluates US Logistics Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_logistics_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Logistics Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_logistics_auditor",
+      "description": "Autonomously evaluates APAC Logistics Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_logistics_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Logistics Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_logistics_auditor",
+      "description": "Autonomously evaluates LATAM Logistics Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_logistics_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Logistics Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_retail_auditor",
+      "description": "Autonomously evaluates Global Retail Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_retail_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Retail Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_retail_auditor",
+      "description": "Autonomously evaluates EU Retail Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_retail_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Retail Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_retail_auditor",
+      "description": "Autonomously evaluates US Retail Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_retail_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Retail Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_retail_auditor",
+      "description": "Autonomously evaluates APAC Retail Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_retail_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Retail Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_retail_auditor",
+      "description": "Autonomously evaluates LATAM Retail Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_retail_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Retail Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_gaming_auditor",
+      "description": "Autonomously evaluates Global Gaming Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_gaming_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Gaming Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_gaming_auditor",
+      "description": "Autonomously evaluates EU Gaming Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_gaming_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Gaming Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_gaming_auditor",
+      "description": "Autonomously evaluates US Gaming Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_gaming_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Gaming Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_gaming_auditor",
+      "description": "Autonomously evaluates APAC Gaming Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_gaming_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Gaming Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_gaming_auditor",
+      "description": "Autonomously evaluates LATAM Gaming Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_gaming_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Gaming Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_biotech_auditor",
+      "description": "Autonomously evaluates Global Biotech Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_biotech_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Biotech Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_biotech_auditor",
+      "description": "Autonomously evaluates EU Biotech Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_biotech_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Biotech Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_biotech_auditor",
+      "description": "Autonomously evaluates US Biotech Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_biotech_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Biotech Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_biotech_auditor",
+      "description": "Autonomously evaluates APAC Biotech Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_biotech_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Biotech Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_biotech_auditor",
+      "description": "Autonomously evaluates LATAM Biotech Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_biotech_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Biotech Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "global_semiconductor_auditor",
+      "description": "Autonomously evaluates Global Semiconductor Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "global_semiconductor_auditor_request": {
+            "type": "object",
+            "description": "Payload for Global Semiconductor Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "eu_semiconductor_auditor",
+      "description": "Autonomously evaluates EU Semiconductor Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eu_semiconductor_auditor_request": {
+            "type": "object",
+            "description": "Payload for EU Semiconductor Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "us_semiconductor_auditor",
+      "description": "Autonomously evaluates US Semiconductor Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "us_semiconductor_auditor_request": {
+            "type": "object",
+            "description": "Payload for US Semiconductor Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "apac_semiconductor_auditor",
+      "description": "Autonomously evaluates APAC Semiconductor Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apac_semiconductor_auditor_request": {
+            "type": "object",
+            "description": "Payload for APAC Semiconductor Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    },
+    {
+      "name": "latam_semiconductor_auditor",
+      "description": "Autonomously evaluates LATAM Semiconductor Compliance Agent evidence packets and readiness.",
+      "capabilities": [
+        "evidence_readiness",
+        "pre_action_check"
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latam_semiconductor_auditor_request": {
+            "type": "object",
+            "description": "Payload for LATAM Semiconductor Compliance Agent"
+          }
+        }
+      },
+      "pricing": {
+        "model": "per_token",
+        "estimate": "$0.001 / check"
+      },
+      "status": "active"
+    }
+  ]
+}

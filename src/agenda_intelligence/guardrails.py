@@ -1,16 +1,13 @@
-
 import json
-import logging
+
 
 class GuardrailViolation(Exception):
     pass
 
+
 class GuardrailEngine:
     def __init__(self):
-        self.rules = [
-            self._rule_no_human_review,
-            self._rule_confidence_threshold
-        ]
+        self.rules = [self._rule_no_human_review, self._rule_confidence_threshold]
 
     def _rule_no_human_review(self, payload: dict):
         if "markdown" in payload or "human" in str(payload).lower():
@@ -25,8 +22,8 @@ class GuardrailEngine:
             payload = json.loads(json_string)
         except json.JSONDecodeError:
             raise GuardrailViolation("Output is not valid JSON.")
-        
+
         for rule in self.rules:
             rule(payload)
-            
+
         return payload
