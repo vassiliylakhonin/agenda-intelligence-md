@@ -61,8 +61,14 @@ does not include source text in its JSON or Markdown result. See
 Install the pinned release without cloning the source and check your own packet:
 
 ```text
-pip install "agenda-intelligence-md==1.6.0"
+pip install "agenda-intelligence-md==1.7.0"
 agenda-intelligence check /path/to/evidence-packet.json --strict
+```
+
+Generate an interactive standalone HTML reviewer report from local documents:
+
+```bash
+.venv/bin/agenda-intelligence review examples/evidence-review/manifest.json --format html
 ```
 
 ## The evidence-packet contract
@@ -102,17 +108,65 @@ Russian, and Arabic negation cues are checked. The deterministic check still
 does not resolve morphology, translation, cross-language support, paraphrases,
 or semantic roles. Those remain model or reviewer tasks.
 
+## Agent Guardrail & Self-Correction Loop
+
+Validate packets and automatically run agent self-correction feedback loops in LangChain, LlamaIndex, CrewAI, DSPy, or vanilla LLM loops:
+
+```python
+from agenda_intelligence.integrations import EvidencePacketGuardrail
+
+guardrail = EvidencePacketGuardrail(strict=True, max_repair_attempts=2)
+
+# Direct check
+result = guardrail.check(packet_json)
+if not guardrail.is_complete(result):
+    repair_prompt = guardrail.get_repair_prompt(packet_json, result)
+    # Provide repair_prompt back to LLM to revise output
+
+# Automated retry loop with custom LLM generation function
+final_packet, success, repair_history = guardrail.validate_or_repair(
+    packet_json,
+    llm_repair_fn=lambda prompt: my_llm_chain.invoke({"prompt": prompt}),
+)
+```
+
+## GitHub Action CI Integration
+
+Add deterministic evidence linting to your repository CI workflow (`.github/workflows/evidence-lint.yml`):
+
+```yaml
+name: Evidence Lint
+on: [push, pull_request]
+
+jobs:
+  lint-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate evidence packet
+        uses: vassiliylakhonin/agenda-intelligence-md@main
+        with:
+          path: 'evidence/packet.json'
+          command: 'check'
+          strict: 'true'
+```
+
 ## Python API
 
 ```python
 import json
 from pathlib import Path
 
-from agenda_intelligence.services import check_evidence_packet
+from agenda_intelligence.services import check_evidence_packet, build_repair_prompt
 
 packet = json.loads(Path("examples/evidence-packet/request.json").read_text())
 result = check_evidence_packet(packet)
 print(result["response"]["packet_status"])
+
+# Generate actionable markdown repair instructions for an agent
+if result["response"]["packet_status"] != "packet_complete":
+    prompt = build_repair_prompt(packet, result["response"])
+    print(prompt)
 ```
 
 The service layer is stateless. It does not persist packet contents or fetch missing sources.

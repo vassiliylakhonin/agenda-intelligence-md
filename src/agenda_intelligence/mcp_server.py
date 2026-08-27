@@ -569,3 +569,175 @@ def generate_repair_prompt(packet_json: dict) -> dict:
         "packet_status": response.get("packet_status"),
         "prompt": prompt,
     }
+
+
+# ---------------------------------------------------------------------------
+# MCP Resources & Prompts (Native protocol access)
+# ---------------------------------------------------------------------------
+
+
+def list_resources() -> list[dict]:
+    """List available MCP resources under the agenda:// URI scheme."""
+    manifest = _load_manifest()
+    resources_list = [
+        {
+            "uri": "agenda://manifest",
+            "name": "Agenda Intelligence Manifest",
+            "description": "The complete agent-manifest.json catalog, tools, schemas, and lens definitions.",
+            "mimeType": "application/json",
+        },
+        {
+            "uri": "agenda://protocol/core",
+            "name": "Core Analysis Protocol",
+            "description": "The core Agenda-Intelligence analysis and evidence-discipline protocol specification.",
+            "mimeType": "text/markdown",
+        },
+    ]
+    for key, val in manifest.get("schemas", {}).items():
+        resources_list.append(
+            {
+                "uri": f"agenda://schemas/v1/{key}",
+                "name": f"Schema: {key}",
+                "description": f"v1 JSON schema for {key} ({val.get('path')})",
+                "mimeType": "application/json",
+            }
+        )
+    return resources_list
+
+
+def read_resource(uri: str) -> dict:
+    """Read an MCP resource by URI."""
+    if uri == "agenda://manifest":
+        manifest = _load_manifest()
+        return {
+            "uri": uri,
+            "mimeType": "application/json",
+            "text": json.dumps(manifest, indent=2, ensure_ascii=False),
+        }
+    if uri == "agenda://protocol/core":
+        proto = get_protocol("entrypoint")
+        return {
+            "uri": uri,
+            "mimeType": "text/markdown",
+            "text": proto.get("protocol") or "",
+        }
+    if uri.startswith("agenda://schemas/v1/"):
+        schema_key = uri[len("agenda://schemas/v1/") :]
+        manifest = _load_manifest()
+        schemas = manifest.get("schemas", {})
+        if schema_key in schemas:
+            schema_file = schemas[schema_key]["path"].split("/")[-1]
+            schema_data = _load_schema(schema_file)
+            return {
+                "uri": uri,
+                "mimeType": "application/json",
+                "text": json.dumps(schema_data, indent=2, ensure_ascii=False),
+            }
+        if not schema_key.endswith(".json"):
+            schema_file = f"{schema_key.replace('_', '-')}.schema.json"
+        else:
+            schema_file = schema_key
+        try:
+            schema_data = _load_schema(schema_file)
+            return {
+                "uri": uri,
+                "mimeType": "application/json",
+                "text": json.dumps(schema_data, indent=2, ensure_ascii=False),
+            }
+        except FileNotFoundError:
+            raise ValueError(f"Unknown schema resource: {uri}")
+    raise ValueError(f"Unknown resource URI: {uri}")
+
+
+def list_prompts() -> list[dict]:
+    """List available prompt templates for LLM workflows."""
+    return [
+        {
+            "name": "draft_evidence_memo",
+            "description": "Draft an executive decision memo adhering to the Agenda evidence protocol.",
+            "arguments": [
+                {"name": "topic", "description": "The specific question or decision topic", "required": True},
+                {
+                    "name": "decision_context",
+                    "description": "Context and high-stakes decision moment",
+                    "required": False,
+                },
+                {
+                    "name": "audience",
+                    "description": "Target audience (founder, analyst, policymaker, investor)",
+                    "required": False,
+                },
+                {
+                    "name": "depth",
+                    "description": "Analysis depth (quick_brief, standard, decision_pack)",
+                    "required": False,
+                },
+            ],
+        },
+        {
+            "name": "self_correct_packet",
+            "description": "Analyze evidence packet validation diagnostics and produce a corrected packet.",
+            "arguments": [
+                {"name": "packet_json", "description": "The JSON string of the evidence packet", "required": True},
+            ],
+        },
+        {
+            "name": "audit_evidence_claims",
+            "description": "Audit claims against cited evidence packs for support, coverage, and orphan references.",
+            "arguments": [
+                {"name": "claims", "description": "List or description of claims to audit", "required": True},
+            ],
+        },
+    ]
+
+
+def get_prompt(name: str, arguments: Optional[dict] = None) -> dict:
+    """Generate prompt messages for a given prompt template."""
+    args = arguments or {}
+    if name == "draft_evidence_memo":
+        topic = args.get("topic", "")
+        context = args.get("decision_context", "Not specified")
+        audience = args.get("audience", "investor")
+        depth = args.get("depth", "decision_pack")
+        prompt_text = (
+            f"Please draft an evidence-backed executive intelligence memo on the following topic:\n\n"
+            f"**Topic**: {topic}\n"
+            f"**Decision Context**: {context}\n"
+            f"**Audience**: {audience}\n"
+            f"**Depth**: {depth}\n\n"
+            "Requirements:\n"
+            "1. Every factual assertion must be backed by explicit claims and verifiable source citations.\n"
+            "2. State clear counterarguments, alternative explanations, and falsification triggers.\n"
+            "3. Ensure all numeric tokens in claims match cited source excerpts exactly.\n"
+            "4. Structure the output according to the Agenda-Intelligence memo schema."
+        )
+        return {
+            "description": f"Draft evidence memo for: {topic}",
+            "messages": [{"role": "user", "content": {"type": "text", "text": prompt_text}}],
+        }
+    if name == "self_correct_packet":
+        packet_raw = args.get("packet_json", "{}")
+        try:
+            packet_data = json.loads(packet_raw) if isinstance(packet_raw, str) else packet_raw
+        except json.JSONDecodeError:
+            packet_data = {}
+        repair_instructions = _services.build_repair_prompt(packet_data)
+        return {
+            "description": "Self-correct evidence packet from validation diagnostics",
+            "messages": [{"role": "user", "content": {"type": "text", "text": repair_instructions}}],
+        }
+    if name == "audit_evidence_claims":
+        claims = args.get("claims", "")
+        prompt_text = (
+            f"Please audit the following analytical claims against their evidence sources:\n\n"
+            f"{claims}\n\n"
+            "Evaluate:\n"
+            "1. Grounding and lexical coverage against cited sources.\n"
+            "2. Verbatim accuracy of quoted excerpts (using `...` for omitted words).\n"
+            "3. Numeric consistency and polarity/negation agreement."
+        )
+        return {
+            "description": "Audit claims against evidence sources",
+            "messages": [{"role": "user", "content": {"type": "text", "text": prompt_text}}],
+        }
+    raise ValueError(f"Unknown prompt name: {name}")

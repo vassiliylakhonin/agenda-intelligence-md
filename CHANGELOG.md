@@ -2,7 +2,20 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
-## Unreleased
+## 1.7.0 — 2026-08-27
+
+- **feat(review): interactive standalone HTML report (`--format html`).**
+  `agenda-intelligence review` now supports `--format html`, generating a self-contained, offline HTML report
+  with status badges, interactive claim-to-source highlighting, clickable reviewer action checkboxes,
+  and dark/light mode responsiveness.
+
+- **feat(ingestion): native CSV/TSV table parsing, local HTML stripping, and scanned PDF layer detection.**
+  `evidence_review` natively parses `.csv` and `.tsv` tabular sources into readable records, cleans tags and
+  scripts from local `.html`/`.htm` documents, and explicitly warns when a PDF has no extractable text layer (OCR required).
+
+- **feat(mcp): native MCP resources and prompt templates.**
+  Implements `resources/list`, `resources/read` (`agenda://manifest`, `agenda://protocol/core`, `agenda://schemas/v1/...`)
+  and `prompts/list`, `prompts/get` (`draft_evidence_memo`, `self_correct_packet`, `audit_evidence_claims`) in the stdio MCP server.
 
 - **feat(services): enhanced quote matching with ellipsis and typographical normalization.**
   `check_evidence_packet`, `grounded_check`, and `verify_quotes` now support ellipsis (`...`, `…`) in quoted
