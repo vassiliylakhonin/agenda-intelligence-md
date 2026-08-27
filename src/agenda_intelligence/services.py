@@ -4426,6 +4426,15 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
     if "target_market" in request_json:
         response["target_market"] = request_json["target_market"]
 
+    response["readiness_contract"] = _profile_readiness_contract(
+        "critical_minerals_due_diligence",
+        response,
+        status_field="decision_readiness_label",
+        score_field="decision_readiness_score",
+        routing_field="triage_recommendation",
+        boundary_field="not_advice_notice",
+    )
+
     validation = _validate_json(response, "critical-minerals-due-diligence-response.schema.json")
     if not validation.get("valid"):
         return {

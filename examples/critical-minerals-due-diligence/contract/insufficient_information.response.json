@@ -87,5 +87,36 @@
     "contract_version": "1.7.0",
     "input_digest": "sha256:6228332149780addfbc764fb177bfc53c6ec102bfabd851c06ae2987c3698c86",
     "schema_uri": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-response.schema.json"
+  },
+  "readiness_contract": {
+    "profile": "critical_minerals_due_diligence",
+    "status": "insufficient_information",
+    "score": 0,
+    "routing": {
+      "field": "triage_recommendation",
+      "value": "insufficient_information"
+    },
+    "signal": null,
+    "blocking_gaps": [
+      "Missing required source: mining concession or license extract",
+      "Missing required source: certified ore assay report",
+      "Missing required source: beneficial ownership due diligence",
+      "Missing required source: export quota and permit clearance",
+      "Missing required source: csddd human rights and esg audit",
+      "Missing required source: processing and refining tolling agreement",
+      "rare_earth_elements is subject to strategic export quota / licensing restrictions."
+    ],
+    "non_blocking_gaps": [],
+    "claim_audit": [],
+    "owner_actions": [],
+    "watch_next": [
+      "EU Critical Raw Materials Act strategic project announcements",
+      "Export quota and licensing rule revisions in producing states",
+      "OFAC / EU / UK sanctions updates on mining conglomerates",
+      "Refinery tolling fee and capacity bottlenecks",
+      "CSDDD supply-chain due diligence compliance audits"
+    ],
+    "human_review_required": true,
+    "boundary_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice."
   }
 }

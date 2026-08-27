@@ -5545,6 +5545,14 @@ function criticalMineralsResult(request) {
   if (request.processing_jurisdiction) response.processing_jurisdiction = request.processing_jurisdiction;
   if (request.target_market) response.target_market = request.target_market;
 
+  response.readiness_contract = profileReadinessContract(response, {
+    profile: "critical_minerals_due_diligence",
+    statusField: "decision_readiness_label",
+    scoreField: "decision_readiness_score",
+    routingField: "triage_recommendation",
+    boundaryField: "not_advice_notice"
+  });
+
   return { response };
 }
 

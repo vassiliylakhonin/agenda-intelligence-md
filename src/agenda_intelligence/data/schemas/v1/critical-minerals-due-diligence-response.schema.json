@@ -156,6 +156,9 @@
     "not_advice_notice": {
       "type": "string"
     },
+    "readiness_contract": {
+      "$ref": "#/$defs/readiness_contract"
+    },
     "run_provenance": {
       "type": "object",
       "required": ["contract_version", "input_digest", "schema_uri"],
@@ -164,6 +167,54 @@
         "contract_version": { "type": "string" },
         "input_digest": { "type": "string" },
         "schema_uri": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "readiness_named_value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "value"],
+      "properties": {
+        "field": { "type": "string", "minLength": 1 },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "readiness_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Additive normalized readiness view for cross-profile human-review routing.",
+      "required": [
+        "profile",
+        "status",
+        "score",
+        "routing",
+        "signal",
+        "blocking_gaps",
+        "non_blocking_gaps",
+        "claim_audit",
+        "owner_actions",
+        "watch_next",
+        "human_review_required",
+        "boundary_notice"
+      ],
+      "properties": {
+        "profile": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "score": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+        "routing": {
+          "anyOf": [{ "$ref": "#/$defs/readiness_named_value" }, { "type": "null" }]
+        },
+        "signal": {
+          "anyOf": [{ "$ref": "#/$defs/readiness_named_value" }, { "type": "null" }]
+        },
+        "blocking_gaps": { "type": "array", "items": {} },
+        "non_blocking_gaps": { "type": "array", "items": {} },
+        "claim_audit": { "type": "array", "items": {} },
+        "owner_actions": { "type": "array", "items": {} },
+        "watch_next": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "human_review_required": { "type": "boolean" },
+        "boundary_notice": { "type": "string", "minLength": 1 }
       }
     }
   }

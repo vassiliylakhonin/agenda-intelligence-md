@@ -66,5 +66,28 @@
     "schema_uri": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-response.schema.json"
   },
   "processing_jurisdiction": "Kazakhstan",
-  "target_market": "eu"
+  "target_market": "eu",
+  "readiness_contract": {
+    "profile": "critical_minerals_due_diligence",
+    "status": "review_ready",
+    "score": 100,
+    "routing": {
+      "field": "triage_recommendation",
+      "value": "ready_for_human_review"
+    },
+    "signal": null,
+    "blocking_gaps": [],
+    "non_blocking_gaps": [],
+    "claim_audit": [],
+    "owner_actions": [],
+    "watch_next": [
+      "EU Critical Raw Materials Act strategic project announcements",
+      "Export quota and licensing rule revisions in producing states",
+      "OFAC / EU / UK sanctions updates on mining conglomerates",
+      "Refinery tolling fee and capacity bottlenecks",
+      "CSDDD supply-chain due diligence compliance audits"
+    ],
+    "human_review_required": true,
+    "boundary_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice."
+  }
 }
