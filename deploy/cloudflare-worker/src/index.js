@@ -6014,7 +6014,11 @@ async function cisSecondarySanctionsResult(request, env) {
   const counterparty = request.counterparty || {};
   const { upstream_name, result: upstreamResult } = await matchAgainstActiveUpstream(env, counterparty);
   const autoFetched = [];
-  for (const match of upstreamResult.matches || []) {
+  // Only a real, successful fetch produces auto-fetched sources. A degraded or
+  // disabled run may still carry matches (the keyless simulation does), but
+  // nothing was retrieved, so there is no attribution obligation and no match
+  // to imply to a reviewer. Parity with the Python service.
+  for (const match of upstreamResult.status === "success" ? upstreamResult.matches || [] : []) {
     const sourceType = match.source_type || "user_provided_note";
     if (!supplied.includes(sourceType)) supplied.push(sourceType);
     autoFetched.push({
