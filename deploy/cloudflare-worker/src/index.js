@@ -7183,10 +7183,17 @@ function buildUsageEvent(request, details = {}) {
   const url = new URL(request.url);
   const cf = request.cf || {};
   const promptChars = Number.isFinite(details.prompt_chars) ? details.prompt_chars : 0;
+  // Absent rather than zero when a caller path does not produce one, so a
+  // reader can tell "this profile parsed nothing" from "nobody measured".
+  const structuredChars = Number.isFinite(details.structured_chars) ? details.structured_chars : null;
 
   return {
     event: "agenda_intelligence_a2a_usage",
-    event_version: 3,
+    // 4: prompt_chars became the size of what arrived rather than the size of
+    // what this profile could parse, and structured_chars carries the latter.
+    // Rows at version 3 and below measured a plain-text request to a gate as
+    // zero, and their likely_probe follows from that number.
+    event_version: 4,
     timestamp: new Date().toISOString(),
     source: "cloudflare_worker",
     method: request.method,
@@ -7196,6 +7203,7 @@ function buildUsageEvent(request, details = {}) {
     jsonrpc_id_present: Boolean(details.jsonrpc_id_present),
     agent_profile: details.agent_profile || agentProfile(request),
     prompt_chars: promptChars,
+    structured_chars: structuredChars,
     modules_used: normalizeModules(details.modules_used),
     live_retrieval: details.live_retrieval || { status: null, upstream: null, billable: false, cost_eur: 0 },
     client: classifyClient(request),
@@ -8169,7 +8177,7 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
     }
     const params = payload.params ?? {};
     const profile = agentProfile(request, env);
-    const { result, promptChars, modulesUsed } = await runProfileRequest(profile, params, request, env);
+    const { result, promptChars, structuredChars, modulesUsed } = await runProfileRequest(profile, params, request, env);
     const likelyProbe =
       classifyClient(request) === "agenstry" || promptChars < PROBE_PROMPT_CHAR_THRESHOLD;
     const event = logUsageEvent(request, {
@@ -8177,6 +8185,7 @@ async function handleJsonRpc(payload, request, env = {}, ctx = {}) {
       jsonrpc_id_present: payload.id !== undefined,
       agent_profile: result.metadata.product_profile,
       prompt_chars: promptChars,
+      structured_chars: structuredChars,
       modules_used: modulesUsed,
       live_retrieval: billableUpstreamCost(result),
       likely_probe: likelyProbe,
@@ -8391,12 +8400,13 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
     const toolArguments = params.arguments ?? {};
     const legacyRequestWrapper = mcpUsesLegacyRequestWrapper(profile, toolArguments, name);
     const callParams = mcpArgumentsToParams(profile, toolArguments, name);
-    const { result, promptChars, modulesUsed } = await runProfileRequest(profile, callParams, request, env);
+    const { result, promptChars, structuredChars, modulesUsed } = await runProfileRequest(profile, callParams, request, env);
     const event = logUsageEvent(request, {
       jsonrpc_method: "tools/call",
       jsonrpc_id_present: payload.id !== undefined,
       agent_profile: result.metadata.product_profile,
       prompt_chars: promptChars,
+      structured_chars: structuredChars,
       modules_used: modulesUsed,
       live_retrieval: billableUpstreamCost(result),
       likely_probe: classifyClient(request) === "agenstry" || promptChars < PROBE_PROMPT_CHAR_THRESHOLD,
@@ -8467,6 +8477,58 @@ async function handleMcpPost(request, env, ctx) {
 // Single dispatch from a deployed profile to its triage result. Shared by the
 // A2A message/send route and the MCP tools/call route so the two transports
 // cannot drift into different verdicts for the same payload.
+// What the caller actually sent, in characters, independent of whether this
+// profile could parse it.
+//
+// Every branch of runProfileRequest below measures the request after its own
+// schema has had a go at it, so a question a gate cannot use measures zero. On
+// 2026-08-24..26 that recorded AgenstryBot's four-character plain-text probe as
+// `prompt_chars: 0` on the five structured gates and as 4 on the three
+// conversational endpoints — the same request, two answers — and it is why a
+// failing outcome column, read without a payload column, was misread as a
+// protocol bug for a day.
+//
+// The consequence that matters is not the reporting. `likely_probe` is derived
+// from this number, and the archive keeps whole rows only for non-probes, so a
+// real question written in prose to a gate would be labelled a probe and its
+// row never kept: the caller most worth reading about is the one the record
+// throws away. No such caller appears in the 2026-08-25..27 raw window — the
+// largest external body was 1,492 bytes and was measured correctly — so this
+// corrects the instrument rather than recovering anything lost.
+//
+// Two shapes reach here: an A2A message with parts, and MCP tool arguments.
+// Both are the caller's content with the protocol envelope removed.
+function receivedChars(params) {
+  if (!params || typeof params !== "object") return 0;
+
+  const parts = params.message && Array.isArray(params.message.parts) ? params.message.parts : null;
+  if (parts) {
+    return parts.reduce((total, part) => {
+      if (!part || typeof part !== "object") return total;
+      if (typeof part.text === "string") return total + part.text.length;
+      if (typeof part.raw === "string") return total + part.raw.length;
+      if (typeof part.url === "string") return total + part.url.length;
+      if (part.data !== undefined) return total + safeJsonLength(part.data);
+      return total;
+    }, 0);
+  }
+
+  // MCP tools/call, where the arguments are the content.
+  return safeJsonLength(params);
+}
+
+// A caller can send a structure this cannot stringify — a cycle is the usual
+// one. Measuring zero would put such a request back in the bucket this function
+// exists to empty, so an unmeasurable body counts as present rather than absent.
+function safeJsonLength(value) {
+  try {
+    const text = JSON.stringify(value);
+    return typeof text === "string" ? text.length : 0;
+  } catch {
+    return PROBE_PROMPT_CHAR_THRESHOLD;
+  }
+}
+
 async function runProfileRequest(profile, params, request, env = {}) {
   {
     let result;
@@ -8529,7 +8591,15 @@ async function runProfileRequest(profile, params, request, env = {}) {
       promptChars = text.length;
       modulesUsed = result.metadata.modules_used;
     }
-    return { result: withEngagementOffer(result, profile, request), promptChars, modulesUsed };
+    // promptChars above is what this profile could parse. receivedChars is what
+    // arrived. Both are reported, because the difference between them is the
+    // signal that a caller sent something the gate could not read.
+    return {
+      result: withEngagementOffer(result, profile, request),
+      promptChars: receivedChars(params),
+      structuredChars: promptChars,
+      modulesUsed
+    };
   }
 }
 

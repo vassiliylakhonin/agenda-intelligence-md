@@ -1967,6 +1967,50 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   assert.equal(event.ip, undefined);
 });
 
+// A gate needs a structured payload, so a question written in prose measures
+// zero against its schema — and until 2026-08-27 that zero was what
+// prompt_chars reported and what likely_probe was derived from. The archive
+// keeps whole rows only for non-probes, so the one caller worth reading about
+// would have been the one it threw away.
+test("a prose question to a gate is measured by what arrived, not by what parsed", async () => {
+  const question =
+    "We are moving transformer components from Aktau to Baku for a substation upgrade " +
+    "and the buyer's compliance team asked whether the freight forwarder's ownership " +
+    "chain needs to be evidenced before the shipment moves. What do you need from us?";
+  assert.ok(question.length > 100, "the fixture must be longer than a probe");
+
+  const logged = [];
+  const originalLog = console.log;
+  console.log = (event) => {
+    if (event && event.event === "agenda_intelligence_a2a_usage") logged.push(event);
+  };
+  try {
+    await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "prose-to-gate",
+        method: "SendMessage",
+        params: { message: { messageId: "m-prose", role: "ROLE_USER", parts: [{ text: question }] } }
+      },
+      new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/message/send", {
+        method: "POST",
+        headers: { "a2a-version": "1.0", "content-type": "application/json" }
+      }),
+      {},
+      {}
+    );
+  } finally {
+    console.log = originalLog;
+  }
+
+  assert.equal(logged.length, 1, "the call must produce exactly one usage event");
+  const [event] = logged;
+  assert.equal(event.prompt_chars, question.length, "prompt_chars is the size of what the caller sent");
+  assert.equal(event.structured_chars, 0, "structured_chars still reports what the gate could parse");
+  assert.equal(event.likely_probe, false, "a request this size is not a probe because a schema rejected it");
+  assert.equal(event.event_version, 4);
+});
+
 test("usage analytics records modules for single-profile worker branches", () => {
   // The vertical worker branches pass plain strings rather than the
   // [{ module, role }] shape the routed analyze path emits. Both must survive
