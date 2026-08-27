@@ -32,6 +32,7 @@ CONTRACTS: tuple[tuple[str, Callable[[dict[str, Any]], dict[str, Any]]], ...] = 
     ("examples/cis-secondary-sanctions/contract", cis_response),
     ("examples/gulf-maritime-exposure/contract", services.gulf_maritime_exposure),
     ("examples/kazakhstan-market-entry-readiness/contract", services.kazakhstan_market_entry_readiness),
+    ("examples/critical-minerals-due-diligence/contract", services.critical_minerals_due_diligence),
 )
 
 

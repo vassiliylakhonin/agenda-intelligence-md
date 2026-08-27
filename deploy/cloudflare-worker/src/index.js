@@ -618,6 +618,13 @@ function agentProfile(request, env = {}) {
     return "market_entry_readiness";
   }
   if (
+    env.AGENT_PROFILE === "critical_minerals_due_diligence" ||
+    env.AGENT_PROFILE === "critical_minerals" ||
+    host.includes("critical-minerals-due-diligence-a2a")
+  ) {
+    return "critical_minerals_due_diligence";
+  }
+  if (
     env.AGENT_PROFILE === "corridor_sanctions_assistant" ||
     host.includes("corridor-sanctions-assistant-a2a")
   ) {
@@ -2018,6 +2025,7 @@ function applyAgentProfile(card, request, env = {}) {
   if (profile === "agent_output_verification") return applyAgentOutputVerificationProfile(card, request);
   if (profile === "gulf_maritime_exposure") return applyGulfMaritimeProfile(card, request);
   if (profile === "market_entry_readiness") return applyMarketEntryReadinessProfile(card, request);
+  if (profile === "critical_minerals_due_diligence") return applyCriticalMineralsProfile(card, request);
   if (profile === "corridor_sanctions_assistant") return applyCorridorSanctionsAssistantProfile(card, request);
   if (profile !== "kazakhstan") return card;
 
@@ -5299,6 +5307,390 @@ function applyMarketEntryReadinessProfile(card, request) {
   return card;
 }
 
+const CRITICAL_MINERALS_QUOTA_RESTRICTED = new Set([
+  "rare_earth_elements",
+  "gallium_germanium",
+  "graphite",
+  "tungsten"
+]);
+
+const CRITICAL_MINERALS_HIGH_RISK_PROCESSING_JURISDICTIONS = new Set([
+  "Russia",
+  "Iran",
+  "North Korea",
+  "Myanmar",
+  "Syria"
+]);
+
+const CRITICAL_MINERALS_TAXONOMY = {
+  required_before_offtake: [
+    "mining_concession_or_license_extract",
+    "certified_ore_assay_report",
+    "beneficial_ownership_due_diligence",
+    "export_quota_and_permit_clearance",
+    "csddd_human_rights_and_esg_audit",
+    "processing_and_refining_tolling_agreement"
+  ],
+  required_before_investment: [
+    "bankable_feasibility_study",
+    "sovereign_royalty_and_tax_stability_memo",
+    "tailings_and_environmental_permits",
+    "local_content_and_employment_quota_filing"
+  ],
+  required_before_shipment: [
+    "certificate_of_origin",
+    "export_customs_declaration",
+    "port_of_loading_assay_verification",
+    "sanctions_and_export_control_license",
+    "marine_and_transit_cargo_insurance"
+  ]
+};
+
+const CRITICAL_MINERALS_NOT_ADVICE_NOTICE =
+  "Pre-compliance evidence triage only on caller-supplied documentation. " +
+  "Does not perform live retrieval, factual-truth verification, mineral assay testing, " +
+  "or provide legal, sanctions, trade-compliance, ESG certification, or investment advice.";
+
+function isCriticalMineralsRequest(value) {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      typeof value.project_name === "string" &&
+      typeof value.commodity === "string" &&
+      typeof value.origin_jurisdiction === "string" &&
+      typeof value.decision_question === "string" &&
+      typeof value.decision_stage === "string" &&
+      Array.isArray(value.supplied_sources)
+  );
+}
+
+function criticalMineralsErrors(request) {
+  const errors = [];
+  if (!request || typeof request !== "object") return ["request must be an object"];
+  if (!request.project_name) errors.push("project_name is required");
+  if (!request.commodity) errors.push("commodity is required");
+  if (!request.origin_jurisdiction) errors.push("origin_jurisdiction is required");
+  if (!request.decision_question) errors.push("decision_question is required");
+  if (!request.decision_stage) errors.push("decision_stage is required");
+  if (!Array.isArray(request.supplied_sources)) errors.push("supplied_sources must be an array");
+  return errors;
+}
+
+function criticalMineralsResult(request) {
+  const stage = request.decision_stage || "pre_offtake_agreement";
+  const commodity = request.commodity || "";
+  const origin = request.origin_jurisdiction || "";
+  const processing = request.processing_jurisdiction || "";
+
+  const suppliedSources = [];
+  for (const s of request.supplied_sources || []) {
+    if (s && s.source_type && !suppliedSources.includes(s.source_type)) {
+      suppliedSources.push(s.source_type);
+    }
+  }
+
+  const stageTierMap = {
+    pre_offtake_agreement: "required_before_offtake",
+    pre_investment_decision: "required_before_investment",
+    pre_export_shipment: "required_before_shipment",
+    pre_exploration: "required_before_offtake",
+    pre_processing_contract: "required_before_offtake"
+  };
+  const tierKey = stageTierMap[stage] || "required_before_offtake";
+  const required = CRITICAL_MINERALS_TAXONOMY[tierKey] || [];
+  const missingSources = required.filter((s) => !suppliedSources.includes(s));
+
+  const hasConcession = suppliedSources.includes("mining_concession_or_license_extract");
+  const hasAssay =
+    suppliedSources.includes("certified_ore_assay_report") ||
+    suppliedSources.includes("port_of_loading_assay_verification");
+  const hasCoo = suppliedSources.includes("certificate_of_origin");
+
+  let traceability = "unverified";
+  if (hasConcession && hasAssay && (hasCoo || stage !== "pre_export_shipment")) {
+    traceability = "verified";
+  } else if (hasConcession || hasAssay) {
+    traceability = "partial";
+  }
+
+  const quotaRestricted = CRITICAL_MINERALS_QUOTA_RESTRICTED.has(commodity);
+  const flags = [];
+  if (quotaRestricted && !suppliedSources.includes("export_quota_and_permit_clearance")) {
+    flags.push(`${commodity} is subject to strategic export quota / licensing restrictions.`);
+  }
+  if (CRITICAL_MINERALS_HIGH_RISK_PROCESSING_JURISDICTIONS.has(processing)) {
+    flags.push(`Processing jurisdiction ${processing} carries elevated sanctions / export-control exposure.`);
+  }
+
+  const totalReq = required.length || 1;
+  const satisfiedCount = totalReq - missingSources.length;
+  let baseScore = Math.round((satisfiedCount / totalReq) * 100);
+  if (flags.length) baseScore = Math.max(0, baseScore - 15 * flags.length);
+
+  let score = 0;
+  let readinessLabel = "insufficient_information";
+  let triage = "insufficient_information";
+  let riskSignal = "unknown";
+  let decision = "request_evidence";
+  let reasonCode = "insufficient_sources";
+
+  if (!suppliedSources.length) {
+    score = 0;
+    readinessLabel = "insufficient_information";
+    triage = "insufficient_information";
+    riskSignal = "unknown";
+    decision = "request_evidence";
+    reasonCode = "insufficient_sources";
+  } else if (missingSources.length || flags.length) {
+    score = Math.min(baseScore, 65);
+    readinessLabel = score < 40 ? "not_decision_ready" : "partial";
+    if (stage === "pre_offtake_agreement") triage = "escalate_before_offtake";
+    else if (stage === "pre_export_shipment") triage = "escalate_before_shipment";
+    else if (stage === "pre_investment_decision") triage = "escalate_before_investment";
+    else triage = "not_decision_ready";
+    riskSignal = flags.length || score < 40 ? "high" : "medium_high";
+    decision = flags.length && score < 40 ? "stop" : "request_evidence";
+    reasonCode = "critical_evidence_gaps";
+  } else {
+    score = Math.max(80, baseScore);
+    readinessLabel = "review_ready";
+    triage = "ready_for_human_review";
+    riskSignal = score >= 90 ? "low" : "medium";
+    decision = "continue";
+    reasonCode = "evidence_complete";
+  }
+
+  const blockingGaps = [...missingSources.map((s) => `Missing required source: ${s.replace(/_/gu, " ")}`), ...flags];
+  const opDecision = {
+    decision,
+    reason_code: reasonCode,
+    blocking_gaps: blockingGaps,
+    next_permitted_action:
+      decision === "continue"
+        ? "Human review and committee sign-off"
+        : "Obtain missing origin, assay, or export-control permits"
+  };
+
+  const exportExposure = {
+    quota_restricted: quotaRestricted,
+    processing_monopoly_risk: Boolean(processing && (processing === "China" || processing === "Russia")),
+    jurisdiction_risk_flags: flags
+  };
+
+  const topRisks = [
+    {
+      category: "Supply Chain & Origin Traceability",
+      severity: traceability === "unverified" || traceability === "obfuscated" ? "high" : "low",
+      description: `Traceability status is ${traceability} for ${commodity} originating from ${origin}.`
+    }
+  ];
+  if (flags.length) {
+    topRisks.push({
+      category: "Export Control & Regulatory Quotas",
+      severity: "high",
+      description: flags.join("; ")
+    });
+  }
+
+  const exposureLayers = [
+    {
+      layer: "Origin Concession & Mining Rights",
+      level: suppliedSources.includes("mining_concession_or_license_extract") ? "verified" : "gap",
+      summary: "Mining concession / license extract status in source ledger."
+    },
+    {
+      layer: "Processing & Beneficiation Route",
+      level: suppliedSources.includes("processing_and_refining_tolling_agreement") ? "verified" : "gap",
+      summary: "Refining, smelter, and tolling contract agreements."
+    },
+    {
+      layer: "ESG & CSDDD Compliance",
+      level: suppliedSources.includes("csddd_human_rights_and_esg_audit") ? "verified" : "gap",
+      summary: "Human rights, environmental, and tailings due diligence audit."
+    }
+  ];
+
+  const watchNext = [
+    "EU Critical Raw Materials Act strategic project announcements",
+    "Export quota and licensing rule revisions in producing states",
+    "OFAC / EU / UK sanctions updates on mining conglomerates",
+    "Refinery tolling fee and capacity bottlenecks",
+    "CSDDD supply-chain due diligence compliance audits"
+  ];
+
+  const response = {
+    triage_recommendation: triage,
+    risk_signal: riskSignal,
+    decision_readiness_score: score,
+    decision_readiness_label: readinessLabel,
+    operational_decision: opDecision,
+    commodity,
+    origin_jurisdiction: origin,
+    traceability_status: traceability,
+    export_control_exposure: exportExposure,
+    supplied_sources: suppliedSources,
+    minimum_sources_before_go: missingSources,
+    evidence_gaps: blockingGaps,
+    top_risks: topRisks,
+    exposure_layers: exposureLayers,
+    watch_next: watchNext,
+    human_review_required: true,
+    not_advice_notice: CRITICAL_MINERALS_NOT_ADVICE_NOTICE,
+    run_provenance: {
+      contract_version: VERSION,
+      input_digest: "sha256:canonical",
+      schema_uri: `${SCHEMAS_URL}/critical-minerals-due-diligence-response.schema.json`
+    }
+  };
+  if (request.processing_jurisdiction) response.processing_jurisdiction = request.processing_jurisdiction;
+  if (request.target_market) response.target_market = request.target_market;
+
+  return { response };
+}
+
+function criticalMineralsArtifactText(response) {
+  const missing = response.minimum_sources_before_go || [];
+  const missingText = missing.length ? missing.map((item) => `- ${item}`).join("\n") : "- none";
+  const risks = response.top_risks || [];
+  const risksText = risks.length
+    ? risks.map((r) => `- [${(r.severity || "medium").toUpperCase()}] ${r.category}: ${r.description}`).join("\n")
+    : "- none";
+  return [
+    "Critical Minerals & Strategic Raw Materials Due Diligence Gate response",
+    "",
+    `Recommendation: ${response.triage_recommendation}`,
+    `Risk signal: ${response.risk_signal}`,
+    `Decision readiness: ${response.decision_readiness_score}/100 (${response.decision_readiness_label})`,
+    `Commodity: ${response.commodity}`,
+    `Origin jurisdiction: ${response.origin_jurisdiction}`,
+    `Traceability status: ${response.traceability_status}`,
+    `Human review required: ${String(response.human_review_required)}`,
+    "",
+    "Top risks:",
+    risksText,
+    "",
+    "Minimum sources before go:",
+    missingText,
+    "",
+    response.not_advice_notice
+  ].join("\n");
+}
+
+function structuredCriticalMineralsRequestFromParams(params) {
+  if (!params || typeof params !== "object") return null;
+  const candidates = [
+    params.request,
+    params.critical_minerals_request,
+    params.critical_minerals_due_diligence_request,
+    params.input,
+    params
+  ];
+  const message = params.message;
+  if (message && typeof message === "object") {
+    if (message.data && typeof message.data === "object") candidates.push(message.data);
+    if (Array.isArray(message.parts)) {
+      for (const part of message.parts) {
+        if (!part || typeof part !== "object") continue;
+        candidates.push(part.data, part.json, part.content);
+        const parsed = tryParseJsonObject(part.text);
+        if (parsed) candidates.push(parsed);
+      }
+    }
+  }
+  for (const candidate of candidates) {
+    if (isCriticalMineralsRequest(candidate)) return candidate;
+    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
+    if (parsed && isCriticalMineralsRequest(parsed)) return parsed;
+  }
+  return null;
+}
+
+function a2aResultForCriticalMinerals(params) {
+  const structured = structuredCriticalMineralsRequestFromParams(params);
+  if (!structured) {
+    return invalidRequestResult(
+      "critical_minerals_due_diligence",
+      "/v1/critical-minerals/due-diligence",
+      "schemas/v1/critical-minerals-due-diligence-request.schema.json",
+      ["Missing structured Critical Minerals Due Diligence request"]
+    );
+  }
+  const errors = criticalMineralsErrors(structured);
+  if (errors.length) {
+    return invalidRequestResult(
+      "critical_minerals_due_diligence",
+      "/v1/critical-minerals/due-diligence",
+      "schemas/v1/critical-minerals-due-diligence-request.schema.json",
+      errors
+    );
+  }
+  const result = criticalMineralsResult(structured);
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "critical-minerals-due-diligence-response",
+        name: "Critical minerals due diligence response",
+        parts: [
+          { text: criticalMineralsArtifactText(result.response), mediaType: "text/markdown" },
+          { data: result.response, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "critical_minerals_due_diligence",
+      canonical_http_endpoint: "/v1/critical-minerals/due-diligence",
+      schema: "schemas/v1/critical-minerals-due-diligence-request.schema.json",
+      human_review_required: result.response.human_review_required,
+      not_advice_notice: result.response.not_advice_notice,
+      response: result.response
+    }
+  };
+}
+
+function applyCriticalMineralsProfile(card, request) {
+  const origin = originFromRequest(request);
+  const discovery = profileDiscovery("critical_minerals_due_diligence");
+  card.name = "Critical Minerals & Strategic Raw Materials Due Diligence Gate";
+  card.documentationUrl = discovery.documentation_url;
+  card.description =
+    "A2A-compatible evidence-readiness gate for critical raw materials origin tracing and supply-chain due diligence. Bring commodity, extraction jurisdiction, processing route, counterparties, and dated sources; get deterministic due-diligence triage with origin traceability, export quota flags, CSDDD compliance evidence gaps, and human-review routing." +
+    PROVIDER_FRONT_DOOR_POINTER;
+  card.provider.legalEntity.sameAs = discovery.provider_same_as;
+  card.skills = [
+    {
+      id: "critical-minerals-due-diligence",
+      name: "Critical minerals due diligence gate",
+      description:
+        "Turns commodity, origin jurisdiction, processing route, and supplied sources into structured critical-minerals due diligence triage.",
+      tags: ["critical-minerals", "rare-earths", "lithium", "csddd", "export-control", "due-diligence", "free"],
+      examples: [
+        "Is this rare earth elements offtake dossier complete for committee review?",
+        "What export quota permits are missing before we sign the lithium offtake?"
+      ],
+      inputModes: ["application/json", "text/plain"],
+      outputModes: ["application/json", "text/markdown"]
+    }
+  ];
+  card.x_agenda_intelligence.product_profile = discovery.product_profile;
+  card.x_agenda_intelligence.canonical_product_name = discovery.canonical_product_name;
+  card.x_agenda_intelligence.wrapper_scope = discovery.wrapper_scope;
+  card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
+  card.x_agenda_intelligence.documentation = discovery.documentation_url;
+  card.x_agenda_intelligence.product_contract = discovery.product_contract;
+  card.x_agenda_intelligence.supported_contracts = discovery.supported_contracts;
+  card.x_agenda_intelligence.buyer_use_cases = discovery.buyer_use_cases;
+  card.x_agenda_intelligence.commercial_positioning = discovery.commercial_positioning;
+  card.x_agenda_intelligence.boundaries = [
+    "No live source retrieval; caller-supplied evidence only.",
+    "No factual-truth verification or mineral assay testing.",
+    "No legal, compliance, sanctions, ESG certification, or investment advice.",
+    "Human review is required before any commercial action."
+  ];
+  return card;
+}
+
 async function matchAgainstActiveUpstream(env, counterparty) {
   const active = activeUpstreamOption("cis_secondary_sanctions", env);
   if (!active) {
@@ -8359,7 +8751,11 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
   if (payload.method === "server/discover") {
     return mcpResponse(id, {
       protocolVersions: [...MCP_SUPPORTED_PROTOCOL_VERSIONS],
-      capabilities: { tools: { listChanged: false } },
+      capabilities: {
+        tools: { listChanged: false },
+        resources: { listChanged: false, subscribe: false },
+        prompts: { listChanged: false }
+      },
       serverInfo: mcpServerIdentity(),
       instructions: profileInstructions(profile)
     });
@@ -8371,13 +8767,55 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
     const echoed = typeof params.protocolVersion === "string" ? params.protocolVersion : MCP_PROTOCOL_VERSION;
     return mcpResponse(id, {
       protocolVersion: echoed,
-      capabilities: { tools: { listChanged: false } },
+      capabilities: {
+        tools: { listChanged: false },
+        resources: { listChanged: false, subscribe: false },
+        prompts: { listChanged: false }
+      },
       serverInfo: mcpServerIdentity(),
       instructions: profileInstructions(profile)
     });
   }
 
   if (payload.method === "ping") return mcpResponse(id, {});
+
+  if (payload.method === "resources/list") {
+    return mcpResponse(id, {
+      resources: mcpResourcesList()
+    });
+  }
+
+  if (payload.method === "resources/read") {
+    const uri = params.uri;
+    if (typeof uri !== "string") {
+      return jsonRpcError(id, -32602, "resources/read requires a string uri parameter");
+    }
+    const resource = mcpResourceRead(uri);
+    if (!resource) {
+      return jsonRpcError(id, -32602, `Resource not found: ${uri}`);
+    }
+    return mcpResponse(id, {
+      contents: [resource]
+    });
+  }
+
+  if (payload.method === "prompts/list") {
+    return mcpResponse(id, {
+      prompts: mcpPromptsList()
+    });
+  }
+
+  if (payload.method === "prompts/get") {
+    const name = params.name;
+    if (typeof name !== "string") {
+      return jsonRpcError(id, -32602, "prompts/get requires a string name parameter");
+    }
+    const prompt = mcpPromptGet(name, params.arguments || {});
+    if (!prompt) {
+      return jsonRpcError(id, -32602, `Prompt not found: ${name}`);
+    }
+    return mcpResponse(id, prompt);
+  }
 
   if (payload.method === "tools/list") {
     return mcpResponse(id, {
@@ -8424,8 +8862,219 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
   }
 
   return jsonRpcError(id, -32601, "Method not found", {
-    supported_methods: ["server/discover", "tools/list", "tools/call"]
+    supported_methods: [
+      "server/discover",
+      "tools/list",
+      "tools/call",
+      "resources/list",
+      "resources/read",
+      "prompts/list",
+      "prompts/get"
+    ]
   });
+}
+
+function mcpResourcesList() {
+  return [
+    {
+      uri: "agenda://manifest",
+      name: "Agenda Manifest",
+      description: "Public manifest of Agenda Intelligence tools, schemas, and capabilities",
+      mimeType: "application/json"
+    },
+    {
+      uri: "agenda://protocol/core",
+      name: "Agenda Protocol Core",
+      description: "Core protocol principles and verification boundary rules",
+      mimeType: "text/markdown"
+    },
+    {
+      uri: "agenda://schemas/v1/middle-corridor-deal-risk-request",
+      name: "Middle Corridor Deal Risk Request Schema",
+      description: "JSON schema for Middle Corridor deal-risk requests",
+      mimeType: "application/json"
+    },
+    {
+      uri: "agenda://schemas/v1/cis-secondary-sanctions-request",
+      name: "CIS Secondary Sanctions Request Schema",
+      description: "JSON schema for CIS secondary sanctions requests",
+      mimeType: "application/json"
+    },
+    {
+      uri: "agenda://schemas/v1/critical-minerals-due-diligence-request",
+      name: "Critical Minerals Due Diligence Request Schema",
+      description: "JSON schema for Critical Minerals due diligence requests",
+      mimeType: "application/json"
+    },
+    {
+      uri: "agenda://schemas/v1/pre-action-check-request",
+      name: "Pre-Action Check Request Schema",
+      description: "JSON schema for pre-action check requests",
+      mimeType: "application/json"
+    }
+  ];
+}
+
+function mcpResourceRead(uri) {
+  if (uri === "agenda://manifest") {
+    return {
+      uri,
+      mimeType: "application/json",
+      text: JSON.stringify(
+        {
+          schema_version: "v1",
+          version: VERSION,
+          product: "Agenda Intelligence MD",
+          documentation_url: REPOSITORY_URL
+        },
+        null,
+        2
+      )
+    };
+  }
+  if (uri === "agenda://protocol/core") {
+    return {
+      uri,
+      mimeType: "text/markdown",
+      text: [
+        "# Agenda Intelligence Core Protocol",
+        "",
+        "1. Deterministic evidence triage over probabilistic guessing.",
+        "2. Structure validation before policy evaluation.",
+        "3. Mandatory human review on high-stakes routing.",
+        "4. Content-provenance and reproducibility on all outputs."
+      ].join("\n")
+    };
+  }
+  if (uri.startsWith("agenda://schemas/v1/")) {
+    const schemaName = uri.replace("agenda://schemas/v1/", "");
+    return {
+      uri,
+      mimeType: "application/json",
+      text: JSON.stringify(
+        {
+          $schema: "https://json-schema.org/draft/2020-12/schema",
+          title: schemaName,
+          description: `Agenda Intelligence schema for ${schemaName}`
+        },
+        null,
+        2
+      )
+    };
+  }
+  return null;
+}
+
+function mcpPromptsList() {
+  return [
+    {
+      name: "draft_evidence_memo",
+      description: "Draft a structured evidence-backed analysis memo for review",
+      arguments: [
+        { name: "topic", description: "Subject matter of the memo", required: true },
+        { name: "evidence_summary", description: "Summary of available evidence", required: false }
+      ]
+    },
+    {
+      name: "self_correct_packet",
+      description: "Generate instructions to repair an evidence packet with gaps",
+      arguments: [
+        { name: "packet_json", description: "Current evidence packet JSON", required: true },
+        { name: "diagnostics_json", description: "Audit or verification failure details", required: false }
+      ]
+    },
+    {
+      name: "audit_evidence_claims",
+      description: "Audit claims against cited evidence sources",
+      arguments: [
+        { name: "claims_text", description: "Extracted claims to audit", required: true },
+        { name: "sources_text", description: "Source text to verify against", required: true }
+      ]
+    }
+  ];
+}
+
+function mcpPromptGet(name, args = {}) {
+  if (name === "draft_evidence_memo") {
+    const topic = args.topic || "[TOPIC]";
+    const summary = args.evidence_summary || "";
+    return {
+      description: `Draft an evidence memo for: ${topic}`,
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: [
+              `# Drafting Task: Evidence-Backed Memo on "${topic}"`,
+              "",
+              "Please draft a structured, decision-grade memo backed by verifiable evidence citations.",
+              summary ? `Available evidence summary: ${summary}` : "",
+              "",
+              "Requirements:",
+              "- Every factual assertion must cite a verifiable source in the evidence ledger.",
+              "- Explicitly distinguish confirmed facts from analyst assumptions.",
+              "- Identify remaining evidence gaps before human sign-off."
+            ]
+              .filter(Boolean)
+              .join("\n")
+          }
+        }
+      ]
+    };
+  }
+  if (name === "self_correct_packet") {
+    const packet = args.packet_json || "{}";
+    const diag = args.diagnostics_json || "";
+    return {
+      description: "Repair and complete evidence packet",
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: [
+              "# Evidence Packet Self-Correction Task",
+              "",
+              "Review the following evidence packet and diagnostics to close evidence gaps:",
+              `Packet: ${packet}`,
+              diag ? `Diagnostics: ${diag}` : "",
+              "",
+              "Please output the corrected evidence packet JSON with all cited evidence IDs resolved."
+            ]
+              .filter(Boolean)
+              .join("\n")
+          }
+        }
+      ]
+    };
+  }
+  if (name === "audit_evidence_claims") {
+    const claims = args.claims_text || "";
+    const sources = args.sources_text || "";
+    return {
+      description: "Audit claims against sources",
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: [
+              "# Audit Claims Against Sources",
+              "",
+              "Audit each claim against the provided sources and classify support level:",
+              `Claims:\n${claims}`,
+              "",
+              `Sources:\n${sources}`,
+              "",
+              "Classify each claim as supported, weakly_supported, or unsupported."
+            ].join("\n")
+          }
+        }
+      ]
+    };
+  }
+  return null;
 }
 
 function profileInstructions(profile) {
@@ -8580,6 +9229,11 @@ async function runProfileRequest(profile, params, request, env = {}) {
       const structured = structuredMarketEntryReadinessRequestFromParams(params);
       promptChars = structured && structured.decision_question ? structured.decision_question.length : 0;
       modulesUsed = ["market_entry_readiness"];
+    } else if (profile === "critical_minerals_due_diligence") {
+      result = a2aResultForCriticalMinerals(params);
+      const structured = structuredCriticalMineralsRequestFromParams(params);
+      promptChars = structured && structured.decision_question ? structured.decision_question.length : 0;
+      modulesUsed = ["critical_minerals_due_diligence"];
     } else if (profile === "corridor_sanctions_assistant") {
       result = a2aResultForCorridorSanctionsAssistant(params);
       promptChars = extractText(params).length;
@@ -9326,6 +9980,111 @@ function landingHtml(request, env) {
 </html>`;
 }
 
+function buildRepairPromptJs(packet, response) {
+  const lines = [
+    "# Evidence Packet Repair Prompt",
+    "",
+    "You are an AI assistant tasked with repairing an evidence packet to make it decision-ready.",
+    "",
+    `Current Status: ${response.readiness_label || response.verdict || "not_decision_ready"}`,
+    `Readiness Score: ${response.readiness_score || 0}/100`,
+    ""
+  ];
+  if (response.unsafe_claims && response.unsafe_claims.length) {
+    lines.push("## Unsafe / Unsupported Claims to Fix or Remove:");
+    for (const u of response.unsafe_claims) {
+      lines.push(`- Claim ${u.claim_id}: "${u.claim}" (Reason: ${u.reason})`);
+    }
+    lines.push("");
+  }
+  if (response.evidence_gaps && response.evidence_gaps.length) {
+    lines.push("## Evidence Gaps:");
+    for (const gap of response.evidence_gaps) {
+      lines.push(`- ${gap}`);
+    }
+    lines.push("");
+  }
+  if (response.owner_actions && response.owner_actions.length) {
+    lines.push("## Required Actions:");
+    for (const act of response.owner_actions) {
+      lines.push(`- ${act}`);
+    }
+    lines.push("");
+  }
+  lines.push("Please supply the required evidence or adjust claims to address the points above.");
+  return lines.join("\n");
+}
+
+async function handleEvidencePacketCheck(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (_e) {
+    return jsonResponse({ ok: false, error: "Invalid JSON payload" }, 400);
+  }
+  const packet = body.packet || body;
+  if (!packet || typeof packet !== "object") {
+    return jsonResponse({ ok: false, error: "Expected evidence packet object" }, 400);
+  }
+  const verification = agentOutputVerificationResult(packet).response;
+  const prompt = buildRepairPromptJs(packet, verification);
+  return jsonResponse(
+    {
+      valid: true,
+      packet_status: verification.readiness_label,
+      response: {
+        ...verification,
+        repair_guidance: prompt
+      },
+      run_provenance: {
+        contract_version: VERSION,
+        endpoint: "/v1/evidence-packet/check"
+      }
+    },
+    200
+  );
+}
+
+async function handleEvidencePacketRepairPrompt(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (_e) {
+    return jsonResponse({ ok: false, error: "Invalid JSON payload" }, 400);
+  }
+  const packet = body.packet || body;
+  const verification =
+    body.response ||
+    (packet && typeof packet === "object" ? agentOutputVerificationResult(packet).response : null);
+  if (!verification) {
+    return jsonResponse({ ok: false, error: "Expected evidence packet or verification response" }, 400);
+  }
+  const prompt = buildRepairPromptJs(packet, verification);
+  return jsonResponse(
+    {
+      valid: true,
+      packet_status: verification.readiness_label || "not_decision_ready",
+      repair_prompt: prompt
+    },
+    200
+  );
+}
+
+async function handleCriticalMineralsDirect(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (_e) {
+    return jsonResponse({ ok: false, error: "Invalid JSON payload" }, 400);
+  }
+  const errors = criticalMineralsErrors(body);
+  if (errors.length) {
+    return jsonResponse({ ok: false, error: "Invalid Critical minerals due diligence request", errors }, 400);
+  }
+  const result = criticalMineralsResult(body);
+  return jsonResponse(result.response, 200);
+}
+
 export async function handleRequest(request, env = {}, ctx = {}) {
   const url = new URL(request.url);
 
@@ -9470,6 +10229,18 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return handleStats(request, env);
   }
 
+  if (request.method === "POST" && url.pathname === "/v1/evidence-packet/check") {
+    return handleEvidencePacketCheck(request, env);
+  }
+
+  if (request.method === "POST" && url.pathname === "/v1/evidence-packet/repair-prompt") {
+    return handleEvidencePacketRepairPrompt(request, env);
+  }
+
+  if (request.method === "POST" && url.pathname === "/v1/critical-minerals/due-diligence") {
+    return handleCriticalMineralsDirect(request, env);
+  }
+
   if (request.method === "POST" && url.pathname === MCP_ENDPOINT_PATH) {
     return handleMcpPost(request, env, ctx);
   }
@@ -9491,12 +10262,17 @@ export {
   agentCard,
   GATE_REQUEST_GUIDES,
   buildUsageEvent,
+  buildRepairPromptJs,
   callOutcome,
+  criticalMineralsResult,
   dealRiskContractResponseForRequest,
   entityMap,
   funnelStepForPath,
   handleCisReviewIntake,
   handleCisReviewIntakeList,
+  handleCriticalMineralsDirect,
+  handleEvidencePacketCheck,
+  handleEvidencePacketRepairPrompt,
   sendCisReviewEmailNotification,
   logFunnelEvent,
   handleJsonRpc,
@@ -9523,3 +10299,4 @@ export {
   triageForText,
   usageStats
 };
+

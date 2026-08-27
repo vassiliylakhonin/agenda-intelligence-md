@@ -24,6 +24,8 @@ GULF_MARITIME_SCHEMA = "schemas/v1/gulf-maritime-exposure-request.schema.json"
 GULF_MARITIME_ENDPOINT = "/v1/gulf-maritime/exposure"
 MARKET_ENTRY_READINESS_SCHEMA = "schemas/v1/market-entry-readiness-request.schema.json"
 MARKET_ENTRY_READINESS_ENDPOINT = "/v1/market-entry/readiness"
+CRITICAL_MINERALS_SCHEMA = "schemas/v1/critical-minerals-due-diligence-request.schema.json"
+CRITICAL_MINERALS_ENDPOINT = "/v1/critical-minerals/due-diligence"
 AUDIT_CLAIMS_ENDPOINT = "/v1/audit-claims"
 SOURCE_COVERAGE_ENDPOINT = "/v1/source-coverage"
 SCORE_OUTPUT_ENDPOINT = "/v1/score"
@@ -38,6 +40,7 @@ SUPPORTED_CAPABILITIES = [
     "cis_secondary_sanctions_exposure",
     "gulf_maritime_exposure",
     "kazakhstan_market_entry_readiness",
+    "critical_minerals_due_diligence",
     "audit_claims",
     "source_coverage",
     "score_output",
@@ -78,6 +81,12 @@ CAPABILITY_ALIASES = {
     "market-entry": "kazakhstan_market_entry_readiness",
     "kazakhstan_market_entry": "kazakhstan_market_entry_readiness",
     "kazakhstan-market-entry": "kazakhstan_market_entry_readiness",
+    "critical_minerals_due_diligence": "critical_minerals_due_diligence",
+    "critical-minerals-due-diligence": "critical_minerals_due_diligence",
+    "critical_minerals": "critical_minerals_due_diligence",
+    "critical-minerals": "critical_minerals_due_diligence",
+    "critical_raw_materials": "critical_minerals_due_diligence",
+    "critical-raw-materials": "critical_minerals_due_diligence",
     "audit_claims": "audit_claims",
     "audit-claims": "audit_claims",
     "audit": "audit_claims",
@@ -658,6 +667,35 @@ def market_entry_readiness_request_from_params(params: dict) -> dict | None:
     return None
 
 
+def _looks_like_critical_minerals_request(value: Any) -> bool:
+    return (
+        isinstance(value, dict)
+        and isinstance(value.get("project_name"), str)
+        and isinstance(value.get("commodity"), str)
+        and isinstance(value.get("origin_jurisdiction"), str)
+        and isinstance(value.get("decision_question"), str)
+        and isinstance(value.get("decision_stage"), str)
+        and isinstance(value.get("supplied_sources"), list)
+    )
+
+
+def critical_minerals_request_from_params(params: dict) -> dict | None:
+    """Extract a structured Critical Minerals Due Diligence request from A2A/JSON-RPC params."""
+    candidates = _candidate_objects_from_params(params)
+    candidates.extend(
+        candidate
+        for candidate in [
+            _try_parse_json_object(params.get("critical_minerals_request")),
+            _try_parse_json_object(params.get("critical_minerals_due_diligence_request")),
+        ]
+        if candidate is not None
+    )
+    for candidate in candidates:
+        if _looks_like_critical_minerals_request(candidate):
+            return candidate
+    return None
+
+
 def _looks_like_agentic_interaction_trust_request(value: Any) -> bool:
     return (
         isinstance(value, dict)
@@ -998,6 +1036,78 @@ def a2a_result_for_market_entry_readiness(request_json: dict) -> dict:
             "schema": MARKET_ENTRY_READINESS_SCHEMA,
             "human_review_required": response["human_review_required"],
             "not_advice_notice": response["boundary_notice"],
+            "response": response,
+        },
+    }
+
+
+def _critical_minerals_artifact_text(response: dict) -> str:
+    missing = response.get("minimum_sources_before_go", [])
+    missing_text = "\n".join(f"- {item}" for item in missing) if missing else "- none"
+    risks = response.get("top_risks", [])
+    risks_text = (
+        "\n".join(
+            f"- [{r.get('severity', 'medium').upper()}] {r.get('category')}: {r.get('description')}" for r in risks
+        )
+        if risks
+        else "- none"
+    )
+    return "\n".join(
+        [
+            "Critical Minerals & Strategic Raw Materials Due Diligence Gate response",
+            "",
+            f"Recommendation: {response['triage_recommendation']}",
+            f"Risk signal: {response['risk_signal']}",
+            f"Decision readiness: {response['decision_readiness_score']}/100 ({response['decision_readiness_label']})",
+            f"Commodity: {response['commodity']}",
+            f"Origin jurisdiction: {response['origin_jurisdiction']}",
+            f"Traceability status: {response['traceability_status']}",
+            f"Human review required: {str(response['human_review_required']).lower()}",
+            "",
+            "Top risks:",
+            risks_text,
+            "",
+            "Minimum sources before go:",
+            missing_text,
+            "",
+            response["not_advice_notice"],
+        ]
+    )
+
+
+def a2a_result_for_critical_minerals_due_diligence(request_json: dict) -> dict:
+    result = services.critical_minerals_due_diligence(request_json)
+    if not result.get("valid"):
+        return {
+            "id": "agenda-intelligence-a2a-result",
+            "status": {"state": "TASK_STATE_FAILED"},
+            "artifacts": [],
+            "metadata": {
+                "product_profile": "critical_minerals_due_diligence",
+                "canonical_http_endpoint": CRITICAL_MINERALS_ENDPOINT,
+                "schema": CRITICAL_MINERALS_SCHEMA,
+                "valid": False,
+                "errors": result.get("errors", []),
+            },
+        }
+
+    response = result["response"]
+    return {
+        "id": "agenda-intelligence-a2a-result",
+        "status": {"state": "TASK_STATE_COMPLETED"},
+        "artifacts": [
+            {
+                "artifactId": "critical-minerals-due-diligence-response",
+                "name": "Critical minerals due diligence response",
+                "parts": [{"text": _critical_minerals_artifact_text(response), "mediaType": "text/markdown"}],
+            }
+        ],
+        "metadata": {
+            "product_profile": "critical_minerals_due_diligence",
+            "canonical_http_endpoint": CRITICAL_MINERALS_ENDPOINT,
+            "schema": CRITICAL_MINERALS_SCHEMA,
+            "human_review_required": response["human_review_required"],
+            "not_advice_notice": response["not_advice_notice"],
             "response": response,
         },
     }
@@ -1372,6 +1482,31 @@ def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> di
                 "jsonrpc": "2.0",
                 "id": id_value,
                 "result": a2a_result_for_market_entry_readiness(request_json),
+            }
+
+        if capability == "critical_minerals_due_diligence":
+            request_json = critical_minerals_request_from_params(params)
+            if request_json is None:
+                return jsonrpc_error(
+                    id_value,
+                    -32602,
+                    "Missing structured Critical Minerals Due Diligence request",
+                    {
+                        "required_shape": {
+                            "project_name": "string",
+                            "commodity": "string",
+                            "origin_jurisdiction": "string",
+                            "decision_question": "string",
+                            "decision_stage": "string",
+                            "supplied_sources": "array",
+                        },
+                        "schema": CRITICAL_MINERALS_SCHEMA,
+                    },
+                )
+            return {
+                "jsonrpc": "2.0",
+                "id": id_value,
+                "result": a2a_result_for_critical_minerals_due_diligence(request_json),
             }
 
         if capability == "agentic_interaction_trust":

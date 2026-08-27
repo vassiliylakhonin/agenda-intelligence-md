@@ -1,0 +1,70 @@
+{
+  "triage_recommendation": "ready_for_human_review",
+  "risk_signal": "low",
+  "decision_readiness_score": 100,
+  "decision_readiness_label": "review_ready",
+  "operational_decision": {
+    "decision": "continue",
+    "reason_code": "evidence_complete",
+    "blocking_gaps": [],
+    "next_permitted_action": "Human review and committee sign-off"
+  },
+  "commodity": "copper",
+  "origin_jurisdiction": "Kazakhstan",
+  "traceability_status": "verified",
+  "export_control_exposure": {
+    "quota_restricted": false,
+    "processing_monopoly_risk": false,
+    "jurisdiction_risk_flags": []
+  },
+  "supplied_sources": [
+    "mining_concession_or_license_extract",
+    "certified_ore_assay_report",
+    "beneficial_ownership_due_diligence",
+    "export_quota_and_permit_clearance",
+    "csddd_human_rights_and_esg_audit",
+    "processing_and_refining_tolling_agreement"
+  ],
+  "minimum_sources_before_go": [],
+  "evidence_gaps": [],
+  "top_risks": [
+    {
+      "category": "Supply Chain & Origin Traceability",
+      "severity": "low",
+      "description": "Traceability status is verified for copper originating from Kazakhstan."
+    }
+  ],
+  "exposure_layers": [
+    {
+      "layer": "Origin Concession & Mining Rights",
+      "level": "verified",
+      "summary": "Mining concession / license extract status in source ledger."
+    },
+    {
+      "layer": "Processing & Beneficiation Route",
+      "level": "verified",
+      "summary": "Refining, smelter, and tolling contract agreements."
+    },
+    {
+      "layer": "ESG & CSDDD Compliance",
+      "level": "verified",
+      "summary": "Human rights, environmental, and tailings due diligence audit."
+    }
+  ],
+  "watch_next": [
+    "EU Critical Raw Materials Act strategic project announcements",
+    "Export quota and licensing rule revisions in producing states",
+    "OFAC / EU / UK sanctions updates on mining conglomerates",
+    "Refinery tolling fee and capacity bottlenecks",
+    "CSDDD supply-chain due diligence compliance audits"
+  ],
+  "human_review_required": true,
+  "not_advice_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice.",
+  "run_provenance": {
+    "contract_version": "1.7.0",
+    "input_digest": "sha256:0d7596a202504637e2e8b71844d66089ddeb6c48c5527d6ea1213510aa4241f8",
+    "schema_uri": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-response.schema.json"
+  },
+  "processing_jurisdiction": "Kazakhstan",
+  "target_market": "eu"
+}

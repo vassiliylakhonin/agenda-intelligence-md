@@ -124,3 +124,18 @@ AGENT_PROFILE = "corridor_sanctions_assistant"
 [[env.corridor-sanctions-assistant.kv_namespaces]]
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
+
+# Critical Minerals & Strategic Raw Materials Due Diligence Gate — origin tracing and CSDDD compliance.
+# Evidence triage only, no live retrieval. Open free demo (no API key). Deploy with:
+#   wrangler deploy --env critical-minerals-due-diligence
+[env.critical-minerals-due-diligence]
+name = "critical-minerals-due-diligence-a2a"
+workers_dev = true
+
+[env.critical-minerals-due-diligence.vars]
+AGENT_PROFILE = "critical_minerals_due_diligence"
+
+[[env.critical-minerals-due-diligence.kv_namespaces]]
+binding = "AGENDA_USAGE"
+id = "d2228183999246ccbec8aa2d5f130bfc"
+

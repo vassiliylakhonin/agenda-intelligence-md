@@ -1,0 +1,41 @@
+{
+  "project_name": "Balkhash Copper-Cobalt Beneficiation",
+  "commodity": "copper",
+  "origin_jurisdiction": "Kazakhstan",
+  "processing_jurisdiction": "Kazakhstan",
+  "target_market": "eu",
+  "decision_question": "Is the due diligence file complete for committee off-take approval?",
+  "decision_stage": "pre_offtake_agreement",
+  "supplied_sources": [
+    {
+      "source_type": "mining_concession_or_license_extract",
+      "title": "Mining License #1029",
+      "date": "2025-06-01"
+    },
+    {
+      "source_type": "certified_ore_assay_report",
+      "title": "SGS Verified Assay Summary",
+      "date": "2026-02-10"
+    },
+    {
+      "source_type": "beneficial_ownership_due_diligence",
+      "title": "Kroll Ultimate Beneficial Ownership Report",
+      "date": "2026-03-01"
+    },
+    {
+      "source_type": "export_quota_and_permit_clearance",
+      "title": "Strategic Export Clearance Certificate",
+      "date": "2026-03-15"
+    },
+    {
+      "source_type": "csddd_human_rights_and_esg_audit",
+      "title": "DNV Supply Chain & Human Rights ESG Audit",
+      "date": "2026-04-01"
+    },
+    {
+      "source_type": "processing_and_refining_tolling_agreement",
+      "title": "Kazakhmys Smelter Tolling Agreement",
+      "date": "2026-04-10"
+    }
+  ]
+}

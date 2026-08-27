@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-request.schema.json",
+  "title": "CriticalMineralsDueDiligenceRequest",
+  "description": "Product-grade structured request contract for Critical Minerals & Strategic Raw Materials evidence triage (EU Critical Raw Materials Act, EU CSDDD, US Inflation Reduction Act, and export-control compliance). This schema describes caller-supplied mineral commodity, extraction jurisdiction, processing route, counterparty, and decision-stage inputs. It does not enable live retrieval, factual-truth verification, legal advice, compliance advice, sanctions advice, or ESG certification.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "project_name",
+    "commodity",
+    "origin_jurisdiction",
+    "decision_question",
+    "decision_stage",
+    "supplied_sources"
+  ],
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "commodity": {
+      "type": "string",
+      "enum": [
+        "lithium",
+        "rare_earth_elements",
+        "nickel",
+        "cobalt",
+        "copper",
+        "graphite",
+        "manganese",
+        "tungsten",
+        "gallium_germanium",
+        "other_critical_mineral"
+      ]
+    },
+    "origin_jurisdiction": {
+      "type": "string",
+      "minLength": 1
+    },
+    "processing_jurisdiction": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_market": {
+      "type": "string",
+      "enum": [
+        "eu",
+        "us",
+        "uk",
+        "japan_korea",
+        "global",
+        "domestic"
+      ],
+      "default": "global"
+    },
+    "decision_question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_stage": {
+      "type": "string",
+      "enum": [
+        "pre_exploration",
+        "pre_offtake_agreement",
+        "pre_processing_contract",
+        "pre_export_shipment",
+        "pre_investment_decision"
+      ]
+    },
+    "counterparties": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "role", "jurisdiction"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "role": {
+            "type": "string",
+            "enum": [
+              "mine_operator",
+              "concession_holder",
+              "refinery_processor",
+              "trading_intermediary",
+              "offtake_buyer",
+              "transport_logistics_carrier",
+              "government_entity"
+            ]
+          },
+          "jurisdiction": { "type": "string", "minLength": 1 },
+          "state_owned_or_affiliated": { "type": "boolean" },
+          "beneficial_owners": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "sanctions_screening_ref": { "type": "string" }
+        }
+      },
+      "default": []
+    },
+    "supplied_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_type"],
+        "additionalProperties": false,
+        "properties": {
+          "source_type": { "type": "string", "minLength": 1 },
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "date": { "type": "string" },
+          "issuing_authority": { "type": "string" },
+          "verified_by_counsel": { "type": "boolean" },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "dated_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_type"],
+        "additionalProperties": false,
+        "properties": {
+          "source_type": { "type": "string", "minLength": 1 },
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "date": { "type": "string" },
+          "issuing_authority": { "type": "string" },
+          "verified_by_counsel": { "type": "boolean" },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    }
+  }
+}

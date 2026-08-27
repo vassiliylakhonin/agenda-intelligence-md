@@ -127,6 +127,14 @@
       "path": "schemas/v1/market-entry-readiness-response.schema.json",
       "schema_version": "v1"
     },
+    "critical_minerals_due_diligence_request": {
+      "path": "schemas/v1/critical-minerals-due-diligence-request.schema.json",
+      "schema_version": "v1"
+    },
+    "critical_minerals_due_diligence_response": {
+      "path": "schemas/v1/critical-minerals-due-diligence-response.schema.json",
+      "schema_version": "v1"
+    },
     "claim_verification_request": {
       "path": "schemas/v1/claim-verification-request.schema.json",
       "schema_version": "v1"

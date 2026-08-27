@@ -458,6 +458,120 @@
           }
         }
       }
+    },
+    "/v1/evidence-packet/check": {
+      "post": {
+        "tags": [
+          "rest"
+        ],
+        "summary": "Direct Evidence Packet Validation & Gate Check",
+        "description": "Validates claims against supplied evidence sources, evaluates decision readiness, and returns actionable markdown repair guidance.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "claims": { "type": "array" },
+                  "evidence": { "type": "array" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Packet validation result with repair guidance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/evidence-packet/repair-prompt": {
+      "post": {
+        "tags": [
+          "rest"
+        ],
+        "summary": "Evidence Packet Actionable Repair Prompt",
+        "description": "Generates a structured LLM repair prompt for closing evidence gaps and repairing unsafe claims in an evidence packet.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Generated repair prompt in Markdown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/critical-minerals/due-diligence": {
+      "post": {
+        "tags": [
+          "rest"
+        ],
+        "summary": "Critical Minerals & Strategic Raw Materials Due Diligence",
+        "description": "Evaluates origin tracing, export quota restrictions, and CSDDD supply-chain due diligence for critical raw materials.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/critical-minerals-due-diligence-request.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Critical minerals due diligence response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/critical-minerals-due-diligence-response.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "tags": [
+          "mcp"
+        ],
+        "summary": "Streamable HTTP MCP JSON-RPC Endpoint",
+        "description": "Model Context Protocol JSON-RPC 2.0 endpoint supporting server/discover, tools/*, resources/*, and prompts/*.",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/JsonRpcRequest"
+        },
+        "responses": {
+          "200": {
+            "description": "MCP JSON-RPC response envelope."
+          }
+        }
+      }
     }
   },
   "components": {

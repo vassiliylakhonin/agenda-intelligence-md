@@ -139,6 +139,15 @@ const PROFILE_TOOLS = {
       "or partner commitment. Returns a gate decision, readiness label, evidence gaps, claim audit, owner " +
       "actions, and watch-next indicators."
   },
+  critical_minerals_due_diligence: {
+    name: "critical_minerals_due_diligence",
+    argKey: "request",
+    summary:
+      "Triage origin tracing, export quota restrictions, and CSDDD supply-chain due diligence for critical minerals " +
+      "(lithium, rare earths, nickel, cobalt, copper, graphite, manganese, tungsten, gallium/germanium) before offtake " +
+      "or investment commitment. Returns origin traceability status, export quota flags, top supply-chain risks, " +
+      "and evidence gaps."
+  },
   corridor_sanctions_assistant: {
     name: "corridor_sanctions_assistant",
     argKey: "text",

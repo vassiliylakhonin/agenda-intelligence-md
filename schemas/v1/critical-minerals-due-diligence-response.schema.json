@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-response.schema.json",
+  "title": "CriticalMineralsDueDiligenceResponse",
+  "description": "Product-grade structured response contract for Critical Minerals & Strategic Raw Materials evidence triage. Provides deterministic evaluation of origin tracing, export-control flags, beneficiation bottleneck risks, and CSDDD compliance gaps. It does not provide legal advice, sanctions advice, compliance advice, financial advice, ESG certification, live retrieval, or factual-truth verification.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "triage_recommendation",
+    "risk_signal",
+    "decision_readiness_score",
+    "decision_readiness_label",
+    "operational_decision",
+    "commodity",
+    "origin_jurisdiction",
+    "traceability_status",
+    "supplied_sources",
+    "minimum_sources_before_go",
+    "evidence_gaps",
+    "watch_next",
+    "human_review_required",
+    "not_advice_notice"
+  ],
+  "properties": {
+    "triage_recommendation": {
+      "type": "string",
+      "enum": [
+        "not_decision_ready",
+        "escalate_before_offtake",
+        "escalate_before_shipment",
+        "escalate_before_investment",
+        "ready_for_human_review",
+        "insufficient_information"
+      ]
+    },
+    "risk_signal": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "medium_high",
+        "high",
+        "unknown"
+      ]
+    },
+    "decision_readiness_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "decision_readiness_label": {
+      "type": "string",
+      "enum": [
+        "insufficient_information",
+        "not_decision_ready",
+        "partial",
+        "review_ready"
+      ]
+    },
+    "operational_decision": {
+      "type": "object",
+      "required": ["decision", "reason_code", "blocking_gaps"],
+      "additionalProperties": false,
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["stop", "request_evidence", "require_approval", "continue"]
+        },
+        "reason_code": {
+          "type": "string"
+        },
+        "blocking_gaps": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "next_permitted_action": {
+          "type": "string"
+        }
+      }
+    },
+    "commodity": {
+      "type": "string"
+    },
+    "origin_jurisdiction": {
+      "type": "string"
+    },
+    "processing_jurisdiction": {
+      "type": "string"
+    },
+    "target_market": {
+      "type": "string"
+    },
+    "traceability_status": {
+      "type": "string",
+      "enum": ["verified", "partial", "unverified", "obfuscated"]
+    },
+    "export_control_exposure": {
+      "type": "object",
+      "required": ["quota_restricted", "jurisdiction_risk_flags"],
+      "additionalProperties": false,
+      "properties": {
+        "quota_restricted": { "type": "boolean" },
+        "processing_monopoly_risk": { "type": "boolean" },
+        "jurisdiction_risk_flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "supplied_sources": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "minimum_sources_before_go": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "evidence_gaps": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "top_risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "severity", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "category": { "type": "string" },
+          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "exposure_layers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["layer", "level", "summary"],
+        "additionalProperties": false,
+        "properties": {
+          "layer": { "type": "string" },
+          "level": { "type": "string" },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "watch_next": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "human_review_required": {
+      "type": "boolean"
+    },
+    "not_advice_notice": {
+      "type": "string"
+    },
+    "run_provenance": {
+      "type": "object",
+      "required": ["contract_version", "input_digest", "schema_uri"],
+      "additionalProperties": false,
+      "properties": {
+        "contract_version": { "type": "string" },
+        "input_digest": { "type": "string" },
+        "schema_uri": { "type": "string" }
+      }
+    }
+  }
+}

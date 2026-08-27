@@ -73,6 +73,7 @@ def handle_get(path: str) -> tuple[int, dict]:
                     "cis_secondary_sanctions_exposure",
                     "gulf_maritime_exposure",
                     "kazakhstan_market_entry_readiness",
+                    "critical_minerals_due_diligence",
                     "agent_output_verification",
                     "pre_action_check",
                 ],
@@ -159,6 +160,19 @@ def handle_post(path: str, payload: dict) -> tuple[int, dict]:
             return 400, {
                 "ok": False,
                 "error": "Invalid Kazakhstan market-entry readiness request",
+                "errors": result["errors"],
+            }
+        return 200, result["response"]
+
+    if path == "/v1/critical-minerals/due-diligence":
+        result = services.critical_minerals_due_diligence(payload)
+        unavailable = _validation_unavailable(result, "Critical minerals due diligence")
+        if unavailable is not None:
+            return unavailable
+        if not result.get("valid"):
+            return 400, {
+                "ok": False,
+                "error": "Invalid Critical minerals due diligence request",
                 "errors": result["errors"],
             }
         return 200, result["response"]

@@ -1,0 +1,29 @@
+{
+  "category": "critical-minerals-due-diligence",
+  "required_before_offtake": [
+    "mining_concession_or_license_extract",
+    "certified_ore_assay_report",
+    "beneficial_ownership_due_diligence",
+    "export_quota_and_permit_clearance",
+    "csddd_human_rights_and_esg_audit",
+    "processing_and_refining_tolling_agreement"
+  ],
+  "required_before_investment": [
+    "bankable_feasibility_study",
+    "sovereign_royalty_and_tax_stability_memo",
+    "tailings_and_environmental_permits",
+    "local_content_and_employment_quota_filing"
+  ],
+  "required_before_shipment": [
+    "certificate_of_origin",
+    "export_customs_declaration",
+    "port_of_loading_assay_verification",
+    "sanctions_and_export_control_license",
+    "marine_and_transit_cargo_insurance"
+  ],
+  "helpful_context": [
+    "global_market_pricing_benchmark",
+    "substitute_chemistry_risk_assessment",
+    "refinery_smelter_capacity_analysis"
+  ]
+}

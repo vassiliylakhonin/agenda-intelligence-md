@@ -47,6 +47,11 @@ export const MARKET_ENTRY_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/sche
 export const MARKET_ENTRY_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/market-entry-readiness-response.schema.json`;
 export const MARKET_ENTRY_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/kazakhstan-market-entry-readiness.json`;
 
+export const CRITICAL_MINERALS_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/critical-minerals-due-diligence.md`;
+export const CRITICAL_MINERALS_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/critical-minerals-due-diligence-request.schema.json`;
+export const CRITICAL_MINERALS_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/critical-minerals-due-diligence-response.schema.json`;
+export const CRITICAL_MINERALS_SOURCE_TAXONOMY_URL = `${REPOSITORY_URL}/blob/main/source-requirements/critical-minerals-due-diligence.json`;
+
 export const AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/evidence-audit.schema.json`;
 export const AGENT_OUTPUT_VERIFICATION_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agent-output-verification-response.schema.json`;
 export const PRE_ACTION_CHECK_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/pre-action-check-request.schema.json`;
@@ -389,6 +394,33 @@ const confidentialProjectRoomProfile = Object.freeze({
   profile_schema: CONFIDENTIAL_PROJECT_ROOM_SCHEMA_URL
 });
 
+const criticalMineralsProfile = Object.freeze({
+  profile_key: "critical_minerals_due_diligence",
+  product_profile: "critical_minerals_due_diligence",
+  canonical_product_name: "Critical Minerals & Strategic Raw Materials Due Diligence Gate",
+  documentation_url: CRITICAL_MINERALS_DOCS_URL,
+  provider_same_as: SHARED_PROVIDER_SAME_AS,
+  wrapper_scope:
+    "A2A/JSON-RPC discovery, critical minerals origin tracing, strategic export-quota flags, CSDDD compliance triage, evidence gating, and routing response only",
+  supported_contracts: frozenArray(["critical_minerals_due_diligence_contract"]),
+  buyer_use_cases: frozenArray([
+    "critical minerals procurement and offtake agreement review",
+    "mining concession and assay traceability verification before investment",
+    "EU CSDDD and Critical Raw Materials Act supply chain compliance audit",
+    "strategic export quota and refinery bottleneck exposure screening"
+  ]),
+  commercial_positioning:
+    "Commodity + origin jurisdiction + processing route + counterparties + supplied sources -> deterministic due diligence triage with origin traceability, export quota flags, CSDDD compliance gaps, top supply-chain risks, and human-review escalation. Sits beside legal, trade-compliance, and ESG advisors.",
+  product_contract: productContract({
+    request_schema: CRITICAL_MINERALS_REQUEST_SCHEMA_URL,
+    response_schema: CRITICAL_MINERALS_RESPONSE_SCHEMA_URL,
+    source_taxonomy: CRITICAL_MINERALS_SOURCE_TAXONOMY_URL,
+    runnable_examples: `${REPOSITORY_URL}/tree/main/examples/critical-minerals-due-diligence`,
+    demo_input_modes: ["structured_json"]
+  }),
+  live_retrieval: PROFILE_LIVE_RETRIEVAL.critical_minerals_due_diligence || { capability_declared: false, upstream_options: [] }
+});
+
 export const PROFILE_REGISTRY = Object.freeze({
   agenda: Object.freeze({
     profile_key: "agenda",
@@ -405,6 +437,8 @@ export const PROFILE_REGISTRY = Object.freeze({
   cis_secondary_sanctions: cisSecondarySanctionsProfile,
   market_entry_readiness: marketEntryReadinessProfile,
   kazakhstan_market_entry_readiness: marketEntryReadinessProfile,
+  critical_minerals_due_diligence: criticalMineralsProfile,
+  critical_minerals: criticalMineralsProfile,
   corridor_sanctions_assistant: corridorSanctionsAssistantProfile,
   confidential_project_room: confidentialProjectRoomProfile
 });

@@ -1,0 +1,23 @@
+{
+  "project_name": "Central Asia Lithium Brine Offtake",
+  "commodity": "lithium",
+  "origin_jurisdiction": "Kazakhstan",
+  "processing_jurisdiction": "China",
+  "target_market": "eu",
+  "decision_question": "Can we execute the 5-year spodumene concentrate offtake agreement?",
+  "decision_stage": "pre_offtake_agreement",
+  "supplied_sources": [
+    {
+      "source_type": "mining_concession_or_license_extract",
+      "title": "Subsoil Use Contract #4812",
+      "date": "2025-11-10",
+      "issuing_authority": "Ministry of Industry and Construction RK"
+    },
+    {
+      "source_type": "certified_ore_assay_report",
+      "title": "ALS Minerals JORC Assay Report",
+      "date": "2026-01-15",
+      "issuing_authority": "ALS Minerals Kazakhstan"
+    }
+  ]
+}

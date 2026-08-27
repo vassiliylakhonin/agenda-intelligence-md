@@ -83,6 +83,18 @@ const cases = [
       "examples/kazakhstan-market-entry-readiness/contract/pre_signature_validation.request.json"
     ),
     extractResponse: (json) => json.result?.metadata?.response
+  },
+  {
+    name: "critical-minerals-due-diligence",
+    baseUrl: origin("critical-minerals-due-diligence-a2a"),
+    expectedCardProfile: "critical_minerals_due_diligence",
+    expectedContractProfile: "critical_minerals_due_diligence",
+    body: rpcBody(
+      "smoke-minerals",
+      "critical_minerals_due_diligence",
+      "examples/critical-minerals-due-diligence/contract/pre_signature_escalate.request.json"
+    ),
+    extractResponse: (json) => json.result?.metadata?.response
   }
 ];
 

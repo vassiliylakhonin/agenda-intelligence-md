@@ -42,6 +42,7 @@ const UNGATED_ENVS = [
   "agentic-interaction-trust",
   "gulf-maritime-exposure",
   "kazakhstan-market-entry-readiness",
+  "critical-minerals-due-diligence",
   "corridor-sanctions-assistant"
 ];
 

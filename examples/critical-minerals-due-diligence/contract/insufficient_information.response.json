@@ -1,0 +1,91 @@
+{
+  "triage_recommendation": "insufficient_information",
+  "risk_signal": "unknown",
+  "decision_readiness_score": 0,
+  "decision_readiness_label": "insufficient_information",
+  "operational_decision": {
+    "decision": "request_evidence",
+    "reason_code": "insufficient_sources",
+    "blocking_gaps": [
+      "Missing required source: mining concession or license extract",
+      "Missing required source: certified ore assay report",
+      "Missing required source: beneficial ownership due diligence",
+      "Missing required source: export quota and permit clearance",
+      "Missing required source: csddd human rights and esg audit",
+      "Missing required source: processing and refining tolling agreement",
+      "rare_earth_elements is subject to strategic export quota / licensing restrictions."
+    ],
+    "next_permitted_action": "Obtain missing origin, assay, or export-control permits"
+  },
+  "commodity": "rare_earth_elements",
+  "origin_jurisdiction": "Kazakhstan",
+  "traceability_status": "unverified",
+  "export_control_exposure": {
+    "quota_restricted": true,
+    "processing_monopoly_risk": false,
+    "jurisdiction_risk_flags": [
+      "rare_earth_elements is subject to strategic export quota / licensing restrictions."
+    ]
+  },
+  "supplied_sources": [],
+  "minimum_sources_before_go": [
+    "mining_concession_or_license_extract",
+    "certified_ore_assay_report",
+    "beneficial_ownership_due_diligence",
+    "export_quota_and_permit_clearance",
+    "csddd_human_rights_and_esg_audit",
+    "processing_and_refining_tolling_agreement"
+  ],
+  "evidence_gaps": [
+    "Missing required source: mining concession or license extract",
+    "Missing required source: certified ore assay report",
+    "Missing required source: beneficial ownership due diligence",
+    "Missing required source: export quota and permit clearance",
+    "Missing required source: csddd human rights and esg audit",
+    "Missing required source: processing and refining tolling agreement",
+    "rare_earth_elements is subject to strategic export quota / licensing restrictions."
+  ],
+  "top_risks": [
+    {
+      "category": "Supply Chain & Origin Traceability",
+      "severity": "high",
+      "description": "Traceability status is unverified for rare_earth_elements originating from Kazakhstan."
+    },
+    {
+      "category": "Export Control & Regulatory Quotas",
+      "severity": "high",
+      "description": "rare_earth_elements is subject to strategic export quota / licensing restrictions."
+    }
+  ],
+  "exposure_layers": [
+    {
+      "layer": "Origin Concession & Mining Rights",
+      "level": "gap",
+      "summary": "Mining concession / license extract status in source ledger."
+    },
+    {
+      "layer": "Processing & Beneficiation Route",
+      "level": "gap",
+      "summary": "Refining, smelter, and tolling contract agreements."
+    },
+    {
+      "layer": "ESG & CSDDD Compliance",
+      "level": "gap",
+      "summary": "Human rights, environmental, and tailings due diligence audit."
+    }
+  ],
+  "watch_next": [
+    "EU Critical Raw Materials Act strategic project announcements",
+    "Export quota and licensing rule revisions in producing states",
+    "OFAC / EU / UK sanctions updates on mining conglomerates",
+    "Refinery tolling fee and capacity bottlenecks",
+    "CSDDD supply-chain due diligence compliance audits"
+  ],
+  "human_review_required": true,
+  "not_advice_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice.",
+  "run_provenance": {
+    "contract_version": "1.7.0",
+    "input_digest": "sha256:6228332149780addfbc764fb177bfc53c6ec102bfabd851c06ae2987c3698c86",
+    "schema_uri": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-response.schema.json"
+  }
+}

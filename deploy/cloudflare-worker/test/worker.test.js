@@ -5253,3 +5253,196 @@ test("the routing note states each source category once", async () => {
   const occurrences = note.split("\n").filter((line) => line.trim() === "- ownership/counterparty").length;
   assert.equal(occurrences, 0, "the bare category list should not reappear after Collect next");
 });
+
+test("direct REST POST /v1/evidence-packet/check validates packet and returns repair guidance", async () => {
+  const payload = {
+    claims: [
+      {
+        claim_id: "c1",
+        claim: "Vessel has valid P&I insurance",
+        support_level: "direct",
+        evidence_ids: ["e1"],
+        supporting_quotes: [{ evidence_id: "e1", text: "Gard confirms active P&I cover." }]
+      }
+    ],
+    evidence: [
+      {
+        evidence_id: "e1",
+        source_type: "insurance_certificate",
+        title: "Gard P&I Certificate",
+        date: "2026-05-01"
+      }
+    ]
+  };
+
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/evidence-packet/check", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+  );
+
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.valid, true);
+  assert.equal(json.packet_status, "review_ready");
+  assert.equal(json.response.claim_count, 1);
+  assert.equal(json.response.grounded_claim_count, 1);
+  assert.match(json.response.repair_guidance, /# Evidence Packet Repair Prompt/);
+  assert.equal(json.run_provenance.endpoint, "/v1/evidence-packet/check");
+});
+
+test("direct REST POST /v1/evidence-packet/repair-prompt generates actionable markdown", async () => {
+  const payload = {
+    packet: {
+      claims: [
+        {
+          claim_id: "c1",
+          claim: "Unverified transaction volume",
+          support_level: "unsupported",
+          evidence_ids: ["e99"]
+        }
+      ],
+      evidence: []
+    }
+  };
+
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/evidence-packet/repair-prompt", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+  );
+
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.valid, true);
+  assert.equal(json.packet_status, "not_decision_ready");
+  assert.match(json.repair_prompt, /Unsafe \/ Unsupported Claims to Fix or Remove:/);
+  assert.match(json.repair_prompt, /Claim c1/);
+});
+
+test("direct REST POST /v1/critical-minerals/due-diligence evaluates mineral offtake file", async () => {
+  const payload = {
+    project_name: "Balkhash Copper-Cobalt",
+    commodity: "copper",
+    origin_jurisdiction: "Kazakhstan",
+    decision_question: "Is the due diligence file complete for off-take?",
+    decision_stage: "pre_offtake_agreement",
+    supplied_sources: [
+      { source_type: "mining_concession_or_license_extract", title: "License #102" },
+      { source_type: "certified_ore_assay_report", title: "Assay Report" }
+    ]
+  };
+
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/critical-minerals/due-diligence", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+  );
+
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.commodity, "copper");
+  assert.equal(json.origin_jurisdiction, "Kazakhstan");
+  assert.equal(json.traceability_status, "verified");
+  assert.equal(json.human_review_required, true);
+  assert.equal(json.operational_decision.decision, "request_evidence");
+});
+
+test("critical_minerals_due_diligence profile over A2A and MCP", async () => {
+  const env = { AGENT_PROFILE: "critical_minerals_due_diligence" };
+  const cardReq = new Request("https://critical-minerals-due-diligence-a2a.example.workers.dev/.well-known/agent-card.json");
+  const card = agentCard(cardReq, env);
+  assert.equal(card.x_agenda_intelligence.product_profile, "critical_minerals_due_diligence");
+
+  const mcpDiscover = await handleMcpJsonRpc(
+    { jsonrpc: "2.0", id: "d1", method: "server/discover", params: {} },
+    cardReq,
+    env
+  );
+  assert.deepEqual(mcpDiscover.result.capabilities, {
+    tools: { listChanged: false },
+    resources: { listChanged: false, subscribe: false },
+    prompts: { listChanged: false }
+  });
+
+  const mcpTools = await handleMcpJsonRpc(
+    { jsonrpc: "2.0", id: "t1", method: "tools/list", params: {} },
+    cardReq,
+    env
+  );
+  assert.equal(mcpTools.result.tools[0].name, "critical_minerals_due_diligence");
+
+  const mcpCall = await handleMcpJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "c1",
+      method: "tools/call",
+      params: {
+        name: "critical_minerals_due_diligence",
+        arguments: {
+          request: {
+            project_name: "Korgantas Rare Earths",
+            commodity: "rare_earth_elements",
+            origin_jurisdiction: "Kazakhstan",
+            decision_question: "Proceed to offtake?",
+            decision_stage: "pre_offtake_agreement",
+            supplied_sources: []
+          }
+        }
+      }
+    },
+    cardReq,
+    env
+  );
+  const respPayload = mcpCall.result.structuredContent.metadata?.response || mcpCall.result.structuredContent;
+  assert.equal(respPayload.triage_recommendation, "insufficient_information");
+});
+
+test("remote MCP HTTP transport handles resources and prompts", async () => {
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/mcp");
+
+  // resources/list
+  const resList = await handleMcpJsonRpc(
+    { jsonrpc: "2.0", id: "r1", method: "resources/list", params: {} },
+    req
+  );
+  assert.ok(Array.isArray(resList.result.resources));
+  assert.ok(resList.result.resources.some((r) => r.uri === "agenda://manifest"));
+  assert.ok(resList.result.resources.some((r) => r.uri === "agenda://protocol/core"));
+
+  // resources/read
+  const resRead = await handleMcpJsonRpc(
+    { jsonrpc: "2.0", id: "r2", method: "resources/read", params: { uri: "agenda://manifest" } },
+    req
+  );
+  assert.equal(resRead.result.contents[0].mimeType, "application/json");
+  const manifestData = JSON.parse(resRead.result.contents[0].text);
+  assert.equal(manifestData.product, "Agenda Intelligence MD");
+
+  // prompts/list
+  const pList = await handleMcpJsonRpc(
+    { jsonrpc: "2.0", id: "p1", method: "prompts/list", params: {} },
+    req
+  );
+  assert.ok(Array.isArray(pList.result.prompts));
+  assert.ok(pList.result.prompts.some((p) => p.name === "draft_evidence_memo"));
+
+  // prompts/get
+  const pGet = await handleMcpJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "p2",
+      method: "prompts/get",
+      params: { name: "draft_evidence_memo", arguments: { topic: "Critical Minerals Supply" } }
+    },
+    req
+  );
+  assert.match(pGet.result.messages[0].content.text, /Critical Minerals Supply/);
+});
+
