@@ -6,7 +6,7 @@ export const SUPPORT_CONTACT_EMAIL = "vassiliy.lakhonin@gmail.com";
 export const SUPPORT_HOURS_LOCAL = "Mon–Fri 09:00–18:00 Asia/Almaty (UTC+5)";
 export const SUPPORT_TIMEZONE = "Asia/Almaty";
 
-export const VERSION = "1.7.0";
+export const VERSION = "1.7.1";
 export const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
 export const DOCS_URL = `${REPOSITORY_URL}/blob/main/MCP.md`;
 export const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";

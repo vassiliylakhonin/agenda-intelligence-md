@@ -1,7 +1,7 @@
 {
   "name": "agenda-intelligence",
   "description": "Deterministic evidence-packet linter for claim-backed AI output, with compatibility agenda-analysis skills and MCP tools. Reports packet completeness, not factual truth.",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "author": {
     "name": "Vassiliy Lakhonin",
     "url": "https://github.com/vassiliylakhonin"

@@ -2,6 +2,13 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
+## 1.7.1 — 2026-08-27
+
+- **feat(workers): Edge REST routes, streamable MCP resources & prompts, and critical minerals vertical worker.**
+  - Direct REST validation endpoints on Cloudflare Workers: `POST /v1/evidence-packet/check`, `POST /v1/evidence-packet/repair-prompt`, `POST /v1/critical-minerals/due-diligence`.
+  - Remote Streamable HTTP MCP JSON-RPC transport extended with `resources/list`, `resources/read`, `prompts/list`, `prompts/get`.
+  - Added sixth vertical gate profile: `critical_minerals_due_diligence` for origin tracing, export quota compliance (rare earths, graphite, gallium, germanium, tungsten), and CSDDD alignment.
+
 ## 1.7.0 — 2026-08-27
 
 - **feat(review): interactive standalone HTML report (`--format html`).**
