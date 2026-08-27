@@ -4,6 +4,26 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(services): enhanced quote matching with ellipsis and typographical normalization.**
+  `check_evidence_packet`, `grounded_check`, and `verify_quotes` now support ellipsis (`...`, `…`) in quoted
+  excerpts to match non-contiguous verbatim passages in order, and normalize typographical quotes (`“”«»‘’`),
+  dashes, and unicode whitespace.
+
+- **feat(services/cli/mcp): self-correction repair prompt generation for LLM agents.**
+  Adds `build_repair_prompt` service function, `agenda-intelligence repair-prompt` CLI command, and
+  `generate_repair_prompt` MCP tool. Inspects claim diagnostics (missing sources, misquotes, unmatched numbers,
+  polarity/negation mismatches, weak lexical support) and formats structured markdown guidance for agent retries.
+
+- **feat(integrations): EvidencePacketGuardrail for agent pipelines.**
+  Adds `src/agenda_intelligence/integrations.py` providing a lightweight, zero-dependency guardrail and
+  automated `validate_or_repair` feedback loop for LangChain, LlamaIndex, CrewAI, DSPy, and custom agent loops.
+
+- **feat(ci): GitHub Action (`action.yml`) for evidence linting.**
+  Adds a composite GitHub Action definition allowing CI workflows to validate evidence packets or run local
+  document reviews directly via `uses: vassiliylakhonin/agenda-intelligence-md@main`.
+
+- **fix(tests): isolate PYTHONPATH in subprocess calls in `test_lens_packs.py`.**
+
 - **fix(worker): the deal-risk gate no longer contradicts the subject line two rows above it.**
   Measured live on the Middle Corridor gate right after #266 deployed: "Aluminium extrusions from
   Aktau to Jebel Ali via Baku and Poti" produced a subject line naming all four places and a cargo

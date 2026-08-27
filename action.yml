@@ -1,0 +1,55 @@
+name: 'Agenda Intelligence Evidence Linter'
+description: 'Deterministic evidence-packet and document review linter for claim-backed AI output.'
+author: 'Vassiliy Lakhonin'
+branding:
+  icon: 'check-circle'
+  color: 'blue'
+
+inputs:
+  path:
+    description: 'Path to evidence packet JSON file or evidence review manifest JSON file'
+    required: true
+  command:
+    description: 'Command to run: "check" (evidence packet) or "review" (local document review manifest)'
+    required: false
+    default: 'check'
+  strict:
+    description: 'Exit non-zero if packet is not complete'
+    required: false
+    default: 'true'
+  format:
+    description: 'Output format (text/json for check, markdown/json for review)'
+    required: false
+    default: 'text'
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.11'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install agenda-intelligence-md
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install .
+
+    - name: Run evidence check/review
+      shell: bash
+      run: |
+        STRICT_FLAG=""
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          STRICT_FLAG="--strict"
+        fi
+
+        if [ "${{ inputs.command }}" = "review" ]; then
+          agenda-intelligence review "${{ inputs.path }}" --format "${{ inputs.format }}" $STRICT_FLAG
+        else
+          agenda-intelligence check "${{ inputs.path }}" --format "${{ inputs.format }}" $STRICT_FLAG
+        fi

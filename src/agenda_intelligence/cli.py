@@ -175,6 +175,26 @@ def cmd_review(args):
         raise SystemExit(1)
 
 
+def cmd_repair_prompt(args):
+    """Generate self-correction instructions for an LLM agent from an evidence packet."""
+    from agenda_intelligence import services
+
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"File not found: {args.path}")
+    try:
+        packet = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid JSON in {args.path}: {exc}")
+
+    prompt = services.build_repair_prompt(packet)
+    if args.out:
+        Path(args.out).write_text(prompt + "\n", encoding="utf-8")
+        print(f"Wrote {args.out}")
+    else:
+        print(prompt)
+
+
 def cmd_validate_manifest(args):
     # Validate agent-manifest.json against its schema.
     from jsonschema import ValidationError, validate
@@ -1231,6 +1251,14 @@ def main():
     p.add_argument("--out", help="Write output to this file instead of stdout")
     p.add_argument("--strict", action="store_true", help="Exit 1 unless every packet claim is complete")
     p.set_defaults(func=cmd_review)
+    # repair-prompt: generate agent self-correction instructions from an evidence packet
+    p = sub.add_parser(
+        "repair-prompt",
+        help="Generate structured self-correction instructions for an LLM agent from an evidence packet",
+    )
+    p.add_argument("path", help="Evidence packet request JSON file")
+    p.add_argument("--out", help="Write prompt to this file instead of stdout")
+    p.set_defaults(func=cmd_repair_prompt)
     # audit (alias of validate-evidence)
     p = sub.add_parser("audit", help="Audit an evidence pack (alias of validate-evidence)")
     p.add_argument("path")

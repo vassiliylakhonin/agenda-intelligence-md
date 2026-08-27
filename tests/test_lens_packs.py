@@ -1,7 +1,11 @@
 import json
+import os
 import subprocess
 import sys
+from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+ENV = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
 CATEGORIES = ["energy", "cyber-threats", "esg", "supply-chain-resilience"]
 
 
@@ -10,6 +14,8 @@ def run_cli(category):
         [sys.executable, "-m", "agenda_intelligence.cli", "source-plan", category],
         capture_output=True,
         text=True,
+        cwd=ROOT,
+        env=ENV,
     )
     assert result.returncode == 0, f"CLI returned {result.returncode}: {result.stderr}"
     return json.loads(result.stdout)

@@ -827,6 +827,24 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "handler": lambda args: mcp_server.append_evidence(args),
     },
+    "generate_repair_prompt": {
+        "description": (
+            "Generate actionable self-correction instructions for an LLM agent from an evidence packet "
+            "request. Inspects validation and claim-level issues (missing sources, misquoted excerpts, "
+            "unmatched numbers, polarity/negation mismatches, weak lexical support) and formats a structured "
+            "markdown prompt for the agent to revise its claims and citations."
+        ),
+        "inputSchema": _schema(
+            {
+                "packet_json": _request_shape(
+                    "evidence_packet_request",
+                    "Evidence packet request JSON to analyze and generate repair instructions for.",
+                )
+            },
+            ["packet_json"],
+        ),
+        "handler": lambda args: mcp_server.generate_repair_prompt(args["packet_json"]),
+    },
 }
 
 
