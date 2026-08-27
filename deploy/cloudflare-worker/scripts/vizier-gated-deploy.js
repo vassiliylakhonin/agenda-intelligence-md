@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { DIGEST_PREFIX, bundleDigest } from "./deploy-all.js";
 
 const VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev";
 const KEYCHAIN_ACCOUNT = "VIZIER_API_KEY";
@@ -259,7 +260,14 @@ export async function readVizierCredential({ environment = process.env, readKeyc
   return secret;
 }
 
-function executeWranglerDeploy(receiptId) {
+function executeWranglerDeploy(receiptId, digest) {
+  // The receipt says the gate allowed this deploy; the digest says what was
+  // deployed. deploy-all.js --check reads both from the same message, and
+  // without the second a gated environment reports as unstamped forever
+  // because the gate is the only path that may ship it.
+  const message = digest
+    ? `Vizier ALLOW receipt ${receiptId} ${DIGEST_PREFIX} ${digest}`
+    : `Vizier ALLOW receipt ${receiptId}`;
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(
       "npx",
@@ -271,7 +279,7 @@ function executeWranglerDeploy(receiptId) {
         "agent-output-verification",
         "--strict",
         "--message",
-        `Vizier ALLOW receipt ${receiptId}`
+        message
       ],
       { stdio: "inherit", shell: false }
     );
@@ -291,7 +299,15 @@ async function main() {
     throw new Error("vizier-gated-deploy does not accept command arguments.");
   }
   const [metadata, apiKey] = await Promise.all([collectDeployMetadata(), readVizierCredential()]);
-  const result = await runGatedDeploy({ metadata, apiKey, execute: executeWranglerDeploy });
+  // The gate already refused a dirty worktree above, so a digest is always
+  // available here; the fallback exists so a change to that rule cannot turn a
+  // missing digest into a crash mid-deploy.
+  const { digest } = await bundleDigest();
+  const result = await runGatedDeploy({
+    metadata,
+    apiKey,
+    execute: (receiptId) => executeWranglerDeploy(receiptId, digest)
+  });
   console.log(
     JSON.stringify({
       event: "vizier.gated_deploy.completed",
