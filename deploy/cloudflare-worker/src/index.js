@@ -2947,6 +2947,30 @@ const GATE_REQUEST_GUIDES = Object.freeze({
       risk_question: "Is this shipment ready for a pre-signature human review?",
       decision_stage: "pre_signature"
     }
+  },
+  critical_minerals_due_diligence: {
+    title: "Critical Minerals & Strategic Raw Materials Due Diligence Gate",
+    required: [
+      "project_name — the offtake, investment or shipment file",
+      "commodity — one of lithium, rare_earth_elements, nickel, cobalt, copper, graphite, manganese, tungsten, gallium_germanium, other_critical_mineral",
+      "origin_jurisdiction — where the material is mined",
+      "decision_question — one sentence naming the decision",
+      "decision_stage — pre_exploration, pre_offtake_agreement, pre_processing_contract, pre_export_shipment, pre_investment_decision",
+      "supplied_sources — array of { id, source_type, title, date }"
+    ],
+    example: {
+      project_name: "Example spodumene offtake",
+      commodity: "lithium",
+      origin_jurisdiction: "KZ",
+      processing_jurisdiction: "CN",
+      target_market: "eu",
+      decision_question: "Is this offtake ready for a pre-signature human review?",
+      decision_stage: "pre_offtake_agreement",
+      supplied_sources: [
+        { id: "cm-1", source_type: "mining_concession_or_license_extract", title: "Concession extract", date: "2026-08-01" },
+        { id: "cm-2", source_type: "certified_ore_assay_report", title: "Certified assay", date: "2026-08-02" }
+      ]
+    }
   }
 });
 

@@ -4992,7 +4992,8 @@ test("a gate that refuses a request says what it needs, and its own example work
     ["agentic_interaction_trust", "agentic_interaction_trust"],
     ["agent_output_verification", "agent_output_verification"],
     ["gulf_maritime_exposure", "gulf_maritime_exposure"],
-    ["kazakhstan_market_entry_readiness", "market_entry_readiness"]
+    ["kazakhstan_market_entry_readiness", "market_entry_readiness"],
+    ["critical_minerals_due_diligence", "critical_minerals_due_diligence"]
   ];
   const originalLog = console.log;
   console.log = () => {};
