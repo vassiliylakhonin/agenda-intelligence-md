@@ -353,7 +353,7 @@ def verify_quotes(pack_json: dict, texts: Optional[dict] = None) -> dict:
         source_text = resolved_texts.get(ident)
         if source_text is None:
             return {"id": ident, "status": "missing_source_text"}
-        match = _normalize(quote) in _normalize(source_text)
+        match = _services._quote_matches_source(quote, source_text)
         return {"id": ident, "status": "present" if match else "absent"}
 
     sources = pack_json.get("sources") or pack_json.get("evidence") or []
@@ -545,3 +545,27 @@ def pre_action_check(request_json: dict) -> dict:
     authorization, enforcement, approval storage, and performing the action.
     """
     return _services.pre_action_check(request_json)
+
+
+def generate_repair_prompt(packet_json: dict) -> dict:
+    """Generate structured revision instructions for an agent to self-correct an evidence packet.
+
+    Inspects claim diagnostics and produces actionable guidance for resolving
+    missing references, misquotes, unmatched numbers, and polarity conflicts.
+    """
+    check_result = _services.check_evidence_packet(packet_json)
+    if not check_result.get("valid"):
+        return {
+            "implemented": True,
+            "valid": False,
+            "errors": check_result.get("errors", []),
+            "prompt": _services.build_repair_prompt(packet_json, None),
+        }
+    response = check_result.get("response") or {}
+    prompt = _services.build_repair_prompt(packet_json, response)
+    return {
+        "implemented": True,
+        "valid": True,
+        "packet_status": response.get("packet_status"),
+        "prompt": prompt,
+    }

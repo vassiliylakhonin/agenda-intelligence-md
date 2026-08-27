@@ -596,6 +596,53 @@ def _grounded_normalize(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip().casefold()
 
 
+def _normalize_quote_chars(text: str) -> str:
+    """Normalize quote characters, dashes, and whitespace for resilient matching."""
+    text = unicodedata.normalize("NFKC", text)
+    text = re.sub(r"[\u201c\u201d\u00ab\u00bb\u201e\u201f\u300c\u300d]", '"', text)
+    text = re.sub(r"[\u2018\u2019\u201a\u201b]", "'", text)
+    text = re.sub(r"[\u2013\u2014]", "-", text)
+    return re.sub(r"\s+", " ", text).strip().casefold()
+
+
+def _quote_matches_source(quote_text: str, source_text: str) -> bool:
+    """Check whether a quoted fragment appears in source text.
+
+    Supports:
+    1. Verbatim exact normalized substring.
+    2. Typographical quote and dash normalization.
+    3. Ellipsis-separated fragments (e.g. 'part 1 ... part 2' or 'part 1 … part 2').
+       Each non-empty segment must appear in chronological order in the source text.
+    """
+    if not quote_text or not source_text:
+        return False
+
+    norm_quote = _grounded_normalize(quote_text)
+    norm_source = _grounded_normalize(source_text)
+    if norm_quote in norm_source:
+        return True
+
+    q_norm_quote = _normalize_quote_chars(quote_text)
+    q_norm_source = _normalize_quote_chars(source_text)
+    if q_norm_quote in q_norm_source:
+        return True
+
+    ellipsis_parts = [p.strip() for p in re.split(r"\s*(?:\.{3,}|…)\s*", q_norm_quote) if p.strip()]
+    if len(ellipsis_parts) > 1:
+        current_idx = 0
+        matched_all = True
+        for part in ellipsis_parts:
+            found_idx = q_norm_source.find(part, current_idx)
+            if found_idx == -1:
+                matched_all = False
+                break
+            current_idx = found_idx + len(part)
+        if matched_all:
+            return True
+
+    return False
+
+
 def _grounded_content_terms(text: str) -> list[str]:
     """Unique content-bearing terms of a normalized text, in first-seen order.
 
@@ -742,7 +789,7 @@ def grounded_check(request_json: dict) -> dict:
             cid = declared["corpus_id"]
             if cid not in corpus_norm:
                 status = "missing_corpus_text"
-            elif _grounded_normalize(declared["quote"]) in corpus_norm[cid]:
+            elif _quote_matches_source(declared["quote"], corpus_norm[cid]):
                 status = "present"
             else:
                 status = "absent"
@@ -883,7 +930,6 @@ def check_evidence_packet(request_json: dict) -> dict:
         return {"implemented": True, "valid": False, "errors": errors, "response": None}
 
     sources = {source["source_id"]: source for source in source_items}
-    normalized_sources = {source_id: _grounded_normalize(source["text"]) for source_id, source in sources.items()}
     source_terms = {source_id: set(_grounded_content_terms(source["text"])) for source_id, source in sources.items()}
     source_sentences = {source_id: _grounded_sentences(source["text"]) for source_id, source in sources.items()}
 
@@ -924,7 +970,7 @@ def check_evidence_packet(request_json: dict) -> dict:
                 status = "source_not_declared"
                 structural_issues.append(f"quote_source_not_declared:{source_id}")
                 add_action(f"Add source {source_id} to claim {claim_id}.source_ids or remove its quote.")
-            elif _grounded_normalize(quote["text"]) in normalized_sources[source_id]:
+            elif _quote_matches_source(quote["text"], sources[source_id]["text"]):
                 status = "present"
             else:
                 status = "absent"
@@ -1045,6 +1091,134 @@ def check_evidence_packet(request_json: dict) -> dict:
         "errors": response_validation.get("errors", []),
         "response": response,
     }
+
+
+def build_repair_prompt(request_json: dict, response_json: dict | None = None) -> str:
+    """Generate structured instructions for an LLM agent to self-correct an evidence packet.
+
+    Inspects validation errors and claim-level issues (missing sources, misquoted
+    excerpts, unmatched numbers, polarity/negation mismatches, weak lexical support)
+    and formats actionable revision guidance.
+    """
+    if response_json is None:
+        check_result = check_evidence_packet(request_json)
+        if not check_result.get("valid"):
+            errors_str = "\n".join(f"- {err}" for err in check_result.get("errors", []))
+            return (
+                "# Evidence Packet Schema Repair Instructions\n\n"
+                "The submitted evidence packet is invalid according to `evidence-packet-request.schema.json`.\n\n"
+                "## Validation Errors\n"
+                f"{errors_str}\n\n"
+                "Please fix these structural errors and format the JSON strictly following the schema."
+            )
+        response_json = check_result.get("response") or {}
+
+    packet_status = response_json.get("packet_status", "unknown")
+    if packet_status == "packet_complete":
+        return (
+            "# Evidence Packet Status: Complete\n\n"
+            "No repair needed: all claims and quotes satisfy the evidence-packet contract."
+        )
+
+    claims_by_id = {c.get("claim_id"): c for c in request_json.get("claims", []) or []}
+    claims_issues = response_json.get("claims", []) or []
+
+    lines = [
+        "# Evidence Packet Repair Instructions",
+        "",
+        f"Your evidence packet check returned status `{packet_status}`.",
+        (
+            "Please review the claim-specific diagnostics below and revise your packet "
+            "to satisfy deterministic evidence verification."
+        ),
+        "",
+        "## Claim Diagnostics",
+    ]
+
+    for item in claims_issues:
+        c_status = item.get("packet_status", "packet_complete")
+        if c_status == "packet_complete":
+            continue
+
+        cid = item.get("claim_id", "unknown")
+        claim_data = claims_by_id.get(cid, {})
+        claim_text = claim_data.get("text", "")
+        issues = item.get("issues", [])
+        lexical = item.get("lexical_support", {})
+
+        lines.append(f"\n### Claim `{cid}`")
+        if claim_text:
+            lines.append(f'> "{claim_text}"')
+        lines.append(f"- **Status**: `{c_status}`")
+
+        for issue in issues:
+            if issue == "no_source_reference":
+                lines.append(
+                    "- **Missing Reference**: The claim has no `source_ids`. "
+                    "Attach at least one source ID from declared `sources`."
+                )
+            elif issue.startswith("missing_source:"):
+                missing_sid = issue.split(":", 1)[1]
+                lines.append(
+                    f"- **Undeclared Source ID**: Referenced source `{missing_sid}` is not in `sources`. "
+                    f"Supply its source text or update `source_ids`."
+                )
+            elif issue.startswith("quote_source_missing:"):
+                missing_sid = issue.split(":", 1)[1]
+                lines.append(
+                    f"- **Quote Source Missing**: Quote references source `{missing_sid}`, "
+                    f"which is missing from `sources`."
+                )
+            elif issue.startswith("quote_source_not_declared:"):
+                undeclared_sid = issue.split(":", 1)[1]
+                lines.append(
+                    f"- **Quote Source Not Declared**: Quote cites source `{undeclared_sid}`, "
+                    f"but `{undeclared_sid}` is not in `claim.source_ids`."
+                )
+            elif issue.startswith("quote_absent:"):
+                absent_sid = issue.split(":", 1)[1]
+                lines.append(
+                    f"- **Misquoted / Absent Quote**: A quote attributed to source `{absent_sid}` "
+                    f"was not found in the source text. Provide an exact verbatim excerpt "
+                    f"(use `...` to omit intermediate words if needed) or remove the quote."
+                )
+            elif issue == "lexical_support_polarity_mismatch":
+                lines.append(
+                    "- **Negation / Polarity Conflict**: The claim and its matching source sentence "
+                    "disagree on polarity (negation/denial cues). "
+                    "Verify that the claim asserts what the source asserts."
+                )
+            elif issue == "unmatched_numbers":
+                nums = lexical.get("unmatched_numbers", [])
+                lines.append(
+                    f"- **Unmatched Numbers / Figures**: Numeric token(s) {nums} appear in the claim "
+                    f"but were not found in the cited source text. Ensure all numbers and stats match the source."
+                )
+            elif issue == "lexical_support_weak":
+                cov = lexical.get("coverage", 0.0)
+                lines.append(
+                    f"- **Weak Lexical Support**: Lexical term overlap is only {int(cov * 100)}%. "
+                    f"Use terminology and facts grounded in the cited source."
+                )
+            elif issue == "lexical_support_unsupported":
+                lines.append(
+                    "- **Unsupported Claim**: The claim terms have insufficient overlap with the cited source. "
+                    "Revise the claim or cite a relevant source."
+                )
+
+    owner_actions = response_json.get("owner_actions", [])
+    if owner_actions:
+        lines.append("\n## Recommended Action Items")
+        for i, action in enumerate(owner_actions, 1):
+            lines.append(f"{i}. {action}")
+
+    lines.append("\n## Expected Output Shape")
+    lines.append(
+        "Return the updated JSON conforming to `evidence-packet-request.schema.json` "
+        "with resolved references, exact quotes, and grounded claims."
+    )
+
+    return "\n".join(lines)
 
 
 def verify_claims(request_json: dict) -> dict:
