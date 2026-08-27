@@ -32,6 +32,43 @@ BATCH_SIZE = 250
 MINUTES_PER_MANUAL_REVIEW = 45
 HOURLY_WAGE = 50.0
 
+# Per-call spend on the Worker path. No LLM runs there and this demo sends no
+# `live_retrieval` request, so the deterministic triage path costs nothing per
+# ADR 0014 — the paid OpenSanctions upstream (EUR 0.10/call) is never reached.
+AGENT_COST_PER_CALL_EUR = 0.0
+
+
+def build_request(index):
+    """A request shaped the way the gate actually reads one.
+
+    The gate takes its structured payload from `params.message.parts[].data`;
+    a capability-named sibling key is not read and the request is rejected as
+    unstructured. `dated_sources` are objects, not bare source-type strings,
+    and both `risk_question` and `decision_stage` are required.
+    """
+    return {
+        "counterparty": {
+            "name": f"Synthetic Entity {index} LLC",
+            "jurisdiction": "ru",
+            "sector": "trading_house",
+        },
+        "exposure_facets": ["ownership_or_control"],
+        "dated_sources": [
+            {
+                "id": f"cis-{index}-1",
+                "source_type": "ofac_sdn_extract",
+                "title": "OFAC SDN extract",
+                "date": "2026-08-01",
+            }
+        ],
+        "risk_question": (
+            "Is this counterparty ready for onboarding review under "
+            "secondary-sanctions exposure?"
+        ),
+        "decision_stage": "onboarding",
+    }
+
+
 async def check_counterparty(session, index):
     """Dispatch a single A2A request to the edge agent."""
     payload = {
@@ -39,68 +76,110 @@ async def check_counterparty(session, index):
         "id": str(uuid.uuid4()),
         "method": "message/send",
         "params": {
-            "capability": "cis_secondary_sanctions",
-            "cis_secondary_sanctions_request": {
-                "counterparty": {
-                    "name": f"Synthetic Entity {index} LLC",
-                    "jurisdiction": "ru"
-                },
-                "exposure_facets": ["ownership_or_control"],
-                "supplied_sources": ["user_provided_note"]
+            "message": {
+                "role": "user",
+                "parts": [{"data": build_request(index)}],
             }
-        }
+        },
     }
-    
+
     start_time = time.monotonic()
     try:
         async with session.post(WORKER_URL, json=payload, timeout=30) as response:
             result = await response.json()
             latency = time.monotonic() - start_time
-            
-            # Extract status from the response
-            status = "unknown"
-            if "result" in result and "status" in result["result"]:
-                status = result["result"]["status"].get("state", "completed")
-                
-            return {"index": index, "status": status, "latency": latency, "success": response.status == 200}
+
+            # JSON-RPC answers 200 whether the gate screened the request or
+            # refused it, so the HTTP code says nothing about the outcome.
+            # The task state is the only honest signal.
+            if "error" in result:
+                return {
+                    "index": index,
+                    "state": "rpc_error",
+                    "latency": latency,
+                    "screened": False,
+                    "detail": result["error"].get("message", "JSON-RPC error"),
+                }
+
+            task = result.get("result") or {}
+            state = (task.get("status") or {}).get("state", "unknown")
+            return {
+                "index": index,
+                "state": state,
+                "latency": latency,
+                "screened": state == "TASK_STATE_COMPLETED",
+                "detail": first_rejection_reason(task),
+            }
     except Exception as e:
-        return {"index": index, "status": "error", "latency": time.monotonic() - start_time, "success": False, "error": str(e)}
+        return {
+            "index": index,
+            "state": "transport_error",
+            "latency": time.monotonic() - start_time,
+            "screened": False,
+            "detail": str(e),
+        }
+
+
+def first_rejection_reason(task):
+    """The gate explains a refusal in the data part of its guidance artifact."""
+    for artifact in task.get("artifacts") or []:
+        for part in artifact.get("parts") or []:
+            errors = (part.get("data") or {}).get("errors")
+            if errors:
+                return errors[0]
+    return ""
+
 
 async def main():
     print(f"\n🚀 Launching Infinite Swarm Batch Processor")
     print(f"Target: {BATCH_SIZE} compliance reviews in parallel against Edge Agents...\n")
-    
+
     start_time = time.time()
-    
+
     # Use a TCP connector with high limit for parallel fan-out
     connector = aiohttp.TCPConnector(limit=500)
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [check_counterparty(session, i) for i in range(1, BATCH_SIZE + 1)]
-        
+
         # Gather all results concurrently
         print("Dispatching agents...")
         results = await asyncio.gather(*tasks)
-        
+
     end_time = time.time()
     total_time = end_time - start_time
-    
-    successful = sum(1 for r in results if r["success"])
-    failed = len(results) - successful
+
+    screened = sum(1 for r in results if r["screened"])
+    rejected = sum(1 for r in results if not r["screened"])
     avg_latency = sum(r["latency"] for r in results) / len(results) if results else 0
-    
+
     # Calculate Human vs Agent metrics
     human_hours = (BATCH_SIZE * MINUTES_PER_MANUAL_REVIEW) / 60
     human_cost = human_hours * HOURLY_WAGE
-    
-    # Approx LLM + Edge compute cost (tokens)
-    agent_cost = BATCH_SIZE * 0.005 # $0.005 per agent run
-    
-    print("\n" + "="*50)
+    agent_cost = BATCH_SIZE * AGENT_COST_PER_CALL_EUR
+
+    print("\n" + "=" * 50)
     print("📈 HIRING EMPLOYEES VS. AGENTS: BATCH RESULTS")
-    print("="*50)
-    print(f"Volume Processed   : {BATCH_SIZE} complex reviews")
-    print(f"Agent Success Rate : {successful}/{BATCH_SIZE} ({(successful/BATCH_SIZE)*100:.1f}%)")
+    print("=" * 50)
+    print(f"Volume Dispatched  : {BATCH_SIZE} complex reviews")
+    print(f"Screened           : {screened}/{BATCH_SIZE} ({(screened / BATCH_SIZE) * 100:.1f}%)")
+    print(f"Not screened       : {rejected}/{BATCH_SIZE}")
     print(f"Avg Agent Latency  : {avg_latency:.2f} seconds")
+
+    # A run where nothing was screened is a failed run, however fast it was.
+    # Naming the states keeps a broken request shape from reading as a result.
+    if rejected:
+        print("-" * 50)
+        print("NOT SCREENED — BY STATE")
+        states = {}
+        for r in results:
+            if r["screened"]:
+                continue
+            key = (r["state"], r["detail"])
+            states[key] = states.get(key, 0) + 1
+        for (state, detail), count in sorted(states.items(), key=lambda kv: -kv[1]):
+            suffix = f" — {detail}" if detail else ""
+            print(f"  {count:>4} x {state}{suffix}")
+
     print("-" * 50)
     print(f"SCALABILITY")
     print(f"  Employees : Hard to scale (Requires hiring 10+ analysts)")
@@ -112,12 +191,13 @@ async def main():
     print("-" * 50)
     print(f"COST (for {BATCH_SIZE} reviews)")
     print(f"  Employees : Salaries (~${human_cost:,.2f} at {human_hours:,.1f} hours)")
-    print(f"  Agents    : Tokens (~${agent_cost:,.2f})")
+    print(f"  Agents    : ~EUR {agent_cost:,.2f} (deterministic triage, no LLM, no paid upstream)")
     print("-" * 50)
     print(f"CAPABILITY")
     print(f"  Employees : Human intelligence (Prone to fatigue on document {BATCH_SIZE})")
     print(f"  Agents    : Machine intelligence (Consistent deterministic evaluation)")
-    print("="*50 + "\n")
+    print("=" * 50 + "\n")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
