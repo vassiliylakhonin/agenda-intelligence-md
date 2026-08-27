@@ -12,6 +12,7 @@ import sys
 from typing import Any
 
 from agenda_intelligence import __version__, services
+from agenda_intelligence.html_dashboard import generate_html_dashboard
 
 REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md"
 MIDDLE_CORRIDOR_SCHEMA = "schemas/v1/middle-corridor-deal-risk-request.schema.json"
@@ -1631,33 +1632,6 @@ def _handle_jsonrpc_inner(payload: dict, base_url: str = "http://localhost:8080"
     )
 
 
-def handle_stdin_jsonrpc(raw_input: str, base_url: str = "http://localhost:8080") -> dict:
-    """Handle one JSON-RPC object read from stdin."""
-    if not raw_input.strip():
-        return jsonrpc_error(None, -32700, "Parse error", {"detail": "stdin is empty"})
-    try:
-        payload = json.loads(raw_input)
-    except json.JSONDecodeError as error:
-        return jsonrpc_error(None, -32700, "Parse error", {"detail": error.msg})
-    if not isinstance(payload, dict):
-        return jsonrpc_error(None, -32600, "Invalid Request")
-    return handle_jsonrpc(payload, base_url)
-
-
-def main() -> None:
-    """Run the A2A JSON-RPC stdio shell."""
-    base_url = os.environ.get("AGENDA_INTELLIGENCE_A2A_BASE_URL", "http://localhost:8080")
-    response = handle_stdin_jsonrpc(sys.stdin.read(), base_url)
-    json.dump(response, sys.stdout, indent=2, sort_keys=True)
-    sys.stdout.write("\n")
-
-
-if __name__ == "__main__":
-    main()
-
-
-from agenda_intelligence.html_dashboard import generate_html_dashboard
-
 def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> dict:
     """Handle the first A2A JSON-RPC slice, with optional HTML dashboard rendering."""
     response = _handle_jsonrpc_inner(payload, base_url)
@@ -1686,9 +1660,31 @@ def handle_jsonrpc(payload: dict, base_url: str = "http://localhost:8080") -> di
                         # Append to the first artifact
                         if "parts" not in result["artifacts"][0]:
                             result["artifacts"][0]["parts"] = []
-                        result["artifacts"][0]["parts"].append({
-                            "text": html_content,
-                            "mediaType": "text/html"
-                        })
+                        result["artifacts"][0]["parts"].append({"text": html_content, "mediaType": "text/html"})
 
     return response
+
+
+def handle_stdin_jsonrpc(raw_input: str, base_url: str = "http://localhost:8080") -> dict:
+    """Handle one JSON-RPC object read from stdin."""
+    if not raw_input.strip():
+        return jsonrpc_error(None, -32700, "Parse error", {"detail": "stdin is empty"})
+    try:
+        payload = json.loads(raw_input)
+    except json.JSONDecodeError as error:
+        return jsonrpc_error(None, -32700, "Parse error", {"detail": error.msg})
+    if not isinstance(payload, dict):
+        return jsonrpc_error(None, -32600, "Invalid Request")
+    return handle_jsonrpc(payload, base_url)
+
+
+def main() -> None:
+    """Run the A2A JSON-RPC stdio shell."""
+    base_url = os.environ.get("AGENDA_INTELLIGENCE_A2A_BASE_URL", "http://localhost:8080")
+    response = handle_stdin_jsonrpc(sys.stdin.read(), base_url)
+    json.dump(response, sys.stdout, indent=2, sort_keys=True)
+    sys.stdout.write("\n")
+
+
+if __name__ == "__main__":
+    main()
