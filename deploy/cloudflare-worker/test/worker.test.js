@@ -18,6 +18,8 @@ import {
   handleCisReviewIntake,
   handleCisReviewIntakeList,
   handleJsonRpc,
+  canonicalDecisionInput,
+  decisionRuns,
   verificationStatus,
   handleMcpJsonRpc,
   handleRequest,
@@ -5858,4 +5860,151 @@ test("the verification block never claims an outcome it did not observe", () => 
     assert.equal(status.self_reported, true);
     assert.ok(!("passed" in status) && !("verified" in status), "no field may read as a verdict");
   }
+});
+
+function memoryKv() {
+  const store = new Map();
+  return {
+    store,
+    put: async (key, value) => {
+      store.set(key, value);
+    },
+    get: async (key) => store.get(key) ?? null,
+    list: async ({ prefix }) => ({
+      keys: [...store.keys()].filter((key) => key.startsWith(prefix)).map((name) => ({ name })),
+      list_complete: true
+    })
+  };
+}
+
+async function sendTwice(env, ctx, text) {
+  for (const _ of [0, 1]) {
+    await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "journal",
+        method: "SendMessage",
+        params: {
+          // A new message id per call, as a real caller sends: the hash must
+          // not move because of it.
+          message: { messageId: crypto.randomUUID(), role: "ROLE_USER", parts: [{ text }] }
+        }
+      },
+      new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/message/send", {
+        method: "POST",
+        headers: { "a2a-version": "1.0", "content-type": "application/json" }
+      }),
+      env,
+      ctx
+    );
+  }
+}
+
+// The counters cannot answer "what did this gate decide about this file last
+// week": they keep no input and no verdict, and the detailed funnel events live
+// in Workers Logs, which retains 72 hours on the free plan.
+test("the journal records the verdict and a hash of the input, never the input", async () => {
+  const kv = memoryKv();
+  const pending = [];
+  const env = { AGENDA_USAGE: kv, STATS_TOKEN: "test-token" };
+  const ctx = { waitUntil: (promise) => pending.push(promise) };
+  const secret = "Kyrgyz Trans Logistics LLP, Almaty to Bishkek, dual-use cargo";
+
+  await sendTwice(env, ctx, `Counterparty exposure for ${secret} with dated sources.`);
+  await Promise.all(pending);
+
+  const response = await handleRequest(
+    new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/decisions", {
+      headers: { "x-stats-token": "test-token" }
+    }),
+    env,
+    ctx
+  );
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.count, 2);
+
+  // Nothing the caller sent may be recoverable from the store. These payloads
+  // carry counterparty names, routes and cargo; keeping them would be a
+  // different product with a different privacy posture.
+  const stored = [...kv.store.values()].join("\n");
+  assert.ok(!stored.includes("Kyrgyz Trans Logistics"), "the journal stored caller text");
+  assert.ok(!stored.includes("Bishkek"), "the journal stored caller text");
+
+  const [first, second] = body.records;
+  assert.match(first.input_hash, /^sha256:[0-9a-f]{64}$/);
+  assert.equal(first.input_hash, second.input_hash, "the same input must hash the same across runs");
+  assert.equal(first.agent_profile, "cis_secondary_sanctions");
+  assert.equal(first.contract_version, VERSION);
+  assert.ok(typeof first.decision === "string" && first.decision.length > 0);
+
+  // Two runs of one file: reported as a pair, and reported as unchanged rather
+  // than omitted — asked again and got the same answer is also an answer.
+  assert.equal(body.runs.length, 1);
+  assert.equal(body.runs[0].runs, 2);
+  assert.equal(body.runs[0].changed, false);
+});
+
+test("the journal is private and the date is validated", async () => {
+  const env = { AGENDA_USAGE: memoryKv(), STATS_TOKEN: "test-token" };
+  const unauthorized = await handleRequest(
+    new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/decisions"),
+    env,
+    {}
+  );
+  assert.equal(unauthorized.status, 401);
+
+  const badDate = await handleRequest(
+    new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/decisions?date=yesterday", {
+      headers: { "x-stats-token": "test-token" }
+    }),
+    env,
+    {}
+  );
+  assert.equal(badDate.status, 400);
+});
+
+// The diff is the point: same input, different verdict.
+test("a changed verdict on an unchanged input is reported as changed", () => {
+  const runs = decisionRuns([
+    { input_hash: "sha256:a", timestamp: "2026-08-27T09:00:00.000Z", decision: "escalate", status: "escalate", score: 40, contract_version: "1.7.1" },
+    { input_hash: "sha256:a", timestamp: "2026-08-28T09:00:00.000Z", decision: "proceed", status: "proceed", score: 80, contract_version: "1.7.1" },
+    { input_hash: "sha256:b", timestamp: "2026-08-28T09:05:00.000Z", decision: "proceed", status: "proceed", score: 80, contract_version: "1.7.1" },
+    { input_hash: "sha256:b", timestamp: "2026-08-28T09:06:00.000Z", decision: "proceed", status: "proceed", score: 80, contract_version: "1.7.1" }
+  ]);
+
+  assert.equal(runs.length, 2, "a single run is not a pair and is not reported");
+  assert.equal(runs[0].input_hash, "sha256:a", "changed pairs sort first");
+  assert.equal(runs[0].changed, true);
+  assert.equal(runs[1].changed, false);
+  assert.deepEqual(
+    runs[0].verdicts.map((verdict) => verdict.decision),
+    ["escalate", "proceed"],
+    "verdicts must read oldest first"
+  );
+
+  // A version bump is a different fact from a changed answer on one contract,
+  // so the contract version is part of what counts as a change.
+  const acrossVersions = decisionRuns([
+    { input_hash: "sha256:c", timestamp: "2026-08-27T09:00:00.000Z", decision: "proceed", status: "proceed", score: 80, contract_version: "1.7.0" },
+    { input_hash: "sha256:c", timestamp: "2026-08-28T09:00:00.000Z", decision: "proceed", status: "proceed", score: 80, contract_version: "1.7.1" }
+  ]);
+  assert.equal(acrossVersions[0].changed, true);
+});
+
+// Message and task identifiers are new on every call. Including them would give
+// each run a fresh hash, which is the one thing this must not do.
+test("the input hash ignores what changes on every call", () => {
+  const first = canonicalDecisionInput({
+    message: { messageId: "one", taskId: "t1", role: "ROLE_USER", parts: [{ text: "same file" }] }
+  });
+  const second = canonicalDecisionInput({
+    message: { messageId: "two", taskId: "t2", role: "ROLE_USER", parts: [{ text: "same file" }] }
+  });
+  assert.deepEqual(first, second);
+
+  const other = canonicalDecisionInput({
+    message: { messageId: "three", role: "ROLE_USER", parts: [{ text: "a different file" }] }
+  });
+  assert.notDeepEqual(first, other);
 });

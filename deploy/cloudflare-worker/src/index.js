@@ -32,6 +32,7 @@ import { buildJwks, maybeSignCard } from "./jws.js";
 import {
   DECISION_NOT_AUTHORIZATION_NOTICE,
   decisionPolicyCatalog,
+  sha256Jcs,
   signDecisionReceipt,
   verifyDecisionReceipt
 } from "./decision-receipt.js";
@@ -8096,6 +8097,7 @@ const FUNNEL_SILENT_PATHS = new Set([
   "/status",
   "/robots.txt",
   "/stats",
+  "/decisions",
   "/.well-known/jwks.json",
   AGENSTRY_VERIFICATION_PATH
 ]);
@@ -8175,6 +8177,146 @@ function statsTokenFromRequest(request) {
 function isStatsAuthorized(request, env) {
   if (!env?.STATS_TOKEN) return false;
   return statsTokenFromRequest(request) === env.STATS_TOKEN;
+}
+
+// One record per decision, so two runs of the same file can be compared.
+//
+// The usage counters answer how many and from where. They cannot answer what
+// this gate decided about this input last week, because they keep no input and
+// no verdict — by design; they are described in their own response as coarse
+// and not an audit ledger. The funnel events that do carry detail live in
+// Workers Logs, which retains 72 hours on the free plan, so "did this file get
+// a different answer than last time" was a question with nowhere to look.
+//
+// What is kept is a hash of the input and the verdict about it. Not the input:
+// these payloads carry counterparty names, routes and cargo, and a store that
+// held them would be a different product with a different privacy posture. The
+// hash is enough for the question actually asked — the same file hashes the
+// same way, so a changed verdict on an unchanged hash is exactly the diff a
+// reviewer wants, and an unchanged verdict is silence rather than a story.
+// One write per SendMessage and none on discovery GETs. The free plan allows
+// 1,000 KV writes a day on this namespace, shared with the rate limiter, the
+// snapshot cache and the usage counters; at the observed volume -- 32 non-probe
+// calls on 2026-08-28 -- the journal is a few percent of that budget. It stays
+// worth watching if calls ever outgrow discovery traffic.
+const DECISION_JOURNAL_RETENTION_SECONDS = 30 * 24 * 60 * 60;
+const DECISION_JOURNAL_PREFIX = "decision:";
+
+export async function recordDecision(env, { params, profile, result, timestamp }) {
+  const kv = env?.AGENDA_USAGE;
+  if (!kv || typeof kv.put !== "function") return null;
+
+  const at = timestamp || new Date().toISOString();
+  const day = dateKeyFromTimestamp(at);
+  const outcome = callOutcome(result);
+  const response = result?.metadata?.response;
+  const record = {
+    timestamp: at,
+    agent_profile: profile,
+    // The contract the verdict was produced under. A verdict that changed
+    // across a version bump is a different fact from one that changed on the
+    // same contract, and without this the two are indistinguishable.
+    contract_version: VERSION,
+    input_hash: await sha256Jcs(canonicalDecisionInput(params)),
+    decision: outcome.decision,
+    status: outcome.status,
+    score: outcome.score,
+    human_review_required: Boolean(response?.human_review_required),
+    task_state: result?.status?.state || "unknown"
+  };
+  await kv.put(`${DECISION_JOURNAL_PREFIX}${day}:${at}:${crypto.randomUUID()}`, JSON.stringify(record), {
+    expirationTtl: DECISION_JOURNAL_RETENTION_SECONDS
+  });
+  return record;
+}
+
+// What the caller actually sent, reduced to the parts that decide the answer.
+// Message ids and task ids are new on every call and would make each run a
+// fresh hash, which is the one thing this must not do.
+export function canonicalDecisionInput(params) {
+  const message = params?.message;
+  const parts = Array.isArray(message?.parts) ? message.parts : [];
+  return {
+    request: params?.request ?? null,
+    capability: params?.capability ?? null,
+    parts: parts.map((part) => ({
+      text: typeof part?.text === "string" ? part.text : null,
+      data: part?.data ?? null
+    }))
+  };
+}
+
+// Runs grouped by input: the same file, answered more than once. A repeated
+// hash whose verdicts differ is the diff; one whose verdicts agree is reported
+// as stable rather than omitted, because "asked again and got the same answer"
+// is also an answer.
+export function decisionRuns(records) {
+  const byInput = new Map();
+  for (const record of records) {
+    const list = byInput.get(record.input_hash) || [];
+    list.push(record);
+    byInput.set(record.input_hash, list);
+  }
+  const repeated = [];
+  for (const [inputHash, runs] of byInput) {
+    if (runs.length < 2) continue;
+    const ordered = [...runs].sort((left, right) => left.timestamp.localeCompare(right.timestamp));
+    const verdicts = ordered.map((run) => `${run.decision}/${run.status}/${run.score}/${run.contract_version}`);
+    repeated.push({
+      input_hash: inputHash,
+      runs: ordered.length,
+      changed: new Set(verdicts).size > 1,
+      first: ordered[0].timestamp,
+      last: ordered[ordered.length - 1].timestamp,
+      verdicts: ordered.map((run) => ({
+        timestamp: run.timestamp,
+        decision: run.decision,
+        status: run.status,
+        score: run.score,
+        contract_version: run.contract_version
+      }))
+    });
+  }
+  return repeated.sort((left, right) => Number(right.changed) - Number(left.changed));
+}
+
+async function handleDecisionJournal(request, env) {
+  if (!isStatsAuthorized(request, env)) {
+    return jsonResponse({ error: "Unauthorized" }, 401);
+  }
+  const kv = env?.AGENDA_USAGE;
+  if (!kv || typeof kv.list !== "function") {
+    return jsonResponse({ error: "Decision journal storage is unavailable" }, 503);
+  }
+  const day = dateKeyFromRequest(request);
+  if (!day) return jsonResponse({ error: "date must use YYYY-MM-DD" }, 400);
+
+  const listed = await kv.list({ prefix: `${DECISION_JOURNAL_PREFIX}${day}:`, limit: 1000 });
+  const records = (
+    await Promise.all(
+      listed.keys.map(async ({ name }) => {
+        const value = await kv.get(name);
+        if (!value) return null;
+        try {
+          return JSON.parse(value);
+        } catch (_error) {
+          return null;
+        }
+      })
+    )
+  )
+    .filter(Boolean)
+    .sort((left, right) => left.timestamp.localeCompare(right.timestamp));
+
+  return jsonResponse({
+    date: day,
+    retention_days: DECISION_JOURNAL_RETENTION_SECONDS / 86400,
+    count: records.length,
+    truncated: Boolean(listed.list_complete === false),
+    note: "Input hashes only; no caller payload is stored. Runs pairs a repeated input with the verdicts it received.",
+    runs: decisionRuns(records),
+    records
+  });
 }
 
 async function recordUsageStats(env, event) {
@@ -9104,8 +9246,20 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
     const statsPromise = recordUsageStats(env, event).catch((error) => {
       console.warn("usage stats write failed", error);
     });
+    // Written beside the counters and never in front of the response: a journal
+    // that could delay or fail an answer would be a worse trade than not having
+    // one.
+    const journalPromise = recordDecision(env, {
+      params,
+      profile: result.metadata.product_profile,
+      result,
+      timestamp: event.timestamp
+    }).catch((error) => {
+      console.warn("decision journal write failed", error);
+    });
     if (typeof ctx.waitUntil === "function") {
       ctx.waitUntil(statsPromise);
+      ctx.waitUntil(journalPromise);
     }
 
     return {
@@ -10870,6 +11024,10 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 
   if (request.method === "GET" && url.pathname === "/robots.txt") {
     return textResponse(robotsTxt(request), 200, aiCatalogHeaders(request));
+  }
+
+  if (request.method === "GET" && url.pathname === "/decisions") {
+    return handleDecisionJournal(request, env);
   }
 
   if (request.method === "GET" && url.pathname === "/stats") {

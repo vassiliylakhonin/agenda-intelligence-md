@@ -31,6 +31,7 @@ This Worker is intentionally small:
 | GET | `/okf/index.md`, `/okf/*.md` | Always Markdown | OKF-style concept bundle served from the worker domain |
 | GET | `/profiles/confidential-project-room`, `/profiles/confidential-project-room/redacted-example.json` | Markdown / JSON | Public alias-first confidential project-room profile contract and synthetic example |
 | GET | `/stats` | JSON (requires `x-stats-token`) | Private usage analytics |
+| GET | `/decisions` | JSON (requires `x-stats-token`) | Private decision journal: verdicts, input hashes, repeated-run diffs |
 | POST | `/intake/cis-review` | JSON, CIS profile only | Store a validated redacted service request for 30 days |
 | GET | `/intake/cis-review` | JSON (requires `x-stats-token`) | Read retained CIS service requests |
 | POST | `/message/send`, `/` | JSON-RPC 2.0 | A2A 1.0 `SendMessage` |
@@ -586,6 +587,30 @@ The local `npm run stats` helper reads `STATS_TOKEN` from `deploy/cloudflare-wor
 curl 'https://agenda-intelligence-a2a.<your-subdomain>.workers.dev/stats?date=2026-05-22' \
   -H "x-stats-token: $STATS_TOKEN"
 ```
+
+### Decision journal
+
+`GET /decisions?date=YYYY-MM-DD` returns one record per `SendMessage`: timestamp,
+profile, contract version, a `sha256:` hash of the input, the verdict
+(`decision`, `status`, `score`), `human_review_required`, and the task state. It
+takes the same `x-stats-token` as `/stats` and keeps records for 30 days.
+
+```bash
+npm run decisions            # today
+npm run decisions -- 2026-08-27
+```
+
+It stores a hash of the input, never the input. These payloads carry counterparty
+names, routes and cargo; a store that held them would be a different product with
+a different privacy posture. The hash is enough for the question actually asked:
+the same file hashes the same way, so the `runs` block pairs a repeated input with
+the verdicts it received and marks the pair `changed` when they differ — including
+when only the contract version moved, because a verdict that changed across a
+version bump is a different fact from one that changed on the same contract.
+
+The counters at `/stats` cannot answer this: they keep no input and no verdict, and
+the detailed funnel events live in Workers Logs, which retains 72 hours on the free
+plan. One KV write per call, none on discovery GETs.
 
 The `/stats` response includes approximate daily totals, likely probes, non-probe calls, prompt character counts, client classes, per-host counts (`hosts` — every published worker shares one KV namespace, so this is the only way to attribute calls to a specific worker), countries, JSON-RPC methods, and selected Agenda modules. The counters are intentionally coarse and are not a billing or audit ledger.
 
