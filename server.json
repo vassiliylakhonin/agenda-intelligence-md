@@ -19,5 +19,48 @@
         "type": "stdio"
       }
     }
+  ],
+  "websiteUrl": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp"
+    },
+    {
+      "type": "streamable-http",
+      "url": "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp"
+    },
+    {
+      "type": "streamable-http",
+      "url": "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/mcp"
+    },
+    {
+      "type": "streamable-http",
+      "url": "https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev/mcp"
+    },
+    {
+      "type": "streamable-http",
+      "url": "https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev/mcp"
+    },
+    {
+      "type": "streamable-http",
+      "url": "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev/mcp"
+    },
+    {
+      "type": "streamable-http",
+      "url": "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/mcp"
+    },
+    {
+      "type": "streamable-http",
+      "url": "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/mcp"
+    },
+    {
+      "type": "streamable-http",
+      "url": "https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev/mcp"
+    },
+    {
+      "type": "streamable-http",
+      "url": "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev/mcp"
+    }
   ]
 }
