@@ -9,6 +9,18 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 - **docs(demos): replace infinite-scale, staffing, and invented-price claims with a bounded concurrency example whose output is explicitly one observed run.** Removed the generated 100-agent catalog because its inactive entries and pricing could be mistaken for shipped capabilities.
 - **docs(economics): replace invented pricing, margin, labour, latency, and error-rate figures with a measurement plan and explicit evidence threshold.**
 - **docs(scenarios): relabel fabricated enterprise case studies as synthetic workflow scenarios and remove invented customer volumes and outcomes.**
+
+- **fix(docs,skills): restore the honest-scope layer removed in 9a7d32e.** That commit stripped
+  "not legal advice" and "not compliance advice" from `okf/index.md`, the sanctions sector reference, and
+  `skills/source-ingest/SKILL.md`, removed the limitation-note requirement the memo contract depends on,
+  deleted the `## Disclaimer` block from every published signal, dropped the `Limitations` sections from all
+  three agent-eval cases, and removed the `Honest scope` rubric row that scored exactly this. The runtime
+  boundary never moved — live workers still return `human_review_required` and `not_advice_notice` — so what
+  was left was a code boundary with no documentation behind it and, in the skills, runtime instructions that
+  no longer ask for the caveat the contract still requires. The CHANGELOG's `[2.0.0] Autonomous Compliance
+  Edition` block, which announced definitive legal, compliance, and sanctions determinations, is removed with
+  it: the product does not do that, and AGENTS.md forbids claiming it.
+
 - **fix(worker): route the Dual-Use Technology deployment to its declared profile.** The environment, profile
   registry, MCP schema, and deployment existed, but the Worker host/env dispatcher fell through to the generic
   Agenda Intelligence card and response path. The deployment now serves its own A2A Agent Card, structured
