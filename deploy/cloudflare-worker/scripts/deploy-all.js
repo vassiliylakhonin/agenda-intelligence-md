@@ -32,23 +32,55 @@
 
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-// Everything that ships with a plain `wrangler deploy`.
-const UNGATED_ENVS = [
-  "", // top-level worker
-  "middle-corridor-deal-risk-gate",
-  "cis-secondary-sanctions",
-  "agentic-interaction-trust",
-  "gulf-maritime-exposure",
-  "kazakhstan-market-entry-readiness",
-  "critical-minerals-due-diligence",
-  "corridor-sanctions-assistant",
-  "dual-use-technology-export"
-];
-
-const GATED_ENV = "agent-output-verification";
+// Every environment ships through the gate.
+//
+// Until 2026-08-28 exactly one did. The other nine went out with a plain
+// `wrangler deploy` and left no receipt, so "who shipped this, and did anything
+// check it" had an answer for one tenth of the fleet. The gate cost the one
+// environment about twenty seconds and refused nothing in two weeks; the
+// asymmetry was habit, not judgement.
+//
+// The list is read from wrangler.toml rather than kept here, because a
+// hand-kept list is one a new profile can be missing from -- which is how a
+// profile would quietly go back to being ungated.
 const RECEIPT_MARKER = "Vizier ALLOW receipt";
+const GATED_DEPLOY_SCRIPT = fileURLToPath(new URL("vizier-gated-deploy.js", import.meta.url));
+
+// [env.x], [env.x.vars] and [[env.x.kv_namespaces]] all name one environment;
+// only the first occurrence introduces it. The top-level worker is the entry
+// with an empty name, and its `name` sits above every section header.
+export function deployedEnvironments(toml) {
+  const environments = [{ env: "", workerName: null }];
+  let current = environments[0];
+  for (const rawLine of String(toml).split(/\r?\n/)) {
+    const line = rawLine.trim();
+    const section = /^\[+env\.([a-z0-9-]+)/.exec(line);
+    if (section) {
+      const [, env] = section;
+      current = environments.find((item) => item.env === env) ?? null;
+      if (!current) {
+        current = { env, workerName: null };
+        environments.push(current);
+      }
+      continue;
+    }
+    if (/^\[/.test(line)) {
+      current = environments[0];
+      continue;
+    }
+    const named = /^name\s*=\s*"([^"]+)"/.exec(line);
+    if (named && current && !current.workerName) current.workerName = named[1];
+  }
+  return environments;
+}
+
+export function fleetEnvironments() {
+  const toml = readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8");
+  return deployedEnvironments(toml);
+}
 
 function run(command, args, options = {}) {
   return new Promise((resolve) => {
@@ -64,42 +96,26 @@ function run(command, args, options = {}) {
   });
 }
 
-function versionFrom(output) {
-  return /Current Version ID:\s*(\S+)/.exec(output)?.[1] ?? null;
-}
-
-async function deployUngated(env, digest) {
-  const args = env ? ["--yes", "wrangler", "deploy", "--env", env] : ["--yes", "wrangler", "deploy"];
-  // What the check reads back. Skipped on a dirty tree, where there is no
-  // honest digest to claim — an unstamped deployment reports as unknown, which
-  // is true, rather than as matching a digest it does not have.
-  if (digest) args.push("--message", `${DIGEST_PREFIX} ${digest}`);
-  const { code, output } = await run("npx", args);
+async function deployThroughGate(env, digest) {
   const label = env || "(top-level)";
+  // The gate itself requires a clean commit, reads the Vizier credential, and
+  // runs wrangler only after a validated ALLOW receipt bound to this request.
+  const args = [GATED_DEPLOY_SCRIPT, env ? "--env" : "--top-level", ...(env ? [env] : [])];
+  const { code, output } = await run("node", args);
   if (code !== 0) {
-    console.error(`FAIL  ${label}`);
-    console.error(output.split("\n").slice(-12).join("\n"));
-    return false;
-  }
-  console.log(`ok    ${label.padEnd(36)} ${versionFrom(output) ?? "deployed"}`);
-  return true;
-}
-
-async function deployGated() {
-  // Delegates to the gate itself: it requires a clean commit, reads the Vizier
-  // credential, and runs wrangler only after a validated ALLOW receipt.
-  const { code, output } = await run("npm", ["run", "deploy:agent-output-verification:gated"]);
-  if (code !== 0) {
-    console.error(`FAIL  ${GATED_ENV} — the gate refused or could not run.`);
+    console.error(`FAIL  ${label} — the gate refused or could not run.`);
     console.error(output.split("\n").slice(-15).join("\n"));
     console.error(
-      "\nDo not fall back to `wrangler deploy --env agent-output-verification`.\n" +
+      `\nDo not fall back to a plain \`wrangler deploy\`${env ? ` --env ${env}` : ""}.\n` +
         "Either fix the cause above, or dispatch the protected workflow:\n" +
         "  gh workflow run deploy-agent-output-verification.yml --ref main"
     );
     return false;
   }
-  console.log(`ok    ${GATED_ENV.padEnd(36)} through the Vizier gate`);
+  // The digest travels inside the gate's own deployment message, next to the
+  // receipt id, so one message answers both questions the check asks.
+  void digest;
+  console.log(`ok    ${label.padEnd(36)} through the Vizier gate`);
   return true;
 }
 
@@ -173,7 +189,7 @@ async function checkFreshness() {
 
   let allCurrent = true;
   let unstamped = 0;
-  for (const env of [...UNGATED_ENVS, GATED_ENV]) {
+  for (const { env } of fleetEnvironments()) {
     const args = env
       ? ["--yes", "wrangler", "deployments", "list", "--env", env]
       : ["--yes", "wrangler", "deployments", "list"];
@@ -216,29 +232,50 @@ async function checkFreshness() {
     console.error(
       "\nAn environment is live on different code from the current bundle.\n" +
         "Run `npm run deploy:all` to bring the fleet up, or deploy the named env alone.\n" +
-        `For ${GATED_ENV} use the gate, never wrangler directly.`
+        "Every environment ships through the gate; never wrangler directly."
     );
   }
   return allCurrent;
 }
 
 async function checkReceipt() {
-  const { code, output } = await run("npx", ["--yes", "wrangler", "deployments", "list", "--env", GATED_ENV]);
-  if (code !== 0) {
-    console.error(`\nCould not read deployments for ${GATED_ENV}; receipt not verified.`);
-    return false;
+  // Asked of every environment, not only the one that used to be gated: an
+  // environment shipped around the gate is exactly what leaves no receipt, so
+  // checking only the environments known to be gated would check nothing.
+  let allGated = true;
+  for (const { env } of fleetEnvironments()) {
+    const label = env || "(top-level)";
+    const args = env
+      ? ["--yes", "wrangler", "deployments", "list", "--env", env]
+      : ["--yes", "wrangler", "deployments", "list"];
+    const { code, output } = await run("npx", args);
+    if (code !== 0) {
+      console.error(`unknown  ${label.padEnd(36)} could not read the deployment list`);
+      allGated = false;
+      continue;
+    }
+    const receipt = newestReceipt(output);
+    if (receipt) {
+      console.log(`receipt  ${label.padEnd(36)} ${receipt}`);
+      continue;
+    }
+    // Nine environments were last shipped before the gate covered them, so this
+    // is expected until the next full deploy and is reported as ungated rather
+    // than as drift. It still fails the check: an ungated live version is the
+    // condition this exists to surface.
+    console.error(`UNGATED  ${label.padEnd(36)} live version carries no ${RECEIPT_MARKER}`);
+    allGated = false;
   }
-  const receipt = newestReceipt(output);
-  if (receipt) {
-    console.log(`\nreceipt  ${GATED_ENV} live version carries ${receipt}`);
-    return true;
+
+  if (!allGated) {
+    console.error(
+      "\nAn environment is live on a version nothing gated.\n" +
+        "Run `npm run deploy:all` to ship every environment through the gate,\n" +
+        "or dispatch the protected workflow:\n" +
+        "  gh workflow run deploy-agent-output-verification.yml --ref main"
+    );
   }
-  console.error(
-    `\nDRIFT  the live ${GATED_ENV} deployment carries no ${RECEIPT_MARKER}.\n` +
-      "Something shipped it outside the gate. Re-run the gate to restore the trail:\n" +
-      "  gh workflow run deploy-agent-output-verification.yml --ref main"
-  );
-  return false;
+  return allGated;
 }
 
 async function main() {
@@ -247,15 +284,11 @@ async function main() {
   if (!checkOnly) {
     const { digest, reason } = await bundleDigest();
     if (!digest) console.warn(`Deploying without a content stamp: ${reason}.`);
-    for (const env of UNGATED_ENVS) {
-      if (!(await deployUngated(env, digest))) {
+    for (const { env } of fleetEnvironments()) {
+      if (!(await deployThroughGate(env, digest))) {
         process.exitCode = 1;
         return;
       }
-    }
-    if (!(await deployGated())) {
-      process.exitCode = 1;
-      return;
     }
   }
 

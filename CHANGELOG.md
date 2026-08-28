@@ -61,6 +61,16 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   surfaces or on neither. It sits in the vendor extension because the A2A v1 `AgentSkill` field set is
   closed. Cards get heavier: `agent-output-verification`, with five tools, goes from ~8.6 kB to ~35 kB.
 
+- **feat(deploy): every environment ships through the Vizier gate, not one of ten.** Nine environments
+  went out with a plain `wrangler deploy` and left no receipt, so the question the gate exists to answer
+  had an answer for one tenth of the fleet — while the gate cost the tenth environment about twenty
+  seconds and refused nothing in two weeks. `vizier-gated-deploy.js` now takes `--env <name>` or
+  `--top-level` and derives both the Vizier action target and the wrangler invocation from
+  `wrangler.toml`, so the request names the worker the deploy actually ships; an environment the file
+  does not declare is refused rather than silently defaulted. `deploy:all --check` asks every
+  environment for a receipt. Until the first full gated deploy, it reports nine as `UNGATED` and exits
+  non-zero, which is the true state of the fleet.
+
 - **fix(worker): route the Dual-Use Technology deployment to its declared profile.** The environment, profile
   registry, MCP schema, and deployment existed, but the Worker host/env dispatcher fell through to the generic
   Agenda Intelligence card and response path. The deployment now serves its own A2A Agent Card, structured

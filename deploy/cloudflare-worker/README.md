@@ -142,11 +142,21 @@ To deploy everything at once, use the script rather than a hand-rolled loop:
 
 ```bash
 cd deploy/cloudflare-worker
-npm run deploy:all            # seven envs plainly, the gated one through Vizier
+npm run deploy:all            # every env through the Vizier gate
 npm run deploy:all -- --check # verify only, deploy nothing
 ```
 
-It ends by reading the live deployment list for `agent-output-verification` and
+Every environment ships through the gate. Until 2026-08-28 exactly one did, and
+the other nine went out with a plain `wrangler deploy`: "who shipped this, and
+did anything check it" had an answer for one tenth of the fleet. The gate costs
+about twenty seconds per environment and needs the Vizier credential
+(`VIZIER_API_KEY`, or the macOS Keychain entry) — without it nothing deploys,
+which is the intended tightening and not a fallback to the old path.
+
+The environment list is read from `wrangler.toml`, so a new profile is gated the
+day it ships rather than the day someone remembers to add it to a list.
+
+`--check` ends by reading the live deployment list for every environment and
 fails if the newest deployment carries no ALLOW receipt. That is detection, not
 prevention — anyone can still call wrangler directly — but the drift is then
 reported instead of going unnoticed. Observed 2026-08-14: a manual "deploy all
@@ -160,6 +170,10 @@ new version carries neither the ALLOW receipt nor the content stamp. Observed
 2026-08-28 while adding `STATS_TOKEN` to five environments. After writing a
 secret to the gated environment, re-run `npm run deploy:all` to ship it through
 the gate again, then `-- --check` to confirm the receipt is back.
+
+Until the first full gated deploy runs, `--check` reports nine environments as
+`UNGATED` and exits non-zero. That is accurate — those live versions were shipped
+before the gate covered them — and one `npm run deploy:all` clears it.
 
 The supported production path for the `agent-output-verification` profile runs
 the same Vizier gate locally or through the protected GitHub Actions environment:

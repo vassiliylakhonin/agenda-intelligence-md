@@ -4,10 +4,13 @@ import test from "node:test";
 
 import {
   createDeployRequest,
+  envFromArgv,
   readVizierCredential,
   requestHash,
-  runGatedDeploy
+  runGatedDeploy,
+  workerTargetFor
 } from "../scripts/vizier-gated-deploy.js";
+import { deployedEnvironments, fleetEnvironments } from "../scripts/deploy-all.js";
 
 function responseFor(request, decision, reasonCodes = []) {
   const policyResults = [
@@ -208,4 +211,73 @@ test("production workflow tests without secrets before the protected deploy job"
   assert.match(deployJob, /name: agent-output-verification-production/u);
   assert.match(deployJob, /VIZIER_API_KEY: \$\{\{ secrets\.VIZIER_API_KEY \}\}/u);
   assert.match(deployJob, /CLOUDFLARE_API_TOKEN: \$\{\{ secrets\.CLOUDFLARE_API_TOKEN \}\}/u);
+});
+
+// Nine of ten environments used to ship with a plain `wrangler deploy`, so a
+// receipt existed for one tenth of the fleet. Gating the rest means the target
+// must follow the environment: a request that named one worker while wrangler
+// shipped another would produce a valid receipt for the wrong thing.
+test("the gated request names the worker the deploy will actually ship", () => {
+  const metadata = { commit: "b".repeat(40), dirty: false };
+
+  const cis = createDeployRequest(metadata, "cis-secondary-sanctions");
+  assert.equal(cis.action.target, "worker:cis-secondary-sanctions-a2a");
+  assert.deepEqual(cis.authority.constraints.allowed_targets, ["worker:cis-secondary-sanctions-a2a"]);
+
+  const top = createDeployRequest(metadata, "");
+  assert.equal(top.action.target, "worker:agenda-intelligence-a2a");
+  assert.equal(top.agent.id, "top-level-deployer");
+
+  // The historical default is unchanged, so the protected workflow and the
+  // named npm script still mean exactly what they meant.
+  assert.equal(createDeployRequest(metadata).action.target, "worker:agent-output-verification-a2a");
+  assert.equal(createDeployRequest(metadata).agent.id, "agent-output-verification-deployer");
+
+  // Every declared environment resolves; none inherits another's worker name.
+  const targets = fleetEnvironments().map((item) => workerTargetFor(item.env));
+  assert.equal(targets.length, 10);
+  assert.equal(new Set(targets).size, 10, "two environments resolved to one worker");
+});
+
+test("an environment this repository does not declare is refused, not defaulted", () => {
+  assert.equal(envFromArgv([]), "agent-output-verification");
+  assert.equal(envFromArgv(["--top-level"]), "");
+  assert.equal(envFromArgv(["--env", "gulf-maritime-exposure"]), "gulf-maritime-exposure");
+  // A typo that fell through to the default would ship the wrong worker under
+  // a receipt that validates.
+  assert.throws(() => envFromArgv(["--env", "gulf-maritime"]), /declares no environment/);
+  assert.throws(() => envFromArgv(["gulf-maritime-exposure"]), /--env <name> or --top-level/);
+  assert.throws(() => workerTargetFor("gulf-maritime"), /declares no Worker/);
+});
+
+test("the environment list comes from wrangler.toml, not a second hand-kept list", () => {
+  const toml = [
+    'name = "agenda-intelligence-a2a"',
+    "",
+    "[[kv_namespaces]]",
+    'binding = "AGENDA_USAGE"',
+    "",
+    "[env.one]",
+    'name = "one-a2a"',
+    "",
+    "[env.one.vars]",
+    'AGENT_PROFILE = "one"',
+    "",
+    "[[env.one.kv_namespaces]]",
+    'binding = "AGENDA_USAGE"',
+    "",
+    "[env.two]",
+    'name = "two-a2a"'
+  ].join("\n");
+
+  assert.deepEqual(deployedEnvironments(toml), [
+    { env: "", workerName: "agenda-intelligence-a2a" },
+    { env: "one", workerName: "one-a2a" },
+    { env: "two", workerName: "two-a2a" }
+  ]);
+
+  // The real file: ten environments, ten names, no gaps.
+  const live = fleetEnvironments();
+  assert.equal(live.length, 10);
+  assert.ok(live.every((item) => item.workerName));
 });
