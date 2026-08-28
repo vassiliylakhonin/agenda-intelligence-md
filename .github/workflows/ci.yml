@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     strategy:
@@ -110,3 +113,24 @@ jobs:
           .wheel-smoke-venv/bin/python -m pip install dist/*.whl
           .wheel-smoke-venv/bin/agenda-intelligence --version
           .wheel-smoke-venv/bin/agenda-intelligence validate-manifest
+
+  worker:
+    name: Cloudflare Worker tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: deploy/cloudflare-worker
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Test the Worker
+        run: npm test
