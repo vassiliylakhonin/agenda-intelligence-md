@@ -495,12 +495,22 @@ likely_probe = false
 caller_kind = "unsigned_external"
 ```
 
-Set a stats token once:
+Set or rotate the stats token across the whole fleet:
 
 ```bash
 cd deploy/cloudflare-worker
-npx --yes wrangler secret put STATS_TOKEN
+node scripts/rotate-stats-token.js          # rotate, re-publish, verify
+node scripts/rotate-stats-token.js --check  # ask every environment, write nothing
 ```
+
+Every environment needs its own copy: `wrangler secret put STATS_TOKEN` without
+`--env` reaches the top-level Worker and nothing else. Observed 2026-08-28, four
+environments answering `/stats` with 401 — a gap nothing else reports, because
+`/stats` is the one endpoint no monitor calls. The script reads the environment
+list from `wrangler.toml`, writes the secret everywhere, updates `.env` only
+after every environment took it, and then runs `deploy:all` — because a secret
+write publishes an unstamped version and, in the gated environment, one without
+its ALLOW receipt.
 
 View product-level daily counters:
 

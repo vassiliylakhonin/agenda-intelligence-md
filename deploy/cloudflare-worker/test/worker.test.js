@@ -4982,6 +4982,71 @@ test("deploy freshness reads the content stamp from the newest deployment only",
   assert.equal(newestReceipt(listing), "vrf_7bdb60fb");
 });
 
+// A rotation that reaches nine of ten environments leaves no trace: the tenth
+// keeps answering /stats with 401 and nothing else changes. Observed
+// 2026-08-28, four environments behind. The environment list is therefore read
+// from wrangler.toml rather than kept by hand.
+test("stats-token rotation covers every environment wrangler.toml declares", async () => {
+  const { deployedEnvironments } = await import("../scripts/rotate-stats-token.js");
+
+  const toml = [
+    'name = "agenda-intelligence-a2a"',
+    'main = "src/index.js"',
+    "",
+    "[observability]",
+    "enabled = true",
+    "",
+    "[[kv_namespaces]]",
+    'binding = "AGENDA_USAGE"',
+    "",
+    "[env.cis-secondary-sanctions]",
+    'name = "cis-secondary-sanctions-a2a"',
+    "",
+    "[env.cis-secondary-sanctions.vars]",
+    'AGENT_PROFILE = "cis_secondary_sanctions"',
+    "",
+    "[[env.cis-secondary-sanctions.kv_namespaces]]",
+    'binding = "AGENDA_USAGE"',
+    "",
+    "[env.dual-use-technology-export]",
+    'name = "dual-use-technology-export-a2a"'
+  ].join("\n");
+
+  const environments = deployedEnvironments(toml);
+  assert.deepEqual(
+    environments.map((item) => item.env),
+    ["", "cis-secondary-sanctions", "dual-use-technology-export"],
+    "[env.x.vars] and [[env.x.kv_namespaces]] must not introduce extra environments"
+  );
+  // The top-level name must not be captured from a sub-table, and an
+  // environment must not inherit the name of the one declared before it.
+  assert.equal(environments[0].workerName, "agenda-intelligence-a2a");
+  assert.equal(environments[1].workerName, "cis-secondary-sanctions-a2a");
+  assert.equal(environments[2].workerName, "dual-use-technology-export-a2a");
+
+  // The real file is the case that matters: ten environments, ten names.
+  const live = deployedEnvironments(
+    readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8")
+  );
+  assert.equal(live.length, 10);
+  assert.ok(live.every((item) => item.workerName));
+});
+
+// The helper this replaced wrote the token with `> .env`, which also erased
+// AGENDA_OBSERVABILITY_TOKEN — the credential `npm run funnel` reads. Rotating
+// one secret must not silently revoke another.
+test("stats-token rotation rewrites one key and keeps the rest of .env", async () => {
+  const { withStatsToken } = await import("../scripts/rotate-stats-token.js");
+
+  assert.equal(
+    withStatsToken("AGENDA_OBSERVABILITY_TOKEN=abc\nSTATS_TOKEN=old\n", "new"),
+    "AGENDA_OBSERVABILITY_TOKEN=abc\nSTATS_TOKEN=new\n"
+  );
+  assert.equal(withStatsToken("AGENDA_OBSERVABILITY_TOKEN=abc\n", "new"),
+    "AGENDA_OBSERVABILITY_TOKEN=abc\nSTATS_TOKEN=new\n");
+  assert.equal(withStatsToken("", "new"), "STATS_TOKEN=new\n");
+});
+
 // Measured 2026-08-18 on the live workers: a plain-language probe made five of
 // the eight gates answer TASK_STATE_FAILED with `artifacts: []` — no required
 // field, no example, no human to write to. The refusal is correct; the silence
