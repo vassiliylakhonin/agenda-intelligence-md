@@ -6,8 +6,9 @@ Tank Analyst repository owns the signal canon. Agenda Intelligence vendors a
 snapshot under ``src/agenda_intelligence/data/signals/`` so the MCP tools
 ``list_signals`` and ``get_signal`` work from a self-contained wheel.
 
-Default source: ``~/work/global-think-tank-analyst/signals``. Override with
-``--source PATH`` if your checkout lives elsewhere.
+Source resolution, first hit wins: ``$GTTA_SIGNALS``, a ``global-think-tank-analyst``
+checkout beside this repository, then ``~/work`` and ``~/projects``. Override with
+``--source PATH`` if your checkout lives somewhere else again.
 
 Files copied:
 
@@ -21,11 +22,38 @@ the vendored snapshot and the local source path (when present) will fail.
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 from pathlib import Path
 
-DEFAULT_SOURCE = Path.home() / "work" / "global-think-tank-analyst" / "signals"
-TARGET = Path(__file__).resolve().parents[1] / "src" / "agenda_intelligence" / "data" / "signals"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+TARGET = REPO_ROOT / "src" / "agenda_intelligence" / "data" / "signals"
+
+# One hard-coded home directory used to decide this. The checkout moved to
+# ~/projects and the path here did not, so `sync_signals.py` stopped finding it
+# and the freshness test in tests/test_signal_sync.py -- which skips when the
+# source is absent -- went quiet instead of failing. It stayed quiet through a
+# sweep that edited the vendored snapshot directly, which is exactly the drift
+# it exists to catch. Several candidates, checked in order, so a moved checkout
+# degrades to the next one rather than to silence. An explicit GTTA_SIGNALS is
+# used alone: a typo in it should surface, not fall through to a guess.
+
+
+def candidate_sources() -> list[Path]:
+    override = os.environ.get("GTTA_SIGNALS")
+    if override:
+        return [Path(override)]
+    candidates = [REPO_ROOT.parent / "global-think-tank-analyst" / "signals"]
+    candidates += [Path.home() / parent / "global-think-tank-analyst" / "signals" for parent in ("work", "projects")]
+    return candidates
+
+
+def resolve_source() -> Path | None:
+    """The first candidate that exists, or None when no checkout is present."""
+    return next((path for path in candidate_sources() if path.is_dir()), None)
+
+
+DEFAULT_SOURCE = resolve_source() or candidate_sources()[-1]
 
 TOP_LEVEL_FILES = ["index.json", "feed.json", "latest.md", "TEMPLATE.md", "README.md"]
 

@@ -13,6 +13,7 @@ present (e.g. on CI without that repo cloned). Locally it enforces that
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from pathlib import Path
 
@@ -20,7 +21,17 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGED = ROOT / "src" / "agenda_intelligence" / "data" / "signals"
-LOCAL_SOURCE = Path.home() / "work" / "global-think-tank-analyst" / "signals"
+
+# The source path is resolved by the sync script rather than repeated here. The
+# two used to hold the same hard-coded ~/work path; when the checkout moved, the
+# script started failing loudly and this test started skipping silently, so the
+# guard was off for every run that mattered.
+SPEC = importlib.util.spec_from_file_location("sync_signals", ROOT / "scripts" / "sync_signals.py")
+assert SPEC and SPEC.loader
+SYNC = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(SYNC)
+
+LOCAL_SOURCE = SYNC.resolve_source()
 
 
 def _read(p: Path) -> str:
@@ -48,7 +59,7 @@ def test_signal_feed_content_matches_packaged_markdown():
     )
 
 
-@pytest.mark.skipif(not LOCAL_SOURCE.is_dir(), reason="GTTA checkout not available")
+@pytest.mark.skipif(LOCAL_SOURCE is None, reason="GTTA checkout not available")
 def test_signals_index_matches_source():
     src = LOCAL_SOURCE / "index.json"
     dst = PACKAGED / "index.json"
@@ -57,7 +68,7 @@ def test_signals_index_matches_source():
     )
 
 
-@pytest.mark.skipif(not LOCAL_SOURCE.is_dir(), reason="GTTA checkout not available")
+@pytest.mark.skipif(LOCAL_SOURCE is None, reason="GTTA checkout not available")
 def test_signal_markdown_count_matches():
     src_count = sum(1 for _ in LOCAL_SOURCE.rglob("20*/*.md"))
     dst_count = sum(1 for _ in PACKAGED.rglob("20*/*.md"))
