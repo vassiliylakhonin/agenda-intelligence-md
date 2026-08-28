@@ -4,6 +4,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(registry): declare the ten hosted endpoints in `server.json`.** The registry entry offered exactly
+  one way to reach this project — install the PyPI package and speak stdio — while ten Streamable HTTP
+  endpoints were live, open, and answering `tools/list` with complete input and output schemas. An agent
+  browsing the registry saw software to install, not endpoints it could call. Measured the same day in the
+  Agenstry directory: 4–5 listing impressions per gate, zero invocations. `remotes[]` now names all ten,
+  general profile first, and `websiteUrl` points at the hosted landing page. `tests/test_server_manifest.py`
+  checks both directions offline against `wrangler.toml`: no declared URL that no deployment serves, and no
+  deployed Worker the manifest forgets. The release workflow syncs versions only, so it needs no change.
+
 - **chore(signals): re-sync the vendored snapshot with the canon, and translate the links vendoring breaks.**
   The snapshot was three signals behind `global-think-tank-analyst` — the guard that should have said so had
   been looking for the checkout in the wrong place — and it carried the disclaimer removal that the canon has
