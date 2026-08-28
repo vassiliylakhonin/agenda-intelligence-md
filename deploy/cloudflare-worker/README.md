@@ -144,6 +144,14 @@ reported instead of going unnoticed. Observed 2026-08-14: a manual "deploy all
 eight" loop overwrote two gated deployments with ungated ones within ninety
 seconds of each, leaving the live version without a receipt.
 
+`npx wrangler secret put ... --env agent-output-verification` drops the receipt
+the same way, and is easier to do by accident because it looks like a config
+change rather than a deployment: a secret write publishes a new version, and the
+new version carries neither the ALLOW receipt nor the content stamp. Observed
+2026-08-28 while adding `STATS_TOKEN` to five environments. After writing a
+secret to the gated environment, re-run `npm run deploy:all` to ship it through
+the gate again, then `-- --check` to confirm the receipt is back.
+
 The supported production path for the `agent-output-verification` profile runs
 the same Vizier gate locally or through the protected GitHub Actions environment:
 

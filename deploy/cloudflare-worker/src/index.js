@@ -1464,6 +1464,52 @@ function apiCatalog(request) {
   };
 }
 
+// The /v1 gate endpoints are documented from the same table that serves them,
+// so a route can never be advertised in the spec without being routed, or routed
+// without being documented.
+function directV1OpenApiPaths() {
+  const paths = {};
+  for (const [endpoint, route] of Object.entries(DIRECT_V1_ROUTES)) {
+    const guide = route.guide || GATE_REQUEST_GUIDES[route.guideProfile];
+    paths[endpoint] = {
+      post: {
+        tags: ["gates"],
+        summary: `${route.label} — canonical HTTP endpoint`,
+        description:
+          `Runs the ${route.label} gate over a structured request and returns the triage response directly. ` +
+          `This is the canonical_http_endpoint the gate names in its A2A metadata and in the guidance it returns ` +
+          `for a malformed request; it applies the same validation and produces the same result as message/send, ` +
+          `without the JSON-RPC envelope. Request schema: ${route.schema}. ` +
+          "Evidence-readiness triage only. It does not verify facts or replace human review.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { type: "object", additionalProperties: true },
+              ...(guide && guide.example ? { example: guide.example } : {})
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "Gate triage response.",
+            content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+          },
+          400: {
+            description:
+              "The body is not valid JSON, or is not a request this gate accepts. The response carries the " +
+              "field-level errors, the required fields, and a worked example.",
+            content: {
+              "application/json": { schema: { $ref: "#/components/schemas/GateRequestRejection" } }
+            }
+          }
+        }
+      }
+    };
+  }
+  return paths;
+}
+
 function openApiDocument(request) {
   const origin = originFromRequest(request);
   return {
@@ -1479,7 +1525,8 @@ function openApiDocument(request) {
       { name: "discovery", description: "Machine-readable discovery documents." },
       { name: "status", description: "Health and status endpoints." },
       { name: "knowledge", description: "OKF and entity-map artifacts for retrieval agents." },
-      { name: "jsonrpc", description: "A2A-compatible JSON-RPC endpoint." }
+      { name: "jsonrpc", description: "A2A-compatible JSON-RPC endpoint." },
+      { name: "gates", description: "Canonical HTTP endpoints for the triage gates." }
     ],
     paths: {
       "/": {
@@ -1735,6 +1782,47 @@ function openApiDocument(request) {
           }
         }
       },
+      ...directV1OpenApiPaths(),
+      "/v1/evidence-packet/check": {
+        post: {
+          tags: ["gates"],
+          summary: "Check an evidence packet and return repair guidance",
+          description:
+            "Runs agent-output verification over an evidence packet and returns the readiness result together with " +
+            "a repair prompt naming what is missing. Accepts the packet either bare or under a `packet` key.",
+          requestBody: {
+            required: true,
+            content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+          },
+          responses: {
+            200: {
+              description: "Verification result with repair guidance.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            },
+            400: { description: "The body is not valid JSON, or carries no evidence packet object." }
+          }
+        }
+      },
+      "/v1/evidence-packet/repair-prompt": {
+        post: {
+          tags: ["gates"],
+          summary: "Return the repair prompt for an evidence packet",
+          description:
+            "Returns only the repair prompt for a packet. Accepts a packet, or a packet together with an existing " +
+            "verification response under `response` to avoid re-running the check.",
+          requestBody: {
+            required: true,
+            content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+          },
+          responses: {
+            200: {
+              description: "Repair prompt for the supplied packet.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            },
+            400: { description: "The body is not valid JSON, or carries neither a packet nor a verification response." }
+          }
+        }
+      },
       "/message/send": {
         post: {
           tags: ["jsonrpc"],
@@ -1822,6 +1910,23 @@ function openApiDocument(request) {
         }
       },
       schemas: {
+        GateRequestRejection: {
+          type: "object",
+          required: ["ok", "valid", "error", "errors", "canonical_http_endpoint", "schema"],
+          properties: {
+            ok: { type: "boolean", enum: [false] },
+            valid: { type: "boolean", enum: [false] },
+            error: { type: "string" },
+            errors: { type: "array", items: { type: "string" } },
+            canonical_http_endpoint: { type: "string" },
+            schema: { type: "string" },
+            required_fields: { type: "array", items: { type: "string" } },
+            example_request: { type: "object", additionalProperties: true },
+            front_door: { type: "string", format: "uri" },
+            support_contact: { type: "string" }
+          },
+          additionalProperties: true
+        },
         HealthInfo: {
           type: "object",
           required: ["ok", "name", "version", "profile", "ai_catalog", "agent_card", "message_send"],
@@ -3016,8 +3121,40 @@ const GATE_REQUEST_GUIDES = Object.freeze({
   }
 });
 
-function invalidRequestArtifact(profile, endpoint, schema, errors) {
-  const guide = GATE_REQUEST_GUIDES[profile];
+// The pre-action check shares the agent_output_verification profile but not its
+// request shape: it wraps a claim audit in the action being proposed. Handing a
+// caller the verification example here would hand them a request this gate rejects.
+const PRE_ACTION_CHECK_GUIDE = {
+  title: "Agenda Decision Gate — pre-action check",
+  required: [
+    "run_id — caller-generated correlation id, resubmitted after adding evidence or approval",
+    "actor — object with id, type, operator",
+    "requested_action — one sentence naming the action about to be taken",
+    "target — object with id and type",
+    "risk_tier — low, medium, high",
+    "claims — non-empty array of { claim_id, claim, support_level, evidence_ids }",
+    "evidence — array of { evidence_id, title, date }"
+  ],
+  example: {
+    run_id: "run-2026-08-28-001",
+    actor: { id: "procurement-agent", type: "ai_agent", operator: "Example buyer" },
+    requested_action: "send supplier recommendation to the buyer",
+    target: { id: "supplier-456", type: "counterparty" },
+    risk_tier: "low",
+    claims: [
+      {
+        claim_id: "c1",
+        claim: "The counterparty is not on the OFAC SDN list as of 2026-08-01.",
+        support_level: "direct",
+        evidence_ids: ["e1"]
+      }
+    ],
+    evidence: [{ evidence_id: "e1", title: "OFAC SDN extract", date: "2026-08-01" }]
+  }
+};
+
+function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride = null) {
+  const guide = guideOverride || GATE_REQUEST_GUIDES[profile];
   if (!guide) return null;
   const text = [
     `# ${guide.title} — request not accepted`,
@@ -3068,9 +3205,9 @@ function invalidRequestArtifact(profile, endpoint, schema, errors) {
   };
 }
 
-function invalidRequestResult(profile, endpoint, schema, errors) {
-  const artifact = invalidRequestArtifact(profile, endpoint, schema, errors);
-  const guide = GATE_REQUEST_GUIDES[profile];
+function invalidRequestResult(profile, endpoint, schema, errors, guideOverride = null) {
+  const artifact = invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride);
+  const guide = guideOverride || GATE_REQUEST_GUIDES[profile];
   return {
     id: crypto.randomUUID(),
     status: { state: "TASK_STATE_FAILED", timestamp: new Date().toISOString() },
@@ -3982,32 +4119,16 @@ function a2aResultForDecisionPoliciesList(params) {
   return decisionGateTask("decision_policies_list", decisionPolicyCatalog());
 }
 
-async function a2aResultForDecisionCheck(params, request, env = {}) {
-  const structured = structuredAgentOutputVerificationRequestFromParams(params);
-  if (!structured || !isPreActionCheckRequest(structured)) {
-    return invalidRequestResult(
-      "agent_output_verification",
-      "/mcp#decision_check",
-      "schemas/v1/pre-action-check-request.schema.json",
-      ["Missing structured pre-action check request"]
-    );
-  }
-  const errors = preActionCheckErrors(structured);
-  if (errors.length) {
-    return invalidRequestResult(
-      "agent_output_verification",
-      "/mcp#decision_check",
-      "schemas/v1/pre-action-check-request.schema.json",
-      errors
-    );
-  }
-
+// The signed pre-action decision is reachable two ways: the decision_check
+// capability over A2A/MCP, and the /v1/agent-output/pre-action-check HTTP route
+// the decision_check response names as its canonical endpoint. The receipt logic
+// lives here so both callers issue the same decision and the same receipt.
+async function preActionCheckDecision(structured, request, env = {}) {
   const baseResponse = preActionCheckResult(structured).response;
   const signingKey = env.AGENT_CARD_SIGNING_KEY || env.AGENT_CARD_PRIVATE_JWK;
   if (!signingKey) {
-    return decisionGateTask(
-      "decision_check",
-      {
+    return {
+      response: {
         ...baseResponse,
         receipt_status: "unavailable",
         receipt: null,
@@ -4016,8 +4137,8 @@ async function a2aResultForDecisionCheck(params, request, env = {}) {
           "Receipt signing is unavailable; do not treat this diagnostic decision as a signed Gate pass."
         ]
       },
-      { error: true }
-    );
+      error: true
+    };
   }
 
   try {
@@ -4034,16 +4155,18 @@ async function a2aResultForDecisionCheck(params, request, env = {}) {
     limitations.push(
       "The attached receipt proves this Worker's readiness result and request binding only; it is not authorization."
     );
-    return decisionGateTask("decision_check", {
-      ...baseResponse,
-      receipt_status: "signed",
-      receipt,
-      limitations
-    });
+    return {
+      response: {
+        ...baseResponse,
+        receipt_status: "signed",
+        receipt,
+        limitations
+      },
+      error: false
+    };
   } catch (_error) {
-    return decisionGateTask(
-      "decision_check",
-      {
+    return {
+      response: {
         ...baseResponse,
         receipt_status: "unavailable",
         receipt: null,
@@ -4052,9 +4175,35 @@ async function a2aResultForDecisionCheck(params, request, env = {}) {
           "Receipt signing failed; do not treat this diagnostic decision as a signed Gate pass."
         ]
       },
-      { error: true }
+      error: true
+    };
+  }
+}
+
+async function a2aResultForDecisionCheck(params, request, env = {}) {
+  const structured = structuredAgentOutputVerificationRequestFromParams(params);
+  if (!structured || !isPreActionCheckRequest(structured)) {
+    return invalidRequestResult(
+      "agent_output_verification",
+      "/mcp#decision_check",
+      "schemas/v1/pre-action-check-request.schema.json",
+      ["Missing structured pre-action check request"],
+      PRE_ACTION_CHECK_GUIDE
     );
   }
+  const errors = preActionCheckErrors(structured);
+  if (errors.length) {
+    return invalidRequestResult(
+      "agent_output_verification",
+      "/mcp#decision_check",
+      "schemas/v1/pre-action-check-request.schema.json",
+      errors,
+      PRE_ACTION_CHECK_GUIDE
+    );
+  }
+
+  const { response, error } = await preActionCheckDecision(structured, request, env);
+  return decisionGateTask("decision_check", response, { error });
 }
 
 function decisionVerifyErrors(value) {
@@ -10359,19 +10508,143 @@ async function handleEvidencePacketRepairPrompt(request, env) {
   );
 }
 
-async function handleCriticalMineralsDirect(request, env) {
+// Every gate names a canonical_http_endpoint in its A2A metadata and in the
+// guidance it returns for a malformed request. These are those endpoints: the
+// same validators and the same result builders the A2A path uses, reached with a
+// plain JSON POST instead of a JSON-RPC envelope. A caller that follows the
+// advertised pointer has to land on a working route, so the table is the single
+// place an endpoint is declared and served.
+const DIRECT_V1_ROUTES = {
+  "/v1/cis-secondary-sanctions/exposure": {
+    label: "CIS secondary-sanctions exposure",
+    guideProfile: "cis_secondary_sanctions",
+    schema: "schemas/v1/cis-secondary-sanctions-request.schema.json",
+    missing: "Missing structured CIS secondary-sanctions exposure request",
+    extract: structuredCisSecondarySanctionsRequestFromParams,
+    errorsFor: cisEnumErrors,
+    run: (structured, request, env) => cisSecondarySanctionsResult(structured, env),
+    // The live-list status is metadata on the A2A path; a REST caller needs it
+    // too, or it cannot tell a screened name from an unscreened one.
+    provenance: (result) => ({
+      live_retrieval_status: result.live_retrieval_status,
+      live_retrieval_upstream: result.live_retrieval_upstream,
+      live_retrieval_snapshot_generated_at: result.live_retrieval_snapshot_generated_at,
+      auto_fetched_sources: result.auto_fetched_sources,
+      upstream_attribution: result.upstream_attribution
+    })
+  },
+  "/v1/agentic-interaction/trust": {
+    label: "agentic interaction trust",
+    guideProfile: "agentic_interaction_trust",
+    schema: "schemas/v1/agentic-interaction-trust-request.schema.json",
+    missing: "Missing structured agentic interaction trust request",
+    extract: structuredAgenticInteractionTrustRequestFromParams,
+    errorsFor: agenticEnumErrors,
+    run: (structured) => agenticInteractionTrustResult(structured)
+  },
+  "/v1/gulf-maritime/exposure": {
+    label: "Gulf maritime exposure",
+    guideProfile: "gulf_maritime_exposure",
+    schema: "schemas/v1/gulf-maritime-exposure-request.schema.json",
+    missing: "Missing structured Gulf maritime exposure request",
+    extract: structuredGulfMaritimeRequestFromParams,
+    errorsFor: gulfEnumErrors,
+    run: (structured) => gulfMaritimeExposureResult(structured)
+  },
+  "/v1/market-entry/readiness": {
+    label: "Kazakhstan market-entry readiness",
+    guideProfile: "kazakhstan_market_entry_readiness",
+    schema: "schemas/v1/market-entry-readiness-request.schema.json",
+    missing: "Missing structured Kazakhstan market-entry readiness request",
+    extract: structuredMarketEntryReadinessRequestFromParams,
+    errorsFor: marketEntryEnumErrors,
+    run: (structured) => marketEntryReadinessResult(structured)
+  },
+  "/v1/agent-output/verification": {
+    label: "agent output verification",
+    guideProfile: "agent_output_verification",
+    schema: "schemas/v1/evidence-audit.schema.json",
+    missing: "Missing structured agent output verification request",
+    extract: structuredAgentOutputVerificationRequestFromParams,
+    errorsFor: agentOutputVerificationEnumErrors,
+    run: (structured) => agentOutputVerificationResult(structured)
+  },
+  "/v1/agent-output/pre-action-check": {
+    label: "pre-action check",
+    guideProfile: "agent_output_verification",
+    schema: "schemas/v1/pre-action-check-request.schema.json",
+    missing: "Missing structured pre-action check request",
+    guide: PRE_ACTION_CHECK_GUIDE,
+    extract: (body) => {
+      const structured = structuredAgentOutputVerificationRequestFromParams(body);
+      return structured && isPreActionCheckRequest(structured) ? structured : null;
+    },
+    errorsFor: preActionCheckErrors,
+    // Returns the same signed receipt the decision_check capability returns.
+    run: async (structured, request, env) => {
+      const { response } = await preActionCheckDecision(structured, request, env);
+      return { response };
+    }
+  },
+  "/v1/critical-minerals/due-diligence": {
+    label: "Critical minerals due diligence",
+    guideProfile: "critical_minerals_due_diligence",
+    schema: "schemas/v1/critical-minerals-due-diligence-request.schema.json",
+    missing: "Missing structured critical minerals due diligence request",
+    extract: structuredCriticalMineralsRequestFromParams,
+    errorsFor: criticalMineralsErrors,
+    run: (structured) => criticalMineralsResult(structured)
+  }
+};
+
+function directV1Rejection(endpoint, route, errors) {
+  const guide = route.guide || GATE_REQUEST_GUIDES[route.guideProfile];
+  return {
+    ok: false,
+    valid: false,
+    error: `Invalid ${route.label} request`,
+    errors,
+    canonical_http_endpoint: endpoint,
+    schema: route.schema,
+    ...(guide
+      ? {
+          required_fields: guide.required,
+          example_request: guide.example,
+          front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+          support_contact: SUPPORT_CONTACT_EMAIL
+        }
+      : {})
+  };
+}
+
+async function handleDirectV1(endpoint, route, request, env) {
   let body;
   try {
     body = await request.json();
   } catch (_e) {
     return jsonResponse({ ok: false, error: "Invalid JSON payload" }, 400);
   }
-  const errors = criticalMineralsErrors(body);
-  if (errors.length) {
-    return jsonResponse({ ok: false, error: "Invalid Critical minerals due diligence request", errors }, 400);
+
+  const structured = route.extract(body);
+  if (!structured) {
+    // A body that is shaped like a request but incomplete gets field-level
+    // errors; anything else gets the schema and a worked example.
+    const detail =
+      body && typeof body === "object" && !Array.isArray(body) ? route.errorsFor(body) : [];
+    return jsonResponse(
+      directV1Rejection(endpoint, route, detail.length ? detail : [route.missing]),
+      400
+    );
   }
-  const result = criticalMineralsResult(body);
-  return jsonResponse(result.response, 200);
+
+  const errors = route.errorsFor(structured);
+  if (errors.length) {
+    return jsonResponse(directV1Rejection(endpoint, route, errors), 400);
+  }
+
+  const result = await route.run(structured, request, env);
+  const provenance = route.provenance ? route.provenance(result) : null;
+  return jsonResponse(provenance ? { ...result.response, ...provenance } : result.response, 200);
 }
 
 export async function handleRequest(request, env = {}, ctx = {}) {
@@ -10526,8 +10799,8 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return handleEvidencePacketRepairPrompt(request, env);
   }
 
-  if (request.method === "POST" && url.pathname === "/v1/critical-minerals/due-diligence") {
-    return handleCriticalMineralsDirect(request, env);
+  if (request.method === "POST" && Object.hasOwn(DIRECT_V1_ROUTES, url.pathname)) {
+    return handleDirectV1(url.pathname, DIRECT_V1_ROUTES[url.pathname], request, env);
   }
 
   if (request.method === "POST" && url.pathname === MCP_ENDPOINT_PATH) {
@@ -10559,7 +10832,8 @@ export {
   funnelStepForPath,
   handleCisReviewIntake,
   handleCisReviewIntakeList,
-  handleCriticalMineralsDirect,
+  DIRECT_V1_ROUTES,
+  handleDirectV1,
   handleEvidencePacketCheck,
   handleEvidencePacketRepairPrompt,
   sendCisReviewEmailNotification,
