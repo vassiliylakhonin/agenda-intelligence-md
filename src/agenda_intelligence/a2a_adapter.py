@@ -221,7 +221,9 @@ def _build_per_profile_live_retrieval_block() -> dict[str, Any]:
 #
 # agent_card() keeps the root shape its callers and tests read. Normalisation
 # happens on the way out, in the JSON-RPC card result.
-CARD_EXTENSION_URI = "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/a2a/extensions/agenda-intelligence/v1"
+CARD_EXTENSION_URI = (
+    "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev" "/a2a/extensions/agenda-intelligence/v1"
+)
 CARD_EXTENSION_DESCRIPTION = (
     "Wrapper scope, product contract, boundaries and capability declarations for this agent. "
     "Descriptive only: reading it is never required to call the agent."
