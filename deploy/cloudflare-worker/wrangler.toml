@@ -45,8 +45,15 @@ workers_dev = true
 
 AGENT_PROFILE = "cis_secondary_sanctions"
 # Snapshot upstream activation (ADR 0014): $0 server-side name screening against
-# the published compact public-list index. Not a secret (public URL), so kept as
+# a published compact public-list index. Not a secret (public URL), so kept as
 # a declarative var. Set SNAPSHOT_DISABLED=1 to deactivate without removing this.
+#
+# NOT LIVE: the URL below returns 404 — vassiliylakhonin.github.io has never been
+# published. The adapter degrades correctly (live_retrieval_status: "degraded"
+# with a degrade_reason, no fabricated "no matches"), so responses stay honest,
+# but this profile has never actually screened a name server-side. Publish the
+# index, or point this at a host that serves it, before describing the feature
+# as active.
 SNAPSHOT_INDEX_URL = "https://vassiliylakhonin.github.io/docs/assets/sanctions-name-index-compact.json"
 # Optional access controls for the message/send route — both OFF by default so
 # the browser demo stays an open free evaluation. Flip on when needed:
