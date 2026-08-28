@@ -36,6 +36,7 @@ Eight binary criteria from [`docs/agent-eval-methodology.md`](../../docs/agent-e
 | Options with explicit trade-offs | 1 | 1 | A: three postures with Viable-when / Risk / Actions. B: four options with Pros / Cons / Trade-offs. |
 | Failure modes with likelihood and impact | 0.5 | 1 | A: implicit failure scenarios in "Risk" prose. B: five-row failure-modes table with explicit Likelihood + Impact + Mitigation columns. |
 | Watch-next indicators with triggers | 0.5 | 1 | A: Immediate Actions table has Owner + Why Urgent, no per-indicator trigger. B: seven-row table with Indicator + Trigger + Source Type. |
+| Honest scope | 0 | 1 | A: no evidence-mode disclosure, confident framing. B: evidence_mode declared in meta, "no live source retrieval was performed" in audit notes, validation_score 0.71 labelled advisory, "not legal advice" caveat. |
 | **Total** | **3.5 / 8** | **8 / 8** | |
 
 **Delta:** **+4.5** — identical to the GTTA case (`gtta-global-policy.md`). Same Sonnet 4.6 adaptive, same evidence mode, same delta. Two cases now show the same +4.5 number; that is a pattern, not a single point.
@@ -55,3 +56,12 @@ Five findings, in order of importance.
 **5. Provenance basis used schema enum, not SKILL Axis A/B tags.** The CA-Caspian and GTTA SKILL instructions describe inline provenance tags from Axis A (`[primary]`, `[secondary]`, `[user-provided]`, `[inference]`, `[analyst-judgment]`) and Axis B (`[verify]`, `[stale-risk: YYYY-MM]`). Sonnet did not use those. Instead it used the agenda-memo.schema.json `audit.provenance` field with `basis` enum (`fact` / `assessment` / `assumption` / `unknown`). The schema's STRICT output contract trumped the SKILL's stylistic preference. This is a deliberate choice — the product shell decided to be schema-first, not SKILL-prose-first — but it is worth recording: if Axis A/B tags inside the memo body are a Bar 2 criterion in the skill repo, the product shell currently routes around them by enforcing a simpler basis enum at the schema level. Either the schema gains Axis A/B-aware fields in a future version, or the SKILL's tag prescription gets reframed as advice the model may add inside text fields rather than as a separate axis.
 
 **6. Stop-and-request correctly did NOT fire.** The CA-Caspian AGENTS.md lists explicit triggers for Stop-and-request: definitive sanctions / legal / compliance conclusions, claims hinging on a fact sources disagree on, operational sanctions claims older than the decision window, named-individual predictions. The question was framed as risk analysis ("what are our risks", "what should we do") with no demand for a definitive list-status determination on any named counterparty. Sonnet answered with risk framing rather than stopping. The trigger logic neither over-fired nor under-fired in this case.
+
+## Limitations
+
+- One model, one prompt run per condition, one author scoring. Methodology accepts this for v0.9.
+- Structural delta only. A schema-conformant memo with factually wrong claims is still wrong; this eval did not perform source verification of any specific date, designation, framework, or jurisdiction reference in either output.
+- The "Russia-affiliated bank subsidiaries operate in Kazakhstan" claim is tagged `fact` in B's provenance but is not source-verified within this eval; it is a public-record claim that would need primary-source confirmation before operational use.
+- Several B-side specific dates (Kazakhstan FATF exit October 2024, EU AI Act phase-in calendar) carry the same caveat. The provenance system makes the gap visible — but visibility is not verification.
+- The same MCP-pipeline flow as the GTTA case (`llm_invoked: false`; host model completes from system_prompt) means we have not yet exercised the self-invoking branch where `analyze` calls the Anthropic API itself. Both flows are documented; only the host-completion path has been eval-tested.
+- Self-scored by the case author per methodology.
