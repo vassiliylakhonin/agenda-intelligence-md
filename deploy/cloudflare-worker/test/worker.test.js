@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   aiCatalog,
+  DIRECT_V1_ROUTES,
   apiCatalog,
   agentCard,
   GATE_REQUEST_GUIDES,
@@ -5501,4 +5502,139 @@ test("remote MCP HTTP transport handles resources and prompts", async () => {
     req
   );
   assert.match(pGet.result.messages[0].content.text, /Critical Minerals Supply/);
+});
+
+// A gate that names a canonical_http_endpoint is making a promise to any caller
+// that reads its metadata or its rejection guidance. These tests hold the fleet
+// to it: the endpoint is routed, the example it hands out is one it accepts, and
+// the spec it publishes lists it.
+function directV1Example(route) {
+  return (route.guide || GATE_REQUEST_GUIDES[route.guideProfile]).example;
+}
+
+for (const [endpoint, route] of Object.entries(DIRECT_V1_ROUTES)) {
+  test(`canonical endpoint ${endpoint} accepts the example it advertises`, async () => {
+    const response = await handleRequest(
+      new Request(`https://agenda-intelligence-a2a.example.workers.dev${endpoint}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(directV1Example(route))
+      }),
+      { AGENT_CARD_SIGNING_KEY: "" }
+    );
+
+    assert.equal(response.status, 200);
+    const json = await response.json();
+    assert.equal(typeof json, "object");
+    assert.ok(json !== null && !Array.isArray(json));
+    assert.ok(Object.keys(json).length > 0);
+  });
+
+  test(`canonical endpoint ${endpoint} rejects an empty body with usable guidance`, async () => {
+    const response = await handleRequest(
+      new Request(`https://agenda-intelligence-a2a.example.workers.dev${endpoint}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}"
+      })
+    );
+
+    assert.equal(response.status, 400);
+    const json = await response.json();
+    assert.equal(json.ok, false);
+    assert.equal(json.valid, false);
+    assert.ok(Array.isArray(json.errors) && json.errors.length > 0);
+    assert.equal(json.canonical_http_endpoint, endpoint);
+    assert.equal(json.schema, route.schema);
+    assert.ok(Array.isArray(json.required_fields) && json.required_fields.length > 0);
+    // The example handed back has to be the one this endpoint accepts, or the
+    // guidance sends the caller straight into a second rejection.
+    assert.deepEqual(json.example_request, directV1Example(route));
+  });
+
+  test(`canonical endpoint ${endpoint} is documented in the OpenAPI spec`, () => {
+    const spec = openApiDocument(
+      new Request("https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json")
+    );
+    const path = spec.paths[endpoint];
+    assert.ok(path, `${endpoint} is served but missing from the spec`);
+    assert.ok(path.post, `${endpoint} is a POST route but the spec does not describe post`);
+    assert.equal(path.post.responses[200].description, "Gate triage response.");
+  });
+}
+
+test("every /v1 endpoint the source advertises is actually routed", () => {
+  const source = readFileSync(new URL("../src/index.js", import.meta.url), "utf8");
+  const advertised = new Set(
+    [...source.matchAll(/canonical_http_endpoint: "(\/v1\/[^"]+)"/gu)].map((match) => match[1])
+  );
+  assert.ok(advertised.size > 0, "expected the source to advertise canonical /v1 endpoints");
+  for (const endpoint of advertised) {
+    assert.ok(
+      Object.hasOwn(DIRECT_V1_ROUTES, endpoint),
+      `${endpoint} is advertised as a canonical endpoint but no route serves it`
+    );
+  }
+});
+
+test("a malformed but request-shaped body gets field-level errors, not just the schema", async () => {
+  const response = await handleRequest(
+    new Request(
+      "https://critical-minerals-due-diligence-a2a.example.workers.dev/v1/critical-minerals/due-diligence",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ project_name: "Balkhash", commodity: "copper" })
+      }
+    )
+  );
+
+  assert.equal(response.status, 400);
+  const json = await response.json();
+  assert.ok(json.errors.includes("origin_jurisdiction is required"));
+  assert.ok(json.errors.includes("decision_question is required"));
+});
+
+test("the pre-action check endpoint returns the same decision the capability returns", async () => {
+  const example = directV1Example(DIRECT_V1_ROUTES["/v1/agent-output/pre-action-check"]);
+  const env = { AGENT_PROFILE: "agent_output_verification" };
+
+  const rest = await handleRequest(
+    new Request(
+      "https://agent-output-verification-a2a.example.workers.dev/v1/agent-output/pre-action-check",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(example)
+      }
+    ),
+    env
+  );
+  assert.equal(rest.status, 200);
+  const restJson = await rest.json();
+
+  const capability = await handleRequest(
+    new Request("https://agent-output-verification-a2a.example.workers.dev/mcp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "decision_check", arguments: example }
+      })
+    }),
+    env
+  );
+  const capabilityJson = await capability.json();
+  const viaCapability = capabilityJson.result.structuredContent;
+
+  assert.equal(restJson.run_id, example.run_id);
+  assert.equal(restJson.decision, viaCapability.decision);
+  assert.equal(restJson.reason_code, viaCapability.reason_code);
+  assert.equal(restJson.policy_version, viaCapability.policy_version);
+  // No signing key is configured here, so the receipt must be reported as
+  // unavailable rather than silently omitted.
+  assert.equal(restJson.receipt_status, "unavailable");
+  assert.equal(restJson.receipt, null);
 });
