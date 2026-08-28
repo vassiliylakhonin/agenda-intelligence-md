@@ -52,6 +52,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   through `deploy:all`, since a secret write leaves an unstamped version and drops the gated
   environment's ALLOW receipt. `--check` asks every environment and writes nothing.
 
+- **feat(worker): the agent card now carries the same tool contracts `tools/list` carries.**
+  Every hosted MCP tool has published a complete input and output JSON Schema since the endpoint
+  shipped; the card published `inputModes`, so an agent that found a gate through its card learned
+  that it accepts JSON and nothing about which JSON. Composing against a gate meant reading prose or
+  speaking MCP first. `capabilities.extensions[].params.x_tool_contracts` now carries the schemas and
+  annotations, read from `mcpToolsForProfile` rather than restated, so a schema change lands on both
+  surfaces or on neither. It sits in the vendor extension because the A2A v1 `AgentSkill` field set is
+  closed. Cards get heavier: `agent-output-verification`, with five tools, goes from ~8.6 kB to ~35 kB.
+
 - **fix(worker): route the Dual-Use Technology deployment to its declared profile.** The environment, profile
   registry, MCP schema, and deployment existed, but the Worker host/env dispatcher fell through to the generic
   Agenda Intelligence card and response path. The deployment now serves its own A2A Agent Card, structured
