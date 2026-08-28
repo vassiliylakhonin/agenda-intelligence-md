@@ -3,10 +3,12 @@ name: Publish to PyPI
 on:
   workflow_dispatch:
 
-# TODO: switch to PyPI Trusted Publishers (OIDC) when PyPI access is available.
-# Setup: https://pypi.org/manage/project/agenda-intelligence-md/settings/publishing/
-# → Add publisher: GitHub / vassiliylakhonin / agenda-intelligence-md / publish.yml
-# After setup: remove the `password` line below and set `attestations: true`.
+# Publishes via PyPI Trusted Publishers (OIDC): no long-lived token, and the
+# upload carries a PEP 740 attestation binding the artifact to this workflow.
+# The publisher must be registered on PyPI first, at
+# https://pypi.org/manage/project/agenda-intelligence-md/settings/publishing/
+# as GitHub / vassiliylakhonin / agenda-intelligence-md / publish.yml (and again
+# for release.yml). Without it the upload is rejected as an untrusted publisher.
 
 jobs:
   build-and-publish:
@@ -36,6 +38,5 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
           skip-existing: true
-          attestations: false
+          attestations: true
