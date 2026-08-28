@@ -43,6 +43,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   (`examples/dual-use-technology-export/contract/`), a contract test asserting the profile still gives that
   example the answer its response fixture publishes, and both profiles to the live conformance run.
 
+- **ops(worker): rotate `STATS_TOKEN` across every environment, not just the top-level Worker.**
+  `wrangler secret put STATS_TOKEN` without `--env` reaches one Worker; the other nine answered `/stats`
+  with 401 and nothing reported it, because `/stats` is the one endpoint no monitor calls. Observed
+  2026-08-28, four environments behind. `scripts/rotate-stats-token.js` reads the environment list from
+  `wrangler.toml`, writes the secret everywhere, rewrites only the `STATS_TOKEN` line of `.env` (the
+  previous helper truncated the file and took `AGENDA_OBSERVABILITY_TOKEN` with it), and re-publishes
+  through `deploy:all`, since a secret write leaves an unstamped version and drops the gated
+  environment's ALLOW receipt. `--check` asks every environment and writes nothing.
+
 - **fix(worker): route the Dual-Use Technology deployment to its declared profile.** The environment, profile
   registry, MCP schema, and deployment existed, but the Worker host/env dispatcher fell through to the generic
   Agenda Intelligence card and response path. The deployment now serves its own A2A Agent Card, structured
