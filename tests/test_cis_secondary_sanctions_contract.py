@@ -4,7 +4,7 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
-from agenda_intelligence import services
+from agenda_intelligence import services, upstream_opensanctions
 from agenda_intelligence.a2a_adapter import (
     CIS_SECONDARY_SANCTIONS_ENDPOINT,
     CIS_SECONDARY_SANCTIONS_SCHEMA,
@@ -114,6 +114,20 @@ def test_cis_service_degrades_gracefully_when_upstream_unavailable(monkeypatch):
     assert result["auto_fetched_sources"] == []
     assert not any("via OpenSanctions" in note for note in response["limitations"])
     assert response["human_review_required"] is True
+
+
+def test_opensanctions_without_key_never_invents_a_match(monkeypatch):
+    monkeypatch.delenv("OPENSANCTIONS_API_KEY", raising=False)
+    monkeypatch.delenv("OPENSANCTIONS_DISABLED", raising=False)
+
+    result = upstream_opensanctions.match_counterparty(
+        name="Any Nonempty Counterparty",
+        jurisdiction="kz",
+    )
+
+    assert result["status"] == "degraded"
+    assert result["matches"] == []
+    assert "not configured" in result["degrade_reason"]
 
 
 def test_cis_a2a_adapter_capability_registered():

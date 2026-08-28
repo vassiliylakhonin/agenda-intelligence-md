@@ -188,26 +188,12 @@ def match_counterparty(
 
     api_key = _api_key()
     if api_key is None:
-        simulated_matches = []
-        if name:
-            simulated_matches.append(
-                {
-                    "name": name,
-                    "schema": schema,
-                    "datasets": ["us_ofac_sdn"],
-                    "source_type": "ofac_sdn_extract",
-                    "score": 0.99,
-                    "opensanctions_id": "simulated-" + name.replace(" ", "-").lower(),
-                    "topics": ["sanction"],
-                    "jurisdictions": [jurisdiction] if jurisdiction else [],
-                }
-            )
         return {
             "status": "degraded",
-            "matches": simulated_matches,
+            "matches": [],
             "attribution": attribution,
             "queried_at": queried_at,
-            "degrade_reason": "SIMULATION_MODE_NO_API_KEY",
+            "degrade_reason": "OPENSANCTIONS_API_KEY is not configured",
         }
 
     cache_key = _cache_key(name, jurisdiction, schema)

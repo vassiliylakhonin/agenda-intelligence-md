@@ -1,67 +1,51 @@
-# Agenda Intelligence MD — Unit Economics & Margins
+# Agenda Intelligence MD — measurement plan
 
-*Detailed financial breakdown of compute, token costs, and gross margins across deployment tiers.*
+> Status: planning document. The repository contains no verified price,
+> customer-volume, revenue, margin, latency-SLA, labour-replacement, or error-rate
+> evidence. Do not quote this file as commercial traction or unit economics.
 
----
+## What can be measured now
 
-## 1. Cost Architecture per Query
+The deterministic checker can be benchmarked without an LLM. A dated benchmark
+should record:
 
-Unlike traditional GenAI wrappers that send large prompts to expensive frontier LLMs ($5–$30 / 1M tokens), Agenda Intelligence MD uses a **two-tier cascade**:
+- commit SHA and deployment surface;
+- request and evidence-packet size distribution;
+- warm and cold latency percentiles;
+- compute duration, memory, storage, and network usage;
+- upstream calls and their published prices at the measurement date;
+- pass, fail, degraded, and error counts.
 
-1. **Tier 1 — Deterministic Verification (95% of queries):**
-   - Executed entirely in JavaScript / Python on serverless edge compute (Cloudflare Workers).
-   - Validates JSON schemas, references, quote exactness, numeric values, and sentence-level polarity without calling an LLM.
-   - **Cost per query:** **$0.0001** (Worker invocation cost only; **$0 token cost**).
+These measurements describe one workload and environment. They do not establish
+capacity, customer value, correctness, or future infrastructure cost.
 
-2. **Tier 2 — Model Auto-Repair & Synthesis (5% of queries upon error):**
-   - Triggered only when a packet fails verification and the caller requests an automated repair prompt.
-   - Routes to efficient open-weights / lightweight models (DeepSeek V4 Flash @ $0.14/1M input, Gemini 3.6 Flash @ $1.50/1M input).
-   - **Cost per repair generation:** **~$0.0008 – $0.002**.
+## Costs that remain unknown
 
----
+- Real traffic distribution and peak concurrency.
+- Cloudflare plan, storage, log-retention, and egress charges at production scale.
+- Optional upstream screening and retrieval costs.
+- Model usage if an external workflow chooses to generate repair drafts.
+- Support, security review, monitoring, incident response, and compliance work.
 
-## 2. Unit Economics Breakdown (Blended 10,000 Query Batch)
+The linter itself does not call an LLM. It may produce a repair prompt, but the
+caller decides whether and where to send that prompt. Therefore model spend must
+not be blended into repository-level economics without observed usage data.
 
-| Component | Cost per 10,000 Checks | Notes |
-|---|---|---|
-| Edge Compute (Cloudflare Workers) | $1.00 | $0.10 / 1M requests baseline |
-| Tier 1 Deterministic Linters | $0.00 | Pure CPU / memory execution |
-| Tier 2 LLM Auto-Repair (5% fail rate, 500 calls) | $0.75 | 500 calls × 1,000 tokens @ DeepSeek/Flash rate |
-| Key-Value Storage & Telemetry (KV/D1) | $0.25 | Audit trail persistence |
-| **Total Cost of Goods Sold (COGS)** | **$2.00** | **$0.00020 per query** |
+## Commercial hypotheses to test
 
----
+Pricing should be treated as a research question, not a fact. Useful experiments
+include willingness-to-pay interviews, a time-boxed design-partner workflow, and
+comparison of reviewer effort before and after using the checker. Record failures
+and non-adoption as well as positive signals.
 
-## 3. Revenue & Gross Margin Model
+## Minimum evidence for a future unit-economics table
 
-### Pricing Tiers:
-- **Developer / Pay-as-you-go:** $0.01 per verified check (~$100 per 10k checks).
-- **Enterprise Volume Tier:** $0.005 per verified check (~$50 per 10k checks).
-- **Enterprise Platform Subscription:** $2,500 – $10,000 / month (includes 500k – 2.5M monthly checks + dedicated private workers).
+Publish a table only when every value is linked to one of:
 
-### Margins at Scale:
+1. an invoice or provider usage export;
+2. a reproducible benchmark tied to a commit and date;
+3. an executed customer agreement or paid invoice; or
+4. a clearly labelled scenario with editable assumptions and sensitivity ranges.
 
-| Metric | Pay-as-you-go | Enterprise Volume | Enterprise Subscription |
-|---|---|---|---|
-| **Price per 10k checks** | $100.00 | $50.00 | ~$40.00 (implied) |
-| **COGS per 10k checks** | $2.00 | $2.00 | $2.00 |
-| **Gross Profit** | **$98.00** | **$48.00** | **$38.00** |
-| **Gross Margin** | **98.0%** | **96.0%** | **95.0%** |
-
----
-
-## 4. Human vs. Agent Cost Comparison
-
-For an enterprise reviewing 50,000 counterparty transactions or legal claim packets per month:
-
-- **Human Compliance Team:**
-  - 10 analysts × $5,000/mo salary = **$50,000 / month**.
-  - Turnaround time: 1–3 business days.
-  - Error rate: 4–8% due to human fatigue.
-
-- **Agenda Intelligence MD Fleet:**
-  - 50,000 checks @ Enterprise rate = **$250 / month**.
-  - Turnaround time: <500 milliseconds.
-  - Error rate: 0% schema/polarity/quote bypass.
-
-**Customer ROI: >99% direct cost savings with instant turnaround.**
+Until then, no gross-margin, ROI, staff-replacement, zero-error, or sub-second
+production claim is supported.

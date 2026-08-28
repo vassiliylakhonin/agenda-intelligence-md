@@ -1,58 +1,46 @@
-# Agenda Intelligence MD — Enterprise Case Studies
+# Agenda Intelligence MD — synthetic workflow scenarios
 
-Real-world scenarios demonstrating how Agenda Intelligence MD eliminates hallucination risks, reduces manual review overhead, and enforces compliance in high-stakes agentic workflows.
+> These are design scenarios, not customers, deployments, pilots, measured
+> outcomes, endorsements, or proof of legal or regulatory compliance. Every
+> organisation, volume, and packet described below is hypothetical.
 
----
+## Scenario 1: Middle Corridor evidence intake
 
-## Case Study 1: Cross-Border Logistics & Sanctions Triage (Middle Corridor)
+A trade-finance reviewer receives a shipment packet containing a bill of lading,
+cargo certificate, counterparty declaration, and ownership documents. The
+`middle_corridor_deal_risk` profile can check whether required evidence objects
+are present and whether claims cite the supplied records.
 
-### Profile:
-- **Client Archetype:** Regional Trade Finance Bank & Freight Forwarder Consortium (Kazakhstan / EU / Caspian).
-- **Core Challenge:** Daily intake of 300+ cross-border bills of lading, cargo certificates, and ownership structures traversing the Middle Corridor. Manual legal screening took **3 business days per complex shipment** with high risk of secondary sanctions exposure.
+The checker cannot determine sanctions status, beneficial ownership, legality,
+or whether the shipment should proceed. A useful evaluation would measure which
+missing documents reviewers catch with and without the checker, including false
+positives and false negatives.
 
-### The Agenda Intelligence Solution:
-- Deployed the `middle_corridor_deal_risk` and `cis_secondary_sanctions` edge gates.
-- Automated claim-to-source extraction: verified that cargo commodity codes, transit routes (Aktau, Baku, Poti), and corporate beneficial owners had explicit, dated evidence with zero lexical gaps.
-- Pre-action gate blocked unauthorized deal execution when beneficial ownership chains lacked primary registry proof.
+## Scenario 2: Agent action step-up
 
-### Measured Impact:
-- **Turnaround Time:** Reduced from **72 hours** (manual legal review) to **450 milliseconds** (automated edge triage).
-- **Cost Reduction:** Screening cost dropped from **~$150 per file** in legal analyst hours to **<$0.005 in compute tokens**.
-- **Audit Accuracy:** 100% auditable JSON/Markdown evidence packet generated for bank compliance regulators. Zero sanctions leakages.
+An agent requests a consequential action without supplying the authority fields
+required by the `agentic_interaction_trust` contract. The deterministic gate can
+return a structured request for additional evidence instead of treating the
+request as authorized.
 
----
+The repository does not authenticate a person, verify biometrics, settle a
+payment, prevent fraud, or prove an agent's identity. Those controls belong to
+the integrating system and require their own security assessment.
 
-## Case Study 2: Autonomous Agent Trust Gate (A2A Payment & Checkout)
+## Scenario 3: Critical-minerals report review
 
-### Profile:
-- **Client Archetype:** E-Commerce Marketplace & Agentic AI Platform.
-- **Core Challenge:** External shopping bots and autonomous AI agents attempted to execute high-value purchases ($1,000–$10,000). Traditional bot detection was too blunt: blocking them lost revenue, while allowing them risked fraud, chargebacks, and unconfirmed user intent.
+A synthetic report contains quantities, dates, quoted permit language, and
+source references. `check_evidence_packet` can detect missing references, quote
+mismatches, unmatched numbers, and some polarity mismatches inside that supplied
+packet.
 
-### The Agenda Intelligence Solution:
-- Integrated `agentic_interaction_trust` A2A endpoint as an interception layer before payment settlement.
-- The gate dynamically evaluated incoming agent identity headers, session tokens, and stated action intent.
-- When critical proof was missing (e.g. lack of cryptographic human approval), the gate automatically issued a structured `require_step_up` challenge instead of outright refusal.
-- Allowed high-trust agents to transact smoothly while requiring biometric confirmation for anomalous high-value transactions.
+Passing the linter does not prove the documents are authentic, current, complete,
+or sufficient for an investment or regulatory decision. A future study should
+use independently labelled packets and publish the dataset, commit, rubric, and
+error analysis.
 
-### Measured Impact:
-- **Fraud & Chargeback Prevention:** 100% elimination of unauthorized autonomous checkouts.
-- **Transaction Completion:** 34% increase in successful agent-mediated GMV by converting blind bot blocks into structured step-up challenges.
-- **Observability:** Centralized audit trail identifying the exact agent, manifest, and authorization payload for every transaction.
+## Evidence required before calling these case studies
 
----
-
-## Case Study 3: Critical Minerals Due Diligence & ESG Offtake Validation
-
-### Profile:
-- **Client Archetype:** Clean Energy Investment Fund & Mining Offtake Operator.
-- **Core Challenge:** Evaluating complex multi-party agreements for rare-earth metals (lithium, nickel, tungsten). Reports generated by generative AI analysts contained subtle numerical hallucinations (swapping metric tons and dollar values) and missing environmental impact licenses.
-
-### The Agenda Intelligence Solution:
-- Enforced `critical_minerals_due_diligence` and `check_evidence_packet` with strict numeric validation.
-- The linter verified that every metric ton figure, price ceiling, and environmental compliance certificate in the summary was verbatim grounded in cited lab assays and government permits.
-- Generated standalone interactive HTML dashboards (`review --format html`) for investment committee review.
-
-### Measured Impact:
-- **Hallucination Elimination:** Caught 100% of numerical mismatches and polarity inversions prior to committee submission.
-- **Reviewer Productivity:** Committee due-diligence briefing prep accelerated by **6.5x**.
-- **Regulatory Readiness:** Provided an immutable proof pack satisfying EU Critical Raw Materials Act diligence requirements.
+Replace “scenario” with “case study” only after obtaining permission to publish
+and linking claims to a dated study protocol, source dataset, observed results,
+limitations, and the participating organisation's confirmation.
