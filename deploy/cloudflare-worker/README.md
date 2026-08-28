@@ -76,6 +76,16 @@ card invalid. An A2A-only caller can therefore compose against a gate from its
 card alone, without speaking MCP first. The contracts add weight to the card:
 the largest, `agent-output-verification` with five tools, is ~35 kB.
 
+Every `SendMessage` response says whether anything checked it. `task.metadata.verification`
+carries `status` — `not_performed` for the nine gates that cannot verify their own
+output, `self` for the verifier's own deployment — plus where verification is
+available and a plain statement that the gate issues no receipt, holds no
+authority, and performs no action. It is self-reported and names no outcome: a
+field that could read as "checked and passed" would be worse than silence. It
+rides in task metadata because every v1 response schema is
+`additionalProperties: false`, and this says something about the transport, not
+about the verdict.
+
 `tools/call` inherits the same Bearer gate, rate limit, and usage logging.
 `server/discover` and `tools/list` stay open, like `agent/card`. `tools/list`
 embeds the complete JSON Schema for both input and output. Tools are read-only

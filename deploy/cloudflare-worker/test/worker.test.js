@@ -18,6 +18,7 @@ import {
   handleCisReviewIntake,
   handleCisReviewIntakeList,
   handleJsonRpc,
+  verificationStatus,
   handleMcpJsonRpc,
   handleRequest,
   healthInfo,
@@ -5797,4 +5798,64 @@ test("the pre-action check endpoint returns the same decision the capability ret
   // unavailable rather than silently omitted.
   assert.equal(restJson.receipt_status, "unavailable");
   assert.equal(restJson.receipt, null);
+});
+
+// A relayed verdict carried the same weight whether or not anything had checked
+// it, because nothing in the response said. Verification and the trust gate are
+// deployments beside these gates, not a step between them and the caller, and
+// most callers do not route through one.
+test("every gate says whether its output was verified, and nine say it was not", async () => {
+  const hosts = [
+    ["cis-secondary-sanctions-a2a.example.workers.dev", "cis_secondary_sanctions", "not_performed"],
+    ["middle-corridor-deal-risk-gate-a2a.example.workers.dev", "kazakhstan", "not_performed"],
+    ["gulf-maritime-exposure-a2a.example.workers.dev", "gulf_maritime_exposure", "not_performed"],
+    ["agenda-intelligence-a2a.example.workers.dev", "agenda", "not_performed"],
+    // The verifier's own deployment: there the check and the answer are one call.
+    ["agent-output-verification-a2a.example.workers.dev", "agent_output_verification", "self"]
+  ];
+
+  for (const [host, profile, expected] of hosts) {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: `verification-${profile}`,
+        method: "SendMessage",
+        params: {
+          message: {
+            messageId: `message-verification-${profile}`,
+            role: "ROLE_USER",
+            parts: [{ text: "Corridor and counterparty exposure question with dated sources." }]
+          }
+        }
+      },
+      new Request(`https://${host}/message/send`, {
+        method: "POST",
+        headers: { "a2a-version": "1.0", "content-type": "application/json" }
+      }),
+      { AGENT_PROFILE: profile }
+    );
+
+    const verification = response.result.task.metadata.verification;
+    assert.ok(verification, `${host} said nothing about verification`);
+    assert.equal(verification.status, expected, `${host} reported the wrong verification status`);
+    assert.equal(verification.performed_by, expected === "self" ? profile : null);
+
+    // The pointer must name a deployment that exists, or it sends the caller
+    // nowhere. Both URLs are the verifier's, never the responding gate's.
+    assert.match(verification.verifier.agent_card, /^https:\/\/agent-output-verification-a2a\./);
+    assert.match(verification.verifier.mcp_endpoint, /\/mcp$/);
+    assert.equal(verification.self_reported, true, "a self-reported status must say so");
+    assert.match(verification.before_state_change, /performs no action/);
+  }
+});
+
+// The claim this block makes about itself: it reports, it does not check. A
+// status that could read as "checked and passed" would be worse than silence.
+test("the verification block never claims an outcome it did not observe", () => {
+  for (const profile of ["agenda", "cis_secondary_sanctions", "agent_output_verification"]) {
+    const status = verificationStatus(profile);
+    assert.ok(["self", "not_performed"].includes(status.status));
+    assert.equal(status.self_reported, true);
+    assert.ok(!("passed" in status) && !("verified" in status), "no field may read as a verdict");
+  }
 });
