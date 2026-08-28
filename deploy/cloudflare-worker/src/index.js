@@ -8994,11 +8994,64 @@ function versionNotSupportedError(id, requestedVersion) {
   ]);
 }
 
-function v1SendMessageResponse(task) {
+// Whether anything checked this answer, said in the answer.
+//
+// Agent Output Verification and the Agentic Interaction Trust Gate are
+// deployments beside these gates, not a step between them and the caller. A
+// caller may route through one, and most do not; nothing in a gate's response
+// distinguished "verified" from "nobody looked", so a relayed verdict carried
+// the same weight either way and the difference was invisible downstream.
+//
+// This states the true value rather than adding a check: a gate cannot verify
+// its own output, so for nine profiles the honest word is not_performed, and it
+// names where verification is available instead of implying it happened. The
+// verifier's own deployment reports self, because there the check and the
+// answer are the same call.
+//
+// It rides in task metadata, not in the service response: every v1 response
+// schema is additionalProperties:false, and a field inside the frozen payload
+// would mean editing fourteen schemas and their packaged twins to say something
+// about the transport rather than about the verdict.
+const VERIFIER_ORIGIN = "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev";
+
+export function verificationStatus(profile) {
+  const selfVerifying = profile === "agent_output_verification";
+  return {
+    status: selfVerifying ? "self" : "not_performed",
+    performed_by: selfVerifying ? profile : null,
+    applies_to: "the structured payload of this task",
+    verifier: {
+      agent_card: `${VERIFIER_ORIGIN}/.well-known/agent-card.json`,
+      mcp_endpoint: `${VERIFIER_ORIGIN}${MCP_ENDPOINT_PATH}`,
+      tool: "agent_output_verification"
+    },
+    // Said plainly because the receipt is the part callers misread: it records
+    // that the evidence was checked, and nothing about authority to act.
+    before_state_change:
+      "A state-changing action should carry a decision receipt that is current and bound to it. " +
+      "This gate issues none, holds no authority, and performs no action.",
+    self_reported: true
+  };
+}
+
+function withVerificationStatus(task, request, env = {}) {
+  if (!task || typeof task !== "object") return task;
+  const metadata = task.metadata && typeof task.metadata === "object" ? task.metadata : {};
+  // A profile that already reported its own verification keeps what it said.
+  if (metadata.verification) return task;
+  const profile = metadata.product_profile || agentProfile(request, env);
+  return {
+    ...task,
+    metadata: { ...metadata, verification: verificationStatus(profile) }
+  };
+}
+
+function v1SendMessageResponse(task, request, env = {}) {
+  const shaped = withVerificationStatus(task, request, env);
   return {
     task: {
-      ...task,
-      contextId: task.contextId || crypto.randomUUID()
+      ...shaped,
+      contextId: shaped.contextId || crypto.randomUUID()
     }
   };
 }
@@ -9058,7 +9111,7 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
     return {
       jsonrpc: "2.0",
       id,
-      result: isV1SendMessage ? v1SendMessageResponse(result) : result
+      result: isV1SendMessage ? v1SendMessageResponse(result, request, env) : result
     };
   }
 

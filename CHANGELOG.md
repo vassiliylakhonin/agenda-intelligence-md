@@ -71,6 +71,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   environment for a receipt. Until the first full gated deploy, it reports nine as `UNGATED` and exits
   non-zero, which is the true state of the fleet.
 
+- **feat(worker): every gate response says whether anything verified it.** Agent Output Verification and
+  the Agentic Interaction Trust Gate are deployments beside the other gates, not a step between them and
+  the caller, and nothing in a response distinguished "verified" from "nobody looked" — so a relayed
+  verdict carried the same weight either way. `task.metadata.verification` now reports `not_performed`
+  for the nine gates that cannot check their own output and `self` for the verifier's own deployment,
+  names where verification is available, and states that the gate issues no receipt, holds no authority,
+  and performs no action. Self-reported, and it names no outcome. It sits in task metadata because every
+  v1 response schema is `additionalProperties: false` and this describes the transport, not the verdict.
+
 - **fix(worker): route the Dual-Use Technology deployment to its declared profile.** The environment, profile
   registry, MCP schema, and deployment existed, but the Worker host/env dispatcher fell through to the generic
   Agenda Intelligence card and response path. The deployment now serves its own A2A Agent Card, structured
