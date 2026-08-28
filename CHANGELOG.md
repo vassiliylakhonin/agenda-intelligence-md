@@ -21,6 +21,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   Edition` block, which announced definitive legal, compliance, and sanctions determinations, is removed with
   it: the product does not do that, and AGENTS.md forbids claiming it.
 
+- **fix(tooling): make the signal-sync guard find the GTTA checkout.** `scripts/sync_signals.py` and
+  `tests/test_signal_sync.py` each hard-coded `~/work/global-think-tank-analyst`. The checkout moved to
+  `~/projects`, so the script failed loudly and the test — which skips when the source is absent — went
+  quiet, and stayed quiet through a sweep that edited the vendored snapshot directly. The path is now
+  resolved once, in the script, from `$GTTA_SIGNALS` or a checkout beside this repository or under
+  `~/work` / `~/projects`; the test imports that resolver instead of repeating it. With the guard live
+  again it immediately reports the snapshot is three signals behind canon.
+
 - **fix(worker): route the Dual-Use Technology deployment to its declared profile.** The environment, profile
   registry, MCP schema, and deployment existed, but the Worker host/env dispatcher fell through to the generic
   Agenda Intelligence card and response path. The deployment now serves its own A2A Agent Card, structured
