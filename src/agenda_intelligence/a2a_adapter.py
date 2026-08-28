@@ -163,8 +163,6 @@ LIVE_RETRIEVAL_PROFILES: dict[str, dict[str, Any]] = {
 def _is_upstream_option_active(option: dict[str, Any]) -> bool:
     activation = (os.environ.get(option["activation_env_var"], "") or "").strip()
     if not activation:
-        # Un-deferred: Fallback to powerful simulation if no key
-        return True
         return False
     disabled = (os.environ.get(option["disable_env_var"], "") or "").strip().lower()
     if disabled in {"1", "true", "yes"}:
