@@ -3,12 +3,27 @@ import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import { DIGEST_PREFIX, bundleDigest } from "./deploy-all.js";
+import { DIGEST_PREFIX, bundleDigest, fleetEnvironments } from "./deploy-all.js";
 
 const VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev";
 const KEYCHAIN_ACCOUNT = "VIZIER_API_KEY";
 const KEYCHAIN_SERVICE = "com.vizier.gated-deploy";
-const WORKER_TARGET = "worker:agent-output-verification-a2a";
+// The environment this script gates when invoked with no argument. Kept so the
+// protected workflow and `npm run deploy:agent-output-verification:gated` mean
+// what they have always meant; deploy-all.js now passes an environment for
+// every deployment instead.
+const DEFAULT_ENV = "agent-output-verification";
+
+// `worker:<name>` from wrangler.toml, not a constant per environment: the
+// target names what is actually being shipped, and a target invented here
+// could name something the deploy does not touch.
+export function workerTargetFor(env = DEFAULT_ENV) {
+  const found = fleetEnvironments().find((item) => item.env === env);
+  if (!found?.workerName) {
+    throw new Error(`wrangler.toml declares no Worker for environment "${env || "(top-level)"}".`);
+  }
+  return `worker:${found.workerName}`;
+}
 const WRANGLER_VERSION = "4.122.0";
 const VERIFY_TIMEOUT_MS = 10_000;
 const MAX_RESPONSE_BYTES = 256 * 1024;
@@ -44,19 +59,25 @@ export function requestHash(request) {
   return createHash("sha256").update(canonicalize(request)).digest("hex");
 }
 
-export function createDeployRequest(metadata) {
+export function createDeployRequest(metadata, env = DEFAULT_ENV) {
+  const target = workerTargetFor(env);
   return {
-    agent: { id: "agent-output-verification-deployer", owner: "vassiliy-lakhonin" },
+    agent: { id: `${env || "top-level"}-deployer`, owner: "vassiliy-lakhonin" },
     principal: { id: "vassiliy-lakhonin" },
     action: {
       type: "deploy_worker",
-      target: WORKER_TARGET,
+      target,
       parameters: { git_commit: metadata.commit, dirty_worktree: metadata.dirty }
     },
+    // The authority envelope is declared by this caller, so an ALLOW proves the
+    // deploy went through the gate and produced a receipt bound to this exact
+    // request -- not that some external authority approved it. Narrow it to the
+    // one target anyway: a request that would allow any worker could be replayed
+    // against any worker.
     authority: {
       allowed_actions: ["deploy_worker"],
       constraints: {
-        allowed_targets: [WORKER_TARGET],
+        allowed_targets: [target],
         allowed_sensitive_actions: ["deploy_worker"]
       }
     },
@@ -191,9 +212,9 @@ async function verifyWithVizier(request, apiKey, fetchImpl) {
   }
 }
 
-export async function runGatedDeploy({ metadata, apiKey, fetchImpl = fetch, execute }) {
+export async function runGatedDeploy({ metadata, apiKey, fetchImpl = fetch, execute, env = DEFAULT_ENV }) {
   assertCleanWorktree(metadata);
-  const request = createDeployRequest(metadata);
+  const request = createDeployRequest(metadata, env);
   const response = await verifyWithVizier(request, apiKey, fetchImpl);
   if (response.decision !== "ALLOW") {
     return {
@@ -260,11 +281,11 @@ export async function readVizierCredential({ environment = process.env, readKeyc
   return secret;
 }
 
-function executeWranglerDeploy(receiptId, digest) {
+function executeWranglerDeploy(receiptId, digest, env = DEFAULT_ENV) {
   // The receipt says the gate allowed this deploy; the digest says what was
   // deployed. deploy-all.js --check reads both from the same message, and
   // without the second a gated environment reports as unstamped forever
-  // because the gate is the only path that may ship it.
+  // because the gate is now the only path that may ship any of them.
   const message = digest
     ? `Vizier ALLOW receipt ${receiptId} ${DIGEST_PREFIX} ${digest}`
     : `Vizier ALLOW receipt ${receiptId}`;
@@ -275,8 +296,7 @@ function executeWranglerDeploy(receiptId, digest) {
         "--yes",
         `wrangler@${WRANGLER_VERSION}`,
         "deploy",
-        "--env",
-        "agent-output-verification",
+        ...(env ? ["--env", env] : []),
         "--strict",
         "--message",
         message
@@ -294,10 +314,27 @@ function executeWranglerDeploy(receiptId, digest) {
   });
 }
 
-async function main() {
-  if (process.argv.length > 2) {
-    throw new Error("vizier-gated-deploy does not accept command arguments.");
+// One optional environment, and only one this script can name: an argument
+// that is not a declared environment is a typo, and a typo that fell through
+// to the default would ship the wrong worker under a valid receipt.
+export function envFromArgv(argv) {
+  if (argv.length === 0) return DEFAULT_ENV;
+  if (argv.length === 1 && argv[0] === "--top-level") return "";
+  if (argv.length === 2 && argv[0] === "--env") {
+    const declared = fleetEnvironments().map((item) => item.env);
+    if (!declared.includes(argv[1])) {
+      throw new Error(`wrangler.toml declares no environment "${argv[1]}".`);
+    }
+    return argv[1];
   }
+  throw new Error("vizier-gated-deploy accepts --env <name> or --top-level, and nothing else.");
+}
+
+async function main() {
+  if (process.argv.length > 4) {
+    throw new Error("vizier-gated-deploy accepts --env <name> or --top-level, and nothing else.");
+  }
+  const env = envFromArgv(process.argv.slice(2));
   const [metadata, apiKey] = await Promise.all([collectDeployMetadata(), readVizierCredential()]);
   // The gate already refused a dirty worktree above, so a digest is always
   // available here; the fallback exists so a change to that rule cannot turn a
@@ -306,12 +343,13 @@ async function main() {
   const result = await runGatedDeploy({
     metadata,
     apiKey,
-    execute: (receiptId) => executeWranglerDeploy(receiptId, digest)
+    env,
+    execute: (receiptId) => executeWranglerDeploy(receiptId, digest, env)
   });
   console.log(
     JSON.stringify({
       event: "vizier.gated_deploy.completed",
-      target: WORKER_TARGET,
+      target: workerTargetFor(env),
       status: result.status,
       decision: result.decision,
       receipt_id: result.receiptId,
@@ -320,6 +358,16 @@ async function main() {
     })
   );
   return result.status === "stopped" ? 2 : result.exitCode;
+}
+
+// The failure log must never throw while reporting a failure: the environment
+// may be the very thing that was wrong.
+function safeTarget() {
+  try {
+    return workerTargetFor(envFromArgv(process.argv.slice(2)));
+  } catch {
+    return null;
+  }
 }
 
 const entryUrl = process.argv[1] === undefined ? null : pathToFileURL(resolve(process.argv[1])).href;
@@ -332,7 +380,7 @@ if (entryUrl === import.meta.url) {
       console.error(
         JSON.stringify({
           event: "vizier.gated_deploy.failed",
-          target: WORKER_TARGET,
+          target: safeTarget(),
           error: error instanceof Error ? error.message : "Unknown error"
         })
       );
