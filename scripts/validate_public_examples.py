@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -200,32 +201,25 @@ def extract_runnable_commands(block: str) -> list[str]:
     return commands
 
 
-def command_to_python_module(command: str) -> list[str]:
-    parts = command.split()
-    if parts[0] != "agenda-intelligence":
+def command_to_argv(command: str) -> list[str]:
+    parts = shlex.split(command)
+    if not parts:
         raise ValueError(command)
+    if parts[0] != "agenda-intelligence":
+        if parts[0] not in {"mkdir", "cp"}:
+            raise ValueError(f"unsupported documentation command: {command}")
+        return parts
     return [sys.executable, "-m", "agenda_intelligence.cli", *parts[1:]]
 
 
 def run_command(command: str) -> subprocess.CompletedProcess[str]:
-    if command.startswith("agenda-intelligence "):
-        return subprocess.run(
-            command_to_python_module(command),
-            cwd=ROOT,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            env=LOCAL_ENV,
-            check=False,
-        )
     return subprocess.run(
-        command,
+        command_to_argv(command),
         cwd=ROOT,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=LOCAL_ENV,
-        shell=True,
         check=False,
     )
 

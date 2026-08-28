@@ -144,14 +144,13 @@ final_packet, success, repair_history = guardrail.validate_or_repair(
 
 ---
 
-## Infinite Swarm & A2A Demos
+## Concurrency & A2A Demos
 
 The repository includes runnable end-to-end demonstrations of the agent-first architecture:
 
-- **Massive Parallel Swarm ([`examples/infinite-swarm-batch.py`](examples/infinite-swarm-batch.py))**: Blasts hundreds of concurrent compliance reviews to the edge in sub-second time, proving the $0 / token-cost model against human team salaries.
-- **Autonomous A2A Negotiation ([`examples/agent-to-agent-negotiation.py`](examples/agent-to-agent-negotiation.py))**: Simulates two autonomous agents negotiating trust, step-up verification, and transaction authorization without human intervention.
-- **Dynamic Fleet Factory ([`scripts/agent-factory.py`](scripts/agent-factory.py))**: Scaffolds and deploys new specialized vertical compliance agent roles on the fly.
-- **Massive Fleet Directory ([`massive-fleet-catalog.json`](massive-fleet-catalog.json))**: Complete 100-agent catalog ready for distribution into AI agent registries (such as Agenstry).
+- **Bounded concurrency example ([`examples/infinite-swarm-batch.py`](examples/infinite-swarm-batch.py))**: Sends 250 synthetic requests and reports transport latency and actual task states. It is a load demonstration, not a capacity benchmark or comparison with staff.
+- **A2A step-up simulation ([`examples/agent-to-agent-negotiation.py`](examples/agent-to-agent-negotiation.py))**: Demonstrates a synthetic request being stopped until operator-authorization evidence is supplied. No real transaction is authorized.
+- **Profile scaffolder ([`scripts/agent-factory.py`](scripts/agent-factory.py))**: Creates starter files for a proposed vertical profile. Generated files are inactive until schemas, implementation, tests, and review are added.
 
 ---
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Infinite Scalability Demonstration: Hiring Employees vs. Agents
+Bounded Concurrency Demonstration
 
-This script demonstrates the "Infinitely Scalable" and "Cost: Tokens" value
-proposition of Agenda Intelligence MD. It dispatches a massive batch of
-compliance checks asynchronously to the Cloudflare Worker edge, simulating
-a workload that would take a human compliance team weeks to process.
+This script sends a bounded batch of synthetic evidence-triage requests to the
+Cloudflare Worker. It reports observed task states and latency for this run. It
+does not establish capacity, cost savings, production readiness, or equivalence
+to human review.
 
 Usage:
     pip install aiohttp
@@ -27,16 +27,6 @@ WORKER_URL = "https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev/
 
 # Simulated volume
 BATCH_SIZE = 250
-
-# Human cost metrics (for comparison)
-MINUTES_PER_MANUAL_REVIEW = 45
-HOURLY_WAGE = 50.0
-
-# Per-call spend on the Worker path. No LLM runs there and this demo sends no
-# `live_retrieval` request, so the deterministic triage path costs nothing per
-# ADR 0014 — the paid OpenSanctions upstream (EUR 0.10/call) is never reached.
-AGENT_COST_PER_CALL_EUR = 0.0
-
 
 def build_request(index):
     """A request shaped the way the gate actually reads one.
@@ -131,8 +121,8 @@ def first_rejection_reason(task):
 
 
 async def main():
-    print(f"\n🚀 Launching Infinite Swarm Batch Processor")
-    print(f"Target: {BATCH_SIZE} compliance reviews in parallel against Edge Agents...\n")
+    print("\nLaunching bounded concurrency example")
+    print(f"Target: {BATCH_SIZE} synthetic triage requests\n")
 
     start_time = time.time()
 
@@ -152,15 +142,10 @@ async def main():
     rejected = sum(1 for r in results if not r["screened"])
     avg_latency = sum(r["latency"] for r in results) / len(results) if results else 0
 
-    # Calculate Human vs Agent metrics
-    human_hours = (BATCH_SIZE * MINUTES_PER_MANUAL_REVIEW) / 60
-    human_cost = human_hours * HOURLY_WAGE
-    agent_cost = BATCH_SIZE * AGENT_COST_PER_CALL_EUR
-
     print("\n" + "=" * 50)
-    print("📈 HIRING EMPLOYEES VS. AGENTS: BATCH RESULTS")
+    print("BOUNDED CONCURRENCY RUN")
     print("=" * 50)
-    print(f"Volume Dispatched  : {BATCH_SIZE} complex reviews")
+    print(f"Volume Dispatched  : {BATCH_SIZE} synthetic requests")
     print(f"Screened           : {screened}/{BATCH_SIZE} ({(screened / BATCH_SIZE) * 100:.1f}%)")
     print(f"Not screened       : {rejected}/{BATCH_SIZE}")
     print(f"Avg Agent Latency  : {avg_latency:.2f} seconds")
@@ -180,22 +165,8 @@ async def main():
             suffix = f" — {detail}" if detail else ""
             print(f"  {count:>4} x {state}{suffix}")
 
-    print("-" * 50)
-    print(f"SCALABILITY")
-    print(f"  Employees : Hard to scale (Requires hiring 10+ analysts)")
-    print(f"  Agents    : Infinitely scalable (Done in {total_time:.2f} seconds)")
-    print("-" * 50)
-    print(f"MAINTENANCE")
-    print(f"  Employees : High (HR, management, turnover)")
-    print(f"  Agents    : Low (Serverless edge deployment)")
-    print("-" * 50)
-    print(f"COST (for {BATCH_SIZE} reviews)")
-    print(f"  Employees : Salaries (~${human_cost:,.2f} at {human_hours:,.1f} hours)")
-    print(f"  Agents    : ~EUR {agent_cost:,.2f} (deterministic triage, no LLM, no paid upstream)")
-    print("-" * 50)
-    print(f"CAPABILITY")
-    print(f"  Employees : Human intelligence (Prone to fatigue on document {BATCH_SIZE})")
-    print(f"  Agents    : Machine intelligence (Consistent deterministic evaluation)")
+    print(f"Elapsed            : {total_time:.2f} seconds")
+    print("Interpretation      : one observed run; not a capacity or cost benchmark")
     print("=" * 50 + "\n")
 
 

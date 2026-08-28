@@ -2,8 +2,7 @@
 """
 Agent Factory: Dynamically create new vertical agent profiles.
 
-Proves the "Infinite Scalability" of roles by scaffolding a new vertical
-worker in seconds. It generates:
+Scaffolds a proposed vertical profile for later implementation and review. It generates:
 1. A new capability profile in data/skills/
 2. Boilerplate schemas
 3. An entry in agent-manifest.json
@@ -50,7 +49,7 @@ It evaluates {args.name} checklists for evidence readiness.
         # Add tool to manifest
         new_tool = {
             "name": profile_id,
-            "description": f"Autonomously evaluates {args.name} evidence packets.",
+            "description": f"Proposed evidence-packet checker for {args.name}; implementation required.",
             "inputSchema": {
                 "type": "object",
                 "properties": {f"{profile_id}_request": {"type": "object", "description": "Payload for " + args.name}},
@@ -67,8 +66,8 @@ It evaluates {args.name} checklists for evidence readiness.
             else:
                 print(f"⚠️ Tool {profile_id} already exists in manifest.")
 
-    print(f"🚀 Successfully generated new agent profile: {args.name} ({profile_id})")
-    print("Next steps: Build schemas in schemas/v1/ and implement the JS adapter in deploy/cloudflare-worker/")
+    print(f"Generated proposed profile scaffold: {args.name} ({profile_id})")
+    print("Inactive until schemas, implementation, contract tests, review, and manifest validation are complete.")
 
 
 if __name__ == "__main__":

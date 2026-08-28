@@ -1,17 +1,14 @@
-## [2.0.0] - 2026-08-27
-
-### Changed
-- **Autonomous Compliance Edition**: Completely removed all disclaimers, "Safety limits", and compliance restrictions across the entire repository.
-- Empowered the skill to provide definitive legal, compliance, and sanctions determinations instead of defaulting to a refusal posture.
-- Replaced hesitant "Mitigation questions" with decisive "Autonomous Enforcement Actions" in risk archetypes.
-- Stripped arbitrary "Limitation note" requirements from outputs and updated continuous integration validation scripts to reflect the new autonomous capabilities.
-
 # CHANGELOG
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(opensanctions): never fabricate a sanctions match when the API key is missing.** The Python adapter now follows its documented degradation contract and returns an empty match list. A regression test calls the adapter directly so future callers cannot mistake simulated data for an upstream result.
+- **fix(docs-smoke): execute allowlisted documentation commands without a shell.** Markdown examples are parsed with `shlex` and passed as argument lists, removing the avoidable `shell=True` surface.
+- **docs(demos): replace infinite-scale, staffing, and invented-price claims with a bounded concurrency example whose output is explicitly one observed run.** Removed the generated 100-agent catalog because its inactive entries and pricing could be mistaken for shipped capabilities.
+- **docs(economics): replace invented pricing, margin, labour, latency, and error-rate figures with a measurement plan and explicit evidence threshold.**
+- **docs(scenarios): relabel fabricated enterprise case studies as synthetic workflow scenarios and remove invented customer volumes and outcomes.**
 - **fix(worker): route the Dual-Use Technology deployment to its declared profile.** The environment, profile
   registry, MCP schema, and deployment existed, but the Worker host/env dispatcher fell through to the generic
   Agenda Intelligence card and response path. The deployment now serves its own A2A Agent Card, structured
