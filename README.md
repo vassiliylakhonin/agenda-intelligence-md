@@ -387,6 +387,9 @@ Current classification: `Ecosystem Expansion & R&D`.
 
 | Topic | File |
 |---|---|
+| Pitch Deck (12 Slides) | [`docs/pitch/PITCH_DECK.md`](docs/pitch/PITCH_DECK.md) |
+| Case Studies | [`docs/pitch/CASE_STUDIES.md`](docs/pitch/CASE_STUDIES.md) |
+| Unit Economics | [`docs/pitch/UNIT_ECONOMICS.md`](docs/pitch/UNIT_ECONOMICS.md) |
 | Adoption | [`ADOPTION.md`](ADOPTION.md) |
 | Quickstart | [`docs/quickstart.md`](docs/quickstart.md) |
 | Evidence audit | [`docs/evidence-audit.md`](docs/evidence-audit.md) |
