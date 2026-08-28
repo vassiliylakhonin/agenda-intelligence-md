@@ -48,7 +48,7 @@ function jwksUrl(issuer) {
   return new URL("/.well-known/jwks.json", url).toString();
 }
 
-async function sha256Jcs(value) {
+export async function sha256Jcs(value) {
   const digest = await crypto.subtle.digest("SHA-256", TEXT_ENCODER.encode(jcs(value)));
   return (
     "sha256:" +

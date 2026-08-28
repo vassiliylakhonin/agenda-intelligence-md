@@ -80,6 +80,16 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   and performs no action. Self-reported, and it names no outcome. It sits in task metadata because every
   v1 response schema is `additionalProperties: false` and this describes the transport, not the verdict.
 
+- **feat(worker): a decision journal, so two runs of one file can be compared.** `/stats` answers how many
+  calls and from where; it keeps no input and no verdict, and the detailed funnel events live in Workers
+  Logs, which retains 72 hours on the free plan — so "did this file get a different answer than last time"
+  had nowhere to look. `GET /decisions?date=` (same `x-stats-token`, 30-day retention) returns one record
+  per `SendMessage`: timestamp, profile, contract version, a `sha256:` hash of the input, the verdict, and
+  whether human review was required. It stores a hash, never the input: these payloads carry counterparty
+  names, routes and cargo. The `runs` block pairs a repeated input with the verdicts it received and marks
+  the pair changed when they differ, including when only the contract version moved. `npm run decisions`
+  prints the changed pairs first. One KV write per call, none on discovery GETs.
+
 - **fix(worker): route the Dual-Use Technology deployment to its declared profile.** The environment, profile
   registry, MCP schema, and deployment existed, but the Worker host/env dispatcher fell through to the generic
   Agenda Intelligence card and response path. The deployment now serves its own A2A Agent Card, structured
