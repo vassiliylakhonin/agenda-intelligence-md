@@ -6,7 +6,7 @@
     "organization": "Vassiliy Lakhonin",
     "url": "https://github.com/vassiliylakhonin"
   },
-  "version": "1.7.1",
+  "version": "1.8.0",
   "documentationUrl": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/MCP.md",
   "capabilities": {
     "streaming": false,

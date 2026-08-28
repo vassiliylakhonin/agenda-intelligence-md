@@ -8,7 +8,7 @@
   "displayName": "Agenda Intelligence MD AI resource catalog",
   "description": "Discovery catalog for Agenda Intelligence MD resources: A2A wrapper, MCP server card, OKF knowledge bundle, confidential project-room profile contract, schemas, and source-policy artifacts. Visibility in this catalog is not buyer traction or product-market-fit evidence.",
   "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "updatedAt": "2026-06-29",
   "entries": [
     {
