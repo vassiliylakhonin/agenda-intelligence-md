@@ -5462,6 +5462,45 @@ test("dual-use technology profile routes structured MCP requests to its declared
   assert.equal(response.result.structuredContent.export_risk_triage.score, 100);
 });
 
+// The published request/response pair is what verify:public-agents sends to the
+// live worker, so a drift between the two would be found in production or not
+// at all: the profile has no other example, and the public-example validator
+// skips the vertical fixture directories. Asserting the pair here means the
+// example and the code move together.
+test("the published dual-use example gets the answer its response fixture publishes", async () => {
+  const exampleDir = new URL("../../../examples/dual-use-technology-export/contract/", import.meta.url);
+  const request = JSON.parse(readFileSync(new URL("decision_ready.request.json", exampleDir), "utf8"));
+  const published = JSON.parse(readFileSync(new URL("decision_ready.response.json", exampleDir), "utf8"));
+
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "dual-use-example",
+      method: "SendMessage",
+      params: {
+        message: {
+          messageId: "message-dual-use-example",
+          role: "ROLE_USER",
+          parts: [{ data: request }]
+        }
+      }
+    },
+    new Request("https://dual-use-technology-export-a2a.example.workers.dev/message/send", {
+      method: "POST",
+      headers: { "a2a-version": "1.0", "content-type": "application/json" }
+    }),
+    { AGENT_PROFILE: "dual_use_technology_export" }
+  );
+
+  const task = response.result.task;
+  assert.equal(task.status.state, "TASK_STATE_COMPLETED");
+  assert.equal(task.metadata.product_profile, "dual_use_technology_export");
+  // Everything but contract_version, which moves with the release and says
+  // nothing about whether this example still gets this answer.
+  assert.deepEqual(task.metadata.response.export_risk_triage, published.export_risk_triage);
+  assert.equal(task.metadata.response.profile, published.profile);
+});
+
 test("remote MCP HTTP transport handles resources and prompts", async () => {
   const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/mcp");
 

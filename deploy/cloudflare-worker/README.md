@@ -307,6 +307,14 @@ npm run smoke:live
 npm run verify:public-agents
 ```
 
+`verify:public-agents` covers all ten deployed environments. `smoke:live` covers
+the profiles whose response carries a `readiness_contract`, so it stops short of
+`dual-use-technology-export`, which answers with `export_risk_triage` instead. A
+profile added to only one of the two scripts is a profile nobody checks: on
+2026-08-28 both `critical-minerals-due-diligence` and `dual-use-technology-export`
+were live and passing `/health` while `verify:public-agents` had never called
+either of them.
+
 Set `WORKERS_SUBDOMAIN` when checking a non-default workers.dev account:
 
 ```bash

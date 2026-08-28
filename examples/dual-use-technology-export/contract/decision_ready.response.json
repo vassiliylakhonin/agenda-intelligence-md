@@ -1,0 +1,15 @@
+{
+  "contract_version": "1.7.1",
+  "profile": "dual_use_technology_export",
+  "export_risk_triage": {
+    "status": "decision_ready",
+    "score": 100,
+    "primary_risk_vectors": [
+      "Transit countries are present; human review must assess diversion and re-export controls for each leg."
+    ],
+    "evidence_ledger": [
+      "du-1: classification_note — Exporter ECCN self-classification note (2026-08-01)",
+      "du-2: end_user_statement — Signed end-use / end-user statement from the Kazakhstan consignee (2026-08-05)"
+    ]
+  }
+}

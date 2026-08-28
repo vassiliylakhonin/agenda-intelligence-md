@@ -67,6 +67,20 @@ const ACTIVE_AGENTS = [
     key: "corridor-sanctions-assistant",
     origin: workerOrigin("corridor-sanctions-assistant-a2a"),
     representative: { text: "Which gate fits a Kazakhstan route and counterparty question?" }
+  },
+  {
+    key: "critical-minerals-due-diligence",
+    origin: workerOrigin("critical-minerals-due-diligence-a2a"),
+    representative: {
+      data: readJson("examples/critical-minerals-due-diligence/contract/pre_signature_escalate.request.json")
+    }
+  },
+  {
+    key: "dual-use-technology-export",
+    origin: workerOrigin("dual-use-technology-export-a2a"),
+    representative: {
+      data: readJson("examples/dual-use-technology-export/contract/decision_ready.request.json")
+    }
   }
 ];
 

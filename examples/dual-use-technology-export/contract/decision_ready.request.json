@@ -1,0 +1,26 @@
+{
+  "shipment": {
+    "hs_code": "854231",
+    "eccn": "3A001.a.2",
+    "description": "Radiation-hardened monolithic integrated circuits for industrial control units",
+    "origin": "DE",
+    "destination": "KZ",
+    "transit_countries": ["PL", "RU"],
+    "end_user_sector": "semiconductor"
+  },
+  "dated_sources": [
+    {
+      "id": "du-1",
+      "source_type": "classification_note",
+      "title": "Exporter ECCN self-classification note",
+      "date": "2026-08-01"
+    },
+    {
+      "id": "du-2",
+      "source_type": "end_user_statement",
+      "title": "Signed end-use / end-user statement from the Kazakhstan consignee",
+      "date": "2026-08-05"
+    }
+  ],
+  "risk_question": "Is this export file complete enough for export-control human review?"
+}
