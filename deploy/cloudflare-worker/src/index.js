@@ -1067,7 +1067,39 @@ function agentCard(request, env = {}) {
       abuse_contact: `mailto:${SUPPORT_CONTACT_EMAIL}`
     }
   };
-  return applyAgentProfile(card, request, env);
+  const shaped = applyAgentProfile(card, request, env);
+  const contracts = toolContractsForProfile(agentProfile(request, env));
+  if (contracts) shaped.x_tool_contracts = contracts;
+  return shaped;
+}
+
+// The card carries the same contract tools/list carries.
+//
+// Every hosted MCP tool has published a complete input and output JSON Schema
+// since the endpoint shipped. The card published inputModes: an agent that
+// found this gate through its card learned that it accepts JSON, and nothing
+// about which JSON, so composing against it meant reading prose or speaking
+// MCP instead. Both transports put the same payload through the same dispatch,
+// so this reads the schema off mcpToolsForProfile rather than restating it --
+// a second copy of a schema is a second thing to drift, and the drift would
+// stay invisible until a caller had built against the wrong half.
+//
+// It rides in the vendor extension because the A2A v1 AgentSkill field set is
+// closed; a schema hung on the skill itself would make the served card invalid.
+// toSpecWireCard moves anything outside that field set there on the way out.
+function toolContractsForProfile(profile) {
+  const tools = mcpToolsForProfile(profile);
+  if (!tools.length) return null;
+  return {
+    contract_version: VERSION,
+    note: "Each entry is the contract of the hosted MCP tool of the same name. SendMessage params.request and tools/call arguments reach one dispatch, so the input schema describes both.",
+    tools: tools.map((tool) => ({
+      name: tool.name,
+      input_schema: tool.inputSchema,
+      ...(tool.outputSchema ? { output_schema: tool.outputSchema } : {}),
+      annotations: tool.annotations
+    }))
+  };
 }
 
 function agentCardProtocolVersion(card) {

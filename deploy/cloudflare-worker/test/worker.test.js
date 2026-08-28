@@ -42,8 +42,9 @@ import {
   usageStats
 } from "../src/index.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "../src/usage_constants.js";
-import { PROFILE_REGISTRY, profileDiscovery } from "../src/profiles.js";
+import { PROFILE_REGISTRY, VERSION, profileDiscovery } from "../src/profiles.js";
 import { mcpToolsForProfile } from "../src/mcp.js";
+import { cardExtensionParams } from "../src/card-extension.js";
 import { validateAgentCard } from "../scripts/verify-agent-card.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "../src/okf_content.js";
 import { matchCounterparty as matchCounterpartyAgainstWatchman } from "../src/upstream_watchman.js";
@@ -5171,6 +5172,61 @@ test("card data outside the schema survives inside capabilities.extensions", asy
   assert.ok(extension.params.x_agenda_intelligence, "wrapper metadata must survive the move");
   assert.equal(extension.params.support.email, "vassiliy.lakhonin@gmail.com");
   assert.equal(extension.params.provider.legalEntity.type, "individual");
+});
+
+// An agent that finds a gate through its card and one that finds it through
+// tools/list must learn the same contract. Until the card carried this, the
+// first learned only that the gate accepts JSON, and the two transports —
+// which share a dispatch — advertised different amounts about the same payload.
+test("the served card carries the same tool contracts tools/list carries", async () => {
+  const hosts = [
+    ["agenda-intelligence-a2a.example.workers.dev", "agenda"],
+    ["middle-corridor-deal-risk-gate-a2a.example.workers.dev", "kazakhstan"],
+    ["cis-secondary-sanctions-a2a.example.workers.dev", "cis_secondary_sanctions"],
+    ["agent-output-verification-a2a.example.workers.dev", "agent_output_verification"],
+    ["dual-use-technology-export-a2a.example.workers.dev", "dual_use_technology_export"]
+  ];
+
+  for (const [host, profile] of hosts) {
+    const response = await handleRequest(
+      new Request(`https://${host}/.well-known/agent-card.json`),
+      {}
+    );
+    const card = await response.json();
+    const contracts = cardExtensionParams(card).x_tool_contracts;
+    assert.ok(contracts, `${host} served no tool contracts`);
+
+    // Read from the same source the MCP endpoint answers from, so a schema
+    // change lands on both surfaces or on neither.
+    const expected = mcpToolsForProfile(profile).map((tool) => ({
+      name: tool.name,
+      input_schema: tool.inputSchema,
+      ...(tool.outputSchema ? { output_schema: tool.outputSchema } : {}),
+      annotations: tool.annotations
+    }));
+    assert.deepEqual(contracts.tools, expected, `${host} card and tools/list disagree`);
+    assert.equal(contracts.contract_version, VERSION);
+
+    // The schemas must arrive whole. A card that names a tool and describes
+    // half its payload is worse than one that describes none: it reads as a
+    // complete contract.
+    for (const tool of contracts.tools) {
+      assert.equal(tool.input_schema?.type, "object", `${tool.name} input schema is not an object schema`);
+      assert.ok(tool.annotations, `${tool.name} lost its annotations`);
+    }
+  }
+});
+
+test("a profile with no hosted tools serves no empty contract block", () => {
+  const card = agentCard(
+    new Request("https://corridor-sanctions-assistant-a2a.example.workers.dev/.well-known/agent-card.json"),
+    { AGENT_PROFILE: "corridor_sanctions_assistant" }
+  );
+  // The front-door profile does have a tool today; the guard is that an empty
+  // list never ships as `tools: []`, which reads as "this gate exposes nothing"
+  // rather than "this card says nothing about tools".
+  const contracts = card.x_tool_contracts;
+  if (contracts) assert.ok(contracts.tools.length > 0, "an empty tool list must be omitted, not served");
 });
 
 test("toSpecWireCard moves anything it does not recognise, not a fixed list", () => {

@@ -67,6 +67,15 @@ is stateless, so an exactly bound receipt may be reused during its five-minute
 lifetime; callers that require one-time execution must prevent replay at their
 own execution boundary.
 
+The card carries the same contracts. `capabilities.extensions[].params.x_tool_contracts`
+lists every hosted tool with its complete input and output JSON Schema and the
+same annotations `tools/list` returns, read from one source so the two surfaces
+cannot drift. It rides in the vendor extension because the A2A v1 `AgentSkill`
+field set is closed — a schema hung on the skill itself would make the served
+card invalid. An A2A-only caller can therefore compose against a gate from its
+card alone, without speaking MCP first. The contracts add weight to the card:
+the largest, `agent-output-verification` with five tools, is ~35 kB.
+
 `tools/call` inherits the same Bearer gate, rate limit, and usage logging.
 `server/discover` and `tools/list` stay open, like `agent/card`. `tools/list`
 embeds the complete JSON Schema for both input and output. Tools are read-only
