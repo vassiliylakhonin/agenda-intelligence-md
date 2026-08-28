@@ -13,8 +13,7 @@ const DEFAULT_AGENT_CARD_URLS = [
   "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
   "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
   "https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
-  "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
-  "https://vassiliylakhonin.github.io/.well-known/agent-card.json"
+  "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json"
 ];
 
 function agentCardUrl(value) {

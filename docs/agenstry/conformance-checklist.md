@@ -35,9 +35,8 @@ Agenstry re-probed the restructured card on 2026-08-24 at 01:09 UTC. Its record 
 
 ## Ownership verification
 
-Per [Damiën / Agenstry, 2026-05-27], three ownership-proof methods:
+Per [Damiën / Agenstry, 2026-05-27], the ownership-proof methods in use:
 
-- `vassiliylakhonin.github.io` — verified via `well_known` (`/.well-known/agenstry-verify`). ✅
 - Worker domains — verified via `jws` (JWKS round-trip against the card signature in `signatures`; no token, no file). The strongest method.
 
 ## Boundaries (declared on every card / `/status`)

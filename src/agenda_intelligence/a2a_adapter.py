@@ -131,7 +131,7 @@ LIVE_RETRIEVAL_PROFILES: dict[str, dict[str, Any]] = {
             {
                 "name": "Snapshot",
                 "license": "Public official-list snapshot",
-                "homepage": "https://vassiliylakhonin.github.io/",
+                "homepage": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
                 "activation_env_var": "SNAPSHOT_INDEX_URL",
                 "disable_env_var": "SNAPSHOT_DISABLED",
                 "cost_model": "$0 static compact public-list index; no external host",
@@ -221,7 +221,7 @@ def _build_per_profile_live_retrieval_block() -> dict[str, Any]:
 #
 # agent_card() keeps the root shape its callers and tests read. Normalisation
 # happens on the way out, in the JSON-RPC card result.
-CARD_EXTENSION_URI = "https://vassiliylakhonin.github.io/a2a/extensions/agenda-intelligence/v1"
+CARD_EXTENSION_URI = "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/a2a/extensions/agenda-intelligence/v1"
 CARD_EXTENSION_DESCRIPTION = (
     "Wrapper scope, product contract, boundaries and capability declarations for this agent. "
     "Descriptive only: reading it is never required to call the agent."
@@ -298,7 +298,7 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
         "url": base_url,
         "provider": {
             "organization": "Vassiliy Lakhonin",
-            "url": "https://vassiliylakhonin.github.io/",
+            "url": "https://github.com/vassiliylakhonin",
         },
         "version": __version__,
         "supportedInterfaces": [

@@ -89,7 +89,7 @@ class MemoryKv {
   }
 }
 
-function cisIntakeRequest(payload, origin = "https://vassiliylakhonin.github.io") {
+function cisIntakeRequest(payload, origin = "http://localhost:8788") {
   return new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/intake/cis-review", {
     method: "POST",
     headers: { "content-type": "application/json", origin },
@@ -5097,7 +5097,7 @@ test("card data outside the schema survives inside capabilities.extensions", asy
   );
   const card = await response.json();
   const extension = card.capabilities.extensions.find(
-    (entry) => entry.uri === "https://vassiliylakhonin.github.io/a2a/extensions/agenda-intelligence/v1"
+    (entry) => entry.uri === "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/a2a/extensions/agenda-intelligence/v1"
   );
 
   assert.ok(extension, "the vendor extension must be present");
