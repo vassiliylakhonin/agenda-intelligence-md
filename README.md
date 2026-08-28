@@ -69,7 +69,7 @@ does not include source text in its JSON or Markdown result. See
 Install the pinned release without cloning the source and check your own packet:
 
 ```text
-pip install "agenda-intelligence-md==1.7.1"
+pip install "agenda-intelligence-md==1.8.0"
 agenda-intelligence check /path/to/evidence-packet.json --strict
 ```
 

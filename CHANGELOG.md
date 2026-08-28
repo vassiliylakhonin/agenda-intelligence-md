@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## 1.8.0 — 2026-08-28
+
 - **feat(registry): declare the ten hosted endpoints in `server.json`.** The registry entry offered exactly
   one way to reach this project — install the PyPI package and speak stdio — while ten Streamable HTTP
   endpoints were live, open, and answering `tools/list` with complete input and output schemas. An agent

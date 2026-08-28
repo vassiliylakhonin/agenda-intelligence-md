@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.7.1",
+  "contract_version": "1.8.0",
   "profile": "dual_use_technology_export",
   "export_risk_triage": {
     "status": "decision_ready",

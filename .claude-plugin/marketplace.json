@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Deterministic evidence-packet linter with compatibility agenda-analysis skills and MCP tools.",
-    "version": "1.7.1"
+    "version": "1.8.0"
   },
   "plugins": [
     {
