@@ -70,15 +70,13 @@ The Gate is classified as **medium-risk** under this policy:
 | Party | Role | Responsibility |
 |---|---|---|
 | Cloudflare | Infrastructure provider | Worker runtime, KV storage, uptime |
-| User organisation | Deployer / end-user | Supplying accurate input documents; human oversight of output |
-| Vassiliy Lakhonin | Developer / operator | Policy compliance, system updates, incident response |
+| Maintainer team | Developer / operator | Policy compliance, system updates, incident response |
 
 ---
 
 ## 7. Incident and adverse-impact reporting
 
-Users who believe the Gate produced an incorrect, unfair, or harmful output should contact:
-**vassiliy.lakhonin@gmail.com** with subject line `[Gate] Adverse Impact Report`.
+Users who believe the Gate produced an incorrect, unfair, or harmful output should report via GitHub Security Advisories or Issues with subject line `[Gate] Adverse Impact Report`.
 
 All reports will be acknowledged within 5 business days and reviewed within 30 days.
 

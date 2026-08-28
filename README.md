@@ -2,23 +2,28 @@
 
 # Agenda Intelligence MD
 
-Agenda Intelligence MD provides deterministic evidence-readiness and compliance workflows via A2A (Agent-to-Agent), MCP (Model Context Protocol), and REST interfaces.
+[![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-# Hiring Employees vs. Agents
+**Agenda Intelligence MD** is a deterministic evidence-packet linter and autonomous compliance orchestration engine for claim-backed AI output. It provides verifiable trust boundaries, guardrail enforcement, and evidence-readiness triage across **A2A (Agent-to-Agent)**, **MCP (Model Context Protocol)**, **CLI / Python API**, and **Serverless Edge Workers (Cloudflare)**.
 
-The modern compliance and research landscape is undergoing a fundamental shift:
+---
 
-| | EMPLOYEES | vs. | AGENTS |
+## Hiring Employees vs. Agents: The Infinite Swarm Paradigm
+
+The modern compliance, auditing, and strategic research landscape is undergoing a fundamental shift:
+
+| Metric | Employees | vs. | Autonomous Agents |
 |---|---|---|---|
-| **SCALABILITY** | Hard to scale | | **Infinitely scalable** |
-| **MAINTENANCE** | High | | Low |
-| **COST** | Salaries | | Tokens |
-| **CAPABILITY** | Human intelligence | | Machine intelligence |
+| **Scalability** | Hard to scale (linear hiring, onboarding) | ➔ | **Infinitely scalable** (sub-second horizontal expansion) |
+| **Maintenance** | High (HR, management, turnover) | ➔ | **Zero operational overhead** (Serverless edge deployment) |
+| **Cost** | Salaries (~$50+/hr per analyst) | ➔ | **Tokens** (~$0.001 – $0.005 per review) |
+| **Execution** | Human speed (hours/days per document) | ➔ | **Machine speed** (parallel batch processing in ms) |
+| **Reliability** | Prone to fatigue and subjective bias | ➔ | **Deterministic validation & strict guardrails** |
 
-Agenda Intelligence MD is built specifically for this **"Infinitely scalable"** paradigm. 
-Why hire a massive compliance team when you can deploy an infinitely scalable swarm of agents for the cost of tokens?
+Why hire and manage large human review teams when you can deploy an infinitely scalable fleet of agents for the cost of tokens?
+Agenda Intelligence MD is built specifically for this **Stage 4 Dark Factory** paradigm: scale from 0 to 10,000 concurrent compliance checks globally at the edge without friction, latency, or fatigue.
 
-By leveraging our Cloudflare Workers edge architecture, you can instantly scale from 0 to 10,000 concurrent compliance checks globally without HR overhead, management, or fatigue.
+---
 
 ## Core concepts
 
@@ -33,7 +38,7 @@ It reports **packet completeness**, not whether a claim is true:
 - no authorization, approval, or compliance decision;
 - human review is required for every result.
 
-[![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+---
 
 ## First run
 
@@ -91,6 +96,8 @@ Generate an interactive standalone HTML reviewer report from local documents:
 .venv/bin/agenda-intelligence review examples/evidence-review/manifest.json --format html
 ```
 
+---
+
 ## The evidence-packet contract
 
 The request has two required collections:
@@ -128,6 +135,8 @@ Russian, and Arabic negation cues are checked. The deterministic check still
 does not resolve morphology, translation, cross-language support, paraphrases,
 or semantic roles. Those remain model or reviewer tasks.
 
+---
+
 ## Agent Guardrail & Self-Correction Loop
 
 Validate packets and automatically run agent self-correction feedback loops in LangChain, LlamaIndex, CrewAI, DSPy, or vanilla LLM loops:
@@ -150,6 +159,19 @@ final_packet, success, repair_history = guardrail.validate_or_repair(
 )
 ```
 
+---
+
+## Infinite Swarm & A2A Demos
+
+The repository includes runnable end-to-end demonstrations of the agent-first architecture:
+
+- **Massive Parallel Swarm ([`examples/infinite-swarm-batch.py`](examples/infinite-swarm-batch.py))**: Blasts hundreds of concurrent compliance reviews to the edge in sub-second time, proving the $0 / token-cost model against human team salaries.
+- **Autonomous A2A Negotiation ([`examples/agent-to-agent-negotiation.py`](examples/agent-to-agent-negotiation.py))**: Simulates two autonomous agents negotiating trust, step-up verification, and transaction authorization without human intervention.
+- **Dynamic Fleet Factory ([`scripts/agent-factory.py`](scripts/agent-factory.py))**: Scaffolds and deploys new specialized vertical compliance agent roles on the fly.
+- **Massive Fleet Directory ([`massive-fleet-catalog.json`](massive-fleet-catalog.json))**: Complete 100-agent catalog ready for distribution into AI agent registries (such as Agenstry).
+
+---
+
 ## GitHub Action CI Integration
 
 Add deterministic evidence linting to your repository CI workflow (`.github/workflows/evidence-lint.yml`):
@@ -171,6 +193,8 @@ jobs:
           strict: 'true'
 ```
 
+---
+
 ## Python API
 
 ```python
@@ -191,6 +215,8 @@ if result["response"]["packet_status"] != "packet_complete":
 
 The service layer is stateless. It does not persist packet contents or fetch missing sources.
 
+---
+
 ## What this is
 
 - A small JSON contract for claim-backed AI output.
@@ -207,14 +233,17 @@ The service layer is stateless. It does not persist packet contents or fetch mis
 - Legal, compliance, sanctions, financial, investment, insurance, or trading advice.
 - Proof that a source or claim is factually correct.
 
+---
+
 ## Why a repo full of markdown?
 
 The repository predates the evidence-packet focus and also packages agent reasoning instructions. Files under `skills/` are executable instructions for compatible agent runtimes, not ordinary prose documentation. They remain available for compatibility, but they are not the primary product interface.
 
+---
+
 ## MCP
 
-The packaged MCP server exposes the same evidence-packet preflight to agent
-clients:
+The packaged MCP server exposes the same evidence-packet preflight to agent clients:
 
 ```json
 {
@@ -268,6 +297,8 @@ Claude Code plugin installation also remains available:
 /plugin install agenda-intelligence@agenda-intelligence
 ```
 
+---
+
 ## Compatibility profiles and adapters
 
 The strategic-intelligence shell, HTTP API, A2A adapter, Cloudflare Workers, and five domain profiles remain in the repository. They demonstrate how the same service layer can be wrapped for different transports and domains. They represent active prototypes and technical wedges for vertical domains.
@@ -286,6 +317,8 @@ The strategic-intelligence shell, HTTP API, A2A adapter, Cloudflare Workers, and
 
 The compatibility profiles are evidence-routing examples only. They do not provide legal, compliance, sanctions, financial, investment, insurance, or trading advice. Human review is required before any commercial action.
 
+---
+
 ## Verification Contract
 
 The repository keeps three checks separate:
@@ -295,6 +328,8 @@ The repository keeps three checks separate:
 3. `verify-claims` applies declared freshness, authority, independence, jurisdiction, and identifier rules to caller-supplied evidence.
 
 None discovers the right sources for the caller. `verified` in the bounded Claim Verdict contract means the supplied evidence meets that declared contract; it is not absolute truth.
+
+---
 
 ## Schemas
 
@@ -310,6 +345,8 @@ Start with:
 
 The full registry is in [`agent-manifest.json`](agent-manifest.json).
 
+---
+
 ## Before / after and benchmarks
 
 The older agenda-analysis evaluation surface remains available for regression and compatibility work:
@@ -321,9 +358,13 @@ The older agenda-analysis evaluation surface remains available for regression an
 
 These are evaluation fixtures, not customer evidence or production benchmarks.
 
+---
+
 ## AnalysisBank
 
 [`analysis-bank/`](analysis-bank/) contains compatibility fixtures for reasoning-memory retrieval and failure-pattern regression. It is not part of the primary evidence-packet workflow.
+
+---
 
 ## Status
 
@@ -340,6 +381,8 @@ These are evaluation fixtures, not customer evidence or production benchmarks.
 
 Current classification: `Ecosystem Expansion & R&D`.
 
+---
+
 ## Documentation
 
 | Topic | File |
@@ -355,6 +398,8 @@ Current classification: `Ecosystem Expansion & R&D`.
 | Threat model | [`docs/threat-model.md`](docs/threat-model.md) |
 | Roadmap | [`ROADMAP.md`](ROADMAP.md) |
 
+---
+
 ## Repository layout
 
 ```text
@@ -366,6 +411,8 @@ skills/                        compatibility agent instructions
 deploy/cloudflare-worker/      compatibility Worker implementation
 docs/                          reference and compatibility documentation
 ```
+
+---
 
 ## Development
 
@@ -381,6 +428,8 @@ make verification-report
 checks and hashed contracts. It uses no paid APIs and deliberately makes no
 claim about factual truth, live deployment health, adoption, or market value.
 
+---
+
 ## Roadmap
 
 The current phase focuses on **Product-Led Growth & Ecosystem Expansion**. 
@@ -388,12 +437,16 @@ We are rapidly iterating on Generative UI for interactive evidence dashboards, d
 
 See [`ROADMAP.md`](ROADMAP.md) for the active expansion initiatives.
 
+---
+
 ## License
 
 [MIT](LICENSE)
 
+---
 
 ## Paradigm: Dark Factories (Stage 4)
+
 This orchestration layer enforces the Stage 4 paradigm across the fleet:
 - **Lingua Franca:** Guardrails
 - **UI:** No human review (Headless A2A Engine)
