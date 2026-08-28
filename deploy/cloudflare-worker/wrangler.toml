@@ -44,10 +44,14 @@ workers_dev = true
 [env.cis-secondary-sanctions.vars]
 
 AGENT_PROFILE = "cis_secondary_sanctions"
-# Snapshot upstream activation (ADR 0014): $0 server-side name screening against
-# the published compact public-list index. Not a secret (public URL), so kept as
-# a declarative var. Set SNAPSHOT_DISABLED=1 to deactivate without removing this.
-SNAPSHOT_INDEX_URL = "https://vassiliylakhonin.github.io/docs/assets/sanctions-name-index-compact.json"
+# Snapshot upstream (ADR 0014): $0 server-side name screening against a compact
+# public-list index served over HTTP. Not a secret (public URL), so it belongs in
+# [vars] rather than a secret. No index is published yet, so the var is unset and
+# the adapter reports live_retrieval_status "disabled" — it never reports an
+# unscreened name as clean. To activate, publish the index and set:
+#   SNAPSHOT_INDEX_URL = "https://<host>/sanctions-name-index-compact.json"
+# Set SNAPSHOT_DISABLED=1 to deactivate without removing the URL.
+
 # Optional access controls for the message/send route — both OFF by default so
 # the browser demo stays an open free evaluation. Flip on when needed:
 #   Hard paywall (closes the route, incl. the demo) — issue a key per customer:

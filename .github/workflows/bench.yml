@@ -11,6 +11,9 @@ on:
 # against silent rubric / example drift; not a benchmark of agent
 # output.
 
+permissions:
+  contents: read
+
 jobs:
   bench:
     runs-on: ubuntu-latest

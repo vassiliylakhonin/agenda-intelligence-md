@@ -67,12 +67,6 @@ const ACTIVE_AGENTS = [
     key: "corridor-sanctions-assistant",
     origin: workerOrigin("corridor-sanctions-assistant-a2a"),
     representative: { text: "Which gate fits a Kazakhstan route and counterparty question?" }
-  },
-  {
-    key: "portfolio-discovery-alias",
-    origin: "https://vassiliylakhonin.github.io",
-    healthOrigin: workerOrigin("agenda-intelligence-a2a"),
-    representative: { text: "Route a strategic-risk question with explicit evidence gaps." }
   }
 ];
 

@@ -174,10 +174,3 @@ Before finishing any change, report:
 3. what was not changed
 4. how to verify
 5. risks or follow-ups
-
-
-## Paradigm: Dark Factories (Stage 4)
-This orchestration layer enforces the Stage 4 paradigm across the fleet:
-- **Lingua Franca:** Guardrails
-- **UI:** No human review (Headless A2A Engine)
-- **Agent to Human Ratio:** ∞

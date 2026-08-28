@@ -74,7 +74,10 @@ import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 
 const AGENSTRY_VERIFICATION_PATH = "/.well-known/agenstry-verify";
 const CIS_REVIEW_INTAKE_PATH = "/intake/cis-review";
-const CIS_REVIEW_INTAKE_ORIGIN = "https://vassiliylakhonin.github.io";
+// The intake form used to be hosted off-Worker and its origin was allow-listed
+// here. That host was never published, so no browser can present it; only local
+// development origins remain. Add a real origin here when a form is hosted again.
+const CIS_REVIEW_INTAKE_ORIGIN = null;
 // The agent card already carries the contact under `support`, so machines could
 // always find a person. The HTML landing page could not: measured 2026-08-14,
 // none of the eight profiles offered a human any way to make contact, which made
@@ -483,9 +486,10 @@ function jsonResponse(body, status = 200, extraHeaders = {}) {
 function intakeCorsHeaders(request) {
   const origin = request.headers.get("origin") || "";
   const allowed =
-    origin === CIS_REVIEW_INTAKE_ORIGIN || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    (CIS_REVIEW_INTAKE_ORIGIN !== null && origin === CIS_REVIEW_INTAKE_ORIGIN) ||
+    /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
   return {
-    "access-control-allow-origin": allowed ? origin : CIS_REVIEW_INTAKE_ORIGIN,
+    "access-control-allow-origin": allowed ? origin : "null",
     "access-control-allow-methods": "GET, POST, OPTIONS",
     "access-control-allow-headers": "content-type, x-stats-token",
     "cache-control": "no-store",
@@ -496,7 +500,8 @@ function intakeCorsHeaders(request) {
 function isAllowedIntakeOrigin(request) {
   const origin = request.headers.get("origin") || "";
   return (
-    origin === CIS_REVIEW_INTAKE_ORIGIN || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+    (CIS_REVIEW_INTAKE_ORIGIN !== null && origin === CIS_REVIEW_INTAKE_ORIGIN) ||
+    /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
   );
 }
 
@@ -1045,9 +1050,7 @@ function agentCard(request, env = {}) {
     // from an oversight — the same reading an agent deciding whether to call
     // would make. The remedy is to say so, not to invent an auth model.
     //
-    // The site card at vassiliylakhonin.github.io has carried exactly this
-    // block since before the fleet did; this brings the eight Workers in line
-    // with it rather than inventing a second vocabulary. Everything here is
+    // Everything here is
     // checkable against the deployment: required_authentication follows the
     // configured key, and the usage log records prompt_chars, never the prompt.
     x_security_posture: {

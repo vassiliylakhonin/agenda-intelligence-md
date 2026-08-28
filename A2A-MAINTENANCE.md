@@ -43,9 +43,6 @@ Every deployment exposes:
 - `GET /health`
 - `POST /message/send`
 
-The static card on `vassiliylakhonin.github.io` is a portfolio discovery alias.
-It does not execute JSON-RPC; its `supportedInterfaces` entry points to the
-default Worker above.
 
 ## Deprecated deployment
 

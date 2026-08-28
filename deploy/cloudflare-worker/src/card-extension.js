@@ -11,7 +11,7 @@
 // `cardExtensionParams`.
 
 export const CARD_EXTENSION_URI =
-  "https://vassiliylakhonin.github.io/a2a/extensions/agenda-intelligence/v1";
+  "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/a2a/extensions/agenda-intelligence/v1";
 
 /**
  * Vendor metadata from a served card.

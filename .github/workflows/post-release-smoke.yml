@@ -10,6 +10,9 @@ on:
         description: "Published package version to smoke-test, for example 0.5.5"
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   smoke:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
