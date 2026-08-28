@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **chore(signals): re-sync the vendored snapshot with the canon, and translate the links vendoring breaks.**
+  The snapshot was three signals behind `global-think-tank-analyst` — the guard that should have said so had
+  been looking for the checkout in the wrong place — and it carried the disclaimer removal that the canon has
+  since reverted. `scripts/sync_signals.py` now also rewrites repository-relative links (`../../README.md`)
+  to their canonical URL: they resolve in the canon, where signals sit two levels below the repository root,
+  and point at nothing five levels down inside this package. `feed.json` embeds a copy of each signal, so its
+  `content_text` is re-derived from the rewritten markdown rather than left to contradict it.
+
 - **fix(opensanctions): never fabricate a sanctions match when the API key is missing.** The Python adapter now follows its documented degradation contract and returns an empty match list. A regression test calls the adapter directly so future callers cannot mistake simulated data for an upstream result.
 - **fix(docs-smoke): execute allowlisted documentation commands without a shell.** Markdown examples are parsed with `shlex` and passed as argument lists, removing the avoidable `shell=True` surface.
 - **docs(demos): replace infinite-scale, staffing, and invented-price claims with a bounded concurrency example whose output is explicitly one observed run.** Removed the generated 100-agent catalog because its inactive entries and pricing could be mistaken for shipped capabilities.

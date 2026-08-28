@@ -48,7 +48,7 @@ Retrieved on 2026-05-08:
 - [Clark Hill — China hits "pause" on rare-earth export controls](https://www.clarkhill.com/news-events/news/china-hits-pause-on-rare-earth-export-controls-and-what-it-means-for-supply-chains/) — secondary, legal analysis
 - [Fastmarkets — Gallium export ban suspended by China](https://www.fastmarkets.com/insights/china-suspends-export-prohibition-on-superhard-materials-us/) — secondary, market
 - [CSIS — Beyond Rare Earths](https://www.csis.org/analysis/beyond-rare-earths-chinas-growing-threat-gallium-supply-chains) — secondary, analytical
-- [China rare-earth processing source-backed example](../../../../../examples/source-backed/china-rare-earth-processing-ban.md) — internal example artifact
+- [Companion memo](https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main/examples/live-source-backed-china-critical-minerals-suspension.md) — internal
 
 The MOFCOM-issued primary text(s) of the suspension and the Export Licensing Catalogue are the operative legal sources; verify directly before action.
 

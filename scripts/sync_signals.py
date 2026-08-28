@@ -22,7 +22,9 @@ the vendored snapshot and the local source path (when present) will fail.
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import re
 import shutil
 from pathlib import Path
 
@@ -58,6 +60,47 @@ DEFAULT_SOURCE = resolve_source() or candidate_sources()[-1]
 TOP_LEVEL_FILES = ["index.json", "feed.json", "latest.md", "TEMPLATE.md", "README.md"]
 
 
+# A signal links to its own repository with paths like ../../README.md. Those
+# resolve in the canon, where signals sit two levels below the repository root.
+# Vendored here they sit five levels down inside a package and point at nothing,
+# which is what tests/test_markdown_links.py reports. The link is not wrong, the
+# move is: so the move translates it to the canonical URL rather than leaving a
+# path that only worked where it came from.
+CANON_BLOB_URL = "https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main"
+ESCAPING_LINK = re.compile(r"\]\(\.\./\.\./([^)\s]+)\)")
+
+
+def rewrite_escaping_links(text: str) -> str:
+    return ESCAPING_LINK.sub(lambda match: f"]({CANON_BLOB_URL}/{match.group(1)})", text)
+
+
+# feed.json embeds a copy of each signal's markdown, and a guard test asserts the
+# two are identical. Rewriting one without the other would trade a broken link
+# for a broken invariant.
+def retranslate_snapshot(target: Path, verbose: bool = True) -> int:
+    rewritten = 0
+    for path in sorted(target.rglob("*.md")):
+        original = path.read_text(encoding="utf-8")
+        translated = rewrite_escaping_links(original)
+        if translated != original:
+            path.write_text(translated, encoding="utf-8")
+            rewritten += 1
+
+    feed_path = target / "feed.json"
+    if feed_path.is_file():
+        feed = json.loads(feed_path.read_text(encoding="utf-8"))
+        for item in feed.get("items", []):
+            name = str(item.get("id", "")).rstrip("/").split("/")[-1]
+            markdown = target / "2026" / name
+            if markdown.is_file():
+                item["content_text"] = markdown.read_text(encoding="utf-8")
+        feed_path.write_text(json.dumps(feed, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
+
+    if verbose and rewritten:
+        print(f"rewrote repository-relative links in {rewritten} file(s)")
+    return rewritten
+
+
 def sync(source: Path, target: Path, verbose: bool = True) -> None:
     if not source.is_dir():
         raise SystemExit(f"source signals dir not found: {source}")
@@ -80,6 +123,8 @@ def sync(source: Path, target: Path, verbose: bool = True) -> None:
         shutil.copytree(year_dir, out_year)
         if verbose:
             print(f"copied dir: {year_dir.name}/ ({sum(1 for _ in out_year.glob('*.md'))} signals)")
+
+    retranslate_snapshot(target, verbose=verbose)
 
 
 def main() -> None:
