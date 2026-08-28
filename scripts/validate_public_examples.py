@@ -101,6 +101,7 @@ def validate_examples() -> None:
         ROOT / "examples" / "agentic-interaction-trust",
         ROOT / "examples" / "gulf-maritime-exposure",
         ROOT / "examples" / "critical-minerals-due-diligence",
+        ROOT / "examples" / "dual-use-technology-export",
     }
     a2a_fixture_dir = ROOT / "examples" / "a2a"
     pre_action_fixture_dir = ROOT / "examples" / "pre-action-check"

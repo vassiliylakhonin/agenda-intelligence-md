@@ -37,6 +37,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   `~/work` / `~/projects`; the test imports that resolver instead of repeating it. With the guard live
   again it immediately reports the snapshot is three signals behind canon.
 
+- **test(worker): verify all ten deployed profiles, not eight.** `critical-minerals-due-diligence` and
+  `dual-use-technology-export` were live and checked by nothing — `verify:public-agents` had never called
+  either. Adds the first public example for the dual-use profile
+  (`examples/dual-use-technology-export/contract/`), a contract test asserting the profile still gives that
+  example the answer its response fixture publishes, and both profiles to the live conformance run.
+
 - **fix(worker): route the Dual-Use Technology deployment to its declared profile.** The environment, profile
   registry, MCP schema, and deployment existed, but the Worker host/env dispatcher fell through to the generic
   Agenda Intelligence card and response path. The deployment now serves its own A2A Agent Card, structured
