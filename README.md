@@ -4,24 +4,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Agenda Intelligence MD** is a deterministic evidence-packet linter and autonomous compliance orchestration engine for claim-backed AI output. It provides verifiable trust boundaries, guardrail enforcement, and evidence-readiness triage across **A2A (Agent-to-Agent)**, **MCP (Model Context Protocol)**, **CLI / Python API**, and **Serverless Edge Workers (Cloudflare)**.
-
----
-
-## Hiring Employees vs. Agents: The Infinite Swarm Paradigm
-
-The modern compliance, auditing, and strategic research landscape is undergoing a fundamental shift:
-
-| Metric | Employees | vs. | Autonomous Agents |
-|---|---|---|---|
-| **Scalability** | Hard to scale (linear hiring, onboarding) | ➔ | **Infinitely scalable** (sub-second horizontal expansion) |
-| **Maintenance** | High (HR, management, turnover) | ➔ | **Zero operational overhead** (Serverless edge deployment) |
-| **Cost** | Salaries (~$50+/hr per analyst) | ➔ | **Tokens** (~$0.001 – $0.005 per review) |
-| **Execution** | Human speed (hours/days per document) | ➔ | **Machine speed** (parallel batch processing in ms) |
-| **Reliability** | Prone to fatigue and subjective bias | ➔ | **Deterministic validation & strict guardrails** |
-
-Why hire and manage large human review teams when you can deploy an infinitely scalable fleet of agents for the cost of tokens?
-Agenda Intelligence MD is built specifically for this **Stage 4 Dark Factory** paradigm: scale from 0 to 10,000 concurrent compliance checks globally at the edge without friction, latency, or fatigue.
+**Agenda Intelligence MD** is a deterministic evidence-packet linter and compliance orchestration engine for claim-backed AI output. It provides verifiable trust boundaries, guardrail enforcement, and evidence-readiness triage across **A2A (Agent-to-Agent)**, **MCP (Model Context Protocol)**, **CLI / Python API**, and **Serverless Edge Workers (Cloudflare)**.
 
 ---
 
@@ -445,12 +428,3 @@ See [`ROADMAP.md`](ROADMAP.md) for the active expansion initiatives.
 ## License
 
 [MIT](LICENSE)
-
----
-
-## Paradigm: Dark Factories (Stage 4)
-
-This orchestration layer enforces the Stage 4 paradigm across the fleet:
-- **Lingua Franca:** Guardrails
-- **UI:** No human review (Headless A2A Engine)
-- **Agent to Human Ratio:** ∞
