@@ -4,6 +4,26 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(a2a): answer an unstructured gate request with `TASK_STATE_INPUT_REQUIRED`, not `TASK_STATE_FAILED`.**
+  Measured 2026-08-29 over the preceding 72h of Workers Logs: the Agenstry listing probe calls all ten hosted
+  agents with the same four-character message; the three free-text profiles answered `TASK_STATE_COMPLETED`
+  and the seven structured gates answered `TASK_STATE_FAILED` — the same seven every time, 14 of 38 probe
+  calls. Nothing was failing. Each gate was describing its input contract through a status that means the
+  opposite, on the one external channel that shows the fleet to people who did not build it. A caller who
+  sends no structured request now gets `TASK_STATE_INPUT_REQUIRED` with the unchanged `GATE_REQUEST_GUIDES`
+  artifact — required fields, a worked example, the front door. A caller who sends a structured request that
+  does not validate still gets `TASK_STATE_FAILED` with the field errors, because that request did fail.
+  `/stats` reports the new outcome as `input_required` rather than folding it into `invalid_request`, which
+  on 2026-08-27 counted 271 calls that were mostly one local test script. Both still count toward
+  `empty_handed`. See [ADR 0026](docs/adr/0026-input-required-for-unstructured-gate-requests.md). The Python
+  A2A adapter is unchanged and still returns `TASK_STATE_FAILED` for both cases.
+
+- **chore(observability): sample traces on `cis-secondary-sanctions`.** Over 2026-08-22..28 that Worker was
+  12.4% of named-script requests but 47.4% of the fleet's CPU, with `cpuTimeP99` 423ms against a 1.27ms
+  median, and it is the only agent reporting subrequests (49; every other agent reports 0). The tail is an
+  outbound-call path, not computation. Logs stay unsampled fleet-wide: ~5,900 requests a week is nowhere
+  near the free 200k/day budget, and thinning them would cost the funnel its census.
+
 ## 1.8.0 — 2026-08-28
 
 - **feat(registry): declare the ten hosted endpoints in `server.json`.** The registry entry offered exactly

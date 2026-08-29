@@ -158,3 +158,18 @@ AGENT_PROFILE = "dual_use_technology_export"
 [[env.dual-use-technology-export.kv_namespaces]]
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
+
+# Sampled traces on the one profile that makes outbound calls. Measured
+# 2026-08-29 over 22-28 Aug: this Worker is 12.4% of named-script requests but
+# 47.4% of the fleet's CPU, with cpuTimeP99 423ms against a 1.27ms median, and
+# it is the only agent in the fleet reporting subrequests (49; every other
+# agent reports 0). The tail is therefore an outbound-call path, not
+# computation, and traces name the fetch. Logs stay unsampled fleet-wide: at
+# ~5,900 requests a week the free 200k/day budget is nowhere near binding, and
+# thinning them would only cost the funnel its census.
+[env.cis-secondary-sanctions.observability]
+enabled = true
+
+[env.cis-secondary-sanctions.observability.traces]
+enabled = true
+head_sampling_rate = 0.1

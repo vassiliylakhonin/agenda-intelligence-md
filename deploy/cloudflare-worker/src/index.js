@@ -3263,6 +3263,32 @@ function invalidRequestResult(profile, endpoint, schema, errors, guideOverride =
   };
 }
 
+// A2A separates "your request is broken" from "I need input you have not sent
+// yet". Both answered TASK_STATE_FAILED here, and the second case is the one
+// every directory crawler and marketplace probe lands on: it sends a short
+// plain-text ping, no structured payload, and reads a failed task as a broken
+// agent. Measured 2026-08-29 across the preceding 72h, the Agenstry listing
+// probe called all ten agents with the same 4-character message; the seven
+// structured gates answered TASK_STATE_FAILED to every one of them, the same
+// seven every time, while the three free-text profiles answered COMPLETED.
+// Nothing was failing: the gates were describing their input contract through a
+// status that means the opposite, on the one external channel that shows the
+// fleet to strangers.
+//
+// The distinction the call sites already draw is the right one to keep. A
+// caller who sent no structured request at all is asking what the gate needs,
+// and now gets TASK_STATE_INPUT_REQUIRED carrying the same guide. A caller who
+// sent a structured request that does not validate still gets
+// TASK_STATE_FAILED with the field errors, because that request did fail.
+function requestGuidanceResult(profile, endpoint, schema, errors, guideOverride = null) {
+  const result = invalidRequestResult(profile, endpoint, schema, errors, guideOverride);
+  return {
+    ...result,
+    status: { state: "TASK_STATE_INPUT_REQUIRED", timestamp: new Date().toISOString() }
+  };
+}
+
+
 function isCisSecondarySanctionsRequest(value) {
   return (
     value &&
@@ -3691,7 +3717,7 @@ function agenticArtifactText(response) {
 function a2aResultForAgenticInteractionTrust(params) {
   const structured = structuredAgenticInteractionTrustRequestFromParams(params);
   if (!structured) {
-    return invalidRequestResult(
+    return requestGuidanceResult(
       "agentic_interaction_trust",
       "/v1/agentic-interaction/trust",
       "schemas/v1/agentic-interaction-trust-request.schema.json",
@@ -4216,7 +4242,7 @@ async function preActionCheckDecision(structured, request, env = {}) {
 async function a2aResultForDecisionCheck(params, request, env = {}) {
   const structured = structuredAgentOutputVerificationRequestFromParams(params);
   if (!structured || !isPreActionCheckRequest(structured)) {
-    return invalidRequestResult(
+    return requestGuidanceResult(
       "agent_output_verification",
       "/mcp#decision_check",
       "schemas/v1/pre-action-check-request.schema.json",
@@ -4312,7 +4338,7 @@ function agentOutputVerificationArtifactText(response) {
 function a2aResultForAgentOutputVerification(params) {
   const structured = structuredAgentOutputVerificationRequestFromParams(params);
   if (!structured) {
-    return invalidRequestResult(
+    return requestGuidanceResult(
       "agent_output_verification",
       "/v1/agent-output/verification",
       "schemas/v1/evidence-audit.schema.json",
@@ -4665,7 +4691,7 @@ function gulfArtifactText(response) {
 function a2aResultForGulfMaritimeExposure(params) {
   const structured = structuredGulfMaritimeRequestFromParams(params);
   if (!structured) {
-    return invalidRequestResult(
+    return requestGuidanceResult(
       "gulf_maritime_exposure",
       "/v1/gulf-maritime/exposure",
       "schemas/v1/gulf-maritime-exposure-request.schema.json",
@@ -5464,7 +5490,7 @@ function structuredMarketEntryReadinessRequestFromParams(params) {
 function a2aResultForMarketEntryReadiness(params) {
   const structured = structuredMarketEntryReadinessRequestFromParams(params);
   if (!structured) {
-    return invalidRequestResult(
+    return requestGuidanceResult(
       "kazakhstan_market_entry_readiness",
       "/v1/market-entry/readiness",
       "schemas/v1/market-entry-readiness-request.schema.json",
@@ -5864,7 +5890,7 @@ function structuredCriticalMineralsRequestFromParams(params) {
 function a2aResultForCriticalMinerals(params) {
   const structured = structuredCriticalMineralsRequestFromParams(params);
   if (!structured) {
-    return invalidRequestResult(
+    return requestGuidanceResult(
       "critical_minerals_due_diligence",
       "/v1/critical-minerals/due-diligence",
       "schemas/v1/critical-minerals-due-diligence-request.schema.json",
@@ -6072,7 +6098,7 @@ function dualUseTechnologyExportArtifactText(response) {
 function a2aResultForDualUseTechnologyExport(params) {
   const structured = structuredDualUseTechnologyExportRequestFromParams(params);
   if (!structured) {
-    return invalidRequestResult(
+    return requestGuidanceResult(
       "dual_use_technology_export",
       "/message/send",
       "schemas/v1/dual-use-technology-export-request.schema.json",
@@ -6373,7 +6399,7 @@ function cisArtifactText(response, liveRetrievalStatus) {
 async function a2aResultForCisSecondarySanctions(params, request, env) {
   const structured = structuredCisSecondarySanctionsRequestFromParams(params);
   if (!structured) {
-    return invalidRequestResult(
+    return requestGuidanceResult(
       "cis_secondary_sanctions",
       "/v1/cis-secondary-sanctions/exposure",
       "schemas/v1/cis-secondary-sanctions-request.schema.json",
@@ -8145,6 +8171,15 @@ function callOutcome(result) {
   if (result?.status?.state === "TASK_STATE_FAILED") {
     return { decision: "invalid_request", status: "invalid_request", score: null };
   }
+  // Separate from invalid_request on purpose: a caller who sent nothing
+  // structured and a caller who sent a broken request are two different
+  // problems, and only the second one is a defect in the request. Merging them
+  // is what made `invalid_request` unreadable — on 2026-08-27 it counted 271
+  // calls, of which 211 were one local test script and 14 were the marketplace
+  // probe asking, in effect, what the gate needs.
+  if (result?.status?.state === "TASK_STATE_INPUT_REQUIRED") {
+    return { decision: "input_required", status: "input_required", score: null };
+  }
   const contract = result?.metadata?.response?.readiness_contract;
   if (contract && typeof contract === "object") {
     return {
@@ -8447,7 +8482,9 @@ async function usageStats(env, date) {
     // empty payloads, so including them made the ratio read "5 of 1".
     if (
       !event.likely_probe &&
-      (event.outcome === "insufficient_information" || event.outcome === "invalid_request")
+      (event.outcome === "insufficient_information" ||
+        event.outcome === "invalid_request" ||
+        event.outcome === "input_required")
     ) {
       emptyHanded += 1;
     }
