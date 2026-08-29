@@ -3348,7 +3348,7 @@ test("agentic_interaction_trust message/send dispatches to structured triage", a
   }
 });
 
-test("agentic_interaction_trust message/send fails on missing structured request", async () => {
+test("agentic_interaction_trust message/send asks for input on a missing structured request", async () => {
   const originalLog = console.log;
   console.log = () => {};
   try {
@@ -3362,7 +3362,7 @@ test("agentic_interaction_trust message/send fails on missing structured request
       agenticRequest,
       {}
     );
-    assert.equal(response.result.status.state, "TASK_STATE_FAILED");
+    assert.equal(response.result.status.state, "TASK_STATE_INPUT_REQUIRED");
     assert.equal(response.result.metadata.valid, false);
     assert.equal(response.result.metadata.product_profile, "agentic_interaction_trust");
   } finally {
@@ -3513,7 +3513,7 @@ test("cis_secondary_sanctions message/send dispatches to structured triage", asy
   }
 });
 
-test("cis_secondary_sanctions message/send fails on missing structured request", async () => {
+test("cis_secondary_sanctions message/send asks for input on a missing structured request", async () => {
   const originalLog = console.log;
   console.log = () => {};
   try {
@@ -3527,7 +3527,7 @@ test("cis_secondary_sanctions message/send fails on missing structured request",
       cisRequest,
       { OPENSANCTIONS_DISABLED: "1" }
     );
-    assert.equal(response.result.status.state, "TASK_STATE_FAILED");
+    assert.equal(response.result.status.state, "TASK_STATE_INPUT_REQUIRED");
     assert.equal(response.result.metadata.valid, false);
   } finally {
     console.log = originalLog;
@@ -4067,12 +4067,12 @@ test("a rejected request gets a contact but no offer of person-led work", async 
       gulfRequest(),
       GULF_ENV
     );
-    assert.equal(response.result.status.state, "TASK_STATE_FAILED");
-    assert.equal(response.result.metadata.engagement, undefined, "a failed task must not carry an engagement block");
+    assert.equal(response.result.status.state, "TASK_STATE_INPUT_REQUIRED");
+    assert.equal(response.result.metadata.engagement, undefined, "a task asking for input must not carry an engagement block");
     assert.equal(
       response.result.metadata.support_contact,
       "vassiliy.lakhonin@gmail.com",
-      "a failed task must still say how to reach a person"
+      "a task asking for input must still say how to reach a person"
     );
   } finally {
     console.log = originalLog;
@@ -4106,7 +4106,7 @@ test("the base profile is not stamped twice with the same offer", async () => {
   }
 });
 
-test("gulf message/send rejects a non-gulf request shape", async () => {
+test("gulf message/send asks for input on a non-gulf request shape", async () => {
   const originalLog = console.log;
   console.log = () => {};
   try {
@@ -4115,7 +4115,7 @@ test("gulf message/send rejects a non-gulf request shape", async () => {
       gulfRequest(),
       GULF_ENV
     );
-    assert.equal(response.result.status.state, "TASK_STATE_FAILED");
+    assert.equal(response.result.status.state, "TASK_STATE_INPUT_REQUIRED");
     assert.equal(response.result.metadata.valid, false);
   } finally {
     console.log = originalLog;
@@ -4263,9 +4263,9 @@ test("market-entry message/send rejects a bad source_type enum", async () => {
   assert.equal(response.result.metadata.valid, false);
 });
 
-test("market-entry message/send rejects a non-market-entry request shape", async () => {
+test("market-entry message/send asks for input on a non-market-entry request shape", async () => {
   const response = await marketEntryResponseFor({ foo: "bar" });
-  assert.equal(response.result.status.state, "TASK_STATE_FAILED");
+  assert.equal(response.result.status.state, "TASK_STATE_INPUT_REQUIRED");
   assert.equal(response.result.metadata.valid, false);
 });
 
@@ -4547,9 +4547,9 @@ test("agent-output-verification requires verification for a weak claim (Python p
   assert.ok(resp.weak_claims.some((item) => item.claim_id === "c1"));
 });
 
-test("agent-output-verification rejects a non-audit request shape", async () => {
+test("agent-output-verification asks for input on a non-audit request shape", async () => {
   const response = await agentOutputVerificationResponseFor({ not: "an audit" });
-  assert.equal(response.result.status.state, "TASK_STATE_FAILED");
+  assert.equal(response.result.status.state, "TASK_STATE_INPUT_REQUIRED");
   assert.equal(response.result.metadata.valid, false);
 });
 
@@ -5086,7 +5086,7 @@ test("a gate that refuses a request says what it needs, and its own example work
         );
 
       const refused = (await send([{ kind: "text", text: "hi" }])).result;
-      assert.equal(refused.status.state, "TASK_STATE_FAILED");
+      assert.equal(refused.status.state, "TASK_STATE_INPUT_REQUIRED");
       assert.equal(refused.metadata.product_profile, productProfile);
 
       const artifact = refused.artifacts[0];
