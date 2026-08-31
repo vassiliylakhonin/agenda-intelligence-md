@@ -1955,8 +1955,10 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   });
 
   assert.equal(event.event, "agenda_intelligence_a2a_usage");
+  assert.equal(event.event_version, 5);
   assert.equal(event.path, "/message/send");
   assert.equal(event.jsonrpc_method, "message/send");
+  assert.equal(event.request_kind, "a2a_action");
   assert.equal(event.agent_profile, "agenda");
   assert.equal(event.prompt_chars, 68);
   assert.deepEqual(event.modules_used, [
@@ -1965,6 +1967,7 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
     "sanctions-sector"
   ]);
   assert.equal(event.client, "agenstry");
+  assert.equal(event.traffic_class, "machine_probe");
   assert.equal(event.referrer_host, "agenstry.com");
   assert.equal(event.likely_probe, true);
   assert.equal(event.prompt_text, undefined);
@@ -2014,7 +2017,7 @@ test("a prose question to a gate is measured by what arrived, not by what parsed
   assert.equal(event.prompt_chars, question.length, "prompt_chars is the size of what the caller sent");
   assert.equal(event.structured_chars, 0, "structured_chars still reports what the gate could parse");
   assert.equal(event.likely_probe, false, "a request this size is not a probe because a schema rejected it");
-  assert.equal(event.event_version, 4);
+  assert.equal(event.event_version, 5);
 });
 
 test("usage analytics records modules for single-profile worker branches", () => {
@@ -2131,7 +2134,10 @@ test("funnel event names the visitor without storing an address", () => {
   );
 
   assert.equal(event.event, "agenda_intelligence_a2a_funnel");
+  assert.equal(event.event_version, 3);
   assert.equal(event.step, "card");
+  assert.equal(event.request_kind, "discovery");
+  assert.equal(event.traffic_class, "machine_client");
   assert.equal(event.as_org, "Example Cloud Ltd");
   assert.equal(event.referrer_host, "agenstry.com");
   assert.equal(event.user_agent, "acme-agent-runtime/0.4");
@@ -2348,6 +2354,48 @@ test("caller classification separates our own runs, probes, and callers who sign
   // The bucket the whole classification exists for: no user agent at all. The
   // one external non-probe call observed 2026-08-19 arrived exactly like this.
   assert.equal(kindFor({}), "unsigned_external");
+});
+
+test("traffic class and request kind separate people, machines, probes, and self-tests", () => {
+  const eventFor = (path, headers = {}, details = {}) =>
+    buildUsageEvent(
+      new Request(`https://agenda-intelligence-a2a.example.workers.dev${path}`, {
+        method: "POST",
+        headers
+      }),
+      details
+    );
+
+  assert.equal(
+    eventFor("/message/send", { "user-agent": "Mozilla/5.0" }, { jsonrpc_method: "message/send" })
+      .traffic_class,
+    "human_browser"
+  );
+  assert.equal(
+    eventFor("/message/send", { "user-agent": "node" }, { jsonrpc_method: "message/send" }).traffic_class,
+    "machine_client"
+  );
+  assert.equal(
+    eventFor("/message/send", { "user-agent": "AgenstryBot/1.0" }, { jsonrpc_method: "message/send" })
+      .traffic_class,
+    "machine_probe"
+  );
+  assert.equal(
+    eventFor(
+      "/message/send",
+      { "user-agent": "agenda-intelligence-live-smoke" },
+      { jsonrpc_method: "message/send" }
+    ).traffic_class,
+    "self_test"
+  );
+  assert.equal(
+    eventFor("/message/send", { "user-agent": "Mozilla/5.0" }, { jsonrpc_method: "message/send", likely_probe: true })
+      .traffic_class,
+    "machine_probe",
+    "a near-empty action is a probe even when its user agent looks like a browser"
+  );
+  assert.equal(eventFor("/mcp", {}, { jsonrpc_method: "tools/call" }).request_kind, "mcp_action");
+  assert.equal(eventFor("/message/send", {}, { jsonrpc_method: "message/send" }).request_kind, "a2a_action");
 });
 
 test("calling Worker zone is recorded from cf-worker and nothing else is", () => {
@@ -2587,6 +2635,8 @@ test("usage stats aggregates daily counters from KV", async () => {
     jsonrpc_method: "message/send",
     agent_profile: "agenda",
     likely_probe: false,
+    traffic_class: "human_browser",
+    request_kind: "a2a_action",
     client: "curl",
     cf: {
       country: "KZ"
@@ -2595,7 +2645,14 @@ test("usage stats aggregates daily counters from KV", async () => {
   };
 
   await recordUsageStats(env, event);
-  await recordUsageStats(env, { ...event, agent_profile: "kazakhstan", likely_probe: true, client: "agenstry" });
+  await recordUsageStats(env, {
+    ...event,
+    agent_profile: "kazakhstan",
+    likely_probe: true,
+    traffic_class: "machine_probe",
+    request_kind: "mcp_action",
+    client: "agenstry"
+  });
 
   const stats = await usageStats(env, "2026-05-22");
 
@@ -2603,6 +2660,18 @@ test("usage stats aggregates daily counters from KV", async () => {
   assert.equal(stats.counters.total, 2);
   assert.equal(stats.counters.non_probe, 1);
   assert.equal(stats.counters.likely_probe, 1);
+  assert.equal(stats.counters.human_requests, 1);
+  assert.equal(stats.counters.machine_requests, 1);
+  assert.equal(stats.counters.self_test_requests, 0);
+  assert.equal(stats.counters.unclassified_requests, 0);
+  assert.deepEqual(stats.traffic_classes, [
+    { name: "human_browser", count: 1 },
+    { name: "machine_probe", count: 1 }
+  ]);
+  assert.deepEqual(stats.request_kinds, [
+    { name: "a2a_action", count: 1 },
+    { name: "mcp_action", count: 1 }
+  ]);
   assert.deepEqual(stats.clients, [
     { name: "agenstry", count: 1 },
     { name: "curl", count: 1 }
@@ -2635,17 +2704,37 @@ test("usage stats accounts billable upstream cost and budget thresholds", async 
 
   // 6 billable OpenSanctions calls (success) + 1 degraded (failed, not billed)
   // + 1 disabled (no key, no call). Only the 6 successes cost money.
-  const billable = { status: "success", upstream: "OpenSanctions", billable: true, cost_eur: 0.1 };
+  const billable = {
+    status: "success",
+    upstream: "OpenSanctions",
+    reason_code: null,
+    billable: true,
+    cost_eur: 0.1
+  };
   for (let i = 0; i < 6; i += 1) {
     await recordUsageStats({ AGENDA_USAGE: kv }, { ...base, timestamp: `2026-05-30T10:0${i}:00.000Z`, live_retrieval: billable });
   }
   await recordUsageStats(
     { AGENDA_USAGE: kv },
-    { ...base, timestamp: "2026-05-30T10:07:00.000Z", live_retrieval: { status: "degraded", upstream: "OpenSanctions", billable: false, cost_eur: 0 } }
+    {
+      ...base,
+      timestamp: "2026-05-30T10:07:00.000Z",
+      live_retrieval: {
+        status: "degraded",
+        upstream: "OpenSanctions",
+        reason_code: "upstream_http_503",
+        billable: false,
+        cost_eur: 0
+      }
+    }
   );
   await recordUsageStats(
     { AGENDA_USAGE: kv },
-    { ...base, timestamp: "2026-05-30T10:08:00.000Z", live_retrieval: { status: "disabled", upstream: null, billable: false, cost_eur: 0 } }
+    {
+      ...base,
+      timestamp: "2026-05-30T10:08:00.000Z",
+      live_retrieval: { status: "disabled", upstream: null, reason_code: "disabled", billable: false, cost_eur: 0 }
+    }
   );
 
   // No budget cap configured: cost reported, no alert.
@@ -2653,6 +2742,15 @@ test("usage stats accounts billable upstream cost and budget thresholds", async 
   assert.equal(noCap.counters.billable_calls, 6);
   assert.equal(noCap.cost.estimated_cost_eur, 0.6);
   assert.deepEqual(noCap.cost.billable_upstreams, [{ name: "OpenSanctions", count: 6 }]);
+  assert.deepEqual(noCap.live_retrieval_statuses, [
+    { name: "success", count: 6 },
+    { name: "degraded", count: 1 },
+    { name: "disabled", count: 1 }
+  ]);
+  assert.deepEqual(noCap.live_retrieval_reason_codes, [
+    { name: "disabled", count: 1 },
+    { name: "upstream_http_503", count: 1 }
+  ]);
   assert.equal(noCap.cost.budget.configured, false);
   assert.equal(noCap.cost.budget.alert_level, "none");
 
@@ -3028,6 +3126,31 @@ test("cis worker surfaces the snapshot provenance date in A2A metadata", async (
       { OPENSANCTIONS_DISABLED: "1" }
     );
     assert.equal(withoutSnapshot.result.metadata.live_retrieval_snapshot_generated_at, null);
+  } finally {
+    console.log = originalLog;
+    globalThis.fetch = originalFetch;
+    resetSnapshotCache();
+  }
+});
+
+test("cis worker logs a bounded reason code when live retrieval degrades", async () => {
+  resetSnapshotCache();
+  const originalLog = console.log;
+  const originalFetch = globalThis.fetch;
+  const logged = [];
+  console.log = (event) => logged.push(event);
+  globalThis.fetch = async () => new Response("temporarily unavailable", { status: 503 });
+  try {
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "cis-degraded", method: "message/send", params: { message: { data: cisSampleStructuredRequest } } },
+      cisRequest,
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" }
+    );
+    assert.equal(response.result.metadata.live_retrieval_status, "degraded");
+    assert.equal(response.result.metadata.live_retrieval_reason_code, "upstream_http_503");
+    const usageEvent = logged.find((event) => event?.event === "agenda_intelligence_a2a_usage");
+    assert.equal(usageEvent.live_retrieval.reason_code, "upstream_http_503");
+    assert.ok(!JSON.stringify(usageEvent).includes("temporarily unavailable"));
   } finally {
     console.log = originalLog;
     globalThis.fetch = originalFetch;

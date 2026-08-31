@@ -6362,6 +6362,11 @@ async function cisSecondarySanctionsResult(request, env) {
     response,
     live_retrieval_status: upstreamResult.status,
     live_retrieval_upstream: upstream_name,
+    // A bounded, privacy-safe operator signal. The upstream adapters retain a
+    // human-readable reason for local diagnosis, but that text may contain an
+    // env-var name or exception detail and must not be copied into responses or
+    // logs. The code is stable enough to aggregate in Workers Observability.
+    live_retrieval_reason_code: liveRetrievalReasonCode(upstreamResult.status, upstreamResult.degrade_reason),
     // Provenance date of the public-list index the match ran against (Snapshot
     // upstream only; null for Watchman / OpenSanctions, which query live). The
     // snapshot is a static file rebuilt by hand, so a caller cannot otherwise
@@ -6441,6 +6446,7 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
       schema: "schemas/v1/cis-secondary-sanctions-request.schema.json",
       live_retrieval_status: result.live_retrieval_status,
       live_retrieval_upstream: result.live_retrieval_upstream,
+      live_retrieval_reason_code: result.live_retrieval_reason_code,
       live_retrieval_snapshot_generated_at: result.live_retrieval_snapshot_generated_at,
       auto_fetched_sources: result.auto_fetched_sources,
       upstream_attribution: result.upstream_attribution,
@@ -8024,6 +8030,28 @@ function callerKind(request) {
   return "external";
 }
 
+// A deliberately small classification for the question operators actually
+// ask: was this a person, a machine client, monitoring noise, or our own test?
+// It is a signal, not identity proof; user-agent strings are self-reported.
+function trafficClass(request, likelyProbe = false) {
+  const kind = callerKind(request);
+  if (kind === "self_test") return "self_test";
+  if (kind === "service_probe" || likelyProbe) return "machine_probe";
+  if (classifyClient(request) === "browser") return "human_browser";
+  return "machine_client";
+}
+
+function usageRequestKind(path, jsonrpcMethod) {
+  if (path === MCP_ENDPOINT_PATH || jsonrpcMethod === "tools/call") return "mcp_action";
+  if (path === "/message/send" || path === "/") return "a2a_action";
+  return "other_action";
+}
+
+function funnelRequestKind(step) {
+  if (step === "card" || step === "discovery") return "discovery";
+  return step || "unknown";
+}
+
 // modules_used reaches this function in two shapes: the routed analyze path
 // passes result.metadata entries ([{ module, role }, ...]), while the
 // single-profile worker branches pass plain strings (["cis_secondary_sanctions"]).
@@ -8048,6 +8076,21 @@ function round2(value) {
   return Math.round((Number(value) || 0) * 100) / 100;
 }
 
+function liveRetrievalReasonCode(status, reason) {
+  if (status === "success") return null;
+  if (status === "disabled") return "disabled";
+  const value = typeof reason === "string" ? reason.trim() : "";
+  if (!value) return status ? "unknown" : null;
+  if (/^network error:/i.test(value)) return "network_error";
+  const httpStatus = value.match(/^upstream HTTP (\d{3})$/i);
+  if (httpStatus) return `upstream_http_${httpStatus[1]}`;
+  if (/malformed JSON/i.test(value)) return "malformed_response";
+  if (/index build failed/i.test(value)) return "index_build_failed";
+  if (/empty counterparty name/i.test(value)) return "invalid_input";
+  if (/SIMULATION_MODE_NO_API_KEY|API_KEY.*not set/i.test(value)) return "not_configured";
+  return "unknown";
+}
+
 // Extract per-request billable cost from a result's live-retrieval metadata.
 // A call is billed only when a paid upstream actually returned data
 // (status "success"). "disabled" = no call made; "degraded" = the call
@@ -8056,11 +8099,12 @@ function round2(value) {
 function billableUpstreamCost(result) {
   const status = result?.metadata?.live_retrieval_status ?? null;
   const upstream = result?.metadata?.live_retrieval_upstream ?? null;
+  const reasonCode = result?.metadata?.live_retrieval_reason_code ?? null;
   const unit = upstream ? BILLABLE_UPSTREAM_EUR[upstream] : undefined;
   if (status !== "success" || !unit) {
-    return { status, upstream, billable: false, cost_eur: 0 };
+    return { status, upstream, reason_code: reasonCode, billable: false, cost_eur: 0 };
   }
-  return { status, upstream, billable: true, cost_eur: unit };
+  return { status, upstream, reason_code: null, billable: true, cost_eur: unit };
 }
 
 function buildUsageEvent(request, details = {}) {
@@ -8070,29 +8114,34 @@ function buildUsageEvent(request, details = {}) {
   // Absent rather than zero when a caller path does not produce one, so a
   // reader can tell "this profile parsed nothing" from "nobody measured".
   const structuredChars = Number.isFinite(details.structured_chars) ? details.structured_chars : null;
+  const likelyProbe = Boolean(details.likely_probe);
 
   return {
     event: "agenda_intelligence_a2a_usage",
-    // 4: prompt_chars became the size of what arrived rather than the size of
-    // what this profile could parse, and structured_chars carries the latter.
-    // Rows at version 3 and below measured a plain-text request to a gate as
-    // zero, and their likely_probe follows from that number.
-    event_version: 4,
+    // 5: adds bounded traffic_class, request_kind, and live-retrieval reason
+    // codes. Version 4 made prompt_chars the size of what arrived rather than
+    // the size of what this profile could parse, with structured_chars carrying
+    // the latter. Rows at version 3 and below measured a plain-text request to
+    // a gate as zero, and their likely_probe follows from that number.
+    event_version: 5,
     timestamp: new Date().toISOString(),
     source: "cloudflare_worker",
     method: request.method,
     path: url.pathname,
     host: url.hostname,
     jsonrpc_method: details.jsonrpc_method || null,
+    request_kind: usageRequestKind(url.pathname, details.jsonrpc_method),
     jsonrpc_id_present: Boolean(details.jsonrpc_id_present),
     agent_profile: details.agent_profile || agentProfile(request),
     prompt_chars: promptChars,
     structured_chars: structuredChars,
     modules_used: normalizeModules(details.modules_used),
-    live_retrieval: details.live_retrieval || { status: null, upstream: null, billable: false, cost_eur: 0 },
+    live_retrieval:
+      details.live_retrieval || { status: null, upstream: null, reason_code: null, billable: false, cost_eur: 0 },
     client: classifyClient(request),
     user_agent: userAgentSummary(request),
     caller_kind: callerKind(request),
+    traffic_class: trafficClass(request, likelyProbe),
     caller_zone: callerZone(request),
     referrer_host: headerHost(request, "referer"),
     cf: {
@@ -8101,7 +8150,7 @@ function buildUsageEvent(request, details = {}) {
       as_org: cf.asOrganization || null
     },
     outcome: details.outcome || { decision: null, status: null, score: null },
-    likely_probe: Boolean(details.likely_probe)
+    likely_probe: likelyProbe
   };
 }
 
@@ -8145,15 +8194,17 @@ function logFunnelEvent(request, step) {
   const cf = request.cf || {};
   const event = {
     event: "agenda_intelligence_a2a_funnel",
-    event_version: 2,
+    event_version: 3,
     timestamp: new Date().toISOString(),
     step,
+    request_kind: funnelRequestKind(step),
     method: request.method,
     path: url.pathname,
     host: url.hostname,
     client: classifyClient(request),
     user_agent: userAgentSummary(request),
     caller_kind: callerKind(request),
+    traffic_class: trafficClass(request),
     caller_zone: callerZone(request),
     referrer_host: headerHost(request, "referer"),
     country: cf.country || null,
@@ -8367,11 +8418,13 @@ async function recordUsageStats(env, event) {
       agent_profile: event.agent_profile || "unknown",
       host: event.host || "unknown",
       jsonrpc_method: event.jsonrpc_method || "unknown",
+      request_kind: event.request_kind || "unknown",
       prompt_chars: event.prompt_chars || 0,
       likely_probe: Boolean(event.likely_probe),
       client: event.client || "unknown",
       user_agent: event.user_agent || "unknown",
       caller_kind: event.caller_kind || "external",
+      traffic_class: event.traffic_class || "unknown",
       caller_zone: event.caller_zone || "none",
       referrer_host: event.referrer_host || "none",
       country: event.cf?.country || "unknown",
@@ -8380,7 +8433,8 @@ async function recordUsageStats(env, event) {
       outcome: event.outcome?.decision || "unknown",
       outcome_score: Number.isInteger(event.outcome?.score) ? event.outcome.score : null,
       modules_used: Array.isArray(event.modules_used) ? event.modules_used : [],
-      live_retrieval: event.live_retrieval || { status: null, upstream: null, billable: false, cost_eur: 0 }
+      live_retrieval:
+        event.live_retrieval || { status: null, upstream: null, reason_code: null, billable: false, cost_eur: 0 }
     })
   );
 }
@@ -8447,8 +8501,12 @@ async function usageStats(env, date) {
   const networks = new Map();
   const userAgents = new Map();
   const callerKinds = new Map();
+  const trafficClasses = new Map();
+  const requestKinds = new Map();
   const callerZones = new Map();
   const outcomes = new Map();
+  const liveRetrievalStatuses = new Map();
+  const liveRetrievalReasonCodes = new Map();
   let emptyHanded = 0;
   let likelyProbe = 0;
   let promptChars = 0;
@@ -8459,6 +8517,8 @@ async function usageStats(env, date) {
     if (event.likely_probe) likelyProbe += 1;
     promptChars += Number.isFinite(event.prompt_chars) ? event.prompt_chars : 0;
     const lr = event.live_retrieval;
+    if (lr?.status) incrementMap(liveRetrievalStatuses, lr.status);
+    if (lr?.reason_code) incrementMap(liveRetrievalReasonCodes, lr.reason_code);
     if (lr && lr.billable) {
       billableCalls += 1;
       estimatedCostEur += Number.isFinite(lr.cost_eur) ? lr.cost_eur : 0;
@@ -8473,6 +8533,8 @@ async function usageStats(env, date) {
     incrementMap(networks, event.as_org);
     incrementMap(userAgents, event.user_agent);
     incrementMap(callerKinds, event.caller_kind);
+    incrementMap(trafficClasses, event.traffic_class);
+    incrementMap(requestKinds, event.request_kind);
     // Only zones that actually sent one: "none" is every ordinary caller and
     // would bury the handful of rows this map exists to show.
     if (event.caller_zone && event.caller_zone !== "none") incrementMap(callerZones, event.caller_zone);
@@ -8508,7 +8570,12 @@ async function usageStats(env, date) {
       prompt_chars_total: promptChars,
       prompt_chars_avg: total > 0 ? Math.round(promptChars / total) : 0,
       billable_calls: billableCalls,
-      empty_handed: emptyHanded
+      empty_handed: emptyHanded,
+      human_requests: trafficClasses.get("human_browser") || 0,
+      machine_requests:
+        (trafficClasses.get("machine_client") || 0) + (trafficClasses.get("machine_probe") || 0),
+      self_test_requests: trafficClasses.get("self_test") || 0,
+      unclassified_requests: trafficClasses.get("unknown") || 0
     },
     cost: {
       estimated_cost_eur: round2(estimatedCostEur),
@@ -8521,10 +8588,14 @@ async function usageStats(env, date) {
     // itself with nothing at all. `external` means "not ours and not a
     // self-declared probe", which includes an ad-hoc curl from this desk.
     caller_kinds: sortedMap(callerKinds),
+    traffic_classes: sortedMap(trafficClasses),
+    request_kinds: sortedMap(requestKinds),
     // Calling Cloudflare Worker zones, from the `cf-worker` header. Empty on
     // most days by design — see callerZone() for what this is for.
     caller_zones: sortedMap(callerZones),
     outcomes: sortedMap(outcomes),
+    live_retrieval_statuses: sortedMap(liveRetrievalStatuses),
+    live_retrieval_reason_codes: sortedMap(liveRetrievalReasonCodes),
     agent_profiles: sortedMap(agentProfiles),
     hosts: sortedMap(hosts),
     countries: sortedMap(countries),
@@ -10804,6 +10875,7 @@ const DIRECT_V1_ROUTES = {
     provenance: (result) => ({
       live_retrieval_status: result.live_retrieval_status,
       live_retrieval_upstream: result.live_retrieval_upstream,
+      live_retrieval_reason_code: result.live_retrieval_reason_code,
       live_retrieval_snapshot_generated_at: result.live_retrieval_snapshot_generated_at,
       auto_fetched_sources: result.auto_fetched_sources,
       upstream_attribution: result.upstream_attribution
