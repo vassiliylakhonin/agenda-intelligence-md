@@ -3158,6 +3158,33 @@ test("cis worker logs a bounded reason code when live retrieval degrades", async
   }
 });
 
+test("cis worker treats unconfigured live retrieval as disabled without fetching", async () => {
+  const originalLog = console.log;
+  const originalFetch = globalThis.fetch;
+  const logged = [];
+  console.log = (event) => logged.push(event);
+  globalThis.fetch = async () => {
+    throw new Error("unconfigured retrieval must not fetch");
+  };
+  try {
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "cis-unconfigured", method: "message/send", params: { message: { data: cisSampleStructuredRequest } } },
+      cisRequest,
+      {}
+    );
+    assert.equal(response.result.metadata.live_retrieval_status, "disabled");
+    assert.equal(response.result.metadata.live_retrieval_upstream, null);
+    assert.equal(response.result.metadata.live_retrieval_reason_code, "not_configured");
+    assert.equal(response.result.metadata.upstream_attribution, null);
+    const usageEvent = logged.find((event) => event?.event === "agenda_intelligence_a2a_usage");
+    assert.equal(usageEvent.live_retrieval.status, "disabled");
+    assert.equal(usageEvent.live_retrieval.reason_code, "not_configured");
+  } finally {
+    console.log = originalLog;
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("cis worker does not call a listed ship a match on the counterparty", async () => {
   resetSnapshotCache();
   const originalLog = console.log;

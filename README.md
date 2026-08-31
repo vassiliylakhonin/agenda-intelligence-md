@@ -359,7 +359,7 @@ These are evaluation fixtures, not customer evidence or production benchmarks.
 | `agenda-intelligence review --format html` | Implemented (Generative UI) |
 | `check_evidence_packet` MCP tool | Implemented |
 | AI Fleet (Vertical Workers) | Active (10 profiles deployed) |
-| Live Source Retrieval | Active via `live_retrieval` flag |
+| Live Source Retrieval | Optional per profile; currently unconfigured in the hosted fleet |
 
 Current classification: `Ecosystem Expansion & R&D`.
 

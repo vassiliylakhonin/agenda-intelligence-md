@@ -1,6 +1,6 @@
 # Use case: CIS counterparty secondary-sanctions exposure triage
 
-Status: shipped 2026-05-26. Vertical worker profile `cis_secondary_sanctions`. Schema family v1, additive (non-breaking under [ADR 0003](../adr/0003-v1-compatibility-policy.md)). Live retrieval enabled per [ADR 0014](../adr/0014-per-profile-live-retrieval.md).
+Status: shipped 2026-05-26. Vertical worker profile `cis_secondary_sanctions`. Schema family v1, additive (non-breaking under [ADR 0003](../adr/0003-v1-compatibility-policy.md)). Live-retrieval capability declared per [ADR 0014](../adr/0014-per-profile-live-retrieval.md); no upstream is currently configured in production.
 
 ## What this is for
 
@@ -23,7 +23,7 @@ The product does not target Kazakhstani or Uzbek operating companies as buyers �
 
 The `cis_secondary_sanctions` profile accepts a structured request describing a CIS, Caucasus, or Central Asia counterparty (name, jurisdiction, sector, optional ownership layers), the exposure facets under review (ownership, financial flows, transit / re-export, dual-use, correspondent banking, etc.), the jurisdictions whose regimes are in scope (OFAC, EU, UK OFSI, UN, FATF, EAG), and any dated source extracts the caller has already pulled.
 
-The profile has three live-retrieval upstreams (per [ADR 0014](../adr/0014-per-profile-live-retrieval.md) / [ADR 0020](../adr/0020-activate-snapshot-upstream-cis-secondary-sanctions.md)), tried in order: **Snapshot** (active, $0) — the worker fetches a compact public-list name index (OFAC SDN + consolidated, EU, UK FCDO) published by the portfolio site and matches the counterparty name in-worker (exact + token overlap, no external host); **Watchman** (`WATCHMAN_URL`, free self-host); **OpenSanctions** (`OPENSANCTIONS_API_KEY`, paid). Matches merge into the evidence pack as auto-fetched `dated_source` entries with attribution. When no upstream is configured or the active one fails, the worker degrades gracefully and returns `live_retrieval_status: degraded` / `disabled`, with triage based on user-supplied evidence only. A match is a possible string match only — not identity verification, ownership resolution, or a sanctions determination.
+The profile has three optional live-retrieval upstreams (per [ADR 0014](../adr/0014-per-profile-live-retrieval.md) / [ADR 0020](../adr/0020-activate-snapshot-upstream-cis-secondary-sanctions.md)), tried in order: **Snapshot** (`SNAPSHOT_INDEX_URL`, $0), which fetches a compact public-list name index and matches the counterparty name in-worker (exact + token overlap, no external host); **Watchman** (`WATCHMAN_URL`, free self-host); **OpenSanctions** (`OPENSANCTIONS_API_KEY`, paid). None is currently configured in production because the proposed Snapshot URL was never published. When configured, matches merge into the evidence pack as auto-fetched `dated_source` entries with attribution. No configured upstream returns `live_retrieval_status: disabled`; failure of a configured upstream returns `degraded`. In either case, triage continues on user-supplied evidence only. A match is a possible string match only — not identity verification, ownership resolution, or a sanctions determination.
 
 The response is an auditable triage shape:
 
@@ -73,9 +73,9 @@ The response may include `typology_refs` pointing at publicly published FATF, EA
 
 ## Boundaries (per ADR 0014)
 
-- `live_retrieval: true` for this profile only. Other profiles (`agenda`, `kazakhstan`) remain `live_retrieval: false`.
+- Live-retrieval capability is declared for this profile only, but the runtime boundary is env-derived and currently `live_retrieval: false` because no upstream is configured. Other profiles remain `live_retrieval: false`.
 - `factual_verification: false`. `not_advice: true`. `human_review_required: true`.
-- Upstreams: Snapshot (active, $0, default), Watchman (free self-host), OpenSanctions (paid) — tried in that order; first active one wins. Adding further upstreams requires a CHANGELOG entry and a row in the [SOURCE_POLICY.md](../../SOURCE_POLICY.md) per-profile live retrieval whitelist.
+- Upstreams: Snapshot ($0), Watchman (free self-host), OpenSanctions (paid) — tried in that order; first configured one wins. Adding further upstreams requires a CHANGELOG entry and a row in the [SOURCE_POLICY.md](../../SOURCE_POLICY.md) per-profile live retrieval whitelist.
 
 ## Calling the worker
 

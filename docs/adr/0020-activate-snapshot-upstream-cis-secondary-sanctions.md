@@ -1,7 +1,13 @@
 # ADR 0020 — Activate the Snapshot upstream for `cis_secondary_sanctions` (live server-side name screening)
 
-Status: accepted
+Status: superseded operationally — activation rolled back because the configured index URL was never published
 Date: 2026-06-26
+Updated: 2026-08-31
+
+> Operational update: the `SNAPSHOT_INDEX_URL` added by this decision was removed after the target returned
+> 404 and no published index could be found. The Snapshot adapter remains an available first-choice upstream,
+> but production currently has no configured live-retrieval upstream and honestly reports evidence-only mode.
+> A future activation requires publishing and verifying the index before setting the URL.
 
 ## Context
 
@@ -23,7 +29,7 @@ Activation does **not** widen what the profile claims to do. A snapshot match is
 
 ## Consequences
 
-- The live `cis-secondary-sanctions-a2a` endpoint now returns server-side name matches in `auto_fetched_sources` / `supplied_sources` with `live_retrieval_status: success`.
+- While a verified Snapshot URL is configured, the live endpoint returns server-side name matches in `auto_fetched_sources` / `supplied_sources` with `live_retrieval_status: success`. With no configured upstream, it returns `disabled` and uses caller-supplied evidence only.
 - Deactivation is one step: set `SNAPSHOT_DISABLED=1` (or remove the var) and redeploy → graceful degrade to evidence-only.
 - The snapshot's freshness is bounded by whatever rebuilds `sanctions-name-index-compact.json`; staleness is the maintenance risk to watch.
 - Cold-isolate parse of the 2.76 MB index is the one CPU risk; on failure the adapter degrades rather than failing the user request.

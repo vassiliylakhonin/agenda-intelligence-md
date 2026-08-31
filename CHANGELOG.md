@@ -4,6 +4,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(cis-secondary-sanctions): report an unconfigured retrieval upstream as disabled, not degraded.**
+  The dispatcher no longer invokes the keyless OpenSanctions adapter when Snapshot, Watchman, and
+  OpenSanctions are all unconfigured. Evidence-only requests now emit `live_retrieval_status: "disabled"`
+  with the bounded operator reason `not_configured`, make no outbound request, and attach no upstream
+  attribution. A configured upstream that fails still emits `degraded` with its bounded failure reason.
+
 - **feat(observability): separate human, machine, probe, and self-test traffic in Worker logs and `/stats`.**
   Usage and funnel events now carry bounded `traffic_class` and `request_kind` fields, so discovery traffic,
   A2A actions, and MCP actions can be counted without re-parsing user agents and paths. Daily stats expose the
