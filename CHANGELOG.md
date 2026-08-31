@@ -4,6 +4,13 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(observability): separate human, machine, probe, and self-test traffic in Worker logs and `/stats`.**
+  Usage and funnel events now carry bounded `traffic_class` and `request_kind` fields, so discovery traffic,
+  A2A actions, and MCP actions can be counted without re-parsing user agents and paths. Daily stats expose the
+  same split and direct human/machine counters. Live-retrieval failures now carry an aggregate-safe
+  `reason_code` (for example `network_error` or `upstream_http_503`) while raw exception and configuration
+  detail remains out of logs and user-facing limitations.
+
 - **fix(a2a): answer an unstructured gate request with `TASK_STATE_INPUT_REQUIRED`, not `TASK_STATE_FAILED`.**
   Measured 2026-08-29 over the preceding 72h of Workers Logs: the Agenstry listing probe calls all ten hosted
   agents with the same four-character message; the three free-text profiles answered `TASK_STATE_COMPLETED`

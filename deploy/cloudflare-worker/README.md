@@ -612,7 +612,7 @@ The counters at `/stats` cannot answer this: they keep no input and no verdict, 
 the detailed funnel events live in Workers Logs, which retains 72 hours on the free
 plan. One KV write per call, none on discovery GETs.
 
-The `/stats` response includes approximate daily totals, likely probes, non-probe calls, prompt character counts, client classes, per-host counts (`hosts` — every published worker shares one KV namespace, so this is the only way to attribute calls to a specific worker), countries, JSON-RPC methods, and selected Agenda modules. The counters are intentionally coarse and are not a billing or audit ledger.
+The `/stats` response includes approximate daily totals, likely probes, non-probe calls, prompt character counts, client classes, per-host counts (`hosts` — every published worker shares one KV namespace, so this is the only way to attribute calls to a specific worker), countries, JSON-RPC methods, and selected Agenda modules. The counters are intentionally coarse and are not a billing or audit ledger. `traffic_classes` separates `human_browser`, `machine_client`, `machine_probe`, and `self_test`; `request_kinds` separates A2A and MCP actions. The corresponding `human_requests`, `machine_requests`, `self_test_requests`, and `unclassified_requests` counters make the split directly readable while older pre-classification rows remain explicit.
 
 Three of those breakdowns exist to identify a caller the coarse client class cannot name — every unrecognised agent otherwise lands in `unknown`:
 
@@ -622,7 +622,7 @@ Three of those breakdowns exist to identify a caller the coarse client class can
 
 No IP address is stored in any of them.
 
-`outcomes` and `counters.empty_handed` report what the caller actually received. `empty_handed` counts calls that ended in `insufficient_information` or `invalid_request` — the gate could not act on what was supplied. At this traffic level that ratio is the useful number: a caller who reaches the endpoint and leaves with nothing is a different failure from one who never arrives.
+`outcomes` and `counters.empty_handed` report what the caller actually received. `empty_handed` counts calls that ended in `insufficient_information`, `input_required`, or `invalid_request` — the gate could not act on what was supplied. At this traffic level that ratio is the useful number: a caller who reaches the endpoint and leaves with nothing is a different failure from one who never arrives.
 
 An A2A request is counted as a likely probe when the client is `agenstry` or the prompt payload is shorter than `PROBE_PROMPT_CHAR_THRESHOLD` (24 characters) — this filters untagged uptime pings from monitor colos that do not announce themselves in the user-agent. Inspect `non_probe` for genuine usage.
 
@@ -633,6 +633,7 @@ The `/stats` response also includes a `cost` block. No LLM is called on the Work
 - `counters.billable_calls` — number of billable upstream calls that day.
 - `cost.estimated_cost_eur` — `billable_calls × unit price`, rounded to cents. An estimate, not an invoice.
 - `cost.budget` — daily spend vs an optional cap. Set the **plaintext** var `USAGE_BUDGET_EUR_PER_DAY` (e.g. `wrangler deploy --var USAGE_BUDGET_EUR_PER_DAY:5` or in `wrangler.toml [vars]`) to get `pct_of_budget` and an `alert_level` of `none`/`50`/`75`/`90`. The Worker never blocks on budget — it only reports. When unset, `budget.configured` is `false`.
+- `live_retrieval_statuses` and `live_retrieval_reason_codes` — aggregate-safe upstream health. Reason codes are bounded (`network_error`, `upstream_http_503`, and similar); raw exception and configuration text is not stored.
 
 ## Test locally
 
