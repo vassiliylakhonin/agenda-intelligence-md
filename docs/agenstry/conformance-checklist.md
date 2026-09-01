@@ -43,7 +43,7 @@ Per [Damiën / Agenstry, 2026-05-27], the ownership-proof methods in use:
 
 - `not_advice: true` — no legal / compliance / sanctions / financial / investment advice.
 - `factual_verification: false` — schemas enforce structure, not truth.
-- `live_retrieval: false` by default; active only for `cis_secondary_sanctions` through the $0 Snapshot upstream, with Watchman / OpenSanctions as optional alternates — see [ADR 0014](../adr/0014-per-profile-live-retrieval.md), [ADR 0020](../adr/0020-activate-snapshot-upstream-cis-secondary-sanctions.md), and [SOURCE_POLICY.md](../../SOURCE_POLICY.md).
+- `live_retrieval: false` by default and in the current hosted fleet. The `cis_secondary_sanctions` profile declares optional Snapshot / Watchman / OpenSanctions capability and becomes active only when one is configured — see [ADR 0014](../adr/0014-per-profile-live-retrieval.md), the operational update to [ADR 0020](../adr/0020-activate-snapshot-upstream-cis-secondary-sanctions.md), and [SOURCE_POLICY.md](../../SOURCE_POLICY.md).
 - `human_review_required: true` on every vertical-worker response.
 
 ## Not done (deliberate)

@@ -249,7 +249,7 @@ const cisSecondarySanctionsProfile = Object.freeze({
   documentation_url: CIS_SECONDARY_SANCTIONS_DOCS_URL,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
-    "A2A/JSON-RPC discovery, CIS secondary-sanctions exposure triage, active server-side name matching against a dated public-list snapshot rebuilt on an operator cadence, not a live list feed (Snapshot upstream; Watchman / OpenSanctions alternates), and routing response only",
+    "A2A/JSON-RPC discovery, CIS secondary-sanctions exposure triage, optional server-side name matching when a Snapshot, Watchman, or OpenSanctions upstream is configured, and routing response only",
   supported_contracts: frozenArray(["cis_secondary_sanctions_exposure_contract"]),
   buyer_use_cases: frozenArray([
     "exporter or importer preparing a returned trade file for resubmission",

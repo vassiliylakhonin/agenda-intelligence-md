@@ -6182,15 +6182,19 @@ function applyDualUseTechnologyExportProfile(card, request) {
 async function matchAgainstActiveUpstream(env, counterparty) {
   const active = activeUpstreamOption("cis_secondary_sanctions", env);
   if (!active) {
-    // No upstream configured. Return a degraded shape with OpenSanctions
-    // attribution as the canonical fallback (matches the prior behavior so
-    // existing callers / tests see a consistent shape).
+    // Configuration absence is an expected evidence-only mode, not an upstream
+    // failure. Do not call a keyless adapter here: besides wasting work, that
+    // made routine self-tests look degraded and attached attribution for data
+    // that was never fetched.
     return {
       upstream_name: null,
-      result: await matchCounterpartyAgainstOpenSanctions(env, {
-        name: counterparty.name,
-        jurisdiction: counterparty.jurisdiction
-      })
+      result: {
+        status: "disabled",
+        matches: [],
+        attribution: null,
+        queried_at: new Date().toISOString(),
+        degrade_reason: "no live-retrieval upstream is configured"
+      }
     };
   }
   if (active.name === "Snapshot") {
@@ -8078,8 +8082,9 @@ function round2(value) {
 
 function liveRetrievalReasonCode(status, reason) {
   if (status === "success") return null;
-  if (status === "disabled") return "disabled";
   const value = typeof reason === "string" ? reason.trim() : "";
+  if (/no live-retrieval upstream is configured/i.test(value)) return "not_configured";
+  if (status === "disabled") return "disabled";
   if (!value) return status ? "unknown" : null;
   if (/^network error:/i.test(value)) return "network_error";
   const httpStatus = value.match(/^upstream HTTP (\d{3})$/i);
