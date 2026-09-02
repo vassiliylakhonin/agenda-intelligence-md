@@ -6,14 +6,23 @@ used to host an A2A gate.
 ## Why it exists
 
 The alias was retired in `fa4ab2d` (2026-05-31) and the name was left
-unclaimed. An unclaimed `workers.dev` host answers `404`, which crawlers read
-as "try again later", so directory listings that still carry the old URL kept
-fetching it — about 2,900 requests a week as of 2026-09-02, roughly 8% of all
-Worker invocations on the account, three months after retirement.
-
-`410` is terminal. Registries that honour it drop the entry instead of
+unclaimed. An unclaimed `workers.dev` host answers `404`, and a crawler reads
+`404` as "try again later" — the wrong answer for a name that is never coming
+back. `410` is terminal: registries that honour it drop the entry instead of
 retrying, and the response body and `Link` header name the successor for the
 ones that read it.
+
+This is deliberate hygiene, not a fix for measured traffic. When the tombstone
+went up on 2026-09-02 the retired name was drawing no external requests at all,
+and it had drawn none for at least the two hours that followed. Do not expect
+it to move any number on the analytics dashboard. It exists so that whatever
+still holds the name in a listing gets a true answer.
+
+An earlier version of this README, and of the commit that added the Worker,
+justified it with about 2,900 requests a week arriving at the dead host. That
+number was wrong — it came from a `__unknown__` bucket read as a rate when it
+was the tail of a process that had already stopped on 2026-08-27. See
+`A2A-MAINTENANCE.md`, "Reading `__unknown__` in Workers analytics".
 
 ## What it must never become
 
@@ -38,3 +47,12 @@ curl -sS -D- -o/dev/null https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.
 
 Expect `HTTP/2 410`, a `sunset` header, and a `link` header pointing at
 `middle-corridor-deal-risk-gate-a2a`.
+
+## Removing it
+
+Nothing depends on this Worker. Deleting it returns the name to Cloudflare's
+`404`, which is the state it was in before 2026-09-02:
+
+```bash
+npx wrangler delete --name kazakhstan-corridor-risk-a2a
+```

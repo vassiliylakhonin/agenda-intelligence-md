@@ -53,20 +53,34 @@ removed in `fa4ab2d` (2026-05-31) and must not be reintroduced into discovery
 files, `server.json`, `entitymap.json` or `scripts/verify-public-agents.js`.
 Its profile is served by `middle-corridor-deal-risk-gate-a2a`.
 
-Waiting for the next crawl did not clear the stale listings. Three months on,
-account analytics for 26 Aug - 2 Sep 2026 showed ~2,900 requests a week still
-arriving at the retired host — 8% of all Worker invocations on the account,
-billed to the `__unknown__` script bucket because no script claimed the name.
-An unclaimed `workers.dev` host answers 404, and crawlers retry a 404.
-
 Since 2026-09-02 the name serves a tombstone Worker from
 `deploy/tombstone-kazakhstan-corridor-risk`: `410 Gone` on every path, with
-`Sunset`, `Deprecation` and a `Link` header naming the successor. 410 is
-terminal, so a registry that honours it delists instead of retrying. The
-tombstone carries no profile, no bindings and no discovery documents, and is
-deliberately absent from the public matrix — it is not a deployment, it is the
-record of one that ended. Watch `__unknown__` in Workers analytics to see the
-listings drain; the traffic reappears under the tombstone's own script name.
+`Sunset`, `Deprecation` and a `Link` header naming the successor. This is
+hygiene, not the fix to a live problem. A retired name should say it is gone
+rather than say nothing, and 410 is terminal where the 404 from an unclaimed
+`workers.dev` host reads as "try again later". Measured over its first hours
+the name drew no external traffic at all, so expect no change in request
+volume from this. The tombstone carries no profile, no bindings and no
+discovery documents, and stays out of the public matrix: it is not a
+deployment, it is the record of one that ended.
+
+### Reading `__unknown__` in Workers analytics
+
+`workersInvocationsAdaptive` files a request under `__unknown__` when no
+current script claims the name it arrived on, with no script tag and no
+environment. The bucket ran at roughly 1,500 requests a day from at least
+2026-08-03 — the far edge of analytics retention — and stopped at 2026-08-27
+13:00 UTC. It has been zero since. What produced it is no longer recoverable:
+Workers Logs keep 72 hours on the free plan, so the request lines for that
+period are gone, and the analytics dataset carries neither host nor path.
+
+Two cautions for anyone reading this bucket later, both learned the hard way
+on 2026-09-02. A seven-day window ending after the traffic stopped still shows
+a large total, and dividing that by seven turns a finished process into a
+convincing weekly rate — group by hour and look at the shape before believing
+any rate drawn from a window. And `__unknown__` is not evidence about any
+particular retired hostname. It says only that some name went unclaimed, never
+which one.
 
 ## Verification
 
