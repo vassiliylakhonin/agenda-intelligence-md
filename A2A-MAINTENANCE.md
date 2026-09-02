@@ -35,6 +35,8 @@ Normative references:
 | `kazakhstan-market-entry-readiness` | `https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev` | `market_entry_readiness` |
 | `agent-output-verification` | `https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev` | `agent_output_verification` |
 | `corridor-sanctions-assistant` | `https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev` | `corridor_sanctions_assistant` |
+| `critical-minerals-due-diligence` | `https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev` | `critical_minerals_due_diligence` |
+| `dual-use-technology-export` | `https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev` | `dual_use_technology_export` |
 
 Every deployment exposes:
 
@@ -47,9 +49,24 @@ Every deployment exposes:
 ## Deprecated deployment
 
 `https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev` was
-removed. It currently returns Cloudflare 404/1042 and must not be reintroduced
-into discovery files or deployment scripts. Historical directory listings can
-remain stale until their next crawl.
+removed in `fa4ab2d` (2026-05-31) and must not be reintroduced into discovery
+files, `server.json`, `entitymap.json` or `scripts/verify-public-agents.js`.
+Its profile is served by `middle-corridor-deal-risk-gate-a2a`.
+
+Waiting for the next crawl did not clear the stale listings. Three months on,
+account analytics for 26 Aug - 2 Sep 2026 showed ~2,900 requests a week still
+arriving at the retired host — 8% of all Worker invocations on the account,
+billed to the `__unknown__` script bucket because no script claimed the name.
+An unclaimed `workers.dev` host answers 404, and crawlers retry a 404.
+
+Since 2026-09-02 the name serves a tombstone Worker from
+`deploy/tombstone-kazakhstan-corridor-risk`: `410 Gone` on every path, with
+`Sunset`, `Deprecation` and a `Link` header naming the successor. 410 is
+terminal, so a registry that honours it delists instead of retrying. The
+tombstone carries no profile, no bindings and no discovery documents, and is
+deliberately absent from the public matrix — it is not a deployment, it is the
+record of one that ended. Watch `__unknown__` in Workers analytics to see the
+listings drain; the traffic reappears under the tombstone's own script name.
 
 ## Verification
 
@@ -60,7 +77,7 @@ npm run test:a2a
 node scripts/verify-agent-card.js
 ```
 
-After deployment, run the public matrix. It checks all eight Workers plus the
+After deployment, run the public matrix. It checks all ten Workers plus the
 portfolio discovery alias:
 
 ```bash
@@ -94,6 +111,8 @@ npx wrangler deploy --env agentic-interaction-trust
 npx wrangler deploy --env gulf-maritime-exposure
 npx wrangler deploy --env kazakhstan-market-entry-readiness
 npx wrangler deploy --env corridor-sanctions-assistant
+npx wrangler deploy --env critical-minerals-due-diligence
+npx wrangler deploy --env dual-use-technology-export
 npm run verify:public-agents
 ```
 
@@ -110,11 +129,16 @@ Do not rotate an existing signing key merely because card content or signature
 shape changed; the Worker signs the current card at request time, so an existing
 key keeps working.
 
-As of 2026-08-09, all eight Worker deployments have signing secrets configured
-and their signatures verify against their public JWKS. The
+As of 2026-08-09, the first eight Worker deployments had signing secrets
+configured and their signatures verified against their public JWKS. The
 Kazakhstan Market Entry, Agent Output Verification, and Corridor & Sanctions
 Assistant environments share one ES256 key created for that deployment group;
 the five earlier deployments retain their existing keys.
+
+Critical Minerals Due Diligence and Dual-Use Technology Export were added on
+2026-08-27 and each carries its own ES256 key (`critical-minerals-2026-08-27-*`
+and `dual-use-export-2026-08-27-*`), so they are outside that shared-key group
+and rotate independently. All ten deployments now publish a signed card.
 
 The new private key was passed directly from a permission-restricted temporary
 file into Cloudflare secrets and was not retained locally. If any of those

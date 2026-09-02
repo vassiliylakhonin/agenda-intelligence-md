@@ -167,6 +167,16 @@ id = "d2228183999246ccbec8aa2d5f130bfc"
 # computation, and traces name the fetch. Logs stay unsampled fleet-wide: at
 # ~5,900 requests a week the free 200k/day budget is nowhere near binding, and
 # thinning them would only cost the funnel its census.
+#
+# Re-measured 2026-09-02 over 26 Aug - 2 Sep, after fleet traffic grew 5.6x to
+# 33,121 named-script requests a week: the reason to trace holds, the tail that
+# set the rate does not. Still the CPU outlier (16.7% of fleet CPU on 9.0% of
+# requests) and still the only agent reporting subrequests (23), but cpuTimeP99
+# has collapsed from 423ms to 11.8ms — 36x — so the sampled 1-in-10 no longer
+# catches a tail worth naming. Before touching head_sampling_rate, re-measure:
+# a rate chosen for a 423ms tail is not a rate chosen for this one. The
+# unsampled-logs argument survives the growth with room to spare — 33k a week
+# is ~4.7k a day against the same 200k/day budget.
 [env.cis-secondary-sanctions.observability]
 enabled = true
 

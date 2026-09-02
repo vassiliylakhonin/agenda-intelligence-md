@@ -1,0 +1,15 @@
+# Tombstone for a retired A2A deployment. This Worker serves 410 Gone and
+# nothing else — it is not a gate, has no profile, and must never gain one.
+#
+# The name was retired in fa4ab2d (2026-05-31). Cloudflare answers an unclaimed
+# workers.dev host with 404, which crawlers treat as transient and keep
+# retrying: stale directory listings were still fetching this origin about
+# 2,900 times a week three months later. 410 is the terminal signal, so the
+# listings that hold the name can drop it.
+name = "kazakhstan-corridor-risk-a2a"
+main = "src/index.js"
+compatibility_date = "2026-05-22"
+workers_dev = true
+
+[observability]
+enabled = true
