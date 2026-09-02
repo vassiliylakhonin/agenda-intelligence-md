@@ -4978,6 +4978,43 @@ test("the free-text profile names its one argument when it refuses over mcp", as
   assert.ok(!JSON.stringify(payload).includes("params.message.parts"));
 });
 
+// A description that promises "evidence gaps" without saying evidence must be
+// supplied reads, to an agent holding only a question, as a tool it can call.
+// It cannot: the call is refused. The precondition belongs next to the promise.
+test("a tool that grades supplied evidence says so in its description", async () => {
+  const { mcpToolsForProfile } = await import("../src/mcp.js");
+  const precondition = "brings none is refused";
+
+  for (const profile of ["kazakhstan", "cis_secondary_sanctions", "gulf_maritime_exposure"]) {
+    const [tool] = mcpToolsForProfile(profile);
+    assert.ok(
+      tool.inputSchema.required.length > 1,
+      `${tool.name} is expected to take a structured request`
+    );
+    assert.ok(
+      tool.description.includes(precondition),
+      `${tool.name} must say the caller has to bring evidence`
+    );
+    // A refused caller needs somewhere to go, not just a no.
+    assert.ok(tool.description.includes("corridor_sanctions_assistant"));
+  }
+
+  // The free-text tools take a question and are the place an empty-handed
+  // caller is sent, so the clause would be false on them.
+  for (const profile of ["agenda", "corridor_sanctions_assistant"]) {
+    const [tool] = mcpToolsForProfile(profile);
+    assert.deepEqual(tool.inputSchema.required, ["text"]);
+    assert.ok(!tool.description.includes(precondition));
+  }
+
+  // Neither of these grades evidence: one takes no arguments, the other a receipt.
+  const decision = mcpToolsForProfile("agent_output_verification");
+  for (const name of ["decision_policies_list", "decision_verify"]) {
+    const tool = decision.find((entry) => entry.name === name);
+    assert.ok(!tool.description.includes(precondition), `${name} does not grade evidence`);
+  }
+});
+
 test("mcp decision gate lists its bounded policy and signs an exact-request receipt", async () => {
   const privateJwk = await generateTestKey();
   const env = {

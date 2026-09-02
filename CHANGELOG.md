@@ -4,6 +4,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **docs(mcp): tool descriptions now state the precondition, not just the promise.**
+  Every gate summary said what comes back — "returns ... missing evidence", "... evidence gaps" — and none
+  said the caller has to bring its own evidence first, which each of them requires. An agent reading that
+  while holding only a question concluded it could ask what it was missing, called, and was refused. The ten
+  tools that grade caller-supplied evidence now say so and name `corridor_sanctions_assistant` as the place
+  to start with a question and nothing else; the two free-text tools and the two that grade no evidence
+  (`decision_policies_list`, `decision_verify`) are unchanged. Descriptions only — no schema, contract, or
+  behaviour change.
+
 - **fix(mcp): an empty `tools/call` is an error, and every refusal names its arguments.**
   A2A distinguishes "done", "broken" and "I need input you have not sent"; MCP has only `isError`, and
   the gates that answered `TASK_STATE_INPUT_REQUIRED` crossed into MCP as `isError: false` — telling a
