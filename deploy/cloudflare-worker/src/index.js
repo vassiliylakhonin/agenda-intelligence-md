@@ -3157,17 +3157,24 @@ const GATE_REQUEST_GUIDES = Object.freeze({
 // The pre-action check shares the agent_output_verification profile but not its
 // request shape: it wraps a claim audit in the action being proposed. Handing a
 // caller the verification example here would hand them a request this gate rejects.
-const PRE_ACTION_CHECK_GUIDE = {
+export const PRE_ACTION_CHECK_GUIDE = {
   title: "Agenda Decision Gate — pre-action check",
   required: [
     "run_id — caller-generated correlation id, resubmitted after adding evidence or approval",
     "actor — object with id, type, operator",
     "requested_action — one sentence naming the action about to be taken",
     "target — object with id and type",
-    "risk_tier — low, medium, high",
-    "claims — non-empty array of { claim_id, claim, support_level, evidence_ids }",
-    "evidence — array of { evidence_id, title, date }"
+    "risk_tier — low, medium, high, critical",
+    "claims — non-empty array of { claim_id, claim, support_level, evidence_ids, supporting_quotes }",
+    "supporting_quotes — { evidence_id, quote } per claim; a claim without one is not grounded, and an ungrounded claim cannot reach continue",
+    "evidence — array of { evidence_id, source_type }, optionally name, url, freshness"
   ],
+  // The example has to be one a caller can send and get the positive decision
+  // from. Until 2026-09-02 it was neither: its evidence carried title and date,
+  // which the published schema forbids and requires source_type instead, and it
+  // had no supporting_quotes, so no claim was grounded, so the decision was
+  // always request_evidence. The one example the Gate published demonstrated
+  // only its negative path.
   example: {
     run_id: "run-2026-08-28-001",
     actor: { id: "procurement-agent", type: "ai_agent", operator: "Example buyer" },
@@ -3179,10 +3186,13 @@ const PRE_ACTION_CHECK_GUIDE = {
         claim_id: "c1",
         claim: "The counterparty is not on the OFAC SDN list as of 2026-08-01.",
         support_level: "direct",
-        evidence_ids: ["e1"]
+        evidence_ids: ["e1"],
+        supporting_quotes: [{ evidence_id: "e1", quote: "No matching entry for supplier-456 in the SDN list." }]
       }
     ],
-    evidence: [{ evidence_id: "e1", title: "OFAC SDN extract", date: "2026-08-01" }]
+    evidence: [
+      { evidence_id: "e1", name: "OFAC SDN extract", source_type: "primary", freshness: "2026-08-01" }
+    ]
   }
 };
 

@@ -16,6 +16,7 @@
     "test": "npm run check:mcp-contracts && node --test",
     "test:a2a": "node --test test/worker.test.js",
     "verify:agent-card": "node scripts/verify-agent-card.js",
+    "verify:decision-gate": "node scripts/verify-decision-gate.js",
     "verify:agent-discovery": "node scripts/check-agent-discovery-fetchability.js",
     "verify:public-agents": "node scripts/verify-public-agents.js",
     "verify:refusals": "node scripts/verify-refusals.js"

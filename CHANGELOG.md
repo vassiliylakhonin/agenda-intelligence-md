@@ -4,6 +4,40 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **test(worker): `npm run verify:decision-gate` plays the enforcing caller against the live Gate.**
+  Every existing test of the signed Gate signs and verifies with the same JavaScript, so none of them can
+  see the only failure this binding has — the two parties disagreeing. This one computes the hashes with
+  `agenda_intelligence.canonical`, which shares no code with the Worker, and completes
+  `decision_check → decision_verify` against production. The binding itself held: independent hashes
+  agreed, the receipt verified against the published JWKS rather than the key that signed it,
+  `gate_passed` came back true, and all three refusals — changed action, non-`continue` receipt,
+  malformed token — answered correctly. 17 checks. The four failures were all in front of it, in what a
+  caller reads before it sends anything.
+
+- **fix(worker): the Gate's own example could not reach the decision the Gate exists to produce.**
+  A claim counts as grounded only if it carries `supporting_quotes`, and the decision is `continue` only
+  if every claim is grounded. The advertised `example_request` had none, so it returned
+  `request_evidence` every time: the one example the Gate published demonstrated only its negative path,
+  and a caller following it never saw `gate_passed: true`. Its evidence was also invalid against the
+  schema published beside it — `title` and `date` where `$defs.evidence_item` sets
+  `additionalProperties: false` and requires `source_type` — and the guide named three risk tiers where
+  the gate accepts four. The 2026-08-28 comment above it already warned that handing a caller the wrong
+  example hands them a request this gate rejects; the evidence half stayed wrong anyway. Four regression
+  tests, verified to fail against the previous code.
+
+- **fix(worker): `input_schema` pointed at a GitHub HTML page.**
+  `decision_policies_list` published a `/blob/` URL as the caller's input schema. Fetching it returns
+  `text/html`, so a caller that does what the field says cannot parse what comes back. Now the raw URL.
+
+- **feat(worker): the published binding states the Unicode normal form it does not apply.**
+  `canonicalization: "RFC8785-JCS"` is not enough to reimplement: JCS canonicalizes structure, not text,
+  so two conformant implementations still disagree when the same name arrives decomposed. The binding now
+  carries `unicode_normalization: "none"`, which is what the Gate actually does, and leaves the caller to
+  settle its own text before hashing rather than discovering the rule through `binding_mismatch`.
+
+- **feat(cli): `decision-hashes -` reads stdin.**
+  An enforcing caller holds the request in memory and had to write it to disk to hash it.
+
 - **feat(canonical): a Python caller can now compute the Gate hashes it is required to compute.**
   [ADR 0025](docs/adr/0025-signed-readiness-receipts.md) tells an enforcing caller to derive
   `expected_request_hash` and `expected_action_hash` from its own copy of the request rather than

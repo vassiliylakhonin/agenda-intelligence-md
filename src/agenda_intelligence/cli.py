@@ -829,11 +829,17 @@ def cmd_decision_hashes(args):
 
     from agenda_intelligence.canonical import canonicalize, decision_request_hashes
 
-    path = Path(args.path)
-    if not path.is_file():
-        raise SystemExit(f"Not found: {path}")
+    # "-" reads stdin: an enforcing caller usually holds the request in memory
+    # and has no reason to put it on disk to hash it.
+    if args.path == "-":
+        raw = sys.stdin.read()
+    else:
+        path = Path(args.path)
+        if not path.is_file():
+            raise SystemExit(f"Not found: {path}")
+        raw = path.read_text(encoding="utf-8")
     try:
-        request = json.loads(path.read_text(encoding="utf-8"))
+        request = json.loads(raw)
     except json.JSONDecodeError as e:
         raise SystemExit(f"Invalid JSON: {e}")
     if not isinstance(request, dict):
@@ -1498,7 +1504,7 @@ def main():
         "decision-hashes",
         help="Compute expected_request_hash / expected_action_hash for decision_verify (RFC 8785)",
     )
-    p.add_argument("path", help="Pre-action check request JSON file")
+    p.add_argument("path", help="Pre-action check request JSON file, or - for stdin")
     p.add_argument("--format", choices=["text", "json"], default="text")
     p.add_argument(
         "--normalize",

@@ -80,8 +80,10 @@ export function decisionPolicyCatalog() {
         policy_version: DECISION_POLICY_VERSION,
         decision_tool: "decision_check",
         verify_tool: "decision_verify",
+        // raw, not the blob view: a caller told this is its input schema has to
+        // be able to parse what comes back, and the blob URL serves an HTML page.
         input_schema:
-          "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/pre-action-check-request.schema.json",
+          "https://raw.githubusercontent.com/vassiliylakhonin/agenda-intelligence-md/main/schemas/v1/pre-action-check-request.schema.json",
         decisions: [...DECISIONS],
         positive_decision: "continue",
         receipt_ttl_seconds: DECISION_RECEIPT_TTL_SECONDS
@@ -89,6 +91,13 @@ export function decisionPolicyCatalog() {
     ],
     receipt_format: DECISION_RECEIPT_FORMAT,
     binding: {
+      // JCS canonicalizes structure, not text, so two implementations that both
+      // follow RFC 8785 still disagree when the same name arrives decomposed.
+      // The Gate hashes what it received and normalizes nothing; a caller whose
+      // text can reach it in more than one normal form has to settle that
+      // itself, before hashing, or it gets binding_mismatch on a request both
+      // sides would call identical.
+      unicode_normalization: "none",
       request_hash: {
         algorithm: "SHA-256",
         canonicalization: "RFC8785-JCS",
