@@ -251,6 +251,21 @@ class TestDecisionHashesCommand:
             dict(TestDecisionHashes.REQUEST, actor=unicodedata.normalize("NFC", decomposed))
         )
 
+    def test_it_reads_stdin_so_a_caller_need_not_touch_disk(self, tmp_path: Path) -> None:
+        """An enforcing caller holds the request in memory, not in a file."""
+
+        payload = json.dumps(TestDecisionHashes.REQUEST, ensure_ascii=False)
+        result = subprocess.run(
+            self.CLI + ["-", "--format", "json"],
+            input=payload,
+            capture_output=True,
+            text=True,
+            cwd=ROOT,
+            env=self.ENV,
+        )
+        assert result.returncode == 0, result.stderr
+        assert json.loads(result.stdout) == decision_request_hashes(TestDecisionHashes.REQUEST)
+
     def test_a_malformed_request_exits_non_zero(self, tmp_path: Path) -> None:
         broken = tmp_path / "broken.json"
         broken.write_text("{not json", encoding="utf-8")

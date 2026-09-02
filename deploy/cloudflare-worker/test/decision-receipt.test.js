@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -10,6 +11,7 @@ import {
   verifyDecisionReceipt
 } from "../src/decision-receipt.js";
 import { publicJwkFromPrivate } from "../src/jws.js";
+import { PRE_ACTION_CHECK_GUIDE } from "../src/index.js";
 
 async function generateTestKey() {
   const { privateKey } = await webcrypto.subtle.generateKey(
@@ -179,4 +181,67 @@ test("receipt verification fails closed for tampering, wrong binding, expiry, an
   assert.equal(notContinue.signature_valid, true);
   assert.equal(notContinue.gate_passed, false);
   assert.equal(notContinue.reason_code, "decision_not_continue");
+});
+
+// The guide a caller reads before it sends anything. Until 2026-09-02 all three
+// of these were wrong at once and nothing caught it: the published example was
+// invalid against the published schema, it could not reach the only decision
+// that yields gate_passed, and the schema it pointed at served an HTML page.
+// verify:decision-gate found them against production; these keep them from
+// coming back before a deploy.
+
+test("the published input schema is machine-readable, not a blob page", () => {
+  const { input_schema: url } = decisionPolicyCatalog().policies[0];
+  assert.ok(!url.includes("/blob/"), `input_schema serves HTML from a blob URL: ${url}`);
+  assert.match(url, /^https:\/\/raw\.githubusercontent\.com\//u);
+});
+
+test("the advertised pre-action example validates against the published schema", () => {
+  const schema = JSON.parse(
+    readFileSync(new URL("../../../schemas/v1/pre-action-check-request.schema.json", import.meta.url), "utf8")
+  );
+  const example = PRE_ACTION_CHECK_GUIDE.example;
+
+  for (const field of schema.required) {
+    assert.ok(field in example, `example is missing required field ${field}`);
+  }
+  const evidenceSchema = schema.$defs.evidence_item;
+  for (const item of example.evidence) {
+    for (const field of evidenceSchema.required) {
+      assert.ok(field in item, `example evidence is missing required field ${field}`);
+    }
+    for (const key of Object.keys(item)) {
+      assert.ok(key in evidenceSchema.properties, `example evidence carries ${key}, which the schema forbids`);
+    }
+  }
+  assert.ok(schema.properties.risk_tier.enum.includes(example.risk_tier));
+});
+
+test("the advertised example can reach continue, not only request_evidence", () => {
+  // A claim is grounded only if it carries supporting_quotes, and the decision
+  // is continue only if every claim is grounded. An example without them
+  // publishes the negative path as the whole feature.
+  for (const claim of PRE_ACTION_CHECK_GUIDE.example.claims) {
+    assert.ok(
+      Array.isArray(claim.supporting_quotes) && claim.supporting_quotes.length > 0,
+      `claim ${claim.claim_id} has no supporting_quotes, so the example can never reach continue`
+    );
+    for (const quote of claim.supporting_quotes) {
+      assert.ok(claim.evidence_ids.includes(quote.evidence_id), "a supporting quote cites undeclared evidence");
+      assert.ok(
+        PRE_ACTION_CHECK_GUIDE.example.evidence.some((e) => e.evidence_id === quote.evidence_id),
+        "a supporting quote cites evidence the example does not supply"
+      );
+    }
+  }
+});
+
+test("the guide names every risk tier the gate accepts", () => {
+  const schema = JSON.parse(
+    readFileSync(new URL("../../../schemas/v1/pre-action-check-request.schema.json", import.meta.url), "utf8")
+  );
+  const line = PRE_ACTION_CHECK_GUIDE.required.find((entry) => entry.startsWith("risk_tier"));
+  for (const tier of schema.properties.risk_tier.enum) {
+    assert.ok(line.includes(tier), `the guide omits risk_tier ${tier}, which the gate accepts`);
+  }
 });
