@@ -46,12 +46,30 @@ const NOT_ADVICE =
   "Evidence triage only: no factual-truth verification, no legal, compliance, sanctions, or financial advice. " +
   "Human review is required before any commercial action.";
 
+// A summary says what comes back. It does not say what the caller has to bring,
+// and these gates will not answer without it — each one requires the caller's
+// own evidence up front. An agent reading "returns ... evidence gaps" while
+// holding only a question reasonably concludes it can ask what it is missing,
+// calls, and is refused. Measured over the 72h to 2026-09-02: 18,048
+// tools/list calls across the ten gates, one genuine tools/call, and that one
+// went to a tool whose only argument is text.
+//
+// So the precondition is stated where it is read, next to the promise it
+// qualifies, and the caller who has nothing yet is sent somewhere that can take
+// them. Marked per tool rather than inferred from argKey: decision_policies_list
+// takes no arguments and decision_verify takes a receipt, and neither grades
+// evidence.
+const BRING_EVIDENCE =
+  "Grades the evidence you supply and names what is still missing; it does not retrieve sources, so a call that " +
+  "brings none is refused. With only a question and no evidence yet, start at corridor_sanctions_assistant.";
+
 // One deployment serves one profile and a fixed, small tool set. The names match
 // the stdio server's tool names for the same contract, so an agent that learned
 // the tool locally can call the hosted one without relearning it.
 const PROFILE_TOOLS = {
   kazakhstan: {
     name: "middle_corridor_deal_risk",
+    bringsEvidence: true,
     argKey: "request",
     summary:
       "Screen a Kazakhstan / Middle Corridor (Trans-Caspian) trade deal for sanctions-adjacent and corridor risk " +
@@ -60,6 +78,7 @@ const PROFILE_TOOLS = {
   },
   cis_secondary_sanctions: {
     name: "cis_secondary_sanctions_exposure",
+    bringsEvidence: true,
     argKey: "request",
     summary:
       "Triage secondary-sanctions exposure for a CIS-domiciled counterparty against OFAC EO 14114, the EU " +
@@ -68,6 +87,7 @@ const PROFILE_TOOLS = {
   },
   agentic_interaction_trust: {
     name: "agentic_interaction_trust",
+    bringsEvidence: true,
     argKey: "request",
     summary:
       "Triage the trust evidence for an agent-mediated interaction (identity, operator or principal " +
@@ -77,6 +97,7 @@ const PROFILE_TOOLS = {
   agent_output_verification: [
     {
       name: "agent_output_verification",
+    bringsEvidence: true,
       argKey: "request",
       summary:
         "Decide whether another agent's claim-backed output is safe to relay onward. Returns a relay verdict with " +
@@ -85,6 +106,7 @@ const PROFILE_TOOLS = {
     },
     {
       name: "pre_action_check",
+    bringsEvidence: true,
       argKey: "request",
       requestSchema:
         "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/pre-action-check-request.schema.json",
@@ -103,6 +125,7 @@ const PROFILE_TOOLS = {
     },
     {
       name: "decision_check",
+    bringsEvidence: true,
       argKey: "request",
       legacyWrapper: false,
       idempotent: false,
@@ -125,6 +148,7 @@ const PROFILE_TOOLS = {
   ],
   gulf_maritime_exposure: {
     name: "gulf_maritime_exposure",
+    bringsEvidence: true,
     argKey: "request",
     summary:
       "Triage maritime sanctions and chokepoint-disruption exposure for a vessel/voyage transiting the Strait of " +
@@ -133,6 +157,7 @@ const PROFILE_TOOLS = {
   },
   market_entry_readiness: {
     name: "kazakhstan_market_entry_readiness",
+    bringsEvidence: true,
     argKey: "request",
     summary:
       "Grade a Kazakhstan market-entry file against a staged source-requirement taxonomy before a launch, budget, " +
@@ -141,6 +166,7 @@ const PROFILE_TOOLS = {
   },
   critical_minerals_due_diligence: {
     name: "critical_minerals_due_diligence",
+    bringsEvidence: true,
     argKey: "request",
     summary:
       "Triage origin tracing, export quota restrictions, and CSDDD supply-chain due diligence for critical minerals " +
@@ -150,6 +176,7 @@ const PROFILE_TOOLS = {
   },
   dual_use_technology_export: {
     name: "dual_use_technology_export",
+    bringsEvidence: true,
     argKey: "request",
     summary:
       "Triage dual-use technology export controls, ECCN/HS Codes, and transit route risks for unauthorized diversion."
@@ -228,7 +255,9 @@ export function mcpToolsForProfile(profile) {
     const contract = contractFor(spec, profile);
     const tool = {
       name: spec.name,
-      description: `${spec.summary} ${NOT_ADVICE}`,
+      description: [spec.summary, spec.bringsEvidence ? BRING_EVIDENCE : null, NOT_ADVICE]
+        .filter(Boolean)
+        .join(" "),
       inputSchema: inputSchemaFor(spec, profile),
       annotations: {
         readOnlyHint: true,
