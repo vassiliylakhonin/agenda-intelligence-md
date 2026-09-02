@@ -4863,6 +4863,54 @@ test("mcp pre_action_check uses the same action decision as the A2A route", asyn
   assert.equal(viaMcp.reason_code, a2a.result.metadata.response.reason_code);
 });
 
+// A refusal that names no field is a dead end for a machine caller: nothing in
+// "does not satisfy this tool's input contract" tells it which argument to add,
+// so it cannot retry and does not come back. The A2A route has always answered
+// with the full guide. This asserts the MCP route carries the same one.
+test("an mcp refusal carries the field guide, not just a sentence", async () => {
+  const env = { AGENT_PROFILE: "kazakhstan" };
+  const request = new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/mcp", {
+    method: "POST",
+    headers: { "user-agent": "node:test" }
+  });
+
+  const refusal = await mcpCall(
+    {
+      jsonrpc: "2.0",
+      id: "gate-refusal",
+      method: "tools/call",
+      params: {
+        name: "middle_corridor_deal_risk",
+        arguments: { risk_question: "What do we need before signing?" }
+      }
+    },
+    request,
+    env
+  );
+
+  const payload = refusal.result.structuredContent;
+  assert.equal(refusal.result.isError, true);
+  assert.equal(payload.error, "INVALID_TOOL_INPUT");
+  assert.ok(
+    Array.isArray(payload.required_fields) && payload.required_fields.length > 0,
+    "a refusal must name the fields it wants"
+  );
+  assert.ok(
+    payload.example_request && typeof payload.example_request === "object",
+    "a refusal must carry an example the caller can send back"
+  );
+  assert.ok(payload.front_door, "a refusal must say where to route instead");
+
+  // The example is the arguments object itself, so a caller can retry with it
+  // unchanged. An A2A envelope would not survive the hop into tools/call.
+  assert.ok(!("jsonrpc" in payload.example_request));
+  assert.ok(!("params" in payload.example_request));
+
+  // params.message.parts is the A2A request path and does not exist in an MCP
+  // tools/call, so no refusal reaching an MCP caller may point at it.
+  assert.ok(!JSON.stringify(payload).includes("params.message.parts"));
+});
+
 test("mcp decision gate lists its bounded policy and signs an exact-request receipt", async () => {
   const privateJwk = await generateTestKey();
   const env = {
