@@ -814,6 +814,55 @@ def cmd_verify_claims(args):
         raise SystemExit(1)
 
 
+def cmd_decision_hashes(args):
+    """Compute the request and action hashes that bind a readiness receipt.
+
+    ADR 0025 requires an enforcing caller to derive these from its own copy of
+    the request instead of echoing what `decision_check` returned; this is the
+    command that lets it. Canonicalization is RFC 8785, matching the Worker.
+
+    JCS does not normalize Unicode, so `--normalize nfc` is available for text
+    that can reach the caller in more than one normal form. Both parties must
+    make the same choice or the Gate answers `binding_mismatch`.
+    """
+    import unicodedata
+
+    from agenda_intelligence.canonical import canonicalize, decision_request_hashes
+
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"Not found: {path}")
+    try:
+        request = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Invalid JSON: {e}")
+    if not isinstance(request, dict):
+        raise SystemExit("Pre-action request must be a JSON object")
+
+    if args.normalize != "none":
+        form = args.normalize.upper()
+
+        def normalized(value):
+            if isinstance(value, str):
+                return unicodedata.normalize(form, value)
+            if isinstance(value, dict):
+                return {unicodedata.normalize(form, str(k)): normalized(v) for k, v in value.items()}
+            if isinstance(value, list):
+                return [normalized(item) for item in value]
+            return value
+
+        request = normalized(request)
+
+    hashes = decision_request_hashes(request)
+    if args.format == "json":
+        print(json.dumps(hashes, indent=2, ensure_ascii=False))
+    else:
+        print(f"expected_request_hash={hashes['request_hash']}")
+        print(f"expected_action_hash={hashes['action_hash']}")
+    if args.show_canonical:
+        print(canonicalize(request), file=sys.stderr)
+
+
 def cmd_validate_agent_card(args):
     """Static readiness lint of a published agent-card JSON file.
 
@@ -1444,6 +1493,21 @@ def main():
     p.add_argument("--format", choices=["text", "json"], default="text")
     p.add_argument("--strict", action="store_true", help="Exit 1 unless every claim is verified")
     p.set_defaults(func=cmd_verify_claims)
+    # decision-hashes – the caller's half of the signed readiness Gate (ADR 0025)
+    p = sub.add_parser(
+        "decision-hashes",
+        help="Compute expected_request_hash / expected_action_hash for decision_verify (RFC 8785)",
+    )
+    p.add_argument("path", help="Pre-action check request JSON file")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.add_argument(
+        "--normalize",
+        choices=["none", "nfc", "nfd"],
+        default="none",
+        help="Unicode normal form to apply before hashing; JCS does not normalize text (default: none)",
+    )
+    p.add_argument("--show-canonical", action="store_true", help="Print the canonical JSON to stderr")
+    p.set_defaults(func=cmd_decision_hashes)
     # start – guided workflow for new analysis
     p = sub.add_parser("start", help="Guided start for a new agenda analysis")
     p.add_argument("category", help="Source category (e.g., conflict-security)")

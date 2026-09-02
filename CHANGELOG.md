@@ -4,6 +4,34 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(canonical): a Python caller can now compute the Gate hashes it is required to compute.**
+  [ADR 0025](docs/adr/0025-signed-readiness-receipts.md) tells an enforcing caller to derive
+  `expected_request_hash` and `expected_action_hash` from its own copy of the request rather than
+  echoing what `decision_check` returned, and `decision_policies_list` publishes
+  `canonicalization: "RFC8785-JCS"` — but this package shipped no JCS. The nearest thing,
+  `services._input_digest`, is `json.dumps(sort_keys=True)` over a different field
+  (`run_provenance.input_digest`), and it disagrees with the Worker on 3 of 11 probe cases: it renders
+  `9.0` as `9.0` where ECMAScript renders `9`, `-0.0` as `-0.0` where ECMAScript renders `0`, and a
+  22-digit integer in full where ECMAScript renders `1e+22`. A caller that reached for it would pass on
+  ASCII integers and get `binding_mismatch` on the first whole-number float — a ratio or threshold that
+  landed exactly on an integer — with the Gate refusing a legitimate action and no field saying why.
+  `agenda_intelligence.canonical` reproduces `jcs()` from `deploy/cloudflare-worker/src/jws.js` byte for
+  byte, including the two rules Python gets wrong by default: ECMAScript number rendering, and key order
+  by UTF-16 code unit rather than code point, which differ for any astral key. 600 randomized structures
+  and 31 boundary numbers agree with Node; `tests/fixtures/jcs-parity.json` freezes 19 named cases and
+  regenerates from the Worker under test, so drift in `jws.js` fails here instead of in production.
+  Verified end to end: a receipt signed by the Worker over a request carrying `threshold: 9.0` verifies
+  `gate_passed: true` against hashes computed by `agenda-intelligence decision-hashes`.
+
+- **docs(canonical): JCS canonicalizes structure, not text, and the tests say so.**
+  RFC 8785 does not normalize Unicode, so `Айдын Жумабай` in NFD hashes differently from the same name in
+  NFC and the Gate answers `binding_mismatch` for what a reader calls one request. Decomposed text
+  reaches a caller by ordinary routes — macOS paths, clipboard, some IMEs — and this product's regions are
+  exactly the ones where it is not ASCII. Normalizing inside the canonicalizer would break parity with the
+  Worker, so the limit is pinned by
+  `TestUnicodeNormalizationIsTheCallersJob` and answered with an explicit `--normalize nfc` on the CLI
+  that both parties must choose together.
+
 - **fix(a2a): an empty message asks for input on every gate, not eight of ten.**
   [ADR 0026](docs/adr/0026-input-required-for-unstructured-gate-requests.md) enumerated the eight
   `Missing structured …` call sites and moved them to `TASK_STATE_INPUT_REQUIRED`. The shared

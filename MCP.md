@@ -113,6 +113,21 @@ The receipt format, five-minute lifetime, fail-closed behavior, and deliberate
 non-authorization boundary are recorded in
 [ADR 0025](docs/adr/0025-signed-readiness-receipts.md).
 
+The caller's half of that binding is `agenda-intelligence decision-hashes`,
+which computes `expected_request_hash` and `expected_action_hash` from the
+caller's own copy of the request using the same RFC 8785 canonicalization the
+Worker signs over. Echoing the hashes `decision_check` returned binds the
+receipt to whatever the caller was told rather than to the request it is about
+to act on, and `services._input_digest` is a different serialization for a
+different field — it renders `9.0` where ECMAScript renders `9`, so it agrees
+on ASCII integers and mismatches on the first whole-number float. JCS does not
+normalize Unicode: if request text can arrive in more than one normal form, both
+parties must apply the same `--normalize` before hashing.
+
+```bash
+agenda-intelligence decision-hashes pre-action-request.json --format json
+```
+
 ---
 
 ## Running the server
