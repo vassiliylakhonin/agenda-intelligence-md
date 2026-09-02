@@ -8884,7 +8884,7 @@ function emptyRequestResult(profile, request) {
       profile,
       "/v1/middle-corridor/deal-risk",
       "schemas/v1/middle-corridor-deal-risk-request.schema.json",
-      ["No structured deal-risk request and no text in params.message.parts."]
+      ["No structured deal-risk request and no free-text message."]
     );
   }
 
@@ -9446,11 +9446,24 @@ function mcpPayloadForResult(result) {
   if (!result || typeof result !== "object") {
     return { error: "EMPTY_TOOL_RESULT", message: "The worker returned no result." };
   }
+  // A refusal is the only material a machine caller has to correct itself with,
+  // so it carries the same guide over MCP that it already carried over A2A.
+  // invalidRequestResult builds required_fields, a ready-to-send example and the
+  // routing front door; forwarding metadata.errors alone dropped every one of
+  // them and left an agent one sentence with no field named in it. The example
+  // is a bare arguments object, which is exactly the shape tools/call wants, so
+  // it transfers without translation. Measured 2026-09-02 over the preceding
+  // 72h: 18,048 tools/list calls across the fleet and no tools/call at all.
   if (mcpTaskFailed(result)) {
+    const meta = result.metadata || {};
     return {
       error: "INVALID_TOOL_INPUT",
       message: "The supplied arguments do not satisfy this tool's input contract.",
-      details: result.metadata?.errors || result.metadata?.required_fields || []
+      details: meta.errors || meta.required_fields || [],
+      ...(meta.required_fields ? { required_fields: meta.required_fields } : {}),
+      ...(meta.example_request ? { example_request: meta.example_request } : {}),
+      ...(meta.front_door ? { front_door: meta.front_door } : {}),
+      ...(meta.support_contact ? { support_contact: meta.support_contact } : {})
     };
   }
   if (result.metadata?.response && typeof result.metadata.response === "object") {
