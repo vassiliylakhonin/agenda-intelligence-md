@@ -4911,6 +4911,73 @@ test("an mcp refusal carries the field guide, not just a sentence", async () => 
   assert.ok(!JSON.stringify(payload).includes("params.message.parts"));
 });
 
+// A2A can say "I need input"; MCP cannot. Its only way to tell a model to fix
+// the call is isError, so a gate that answered INPUT_REQUIRED with isError:false
+// was reporting an empty request as a call that worked.
+test("an mcp caller that sends nothing gets an error, not a silent non-answer", async () => {
+  const env = { AGENT_PROFILE: "cis_secondary_sanctions" };
+  const request = new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/mcp", {
+    method: "POST",
+    headers: { "user-agent": "node:test" }
+  });
+
+  const refusal = await mcpCall(
+    {
+      jsonrpc: "2.0",
+      id: "needs-input",
+      method: "tools/call",
+      params: { name: "cis_secondary_sanctions_exposure", arguments: {} }
+    },
+    request,
+    env
+  );
+
+  assert.equal(refusal.result.isError, true, "an empty request must not read as a completed call");
+  const payload = refusal.result.structuredContent;
+
+  // Kept distinct from INVALID_TOOL_INPUT on purpose: sending nothing and
+  // sending something broken are different problems for the caller to fix.
+  assert.equal(payload.error, "INPUT_REQUIRED");
+  assert.ok(
+    Array.isArray(payload.required_fields) && payload.required_fields.length > 0,
+    "a refusal must name the fields it wants"
+  );
+  assert.ok(!JSON.stringify(payload).includes("params.message.parts"));
+});
+
+// The free-text profile kept its guide only in the artifact, so its MCP refusal
+// arrived with no field named anywhere in it.
+test("the free-text profile names its one argument when it refuses over mcp", async () => {
+  const env = { AGENT_PROFILE: "agenda" };
+  const request = new Request("https://agenda-intelligence-a2a.example.workers.dev/mcp", {
+    method: "POST",
+    headers: { "user-agent": "node:test" }
+  });
+
+  const refusal = await mcpCall(
+    {
+      jsonrpc: "2.0",
+      id: "empty-text",
+      method: "tools/call",
+      params: { name: "strategic_risk_triage", arguments: {} }
+    },
+    request,
+    env
+  );
+
+  assert.equal(refusal.result.isError, true);
+  const payload = refusal.result.structuredContent;
+  assert.ok(
+    Array.isArray(payload.required_fields) && payload.required_fields.length > 0,
+    "even a one-argument tool must say which argument"
+  );
+  assert.ok(
+    payload.required_fields.some((field) => field.startsWith("text")),
+    "the named argument must be the one tools/call actually takes"
+  );
+  assert.ok(!JSON.stringify(payload).includes("params.message.parts"));
+});
+
 test("mcp decision gate lists its bounded policy and signs an exact-request receipt", async () => {
   const privateJwk = await generateTestKey();
   const env = {

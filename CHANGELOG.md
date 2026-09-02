@@ -4,6 +4,16 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(mcp): an empty `tools/call` is an error, and every refusal names its arguments.**
+  A2A distinguishes "done", "broken" and "I need input you have not sent"; MCP has only `isError`, and
+  the gates that answered `TASK_STATE_INPUT_REQUIRED` crossed into MCP as `isError: false` — telling a
+  machine caller its empty request had worked, the failure the A2A-side fix of 2026-08-25 set out to
+  stop. Seven gates did this. `INPUT_REQUIRED` now surfaces as an MCP error carrying the same field
+  guide, under its own code so that sending nothing stays distinguishable from sending something
+  broken. The free-text profile kept its guide only inside the artifact and so refused with no field
+  named at all; it now names its one `text` argument. A2A behaviour, task states, and usage
+  classification are unchanged, and no gate accepts or refuses anything it did not before.
+
 - **fix(mcp): a `tools/call` refusal now carries the field guide, not just a sentence.**
   A caller that sent the wrong arguments got back only "The supplied arguments do not satisfy this
   tool's input contract" — no field named, no example, nothing to retry against. The refusal already

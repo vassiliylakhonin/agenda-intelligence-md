@@ -8908,7 +8908,7 @@ function emptyRequestResult(profile, request) {
       }
     }
   };
-  const errors = ["No text and no structured request in params.message.parts."];
+  const errors = ["No question in the request: no text and no structured request."];
   const text = [
     "# Nothing to route",
     "",
@@ -8967,7 +8967,16 @@ function emptyRequestResult(profile, request) {
       product_profile: profile,
       valid: false,
       errors,
+      // The artifact above says the same thing at length, in markdown, with an
+      // A2A envelope for an example. Metadata is what the MCP layer forwards,
+      // and an MCP caller has no params.message.parts to fill — it has one
+      // `text` argument. So the wording here names neither protocol's plumbing,
+      // only the thing both of them need: a question.
+      required_fields: [
+        "text — the question: a route, counterparty, or document, and the decision it feeds"
+      ],
       related_agents: gates,
+      front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
       support_contact: SUPPORT_CONTACT_EMAIL,
       engagement: engagementBlock(request)
     }
@@ -9442,6 +9451,37 @@ function mcpTaskFailed(result) {
   return result?.status?.state === "TASK_STATE_FAILED";
 }
 
+// A2A has three answers — done, broken, and "I need input you have not sent".
+// MCP has two. Its only channel for "fix your call and try again" is isError,
+// so an INPUT_REQUIRED task that crossed into MCP as isError:false told the
+// caller its empty request had worked, which is the thing the 2026-08-25 note
+// set out to stop on the A2A side. The state itself is unchanged: A2A still
+// sees INPUT_REQUIRED, usage still logs input_required separately from
+// invalid_request, and no gate accepts or refuses anything new.
+function mcpTaskNeedsInput(result) {
+  return result?.status?.state === "TASK_STATE_INPUT_REQUIRED";
+}
+
+// Both refusals carry the same guide; only the code differs. Merging them is
+// what made invalid_request unreadable before — a caller that sent nothing and
+// a caller that sent something broken have different problems, and the one
+// reading this is a machine deciding what to change.
+function mcpRefusalPayload(result, code) {
+  const meta = result.metadata || {};
+  return {
+    error: code,
+    message:
+      code === "INPUT_REQUIRED"
+        ? "This tool needs arguments it did not receive."
+        : "The supplied arguments do not satisfy this tool's input contract.",
+    details: meta.errors || meta.required_fields || [],
+    ...(meta.required_fields ? { required_fields: meta.required_fields } : {}),
+    ...(meta.example_request ? { example_request: meta.example_request } : {}),
+    ...(meta.front_door ? { front_door: meta.front_door } : {}),
+    ...(meta.support_contact ? { support_contact: meta.support_contact } : {})
+  };
+}
+
 function mcpPayloadForResult(result) {
   if (!result || typeof result !== "object") {
     return { error: "EMPTY_TOOL_RESULT", message: "The worker returned no result." };
@@ -9454,18 +9494,8 @@ function mcpPayloadForResult(result) {
   // is a bare arguments object, which is exactly the shape tools/call wants, so
   // it transfers without translation. Measured 2026-09-02 over the preceding
   // 72h: 18,048 tools/list calls across the fleet and no tools/call at all.
-  if (mcpTaskFailed(result)) {
-    const meta = result.metadata || {};
-    return {
-      error: "INVALID_TOOL_INPUT",
-      message: "The supplied arguments do not satisfy this tool's input contract.",
-      details: meta.errors || meta.required_fields || [],
-      ...(meta.required_fields ? { required_fields: meta.required_fields } : {}),
-      ...(meta.example_request ? { example_request: meta.example_request } : {}),
-      ...(meta.front_door ? { front_door: meta.front_door } : {}),
-      ...(meta.support_contact ? { support_contact: meta.support_contact } : {})
-    };
-  }
+  if (mcpTaskFailed(result)) return mcpRefusalPayload(result, "INVALID_TOOL_INPUT");
+  if (mcpTaskNeedsInput(result)) return mcpRefusalPayload(result, "INPUT_REQUIRED");
   if (result.metadata?.response && typeof result.metadata.response === "object") {
     return result.metadata.response;
   }
@@ -9656,7 +9686,10 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
       return mcpResponse(id, mcpLegacyToolResult(result, Boolean(result.error)));
     }
     const toolPayload = mcpPayloadForResult(result);
-    return mcpResponse(id, mcpToolResult(toolPayload, mcpTaskFailed(result) || Boolean(result.error)));
+    return mcpResponse(
+      id,
+      mcpToolResult(toolPayload, mcpTaskFailed(result) || mcpTaskNeedsInput(result) || Boolean(result.error))
+    );
   }
 
   return jsonRpcError(id, -32601, "Method not found", {
