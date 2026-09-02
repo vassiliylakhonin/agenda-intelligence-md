@@ -2223,7 +2223,11 @@ test("a request with nothing in it is refused, not completed", async () => {
     );
 
     const task = response.result;
-    assert.equal(task.status.state, "TASK_STATE_FAILED", `empty params must not complete: ${JSON.stringify(params)}`);
+    // ADR 0026 case 1: the caller sent nothing structured, an empty message
+    // included. Not completed — the point of this test — but not failed either;
+    // nothing failed, the gate is saying what it needs.
+    assert.notEqual(task.status.state, "TASK_STATE_COMPLETED", `empty params must not complete: ${JSON.stringify(params)}`);
+    assert.equal(task.status.state, "TASK_STATE_INPUT_REQUIRED", `empty params ask for input: ${JSON.stringify(params)}`);
     const data = task.artifacts[0].parts.find((part) => part.mediaType === "application/json").data;
     assert.equal(data.valid, false);
     assert.ok(data.errors.length > 0, "a refusal must say why it stopped");
@@ -4890,7 +4894,9 @@ test("an mcp refusal carries the field guide, not just a sentence", async () => 
 
   const payload = refusal.result.structuredContent;
   assert.equal(refusal.result.isError, true);
-  assert.equal(payload.error, "INVALID_TOOL_INPUT");
+  // An object the gate does not recognise as a structured request is ADR 0026
+  // case 1 — nothing structured arrived — not a request that failed validation.
+  assert.equal(payload.error, "INPUT_REQUIRED");
   assert.ok(
     Array.isArray(payload.required_fields) && payload.required_fields.length > 0,
     "a refusal must name the fields it wants"
@@ -5003,7 +5009,9 @@ test("a tool that grades supplied evidence says so in its description", async ()
   // caller is sent, so the clause would be false on them.
   for (const profile of ["agenda", "corridor_sanctions_assistant"]) {
     const [tool] = mcpToolsForProfile(profile);
-    assert.deepEqual(tool.inputSchema.required, ["text"]);
+    // One string argument, whether or not it is required — the front door
+    // answers without it, which is why it is the place to send someone.
+    assert.deepEqual(Object.keys(tool.inputSchema.properties), ["text"]);
     assert.ok(!tool.description.includes(precondition));
   }
 
@@ -5013,6 +5021,25 @@ test("a tool that grades supplied evidence says so in its description", async ()
     const tool = decision.find((entry) => entry.name === name);
     assert.ok(!tool.description.includes(precondition), `${name} does not grade evidence`);
   }
+});
+
+// The front door is where every other gate's refusal now sends an empty-handed
+// caller, so it must not turn one away — and its schema has to say so. It said
+// the opposite while accepting a number, a null and an unrelated object alike.
+test("the front door declares that it answers without a question", async () => {
+  const { mcpToolsForProfile } = await import("../src/mcp.js");
+
+  const [door] = mcpToolsForProfile("corridor_sanctions_assistant");
+  assert.equal(door.name, "corridor_sanctions_assistant");
+  assert.ok(!door.inputSchema.required, "the front door must not require an argument it answers without");
+  assert.equal(door.inputSchema.additionalProperties, true);
+  assert.ok(door.inputSchema.properties.text.description.includes("Optional"));
+
+  // Its sibling takes the same single string and does enforce it. That contrast
+  // is the point: a schema is a promise, and these two made opposite ones.
+  const [triage] = mcpToolsForProfile("agenda");
+  assert.deepEqual(triage.inputSchema.required, ["text"]);
+  assert.equal(triage.inputSchema.additionalProperties, false);
 });
 
 test("mcp decision gate lists its bounded policy and signs an exact-request receipt", async () => {

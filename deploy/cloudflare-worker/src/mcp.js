@@ -185,6 +185,14 @@ const PROFILE_TOOLS = {
   corridor_sanctions_assistant: {
     name: "corridor_sanctions_assistant",
     argKey: "text",
+    // It answers with or without a question, and that is the point: every other
+    // gate's refusal now sends an empty-handed caller here, so this is the one
+    // tool in the fleet that must not turn one away. The schema said the
+    // opposite — text required, nothing else allowed — while the runtime
+    // accepted a number, a null and an unrelated object alike. Declare the
+    // permissive behaviour instead of tightening it, or the routing advice ends
+    // at a refusal.
+    answersWithoutInput: true,
     summary:
       "Route a free-text Middle Corridor sanctions question to the matching structured contract and explain what " +
       "evidence the caller still has to supply. Orientation only: it does not itself triage a deal."
@@ -216,11 +224,13 @@ function inputSchemaFor(spec, profile) {
       properties: {
         text: {
           type: "string",
-          description: "The question in plain language."
+          description: spec.answersWithoutInput
+            ? "The question in plain language. Optional: with none, this returns the gate list."
+            : "The question in plain language."
         }
       },
-      required: ["text"],
-      additionalProperties: false
+      ...(spec.answersWithoutInput ? {} : { required: ["text"] }),
+      additionalProperties: Boolean(spec.answersWithoutInput)
     };
   }
   const schemaUrl = spec.requestSchema || requestSchemaUrl(profile);

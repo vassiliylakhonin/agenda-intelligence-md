@@ -4,6 +4,27 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(a2a): an empty message asks for input on every gate, not eight of ten.**
+  [ADR 0026](docs/adr/0026-input-required-for-unstructured-gate-requests.md) enumerated the eight
+  `Missing structured …` call sites and moved them to `TASK_STATE_INPUT_REQUIRED`. The shared
+  `emptyRequestResult` path was not among them, so `agenda` and `kazakhstan` still answered a request with
+  nothing in it — case 1 in that ADR, "an empty message" included — with `TASK_STATE_FAILED`. Swept the
+  live fleet 2026-09-02: those two of ten. Both now ask for input, which also moves them out of
+  `invalid_request` in `/stats`.
+
+- **fix(mcp): the front door's schema now says it answers without a question.**
+  `corridor_sanctions_assistant` declared `text` required and `additionalProperties: false` while
+  answering `{text: 12345}`, `{text: null}` and `{nope: "…"}` alike with the gate list; its sibling
+  `strategic_risk_triage`, generated from the same branch, refuses all three. Declared the permissive
+  behaviour rather than tightening it: every other gate's refusal now routes an empty-handed caller here,
+  so this is the one tool that must not turn one away.
+
+- **test(worker): `npm run verify:refusals` sweeps the refusal paths across the live fleet.**
+  `verify:public-agents` proves a gate answers a request it accepts; this proves what all ten do with the
+  requests they do not — empty call, wrong-shaped object, unknown tool — plus the round trip that takes
+  `example_request` out of a gate's own refusal and sends it back. 130 checks. Both fixes above came out
+  of its first run.
+
 - **docs(mcp): tool descriptions now state the precondition, not just the promise.**
   Every gate summary said what comes back — "returns ... missing evidence", "... evidence gaps" — and none
   said the caller has to bring its own evidence first, which each of them requires. An agent reading that
