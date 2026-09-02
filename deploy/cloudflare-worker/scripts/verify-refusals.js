@@ -6,11 +6,26 @@
 // `verify:public-agents` proves a gate answers a request it accepts. This
 // proves what it does with the requests it does not: an empty call, an object
 // of the wrong shape, a tool that does not exist. That is the path almost every
-// caller actually takes first — measured over the 72h to 2026-09-02, the fleet
-// took 18,048 tools/list calls and one genuine tools/call — and until it was
-// swept end to end it drifted per gate. Two of ten answered an empty A2A
-// message with TASK_STATE_FAILED against ADR 0026, and the front door declared
-// a required argument it answered happily without.
+// caller actually takes first, and until it was swept end to end it drifted per
+// gate. Two of ten answered an empty A2A message with TASK_STATE_FAILED against
+// ADR 0026, and the front door declared a required argument it answered happily
+// without.
+//
+// The scale, from the two complete sources rather than the sampled one: over
+// the 72h to 2026-09-02 Workers analytics counted roughly 21,000 invocations
+// across the fleet, and the KV usage log counted about 60 actual calls, of
+// which single digits a day were tools/call. Nearly everything that arrives is
+// discovery — a card fetch, an MCP handshake, a tools/list — so the refusal
+// path is not an edge case, it is the main road.
+//
+// A warning for whoever measures this next. The observability telemetry query
+// caps at 1000 rows per request, and on this fleet an unfiltered three-hour
+// slice hits that cap, so it returns a truncated page and says nothing about
+// it. An earlier reading of "18,048 tools/list and one genuine tools/call" came
+// from exactly that mistake: both numbers were undercounts off a capped page.
+// Keep unfiltered slices to about an hour, or filter to one event the way
+// funnel.js does, and cross-check any total against analytics or /stats, which
+// count everything.
 //
 // The round-trip check is the one worth keeping honest: it takes the
 // example_request out of a gate's own refusal and sends it straight back. If
