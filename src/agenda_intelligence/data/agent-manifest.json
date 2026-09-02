@@ -174,6 +174,10 @@
     "dual_use_technology_export_response": {
       "path": "schemas/v1/dual-use-technology-export-response.schema.json",
       "schema_version": "v1"
+    },
+    "source_discovery_response": {
+      "path": "schemas/v1/source-discovery-response.schema.json",
+      "schema_version": "v1"
     }
   },
   "product": {

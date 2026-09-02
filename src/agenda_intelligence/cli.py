@@ -814,6 +814,59 @@ def cmd_verify_claims(args):
         raise SystemExit(1)
 
 
+def cmd_discover(args):
+    """Rank the corpus against every claim before the packet is checked.
+
+    Accepts either an evidence-review manifest, whose sources are paths to local
+    files, or an evidence packet with the source text inline. Exhaustive: every
+    source is read and scanned for every claim, and no model is called.
+    """
+    from agenda_intelligence import services
+    from agenda_intelligence.discovery import format_discovery_text
+    from agenda_intelligence.evidence_review import (
+        EvidenceReviewError,
+        load_review_manifest,
+    )
+
+    path = Path(args.path)
+    if not path.is_file():
+        raise SystemExit(f"Not found: {path}")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid JSON: {exc}")
+    if not isinstance(data, dict):
+        raise SystemExit("Input must be a JSON object")
+
+    # A manifest points at files; a packet carries the text. Discriminate on the
+    # first source rather than asking the caller which one they brought.
+    sources = data.get("sources") or []
+    if sources and isinstance(sources[0], dict) and "path" in sources[0]:
+        try:
+            packet = load_review_manifest(path)
+        except EvidenceReviewError as exc:
+            raise SystemExit(str(exc))
+    else:
+        packet = data
+
+    result = services.discover_evidence_sources(packet, limit=args.limit)
+    if not result.get("valid"):
+        for error in result.get("errors", []):
+            print(f"ERROR: {error}", file=sys.stderr)
+        raise SystemExit(1)
+
+    response = result["response"]
+    if args.format == "json":
+        print(json.dumps(response, indent=2, ensure_ascii=False))
+    else:
+        print(format_discovery_text(response, sources=packet.get("sources") or []))
+
+    misfiled = sum(len(claim["declared_without_match"]) for claim in response["claims"])
+    if args.strict and misfiled:
+        print(f"ERROR: {misfiled} declared source(s) contain none of their claim's patterns", file=sys.stderr)
+        raise SystemExit(1)
+
+
 def cmd_decision_hashes(args):
     """Compute the request and action hashes that bind a readiness receipt.
 
@@ -1499,6 +1552,20 @@ def main():
     p.add_argument("--format", choices=["text", "json"], default="text")
     p.add_argument("--strict", action="store_true", help="Exit 1 unless every claim is verified")
     p.set_defaults(func=cmd_verify_claims)
+    # discover – exhaustive candidate discovery before the packet is checked
+    p = sub.add_parser(
+        "discover",
+        help="Rank every source against every claim; reports candidates, never verdicts",
+    )
+    p.add_argument("path", help="Evidence review manifest or evidence packet JSON file")
+    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.add_argument("--limit", type=int, default=5, help="Candidates kept per claim (default: 5)")
+    p.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit 1 if a claim cites a source containing none of its patterns",
+    )
+    p.set_defaults(func=cmd_discover)
     # decision-hashes – the caller's half of the signed readiness Gate (ADR 0025)
     p = sub.add_parser(
         "decision-hashes",

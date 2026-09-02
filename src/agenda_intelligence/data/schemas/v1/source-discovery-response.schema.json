@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/source-discovery-response.schema.json",
+  "title": "Source discovery response",
+  "description": "Deterministic candidate discovery over an evidence packet's own corpus. Reports where a claim could be supported, never whether it is. Takes the evidence-packet request shape as input; no separate request schema.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["packet_id", "corpus", "claims", "discovery_status", "limitations", "run_provenance"],
+  "properties": {
+    "packet_id": { "type": "string" },
+    "corpus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sources_scanned", "claims", "pattern_cap"],
+      "properties": {
+        "sources_scanned": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Every source in the packet is scanned for every claim. Nothing is sampled."
+        },
+        "claims": { "type": "integer", "minimum": 0 },
+        "pattern_cap": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum patterns derived from one claim. Numbers and quoted spans are admitted before terms, so the cap drops the least discriminating patterns first."
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["claim_id", "patterns", "declared_source_ids", "candidates", "undeclared_candidates", "declared_without_match"],
+        "properties": {
+          "claim_id": { "type": "string" },
+          "patterns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "literal"],
+              "properties": {
+                "kind": { "type": "string", "enum": ["number", "quote", "term"] },
+                "literal": { "type": "string", "minLength": 1 }
+              }
+            }
+          },
+          "declared_source_ids": { "type": "array", "items": { "type": "string" } },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["source_id", "declared", "score", "matched_patterns", "of_patterns", "kinds", "best_line"],
+              "properties": {
+                "source_id": { "type": "string" },
+                "declared": { "type": "boolean" },
+                "score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Weighted share of the claim's patterns present in this source. Orders candidates; not a probability and not a judgement that the source supports the claim."
+                },
+                "matched_patterns": { "type": "integer", "minimum": 1 },
+                "of_patterns": { "type": "integer", "minimum": 0 },
+                "kinds": { "type": "array", "items": { "type": "string", "enum": ["number", "quote", "term"] } },
+                "best_line": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["line", "text"],
+                  "properties": {
+                    "line": { "type": "integer", "minimum": 0 },
+                    "text": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "undeclared_candidates": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Sources this claim does not cite that its own numbers and terms reach. The reviewer decides whether any of them belongs."
+          },
+          "declared_without_match": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Sources this claim cites in which not one of its patterns occurs. Usually a citation attached to the wrong document."
+          }
+        }
+      }
+    },
+    "discovery_status": {
+      "type": "string",
+      "const": "candidates_only",
+      "description": "Fixed. Discovery never returns a verdict; it returns places to look."
+    },
+    "limitations": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "run_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_version", "schema_id", "input_digest"],
+      "properties": {
+        "contract_version": { "type": "string" },
+        "schema_id": { "type": "string" },
+        "input_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    }
+  }
+}
