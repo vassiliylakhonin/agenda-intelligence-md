@@ -52,6 +52,20 @@ Use JSON for an agent loop or CI pipeline:
 
 `--strict` exits non-zero unless every claim is `packet_complete`.
 
+Find where a claim could be supported, before deciding what it cites:
+
+```bash
+.venv/bin/agenda-intelligence discover examples/evidence-review/manifest.json
+```
+
+`discover` derives literal patterns from each claim — figures and quoted spans
+first, then content terms, rarest first — and matches every one against every
+source, reporting the line that matched. Nothing is sampled and no model is
+called, so it behaves the same on 40 sources and on 4,000. It names the sources
+a claim's own figures reach but it does not cite, and the ones it cites where
+not one pattern occurs. Candidates are places to look: nothing here verifies a
+claim, and a source that supports one in different words does not appear at all.
+
 Review local source files without copying their full text into JSON:
 
 ```bash

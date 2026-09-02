@@ -899,6 +899,39 @@ def grounded_check(request_json: dict) -> dict:
     }
 
 
+def discover_evidence_sources(request_json: dict, *, limit: int = 5) -> dict:
+    """Rank every source in the packet against every claim, before the packet is checked.
+
+    Takes the evidence-packet request shape: the claims and the corpus. Returns,
+    per claim, the literal patterns it produced and the sources those patterns
+    reached, with the line that matched. Exhaustive and deterministic — every
+    source is scanned for every claim, nothing is sampled, and no model is
+    called.
+
+    It answers a question ``check_evidence_packet`` cannot: that check reads
+    only the sources a claim already names, so a claim pointed at the wrong
+    document comes back with weak support and no reason. Discovery names the
+    sources the claim's own numbers and terms reach, and the ones it cites where
+    nothing occurs at all.
+
+    Candidates are places to look. Nothing here verifies a claim.
+    """
+    base = _validate_json(request_json, "evidence-packet-request.schema.json")
+    if not base.get("valid"):
+        return {
+            "implemented": base.get("implemented", True),
+            "valid": base.get("valid"),
+            "errors": base.get("errors", []),
+            "response": None,
+        }
+
+    from agenda_intelligence.discovery import discover_sources
+
+    response = discover_sources(request_json, limit=limit)
+    response["run_provenance"] = _run_provenance(request_json, "source-discovery-response.schema.json")
+    return {"implemented": True, "valid": True, "errors": [], "response": response}
+
+
 def check_evidence_packet(request_json: dict) -> dict:
     """Check an AI-output evidence packet before human review.
 

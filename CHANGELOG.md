@@ -4,6 +4,28 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(discovery): the corpus is now searched exhaustively, and only the judgement is left to a model.**
+  `check_evidence_packet` reads the sources a claim already names, so everything upstream of it rests on
+  whoever assigned `source_ids`. On a handful of documents that is a person reading. On four hundred it is
+  a model guessing, and the two failures it produces are indistinguishable in the output: a claim whose
+  real support sits in an undeclared document comes back `packet_incomplete`, and a claim pointed at the
+  wrong document comes back `source_review_required` with weak lexical support and no reason.
+  `agenda-intelligence discover` derives literal patterns from each claim — numbers and quoted spans
+  first, then content terms rarest-first by document frequency — and matches every one against every
+  source, reporting the line that matched. Nothing is sampled and no model is called, so the behaviour is
+  the same on 40 sources and on 4,000; a 401-source corpus is pinned by a test. Two fields carry the
+  finding: `undeclared_candidates`, sources a claim's own figures reach but it does not cite, and
+  `declared_without_match`, sources it cites where not one pattern occurs. `--strict` exits non-zero on
+  the second.
+
+- **docs(discovery): a candidate is a place to look, and the tests hold it to that.**
+  `discovery_status` is the constant `candidates_only`, and the findings carry no field named for a
+  verdict. Two limits are pinned rather than described: a supporting source sharing no token with the
+  claim does not appear at all, and a source that *denies* the claim scores within a hair of one that
+  supports it — both spellings share the same literals. Polarity is `check_evidence_packet`'s job, against
+  the source a reviewer accepted. Reading a high candidate as support gets that case exactly backwards,
+  which is why the score is documented as an ordering and never as a probability.
+
 - **test(worker): `npm run verify:decision-gate` plays the enforcing caller against the live Gate.**
   Every existing test of the signed Gate signs and verifies with the same JavaScript, so none of them can
   see the only failure this binding has — the two parties disagreeing. This one computes the hashes with
