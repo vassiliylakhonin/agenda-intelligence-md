@@ -40,11 +40,21 @@
  * - Numbers: JSON.stringify (close to ES2017 ToString; finite numbers only)
  * - Booleans / null: literal
  * - Arrays: "[" + items.join(",") + "]"  (each item canonicalised)
- * - Objects: "{" + entries sorted by key (UTF-16 code-point order)
+ * - Objects: "{" + entries sorted by key (UTF-16 code-unit order)
  *            .map(k => JSON.stringify(k) + ":" + jcs(v)).join(",") + "}"
  * - `undefined` values inside objects are skipped (matches JSON.stringify)
  *
  * Throws on non-finite numbers and on functions / symbols.
+ *
+ * This function is the source of truth for the hash binding in ADR 0025: it is
+ * what the Gate signs over, so a caller that computes an expected hash any
+ * other way gets `binding_mismatch` on a request both sides agree on. Its
+ * Python twin, `agenda_intelligence.canonical.canonicalize`, exists so an
+ * enforcing caller can compute those hashes at all, and is held byte-identical
+ * to this function by tests/fixtures/jcs-parity.json — regenerated from here by
+ * scripts/generate-jcs-parity-fixture.mjs and checked in
+ * tests/test_jcs_canonicalization.py. Change this function and that fixture
+ * must be regenerated in the same commit.
  */
 export function jcs(value) {
   if (value === null) return "null";
@@ -63,7 +73,7 @@ export function jcs(value) {
   if (typeof value === "object") {
     const keys = Object.keys(value)
       .filter((k) => value[k] !== undefined)
-      .sort(); // JS default string sort is UTF-16 code-point order for BMP keys
+      .sort(); // default string sort is UTF-16 code-unit order, which is what RFC 8785 requires
     return "{" + keys.map((k) => JSON.stringify(k) + ":" + jcs(value[k])).join(",") + "}";
   }
   throw new TypeError(`JCS cannot serialize ${typeof value}`);
