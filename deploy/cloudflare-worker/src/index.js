@@ -8880,7 +8880,7 @@ function engagementMarkdown(engagement) {
 // and needs its own wording.
 function emptyRequestResult(profile, request) {
   if (GATE_REQUEST_GUIDES[profile]) {
-    return invalidRequestResult(
+    return requestGuidanceResult(
       profile,
       "/v1/middle-corridor/deal-risk",
       "schemas/v1/middle-corridor-deal-risk-request.schema.json",
@@ -8938,7 +8938,15 @@ function emptyRequestResult(profile, request) {
 
   return {
     id: crypto.randomUUID(),
-    status: { state: "TASK_STATE_FAILED", timestamp: new Date().toISOString() },
+    // ADR 0026 case 1: the caller sent no structured request at all — an empty
+    // message included. Nothing failed here; the gate is describing what it
+    // needs. The ADR listed the eight `Missing structured ...` call sites and
+    // this one, on the shared a2aResult path, was not among them, so `agenda`
+    // and `kazakhstan` kept answering an empty message with FAILED — a status
+    // that means the opposite, on the channel that shows the fleet to
+    // strangers. Measured 2026-09-02 against the live fleet: those two, and
+    // only those two, of ten.
+    status: { state: "TASK_STATE_INPUT_REQUIRED", timestamp: new Date().toISOString() },
     artifacts: [
       {
         artifactId: "agenda-intelligence-request-guidance",
