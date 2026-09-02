@@ -1,0 +1,15 @@
+# Tombstone for a retired A2A deployment. This Worker serves 410 Gone and
+# nothing else — it is not a gate, has no profile, and must never gain one.
+#
+# The name was retired in fa4ab2d (2026-05-31) and then left unclaimed, and an
+# unclaimed workers.dev host answers 404, which crawlers read as "try again
+# later". 410 is terminal, so a registry that honours it can drop the entry.
+# This is hygiene for a name that outlived its deployment, not a response to
+# measured traffic: on 2026-09-02 the name was drawing none.
+name = "kazakhstan-corridor-risk-a2a"
+main = "src/index.js"
+compatibility_date = "2026-05-22"
+workers_dev = true
+
+[observability]
+enabled = true

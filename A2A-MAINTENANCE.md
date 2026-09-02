@@ -35,6 +35,8 @@ Normative references:
 | `kazakhstan-market-entry-readiness` | `https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev` | `market_entry_readiness` |
 | `agent-output-verification` | `https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev` | `agent_output_verification` |
 | `corridor-sanctions-assistant` | `https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev` | `corridor_sanctions_assistant` |
+| `critical-minerals-due-diligence` | `https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev` | `critical_minerals_due_diligence` |
+| `dual-use-technology-export` | `https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev` | `dual_use_technology_export` |
 
 Every deployment exposes:
 
@@ -47,9 +49,38 @@ Every deployment exposes:
 ## Deprecated deployment
 
 `https://kazakhstan-corridor-risk-a2a.vassiliy-lakhonin.workers.dev` was
-removed. It currently returns Cloudflare 404/1042 and must not be reintroduced
-into discovery files or deployment scripts. Historical directory listings can
-remain stale until their next crawl.
+removed in `fa4ab2d` (2026-05-31) and must not be reintroduced into discovery
+files, `server.json`, `entitymap.json` or `scripts/verify-public-agents.js`.
+Its profile is served by `middle-corridor-deal-risk-gate-a2a`.
+
+Since 2026-09-02 the name serves a tombstone Worker from
+`deploy/tombstone-kazakhstan-corridor-risk`: `410 Gone` on every path, with
+`Sunset`, `Deprecation` and a `Link` header naming the successor. This is
+hygiene, not the fix to a live problem. A retired name should say it is gone
+rather than say nothing, and 410 is terminal where the 404 from an unclaimed
+`workers.dev` host reads as "try again later". Measured over its first hours
+the name drew no external traffic at all, so expect no change in request
+volume from this. The tombstone carries no profile, no bindings and no
+discovery documents, and stays out of the public matrix: it is not a
+deployment, it is the record of one that ended.
+
+### Reading `__unknown__` in Workers analytics
+
+`workersInvocationsAdaptive` files a request under `__unknown__` when no
+current script claims the name it arrived on, with no script tag and no
+environment. The bucket ran at roughly 1,500 requests a day from at least
+2026-08-03 — the far edge of analytics retention — and stopped at 2026-08-27
+13:00 UTC. It has been zero since. What produced it is no longer recoverable:
+Workers Logs keep 72 hours on the free plan, so the request lines for that
+period are gone, and the analytics dataset carries neither host nor path.
+
+Two cautions for anyone reading this bucket later, both learned the hard way
+on 2026-09-02. A seven-day window ending after the traffic stopped still shows
+a large total, and dividing that by seven turns a finished process into a
+convincing weekly rate — group by hour and look at the shape before believing
+any rate drawn from a window. And `__unknown__` is not evidence about any
+particular retired hostname. It says only that some name went unclaimed, never
+which one.
 
 ## Verification
 
@@ -60,7 +91,7 @@ npm run test:a2a
 node scripts/verify-agent-card.js
 ```
 
-After deployment, run the public matrix. It checks all eight Workers plus the
+After deployment, run the public matrix. It checks all ten Workers plus the
 portfolio discovery alias:
 
 ```bash
@@ -94,6 +125,8 @@ npx wrangler deploy --env agentic-interaction-trust
 npx wrangler deploy --env gulf-maritime-exposure
 npx wrangler deploy --env kazakhstan-market-entry-readiness
 npx wrangler deploy --env corridor-sanctions-assistant
+npx wrangler deploy --env critical-minerals-due-diligence
+npx wrangler deploy --env dual-use-technology-export
 npm run verify:public-agents
 ```
 
@@ -110,11 +143,16 @@ Do not rotate an existing signing key merely because card content or signature
 shape changed; the Worker signs the current card at request time, so an existing
 key keeps working.
 
-As of 2026-08-09, all eight Worker deployments have signing secrets configured
-and their signatures verify against their public JWKS. The
+As of 2026-08-09, the first eight Worker deployments had signing secrets
+configured and their signatures verified against their public JWKS. The
 Kazakhstan Market Entry, Agent Output Verification, and Corridor & Sanctions
 Assistant environments share one ES256 key created for that deployment group;
 the five earlier deployments retain their existing keys.
+
+Critical Minerals Due Diligence and Dual-Use Technology Export were added on
+2026-08-27 and each carries its own ES256 key (`critical-minerals-2026-08-27-*`
+and `dual-use-export-2026-08-27-*`), so they are outside that shared-key group
+and rotate independently. All ten deployments now publish a signed card.
 
 The new private key was passed directly from a permission-restricted temporary
 file into Cloudflare secrets and was not retained locally. If any of those
