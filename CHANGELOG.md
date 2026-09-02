@@ -4,6 +4,16 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(mcp): a `tools/call` refusal now carries the field guide, not just a sentence.**
+  A caller that sent the wrong arguments got back only "The supplied arguments do not satisfy this
+  tool's input contract" — no field named, no example, nothing to retry against. The refusal already
+  built `required_fields`, a ready-to-send example, the routing front door and a support contact, and
+  the A2A route returned all of it; the MCP layer forwarded `metadata.errors` alone and dropped the
+  rest. It now forwards them, and because the example is a bare arguments object a caller can resend
+  it unchanged. The refusal also no longer names `params.message.parts`, which is the A2A request
+  path and does not exist in an MCP `tools/call`. No contract changed: every gate accepts and refuses
+  exactly what it did before.
+
 - **fix(cis-secondary-sanctions): report an unconfigured retrieval upstream as disabled, not degraded.**
   The dispatcher no longer invokes the keyless OpenSanctions adapter when Snapshot, Watchman, and
   OpenSanctions are all unconfigured. Evidence-only requests now emit `live_retrieval_status: "disabled"`
