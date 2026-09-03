@@ -5042,6 +5042,33 @@ test("the front door declares that it answers without a question", async () => {
   assert.equal(triage.inputSchema.additionalProperties, false);
 });
 
+// 404 on the MCP endpoint does not say "wrong method" — it says there is no MCP
+// server at this address, and that is what the registry probes were told. The
+// endpoint is advertised as streamable-http, whose client may open the stream
+// with GET, so the honest answer for a POST-only server is 405.
+test("the mcp endpoint answers a non-POST with 405, not 404", async () => {
+  const { default: worker } = await import("../src/index.js");
+  const env = { AGENT_PROFILE: "agenda" };
+
+  for (const method of ["GET", "HEAD", "PUT", "DELETE"]) {
+    const response = await worker.fetch(
+      new Request("https://agenda-intelligence-a2a.example.workers.dev/mcp", { method }),
+      env,
+      { waitUntil() {} }
+    );
+    assert.equal(response.status, 405, `${method} /mcp must not read as a missing endpoint`);
+    assert.equal(response.headers.get("allow"), "POST", `${method} must be told what is allowed`);
+  }
+
+  // A path that really is absent still says so.
+  const missing = await worker.fetch(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/mcp/nope", { method: "GET" }),
+    env,
+    { waitUntil() {} }
+  );
+  assert.equal(missing.status, 404);
+});
+
 test("mcp decision gate lists its bounded policy and signs an exact-request receipt", async () => {
   const privateJwk = await generateTestKey();
   const env = {
