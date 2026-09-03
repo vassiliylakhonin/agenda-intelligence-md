@@ -11228,6 +11228,28 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return handleMcpPost(request, env, ctx);
   }
 
+  // The endpoint is advertised as `streamable-http`, and that transport lets a
+  // client open the stream with GET. A server that does not offer SSE there
+  // answers 405; falling through to the catch-all answered 404, which does not
+  // mean "wrong method" — it means there is no MCP server at this address, and
+  // that is what the probes were told. Measured over the 24h to 2026-09-03:
+  // 148 GET and 9 HEAD on /mcp across the fleet, all 404, from io.verifymcp,
+  // mcp-scraper (mcp-cloud.ai), AIVE-MCP-EndpointProbe, reliability-bureau and
+  // SentinelOracle — registries and monitors, deciding whether to list the
+  // endpoint at all. 115 of them asked for text/event-stream, so they were
+  // opening the transport, not guessing at a URL. vizier already answers 405
+  // here; this brings the fleet in line with it.
+  if (url.pathname === MCP_ENDPOINT_PATH) {
+    return new Response("Method not allowed. This MCP endpoint is POST-only.", {
+      status: 405,
+      headers: {
+        allow: "POST",
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "no-store"
+      }
+    });
+  }
+
   if (request.method === "POST" && (url.pathname === "/message/send" || url.pathname === "/")) {
     return handlePost(request, env, ctx);
   }

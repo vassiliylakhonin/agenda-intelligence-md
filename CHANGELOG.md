@@ -4,6 +4,16 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(mcp): the endpoint answers a non-POST with `405`, not `404`.**
+  `/mcp` was routed for POST only, so every other method fell through to the catch-all. The endpoint is
+  advertised as `streamable-http`, a transport whose client may open the stream with GET, and `404` does
+  not say "wrong method" — it says there is no MCP server at this address. Measured over the 24h to
+  2026-09-03: 148 GET and 9 HEAD on `/mcp` across the fleet, every one a 404, from `io.verifymcp`,
+  `mcp-scraper` (mcp-cloud.ai), `AIVE-MCP-EndpointProbe`, `reliability-bureau-spike` and
+  `SentinelOracle` — registries and monitors deciding whether to list the endpoint. 115 of them sent
+  `Accept: text/event-stream`, so they were opening the transport, not guessing at a URL. Now `405` with
+  `Allow: POST`, which is what `vizier` already answered.
+
 - **feat(discovery): the corpus is now searched exhaustively, and only the judgement is left to a model.**
   `check_evidence_packet` reads the sources a claim already names, so everything upstream of it rests on
   whoever assigned `source_ids`. On a handful of documents that is a person reading. On four hundred it is
