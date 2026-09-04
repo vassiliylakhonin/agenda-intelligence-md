@@ -3,10 +3,10 @@
 
 /** Structured verdict for whether one agent's claim-backed output is ready for a consuming agent to relay or act on. Wraps a claim-level evidence audit (evidence-audit.schema.json) and returns a machine-actionable relay verdict, weak/unsafe claim triage, evidence gaps, and owner actions. Schema-level and structural only: it does not verify that any claim or quote is factually true, does not fetch or validate cited sources, and does not authorize an action or provide legal, compliance, sanctions, financial, or investment advice. */
 export interface AgentOutputVerificationResponse {
-  /** Machine-actionable relay verdict. allow_relay: every claim is grounded and none is unsupported. verify_before_relay: claims are declared-supported but carry weak support or span-grounding gaps. block_unsafe_claims: at least one claim is marked unsupported or cites evidence that is not present. not_decision_ready / insufficient_information: not enough structured claim material to verdict. */
+  /** Machine-actionable relay verdict. allow_relay: every claim is grounded and none is unsupported. verify_before_relay: claims are declared-supported but carry weak support or span-grounding gaps. block_unsafe_claims: at least one claim is marked unsupported or cites evidence that is not present. not_decision_ready / insufficient_information: not enough structured claim material to verdict, or no claim cites evidence present in the supplied pack. A declared support_level is a caller assertion, not a verified fact: it counts only where the claim cites an evidence_id the caller actually supplied. */
   verdict: "allow_relay" | "verify_before_relay" | "block_unsafe_claims" | "not_decision_ready" | "insufficient_information";
   trust_signal: "low" | "medium" | "medium_high" | "high" | "unknown";
-  /** Heuristic 0-100 score for how ready the supplied claim set is for relay. Not approval, clearance, or factual verification. */
+  /** Heuristic 0-100 score for how ready the supplied claim set is for relay. Only claims that cite an evidence_id present in the supplied evidence contribute to it; a claim whose declared support_level nothing in the pack corroborates weighs nothing, and any such claim holds the score below the review_ready band. Not approval, clearance, or factual verification. */
   readiness_score: number;
   readiness_label: "insufficient_information" | "not_decision_ready" | "partial" | "review_ready";
   claim_count: number;

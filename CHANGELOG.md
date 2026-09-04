@@ -4,6 +4,30 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(gates): a declared `support_level` is a caller assertion, and the verification gate now scores it as one.**
+  `agent_output_verification` computed readiness from the caller's own declared support level per claim, with
+  nothing required to back it. Measured on 2026-09-04: one claim at `support_level: "direct"` and
+  `evidence: []` returned `readiness_score: 100`, `readiness_label: review_ready`, `trust_signal: medium` —
+  full marks for an empty pack, from the gate whose stated job is checking that claims are backed. A level now
+  counts only where the claim cites an `evidence_id` present in the supplied evidence. An uncited level weighs
+  nothing in the score; a claim set where nothing is corroborated returns `insufficient_information` /
+  `readiness_score: 0` / `trust_signal: unknown` instead of a scored verdict; and one uncorroborated claim
+  among corroborated ones holds the score below the `review_ready` band and names the claim in `evidence_gaps`
+  and `owner_actions`. `allow_relay` is unchanged — it already required every claim grounded by a quote in
+  supplied evidence — and so is every one of the twenty `pre-action-check` replay cases. No new response
+  fields: the v1 shape is unchanged under the ADR 0003 freeze, and the `verdict` and `readiness_score`
+  descriptions now state the corroboration rule. Python and Worker carry the same rule, with contract tests
+  on both sides.
+
+- **feat(gates): with that fixed, the first pass extends to `agent_output_verification` too.**
+  It was one of the two gates held out of the minimal-request first pass below, on the measurement that a
+  defaulted `evidence: []` returned readiness 100 / `review_ready`. That is no longer what it returns, so the
+  gate takes the pass through the same mechanism the others share: a non-empty claim set is the subject, the
+  evidence pack is the one defaulted field, and the artifact discloses it in the same block as the score.
+  A caller who sends claims and no evidence gets `insufficient_information` and the list of claims that cite
+  nothing, rather than the request guide. `pre_action_check` stays held out: it requires `risk_tier`, and
+  defaulting a risk classification would invent the one judgement that gate carries.
+
 - **feat(gates): the first pass extends to every gate whose scorers stay honest without evidence.**
   The CIS gate now shares one mechanism — `completeMinimalRequest` plus `minimalRequestFromCandidates` —
   with `agentic_interaction_trust`, `gulf_maritime_exposure`, `kazakhstan_market_entry_readiness`,

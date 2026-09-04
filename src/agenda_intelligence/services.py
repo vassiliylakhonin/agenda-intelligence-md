@@ -301,6 +301,25 @@ AGENT_OUTPUT_VERIFICATION_NOT_ADVICE_NOTICE = (
     "required before a consuming agent acts on any verdict other than allow_relay."
 )
 
+# A declared ``support_level`` is a caller assertion about its own output, not a
+# fact this gate has checked. Scoring it at face value is how a request carrying
+# one `direct` claim and ``evidence: []`` returned readiness 100 / review_ready
+# on 2026-09-04 — full marks for an empty pack, from the gate whose stated job is
+# checking that claims are backed. A level counts only when the claim cites an
+# ``evidence_id`` that is actually in the supplied evidence; an uncited level
+# weighs nothing and is reported as the gap it is.
+AGENT_OUTPUT_SUPPORT_LEVEL_WEIGHTS = {"direct": 1.0, "partial": 0.6, "weak": 0.2, "unsupported": 0.0}
+
+# Mirrors the ``min(readiness_score, 49)`` cap that block_unsafe_claims already
+# applies: one uncorroborated claim keeps the set below the >= 85 review_ready
+# band however many corroborated claims sit beside it.
+AGENT_OUTPUT_UNCORROBORATED_READINESS_CAP = 84
+
+
+def _claim_is_corroborated(claim: dict, evidence_ids: set) -> bool:
+    """True when the claim cites at least one evidence_id present in the pack."""
+    return any(eid in evidence_ids for eid in (claim.get("evidence_ids") or []))
+
 
 def agent_output_verification(request_json: dict) -> dict:
     """Verify whether one agent's claim-backed output is ready for another agent to relay.
@@ -357,6 +376,15 @@ def agent_output_verification(request_json: dict) -> dict:
         )
         seen_unsafe.add(claim_id)
 
+    evidence_ids = {item.get("evidence_id") for item in (request_json.get("evidence") or [])}
+    corroborated_claim_count = sum(1 for claim in claims if _claim_is_corroborated(claim, evidence_ids))
+    # A claim already listed as unsafe is reported once, under the sharper reason.
+    uncorroborated_claims = [
+        claim
+        for claim in claims
+        if claim["claim_id"] not in seen_unsafe and not _claim_is_corroborated(claim, evidence_ids)
+    ]
+
     evidence_gaps: list[str] = []
     for entry in orphan_refs:
         missing = ", ".join(entry.get("missing_evidence_ids", []) or [])
@@ -366,13 +394,19 @@ def agent_output_verification(request_json: dict) -> dict:
             f"Claim {entry.get('claim_id')} quote attributed to evidence {entry.get('evidence_id')} "
             f"({entry.get('reason')})."
         )
+    for claim in uncorroborated_claims:
+        evidence_gaps.append(
+            f"Claim {claim['claim_id']} declares support_level {claim.get('support_level')} "
+            f"but cites no evidence present in the supplied pack."
+        )
 
-    support_levels = summary.get("support_levels", {}) or {}
-    direct = support_levels.get("direct", 0)
-    partial = support_levels.get("partial", 0)
-    weak = support_levels.get("weak", 0)
+    corroborated_weight = sum(
+        AGENT_OUTPUT_SUPPORT_LEVEL_WEIGHTS.get(claim.get("support_level"), 0.0)
+        for claim in claims
+        if _claim_is_corroborated(claim, evidence_ids)
+    )
     if claim_count:
-        raw_score = round((direct * 1.0 + partial * 0.6 + weak * 0.2) / claim_count * 100)
+        raw_score = round(corroborated_weight / claim_count * 100)
     else:
         raw_score = 0
     readiness_score = max(0, raw_score - 10 * len(unsafe_claims) - 5 * len(unsupported_statements))
@@ -382,14 +416,22 @@ def agent_output_verification(request_json: dict) -> dict:
         readiness_score = min(readiness_score, 49)
     elif not claim_count:
         verdict = "insufficient_information"
+    elif not corroborated_claim_count:
+        # Nothing in the request backs anything in it. The declared levels are
+        # the caller's own word, so there is no material here to verdict on.
+        verdict = "insufficient_information"
+        readiness_score = 0
     elif weak_claims or span_orphans:
         verdict = "verify_before_relay"
-    elif grounded_claim_count == claim_count:
+    elif grounded_claim_count == claim_count and not uncorroborated_claims:
         verdict = "allow_relay"
     else:
         verdict = "verify_before_relay"
 
-    if not claim_count:
+    if uncorroborated_claims:
+        readiness_score = min(readiness_score, AGENT_OUTPUT_UNCORROBORATED_READINESS_CAP)
+
+    if verdict == "insufficient_information":
         readiness_label = "insufficient_information"
     elif verdict == "block_unsafe_claims":
         readiness_label = "not_decision_ready"
@@ -418,6 +460,11 @@ def agent_output_verification(request_json: dict) -> dict:
         owner_actions.append(f"Supply source-backed evidence for the unsupported statement: {statement}")
     for item in weak_claims:
         owner_actions.append(f"Strengthen weak claim {item['claim_id']} with direct supporting evidence.")
+    for claim in uncorroborated_claims:
+        owner_actions.append(
+            f"Cite supplied evidence for claim {claim['claim_id']}: a declared support_level of "
+            f"{claim.get('support_level')} is a caller assertion until an evidence_id in the pack backs it."
+        )
 
     response = {
         "verdict": verdict,

@@ -2379,25 +2379,68 @@ test("the dual-use gate says outright that no sources were supplied", async () =
   );
 });
 
-// Two gates are held out on purpose, and the reason is measurable rather than
-// stylistic. `agent_output_verification` scores readiness from the caller's own
-// declared support_level, so a defaulted empty evidence array returns
-// readiness 100 / review_ready on a request carrying no evidence — the exact
-// invention this pass exists to avoid. `pre_action_check` requires a risk_tier,
-// which cannot be defaulted without inventing a risk classification.
-test("the two gates that cannot default their evidence still refuse a partial request", async () => {
-  const cases = [
-    ["agent-output-verification-a2a", { claims: [{ claim_id: "c1", claim: "A claim with no evidence behind it.", support_level: "direct" }] }],
-    ["agent-output-verification-a2a", { run_id: "r1", actor: { declared_type: "ai_agent" }, requested_action: "refund", target: {}, claims: [] }]
-  ];
+// `pre_action_check` is the one gate still held out, and the reason is
+// measurable rather than stylistic: it requires a risk_tier, which cannot be
+// defaulted without inventing a risk classification. Its subject check needs a
+// non-empty claim set, so a request carrying neither claims nor a tier is not
+// completed by the verification gate's pass either.
+test("the gate that cannot default its risk tier still refuses a partial request", async () => {
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "1",
+      method: "message/send",
+      params: {
+        message: {
+          role: "user",
+          parts: [
+            {
+              kind: "data",
+              data: { run_id: "r1", actor: { declared_type: "ai_agent" }, requested_action: "refund", target: {}, claims: [] }
+            }
+          ]
+        }
+      }
+    },
+    new Request("https://agent-output-verification-a2a.example.workers.dev/message/send", { method: "POST" })
+  );
+  assert.notEqual(response.result.status.state, "TASK_STATE_COMPLETED", "a partial pre-action request must not complete");
+});
 
-  for (const [host, payload] of cases) {
-    const response = await handleJsonRpc(
-      { jsonrpc: "2.0", id: "1", method: "message/send", params: { message: { role: "user", parts: [{ kind: "data", data: payload }] } } },
-      new Request(`https://${host}.example.workers.dev/message/send`, { method: "POST" })
-    );
-    assert.notEqual(response.result.status.state, "TASK_STATE_COMPLETED", `${host} must not complete a request with no evidence`);
-  }
+// `agent_output_verification` was the second held-out gate, on the measurement
+// that a defaulted empty evidence array returned readiness 100 / review_ready.
+// It takes the pass now that a declared support_level no longer scores as a
+// verified one — and this asserts the measurement, not just the state.
+test("the verification gate's first pass answers a claim set with no evidence pack honestly", async () => {
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "1",
+      method: "message/send",
+      params: {
+        message: {
+          role: "user",
+          parts: [
+            {
+              kind: "data",
+              data: { claims: [{ claim_id: "c1", claim: "A claim with no evidence behind it.", support_level: "direct" }] }
+            }
+          ]
+        }
+      }
+    },
+    new Request("https://agent-output-verification-a2a.example.workers.dev/message/send", { method: "POST" })
+  );
+
+  assert.equal(response.result.status.state, "TASK_STATE_COMPLETED");
+  const body = response.result.metadata.response;
+  assert.equal(body.verdict, "insufficient_information");
+  assert.equal(body.readiness_score, 0);
+  assert.equal(body.readiness_label, "insufficient_information");
+  assert.equal(body.trust_signal, "unknown");
+  assert.ok(body.evidence_gaps.some((gap) => gap.includes("cites no evidence present in the supplied pack")));
+  const text = response.result.artifacts[0].parts[0].text;
+  assert.match(text, /Defaulted, not supplied by you: evidence\./u);
 });
 
 // The strict path is the contract; completing a minimal request must not relax
@@ -4890,6 +4933,45 @@ test("agent-output-verification requires verification for a weak claim (Python p
   assert.equal(resp.verdict, "verify_before_relay");
   assert.equal(resp.human_review_required, true);
   assert.ok(resp.weak_claims.some((item) => item.claim_id === "c1"));
+});
+
+// The gate's stated job is checking that claims are backed. Until 2026-09-04 it
+// scored the caller's own declared support_level, so one `direct` claim and an
+// empty evidence array returned readiness 100 / review_ready — full marks for a
+// pack with nothing in it. A declared level is an assertion; it counts only when
+// the claim cites evidence actually supplied.
+test("agent-output-verification scores nothing for a declared support level nothing backs (Python parity)", async () => {
+  const response = await agentOutputVerificationResponseFor({
+    claims: [{ claim_id: "c1", claim: "A claim with no evidence behind it.", support_level: "direct" }],
+    evidence: []
+  });
+  const resp = response.result.metadata.response;
+  assert.equal(resp.verdict, "insufficient_information");
+  assert.equal(resp.readiness_score, 0);
+  assert.equal(resp.readiness_label, "insufficient_information");
+  assert.equal(resp.trust_signal, "unknown");
+  assert.deepEqual(resp.unsafe_claims, []);
+  assert.ok(resp.evidence_gaps.some((gap) => gap.includes("c1")));
+  assert.ok(resp.owner_actions.some((action) => action.includes("caller assertion")));
+});
+
+test("agent-output-verification keeps an uncorroborated claim out of the review_ready band (Python parity)", async () => {
+  const audit = groundedAuditFixture();
+  audit.claims.push({ claim_id: "c2", claim: "Volumes tripled last quarter.", support_level: "direct" });
+  const response = await agentOutputVerificationResponseFor(audit);
+  const resp = response.result.metadata.response;
+  assert.equal(resp.verdict, "verify_before_relay");
+  assert.equal(resp.readiness_score, 50);
+  assert.equal(resp.readiness_label, "partial");
+  assert.deepEqual(resp.unsafe_claims, []);
+  assert.ok(resp.evidence_gaps.some((gap) => gap.includes("c2")));
+});
+
+test("agent-output-verification still scores a corroborated claim set at full readiness (Python parity)", async () => {
+  const response = await agentOutputVerificationResponseFor(groundedAuditFixture());
+  const resp = response.result.metadata.response;
+  assert.equal(resp.readiness_score, 100);
+  assert.equal(resp.readiness_label, "review_ready");
 });
 
 test("agent-output-verification asks for input on a non-audit request shape", async () => {

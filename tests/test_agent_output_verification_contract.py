@@ -73,6 +73,50 @@ def test_weak_claim_requires_verification():
     assert any(item["claim_id"] == "c1" for item in response["weak_claims"])
 
 
+def test_declared_support_level_scores_nothing_without_evidence():
+    """The gate's job is checking that claims are backed.
+
+    Until 2026-09-04 it scored the caller's own declared ``support_level``, so one ``direct``
+    claim and an empty evidence array returned ``readiness_score: 100`` / ``review_ready`` —
+    full marks for a pack with nothing in it. A declared level is a caller assertion; it
+    counts only when the claim cites evidence the caller actually supplied.
+    """
+    audit = {
+        "claims": [{"claim_id": "c1", "claim": "A claim with no evidence behind it.", "support_level": "direct"}],
+        "evidence": [],
+    }
+    result = services.agent_output_verification(audit)
+    response = result["response"]
+    Draft202012Validator(RESPONSE_SCHEMA).validate(response)
+    assert response["verdict"] == "insufficient_information"
+    assert response["readiness_score"] == 0
+    assert response["readiness_label"] == "insufficient_information"
+    assert response["trust_signal"] == "unknown"
+    assert response["unsafe_claims"] == []
+    assert any("c1" in gap for gap in response["evidence_gaps"])
+    assert any("caller assertion" in action for action in response["owner_actions"])
+
+
+def test_uncorroborated_claim_stays_out_of_the_review_ready_band():
+    audit = _grounded_audit()
+    audit["claims"].append({"claim_id": "c2", "claim": "Volumes tripled last quarter.", "support_level": "direct"})
+    result = services.agent_output_verification(audit)
+    response = result["response"]
+    Draft202012Validator(RESPONSE_SCHEMA).validate(response)
+    assert response["verdict"] == "verify_before_relay"
+    assert response["readiness_score"] == 50
+    assert response["readiness_label"] == "partial"
+    assert response["unsafe_claims"] == []
+    assert any("c2" in gap for gap in response["evidence_gaps"])
+
+
+def test_corroborated_claim_set_still_scores_full_readiness():
+    result = services.agent_output_verification(_grounded_audit())
+    response = result["response"]
+    assert response["readiness_score"] == 100
+    assert response["readiness_label"] == "review_ready"
+
+
 def test_invalid_input_reports_validation_failure():
     result = services.agent_output_verification({"claims": []})
     assert result["valid"] is False
