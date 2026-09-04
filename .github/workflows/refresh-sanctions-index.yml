@@ -1,0 +1,83 @@
+# Rebuild the public-list name index the cis_secondary_sanctions worker screens
+# against, and republish it to Cloudflare Pages.
+#
+# This exists because the previous index stopped being served in August and
+# nobody noticed for a month: the host was a repository that had been deleted,
+# the worker degraded to evidence-only exactly as designed, and the silence was
+# the problem. A snapshot that nothing rebuilds goes stale the same quiet way —
+# the gate keeps answering `success` with an ageing `generated_at_utc`.
+#
+# The verify step is the point. A sanctions source serving an error page or a
+# truncated body with HTTP 200 produces a valid-looking index with most of the
+# names gone, and publishing that would leave the gate matching nothing while
+# still reporting that it screened. On failure this job stops before deploying
+# and the last good index stays live.
+name: Refresh sanctions name index
+
+on:
+  schedule:
+    # 04:20 UTC daily — after the US business day, before Almaty morning.
+    - cron: "20 4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-sanctions-index
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # A separate environment from agent-output-verification-production on
+    # purpose. That one is administrator-gated because it can deploy workers;
+    # this job only needs to write one Pages project, so it gets its own
+    # least-privilege token (Cloudflare Pages:Edit) rather than borrowing a
+    # credential that a scheduled, unattended run has no business holding.
+    environment:
+      name: sanctions-index-production
+      url: https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the index from the official sources
+        run: python3 scripts/sanctions_name_index.py
+
+      - name: Refuse to publish an index that lost its shape
+        run: python3 scripts/verify_sanctions_index.py deploy/snapshot-site/sanctions-name-index-compact.json
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy deploy/snapshot-site
+            --project-name=sanctions-name-index
+            --branch=main
+            --commit-dirty=true
+
+      - name: Confirm the published file is the one just built
+        run: |
+          set -euo pipefail
+          built=$(python3 -c "import json;print(json.load(open('deploy/snapshot-site/sanctions-name-index-compact.json'))['generated_at_utc'])")
+          # Pages needs a moment to route a fresh deployment.
+          for attempt in 1 2 3 4 5 6; do
+            live=$(curl -fsS --max-time 60 \
+              https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json \
+              | python3 -c "import json,sys;print(json.load(sys.stdin)['generated_at_utc'])") || live=""
+            if [ "$live" = "$built" ]; then
+              echo "published index is live: $live"
+              exit 0
+            fi
+            echo "attempt $attempt: live=${live:-unreachable} built=$built"
+            sleep 20
+          done
+          echo "the deployed index never became live" >&2
+          exit 1
