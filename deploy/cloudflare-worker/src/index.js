@@ -3229,32 +3229,33 @@ export const PRE_ACTION_CHECK_GUIDE = {
 // #310 corrected the examples inside GATE_REQUEST_GUIDES; it left the call-site
 // pairings alone, and two of them were the same bug one level out. Both of these
 // routes share the agent_output_verification profile without sharing its request
-// shape, so both published the claims/evidence example while naming a schema
-// that rejects every field in it: the caller was told to read one file and handed
-// a request built for another. PRE_ACTION_CHECK_GUIDE is the pattern — a
+// shape, so both published that gate's claims/evidence example while naming a
+// schema that rejects every field in it: the caller was told to read one file and
+// handed a request built for another. PRE_ACTION_CHECK_GUIDE is the pattern — a
 // standalone guide passed as guideOverride, checked against its own schema.
 
 // DecisionPoliciesListRequest is the one request schema in v1 with no properties
 // at all: { type: "object", additionalProperties: false }. There is no payload to
-// publish, so the example is the empty request, and exampleNote says so rather
-// than letting `{}` under "a request that works" read as a truncation.
+// publish, so the example is the empty request the route accepts, and exampleNote
+// says so rather than letting `{}` under "a request that works" read as a
+// truncation.
 export const DECISION_POLICIES_LIST_GUIDE = {
   title: "Agenda Decision Gate — policy catalog",
   schema: "schemas/v1/decision-policies-list-request.schema.json",
   required: [
     "no arguments — this capability takes none; send an empty object, or no data part at all",
-    "any field is rejected: the request schema carries no properties and is additionalProperties: false",
-    "the catalog is the response, not the request: policy_id, policy_version, decisions, and the inputs each policy reads come back from the call"
+    "any field is rejected: the request schema declares no properties and is additionalProperties: false",
+    "the catalog is the response, not the request: policy_id, policy_version, the decisions the policy can return, and the inputs it reads all come back from the call"
   ],
   exampleNote:
     "This capability takes no arguments. The empty object above is the whole request; sending any field is what it refused.",
   example: {}
 };
 
-// decision_verify takes a receipt issued by decision_check and the two hashes the
+// decision_verify takes a receipt issued by decision_check plus the two hashes the
 // enforcing caller computed itself. The example receipt is a syntactically valid
-// placeholder — header and payload decode, the signature segment does not verify —
-// so exampleNote says to substitute the token from a decision_check response
+// placeholder — its header and payload decode, its signature does not verify — so
+// exampleNote says to substitute the token a decision_check response returned
 // rather than replaying this one.
 export const DECISION_VERIFY_GUIDE = {
   title: "Agenda Decision Gate — receipt verification",
@@ -3267,7 +3268,7 @@ export const DECISION_VERIFY_GUIDE = {
     "no other fields: the request schema is additionalProperties: false"
   ],
   exampleNote:
-    "The receipt below is a placeholder: its header and payload decode, its signature does not verify. Send the receipt.token string a decision_check response returned, with hashes you computed yourself.",
+    "The receipt below is a placeholder: its header and payload decode, its signature does not. Send the receipt.token string a decision_check response returned, with hashes you computed yourself.",
   example: {
     receipt:
       "eyJhbGciOiJFUzI1NiIsImprdSI6Imh0dHBzOi8vYWdlbnQtb3V0cHV0LXZlcmlmaWNhdGlvbi1hMmEuZXhhbXBsZS53b3JrZXJzLmRldi8ud2VsbC1rbm93bi9qd2tzLmpzb24iLCJ0eXAiOiJhZ2VuZGEtcmVhZGluZXNzLXJlY2VpcHQrandzIn0" +
@@ -3296,6 +3297,10 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
     "```json",
     JSON.stringify(guide.example, null, 2),
     "```",
+    // A guide whose schema has nothing to fill in, or whose example carries a
+    // placeholder the caller must replace, says so here. Without it the block
+    // above reads as a payload that was truncated.
+    ...(guide.exampleNote ? ["", guide.exampleNote] : []),
     "",
     `Send it as \`params.message.parts[0].data\` to \`message/send\`, or POST it to \`${endpoint}\`.`,
     `Full field list: \`${schema}\`.`,
@@ -3319,6 +3324,7 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
           errors,
           required_fields: guide.required,
           example_request: guide.example,
+          ...(guide.exampleNote ? { example_note: guide.exampleNote } : {}),
           canonical_http_endpoint: endpoint,
           schema,
           front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
@@ -3347,6 +3353,7 @@ function invalidRequestResult(profile, endpoint, schema, errors, guideOverride =
         ? {
             required_fields: guide.required,
             example_request: guide.example,
+            ...(guide.exampleNote ? { example_note: guide.exampleNote } : {}),
             front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
             support_contact: SUPPORT_CONTACT_EMAIL
           }
@@ -4558,7 +4565,8 @@ function a2aResultForDecisionPoliciesList(params) {
       "agent_output_verification",
       "/mcp#decision_policies_list",
       "schemas/v1/decision-policies-list-request.schema.json",
-      ["The decision policy list request does not accept arguments"]
+      ["The decision policy list request does not accept arguments"],
+      DECISION_POLICIES_LIST_GUIDE
     );
   }
   return decisionGateTask("decision_policies_list", decisionPolicyCatalog());
@@ -4681,7 +4689,8 @@ async function a2aResultForDecisionVerify(params, request, env = {}) {
       "agent_output_verification",
       "/mcp#decision_verify",
       "schemas/v1/decision-receipt-verify-request.schema.json",
-      errors
+      errors,
+      DECISION_VERIFY_GUIDE
     );
   }
   const signingKey = env.AGENT_CARD_SIGNING_KEY || env.AGENT_CARD_PRIVATE_JWK;
@@ -4738,7 +4747,8 @@ function a2aResultForAgentOutputVerification(params) {
         "agent_output_verification",
         "/v1/agent-output/pre-action-check",
         "schemas/v1/pre-action-check-request.schema.json",
-        actionErrors
+        actionErrors,
+        PRE_ACTION_CHECK_GUIDE
       );
     }
     const result = preActionCheckResult(structured);

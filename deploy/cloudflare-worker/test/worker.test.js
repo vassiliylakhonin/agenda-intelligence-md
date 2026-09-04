@@ -7,6 +7,8 @@ import {
   DIRECT_V1_ROUTES,
   apiCatalog,
   agentCard,
+  DECISION_POLICIES_LIST_GUIDE,
+  DECISION_VERIFY_GUIDE,
   GATE_REQUEST_GUIDES,
   buildUsageEvent,
   callOutcome,
@@ -5477,6 +5479,89 @@ test("mcp decision gate fails closed when a signing key is unavailable", async (
   assert.equal(checked.result.structuredContent.receipt, null);
 });
 
+// Both decision routes share the agent_output_verification profile and neither
+// shares its request shape, so until this branch both refused with that gate's
+// claims/evidence example while naming their own schema. The refusal is the whole
+// product here — a caller who gets it has sent nothing the gate could screen — so
+// the golden case is the published example coming back accepted.
+test("the decision policy catalog refuses arguments with the empty request it accepts", async () => {
+  const rpcRequest = new Request("https://agent-output-verification-a2a.example.workers.dev/message/send", {
+    method: "POST",
+    headers: { "content-type": "application/json" }
+  });
+  const send = (params) =>
+    handleJsonRpc(
+      { jsonrpc: "2.0", id: "policies", method: "message/send", params },
+      rpcRequest,
+      { AGENT_PROFILE: "agent_output_verification" }
+    );
+
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const refused = (
+      await send({ capability: "decision_policies_list", request: { unexpected: true } })
+    ).result;
+    assert.equal(refused.status.state, "TASK_STATE_FAILED");
+    assert.equal(refused.metadata.schema, DECISION_POLICIES_LIST_GUIDE.schema);
+    assert.deepEqual(refused.metadata.example_request, {});
+    assert.equal(refused.metadata.example_note, DECISION_POLICIES_LIST_GUIDE.exampleNote);
+    // The shape it used to publish, from a schema this route does not name.
+    assert.ok(!Object.hasOwn(refused.metadata.example_request, "claims"));
+    assert.ok(!refused.metadata.required_fields.some((field) => field.startsWith("claims —")));
+
+    const [markdown] = refused.artifacts[0].parts;
+    assert.match(markdown.text, /takes no arguments/u);
+
+    const accepted = (
+      await send({ capability: "decision_policies_list", request: refused.metadata.example_request })
+    ).result;
+    assert.equal(accepted.status.state, "TASK_STATE_COMPLETED");
+    assert.equal(accepted.metadata.response.policies[0].policy_id, "pre-action-check.v1");
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("receipt verification refuses with a receipt request, not a claim audit", async () => {
+  const privateJwk = await generateTestKey();
+  const env = {
+    AGENT_PROFILE: "agent_output_verification",
+    AGENT_CARD_SIGNING_KEY: JSON.stringify(privateJwk),
+    AGENT_CARD_SIGNING_KID: privateJwk.kid
+  };
+  const rpcRequest = new Request("https://agent-output-verification-a2a.example.workers.dev/message/send", {
+    method: "POST",
+    headers: { "content-type": "application/json" }
+  });
+  const send = (params) =>
+    handleJsonRpc({ jsonrpc: "2.0", id: "verify", method: "message/send", params }, rpcRequest, env);
+
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const refused = (await send({ capability: "decision_verify", request: { receipt: "not-a-jws" } })).result;
+    assert.equal(refused.status.state, "TASK_STATE_FAILED");
+    assert.equal(refused.metadata.schema, DECISION_VERIFY_GUIDE.schema);
+    assert.deepEqual(
+      Object.keys(refused.metadata.example_request).sort(),
+      ["expected_action_hash", "expected_request_hash", "receipt"]
+    );
+    assert.ok(!Object.hasOwn(refused.metadata.example_request, "claims"));
+
+    // The published example is a well-formed request: it clears request validation
+    // and reaches the verifier, which is where a placeholder signature belongs.
+    const attempted = (
+      await send({ capability: "decision_verify", request: refused.metadata.example_request })
+    ).result;
+    assert.equal(attempted.status.state, "TASK_STATE_COMPLETED");
+    assert.equal(attempted.metadata.capability, "decision_verify");
+    assert.equal(attempted.metadata.response.gate_passed, false);
+  } finally {
+    console.log = originalLog;
+  }
+});
+
 test("mcp tools/call keeps the largest worker result below a bounded context cost", async () => {
   const liveRequest = JSON.parse(
     readFileSync(new URL("../../../examples/kazakhstan-middle-corridor/live-agent-request.json", import.meta.url), "utf8")
@@ -6441,6 +6526,9 @@ test("every /v1 endpoint the source advertises is actually routed", () => {
 const SUPPORTED_SCHEMA_KEYWORDS = new Set([
   "$ref", "$defs", "type", "enum", "const", "required", "properties", "additionalProperties",
   "items", "minItems", "maxItems", "minLength", "maxLength", "minimum", "maximum",
+  // decision-receipt-verify-request constrains the JWS shape and both sha256
+  // digests with pattern, and those are the constraints its example has to meet.
+  "pattern",
   // Annotations and metadata: no effect on validity.
   "$schema", "$id", "title", "description", "default", "examples", "format", "x-schema-version"
 ]);
@@ -6480,6 +6568,11 @@ function jsonSchemaErrors(value, schema, root, path = "") {
   }
 
   if (typeof value === "string") {
+    // JSON Schema patterns are unanchored ECMA-262 regexes, which is what the
+    // RegExp constructor gives; the v1 schemas anchor their own.
+    if (schema.pattern !== undefined && !new RegExp(schema.pattern, "u").test(value)) {
+      errors.push(`${at}: ${JSON.stringify(value)} does not match ${schema.pattern}`);
+    }
     if (schema.minLength !== undefined && value.length < schema.minLength) {
       errors.push(`${at}: shorter than minLength ${schema.minLength}`);
     }
@@ -6553,7 +6646,9 @@ function loadV1Schema(ref) {
 
 const REQUEST_GUIDES = [
   ...Object.entries(GATE_REQUEST_GUIDES),
-  ["pre_action_check", PRE_ACTION_CHECK_GUIDE]
+  ["pre_action_check", PRE_ACTION_CHECK_GUIDE],
+  ["decision_policies_list", DECISION_POLICIES_LIST_GUIDE],
+  ["decision_verify", DECISION_VERIFY_GUIDE]
 ];
 
 for (const [name, guide] of REQUEST_GUIDES) {
@@ -6595,6 +6690,165 @@ for (const [endpoint, route] of Object.entries(DIRECT_V1_ROUTES)) {
   });
 }
 
+// DIRECT_V1_ROUTES pairs a guide with a schema declaratively, so the test above
+// can read both off the route. The A2A and MCP capability handlers pair them by
+// passing two independent arguments to invalidRequestResult, and nothing checked
+// that they agree: decision_policies_list and decision_verify each named their own
+// schema while handing out the agent_output_verification claims/evidence example,
+// and the /v1/agent-output/pre-action-check branch of the verification handler
+// quoted the pre-action schema without passing PRE_ACTION_CHECK_GUIDE. The check
+// has to read the call sites themselves, because that pairing exists nowhere else.
+const WORKER_SOURCE = readFileSync(new URL("../src/index.js", import.meta.url), "utf8");
+
+const GUIDE_IDENTIFIERS = {
+  PRE_ACTION_CHECK_GUIDE,
+  DECISION_POLICIES_LIST_GUIDE,
+  DECISION_VERIFY_GUIDE
+};
+
+const STRING_ARGUMENT = /^"([^"\\]*)"$/u;
+
+function splitTopLevelArguments(text) {
+  const args = [];
+  let current = "";
+  let depth = 0;
+  let quote = null;
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+    if (quote) {
+      current += character;
+      if (character === "\\") {
+        current += text[index + 1] || "";
+        index += 1;
+      } else if (character === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (character === '"' || character === "'" || character === "`") {
+      quote = character;
+      current += character;
+      continue;
+    }
+    if ("([{".includes(character)) depth += 1;
+    if (")]}".includes(character)) depth -= 1;
+    if (character === "," && depth === 0) {
+      args.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += character;
+  }
+  if (current.trim()) args.push(current.trim());
+  return args;
+}
+
+function callArguments(source, openIndex) {
+  let depth = 0;
+  let quote = null;
+  for (let index = openIndex; index < source.length; index += 1) {
+    const character = source[index];
+    if (quote) {
+      if (character === "\\") index += 1;
+      else if (character === quote) quote = null;
+      continue;
+    }
+    if (character === '"' || character === "'" || character === "`") {
+      quote = character;
+      continue;
+    }
+    if (character === "(") depth += 1;
+    else if (character === ")") {
+      depth -= 1;
+      if (depth === 0) return splitTopLevelArguments(source.slice(openIndex + 1, index));
+    }
+  }
+  throw new Error("unbalanced call argument list");
+}
+
+// Sorts every invalidRequestResult / requestGuidanceResult call into three kinds:
+// `checked` names both its profile and its schema as literals and can be compared;
+// `forwarding` is the internal delegation that passes its own parameters straight
+// through; `dynamicProfile` picks the guide from a runtime profile, which only
+// emptyRequestResult does.
+function guideCallSites(source) {
+  const checked = [];
+  const forwarding = [];
+  const dynamicProfile = [];
+  const pattern = /\b(invalidRequestResult|requestGuidanceResult)\(/gu;
+  for (let match = pattern.exec(source); match; match = pattern.exec(source)) {
+    if (source.slice(Math.max(0, match.index - 9), match.index) === "function ") continue;
+    const args = callArguments(source, match.index + match[0].length - 1);
+    const line = source.slice(0, match.index).split("\n").length;
+    const profile = STRING_ARGUMENT.exec(args[0] || "");
+    const schema = STRING_ARGUMENT.exec(args[2] || "");
+    const site = {
+      line,
+      profile: profile ? profile[1] : null,
+      schema: schema ? schema[1] : null,
+      guide: args[4] || null
+    };
+    if (!schema) forwarding.push(site);
+    else if (!profile) dynamicProfile.push(site);
+    else checked.push(site);
+  }
+  return { checked, forwarding, dynamicProfile };
+}
+
+function guideSchemaMismatches(source) {
+  const { checked } = guideCallSites(source);
+  const mismatches = [];
+  for (const site of checked) {
+    const guide = site.guide ? GUIDE_IDENTIFIERS[site.guide] : GATE_REQUEST_GUIDES[site.profile];
+    if (!guide) {
+      mismatches.push(`index.js:${site.line} passes ${site.guide || site.profile}, which is not a guide this test knows`);
+      continue;
+    }
+    if (guide.schema !== site.schema) {
+      const named = site.guide || `GATE_REQUEST_GUIDES.${site.profile}`;
+      mismatches.push(
+        `index.js:${site.line} tells the caller to read ${site.schema} and hands them ${named}, whose example is built for ${guide.schema}`
+      );
+    }
+  }
+  return mismatches;
+}
+
+test("no call site pairs a request guide with a schema that guide does not name", () => {
+  const { checked, forwarding, dynamicProfile } = guideCallSites(WORKER_SOURCE);
+
+  // If the scanner stops matching, every assertion below passes vacuously.
+  assert.ok(checked.length >= 12, `only ${checked.length} literal guide call sites found; the scanner stopped matching`);
+  assert.equal(forwarding.length, 1, "requestGuidanceResult forwarding its own arguments is the only pass-through call");
+  assert.equal(
+    dynamicProfile.length,
+    1,
+    "emptyRequestResult is the only site that picks a guide from a runtime profile; a second one needs its own check"
+  );
+
+  const mismatches = guideSchemaMismatches(WORKER_SOURCE);
+  assert.deepEqual(mismatches, [], `\n  ${mismatches.join("\n  ")}`);
+});
+
+// Same reason the schema validator has a negative case: a scanner that silently
+// matches nothing would report a clean pairing over any source at all.
+test("the call-site scanner reports a guide paired with the wrong schema", () => {
+  const drifted = [
+    "function a2aResultForDecisionVerify(params) {",
+    '  return invalidRequestResult(',
+    '    "agent_output_verification",',
+    '    "/mcp#decision_verify",',
+    '    "schemas/v1/decision-receipt-verify-request.schema.json",',
+    "    errors",
+    "  );",
+    "}"
+  ].join("\n");
+  const mismatches = guideSchemaMismatches(drifted);
+  assert.equal(mismatches.length, 1);
+  assert.match(mismatches[0], /decision-receipt-verify-request\.schema\.json/u);
+  assert.match(mismatches[0], /evidence-audit\.schema\.json/u);
+});
+
 // The validator has to be able to fail, or the assertions above prove nothing.
 test("the guide schema validator rejects the drift it is there to catch", () => {
   const schema = loadV1Schema("schemas/v1/evidence-audit.schema.json");
@@ -6609,6 +6863,21 @@ test("the guide schema validator rejects the drift it is there to catch", () => 
   assert.deepEqual(jsonSchemaErrors({ claims: [], evidence: [] }, schema, schema).filter(
     (error) => error.includes("minItems")
   ).length, 1);
+
+  // pattern is the only constraint decision-receipt-verify-request has beyond its
+  // required fields, so an example there proves nothing unless pattern can fail.
+  const verify = loadV1Schema("schemas/v1/decision-receipt-verify-request.schema.json");
+  const malformed = jsonSchemaErrors(
+    {
+      receipt: "two.segments",
+      expected_request_hash: "sha256:NOTLOWERCASEHEX",
+      expected_action_hash: "885ce5052fe88f3b71bdd6c235ed59b3d20828ceb163d39e946512de4e2be333"
+    },
+    verify,
+    verify
+  );
+  assert.equal(malformed.length, 3, malformed.join("\n  "));
+  assert.ok(malformed.every((error) => error.includes("does not match")));
 });
 
 test("a malformed but request-shaped body gets field-level errors, not just the schema", async () => {
