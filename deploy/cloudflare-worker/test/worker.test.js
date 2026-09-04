@@ -2242,6 +2242,85 @@ test("a request with nothing in it is refused, not completed", async () => {
   }
 });
 
+// ADR 0026 draws its line at a caller who sent *nothing*. A caller who named the
+// counterparty and its jurisdiction sent the subject of the review, and the gate
+// can answer that without inventing anything: no dated sources scores 0/100 with
+// signal `unknown` and recommendation `insufficient_information`. Refusing it
+// sent a would-be client away with a schema lecture instead of their gap list.
+test("a counterparty with no evidence pack yet gets a first pass, not a refusal", async () => {
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "1",
+      method: "message/send",
+      params: {
+        message: {
+          role: "user",
+          parts: [{ kind: "data", data: { counterparty: { name: "Alatau Trading LLP", jurisdiction: "Kazakhstan" } } }]
+        }
+      }
+    },
+    new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/message/send", { method: "POST" })
+  );
+
+  const task = response.result;
+  assert.equal(task.status.state, "TASK_STATE_COMPLETED");
+
+  const data = task.artifacts[0].parts.find((part) => part.mediaType === "application/json").data;
+  // Nothing was screened, and the response has to keep saying so. A defaulted
+  // facet must never surface as an exposure finding about a named company.
+  assert.equal(data.secondary_exposure_signal, "unknown");
+  assert.equal(data.triage_recommendation, "insufficient_information");
+  assert.equal(data.decision_readiness_score, 0);
+  assert.deepEqual(data.supplied_sources, []);
+  assert.equal(data.human_review_required, true);
+  assert.ok(data.minimum_sources_before_review.length > 0, "a first pass must say what to bring back");
+
+  // The defaults are disclosed in the same artifact as the score, so the caller
+  // cannot read `ownership_or_control` as something the gate concluded.
+  const markdown = task.artifacts[0].parts.find((part) => part.mediaType === "text/markdown").text;
+  assert.match(markdown, /First pass from counterparty only\./);
+  for (const field of ["exposure_facets", "dated_sources", "risk_question", "decision_stage"]) {
+    assert.ok(markdown.includes(field), `the defaulted field ${field} must be named in the artifact`);
+  }
+
+  // The completion marker is a Symbol so it cannot leak into the wire response.
+  assert.ok(!JSON.stringify(data).includes("defaultedRequestFields"));
+});
+
+// The strict path is the contract; completing a minimal request must not relax
+// it. A request that names the counterparty and carries a bad enum is case 2 of
+// ADR 0026 — something was sent and it is wrong — and still fails.
+test("a named counterparty with an invalid enum still fails validation", async () => {
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "1",
+      method: "message/send",
+      params: {
+        message: {
+          role: "user",
+          parts: [
+            {
+              kind: "data",
+              data: {
+                counterparty: { name: "Alatau Trading LLP", jurisdiction: "Kazakhstan" },
+                exposure_facets: ["not_a_real_facet"],
+                dated_sources: [],
+                risk_question: "Ready for onboarding review?",
+                decision_stage: "onboarding"
+              }
+            }
+          ]
+        }
+      }
+    },
+    new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/message/send", { method: "POST" })
+  );
+
+  assert.equal(response.result.status.state, "TASK_STATE_FAILED");
+});
+
 // An agent that cannot serve the request should hand back the ones that can.
 test("the routing note names the sibling gates and never itself", async () => {
   const call = async (host) =>
