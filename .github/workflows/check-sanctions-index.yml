@@ -1,0 +1,55 @@
+# Watch the published sanctions name index. Do not publish it.
+#
+# The failure this exists for is silence. The previous index stopped being
+# served in August and nobody noticed for a month: the host was a repository
+# that had been deleted, the worker degraded to evidence-only exactly as
+# designed, and nothing said so out loud. A snapshot that nothing watches fails
+# the same quiet way — the gate keeps answering `success` while
+# `generated_at_utc` ages.
+#
+# Publishing needs a Cloudflare credential; noticing does not. This job reads
+# the public URL, rebuilds from the official sources, and fails when the two
+# disagree, which turns a silent stall into an email. Republishing stays a
+# deliberate command — see deploy/snapshot-site/README.md.
+name: Check sanctions name index
+
+on:
+  schedule:
+    # 04:20 UTC daily — after the US business day, before Almaty morning.
+    - cron: "20 4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: check-sanctions-index
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Rebuilding here is not busywork even though nothing is published: it is
+      # how an upstream that has started serving an error page, a truncated
+      # body, or an expired certificate gets caught on a normal day rather than
+      # on the day someone needs to republish.
+      - name: Rebuild the index from the official sources
+        run: python3 scripts/sanctions_name_index.py
+
+      - name: Check the rebuilt index still has its shape
+        run: python3 scripts/verify_sanctions_index.py deploy/snapshot-site/sanctions-name-index-compact.json
+
+      - name: Check what is actually being served
+        run: |
+          python3 scripts/check_published_index.py \
+            --published https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json \
+            --built deploy/snapshot-site/sanctions-name-index-compact.json \
+            --max-age-days 7
