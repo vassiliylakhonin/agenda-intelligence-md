@@ -210,7 +210,7 @@ Validate a claim-level evidence-audit dict against `evidence-audit.schema.json` 
 ```json
 {
   "audit_json": {
-    "brief_id": "eu-ai-act-2024-08",
+    "topic": "EU AI Act, August 2024",
     "claims": [
       {
         "claim_id": "c1",
@@ -222,7 +222,7 @@ Validate a claim-level evidence-audit dict against `evidence-audit.schema.json` 
         "risk_if_wrong": "Compliance plans miss deadline."
       }
     ],
-    "evidence": [ { "evidence_id": "e1", "title": "...", "url": "..." } ],
+    "evidence": [ { "evidence_id": "e1", "source_type": "official_document", "name": "...", "url": "..." } ],
     "unsupported_claims": []
   }
 }

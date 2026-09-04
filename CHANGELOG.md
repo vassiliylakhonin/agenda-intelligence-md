@@ -4,6 +4,30 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(gates): every request guide now publishes an example the schema it names actually accepts.**
+  A gate that refuses a request answers with `GATE_REQUEST_GUIDES`: the fields it needs, one worked
+  example, and the schema file to read. That example has to be true on both transports. It was checked on
+  neither — the Worker validates a few enums per gate, never the published schema, so an example could
+  drift from the contract it advertises and every test still passed. Measured 2026-09-04, three had.
+  `agent_output_verification` handed out evidence items of `{ evidence_id, title, date }` while
+  `evidence-audit.schema.json` sets `additionalProperties: false` on `evidence_item` and requires
+  `source_type`; `gulf_maritime_exposure` nested `vessel` and `cargo` inside a `voyage` that permits
+  neither (both are top-level siblings, and the Worker never read them where the example put them);
+  `critical_minerals_due_diligence` put an `id` on each `supplied_sources` entry, which that schema has no
+  property for. All three were accepted over A2A and `/v1/...` and rejected by `services.audit_claims`,
+  `gulf_maritime_exposure`, and `critical_minerals_due_diligence` — so the same published request worked
+  or failed depending on which door the caller used. This is the drift `PRE_ACTION_CHECK_GUIDE` carried
+  until 2026-09-02, found on three more gates. Examples corrected, and the `required:` lines that
+  described the wrong shape with them. Each guide now carries the `schema` it is checked against, and a
+  contract test in `deploy/cloudflare-worker/test/worker.test.js` reads that file off disk and validates
+  the example against it, so a guide cannot ship without a schema or drift from the one it names. The
+  same test asserts each `DIRECT_V1_ROUTES` entry quotes the schema its guide names, and a negative case
+  proves the validator rejects the exact shape that shipped. No response field changed: `schema` is read
+  only by the test, and `required_fields` / `example_request` carry the corrected content.
+  The `audit_claims` example in `MCP.md` carried the same drift plus a `brief_id` the root schema forbids,
+  under a "Returns `valid: true`" that was not reachable; corrected to `topic` and a `source_type`-bearing
+  evidence item.
+
 - **fix(gates): a declared `support_level` is a caller assertion, and the verification gate now scores it as one.**
   `agent_output_verification` computed readiness from the caller's own declared support level per claim, with
   nothing required to back it. Measured on 2026-09-04: one claim at `support_level: "direct"` and

@@ -2975,6 +2975,7 @@ function agenticEnumErrors(r) {
 const GATE_REQUEST_GUIDES = Object.freeze({
   cis_secondary_sanctions: {
     title: "CIS Secondary-Sanctions Exposure Gate",
+    schema: "schemas/v1/cis-secondary-sanctions-request.schema.json",
     required: [
       "counterparty — object with name and jurisdiction",
       "exposure_facets — array, e.g. ownership_or_control, transit_or_re_export",
@@ -2995,6 +2996,7 @@ const GATE_REQUEST_GUIDES = Object.freeze({
   },
   agentic_interaction_trust: {
     title: "Agentic Interaction Trust Gate",
+    schema: "schemas/v1/agentic-interaction-trust-request.schema.json",
     required: [
       "actor — object with declared_type and declared_name",
       "target_surface — checkout, account, api, mcp_tool, a2a_endpoint, content_or_catalog, auth_flow, support_or_messaging, other",
@@ -3022,12 +3024,20 @@ const GATE_REQUEST_GUIDES = Object.freeze({
   },
   agent_output_verification: {
     title: "Agent Output Verification Gate",
+    schema: "schemas/v1/evidence-audit.schema.json",
     required: [
       "claims — non-empty array of { claim_id, claim, support_level, evidence_ids }",
       "support_level — direct, partial, weak, unsupported",
       "evidence_ids — at least one id per claim that also appears in evidence; a support_level nothing in the pack backs is a caller assertion, scores nothing, and cannot reach review_ready",
-      "evidence — array of { evidence_id, title, date }"
+      "evidence — array of { evidence_id, source_type }, optionally name, url, freshness"
     ],
+    // Same drift PRE_ACTION_CHECK_GUIDE carried until 2026-09-02, on the gate
+    // that names evidence-audit.schema.json: the evidence items were
+    // { evidence_id, title, date }, and that schema sets additionalProperties
+    // false on evidence_item and requires source_type. Nothing here caught it,
+    // because agentOutputVerificationEnumErrors only walks claims — so the A2A
+    // and REST paths accepted the published example while audit_claims, and
+    // therefore the HTTP API, rejected it. Same example, two answers.
     example: {
       claims: [
         {
@@ -3037,20 +3047,31 @@ const GATE_REQUEST_GUIDES = Object.freeze({
           evidence_ids: ["e1"]
         }
       ],
-      evidence: [{ evidence_id: "e1", title: "OFAC SDN extract", date: "2026-08-01" }]
+      evidence: [
+        { evidence_id: "e1", name: "OFAC SDN extract", source_type: "official_document", freshness: "2026-08-01" }
+      ]
     }
   },
   gulf_maritime_exposure: {
     title: "Gulf Maritime Exposure Gate",
+    schema: "schemas/v1/gulf-maritime-exposure-request.schema.json",
     required: [
-      "voyage — object, chokepoint one of strait_of_hormuz, persian_gulf, gulf_of_oman, bab_el_mandeb, red_sea, suez_canal, other",
+      "voyage — object of { chokepoint }, optionally origin, destination, route_note; chokepoint one of strait_of_hormuz, persian_gulf, gulf_of_oman, bab_el_mandeb, red_sea, suez_canal, other",
+      "vessel — sibling of voyage, not a field inside it: { name, imo, flag, vessel_type }",
+      "cargo — sibling of voyage, a string",
       "exposure_facets — array, e.g. dark_fleet_indicators, insurance_or_pi_gap",
       "dated_sources — array of { id, source_type, title, date }",
       "risk_question — one sentence naming the decision",
       "decision_stage — pre_fixture, pre_voyage, pre_port_call, post_alert, committee_review, other"
     ],
+    // voyage is additionalProperties: false and holds the chokepoint and the
+    // leg only; vessel and cargo are top-level siblings. The example nested
+    // both inside voyage, which the Worker never looked at and the published
+    // schema forbids.
     example: {
-      voyage: { vessel: "Example Carrier", chokepoint: "strait_of_hormuz", cargo: "crude oil" },
+      vessel: { name: "Example Carrier", vessel_type: "tanker" },
+      voyage: { chokepoint: "strait_of_hormuz", origin: "Basrah", destination: "Fujairah" },
+      cargo: "crude oil",
       exposure_facets: ["dark_fleet_indicators", "insurance_or_pi_gap"],
       dated_sources: [
         { id: "gme-1", source_type: "vessel_registry_extract", title: "Vessel registry extract", date: "2026-08-01" },
@@ -3062,6 +3083,7 @@ const GATE_REQUEST_GUIDES = Object.freeze({
   },
   kazakhstan_market_entry_readiness: {
     title: "Kazakhstan Market-Entry Readiness Gate",
+    schema: "schemas/v1/market-entry-readiness-request.schema.json",
     required: [
       "project_name — the entry project",
       "partner_or_company — the entering company or partner",
@@ -3083,6 +3105,7 @@ const GATE_REQUEST_GUIDES = Object.freeze({
   },
   kazakhstan: {
     title: "Kazakhstan / Middle Corridor Deal Risk Gate",
+    schema: "schemas/v1/middle-corridor-deal-risk-request.schema.json",
     required: [
       "route — the corridor leg",
       "cargo — what moves",
@@ -3105,14 +3128,18 @@ const GATE_REQUEST_GUIDES = Object.freeze({
   },
   critical_minerals_due_diligence: {
     title: "Critical Minerals & Strategic Raw Materials Due Diligence Gate",
+    schema: "schemas/v1/critical-minerals-due-diligence-request.schema.json",
     required: [
       "project_name — the offtake, investment or shipment file",
       "commodity — one of lithium, rare_earth_elements, nickel, cobalt, copper, graphite, manganese, tungsten, gallium_germanium, other_critical_mineral",
       "origin_jurisdiction — where the material is mined",
       "decision_question — one sentence naming the decision",
       "decision_stage — pre_exploration, pre_offtake_agreement, pre_processing_contract, pre_export_shipment, pre_investment_decision",
-      "supplied_sources — array of { id, source_type, title, date }"
+      "supplied_sources — array of { source_type }, optionally title, url, date, issuing_authority, verified_by_counsel, summary; this gate's sources carry no id"
     ],
+    // Unlike the dated_sources the corridor gates take, supplied_sources here
+    // is additionalProperties: false with no id property. The example carried
+    // one, so the published request failed the schema it named.
     example: {
       project_name: "Example spodumene offtake",
       commodity: "lithium",
@@ -3122,13 +3149,14 @@ const GATE_REQUEST_GUIDES = Object.freeze({
       decision_question: "Is this offtake ready for a pre-signature human review?",
       decision_stage: "pre_offtake_agreement",
       supplied_sources: [
-        { id: "cm-1", source_type: "mining_concession_or_license_extract", title: "Concession extract", date: "2026-08-01" },
-        { id: "cm-2", source_type: "certified_ore_assay_report", title: "Certified assay", date: "2026-08-02" }
+        { source_type: "mining_concession_or_license_extract", title: "Concession extract", date: "2026-08-01" },
+        { source_type: "certified_ore_assay_report", title: "Certified assay", date: "2026-08-02" }
       ]
     }
   },
   dual_use_technology_export: {
     title: "Dual-Use Technology & Export Controls Gate",
+    schema: "schemas/v1/dual-use-technology-export-request.schema.json",
     required: [
       "shipment — object with hs_code, description, origin, and destination",
       "dated_sources — array of { id, source_type, title, date }",
@@ -3160,6 +3188,7 @@ const GATE_REQUEST_GUIDES = Object.freeze({
 // caller the verification example here would hand them a request this gate rejects.
 export const PRE_ACTION_CHECK_GUIDE = {
   title: "Agenda Decision Gate — pre-action check",
+  schema: "schemas/v1/pre-action-check-request.schema.json",
   required: [
     "run_id — caller-generated correlation id, resubmitted after adding evidence or approval",
     "actor — object with id, type, operator",

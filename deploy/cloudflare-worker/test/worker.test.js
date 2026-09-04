@@ -31,6 +31,7 @@ import {
   mcpServerCard,
   okfMarkdown,
   openApiDocument,
+  PRE_ACTION_CHECK_GUIDE,
   profileContent,
   productionAuthKey,
   rateLimitPerHour,
@@ -6367,6 +6368,201 @@ test("every /v1 endpoint the source advertises is actually routed", () => {
       `${endpoint} is advertised as a canonical endpoint but no route serves it`
     );
   }
+});
+
+// A request guide is a promise made to a caller who has already been refused
+// once: send this, and it works. It has to be true on both transports. The
+// Worker only ever checked its own — its enum validators walk a few fields, not
+// the published schema — so an example could drift away from the schema its own
+// guidance names and nothing here noticed. Measured 2026-09-04, three had:
+// agent_output_verification carried { evidence_id, title, date } evidence
+// against an evidence_item that is additionalProperties: false and requires
+// source_type; gulf_maritime_exposure nested vessel and cargo inside a voyage
+// that forbids them; critical_minerals_due_diligence put an id on
+// supplied_sources, which has no id property. All three were accepted here and
+// rejected by services.audit_claims and the HTTP API behind it — the same
+// request, two answers, depending on which door the caller used. This is the
+// same bug PRE_ACTION_CHECK_GUIDE carried until 2026-09-02.
+//
+// So every guide now names its schema, and this test reads that schema off disk
+// and validates the example against it. A new gate cannot ship a guide without
+// one, and an example cannot drift from the contract it advertises.
+
+// The worker package has no dependencies and runs on plain `node --test`, so
+// there is no ajv to reach for. This covers the keyword subset these v1 request
+// schemas actually use; UNSUPPORTED_SCHEMA_KEYWORDS below fails the test rather
+// than silently passing if one of them starts using something else.
+const SUPPORTED_SCHEMA_KEYWORDS = new Set([
+  "$ref", "$defs", "type", "enum", "const", "required", "properties", "additionalProperties",
+  "items", "minItems", "maxItems", "minLength", "maxLength", "minimum", "maximum",
+  // Annotations and metadata: no effect on validity.
+  "$schema", "$id", "title", "description", "default", "examples", "format", "x-schema-version"
+]);
+
+function resolveSchemaRef(ref, root) {
+  assert.ok(ref.startsWith("#/"), `only local $ref is supported, got ${ref}`);
+  let node = root;
+  for (const segment of ref.slice(2).split("/")) {
+    node = node[segment.replace(/~1/gu, "/").replace(/~0/gu, "~")];
+    assert.ok(node, `unresolvable $ref ${ref}`);
+  }
+  return node;
+}
+
+function jsonSchemaErrors(value, schema, root, path = "") {
+  if (schema.$ref) return jsonSchemaErrors(value, resolveSchemaRef(schema.$ref, root), root, path);
+
+  const errors = [];
+  const at = path || "(root)";
+  const typeOf = (v) =>
+    v === null ? "null" : Array.isArray(v) ? "array" : Number.isInteger(v) ? "integer" : typeof v;
+
+  if (schema.type) {
+    const allowed = Array.isArray(schema.type) ? schema.type : [schema.type];
+    const actual = typeOf(value);
+    const ok = allowed.some((t) => t === actual || (t === "number" && actual === "integer"));
+    if (!ok) {
+      errors.push(`${at}: expected ${allowed.join(" or ")}, got ${actual}`);
+      return errors;
+    }
+  }
+  if (schema.enum && !schema.enum.some((option) => option === value)) {
+    errors.push(`${at}: ${JSON.stringify(value)} is not one of ${JSON.stringify(schema.enum)}`);
+  }
+  if (Object.hasOwn(schema, "const") && schema.const !== value) {
+    errors.push(`${at}: expected ${JSON.stringify(schema.const)}`);
+  }
+
+  if (typeof value === "string") {
+    if (schema.minLength !== undefined && value.length < schema.minLength) {
+      errors.push(`${at}: shorter than minLength ${schema.minLength}`);
+    }
+    if (schema.maxLength !== undefined && value.length > schema.maxLength) {
+      errors.push(`${at}: longer than maxLength ${schema.maxLength}`);
+    }
+  }
+
+  if (typeof value === "number") {
+    if (schema.minimum !== undefined && value < schema.minimum) {
+      errors.push(`${at}: below minimum ${schema.minimum}`);
+    }
+    if (schema.maximum !== undefined && value > schema.maximum) {
+      errors.push(`${at}: above maximum ${schema.maximum}`);
+    }
+  }
+
+  if (Array.isArray(value)) {
+    if (schema.minItems !== undefined && value.length < schema.minItems) {
+      errors.push(`${at}: has ${value.length} items, minItems is ${schema.minItems}`);
+    }
+    if (schema.maxItems !== undefined && value.length > schema.maxItems) {
+      errors.push(`${at}: has ${value.length} items, maxItems is ${schema.maxItems}`);
+    }
+    if (schema.items) {
+      value.forEach((item, index) => {
+        errors.push(...jsonSchemaErrors(item, schema.items, root, `${path}/${index}`));
+      });
+    }
+  }
+
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    for (const key of schema.required || []) {
+      if (!Object.hasOwn(value, key)) errors.push(`${at}: '${key}' is required`);
+    }
+    const properties = schema.properties || {};
+    for (const [key, child] of Object.entries(value)) {
+      if (Object.hasOwn(properties, key)) {
+        errors.push(...jsonSchemaErrors(child, properties[key], root, `${path}/${key}`));
+      } else if (schema.additionalProperties === false) {
+        errors.push(`${at}: '${key}' is not a permitted property`);
+      } else if (schema.additionalProperties && typeof schema.additionalProperties === "object") {
+        errors.push(...jsonSchemaErrors(child, schema.additionalProperties, root, `${path}/${key}`));
+      }
+    }
+  }
+
+  return errors;
+}
+
+// Only descends into the positions the validator above actually reads, so a
+// constraint added anywhere it would have ignored shows up as an unsupported
+// keyword instead of quietly passing.
+function unsupportedSchemaKeywords(schema, found = new Set()) {
+  if (schema === null || typeof schema !== "object" || Array.isArray(schema)) return found;
+  for (const [keyword, child] of Object.entries(schema)) {
+    if (!SUPPORTED_SCHEMA_KEYWORDS.has(keyword)) found.add(keyword);
+    if (keyword === "properties" || keyword === "$defs") {
+      for (const subschema of Object.values(child)) unsupportedSchemaKeywords(subschema, found);
+    } else if (keyword === "items" || keyword === "additionalProperties") {
+      unsupportedSchemaKeywords(child, found);
+    }
+  }
+  return found;
+}
+
+function loadV1Schema(ref) {
+  assert.match(ref, /^schemas\/v1\/[a-z0-9-]+\.schema\.json$/u, `${ref} is not a schemas/v1 path`);
+  return JSON.parse(readFileSync(new URL(`../../../${ref}`, import.meta.url), "utf8"));
+}
+
+const REQUEST_GUIDES = [
+  ...Object.entries(GATE_REQUEST_GUIDES),
+  ["pre_action_check", PRE_ACTION_CHECK_GUIDE]
+];
+
+for (const [name, guide] of REQUEST_GUIDES) {
+  test(`request guide ${name} names the schema it is validated against`, () => {
+    assert.equal(
+      typeof guide.schema,
+      "string",
+      `${name} publishes an example but names no schema, so nothing can check it`
+    );
+    assert.ok(loadV1Schema(guide.schema), `${name} names ${guide.schema}, which does not exist`);
+  });
+
+  test(`request guide ${name} publishes an example its own schema accepts`, () => {
+    const schema = loadV1Schema(guide.schema);
+    const unsupported = unsupportedSchemaKeywords(schema);
+    assert.deepEqual(
+      [...unsupported],
+      [],
+      `${guide.schema} uses schema keywords this test does not implement: ${[...unsupported].join(", ")}`
+    );
+
+    const errors = jsonSchemaErrors(guide.example, schema, schema);
+    assert.deepEqual(
+      errors,
+      [],
+      `${name} hands callers a request that ${guide.schema} rejects:\n  ${errors.join("\n  ")}`
+    );
+  });
+}
+
+// The guide's schema and the schema the endpoint quotes back in its rejection
+// are two independent strings pointing at one contract. If they disagree, the
+// caller is told to read one file and handed an example built for another.
+for (const [endpoint, route] of Object.entries(DIRECT_V1_ROUTES)) {
+  test(`canonical endpoint ${endpoint} quotes the schema its guide names`, () => {
+    const guide = route.guide || GATE_REQUEST_GUIDES[route.guideProfile];
+    assert.ok(guide, `${endpoint} has no request guide`);
+    assert.equal(route.schema, guide.schema);
+  });
+}
+
+// The validator has to be able to fail, or the assertions above prove nothing.
+test("the guide schema validator rejects the drift it is there to catch", () => {
+  const schema = loadV1Schema("schemas/v1/evidence-audit.schema.json");
+  const drifted = {
+    claims: [{ claim_id: "c1", claim: "Example claim.", support_level: "direct", evidence_ids: ["e1"] }],
+    // The shape agent_output_verification published until 2026-09-04.
+    evidence: [{ evidence_id: "e1", title: "OFAC SDN extract", date: "2026-08-01" }]
+  };
+  const errors = jsonSchemaErrors(drifted, schema, schema);
+  assert.ok(errors.some((error) => error.includes("'source_type' is required")));
+  assert.ok(errors.some((error) => error.includes("'title' is not a permitted property")));
+  assert.deepEqual(jsonSchemaErrors({ claims: [], evidence: [] }, schema, schema).filter(
+    (error) => error.includes("minItems")
+  ).length, 1);
 });
 
 test("a malformed but request-shaped body gets field-level errors, not just the schema", async () => {
