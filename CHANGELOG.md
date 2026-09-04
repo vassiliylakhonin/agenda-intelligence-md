@@ -4,6 +4,33 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(gates): the two decision routes now publish their own request guide, not the verification gate's.**
+  The `every request guide now publishes an example the schema it names actually accepts` entry below
+  corrected the examples inside `GATE_REQUEST_GUIDES`. It deliberately left the call sites
+  alone, and two of them were the same bug one level out: `decision_policies_list` and `decision_verify`
+  each passed the `agent_output_verification` profile to `invalidRequestResult` beside its own schema
+  string, so a refused caller was told to read `decision-policies-list-request.schema.json` or
+  `decision-receipt-verify-request.schema.json` and handed the evidence-audit claims/evidence example —
+  a request the named schema rejects in every field. `decision_policies_list` was doubly wrong: it takes
+  no arguments at all, and the example it published was the reason it refused. Each route now has a
+  standalone guide passed as `guideOverride`, the way `PRE_ACTION_CHECK_GUIDE` already was —
+  `DECISION_POLICIES_LIST_GUIDE` publishes the empty request the route accepts, `DECISION_VERIFY_GUIDE`
+  publishes a `{ receipt, expected_request_hash, expected_action_hash }` request and says to compute both
+  hashes locally rather than copying them out of the receipt response. The
+  `/v1/agent-output/pre-action-check` branch of the verification handler was quoting the pre-action schema
+  without passing `PRE_ACTION_CHECK_GUIDE` and is fixed with them.
+  Guides may now carry an optional `exampleNote`, surfaced in the artifact text and as `example_note` in
+  the JSON part and task metadata, so an empty example reads as "this route takes no arguments" rather
+  than a truncated payload, and a placeholder receipt says it is one. Additive: the field appears only
+  where a guide sets it.
+  The contract test from the entry below covers both new guides, its hand-rolled validator now implements
+  `pattern` (the only constraint the verify schema carries beyond its required fields, with a negative case
+  proving it can fail), and a new test reads the Worker source and asserts no `invalidRequestResult` or
+  `requestGuidanceResult` call site pairs a guide with a schema that guide does not name — the pairing the
+  declarative `DIRECT_V1_ROUTES` check could not see. It too has a negative case, because a source scanner
+  that silently matches nothing reports every source clean. Golden and failure cases for both routes over
+  A2A: the refusal carries the right example, and the example it publishes comes back accepted.
+
 - **fix(watchman): a sanctions hit is attributed to the list it came from, not to the caller.**
   Measured against a live `moov/watchman` v0.66.0 on 2026-09-04, `sourceList` comes back as the snake_case
   identifiers declared in `pkg/search/models.go` — `us_ofac`, `us_non_sdn`, `us_csl`, `us_fincen_311`,
