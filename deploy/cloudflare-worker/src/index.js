@@ -3315,6 +3315,58 @@ function isCisSecondarySanctionsRequest(value) {
   );
 }
 
+// ADR 0026 answers a caller who sent *nothing* with the request guide. A caller
+// who named the counterparty and its jurisdiction is a different case: they sent
+// the subject of the review and have not built the evidence pack yet, and the
+// gate can already answer that truthfully. With no dated sources the scorers
+// return signal `unknown`, recommendation `insufficient_information`, and
+// readiness 0/100 — no assessment is invented — alongside the minimum source
+// list the caller has to bring back. Completing the request here keeps it valid
+// against the v1 request schema: `exposure_facets` carries `minItems: 1`, so the
+// default is the one facet that applies to every counterparty, and the artifact
+// text names every field that was defaulted.
+const CIS_MINIMAL_DEFAULT_FACET = "ownership_or_control";
+const CIS_MINIMAL_DEFAULT_DECISION_STAGE = "other";
+const DEFAULTED_REQUEST_FIELDS = Symbol("defaultedRequestFields");
+
+function isMinimalCisSecondarySanctionsRequest(value) {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      value.counterparty &&
+      typeof value.counterparty === "object" &&
+      typeof value.counterparty.name === "string" &&
+      value.counterparty.name.trim() !== "" &&
+      typeof value.counterparty.jurisdiction === "string" &&
+      value.counterparty.jurisdiction.trim() !== ""
+  );
+}
+
+function completeMinimalCisSecondarySanctionsRequest(minimal) {
+  const defaulted = [];
+  const completed = { ...minimal };
+  if (!Array.isArray(completed.exposure_facets) || completed.exposure_facets.length === 0) {
+    completed.exposure_facets = [CIS_MINIMAL_DEFAULT_FACET];
+    defaulted.push("exposure_facets");
+  }
+  if (!Array.isArray(completed.dated_sources)) {
+    completed.dated_sources = [];
+    defaulted.push("dated_sources");
+  }
+  if (typeof completed.risk_question !== "string" || completed.risk_question.trim() === "") {
+    completed.risk_question =
+      `What is required before a human can review ${completed.counterparty.name} for secondary-sanctions exposure?`;
+    defaulted.push("risk_question");
+  }
+  if (typeof completed.decision_stage !== "string" || completed.decision_stage.trim() === "") {
+    completed.decision_stage = CIS_MINIMAL_DEFAULT_DECISION_STAGE;
+    defaulted.push("decision_stage");
+  }
+  Object.defineProperty(completed, DEFAULTED_REQUEST_FIELDS, { value: defaulted, enumerable: false });
+  return completed;
+}
+
 function structuredCisSecondarySanctionsRequestFromParams(params) {
   if (!params || typeof params !== "object") return null;
   const candidates = [
@@ -3340,6 +3392,17 @@ function structuredCisSecondarySanctionsRequestFromParams(params) {
     if (isCisSecondarySanctionsRequest(candidate)) return candidate;
     const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
     if (parsed && isCisSecondarySanctionsRequest(parsed)) return parsed;
+  }
+  // Second pass, and only after the strict shape has been ruled out everywhere:
+  // a named counterparty with no evidence pack yet is answerable, not refusable.
+  for (const candidate of candidates) {
+    if (isMinimalCisSecondarySanctionsRequest(candidate)) {
+      return completeMinimalCisSecondarySanctionsRequest(candidate);
+    }
+    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
+    if (parsed && isMinimalCisSecondarySanctionsRequest(parsed)) {
+      return completeMinimalCisSecondarySanctionsRequest(parsed);
+    }
   }
   return null;
 }
@@ -6391,11 +6454,21 @@ async function cisSecondarySanctionsResult(request, env) {
   };
 }
 
-function cisArtifactText(response, liveRetrievalStatus) {
+function cisArtifactText(response, liveRetrievalStatus, defaultedFields) {
   const missing = response.minimum_sources_before_review || [];
   const missingText = missing.length ? missing.map((s) => `- ${s}`).join("\n") : "- none";
   const dims = response.top_exposure_dimensions || [];
   const dimsText = dims.length ? dims.map((s) => `- ${s}`).join("\n") : "- none";
+  // A first pass run from a name and a jurisdiction has to say so in the same
+  // breath as the score, or the caller reads a defaulted facet as our finding.
+  const defaultedNote = Array.isArray(defaultedFields) && defaultedFields.length
+    ? [
+        "",
+        "First pass from counterparty only.",
+        `Defaulted, not supplied by you: ${defaultedFields.join(", ")}.`,
+        "Resend with your own facets, decision stage, and dated sources for a scored triage."
+      ]
+    : [];
   return [
     "CIS secondary-sanctions exposure response",
     "",
@@ -6410,6 +6483,7 @@ function cisArtifactText(response, liveRetrievalStatus) {
     "",
     "Minimum sources before review:",
     missingText,
+    ...defaultedNote,
     "",
     response.not_advice_notice
   ].join("\n");
@@ -6444,7 +6518,7 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
         name: "CIS secondary-sanctions exposure response",
         parts: [
           {
-            text: cisArtifactText(result.response, result.live_retrieval_status),
+            text: cisArtifactText(result.response, result.live_retrieval_status, structured[DEFAULTED_REQUEST_FIELDS]),
             mediaType: "text/markdown"
           },
           {

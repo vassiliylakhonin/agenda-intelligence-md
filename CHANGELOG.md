@@ -4,6 +4,28 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(cis): a named counterparty with no evidence pack gets a first pass instead of a refusal.**
+  ADR 0026 draws its line at a caller who sent nothing, and answers them with the request guide. A caller
+  who sent `counterparty.name` and `counterparty.jurisdiction` and no evidence was landing on that same
+  path, because `isCisSecondarySanctionsRequest` requires all five top-level fields at once. That caller
+  sent the subject of the review; the gate could already answer them truthfully and did not. The scorers
+  handle an empty evidence pack honestly on their own — `cisExposureSignal` returns `unknown` with zero
+  dated sources, `cisTriageRecommendation` returns `insufficient_information`, and `cisDecisionReadiness`
+  returns `0`. So the A2A and `/v1/cis-secondary-sanctions/exposure` extractor now takes a second pass
+  after the strict shape has been ruled out everywhere: a named counterparty is completed with defaults
+  and run. Nothing is invented — the response still reports signal `unknown`, recommendation
+  `insufficient_information`, readiness `0/100`, `supplied_sources: []`, and the five source types the
+  caller has to bring back. `exposure_facets` carries `minItems: 1`, so the completion cannot leave it
+  empty; it defaults to `ownership_or_control`, the one facet that applies to every counterparty, and the
+  artifact text names all four defaulted fields in the same block as the score, so a defaulted facet is
+  never read as a finding about a real company. An empty request is unchanged and still answers
+  `TASK_STATE_INPUT_REQUIRED`; a request that names a counterparty and carries a bad enum is unchanged and
+  still answers `TASK_STATE_FAILED`. The completion marker is a `Symbol`, so it cannot reach the wire.
+  The Python service is deliberately not mirrored: `cis_secondary_sanctions_exposure` validates against
+  `cis-secondary-sanctions-request.schema.json` and stays strict for embedders. Completion belongs at the
+  hosted edge, which is where strangers arrive — and the completed request validates against that same v1
+  schema, so what reaches the service is unchanged in kind.
+
 - **fix(mcp): the endpoint answers a non-POST with `405`, not `404`.**
   `/mcp` was routed for POST only, so every other method fell through to the catch-all. The endpoint is
   advertised as `streamable-http`, a transport whose client may open the stream with GET, and `404` does
