@@ -3025,6 +3025,7 @@ const GATE_REQUEST_GUIDES = Object.freeze({
     required: [
       "claims — non-empty array of { claim_id, claim, support_level, evidence_ids }",
       "support_level — direct, partial, weak, unsupported",
+      "evidence_ids — at least one id per claim that also appears in evidence; a support_level nothing in the pack backs is a caller assertion, scores nothing, and cannot reach review_ready",
       "evidence — array of { evidence_id, title, date }"
     ],
     example: {
@@ -3399,9 +3400,13 @@ const CIS_MINIMAL_DEFAULTS = [
 // The same second pass as CIS, for every other gate whose scorers already
 // return an honest verdict on an empty evidence pack. Each spec names the
 // subject the caller has to have sent — the thing being reviewed — and defaults
-// only the evidence and framing around it. `pre_action_check` is deliberately
-// absent: it requires `risk_tier`, and defaulting a risk classification would
-// invent the one judgement that gate exists to carry.
+// only the evidence and framing around it. `agent_output_verification` was held
+// out until its scorer stopped reading a declared `support_level` as a verified
+// one; now that an uncited level weighs nothing and an uncorroborated claim set
+// returns `insufficient_information`, a defaulted `evidence: []` states the
+// absence instead of scoring around it, and the gate takes the pass too.
+// `pre_action_check` stays absent: it requires `risk_tier`, and defaulting a
+// risk classification would invent the one judgement that gate exists to carry.
 function isMinimalAgenticInteractionTrustRequest(value) {
   return Boolean(
     value &&
@@ -3514,6 +3519,22 @@ const DUAL_USE_MINIMAL_DEFAULTS = [
       `from ${r.shipment.origin} to ${r.shipment.destination}?`
   }
 ];
+
+function isMinimalAgentOutputVerificationRequest(value) {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      Array.isArray(value.claims) &&
+      value.claims.length > 0 &&
+      value.claims.every((claim) => claim && typeof claim === "object" && !Array.isArray(claim))
+  );
+}
+
+// The claim set is the subject; the evidence pack is what the caller has not
+// built yet. Nothing else here is defaultable — `support_level` is the caller's
+// own declaration and `unsupported_claims` is optional — so this is one spec.
+const AGENT_OUTPUT_VERIFICATION_MINIMAL_DEFAULTS = [{ field: "evidence", fill: () => [] }];
 
 function isMinimalCisSecondarySanctionsRequest(value) {
   return Boolean(
@@ -4001,6 +4022,26 @@ const AGENT_OUTPUT_VERIFICATION_NOT_ADVICE_NOTICE =
 
 const AGENT_OUTPUT_VERIFICATION_SUPPORT_LEVELS = ["direct", "partial", "weak", "unsupported"];
 
+// A declared support_level is a caller assertion about its own output, not a
+// fact this gate has checked. Scoring it at face value is how a request carrying
+// one `direct` claim and `evidence: []` returned readiness 100 / review_ready on
+// 2026-09-04 — full marks for an empty pack, from the gate whose stated job is
+// checking that claims are backed. A level counts only when the claim cites an
+// evidence_id that is actually in the supplied evidence; an uncited level weighs
+// nothing and is reported as the gap it is. Kept in step with
+// AGENT_OUTPUT_SUPPORT_LEVEL_WEIGHTS in src/agenda_intelligence/services.py.
+const AGENT_OUTPUT_SUPPORT_LEVEL_WEIGHTS = { direct: 1.0, partial: 0.6, weak: 0.2, unsupported: 0.0 };
+
+// Mirrors the readiness cap block_unsafe_claims already applies: one
+// uncorroborated claim keeps the set below the >= 85 review_ready band however
+// many corroborated claims sit beside it.
+const AGENT_OUTPUT_UNCORROBORATED_READINESS_CAP = 84;
+
+function claimIsCorroborated(claim, evidenceIds) {
+  const declared = Array.isArray(claim && claim.evidence_ids) ? claim.evidence_ids : [];
+  return declared.some((eid) => evidenceIds.has(eid));
+}
+
 function isAgentOutputVerificationRequest(value) {
   return (
     value &&
@@ -4031,7 +4072,12 @@ function structuredAgentOutputVerificationRequestFromParams(params) {
     const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
     if (parsed && isAgentOutputVerificationRequest(parsed)) return parsed;
   }
-  return null;
+  // Second pass: a claim set with no evidence pack yet is answerable.
+  return minimalRequestFromCandidates(
+    candidates,
+    isMinimalAgentOutputVerificationRequest,
+    AGENT_OUTPUT_VERIFICATION_MINIMAL_DEFAULTS
+  );
 }
 
 function agentOutputVerificationEnumErrors(request) {
@@ -4075,7 +4121,7 @@ function agentOutputAuditSummary(request) {
       }
     }
   }
-  return { supportLevels, orphans, spanOrphans, grounded, claimCount: claims.length };
+  return { supportLevels, orphans, spanOrphans, grounded, claimCount: claims.length, evidenceIds };
 }
 
 function agentOutputVerificationResult(request) {
@@ -4113,6 +4159,13 @@ function agentOutputVerificationResult(request) {
     seenUnsafe.add(entry.claim_id);
   }
 
+  const evidenceIds = summary.evidenceIds;
+  const corroboratedClaimCount = claims.filter((claim) => claimIsCorroborated(claim, evidenceIds)).length;
+  // A claim already listed as unsafe is reported once, under the sharper reason.
+  const uncorroboratedClaims = claims.filter(
+    (claim) => !seenUnsafe.has(claim.claim_id) && !claimIsCorroborated(claim, evidenceIds)
+  );
+
   const evidenceGaps = [];
   for (const entry of summary.orphans) {
     evidenceGaps.push(`Claim ${entry.claim_id} cites evidence not supplied: ${entry.missing_evidence_ids.join(", ")}.`);
@@ -4120,11 +4173,19 @@ function agentOutputVerificationResult(request) {
   for (const entry of summary.spanOrphans) {
     evidenceGaps.push(`Claim ${entry.claim_id} quote attributed to evidence ${entry.evidence_id} (${entry.reason}).`);
   }
+  for (const claim of uncorroboratedClaims) {
+    evidenceGaps.push(
+      `Claim ${claim.claim_id} declares support_level ${claim.support_level} ` +
+        "but cites no evidence present in the supplied pack."
+    );
+  }
 
-  const direct = summary.supportLevels.direct || 0;
-  const partial = summary.supportLevels.partial || 0;
-  const weak = summary.supportLevels.weak || 0;
-  const rawScore = claimCount ? Math.round(((direct * 1.0 + partial * 0.6 + weak * 0.2) / claimCount) * 100) : 0;
+  let corroboratedWeight = 0;
+  for (const claim of claims) {
+    if (!claimIsCorroborated(claim, evidenceIds)) continue;
+    corroboratedWeight += AGENT_OUTPUT_SUPPORT_LEVEL_WEIGHTS[claim.support_level] || 0;
+  }
+  const rawScore = claimCount ? Math.round((corroboratedWeight / claimCount) * 100) : 0;
   let readinessScore = Math.max(0, rawScore - 10 * unsafeClaims.length - 5 * unsupportedStatements.length);
 
   let verdict;
@@ -4133,16 +4194,25 @@ function agentOutputVerificationResult(request) {
     readinessScore = Math.min(readinessScore, 49);
   } else if (!claimCount) {
     verdict = "insufficient_information";
+  } else if (!corroboratedClaimCount) {
+    // Nothing in the request backs anything in it. The declared levels are the
+    // caller's own word, so there is no material here to verdict on.
+    verdict = "insufficient_information";
+    readinessScore = 0;
   } else if (weakClaims.length || summary.spanOrphans.length) {
     verdict = "verify_before_relay";
-  } else if (grounded === claimCount) {
+  } else if (grounded === claimCount && !uncorroboratedClaims.length) {
     verdict = "allow_relay";
   } else {
     verdict = "verify_before_relay";
   }
 
+  if (uncorroboratedClaims.length) {
+    readinessScore = Math.min(readinessScore, AGENT_OUTPUT_UNCORROBORATED_READINESS_CAP);
+  }
+
   let readinessLabel;
-  if (!claimCount) {
+  if (verdict === "insufficient_information") {
     readinessLabel = "insufficient_information";
   } else if (verdict === "block_unsafe_claims") {
     readinessLabel = "not_decision_ready";
@@ -4174,6 +4244,12 @@ function agentOutputVerificationResult(request) {
   }
   for (const item of weakClaims) {
     ownerActions.push(`Strengthen weak claim ${item.claim_id} with direct supporting evidence.`);
+  }
+  for (const claim of uncorroboratedClaims) {
+    ownerActions.push(
+      `Cite supplied evidence for claim ${claim.claim_id}: a declared support_level of ` +
+        `${claim.support_level} is a caller assertion until an evidence_id in the pack backs it.`
+    );
   }
 
   const response = {
@@ -4594,16 +4670,21 @@ function a2aResultForAgentOutputVerification(params) {
           name: "Pre-action check response",
           parts: [
             {
-              text: [
-                "Pre-action check response",
-                "",
-                `Decision: ${result.response.decision}`,
-                `Reason: ${result.response.reason_code}`,
-                `Run: ${result.response.run_id}`,
-                `Human review required: ${String(result.response.human_review_required)}`,
-                "",
-                result.response.not_authorization_notice
-              ].join("\n"),
+              text: withDefaultedNote(
+                [
+                  "Pre-action check response",
+                  "",
+                  `Decision: ${result.response.decision}`,
+                  `Reason: ${result.response.reason_code}`,
+                  `Run: ${result.response.run_id}`,
+                  `Human review required: ${String(result.response.human_review_required)}`,
+                  "",
+                  result.response.not_authorization_notice
+                ].join("\n"),
+                structured[DEFAULTED_REQUEST_FIELDS],
+                "your claim set and the action you named",
+                "the evidence those claims cite"
+              ),
               mediaType: "text/markdown"
             },
             { data: result.response, mediaType: "application/json" }
@@ -4640,7 +4721,12 @@ function a2aResultForAgentOutputVerification(params) {
         name: "Agent output verification response",
         parts: [
           {
-            text: agentOutputVerificationArtifactText(result.response),
+            text: withDefaultedNote(
+              agentOutputVerificationArtifactText(result.response),
+              structured[DEFAULTED_REQUEST_FIELDS],
+              "your claim set",
+              "the evidence those claims cite"
+            ),
             mediaType: "text/markdown"
           },
           {
