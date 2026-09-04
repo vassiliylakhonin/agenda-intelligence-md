@@ -4,6 +4,27 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(ci): watch the published index instead of publishing it, and drop the credential.**
+  The scheduled job added a moment ago deployed to Cloudflare Pages, which meant standing up an API token
+  and an environment to hold it. That was solving the wrong half. The failure this guards against was never
+  the absence of automatic publishing — it was silence: the previous index stopped being served in August
+  and nobody noticed for a month, because a worker that degrades gracefully degrades quietly. Publishing
+  needs a credential; noticing does not.
+  So `refresh-sanctions-index.yml` becomes `check-sanctions-index.yml` and writes nothing. It rebuilds from
+  the four official sources — which is how an upstream serving an error page, a truncated body, or an
+  expired certificate gets caught on an ordinary day rather than on the day someone needs to republish —
+  then `scripts/check_published_index.py` reads the public URL the worker actually reads and fails when it
+  is unreachable, carries no build date, is older than seven days, or has drifted more than 10% from what
+  the sources give today. All three failure paths were exercised against doctored copies: a 404 exits 1
+  with "the worker is screening on caller-supplied evidence only until this is republished", a July index
+  exits 1 with "65 days old (limit 7)", and a corpus missing half its names exits 1 naming the drift.
+  Against production it exits 0. Republishing stays the deliberate local command in
+  `deploy/snapshot-site/README.md`, run under the maintainer's own wrangler login, so no Cloudflare token
+  is stored in GitHub at all and no environment is needed.
+  Correction to the previous entry: it described `agent-output-verification-production` as
+  administrator-gated. That environment carries a branch policy and no reviewers — the phrase came from
+  that workflow's own self-description rather than its actual protection rules.
+
 - **feat(ci): rebuild and republish the sanctions index on a schedule, and refuse to publish a broken one.**
   The previous index stopped being served in August and nobody noticed for a month — the host was a
   repository that had been deleted, the worker degraded to evidence-only exactly as designed, and the
