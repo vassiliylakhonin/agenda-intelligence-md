@@ -4,6 +4,21 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(watchman): a sanctions hit is attributed to the list it came from, not to the caller.**
+  Measured against a live `moov/watchman` v0.66.0 on 2026-09-04, `sourceList` comes back as the snake_case
+  identifiers declared in `pkg/search/models.go` — `us_ofac`, `us_non_sdn`, `us_csl`, `us_fincen_311`,
+  `us_tel`, `eu_csl`, `uk_csl`, `un_csl`. Not one of them was in `SOURCE_LIST_TO_SOURCE_TYPE`, so every
+  real match fell through the default and an OFAC SDN hit on Nicolas Maduro was returned as
+  `source_type: user_provided_note` — evidence the caller supposedly wrote, rather than a name on a
+  sanctions list. The existing test did not catch it because its fixture was hand-written in the old
+  grouped shape rather than captured from a running instance; the new test uses a real v0.66.0 payload.
+  The unrecognised-list default is now `other` rather than `user_provided_note`: anything reaching that
+  function came from the upstream, so it is never a caller note — unattributed is honest, misattributed is
+  not. Also documented, in the degraded-status message and the module header, that `WATCHMAN_URL` carries
+  the API version prefix: v0.6x serves `/v2/search`, so the variable is set to `https://<host>/v2` and a
+  bare host answers 404. No behaviour change when `WATCHMAN_URL` is unset — the profile still degrades to
+  user-supplied evidence.
+
 - **fix(gates): every request guide now publishes an example the schema it names actually accepts.**
   A gate that refuses a request answers with `GATE_REQUEST_GUIDES`: the fields it needs, one worked
   example, and the schema file to read. That example has to be true on both transports. It was checked on
