@@ -4,6 +4,26 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(gates): the first pass extends to every gate whose scorers stay honest without evidence.**
+  The CIS gate now shares one mechanism — `completeMinimalRequest` plus `minimalRequestFromCandidates` —
+  with `agentic_interaction_trust`, `gulf_maritime_exposure`, `kazakhstan_market_entry_readiness`,
+  `critical_minerals_due_diligence`, and `dual_use_technology_export`. Each spec names the subject the
+  caller must have sent and defaults only the evidence and framing around it, and every one was measured
+  with an empty pack before being wired: agentic returns `trust_signal: unknown`, gulf
+  `exposure_signal: unknown`, market entry `readiness_label: insufficient_information`, minerals
+  `risk_signal: unknown` with `operational_decision.decision: request_evidence`, and dual-use
+  `not_decision_ready` with `No dated supporting sources were supplied` stated in its risk vectors.
+  Disclosure is one shared block appended at the artifact call site, the way `engagementMarkdown` already
+  is, so all six gates read alike. Two are held out, on evidence rather than taste.
+  `agent_output_verification` scores readiness from the caller's own declared `support_level` per claim,
+  so defaulting `evidence` to `[]` returned `readiness_score: 100` / `review_ready` for a request that
+  supplied no evidence — measured, and the exact invention this pass exists to prevent; a caller can still
+  send `evidence: []` deliberately, but it must not become the silent default. `pre_action_check` requires
+  `risk_tier`, and defaulting a risk classification would invent the one judgement that gate carries.
+  `critical_minerals_due_diligence` has no `other` in its `decision_stage` enum, so its default is
+  `pre_offtake_agreement` — what `criticalMineralsResult` already fell back to silently, now stated in the
+  artifact. Empty requests are unchanged everywhere and still answer `TASK_STATE_INPUT_REQUIRED`.
+
 - **feat(cis): a named counterparty with no evidence pack gets a first pass instead of a refusal.**
   ADR 0026 draws its line at a caller who sent nothing, and answers them with the request guide. A caller
   who sent `counterparty.name` and `counterparty.jurisdiction` and no evidence was landing on that same
