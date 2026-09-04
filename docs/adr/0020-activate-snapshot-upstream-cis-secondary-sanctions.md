@@ -1,13 +1,22 @@
 # ADR 0020 — Activate the Snapshot upstream for `cis_secondary_sanctions` (live server-side name screening)
 
-Status: superseded operationally — activation rolled back because the configured index URL was never published
+Status: accepted — reactivated 2026-09-04 against a self-owned published index
 Date: 2026-06-26
-Updated: 2026-08-31
+Updated: 2026-09-04
 
-> Operational update: the `SNAPSHOT_INDEX_URL` added by this decision was removed after the target returned
-> 404 and no published index could be found. The Snapshot adapter remains an available first-choice upstream,
-> but production currently has no configured live-retrieval upstream and honestly reports evidence-only mode.
-> A future activation requires publishing and verifying the index before setting the URL.
+> Operational history. **2026-08-31:** the `SNAPSHOT_INDEX_URL` added by this decision was removed after the
+> target returned 404 and no published index could be found. The root cause, established 2026-09-04, was that
+> the index lived on the portfolio site at `vassiliylakhonin.github.io`, and that repository no longer exists
+> on GitHub — so Pages stopped serving, the index 404'd, and the discovery alias hosted on the same domain
+> started failing too. The dependency was on a host this project did not own.
+>
+> **2026-09-04:** reactivated. The index build (`scripts/sanctions_name_index.py`) and the published
+> directory (`deploy/snapshot-site/`) now live in this repository, and the index is served from Cloudflare
+> Pages at `https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json` — the same account that
+> already runs the worker fleet, so there is one less external party to lose. Rebuilt the same day from the
+> four official sources: 84,367 names, verified through the adapter before the URL was set (`VTB BANK` →
+> `eu_consolidated_extract`, `SBERBANK OF RUSSIA` and `MADURO MOROS, Nicolas` → `ofac_sdn_extract`, all
+> exact; an invented company returns no match).
 
 ## Context
 

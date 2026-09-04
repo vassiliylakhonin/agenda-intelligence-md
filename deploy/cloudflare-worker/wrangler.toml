@@ -44,13 +44,18 @@ workers_dev = true
 [env.cis-secondary-sanctions.vars]
 
 AGENT_PROFILE = "cis_secondary_sanctions"
-# Snapshot upstream (ADR 0014): $0 server-side name screening against a compact
-# public-list index served over HTTP. Not a secret (public URL), so it belongs in
-# [vars] rather than a secret. No index is published yet, so the var is unset and
-# the adapter reports live_retrieval_status "disabled" — it never reports an
-# unscreened name as clean. To activate, publish the index and set:
-#   SNAPSHOT_INDEX_URL = "https://<host>/sanctions-name-index-compact.json"
-# Set SNAPSHOT_DISABLED=1 to deactivate without removing the URL.
+# Snapshot upstream (ADR 0014, activated by ADR 0020): $0 server-side name
+# screening against a compact public-list index served over HTTP. Not a secret
+# (public URL), so it belongs in [vars] rather than a secret.
+#
+# The index is built by scripts/sanctions_name_index.py and published to
+# Cloudflare Pages from deploy/snapshot-site — see that directory's README for
+# the rebuild-and-republish command. It is a snapshot, so its freshness is
+# whatever generated_at_utc says; the worker reports that date back to callers.
+# Set SNAPSHOT_DISABLED=1 to deactivate without removing the URL — the adapter
+# then reports live_retrieval_status "disabled" and falls back to caller-supplied
+# evidence. It never reports an unscreened name as clean.
+SNAPSHOT_INDEX_URL = "https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json"
 
 # Optional access controls for the message/send route — both OFF by default so
 # the browser demo stays an open free evaluation. Flip on when needed:

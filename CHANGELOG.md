@@ -4,6 +4,25 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(cis): live name screening is back on, against an index this project owns.**
+  ADR 0020 activated the Snapshot upstream in June and was rolled back on 2026-08-31 when the configured URL
+  returned 404. The cause, found now: the index was published by the portfolio site at
+  `vassiliylakhonin.github.io`, and that repository no longer exists on GitHub — Pages stopped serving, the
+  index went with it, and the A2A discovery alias on the same domain has been failing ever since (66.7%
+  uptime on the marketplace listing, the only agent below 100%). The upstream was fine; the host was somebody
+  else's.
+  So the build moves in-tree. `scripts/sanctions_name_index.py` and the published directory
+  `deploy/snapshot-site/` now live here, and the index is served from Cloudflare Pages — the same account
+  that already runs the worker fleet. Rebuilt from the four official sources (OFAC SDN, OFAC consolidated
+  non-SDN, EU consolidated, UK FCDO): 84,367 names, 2.8 MB, `application/json`. Verified through
+  `upstream_snapshot.js` against the published file before `SNAPSHOT_INDEX_URL` was set — `VTB BANK` matches
+  `eu_consolidated_extract`, `SBERBANK OF RUSSIA` and `MADURO MOROS, Nicolas` match `ofac_sdn_extract`, all
+  exact, and an invented company returns nothing. Generated JSON is gitignored: it is a build artifact, not
+  source. Nothing about the profile's claims widens — a match is still a possible string match, still not
+  identity verification or a sanctions determination, and human review is still required. What changes is
+  that `live_retrieval_status` is `success` instead of `disabled`, and callers get
+  `live_retrieval_snapshot_generated_at` so they can see exactly how fresh the screening was.
+
 - **fix(gates): the two decision routes now publish their own request guide, not the verification gate's.**
   The `every request guide now publishes an example the schema it names actually accepts` entry below
   corrected the examples inside `GATE_REQUEST_GUIDES`. It deliberately left the call sites
