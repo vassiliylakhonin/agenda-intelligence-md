@@ -4,6 +4,30 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(cis): score the evidence the screening actually merged, instead of contradicting it.**
+  Activating the Snapshot upstream (ADR 0020) made one response say two things. The result builder merges an
+  auto-fetched name match into `supplied_sources`, so `missing` shrinks and the evidence half of the response
+  reports an OFAC SDN hit — but all three scorers still short-circuited on `request.dated_sources`, which the
+  minimal first pass (#307/#308) defaults to `[]`. Measured on the deployed endpoint for `SBERBANK OF RUSSIA`:
+  `auto_fetched_sources` naming the SDN entry, `supplied_sources: ["ofac_sdn_extract", "uk_ofsi_extract"]`, and
+  a verdict of `secondary_exposure_signal: unknown` / `triage_recommendation: insufficient_information` /
+  `decision_readiness_score: 0`. The body named the match; the verdict said nothing was found.
+  The guard was right when it was written — `dated_sources` *was* the whole evidence pack. Live retrieval made
+  the caller's array and the scored pack two different sets, and the scorers were never moved across. They now
+  read the effective pack (`supplied_sources`, caller evidence plus whatever screening merged), so a match
+  reaches the `high` branch, `escalate_before_*`, and a non-zero readiness score. A counterparty nobody
+  screened, and one screening cleared, both still return `unknown` / `insufficient_information` / 0 — scoring
+  the effective pack invents no evidence where there is none.
+  What `high` asserts is unchanged and now says so in the response: a merged match adds a limitation reading
+  "a name on a public sanctions list resembles this counterparty ... not a determination that this counterparty
+  is listed, and not identity, ownership, or 50 % rule resolution", and the markdown artifact carries a
+  `Name screening:` line beside the signal. `human_review_required` stays unconditionally true. Same fix in the
+  Python service and the worker, so parity holds; no response field added (the v1 schema is
+  `additionalProperties: false` under ADR 0003). ADR 0020 records the posture change.
+  Also fixed while proving what `high` may be scored from: the worker passed `autoFetched.length` — which
+  includes GLEIF ownership records (ADR 0022) — as the sanctions match count, so an ownership record alone
+  could raise the signal to `high`. It is now counted before ownership enrichment appends to the same array.
+
 - **feat(cis): live name screening is back on, against an index this project owns.**
   ADR 0020 activated the Snapshot upstream in June and was rolled back on 2026-08-31 when the configured URL
   returned 404. The cause, found now: the index was published by the portfolio site at

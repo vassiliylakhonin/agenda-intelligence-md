@@ -3420,6 +3420,115 @@ test("cis worker surfaces the snapshot provenance date in A2A metadata", async (
   }
 });
 
+// The two halves of a screened response have to agree. Before this, the scorers
+// read `request.dated_sources` while the merge wrote into `supplied_sources`, so
+// a name-only request that hit a public list came back naming an OFAC SDN entry
+// under a verdict of `unknown` / `insufficient_information` / 0.
+test("cis worker scores a merged name match instead of reporting nothing was found", async () => {
+  resetSnapshotCache();
+  const originalLog = console.log;
+  const originalFetch = globalThis.fetch;
+  console.log = () => {};
+  globalThis.fetch = async () =>
+    new Response(SNAPSHOT_FIXTURE, { status: 200, headers: { "content-type": "application/json" } });
+  try {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "cis-merged-match",
+        method: "message/send",
+        params: {
+          message: {
+            role: "user",
+            parts: [{ kind: "data", data: { counterparty: { name: "Gazprom Export", jurisdiction: "Russia" } } }]
+          }
+        }
+      },
+      cisRequest,
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" }
+    );
+
+    const task = response.result;
+    assert.equal(task.status.state, "TASK_STATE_COMPLETED");
+    assert.equal(task.metadata.live_retrieval_status, "success");
+    assert.ok(task.metadata.auto_fetched_sources.length >= 1, "the fixture entity is on the indexed OFAC list");
+
+    const data = task.artifacts[0].parts.find((part) => part.mediaType === "application/json").data;
+    // The evidence half.
+    assert.ok(data.supplied_sources.includes("ofac_sdn_extract"));
+    assert.ok(!data.minimum_sources_before_review.includes("ofac_sdn_extract"));
+    // The verdict half, which must now agree with it.
+    assert.equal(data.secondary_exposure_signal, "high");
+    assert.notEqual(data.triage_recommendation, "insufficient_information");
+    assert.ok(data.decision_readiness_score > 0);
+    assert.notEqual(data.decision_readiness_label, "insufficient_information");
+    // Scoring the match does not upgrade what the gate claims about it.
+    assert.equal(data.human_review_required, true);
+    assert.ok(
+      data.limitations.some((line) => line.includes("resembles this counterparty") && line.includes("not a determination")),
+      "a scored match must say what high means and what it does not"
+    );
+
+    const markdown = task.artifacts[0].parts.find((part) => part.mediaType === "text/markdown").text;
+    assert.match(markdown, /Exposure signal: high/);
+    assert.match(markdown, /Name screening: 1 public-list name match merged as evidence/);
+    assert.match(markdown, /not identity verification/);
+  } finally {
+    console.log = originalLog;
+    globalThis.fetch = originalFetch;
+    resetSnapshotCache();
+  }
+});
+
+// The other half of the same invariant: scoring the effective pack must not
+// invent evidence. A name screening ran and cleared is still no evidence.
+test("cis worker still reports it has nothing when screening merges no match", async () => {
+  resetSnapshotCache();
+  const originalLog = console.log;
+  const originalFetch = globalThis.fetch;
+  console.log = () => {};
+  globalThis.fetch = async () =>
+    new Response(SNAPSHOT_FIXTURE, { status: 200, headers: { "content-type": "application/json" } });
+  try {
+    const response = await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "cis-no-match",
+        method: "message/send",
+        params: {
+          message: {
+            role: "user",
+            parts: [{ kind: "data", data: { counterparty: { name: "Alatau Trading LLP", jurisdiction: "Kazakhstan" } } }]
+          }
+        }
+      },
+      cisRequest,
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" }
+    );
+
+    const task = response.result;
+    assert.equal(task.metadata.live_retrieval_status, "success");
+    assert.deepEqual(task.metadata.auto_fetched_sources, []);
+
+    const data = task.artifacts[0].parts.find((part) => part.mediaType === "application/json").data;
+    assert.deepEqual(data.supplied_sources, []);
+    assert.equal(data.secondary_exposure_signal, "unknown");
+    assert.equal(data.triage_recommendation, "insufficient_information");
+    assert.equal(data.decision_readiness_score, 0);
+    assert.ok(
+      !data.limitations.some((line) => line.includes("Live name screening merged")),
+      "no match merged, so nothing to explain away"
+    );
+
+    const markdown = task.artifacts[0].parts.find((part) => part.mediaType === "text/markdown").text;
+    assert.match(markdown, /Name screening: no public-list name match against the current snapshot/);
+  } finally {
+    console.log = originalLog;
+    globalThis.fetch = originalFetch;
+    resetSnapshotCache();
+  }
+});
+
 test("cis worker logs a bounded reason code when live retrieval degrades", async () => {
   resetSnapshotCache();
   const originalLog = console.log;

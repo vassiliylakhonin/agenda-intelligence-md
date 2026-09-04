@@ -1,6 +1,6 @@
 # ADR 0020 — Activate the Snapshot upstream for `cis_secondary_sanctions` (live server-side name screening)
 
-Status: accepted — reactivated 2026-09-04 against a self-owned published index
+Status: accepted — reactivated 2026-09-04 against a self-owned published index; scoring posture settled 2026-09-04
 Date: 2026-06-26
 Updated: 2026-09-04
 
@@ -31,6 +31,39 @@ A third upstream removes that cost. The portfolio site already builds and publis
 Add and **activate** a third per-profile upstream, `Snapshot` (`deploy/cloudflare-worker/src/upstream_snapshot.js`), listed first ahead of Watchman and OpenSanctions. The worker fetches the published compact index (cached in module-global scope per isolate, 6 h TTL) and matches with exact normalized-name + significant-token overlap (no per-request Levenshtein; fuzzy stays browser-side). Activation is the declarative var `SNAPSHOT_INDEX_URL` in `wrangler.toml` for the `cis-secondary-sanctions` env, deployed 2026-06-26 (verified: `live_retrieval_status: success`, `upstream: Snapshot`, exact match on a known SDN entity).
 
 This **flips the profile's public posture** from "no live retrieval" to "server-side name screening against a fresh public-list snapshot", which is why this is a recorded ADR and not a silent config change. The portfolio demo page copy and the agent-card text are updated in the same change.
+
+## What a merged match is scored as (2026-09-04)
+
+Activation left one question unanswered, and the two halves of the response answered it differently. The result
+builder merges an auto-fetched match into `supplied_sources` — so `minimum_sources_before_review` shrinks and the
+evidence half of the response reports the hit — while the exposure, triage, and readiness scorers all
+short-circuited on `request.dated_sources`. Those were the same set when the scorers were written; live retrieval
+made them different. Since the minimal first pass defaults `dated_sources` to `[]`, a name-only request against a
+listed counterparty returned `auto_fetched_sources` naming an OFAC SDN entry under
+`secondary_exposure_signal: unknown`, `triage_recommendation: insufficient_information`, and
+`decision_readiness_score: 0`.
+
+**Decision: the scorers gate on the effective evidence pack** — what the caller supplied plus what screening
+merged — not on the caller's own array. A merged match therefore reaches the `high` branch, an
+`escalate_before_*` triage, and a non-zero readiness score.
+
+The alternative was to keep the guard and stop merging matches into `supplied_sources`, on the reasoning that a
+snapshot name match is a possible string match rather than identity verification. It was rejected because it
+contradicts what this ADR already decided (matches land in `supplied_sources` / `auto_fetched_sources`), it would
+make server-side screening change no scored field at all, and it leaves the gate's error pointing the wrong way:
+`unknown` / `0` / `insufficient_information` on a live OFAC SDN hit reads to a caller as *nothing was found*.
+
+The posture change is in what the gate is willing to **score**, not in what it **claims**. `high` here means a
+name on a public sanctions list resembles this counterparty and a reviewer must resolve it — not that the
+counterparty is listed, and not identity, ownership, or 50 % rule resolution. A response carrying a merged match
+now states that in `limitations` and names the screening result in the markdown artifact beside the signal, so
+the verdict and the evidence say the same thing. `human_review_required` stays unconditionally true, and an
+empty effective pack — nobody screened it, or screening matched nothing — still returns `unknown` /
+`insufficient_information` / 0.
+
+Only *sanctions-list* matches may raise the signal. Ownership enrichment ([ADR 0022](0022-gleif-ownership-enrichment-cis-secondary-sanctions.md))
+contributes auto-fetched sources too, and those are counted separately: a disclosed LEI parent is evidence about
+ownership, never a listing signal.
 
 ## Boundaries (unchanged)
 

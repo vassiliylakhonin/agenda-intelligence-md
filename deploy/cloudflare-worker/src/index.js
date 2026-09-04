@@ -3683,8 +3683,18 @@ function cisEvidenceGapForSource(sourceType) {
   return gaps[sourceType] || `No ${sourceType} supplied.`;
 }
 
-function cisTriageRecommendation(request, missing, exposureSignal) {
-  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0) {
+// These three scorers judge the *effective* evidence pack — what the caller
+// supplied plus whatever live screening merged into it — not `request
+// .dated_sources`. Reading the request array was right only while the two were
+// the same set. Since ADR 0020 activated the Snapshot upstream, a match is
+// merged into `supplied_sources` before scoring, so a name-only request (the
+// minimal first pass) could carry a public-list hit and still score `unknown` /
+// `insufficient_information` / 0: the body named an OFAC SDN entry while the
+// verdict said nothing had been found. An empty effective pack still returns
+// the same "no evidence" verdict it always did — a counterparty nobody has
+// screened, and a counterparty that screening cleared, are both still `unknown`.
+function cisTriageRecommendation(supplied, request, missing, exposureSignal) {
+  if (supplied.length === 0) {
     return "insufficient_information";
   }
   if (missing.length === 0 && exposureSignal === "low") return "ready_for_human_review";
@@ -3693,16 +3703,21 @@ function cisTriageRecommendation(request, missing, exposureSignal) {
   return "not_decision_ready";
 }
 
-function cisExposureSignal(request, missing, openSanctionsMatchCount) {
-  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0) return "unknown";
-  if (openSanctionsMatchCount >= 1) return "high";
+// `sanctionsMatchCount` counts merged *sanctions-list* name matches only. An
+// ownership record (GLEIF, ADR 0022) is also an auto-fetched source but says
+// nothing about listing, and must never raise the signal to `high` on its own.
+function cisExposureSignal(supplied, missing, sanctionsMatchCount) {
+  if (supplied.length === 0) return "unknown";
+  // A name on a public list resembling this counterparty. Not a determination
+  // that it is listed — see the limitation this emits alongside the signal.
+  if (sanctionsMatchCount >= 1) return "high";
   if (missing.length >= 4) return "medium_high";
   if (missing.length > 0) return "medium";
   return "low";
 }
 
-function cisDecisionReadiness(request, supplied) {
-  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0 || supplied.length === 0) {
+function cisDecisionReadiness(supplied) {
+  if (supplied.length === 0) {
     return [0, "insufficient_information"];
   }
   const requiredPresent = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW.filter((s) => supplied.includes(s)).length;
@@ -6694,6 +6709,10 @@ async function cisSecondarySanctionsResult(request, env) {
     });
   }
 
+  // Merged sanctions-list matches, counted before ownership enrichment appends
+  // to the same array. Only these may drive the exposure signal to `high`.
+  const sanctionsMatchesMerged = autoFetched.length;
+
   // Ownership enrichment (GLEIF), off by default, runs ALONGSIDE the sanctions
   // match — never replaces it. Contributes disclosed direct/ultimate parent as
   // ownership evidence per ADR 0022. Graceful degrade: any non-success status
@@ -6722,9 +6741,9 @@ async function cisSecondarySanctionsResult(request, env) {
   }
 
   const missing = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW.filter((s) => !supplied.includes(s));
-  const [score, label] = cisDecisionReadiness(request, supplied);
-  const exposureSignal = cisExposureSignal(request, missing, autoFetched.length);
-  const triage = cisTriageRecommendation(request, missing, exposureSignal);
+  const [score, label] = cisDecisionReadiness(supplied);
+  const exposureSignal = cisExposureSignal(supplied, missing, sanctionsMatchesMerged);
+  const triage = cisTriageRecommendation(supplied, request, missing, exposureSignal);
   const facets = Array.isArray(request.exposure_facets) ? request.exposure_facets : [];
   const undisclosedUbo = cisHasUndisclosedUbo(request);
 
@@ -6770,6 +6789,18 @@ async function cisSecondarySanctionsResult(request, env) {
         break;
       }
     }
+  }
+  // The signal is scored off screening results, so it has to say what it is
+  // asserting. `high` here is "a name on a public list resembles this
+  // counterparty", not a finding that this counterparty is listed.
+  if (sanctionsMatchesMerged) {
+    limitations.push(
+      `Live name screening merged ${sanctionsMatchesMerged} public-list name ` +
+        `match${sanctionsMatchesMerged === 1 ? "" : "es"} into the evidence pack, which is what raised ` +
+        "secondary_exposure_signal to high. That signal means a name on a public sanctions list resembles " +
+        "this counterparty and the match is evidence a reviewer must resolve — not a determination that this " +
+        "counterparty is listed, and not identity, ownership, or 50 % rule resolution."
+    );
   }
   limitations.push(
     "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
@@ -6819,11 +6850,14 @@ async function cisSecondarySanctionsResult(request, env) {
     // tell whether a "no match" reflects the current lists or a stale index.
     live_retrieval_snapshot_generated_at: upstreamResult.snapshot_generated_at ?? null,
     auto_fetched_sources: autoFetched,
+    // Sanctions-list matches only (ownership enrichment excluded), so the
+    // markdown can name what the exposure signal was scored from.
+    sanctions_matches_merged: sanctionsMatchesMerged,
     upstream_attribution: upstreamResult.attribution
   };
 }
 
-function cisArtifactText(response, liveRetrievalStatus) {
+function cisArtifactText(response, liveRetrievalStatus, sanctionsMatchesMerged = 0) {
   const missing = response.minimum_sources_before_review || [];
   const missingText = missing.length ? missing.map((s) => `- ${s}`).join("\n") : "- none";
   const dims = response.top_exposure_dimensions || [];
@@ -6837,6 +6871,19 @@ function cisArtifactText(response, liveRetrievalStatus) {
     `Exposure signal: ${response.secondary_exposure_signal}`,
     `Decision readiness: ${response.decision_readiness_score}/100 (${response.decision_readiness_label})`,
     `Live retrieval status: ${liveRetrievalStatus}`,
+    // The signal is now scored off merged screening results, so the markdown has
+    // to name the match in the same breath — and name what it is not. Only a
+    // successful run may report an absence of matches; on the disabled and
+    // degraded paths nothing was screened, and the status line above says so.
+    ...(liveRetrievalStatus === "success"
+      ? [
+          sanctionsMatchesMerged
+            ? `Name screening: ${sanctionsMatchesMerged} public-list name ` +
+              `match${sanctionsMatchesMerged === 1 ? "" : "es"} merged as evidence ` +
+              "(possible string match, not identity verification)"
+            : "Name screening: no public-list name match against the current snapshot"
+        ]
+      : []),
     `Human review required: ${String(response.human_review_required)}`,
     "",
     "Top exposure dimensions:",
@@ -6879,7 +6926,7 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
         parts: [
           {
             text: withDefaultedNote(
-              cisArtifactText(result.response, result.live_retrieval_status),
+              cisArtifactText(result.response, result.live_retrieval_status, result.sanctions_matches_merged),
               structured[DEFAULTED_REQUEST_FIELDS],
               "counterparty",
               "your own facets, decision stage, and dated sources"

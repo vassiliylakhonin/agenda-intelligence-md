@@ -849,7 +849,7 @@ def a2a_result_for_middle_corridor(request_json: dict) -> dict:
     }
 
 
-def _cis_artifact_text(response: dict, live_retrieval_status: str) -> str:
+def _cis_artifact_text(response: dict, live_retrieval_status: str, sanctions_matches_merged: int = 0) -> str:
     missing = response.get("minimum_sources_before_review", [])
     missing_text = "\n".join(f"- {item}" for item in missing) if missing else "- none"
     dims = response.get("top_exposure_dimensions", [])
@@ -862,6 +862,25 @@ def _cis_artifact_text(response: dict, live_retrieval_status: str) -> str:
             f"Exposure signal: {response['secondary_exposure_signal']}",
             f"Decision readiness: {response['decision_readiness_score']}/100 ({response['decision_readiness_label']})",
             f"Live retrieval status: {live_retrieval_status}",
+            # The signal is scored off merged screening results, so the markdown
+            # has to name the match in the same breath — and name what it is not.
+            # Only a successful run may report an absence of matches; on the
+            # disabled and degraded paths nothing was screened.
+            *(
+                [
+                    (
+                        (
+                            f"Name screening: {sanctions_matches_merged} public-list name "
+                            f"match{'' if sanctions_matches_merged == 1 else 'es'} merged as evidence "
+                            "(possible string match, not identity verification)"
+                        )
+                        if sanctions_matches_merged
+                        else "Name screening: no public-list name match against the current snapshot"
+                    )
+                ]
+                if live_retrieval_status == "success"
+                else []
+            ),
             f"Human review required: {str(response['human_review_required']).lower()}",
             "",
             "Top exposure dimensions:",
@@ -900,7 +919,14 @@ def a2a_result_for_cis_secondary_sanctions(request_json: dict) -> dict:
             {
                 "artifactId": "cis-secondary-sanctions-exposure-response",
                 "name": "CIS secondary-sanctions exposure response",
-                "parts": [{"text": _cis_artifact_text(response, live_retrieval_status), "mediaType": "text/markdown"}],
+                "parts": [
+                    {
+                        "text": _cis_artifact_text(
+                            response, live_retrieval_status, len(result.get("auto_fetched_sources", []))
+                        ),
+                        "mediaType": "text/markdown",
+                    }
+                ],
             }
         ],
         "metadata": {

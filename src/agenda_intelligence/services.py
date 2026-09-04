@@ -3096,8 +3096,19 @@ def _cis_evidence_gap_for_source(source_type: str) -> str:
     return gaps.get(source_type, f"No {source_type} supplied.")
 
 
-def _cis_triage_recommendation(request_json: dict, missing_sources: list[str], exposure_signal: str) -> str:
-    if not request_json.get("dated_sources"):
+# These three scorers judge the *effective* evidence pack — what the caller
+# supplied plus whatever live retrieval merged into it — not
+# ``request_json["dated_sources"]``. Reading the request array was right only
+# while the two were the same set. Since ADR 0020 activated server-side name
+# screening, a match is merged into ``supplied_sources`` before scoring, so a
+# request carrying no dated sources of its own could hold a public-list hit and
+# still score ``unknown`` / ``insufficient_information`` / 0: the body naming an
+# OFAC SDN entry while the verdict said nothing had been found. An empty
+# effective pack still returns the same "no evidence" verdict it always did.
+def _cis_triage_recommendation(
+    supplied_sources: list[str], request_json: dict, missing_sources: list[str], exposure_signal: str
+) -> str:
+    if not supplied_sources:
         return "insufficient_information"
     if not missing_sources and exposure_signal in {"low"}:
         return "ready_for_human_review"
@@ -3109,10 +3120,13 @@ def _cis_triage_recommendation(request_json: dict, missing_sources: list[str], e
     return "not_decision_ready"
 
 
-def _cis_exposure_signal(request_json: dict, missing_sources: list[str], opensanctions_matches: int) -> str:
-    if not request_json.get("dated_sources"):
+def _cis_exposure_signal(supplied_sources: list[str], missing_sources: list[str], sanctions_matches: int) -> str:
+    """``sanctions_matches`` counts merged sanctions-list name matches only."""
+    if not supplied_sources:
         return "unknown"
-    if opensanctions_matches >= 1:
+    # A name on a public list resembling this counterparty. Not a determination
+    # that it is listed — see the limitation emitted alongside the signal.
+    if sanctions_matches >= 1:
         return "high"
     if len(missing_sources) >= 4:
         return "medium_high"
@@ -3121,8 +3135,8 @@ def _cis_exposure_signal(request_json: dict, missing_sources: list[str], opensan
     return "low"
 
 
-def _cis_readiness(request_json: dict, supplied_sources: list[str]) -> tuple[int, str]:
-    if not request_json.get("dated_sources") or not supplied_sources:
+def _cis_readiness(supplied_sources: list[str]) -> tuple[int, str]:
+    if not supplied_sources:
         return 0, "insufficient_information"
 
     required_present = len([s for s in CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW if s in supplied_sources])
@@ -3297,9 +3311,9 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
 
     missing_sources = [s for s in CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW if s not in supplied_sources]
     undisclosed_ubo = _cis_has_undisclosed_ubo(request_json)
-    readiness_score, readiness_label = _cis_readiness(request_json, supplied_sources)
-    exposure_signal = _cis_exposure_signal(request_json, missing_sources, len(auto_fetched_sources))
-    triage = _cis_triage_recommendation(request_json, missing_sources, exposure_signal)
+    readiness_score, readiness_label = _cis_readiness(supplied_sources)
+    exposure_signal = _cis_exposure_signal(supplied_sources, missing_sources, len(auto_fetched_sources))
+    triage = _cis_triage_recommendation(supplied_sources, request_json, missing_sources, exposure_signal)
 
     limitations: list[str] = []
     # CC-BY / source attribution is only required — and only honest — when upstream
@@ -3337,6 +3351,18 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
                     "review, not a sanctions determination."
                 )
                 break
+    # The signal is scored off screening results, so it has to say what it is
+    # asserting. ``high`` here is "a name on a public list resembles this
+    # counterparty", not a finding that this counterparty is listed.
+    if auto_fetched_sources:
+        merged = len(auto_fetched_sources)
+        limitations.append(
+            f"Live name screening merged {merged} public-list name match{'' if merged == 1 else 'es'} into the "
+            "evidence pack, which is what raised secondary_exposure_signal to high. That signal means a name on "
+            "a public sanctions list resembles this counterparty and the match is evidence a reviewer must "
+            "resolve — not a determination that this counterparty is listed, and not identity, ownership, or "
+            "50 % rule resolution."
+        )
     limitations.append(
         "Name match against a sanctions list is not legal-entity identity verification. " "Human review is required."
     )
