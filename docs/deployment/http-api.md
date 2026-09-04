@@ -4,7 +4,29 @@
 
 The HTTP API shell is a portable JSON wrapper over the shared Agenda Intelligence service layer.
 
-It is intended for local development, adapter development, integration tests, and future deployment packaging. It is not a hardened internet-facing production server and does not replace the stdio MCP server.
+It is intended for local development, adapter development, integration tests, and deployment packaging inside a trusted perimeter. It does not replace the stdio MCP server.
+
+It carries API-key authentication, a per-client rate limit, a usage ledger and a CORS allowlist — see [Access control](#access-control) — but it is a single-process standard-library server: no shared state across replicas, no queue, no TLS of its own. Terminate TLS and balance load in front of it.
+
+## Access control
+
+Configuration is environment-only. A policy that cannot be parsed refuses to start rather than enforcing nothing.
+
+| Variable | Effect |
+|---|---|
+| `AGENDA_INTELLIGENCE_API_KEYS` | `client:secret` pairs, comma separated. Unset means open mode, which warns at startup and is reported on `/readyz`. |
+| `AGENDA_INTELLIGENCE_REQUIRE_AUTH` | `1` refuses to start without keys. Set it anywhere the shell is reachable by anything but its own developer. |
+| `AGENDA_INTELLIGENCE_RATE_LIMIT_PER_MINUTE` | Requests per client per minute. Default 60; `0` disables the limit. |
+| `AGENDA_INTELLIGENCE_CORS_ORIGINS` | Exact origins that may call from a browser. `*` is rejected. |
+| `AGENDA_INTELLIGENCE_ADMIN_KEY` | Bearer secret for `GET /usage`. Without one the endpoint returns 404. |
+
+`/healthz` and `/readyz` answer without a key, so an orchestrator can tell a starting container from a broken one. Everything under `/v1/` requires `Authorization: Bearer <secret>` once keys are configured.
+
+Responses carry `x-request-id` (echoed from the request when the caller sends a safe one), `x-ratelimit-limit` and `x-ratelimit-remaining`. A 429 carries `retry-after`.
+
+`GET /usage` returns per-client, per-endpoint counts — requests, answers, client errors, rate-limited refusals, server errors, last seen. It is in memory and per process: scrape it, do not treat it as a record.
+
+For embedding this in another product, see [OEM integration](../integrations/oem.md).
 
 ## Run
 

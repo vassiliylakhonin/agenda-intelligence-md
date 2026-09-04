@@ -9,6 +9,9 @@ This directory holds short integration adapters for popular AI tooling platforms
   includes Claude Desktop, Cursor, Codex local MCP, and generic JSON config blocks.
 - **Agenstry discovery** – `docs/integrations/agenstry.md`
   documents the public Agent Card, installable-MCP positioning, and optional free A2A Worker wrapper.
+- **OEM / embedding in another product** – `docs/integrations/oem.md`
+  covers running the HTTP shell with API keys, metering and CORS, the generated
+  TypeScript client, and the compatibility promise a partner integrates against.
 - **Verified MCP setup** – `docs/integrations/verified-mcp.md`
   helps confirm that the configured client can list and call the tools.
 

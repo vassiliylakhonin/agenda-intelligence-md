@@ -114,6 +114,42 @@ jobs:
           .wheel-smoke-venv/bin/agenda-intelligence --version
           .wheel-smoke-venv/bin/agenda-intelligence validate-manifest
 
+  typescript-client:
+    name: TypeScript client
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The generated sources are the published package, so a schema change that
+      # was not regenerated fails here rather than in a partner's build.
+      - name: Check the client matches schemas/v1
+        run: python3 scripts/generate_ts_client.py --check
+
+      # Types alone do not prove the package loads: this caught ESM imports
+      # missing their file extension, which tsc accepts and Node does not.
+      - name: Compile and load
+        working-directory: clients/typescript
+        run: |
+          npm install --no-audit --no-fund typescript@5.4.5
+          ./node_modules/.bin/tsc -p tsconfig.json
+          node --input-type=module -e "import('./dist/index.js').then(m => {
+            if (typeof m.AgendaIntelligenceClient !== 'function') { throw new Error('client missing from the built package'); }
+            if (typeof m.RateLimitError !== 'function') { throw new Error('RateLimitError missing from the built package'); }
+            console.log('ok: built package loads and exports its client');
+          })"
+
   worker:
     name: Cloudflare Worker tests
     runs-on: ubuntu-latest

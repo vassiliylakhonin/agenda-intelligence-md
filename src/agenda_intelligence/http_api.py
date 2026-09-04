@@ -15,6 +15,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 from agenda_intelligence import __version__, services
+from agenda_intelligence.http_access import (
+    PUBLIC_PATHS,
+    AccessPolicy,
+    RateLimiter,
+    UsageLedger,
+    request_id,
+)
 
 MAX_BODY_BYTES = 1_000_000
 
@@ -46,7 +53,7 @@ def _validation_unavailable(result: dict, label: str) -> tuple[int, dict] | None
     return None
 
 
-def handle_get(path: str) -> tuple[int, dict]:
+def handle_get(path: str, policy: AccessPolicy | None = None) -> tuple[int, dict]:
     if path == "/healthz":
         return (
             200,
@@ -78,6 +85,9 @@ def handle_get(path: str) -> tuple[int, dict]:
                     "pre_action_check",
                 ],
                 "boundary": BOUNDARY_NOTICE,
+                # An operator has to be able to see, without a request that
+                # carries a secret, whether this instance is enforcing anything.
+                "access": (policy or AccessPolicy()).describe(),
             },
         )
 
@@ -202,21 +212,85 @@ def handle_post(path: str, payload: dict) -> tuple[int, dict]:
 
 
 class AgendaIntelligenceHTTPHandler(BaseHTTPRequestHandler):
-    """HTTP handler exposing a small JSON API over the shared service layer."""
+    """HTTP handler exposing a small JSON API over the shared service layer.
+
+    Access control, metering and CORS live in :mod:`agenda_intelligence.http_access`;
+    this class only wires them around the pure ``handle_get``/``handle_post``
+    functions, which stay callable without a socket.
+    """
 
     server_version = "AgendaIntelligenceHTTP/0.1"
+
+    policy: AccessPolicy = AccessPolicy()
+    limiter: RateLimiter = RateLimiter(0)
+    ledger: UsageLedger = UsageLedger()
 
     def log_message(self, _format: str, *args: Any) -> None:
         """Suppress default request logging so payloads are never logged here."""
 
-    def _send_json(self, status: int, payload: dict) -> None:
+    def _send_json(self, status: int, payload: dict, extra_headers: list[tuple[str, str]] | None = None) -> None:
         body = _json_bytes(payload)
         self.send_response(status)
         self.send_header("content-type", "application/json; charset=utf-8")
         self.send_header("cache-control", "no-store")
+        self.send_header("x-content-type-options", "nosniff")
+        self.send_header("referrer-policy", "no-referrer")
+        self.send_header("x-request-id", self._request_id())
+        for name, value in self.policy.cors_headers(self.headers.get("origin")):
+            self.send_header(name, value)
+        for name, value in extra_headers or []:
+            self.send_header(name, value)
         self.send_header("content-length", str(len(body)))
         self.end_headers()
-        self.wfile.write(body)
+        if self.command != "HEAD":
+            self.wfile.write(body)
+
+    def _request_id(self) -> str:
+        if not hasattr(self, "_rid"):
+            self._rid = request_id(self.headers.get("x-request-id"))
+        return self._rid
+
+    def _admit(self, path: str) -> str | None:
+        """Authenticate and meter one request. Returns the client, or ``None`` when answered.
+
+        Health and readiness stay open: an orchestrator has to tell a starting
+        container from a broken one before it has credentials.
+        """
+        if path in PUBLIC_PATHS:
+            return self.policy.client_for(self.headers.get("authorization")) or "unauthenticated"
+
+        client = self.policy.client_for(self.headers.get("authorization"))
+        if client is None:
+            self.ledger.record("unauthenticated", path, 401)
+            self._send_json(
+                401,
+                {"ok": False, "error": "Missing or unknown API key", "request_id": self._request_id()},
+                [("www-authenticate", 'Bearer realm="agenda-intelligence"')],
+            )
+            return None
+
+        allowed, remaining, retry_after = self.limiter.check(client)
+        if not allowed:
+            self.ledger.record(client, path, 429)
+            self._send_json(
+                429,
+                {
+                    "ok": False,
+                    "error": "Rate limit exceeded",
+                    "limit_per_minute": self.policy.rate_limit_per_minute,
+                    "retry_after_seconds": retry_after,
+                    "request_id": self._request_id(),
+                },
+                [("retry-after", str(retry_after))],
+            )
+            return None
+
+        if remaining >= 0:
+            self._rate_headers = [
+                ("x-ratelimit-limit", str(self.policy.rate_limit_per_minute)),
+                ("x-ratelimit-remaining", str(remaining)),
+            ]
+        return client
 
     def _send_error(self, status: int, message: str) -> None:
         self._send_json(
@@ -252,22 +326,73 @@ class AgendaIntelligenceHTTPHandler(BaseHTTPRequestHandler):
             return None
         return payload
 
+    def do_OPTIONS(self) -> None:
+        """Preflight. An origin that is not on the list gets no CORS headers and a 403."""
+        headers = self.policy.cors_headers(self.headers.get("origin"))
+        if not headers:
+            self._send_json(403, {"ok": False, "error": "Origin not allowed"})
+            return
+        self._send_json(204, {"ok": True})
+
     def do_GET(self) -> None:
-        status, body = handle_get(self.path)
-        self._send_json(status, body)
+        if self.path == "/usage":
+            self._serve_usage()
+            return
+        client = self._admit(self.path)
+        if client is None:
+            return
+        status, body = handle_get(self.path, self.policy)
+        self.ledger.record(client, self.path, status)
+        self._send_json(status, body, getattr(self, "_rate_headers", None))
 
     def do_POST(self) -> None:
+        client = self._admit(self.path)
+        if client is None:
+            return
+
         payload = self._read_json_body()
         if payload is None:
+            self.ledger.record(client, self.path, 400)
             return
 
         status, body = handle_post(self.path, payload)
-        self._send_json(status, body)
+        self.ledger.record(client, self.path, status)
+        self._send_json(status, body, getattr(self, "_rate_headers", None))
+
+    def _serve_usage(self) -> None:
+        """What each client actually spent. Off unless an admin key is configured."""
+        if not self.policy.admin_key:
+            self._send_json(404, {"ok": False, "error": "Not found"})
+            return
+        if not self.policy.is_admin(self.headers.get("authorization")):
+            self._send_json(
+                401,
+                {"ok": False, "error": "Usage requires the admin key"},
+                [("www-authenticate", 'Bearer realm="agenda-intelligence-usage"')],
+            )
+            return
+        self._send_json(200, {"ok": True, **self.ledger.snapshot()})
 
 
-def serve(host: str = "127.0.0.1", port: int = 8080) -> None:
-    server = ThreadingHTTPServer((host, port), AgendaIntelligenceHTTPHandler)
+def serve(host: str = "127.0.0.1", port: int = 8080, policy: AccessPolicy | None = None) -> None:
+    resolved = policy or AccessPolicy.from_env()
+
+    class Handler(AgendaIntelligenceHTTPHandler):
+        pass
+
+    Handler.policy = resolved
+    Handler.limiter = RateLimiter(resolved.rate_limit_per_minute)
+    Handler.ledger = UsageLedger()
+
+    server = ThreadingHTTPServer((host, port), Handler)
     print(f"agenda-intelligence-http listening on http://{host}:{port}", file=sys.stderr)
+    print(f"access policy: {json.dumps(resolved.describe(), sort_keys=True)}", file=sys.stderr)
+    if resolved.open_mode:
+        print(
+            "warning: no API keys configured, every caller is accepted as 'anonymous'. "
+            "Set AGENDA_INTELLIGENCE_API_KEYS, and AGENDA_INTELLIGENCE_REQUIRE_AUTH=1 to refuse to start without them.",
+            file=sys.stderr,
+        )
     try:
         server.serve_forever()
     except KeyboardInterrupt:

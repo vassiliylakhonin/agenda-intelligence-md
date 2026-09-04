@@ -1,4 +1,4 @@
-.PHONY: install test package-consistency lint format typecheck worker-test update-contract-responses smoke-live ci ci-fast verify-local verification-report clean build publish
+.PHONY: install test package-consistency lint format typecheck worker-test update-contract-responses ts-client ts-client-check smoke-live ci ci-fast verify-local verification-report clean build publish
 
 # Python interpreter used by the test/CI targets. Override per invocation when
 # the default `python3` points at an interpreter without the dev deps installed
@@ -45,13 +45,21 @@ worker-test:
 update-contract-responses:
 	$(PYTHON) scripts/update_contract_responses.py
 
+# Regenerate the TypeScript client from schemas/v1. The checked-in output is
+# the published package, so this runs on every schema change.
+ts-client:
+	$(PYTHON) scripts/generate_ts_client.py
+
+ts-client-check:
+	$(PYTHON) scripts/generate_ts_client.py --check
+
 # Networked post-deploy smoke. Kept out of CI because it depends on live Workers.
 smoke-live:
 	cd deploy/cloudflare-worker && npm run smoke:live
 
 # Python/package pre-push gate. Mirrors what GitHub Actions runs.
 # Run `make ci` before Python/package pushes to avoid the staircase of CI fixes.
-ci: lint typecheck test
+ci: lint typecheck test ts-client-check
 	$(PYTHON) -m compileall src scripts tests
 	$(PYTHON) -m agenda_intelligence.cli --help >/dev/null
 	$(PYTHON) -m agenda_intelligence.cli validate-manifest >/dev/null

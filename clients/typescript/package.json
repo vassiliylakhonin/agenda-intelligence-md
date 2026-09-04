@@ -1,0 +1,25 @@
+{
+  "name": "@agenda-intelligence/client",
+  "version": "1.8.0",
+  "description": "TypeScript client for the Agenda Intelligence MD HTTP shell, generated from schemas/v1.",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vassiliylakhonin/agenda-intelligence-md.git",
+    "directory": "clients/typescript"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
