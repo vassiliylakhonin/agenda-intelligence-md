@@ -2288,6 +2288,118 @@ test("a counterparty with no evidence pack yet gets a first pass, not a refusal"
   assert.ok(!JSON.stringify(data).includes("defaultedRequestFields"));
 });
 
+// The same second pass, across every gate that takes it. The assertion that
+// matters is not that the call completes — it is that a gate handed no evidence
+// still reports it has none. A confident verdict here would be invented.
+const MINIMAL_FIRST_PASS_GATES = [
+  {
+    host: "agentic-interaction-trust-a2a",
+    subject: { actor: { declared_type: "ai_agent", declared_name: "PartnerBot" }, target_surface: "api", requested_action: "issue a refund" },
+    expect: { trust_signal: "unknown", triage_recommendation: "insufficient_information" },
+    defaulted: ["dated_sources", "risk_question", "decision_stage"]
+  },
+  {
+    host: "gulf-maritime-exposure-a2a",
+    subject: { voyage: { chokepoint: "strait_of_hormuz" } },
+    expect: { exposure_signal: "unknown", triage_recommendation: "insufficient_information" },
+    defaulted: ["exposure_facets", "dated_sources", "risk_question", "decision_stage"]
+  },
+  {
+    host: "kazakhstan-market-entry-readiness-a2a",
+    subject: { project_name: "Alatau showroom", partner_or_company: "Alatau Trading LLP", market: "Kazakhstan" },
+    expect: { readiness_label: "insufficient_information" },
+    defaulted: ["supplied_sources", "decision_question", "decision_stage"]
+  },
+  {
+    host: "critical-minerals-due-diligence-a2a",
+    subject: { project_name: "Balkhash offtake", commodity: "copper", origin_jurisdiction: "Kazakhstan" },
+    expect: { risk_signal: "unknown", triage_recommendation: "insufficient_information" },
+    defaulted: ["supplied_sources", "decision_question", "decision_stage"]
+  }
+];
+
+test("every gate that takes a first pass reports it has no evidence, and says what it defaulted", async () => {
+  for (const gate of MINIMAL_FIRST_PASS_GATES) {
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "1", method: "message/send", params: { message: { role: "user", parts: [{ kind: "data", data: gate.subject }] } } },
+      new Request(`https://${gate.host}.example.workers.dev/message/send`, { method: "POST" })
+    );
+
+    const task = response.result;
+    assert.equal(task.status.state, "TASK_STATE_COMPLETED", `${gate.host} should answer a named subject`);
+
+    const data = task.artifacts[0].parts.find((part) => part.mediaType === "application/json").data;
+    for (const [field, value] of Object.entries(gate.expect)) {
+      assert.equal(data[field], value, `${gate.host}: ${field} must stay ${value} with no evidence supplied`);
+    }
+
+    const markdown = task.artifacts[0].parts.find((part) => part.mediaType === "text/markdown").text;
+    assert.match(markdown, /First pass from /, `${gate.host} must disclose the first pass`);
+    for (const field of gate.defaulted) {
+      assert.ok(markdown.includes(field), `${gate.host} must name the defaulted field ${field}`);
+    }
+
+    const empty = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "2", method: "message/send", params: {} },
+      new Request(`https://${gate.host}.example.workers.dev/message/send`, { method: "POST" })
+    );
+    assert.equal(empty.result.status.state, "TASK_STATE_INPUT_REQUIRED", `${gate.host} must still refuse an empty request`);
+  }
+});
+
+// Dual-use has no signal field; its verdict lives on the triage block, and it
+// has to name the absence rather than score around it.
+test("the dual-use gate says outright that no sources were supplied", async () => {
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "1",
+      method: "message/send",
+      params: {
+        message: {
+          role: "user",
+          parts: [
+            {
+              kind: "data",
+              data: { shipment: { hs_code: "8542.31", description: "microcontrollers", origin: "Germany", destination: "Kazakhstan" } }
+            }
+          ]
+        }
+      }
+    },
+    new Request("https://dual-use-technology-export-a2a.example.workers.dev/message/send", { method: "POST" })
+  );
+
+  assert.equal(response.result.status.state, "TASK_STATE_COMPLETED");
+  const data = response.result.artifacts[0].parts.find((part) => part.mediaType === "application/json").data;
+  assert.equal(data.export_risk_triage.status, "not_decision_ready");
+  assert.ok(
+    data.export_risk_triage.primary_risk_vectors.some((vector) => vector.includes("No dated supporting sources")),
+    "the absence of sources has to be stated, not scored around"
+  );
+});
+
+// Two gates are held out on purpose, and the reason is measurable rather than
+// stylistic. `agent_output_verification` scores readiness from the caller's own
+// declared support_level, so a defaulted empty evidence array returns
+// readiness 100 / review_ready on a request carrying no evidence — the exact
+// invention this pass exists to avoid. `pre_action_check` requires a risk_tier,
+// which cannot be defaulted without inventing a risk classification.
+test("the two gates that cannot default their evidence still refuse a partial request", async () => {
+  const cases = [
+    ["agent-output-verification-a2a", { claims: [{ claim_id: "c1", claim: "A claim with no evidence behind it.", support_level: "direct" }] }],
+    ["agent-output-verification-a2a", { run_id: "r1", actor: { declared_type: "ai_agent" }, requested_action: "refund", target: {}, claims: [] }]
+  ];
+
+  for (const [host, payload] of cases) {
+    const response = await handleJsonRpc(
+      { jsonrpc: "2.0", id: "1", method: "message/send", params: { message: { role: "user", parts: [{ kind: "data", data: payload }] } } },
+      new Request(`https://${host}.example.workers.dev/message/send`, { method: "POST" })
+    );
+    assert.notEqual(response.result.status.state, "TASK_STATE_COMPLETED", `${host} must not complete a request with no evidence`);
+  }
+});
+
 // The strict path is the contract; completing a minimal request must not relax
 // it. A request that names the counterparty and carries a bad enum is case 2 of
 // ADR 0026 — something was sent and it is wrong — and still fails.

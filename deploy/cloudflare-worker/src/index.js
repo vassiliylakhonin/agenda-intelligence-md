@@ -3329,6 +3329,192 @@ const CIS_MINIMAL_DEFAULT_FACET = "ownership_or_control";
 const CIS_MINIMAL_DEFAULT_DECISION_STAGE = "other";
 const DEFAULTED_REQUEST_FIELDS = Symbol("defaultedRequestFields");
 
+// One mechanism for every gate that takes this second pass. A default spec is
+// `{ field, fill, emptyArrayIsUnset }`: `fill` receives the request being built,
+// so a default can quote the subject the caller named. `emptyArrayIsUnset` is
+// for the one case that needs it — a schema with `minItems: 1` cannot be
+// satisfied by `[]`, so that field is filled even when the caller sent an empty
+// array, while `dated_sources: []` is left alone because empty is the truth.
+function completeMinimalRequest(subject, specs) {
+  const defaulted = [];
+  const completed = { ...subject };
+  for (const { field, fill, emptyArrayIsUnset } of specs) {
+    const value = completed[field];
+    const unset =
+      value === undefined ||
+      value === null ||
+      (typeof value === "string" && value.trim() === "") ||
+      (Array.isArray(value) && value.length === 0 && emptyArrayIsUnset === true);
+    if (!unset) continue;
+    completed[field] = fill(completed);
+    defaulted.push(field);
+  }
+  Object.defineProperty(completed, DEFAULTED_REQUEST_FIELDS, { value: defaulted, enumerable: false });
+  return completed;
+}
+
+// Runs only after the strict shape has been ruled out on every candidate.
+function minimalRequestFromCandidates(candidates, isSubject, specs) {
+  for (const candidate of candidates) {
+    if (isSubject(candidate)) return completeMinimalRequest(candidate, specs);
+    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
+    if (parsed && isSubject(parsed)) return completeMinimalRequest(parsed, specs);
+  }
+  return null;
+}
+
+// A caller who was handed defaults has to read them next to the score, or a
+// defaulted field is mistaken for something the gate concluded.
+function defaultedFieldsNote(defaultedFields, subjectLabel, resendHint) {
+  if (!Array.isArray(defaultedFields) || defaultedFields.length === 0) return [];
+  return [
+    "",
+    `First pass from ${subjectLabel} only.`,
+    `Defaulted, not supplied by you: ${defaultedFields.join(", ")}.`,
+    `Resend with ${resendHint} for a scored triage.`
+  ];
+}
+
+// Appended at the artifact call site, the same way engagementMarkdown is, so
+// every gate that takes the second pass discloses it in one identical block.
+function withDefaultedNote(text, defaultedFields, subjectLabel, resendHint) {
+  const note = defaultedFieldsNote(defaultedFields, subjectLabel, resendHint);
+  return note.length ? `${text}\n${note.join("\n")}` : text;
+}
+
+function nonEmptyString(value) {
+  return typeof value === "string" && value.trim() !== "";
+}
+
+const CIS_MINIMAL_DEFAULTS = [
+  { field: "exposure_facets", fill: () => [CIS_MINIMAL_DEFAULT_FACET], emptyArrayIsUnset: true },
+  { field: "dated_sources", fill: () => [] },
+  {
+    field: "risk_question",
+    fill: (r) => `What is required before a human can review ${r.counterparty.name} for secondary-sanctions exposure?`
+  },
+  { field: "decision_stage", fill: () => CIS_MINIMAL_DEFAULT_DECISION_STAGE }
+];
+
+// The same second pass as CIS, for every other gate whose scorers already
+// return an honest verdict on an empty evidence pack. Each spec names the
+// subject the caller has to have sent — the thing being reviewed — and defaults
+// only the evidence and framing around it. `pre_action_check` is deliberately
+// absent: it requires `risk_tier`, and defaulting a risk classification would
+// invent the one judgement that gate exists to carry.
+function isMinimalAgenticInteractionTrustRequest(value) {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      value.actor &&
+      typeof value.actor === "object" &&
+      nonEmptyString(value.actor.declared_type) &&
+      nonEmptyString(value.actor.declared_name) &&
+      nonEmptyString(value.target_surface) &&
+      nonEmptyString(value.requested_action)
+  );
+}
+
+const AGENTIC_MINIMAL_DEFAULTS = [
+  { field: "dated_sources", fill: () => [] },
+  {
+    field: "risk_question",
+    fill: (r) => `What is required before a human can review "${r.requested_action}" by ${r.actor.declared_name}?`
+  },
+  { field: "decision_stage", fill: () => "other" }
+];
+
+function isMinimalGulfMaritimeRequest(value) {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      value.voyage &&
+      typeof value.voyage === "object" &&
+      nonEmptyString(value.voyage.chokepoint)
+  );
+}
+
+const GULF_MINIMAL_DEFAULTS = [
+  // GULF_EXPOSURE_FACETS carries minItems: 1. Ownership or control is the one
+  // facet that applies to any voyage, whatever the cargo or flag.
+  { field: "exposure_facets", fill: () => ["ownership_or_control"], emptyArrayIsUnset: true },
+  { field: "dated_sources", fill: () => [] },
+  {
+    field: "risk_question",
+    fill: (r) => `What is required before a human can review a voyage through ${r.voyage.chokepoint}?`
+  },
+  { field: "decision_stage", fill: () => "other" }
+];
+
+function isMinimalMarketEntryReadinessRequest(value) {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      nonEmptyString(value.project_name) &&
+      nonEmptyString(value.partner_or_company) &&
+      nonEmptyString(value.market)
+  );
+}
+
+const MARKET_ENTRY_MINIMAL_DEFAULTS = [
+  { field: "supplied_sources", fill: () => [] },
+  {
+    field: "decision_question",
+    fill: (r) => `What is required before a human can review ${r.project_name} for entry into ${r.market}?`
+  },
+  { field: "decision_stage", fill: () => "other" }
+];
+
+function isMinimalCriticalMineralsRequest(value) {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      nonEmptyString(value.project_name) &&
+      nonEmptyString(value.commodity) &&
+      nonEmptyString(value.origin_jurisdiction)
+  );
+}
+
+const CRITICAL_MINERALS_MINIMAL_DEFAULTS = [
+  { field: "supplied_sources", fill: () => [] },
+  {
+    field: "decision_question",
+    fill: (r) => `What is required before a human can review ${r.commodity} from ${r.origin_jurisdiction}?`
+  },
+  // This enum has no "other". criticalMineralsResult already falls back to
+  // pre_offtake_agreement when the field is absent, so the default states what
+  // the gate was doing silently rather than choosing something new.
+  { field: "decision_stage", fill: () => "pre_offtake_agreement" }
+];
+
+function isMinimalDualUseTechnologyExportRequest(value) {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      value.shipment &&
+      typeof value.shipment === "object" &&
+      nonEmptyString(value.shipment.hs_code) &&
+      nonEmptyString(value.shipment.description) &&
+      nonEmptyString(value.shipment.origin) &&
+      nonEmptyString(value.shipment.destination)
+  );
+}
+
+const DUAL_USE_MINIMAL_DEFAULTS = [
+  { field: "dated_sources", fill: () => [] },
+  {
+    field: "risk_question",
+    fill: (r) =>
+      `What is required before a human can review ${r.shipment.description} (${r.shipment.hs_code}) ` +
+      `from ${r.shipment.origin} to ${r.shipment.destination}?`
+  }
+];
+
 function isMinimalCisSecondarySanctionsRequest(value) {
   return Boolean(
     value &&
@@ -3336,35 +3522,9 @@ function isMinimalCisSecondarySanctionsRequest(value) {
       !Array.isArray(value) &&
       value.counterparty &&
       typeof value.counterparty === "object" &&
-      typeof value.counterparty.name === "string" &&
-      value.counterparty.name.trim() !== "" &&
-      typeof value.counterparty.jurisdiction === "string" &&
-      value.counterparty.jurisdiction.trim() !== ""
+      nonEmptyString(value.counterparty.name) &&
+      nonEmptyString(value.counterparty.jurisdiction)
   );
-}
-
-function completeMinimalCisSecondarySanctionsRequest(minimal) {
-  const defaulted = [];
-  const completed = { ...minimal };
-  if (!Array.isArray(completed.exposure_facets) || completed.exposure_facets.length === 0) {
-    completed.exposure_facets = [CIS_MINIMAL_DEFAULT_FACET];
-    defaulted.push("exposure_facets");
-  }
-  if (!Array.isArray(completed.dated_sources)) {
-    completed.dated_sources = [];
-    defaulted.push("dated_sources");
-  }
-  if (typeof completed.risk_question !== "string" || completed.risk_question.trim() === "") {
-    completed.risk_question =
-      `What is required before a human can review ${completed.counterparty.name} for secondary-sanctions exposure?`;
-    defaulted.push("risk_question");
-  }
-  if (typeof completed.decision_stage !== "string" || completed.decision_stage.trim() === "") {
-    completed.decision_stage = CIS_MINIMAL_DEFAULT_DECISION_STAGE;
-    defaulted.push("decision_stage");
-  }
-  Object.defineProperty(completed, DEFAULTED_REQUEST_FIELDS, { value: defaulted, enumerable: false });
-  return completed;
 }
 
 function structuredCisSecondarySanctionsRequestFromParams(params) {
@@ -3393,18 +3553,8 @@ function structuredCisSecondarySanctionsRequestFromParams(params) {
     const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
     if (parsed && isCisSecondarySanctionsRequest(parsed)) return parsed;
   }
-  // Second pass, and only after the strict shape has been ruled out everywhere:
-  // a named counterparty with no evidence pack yet is answerable, not refusable.
-  for (const candidate of candidates) {
-    if (isMinimalCisSecondarySanctionsRequest(candidate)) {
-      return completeMinimalCisSecondarySanctionsRequest(candidate);
-    }
-    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
-    if (parsed && isMinimalCisSecondarySanctionsRequest(parsed)) {
-      return completeMinimalCisSecondarySanctionsRequest(parsed);
-    }
-  }
-  return null;
+  // Second pass: a named counterparty with no evidence pack yet is answerable.
+  return minimalRequestFromCandidates(candidates, isMinimalCisSecondarySanctionsRequest, CIS_MINIMAL_DEFAULTS);
 }
 
 function cisEvidenceGapForSource(sourceType) {
@@ -3608,7 +3758,8 @@ function structuredAgenticInteractionTrustRequestFromParams(params) {
     const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
     if (parsed && isAgenticInteractionTrustRequest(parsed)) return parsed;
   }
-  return null;
+  // Second pass: the subject was named, the evidence pack has not been built yet.
+  return minimalRequestFromCandidates(candidates, isMinimalAgenticInteractionTrustRequest, AGENTIC_MINIMAL_DEFAULTS);
 }
 
 function agenticEvidenceGapForSource(sourceType) {
@@ -3816,7 +3967,12 @@ function a2aResultForAgenticInteractionTrust(params) {
         name: "Agentic interaction trust response",
         parts: [
           {
-            text: agenticArtifactText(result.response),
+            text: withDefaultedNote(
+              agenticArtifactText(result.response),
+              structured[DEFAULTED_REQUEST_FIELDS],
+              "actor and requested action",
+              "your dated sources and decision stage"
+            ),
             mediaType: "text/markdown"
           },
           {
@@ -4591,7 +4747,8 @@ function structuredGulfMaritimeRequestFromParams(params) {
     const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
     if (parsed && isGulfMaritimeRequest(parsed)) return parsed;
   }
-  return null;
+  // Second pass: the subject was named, the evidence pack has not been built yet.
+  return minimalRequestFromCandidates(candidates, isMinimalGulfMaritimeRequest, GULF_MINIMAL_DEFAULTS);
 }
 
 function gulfEvidenceGapForSource(sourceType) {
@@ -4789,7 +4946,15 @@ function a2aResultForGulfMaritimeExposure(params) {
         artifactId: "gulf-maritime-exposure-response",
         name: "Gulf maritime exposure response",
         parts: [
-          { text: gulfArtifactText(result.response), mediaType: "text/markdown" },
+          {
+            text: withDefaultedNote(
+              gulfArtifactText(result.response),
+              structured[DEFAULTED_REQUEST_FIELDS],
+              "voyage",
+              "your own facets, decision stage, and dated sources"
+            ),
+            mediaType: "text/markdown"
+          },
           { data: result.response, mediaType: "application/json" }
         ]
       }
@@ -5557,7 +5722,8 @@ function structuredMarketEntryReadinessRequestFromParams(params) {
     const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
     if (parsed && isMarketEntryReadinessRequest(parsed)) return parsed;
   }
-  return null;
+  // Second pass: the subject was named, the evidence pack has not been built yet.
+  return minimalRequestFromCandidates(candidates, isMinimalMarketEntryReadinessRequest, MARKET_ENTRY_MINIMAL_DEFAULTS);
 }
 
 function a2aResultForMarketEntryReadiness(params) {
@@ -5588,7 +5754,15 @@ function a2aResultForMarketEntryReadiness(params) {
         artifactId: "market-entry-readiness-response",
         name: "Kazakhstan market-entry readiness response",
         parts: [
-          { text: marketEntryArtifactText(result.response), mediaType: "text/markdown" },
+          {
+            text: withDefaultedNote(
+              marketEntryArtifactText(result.response),
+              structured[DEFAULTED_REQUEST_FIELDS],
+              "project, company, and market",
+              "your decision question, stage, and supplied sources"
+            ),
+            mediaType: "text/markdown"
+          },
           { data: result.response, mediaType: "application/json" }
         ]
       }
@@ -5957,7 +6131,8 @@ function structuredCriticalMineralsRequestFromParams(params) {
     const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
     if (parsed && isCriticalMineralsRequest(parsed)) return parsed;
   }
-  return null;
+  // Second pass: the subject was named, the evidence pack has not been built yet.
+  return minimalRequestFromCandidates(candidates, isMinimalCriticalMineralsRequest, CRITICAL_MINERALS_MINIMAL_DEFAULTS);
 }
 
 function a2aResultForCriticalMinerals(params) {
@@ -5988,7 +6163,15 @@ function a2aResultForCriticalMinerals(params) {
         artifactId: "critical-minerals-due-diligence-response",
         name: "Critical minerals due diligence response",
         parts: [
-          { text: criticalMineralsArtifactText(result.response), mediaType: "text/markdown" },
+          {
+            text: withDefaultedNote(
+              criticalMineralsArtifactText(result.response),
+              structured[DEFAULTED_REQUEST_FIELDS],
+              "project, commodity, and origin",
+              "your decision question, stage, and supplied sources"
+            ),
+            mediaType: "text/markdown"
+          },
           { data: result.response, mediaType: "application/json" }
         ]
       }
@@ -6100,7 +6283,8 @@ function structuredDualUseTechnologyExportRequestFromParams(params) {
     const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
     if (parsed && isDualUseTechnologyExportRequest(parsed)) return parsed;
   }
-  return null;
+  // Second pass: the subject was named, the evidence pack has not been built yet.
+  return minimalRequestFromCandidates(candidates, isMinimalDualUseTechnologyExportRequest, DUAL_USE_MINIMAL_DEFAULTS);
 }
 
 function dualUseTechnologyExportResult(request) {
@@ -6196,7 +6380,15 @@ function a2aResultForDualUseTechnologyExport(params) {
         artifactId: "dual-use-technology-export-response",
         name: "Dual-use technology export controls response",
         parts: [
-          { text: dualUseTechnologyExportArtifactText(response), mediaType: "text/markdown" },
+          {
+            text: withDefaultedNote(
+              dualUseTechnologyExportArtifactText(response),
+              structured[DEFAULTED_REQUEST_FIELDS],
+              "shipment",
+              "your risk question and dated sources"
+            ),
+            mediaType: "text/markdown"
+          },
           { data: response, mediaType: "application/json" }
         ]
       }
@@ -6454,21 +6646,13 @@ async function cisSecondarySanctionsResult(request, env) {
   };
 }
 
-function cisArtifactText(response, liveRetrievalStatus, defaultedFields) {
+function cisArtifactText(response, liveRetrievalStatus) {
   const missing = response.minimum_sources_before_review || [];
   const missingText = missing.length ? missing.map((s) => `- ${s}`).join("\n") : "- none";
   const dims = response.top_exposure_dimensions || [];
   const dimsText = dims.length ? dims.map((s) => `- ${s}`).join("\n") : "- none";
   // A first pass run from a name and a jurisdiction has to say so in the same
   // breath as the score, or the caller reads a defaulted facet as our finding.
-  const defaultedNote = Array.isArray(defaultedFields) && defaultedFields.length
-    ? [
-        "",
-        "First pass from counterparty only.",
-        `Defaulted, not supplied by you: ${defaultedFields.join(", ")}.`,
-        "Resend with your own facets, decision stage, and dated sources for a scored triage."
-      ]
-    : [];
   return [
     "CIS secondary-sanctions exposure response",
     "",
@@ -6483,7 +6667,6 @@ function cisArtifactText(response, liveRetrievalStatus, defaultedFields) {
     "",
     "Minimum sources before review:",
     missingText,
-    ...defaultedNote,
     "",
     response.not_advice_notice
   ].join("\n");
@@ -6518,7 +6701,12 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
         name: "CIS secondary-sanctions exposure response",
         parts: [
           {
-            text: cisArtifactText(result.response, result.live_retrieval_status, structured[DEFAULTED_REQUEST_FIELDS]),
+            text: withDefaultedNote(
+              cisArtifactText(result.response, result.live_retrieval_status),
+              structured[DEFAULTED_REQUEST_FIELDS],
+              "counterparty",
+              "your own facets, decision stage, and dated sources"
+            ),
             mediaType: "text/markdown"
           },
           {
