@@ -4,6 +4,24 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(ci): rebuild and republish the sanctions index on a schedule, and refuse to publish a broken one.**
+  The previous index stopped being served in August and nobody noticed for a month — the host was a
+  repository that had been deleted, the worker degraded to evidence-only exactly as designed, and the
+  silence was the whole problem. A snapshot that nothing rebuilds fails the same quiet way: the gate keeps
+  answering `success` while `generated_at_utc` ages. `refresh-sanctions-index.yml` now rebuilds daily from
+  the four official sources and republishes to Cloudflare Pages, with `workflow_dispatch` for a manual run.
+  The gate in front of the deploy is the point. `scripts/verify_sanctions_index.py` rejects an index whose
+  `name_count` fell below 60,000, whose `source_count` is not 4, or that lost either of two long-standing
+  canary designations — the failure this guards against is not a crash but a source serving an error page
+  or a truncated body with HTTP 200, which yields a valid-looking index with most of the names gone.
+  Publishing that would leave the gate matching nothing while still reporting that it screened. Both
+  rejection paths were exercised against deliberately damaged copies before the workflow was committed.
+  On failure the job stops before deploying and the last good index stays live, and the final step polls
+  the published URL until `generated_at_utc` matches what was just built, so a green run means the file is
+  actually serving. The job runs in its own `sanctions-index-production` environment rather than borrowing
+  `agent-output-verification-production`: that environment is administrator-gated because it can deploy
+  workers, and an unattended scheduled job should hold a Pages-only token instead.
+
 - **fix(cis): score the evidence the screening actually merged, instead of contradicting it.**
   Activating the Snapshot upstream (ADR 0020) made one response say two things. The result builder merges an
   auto-fetched name match into `supplied_sources`, so `missing` shrinks and the evidence half of the response
