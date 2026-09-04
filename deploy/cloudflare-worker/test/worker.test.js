@@ -2289,6 +2289,52 @@ test("a counterparty with no evidence pack yet gets a first pass, not a refusal"
   assert.ok(!JSON.stringify(data).includes("defaultedRequestFields"));
 });
 
+// Captured from a live moov/watchman v0.66.0 on 2026-09-04. The elements are
+// flat — name, sourceList, match and entityType sit on the element itself — and
+// `sourceList` uses the snake_case identifiers from pkg/search/models.go. Every
+// one of them used to miss SOURCE_LIST_TO_SOURCE_TYPE, so an OFAC SDN hit was
+// attributed to `user_provided_note`: the caller, not the list it came from.
+const WATCHMAN_V2_SAMPLE = {
+  query: { name: "nicolas maduro", entityType: "person" },
+  entities: [
+    { name: "Nicolas MADURO MOROS", entityType: "person", sourceList: "us_ofac", sourceID: "22790", match: 0.7784 },
+    { name: "An EU listing", entityType: "business", sourceList: "eu_csl", sourceID: "1", match: 0.9 },
+    { name: "A list this adapter does not know", entityType: "business", sourceList: "zz_future_list", sourceID: "2", match: 0.8 }
+  ]
+};
+
+test("a watchman match is attributed to the list it came from, never to the caller", async () => {
+  const requested = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    requested.push(String(url));
+    return new Response(JSON.stringify(WATCHMAN_V2_SAMPLE), { status: 200, headers: { "content-type": "application/json" } });
+  };
+
+  try {
+    const result = await matchCounterpartyAgainstWatchman(
+      { WATCHMAN_URL: "https://watchman.example.dev/v2" },
+      { name: "Nicolas Maduro", schema: "Person", maxMatches: 5 }
+    );
+
+    assert.equal(result.status, "success");
+    // WATCHMAN_URL carries the version prefix; a bare host answers 404 on v0.6x.
+    assert.match(requested[0], /^https:\/\/watchman\.example\.dev\/v2\/search\?/);
+    assert.match(requested[0], /type=person/);
+
+    const types = result.matches.map((m) => m.source_type);
+    assert.equal(types[0], "ofac_sdn_extract", "an OFAC SDN hit is OFAC evidence");
+    assert.equal(types[1], "eu_consolidated_extract");
+    // An unrecognised list stays unattributed rather than being blamed on the
+    // caller — `other` is in CIS_SOURCE_TYPES, `user_provided_note` would lie.
+    assert.equal(types[2], "other");
+    assert.equal(result.matches[0].name, "Nicolas MADURO MOROS");
+    assert.equal(result.matches[0].score, 0.7784);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
 // The same second pass, across every gate that takes it. The assertion that
 // matters is not that the call completes — it is that a gate handed no evidence
 // still reports it has none. A confident verdict here would be invented.

@@ -2,8 +2,12 @@
 //
 // Watchman is an open-source (Apache 2.0) self-hosted OFAC / EU / UK OFSI / UN
 // consolidated sanctions search engine maintained by Moov Financial. It exposes
-// /search?name=...&type=...&limit=...&minMatch=... and returns grouped list
-// results with a `match` score (0-1).
+// <base>/search?name=...&type=...&limit=...&minMatch=... and returns entities
+// with a `match` score (0-1). WATCHMAN_URL carries the version prefix, so for
+// watchman v0.6x it is set to https://<host>/v2 and this adapter requests
+// /v2/search. Measured against v0.66.0 on 2026-09-04, that route returns a flat
+// `entities` array whose elements carry name, entityType, sourceList, sourceID
+// and match directly.
 //
 // Used as a per-profile live retrieval upstream for the `cis_secondary_sanctions`
 // profile (per ADR 0014). Selected when env.WATCHMAN_URL is set. Activation is
@@ -32,20 +36,35 @@ export const CACHE_KEY_PREFIX = "watchman:";
 
 // Watchman source/list identifiers -> canonical source_type used by the
 // cis-secondary-sanctions schema.
+// The keys a live Watchman actually returns in `sourceList`, measured against
+// moov/watchman v0.66.0 on 2026-09-04, are the snake_case identifiers declared
+// in pkg/search/models.go: us_ofac, us_non_sdn, us_csl, us_fincen_311, us_tel,
+// eu_csl, uk_csl, un_csl. None of them were in this map, so every real match —
+// an OFAC SDN hit included — fell through to the `user_provided_note` default
+// and was attributed to the caller rather than to the list it came from. The
+// hyphenated spellings are kept for older or custom deployments.
 const SOURCE_LIST_TO_SOURCE_TYPE = {
+  us_ofac: "ofac_sdn_extract",
+  us_non_sdn: "ofac_sdn_extract",
+  us_csl: "dual_use_export_evidence",
+  us_fincen_311: "bank_correspondent_evidence",
+  us_tel: "other",
+  eu_csl: "eu_consolidated_extract",
+  uk_csl: "uk_ofsi_extract",
+  un_csl: "un_security_council_extract",
   "us-ofac-sdn": "ofac_sdn_extract",
-  "us_ofac_sdn": "ofac_sdn_extract",
-  "ofac": "ofac_sdn_extract",
+  us_ofac_sdn: "ofac_sdn_extract",
+  ofac: "ofac_sdn_extract",
   "us-ofac-non-sdn": "ofac_sdn_extract",
   "us-ofac-cons": "ofac_sdn_extract",
   "eu-csl": "eu_consolidated_extract",
   "eu-consolidated": "eu_consolidated_extract",
-  "eu": "eu_consolidated_extract",
+  eu: "eu_consolidated_extract",
   "uk-csl": "uk_ofsi_extract",
   "uk-ofsi": "uk_ofsi_extract",
-  "uk": "uk_ofsi_extract",
+  uk: "uk_ofsi_extract",
   "un-sc": "un_security_council_extract",
-  "un": "un_security_council_extract"
+  un: "un_security_council_extract"
 };
 
 const RESULT_KEY_TO_SOURCE_TYPE = {
@@ -95,9 +114,12 @@ function mapSourceListToSourceType(sourceList, resultKey) {
   if (resultKey && RESULT_KEY_TO_SOURCE_TYPE[resultKey]) {
     return RESULT_KEY_TO_SOURCE_TYPE[resultKey];
   }
-  if (!sourceList) return "user_provided_note";
+  // Anything that reached this function came from the upstream, so it is never
+  // a note the caller wrote. An unrecognised list is `other`: unattributed, but
+  // not attributed to the wrong party.
+  if (!sourceList) return "other";
   const key = String(sourceList).toLowerCase();
-  return SOURCE_LIST_TO_SOURCE_TYPE[key] || "user_provided_note";
+  return SOURCE_LIST_TO_SOURCE_TYPE[key] || "other";
 }
 
 async function readCache(env, key) {
@@ -247,7 +269,9 @@ export async function matchCounterparty(env, options = {}) {
   const root = baseUrl(env);
   if (!root) {
     return disabledResult(
-      "WATCHMAN_URL env var is not set. Self-host Watchman from https://github.com/moov-io/watchman (Apache-2.0, fits on free-tier Fly.io / Railway) and point WATCHMAN_URL at it."
+      "WATCHMAN_URL env var is not set. Self-host Watchman from https://github.com/moov-io/watchman " +
+        "(Apache-2.0) and point WATCHMAN_URL at it, including the API version prefix — " +
+        "https://<host>/v2 for watchman v0.6x, whose search route is /v2/search. A bare host answers 404."
     );
   }
 

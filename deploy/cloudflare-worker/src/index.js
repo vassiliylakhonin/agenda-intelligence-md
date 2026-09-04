@@ -3226,6 +3226,58 @@ export const PRE_ACTION_CHECK_GUIDE = {
   }
 };
 
+// #310 corrected the examples inside GATE_REQUEST_GUIDES; it left the call-site
+// pairings alone, and two of them were the same bug one level out. Both of these
+// routes share the agent_output_verification profile without sharing its request
+// shape, so both published the claims/evidence example while naming a schema
+// that rejects every field in it: the caller was told to read one file and handed
+// a request built for another. PRE_ACTION_CHECK_GUIDE is the pattern — a
+// standalone guide passed as guideOverride, checked against its own schema.
+
+// DecisionPoliciesListRequest is the one request schema in v1 with no properties
+// at all: { type: "object", additionalProperties: false }. There is no payload to
+// publish, so the example is the empty request, and exampleNote says so rather
+// than letting `{}` under "a request that works" read as a truncation.
+export const DECISION_POLICIES_LIST_GUIDE = {
+  title: "Agenda Decision Gate — policy catalog",
+  schema: "schemas/v1/decision-policies-list-request.schema.json",
+  required: [
+    "no arguments — this capability takes none; send an empty object, or no data part at all",
+    "any field is rejected: the request schema carries no properties and is additionalProperties: false",
+    "the catalog is the response, not the request: policy_id, policy_version, decisions, and the inputs each policy reads come back from the call"
+  ],
+  exampleNote:
+    "This capability takes no arguments. The empty object above is the whole request; sending any field is what it refused.",
+  example: {}
+};
+
+// decision_verify takes a receipt issued by decision_check and the two hashes the
+// enforcing caller computed itself. The example receipt is a syntactically valid
+// placeholder — header and payload decode, the signature segment does not verify —
+// so exampleNote says to substitute the token from a decision_check response
+// rather than replaying this one.
+export const DECISION_VERIFY_GUIDE = {
+  title: "Agenda Decision Gate — receipt verification",
+  schema: "schemas/v1/decision-receipt-verify-request.schema.json",
+  required: [
+    "receipt — the compact JWS from a decision_check response's receipt.token: three dot-separated base64url segments",
+    "expected_request_hash — sha256:<64 lowercase hex>, computed by the caller from its own copy of the complete pre-action request",
+    "expected_action_hash — sha256:<64 lowercase hex>, computed by the caller from its own { actor, requested_action, target, risk_tier }",
+    "compute both hashes locally; copying them out of the receipt response verifies the receipt against itself and proves nothing",
+    "no other fields: the request schema is additionalProperties: false"
+  ],
+  exampleNote:
+    "The receipt below is a placeholder: its header and payload decode, its signature does not verify. Send the receipt.token string a decision_check response returned, with hashes you computed yourself.",
+  example: {
+    receipt:
+      "eyJhbGciOiJFUzI1NiIsImprdSI6Imh0dHBzOi8vYWdlbnQtb3V0cHV0LXZlcmlmaWNhdGlvbi1hMmEuZXhhbXBsZS53b3JrZXJzLmRldi8ud2VsbC1rbm93bi9qd2tzLmpzb24iLCJ0eXAiOiJhZ2VuZGEtcmVhZGluZXNzLXJlY2VpcHQrandzIn0" +
+      ".eyJkZWNpc2lvbiI6ImNvbnRpbnVlIiwicnVuX2lkIjoicnVuLTIwMjYtMDgtMjgtMDAxIiwicG9saWN5X3ZlcnNpb24iOiJwcmUtYWN0aW9uLWNoZWNrLnYxIn0" +
+      ".SGVyZVRoZUVTMjU2U2lnbmF0dXJlRnJvbURlY2lzaW9uQ2hlY2tHb2VzLU5vdFRoaXNQbGFjZWhvbGRlcg",
+    expected_request_hash: "sha256:885ce5052fe88f3b71bdd6c235ed59b3d20828ceb163d39e946512de4e2be333",
+    expected_action_hash: "sha256:bfde0432bf575d372a038be453e84ef0ad262e47b4b710af8ed4ead1e3963f5a"
+  }
+};
+
 function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride = null) {
   const guide = guideOverride || GATE_REQUEST_GUIDES[profile];
   if (!guide) return null;
