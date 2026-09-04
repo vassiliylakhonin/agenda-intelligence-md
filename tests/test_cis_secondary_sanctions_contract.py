@@ -346,3 +346,89 @@ def test_cis_entity_type_mapping_does_not_guess():
     assert services._entity_type_for_schema("Company") == "entity"
     assert services._entity_type_for_schema(None) == "unknown"
     assert services._entity_type_for_schema("SomethingNew") == "unknown"
+
+
+def _success_upstream(match_source_type: str = "ofac_sdn_extract"):
+    """Stub upstream: one successful public-list name match on the counterparty."""
+
+    def _match_counterparty(**_kwargs) -> dict:
+        return {
+            "status": "success",
+            "matches": [
+                {
+                    "source_type": match_source_type,
+                    "name": "EXAMPLE KZ HOLDING LLP",
+                    "schema": "Company",
+                    "datasets": ["us_ofac_sdn"],
+                    "opensanctions_id": "NK-contract-test",
+                    "score": 1.0,
+                    "topics": ["sanction"],
+                    "jurisdictions": ["kz"],
+                }
+            ],
+            "attribution": {"notice": "Contains information from OpenSanctions, CC-BY 4.0."},
+        }
+
+    return _match_counterparty
+
+
+def test_cis_service_scores_a_merged_name_match_rather_than_reporting_nothing(monkeypatch):
+    """A merged screening match has to reach the verdict, not only the evidence list.
+
+    The scorers used to gate on ``request_json["dated_sources"]`` while live
+    retrieval merged its matches into ``supplied_sources``. A request carrying no
+    dated sources of its own then came back naming an OFAC SDN entry on the
+    counterparty under ``unknown`` / ``insufficient_information`` / 0 — the two
+    halves of one response contradicting each other.
+    """
+    monkeypatch.setattr(services.upstream_opensanctions, "match_counterparty", _success_upstream())
+    request_json = load_json(CONTRACT_DIR / "insufficient_information.request.json")
+    assert request_json["dated_sources"] == [], "this fixture is the no-caller-evidence case"
+
+    result = services.cis_secondary_sanctions_exposure(request_json)
+    assert result["valid"] is True
+    assert result["live_retrieval_status"] == "success"
+    assert len(result["auto_fetched_sources"]) == 1
+
+    response = result["response"]
+    # The evidence half.
+    assert "ofac_sdn_extract" in response["supplied_sources"]
+    assert "ofac_sdn_extract" not in response["minimum_sources_before_review"]
+    # The verdict half, which must agree with it.
+    assert response["secondary_exposure_signal"] == "high"
+    assert response["triage_recommendation"] != "insufficient_information"
+    assert response["decision_readiness_score"] > 0
+    assert response["decision_readiness_label"] != "insufficient_information"
+    # Scoring the match does not upgrade what the gate claims about it.
+    assert response["human_review_required"] is True
+    assert any(
+        "resembles this counterparty" in note and "not a determination" in note for note in response["limitations"]
+    )
+    Draft202012Validator(load_json(RESPONSE_SCHEMA_PATH)).validate(response)
+
+
+def test_cis_service_still_reports_nothing_when_screening_merges_no_match(monkeypatch):
+    """The other half of the invariant: scoring the effective pack invents nothing.
+
+    A successful screening run that matched no list leaves the evidence pack
+    empty, and the verdict must stay the honest "we have nothing" it always was.
+    """
+
+    def _no_match(**_kwargs) -> dict:
+        return {
+            "status": "success",
+            "matches": [],
+            "attribution": {"notice": "Contains information from OpenSanctions, CC-BY 4.0."},
+        }
+
+    monkeypatch.setattr(services.upstream_opensanctions, "match_counterparty", _no_match)
+    request_json = load_json(CONTRACT_DIR / "insufficient_information.request.json")
+
+    result = services.cis_secondary_sanctions_exposure(request_json)
+    response = result["response"]
+    assert result["auto_fetched_sources"] == []
+    assert response["supplied_sources"] == []
+    assert response["secondary_exposure_signal"] == "unknown"
+    assert response["triage_recommendation"] == "insufficient_information"
+    assert response["decision_readiness_score"] == 0
+    assert not any("Live name screening merged" in note for note in response["limitations"])
