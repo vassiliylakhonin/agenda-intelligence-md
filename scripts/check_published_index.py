@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare the published sanctions index against a freshly built one.
+"""Check the published sanctions index and optionally compare a fresh build.
 
 Publishing the index needs a Cloudflare credential. Noticing that it stopped
 being published does not, and noticing is the part that failed before: the
@@ -12,6 +12,10 @@ at, and fails loudly when any of them is wrong:
   * the URL the worker reads still serves something;
   * what it serves still has the shape of a sanctions corpus;
   * what it serves is not older than the operator is willing to screen against.
+
+When ``--built`` is supplied, it also rejects material name-count drift from a
+fresh rebuild. Without it, the served index can still be checked while an
+official source is temporarily unavailable.
 
 It never writes anything. When it fails, the fix is the republish command in
 deploy/snapshot-site/README.md.
@@ -31,6 +35,8 @@ USER_AGENT = "agenda-intelligence-md index watchdog/1.0"
 # Roughly the drop that would mean a source stopped contributing, rather than
 # the ordinary churn of designations being added and removed.
 MAX_NAME_DRIFT_RATIO = 0.10
+MIN_NAMES = 60_000
+EXPECTED_SOURCES = 4
 
 
 def fetch(url: str, timeout: int) -> dict:
@@ -48,13 +54,10 @@ def parse_timestamp(value: str) -> datetime:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--published", required=True, help="URL the worker reads")
-    parser.add_argument("--built", type=Path, required=True, help="index just rebuilt from the sources")
+    parser.add_argument("--built", type=Path, help="optional index just rebuilt from the sources")
     parser.add_argument("--max-age-days", type=int, default=7)
     parser.add_argument("--timeout", type=int, default=60)
     args = parser.parse_args()
-
-    built = json.loads(args.built.read_text())
-    built_names = (built.get("summary") or {}).get("name_count", 0)
 
     try:
         published = fetch(args.published, args.timeout)
@@ -70,23 +73,39 @@ def main() -> int:
     if not generated:
         problems.append("the published index carries no generated_at_utc, so its freshness cannot be stated")
     else:
-        age = datetime.now(timezone.utc) - parse_timestamp(generated)
-        print(f"published index built {generated} ({age.days}d old)")
-        if age > timedelta(days=args.max_age_days):
-            problems.append(
-                f"the published index is {age.days} days old (limit {args.max_age_days}) — "
-                "the gate is still reporting success against it"
-            )
+        try:
+            age = datetime.now(timezone.utc) - parse_timestamp(generated)
+        except (TypeError, ValueError) as exc:
+            problems.append(f"the published index has an invalid generated_at_utc {generated!r}: {exc}")
+        else:
+            print(f"published index built {generated} ({age.days}d old)")
+            if age > timedelta(days=args.max_age_days):
+                problems.append(
+                    f"the published index is {age.days} days old (limit {args.max_age_days}) — "
+                    "the gate is still reporting success against it"
+                )
 
-    published_names = (published.get("summary") or {}).get("name_count", 0)
-    print(f"published names: {published_names} | rebuilt from sources today: {built_names}")
-    if built_names and published_names:
-        drift = abs(published_names - built_names) / built_names
-        if drift > MAX_NAME_DRIFT_RATIO:
-            problems.append(
-                f"published index has {published_names} names against {built_names} rebuilt today "
-                f"({drift:.0%} apart) — a source has probably stopped contributing to one of them"
-            )
+    summary = published.get("summary") or {}
+    published_names = summary.get("name_count", 0)
+    published_sources = summary.get("source_count", 0)
+    if not isinstance(published_names, int) or published_names < MIN_NAMES:
+        problems.append(f"published name_count {published_names!r} is below the {MIN_NAMES} floor")
+    if published_sources != EXPECTED_SOURCES:
+        problems.append(f"published source_count is {published_sources!r}, expected {EXPECTED_SOURCES}")
+
+    if args.built is None:
+        print(f"published names: {published_names} | published sources: {published_sources}")
+    else:
+        built = json.loads(args.built.read_text())
+        built_names = (built.get("summary") or {}).get("name_count", 0)
+        print(f"published names: {published_names} | rebuilt from sources today: {built_names}")
+        if built_names and isinstance(published_names, int) and published_names:
+            drift = abs(published_names - built_names) / built_names
+            if drift > MAX_NAME_DRIFT_RATIO:
+                problems.append(
+                    f"published index has {published_names} names against {built_names} rebuilt today "
+                    f"({drift:.0%} apart) — a source has probably stopped contributing to one of them"
+                )
 
     if problems:
         print("the published index needs attention:", file=sys.stderr)
@@ -95,7 +114,10 @@ def main() -> int:
         print("  republish with the command in deploy/snapshot-site/README.md", file=sys.stderr)
         return 1
 
-    print("published index is current and matches what the sources give today")
+    if args.built is None:
+        print("published index is healthy and current")
+    else:
+        print("published index is current and matches what the sources give today")
     return 0
 
 

@@ -7,10 +7,12 @@
 # the same quiet way — the gate keeps answering `success` while
 # `generated_at_utc` ages.
 #
-# Publishing needs a Cloudflare credential; noticing does not. This job reads
-# the public URL, rebuilds from the official sources, and fails when the two
-# disagree, which turns a silent stall into an email. Republishing stays a
-# deliberate command — see deploy/snapshot-site/README.md.
+# Publishing needs a Cloudflare credential; noticing does not. This job first
+# gates the public URL itself. It then rebuilds from the official sources and
+# compares when they are available. A temporary source outage is a warning
+# while the served index is still inside its freshness budget; an unavailable,
+# malformed, or stale served index fails the run. Republishing stays a deliberate
+# command — see deploy/snapshot-site/README.md.
 name: Check sanctions name index
 
 on:
@@ -37,17 +39,33 @@ jobs:
         with:
           python-version: "3.12"
 
-      # Rebuilding here is not busywork even though nothing is published: it is
-      # how an upstream that has started serving an error page, a truncated
-      # body, or an expired certificate gets caught on a normal day rather than
-      # on the day someone needs to republish.
+      - name: Check the published index is healthy
+        run: |
+          python3 scripts/check_published_index.py \
+            --published https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json \
+            --max-age-days 7
+
+      # Rebuilding provides the sharper drift signal when every source is
+      # available. The public-index gate above remains authoritative during a
+      # temporary source outage and will fail once freshness exceeds the budget.
       - name: Rebuild the index from the official sources
+        id: rebuild
+        continue-on-error: true
         run: python3 scripts/sanctions_name_index.py
 
+      - name: Report an official-source outage
+        if: steps.rebuild.outcome == 'failure'
+        run: |
+          echo "::warning title=Official sanctions source unavailable::Fresh rebuild failed after retries; the served index passed availability, shape, and freshness checks. Drift comparison is deferred."
+          echo "### Official sanctions source unavailable" >> "$GITHUB_STEP_SUMMARY"
+          echo "The fresh rebuild failed after retries. The served index remains within its 7-day freshness budget, so this run is a warning; drift comparison is deferred." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check the rebuilt index still has its shape
+        if: steps.rebuild.outcome == 'success'
         run: python3 scripts/verify_sanctions_index.py deploy/snapshot-site/sanctions-name-index-compact.json
 
-      - name: Check what is actually being served
+      - name: Compare the published and rebuilt indexes
+        if: steps.rebuild.outcome == 'success'
         run: |
           python3 scripts/check_published_index.py \
             --published https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json \

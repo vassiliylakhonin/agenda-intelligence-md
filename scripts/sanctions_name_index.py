@@ -15,6 +15,8 @@ import json
 import re
 import sys
 import tempfile
+import time
+import urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
@@ -130,7 +132,7 @@ def iter_children(element: ET.Element, wanted: str):
             yield child
 
 
-def download(source: dict[str, object], timeout: int, max_bytes: int) -> tuple[Path, dict[str, object]]:
+def _download_once(source: dict[str, object], timeout: int, max_bytes: int) -> tuple[Path, dict[str, object]]:
     request = Request(str(source["url"]), headers={"User-Agent": USER_AGENT})
     sha256 = hashlib.sha256()
     size = 0
@@ -190,6 +192,61 @@ def download(source: dict[str, object], timeout: int, max_bytes: int) -> tuple[P
         "sha256": sha256.hexdigest(),
     }
     return tmp_path, meta
+
+
+def download_error_detail(exc: BaseException) -> str:
+    if isinstance(exc, urllib.error.HTTPError):
+        return f"HTTP {exc.code} {exc.reason}"
+    if isinstance(exc, urllib.error.URLError):
+        return f"{type(exc).__name__}: {exc.reason}"
+    return f"{type(exc).__name__}: {exc}"
+
+
+def is_retryable_download_error(exc: BaseException) -> bool:
+    if isinstance(exc, urllib.error.HTTPError):
+        return exc.code in {408, 425, 429} or 500 <= exc.code < 600
+    return isinstance(exc, (urllib.error.URLError, TimeoutError))
+
+
+def download(
+    source: dict[str, object],
+    timeout: int,
+    max_bytes: int,
+    *,
+    retries: int = 3,
+    retry_delay_seconds: float = 5,
+) -> tuple[Path, dict[str, object]]:
+    """Download one source, retrying failures that are likely temporary."""
+    if retries < 1:
+        raise ValueError("retries must be at least 1")
+    if retry_delay_seconds < 0:
+        raise ValueError("retry_delay_seconds must not be negative")
+
+    last_error: BaseException | None = None
+    attempts_made = 0
+    for attempt in range(1, retries + 1):
+        attempts_made = attempt
+        try:
+            return _download_once(source, timeout, max_bytes)
+        except (urllib.error.URLError, TimeoutError) as exc:
+            last_error = exc
+            if not is_retryable_download_error(exc) or attempt == retries:
+                break
+            delay = retry_delay_seconds * (2 ** (attempt - 1))
+            print(
+                f"warning: source {source['id']} download attempt {attempt}/{retries} failed: "
+                f"{download_error_detail(exc)}; retrying in {delay:g}s",
+                file=sys.stderr,
+            )
+            time.sleep(delay)
+
+    assert last_error is not None
+    attempt_word = "attempt" if attempts_made == 1 else "attempts"
+    raise SourceError(
+        f"source {source['id']} ({source['authority']} / {source['list_name']}) could not be downloaded "
+        f"after {attempts_made} {attempt_word}: {download_error_detail(last_error)}\n"
+        f"  URL: {public_url(str(source['url']))}"
+    ) from last_error
 
 
 def add_entry(

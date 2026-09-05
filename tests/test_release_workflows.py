@@ -20,3 +20,15 @@ def test_post_release_smoke_exercises_new_verification_surfaces():
     assert "verify-claims" in workflow
     assert 'assert "grounded_check" in TOOLS' in workflow
     assert 'assert "verify_claims" in TOOLS' in workflow
+
+
+def test_sanctions_watchdog_treats_a_fresh_source_outage_as_a_warning():
+    workflow = (ROOT / ".github/workflows/check-sanctions-index.yml").read_text()
+
+    published_check = workflow.index("Check the published index is healthy")
+    rebuild = workflow.index("Rebuild the index from the official sources")
+    assert published_check < rebuild
+    assert "id: rebuild" in workflow
+    assert "continue-on-error: true" in workflow
+    assert "if: steps.rebuild.outcome == 'failure'" in workflow
+    assert workflow.count("if: steps.rebuild.outcome == 'success'") == 2
