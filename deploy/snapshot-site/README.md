@@ -21,9 +21,12 @@ Publishing is deliberate and local — it uses your own `wrangler` login, so no
 API token is stored anywhere. A scheduled GitHub workflow
 (`.github/workflows/check-sanctions-index.yml`) watches the published file
 instead of writing it: it rebuilds from the sources, compares against what the
-URL is actually serving, and fails when the served index is missing, stale, or
-has lost a source. That turns a silent stall into an email; the republish stays
-the command above.
+URL is actually serving, and fails when the served index is missing, malformed,
+or older than seven days. A temporary official-source outage is reported as a
+warning while the served index remains within that freshness budget; comparison
+resumes after the source recovers. That turns a real serving stall into an email
+without making one upstream 5xx look like the published index disappeared; the
+republish stays the command above.
 
 The index is a snapshot, not a live query: its freshness is whatever
 `generated_at_utc` says, and the worker reports that date back to the caller in

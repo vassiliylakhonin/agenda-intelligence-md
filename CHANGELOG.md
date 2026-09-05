@@ -4,6 +4,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(ci): keep the sanctions watchdog meaningful during a temporary official-source outage.**
+  The first scheduled run hit a persistent HTTP 500 from the European Commission FSF file backend and
+  stopped before checking the public index, even though the served snapshot was one day old, contained all
+  four sources, and still had 84,367 names. Downloads now retry transient network, rate-limit, and 5xx
+  failures with bounded backoff and report the affected source without an unhandled traceback. The workflow
+  now gates the served index first; a failed fresh rebuild becomes a visible warning while that index passes
+  availability, shape, and seven-day freshness checks, and the drift comparison is deferred. An unavailable,
+  malformed, undersized, incomplete, or stale served index still fails the run.
+
 - **fix(ci): watch the published index instead of publishing it, and drop the credential.**
   The scheduled job added a moment ago deployed to Cloudflare Pages, which meant standing up an API token
   and an environment to hold it. That was solving the wrong half. The failure this guards against was never
