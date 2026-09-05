@@ -12,11 +12,16 @@ back. `410` is terminal: registries that honour it drop the entry instead of
 retrying, and the response body and `Link` header name the successor for the
 ones that read it.
 
-This is deliberate hygiene, not a fix for measured traffic. When the tombstone
-went up on 2026-09-02 the retired name was drawing no external requests at all,
-and it had drawn none for at least the two hours that followed. Do not expect
-it to move any number on the analytics dashboard. It exists so that whatever
-still holds the name in a listing gets a true answer.
+It exists so that whatever still holds the name in a listing gets a true
+answer, and it turns out plenty still does. When this Worker went up on
+2026-09-02 the retired name had drawn no external requests in the two hours
+that followed, and this README said so and told you to expect no change in any
+number. Measured over the 48h to 2026-09-05: 24 external requests from five
+distinct clients — `fasthttp` (Singapore), `TAR-Directory-Indexer/1.0`,
+`A2A-Registry-Healthbot/1.0 (background-job)`, `jscrawler`, and Mac browsers —
+asking for `/.well-known/agent-card.json`, `/`, `/robots.txt` and
+`/sitemap.xml`. Two hours was the wrong window: a directory's crawl cycle runs
+in days, not hours.
 
 An earlier version of this README, and of the commit that added the Worker,
 justified it with about 2,900 requests a week arriving at the dead host. That
