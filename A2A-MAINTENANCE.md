@@ -55,14 +55,23 @@ Its profile is served by `middle-corridor-deal-risk-gate-a2a`.
 
 Since 2026-09-02 the name serves a tombstone Worker from
 `deploy/tombstone-kazakhstan-corridor-risk`: `410 Gone` on every path, with
-`Sunset`, `Deprecation` and a `Link` header naming the successor. This is
-hygiene, not the fix to a live problem. A retired name should say it is gone
-rather than say nothing, and 410 is terminal where the 404 from an unclaimed
-`workers.dev` host reads as "try again later". Measured over its first hours
-the name drew no external traffic at all, so expect no change in request
-volume from this. The tombstone carries no profile, no bindings and no
-discovery documents, and stays out of the public matrix: it is not a
-deployment, it is the record of one that ended.
+`Sunset`, `Deprecation` and a `Link` header naming the successor. A retired
+name should say it is gone rather than say nothing, and 410 is terminal where
+the 404 from an unclaimed `workers.dev` host reads as "try again later".
+
+Its first hours drew no external traffic, and this file said so, and said to
+expect no change in request volume. Both statements were true and are no longer.
+Measured over the 48h to 2026-09-05 the retired name took 24 external requests
+from five distinct clients — `fasthttp` from Singapore, `TAR-Directory-Indexer`,
+`A2A-Registry-Healthbot/1.0 (background-job)`, `jscrawler`, and Mac browsers —
+fetching `/.well-known/agent-card.json`, `/`, `/robots.txt` and `/sitemap.xml`.
+Stale listings are alive, they are being walked, and the crawlers walking them
+now get 410 and a successor instead of a bare 404. Two hours was too short a
+window to conclude from; a directory's crawl cycle is measured in days.
+
+The tombstone carries no profile, no bindings and no discovery documents, and
+stays out of the public matrix: it is not a deployment, it is the record of one
+that ended.
 
 ### Reading `__unknown__` in Workers analytics
 
