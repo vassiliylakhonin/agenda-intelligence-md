@@ -47,14 +47,28 @@ const GATES = [
   ["agent-output-verification-a2a", "agent_output_verification"]
 ];
 const FREE_TEXT = new Set(["strategic_risk_triage", "corridor_sanctions_assistant"]);
-const H = { "content-type": "application/json", accept: "application/json, text/event-stream", "mcp-protocol-version": "2025-06-18" };
-const post = async (url, body, headers = H) => {
-  const r = await fetch(url, { method: "POST", headers, body: JSON.stringify(body), signal: AbortSignal.timeout(30000) });
+const SELF_TEST_USER_AGENT = "agenda-intelligence-refusal-verifier/1.0";
+const H = {
+  "content-type": "application/json",
+  accept: "application/json, text/event-stream",
+  "mcp-protocol-version": "2025-06-18",
+  "user-agent": SELF_TEST_USER_AGENT
+};
+const post = async (url, body, headers = {}) => {
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { ...H, ...headers },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30000)
+  });
   let j = null; try { j = await r.json(); } catch {}
   return { status: r.status, json: j };
 };
 const get = async (url) => {
-  const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
+  const r = await fetch(url, {
+    headers: { "user-agent": SELF_TEST_USER_AGENT },
+    signal: AbortSignal.timeout(20000)
+  });
   let j = null; try { j = await r.json(); } catch {}
   return { status: r.status, json: j };
 };

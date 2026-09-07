@@ -1958,7 +1958,7 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   });
 
   assert.equal(event.event, "agenda_intelligence_a2a_usage");
-  assert.equal(event.event_version, 5);
+  assert.equal(event.event_version, 6);
   assert.equal(event.path, "/message/send");
   assert.equal(event.jsonrpc_method, "message/send");
   assert.equal(event.request_kind, "a2a_action");
@@ -1977,6 +1977,43 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   assert.equal(event.cookie, undefined);
   assert.equal(event.authorization, undefined);
   assert.equal(event.ip, undefined);
+});
+
+test("a self-identified service probe stays out of non-probe usage even with a long prompt", async () => {
+  const prompt =
+    "Read-only liveness check with enough text to exceed the short-prompt probe threshold.";
+  const logged = [];
+  const originalLog = console.log;
+  console.log = (event) => {
+    if (event && event.event === "agenda_intelligence_a2a_usage") logged.push(event);
+  };
+  try {
+    await handleJsonRpc(
+      {
+        jsonrpc: "2.0",
+        id: "long-service-probe",
+        method: "message/send",
+        params: { message: { role: "user", parts: [{ kind: "text", text: prompt }] } }
+      },
+      new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
+        method: "POST",
+        headers: {
+          "user-agent":
+            "agentprobe/0.1.0 (+https://agentprobe.org/methodology; read-only liveness probe)"
+        }
+      }),
+      {},
+      {}
+    );
+  } finally {
+    console.log = originalLog;
+  }
+
+  assert.equal(logged.length, 1, "the call must produce exactly one usage event");
+  assert.equal(logged[0].caller_kind, "service_probe");
+  assert.equal(logged[0].traffic_class, "machine_probe");
+  assert.equal(logged[0].likely_probe, true, "service probes must not inflate non-probe usage");
+  assert.equal(logged[0].probe_reason, "self_identified_service");
 });
 
 // A gate needs a structured payload, so a question written in prose measures
@@ -2020,7 +2057,7 @@ test("a prose question to a gate is measured by what arrived, not by what parsed
   assert.equal(event.prompt_chars, question.length, "prompt_chars is the size of what the caller sent");
   assert.equal(event.structured_chars, 0, "structured_chars still reports what the gate could parse");
   assert.equal(event.likely_probe, false, "a request this size is not a probe because a schema rejected it");
-  assert.equal(event.event_version, 5);
+  assert.equal(event.event_version, 6);
 });
 
 test("usage analytics records modules for single-profile worker branches", () => {
@@ -2782,7 +2819,9 @@ test("usage stats counts callers who got nothing usable", async () => {
 
   assert.equal(stats.counters.total, 5);
   assert.equal(stats.counters.non_probe, 4);
+  assert.equal(stats.counters.external_non_probe, 4);
   assert.equal(stats.counters.empty_handed, 3);
+  assert.equal(stats.counters.external_empty_handed, 3);
   assert.ok(stats.counters.empty_handed <= stats.counters.non_probe);
   // outcomes covers every call; only empty_handed is restricted to non-probes.
   assert.deepEqual(stats.outcomes, [
@@ -2825,6 +2864,14 @@ test("usage stats reports caller kinds and calling Worker zones", async () => {
 
   const stats = await usageStats(env, "2026-08-19");
 
+  // The stored service-probe row deliberately mimics event v5: its caller
+  // classification says probe while likely_probe is absent/false. /stats must
+  // repair that historical disagreement instead of counting it as usage.
+  assert.equal(stats.counters.total, 3);
+  assert.equal(stats.counters.likely_probe, 1);
+  assert.equal(stats.counters.non_probe, 2);
+  assert.equal(stats.counters.external_non_probe, 1);
+  assert.deepEqual(stats.probe_reasons, [{ name: "self_identified_service", count: 1 }]);
   assert.deepEqual(stats.caller_kinds, [
     { name: "self_test", count: 1 },
     { name: "service_probe", count: 1 },

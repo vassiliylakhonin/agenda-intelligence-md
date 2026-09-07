@@ -4,6 +4,18 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(worker telemetry): make the usage counter exclude known probes and identified self-tests.**
+  `/stats.non_probe` trusted only the stored `likely_probe` boolean, while the same event could already say
+  `caller_kind: service_probe` and `traffic_class: machine_probe`. Measured over 2026-09-01..07: 695 action
+  rows, 554 reported non-probe, 522 from the operator's ALMANET connection and 31 of the remaining 32 from
+  self-identified scanners. The two classifiers now share one probe decision for A2A and MCP calls, record a
+  bounded `probe_reason`, and repair event-v5 scanner rows at read time without rewriting KV history.
+  `/stats` adds `external_non_probe`, `external_empty_handed`, and `probe_reasons`; the stats CLI prints them.
+  The production refusal and decision-gate verification scripts now identify themselves with the existing
+  `agenda-intelligence-*` self-test convention. ALMANET is deliberately not hard-coded: an ASN identifies a
+  network, not the operator, and would hide a legitimate caller on the same ISP. The agent card, optional
+  `X-Client-Id`, response engagement/contact block, request schemas, and product verdicts are unchanged.
+
 - **fix(ci): keep the sanctions watchdog meaningful during a temporary official-source outage.**
   The first scheduled run hit a persistent HTTP 500 from the European Commission FSF file backend and
   stopped before checking the public index, even though the served snapshot was one day old, contained all

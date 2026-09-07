@@ -486,6 +486,7 @@ The custom usage event is privacy-safe by design. It does not log IP addresses, 
 - coarse client class, such as `agenstry`, `curl`, `browser`, or `automation`;
 - the user-agent string, truncated to 120 characters;
 - `caller_kind` — `self_test`, `service_probe`, `external`, or `unsigned_external`;
+- `probe_reason` — the bounded signal behind `likely_probe` (`self_identified_service`, `agenstry_client`, or `short_prompt`);
 - `caller_zone` — the calling Cloudflare Worker zone from the `cf-worker` header, when present;
 - referrer hostname, when present;
 - Cloudflare colo, country, and network operator (`asOrganization`), when Cloudflare provides them.
@@ -510,6 +511,12 @@ npx --yes wrangler tail agenda-intelligence-a2a --format=json
 Two fields exist to stop the traffic count from reading as usage.
 
 `caller_kind` splits every request four ways. `self_test` is this repository's own conformance and smoke scripts, which name themselves in the user agent. `service_probe` is a directory crawler, registry health check, grader, or security auditor. `external` is everything else that sent a user agent, which includes an ad-hoc `curl` from an operator's shell and any generic HTTP library; read it as "not identified as ours or as a probe", not as "a stranger". `unsigned_external` is a caller that sent no user agent at all.
+
+Every operator-run production check must use a user-agent beginning with
+`agenda-intelligence-` (for example, `curl -A agenda-intelligence-operator-check/1.0 ...`).
+Without that marker, a local Node or curl request is intentionally indistinguishable from an
+external generic client and inflates `external_non_probe`. Do not infer operator identity from
+an ISP or ASN: a network identifies the route, not the caller.
 
 A probe is recognised two ways, and both are needed. The first is a keyword — `bot`, `crawler`, `probe`, `audit`, `registry`, and so on. The second is the self-identification convention: a parenthesised contact prefixed with `+`, as in `(+https://example.com/bot)` or `(+someone@example.com)`. The keyword list alone is not enough — measured 2026-08-20..22, the two highest-volume crawlers against these endpoints name neither a role nor a bot suffix, and 411 requests over three days landed in `external` because of it, 224 of them from a single scheduled crawler.
 
@@ -612,7 +619,7 @@ The counters at `/stats` cannot answer this: they keep no input and no verdict, 
 the detailed funnel events live in Workers Logs, which retains 72 hours on the free
 plan. One KV write per call, none on discovery GETs.
 
-The `/stats` response includes approximate daily totals, likely probes, non-probe calls, prompt character counts, client classes, per-host counts (`hosts` — every published worker shares one KV namespace, so this is the only way to attribute calls to a specific worker), countries, JSON-RPC methods, and selected Agenda modules. The counters are intentionally coarse and are not a billing or audit ledger. `traffic_classes` separates `human_browser`, `machine_client`, `machine_probe`, and `self_test`; `request_kinds` separates A2A and MCP actions. The corresponding `human_requests`, `machine_requests`, `self_test_requests`, and `unclassified_requests` counters make the split directly readable while older pre-classification rows remain explicit.
+The `/stats` response includes approximate daily totals, likely probes, non-probe calls, prompt character counts, client classes, per-host counts (`hosts` — every published worker shares one KV namespace, so this is the only way to attribute calls to a specific worker), countries, JSON-RPC methods, and selected Agenda modules. The counters are intentionally coarse and are not a billing or audit ledger. `traffic_classes` separates `human_browser`, `machine_client`, `machine_probe`, and `self_test`; `request_kinds` separates A2A and MCP actions. The corresponding `human_requests`, `machine_requests`, `self_test_requests`, and `unclassified_requests` counters make the split directly readable while older pre-classification rows remain explicit. `external_non_probe` is the narrower demand-candidate counter: it excludes both self-tests and service probes. It is still not proof of an independent user, because an unmarked operator curl is indistinguishable from any other generic client. `external_empty_handed` applies the same narrower population to calls that needed more input or failed validation.
 
 Three of those breakdowns exist to identify a caller the coarse client class cannot name — every unrecognised agent otherwise lands in `unknown`:
 
@@ -624,7 +631,7 @@ No IP address is stored in any of them.
 
 `outcomes` and `counters.empty_handed` report what the caller actually received. `empty_handed` counts calls that ended in `insufficient_information`, `input_required`, or `invalid_request` — the gate could not act on what was supplied. At this traffic level that ratio is the useful number: a caller who reaches the endpoint and leaves with nothing is a different failure from one who never arrives.
 
-An A2A request is counted as a likely probe when the client is `agenstry` or the prompt payload is shorter than `PROBE_PROMPT_CHAR_THRESHOLD` (24 characters) — this filters untagged uptime pings from monitor colos that do not announce themselves in the user-agent. Inspect `non_probe` for genuine usage.
+An A2A or MCP action is counted as a likely probe when the caller self-identifies as a service probe, the client is `agenstry`, or the prompt payload is shorter than `PROBE_PROMPT_CHAR_THRESHOLD` (24 characters). `probe_reasons` reports which bounded signal matched. `/stats` applies the same rule while reading older event-v5 rows, so a long-prompt scanner whose stored `caller_kind` already says `service_probe` no longer inflates historical `non_probe`. Inspect `external_non_probe`, not `non_probe`, for possible external use; confirm individual rows before claiming demand.
 
 ### Cost accounting
 
