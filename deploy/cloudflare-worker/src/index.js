@@ -8541,6 +8541,19 @@ function trafficClass(request, likelyProbe = false) {
   return "machine_client";
 }
 
+// One classifier owns the probe decision for every action transport. Keeping
+// this separate from callerKind() used to produce contradictory rows: a
+// self-identified scanner with a long prompt was traffic_class=machine_probe
+// but likely_probe=false, so /stats counted it as product usage. The reason is
+// bounded so operators can see which signal made the decision without storing
+// any more request data.
+function actionProbeReason(request, promptChars) {
+  if (callerKind(request) === "service_probe") return "self_identified_service";
+  if (classifyClient(request) === "agenstry") return "agenstry_client";
+  if (promptChars < PROBE_PROMPT_CHAR_THRESHOLD) return "short_prompt";
+  return null;
+}
+
 function usageRequestKind(path, jsonrpcMethod) {
   if (path === MCP_ENDPOINT_PATH || jsonrpcMethod === "tools/call") return "mcp_action";
   if (path === "/message/send" || path === "/") return "a2a_action";
@@ -8619,12 +8632,13 @@ function buildUsageEvent(request, details = {}) {
 
   return {
     event: "agenda_intelligence_a2a_usage",
-    // 5: adds bounded traffic_class, request_kind, and live-retrieval reason
-    // codes. Version 4 made prompt_chars the size of what arrived rather than
+    // 6: adds the bounded probe_reason behind likely_probe. Version 5 added
+    // traffic_class, request_kind, and live-retrieval reason codes. Version 4
+    // made prompt_chars the size of what arrived rather than
     // the size of what this profile could parse, with structured_chars carrying
     // the latter. Rows at version 3 and below measured a plain-text request to
     // a gate as zero, and their likely_probe follows from that number.
-    event_version: 5,
+    event_version: 6,
     timestamp: new Date().toISOString(),
     source: "cloudflare_worker",
     method: request.method,
@@ -8651,7 +8665,8 @@ function buildUsageEvent(request, details = {}) {
       as_org: cf.asOrganization || null
     },
     outcome: details.outcome || { decision: null, status: null, score: null },
-    likely_probe: likelyProbe
+    likely_probe: likelyProbe,
+    probe_reason: details.probe_reason || null
   };
 }
 
@@ -8922,6 +8937,7 @@ async function recordUsageStats(env, event) {
       request_kind: event.request_kind || "unknown",
       prompt_chars: event.prompt_chars || 0,
       likely_probe: Boolean(event.likely_probe),
+      probe_reason: event.probe_reason || null,
       client: event.client || "unknown",
       user_agent: event.user_agent || "unknown",
       caller_kind: event.caller_kind || "external",
@@ -8950,6 +8966,26 @@ function sortedMap(map, limit = 0) {
     .map(([name, count]) => ({ name, count }))
     .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name));
   return limit > 0 ? rows.slice(0, limit) : rows;
+}
+
+// Repair old rows at read time as well as classifying new rows correctly.
+// Event v5 already stored caller_kind and traffic_class, so the 31 long-prompt
+// scanners observed in 2026-09-01..07 can be removed from non-probe usage
+// without rewriting or deleting immutable historical KV records.
+function usageEventIsProbe(event) {
+  return Boolean(
+    event.likely_probe ||
+      event.caller_kind === "service_probe" ||
+      event.traffic_class === "machine_probe"
+  );
+}
+
+function usageEventProbeReason(event) {
+  if (event.probe_reason) return event.probe_reason;
+  if (event.caller_kind === "service_probe") return "self_identified_service";
+  if (event.client === "agenstry") return "agenstry_client";
+  if (event.likely_probe && event.prompt_chars < PROBE_PROMPT_CHAR_THRESHOLD) return "short_prompt";
+  return event.likely_probe ? "legacy_or_unknown" : null;
 }
 
 function listOrNone(items) {
@@ -9008,14 +9044,24 @@ async function usageStats(env, date) {
   const outcomes = new Map();
   const liveRetrievalStatuses = new Map();
   const liveRetrievalReasonCodes = new Map();
+  const probeReasons = new Map();
   let emptyHanded = 0;
+  let externalEmptyHanded = 0;
+  let externalNonProbe = 0;
   let likelyProbe = 0;
   let promptChars = 0;
   let billableCalls = 0;
   let estimatedCostEur = 0;
 
   for (const event of events) {
-    if (event.likely_probe) likelyProbe += 1;
+    const eventIsProbe = usageEventIsProbe(event);
+    const eventIsExternalNonProbe =
+      !eventIsProbe && (event.caller_kind === "external" || event.caller_kind === "unsigned_external");
+    if (eventIsProbe) {
+      likelyProbe += 1;
+      incrementMap(probeReasons, usageEventProbeReason(event));
+    }
+    if (eventIsExternalNonProbe) externalNonProbe += 1;
     promptChars += Number.isFinite(event.prompt_chars) ? event.prompt_chars : 0;
     const lr = event.live_retrieval;
     if (lr?.status) incrementMap(liveRetrievalStatuses, lr.status);
@@ -9044,12 +9090,13 @@ async function usageStats(env, date) {
     // request. Counted among non-probe calls only — monitors send deliberately
     // empty payloads, so including them made the ratio read "5 of 1".
     if (
-      !event.likely_probe &&
+      !eventIsProbe &&
       (event.outcome === "insufficient_information" ||
         event.outcome === "invalid_request" ||
         event.outcome === "input_required")
     ) {
       emptyHanded += 1;
+      if (eventIsExternalNonProbe) externalEmptyHanded += 1;
     }
     for (const moduleName of Array.isArray(event.modules_used) ? event.modules_used : []) {
       incrementMap(modules, moduleName);
@@ -9068,10 +9115,12 @@ async function usageStats(env, date) {
       total,
       non_probe: nonProbe,
       likely_probe: likelyProbe,
+      external_non_probe: externalNonProbe,
       prompt_chars_total: promptChars,
       prompt_chars_avg: total > 0 ? Math.round(promptChars / total) : 0,
       billable_calls: billableCalls,
       empty_handed: emptyHanded,
+      external_empty_handed: externalEmptyHanded,
       human_requests: trafficClasses.get("human_browser") || 0,
       machine_requests:
         (trafficClasses.get("machine_client") || 0) + (trafficClasses.get("machine_probe") || 0),
@@ -9091,6 +9140,7 @@ async function usageStats(env, date) {
     caller_kinds: sortedMap(callerKinds),
     traffic_classes: sortedMap(trafficClasses),
     request_kinds: sortedMap(requestKinds),
+    probe_reasons: sortedMap(probeReasons),
     // Calling Cloudflare Worker zones, from the `cf-worker` header. Empty on
     // most days by design — see callerZone() for what this is for.
     caller_zones: sortedMap(callerZones),
@@ -9856,8 +9906,7 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
     const params = payload.params ?? {};
     const profile = agentProfile(request, env);
     const { result, promptChars, structuredChars, modulesUsed } = await runProfileRequest(profile, params, request, env);
-    const likelyProbe =
-      classifyClient(request) === "agenstry" || promptChars < PROBE_PROMPT_CHAR_THRESHOLD;
+    const probeReason = actionProbeReason(request, promptChars);
     const event = logUsageEvent(request, {
       jsonrpc_method: payload.method,
       jsonrpc_id_present: payload.id !== undefined,
@@ -9866,7 +9915,8 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
       structured_chars: structuredChars,
       modules_used: modulesUsed,
       live_retrieval: billableUpstreamCost(result),
-      likely_probe: likelyProbe,
+      likely_probe: Boolean(probeReason),
+      probe_reason: probeReason,
       outcome: callOutcome(result)
     });
     const statsPromise = recordUsageStats(env, event).catch((error) => {
@@ -10171,6 +10221,7 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
     const legacyRequestWrapper = mcpUsesLegacyRequestWrapper(profile, toolArguments, name);
     const callParams = mcpArgumentsToParams(profile, toolArguments, name);
     const { result, promptChars, structuredChars, modulesUsed } = await runProfileRequest(profile, callParams, request, env);
+    const probeReason = actionProbeReason(request, promptChars);
     const event = logUsageEvent(request, {
       jsonrpc_method: "tools/call",
       jsonrpc_id_present: payload.id !== undefined,
@@ -10179,7 +10230,8 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
       structured_chars: structuredChars,
       modules_used: modulesUsed,
       live_retrieval: billableUpstreamCost(result),
-      likely_probe: classifyClient(request) === "agenstry" || promptChars < PROBE_PROMPT_CHAR_THRESHOLD,
+      likely_probe: Boolean(probeReason),
+      probe_reason: probeReason,
       outcome: callOutcome(result)
     });
     const statsPromise = recordUsageStats(env, event).catch((error) => {

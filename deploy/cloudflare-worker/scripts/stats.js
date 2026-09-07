@@ -63,7 +63,9 @@ async function main() {
   console.log(`Agenda Intelligence A2A stats for ${body.date}`);
   console.log(`Total: ${body.counters.total}`);
   console.log(`Non-probe: ${body.counters.non_probe}`);
+  console.log(`External non-probe: ${body.counters.external_non_probe ?? "n/a"}`);
   console.log(`Likely probe: ${body.counters.likely_probe}`);
+  if (body.probe_reasons) console.log(`Probe reasons: ${formatRows(body.probe_reasons)}`);
   console.log(`Prompt chars: ${body.counters.prompt_chars_total} total, ${body.counters.prompt_chars_avg} avg`);
   if (body.cost) {
     const budget = body.cost.budget || {};
@@ -78,6 +80,11 @@ async function main() {
     }
   }
   console.log(`Empty-handed: ${body.counters.empty_handed} of ${body.counters.non_probe} non-probe calls`);
+  if (body.counters.external_empty_handed !== undefined) {
+    console.log(
+      `External empty-handed: ${body.counters.external_empty_handed} of ${body.counters.external_non_probe} external non-probe calls`
+    );
+  }
   console.log(`Outcomes: ${formatRows(body.outcomes)}`);
   console.log(`Agent profiles: ${formatRows(body.agent_profiles)}`);
   console.log(`Clients: ${formatRows(body.clients)}`);

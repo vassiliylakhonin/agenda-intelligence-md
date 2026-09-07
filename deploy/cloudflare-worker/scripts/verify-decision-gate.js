@@ -34,7 +34,8 @@ const BASE = "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.de
 const H = {
   "content-type": "application/json",
   accept: "application/json, text/event-stream",
-  "mcp-protocol-version": "2025-06-18"
+  "mcp-protocol-version": "2025-06-18",
+  "user-agent": "agenda-intelligence-decision-gate-verifier/1.0"
 };
 
 const rows = [];
