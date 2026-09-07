@@ -1,0 +1,103 @@
+# Temporary bridge: publish global-think-tank-analyst using this repository's token.
+#
+# Why it is here, in the wrong repository on purpose.
+#
+# `PYPI_API_TOKEN` in this repository is account-scoped, not project-scoped: it
+# was created at 2026-05-01T17:44:48Z, five minutes before this project's first
+# upload at 17:49:52Z, and a project-scoped token cannot exist before its
+# project does. So it can publish any project on the account.
+#
+# `global-think-tank-analyst` cannot publish itself. It holds no secrets and
+# offered only Trusted Publishing, which needs a registered publisher, which
+# needs a PyPI web login, which needs the second factor lost on 2026-08-28
+# (pypi/support#12033, still open). Its v1.6.0 release therefore built cleanly
+# and failed at upload, twice.
+#
+# GitHub secrets are write-only, so the token cannot be copied into that
+# repository without the maintainer re-entering it, and it cannot be re-issued
+# without the same web login. Running the upload here, where the secret already
+# lives, is the one remaining way to use it.
+#
+# This is a workaround and should not outlive its purpose. Delete this file once
+# global-think-tank-analyst can publish itself — either through a registered
+# Trusted Publisher or through its own copy of a token. It is dispatch-only and
+# never runs on its own.
+
+name: Publish sibling — global-think-tank-analyst
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag of global-think-tank-analyst to build and publish"
+        required: true
+        default: "v1.6.0"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-sibling-gtta-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and publish the sibling release
+    runs-on: ubuntu-latest
+    steps:
+      # Nothing from this repository is built or uploaded. Only the secret is
+      # borrowed, and the checkout is the sibling repository at its tag.
+      - name: Check out global-think-tank-analyst at the tag
+        uses: actions/checkout@v6
+        with:
+          repository: vassiliylakhonin/global-think-tank-analyst
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install build and test dependencies
+        run: python -m pip install ".[test,mcp]" build "twine==7.0.0"
+
+      # The same gates the sibling's own release workflow runs. A shortcut here
+      # would publish something less verified than that workflow would have.
+      - name: Verify tag matches package version
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          python -c "import os, pathlib, tomllib; expected = os.environ['RELEASE_TAG'].removeprefix('v'); actual = tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version']; assert actual == expected, f'{actual} != {expected}'"
+
+      - name: Confirm the project name is the sibling, not this one
+        run: |
+          python - <<'PY'
+          import pathlib, tomllib, sys
+          name = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["name"]
+          if name != "global-think-tank-analyst":
+              sys.exit(f"refusing to publish unexpected project {name!r}")
+          print(f"project: {name}")
+          PY
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Run repository checks
+        run: python scripts/check.py
+
+      - name: Build distributions
+        run: python -m build
+
+      - name: Check distribution metadata
+        run: python -m twine check dist/*
+
+      - name: Smoke-test installed wheel
+        run: python scripts/test_wheel_install.py
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.14.2
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          print-hash: true
