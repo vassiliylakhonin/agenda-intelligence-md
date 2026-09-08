@@ -85,6 +85,14 @@ async function main() {
       `External empty-handed: ${body.counters.external_empty_handed} of ${body.counters.external_non_probe} external non-probe calls`
     );
   }
+  if (body.counters.external_input_required !== undefined) {
+    console.log(
+      `External input-required: ${body.counters.external_input_required}` +
+        ` (${body.counters.external_input_required_unparsed ?? "n/a"} with no parsed structured data)`
+    );
+    console.log(`External input-required reasons: ${formatRows(body.external_input_required_reasons)}`);
+    console.log(`External required fields: ${formatRows(body.external_input_required_fields)}`);
+  }
   console.log(`Outcomes: ${formatRows(body.outcomes)}`);
   console.log(`Agent profiles: ${formatRows(body.agent_profiles)}`);
   console.log(`Clients: ${formatRows(body.clients)}`);

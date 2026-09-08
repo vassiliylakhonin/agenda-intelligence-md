@@ -8632,13 +8632,14 @@ function buildUsageEvent(request, details = {}) {
 
   return {
     event: "agenda_intelligence_a2a_usage",
-    // 6: adds the bounded probe_reason behind likely_probe. Version 5 added
+    // 7: adds bounded input-required diagnostics to outcome. Version 6 added
+    // the bounded probe_reason behind likely_probe. Version 5 added
     // traffic_class, request_kind, and live-retrieval reason codes. Version 4
     // made prompt_chars the size of what arrived rather than
     // the size of what this profile could parse, with structured_chars carrying
     // the latter. Rows at version 3 and below measured a plain-text request to
     // a gate as zero, and their likely_probe follows from that number.
-    event_version: 6,
+    event_version: 7,
     timestamp: new Date().toISOString(),
     source: "cloudflare_worker",
     method: request.method,
@@ -8734,6 +8735,29 @@ function logFunnelEvent(request, step) {
 // Uniform per-call outcome, so /stats can answer "of the real calls, how many
 // ended with nothing usable". Every vertical profile carries a
 // readiness_contract; the base signal-screen profile does not.
+function inputRequiredTelemetry(result) {
+  const metadata = result?.metadata || {};
+  const errors = Array.isArray(metadata.errors) ? metadata.errors.filter((item) => typeof item === "string") : [];
+  let reasonCode = "missing_required_input";
+  if (errors.some((error) => /no question/i.test(error))) reasonCode = "missing_question";
+  else if (errors.some((error) => /(?:missing|no) structured/i.test(error))) {
+    reasonCode = "missing_structured_request";
+  }
+
+  // The public guide strings contain descriptions after an em dash. Persist
+  // only the stable field path before it, never the description, example, or
+  // caller payload. Entries explicitly described as optional are not missing.
+  const requiredFields = [];
+  for (const item of Array.isArray(metadata.required_fields) ? metadata.required_fields : []) {
+    if (typeof item !== "string" || /\boptional\b/i.test(item)) continue;
+    const field = item.split(/\s+[—–]\s+/, 1)[0].replace(/^or\s+/i, "").trim();
+    if (!/^[A-Za-z0-9_.\[\]-]{1,80}$/.test(field) || requiredFields.includes(field)) continue;
+    requiredFields.push(field);
+    if (requiredFields.length === 16) break;
+  }
+  return { reason_code: reasonCode, required_fields: requiredFields };
+}
+
 function callOutcome(result) {
   if (result?.status?.state === "TASK_STATE_FAILED") {
     return { decision: "invalid_request", status: "invalid_request", score: null };
@@ -8745,7 +8769,12 @@ function callOutcome(result) {
   // calls, of which 211 were one local test script and 14 were the marketplace
   // probe asking, in effect, what the gate needs.
   if (result?.status?.state === "TASK_STATE_INPUT_REQUIRED") {
-    return { decision: "input_required", status: "input_required", score: null };
+    return {
+      decision: "input_required",
+      status: "input_required",
+      score: null,
+      ...inputRequiredTelemetry(result)
+    };
   }
   const contract = result?.metadata?.response?.readiness_contract;
   if (contract && typeof contract === "object") {
@@ -8936,6 +8965,7 @@ async function recordUsageStats(env, event) {
       jsonrpc_method: event.jsonrpc_method || "unknown",
       request_kind: event.request_kind || "unknown",
       prompt_chars: event.prompt_chars || 0,
+      structured_chars: Number.isFinite(event.structured_chars) ? event.structured_chars : null,
       likely_probe: Boolean(event.likely_probe),
       probe_reason: event.probe_reason || null,
       client: event.client || "unknown",
@@ -8949,6 +8979,8 @@ async function recordUsageStats(env, event) {
       as_org: event.cf?.as_org || "unknown",
       outcome: event.outcome?.decision || "unknown",
       outcome_score: Number.isInteger(event.outcome?.score) ? event.outcome.score : null,
+      input_required_reason: event.outcome?.reason_code || null,
+      input_required_fields: Array.isArray(event.outcome?.required_fields) ? event.outcome.required_fields : [],
       modules_used: Array.isArray(event.modules_used) ? event.modules_used : [],
       live_retrieval:
         event.live_retrieval || { status: null, upstream: null, reason_code: null, billable: false, cost_eur: 0 }
@@ -9045,8 +9077,13 @@ async function usageStats(env, date) {
   const liveRetrievalStatuses = new Map();
   const liveRetrievalReasonCodes = new Map();
   const probeReasons = new Map();
+  const inputRequiredReasons = new Map();
+  const externalInputRequiredReasons = new Map();
+  const externalInputRequiredFields = new Map();
   let emptyHanded = 0;
   let externalEmptyHanded = 0;
+  let externalInputRequired = 0;
+  let externalInputRequiredUnparsed = 0;
   let externalNonProbe = 0;
   let likelyProbe = 0;
   let promptChars = 0;
@@ -9086,6 +9123,17 @@ async function usageStats(env, date) {
     // would bury the handful of rows this map exists to show.
     if (event.caller_zone && event.caller_zone !== "none") incrementMap(callerZones, event.caller_zone);
     incrementMap(outcomes, event.outcome);
+    if (event.outcome === "input_required") {
+      incrementMap(inputRequiredReasons, event.input_required_reason || "legacy_or_unknown");
+      if (eventIsExternalNonProbe) {
+        externalInputRequired += 1;
+        incrementMap(externalInputRequiredReasons, event.input_required_reason || "legacy_or_unknown");
+        if (event.structured_chars === 0) externalInputRequiredUnparsed += 1;
+        for (const field of Array.isArray(event.input_required_fields) ? event.input_required_fields : []) {
+          incrementMap(externalInputRequiredFields, field);
+        }
+      }
+    }
     // A caller who supplied nothing usable: the gate could not act on the
     // request. Counted among non-probe calls only — monitors send deliberately
     // empty payloads, so including them made the ratio read "5 of 1".
@@ -9121,6 +9169,8 @@ async function usageStats(env, date) {
       billable_calls: billableCalls,
       empty_handed: emptyHanded,
       external_empty_handed: externalEmptyHanded,
+      external_input_required: externalInputRequired,
+      external_input_required_unparsed: externalInputRequiredUnparsed,
       human_requests: trafficClasses.get("human_browser") || 0,
       machine_requests:
         (trafficClasses.get("machine_client") || 0) + (trafficClasses.get("machine_probe") || 0),
@@ -9145,6 +9195,9 @@ async function usageStats(env, date) {
     // most days by design — see callerZone() for what this is for.
     caller_zones: sortedMap(callerZones),
     outcomes: sortedMap(outcomes),
+    input_required_reasons: sortedMap(inputRequiredReasons),
+    external_input_required_reasons: sortedMap(externalInputRequiredReasons),
+    external_input_required_fields: sortedMap(externalInputRequiredFields),
     live_retrieval_statuses: sortedMap(liveRetrievalStatuses),
     live_retrieval_reason_codes: sortedMap(liveRetrievalReasonCodes),
     agent_profiles: sortedMap(agentProfiles),
