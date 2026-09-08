@@ -1958,7 +1958,7 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   });
 
   assert.equal(event.event, "agenda_intelligence_a2a_usage");
-  assert.equal(event.event_version, 6);
+  assert.equal(event.event_version, 7);
   assert.equal(event.path, "/message/send");
   assert.equal(event.jsonrpc_method, "message/send");
   assert.equal(event.request_kind, "a2a_action");
@@ -2057,7 +2057,11 @@ test("a prose question to a gate is measured by what arrived, not by what parsed
   assert.equal(event.prompt_chars, question.length, "prompt_chars is the size of what the caller sent");
   assert.equal(event.structured_chars, 0, "structured_chars still reports what the gate could parse");
   assert.equal(event.likely_probe, false, "a request this size is not a probe because a schema rejected it");
-  assert.equal(event.event_version, 6);
+  assert.equal(event.event_version, 7);
+  assert.equal(event.outcome.reason_code, "missing_structured_request");
+  assert.ok(event.outcome.required_fields.includes("counterparty"));
+  assert.ok(event.outcome.required_fields.includes("risk_question"));
+  assert.ok(!JSON.stringify(event).includes(question), "telemetry must not retain the caller prompt");
 });
 
 test("usage analytics records modules for single-profile worker branches", () => {
@@ -2771,6 +2775,25 @@ test("call outcome reports the routing decision the caller received", () => {
   const rejected = callOutcome({ status: { state: "TASK_STATE_FAILED" }, metadata: {} });
   assert.equal(rejected.decision, "invalid_request");
 
+  const needsInput = callOutcome({
+    status: { state: "TASK_STATE_INPUT_REQUIRED" },
+    metadata: {
+      errors: ["Missing structured agent-output verification request"],
+      required_fields: [
+        "claims — non-empty array",
+        "evidence — array of evidence items",
+        "freshness — optional ISO date"
+      ]
+    }
+  });
+  assert.deepEqual(needsInput, {
+    decision: "input_required",
+    status: "input_required",
+    score: null,
+    reason_code: "missing_structured_request",
+    required_fields: ["claims", "evidence"]
+  });
+
   // The base signal-screen profile carries no readiness contract.
   const plain = callOutcome({ status: { state: "TASK_STATE_COMPLETED" }, metadata: { response: {} } });
   assert.equal(plain.decision, "completed");
@@ -2805,6 +2828,17 @@ test("usage stats counts callers who got nothing usable", async () => {
     timestamp: "2026-08-07T09:03:00.000Z",
     outcome: { decision: "invalid_request", score: null }
   });
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-08-07T09:03:30.000Z",
+    structured_chars: 0,
+    outcome: {
+      decision: "input_required",
+      score: null,
+      reason_code: "missing_structured_request",
+      required_fields: ["claims", "evidence"]
+    }
+  });
   // A monitor sending a deliberately empty payload is not a caller who left
   // empty-handed. Counting it made the ratio read "5 of 1 non-probe calls".
   await recordUsageStats(env, {
@@ -2817,16 +2851,27 @@ test("usage stats counts callers who got nothing usable", async () => {
 
   const stats = await usageStats(env, "2026-08-07");
 
-  assert.equal(stats.counters.total, 5);
-  assert.equal(stats.counters.non_probe, 4);
-  assert.equal(stats.counters.external_non_probe, 4);
-  assert.equal(stats.counters.empty_handed, 3);
-  assert.equal(stats.counters.external_empty_handed, 3);
+  assert.equal(stats.counters.total, 6);
+  assert.equal(stats.counters.non_probe, 5);
+  assert.equal(stats.counters.external_non_probe, 5);
+  assert.equal(stats.counters.empty_handed, 4);
+  assert.equal(stats.counters.external_empty_handed, 4);
+  assert.equal(stats.counters.external_input_required, 1);
+  assert.equal(stats.counters.external_input_required_unparsed, 1);
   assert.ok(stats.counters.empty_handed <= stats.counters.non_probe);
+  assert.deepEqual(stats.input_required_reasons, [{ name: "missing_structured_request", count: 1 }]);
+  assert.deepEqual(stats.external_input_required_reasons, [
+    { name: "missing_structured_request", count: 1 }
+  ]);
+  assert.deepEqual(stats.external_input_required_fields, [
+    { name: "claims", count: 1 },
+    { name: "evidence", count: 1 }
+  ]);
   // outcomes covers every call; only empty_handed is restricted to non-probes.
   assert.deepEqual(stats.outcomes, [
     { name: "insufficient_information", count: 2 },
     { name: "invalid_request", count: 2 },
+    { name: "input_required", count: 1 },
     { name: "ready_for_human_review", count: 1 }
   ]);
 });

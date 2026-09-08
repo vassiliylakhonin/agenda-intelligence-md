@@ -481,12 +481,13 @@ The custom usage event is privacy-safe by design. It does not log IP addresses, 
 - request method and path;
 - JSON-RPC method;
 - whether a JSON-RPC id was present;
-- prompt character count;
+- prompt character count and, when applicable, parsed structured-data character count;
 - selected Agenda modules;
 - coarse client class, such as `agenstry`, `curl`, `browser`, or `automation`;
 - the user-agent string, truncated to 120 characters;
 - `caller_kind` — `self_test`, `service_probe`, `external`, or `unsigned_external`;
 - `probe_reason` — the bounded signal behind `likely_probe` (`self_identified_service`, `agenstry_client`, or `short_prompt`);
+- for `input_required`, a bounded reason code and the static required-field names from the request guide; raw validation text, examples, and prompt contents are not logged;
 - `caller_zone` — the calling Cloudflare Worker zone from the `cf-worker` header, when present;
 - referrer hostname, when present;
 - Cloudflare colo, country, and network operator (`asOrganization`), when Cloudflare provides them.
@@ -630,6 +631,8 @@ Three of those breakdowns exist to identify a caller the coarse client class can
 No IP address is stored in any of them.
 
 `outcomes` and `counters.empty_handed` report what the caller actually received. `empty_handed` counts calls that ended in `insufficient_information`, `input_required`, or `invalid_request` — the gate could not act on what was supplied. At this traffic level that ratio is the useful number: a caller who reaches the endpoint and leaves with nothing is a different failure from one who never arrives.
+
+`input_required_reasons` shows the bounded reason for every such result. The external-only diagnostic is split into `counters.external_input_required`, `counters.external_input_required_unparsed`, `external_input_required_reasons`, and `external_input_required_fields`. Together they distinguish a long prompt that never supplied parseable structured data from a request that reached the gate in the expected shape. Older retained rows appear as `legacy_or_unknown`; no KV history is rewritten.
 
 An A2A or MCP action is counted as a likely probe when the caller self-identifies as a service probe, the client is `agenstry`, or the prompt payload is shorter than `PROBE_PROMPT_CHAR_THRESHOLD` (24 characters). `probe_reasons` reports which bounded signal matched. `/stats` applies the same rule while reading older event-v5 rows, so a long-prompt scanner whose stored `caller_kind` already says `service_probe` no longer inflates historical `non_probe`. Inspect `external_non_probe`, not `non_probe`, for possible external use; confirm individual rows before claiming demand.
 

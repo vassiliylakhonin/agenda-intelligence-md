@@ -4,6 +4,13 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(worker telemetry): explain why external calls stop at `input_required`.**
+  Usage event v7 adds a bounded outcome reason and static required-field names, and KV now retains the
+  already-computed structured-payload character count. `/stats` reports external input-required totals,
+  how many contained no parseable structured data, their reason codes, and the fields named by the gate's
+  request guide. Raw prompts, validation text, examples, headers, and caller identifiers remain excluded;
+  older KV rows stay immutable and aggregate under `legacy_or_unknown`.
+
 - **fix(worker telemetry): make the usage counter exclude known probes and identified self-tests.**
   `/stats.non_probe` trusted only the stored `likely_probe` boolean, while the same event could already say
   `caller_kind: service_probe` and `traffic_class: machine_probe`. Measured over 2026-09-01..07: 695 action
