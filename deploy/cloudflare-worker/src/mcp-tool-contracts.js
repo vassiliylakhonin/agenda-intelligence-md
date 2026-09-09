@@ -1319,6 +1319,33 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "minLength": 1
             }
           },
+          "normalizations_applied": {
+            "description": "Known, unambiguous input aliases normalized before validation. Ambiguous values are rejected with a suggestion instead.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "from",
+                "to"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "from": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "to": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
           "readiness_contract": {
             "$ref": "#/$defs/readiness_contract"
           }
@@ -1499,6 +1526,254 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
             "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
           }
         ]
+      }
+    },
+    "cis_secondary_sanctions_batch": {
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/cis-secondary-sanctions-batch-request.schema.json",
+        "title": "CISSecondarySanctionsBatchRequest",
+        "description": "Additive batch contract for screening a caller-supplied chain of up to 10 counterparties. Each item accepts the same full request as the singular endpoint, or the documented minimal counterparty name and jurisdiction first pass. Results remain independent and require human review.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "requests"
+        ],
+        "properties": {
+          "batch_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "requests": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/$defs/request"
+            }
+          }
+        },
+        "$defs": {
+          "request": {
+            "type": "object",
+            "required": [
+              "counterparty"
+            ],
+            "additionalProperties": true,
+            "properties": {
+              "counterparty": {
+                "type": "object",
+                "additionalProperties": true,
+                "required": [
+                  "name",
+                  "jurisdiction"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "jurisdiction": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sector": {
+                    "type": "string"
+                  },
+                  "registered_identifiers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  }
+                }
+              },
+              "exposure_facets": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "jurisdiction_review_scope": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "dated_sources": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "risk_question": {
+                "type": "string"
+              },
+              "decision_stage": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              },
+              "requested_output": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/cis-secondary-sanctions-batch-response.schema.json",
+        "title": "CISSecondarySanctionsBatchResponse",
+        "description": "Per-item secondary-sanctions evidence triage for a caller-supplied counterparty chain. Partial input failures do not discard completed items. This is not a sanctions determination or autonomous decision.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "batch_id",
+          "total",
+          "completed",
+          "failed",
+          "highest_exposure_signal",
+          "results",
+          "human_review_required",
+          "not_advice_notice",
+          "decision_workspace"
+        ],
+        "properties": {
+          "batch_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "completed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "highest_exposure_signal": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "medium_high",
+              "high",
+              "unknown"
+            ]
+          },
+          "results": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "index",
+                "status"
+              ],
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "invalid_request"
+                  ]
+                },
+                "counterparty": {
+                  "type": "object"
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "response": {
+                  "type": "object"
+                },
+                "provenance": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "human_review_required": {
+            "const": true
+          },
+          "not_advice_notice": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision_workspace": {
+            "$ref": "#/$defs/decision_workspace"
+          }
+        },
+        "$defs": {
+          "decision_workspace": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "goal",
+              "trusted_evidence",
+              "suspected_unreliable_evidence",
+              "hidden_assumptions",
+              "intended_next_action",
+              "stop_or_escalate_if"
+            ],
+            "properties": {
+              "goal": {
+                "type": "string",
+                "minLength": 1
+              },
+              "trusted_evidence": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "suspected_unreliable_evidence": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "hidden_assumptions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "intended_next_action": {
+                "type": "string",
+                "minLength": 1
+              },
+              "stop_or_escalate_if": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },

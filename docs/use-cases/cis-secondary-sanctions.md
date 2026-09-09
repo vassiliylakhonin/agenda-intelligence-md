@@ -79,6 +79,21 @@ The response may include `typology_refs` pointing at publicly published FATF, EA
 
 ## Calling the worker
 
+### Compatibility input
+
+The worker accepts a small, explicit alias set before enum validation:
+`financial_institution` and `banking` become `bank`; identifier scheme `tin`
+becomes `national_tin`. The response lists each change in
+`normalizations_applied`. Ambiguous terms are not silently guessed:
+`logistics` / `freight` prompt the caller to choose `logistics_forwarder` or
+`other`, and `official_registry` prompts a choice between
+`national_regulator_filing` and `other`.
+
+Plain-text A2A input is an intake path, not a sanctions screen. The worker may
+extract a bounded counterparty-name and jurisdiction candidate, returns
+`TASK_STATE_INPUT_REQUIRED`, and sets `screening_performed: false`. The caller
+must confirm and resubmit structured JSON before any live retrieval or triage.
+
 HTTP:
 
 ```bash
@@ -86,6 +101,20 @@ curl -sS -X POST http://localhost:8080/v1/cis-secondary-sanctions/exposure \
   -H "content-type: application/json" \
   --data @examples/cis-secondary-sanctions/contract/escalate_before_onboarding.request.json
 ```
+
+Batch HTTP (one chain, independent per-item results, maximum ten):
+
+```bash
+curl -sS -X POST http://localhost:8080/v1/cis-secondary-sanctions/exposure/batch \
+  -H "content-type: application/json" \
+  --data '{"batch_id":"chain-1","requests":[{"counterparty":{"name":"Example Exporter LLP","jurisdiction":"Kazakhstan"}},{"counterparty":{"name":"Example Forwarder LLC","jurisdiction":"Kyrgyzstan","sector":"logistics_forwarder"}}]}'
+```
+
+The same contract is exposed over MCP as
+`cis_secondary_sanctions_batch`. A batch response includes per-item provenance,
+partial input errors, `highest_exposure_signal`, and an auditable
+`decision_workspace`; it is not a chain-level approval or sanctions
+determination.
 
 A2A (JSON-RPC over the worker `/message/send` endpoint):
 

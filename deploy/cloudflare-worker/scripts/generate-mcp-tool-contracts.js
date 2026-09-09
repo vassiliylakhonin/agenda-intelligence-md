@@ -20,6 +20,12 @@ const contractSources = [
     output: "schemas/v1/cis-secondary-sanctions-response.schema.json"
   },
   {
+    profile: "cis_secondary_sanctions",
+    tool: "cis_secondary_sanctions_batch",
+    input: "schemas/v1/cis-secondary-sanctions-batch-request.schema.json",
+    output: "schemas/v1/cis-secondary-sanctions-batch-response.schema.json"
+  },
+  {
     profile: "agentic_interaction_trust",
     tool: "agentic_interaction_trust",
     input: "schemas/v1/agentic-interaction-trust-request.schema.json",

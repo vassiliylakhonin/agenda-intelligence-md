@@ -1691,6 +1691,18 @@ function openApiDocument(request) {
           }
         }
       },
+      "/openapi.json": {
+        get: {
+          tags: ["discovery"],
+          summary: "OpenAPI document compatibility alias",
+          responses: {
+            200: {
+              description: "The same OpenAPI 3.0 document served at /api/openapi.json.",
+              content: { "application/vnd.oai.openapi+json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
       "/.well-known/mcp/server-card.json": {
         get: {
           tags: ["discovery"],
@@ -2721,7 +2733,7 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
       id: "cis-secondary-sanctions-exposure",
       name: "CIS secondary-sanctions exposure triage",
       description:
-        "Turns a CIS / Caucasus / Central Asia counterparty, exposure facets, and dated source extracts into structured evidence gaps, exposure dimensions, and mandatory human-review routing, with server-side name matches against a public-list snapshot (Snapshot upstream, with Watchman / OpenSanctions as alternates). When ownership enrichment is enabled, it also fetches disclosed LEI ownership (direct / ultimate parent, via GLEIF) as ownership evidence. Name matches are possible string matches, not identity verification or a determination. The API sits beside a screening or ownership-resolution tool and does not traverse multi-layer beneficial-ownership graphs.",
+        "Turns a CIS / Caucasus / Central Asia counterparty, exposure facets, and dated source extracts into structured evidence gaps, exposure dimensions, and mandatory human-review routing, with server-side name matches against a public-list snapshot (Snapshot upstream, with Watchman / OpenSanctions as alternates). Plain text creates an unconfirmed intake candidate only; no screening runs until structured confirmation. When ownership enrichment is enabled, it also fetches disclosed LEI ownership (direct / ultimate parent, via GLEIF) as ownership evidence. Name matches are possible string matches, not identity verification or a determination. The API sits beside a screening or ownership-resolution tool and does not traverse multi-layer beneficial-ownership graphs.",
       tags: [
         "cis",
         "kazakhstan",
@@ -2908,12 +2920,16 @@ const AIT_SOURCE_TYPES = [
   "prior_interaction_history", "incident_report_or_threat_intel", "human_review_note", "user_provided_note", "other"
 ];
 
-function offEnum(label, value, allowed, errors) {
+function offEnum(label, value, allowed, errors, suggestions = {}) {
   if (value === undefined || value === null) return;
   const values = Array.isArray(value) ? value : [value];
   for (const v of values) {
     if (typeof v === "string" && !allowed.includes(v)) {
-      errors.push(`${label}: '${v}' is not a permitted value`);
+      const suggestion = suggestions[v];
+      errors.push(
+        `${label}: '${v}' is not a permitted value` +
+          (suggestion ? `; ${suggestion}` : "")
+      );
     }
   }
 }
@@ -2937,7 +2953,10 @@ function middleCorridorEnumErrors(r) {
 function cisEnumErrors(r) {
   const errors = [];
   const cp = r.counterparty && typeof r.counterparty === "object" ? r.counterparty : {};
-  offEnum("counterparty.sector", cp.sector, CIS_SECTORS, errors);
+  offEnum("counterparty.sector", cp.sector, CIS_SECTORS, errors, {
+    logistics: "use 'logistics_forwarder' only for a freight forwarder, otherwise use 'other'",
+    freight: "use 'logistics_forwarder' only for a freight forwarder, otherwise use 'other'"
+  });
   for (const id of Array.isArray(cp.registered_identifiers) ? cp.registered_identifiers : []) {
     if (id && typeof id === "object") offEnum("registered_identifiers[].scheme", id.scheme, CIS_ID_SCHEMES, errors);
   }
@@ -2946,7 +2965,12 @@ function cisEnumErrors(r) {
   offEnum("decision_stage", r.decision_stage, CIS_DECISION_STAGES, errors);
   offEnum("requested_output", r.requested_output, REQUESTED_OUTPUTS, errors);
   for (const s of Array.isArray(r.dated_sources) ? r.dated_sources : []) {
-    if (s && typeof s === "object") offEnum("dated_sources[].source_type", s.source_type, CIS_SOURCE_TYPES, errors);
+    if (s && typeof s === "object") {
+      offEnum("dated_sources[].source_type", s.source_type, CIS_SOURCE_TYPES, errors, {
+        official_registry:
+          "use 'national_regulator_filing' for an official regulator or registry record, otherwise use 'other'"
+      });
+    }
   }
   return errors;
 }
@@ -3387,6 +3411,127 @@ function requestGuidanceResult(profile, endpoint, schema, errors, guideOverride 
   };
 }
 
+const CIS_TEXT_JURISDICTIONS = Object.freeze([
+  [/(?:\bkazakhstan\b|\bkz\b|\bastana\b|\balmaty\b|казахстан|астана|алматы)/iu, "Kazakhstan"],
+  [/(?:\bkyrgyzstan\b|\bkg\b|\bbishkek\b|кыргызстан|киргизия|бишкек)/iu, "Kyrgyzstan"],
+  [/(?:\buzbekistan\b|\buz\b|\btashkent\b|узбекистан|ташкент)/iu, "Uzbekistan"],
+  [/(?:\bgeorgia\b|\btbilisi\b|грузия|тбилиси)/iu, "Georgia"],
+  [/(?:\barmenia\b|\byerevan\b|армения|ереван)/iu, "Armenia"],
+  [/(?:\bazerbaijan\b|\bbaku\b|азербайджан|баку)/iu, "Azerbaijan"],
+  [/(?:\bmoldova\b|\bchisinau\b|молдова|кишинев|кишинёв)/iu, "Moldova"],
+  [/(?:\btajikistan\b|\bdushanbe\b|таджикистан|душанбе)/iu, "Tajikistan"],
+  [/(?:\bturkmenistan\b|\bashgabat\b|туркменистан|ашхабад)/iu, "Turkmenistan"]
+]);
+
+function boundedText(value, max = 120) {
+  return String(value || "").replace(/\s+/g, " ").replace(/[.,;:!?]+$/u, "").trim().slice(0, max);
+}
+
+function cisTextIntakeCandidate(text) {
+  const candidate = {};
+  const nameMatch = text.match(
+    /(?:counterparty|company|entity|контрагент|компания|организация)\s*[:#-]?\s*([\p{L}\p{N}&.'’()_-](?:[\p{L}\p{N}&.'’()_\- ]{0,118}?))(?=\s+(?:in|from|based\s+in|registered\s+in|в|из)\s+|[,;.!?]|$)/iu
+  );
+  if (nameMatch) candidate.name = boundedText(nameMatch[1]);
+  for (const [pattern, jurisdiction] of CIS_TEXT_JURISDICTIONS) {
+    if (pattern.test(text)) {
+      candidate.jurisdiction = jurisdiction;
+      break;
+    }
+  }
+  return candidate;
+}
+
+function dualUseTextIntakeCandidate(text) {
+  const shipment = {};
+  const hsMatch = text.match(/\bHS(?:\s*code)?\s*[:#-]?\s*(\d{4,10})\b/iu);
+  if (hsMatch) shipment.hs_code = hsMatch[1];
+  const routeMatch = text.match(
+    /\bfrom\s+([\p{L}][\p{L} .'-]{1,38}?)\s+to\s+([\p{L}][\p{L} .'-]{1,38}?)(?=[,;.!?]|\s+(?:via|with|for)\b|$)/iu
+  );
+  if (routeMatch) {
+    shipment.origin = boundedText(routeMatch[1], 40);
+    shipment.destination = boundedText(routeMatch[2], 40);
+  }
+  return Object.keys(shipment).length ? { shipment } : {};
+}
+
+function textIntakeResult(profile, endpoint, schema, candidate, guideOverride = null) {
+  const guide = guideOverride || GATE_REQUEST_GUIDES[profile];
+  const decisionWorkspace = {
+    goal: "Turn the caller's free text into a confirmed structured request before any high-stakes screening.",
+    trusted_evidence: [],
+    suspected_unreliable_evidence: Object.keys(candidate).length
+      ? ["Fields inferred deterministically from unconfirmed caller text"]
+      : [],
+    hidden_assumptions: ["Spelling, entity identity, jurisdiction, and omitted fields have not been verified."],
+    intended_next_action: "Caller reviews the candidate, fills every required field, and resubmits structured JSON.",
+    stop_or_escalate_if: ["Any inferred field is wrong or ambiguous", "A commercial action depends on the result"]
+  };
+  const data = {
+    valid: false,
+    intake_state: "confirmation_required",
+    screening_performed: false,
+    candidate,
+    required_fields: guide?.required || [],
+    example_request: guide?.example || null,
+    canonical_http_endpoint: endpoint,
+    schema,
+    decision_workspace: decisionWorkspace
+  };
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_INPUT_REQUIRED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: `${profile.replace(/_/g, "-")}-text-intake`,
+        name: "Unconfirmed structured-request intake",
+        parts: [
+          {
+            text: [
+              "# Confirmation required",
+              "",
+              "Nothing was screened. The fields below were inferred from free text and may be wrong.",
+              "Review the candidate, add the required evidence fields, and resend it as structured JSON.",
+              "",
+              "## What it needs",
+              ...(guide?.required || []).map((field) => `- ${field}`),
+              "",
+              "## Unconfirmed candidate",
+              "```json",
+              JSON.stringify(candidate, null, 2),
+              "```",
+              "",
+              "## A request that works",
+              "```json",
+              JSON.stringify(guide?.example || {}, null, 2),
+              "```",
+              "",
+              "For plain-language orientation, use https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev.",
+              `For a human review, email ${SUPPORT_CONTACT_EMAIL}.`
+            ].join("\n"),
+            mediaType: "text/markdown"
+          },
+          { data, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: profile,
+      canonical_http_endpoint: endpoint,
+      schema,
+      valid: false,
+      errors: ["Missing structured request; free-text candidate requires confirmation"],
+      input_required_reason: "missing_structured_request",
+      screening_performed: false,
+      candidate,
+      required_fields: guide?.required || [],
+      example_request: guide?.example || null,
+      decision_workspace: decisionWorkspace
+    }
+  };
+}
+
 
 function isCisSecondarySanctionsRequest(value) {
   return (
@@ -3417,6 +3562,58 @@ function isCisSecondarySanctionsRequest(value) {
 const CIS_MINIMAL_DEFAULT_FACET = "ownership_or_control";
 const CIS_MINIMAL_DEFAULT_DECISION_STAGE = "other";
 const DEFAULTED_REQUEST_FIELDS = Symbol("defaultedRequestFields");
+const NORMALIZATIONS_APPLIED = Symbol("normalizationsApplied");
+
+const CIS_SECTOR_ALIASES = Object.freeze({
+  financial_institution: "bank",
+  banking: "bank"
+});
+const CIS_IDENTIFIER_SCHEME_ALIASES = Object.freeze({ tin: "national_tin" });
+
+// Only unambiguous, documented aliases are accepted. Broader words such as
+// `logistics`, `freight`, and `official_registry` can map to more than one
+// canonical category, so cisEnumErrors returns an actionable suggestion instead
+// of silently changing the caller's meaning.
+function normalizeCisSecondarySanctionsRequest(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const counterparty =
+    value.counterparty && typeof value.counterparty === "object" && !Array.isArray(value.counterparty)
+      ? { ...value.counterparty }
+      : value.counterparty;
+  const normalizations = [];
+
+  if (counterparty && typeof counterparty === "object") {
+    const sector = CIS_SECTOR_ALIASES[counterparty.sector];
+    if (sector) {
+      normalizations.push({ field: "counterparty.sector", from: counterparty.sector, to: sector });
+      counterparty.sector = sector;
+    }
+    if (Array.isArray(counterparty.registered_identifiers)) {
+      counterparty.registered_identifiers = counterparty.registered_identifiers.map((identifier, index) => {
+        if (!identifier || typeof identifier !== "object" || Array.isArray(identifier)) return identifier;
+        const normalized = CIS_IDENTIFIER_SCHEME_ALIASES[identifier.scheme];
+        if (!normalized) return identifier;
+        normalizations.push({
+          field: `counterparty.registered_identifiers[${index}].scheme`,
+          from: identifier.scheme,
+          to: normalized
+        });
+        return { ...identifier, scheme: normalized };
+      });
+    }
+  }
+
+  if (!normalizations.length) return value;
+  const normalized = { ...value, counterparty };
+  Object.defineProperty(normalized, NORMALIZATIONS_APPLIED, { value: normalizations, enumerable: false });
+  if (Array.isArray(value[DEFAULTED_REQUEST_FIELDS])) {
+    Object.defineProperty(normalized, DEFAULTED_REQUEST_FIELDS, {
+      value: value[DEFAULTED_REQUEST_FIELDS],
+      enumerable: false
+    });
+  }
+  return normalized;
+}
 
 // One mechanism for every gate that takes this second pass. A default spec is
 // `{ field, fill, emptyArrayIsUnset }`: `fill` receives the request being built,
@@ -3658,12 +3855,15 @@ function structuredCisSecondarySanctionsRequestFromParams(params) {
     }
   }
   for (const candidate of candidates) {
-    if (isCisSecondarySanctionsRequest(candidate)) return candidate;
+    const normalizedCandidate = normalizeCisSecondarySanctionsRequest(candidate);
+    if (isCisSecondarySanctionsRequest(normalizedCandidate)) return normalizedCandidate;
     const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
-    if (parsed && isCisSecondarySanctionsRequest(parsed)) return parsed;
+    const normalizedParsed = normalizeCisSecondarySanctionsRequest(parsed);
+    if (normalizedParsed && isCisSecondarySanctionsRequest(normalizedParsed)) return normalizedParsed;
   }
   // Second pass: a named counterparty with no evidence pack yet is answerable.
-  return minimalRequestFromCandidates(candidates, isMinimalCisSecondarySanctionsRequest, CIS_MINIMAL_DEFAULTS);
+  const minimal = minimalRequestFromCandidates(candidates, isMinimalCisSecondarySanctionsRequest, CIS_MINIMAL_DEFAULTS);
+  return normalizeCisSecondarySanctionsRequest(minimal);
 }
 
 function cisEvidenceGapForSource(sourceType) {
@@ -6547,6 +6747,15 @@ function dualUseTechnologyExportArtifactText(response) {
 function a2aResultForDualUseTechnologyExport(params) {
   const structured = structuredDualUseTechnologyExportRequestFromParams(params);
   if (!structured) {
+    const text = extractText(params).trim();
+    if (text) {
+      return textIntakeResult(
+        "dual_use_technology_export",
+        "/message/send",
+        "schemas/v1/dual-use-technology-export-request.schema.json",
+        dualUseTextIntakeCandidate(text)
+      );
+    }
     return requestGuidanceResult(
       "dual_use_technology_export",
       "/message/send",
@@ -6608,13 +6817,13 @@ function applyDualUseTechnologyExportProfile(card, request) {
       id: "dual-use-technology-export-controls",
       name: "Dual-use technology export-controls evidence gate",
       description:
-        "Checks whether a caller-supplied technology shipment file contains the classification, route, end-user, and dated-source fields needed for export-control human review.",
+        "Checks whether a caller-supplied technology shipment file contains the classification, route, end-user, and dated-source fields needed for export-control human review. Plain text creates an unconfirmed intake candidate only; no classification or screening runs until structured confirmation.",
       tags: ["dual-use", "export-controls", "eccn", "hs-code", "end-user", "evidence-readiness", "human-review"],
       examples: [
         "Is this semiconductor shipment file complete enough for export-control review?",
         "Which classification or end-user evidence is missing before this hardware export proceeds?"
       ],
-      inputModes: ["application/json"],
+      inputModes: ["application/json", "text/plain"],
       outputModes: ["application/json", "text/markdown"]
     }
   ];
@@ -6829,6 +7038,9 @@ async function cisSecondarySanctionsResult(request, env) {
     not_advice_notice: NOT_ADVICE_NOTICE,
     limitations
   };
+  if (Array.isArray(request[NORMALIZATIONS_APPLIED]) && request[NORMALIZATIONS_APPLIED].length) {
+    response.normalizations_applied = request[NORMALIZATIONS_APPLIED];
+  }
   response.readiness_contract = profileReadinessContract(response, {
     profile: "cis_secondary_sanctions",
     statusField: "decision_readiness_label",
@@ -6899,6 +7111,15 @@ function cisArtifactText(response, liveRetrievalStatus, sanctionsMatchesMerged =
 async function a2aResultForCisSecondarySanctions(params, request, env) {
   const structured = structuredCisSecondarySanctionsRequestFromParams(params);
   if (!structured) {
+    const text = extractText(params).trim();
+    if (text) {
+      return textIntakeResult(
+        "cis_secondary_sanctions",
+        "/v1/cis-secondary-sanctions/exposure",
+        "schemas/v1/cis-secondary-sanctions-request.schema.json",
+        cisTextIntakeCandidate(text)
+      );
+    }
     return requestGuidanceResult(
       "cis_secondary_sanctions",
       "/v1/cis-secondary-sanctions/exposure",
@@ -6953,6 +7174,171 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
       human_review_required: result.response.human_review_required,
       not_advice_notice: result.response.not_advice_notice,
       response: result.response
+    }
+  };
+}
+
+const CIS_BATCH_MAX_REQUESTS = 10;
+export const CIS_BATCH_GUIDE = Object.freeze({
+  title: "CIS Secondary-Sanctions Batch Gate",
+  schema: "schemas/v1/cis-secondary-sanctions-batch-request.schema.json",
+  required: [
+    "requests — array of 1 to 10 singular CIS requests",
+    "each item needs at least counterparty.name and counterparty.jurisdiction",
+    "full exposure facets, dated sources, risk question, and decision stage are recommended for scored triage"
+  ],
+  example: {
+    batch_id: "example-chain-1",
+    requests: [
+      { counterparty: { name: "Example Exporter LLP", jurisdiction: "Kazakhstan" } },
+      { counterparty: { name: "Example Forwarder LLC", jurisdiction: "Kyrgyzstan", sector: "logistics_forwarder" } }
+    ]
+  }
+});
+
+function cisBatchRequestFromParams(params) {
+  if (!params || typeof params !== "object") return null;
+  const candidates = [params.request, params.cis_secondary_sanctions_batch_request, params.input, params];
+  const message = params.message;
+  if (message && typeof message === "object") {
+    if (message.data && typeof message.data === "object") candidates.push(message.data);
+    if (Array.isArray(message.parts)) {
+      for (const part of message.parts) {
+        if (!part || typeof part !== "object") continue;
+        candidates.push(part.data, part.json, part.content);
+        const parsed = tryParseJsonObject(part.text);
+        if (parsed) candidates.push(parsed);
+      }
+    }
+  }
+  for (const candidate of candidates) {
+    if (candidate && typeof candidate === "object" && !Array.isArray(candidate) && Array.isArray(candidate.requests)) {
+      return candidate;
+    }
+    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
+    if (parsed && Array.isArray(parsed.requests)) return parsed;
+  }
+  return null;
+}
+
+function cisBatchErrors(batch) {
+  if (!batch || typeof batch !== "object" || Array.isArray(batch)) return ["request must be an object"];
+  if (!Array.isArray(batch.requests)) return ["requests must be an array"];
+  if (batch.requests.length < 1) return ["requests must contain at least one counterparty request"];
+  if (batch.requests.length > CIS_BATCH_MAX_REQUESTS) {
+    return [`requests must contain at most ${CIS_BATCH_MAX_REQUESTS} counterparty requests`];
+  }
+  return [];
+}
+
+function cisBatchDecisionWorkspace() {
+  return {
+    goal: "Triage a caller-supplied counterparty chain as one review packet without turning it into an autonomous decision.",
+    trusted_evidence: ["Only caller-supplied dated evidence and explicitly disclosed live-retrieval provenance"],
+    suspected_unreliable_evidence: ["Name matches and normalized aliases require reviewer confirmation"],
+    hidden_assumptions: ["Batch membership does not prove ownership, control, identity, or transaction linkage"],
+    intended_next_action: "A human reviews every item, resolves identity and ownership, and decides whether more evidence is required.",
+    stop_or_escalate_if: ["Any item has a high signal, invalid input, unresolved identity, or missing ownership evidence"]
+  };
+}
+
+async function cisSecondarySanctionsBatchResult(batch, env) {
+  const results = await Promise.all(
+    batch.requests.map(async (item, index) => {
+      const structured = structuredCisSecondarySanctionsRequestFromParams({ request: item });
+      if (!structured) {
+        return {
+          index,
+          status: "invalid_request",
+          errors: ["counterparty.name and counterparty.jurisdiction are required"]
+        };
+      }
+      const errors = cisEnumErrors(structured);
+      if (errors.length) {
+        return {
+          index,
+          status: "invalid_request",
+          counterparty: structured.counterparty,
+          errors
+        };
+      }
+      const result = await cisSecondarySanctionsResult(structured, env);
+      return {
+        index,
+        status: "completed",
+        counterparty: structured.counterparty,
+        response: result.response,
+        provenance: {
+          live_retrieval_status: result.live_retrieval_status,
+          live_retrieval_upstream: result.live_retrieval_upstream,
+          live_retrieval_reason_code: result.live_retrieval_reason_code,
+          live_retrieval_snapshot_generated_at: result.live_retrieval_snapshot_generated_at,
+          auto_fetched_sources: result.auto_fetched_sources,
+          upstream_attribution: result.upstream_attribution
+        }
+      };
+    })
+  );
+  const completed = results.filter((item) => item.status === "completed").length;
+  const signalRank = { unknown: 0, low: 1, medium: 2, medium_high: 3, high: 4 };
+  const highestExposureSignal = results
+    .filter((item) => item.response)
+    .map((item) => item.response.secondary_exposure_signal)
+    .sort((a, b) => (signalRank[b] || 0) - (signalRank[a] || 0))[0] || "unknown";
+  return {
+    response: {
+      batch_id: nonEmptyString(batch.batch_id) ? batch.batch_id : crypto.randomUUID(),
+      total: results.length,
+      completed,
+      failed: results.length - completed,
+      highest_exposure_signal: highestExposureSignal,
+      results,
+      human_review_required: true,
+      not_advice_notice: NOT_ADVICE_NOTICE,
+      decision_workspace: cisBatchDecisionWorkspace()
+    }
+  };
+}
+
+async function a2aResultForCisSecondarySanctionsBatch(params, env) {
+  const batch = cisBatchRequestFromParams(params);
+  const errors = cisBatchErrors(batch);
+  if (errors.length) {
+    return invalidRequestResult(
+      "cis_secondary_sanctions",
+      "/v1/cis-secondary-sanctions/exposure/batch",
+      "schemas/v1/cis-secondary-sanctions-batch-request.schema.json",
+      errors,
+      CIS_BATCH_GUIDE
+    );
+  }
+  const { response } = await cisSecondarySanctionsBatchResult(batch, env);
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "cis-secondary-sanctions-batch-response",
+        name: "CIS secondary-sanctions batch response",
+        parts: [
+          {
+            text:
+              `Processed ${response.completed}/${response.total} counterparties; ` +
+              `${response.failed} item(s) need corrected input. Highest exposure signal: ${response.highest_exposure_signal}. ` +
+              response.not_advice_notice,
+            mediaType: "text/markdown"
+          },
+          { data: response, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "cis_secondary_sanctions",
+      capability: "cis_secondary_sanctions_batch",
+      canonical_http_endpoint: "/v1/cis-secondary-sanctions/exposure/batch",
+      schema: "schemas/v1/cis-secondary-sanctions-batch-request.schema.json",
+      human_review_required: true,
+      response
     }
   };
 }
@@ -10084,6 +10470,9 @@ function mcpRefusalPayload(result, code) {
     details: meta.errors || meta.required_fields || [],
     ...(meta.required_fields ? { required_fields: meta.required_fields } : {}),
     ...(meta.example_request ? { example_request: meta.example_request } : {}),
+    ...(meta.candidate ? { candidate: meta.candidate } : {}),
+    ...(meta.screening_performed === false ? { screening_performed: false } : {}),
+    ...(meta.decision_workspace ? { decision_workspace: meta.decision_workspace } : {}),
     ...(meta.front_door ? { front_door: meta.front_door } : {}),
     ...(meta.support_contact ? { support_contact: meta.support_contact } : {})
   };
@@ -10624,9 +11013,15 @@ async function runProfileRequest(profile, params, request, env = {}) {
     let promptChars;
     let modulesUsed;
     if (profile === "cis_secondary_sanctions") {
-      result = await a2aResultForCisSecondarySanctions(params, request, env);
-      const structured = structuredCisSecondarySanctionsRequestFromParams(params);
-      promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
+      if (params.capability === "cis_secondary_sanctions_batch") {
+        result = await a2aResultForCisSecondarySanctionsBatch(params, env);
+        const batch = cisBatchRequestFromParams(params);
+        promptChars = batch ? safeJsonLength(batch) : 0;
+      } else {
+        result = await a2aResultForCisSecondarySanctions(params, request, env);
+        const structured = structuredCisSecondarySanctionsRequestFromParams(params);
+        promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
+      }
       modulesUsed = ["cis_secondary_sanctions"];
     } else if (profile === "agentic_interaction_trust") {
       result = a2aResultForAgenticInteractionTrust(params);
@@ -11522,6 +11917,16 @@ async function handleEvidencePacketRepairPrompt(request, env) {
 // advertised pointer has to land on a working route, so the table is the single
 // place an endpoint is declared and served.
 const DIRECT_V1_ROUTES = {
+  "/v1/cis-secondary-sanctions/exposure/batch": {
+    label: "CIS secondary-sanctions batch exposure",
+    guideProfile: "cis_secondary_sanctions",
+    schema: "schemas/v1/cis-secondary-sanctions-batch-request.schema.json",
+    missing: "Missing CIS secondary-sanctions batch request",
+    guide: CIS_BATCH_GUIDE,
+    extract: cisBatchRequestFromParams,
+    errorsFor: cisBatchErrors,
+    run: (batch, request, env) => cisSecondarySanctionsBatchResult(batch, env)
+  },
   "/v1/cis-secondary-sanctions/exposure": {
     label: "CIS secondary-sanctions exposure",
     guideProfile: "cis_secondary_sanctions",
@@ -11711,7 +12116,10 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     });
   }
 
-  if (request.method === "GET" && url.pathname === "/api/openapi.json") {
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/api/openapi.json" || url.pathname === "/openapi.json")
+  ) {
     return jsonResponse(openApiDocument(request), 200, {
       "content-type": "application/vnd.oai.openapi+json; charset=utf-8",
       "cache-control": "public, max-age=3600",

@@ -76,15 +76,25 @@ const PROFILE_TOOLS = {
       "before signature, shipment, insurer handoff, or committee review. Returns a triage recommendation, risk " +
       "signal, decision-readiness score, supplied vs. minimum-required source categories, and evidence gaps."
   },
-  cis_secondary_sanctions: {
-    name: "cis_secondary_sanctions_exposure",
-    bringsEvidence: true,
-    argKey: "request",
-    summary:
-      "Triage secondary-sanctions exposure for a CIS-domiciled counterparty against OFAC EO 14114, the EU " +
-      "sanctions package, UK OFSI, and FATF / EAG typologies. Returns a triage recommendation, exposure " +
-      "dimensions, missing evidence, and mandatory human-review routing. A name match is not identity verification."
-  },
+  cis_secondary_sanctions: [
+    {
+      name: "cis_secondary_sanctions_exposure",
+      bringsEvidence: true,
+      argKey: "request",
+      summary:
+        "Triage secondary-sanctions exposure for a CIS-domiciled counterparty against OFAC EO 14114, the EU " +
+        "sanctions package, UK OFSI, and FATF / EAG typologies. Returns a triage recommendation, exposure " +
+        "dimensions, missing evidence, and mandatory human-review routing. A name match is not identity verification."
+    },
+    {
+      name: "cis_secondary_sanctions_batch",
+      bringsEvidence: true,
+      argKey: "request",
+      summary:
+        "Triage up to 10 CIS counterparties as one caller-supplied chain. Returns independent per-item results, " +
+        "partial input errors, the highest exposure signal, and mandatory human-review routing."
+    }
+  ],
   agentic_interaction_trust: {
     name: "agentic_interaction_trust",
     bringsEvidence: true,
