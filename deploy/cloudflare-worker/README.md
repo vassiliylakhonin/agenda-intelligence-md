@@ -24,6 +24,7 @@ This Worker is intentionally small:
 | GET | `/.well-known/ai-catalog.json` | Always JSON | Agentic resource discovery catalog |
 | GET | `/.well-known/api-catalog` | Always JSON linkset | API catalog pointing to OpenAPI |
 | GET | `/api/openapi.json` | Always JSON | OpenAPI 3.0 worker contract |
+| GET | `/openapi.json` | Always JSON | Compatibility alias for the same OpenAPI contract |
 | GET | `/.well-known/mcp/server-card.json` | Always JSON | MCP server card for the installable stdio package |
 | GET | `/.well-known/mcp-server.json` | Always JSON | Legacy MCP server-card alias |
 | GET | `/.well-known/did.json` | Always JSON | DID document linking AI catalog, A2A card, and MCP card |
@@ -36,6 +37,7 @@ This Worker is intentionally small:
 | GET | `/intake/cis-review` | JSON (requires `x-stats-token`) | Read retained CIS service requests |
 | POST | `/message/send`, `/` | JSON-RPC 2.0 | A2A 1.0 `SendMessage` |
 | POST | `/mcp` | JSON-RPC 2.0 | MCP over Streamable HTTP, stateless |
+| POST | `/v1/cis-secondary-sanctions/exposure/batch` | JSON | CIS batch triage for 1–10 independent requests |
 
 ### MCP endpoint
 
@@ -48,6 +50,11 @@ serves one profile and a fixed profile-scoped tool set. Most profiles expose one
 tool. Agent Output Verification exposes the existing `agent_output_verification`
 and `pre_action_check` tools plus the hosted Decision Gate:
 `decision_policies_list`, `decision_check`, and `decision_verify`.
+
+The CIS deployment exposes both `cis_secondary_sanctions_exposure` and the
+additive `cis_secondary_sanctions_batch` tool. Batch items are evaluated
+independently: a malformed item is returned as `invalid_request` without
+discarding completed siblings. Every result still requires human review.
 
 ```bash
 curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp \

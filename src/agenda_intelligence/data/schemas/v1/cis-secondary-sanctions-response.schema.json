@@ -150,6 +150,20 @@
         "minLength": 1
       }
     },
+    "normalizations_applied": {
+      "description": "Known, unambiguous input aliases normalized before validation. Ambiguous values are rejected with a suggestion instead.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "from", "to"],
+        "properties": {
+          "field": { "type": "string", "minLength": 1 },
+          "from": { "type": "string", "minLength": 1 },
+          "to": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
     "readiness_contract": {
       "$ref": "#/$defs/readiness_contract"
     }

@@ -210,6 +210,12 @@ export interface CISSecondarySanctionsExposureResponse {
   human_review_required: boolean;
   not_advice_notice: string;
   limitations?: string[];
+  /** Known, unambiguous input aliases normalized before validation. Ambiguous values are rejected with a suggestion instead. */
+  normalizations_applied?: Array<{
+    field: string;
+    from: string;
+    to: string;
+  }>;
   readiness_contract?: CISSecondarySanctionsExposureResponseReadinessContract;
 }
 

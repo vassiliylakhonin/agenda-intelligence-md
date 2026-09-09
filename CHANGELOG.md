@@ -4,6 +4,19 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(worker): make agent-to-agent intake tolerant without making sanctions decisions from guesses.**
+  The CIS gate now normalizes the unambiguous aliases `financial_institution` / `banking` to `bank` and
+  `tin` to `national_tin`, and discloses every change in `normalizations_applied`. Ambiguous labels such as
+  `freight`, `logistics`, and `official_registry` remain rejected, but now name the canonical choices instead
+  of forcing a blind retry. Plain-text CIS and dual-use calls produce an unconfirmed structured candidate and
+  `TASK_STATE_INPUT_REQUIRED`; no screening or classification runs until the caller confirms structured input.
+  A new `cis_secondary_sanctions_batch` MCP tool and
+  `POST /v1/cis-secondary-sanctions/exposure/batch` route accept up to ten independent counterparty requests,
+  retain completed results when another item is invalid, and publish an explicit human-review decision
+  workspace. `GET /openapi.json` now serves the same document as `/api/openapi.json` for clients that probe the
+  conventional root path. No pricing or x402 signal is advertised because this deployment has no payment rail
+  or enforced paid tier.
+
 - **feat(worker telemetry): explain why external calls stop at `input_required`.**
   Usage event v7 adds a bounded outcome reason and static required-field names, and KV now retains the
   already-computed structured-payload character count. `/stats` reports external input-required totals,

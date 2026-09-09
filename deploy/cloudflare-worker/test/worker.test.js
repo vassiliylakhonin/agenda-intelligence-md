@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   aiCatalog,
   DIRECT_V1_ROUTES,
+  CIS_BATCH_GUIDE,
   apiCatalog,
   agentCard,
   DECISION_POLICIES_LIST_GUIDE,
@@ -741,6 +742,13 @@ test("API catalog and OpenAPI routes advertise the public worker HTTP contract",
   assert.equal(openapiResponse.headers.get("content-type"), "application/vnd.oai.openapi+json; charset=utf-8");
   assert.equal(openapiResponse.headers.get("link"), expectedDiscoveryLinkHeader);
   assert.equal(openapiBody.servers[0].url, "https://agenda-intelligence-a2a.example.workers.dev");
+
+  const compatibilityResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/openapi.json")
+  );
+  const compatibilityBody = await compatibilityResponse.json();
+  assert.equal(compatibilityResponse.status, 200);
+  assert.deepEqual(compatibilityBody, openapiBody);
 });
 
 test("MCP server card and DID routes advertise installable MCP identity", async () => {
@@ -4172,6 +4180,127 @@ test("cis_secondary_sanctions message/send asks for input on a missing structure
   }
 });
 
+test("cis_secondary_sanctions normalizes only documented unambiguous aliases", async () => {
+  const requestWithAliases = structuredClone(cisSampleStructuredRequest);
+  requestWithAliases.counterparty.sector = "financial_institution";
+  requestWithAliases.counterparty.registered_identifiers = [{ scheme: "tin", value: "123456789" }];
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "cis-alias",
+      method: "message/send",
+      params: { message: { data: requestWithAliases } }
+    },
+    cisRequest,
+    { OPENSANCTIONS_DISABLED: "1" }
+  );
+  const result = response.result.metadata.response;
+  assert.equal(response.result.status.state, "TASK_STATE_COMPLETED");
+  assert.equal(result.counterparty.sector, "bank");
+  assert.equal(result.counterparty.registered_identifiers[0].scheme, "national_tin");
+  assert.deepEqual(result.normalizations_applied, [
+    { field: "counterparty.sector", from: "financial_institution", to: "bank" },
+    { field: "counterparty.registered_identifiers[0].scheme", from: "tin", to: "national_tin" }
+  ]);
+
+  const ambiguous = structuredClone(cisSampleStructuredRequest);
+  ambiguous.dated_sources[0].source_type = "official_registry";
+  const rejected = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "cis-ambiguous",
+      method: "message/send",
+      params: { message: { data: ambiguous } }
+    },
+    cisRequest,
+    { OPENSANCTIONS_DISABLED: "1" }
+  );
+  assert.equal(rejected.result.status.state, "TASK_STATE_FAILED");
+  assert.match(rejected.result.metadata.errors[0], /national_regulator_filing/);
+});
+
+test("free-text CIS intake extracts a candidate but performs no screening", async () => {
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "cis-text-intake",
+      method: "message/send",
+      params: {
+        message: { parts: [{ kind: "text", text: "Check counterparty LLC Vostok Logistics in Bishkek" }] }
+      }
+    },
+    cisRequest,
+    { OPENSANCTIONS_DISABLED: "1" }
+  );
+  const result = response.result;
+  assert.equal(result.status.state, "TASK_STATE_INPUT_REQUIRED");
+  assert.equal(result.metadata.screening_performed, false);
+  assert.deepEqual(result.metadata.candidate, {
+    name: "LLC Vostok Logistics",
+    jurisdiction: "Kyrgyzstan"
+  });
+  assert.ok(result.metadata.decision_workspace.stop_or_escalate_if.length > 0);
+  assert.equal("live_retrieval_status" in result.metadata, false);
+});
+
+test("CIS batch keeps completed items when another item is invalid", async () => {
+  const response = await handleRequest(
+    new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/v1/cis-secondary-sanctions/exposure/batch", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        batch_id: "chain-1",
+        requests: [
+          { counterparty: { name: "Example Bank", jurisdiction: "Kazakhstan", sector: "banking" } },
+          { counterparty: { name: "Ambiguous Cargo", jurisdiction: "Kyrgyzstan", sector: "freight" } }
+        ]
+      })
+    }),
+    { OPENSANCTIONS_DISABLED: "1" }
+  );
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.completed, 1);
+  assert.equal(body.failed, 1);
+  assert.equal(body.results[0].response.counterparty.sector, "bank");
+  assert.equal(body.results[1].status, "invalid_request");
+  assert.match(body.results[1].errors[0], /logistics_forwarder/);
+  assert.equal(body.human_review_required, true);
+  assert.ok(body.decision_workspace.hidden_assumptions.length > 0);
+});
+
+test("CIS MCP discovery and dispatch expose the separate batch contract", async () => {
+  const env = { AGENT_PROFILE: "cis_secondary_sanctions", OPENSANCTIONS_DISABLED: "1" };
+  const request = new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/mcp");
+  const listed = await handleMcpJsonRpc(
+    { jsonrpc: "2.0", id: "cis-list", method: "tools/list", params: {} },
+    request,
+    env
+  );
+  assert.deepEqual(listed.result.tools.map((tool) => tool.name), [
+    "cis_secondary_sanctions_exposure",
+    "cis_secondary_sanctions_batch"
+  ]);
+  assert.equal(listed.result.tools[1].inputSchema.properties.requests.maxItems, 10);
+
+  const called = await handleMcpJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "cis-batch-call",
+      method: "tools/call",
+      params: {
+        name: "cis_secondary_sanctions_batch",
+        arguments: { requests: [{ counterparty: { name: "Example LLP", jurisdiction: "Kazakhstan" } }] }
+      }
+    },
+    request,
+    env
+  );
+  assert.equal(called.result.isError, false);
+  assert.equal(called.result.structuredContent.completed, 1);
+  assert.equal(called.result.structuredContent.human_review_required, true);
+});
+
 // ---------------------------------------------------------------------------
 // JWS signing (Agenstry conformance criterion: jws_signature)
 // ---------------------------------------------------------------------------
@@ -6548,6 +6677,27 @@ test("dual-use technology profile routes structured MCP requests to its declared
   assert.equal(response.result.structuredContent.export_risk_triage.score, 100);
 });
 
+test("dual-use free text creates an intake candidate without classifying goods", async () => {
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "dual-use-text",
+      method: "message/send",
+      params: {
+        message: { parts: [{ kind: "text", text: "Review HS code 854231 from Germany to Kazakhstan" }] }
+      }
+    },
+    new Request("https://dual-use-technology-export-a2a.example.workers.dev/message/send"),
+    { AGENT_PROFILE: "dual_use_technology_export" }
+  );
+  assert.equal(response.result.status.state, "TASK_STATE_INPUT_REQUIRED");
+  assert.equal(response.result.metadata.screening_performed, false);
+  assert.deepEqual(response.result.metadata.candidate, {
+    shipment: { hs_code: "854231", origin: "Germany", destination: "Kazakhstan" }
+  });
+  assert.equal("response" in response.result.metadata, false);
+});
+
 // The published request/response pair is what verify:public-agents sends to the
 // live worker, so a drift between the two would be found in production or not
 // at all: the profile has no other example, and the public-example validator
@@ -6902,6 +7052,7 @@ for (const [endpoint, route] of Object.entries(DIRECT_V1_ROUTES)) {
 const WORKER_SOURCE = readFileSync(new URL("../src/index.js", import.meta.url), "utf8");
 
 const GUIDE_IDENTIFIERS = {
+  CIS_BATCH_GUIDE,
   PRE_ACTION_CHECK_GUIDE,
   DECISION_POLICIES_LIST_GUIDE,
   DECISION_VERIFY_GUIDE
