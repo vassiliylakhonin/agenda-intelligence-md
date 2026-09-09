@@ -18,7 +18,7 @@ inputs:
     required: false
     default: 'true'
   format:
-    description: 'Output format (text/json for check, markdown/json for review)'
+    description: 'Output format (text/json/sarif for check, markdown/json/html for review)'
     required: false
     default: 'text'
   python-version:
@@ -41,6 +41,7 @@ runs:
         pip install .
 
     - name: Run evidence check/review
+      id: evidence_lint
       shell: bash
       run: |
         STRICT_FLAG=""
@@ -48,8 +49,26 @@ runs:
           STRICT_FLAG="--strict"
         fi
 
-        if [ "${{ inputs.command }}" = "review" ]; then
+        if [ "${{ inputs.command }}" = "check" ] && [ "${{ inputs.format }}" = "sarif" ]; then
+          set +e
+          agenda-intelligence check "${{ inputs.path }}" --format sarif \
+            --out "${RUNNER_TEMP}/agenda-intelligence.sarif" $STRICT_FLAG
+          CHECK_EXIT=$?
+          set -e
+          echo "exit_code=${CHECK_EXIT}" >> "${GITHUB_OUTPUT}"
+        elif [ "${{ inputs.command }}" = "review" ]; then
           agenda-intelligence review "${{ inputs.path }}" --format "${{ inputs.format }}" $STRICT_FLAG
         else
           agenda-intelligence check "${{ inputs.path }}" --format "${{ inputs.format }}" $STRICT_FLAG
         fi
+
+    - name: Upload SARIF
+      if: ${{ inputs.command == 'check' && inputs.format == 'sarif' && always() }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ runner.temp }}/agenda-intelligence.sarif
+
+    - name: Enforce strict SARIF result
+      if: ${{ inputs.command == 'check' && inputs.format == 'sarif' && steps.evidence_lint.outputs.exit_code != '0' }}
+      shell: bash
+      run: exit 1

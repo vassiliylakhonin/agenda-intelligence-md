@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from agenda_intelligence.integrations import (
+    EvidenceClaim,
+    EvidencePacket,
     EvidencePacketGuardrail,
+    EvidenceQuote,
+    EvidenceSource,
     create_evidence_packet,
 )
 
@@ -90,3 +96,59 @@ def test_guardrail_validate_or_repair_loop():
     assert success is True
     assert len(history) == 1
     assert final_packet["sources"][0]["source_id"] == "s1"
+
+
+def test_typed_packet_serializes_to_and_checks_against_stable_contract():
+    packet = EvidencePacket(
+        packet_id="typed-1",
+        topic="Typed SDK",
+        claims=(
+            EvidenceClaim(
+                claim_id="c1",
+                text="The committee approved the budget.",
+                source_ids=("s1",),
+                quotes=(EvidenceQuote("s1", "committee approved the budget"),),
+            ),
+        ),
+        sources=(EvidenceSource("s1", "The committee approved the budget after review."),),
+    )
+
+    result = EvidencePacketGuardrail().check(packet)
+
+    assert packet.to_dict()["packet_id"] == "typed-1"
+    assert result["valid"] is True
+    assert result["response"]["packet_status"] == "packet_complete"
+
+
+def test_async_check_and_repair_do_not_require_asyncio_plugin():
+    guardrail = EvidencePacketGuardrail(max_repair_attempts=1)
+    initial = EvidencePacket(
+        claims=(EvidenceClaim("c1", "The committee approved the budget.", ("missing",)),),
+        sources=(),
+    )
+
+    async def repair(_: str) -> EvidencePacket:
+        return EvidencePacket(
+            claims=(EvidenceClaim("c1", "The committee approved the budget.", ("s1",)),),
+            sources=(EvidenceSource("s1", "The committee approved the budget."),),
+        )
+
+    final_packet, success, history = asyncio.run(guardrail.validate_or_repair_async(initial, repair))
+
+    assert success is True
+    assert len(history) == 1
+    assert final_packet["sources"][0]["source_id"] == "s1"
+
+
+def test_langgraph_node_returns_a_state_delta_without_langgraph_dependency():
+    guardrail = EvidencePacketGuardrail()
+    node = guardrail.as_langgraph_node(packet_key="packet", result_key="check")
+    packet = EvidencePacket(
+        claims=(EvidenceClaim("c1", "The committee approved the budget.", ("s1",)),),
+        sources=(EvidenceSource("s1", "The committee approved the budget."),),
+    )
+
+    delta = asyncio.run(node({"packet": packet, "untouched": True}))
+
+    assert set(delta) == {"check"}
+    assert delta["check"]["response"]["packet_status"] == "packet_complete"

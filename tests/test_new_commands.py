@@ -635,6 +635,22 @@ def test_mcp_verify_quotes_absent():
     assert res["summary"]["present"] == 0
 
 
+def test_mcp_verify_quotes_reports_near_miss_without_marking_it_present():
+    from agenda_intelligence.mcp_server import verify_quotes
+
+    quote = "The committee approved the annual facility budget after review."
+    source = "The committee aproved the annual facility budget after review."
+    pack = {
+        "sources": [{"evidence_id": "e1", "quote": quote}],
+    }
+
+    res = verify_quotes(pack, texts={"e1": source})
+
+    assert res["summary"]["absent"] == 1
+    assert res["summary"]["present"] == 0
+    assert res["results"][0]["near_miss"]["similarity"] >= 0.95
+
+
 def test_mcp_verify_quotes_missing_text():
     from agenda_intelligence.mcp_server import verify_quotes
 

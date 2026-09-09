@@ -62,6 +62,9 @@ def test_render_review_html_basic_structure():
     assert "s1" in rendered
     assert "https://example.com/report.pdf" in rendered
     assert "document.querySelectorAll" in rendered
+    assert 'class="detail-panel" data-claim="c1"' in rendered
+    assert "Source excerpt &middot; <code>s1</code>" in rendered
+    assert "<mark>Transit</mark>" in rendered
 
 
 def test_cli_review_html_output(tmp_path: Path):
@@ -100,3 +103,40 @@ def test_cli_review_html_output(tmp_path: Path):
     assert "<!DOCTYPE html>" in content
     assert "Budget Review" in content
     assert "packet_complete" in content
+
+
+def test_render_review_html_surfaces_quote_near_miss_difference():
+    packet = {
+        "topic": "Quote review",
+        "claims": [{"claim_id": "c1", "text": "Claim", "source_ids": ["s1"]}],
+        "sources": [{"source_id": "s1", "text": "Source"}],
+    }
+    response = {
+        "packet_status": "packet_incomplete",
+        "factuality_status": "not_assessed",
+        "human_review_required": True,
+        "counts": {"packet_complete": 0, "source_review_required": 0, "packet_incomplete": 1},
+        "claims": [
+            {
+                "claim_id": "c1",
+                "referenced_source_ids": ["s1"],
+                "packet_status": "packet_incomplete",
+                "lexical_support": {"status": "supported", "coverage": 1.0},
+                "quote_checks": [
+                    {
+                        "source_id": "s1",
+                        "status": "absent",
+                        "near_miss": {"similarity": 0.98, "difference": "- approved + aproved"},
+                    }
+                ],
+                "issues": ["quote_absent:s1"],
+            }
+        ],
+        "owner_actions": ["Review quote."],
+        "limitations": ["Human review required."],
+    }
+
+    rendered = render_review_html(packet, response)
+
+    assert "quote_near_miss:s1 (98.0%)" in rendered
+    assert "- approved + aproved" in rendered

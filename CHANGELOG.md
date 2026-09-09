@@ -17,6 +17,34 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   conventional root path. No pricing or x402 signal is advertised because this deployment has no payment rail
   or enforced paid tier.
 
+- **feat(grounding): add a cached, morphology-aware IDF index plus async and SARIF adapters.**
+  `GroundingIndex` now tokenizes each supplied document and sentence once per check run, folds a conservative set of
+  English and Russian inflections, and weights rare corpus terms above corpus-wide language using deterministic IDF.
+  Single-document packets retain the previous plain-overlap scale, numeric and polarity guards remain independent, and
+  all existing response schemas stay unchanged. The zero-dependency Python integration adds typed dataclass inputs,
+  `check_async`, `validate_or_repair_async`, and a dependency-free `as_langgraph_node` state adapter. `check --format
+  sarif [--out FILE]` emits SARIF 2.1.0 findings located at claim lines, and the GitHub Action can upload that file to code
+  scanning before enforcing strict failure. The standalone HTML reviewer adds a click-selected side-by-side claim/source
+  excerpt with exact shared literals highlighted. No semantic similarity, translation, factuality inference, Pydantic,
+  LangGraph, or stemming dependency was added.
+
+- **feat(evidence packet): reduce multilingual, numeric, and extracted-document false alarms.**
+  Lexical support now drops common Russian and Arabic function words in addition to English stopwords, while
+  the existing sentence-scoped polarity check continues to read negation independently. Numeric facts are
+  compared through conservative deterministic forms: scaled values (`10M`, `10 million`, `10,000,000`),
+  percentages (`62%`, `62 percent`), selected English/Russian/Arabic month-name dates plus ISO/dotted dates,
+  and USD/EUR/GBP/RUB/KZT spellings. Currency remains part of the fact, so equal amounts in different
+  currencies do not match; no exchange-rate or approximate-value inference is performed. Canonical numeric
+  facts also reach lexical coverage, rather than only the `unmatched_numbers` diagnostic. Quote matching now
+  tolerates soft hyphens and both forms of PDF line-break hyphenation. A typo-level candidate at >=95%
+  similarity is returned as a bounded `near_miss` diff for reviewers but the quote remains `absent` and the
+  packet remains incomplete; candidates with changed numeric facts or polarity cues are suppressed. The
+  optional diagnostic is additive in both v1 response schemas and is surfaced by check, grounded-check,
+  verify-quotes, and HTML/Markdown review. The shared lexical and quote-matching implementation now lives in
+  the internal `agenda_intelligence.grounding` module; `agenda_intelligence.services` retains its compatibility
+  facade while discovery depends on the focused module directly. No model, network call, language detector,
+  currency conversion, or factuality claim was added.
+
 - **feat(worker telemetry): explain why external calls stop at `input_required`.**
   Usage event v7 adds a bounded outcome reason and static required-field names, and KV now retains the
   already-computed structured-payload character count. `/stats` reports external input-required totals,

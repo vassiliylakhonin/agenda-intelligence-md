@@ -6,6 +6,21 @@
   "x-schema-version": "1",
   "type": "object",
   "additionalProperties": false,
+  "$defs": {
+    "quoteNearMiss": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["similarity", "difference"],
+      "properties": {
+        "similarity": {"type": "number", "minimum": 0.95, "maximum": 1},
+        "difference": {
+          "type": "string",
+          "maxLength": 240,
+          "description": "Bounded token diff from the declared quote (-) to the closest source candidate (+)."
+        }
+      }
+    }
+  },
   "required": [
     "packet_status",
     "factuality_status",
@@ -85,7 +100,8 @@
                 "status": {
                   "type": "string",
                   "enum": ["present", "absent", "missing_source", "source_not_declared"]
-                }
+                },
+                "near_miss": {"$ref": "#/$defs/quoteNearMiss"}
               }
             }
           },

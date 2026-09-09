@@ -25,7 +25,7 @@ from __future__ import annotations
 import re
 from typing import Any, Iterable
 
-from agenda_intelligence.services import _grounded_content_terms, _grounded_normalize
+from agenda_intelligence.grounding import _grounded_content_terms, _grounded_normalize
 
 __all__ = [
     "MAX_PATTERNS_PER_CLAIM",
@@ -39,11 +39,10 @@ __all__ = [
 # the least discriminating patterns first.
 MAX_PATTERNS_PER_CLAIM = 12
 
-# A token carrying a digit: figures, dates, percentages, monetary amounts. These
-# are the most discriminating thing a claim can contain and the cheapest to
-# match exactly, so they are ranked first and never dropped by the cap.
-_NUMERIC = re.compile(r"\d")
 _QUOTED = re.compile(r"[\"“„«]([^\"”“»«]{8,120})[\"”»]")
+_NUMERIC = re.compile(r"\d")
+_LEGACY_TERM_PATTERN = re.compile(r"[^\W_]+(?:[.\-][^\W_]+)*(?:%)?", flags=re.UNICODE)
+_CANONICAL_NUMERIC_PREFIXES = ("numnumber-", "numdate-", "numpercent-", "numcurrency-")
 
 
 def _document_frequency(sources: list[dict]) -> dict[str, int]:
@@ -75,13 +74,14 @@ def claim_patterns(claim_text: str, *, frequency: dict[str, int] | None = None) 
             patterns.append({"kind": kind, "literal": literal})
 
     terms = _grounded_content_terms(claim_text)
-    for term in terms:
+    legacy_terms = _LEGACY_TERM_PATTERN.findall(_grounded_normalize(claim_text))
+    for term in legacy_terms:
         if _NUMERIC.search(term):
-            add("number", term)
+            add("number", term.strip(".-"))
     for match in _QUOTED.finditer(claim_text):
         add("quote", _grounded_normalize(match.group(1)))
 
-    words = [term for term in terms if not _NUMERIC.search(term)]
+    words = [term for term in terms if not term.startswith(_CANONICAL_NUMERIC_PREFIXES)]
     if frequency:
         # Rarest first, ties broken by claim order so the output is stable.
         words.sort(key=lambda term: (frequency.get(term, 0), terms.index(term)))
@@ -105,10 +105,9 @@ def _match_source(patterns: list[dict[str, Any]], text: str) -> dict[str, Any]:
     if not matched:
         return {"matched": [], "line": 0, "text": ""}
 
-    literals = [pattern["literal"] for pattern in matched]
     best_index, best_hits = 0, 0
     for index, line in enumerate(normalized_lines):
-        hits = sum(1 for literal in literals if literal in line)
+        hits = sum(1 for pattern in matched if pattern["literal"] in line)
         if hits > best_hits:
             best_index, best_hits = index, hits
     raw_lines = _lines(text)

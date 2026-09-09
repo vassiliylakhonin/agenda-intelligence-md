@@ -11,20 +11,37 @@ import copy
 import hashlib
 import json
 import re
-import unicodedata
 import uuid
 from datetime import date
 from importlib import resources
 from typing import Any, Optional
 from urllib.parse import urlparse
 
-from agenda_intelligence import __version__, upstream_opensanctions
+from agenda_intelligence import __version__
+from agenda_intelligence import grounding as _grounding
+from agenda_intelligence import upstream_opensanctions
 from agenda_intelligence.eval import score_before_after
 from agenda_intelligence.evidence_ledger import EvidenceLedger
+from agenda_intelligence.grounding import GroundingIndex, _polarity_cues, _quote_check
 
 PACKAGE_NAME = "agenda_intelligence"
 
 SCHEMA_ID_BASE = "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1"
+
+
+def _grounded_content_terms(text: str) -> list[str]:
+    """Compatibility facade for callers that imported the former local helper."""
+    return _grounding._grounded_content_terms(text)
+
+
+def _grounded_normalize(text: str) -> str:
+    """Compatibility facade for callers that imported the former local helper."""
+    return _grounding._grounded_normalize(text)
+
+
+def _quote_matches_source(quote_text: str, source_text: str) -> bool:
+    """Compatibility facade for callers that imported the former local helper."""
+    return _grounding._quote_matches_source(quote_text, source_text)
 
 
 def _input_digest(request_json: dict) -> str:
@@ -630,155 +647,12 @@ GROUNDED_CHECK_NOT_ADVICE_NOTICE = (
     "sanctions, financial, or investment advice. Human review is required before acting on any result."
 )
 
-_GROUNDED_CHECK_STOPWORDS = frozenset(
-    "a about after all also an and any are as at be been but by can could did do does for from had has "
-    "have how if in into is it its may more most no not of on or other our over per should so some such "
-    "than that the their them then there these they this to under was were what when where which while "
-    "who will with would".split()
-)
-
-
-def _grounded_normalize(text: str) -> str:
-    text = unicodedata.normalize("NFKC", text)
-    return re.sub(r"\s+", " ", text).strip().casefold()
-
-
-def _normalize_quote_chars(text: str) -> str:
-    """Normalize quote characters, dashes, and whitespace for resilient matching."""
-    text = unicodedata.normalize("NFKC", text)
-    text = re.sub(r"[\u201c\u201d\u00ab\u00bb\u201e\u201f\u300c\u300d]", '"', text)
-    text = re.sub(r"[\u2018\u2019\u201a\u201b]", "'", text)
-    text = re.sub(r"[\u2013\u2014]", "-", text)
-    return re.sub(r"\s+", " ", text).strip().casefold()
-
-
-def _quote_matches_source(quote_text: str, source_text: str) -> bool:
-    """Check whether a quoted fragment appears in source text.
-
-    Supports:
-    1. Verbatim exact normalized substring.
-    2. Typographical quote and dash normalization.
-    3. Ellipsis-separated fragments (e.g. 'part 1 ... part 2' or 'part 1 … part 2').
-       Each non-empty segment must appear in chronological order in the source text.
-    """
-    if not quote_text or not source_text:
-        return False
-
-    norm_quote = _grounded_normalize(quote_text)
-    norm_source = _grounded_normalize(source_text)
-    if norm_quote in norm_source:
-        return True
-
-    q_norm_quote = _normalize_quote_chars(quote_text)
-    q_norm_source = _normalize_quote_chars(source_text)
-    if q_norm_quote in q_norm_source:
-        return True
-
-    ellipsis_parts = [p.strip() for p in re.split(r"\s*(?:\.{3,}|…)\s*", q_norm_quote) if p.strip()]
-    if len(ellipsis_parts) > 1:
-        current_idx = 0
-        matched_all = True
-        for part in ellipsis_parts:
-            found_idx = q_norm_source.find(part, current_idx)
-            if found_idx == -1:
-                matched_all = False
-                break
-            current_idx = found_idx + len(part)
-        if matched_all:
-            return True
-
-    return False
-
-
-def _grounded_content_terms(text: str) -> list[str]:
-    """Unique content-bearing terms of a normalized text, in first-seen order.
-
-    Keeps numeric tokens of any length; drops stopwords and alphabetic tokens
-    shorter than 3 characters.
-    """
-    # ``[^\W_]`` is the Unicode-aware equivalent of an alphanumeric token
-    # character without underscore. The previous ASCII-only expression silently
-    # discarded Cyrillic and Arabic text, making even a verbatim claim/source
-    # pair score 0.0. Keep punctuation only when it joins token characters so
-    # values such as ``9.9`` and ``62%`` retain the existing numeric behavior.
-    tokens = re.findall(r"[^\W_]+(?:[.\-][^\W_]+)*(?:%)?", _grounded_normalize(text), flags=re.UNICODE)
-    terms: list[str] = []
-    seen: set[str] = set()
-    for token in tokens:
-        token = token.strip(".-")
-        if not token or token in seen or token in _GROUNDED_CHECK_STOPWORDS:
-            continue
-        if not any(ch.isdigit() for ch in token) and len(token) < 3:
-            continue
-        seen.add(token)
-        terms.append(token)
-    return terms
-
-
-_POLARITY_CUE_PATTERN = re.compile(
-    r"\b(?:not|no|never|none|neither|nor|without|cannot|can't|won't|doesn't|don't|didn't"
-    r"|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't|shouldn't|wouldn't|couldn't"
-    r"|denied|rejected|refused|declined|lacks|lacked|absent|ceased|suspended|terminated"
-    r"|failed to|unable to|no longer"
-    r"|не|нет|никогда|без|нельзя|невозможно|отклонил|отклонила|отклонили|отклонено"
-    r"|отказал|отказала|отказали|приостановил|приостановила|приостановили|прекратил|прекратили"
-    r"|لا|لم|لن|ليس|ليست|بدون|رفض|رفضت|رفضوا)\b"
-)
-
-
-def _grounded_best_sentence(sentences: list[str], claim_terms: set[str]) -> str:
-    """The single sentence with the highest claim-term overlap.
-
-    Polarity is compared at sentence scope, not over the multi-sentence excerpt
-    window: a neighbouring sentence that negates something else in the same
-    document must not be read as negating this claim.
-    """
-    best_sentence = ""
-    best_hits = 0
-    for sentence in sentences:
-        hits = len(claim_terms & set(_grounded_content_terms(sentence)))
-        if hits > best_hits:
-            best_hits = hits
-            best_sentence = sentence
-    return best_sentence
-
-
-def _polarity_cues(text: str) -> set[str]:
-    """Negation and denial cues in a text.
-
-    Read on the normalized text rather than on content terms: the tokenizer
-    treats ``not`` and ``no`` as stopwords and drops them, so a claim and its
-    source can share every content term while asserting opposite things.
-    """
-    return set(_POLARITY_CUE_PATTERN.findall(_grounded_normalize(text)))
-
-
-def _grounded_sentences(text: str) -> list[str]:
-    parts = re.split(r"(?<=[.!?؟])\s+|\n+", text)
-    return [p.strip() for p in parts if p.strip()]
-
-
-def _grounded_best_passage(sentences: list[str], claim_terms: set[str], window: int = 3) -> str:
-    """Window of consecutive sentences with the highest claim-term overlap."""
-    best_excerpt = ""
-    best_hits = 0
-    for start in range(len(sentences)):
-        chunk = " ".join(sentences[start : start + window])
-        chunk_terms = set(_grounded_content_terms(chunk))
-        hits = len(claim_terms & chunk_terms)
-        if hits > best_hits:
-            best_hits = hits
-            best_excerpt = chunk
-    if len(best_excerpt) > 300:
-        best_excerpt = best_excerpt[:297].rstrip() + "..."
-    return best_excerpt
-
 
 def grounded_check(request_json: dict) -> dict:
     """Check whether a caller-supplied corpus lexically supports each claim.
 
-    Deterministic and local-text only: term overlap against each corpus document
-    plus verbatim presence checks for declared quotes. Honest scope: this is
+    Deterministic and local-text only: morphology-aware IDF term overlap against
+    each corpus document plus presence checks for declared quotes. Honest scope: this is
     claim-to-corpus consistency, not factual-truth verification — a claim can be
     grounded in a corpus that is itself wrong, and a true claim phrased
     differently from the corpus can score as ungrounded.
@@ -805,10 +679,8 @@ def grounded_check(request_json: dict) -> dict:
             "response": None,
         }
 
-    corpus_norm = {doc["corpus_id"]: _grounded_normalize(doc["text"]) for doc in corpus_items}
-    corpus_terms = {cid: set(_grounded_content_terms(text)) for cid, text in corpus_norm.items()}
-    corpus_sentences = {doc["corpus_id"]: _grounded_sentences(doc["text"]) for doc in corpus_items}
-    all_corpus_terms: set[str] = set().union(*corpus_terms.values()) if corpus_terms else set()
+    corpus_raw = {doc["corpus_id"]: doc["text"] for doc in corpus_items}
+    corpus_index = GroundingIndex(corpus_raw)
 
     results: list[dict] = []
     owner_actions: list[str] = []
@@ -816,32 +688,22 @@ def grounded_check(request_json: dict) -> dict:
 
     for claim in request_json.get("claims", []) or []:
         claim_id = claim["claim_id"]
-        claim_terms = set(_grounded_content_terms(claim["claim_text"]))
-        numeric_terms = {t for t in claim_terms if any(ch.isdigit() for ch in t)}
-
-        best_corpus_id = None
-        best_coverage = 0.0
-        for cid, terms in corpus_terms.items():
-            coverage = len(claim_terms & terms) / len(claim_terms) if claim_terms else 0.0
-            if coverage > best_coverage or best_corpus_id is None:
-                best_coverage = coverage
-                best_corpus_id = cid
-
-        missing_terms = sorted(claim_terms - corpus_terms.get(best_corpus_id, set()))
-        unmatched_numbers = sorted(numeric_terms - all_corpus_terms)
+        match = corpus_index.match(claim["claim_text"])
+        best_corpus_id = match.document_id
+        best_coverage = match.coverage
+        missing_terms = sorted(match.missing_terms)
+        unmatched_numbers = list(match.unmatched_numbers)
 
         quote_checks: list[dict] = []
         quote_statuses: list[str] = []
         for declared in claim.get("quotes", []) or []:
             cid = declared["corpus_id"]
-            if cid not in corpus_norm:
-                status = "missing_corpus_text"
-            elif _quote_matches_source(declared["quote"], corpus_norm[cid]):
-                status = "present"
+            if cid not in corpus_raw:
+                details = {"status": "missing_corpus_text"}
             else:
-                status = "absent"
-            quote_checks.append({"corpus_id": cid, "status": status})
-            quote_statuses.append(status)
+                details = _quote_check(declared["quote"], corpus_raw[cid])
+            quote_checks.append({"corpus_id": cid, **details})
+            quote_statuses.append(details["status"])
 
         # Status rules, in order: coverage baseline; verbatim quotes upgrade;
         # a misquote overrides everything; unmatched numbers cap at weak.
@@ -863,9 +725,8 @@ def grounded_check(request_json: dict) -> dict:
         # sentence it matches and still score as grounded.
         polarity_conflict: list[str] = []
         if status == "grounded" and best_corpus_id is not None:
-            sentence = _grounded_best_sentence(corpus_sentences[best_corpus_id], claim_terms)
             claim_cues = _polarity_cues(claim["claim_text"])
-            corpus_cues = _polarity_cues(sentence or corpus_norm[best_corpus_id])
+            corpus_cues = _polarity_cues(match.best_sentence or corpus_raw[best_corpus_id])
             if bool(claim_cues) != bool(corpus_cues):
                 status = "weakly_grounded"
                 polarity_conflict = sorted(claim_cues | corpus_cues)
@@ -873,10 +734,8 @@ def grounded_check(request_json: dict) -> dict:
         status_counts[status] += 1
 
         best_passage = None
-        if best_corpus_id is not None and best_coverage > 0:
-            excerpt = _grounded_best_passage(corpus_sentences[best_corpus_id], claim_terms)
-            if excerpt:
-                best_passage = {"corpus_id": best_corpus_id, "excerpt": excerpt}
+        if best_corpus_id is not None and match.best_passage:
+            best_passage = {"corpus_id": best_corpus_id, "excerpt": match.best_passage}
 
         if "absent" in quote_statuses:
             owner_actions.append(
@@ -929,7 +788,7 @@ def grounded_check(request_json: dict) -> dict:
         "human_review_required": True,
         "not_advice_notice": GROUNDED_CHECK_NOT_ADVICE_NOTICE,
         "limitations": [
-            "Lexical matching only: paraphrased support can be under-detected (false ungrounded) and "
+            "Weighted lexical matching only: paraphrased support can be under-detected (false ungrounded) and "
             "topical overlap without actual support can be over-detected (false grounded).",
             "Corpus quality and completeness are the caller's responsibility; grounding in a wrong "
             "corpus does not make a claim true.",
@@ -983,7 +842,7 @@ def check_evidence_packet(request_json: dict) -> dict:
     """Check an AI-output evidence packet before human review.
 
     The check is deterministic and deliberately narrow: it validates claim to
-    source references, verifies declared quotes verbatim, and reports lexical
+    source references, verifies declared quotes, and reports weighted lexical
     overlap against the sources each claim names. It does not assess source
     authority, factual truth, or whether an action should be allowed.
     """
@@ -1010,8 +869,7 @@ def check_evidence_packet(request_json: dict) -> dict:
         return {"implemented": True, "valid": False, "errors": errors, "response": None}
 
     sources = {source["source_id"]: source for source in source_items}
-    source_terms = {source_id: set(_grounded_content_terms(source["text"])) for source_id, source in sources.items()}
-    source_sentences = {source_id: _grounded_sentences(source["text"]) for source_id, source in sources.items()}
+    source_index = GroundingIndex({source_id: source["text"] for source_id, source in sources.items()})
 
     results: list[dict] = []
     owner_actions: list[str] = []
@@ -1050,28 +908,20 @@ def check_evidence_packet(request_json: dict) -> dict:
                 status = "source_not_declared"
                 structural_issues.append(f"quote_source_not_declared:{source_id}")
                 add_action(f"Add source {source_id} to claim {claim_id}.source_ids or remove its quote.")
-            elif _quote_matches_source(quote["text"], sources[source_id]["text"]):
-                status = "present"
             else:
-                status = "absent"
-                structural_issues.append(f"quote_absent:{source_id}")
-                add_action(f"Fix or remove the quote from source {source_id} in claim {claim_id}.")
+                details = _quote_check(quote["text"], sources[source_id]["text"])
+                status = details["status"]
+                if status == "absent":
+                    structural_issues.append(f"quote_absent:{source_id}")
+                    add_action(f"Fix or remove the quote from source {source_id} in claim {claim_id}.")
+                quote_checks.append({"source_id": source_id, **details})
+                continue
             quote_checks.append({"source_id": source_id, "status": status})
 
-        claim_terms = set(_grounded_content_terms(claim["text"]))
-        numeric_terms = {term for term in claim_terms if any(character.isdigit() for character in term)}
-        referenced_terms: set[str] = set()
-        best_source_id = None
-        best_coverage = 0.0
-        for source_id in valid_source_ids:
-            terms = source_terms[source_id]
-            referenced_terms.update(terms)
-            coverage = len(claim_terms & terms) / len(claim_terms) if claim_terms else 0.0
-            if coverage > best_coverage or best_source_id is None:
-                best_source_id = source_id
-                best_coverage = coverage
-
-        unmatched_numbers = sorted(numeric_terms - referenced_terms)
+        match = source_index.match(claim["text"], valid_source_ids)
+        best_source_id = match.document_id
+        best_coverage = match.coverage
+        unmatched_numbers = list(match.unmatched_numbers)
         if best_coverage >= 0.75:
             lexical_status = "supported"
         elif best_coverage >= 0.4:
@@ -1087,9 +937,8 @@ def check_evidence_packet(request_json: dict) -> dict:
         # packet is not complete, whatever the overlap says.
         polarity_conflict: list[str] = []
         if lexical_status == "supported" and best_source_id:
-            sentence = _grounded_best_sentence(source_sentences[best_source_id], claim_terms)
             claim_cues = _polarity_cues(claim["text"])
-            passage_cues = _polarity_cues(sentence or sources[best_source_id]["text"])
+            passage_cues = _polarity_cues(match.best_sentence or sources[best_source_id]["text"])
             if bool(claim_cues) != bool(passage_cues):
                 lexical_status = "weak"
                 polarity_conflict = sorted(claim_cues | passage_cues)
@@ -1157,10 +1006,10 @@ def check_evidence_packet(request_json: dict) -> dict:
         "human_review_required": True,
         "limitations": [
             "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
-            "Lexical matching can miss valid paraphrases and can overstate support when terms overlap "
+            "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap "
             "without entailment.",
-            "Unicode tokenization supports whitespace-delimited scripts, but does not assess morphology, "
-            "translation, or cross-language entailment.",
+            "Unicode tokenization includes conservative English and Russian inflection folding, but does not "
+            "perform full morphology, translation, or cross-language entailment.",
             "No source discovery or live retrieval is performed; the caller controls the supplied source set.",
         ],
     }
