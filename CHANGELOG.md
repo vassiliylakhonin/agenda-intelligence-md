@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## 1.9.0 — 2026-09-09
+
 - **feat(worker): make agent-to-agent intake tolerant without making sanctions decisions from guesses.**
   The CIS gate now normalizes the unambiguous aliases `financial_institution` / `banking` to `bank` and
   `tin` to `national_tin`, and discloses every change in `normalizations_applied`. Ambiguous labels such as

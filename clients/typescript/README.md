@@ -4,7 +4,7 @@ TypeScript client for the Agenda Intelligence MD HTTP shell. Types are generated
 from `schemas/v1`, so they cannot drift from the contract: CI regenerates and
 compares.
 
-Pinned to package version `1.8.0`.
+Pinned to package version `1.9.0`.
 
 ```ts
 import { AgendaIntelligenceClient, RateLimitError } from "@agenda-intelligence/client";
