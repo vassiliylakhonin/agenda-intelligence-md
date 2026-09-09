@@ -4,6 +4,13 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(worker discovery and telemetry): keep external-agent discovery visible without counting its scouts as usage.**
+  `GET /.well-known/openapi.json` now serves the same contract as the canonical OpenAPI route, matching the
+  path already requested by GAIP discovery clients. Self-identifying scout, test-loop, indexer, and benchmark
+  user agents are classified as service probes for new events and repaired at `/stats` read time for historical
+  KV rows. The Agent Card extension and completed-response engagement block now explain the optional
+  `X-Client-Id` header as a stable non-personal integration label; it remains optional and is not authentication.
+
 ## 1.9.0 — 2026-09-09
 
 - **feat(worker): make agent-to-agent intake tolerant without making sanctions decisions from guesses.**

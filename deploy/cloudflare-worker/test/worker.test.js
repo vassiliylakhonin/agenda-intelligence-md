@@ -600,6 +600,9 @@ test("agent card uses request origin for live endpoints", () => {
   assert.equal(card.securitySchemes, undefined);
   assert.deepEqual(card.securityRequirements, []);
   assert.equal(card.x_agenda_intelligence.optional_client_identifier_header, "X-Client-Id");
+  assert.equal(card.x_agenda_intelligence.client_identification.header, "X-Client-Id");
+  assert.equal(card.x_agenda_intelligence.client_identification.required, false);
+  assert.match(card.x_agenda_intelligence.client_identification.purpose, /non-personal integration label/);
   assert.deepEqual(
     card.skills.map((skill) => skill.id),
     [
@@ -749,6 +752,19 @@ test("API catalog and OpenAPI routes advertise the public worker HTTP contract",
   const compatibilityBody = await compatibilityResponse.json();
   assert.equal(compatibilityResponse.status, 200);
   assert.deepEqual(compatibilityBody, openapiBody);
+
+  const wellKnownResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/openapi.json")
+  );
+  const wellKnownBody = await wellKnownResponse.json();
+  assert.equal(wellKnownResponse.status, 200);
+  assert.deepEqual(wellKnownBody, openapiBody);
+  assert.ok(wellKnownBody.paths["/.well-known/openapi.json"].get);
+  const clientId = wellKnownBody.paths["/message/send"].post.parameters.find(
+    (parameter) => parameter.name === "X-Client-Id"
+  );
+  assert.equal(clientId.required, false);
+  assert.match(clientId.description, /not authentication/);
 });
 
 test("MCP server card and DID routes advertise installable MCP identity", async () => {
@@ -2220,6 +2236,9 @@ test("a successful response hands the caller a way to reach a person", async () 
   const engagement = response.result.metadata.engagement;
   assert.equal(engagement.contact_email, "vassiliy.lakhonin@gmail.com");
   assert.equal(engagement.human_page, "https://agenda-intelligence-a2a.example.workers.dev");
+  assert.equal(engagement.client_identification.header, "X-Client-Id");
+  assert.equal(engagement.client_identification.required, false);
+  assert.match(engagement.client_identification.purpose, /aggregate operational stats/);
   assert.ok(engagement.offer.length > 0);
   assert.ok(engagement.next_step.includes("before work starts"));
   // No price, and no claim about who already uses this. Both are the failure
@@ -2254,6 +2273,7 @@ test("the response text part carries the same contact as the metadata", async ()
   assert.ok(markdown.includes(engagement.offer), "text part must carry the same offer wording as the metadata");
   assert.ok(markdown.includes(engagement.next_step), "text part must carry the same next step as the metadata");
   assert.ok(markdown.includes(engagement.human_page), "text part must point at a page a person can read");
+  assert.ok(markdown.includes("X-Client-Id"), "text part must explain optional repeat-call attribution");
   // Same honesty rules as the metadata block: no price, no claimed traction.
   assert.ok(!/[$\u20ac\u00a3]\s?\d|\bUSD\b|\bEUR\b/.test(markdown), "response text must not quote a price");
   assert.ok(
@@ -2681,6 +2701,10 @@ test("caller classification separates our own runs, probes, and callers who sign
   assert.equal(kindFor({ "user-agent": "agent-tools.cloud-a2a/0.1 (+https://agent-tools.cloud)" }), "service_probe");
   assert.equal(kindFor({ "user-agent": "Waggle/1.0 (+https://waggle.zone)" }), "service_probe");
   assert.equal(kindFor({ "user-agent": "MCPWatch/0.1.0 (+mcpwatch@iyre.com) MCP security research" }), "service_probe");
+  assert.equal(kindFor({ "user-agent": "GAIP-Agent-Economy-Scout/0.2" }), "service_probe");
+  assert.equal(kindFor({ "user-agent": "GAIP-External-Agent-Test-Loop/0.6" }), "service_probe");
+  assert.equal(kindFor({ "user-agent": "TAR-Directory-Indexer/1.0" }), "service_probe");
+  assert.equal(kindFor({ "user-agent": "AutonomousAgent-Benchmark/1.0" }), "service_probe");
   assert.equal(kindFor({ "user-agent": "Java-http-client/25.0.2" }), "external");
   // A generic HTTP library says nothing about itself and must stay external:
   // `external` means unidentified, and collapsing it into "probe" would hide
@@ -2935,6 +2959,49 @@ test("usage stats reports caller kinds and calling Worker zones", async () => {
   assert.deepEqual(stats.caller_zones, [
     { name: "app-builder.example", count: 1 },
     { name: "shadetreerocketsurgeon84.workers.dev", count: 1 }
+  ]);
+});
+
+test("usage stats repairs historical scout and test-loop rows from the stored user agent", async () => {
+  const kv = new MemoryKv();
+  const env = { AGENDA_USAGE: kv };
+  const base = {
+    event: "agenda_intelligence_a2a_usage",
+    event_version: 7,
+    timestamp: "2026-09-08T18:00:00.000Z",
+    agent_profile: "agent_output_verification",
+    caller_kind: "external",
+    traffic_class: "machine_client",
+    likely_probe: false,
+    prompt_chars: 400,
+    outcome: { decision: "completed", score: 70 }
+  };
+
+  await recordUsageStats(env, { ...base, user_agent: "GAIP-Agent-Economy-Scout/0.2" });
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-09-08T18:01:00.000Z",
+    user_agent: "GAIP-External-Agent-Test-Loop/0.6"
+  });
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-09-08T18:02:00.000Z",
+    user_agent: "LegitimatePartnerAgent/1.0"
+  });
+
+  const stats = await usageStats(env, "2026-09-08");
+  assert.equal(stats.counters.total, 3);
+  assert.equal(stats.counters.likely_probe, 2);
+  assert.equal(stats.counters.non_probe, 1);
+  assert.equal(stats.counters.external_non_probe, 1);
+  assert.deepEqual(stats.probe_reasons, [{ name: "self_identified_service", count: 2 }]);
+  assert.deepEqual(stats.caller_kinds, [
+    { name: "service_probe", count: 2 },
+    { name: "external", count: 1 }
+  ]);
+  assert.deepEqual(stats.traffic_classes, [
+    { name: "machine_probe", count: 2 },
+    { name: "machine_client", count: 1 }
   ]);
 });
 
@@ -6263,7 +6330,10 @@ test("card data outside the schema survives inside capabilities.extensions", asy
 
   assert.ok(extension, "the vendor extension must be present");
   assert.equal(extension.required, false, "reading vendor metadata must never be required");
+  assert.match(extension.description, /X-Client-Id/);
   assert.ok(extension.params.x_agenda_intelligence, "wrapper metadata must survive the move");
+  assert.equal(extension.params.x_agenda_intelligence.client_identification.header, "X-Client-Id");
+  assert.equal(extension.params.x_agenda_intelligence.client_identification.required, false);
   assert.equal(extension.params.support.email, "vassiliy.lakhonin@gmail.com");
   assert.equal(extension.params.provider.legalEntity.type, "individual");
 });

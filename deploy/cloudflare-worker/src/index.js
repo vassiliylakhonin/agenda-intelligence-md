@@ -1028,6 +1028,12 @@ function agentCard(request, env = {}) {
       protocol_version: "1.0",
       public_endpoint: !productionKey,
       optional_client_identifier_header: "X-Client-Id",
+      client_identification: {
+        header: "X-Client-Id",
+        required: false,
+        purpose:
+          "Use a stable non-personal integration label so aggregate stats can group repeat calls; do not send a person's name, email, token, or secret."
+      },
       ai_catalog: `${origin}/.well-known/ai-catalog.json`,
       repository: REPOSITORY_URL,
       package: PACKAGE_URL,
@@ -1059,6 +1065,11 @@ function agentCard(request, env = {}) {
       public_endpoint: !productionKey,
       required_authentication: Boolean(productionKey),
       optional_client_identifier_header: "X-Client-Id",
+      client_identification: {
+        required: false,
+        authentication: false,
+        purpose: "Pseudonymous repeat-call attribution in aggregate operational analytics."
+      },
       data_handling: [
         "No payment credentials accepted.",
         "No wallet rails.",
@@ -1140,6 +1151,7 @@ const A2A_CARD_FIELDS = new Set([
 const A2A_PROVIDER_FIELDS = new Set(["organization", "url"]);
 const CARD_EXTENSION_DESCRIPTION =
   "Wrapper scope, product contract, boundaries, support channel and provider identity for this agent. " +
+  "Repeat callers may send the optional X-Client-Id header with a stable non-personal integration label. " +
   "Descriptive only: reading it is never required to call the agent.";
 
 function toSpecWireCard(card) {
@@ -1703,6 +1715,18 @@ function openApiDocument(request) {
           }
         }
       },
+      "/.well-known/openapi.json": {
+        get: {
+          tags: ["discovery"],
+          summary: "Well-known OpenAPI document compatibility alias",
+          responses: {
+            200: {
+              description: "The same OpenAPI 3.0 document served at /api/openapi.json.",
+              content: { "application/vnd.oai.openapi+json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
       "/.well-known/mcp/server-card.json": {
         get: {
           tags: ["discovery"],
@@ -1881,6 +1905,15 @@ function openApiDocument(request) {
               required: false,
               description: "A2A protocol version. Defaults to 1.0 for SendMessage.",
               schema: { type: "string", enum: ["1.0"], default: "1.0" }
+            },
+            {
+              name: "X-Client-Id",
+              in: "header",
+              required: false,
+              description:
+                "Stable non-personal integration label for grouping repeat calls in aggregate operational stats. " +
+                "It is not authentication; do not send a person's name, email, token, or secret.",
+              schema: { type: "string", maxLength: 64 }
             }
           ],
           requestBody: { $ref: "#/components/requestBodies/JsonRpcRequest" },
@@ -8904,15 +8937,31 @@ const SELF_TEST_USER_AGENT = /^agenda-intelligence-/i;
 // or `(+someone@example.com)`. Anything shipping that has published a way to be
 // contacted about its crawling, which is what "self-identified" means. Every
 // crawler in the observed population that the keywords missed carries it.
+//
+// Discovery tools observed on 2026-09-08 use role names instead of the older
+// contact convention: Scout, Test-Loop, Indexer, and Benchmark. They read cards
+// and OpenAPI or replay conformance packets, so those explicit roles are probes;
+// generic runtimes such as python-httpx and AutonomousAgent remain external.
 const SERVICE_PROBE_KEYWORD =
-  /audit|probe|scan|liveness|registry|monitor|census|health|grader|bot\b|crawler|spider|beat\//i;
+  /audit|benchmark|probe|scan|liveness|registry|monitor|census|health|grader|bot\b|crawler|spider|beat\//i;
+const SERVICE_DISCOVERY_PROBE_KEYWORD = /scout|test[-_ ]?loop|indexer/i;
 const SERVICE_PROBE_SELF_ID = /\(\+/;
+
+function isServiceProbeUserAgent(raw) {
+  const value = String(raw || "").trim();
+  return Boolean(
+    value &&
+      (SERVICE_PROBE_KEYWORD.test(value) ||
+        SERVICE_DISCOVERY_PROBE_KEYWORD.test(value) ||
+        SERVICE_PROBE_SELF_ID.test(value))
+  );
+}
 
 function callerKind(request) {
   const raw = (request.headers.get("user-agent") || "").trim();
   if (!raw) return "unsigned_external";
   if (SELF_TEST_USER_AGENT.test(raw)) return "self_test";
-  if (SERVICE_PROBE_KEYWORD.test(raw) || SERVICE_PROBE_SELF_ID.test(raw)) return "service_probe";
+  if (isServiceProbeUserAgent(raw)) return "service_probe";
   return "external";
 }
 
@@ -9394,13 +9443,16 @@ function usageEventIsProbe(event) {
   return Boolean(
     event.likely_probe ||
       event.caller_kind === "service_probe" ||
-      event.traffic_class === "machine_probe"
+      event.traffic_class === "machine_probe" ||
+      isServiceProbeUserAgent(event.user_agent)
   );
 }
 
 function usageEventProbeReason(event) {
   if (event.probe_reason) return event.probe_reason;
-  if (event.caller_kind === "service_probe") return "self_identified_service";
+  if (event.caller_kind === "service_probe" || isServiceProbeUserAgent(event.user_agent)) {
+    return "self_identified_service";
+  }
   if (event.client === "agenstry") return "agenstry_client";
   if (event.likely_probe && event.prompt_chars < PROBE_PROMPT_CHAR_THRESHOLD) return "short_prompt";
   return event.likely_probe ? "legacy_or_unknown" : null;
@@ -9502,8 +9554,8 @@ async function usageStats(env, date) {
     incrementMap(referrers, event.referrer_host);
     incrementMap(networks, event.as_org);
     incrementMap(userAgents, event.user_agent);
-    incrementMap(callerKinds, event.caller_kind);
-    incrementMap(trafficClasses, event.traffic_class);
+    incrementMap(callerKinds, eventIsProbe && isServiceProbeUserAgent(event.user_agent) ? "service_probe" : event.caller_kind);
+    incrementMap(trafficClasses, eventIsProbe ? "machine_probe" : event.traffic_class);
     incrementMap(requestKinds, event.request_kind);
     // Only zones that actually sent one: "none" is every ordinary caller and
     // would bury the handful of rows this map exists to show.
@@ -9846,6 +9898,12 @@ function engagementMarkdown(engagement) {
     "Person-led work:",
     engagement.offer,
     engagement.next_step,
+    ...(engagement.client_identification
+      ? [
+          `Optional attribution: send ${engagement.client_identification.header} with ` +
+            `${engagement.client_identification.value}.`
+        ]
+      : []),
     `Contact: ${engagement.contact_email} (${engagement.support_hours}). ` +
       `Page for a person to read: ${engagement.human_page}`
   ].join("\n");
@@ -10078,6 +10136,12 @@ function engagementBlock(request, { profile = "agenda", response = null } = {}) 
     offer: engagementOffer(subject, outcome, open),
     contact_email: SUPPORT_CONTACT_EMAIL,
     support_hours: SUPPORT_HOURS_LOCAL,
+    client_identification: {
+      header: "X-Client-Id",
+      required: false,
+      value: "a stable non-personal integration label (never a name, email, token, or secret)",
+      purpose: "Lets aggregate operational stats group repeat calls from the same integration."
+    },
     next_step:
       `Email a one-line description of ${subject} and the decision or review it feeds. ` +
       "Fit, scope, fee, and timing are confirmed before work starts.",
@@ -12118,7 +12182,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 
   if (
     request.method === "GET" &&
-    (url.pathname === "/api/openapi.json" || url.pathname === "/openapi.json")
+    ["/api/openapi.json", "/openapi.json", "/.well-known/openapi.json"].includes(url.pathname)
   ) {
     return jsonResponse(openApiDocument(request), 200, {
       "content-type": "application/vnd.oai.openapi+json; charset=utf-8",

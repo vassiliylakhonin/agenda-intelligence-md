@@ -25,6 +25,7 @@ This Worker is intentionally small:
 | GET | `/.well-known/api-catalog` | Always JSON linkset | API catalog pointing to OpenAPI |
 | GET | `/api/openapi.json` | Always JSON | OpenAPI 3.0 worker contract |
 | GET | `/openapi.json` | Always JSON | Compatibility alias for the same OpenAPI contract |
+| GET | `/.well-known/openapi.json` | Always JSON | Well-known compatibility alias used by agent discovery clients |
 | GET | `/.well-known/mcp/server-card.json` | Always JSON | MCP server card for the installable stdio package |
 | GET | `/.well-known/mcp-server.json` | Always JSON | Legacy MCP server-card alias |
 | GET | `/.well-known/did.json` | Always JSON | DID document linking AI catalog, A2A card, and MCP card |
