@@ -31,7 +31,7 @@ docker run --rm -p 8080:8080 \
   -e AGENDA_INTELLIGENCE_API_KEYS="acme-prod:$(openssl rand -hex 24)" \
   -e AGENDA_INTELLIGENCE_RATE_LIMIT_PER_MINUTE=120 \
   -e AGENDA_INTELLIGENCE_ADMIN_KEY="$(openssl rand -hex 24)" \
-  agenda-intelligence-md-api:1.8.0
+  agenda-intelligence-md-api:1.9.0
 ```
 
 `AGENDA_INTELLIGENCE_REQUIRE_AUTH=1` makes the container refuse to start without
