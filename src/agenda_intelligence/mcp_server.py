@@ -340,21 +340,13 @@ def verify_quotes(pack_json: dict, texts: Optional[dict] = None) -> dict:
     Scope: local-text only. Does not make outbound network requests, discover
     sources, score source reputation, gather live news, or verify factual truth.
     """
-    import re
-    import unicodedata
-
-    def _normalize(s: str) -> str:
-        s = unicodedata.normalize("NFKC", s)
-        return re.sub(r"\s+", " ", s).strip().lower()
-
     resolved_texts: dict = texts or {}
 
     def _check(ident: str, quote: str) -> dict:
         source_text = resolved_texts.get(ident)
         if source_text is None:
             return {"id": ident, "status": "missing_source_text"}
-        match = _services._quote_matches_source(quote, source_text)
-        return {"id": ident, "status": "present" if match else "absent"}
+        return {"id": ident, **_services._quote_check(quote, source_text)}
 
     sources = pack_json.get("sources") or pack_json.get("evidence") or []
     results: list[dict] = []

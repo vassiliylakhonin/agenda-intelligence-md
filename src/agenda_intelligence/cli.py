@@ -100,7 +100,8 @@ def cmd_check(args):
     if not path.is_file():
         raise SystemExit(f"Not found: {path}")
     try:
-        data = json.loads(path.read_text())
+        input_text = path.read_text(encoding="utf-8")
+        data = json.loads(input_text)
     except json.JSONDecodeError as exc:
         raise SystemExit(f"Invalid JSON: {exc}")
 
@@ -119,8 +120,16 @@ def cmd_check(args):
 
     response = result["response"]
     if args.format == "json":
-        print(json.dumps(response, indent=2, ensure_ascii=False))
+        rendered = json.dumps(response, indent=2, ensure_ascii=False) + "\n"
+    elif args.format == "sarif":
+        from agenda_intelligence.sarif import render_evidence_packet_sarif
+
+        rendered = (
+            json.dumps(render_evidence_packet_sarif(response, args.path, input_text), indent=2, ensure_ascii=False)
+            + "\n"
+        )
     else:
+        rendered = None
         print(
             f"packet_status={response['packet_status']} "
             f"claims={response['claim_count']} sources={response['source_count']} "
@@ -134,6 +143,12 @@ def cmd_check(args):
             )
         for action in response["owner_actions"]:
             print(f"ACTION: {action}", file=sys.stderr)
+    if rendered is not None:
+        if args.out:
+            Path(args.out).write_text(rendered, encoding="utf-8")
+            print(f"Wrote {args.out}")
+        else:
+            print(rendered, end="")
     if args.strict and response["packet_status"] != "packet_complete":
         raise SystemExit(1)
 
@@ -533,6 +548,8 @@ def cmd_verify_quotes(args):
     import re
     import unicodedata
 
+    from agenda_intelligence import services
+
     pack_path = Path(args.path)
     if not pack_path.is_file():
         raise SystemExit(f"Not found: {pack_path}")
@@ -548,10 +565,6 @@ def cmd_verify_quotes(args):
     def _slugify(name: str) -> str:
         s = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
         return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
-
-    def _normalize(s: str) -> str:
-        s = unicodedata.normalize("NFKC", s)
-        return re.sub(r"\s+", " ", s).strip().lower()
 
     # Unified list of quote checks: source/evidence-level quotes plus span-level
     # supporting_quotes harvested from an evidence-audit-shaped doc.
@@ -586,17 +599,15 @@ def cmd_verify_quotes(args):
             candidates.append(texts_dir / f"{_slugify(check['name'])}.txt")
         text_path = next((p for p in candidates if p.is_file()), None)
         if text_path is not None:
-            text = _normalize(text_path.read_text(encoding="utf-8"))
-            match = _normalize(quote) in text
-            status = "present" if match else "absent"
-            results.append({"id": ident, "status": status, "source_text": str(text_path), **extra})
+            text = text_path.read_text(encoding="utf-8")
+            details = services._quote_check(quote, text)
+            results.append({"id": ident, **details, "source_text": str(text_path), **extra})
             continue
         if do_fetch and check.get("url"):
             try:
                 raw_text = _fetch_url_text(check["url"])
-                match = _normalize(quote) in _normalize(raw_text)
-                status = "present" if match else "absent"
-                results.append({"id": ident, "status": status, "mode": "fetched", "url": check["url"], **extra})
+                details = services._quote_check(quote, raw_text)
+                results.append({"id": ident, **details, "mode": "fetched", "url": check["url"], **extra})
             except Exception as exc:
                 results.append(
                     {"id": ident, "status": "fetch_error", "url": check.get("url"), "error": str(exc), **extra}
@@ -1349,7 +1360,8 @@ def main():
     # check: evidence-packet preflight, with legacy agenda-brief auto-detection
     p = sub.add_parser("check", help="Preflight an evidence packet; agenda briefs keep legacy validation behavior")
     p.add_argument("path", help="Evidence-packet or legacy agenda-brief JSON file")
-    p.add_argument("--format", choices=["text", "json"], default="text")
+    p.add_argument("--format", choices=["text", "json", "sarif"], default="text")
+    p.add_argument("--out", help="Write JSON or SARIF output to this file instead of stdout")
     p.add_argument("--strict", action="store_true", help="Exit 1 unless every packet claim is complete")
     p.set_defaults(func=cmd_check)
     # review: local document adapter over the stable evidence-packet contract

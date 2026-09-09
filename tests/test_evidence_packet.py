@@ -9,6 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from agenda_intelligence import mcp_server
 from agenda_intelligence.mcp_stdio import TOOLS
 from agenda_intelligence.services import check_evidence_packet
@@ -83,6 +85,30 @@ def test_unmatched_number_requires_source_review():
     assert claim["lexical_support"]["unmatched_numbers"] == ["999"]
 
 
+@pytest.mark.parametrize(
+    ("claim_text", "source_text"),
+    [
+        ("The approved budget is $10M.", "The approved budget is 10,000,000 USD."),
+        ("Completion date is 12 May 2024.", "Completion date is 2024-05-12."),
+        ("Growth reached 62%.", "Growth reached 62 percent."),
+        ("Бюджет составил 10 млн руб.", "Бюджет составил 10 000 000 рублей."),
+    ],
+)
+def test_equivalent_numeric_formats_are_not_reported_as_unmatched(claim_text: str, source_text: str):
+    claim = _claim(claim_text, source_text)
+
+    assert claim["lexical_support"]["unmatched_numbers"] == []
+    assert claim["lexical_support"]["status"] == "supported"
+    assert claim["packet_status"] == "packet_complete"
+
+
+def test_equal_amounts_in_different_currencies_do_not_match():
+    claim = _claim("The approved budget is $10M.", "The approved budget is 10,000,000 EUR.")
+
+    assert claim["lexical_support"]["unmatched_numbers"]
+    assert claim["packet_status"] == "source_review_required"
+
+
 def test_duplicate_ids_fail_at_service_boundary():
     request = example_request()
     request["sources"].append(copy.deepcopy(request["sources"][0]))
@@ -110,6 +136,28 @@ def test_cli_check_prints_packet_json():
     payload = json.loads(result.stdout)
     assert payload["packet_status"] == "packet_complete"
     assert payload["factuality_status"] == "not_assessed"
+
+
+def test_cli_check_renders_sarif_with_claim_line_and_can_write_file(tmp_path: Path):
+    request = example_request()
+    request["claims"] = [request["claims"][0]]
+    request["claims"][0]["source_ids"] = ["missing-source"]
+    request["claims"][0]["quotes"] = []
+    packet_path = tmp_path / "packet.json"
+    packet_path.write_text(json.dumps(request, indent=2), encoding="utf-8")
+    sarif_path = tmp_path / "agenda-intelligence.sarif"
+
+    result = run("check", str(packet_path), "--format", "sarif", "--out", str(sarif_path))
+    payload = json.loads(sarif_path.read_text(encoding="utf-8"))
+
+    assert result.stdout.startswith("Wrote ")
+    assert payload["version"] == "2.1.0"
+    run_payload = payload["runs"][0]
+    assert run_payload["tool"]["driver"]["name"] == "Agenda Intelligence Evidence Linter"
+    finding = run_payload["results"][0]
+    assert finding["ruleId"] == "missing_source"
+    assert finding["level"] == "error"
+    assert finding["locations"][0]["physicalLocation"]["region"]["startLine"] > 1
 
 
 def test_cli_check_strict_fails_for_review_packet(tmp_path: Path):

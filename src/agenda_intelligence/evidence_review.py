@@ -13,6 +13,7 @@ import csv
 import html
 import json
 import os
+import re
 import zipfile
 from html.parser import HTMLParser
 from importlib import resources
@@ -20,6 +21,8 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 from jsonschema.validators import validator_for
+
+from agenda_intelligence.grounding import GroundingIndex
 
 PACKAGE_NAME = "agenda_intelligence"
 MAX_SOURCE_BYTES = 20 * 1024 * 1024
@@ -260,6 +263,17 @@ def _cell(value: object) -> str:
     )
 
 
+def _review_issue_labels(result: dict) -> list[str]:
+    labels = list(result.get("issues", []))
+    for quote_check in result.get("quote_checks", []):
+        near_miss = quote_check.get("near_miss")
+        if not near_miss:
+            continue
+        source_id = quote_check.get("source_id") or quote_check.get("corpus_id") or "source"
+        labels.append(f"quote_near_miss:{source_id} ({near_miss['similarity']:.1%}): {near_miss['difference']}")
+    return labels
+
+
 def render_review_markdown(packet: dict, response: dict) -> str:
     """Render a deterministic, reviewer-facing projection without source text."""
 
@@ -281,6 +295,7 @@ def render_review_markdown(packet: dict, response: dict) -> str:
     for result in response["claims"]:
         claim = claims_by_id.get(result["claim_id"], {})
         lexical = result["lexical_support"]
+        issue_labels = _review_issue_labels(result)
         lines.append(
             "| "
             + " | ".join(
@@ -291,7 +306,7 @@ def render_review_markdown(packet: dict, response: dict) -> str:
                     _cell(result["packet_status"]),
                     _cell(lexical["status"]),
                     _cell(lexical["coverage"]),
-                    _cell(", ".join(result["issues"]) or "none"),
+                    _cell(", ".join(issue_labels) or "none"),
                 ]
             )
             + " |"
@@ -314,6 +329,25 @@ def render_review_markdown(packet: dict, response: dict) -> str:
     return "\n".join(lines)
 
 
+def _highlight_claim_literals(excerpt: str, claim_text: str) -> str:
+    """Escape an excerpt and mark exact claim literals for side-by-side review."""
+    tokens = re.findall(r"[^\W_]+(?:[.\-][^\W_]+)*(?:%)?", claim_text, flags=re.UNICODE)
+    needles = sorted(
+        {token for token in tokens if len(token) >= 3 or any(ch.isdigit() for ch in token)}, key=len, reverse=True
+    )
+    if not excerpt or not needles:
+        return html.escape(excerpt)
+    pattern = re.compile("(" + "|".join(re.escape(needle) for needle in needles) + ")", re.IGNORECASE)
+    parts: list[str] = []
+    cursor = 0
+    for match in pattern.finditer(excerpt):
+        parts.append(html.escape(excerpt[cursor : match.start()]))
+        parts.append(f"<mark>{html.escape(match.group(0))}</mark>")
+        cursor = match.end()
+    parts.append(html.escape(excerpt[cursor:]))
+    return "".join(parts)
+
+
 def render_review_html(packet: dict, response: dict) -> str:
     """Render a standalone, interactive HTML reviewer report with zero external CDN dependencies."""
     label = packet.get("topic") or packet.get("packet_id") or "Evidence packet"
@@ -334,7 +368,10 @@ def render_review_html(packet: dict, response: dict) -> str:
     }.get(status, "#f6f8fa")
 
     claims_by_id = {claim["claim_id"]: claim for claim in packet.get("claims", [])}
+    source_texts = {source["source_id"]: source.get("text", "") for source in packet.get("sources", [])}
+    source_index = GroundingIndex(source_texts)
     claim_rows = []
+    comparison_panels = []
     for result in response.get("claims", []):
         cid = result["claim_id"]
         c_text = claims_by_id.get(cid, {}).get("text", "")
@@ -342,13 +379,14 @@ def render_review_html(packet: dict, response: dict) -> str:
         c_status = result.get("packet_status", "")
         lex = result.get("lexical_support", {})
         cov_pct = int(lex.get("coverage", 0.0) * 100)
-        issues = result.get("issues", [])
+        issues = _review_issue_labels(result)
         issues_html = (
             "".join(f"<span class='issue-tag'>{html.escape(iss)}</span>" for iss in issues)
             or "<span class='text-muted'>none</span>"
         )
 
-        claim_rows.append(f"""<tr class="claim-row status-{c_status}" data-sources="{html.escape(sources_str)}">
+        claim_rows.append(f"""<tr class="claim-row status-{c_status}" data-claim="{html.escape(cid)}"
+              data-sources="{html.escape(sources_str)}">
               <td><code>{html.escape(cid)}</code></td>
               <td class="claim-text">{html.escape(c_text)}</td>
               <td><code>{html.escape(sources_str)}</code></td>
@@ -359,6 +397,27 @@ def render_review_html(packet: dict, response: dict) -> str:
               </td>
               <td>{issues_html}</td>
             </tr>""")
+
+        referenced_ids = [
+            source_id for source_id in result.get("referenced_source_ids", []) if source_id in source_texts
+        ]
+        match = source_index.match(c_text, referenced_ids)
+        excerpt = match.best_passage
+        if not excerpt and match.document_id:
+            excerpt = source_texts[match.document_id][:300]
+        source_label = match.document_id or "no matching source"
+        excerpt_html = (
+            _highlight_claim_literals(excerpt, c_text)
+            if excerpt
+            else "<span class='text-muted'>No matching passage available.</span>"
+        )
+        comparison_panels.append(f"""<section class="detail-panel" data-claim="{html.escape(cid)}" hidden>
+          <div class="comparison-grid">
+            <article><h3>Claim &middot; <code>{html.escape(cid)}</code></h3><p>{html.escape(c_text)}</p></article>
+            <article><h3>Source excerpt &middot; <code>{html.escape(source_label)}</code></h3>
+              <p>{excerpt_html}</p></article>
+          </div>
+        </section>""")
 
     actions_html = []
     for i, action in enumerate(response.get("owner_actions", []), 1):
@@ -454,6 +513,14 @@ def render_review_html(packet: dict, response: dict) -> str:
       margin: 6px 0; transition: border-color 0.2s, background 0.2s;
     }}
     .source-item.highlight {{ border-color: #58a6ff; background: rgba(56, 139, 253, 0.1); }}
+    .comparison-grid {{
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 12px 0 24px;
+    }}
+    .comparison-grid article {{ border: 1px solid var(--border); border-radius: 6px; padding: 12px; }}
+    .comparison-grid h3 {{ margin-top: 0; font-size: 0.95em; }}
+    .comparison-grid p {{ white-space: pre-wrap; line-height: 1.55; }}
+    mark {{ background: #fff1a8; color: #24292f; padding: 1px 2px; border-radius: 2px; }}
+    @media (max-width: 700px) {{ .comparison-grid {{ grid-template-columns: 1fr; }} }}
     .limitations {{
       background: rgba(128,128,128,0.05); border-radius: 6px;
       padding: 14px 20px; font-size: 0.85em; color: var(--muted);
@@ -510,6 +577,10 @@ def render_review_html(packet: dict, response: dict) -> str:
       </tbody>
     </table>
 
+    <div class="claim-details">
+      {"".join(comparison_panels)}
+    </div>
+
     <h2>Reviewer Action Items</h2>
     <div class="actions-list">
       {"".join(actions_html)}
@@ -534,8 +605,13 @@ def render_review_html(packet: dict, response: dict) -> str:
         const wasActive = row.classList.contains('active');
         document.querySelectorAll('.claim-row').forEach(r => r.classList.remove('active'));
         document.querySelectorAll('.source-item').forEach(s => s.classList.remove('highlight'));
+        document.querySelectorAll('.detail-panel').forEach(panel => {{ panel.hidden = true; }});
         if (!wasActive) {{
           row.classList.add('active');
+          const claimId = row.getAttribute('data-claim');
+          document.querySelectorAll('.detail-panel').forEach(panel => {{
+            if (panel.getAttribute('data-claim') === claimId) panel.hidden = false;
+          }});
           const sids = (row.getAttribute('data-sources') || '').split(',').map(s => s.trim());
           sids.forEach(sid => {{
             const el = document.getElementById('source-' + sid);

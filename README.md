@@ -118,19 +118,35 @@ The response has three packet statuses:
 
 `factuality_status` is always `not_assessed`. A complete packet can still rely on a wrong, stale, biased, or irrelevant source.
 
-### What term overlap can and cannot see
+Numeric support is format-aware but deliberately conservative. Equivalent scaled values, percentages, and common date
+forms are compared canonically (`$10M` ↔ `10,000,000 USD`, `62%` ↔ `62 percent`, and `12 May 2024` ↔ `2024-05-12`).
+Currency is part of the comparison: `10M USD` does not support `10M EUR`, and the linter performs no currency conversion
+or approximate-value inference.
 
-Lexical support is the share of a claim's content terms that appear in the source it names. That ratio is blind to two things, so both are handled separately.
+Quote presence remains strict after Unicode, typography, whitespace, ellipsis, soft-hyphen, and PDF line-break
+hyphenation normalization. When an otherwise absent quote has a typo-level candidate at 95% similarity or higher,
+the quote check may include a bounded `near_miss` diff for the reviewer. It still reports `status: absent` and keeps the
+packet incomplete. Candidates whose numeric facts or negation cues differ are not presented as harmless near misses.
+
+### What weighted term overlap can and cannot see
+
+Lexical support is an IDF-weighted share of a claim's content terms that appear in the source it names. Terms that occur
+throughout the supplied corpus carry less weight than rare entities, while a single-document packet preserves the original
+plain-overlap scale. Corpus text, sentences, numeric facts, and term sets are indexed once per check run and reused across
+claims.
 
 **Negation is checked.** `not` and `no` are stopwords and never reach the ratio, so "the board approved it" and "the board did not approve it" score the same against the same source. Where a claim and its closest sentence in the cited source disagree on negation or denial, the claim is downgraded to `weak` and carries `lexical_support_polarity_mismatch`. Polarity is read at sentence scope: a negation elsewhere in the same document does not flag an unrelated claim.
 
 **Reversed roles are not checked, and are not claimed to be.** "A approved a facility for B" and "B approved a facility for A" contain the same terms and both score `supported`. Deciding who did what to whom is not something term overlap can do, and no heuristic here pretends otherwise. A reviewer still has to read the sentence. The limit is pinned by a test (`test_polarity_check_does_not_claim_to_catch_reversed_roles`) so it stays visible.
 
 **Unicode text is tokenized, but language understanding is not claimed.**
-Cyrillic and Arabic words are no longer discarded, and common English,
-Russian, and Arabic negation cues are checked. The deterministic check still
-does not resolve morphology, translation, cross-language support, paraphrases,
-or semantic roles. Those remain model or reviewer tasks.
+Cyrillic and Arabic words are no longer discarded, common Russian and Arabic
+function words are excluded from lexical coverage, and common English, Russian,
+and Arabic negation cues are checked. A conservative deterministic fold covers
+common English plurals/verb suffixes and Russian noun/adjective inflections. It
+is not a full morphological analyzer and does not resolve translation,
+cross-language support, paraphrases, or semantic roles. Those remain model or
+reviewer tasks.
 
 ---
 
@@ -139,12 +155,18 @@ or semantic roles. Those remain model or reviewer tasks.
 Validate packets and automatically run agent self-correction feedback loops in LangChain, LlamaIndex, CrewAI, DSPy, or vanilla LLM loops:
 
 ```python
-from agenda_intelligence.integrations import EvidencePacketGuardrail
+from agenda_intelligence.integrations import EvidenceClaim, EvidencePacket, EvidencePacketGuardrail, EvidenceSource
 
 guardrail = EvidencePacketGuardrail(strict=True, max_repair_attempts=2)
 
+# Optional zero-dependency typed input; plain dictionaries remain supported.
+packet = EvidencePacket(
+    claims=(EvidenceClaim("c1", "The board approved the budget.", ("s1",)),),
+    sources=(EvidenceSource("s1", "The board approved the budget after review."),),
+)
+
 # Direct check
-result = guardrail.check(packet_json)
+result = guardrail.check(packet)
 if not guardrail.is_complete(result):
     repair_prompt = guardrail.get_repair_prompt(packet_json, result)
     # Provide repair_prompt back to LLM to revise output
@@ -154,6 +176,10 @@ final_packet, success, repair_history = guardrail.validate_or_repair(
     packet_json,
     llm_repair_fn=lambda prompt: my_llm_chain.invoke({"prompt": prompt}),
 )
+
+# Event-loop pipelines can await check_async(...) or validate_or_repair_async(...).
+# LangGraph can use the dependency-free async node returned by:
+node = guardrail.as_langgraph_node(packet_key="evidence_packet", result_key="evidence_check")
 ```
 
 ---
@@ -176,6 +202,10 @@ Add deterministic evidence linting to your repository CI workflow (`.github/work
 name: Evidence Lint
 on: [push, pull_request]
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   lint-evidence:
     runs-on: ubuntu-latest
@@ -186,8 +216,12 @@ jobs:
         with:
           path: 'evidence/packet.json'
           command: 'check'
+          format: 'sarif'
           strict: 'true'
 ```
+
+With `format: sarif`, findings are uploaded to GitHub code scanning and point to the corresponding `claim_id` line in
+the packet JSON. `text` and `json` output remain available.
 
 ---
 

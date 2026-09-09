@@ -8,7 +8,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from agenda_intelligence.services import grounded_check
+import pytest
+
+from agenda_intelligence.grounding import GroundingIndex
+from agenda_intelligence.services import _grounded_content_terms, grounded_check
 
 ROOT = Path(__file__).resolve().parents[1]
 CLI = [sys.executable, "-m", "agenda_intelligence.cli"]
@@ -80,6 +83,7 @@ def test_ungrounded_claim_and_unmatched_number():
     item = response["results"][0]
     assert item["grounding_status"] == "ungrounded"
     assert "900" in item["unmatched_numbers"]
+    assert all(not term.startswith("num") for term in item["missing_terms"])
     assert response["grounding_signal"] == "ungrounded"
     assert any("claim c1" in action for action in response["owner_actions"])
 
@@ -101,6 +105,36 @@ def test_misquote_forces_ungrounded():
     assert item["grounding_status"] == "ungrounded"
 
 
+def test_grounded_near_miss_remains_absent_and_schema_valid():
+    result = grounded_check(
+        {
+            "claims": [
+                {
+                    "claim_id": "c1",
+                    "claim_text": "The committee approved the annual facility budget after review.",
+                    "quotes": [
+                        {
+                            "corpus_id": "doc1",
+                            "quote": "The committee approved the annual facility budget after review.",
+                        }
+                    ],
+                }
+            ],
+            "corpus": [
+                {
+                    "corpus_id": "doc1",
+                    "text": "The committee aproved the annual facility budget after review.",
+                }
+            ],
+        }
+    )
+
+    assert result["valid"] is True
+    check = result["response"]["results"][0]["quote_checks"][0]
+    assert check["status"] == "absent"
+    assert check["near_miss"]["similarity"] >= 0.95
+
+
 def test_unmatched_number_caps_grounded_at_weak():
     result = grounded_check(
         _request(
@@ -117,6 +151,76 @@ def test_unmatched_number_caps_grounded_at_weak():
     assert "9.9" in item["unmatched_numbers"]
     assert item["grounding_status"] in {"weakly_grounded", "ungrounded"}
     assert item["grounding_status"] != "grounded"
+
+
+def test_russian_function_words_do_not_dilute_coverage():
+    result = grounded_check(
+        {
+            "claims": [
+                {
+                    "claim_id": "c1",
+                    "claim_text": "Компания уже сообщила, что проект был одобрен для реализации.",
+                }
+            ],
+            "corpus": [
+                {
+                    "corpus_id": "doc1",
+                    "text": "Компания сообщила: проект одобрен для реализации.",
+                }
+            ],
+        }
+    )
+
+    item = result["response"]["results"][0]
+    assert item["coverage"] == 1.0
+    assert item["grounding_status"] == "grounded"
+
+
+def test_common_arabic_function_words_are_not_content_terms():
+    terms = _grounded_content_terms("هذا هو التقرير الذي تم إعداده من أجل المشروع")
+
+    assert "هذا" not in terms
+    assert "الذي" not in terms
+    assert "من" not in terms
+    assert "أجل" not in terms
+    assert "التقرير" in terms
+    assert "المشروع" in terms
+
+
+@pytest.mark.parametrize(
+    ("claim_text", "source_text"),
+    [
+        ("Компания под санкциями.", "Профиль компании описывает применимые санкции."),
+        ("Subsidiaries report sanctions.", "The subsidiary reports sanctioned entities."),
+    ],
+)
+def test_conservative_inflection_folding_improves_lexical_grounding(claim_text: str, source_text: str):
+    result = grounded_check(
+        {
+            "claims": [{"claim_id": "c1", "claim_text": claim_text}],
+            "corpus": [{"corpus_id": "doc1", "text": source_text}],
+        }
+    )
+
+    item = result["response"]["results"][0]
+    assert item["coverage"] == 1.0
+    assert item["grounding_status"] == "grounded"
+
+
+def test_grounding_index_weights_rare_entity_above_corpus_wide_terms():
+    index = GroundingIndex(
+        {
+            "generic": "Quarterly report results.",
+            "entity": "Quarterly report about Rosatom.",
+            "other": "Quarterly report outlook.",
+        }
+    )
+
+    match = index.match("Quarterly report Rosatom.", ["generic"])
+
+    assert match.document_id == "generic"
+    assert match.coverage < 2 / 3
+    assert match.missing_terms == ("rosatom",)
 
 
 def test_quote_against_unknown_corpus_id():
