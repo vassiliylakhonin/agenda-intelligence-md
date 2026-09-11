@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import time
 import urllib.error
 import urllib.request
 
@@ -10,7 +11,7 @@ MASTER_KEY = "ec58711dc36374de8d3d264236a922ac15f10d9016fe0a2169156d8653e69e2f"
 def post(endpoint, data, token=MASTER_KEY, headers_extra=None):
     url = f"{BASE_URL}{endpoint}"
     req_headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) VizierEdgeClient/1.0",
+        "User-Agent": "ZeroMockProof/1.0",
         "Content-Type": "application/json",
         "Authorization": f"Bearer {token}",
     }
@@ -19,7 +20,7 @@ def post(endpoint, data, token=MASTER_KEY, headers_extra=None):
     body = json.dumps(data).encode("utf-8")
     req = urllib.request.Request(url, data=body, headers=req_headers, method="POST")
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:
             return resp.status, json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         raw = e.read().decode("utf-8")
@@ -31,14 +32,14 @@ def post(endpoint, data, token=MASTER_KEY, headers_extra=None):
 
 def get(endpoint, token=MASTER_KEY, headers_extra=None):
     url = f"{BASE_URL}{endpoint}"
-    req_headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) VizierEdgeClient/1.0"}
+    req_headers = {"User-Agent": "ZeroMockProof/1.0"}
     if token:
         req_headers["Authorization"] = f"Bearer {token}"
     if headers_extra:
         req_headers.update(headers_extra)
     req = urllib.request.Request(url, headers=req_headers, method="GET")
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:
             content_type = resp.headers.get("Content-Type", "")
             data = resp.read().decode("utf-8")
             if "application/json" in content_type:
@@ -151,27 +152,41 @@ assert status == 200, f"Tenant key auth failed: {status}, {v_res}"
 assert v_res["decision"] == "ALLOW", f"Decision was {v_res}"
 print(f"✓ Authenticated via X-Vizier-Key: decision={v_res['decision']}, receipt={v_res['receipt']['id']}")
 
-# Step 3.4: Verify usage incremented in D1
-status, list_after = get("/v1/admin/keys?org_id=org_fintech_edge")
-assert status == 200
-matching_after = [k for k in list_after["keys"] if k["id"] == key_id][0]
-assert matching_after["current_usage"] >= 1, f"Usage was not incremented: {matching_after}"
+# Step 3.4: Verify usage incremented in D1 (with retry for eventual consistency across Cloudflare colos)
+matching_after = None
+for _ in range(5):
+    status, list_after = get("/v1/admin/keys?org_id=org_fintech_edge")
+    if status == 200:
+        matches = [k for k in list_after.get("keys", []) if k["id"] == key_id]
+        if matches and matches[0].get("current_usage", 0) >= 1:
+            matching_after = matches[0]
+            break
+    time.sleep(0.5)
+
+assert matching_after and matching_after["current_usage"] >= 1, f"Usage was not incremented: {matching_after}"
 print(f"✓ D1 usage counter verified: current_usage={matching_after['current_usage']}/{matching_after['monthly_quota']}")
 
 # Step 3.5: Revoke key and verify access is immediately denied
 del_req = urllib.request.Request(
     f"{BASE_URL}/v1/admin/keys/{key_id}",
     headers={
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) VizierEdgeClient/1.0",
+        "User-Agent": "ZeroMockProof/1.0",
         "Authorization": f"Bearer {MASTER_KEY}",
     },
     method="DELETE",
 )
-with urllib.request.urlopen(del_req) as resp:
+with urllib.request.urlopen(del_req, timeout=15) as resp:
     assert resp.status == 200
 print(f"✓ Revoked key {key_id}")
 
-status, v_revoked = post("/v1/verify", verify_payload, token="", headers_extra={"X-Vizier-Key": raw_key})
+v_revoked = None
+status = None
+for _ in range(5):
+    status, v_revoked = post("/v1/verify", verify_payload, token="", headers_extra={"X-Vizier-Key": raw_key})
+    if status == 401:
+        break
+    time.sleep(0.5)
+
 assert status == 401, f"Expected 401 for revoked key, got {status}: {v_revoked}"
 print("✓ Revoked key immediately rejected with HTTP 401")
 

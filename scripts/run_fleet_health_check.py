@@ -225,7 +225,14 @@ def main():
                 f.write("\n```\n</details>\n\n")
 
     if passed_count != total_count:
-        print("\n❌ One or more edge worker proofs failed! See logs above.", file=sys.stderr)
+        print("\n❌ One or more edge worker proofs failed! Details below:\n", file=sys.stderr)
+        for r in results:
+            if not r["success"]:
+                print(f"=== FAILURE IN WORKER #{r['id']}: {r['title']} ===", file=sys.stderr)
+                if r["stderr"]:
+                    print(r["stderr"], file=sys.stderr)
+                if r["stdout"]:
+                    print(r["stdout"], file=sys.stderr)
         sys.exit(1)
 
     print("\n🏆 ALL EDGE WORKER PROOFS PASSED SUCCESSFULLY!")
