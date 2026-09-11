@@ -42,6 +42,11 @@ import {
   isVerificationVizierEnabled
 } from "./upstream_vizier_verification.js";
 
+import {
+  verifyAgenticTrustWithVizier,
+  isTrustVizierEnabled
+} from "./upstream_vizier_trust.js";
+
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import {
@@ -4244,13 +4249,51 @@ function profileReadinessContract(response, {
   };
 }
 
-function agenticInteractionTrustResult(request) {
+function agenticInteractionTrustResult(request, vizierTrust = null) {
   const supplied = suppliedSourceTypes(request);
   const missing = AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION.filter((s) => !supplied.includes(s));
   const [score, label] = agenticDecisionReadiness(request, supplied);
+  let triage = agenticTriageRecommendation(request, supplied, missing);
+  let trustSignal = agenticTrustSignal(request, supplied, missing);
+  const topDims = agenticTopRiskDimensions(request, supplied, missing);
+  const evidenceGaps = missing.map(agenticEvidenceGapForSource);
+
+  // Live Vizier agentic trust, operator sanctions & DLP firewall verification
+  if (vizierTrust) {
+    if (vizierTrust.operator_screening && vizierTrust.operator_screening.violation) {
+      triage = "block_until_verified";
+      trustSignal = "low";
+      const op = vizierTrust.operator_screening.operator;
+      const match = vizierTrust.operator_screening.match;
+      const pct = match ? match.aggregate_blocked_percentage : 100;
+      topDims.unshift(
+        `Sanctioned operator/principal: '${op}' identified on sanctions list or deemed-blocked under OFAC 50% Rule (${pct}% aggregate blocked ownership)`
+      );
+      evidenceGaps.unshift(`Operator or principal '${op}' is subject to sanctions.`);
+    }
+    if (vizierTrust.dlp_screening && !vizierTrust.dlp_screening.clean) {
+      triage = "block_until_verified";
+      trustSignal = "low";
+      for (const finding of vizierTrust.dlp_screening.findings || []) {
+        topDims.unshift(
+          `DLP secret/PII leak detected in interaction payload (${finding.detector}: ${finding.snippet_masked})`
+        );
+        evidenceGaps.unshift(`Payload contains leaked secret/credential: ${finding.detector} (${finding.snippet_masked})`);
+      }
+    }
+  }
+
+  const limitations = [
+    "This response does not verify the identity of the actor, operator, or principal.",
+    "This response does not authorize, approve, deny, or block the requested action."
+  ];
+  if (vizierTrust && vizierTrust.attribution) {
+    limitations.unshift(vizierTrust.attribution.notice);
+  }
+
   const response = {
-    triage_recommendation: agenticTriageRecommendation(request, supplied, missing),
-    trust_signal: agenticTrustSignal(request, supplied, missing),
+    triage_recommendation: triage,
+    trust_signal: trustSignal,
     decision_readiness_score: score,
     decision_readiness_label: label,
     actor: request.actor,
@@ -4258,8 +4301,8 @@ function agenticInteractionTrustResult(request) {
     requested_action: request.requested_action,
     supplied_sources: supplied,
     minimum_sources_before_action: missing,
-    evidence_gaps: missing.map(agenticEvidenceGapForSource),
-    top_risk_dimensions: agenticTopRiskDimensions(request, supplied, missing),
+    evidence_gaps: evidenceGaps,
+    top_risk_dimensions: topDims,
     watch_next: [
       "agent identity spoofing pattern",
       "unexpected tool-scope expansion",
@@ -4272,10 +4315,7 @@ function agenticInteractionTrustResult(request) {
     ],
     human_review_required: true,
     not_advice_notice: AGENTIC_TRUST_NOT_ADVICE_NOTICE,
-    limitations: [
-      "This response does not verify the identity of the actor, operator, or principal.",
-      "This response does not authorize, approve, deny, or block the requested action."
-    ]
+    limitations
   };
   if (request.asset_or_resource) response.asset_or_resource = request.asset_or_resource;
   response.readiness_contract = profileReadinessContract(response, {
@@ -4283,7 +4323,20 @@ function agenticInteractionTrustResult(request) {
     statusField: "decision_readiness_label",
     signalField: "trust_signal"
   });
-  return { response };
+  return {
+    response,
+    vizier_status: vizierTrust ? vizierTrust.status : "disabled",
+    vizier_degrade_reason: vizierTrust ? vizierTrust.degrade_reason : null,
+    vizier_clearance_receipt: vizierTrust ? vizierTrust.receipt : null,
+    trust_verification: vizierTrust
+      ? {
+          clean: vizierTrust.clean,
+          violation: vizierTrust.violation,
+          operator_screening: vizierTrust.operator_screening,
+          dlp_screening: vizierTrust.dlp_screening
+        }
+      : null
+  };
 }
 
 function agenticArtifactText(response) {
@@ -4310,7 +4363,7 @@ function agenticArtifactText(response) {
   ].join("\n");
 }
 
-function a2aResultForAgenticInteractionTrust(params) {
+async function a2aResultForAgenticInteractionTrust(params, request, env = {}) {
   const structured = structuredAgenticInteractionTrustRequestFromParams(params);
   if (!structured) {
     return requestGuidanceResult(
@@ -4329,7 +4382,11 @@ function a2aResultForAgenticInteractionTrust(params) {
       enumErrors
     );
   }
-  const result = agenticInteractionTrustResult(structured);
+  let vizierTrust = null;
+  if (isTrustVizierEnabled(env)) {
+    vizierTrust = await verifyAgenticTrustWithVizier(env, structured);
+  }
+  const result = agenticInteractionTrustResult(structured, vizierTrust);
   return {
     id: crypto.randomUUID(),
     status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
@@ -4360,6 +4417,10 @@ function a2aResultForAgenticInteractionTrust(params) {
       schema: "schemas/v1/agentic-interaction-trust-request.schema.json",
       human_review_required: result.response.human_review_required,
       not_advice_notice: result.response.not_advice_notice,
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
+      trust_verification: result.trust_verification,
       response: result.response
     }
   };
@@ -11306,7 +11367,7 @@ async function runProfileRequest(profile, params, request, env = {}) {
       }
       modulesUsed = ["cis_secondary_sanctions"];
     } else if (profile === "agentic_interaction_trust") {
-      result = a2aResultForAgenticInteractionTrust(params);
+      result = await a2aResultForAgenticInteractionTrust(params, request, env);
       const structured = structuredAgenticInteractionTrustRequestFromParams(params);
       promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
       modulesUsed = ["agentic_interaction_trust"];
@@ -12238,7 +12299,19 @@ const DIRECT_V1_ROUTES = {
     missing: "Missing structured agentic interaction trust request",
     extract: structuredAgenticInteractionTrustRequestFromParams,
     errorsFor: agenticEnumErrors,
-    run: (structured) => agenticInteractionTrustResult(structured)
+    run: async (structured, request, env) => {
+      let vizierTrust = null;
+      if (isTrustVizierEnabled(env)) {
+        vizierTrust = await verifyAgenticTrustWithVizier(env, structured);
+      }
+      return agenticInteractionTrustResult(structured, vizierTrust);
+    },
+    provenance: (result) => ({
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
+      trust_verification: result.trust_verification
+    })
   },
   "/v1/gulf-maritime/exposure": {
     label: "Gulf maritime exposure",

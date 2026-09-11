@@ -80,6 +80,11 @@ workers_dev = true
 
 [env.agentic-interaction-trust.vars]
 AGENT_PROFILE = "agentic_interaction_trust"
+VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+
+[[env.agentic-interaction-trust.services]]
+binding = "VIZIER"
+service = "vizier"
 
 [[env.agentic-interaction-trust.kv_namespaces]]
 binding = "AGENDA_USAGE"
