@@ -47,6 +47,11 @@ import {
   isTrustVizierEnabled
 } from "./upstream_vizier_trust.js";
 
+import {
+  verifyMarketEntryWithVizier,
+  isMarketEntryVizierEnabled
+} from "./upstream_vizier_market_entry.js";
+
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import {
@@ -6142,7 +6147,7 @@ function marketEntryEvidenceGap(sourceType) {
   return { source_type: sourceType, ...detail };
 }
 
-function marketEntryReadinessResult(request) {
+function marketEntryReadinessResult(request, vizierMarketEntry = null) {
   const stage = request.decision_stage;
   const sector = request.sector;
   const stageTier = MARKET_ENTRY_STAGE_TIER[stage] || MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE;
@@ -6151,8 +6156,8 @@ function marketEntryReadinessResult(request) {
   const satisfied = marketEntrySatisfied(request, supplied);
   const sectorRequired = MARKET_ENTRY_SECTOR_REQUIREMENTS[sector] || [];
   const sectorMissing = sectorRequired.filter((s) => !satisfied.has(s));
-  const readinessLabel = marketEntryReadiness(satisfied, stageTier, sectorMissing);
-  const gateDecision = marketEntryGateDecision(readinessLabel, stage);
+  let readinessLabel = marketEntryReadiness(satisfied, stageTier, sectorMissing);
+  let gateDecision = marketEntryGateDecision(readinessLabel, stage);
 
   const gapSourceTypes = [];
   for (const tier of [MARKET_ENTRY_REQUIRED_BEFORE_VALIDATION, MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE, stageTier]) {
@@ -6224,6 +6229,57 @@ function marketEntryReadinessResult(request) {
     });
   }
 
+  let customPauseReason = null;
+
+  // Live Vizier sanctions screening (OFAC 50% Rule) & dossier DLP firewall
+  if (vizierMarketEntry) {
+    if (vizierMarketEntry.sanctions_screening && vizierMarketEntry.sanctions_screening.violation) {
+      gateDecision = "stop";
+      const matches = vizierMarketEntry.sanctions_screening.matches || [];
+      const first = matches[0] || {};
+      const entityName = first.name || "Counterparty";
+      const pct = first.aggregate_blocked_percentage || 100;
+      customPauseReason = `Sanctions violation: Entity '${entityName}' is designated on sanctions lists or deemed-blocked under the OFAC 50% Rule (${pct}% aggregate blocked ownership).`;
+      confirmedFacts.unshift(
+        `CRITICAL: Sanctioned entity or deemed-blocked counterparty identified in file: '${entityName}' (${pct}% aggregate blocked ownership).`
+      );
+      evidenceGaps.unshift({
+        source_type: "counterparty_integrity_due_diligence",
+        evidence_needed: `Sanctions clearance or divestment documentation for ${entityName}.`,
+        why_it_matters: `Entity '${entityName}' is subject to blocking sanctions under OFAC/EU/UK regimes or the OFAC 50% Rule.`,
+        owner: "Compliance lead",
+        next_action: "Halt transaction onboarding, freeze execution, and escalate to legal/compliance counsel.",
+        decision_blocked: "Any contractual signature, entity setup, bank account opening, or capital injection in Kazakhstan."
+      });
+      claimAudit.unshift({
+        claim: "The partner, company, and counterparties are cleared of international sanctions.",
+        status: "unsupported",
+        how_to_use_now: `Do not proceed. Counterparty '${entityName}' is subject to sanctions (${pct}% aggregate blocked ownership).`
+      });
+    }
+    if (vizierMarketEntry.dlp_screening && !vizierMarketEntry.dlp_screening.clean) {
+      gateDecision = "stop";
+      const findings = vizierMarketEntry.dlp_screening.findings || [];
+      const first = findings[0] || {};
+      customPauseReason = `Security/DLP violation: Leaked credentials or sensitive secrets detected in market-entry file (${first.detector}: ${first.snippet_masked}).`;
+      for (const finding of findings) {
+        evidenceGaps.unshift({
+          source_type: "counterparty_integrity_due_diligence",
+          evidence_needed: `Revocation and rotation proof for leaked credential (${finding.detector}).`,
+          why_it_matters: `Confidential credentials or secrets (${finding.snippet_masked}) were exposed in market-entry submission.`,
+          owner: "Security lead",
+          next_action: "Revoke and rotate exposed credential immediately.",
+          decision_blocked: "File review until submission is sanitized of secrets."
+        });
+      }
+      claimAudit.unshift({
+        claim: "The market-entry submission is free of leaked credentials and private keys.",
+        status: "unsupported",
+        how_to_use_now: `Rotate and sanitize exposed credential (${first.detector}: ${first.snippet_masked}).`
+      });
+    }
+  }
+
   const ownerActions = [
     {
       timeframe: "48_hours",
@@ -6258,12 +6314,17 @@ function marketEntryReadinessResult(request) {
     watch_next: marketEntryWatchNext(sector, stageTierKey, satisfied),
     boundary_notice: MARKET_ENTRY_BOUNDARY_NOTICE
   };
-  if (readinessLabel !== "insufficient_information") {
+  if (readinessLabel !== "insufficient_information" && gateDecision !== "stop") {
     response.strongest_reason_to_proceed =
       "The Kazakhstan use case and commercial objective are specific enough to start advisor requests, " +
       "quote collection, and partner validation.";
   }
-  if (evidenceGaps.length) {
+  if (customPauseReason) {
+    response.strongest_reason_to_pause = customPauseReason;
+    response.management_note =
+      "The opportunity is stopped by security and compliance guardrails. Do not proceed to signature, " +
+      "entity setup, or bank onboarding until sanctions or secret leakage issues are fully resolved.";
+  } else if (evidenceGaps.length) {
     response.strongest_reason_to_pause =
       "The current evidence pack is not sufficient for signature, import, lease, first-batch order, " +
       "advertising spend, or partner appointment.";
@@ -6279,7 +6340,20 @@ function marketEntryReadinessResult(request) {
     routingField: "gate_decision",
     boundaryField: "boundary_notice"
   });
-  return { response };
+  return {
+    response,
+    vizier_status: vizierMarketEntry ? vizierMarketEntry.status : "disabled",
+    vizier_degrade_reason: vizierMarketEntry ? vizierMarketEntry.degrade_reason : null,
+    vizier_clearance_receipt: vizierMarketEntry ? vizierMarketEntry.receipt : null,
+    market_entry_verification: vizierMarketEntry
+      ? {
+          clean: vizierMarketEntry.clean,
+          violation: vizierMarketEntry.violation,
+          sanctions_screening: vizierMarketEntry.sanctions_screening,
+          dlp_screening: vizierMarketEntry.dlp_screening
+        }
+      : null
+  };
 }
 
 function marketEntryArtifactText(response) {
@@ -6359,7 +6433,7 @@ function structuredMarketEntryReadinessRequestFromParams(params) {
   return minimalRequestFromCandidates(candidates, isMinimalMarketEntryReadinessRequest, MARKET_ENTRY_MINIMAL_DEFAULTS);
 }
 
-function a2aResultForMarketEntryReadiness(params) {
+async function a2aResultForMarketEntryReadiness(params, request, env = {}) {
   const structured = structuredMarketEntryReadinessRequestFromParams(params);
   if (!structured) {
     return requestGuidanceResult(
@@ -6378,7 +6452,11 @@ function a2aResultForMarketEntryReadiness(params) {
       enumErrors
     );
   }
-  const result = marketEntryReadinessResult(structured);
+  let vizierMarketEntry = null;
+  if (isMarketEntryVizierEnabled(env)) {
+    vizierMarketEntry = await verifyMarketEntryWithVizier(env, structured);
+  }
+  const result = marketEntryReadinessResult(structured, vizierMarketEntry);
   return {
     id: crypto.randomUUID(),
     status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
@@ -6406,6 +6484,10 @@ function a2aResultForMarketEntryReadiness(params) {
       schema: "schemas/v1/market-entry-readiness-request.schema.json",
       human_review_required: result.response.human_review_required,
       not_advice_notice: result.response.boundary_notice,
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
+      market_entry_verification: result.market_entry_verification,
       response: result.response
     }
   };
@@ -11403,7 +11485,7 @@ async function runProfileRequest(profile, params, request, env = {}) {
       promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
       modulesUsed = ["gulf_maritime_exposure"];
     } else if (profile === "market_entry_readiness") {
-      result = a2aResultForMarketEntryReadiness(params);
+      result = await a2aResultForMarketEntryReadiness(params, request, env);
       const structured = structuredMarketEntryReadinessRequestFromParams(params);
       promptChars = structured && structured.decision_question ? structured.decision_question.length : 0;
       modulesUsed = ["market_entry_readiness"];
@@ -12335,7 +12417,19 @@ const DIRECT_V1_ROUTES = {
     missing: "Missing structured Kazakhstan market-entry readiness request",
     extract: structuredMarketEntryReadinessRequestFromParams,
     errorsFor: marketEntryEnumErrors,
-    run: (structured) => marketEntryReadinessResult(structured)
+    run: async (structured, request, env) => {
+      let vizierMarketEntry = null;
+      if (isMarketEntryVizierEnabled(env)) {
+        vizierMarketEntry = await verifyMarketEntryWithVizier(env, structured);
+      }
+      return marketEntryReadinessResult(structured, vizierMarketEntry);
+    },
+    provenance: (result) => ({
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
+      market_entry_verification: result.market_entry_verification
+    })
   },
   "/v1/agent-output/verification": {
     label: "agent output verification",

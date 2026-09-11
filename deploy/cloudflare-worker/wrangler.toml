@@ -134,6 +134,11 @@ workers_dev = true
 
 [env.kazakhstan-market-entry-readiness.vars]
 AGENT_PROFILE = "market_entry_readiness"
+VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+
+[[env.kazakhstan-market-entry-readiness.services]]
+binding = "VIZIER"
+service = "vizier"
 
 [[env.kazakhstan-market-entry-readiness.kv_namespaces]]
 binding = "AGENDA_USAGE"
