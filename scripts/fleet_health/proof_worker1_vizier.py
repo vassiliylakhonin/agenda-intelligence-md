@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 import json
-import urllib.request
 import urllib.error
-import sys
+import urllib.request
 
 BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 MASTER_KEY = "ec58711dc36374de8d3d264236a922ac15f10d9016fe0a2169156d8653e69e2f"
+
 
 def post(endpoint, data, token=MASTER_KEY, headers_extra=None):
     url = f"{BASE_URL}{endpoint}"
     req_headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) VizierEdgeClient/1.0",
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {token}"
+        "Authorization": f"Bearer {token}",
     }
     if headers_extra:
         req_headers.update(headers_extra)
@@ -28,11 +28,10 @@ def post(endpoint, data, token=MASTER_KEY, headers_extra=None):
         except Exception:
             return e.code, raw
 
+
 def get(endpoint, token=MASTER_KEY, headers_extra=None):
     url = f"{BASE_URL}{endpoint}"
-    req_headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) VizierEdgeClient/1.0"
-    }
+    req_headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) VizierEdgeClient/1.0"}
     if token:
         req_headers["Authorization"] = f"Bearer {token}"
     if headers_extra:
@@ -51,6 +50,7 @@ def get(endpoint, token=MASTER_KEY, headers_extra=None):
             return e.code, json.loads(raw)
         except Exception:
             return e.code, raw
+
 
 print("=== STARTING LIVE ZERO-MOCK PROOF ===")
 print(f"Target: {BASE_URL}\n")
@@ -81,8 +81,8 @@ payload_blocked = {
     "shareholders": [
         {"name": "Garantex Europe", "percentage": 35.0},
         {"name": "Tornado Cash", "percentage": 20.0},
-        {"name": "Alice Clean", "percentage": 45.0}
-    ]
+        {"name": "Alice Clean", "percentage": 45.0},
+    ],
 }
 status, res = post("/v1/sanctions/screen-entity", payload_blocked)
 assert status == 200, f"Expected 200, got {status}: {res}"
@@ -96,10 +96,7 @@ print(f"  Explanation: {res['explanation']}")
 # Case B: Entity owned 45% (under 50% threshold)
 payload_clean = {
     "entity_name": "Caspian Logistics GmbH",
-    "shareholders": [
-        {"name": "Garantex Europe", "percentage": 45.0},
-        {"name": "Clean Partner", "percentage": 55.0}
-    ]
+    "shareholders": [{"name": "Garantex Europe", "percentage": 45.0}, {"name": "Clean Partner", "percentage": 55.0}],
 }
 status, res_clean = post("/v1/sanctions/screen-entity", payload_clean)
 assert status == 200
@@ -107,7 +104,10 @@ assert res_clean["violation"] is False
 assert res_clean["clean"] is True
 assert res_clean["aggregate_blocked_percentage"] == 45.0
 assert res_clean["reason_codes"] == []
-print(f"✓ Under-threshold entity allowed: aggregate={res_clean['aggregate_blocked_percentage']}%, clean={res_clean['clean']}")
+print(
+    f"✓ Under-threshold entity allowed: "
+    f"aggregate={res_clean['aggregate_blocked_percentage']}%, clean={res_clean['clean']}"
+)
 
 # ----------------------------------------------------
 # 3. PHASE 2: Multi-Tenant B2B API Key Manager
@@ -117,7 +117,7 @@ print("\n--- 3. Testing Multi-Tenant API Key Manager & D1 Storage ---")
 key_payload = {
     "org_id": "org_fintech_edge",
     "name": "Live Proof Agent Key",
-    "tier": "developer" # 10,000 monthly quota
+    "tier": "developer",  # 10,000 monthly quota
 }
 status, new_key_res = post("/v1/admin/keys", key_payload)
 assert status in (200, 201), f"Failed to create tenant key: {status}, {new_key_res}"
@@ -128,11 +128,11 @@ assert new_key_res["monthly_quota"] == 10000
 print(f"✓ Created tenant key: ID={key_id}, Prefix={new_key_res['key_prefix']}, Quota={new_key_res['monthly_quota']}")
 
 # Step 3.2: List keys for org_fintech_edge
-status, list_res = get(f"/v1/admin/keys?org_id=org_fintech_edge")
+status, list_res = get("/v1/admin/keys?org_id=org_fintech_edge")
 assert status == 200
 matching = [k for k in list_res["keys"] if k["id"] == key_id]
 assert len(matching) == 1
-print(f"✓ Listed keys in D1: found active key for org_fintech_edge")
+print("✓ Listed keys in D1: found active key for org_fintech_edge")
 
 # Step 3.3: Authenticate with the new tenant key at /v1/verify via X-Vizier-Key
 verify_payload = {
@@ -141,17 +141,10 @@ verify_payload = {
     "action": {
         "type": "payment_transfer",
         "target": "vendor.global.example",
-        "parameters": {"amount": 500, "currency": "USD"}
+        "parameters": {"amount": 500, "currency": "USD"},
     },
-    "authority": {
-        "allowed_actions": ["payment_transfer"],
-        "constraints": {"max_amount": 1000, "currency": "USD"}
-    },
-    "context": {
-        "request_id": f"b2b-req-proof-1",
-        "timestamp": "2026-09-11T15:00:00Z",
-        "source": "rest"
-    }
+    "authority": {"allowed_actions": ["payment_transfer"], "constraints": {"max_amount": 1000, "currency": "USD"}},
+    "context": {"request_id": "b2b-req-proof-1", "timestamp": "2026-09-11T15:00:00Z", "source": "rest"},
 }
 status, v_res = post("/v1/verify", verify_payload, token="", headers_extra={"X-Vizier-Key": raw_key})
 assert status == 200, f"Tenant key auth failed: {status}, {v_res}"
@@ -159,7 +152,7 @@ assert v_res["decision"] == "ALLOW", f"Decision was {v_res}"
 print(f"✓ Authenticated via X-Vizier-Key: decision={v_res['decision']}, receipt={v_res['receipt']['id']}")
 
 # Step 3.4: Verify usage incremented in D1
-status, list_after = get(f"/v1/admin/keys?org_id=org_fintech_edge")
+status, list_after = get("/v1/admin/keys?org_id=org_fintech_edge")
 assert status == 200
 matching_after = [k for k in list_after["keys"] if k["id"] == key_id][0]
 assert matching_after["current_usage"] >= 1, f"Usage was not incremented: {matching_after}"
@@ -170,9 +163,9 @@ del_req = urllib.request.Request(
     f"{BASE_URL}/v1/admin/keys/{key_id}",
     headers={
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) VizierEdgeClient/1.0",
-        "Authorization": f"Bearer {MASTER_KEY}"
+        "Authorization": f"Bearer {MASTER_KEY}",
     },
-    method="DELETE"
+    method="DELETE",
 )
 with urllib.request.urlopen(del_req) as resp:
     assert resp.status == 200
@@ -180,6 +173,6 @@ print(f"✓ Revoked key {key_id}")
 
 status, v_revoked = post("/v1/verify", verify_payload, token="", headers_extra={"X-Vizier-Key": raw_key})
 assert status == 401, f"Expected 401 for revoked key, got {status}: {v_revoked}"
-print(f"✓ Revoked key immediately rejected with HTTP 401")
+print("✓ Revoked key immediately rejected with HTTP 401")
 
 print("\n=== ALL LIVE ZERO-MOCK TESTS PASSED SUCCESSFULLY ON CLOUDFLARE WORKERS EDGE ===")

@@ -9,13 +9,14 @@ Demonstrates:
 5. Strict ADR 0003 contract integrity across A2A JSON-RPC protocols.
 """
 
-import json
-import urllib.request
-import urllib.error
 import base64
+import json
 import sys
+import urllib.error
+import urllib.request
 
 WORKER_URL = "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev"
+
 
 def decode_jws_payload(token: str) -> dict:
     parts = token.split(".")
@@ -24,6 +25,7 @@ def decode_jws_payload(token: str) -> dict:
     padded = parts[1] + "=" * ((4 - len(parts[1]) % 4) % 4)
     return json.loads(base64.urlsafe_b64decode(padded.encode()))
 
+
 def post_json(url: str, payload: dict) -> dict:
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
@@ -31,22 +33,24 @@ def post_json(url: str, payload: dict) -> dict:
         data=data,
         headers={
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
+            "User-Agent": "ZeroMockProof/1.0",
+        },
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read().decode("utf-8"))
+
 
 def get_json(url: str) -> dict:
     req = urllib.request.Request(
         url,
         headers={
             "Accept": "application/json",
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
+            "User-Agent": "ZeroMockProof/1.0",
+        },
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read().decode("utf-8"))
+
 
 def test_clean_corridor_query():
     print("=== TEST CASE 1: Clean Corridor & Sanctions Inquiry (A2A JSON-RPC) ===")
@@ -61,37 +65,40 @@ def test_clean_corridor_query():
                 "parts": [
                     {
                         "kind": "text",
-                        "text": "Shipping grain from Kazakhstan to Italy via Middle Corridor next month. What evidence will the bank request?"
+                        "text": (
+                            "Shipping grain from Kazakhstan to Italy via Middle Corridor next month. "
+                            "What evidence will the bank request?"
+                        ),
                     }
-                ]
+                ],
             }
-        }
+        },
     }
     res = post_json(f"{WORKER_URL}/message/send", payload)
     result = res.get("result", {})
     task = result.get("task", result)
     meta = task.get("metadata", {})
-    
+
     print(f"  Status: {task.get('status', {}).get('state')}")
     print(f"  Product Profile: {meta.get('product_profile')}")
     print(f"  Vizier Status: {meta.get('vizier_status')}")
     print(f"  Vizier Clearance Receipt: {meta.get('vizier_clearance_receipt', '')[:35]}...")
-    
+
     jws_claims = decode_jws_payload(meta.get("vizier_clearance_receipt", ""))
     print(f"  Receipt Issuer: {jws_claims.get('iss')}")
     print(f"  Receipt Subject: {jws_claims.get('sub')}")
     print(f"  Receipt Engine: {jws_claims.get('engine')}")
-    
+
     ast_ver = meta.get("assistant_verification", {})
     print(f"  Screening Clean: {ast_ver.get('clean')}")
     print(f"  Screening Violation: {ast_ver.get('violation')}")
     print(f"  DLP Clean: {ast_ver.get('dlp_screening', {}).get('clean')}")
-    
+
     contract_res = meta.get("response", {})
     print(f"  Response Kind: {contract_res.get('kind')}")
     print(f"  Gates Count: {len(contract_res.get('gates', []))}")
     print(f"  Contact Email: {contract_res.get('engagement', {}).get('contact_email')}")
-    
+
     assert task.get("status", {}).get("state") == "TASK_STATE_COMPLETED"
     assert meta.get("product_profile") == "corridor_sanctions_assistant"
     assert meta.get("vizier_status") == "success", f"Expected success, got {meta.get('vizier_status')}"
@@ -100,6 +107,7 @@ def test_clean_corridor_query():
     assert contract_res.get("kind") == "orientation_and_routing"
     assert len(contract_res.get("gates", [])) >= 4
     print("  -> PASS: Clean corridor inquiry cleared with authentic JWS receipt.")
+
 
 def test_sanctioned_counterparty_ofac50():
     print("\n=== TEST CASE 2: Sanctioned Counterparty Inquiry (OFAC 50% Rule) ===")
@@ -114,17 +122,20 @@ def test_sanctioned_counterparty_ofac50():
                 "parts": [
                     {
                         "kind": "text",
-                        "text": "We are considering shipping petroleum using Sovcomflot tankers via the Caspian route. Can this deal proceed?"
+                        "text": (
+                            "We are considering shipping petroleum using Sovcomflot tankers via the Caspian route. "
+                            "Can this deal proceed?"
+                        ),
                     }
-                ]
+                ],
             }
-        }
+        },
     }
     res = post_json(f"{WORKER_URL}/message/send", payload)
     result = res.get("result", {})
     task = result.get("task", result)
     meta = task.get("metadata", {})
-    
+
     print(f"  Vizier Status: {meta.get('vizier_status')}")
     ast_ver = meta.get("assistant_verification", {})
     print(f"  Violation Detected: {ast_ver.get('violation')}")
@@ -132,13 +143,16 @@ def test_sanctioned_counterparty_ofac50():
     print(f"  Sanctions Screened: {sanctions_screen.get('entities_screened')}")
     print(f"  Sanctions Matches: {len(sanctions_screen.get('matches', []))}")
     for m in sanctions_screen.get("matches", []):
-        print(f"    - Hit: {m.get('name')} ({m.get('role')}), {m.get('aggregate_blocked_percentage')}% blocked, reason: {m.get('reason_codes')}")
-        
+        print(
+            f"    - Hit: {m.get('name')} ({m.get('role')}), "
+            f"{m.get('aggregate_blocked_percentage')}% blocked, reason: {m.get('reason_codes')}"
+        )
+
     contract_res = meta.get("response", {})
     advisory = contract_res.get("sanctions_advisory", {})
     print(f"  Sanctions Advisory Status: {advisory.get('status')}")
     print(f"  Message: {contract_res.get('message')[:140]}...")
-    
+
     assert meta.get("vizier_status") == "success"
     assert ast_ver.get("violation") is True
     assert sanctions_screen.get("violation") is True
@@ -146,6 +160,7 @@ def test_sanctioned_counterparty_ofac50():
     assert "SANCTIONS ADVISORY" in contract_res.get("message", "")
     assert any(m.get("name") == "Sovcomflot" for m in sanctions_screen.get("matches", []))
     print("  -> PASS: OFAC 50% Rule sanctions firewall flagged sanctioned entity Sovcomflot and escalated.")
+
 
 def test_dlp_secret_leak():
     print("\n=== TEST CASE 3: Prompt Sensitive Secret Leak (Vizier DLP Firewall) ===")
@@ -160,17 +175,20 @@ def test_dlp_secret_leak():
                 "parts": [
                     {
                         "kind": "text",
-                        "text": "Here is our internal logistics tracking token: sk-proj-1234567890abcdef1234567890. Please route this deal."
+                        "text": (
+                            "Here is our internal logistics tracking token: "
+                            "sk-proj-1234567890abcdef1234567890. Please route this deal."
+                        ),
                     }
-                ]
+                ],
             }
-        }
+        },
     }
     res = post_json(f"{WORKER_URL}/message/send", payload)
     result = res.get("result", {})
     task = result.get("task", result)
     meta = task.get("metadata", {})
-    
+
     print(f"  Vizier Status: {meta.get('vizier_status')}")
     ast_ver = meta.get("assistant_verification", {})
     print(f"  Screening Violation: {ast_ver.get('violation')}")
@@ -179,11 +197,11 @@ def test_dlp_secret_leak():
     print(f"  Leaks Prevented: {dlp_screen.get('total_leaks_prevented')}")
     for f in dlp_screen.get("findings", []):
         print(f"    - Detector: {f.get('detector')}, Path: {f.get('path')}, Masked: {f.get('snippet_masked')}")
-        
+
     contract_res = meta.get("response", {})
     print(f"  Caller Text Sanitized: {contract_res.get('caller_text')}")
     print(f"  Security Notice in Message: {'SECURITY NOTICE' in contract_res.get('message', '')}")
-    
+
     assert meta.get("vizier_status") == "success"
     assert ast_ver.get("violation") is True
     assert dlp_screen.get("clean") is False
@@ -193,12 +211,13 @@ def test_dlp_secret_leak():
     assert "SECURITY NOTICE" in contract_res.get("message", "")
     print("  -> PASS: Vizier DLP Firewall intercepted and redacted sensitive credentials.")
 
+
 def test_agent_card():
     print("\n=== TEST CASE 4: A2A Agent Card Discovery Verification ===")
     card = get_json(f"{WORKER_URL}/.well-known/agent-card.json")
     print(f"  Name: {card.get('name')}")
     print(f"  Description: {card.get('description')[:100]}...")
-    
+
     # Check capabilities.extensions (spec wire format) or root
     x_ag = card.get("x_agenda_intelligence")
     if not x_ag and "capabilities" in card:
@@ -207,14 +226,15 @@ def test_agent_card():
             x_ag = exts[0].get("params", {}).get("x_agenda_intelligence", {})
     if not x_ag:
         x_ag = {}
-    
+
     print(f"  Product Profile: {x_ag.get('product_profile')}")
     print(f"  Routes To: {x_ag.get('routes_to')}")
-    
+
     assert card.get("name") == "Corridor & Sanctions Risk Assistant"
     assert x_ag.get("product_profile") == "corridor_sanctions_assistant"
     assert len(card.get("skills", [])) >= 1
     print("  -> PASS: A2A agent card accurately declares corridor_sanctions_assistant profile.")
+
 
 def main():
     print("====================================================================")
@@ -232,8 +252,10 @@ def main():
     except Exception as e:
         print(f"\n❌ LIVE PROOF FAILED: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -15,13 +15,13 @@ Executes zero-mock live proofs against all 11 Cloudflare Workers:
 11. Agenda Intelligence Root Gateway A2A
 """
 
+import argparse
 import os
+import subprocess
 import sys
 import time
-import subprocess
-import argparse
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 BASE_DIR = Path(__file__).parent / "fleet_health"
 
@@ -31,91 +31,87 @@ WORKERS = [
         "name": "vizier",
         "title": "Vizier Security Kernel",
         "url": "https://vizier.vassiliy-lakhonin.workers.dev",
-        "script": "proof_worker1_vizier.py"
+        "script": "proof_worker1_vizier.py",
     },
     {
         "id": 2,
         "name": "cis-secondary-sanctions-a2a",
         "title": "CIS Secondary Sanctions A2A",
         "url": "https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev",
-        "script": "proof_worker2_cis_secondary_sanctions.py"
+        "script": "proof_worker2_cis_secondary_sanctions.py",
     },
     {
         "id": 3,
         "name": "gulf-maritime-exposure-a2a",
         "title": "Gulf Maritime Exposure A2A",
         "url": "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev",
-        "script": "proof_worker3_gulf_maritime_exposure.py"
+        "script": "proof_worker3_gulf_maritime_exposure.py",
     },
     {
         "id": 4,
         "name": "agent-output-verification-a2a",
         "title": "Agent Output Verification A2A",
         "url": "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev",
-        "script": "proof_worker4_agent_output_verification.py"
+        "script": "proof_worker4_agent_output_verification.py",
     },
     {
         "id": 5,
         "name": "agentic-interaction-trust-a2a",
         "title": "Agentic Interaction Trust A2A",
         "url": "https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev",
-        "script": "proof_worker5_agentic_interaction_trust.py"
+        "script": "proof_worker5_agentic_interaction_trust.py",
     },
     {
         "id": 6,
         "name": "kazakhstan-market-entry-readiness-a2a",
         "title": "Kazakhstan Market Entry Readiness A2A",
         "url": "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev",
-        "script": "proof_worker6_kazakhstan_market_entry_readiness.py"
+        "script": "proof_worker6_kazakhstan_market_entry_readiness.py",
     },
     {
         "id": 7,
         "name": "middle-corridor-deal-risk-gate-a2a",
         "title": "Middle Corridor Deal Risk Gate A2A",
         "url": "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev",
-        "script": "proof_worker7_middle_corridor_deal_risk_gate.py"
+        "script": "proof_worker7_middle_corridor_deal_risk_gate.py",
     },
     {
         "id": 8,
         "name": "critical-minerals-due-diligence-a2a",
         "title": "Critical Minerals Due Diligence A2A",
         "url": "https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev",
-        "script": "proof_worker8_critical_minerals_due_diligence.py"
+        "script": "proof_worker8_critical_minerals_due_diligence.py",
     },
     {
         "id": 9,
         "name": "dual-use-technology-export-a2a",
         "title": "Dual-Use Technology Export A2A",
         "url": "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev",
-        "script": "proof_worker9_dual_use_technology_export.py"
+        "script": "proof_worker9_dual_use_technology_export.py",
     },
     {
         "id": 10,
         "name": "corridor-sanctions-assistant-a2a",
         "title": "Corridor Sanctions Assistant A2A",
         "url": "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
-        "script": "proof_worker10_corridor_sanctions_assistant.py"
+        "script": "proof_worker10_corridor_sanctions_assistant.py",
     },
     {
         "id": 11,
         "name": "agenda-intelligence-a2a",
         "title": "Agenda Intelligence Root Gateway A2A",
         "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev",
-        "script": "proof_worker11_agenda_intelligence_root.py"
-    }
+        "script": "proof_worker11_agenda_intelligence_root.py",
+    },
 ]
+
 
 def run_proof(worker: dict) -> dict:
     script_path = BASE_DIR / worker["script"]
     start_time = time.perf_counter()
-    
+
     try:
-        proc = subprocess.run(
-            [sys.executable, str(script_path)],
-            capture_output=True,
-            text=True,
-            timeout=40
-        )
+        proc = subprocess.run([sys.executable, str(script_path)], capture_output=True, text=True, timeout=40)
         duration = time.perf_counter() - start_time
         success = proc.returncode == 0
         return {
@@ -124,7 +120,7 @@ def run_proof(worker: dict) -> dict:
             "returncode": proc.returncode,
             "duration": duration,
             "stdout": proc.stdout,
-            "stderr": proc.stderr
+            "stderr": proc.stderr,
         }
     except subprocess.TimeoutExpired:
         duration = time.perf_counter() - start_time
@@ -134,23 +130,19 @@ def run_proof(worker: dict) -> dict:
             "returncode": -1,
             "duration": duration,
             "stdout": "",
-            "stderr": "Execution timed out after 40 seconds."
+            "stderr": "Execution timed out after 40 seconds.",
         }
     except Exception as e:
         duration = time.perf_counter() - start_time
-        return {
-            **worker,
-            "success": False,
-            "returncode": -2,
-            "duration": duration,
-            "stdout": "",
-            "stderr": str(e)
-        }
+        return {**worker, "success": False, "returncode": -2, "duration": duration, "stdout": "", "stderr": str(e)}
+
 
 def main():
     parser = argparse.ArgumentParser(description="Run Cloudflare Workers Fleet Health Check")
     parser.add_argument("--concurrency", type=int, default=4, help="Parallel concurrency level (default: 4)")
-    parser.add_argument("--worker", type=str, default=None, help="Run only a specific worker (e.g. '1', 'vizier', '11')")
+    parser.add_argument(
+        "--worker", type=str, default=None, help="Run only a specific worker (e.g. '1', 'vizier', '11')"
+    )
     args = parser.parse_args()
 
     targets = WORKERS
@@ -202,21 +194,29 @@ def main():
     if summary_path:
         with open(summary_path, "a", encoding="utf-8") as f:
             f.write("# 🛡️ Edge Fleet Health Check & Drift Guard\n\n")
-            f.write(f"- **Fleet Status:** {'✅ **100% HEALTHY**' if passed_count == total_count else '❌ **DEGRADED / DRIFT DETECTED**'}\n")
+            status_text = "✅ **100% HEALTHY**" if passed_count == total_count else "❌ **DEGRADED / DRIFT DETECTED**"
+            f.write(f"- **Fleet Status:** {status_text}\n")
             f.write(f"- **Score:** `{passed_count}/{total_count}` workers passing live edge proofs\n")
             f.write(f"- **Total Duration:** `{total_elapsed:.2f}s`\n\n")
-            
+
             f.write("| # | Worker Service | Role | Edge URL | Duration | Status |\n")
             f.write("|---|---|---|---|---|---|\n")
             for r in results:
                 icon = "✅" if r["success"] else "❌"
-                f.write(f"| **{r['id']}** | `{r['name']}` | {r['title']} | [{r['url']}]({r['url']}) | `{r['duration']:.2f}s` | {icon} **{'PASS' if r['success'] else 'FAIL'}** |\n")
-            
+                p_label = "PASS" if r["success"] else "FAIL"
+                f.write(
+                    f"| **{r['id']}** | `{r['name']}` | {r['title']} | "
+                    f"[{r['url']}]({r['url']}) | `{r['duration']:.2f}s` | {icon} **{p_label}** |\n"
+                )
+
             f.write("\n---\n\n")
             f.write("### 📋 Detailed Worker Proof Logs\n\n")
             for r in results:
                 icon = "✅" if r["success"] else "❌"
-                f.write(f"<details><summary>{icon} <b>Worker #{r['id']}: {r['title']}</b> ({r['duration']:.2f}s)</summary>\n\n")
+                f.write(
+                    f"<details><summary>{icon} <b>Worker #{r['id']}: {r['title']}</b> "
+                    f"({r['duration']:.2f}s)</summary>\n\n"
+                )
                 f.write("```text\n")
                 if r["stdout"]:
                     f.write(r["stdout"])
@@ -229,6 +229,7 @@ def main():
         sys.exit(1)
 
     print("\n🏆 ALL EDGE WORKER PROOFS PASSED SUCCESSFULLY!")
+
 
 if __name__ == "__main__":
     main()
