@@ -27,6 +27,11 @@ import {
   isEnabled as gleifEnabled
 } from "./upstream_gleif.js";
 
+import {
+  screenBeneficialOwnershipWithVizier,
+  isEnabled as vizierEnabled
+} from "./upstream_vizier.js";
+
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import {
@@ -6982,10 +6987,45 @@ async function cisSecondarySanctionsResult(request, env) {
     }
   }
 
+  // Beneficial ownership & OFAC 50% Rule screening via Vizier Action Firewall
+  let vizierResult = null;
+  if (vizierEnabled(env)) {
+    const shareholders = Array.isArray(request.shareholders)
+      ? request.shareholders
+      : Array.isArray(counterparty.shareholders)
+        ? counterparty.shareholders
+        : [];
+    vizierResult = await screenBeneficialOwnershipWithVizier(env, {
+      counterparty,
+      shareholders,
+      ownership_graph: request.ownership_graph || undefined
+    });
+    if (vizierResult && vizierResult.status === "success") {
+      for (const match of vizierResult.matches || []) {
+        const sourceType = match.source_type || "ownership_chain_evidence";
+        if (!supplied.includes(sourceType)) supplied.push(sourceType);
+        autoFetched.push({
+          source_type: sourceType,
+          title: match.name || "Vizier OFAC 50% Rule Match",
+          datasets: ["ofac_50_percent_rule"],
+          percentage: match.percentage,
+          list: match.list,
+          path: match.path,
+          score: 1.0,
+          topics: ["sanctions_50_rule"],
+          jurisdictions: [counterparty.jurisdiction || "global"],
+          notes: match.notes || "Identified under OFAC 50% Rule by Vizier Action Firewall."
+        });
+      }
+    }
+  }
+
   const missing = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW.filter((s) => !supplied.includes(s));
   const [score, label] = cisDecisionReadiness(supplied);
-  const exposureSignal = cisExposureSignal(supplied, missing, sanctionsMatchesMerged);
-  const triage = cisTriageRecommendation(supplied, request, missing, exposureSignal);
+  const totalSanctionsMatches =
+    sanctionsMatchesMerged + (vizierResult && vizierResult.violation ? 1 : 0);
+  let exposureSignal = cisExposureSignal(supplied, missing, totalSanctionsMatches);
+  let triage = cisTriageRecommendation(supplied, request, missing, exposureSignal);
   const facets = Array.isArray(request.exposure_facets) ? request.exposure_facets : [];
   const undisclosedUbo = cisHasUndisclosedUbo(request);
 
@@ -6998,6 +7038,10 @@ async function cisSecondarySanctionsResult(request, env) {
   // Separate ownership-enrichment attribution (GLEIF), only when it merged records.
   if (ownershipResult && ownershipResult.attribution && (ownershipResult.matches || []).length) {
     limitations.push(ownershipResult.attribution.notice);
+  }
+  // Vizier Action Firewall attribution
+  if (vizierResult && vizierResult.attribution && (vizierResult.matches || []).length) {
+    limitations.push(vizierResult.attribution.notice);
   }
   // User-facing degrade note derived from status only — never echo internal
   // env-var names or upstream stack details (parity with the Python service;
@@ -7048,6 +7092,14 @@ async function cisSecondarySanctionsResult(request, env) {
     "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
   );
 
+  const topDims = cisTopExposureDimensions(facets, missing, autoFetched, undisclosedUbo);
+  if (vizierResult && vizierResult.violation) {
+    const blockedNames = vizierResult.blocked_shareholders.map((s) => s.name).join(", ");
+    topDims.unshift(
+      `OFAC 50% Rule deemed-blocked: ${vizierResult.aggregate_blocked_percentage}% aggregate blocked ownership across ${blockedNames}`
+    );
+  }
+
   const response = {
     triage_recommendation: triage,
     secondary_exposure_signal: exposureSignal,
@@ -7058,7 +7110,7 @@ async function cisSecondarySanctionsResult(request, env) {
     supplied_sources: supplied,
     minimum_sources_before_review: missing,
     evidence_gaps: missing.map(cisEvidenceGapForSource),
-    top_exposure_dimensions: cisTopExposureDimensions(facets, missing, autoFetched, undisclosedUbo),
+    top_exposure_dimensions: topDims,
     watch_next: [
       "new OFAC SDN designations",
       "new EU sanctions package",
@@ -7071,6 +7123,19 @@ async function cisSecondarySanctionsResult(request, env) {
     not_advice_notice: NOT_ADVICE_NOTICE,
     limitations
   };
+  if (vizierResult && vizierResult.status === "success") {
+    response.beneficial_ownership_clearance = {
+      engine: vizierResult.engine,
+      violation: vizierResult.violation,
+      clean: vizierResult.clean,
+      aggregate_blocked_percentage: vizierResult.aggregate_blocked_percentage,
+      threshold_percentage: vizierResult.threshold_percentage,
+      blocked_shareholders: vizierResult.blocked_shareholders,
+      reason_codes: vizierResult.reason_codes,
+      explanation: vizierResult.explanation,
+      receipt: vizierResult.receipt
+    };
+  }
   if (Array.isArray(request[NORMALIZATIONS_APPLIED]) && request[NORMALIZATIONS_APPLIED].length) {
     response.normalizations_applied = request[NORMALIZATIONS_APPLIED];
   }
@@ -7084,6 +7149,14 @@ async function cisSecondarySanctionsResult(request, env) {
     response,
     live_retrieval_status: upstreamResult.status,
     live_retrieval_upstream: upstream_name,
+    vizier_status: vizierResult ? vizierResult.status : "disabled",
+    vizier_degrade_reason: vizierResult ? vizierResult.degrade_reason : null,
+    vizier_clearance_receipt:
+      vizierResult && vizierResult.receipt
+        ? typeof vizierResult.receipt === "string"
+          ? vizierResult.receipt
+          : vizierResult.receipt.id || null
+        : null,
     // A bounded, privacy-safe operator signal. The upstream adapters retain a
     // human-readable reason for local diagnosis, but that text may contain an
     // env-var name or exception detail and must not be copied into responses or
@@ -7200,6 +7273,9 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
       schema: "schemas/v1/cis-secondary-sanctions-request.schema.json",
       live_retrieval_status: result.live_retrieval_status,
       live_retrieval_upstream: result.live_retrieval_upstream,
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
       live_retrieval_reason_code: result.live_retrieval_reason_code,
       live_retrieval_snapshot_generated_at: result.live_retrieval_snapshot_generated_at,
       auto_fetched_sources: result.auto_fetched_sources,
@@ -12004,6 +12080,9 @@ const DIRECT_V1_ROUTES = {
     provenance: (result) => ({
       live_retrieval_status: result.live_retrieval_status,
       live_retrieval_upstream: result.live_retrieval_upstream,
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
       live_retrieval_reason_code: result.live_retrieval_reason_code,
       live_retrieval_snapshot_generated_at: result.live_retrieval_snapshot_generated_at,
       auto_fetched_sources: result.auto_fetched_sources,
