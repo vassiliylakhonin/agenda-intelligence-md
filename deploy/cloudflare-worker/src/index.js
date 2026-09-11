@@ -72,6 +72,11 @@ import {
   isAssistantVizierEnabled
 } from "./upstream_vizier_assistant.js";
 
+import {
+  verifyGatewayWithVizier,
+  isGatewayVizierEnabled
+} from "./upstream_vizier_gateway.js";
+
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import {
@@ -10378,7 +10383,24 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
   // whether this endpoint understood them saw a brochure. The answer now runs
   // first — what was read, what applies, what to collect — and the packaging
   // sits at the bottom where a caller who already wants more will look for it.
+  const securityNotices = [];
+  if (extras.vizierGateway && extras.vizierGateway.sanctions_screening && extras.vizierGateway.sanctions_screening.violation) {
+    securityNotices.push("## ⚠️ Gateway Sanctions Warning (OFAC 50% Rule)");
+    securityNotices.push("One or more counterparties in your inquiry match designated sanctions lists or meet the OFAC 50% Rule aggregate blocked threshold:");
+    for (const m of extras.vizierGateway.sanctions_screening.matches) {
+      securityNotices.push(`- **${m.name}** (${m.role}): ${m.aggregate_blocked_percentage}% blocked. ${m.explanation || ""}`);
+    }
+    securityNotices.push("Immediate escalation to compliance / sanctions legal desk is required before proceeding.");
+    securityNotices.push("");
+  }
+  if (extras.vizierGateway && extras.vizierGateway.dlp_screening && !extras.vizierGateway.dlp_screening.clean) {
+    securityNotices.push("## 🛡️ Vizier Gateway DLP Notice");
+    securityNotices.push("Sensitive credentials (API keys / private tokens) were detected in query text and automatically sanitized by Vizier DLP Firewall.");
+    securityNotices.push("");
+  }
+
   return [
+    ...securityNotices,
     subjectHeading,
     "",
     dealGateBlock,
@@ -10664,12 +10686,42 @@ async function a2aResult(params, request, env = {}) {
   if (profile === "kazakhstan" && structuredRequest && isMiddleCorridorVizierEnabled(env)) {
     vizierCorridor = await verifyMiddleCorridorWithVizier(env, structuredRequest);
   }
+  let vizierGateway = null;
+  if (profile === "agenda" && isGatewayVizierEnabled(env)) {
+    vizierGateway = await verifyGatewayWithVizier(env, text, params);
+  }
+
+  let sanitizedText = text;
+  if (vizierGateway && vizierGateway.dlp_screening && !vizierGateway.dlp_screening.clean) {
+    sanitizedText = sanitizedText
+      .replace(/sk-[a-zA-Z0-9_\-]{10,}/g, "sk-******")
+      .replace(/AKIA[0-9A-Z]{16}/g, "AKIA******")
+      .replace(/ghp_[a-zA-Z0-9]{20,}/g, "ghp_******")
+      .replace(/(?:bearer|token|key|secret)\s*[:=]\s*[^\s,;]+/gi, (m) => {
+        const p = m.split(/[:=]/);
+        return `${p[0]}: ******`;
+      });
+  }
+
   const triageText =
     profile === "kazakhstan"
       ? `${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`
-      : text;
-  const modules = routeModulesForProfile(text, profile);
+      : sanitizedText;
+  const modules = routeModulesForProfile(sanitizedText, profile);
   const triage = triageForText(triageText, modules, profile, structuredRequest, vizierCorridor);
+
+  if (vizierGateway && vizierGateway.sanctions_screening && vizierGateway.sanctions_screening.violation) {
+    triage.sanctions_advisory = {
+      status: "escalate",
+      matches: vizierGateway.sanctions_screening.matches,
+      advisory:
+        "One or more counterparties mentioned in your query match designated entities or meet the OFAC 50% Rule aggregate blocked threshold. Route immediately to your sanctions/compliance legal desk before taking any commercial action."
+    };
+    if (triage.signal_screen) {
+      triage.signal_screen.risk_signal = "high";
+    }
+  }
+
   const engagement = engagementBlock(request, {
     profile,
     // The same payload the JSON part exposes, so the offer can only name items
@@ -10690,7 +10742,12 @@ async function a2aResult(params, request, env = {}) {
         name: "Agenda Intelligence routing note",
         parts: [
           {
-            text: routingMarkdown(text, modules, profile, triage, { engagement, relatedAgents, hostedMcpTools }),
+            text: routingMarkdown(sanitizedText, modules, profile, triage, {
+              engagement,
+              relatedAgents,
+              hostedMcpTools,
+              vizierGateway
+            }),
             mediaType: "text/markdown"
           },
           {
@@ -10721,10 +10778,15 @@ async function a2aResult(params, request, env = {}) {
       related_agents: relatedAgents,
       hosted_mcp_tools: hostedMcpTools,
       engagement,
-      vizier_status: vizierCorridor ? vizierCorridor.status : (isMiddleCorridorVizierEnabled(env) ? "unknown" : "disabled"),
-      vizier_degrade_reason: vizierCorridor ? vizierCorridor.degrade_reason || null : null,
-      vizier_clearance_receipt: vizierCorridor ? vizierCorridor.receipt || null : null,
+      vizier_status: vizierGateway
+        ? vizierGateway.status
+        : vizierCorridor
+          ? vizierCorridor.status
+          : (isMiddleCorridorVizierEnabled(env) || isGatewayVizierEnabled(env) ? "unknown" : "disabled"),
+      vizier_degrade_reason: (vizierGateway && vizierGateway.degrade_reason) || (vizierCorridor && vizierCorridor.degrade_reason) || null,
+      vizier_clearance_receipt: (vizierGateway && vizierGateway.receipt) || (vizierCorridor && vizierCorridor.receipt) || null,
       middle_corridor_verification: vizierCorridor,
+      ...(vizierGateway ? { gateway_verification: vizierGateway } : {}),
       response: triage.deal_risk_contract || triage.deal_risk_gate || triage
     }
   };
@@ -13050,7 +13112,9 @@ export {
   dualUseTechnologyExportResult,
   verifyAssistantWithVizier,
   isAssistantVizierEnabled,
-  a2aResultForCorridorSanctionsAssistant
+  a2aResultForCorridorSanctionsAssistant,
+  verifyGatewayWithVizier,
+  isGatewayVizierEnabled
 };
 function generateHtmlDashboard(profile, response) {
   const jsonStr = JSON.stringify(response, null, 2);

@@ -6,6 +6,14 @@ workers_dev = true
 [observability]
 enabled = true
 
+[vars]
+AGENT_PROFILE = "agenda"
+VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+
+[[services]]
+binding = "VIZIER"
+service = "vizier"
+
 [[kv_namespaces]]
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
