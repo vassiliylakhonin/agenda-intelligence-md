@@ -174,6 +174,11 @@ workers_dev = true
 
 [env.critical-minerals-due-diligence.vars]
 AGENT_PROFILE = "critical_minerals_due_diligence"
+VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+
+[[env.critical-minerals-due-diligence.services]]
+binding = "VIZIER"
+service = "vizier"
 
 [[env.critical-minerals-due-diligence.kv_namespaces]]
 binding = "AGENDA_USAGE"

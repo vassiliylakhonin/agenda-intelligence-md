@@ -57,6 +57,11 @@ import {
   isMiddleCorridorVizierEnabled
 } from "./upstream_vizier_middle_corridor.js";
 
+import {
+  verifyCriticalMineralsWithVizier,
+  isCriticalMineralsVizierEnabled
+} from "./upstream_vizier_critical_minerals.js";
+
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import {
@@ -6617,7 +6622,7 @@ function criticalMineralsErrors(request) {
   return errors;
 }
 
-function criticalMineralsResult(request) {
+function criticalMineralsResult(request, vizierMinerals = null) {
   const stage = request.decision_stage || "pre_offtake_agreement";
   const commodity = request.commodity || "";
   const origin = request.origin_jurisdiction || "";
@@ -6702,21 +6707,6 @@ function criticalMineralsResult(request) {
   }
 
   const blockingGaps = [...missingSources.map((s) => `Missing required source: ${s.replace(/_/gu, " ")}`), ...flags];
-  const opDecision = {
-    decision,
-    reason_code: reasonCode,
-    blocking_gaps: blockingGaps,
-    next_permitted_action:
-      decision === "continue"
-        ? "Human review and committee sign-off"
-        : "Obtain missing origin, assay, or export-control permits"
-  };
-
-  const exportExposure = {
-    quota_restricted: quotaRestricted,
-    processing_monopoly_risk: Boolean(processing && (processing === "China" || processing === "Russia")),
-    jurisdiction_risk_flags: flags
-  };
 
   const topRisks = [
     {
@@ -6732,6 +6722,66 @@ function criticalMineralsResult(request) {
       description: flags.join("; ")
     });
   }
+
+  // Live Vizier Action Firewall: sanctions screening (OFAC 50% Rule) & supply chain dossier DLP inspection
+  if (vizierMinerals) {
+    if (vizierMinerals.sanctions_screening && vizierMinerals.sanctions_screening.violation) {
+      riskSignal = "high";
+      decision = "stop";
+      reasonCode = "sanctions_violation_ofac_50";
+      if (stage === "pre_offtake_agreement") triage = "escalate_before_offtake";
+      else if (stage === "pre_export_shipment") triage = "escalate_before_shipment";
+      else if (stage === "pre_investment_decision") triage = "escalate_before_investment";
+      else triage = "not_decision_ready";
+
+      const matches = vizierMinerals.sanctions_screening.matches || [];
+      const matchNames = matches
+        .map((m) => `${m.name} (${m.role || "counterparty"}, ${m.aggregate_blocked_percentage}% blocked)`)
+        .join(", ") || "Sanctioned entity";
+
+      blockingGaps.unshift(`Sanctions violation under OFAC 50% Rule: ${matchNames}. Transaction stopped.`);
+      topRisks.unshift({
+        category: "Sanctions & OFAC 50% Rule Violation",
+        severity: "high",
+        description: `Entity '${matchNames}' is designated or deemed-blocked under the OFAC 50% Rule.`
+      });
+      flags.push(`Sanctioned counterparty or mining entity detected in supply chain (${matchNames}).`);
+    }
+
+    if (vizierMinerals.dlp_screening && !vizierMinerals.dlp_screening.clean) {
+      riskSignal = "high";
+      decision = "stop";
+      const findings = vizierMinerals.dlp_screening.findings || [];
+      const detectorNames = findings.map((f) => f.detector).join(", ") || "sensitive secret";
+      if (reasonCode !== "sanctions_violation_ofac_50") {
+        reasonCode = "dlp_secret_leak_detected";
+      }
+      blockingGaps.unshift(`Security/DLP violation: sensitive secrets detected in file parameters (${detectorNames}).`);
+      topRisks.unshift({
+        category: "Security & Confidential Data Protection",
+        severity: "high",
+        description: `DLP leak detected in dossier parameters (${detectorNames}). Immediate sanitization required.`
+      });
+    }
+  }
+
+  const opDecision = {
+    decision,
+    reason_code: reasonCode,
+    blocking_gaps: blockingGaps,
+    next_permitted_action:
+      decision === "continue"
+        ? "Human review and committee sign-off"
+        : decision === "stop"
+          ? "Halt transaction onboarding and escalate to sanctions/compliance counsel"
+          : "Obtain missing origin, assay, or export-control permits"
+  };
+
+  const exportExposure = {
+    quota_restricted: quotaRestricted,
+    processing_monopoly_risk: Boolean(processing && (processing === "China" || processing === "Russia")),
+    jurisdiction_risk_flags: flags
+  };
 
   const exposureLayers = [
     {
@@ -6794,7 +6844,13 @@ function criticalMineralsResult(request) {
     boundaryField: "not_advice_notice"
   });
 
-  return { response };
+  return {
+    response,
+    vizier_status: vizierMinerals ? vizierMinerals.status : "disabled",
+    vizier_degrade_reason: vizierMinerals ? vizierMinerals.degrade_reason || null : null,
+    vizier_clearance_receipt: vizierMinerals ? vizierMinerals.receipt || null : null,
+    critical_minerals_verification: vizierMinerals
+  };
 }
 
 function criticalMineralsArtifactText(response) {
@@ -6855,7 +6911,7 @@ function structuredCriticalMineralsRequestFromParams(params) {
   return minimalRequestFromCandidates(candidates, isMinimalCriticalMineralsRequest, CRITICAL_MINERALS_MINIMAL_DEFAULTS);
 }
 
-function a2aResultForCriticalMinerals(params) {
+async function a2aResultForCriticalMinerals(params, request, env = {}) {
   const structured = structuredCriticalMineralsRequestFromParams(params);
   if (!structured) {
     return requestGuidanceResult(
@@ -6874,7 +6930,11 @@ function a2aResultForCriticalMinerals(params) {
       errors
     );
   }
-  const result = criticalMineralsResult(structured);
+  let vizierMinerals = null;
+  if (isCriticalMineralsVizierEnabled(env)) {
+    vizierMinerals = await verifyCriticalMineralsWithVizier(env, structured);
+  }
+  const result = criticalMineralsResult(structured, vizierMinerals);
   return {
     id: crypto.randomUUID(),
     status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
@@ -6902,6 +6962,10 @@ function a2aResultForCriticalMinerals(params) {
       schema: "schemas/v1/critical-minerals-due-diligence-request.schema.json",
       human_review_required: result.response.human_review_required,
       not_advice_notice: result.response.not_advice_notice,
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
+      critical_minerals_verification: result.critical_minerals_verification,
       response: result.response
     }
   };
@@ -11559,7 +11623,7 @@ async function runProfileRequest(profile, params, request, env = {}) {
       promptChars = structured && structured.decision_question ? structured.decision_question.length : 0;
       modulesUsed = ["market_entry_readiness"];
     } else if (profile === "critical_minerals_due_diligence") {
-      result = a2aResultForCriticalMinerals(params);
+      result = await a2aResultForCriticalMinerals(params, request, env);
       const structured = structuredCriticalMineralsRequestFromParams(params);
       promptChars = structured && structured.decision_question ? structured.decision_question.length : 0;
       modulesUsed = ["critical_minerals_due_diligence"];
@@ -12545,7 +12609,19 @@ const DIRECT_V1_ROUTES = {
     missing: "Missing structured critical minerals due diligence request",
     extract: structuredCriticalMineralsRequestFromParams,
     errorsFor: criticalMineralsErrors,
-    run: (structured) => criticalMineralsResult(structured)
+    run: async (structured, request, env) => {
+      let vizierMinerals = null;
+      if (isCriticalMineralsVizierEnabled(env)) {
+        vizierMinerals = await verifyCriticalMineralsWithVizier(env, structured);
+      }
+      return criticalMineralsResult(structured, vizierMinerals);
+    },
+    provenance: (result) => ({
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
+      critical_minerals_verification: result.critical_minerals_verification
+    })
   }
 };
 
@@ -12843,7 +12919,9 @@ export {
   triageForText,
   usageStats,
   verifyMiddleCorridorWithVizier,
-  isMiddleCorridorVizierEnabled
+  isMiddleCorridorVizierEnabled,
+  verifyCriticalMineralsWithVizier,
+  isCriticalMineralsVizierEnabled
 };
 function generateHtmlDashboard(profile, response) {
   const jsonStr = JSON.stringify(response, null, 2);
