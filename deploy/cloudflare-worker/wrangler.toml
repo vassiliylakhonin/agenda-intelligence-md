@@ -94,6 +94,11 @@ workers_dev = true
 
 [env.agent-output-verification.vars]
 AGENT_PROFILE = "agent_output_verification"
+VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+
+[[env.agent-output-verification.services]]
+binding = "VIZIER"
+service = "vizier"
 
 [[env.agent-output-verification.kv_namespaces]]
 binding = "AGENDA_USAGE"

@@ -37,6 +37,11 @@ import {
   isMaritimeVizierEnabled
 } from "./upstream_vizier_maritime.js";
 
+import {
+  scanOutputWithVizierDlp,
+  isVerificationVizierEnabled
+} from "./upstream_vizier_verification.js";
+
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import {
@@ -4470,7 +4475,7 @@ function agentOutputAuditSummary(request) {
   return { supportLevels, orphans, spanOrphans, grounded, claimCount: claims.length, evidenceIds };
 }
 
-function agentOutputVerificationResult(request) {
+function agentOutputVerificationResult(request, vizierDlp = null) {
   const claims = Array.isArray(request.claims) ? request.claims : [];
   const summary = agentOutputAuditSummary(request);
   const unsupportedStatements = (Array.isArray(request.unsupported_claims) ? request.unsupported_claims : []).map(
@@ -4494,6 +4499,30 @@ function agentOutputVerificationResult(request) {
       weakClaims.push({ claim_id: claim.claim_id, claim: claim.claim });
     }
   }
+
+  // Vizier DLP secret & PII leak firewall integration
+  const dlpFindings = vizierDlp && Array.isArray(vizierDlp.findings) ? vizierDlp.findings : [];
+  for (const finding of dlpFindings) {
+    let claimId = null;
+    let claimObj = null;
+    const match = finding.path && finding.path.match(/claims\[(\d+)\]/);
+    if (match) {
+      const idx = parseInt(match[1], 10);
+      if (claims[idx]) {
+        claimId = claims[idx].claim_id;
+        claimObj = claims[idx];
+      }
+    }
+    const resolvedClaimId = claimId || (claims[0] ? claims[0].claim_id : "dlp_violation");
+    const reasonText = `DLP secret/PII leak detected by Vizier (${finding.detector}: ${finding.snippet_masked})`;
+    unsafeClaims.push({
+      claim_id: resolvedClaimId,
+      claim: claimObj ? claimObj.claim : (finding.path || "leaked secret"),
+      reason: reasonText
+    });
+    seenUnsafe.add(resolvedClaimId);
+  }
+
   for (const entry of summary.orphans) {
     if (seenUnsafe.has(entry.claim_id)) continue;
     const claimText = (claims.find((c) => c.claim_id === entry.claim_id) || {}).claim || "";
@@ -4513,6 +4542,9 @@ function agentOutputVerificationResult(request) {
   );
 
   const evidenceGaps = [];
+  for (const finding of dlpFindings) {
+    evidenceGaps.push(`DLP violation detected in ${finding.path || "claim"}: ${finding.detector} (${finding.snippet_masked}).`);
+  }
   for (const entry of summary.orphans) {
     evidenceGaps.push(`Claim ${entry.claim_id} cites evidence not supplied: ${entry.missing_evidence_ids.join(", ")}.`);
   }
@@ -4584,7 +4616,14 @@ function agentOutputVerificationResult(request) {
   }
 
   const ownerActions = [];
-  for (const item of unsafeClaims) ownerActions.push(`Ground or remove claim ${item.claim_id}: ${item.reason}.`);
+  for (const finding of dlpFindings) {
+    ownerActions.push(`Remove or redact leaked secret/PII in ${finding.path || "claim"} (${finding.detector}).`);
+  }
+  for (const item of unsafeClaims) {
+    if (!dlpFindings.length || !item.reason.startsWith("DLP")) {
+      ownerActions.push(`Ground or remove claim ${item.claim_id}: ${item.reason}.`);
+    }
+  }
   for (const statement of unsupportedStatements) {
     ownerActions.push(`Supply source-backed evidence for the unsupported statement: ${statement}`);
   }
@@ -4596,6 +4635,14 @@ function agentOutputVerificationResult(request) {
       `Cite supplied evidence for claim ${claim.claim_id}: a declared support_level of ` +
         `${claim.support_level} is a caller assertion until an evidence_id in the pack backs it.`
     );
+  }
+
+  const limitations = [
+    "Schema-level and structural only. Does not verify that any claim or quote is factually true.",
+    "Does not fetch or validate cited sources; it checks declared support structure only."
+  ];
+  if (vizierDlp && vizierDlp.attribution) {
+    limitations.unshift(vizierDlp.attribution.notice);
   }
 
   const response = {
@@ -4617,12 +4664,21 @@ function agentOutputVerificationResult(request) {
     ],
     human_review_required: verdict !== "allow_relay",
     not_advice_notice: AGENT_OUTPUT_VERIFICATION_NOT_ADVICE_NOTICE,
-    limitations: [
-      "Schema-level and structural only. Does not verify that any claim or quote is factually true.",
-      "Does not fetch or validate cited sources; it checks declared support structure only."
-    ]
+    limitations
   };
-  return { response };
+  return {
+    response,
+    vizier_status: vizierDlp ? vizierDlp.status : "disabled",
+    vizier_degrade_reason: vizierDlp ? vizierDlp.degrade_reason : null,
+    vizier_clearance_receipt: vizierDlp ? vizierDlp.receipt : null,
+    dlp_screening: vizierDlp
+      ? {
+          clean: vizierDlp.clean,
+          findings: vizierDlp.findings || [],
+          total_leaks_prevented: vizierDlp.total_leaks_prevented || 0
+        }
+      : null
+  };
 }
 
 const PRE_ACTION_POLICY_VERSION = "pre-action-check.v1";
@@ -4697,8 +4753,8 @@ function deduplicatedStrings(items) {
   return result;
 }
 
-function preActionCheckResult(request) {
-  const verification = agentOutputVerificationResult(request).response;
+function preActionCheckResult(request, vizierDlp = null) {
+  const verification = agentOutputVerificationResult(request, vizierDlp).response;
   const policyContext = request.policy_context || {};
   const policyProfile = policyContext.profile || "default";
   const policyChecks = Array.isArray(policyContext.checks) ? policyContext.checks : [];
@@ -4835,7 +4891,11 @@ function a2aResultForDecisionPoliciesList(params) {
 // the decision_check response names as its canonical endpoint. The receipt logic
 // lives here so both callers issue the same decision and the same receipt.
 async function preActionCheckDecision(structured, request, env = {}) {
-  const baseResponse = preActionCheckResult(structured).response;
+  let vizierDlp = null;
+  if (isVerificationVizierEnabled(env)) {
+    vizierDlp = await scanOutputWithVizierDlp(env, structured);
+  }
+  const baseResponse = preActionCheckResult(structured, vizierDlp).response;
   const signingKey = env.AGENT_CARD_SIGNING_KEY || env.AGENT_CARD_PRIVATE_JWK;
   if (!signingKey) {
     return {
@@ -4988,7 +5048,7 @@ function agentOutputVerificationArtifactText(response) {
   ].join("\n");
 }
 
-function a2aResultForAgentOutputVerification(params) {
+async function a2aResultForAgentOutputVerification(params, request, env = {}) {
   const structured = structuredAgentOutputVerificationRequestFromParams(params);
   if (!structured) {
     return requestGuidanceResult(
@@ -5009,7 +5069,11 @@ function a2aResultForAgentOutputVerification(params) {
         PRE_ACTION_CHECK_GUIDE
       );
     }
-    const result = preActionCheckResult(structured);
+    let vizierDlp = null;
+    if (isVerificationVizierEnabled(env)) {
+      vizierDlp = await scanOutputWithVizierDlp(env, structured);
+    }
+    const result = preActionCheckResult(structured, vizierDlp);
     return {
       id: crypto.randomUUID(),
       status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
@@ -5047,6 +5111,16 @@ function a2aResultForAgentOutputVerification(params) {
         schema: "schemas/v1/pre-action-check-request.schema.json",
         human_review_required: result.response.human_review_required,
         not_authorization_notice: result.response.not_authorization_notice,
+        vizier_status: vizierDlp ? vizierDlp.status : "disabled",
+        vizier_degrade_reason: vizierDlp ? vizierDlp.degrade_reason : null,
+        vizier_clearance_receipt: vizierDlp ? vizierDlp.receipt : null,
+        dlp_screening: vizierDlp
+          ? {
+              clean: vizierDlp.clean,
+              findings: vizierDlp.findings,
+              total_leaks_prevented: vizierDlp.total_leaks_prevented
+            }
+          : null,
         response: result.response
       }
     };
@@ -5060,7 +5134,11 @@ function a2aResultForAgentOutputVerification(params) {
       enumErrors
     );
   }
-  const result = agentOutputVerificationResult(structured);
+  let vizierDlp = null;
+  if (isVerificationVizierEnabled(env)) {
+    vizierDlp = await scanOutputWithVizierDlp(env, structured);
+  }
+  const result = agentOutputVerificationResult(structured, vizierDlp);
   return {
     id: crypto.randomUUID(),
     status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
@@ -5091,6 +5169,10 @@ function a2aResultForAgentOutputVerification(params) {
       schema: "schemas/v1/evidence-audit.schema.json",
       human_review_required: result.response.human_review_required,
       not_advice_notice: result.response.not_advice_notice,
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
+      dlp_screening: result.dlp_screening,
       response: result.response
     }
   };
@@ -11246,7 +11328,7 @@ async function runProfileRequest(profile, params, request, env = {}) {
         promptChars = String((params.request && params.request.receipt) || "").length;
         modulesUsed = ["decision_gate"];
       } else {
-        result = a2aResultForAgentOutputVerification(params);
+        result = await a2aResultForAgentOutputVerification(params, request, env);
         const structured = structuredAgentOutputVerificationRequestFromParams(params);
         promptChars =
           structured && Array.isArray(structured.claims)
@@ -12189,7 +12271,19 @@ const DIRECT_V1_ROUTES = {
     missing: "Missing structured agent output verification request",
     extract: structuredAgentOutputVerificationRequestFromParams,
     errorsFor: agentOutputVerificationEnumErrors,
-    run: (structured) => agentOutputVerificationResult(structured)
+    run: async (structured, request, env) => {
+      let vizierDlp = null;
+      if (isVerificationVizierEnabled(env)) {
+        vizierDlp = await scanOutputWithVizierDlp(env, structured);
+      }
+      return agentOutputVerificationResult(structured, vizierDlp);
+    },
+    provenance: (result) => ({
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
+      dlp_screening: result.dlp_screening
+    })
   },
   "/v1/agent-output/pre-action-check": {
     label: "pre-action check",
