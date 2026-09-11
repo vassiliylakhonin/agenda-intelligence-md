@@ -52,6 +52,11 @@ import {
   isMarketEntryVizierEnabled
 } from "./upstream_vizier_market_entry.js";
 
+import {
+  verifyMiddleCorridorWithVizier,
+  isMiddleCorridorVizierEnabled
+} from "./upstream_vizier_middle_corridor.js";
+
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import {
@@ -8412,7 +8417,7 @@ function operationalDecisionForStructuredRequest(request, triageRecommendation, 
   };
 }
 
-function dealRiskContractResponseForRequest(request) {
+function dealRiskContractResponseForRequest(request, vizierCorridor = null) {
   const suppliedSources = suppliedSourcesFromStructuredRequest(request);
   const minimumSourcesBeforeGo = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.filter(
     (sourceType) => !suppliedSources.includes(sourceType)
@@ -8424,33 +8429,87 @@ function dealRiskContractResponseForRequest(request) {
   const flaggedNewlyFormed = newlyFormedCounterparties(request);
   const matchedSanctionsSegments = matchedSanctionsExposedSegments(request.route);
   const matchedDualUse = matchedDualUseCargoTerms(request.cargo);
-  const triageRecommendation = triageRecommendationForStructuredRequest(request, minimumSourcesBeforeGo);
-  const riskSignal = riskSignalForStructuredRequest(request, minimumSourcesBeforeGo);
+  let triageRecommendation = triageRecommendationForStructuredRequest(request, minimumSourcesBeforeGo);
+  let riskSignal = riskSignalForStructuredRequest(request, minimumSourcesBeforeGo);
+  let operationalDecision = operationalDecisionForStructuredRequest(
+    request,
+    triageRecommendation,
+    riskSignal,
+    decisionReadiness.score
+  );
+  const evidenceGaps = minimumSourcesBeforeGo.map(evidenceGapForSource);
+  const topRisks = topRisksForStructuredRequest(
+    minimumSourcesBeforeGo,
+    flaggedHighRisk.length > 0,
+    flaggedCircumvention.length > 0,
+    flaggedNamedSectors.length > 0,
+    flaggedNewlyFormed.length > 0,
+    matchedDualUse.length > 0
+  );
+  const limitations = [];
+
+  if (vizierCorridor) {
+    if (vizierCorridor.sanctions_screening && vizierCorridor.sanctions_screening.violation) {
+      riskSignal = "high";
+      triageRecommendation =
+        request.decision_stage === "pre_signature"
+          ? "escalate_before_signature"
+          : "escalate_before_shipment";
+      const matches = vizierCorridor.sanctions_screening.matches || [];
+      const matchNames = matches
+        .map((m) => `${m.name} (${m.role || "counterparty"}, ${m.aggregate_blocked_percentage}% blocked)`)
+        .join(", ") || "Sanctioned counterparty";
+      operationalDecision = {
+        decision: "hold",
+        applies_to: "commercial_and_logistics_execution",
+        rationale: `Vizier Action Firewall detected counterparty blocked under OFAC 50% Rule: ${matchNames}. Immediate hold and compliance escalation required before any commercial or logistics execution.`
+      };
+      topRisks.unshift(
+        `Sanctions violation: ${matchNames} identified by Vizier Action Firewall under OFAC 50% Rule. Transaction on hold.`
+      );
+      evidenceGaps.unshift(
+        `OFAC 50% Rule clearance or sanctions relief documentation for ${matchNames}.`
+      );
+      limitations.unshift(
+        `Vizier Action Firewall identified active sanctions designation or deemed-blocked ownership under the OFAC 50% Rule for ${matchNames}. Do not proceed with transit, booking, or settlement without human compliance authorization.`
+      );
+    }
+    if (vizierCorridor.dlp_screening && !vizierCorridor.dlp_screening.clean) {
+      riskSignal = "high";
+      const findings = vizierCorridor.dlp_screening.findings || [];
+      const detectorNames = findings.map((f) => f.detector).join(", ") || "sensitive secret";
+      if (operationalDecision.decision !== "hold") {
+        operationalDecision = {
+          decision: "hold",
+          applies_to: "file_processing",
+          rationale: `Vizier DLP Firewall detected unredacted sensitive secrets in transit file (${detectorNames}). File processing held for remediation.`
+        };
+      }
+      topRisks.unshift(
+        `DLP leak detected in corridor file parameters (${detectorNames}). Sensitive data must be sanitized before onward sharing.`
+      );
+      evidenceGaps.unshift(
+        `Sanitization and credential rotation proof for detected secrets (${detectorNames}).`
+      );
+      limitations.unshift(
+        `DLP violation flagged by Vizier Action Firewall (${detectorNames}). Ensure proper credential redaction before sharing.`
+      );
+    }
+  }
+
   const response = {
     triage_recommendation: triageRecommendation,
     risk_signal: riskSignal,
     decision_readiness_score: decisionReadiness.score,
     decision_readiness_label: decisionReadiness.label,
-    operational_decision: operationalDecisionForStructuredRequest(
-      request,
-      triageRecommendation,
-      riskSignal,
-      decisionReadiness.score
-    ),
+    operational_decision: operationalDecision,
     route: request.route,
     cargo: request.cargo,
     counterparties: request.counterparties,
     supplied_sources: suppliedSources,
     minimum_sources_before_go: minimumSourcesBeforeGo,
-    evidence_gaps: minimumSourcesBeforeGo.map(evidenceGapForSource),
-    top_risks: topRisksForStructuredRequest(
-      minimumSourcesBeforeGo,
-      flaggedHighRisk.length > 0,
-      flaggedCircumvention.length > 0,
-      flaggedNamedSectors.length > 0,
-      flaggedNewlyFormed.length > 0,
-      matchedDualUse.length > 0
-    ),
+    evidence_gaps: evidenceGaps,
+    top_risks: topRisks,
     exposure_layers: exposureLayersForStructuredRequest(
       minimumSourcesBeforeGo,
       flaggedHighRisk.length > 0,
@@ -8473,7 +8532,6 @@ function dealRiskContractResponseForRequest(request) {
     route_sanctions_exposure_indicators: [...MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_CONNECTIONS],
     customs_harmonization_indicators: [...MIDDLE_CORRIDOR_CUSTOMS_HARMONIZATION_INDICATORS]
   };
-  const limitations = [];
   if (flaggedHighRisk.length > 0) {
     const named = flaggedHighRisk.map((c) => `${c.name} (${c.role}, ${c.jurisdiction})`).join(", ");
     limitations.push(
@@ -9170,7 +9228,7 @@ function nextActionsForIntent(intent) {
   ];
 }
 
-function triageForText(text, modules, profile = "agenda", structuredRequest = null) {
+function triageForText(text, modules, profile = "agenda", structuredRequest = null, vizierCorridor = null) {
   const intent =
     profile === "kazakhstan" && structuredRequest
       ? "middle_corridor_deal_risk_contract"
@@ -9181,7 +9239,9 @@ function triageForText(text, modules, profile = "agenda", structuredRequest = nu
     signal_screen: signalScreenForText(text, modules, intent),
     deal_risk_gate: intent === "deal_risk_gate" ? dealRiskGateForText(text) : null,
     deal_risk_contract:
-      intent === "middle_corridor_deal_risk_contract" ? dealRiskContractResponseForRequest(structuredRequest) : null,
+      intent === "middle_corridor_deal_risk_contract"
+        ? dealRiskContractResponseForRequest(structuredRequest, vizierCorridor)
+        : null,
     source_plan: sourcePlanForModules(modules),
     quality_gates: qualityGatesForIntent(intent),
     next_actions: nextActionsForIntent(intent),
@@ -10395,7 +10455,7 @@ function emptyRequestResult(profile, request) {
   };
 }
 
-function a2aResult(params, request, env = {}) {
+async function a2aResult(params, request, env = {}) {
   const structuredRequest = structuredDealRiskRequestFromParams(params);
   if (structuredRequest) {
     const enumErrors = middleCorridorEnumErrors(structuredRequest);
@@ -10413,12 +10473,16 @@ function a2aResult(params, request, env = {}) {
   if (!structuredRequest && !text.trim()) {
     return emptyRequestResult(profile, request);
   }
+  let vizierCorridor = null;
+  if (profile === "kazakhstan" && structuredRequest && isMiddleCorridorVizierEnabled(env)) {
+    vizierCorridor = await verifyMiddleCorridorWithVizier(env, structuredRequest);
+  }
   const triageText =
     profile === "kazakhstan"
       ? `${text}\nKazakhstan Central Asia Caspian Middle Corridor sanctions corridor risk`
       : text;
   const modules = routeModulesForProfile(text, profile);
-  const triage = triageForText(triageText, modules, profile, structuredRequest);
+  const triage = triageForText(triageText, modules, profile, structuredRequest, vizierCorridor);
   const engagement = engagementBlock(request, {
     profile,
     // The same payload the JSON part exposes, so the offer can only name items
@@ -10469,7 +10533,12 @@ function a2aResult(params, request, env = {}) {
       product_profile: profile,
       related_agents: relatedAgents,
       hosted_mcp_tools: hostedMcpTools,
-      engagement
+      engagement,
+      vizier_status: vizierCorridor ? vizierCorridor.status : (isMiddleCorridorVizierEnabled(env) ? "unknown" : "disabled"),
+      vizier_degrade_reason: vizierCorridor ? vizierCorridor.degrade_reason || null : null,
+      vizier_clearance_receipt: vizierCorridor ? vizierCorridor.receipt || null : null,
+      middle_corridor_verification: vizierCorridor,
+      response: triage.deal_risk_contract || triage.deal_risk_gate || triage
     }
   };
 }
@@ -11504,7 +11573,7 @@ async function runProfileRequest(profile, params, request, env = {}) {
       promptChars = extractText(params).length;
       modulesUsed = ["corridor_sanctions_assistant"];
     } else {
-      result = a2aResult(params, request, env);
+      result = await a2aResult(params, request, env);
       const structuredRequest = structuredDealRiskRequestFromParams(params);
       const text = structuredRequest ? textFromStructuredDealRiskRequest(structuredRequest) : extractText(params);
       promptChars = text.length;
@@ -12772,7 +12841,9 @@ export {
   statusInfo,
   toSpecWireCard,
   triageForText,
-  usageStats
+  usageStats,
+  verifyMiddleCorridorWithVizier,
+  isMiddleCorridorVizierEnabled
 };
 function generateHtmlDashboard(profile, response) {
   const jsonStr = JSON.stringify(response, null, 2);

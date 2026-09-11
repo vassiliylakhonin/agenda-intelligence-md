@@ -23,6 +23,11 @@ workers_dev = true
 
 [env.middle-corridor-deal-risk-gate.vars]
 AGENT_PROFILE = "kazakhstan"
+VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+
+[[env.middle-corridor-deal-risk-gate.services]]
+binding = "VIZIER"
+service = "vizier"
 
 [[env.middle-corridor-deal-risk-gate.kv_namespaces]]
 binding = "AGENDA_USAGE"
