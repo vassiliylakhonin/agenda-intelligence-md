@@ -67,6 +67,11 @@ import {
   isDualUseVizierEnabled
 } from "./upstream_vizier_dual_use.js";
 
+import {
+  verifyAssistantWithVizier,
+  isAssistantVizierEnabled
+} from "./upstream_vizier_assistant.js";
+
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import {
@@ -2620,8 +2625,8 @@ const CORRIDOR_ASSISTANT_GATES = Object.freeze([
   }
 ]);
 
-function corridorAssistantMessageText() {
-  return [
+function corridorAssistantMessageText(response = null, vizierAssistant = null) {
+  const parts = [
     "# Corridor & Sanctions Risk Assistant",
     "",
     "Front door to the corridor and sanctions evidence-readiness gates. I orient and route. I do not screen, score, or retrieve.",
@@ -2631,21 +2636,76 @@ function corridorAssistantMessageText() {
     "",
     "## If you need person-led work",
     `Email a one-line description of the route or counterparty and the next decision or review to ${SUPPORT_CONTACT_EMAIL} (${SUPPORT_HOURS_LOCAL}).`,
-    "I confirm fit, scope, fee, and timing before work starts.",
-    "",
+    "I confirm fit, scope, fee, and timing before work starts."
+  ];
+
+  if (vizierAssistant && vizierAssistant.sanctions_screening && vizierAssistant.sanctions_screening.violation) {
+    parts.push("");
+    parts.push("## ⚠️ Sanctions Screening Warning (OFAC 50% Rule)");
+    parts.push("One or more counterparties in your inquiry match designated sanctions lists or meet the OFAC 50% Rule aggregate blocked threshold:");
+    for (const m of vizierAssistant.sanctions_screening.matches) {
+      parts.push(`- **${m.name}** (${m.role}): ${m.aggregate_blocked_percentage}% blocked. ${m.explanation || ""}`);
+    }
+    parts.push("Immediate escalation to compliance / sanctions legal desk is required before proceeding with any commercial or logistics engagement.");
+  }
+
+  if (vizierAssistant && vizierAssistant.dlp_screening && !vizierAssistant.dlp_screening.clean) {
+    parts.push("");
+    parts.push("## 🛡️ Vizier DLP Security Notice");
+    parts.push("Sensitive credentials (API keys / private tokens) were detected in caller parameters and automatically sanitized by Vizier DLP Firewall.");
+  }
+
+  parts.push("");
+  parts.push(
     "_Orientation and routing only. Not legal, compliance, sanctions, financial, investment, or insurance advice. " +
       "Human review is required before any commercial action._"
-  ].join("\n");
+  );
+
+  return parts.join("\n");
 }
 
-function a2aResultForCorridorSanctionsAssistant(params) {
+async function a2aResultForCorridorSanctionsAssistant(params, request, env = {}) {
   const text = extractText(params);
+  let vizierAssistant = null;
+  if (isAssistantVizierEnabled(env)) {
+    vizierAssistant = await verifyAssistantWithVizier(env, text, params);
+  }
+
+  let sanitizedText = text;
+  let securityNotice = "";
+  if (vizierAssistant && vizierAssistant.dlp_screening && !vizierAssistant.dlp_screening.clean) {
+    // Redact sensitive credentials from caller_text
+    sanitizedText = sanitizedText
+      .replace(/sk-[a-zA-Z0-9_\-]{10,}/g, "sk-******")
+      .replace(/AKIA[0-9A-Z]{16}/g, "AKIA******")
+      .replace(/ghp_[a-zA-Z0-9]{20,}/g, "ghp_******")
+      .replace(/(?:bearer|token|key|secret)\s*[:=]\s*[^\s,;]+/gi, (m) => {
+        const p = m.split(/[:=]/);
+        return `${p[0]}: ******`;
+      });
+    securityNotice = " [SECURITY NOTICE] Sensitive credentials detected and sanitized by Vizier DLP Firewall.";
+  }
+
+  let sanctionsNotice = "";
+  let sanctionsAdvisory = null;
+  if (vizierAssistant && vizierAssistant.sanctions_screening && vizierAssistant.sanctions_screening.violation) {
+    sanctionsNotice = " [SANCTIONS ADVISORY] Mentioned counterparty triggers OFAC 50% Rule sanctions hit. Immediate compliance escalation required.";
+    sanctionsAdvisory = {
+      status: "escalate",
+      matches: vizierAssistant.sanctions_screening.matches,
+      advisory:
+        "One or more counterparties mentioned in your query match designated entities or meet the OFAC 50% Rule aggregate blocked threshold. Route immediately to your sanctions/compliance legal desk before taking any commercial or logistics action."
+    };
+  }
+
   const response = {
     kind: "orientation_and_routing",
     message:
       "Corridor & sanctions orientation: routing to the structured gates and person-led work. " +
-      "No triage or screening performed here.",
-    caller_text: text ? text.slice(0, 500) : "",
+      "No triage or screening performed here." +
+      sanctionsNotice +
+      securityNotice,
+    caller_text: sanitizedText ? sanitizedText.slice(0, 500) : "",
     gates: CORRIDOR_ASSISTANT_GATES.map((gate) => ({ ...gate })),
     engagement: {
       offer: "Person-led review of a current deal or counterparty, scoped and quoted before work starts.",
@@ -2655,8 +2715,20 @@ function a2aResultForCorridorSanctionsAssistant(params) {
         "Email a one-line description (route or counterparty + the next decision or review). Fit, scope, fee, and timing are confirmed before work starts."
     },
     human_review_required: true,
-    not_advice_notice: CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE
+    not_advice_notice: CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE,
+    ...(sanctionsAdvisory ? { sanctions_advisory: sanctionsAdvisory } : {}),
+    ...(vizierAssistant
+      ? {
+          screening: {
+            clean: vizierAssistant.clean,
+            violation: vizierAssistant.violation,
+            sanctions: vizierAssistant.sanctions_screening,
+            dlp: vizierAssistant.dlp_screening
+          }
+        }
+      : {})
   };
+
   return {
     id: crypto.randomUUID(),
     status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
@@ -2665,7 +2737,7 @@ function a2aResultForCorridorSanctionsAssistant(params) {
         artifactId: "corridor-sanctions-assistant-orientation",
         name: "Corridor & sanctions orientation",
         parts: [
-          { text: corridorAssistantMessageText(), mediaType: "text/markdown" },
+          { text: corridorAssistantMessageText(response, vizierAssistant), mediaType: "text/markdown" },
           { data: response, mediaType: "application/json" }
         ]
       }
@@ -2674,7 +2746,11 @@ function a2aResultForCorridorSanctionsAssistant(params) {
       product_profile: "corridor_sanctions_assistant",
       human_review_required: true,
       not_advice_notice: CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE,
-      response
+      response,
+      vizier_status: vizierAssistant ? vizierAssistant.status : "disabled",
+      ...(vizierAssistant && vizierAssistant.degrade_reason ? { vizier_degrade_reason: vizierAssistant.degrade_reason } : {}),
+      ...(vizierAssistant && vizierAssistant.receipt ? { vizier_clearance_receipt: vizierAssistant.receipt } : {}),
+      ...(vizierAssistant ? { assistant_verification: vizierAssistant } : {})
     }
   };
 }
@@ -11680,7 +11756,7 @@ async function runProfileRequest(profile, params, request, env = {}) {
       promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
       modulesUsed = ["dual_use_technology_export"];
     } else if (profile === "corridor_sanctions_assistant") {
-      result = a2aResultForCorridorSanctionsAssistant(params);
+      result = await a2aResultForCorridorSanctionsAssistant(params, request, env);
       promptChars = extractText(params).length;
       modulesUsed = ["corridor_sanctions_assistant"];
     } else {
@@ -12971,7 +13047,10 @@ export {
   isCriticalMineralsVizierEnabled,
   verifyDualUseWithVizier,
   isDualUseVizierEnabled,
-  dualUseTechnologyExportResult
+  dualUseTechnologyExportResult,
+  verifyAssistantWithVizier,
+  isAssistantVizierEnabled,
+  a2aResultForCorridorSanctionsAssistant
 };
 function generateHtmlDashboard(profile, response) {
   const jsonStr = JSON.stringify(response, null, 2);

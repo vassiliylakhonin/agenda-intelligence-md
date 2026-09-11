@@ -160,6 +160,11 @@ workers_dev = true
 
 [env.corridor-sanctions-assistant.vars]
 AGENT_PROFILE = "corridor_sanctions_assistant"
+VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+
+[[env.corridor-sanctions-assistant.services]]
+binding = "VIZIER"
+service = "vizier"
 
 [[env.corridor-sanctions-assistant.kv_namespaces]]
 binding = "AGENDA_USAGE"
