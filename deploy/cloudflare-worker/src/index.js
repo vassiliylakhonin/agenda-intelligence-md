@@ -32,6 +32,11 @@ import {
   isEnabled as vizierEnabled
 } from "./upstream_vizier.js";
 
+import {
+  screenMaritimeExposureWithVizier,
+  isMaritimeVizierEnabled
+} from "./upstream_vizier_maritime.js";
+
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import {
@@ -5272,12 +5277,23 @@ function gulfChokepointDisruptionWatch(request) {
   return watch;
 }
 
-function gulfMaritimeExposureResult(request) {
+async function gulfMaritimeExposureResult(request, env = {}) {
   const supplied = suppliedSourceTypes(request);
   const missing = GULF_MARITIME_REQUIRED_BEFORE_REVIEW.filter((s) => !supplied.includes(s));
   const [score, label] = gulfDecisionReadiness(request, supplied);
-  const exposureSignal = gulfExposureSignal(request, missing);
+  let exposureSignal = gulfExposureSignal(request, missing);
   const facets = Array.isArray(request.exposure_facets) ? request.exposure_facets : [];
+
+  // Live maritime sanctions & OFAC 50% Rule screening via Vizier Action Firewall
+  let vizierMaritimeResult = null;
+  if (isMaritimeVizierEnabled(env)) {
+    vizierMaritimeResult = await screenMaritimeExposureWithVizier(env, request);
+  }
+
+  if (vizierMaritimeResult && vizierMaritimeResult.violation) {
+    exposureSignal = "high";
+  }
+
   const watchNext = [
     "new OFAC vessel or entity designation",
     "new EU or UK OFSI shipping-related listing",
@@ -5288,8 +5304,41 @@ function gulfMaritimeExposureResult(request) {
   if (facets.includes("russia_oil_price_cap")) {
     watchNext.push("price-cap attestation refusal, withdrawal, or itemized ancillary-cost gap");
   }
+
+  let triage = gulfTriageRecommendation(request, missing, exposureSignal);
+  if (vizierMaritimeResult && vizierMaritimeResult.violation) {
+    if (request.decision_stage === "pre_fixture") {
+      triage = "escalate_before_fixture";
+    } else if (["pre_voyage", "pre_port_call"].includes(request.decision_stage)) {
+      triage = "escalate_before_voyage";
+    } else if (triage === "ready_for_human_review") {
+      triage = "not_decision_ready";
+    }
+  }
+
+  const topDims = gulfTopExposureDimensions(facets, missing, supplied);
+  if (vizierMaritimeResult && vizierMaritimeResult.violation) {
+    for (const match of vizierMaritimeResult.matches || []) {
+      if (match.role === "vessel") {
+        topDims.unshift(`Sanctioned vessel match: '${match.name}' identified on ${match.reason_codes.join(", ") || "sanctions list"}`);
+      } else if (match.aggregate_blocked_percentage >= 50) {
+        topDims.unshift(`OFAC 50% Rule deemed-blocked: counterparty '${match.name}' (${match.role}) has ${match.aggregate_blocked_percentage}% aggregate blocked ownership`);
+      } else {
+        topDims.unshift(`Sanctioned maritime counterparty: '${match.name}' (${match.role}) identified on ${match.reason_codes.join(", ") || "sanctions list"}`);
+      }
+    }
+  }
+
+  const limitations = [
+    "Triage is based on caller-supplied evidence and live maritime sanctions verification; this service does not resolve physical vessel ownership or verify identity.",
+    "A name match against a sanctions list is not legal-entity or vessel-identity verification. Human review is required."
+  ];
+  if (vizierMaritimeResult && vizierMaritimeResult.attribution && (vizierMaritimeResult.matches || []).length) {
+    limitations.unshift(vizierMaritimeResult.attribution.notice);
+  }
+
   const response = {
-    triage_recommendation: gulfTriageRecommendation(request, missing, exposureSignal),
+    triage_recommendation: triage,
     exposure_signal: exposureSignal,
     decision_readiness_score: score,
     decision_readiness_label: label,
@@ -5298,17 +5347,12 @@ function gulfMaritimeExposureResult(request) {
     supplied_sources: supplied,
     minimum_sources_before_review: missing,
     evidence_gaps: missing.map(gulfEvidenceGapForSource),
-    top_exposure_dimensions: gulfTopExposureDimensions(facets, missing, supplied),
+    top_exposure_dimensions: topDims,
     chokepoint_disruption_watch: gulfChokepointDisruptionWatch(request),
     watch_next: watchNext,
     human_review_required: true,
     not_advice_notice: GULF_NOT_ADVICE_NOTICE,
-    limitations: [
-      "Triage is based on caller-supplied evidence only; this service does not retrieve sources, " +
-        "resolve vessel ownership, or verify vessel identity.",
-      "A name match against a sanctions list is not legal-entity or vessel-identity verification. " +
-        "Human review is required."
-    ]
+    limitations
   };
   if (request.vessel) response.vessel = request.vessel;
   if (request.cargo) response.cargo = request.cargo;
@@ -5317,7 +5361,19 @@ function gulfMaritimeExposureResult(request) {
     statusField: "decision_readiness_label",
     signalField: "exposure_signal"
   });
-  return { response };
+  return {
+    response,
+    vizier_status: vizierMaritimeResult ? vizierMaritimeResult.status : "disabled",
+    vizier_degrade_reason: vizierMaritimeResult ? vizierMaritimeResult.degrade_reason : null,
+    vizier_clearance_receipt: vizierMaritimeResult ? vizierMaritimeResult.receipt : null,
+    maritime_screening: vizierMaritimeResult
+      ? {
+          clean: vizierMaritimeResult.clean,
+          violation: vizierMaritimeResult.violation,
+          matches: vizierMaritimeResult.matches || []
+        }
+      : null
+  };
 }
 
 function gulfArtifactText(response) {
@@ -5348,7 +5404,7 @@ function gulfArtifactText(response) {
   ].join("\n");
 }
 
-function a2aResultForGulfMaritimeExposure(params) {
+async function a2aResultForGulfMaritimeExposure(params, request, env = {}) {
   const structured = structuredGulfMaritimeRequestFromParams(params);
   if (!structured) {
     return requestGuidanceResult(
@@ -5367,7 +5423,7 @@ function a2aResultForGulfMaritimeExposure(params) {
       enumErrors
     );
   }
-  const result = gulfMaritimeExposureResult(structured);
+  const result = await gulfMaritimeExposureResult(structured, env);
   return {
     id: crypto.randomUUID(),
     status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
@@ -5393,6 +5449,10 @@ function a2aResultForGulfMaritimeExposure(params) {
       product_profile: "gulf_maritime_exposure",
       canonical_http_endpoint: "/v1/gulf-maritime/exposure",
       schema: "schemas/v1/gulf-maritime-exposure-request.schema.json",
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
+      maritime_screening: result.maritime_screening,
       human_review_required: result.response.human_review_required,
       not_advice_notice: result.response.not_advice_notice,
       response: result.response
@@ -11195,7 +11255,7 @@ async function runProfileRequest(profile, params, request, env = {}) {
         modulesUsed = ["agent_output_verification"];
       }
     } else if (profile === "gulf_maritime_exposure") {
-      result = a2aResultForGulfMaritimeExposure(params);
+      result = await a2aResultForGulfMaritimeExposure(params, request, env);
       const structured = structuredGulfMaritimeRequestFromParams(params);
       promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
       modulesUsed = ["gulf_maritime_exposure"];
@@ -12105,7 +12165,13 @@ const DIRECT_V1_ROUTES = {
     missing: "Missing structured Gulf maritime exposure request",
     extract: structuredGulfMaritimeRequestFromParams,
     errorsFor: gulfEnumErrors,
-    run: (structured) => gulfMaritimeExposureResult(structured)
+    run: (structured, request, env) => gulfMaritimeExposureResult(structured, env),
+    provenance: (result) => ({
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
+      maritime_screening: result.maritime_screening
+    })
   },
   "/v1/market-entry/readiness": {
     label: "Kazakhstan market-entry readiness",

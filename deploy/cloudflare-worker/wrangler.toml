@@ -105,6 +105,11 @@ workers_dev = true
 
 [env.gulf-maritime-exposure.vars]
 AGENT_PROFILE = "gulf_maritime_exposure"
+VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+
+[[env.gulf-maritime-exposure.services]]
+binding = "VIZIER"
+service = "vizier"
 
 [[env.gulf-maritime-exposure.kv_namespaces]]
 binding = "AGENDA_USAGE"
