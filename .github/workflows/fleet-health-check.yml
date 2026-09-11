@@ -1,0 +1,53 @@
+name: Edge Fleet Health Check & Drift Guard
+
+on:
+  schedule:
+    # 06:00 UTC daily (~11:00 AM Almaty time)
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      worker:
+        description: "Specific worker to test (leave blank for all 11)"
+        required: false
+        default: ""
+        type: string
+  push:
+    branches:
+      - main
+    paths:
+      - "deploy/cloudflare-worker/**"
+      - "scripts/fleet_health/**"
+      - "scripts/run_fleet_health_check.py"
+      - ".github/workflows/fleet-health-check.yml"
+
+concurrency:
+  group: fleet-health-check-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  health-check:
+    name: Synthetic Health Check (11 Edge Workers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run Edge Fleet Health Check
+        env:
+          TARGET_WORKER: ${{ inputs.worker }}
+        run: |
+          if [ -n "$TARGET_WORKER" ]; then
+            python3 scripts/run_fleet_health_check.py --worker "$TARGET_WORKER"
+          else
+            python3 scripts/run_fleet_health_check.py
+          fi
