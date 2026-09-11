@@ -194,10 +194,15 @@ workers_dev = true
 
 [env.dual-use-technology-export.vars]
 AGENT_PROFILE = "dual_use_technology_export"
+VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 
 [[env.dual-use-technology-export.kv_namespaces]]
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
+
+[[env.dual-use-technology-export.services]]
+binding = "VIZIER"
+service = "vizier"
 
 # Sampled traces on the one profile that makes outbound calls. Measured
 # 2026-08-29 over 22-28 Aug: this Worker is 12.4% of named-script requests but

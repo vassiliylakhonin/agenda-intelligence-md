@@ -62,6 +62,11 @@ import {
   isCriticalMineralsVizierEnabled
 } from "./upstream_vizier_critical_minerals.js";
 
+import {
+  verifyDualUseWithVizier,
+  isDualUseVizierEnabled
+} from "./upstream_vizier_dual_use.js";
+
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import {
@@ -7071,7 +7076,7 @@ function structuredDualUseTechnologyExportRequestFromParams(params) {
   return minimalRequestFromCandidates(candidates, isMinimalDualUseTechnologyExportRequest, DUAL_USE_MINIMAL_DEFAULTS);
 }
 
-function dualUseTechnologyExportResult(request) {
+function dualUseTechnologyExportResult(request, vizierDualUse = null) {
   const shipment = request.shipment;
   const sources = request.dated_sources;
   const riskVectors = [];
@@ -7093,17 +7098,39 @@ function dualUseTechnologyExportResult(request) {
     riskVectors.push("Transit countries are present; human review must assess diversion and re-export controls for each leg.");
   }
 
+  // Live Vizier Action Firewall: sanctions screening (OFAC 50% Rule) & export dossier DLP inspection
+  let vizierEscalation = false;
+  if (vizierDualUse) {
+    if (vizierDualUse.sanctions_screening && vizierDualUse.sanctions_screening.violation) {
+      vizierEscalation = true;
+      score = 0;
+      const matches = vizierDualUse.sanctions_screening.matches || [];
+      const matchNames = matches
+        .map((m) => `${m.name} (${m.role || "counterparty"}, ${m.aggregate_blocked_percentage}% blocked)`)
+        .join(", ") || "Sanctioned entity";
+      riskVectors.unshift(`Vizier Action Firewall detected counterparty/destination blocked under OFAC 50% Rule: ${matchNames}. Immediate escalation to export-control counsel required.`);
+    }
+
+    if (vizierDualUse.dlp_screening && !vizierDualUse.dlp_screening.clean) {
+      vizierEscalation = true;
+      score = Math.min(score, 20);
+      const findings = vizierDualUse.dlp_screening.findings || [];
+      const detectorNames = findings.map((f) => f.detector).join(", ") || "sensitive secret";
+      riskVectors.unshift(`Vizier DLP Firewall detected sensitive credentials/secrets in export dossier (${detectorNames}). Immediate sanitization and credential rotation required.`);
+    }
+  }
+
   const hasMissingEvidence = riskVectors.some(
     (item) => item.startsWith("No ") || item.startsWith("End-user")
   );
   const status =
-    shipment.end_user_sector === "military"
+    shipment.end_user_sector === "military" || vizierEscalation
       ? "escalate"
       : hasMissingEvidence
         ? "not_decision_ready"
         : "decision_ready";
 
-  return {
+  const response = {
     contract_version: VERSION,
     profile: "dual_use_technology_export",
     export_risk_triage: {
@@ -7115,6 +7142,14 @@ function dualUseTechnologyExportResult(request) {
           `${String(source?.id || "source")}: ${String(source?.source_type || "unspecified")} — ${String(source?.title || "untitled")} (${String(source?.date || "undated")})`
       )
     }
+  };
+
+  return {
+    response,
+    vizier_status: vizierDualUse ? vizierDualUse.status : "not_configured",
+    vizier_degrade_reason: vizierDualUse ? vizierDualUse.degrade_reason : null,
+    vizier_clearance_receipt: vizierDualUse ? vizierDualUse.receipt : null,
+    dual_use_verification: vizierDualUse
   };
 }
 
@@ -7136,7 +7171,7 @@ function dualUseTechnologyExportArtifactText(response) {
   ].join("\n");
 }
 
-function a2aResultForDualUseTechnologyExport(params) {
+async function a2aResultForDualUseTechnologyExport(params, request, env = {}) {
   const structured = structuredDualUseTechnologyExportRequestFromParams(params);
   if (!structured) {
     const text = extractText(params).trim();
@@ -7164,7 +7199,15 @@ function a2aResultForDualUseTechnologyExport(params) {
       errors
     );
   }
-  const response = dualUseTechnologyExportResult(structured);
+
+  let vizierDualUse = null;
+  if (isDualUseVizierEnabled(env)) {
+    vizierDualUse = await verifyDualUseWithVizier(env, structured);
+  }
+
+  const { response, vizier_status, vizier_degrade_reason, vizier_clearance_receipt, dual_use_verification } =
+    dualUseTechnologyExportResult(structured, vizierDualUse);
+
   return {
     id: crypto.randomUUID(),
     status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
@@ -7190,7 +7233,11 @@ function a2aResultForDualUseTechnologyExport(params) {
       product_profile: "dual_use_technology_export",
       schema: "schemas/v1/dual-use-technology-export-request.schema.json",
       human_review_required: true,
-      response
+      response,
+      ...(vizier_status ? { vizier_status } : {}),
+      ...(vizier_degrade_reason ? { vizier_degrade_reason } : {}),
+      ...(vizier_clearance_receipt ? { vizier_clearance_receipt } : {}),
+      ...(dual_use_verification ? { dual_use_verification } : {})
     }
   };
 }
@@ -11628,7 +11675,7 @@ async function runProfileRequest(profile, params, request, env = {}) {
       promptChars = structured && structured.decision_question ? structured.decision_question.length : 0;
       modulesUsed = ["critical_minerals_due_diligence"];
     } else if (profile === "dual_use_technology_export") {
-      result = a2aResultForDualUseTechnologyExport(params);
+      result = await a2aResultForDualUseTechnologyExport(params, request, env);
       const structured = structuredDualUseTechnologyExportRequestFromParams(params);
       promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
       modulesUsed = ["dual_use_technology_export"];
@@ -12921,7 +12968,10 @@ export {
   verifyMiddleCorridorWithVizier,
   isMiddleCorridorVizierEnabled,
   verifyCriticalMineralsWithVizier,
-  isCriticalMineralsVizierEnabled
+  isCriticalMineralsVizierEnabled,
+  verifyDualUseWithVizier,
+  isDualUseVizierEnabled,
+  dualUseTechnologyExportResult
 };
 function generateHtmlDashboard(profile, response) {
   const jsonStr = JSON.stringify(response, null, 2);
