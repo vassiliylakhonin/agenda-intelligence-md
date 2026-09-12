@@ -88,12 +88,19 @@ import {
 } from "./decision-receipt.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "./okf_content.js";
 import {
+  AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL,
+  AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL,
   CANONICAL_INPUT_MODE,
   CIS_SECONDARY_SANCTIONS_ADR_URL,
+  CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL,
+  CRITICAL_MINERALS_REQUEST_SCHEMA_URL,
   DISCOVERY_UPDATED_AT,
   DOCS_URL,
+  GULF_MARITIME_REQUEST_SCHEMA_URL,
+  MARKET_ENTRY_REQUEST_SCHEMA_URL,
   MIDDLE_CORRIDOR_AGENT_CONTRACT_VERSION,
   MIDDLE_CORRIDOR_DOCS_URL,
+  MIDDLE_CORRIDOR_REQUEST_SCHEMA_URL,
   MIDDLE_CORRIDOR_SUPPORTED_INTENTS,
   OKF_BUNDLE_REPO_URL,
   PACKAGE_URL,
@@ -5099,6 +5106,132 @@ function a2aResultForDecisionPoliciesList(params) {
     );
   }
   return decisionGateTask("decision_policies_list", decisionPolicyCatalog());
+}
+
+function fleetDirectoryResponse() {
+  return {
+    fleet_name: "Agenda Intelligence Risk Triage Fleet",
+    version: VERSION,
+    total_gates: 10,
+    repository: REPOSITORY_URL,
+    documentation: DOCS_URL,
+    gates: [
+      {
+        profile: "kazakhstan",
+        tool_name: "middle_corridor_deal_risk",
+        canonical_endpoint: "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev",
+        description: "Screen a Kazakhstan / Middle Corridor trade deal for sanctions-adjacent and corridor risk before signature, shipment, or committee review.",
+        required_fields: ["route", "cargo", "counterparties", "dated_sources", "risk_question", "decision_stage"],
+        schema_url: MIDDLE_CORRIDOR_REQUEST_SCHEMA_URL
+      },
+      {
+        profile: "cis_secondary_sanctions",
+        tool_name: "cis_secondary_sanctions_exposure",
+        canonical_endpoint: "https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev",
+        description: "Triage secondary-sanctions exposure for a CIS-domiciled counterparty against OFAC EO 14114, EU packages, UK OFSI, and FATF typologies.",
+        required_fields: ["counterparty", "risk_question", "decision_stage", "dated_sources"],
+        schema_url: CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL
+      },
+      {
+        profile: "agentic_interaction_trust",
+        tool_name: "agentic_interaction_trust",
+        canonical_endpoint: "https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev",
+        description: "Triage trust evidence for an agent-mediated interaction (identity, authorization, scope, session, intent) before execution.",
+        required_fields: ["interaction_id", "initiating_agent", "target_surface", "decision_question", "decision_stage", "dated_sources"],
+        schema_url: AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL
+      },
+      {
+        profile: "agent_output_verification",
+        tool_name: "agent_output_verification",
+        canonical_endpoint: "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev",
+        description: "Decide whether another agent's claim-backed output is safe to relay onward.",
+        required_fields: ["output_under_review", "claims"],
+        schema_url: AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL
+      },
+      {
+        profile: "gulf_maritime_exposure",
+        tool_name: "gulf_maritime_exposure",
+        canonical_endpoint: "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev",
+        description: "Triage maritime sanctions and chokepoint-disruption exposure for a vessel/voyage in the Gulf or Red Sea.",
+        required_fields: ["vessel_name", "imo_number", "flag", "voyage_path", "cargo", "risk_question", "decision_stage", "dated_sources"],
+        schema_url: GULF_MARITIME_REQUEST_SCHEMA_URL
+      },
+      {
+        profile: "market_entry_readiness",
+        tool_name: "kazakhstan_market_entry_readiness",
+        canonical_endpoint: "https://market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev",
+        description: "Grade a Kazakhstan market-entry file against staged source requirements before commitment.",
+        required_fields: ["market", "sector", "entry_mode", "decision_question", "decision_stage", "dated_sources"],
+        schema_url: MARKET_ENTRY_REQUEST_SCHEMA_URL
+      },
+      {
+        profile: "critical_minerals_due_diligence",
+        tool_name: "critical_minerals_due_diligence",
+        canonical_endpoint: "https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev",
+        description: "Triage origin tracing, export quota restrictions, and CSDDD supply-chain due diligence for critical minerals.",
+        required_fields: ["project_name", "commodity", "origin_jurisdiction", "decision_question", "decision_stage", "supplied_sources"],
+        schema_url: CRITICAL_MINERALS_REQUEST_SCHEMA_URL
+      },
+      {
+        profile: "dual_use_technology_export",
+        tool_name: "dual_use_technology_export",
+        canonical_endpoint: "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev",
+        description: "Triage dual-use technology export controls, ECCN/HS Codes, and transit route risks for unauthorized diversion.",
+        required_fields: ["item_description", "destination_country", "parties", "transit_countries", "risk_question", "decision_stage", "dated_sources"],
+        schema_url: `${REPOSITORY_URL}/blob/main/schemas/v1/dual-use-technology-export-request.schema.json`
+      },
+      {
+        profile: "corridor_sanctions_assistant",
+        tool_name: "corridor_sanctions_assistant",
+        canonical_endpoint: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+        description: "Orientation front-door: route a free-text Middle Corridor sanctions question to the matching structured contract.",
+        required_fields: ["text"],
+        schema_url: null
+      },
+      {
+        profile: "agenda",
+        tool_name: "strategic_risk_triage",
+        canonical_endpoint: "https://agenda.vassiliy-lakhonin.workers.dev",
+        description: "Master strategic-risk triage: route free-text strategic questions to the relevant regional and sector gates.",
+        required_fields: ["text"],
+        schema_url: null
+      }
+    ]
+  };
+}
+
+function a2aResultForFleetDirectory(params) {
+  const directory = fleetDirectoryResponse();
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "fleet-directory-response",
+        name: "fleet directory response",
+        parts: [
+          {
+            text: [
+              "# Agenda Intelligence Fleet Directory",
+              "",
+              `Total gates: ${directory.total_gates}`,
+              `Version: ${directory.version}`,
+              "",
+              "Use these gates for specialized risk triage and verified readiness decisions."
+            ].join("\n"),
+            mediaType: "text/markdown"
+          },
+          { data: directory, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "agenda",
+      capability: "fleet_directory",
+      human_review_required: false,
+      response: directory
+    }
+  };
 }
 
 // The signed pre-action decision is reachable two ways: the decision_check
@@ -11343,6 +11476,9 @@ function mcpResultSummary(payload, isError) {
     }
     return summary;
   }
+  if (payload.total_gates && Array.isArray(payload.gates)) {
+    return `Agenda Intelligence Fleet Directory: ${payload.total_gates} gates available. See structuredContent for endpoints and contracts.`;
+  }
   const fields = [
     "verdict",
     "decision",
@@ -11911,6 +12047,10 @@ async function runProfileRequest(profile, params, request, env = {}) {
       result = await a2aResultForCorridorSanctionsAssistant(params, request, env);
       promptChars = extractText(params).length;
       modulesUsed = ["corridor_sanctions_assistant"];
+    } else if (params.capability === "fleet_directory" || (profile === "agenda" && params.capability === "fleet_directory")) {
+      result = a2aResultForFleetDirectory(params);
+      promptChars = 0;
+      modulesUsed = ["fleet_directory"];
     } else {
       result = await a2aResult(params, request, env);
       const structuredRequest = structuredDealRiskRequestFromParams(params);

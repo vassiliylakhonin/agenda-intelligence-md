@@ -7655,3 +7655,81 @@ test("direct v1 rejection returns schema_hint for self-healing callers", async (
   assert.ok(json.schema_hint.example_request);
 });
 
+test("mcp tools/list on agenda profile advertises strategic_risk_triage and fleet_directory", async () => {
+  const { mcpToolsForProfile } = await import("../src/mcp.js");
+  const tools = mcpToolsForProfile("agenda");
+  const toolNames = tools.map((t) => t.name);
+  assert.ok(toolNames.includes("strategic_risk_triage"), "agenda must include strategic_risk_triage");
+  assert.ok(toolNames.includes("fleet_directory"), "agenda must include fleet_directory");
+
+  const directoryTool = tools.find((t) => t.name === "fleet_directory");
+  assert.equal(directoryTool.inputSchema.type, "object");
+  assert.equal(directoryTool.inputSchema.additionalProperties, false);
+});
+
+test("mcp tools/call fleet_directory returns all 10 specialized gates with canonical endpoints", async () => {
+  const env = { AGENT_PROFILE: "agenda" };
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/mcp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "fleet-dir-test",
+        method: "tools/call",
+        params: {
+          name: "fleet_directory",
+          arguments: {}
+        }
+      })
+    }),
+    env,
+    {}
+  );
+
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.jsonrpc, "2.0");
+  assert.equal(json.id, "fleet-dir-test");
+  assert.ok(!json.error, "fleet_directory call must succeed");
+
+  const result = json.result;
+  assert.ok(result.content && result.content[0]);
+  assert.match(result.content[0].text, /Agenda Intelligence Fleet Directory: 10 gates available/);
+
+  const payload = result.structuredContent;
+  assert.equal(payload.total_gates, 10);
+  assert.ok(Array.isArray(payload.gates));
+  assert.equal(payload.gates.length, 10);
+
+  const profiles = payload.gates.map((g) => g.profile);
+  assert.ok(profiles.includes("kazakhstan"));
+  assert.ok(profiles.includes("cis_secondary_sanctions"));
+  assert.ok(profiles.includes("agentic_interaction_trust"));
+  assert.ok(profiles.includes("agent_output_verification"));
+  assert.ok(profiles.includes("gulf_maritime_exposure"));
+  assert.ok(profiles.includes("market_entry_readiness"));
+  assert.ok(profiles.includes("critical_minerals_due_diligence"));
+  assert.ok(profiles.includes("dual_use_technology_export"));
+  assert.ok(profiles.includes("corridor_sanctions_assistant"));
+  assert.ok(profiles.includes("agenda"));
+
+  // Check that each gate has canonical_endpoint and required_fields
+  for (const gate of payload.gates) {
+    assert.ok(gate.canonical_endpoint.startsWith("https://"));
+    assert.ok(Array.isArray(gate.required_fields));
+    assert.ok(gate.required_fields.length > 0);
+  }
+});
+
+test("mcp tool descriptions include required field hints for calling LLMs", async () => {
+  const { mcpToolsForProfile } = await import("../src/mcp.js");
+  const kazakhstanTools = mcpToolsForProfile("kazakhstan");
+  assert.match(kazakhstanTools[0].description, /Required fields in 'request': route, cargo/);
+
+  const dualUseTools = mcpToolsForProfile("dual_use_technology_export");
+  assert.match(dualUseTools[0].description, /brings none is refused/);
+  assert.match(dualUseTools[0].description, /Required fields in 'request': item_description/);
+});
+
+

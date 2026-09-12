@@ -74,7 +74,8 @@ const PROFILE_TOOLS = {
     summary:
       "Screen a Kazakhstan / Middle Corridor (Trans-Caspian) trade deal for sanctions-adjacent and corridor risk " +
       "before signature, shipment, insurer handoff, or committee review. Returns a triage recommendation, risk " +
-      "signal, decision-readiness score, supplied vs. minimum-required source categories, and evidence gaps."
+      "signal, decision-readiness score, supplied vs. minimum-required source categories, and evidence gaps. " +
+      "Required fields in 'request': route, cargo, counterparties, dated_sources, risk_question, decision_stage."
   },
   cis_secondary_sanctions: [
     {
@@ -84,7 +85,8 @@ const PROFILE_TOOLS = {
       summary:
         "Triage secondary-sanctions exposure for a CIS-domiciled counterparty against OFAC EO 14114, the EU " +
         "sanctions package, UK OFSI, and FATF / EAG typologies. Returns a triage recommendation, exposure " +
-        "dimensions, missing evidence, and mandatory human-review routing. A name match is not identity verification."
+        "dimensions, missing evidence, and mandatory human-review routing. A name match is not identity verification. " +
+        "Required fields in 'request': counterparty, risk_question, decision_stage, dated_sources."
     },
     {
       name: "cis_secondary_sanctions_batch",
@@ -92,7 +94,8 @@ const PROFILE_TOOLS = {
       argKey: "request",
       summary:
         "Triage up to 10 CIS counterparties as one caller-supplied chain. Returns independent per-item results, " +
-        "partial input errors, the highest exposure signal, and mandatory human-review routing."
+        "partial input errors, the highest exposure signal, and mandatory human-review routing. " +
+        "Required fields in 'request': items."
     }
   ],
   agentic_interaction_trust: {
@@ -102,28 +105,30 @@ const PROFILE_TOOLS = {
     summary:
       "Triage the trust evidence for an agent-mediated interaction (identity, operator or principal " +
       "authorization, tool scope, session authentication, action intent) before a high-stakes action executes. " +
-      "Returns a triage recommendation, trust signal, and the specific missing trust evidence."
+      "Returns a triage recommendation, trust signal, and the specific missing trust evidence. " +
+      "Required fields in 'request': interaction_id, initiating_agent, target_surface, decision_question, decision_stage, dated_sources."
   },
   agent_output_verification: [
     {
       name: "agent_output_verification",
-    bringsEvidence: true,
+      bringsEvidence: true,
       argKey: "request",
       summary:
         "Decide whether another agent's claim-backed output is safe to relay onward. Returns a relay verdict with " +
         "per-claim findings, orphaned evidence references, and owner actions. It does not fetch or validate the " +
-        "cited sources."
+        "cited sources. Required fields in 'request': output_under_review, claims."
     },
     {
       name: "pre_action_check",
-    bringsEvidence: true,
+      bringsEvidence: true,
       argKey: "request",
       requestSchema:
         "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/pre-action-check-request.schema.json",
       summary:
         "Route a caller-controlled action to continue, request_evidence, require_approval, or stop using supplied " +
         "claim evidence, risk tier, policy checks, and an optional external approval reference. Resubmit the same " +
-        "run_id after adding evidence or approval. The caller remains responsible for enforcement."
+        "run_id after adding evidence or approval. The caller remains responsible for enforcement. " +
+        "Required fields in 'request': run_id, proposed_action, risk_tier, claims, dated_sources, policy_context."
     },
     {
       name: "decision_policies_list",
@@ -135,7 +140,7 @@ const PROFILE_TOOLS = {
     },
     {
       name: "decision_check",
-    bringsEvidence: true,
+      bringsEvidence: true,
       argKey: "request",
       legacyWrapper: false,
       idempotent: false,
@@ -153,7 +158,7 @@ const PROFILE_TOOLS = {
       summary:
         "Verify a signed readiness receipt against the caller's expected request and action hashes. Returns " +
         "gate_passed only for a valid, unexpired, exactly bound continue decision. This does not authorize or " +
-        "perform the action."
+        "perform the action. Required fields in 'request': receipt, expected_request_sha256, expected_action_sha256."
     }
   ],
   gulf_maritime_exposure: {
@@ -163,7 +168,8 @@ const PROFILE_TOOLS = {
     summary:
       "Triage maritime sanctions and chokepoint-disruption exposure for a vessel/voyage transiting the Strait of " +
       "Hormuz, the Gulf, Bab-el-Mandeb, or the Red Sea. Returns an exposure signal, decision-readiness score, " +
-      "supplied vs. minimum-required sources, and evidence gaps. It does not resolve vessel ownership."
+      "supplied vs. minimum-required sources, and evidence gaps. It does not resolve vessel ownership. " +
+      "Required fields in 'request': vessel_name, imo_number, flag, voyage_path, cargo, risk_question, decision_stage, dated_sources."
   },
   market_entry_readiness: {
     name: "kazakhstan_market_entry_readiness",
@@ -172,7 +178,8 @@ const PROFILE_TOOLS = {
     summary:
       "Grade a Kazakhstan market-entry file against a staged source-requirement taxonomy before a launch, budget, " +
       "or partner commitment. Returns a gate decision, readiness label, evidence gaps, claim audit, owner " +
-      "actions, and watch-next indicators."
+      "actions, and watch-next indicators. " +
+      "Required fields in 'request': market, sector, entry_mode, decision_question, decision_stage, dated_sources."
   },
   critical_minerals_due_diligence: {
     name: "critical_minerals_due_diligence",
@@ -182,14 +189,16 @@ const PROFILE_TOOLS = {
       "Triage origin tracing, export quota restrictions, and CSDDD supply-chain due diligence for critical minerals " +
       "(lithium, rare earths, nickel, cobalt, copper, graphite, manganese, tungsten, gallium/germanium) before offtake " +
       "or investment commitment. Returns origin traceability status, export quota flags, top supply-chain risks, " +
-      "and evidence gaps."
+      "and evidence gaps. " +
+      "Required fields in 'request': project_name, commodity, origin_jurisdiction, decision_question, decision_stage, supplied_sources."
   },
   dual_use_technology_export: {
     name: "dual_use_technology_export",
     bringsEvidence: true,
     argKey: "request",
     summary:
-      "Triage dual-use technology export controls, ECCN/HS Codes, and transit route risks for unauthorized diversion."
+      "Triage dual-use technology export controls, ECCN/HS Codes, and transit route risks for unauthorized diversion. " +
+      "Required fields in 'request': item_description, destination_country, parties, transit_countries, risk_question, decision_stage, dated_sources."
   },
 
   corridor_sanctions_assistant: {
@@ -207,13 +216,22 @@ const PROFILE_TOOLS = {
       "Route a free-text Middle Corridor sanctions question to the matching structured contract and explain what " +
       "evidence the caller still has to supply. Orientation only: it does not itself triage a deal."
   },
-  agenda: {
-    name: "strategic_risk_triage",
-    argKey: "text",
-    summary:
-      "Triage a free-text strategic-risk question: route it to the relevant regional and sector modules and " +
-      "report which evidence categories a defensible answer would require."
-  }
+  agenda: [
+    {
+      name: "strategic_risk_triage",
+      argKey: "text",
+      summary:
+        "Triage a free-text strategic-risk question: route it to the relevant regional and sector modules and " +
+        "report which evidence categories a defensible answer would require."
+    },
+    {
+      name: "fleet_directory",
+      argKey: "none",
+      summary:
+        "List all 10 specialized risk triage and verification gates in the Agenda Intelligence fleet, " +
+        "including their MCP/A2A endpoints, supported profiles, primary tool names, input schemas, and required fields."
+    }
+  ]
 };
 
 function requestSchemaUrl(profile) {
@@ -228,6 +246,13 @@ function contractFor(spec, profile) {
 function inputSchemaFor(spec, profile) {
   const contract = contractFor(spec, profile);
   if (contract) return contract.inputSchema;
+  if (spec.argKey === "none") {
+    return {
+      type: "object",
+      properties: {},
+      additionalProperties: false
+    };
+  }
   if (spec.argKey === "text") {
     return {
       type: "object",
