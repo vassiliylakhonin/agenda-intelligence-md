@@ -7570,3 +7570,88 @@ test("the input hash ignores what changes on every call", () => {
   });
   assert.notDeepEqual(first, other);
 });
+
+test("mcp tools/call refusal includes schema_hint and detailed error summary in content[0].text", async () => {
+  const env = { AGENT_PROFILE: "cis_secondary_sanctions" };
+  const request = new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/mcp", {
+    method: "POST",
+    headers: { "user-agent": "node:test" }
+  });
+
+  const refusal = await mcpCall(
+    {
+      jsonrpc: "2.0",
+      id: "self-healing-test",
+      method: "tools/call",
+      params: { name: "cis_secondary_sanctions_exposure", arguments: {} }
+    },
+    request,
+    env
+  );
+
+  assert.equal(refusal.result.isError, true);
+  const payload = refusal.result.structuredContent;
+  assert.equal(payload.error, "INPUT_REQUIRED");
+  assert.ok(payload.schema_hint, "refusal must carry schema_hint");
+  assert.ok(Array.isArray(payload.schema_hint.required_fields));
+  assert.ok(payload.schema_hint.example_arguments);
+  assert.match(payload.schema_hint.instruction, /JSON arguments/i);
+
+  // Content[0].text is what LLMs receive directly:
+  const errorText = refusal.result.content[0].text;
+  assert.match(errorText, /INPUT_REQUIRED:/);
+  assert.match(errorText, /Required fields:/);
+  assert.match(errorText, /Example arguments:/);
+});
+
+test("a2a requestGuidanceResult includes status.message and metadata.schema_hint", async () => {
+  const env = { AGENT_PROFILE: "critical_minerals_due_diligence" };
+  const response = await handleRequest(
+    new Request("https://critical-minerals-due-diligence-a2a.example.workers.dev/message/send", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "a2a-self-healing",
+        method: "message/send",
+        params: {
+          message: {
+            messageId: "msg-1",
+            role: "ROLE_USER",
+            parts: [{ text: "Hello, evaluate lithium" }]
+          }
+        }
+      })
+    }),
+    env,
+    {}
+  );
+
+  const json = await response.json();
+  const task = json.result.task || json.result;
+  assert.equal(task.status.state, "TASK_STATE_INPUT_REQUIRED");
+  assert.match(task.status.message, /Input required:/i);
+  assert.ok(task.metadata.schema_hint, "a2a metadata must contain schema_hint");
+  assert.equal(task.metadata.schema_hint.canonical_endpoint, "/v1/critical-minerals/due-diligence");
+  assert.ok(Array.isArray(task.metadata.schema_hint.required_fields));
+  assert.ok(task.metadata.schema_hint.example_request);
+});
+
+test("direct v1 rejection returns schema_hint for self-healing callers", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/cis-secondary-sanctions/exposure", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}"
+    })
+  );
+
+  assert.equal(response.status, 400);
+  const json = await response.json();
+  assert.equal(json.ok, false);
+  assert.ok(json.schema_hint, "direct v1 rejection must contain schema_hint");
+  assert.equal(json.schema_hint.canonical_endpoint, "/v1/cis-secondary-sanctions/exposure");
+  assert.ok(Array.isArray(json.schema_hint.required_fields));
+  assert.ok(json.schema_hint.example_request);
+});
+

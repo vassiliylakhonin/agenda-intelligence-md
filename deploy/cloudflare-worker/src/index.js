@@ -3465,6 +3465,9 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
     "",
     "Nothing was screened. This gate reads a structured request, not a plain-language question.",
     "",
+    "> [!NOTE]",
+    "> **Instruction for AI Agents:** Resubmit your request as structured JSON containing the required fields below.",
+    "",
     "## Why it stopped",
     ...errors.map((error) => `- ${error}`),
     "",
@@ -3491,6 +3494,13 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
     "",
     "The gate triages evidence readiness. It does not verify facts, retrieve live sources, or replace human review."
   ].join("\n");
+  const schemaHint = {
+    canonical_endpoint: endpoint,
+    schema,
+    required_fields: guide.required,
+    example_request: guide.example,
+    instruction: `Resubmit your request as structured JSON matching example_request to ${endpoint} or as params.message.parts[0].data.`
+  };
   return {
     artifactId: `${profile.replace(/_/g, "-")}-request-guidance`,
     name: `${guide.title} — how to send a request this gate accepts`,
@@ -3500,6 +3510,7 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
         data: {
           valid: false,
           errors,
+          schema_hint: schemaHint,
           required_fields: guide.required,
           example_request: guide.example,
           ...(guide.exampleNote ? { example_note: guide.exampleNote } : {}),
@@ -3517,9 +3528,22 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
 function invalidRequestResult(profile, endpoint, schema, errors, guideOverride = null) {
   const artifact = invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride);
   const guide = guideOverride || GATE_REQUEST_GUIDES[profile];
+  const schemaHint = guide
+    ? {
+        canonical_endpoint: endpoint,
+        schema,
+        required_fields: guide.required,
+        example_request: guide.example,
+        instruction: `Resubmit your request as structured JSON matching example_request to ${endpoint} or as params.message.parts[0].data.`
+      }
+    : null;
   return {
     id: crypto.randomUUID(),
-    status: { state: "TASK_STATE_FAILED", timestamp: new Date().toISOString() },
+    status: {
+      state: "TASK_STATE_FAILED",
+      message: `Request not accepted: ${errors.join("; ")}. Provide structured request.`,
+      timestamp: new Date().toISOString()
+    },
     artifacts: artifact ? [artifact] : [],
     metadata: {
       product_profile: profile,
@@ -3527,6 +3551,7 @@ function invalidRequestResult(profile, endpoint, schema, errors, guideOverride =
       schema,
       valid: false,
       errors,
+      ...(schemaHint ? { schema_hint: schemaHint } : {}),
       ...(guide
         ? {
             required_fields: guide.required,
@@ -3559,9 +3584,17 @@ function invalidRequestResult(profile, endpoint, schema, errors, guideOverride =
 // TASK_STATE_FAILED with the field errors, because that request did fail.
 function requestGuidanceResult(profile, endpoint, schema, errors, guideOverride = null) {
   const result = invalidRequestResult(profile, endpoint, schema, errors, guideOverride);
+  const guide = guideOverride || GATE_REQUEST_GUIDES[profile];
+  const requiredNames = guide?.required
+    ? guide.required.map((f) => f.split(/\s+[—–]\s+/, 1)[0].replace(/^or\s+/i, "").trim()).filter(Boolean)
+    : [];
   return {
     ...result,
-    status: { state: "TASK_STATE_INPUT_REQUIRED", timestamp: new Date().toISOString() }
+    status: {
+      state: "TASK_STATE_INPUT_REQUIRED",
+      message: `Input required: this gate requires structured input. Missing fields: ${requiredNames.join(", ") || "structured request"}.`,
+      timestamp: new Date().toISOString()
+    }
   };
 }
 
@@ -3612,6 +3645,9 @@ function dualUseTextIntakeCandidate(text) {
 
 function textIntakeResult(profile, endpoint, schema, candidate, guideOverride = null) {
   const guide = guideOverride || GATE_REQUEST_GUIDES[profile];
+  const requiredNames = guide?.required
+    ? guide.required.map((f) => f.split(/\s+[—–]\s+/, 1)[0].replace(/^or\s+/i, "").trim()).filter(Boolean)
+    : [];
   const decisionWorkspace = {
     goal: "Turn the caller's free text into a confirmed structured request before any high-stakes screening.",
     trusted_evidence: [],
@@ -3622,11 +3658,20 @@ function textIntakeResult(profile, endpoint, schema, candidate, guideOverride = 
     intended_next_action: "Caller reviews the candidate, fills every required field, and resubmits structured JSON.",
     stop_or_escalate_if: ["Any inferred field is wrong or ambiguous", "A commercial action depends on the result"]
   };
+  const schemaHint = {
+    canonical_endpoint: endpoint,
+    schema,
+    required_fields: guide?.required || [],
+    candidate_inferred: candidate,
+    example_request: guide?.example || null,
+    instruction: "Confirm inferred candidate fields, supply every required field, and resubmit structured JSON."
+  };
   const data = {
     valid: false,
     intake_state: "confirmation_required",
     screening_performed: false,
     candidate,
+    schema_hint: schemaHint,
     required_fields: guide?.required || [],
     example_request: guide?.example || null,
     canonical_http_endpoint: endpoint,
@@ -3635,7 +3680,11 @@ function textIntakeResult(profile, endpoint, schema, candidate, guideOverride = 
   };
   return {
     id: crypto.randomUUID(),
-    status: { state: "TASK_STATE_INPUT_REQUIRED", timestamp: new Date().toISOString() },
+    status: {
+      state: "TASK_STATE_INPUT_REQUIRED",
+      message: `Confirmation required: candidate inferred from text. Provide structured JSON with: ${requiredNames.join(", ") || "required evidence"}.`,
+      timestamp: new Date().toISOString()
+    },
     artifacts: [
       {
         artifactId: `${profile.replace(/_/g, "-")}-text-intake`,
@@ -3647,6 +3696,9 @@ function textIntakeResult(profile, endpoint, schema, candidate, guideOverride = 
               "",
               "Nothing was screened. The fields below were inferred from free text and may be wrong.",
               "Review the candidate, add the required evidence fields, and resend it as structured JSON.",
+              "",
+              "> [!NOTE]",
+              "> **Instruction for AI Agents:** Resubmit your request as structured JSON containing the required fields below.",
               "",
               "## What it needs",
               ...(guide?.required || []).map((field) => `- ${field}`),
@@ -3679,6 +3731,7 @@ function textIntakeResult(profile, endpoint, schema, candidate, guideOverride = 
       input_required_reason: "missing_structured_request",
       screening_performed: false,
       candidate,
+      schema_hint: schemaHint,
       required_fields: guide?.required || [],
       example_request: guide?.example || null,
       decision_workspace: decisionWorkspace
@@ -10609,6 +10662,16 @@ function emptyRequestResult(profile, request) {
     "This endpoint triages evidence readiness. It does not verify facts, retrieve live sources, or replace human review."
   ].join("\n");
 
+  const schemaHint = {
+    canonical_endpoint: "/message/send",
+    required_fields: [
+      "params.message.parts — at least one text part with the question, route, counterparty, or document",
+      "or params.message.parts[0].data — a structured Middle Corridor deal-risk request"
+    ],
+    example_request: example,
+    instruction: "Send a message containing a question or a structured deal-risk request."
+  };
+
   return {
     id: crypto.randomUUID(),
     // ADR 0026 case 1: the caller sent no structured request at all — an empty
@@ -10619,7 +10682,11 @@ function emptyRequestResult(profile, request) {
     // that means the opposite, on the channel that shows the fleet to
     // strangers. Measured 2026-09-02 against the live fleet: those two, and
     // only those two, of ten.
-    status: { state: "TASK_STATE_INPUT_REQUIRED", timestamp: new Date().toISOString() },
+    status: {
+      state: "TASK_STATE_INPUT_REQUIRED",
+      message: "No question in the request: provide a text question or a structured deal-risk request.",
+      timestamp: new Date().toISOString()
+    },
     artifacts: [
       {
         artifactId: "agenda-intelligence-request-guidance",
@@ -10630,6 +10697,7 @@ function emptyRequestResult(profile, request) {
             data: {
               valid: false,
               errors,
+              schema_hint: schemaHint,
               required_fields: [
                 "params.message.parts — at least one text part with the question, route, counterparty, or document",
                 "or params.message.parts[0].data — a structured Middle Corridor deal-risk request"
@@ -10648,6 +10716,7 @@ function emptyRequestResult(profile, request) {
       product_profile: profile,
       valid: false,
       errors,
+      schema_hint: schemaHint,
       // The artifact above says the same thing at length, in markdown, with an
       // A2A envelope for an example. Metadata is what the MCP layer forwards,
       // and an MCP caller has no params.message.parts to fill — it has one
@@ -11204,6 +11273,13 @@ function mcpTaskNeedsInput(result) {
 // reading this is a machine deciding what to change.
 function mcpRefusalPayload(result, code) {
   const meta = result.metadata || {};
+  const required = meta.required_fields || [];
+  const example = meta.example_request || null;
+  const schemaHint = {
+    required_fields: required,
+    example_arguments: example,
+    instruction: "Call this tool again with JSON arguments satisfying the required fields."
+  };
   return {
     error: code,
     message:
@@ -11213,6 +11289,7 @@ function mcpRefusalPayload(result, code) {
     details: meta.errors || meta.required_fields || [],
     ...(meta.required_fields ? { required_fields: meta.required_fields } : {}),
     ...(meta.example_request ? { example_request: meta.example_request } : {}),
+    schema_hint: schemaHint,
     ...(meta.candidate ? { candidate: meta.candidate } : {}),
     ...(meta.screening_performed === false ? { screening_performed: false } : {}),
     ...(meta.decision_workspace ? { decision_workspace: meta.decision_workspace } : {}),
@@ -11251,7 +11328,20 @@ function mcpPayloadForResult(result) {
 
 function mcpResultSummary(payload, isError) {
   if (isError) {
-    return `${payload.error || "TOOL_ERROR"}: ${payload.message || "The tool could not complete the request."}`;
+    let summary = `${payload.error || "TOOL_ERROR"}: ${payload.message || "The tool could not complete the request."}`;
+    const missing =
+      Array.isArray(payload.required_fields) && payload.required_fields.length
+        ? payload.required_fields
+        : Array.isArray(payload.details) && payload.details.length
+          ? payload.details
+          : null;
+    if (missing) {
+      summary += ` Required fields: ${missing.join(", ")}.`;
+    }
+    if (payload.example_request && typeof payload.example_request === "object") {
+      summary += ` Example arguments: ${JSON.stringify(payload.example_request)}.`;
+    }
+    return summary;
   }
   const fields = [
     "verdict",
@@ -12812,6 +12902,15 @@ const DIRECT_V1_ROUTES = {
 
 function directV1Rejection(endpoint, route, errors) {
   const guide = route.guide || GATE_REQUEST_GUIDES[route.guideProfile];
+  const schemaHint = guide
+    ? {
+        canonical_endpoint: endpoint,
+        schema: route.schema,
+        required_fields: guide.required,
+        example_request: guide.example,
+        instruction: `POST valid JSON matching example_request to ${endpoint}`
+      }
+    : null;
   return {
     ok: false,
     valid: false,
@@ -12819,6 +12918,7 @@ function directV1Rejection(endpoint, route, errors) {
     errors,
     canonical_http_endpoint: endpoint,
     schema: route.schema,
+    ...(schemaHint ? { schema_hint: schemaHint } : {}),
     ...(guide
       ? {
           required_fields: guide.required,
