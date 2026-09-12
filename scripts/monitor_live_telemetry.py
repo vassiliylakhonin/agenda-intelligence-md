@@ -16,7 +16,6 @@ import json
 import subprocess
 import sys
 import urllib.request
-from collections import Counter
 
 STATS_TOKEN = "037ad1c7556b4880fb415c17f967ac033d62877aafe67f99f7f4b8ad932d92e0"
 DEFAULT_BASE_URL = "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/stats"
@@ -37,10 +36,16 @@ def fetch_stats(date_str: str, base_url: str = DEFAULT_BASE_URL) -> dict:
 def fetch_recent_kv_events(date_str: str, limit: int = 10) -> list:
     """Fetch individual recent usage events via wrangler CLI if available."""
     cmd = [
-        "npx", "wrangler", "kv", "key", "list",
+        "npx",
+        "wrangler",
+        "kv",
+        "key",
+        "list",
         "--remote",
-        "--namespace-id", KV_NAMESPACE_ID,
-        "--prefix", f"usage-event:{date_str}"
+        "--namespace-id",
+        KV_NAMESPACE_ID,
+        "--prefix",
+        f"usage-event:{date_str}",
     ]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
@@ -52,10 +57,15 @@ def fetch_recent_kv_events(date_str: str, limit: int = 10) -> list:
         for item in keys:
             key_name = item["name"]
             get_cmd = [
-                "npx", "wrangler", "kv", "key", "get",
+                "npx",
+                "wrangler",
+                "kv",
+                "key",
+                "get",
                 "--remote",
-                "--namespace-id", KV_NAMESPACE_ID,
-                key_name
+                "--namespace-id",
+                KV_NAMESPACE_ID,
+                key_name,
             ]
             get_res = subprocess.run(get_cmd, capture_output=True, text=True, timeout=10)
             if get_res.returncode == 0 and get_res.stdout.strip():
@@ -64,7 +74,7 @@ def fetch_recent_kv_events(date_str: str, limit: int = 10) -> list:
                 except Exception:
                     pass
         return events
-    except Exception as err:
+    except Exception:
         return []
 
 
@@ -73,18 +83,21 @@ def print_dashboard(data: dict, events: list = None):
     total = counters.get("total", 0)
     non_probe = counters.get("non_probe", 0)
     avg_chars = counters.get("prompt_chars_avg", 0)
+    machine_reqs = counters.get("machine_requests", 0)
+    human_reqs = counters.get("human_requests", 0)
+    ext_input = counters.get("external_input_required", 0)
 
     print("\n" + "=" * 76)
     print(f"   AGENDA INTELLIGENCE — LIVE FLEET TELEMETRY ({data.get('date', 'today')})")
     print("=" * 76)
 
-    print(f"\n[SUMMARY]")
+    print("\n[SUMMARY]")
     print(f"  Total Requests:        {total:<6} | Non-Probe Active:    {non_probe}")
-    print(f"  Machine Traffic:       {counters.get('machine_requests', 0):<6} | Human Traffic:        {counters.get('human_requests', 0)}")
-    print(f"  Average Payload:       {avg_chars} chars | Self-Healing Hints:  {counters.get('external_input_required', 0)}")
+    print(f"  Machine Traffic:       {machine_reqs:<6} | Human Traffic:        {human_reqs}")
+    print(f"  Average Payload:       {avg_chars} chars | Self-Healing Hints:  {ext_input}")
 
     # Networks / External Actors
-    print(f"\n[IDENTIFIED CALLERS & NETWORKS]")
+    print("\n[IDENTIFIED CALLERS & NETWORKS]")
     for net in data.get("networks", []):
         name = net.get("name")
         count = net.get("count")
@@ -99,7 +112,7 @@ def print_dashboard(data: dict, events: list = None):
         print(f"  • {name:<35} : {count:>4} calls ({pct:>5.1f}%){tag}")
 
     # Clients / User-Agents
-    print(f"\n[CLIENTS & TRANSPORTS]")
+    print("\n[CLIENTS & TRANSPORTS]")
     for ua in data.get("user_agents", []):
         print(f"  • {ua.get('name'):<45} : {ua.get('count'):>4} calls")
 
@@ -107,16 +120,23 @@ def print_dashboard(data: dict, events: list = None):
     print(f"  Methods: {methods_str}")
 
     # Outcomes
-    print(f"\n[OUTCOMES DISTRIBUTION]")
+    print("\n[OUTCOMES DISTRIBUTION]")
     for out in data.get("outcomes", []):
         name = out.get("name")
         count = out.get("count")
         pct = (count / total * 100) if total else 0
-        icon = "✅" if name == "completed" else "⚠️" if "escalate" in name else "🛑" if "block" in name or name == "stop" else "💡"
+        if name == "completed":
+            icon = "✅"
+        elif "escalate" in name:
+            icon = "⚠️"
+        elif "block" in name or name == "stop":
+            icon = "🛑"
+        else:
+            icon = "💡"
         print(f"  {icon} {name:<30} : {count:>4} calls ({pct:>5.1f}%)")
 
     # Gate Activity
-    print(f"\n[GATE PROFILES ACTIVITY]")
+    print("\n[GATE PROFILES ACTIVITY]")
     print(f"  {'Profile':<34} | {'Calls':<6} | {'Target Host'}")
     print("  " + "-" * 72)
     for prof in data.get("agent_profiles", []):
@@ -142,9 +162,15 @@ def print_dashboard(data: dict, events: list = None):
 
 def main():
     parser = argparse.ArgumentParser(description="Agenda Intelligence Live Fleet Telemetry Monitor")
-    parser.add_argument("--date", default=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"), help="Date (YYYY-MM-DD)")
+    default_date = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
+    parser.add_argument("--date", default=default_date, help="Date (YYYY-MM-DD)")
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL, help="Stats endpoint URL")
-    parser.add_argument("--events", type=int, default=0, help="Number of individual KV events to fetch and display (slow)")
+    parser.add_argument(
+        "--events",
+        type=int,
+        default=0,
+        help="Number of individual KV events to fetch and display (slow)",
+    )
 
     args = parser.parse_args()
     data = fetch_stats(args.date, args.base_url)

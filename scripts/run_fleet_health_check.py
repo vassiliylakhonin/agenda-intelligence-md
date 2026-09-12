@@ -174,7 +174,7 @@ def main():
     print(" SUMMARY RESULTS MATRIX")
     print("=" * 80)
     header = f"| {'#':<2} | {'Worker Service':<36} | {'Duration':<8} | {'Status':<7} |"
-    sep = f"|{'-'*4}|{'-'*38}|{'-'*10}|{'-'*9}|"
+    sep = f"|{'-' * 4}|{'-' * 38}|{'-' * 10}|{'-' * 9}|"
     print(header)
     print(sep)
 
