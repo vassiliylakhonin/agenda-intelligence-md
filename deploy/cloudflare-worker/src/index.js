@@ -7037,16 +7037,24 @@ function criticalMineralsResult(request, vizierMinerals = null) {
     }
   }
 
+  let nextAction = "Obtain missing origin, assay, or export-control permits";
+  if (decision === "continue") {
+    nextAction = "Human review and committee sign-off";
+  } else if (decision === "stop") {
+    nextAction = "Halt transaction onboarding immediately: blocking sanctions or DLP leak detected. Escalate to sanctions/compliance counsel.";
+  } else if (triage === "escalate_before_offtake") {
+    nextAction = "ACTION CHECKLIST BEFORE OFFTAKE: (1) Require authenticated assay and mining concession extract; (2) Enforce dual-control committee sign-off (4-eyes quorum); (3) Screen direct and indirect shareholders under OFAC 50% Rule.";
+  } else if (triage === "escalate_before_shipment") {
+    nextAction = "ACTION CHECKLIST BEFORE SHIPMENT: (1) Validate export quota permits and customs clearance; (2) Verify transit corridor vessel/carrier history; (3) Obtain underwriter sanctions warranty.";
+  } else if (triage === "escalate_before_investment") {
+    nextAction = "ACTION CHECKLIST BEFORE INVESTMENT: (1) Complete full CSDDD human rights and environmental audit; (2) Verify refinery/tolling agreement enforceability; (3) Route dossier to Investment Committee.";
+  }
+
   const opDecision = {
     decision,
     reason_code: reasonCode,
     blocking_gaps: blockingGaps,
-    next_permitted_action:
-      decision === "continue"
-        ? "Human review and committee sign-off"
-        : decision === "stop"
-          ? "Halt transaction onboarding and escalate to sanctions/compliance counsel"
-          : "Obtain missing origin, assay, or export-control permits"
+    next_permitted_action: nextAction
   };
 
   const exportExposure = {
@@ -8476,7 +8484,7 @@ function dealRiskGateForText(text) {
     minimum_sources_before_go: missingSources,
     reason:
       missingSources.length > 0
-        ? "Evidence pack is not decision-ready for contract signature because required sanctions, counterparty, ownership, insurance, customs, or vessel/carrier evidence is missing."
+        ? "Evidence pack is not decision-ready for contract signature: required sanctions, counterparty, ownership, insurance, customs, or vessel/carrier evidence is missing. REQUIRED REMEDIATION: (1) Obtain corporate registry and beneficial ownership extract; (2) Attach carrier/vessel history and port operator notice; (3) Route to legal and compliance counsel for pre-signature sign-off."
         : "Required source categories are present at the routing layer, but human review is still required before commercial reliance.",
     commercial_impact: [
       "Possible shipment delay or rerouting cost.",
