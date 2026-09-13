@@ -67,7 +67,9 @@ const request = new Request("https://agenda-intelligence-a2a.example.workers.dev
 });
 
 const expectedDiscoveryLinkHeader = [
+  '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ard.json>; rel="ard"',
   '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json>; rel="ai-catalog"',
+  '<https://agenda-intelligence-a2a.example.workers.dev/llms.txt>; rel="llms-txt"',
   '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/api-catalog>; rel="api-catalog"',
   '<https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"',
   '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json>; rel="mcp-server-card"',
@@ -633,15 +635,15 @@ test("AI catalog advertises real agentic resources without traction claims", () 
   assert.deepEqual(
     catalog.entries.map((entry) => entry.identifier),
     [
-      "urn:ai:agenda-intelligence-a2a.example.workers.dev:agent:agenda-intelligence-md-a2a",
-      "urn:ai:agenda-intelligence-a2a.example.workers.dev:server:agenda-intelligence-md-mcp",
-      "urn:ai:agenda-intelligence-a2a.example.workers.dev:endpoint:message-send",
-      "urn:ai:agenda-intelligence-a2a.example.workers.dev:api:worker-openapi",
-      "urn:ai:agenda-intelligence-a2a.example.workers.dev:knowledge:okf-bundle",
-      "urn:ai:agenda-intelligence-a2a.example.workers.dev:entitymap:agenda-intelligence-md",
-      "urn:ai:agenda-intelligence-a2a.example.workers.dev:artifact:confidential-project-room-profile",
-      "urn:ai:agenda-intelligence-a2a.example.workers.dev:schema:agenda-intelligence-v1",
-      "urn:ai:agenda-intelligence-a2a.example.workers.dev:policy:source-policy"
+      "urn:air:agenda-intelligence-a2a.example.workers.dev:agent:agenda-intelligence-md-a2a",
+      "urn:air:agenda-intelligence-a2a.example.workers.dev:server:agenda-intelligence-md-mcp",
+      "urn:air:agenda-intelligence-a2a.example.workers.dev:endpoint:message-send",
+      "urn:air:agenda-intelligence-a2a.example.workers.dev:api:worker-openapi",
+      "urn:air:agenda-intelligence-a2a.example.workers.dev:knowledge:okf-bundle",
+      "urn:air:agenda-intelligence-a2a.example.workers.dev:entitymap:agenda-intelligence-md",
+      "urn:air:agenda-intelligence-a2a.example.workers.dev:artifact:confidential-project-room-profile",
+      "urn:air:agenda-intelligence-a2a.example.workers.dev:schema:agenda-intelligence-v1",
+      "urn:air:agenda-intelligence-a2a.example.workers.dev:policy:source-policy"
     ]
   );
   assert.equal(
@@ -687,6 +689,42 @@ test("AI catalog route returns catalog JSON and discovery Link header", async ()
   assert.equal(response.headers.get("link"), expectedDiscoveryLinkHeader);
   assert.equal(body.url, "https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-catalog.json");
   assert.ok(body.entries.some((entry) => entry.type === "application/mcp-server-card+json"));
+});
+
+test("ARD route returns catalog JSON and discovery Link header", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/ard.json")
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
+  assert.equal(response.headers.get("link"), expectedDiscoveryLinkHeader);
+  assert.equal(body.specVersion, "1.0");
+  assert.ok(body.entries.every((e) => e.identifier.startsWith("urn:air:")));
+});
+
+test("/llms.txt route returns markdown policy with text/plain header", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/llms.txt")
+  );
+  const text = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("content-type"), "text/plain; charset=utf-8");
+  assert.ok(text.includes("# Agenda Intelligence MD"));
+});
+
+test("/agents.txt route returns agents policy with text/plain header", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/agents.txt")
+  );
+  const text = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("content-type"), "text/plain; charset=utf-8");
+  assert.ok(text.includes("User-agent: *"));
+  assert.ok(text.includes("LLMs-txt: /llms.txt"));
 });
 
 test("Agenstry ownership proof route serves only a valid configured token", async () => {

@@ -87,6 +87,7 @@ import {
   verifyDecisionReceipt
 } from "./decision-receipt.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "./okf_content.js";
+import { AGENTS_TXT, LLMS_TXT } from "./discovery_text.js";
 import {
   AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL,
   AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL,
@@ -638,7 +639,9 @@ function aiCatalogHeaders(request) {
   const origin = originFromRequest(request);
   return {
     Link: [
+      `<${origin}/.well-known/ard.json>; rel="ard"`,
       `<${origin}/.well-known/ai-catalog.json>; rel="ai-catalog"`,
+      `<${origin}/llms.txt>; rel="llms-txt"`,
       `<${origin}/.well-known/api-catalog>; rel="api-catalog"`,
       `<${origin}/api/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"`,
       `<${origin}/.well-known/mcp/server-card.json>; rel="mcp-server-card"`,
@@ -1262,7 +1265,7 @@ function aiCatalog(request, env = {}) {
     updatedAt: DISCOVERY_UPDATED_AT,
     entries: [
       {
-        identifier: `urn:ai:${host}:agent:agenda-intelligence-md-a2a`,
+        identifier: `urn:air:${host}:agent:agenda-intelligence-md-a2a`,
         displayName: card.name,
         type: "application/a2a-agent-card+json",
         url: `${origin}/.well-known/agent-card.json`,
@@ -1278,7 +1281,7 @@ function aiCatalog(request, env = {}) {
         updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        identifier: `urn:ai:${host}:server:agenda-intelligence-md-mcp`,
+        identifier: `urn:air:${host}:server:agenda-intelligence-md-mcp`,
         displayName: "Agenda Intelligence MD MCP server",
         type: "application/mcp-server-card+json",
         url: `${origin}/.well-known/mcp/server-card.json`,
@@ -1295,7 +1298,7 @@ function aiCatalog(request, env = {}) {
         updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        identifier: `urn:ai:${host}:endpoint:message-send`,
+        identifier: `urn:air:${host}:endpoint:message-send`,
         displayName: "Agenda Intelligence MD message/send endpoint",
         type: "application/jsonrpc+json",
         url: `${origin}/message/send`,
@@ -1310,7 +1313,7 @@ function aiCatalog(request, env = {}) {
         updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        identifier: `urn:ai:${host}:api:worker-openapi`,
+        identifier: `urn:air:${host}:api:worker-openapi`,
         displayName: "Agenda Intelligence MD Worker OpenAPI",
         type: "application/vnd.oai.openapi+json",
         url: `${origin}/api/openapi.json`,
@@ -1327,7 +1330,7 @@ function aiCatalog(request, env = {}) {
         updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        identifier: `urn:ai:${host}:knowledge:okf-bundle`,
+        identifier: `urn:air:${host}:knowledge:okf-bundle`,
         displayName: "Agenda Intelligence MD OKF-style knowledge bundle",
         type: "text/markdown",
         url: okfUrl(origin),
@@ -1344,7 +1347,7 @@ function aiCatalog(request, env = {}) {
         updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        identifier: `urn:ai:${host}:entitymap:agenda-intelligence-md`,
+        identifier: `urn:air:${host}:entitymap:agenda-intelligence-md`,
         displayName: "Agenda Intelligence MD entity map",
         type: "application/entitymap+json",
         url: `${origin}/entitymap.json`,
@@ -1361,7 +1364,7 @@ function aiCatalog(request, env = {}) {
         updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        identifier: `urn:ai:${host}:artifact:confidential-project-room-profile`,
+        identifier: `urn:air:${host}:artifact:confidential-project-room-profile`,
         displayName: "Confidential Project-Room Evidence-Readiness Profile",
         type: "text/markdown",
         url: confidentialProjectRoomUrl(origin),
@@ -1378,7 +1381,7 @@ function aiCatalog(request, env = {}) {
         updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        identifier: `urn:ai:${host}:schema:agenda-intelligence-v1`,
+        identifier: `urn:air:${host}:schema:agenda-intelligence-v1`,
         displayName: "Agenda Intelligence MD JSON schemas",
         type: "application/schema+json",
         url: SCHEMAS_URL,
@@ -1395,7 +1398,7 @@ function aiCatalog(request, env = {}) {
         updatedAt: DISCOVERY_UPDATED_AT
       },
       {
-        identifier: `urn:ai:${host}:policy:source-policy`,
+        identifier: `urn:air:${host}:policy:source-policy`,
         displayName: "Agenda Intelligence MD source policy",
         type: "text/markdown",
         url: SOURCE_POLICY_URL,
@@ -13149,10 +13152,37 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return jsonResponse(signed, 200, aiCatalogHeaders(request));
   }
 
-  if (request.method === "GET" && url.pathname === "/.well-known/ai-catalog.json") {
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/ai-catalog.json" ||
+      url.pathname === "/.well-known/ard.json" ||
+      url.pathname === "/.well-known/ard")
+  ) {
     return jsonResponse(aiCatalog(request, env), 200, {
       "cache-control": "public, max-age=3600",
       ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (request.method === "GET" && (url.pathname === "/llms.txt" || url.pathname === "/.well-known/llms.txt")) {
+    return new Response(LLMS_TXT, {
+      status: 200,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "public, max-age=3600",
+        ...aiCatalogHeaders(request)
+      }
+    });
+  }
+
+  if (request.method === "GET" && (url.pathname === "/agents.txt" || url.pathname === "/.well-known/agents.txt")) {
+    return new Response(AGENTS_TXT, {
+      status: 200,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "public, max-age=3600",
+        ...aiCatalogHeaders(request)
+      }
     });
   }
 
