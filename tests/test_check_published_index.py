@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -23,7 +25,8 @@ def healthy_index() -> dict[str, object]:
 
 
 def test_fresh_published_index_can_be_checked_without_a_rebuild(monkeypatch):
-    monkeypatch.setattr(CHECK, "fetch", lambda _url, _timeout: healthy_index())
+    payload = json.dumps(healthy_index()).encode()
+    monkeypatch.setattr(CHECK, "fetch", lambda _url, _timeout: (json.loads(payload), payload))
     monkeypatch.setattr(
         sys,
         "argv",
@@ -36,10 +39,49 @@ def test_fresh_published_index_can_be_checked_without_a_rebuild(monkeypatch):
 def test_published_index_shape_is_checked_without_a_rebuild(monkeypatch, capsys):
     published = healthy_index()
     published["summary"] = {"source_count": 3, "name_count": 100}
-    monkeypatch.setattr(CHECK, "fetch", lambda _url, _timeout: published)
+    payload = json.dumps(published).encode()
+    monkeypatch.setattr(CHECK, "fetch", lambda _url, _timeout: (published, payload))
     monkeypatch.setattr(sys, "argv", ["check_published_index.py", "--published", "https://example.test/index.json"])
 
     assert CHECK.main() == 1
     stderr = capsys.readouterr().err
     assert "name_count 100" in stderr
     assert "source_count is 3" in stderr
+
+
+def test_exact_published_bytes_can_be_required(monkeypatch):
+    payload = json.dumps(healthy_index(), separators=(",", ":")).encode()
+    digest = hashlib.sha256(payload).hexdigest()
+    monkeypatch.setattr(CHECK, "fetch", lambda _url, _timeout: (json.loads(payload), payload))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "check_published_index.py",
+            "--published",
+            "https://example.test/index.json",
+            "--expected-sha256",
+            digest,
+        ],
+    )
+
+    assert CHECK.main() == 0
+
+
+def test_exact_published_bytes_reject_a_different_artifact(monkeypatch, capsys):
+    payload = json.dumps(healthy_index(), separators=(",", ":")).encode()
+    monkeypatch.setattr(CHECK, "fetch", lambda _url, _timeout: (json.loads(payload), payload))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "check_published_index.py",
+            "--published",
+            "https://example.test/index.json",
+            "--expected-sha256",
+            "0" * 64,
+        ],
+    )
+
+    assert CHECK.main() == 1
+    assert "expected the just-built artifact" in capsys.readouterr().err

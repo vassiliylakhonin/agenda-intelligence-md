@@ -4,7 +4,7 @@ The static name index the `cis_secondary_sanctions` worker screens against,
 published to Cloudflare Pages as `sanctions-name-index.pages.dev` and read via
 `SNAPSHOT_INDEX_URL` (see ADR 0020).
 
-Rebuild and republish:
+Manual rebuild and republish fallback:
 
 ```
 python3 scripts/sanctions_name_index.py
@@ -17,20 +17,31 @@ list, and the UK FCDO list, then writes both the full index and the compact
 derivative the worker fetches. The compact file is the only one the worker
 reads; the full one stays for browser-side use.
 
-Publishing is deliberate and local — it uses your own `wrangler` login, so no
-API token is stored anywhere. A scheduled GitHub workflow
-(`.github/workflows/check-sanctions-index.yml`) watches the published file
-instead of writing it: it rebuilds from the sources, compares against what the
-URL is actually serving, and fails when the served index is missing, malformed,
-or older than seven days. A temporary official-source outage is reported as a
-warning while the served index remains within that freshness budget; comparison
-resumes after the source recovers. That turns a real serving stall into an email
-without making one upstream 5xx look like the published index disappeared; the
-republish stays the command above. When the published snapshot is stale but the
-official sources are available, the workflow still completes the rebuild before
-failing and keeps the verified full and compact JSON files as a seven-day
-Actions artifact. That gives the operator a recovery payload even when local
-TLS policy prevents a rebuild.
+`.github/workflows/refresh-sanctions-index.yml` rebuilds and publishes daily.
+Its build job has no deployment credential. It requires every source, verifies
+the compact file's shape and canaries, compares it with production, and retains
+every complete rebuild as a seven-day recovery artifact. The deploy job then
+downloads that exact artifact through the `sanctions-index-production` GitHub
+Environment and confirms that the canonical URL serves its SHA-256. A source
+failure, unavailable or malformed production baseline, timestamp rollback, or
+name-count drift above 10% stops before publication, leaving the last good
+deployment in place.
+
+The environment must contain `CLOUDFLARE_PAGES_API_TOKEN`, limited to deploying
+the `sanctions-name-index` Pages project, and `CLOUDFLARE_ACCOUNT_ID`. Scheduled
+runs cannot pass an approval dialog, so do not configure required reviewers on
+this environment; restrict deployment branches to `main` instead. A manual
+dispatch defaults to `publish: false`, which exercises the complete build and
+gate without exposing either credential. Set `publish: true` only to exercise
+the production path.
+
+`.github/workflows/check-sanctions-index.yml` remains an independent watchdog
+and runs one hour later. It verifies the URL users actually read, rebuilds from
+the sources, compares drift when possible, and fails when the served index is
+missing, malformed, or older than seven days. A temporary source outage is only
+a warning while the served index is fresh. When production is stale and a
+rebuild succeeds, the watchdog preserves another seven-day recovery artifact
+before failing. The local command above remains the break-glass recovery path.
 
 The index is a snapshot, not a live query: its freshness is whatever
 `generated_at_utc` says, and the worker reports that date back to the caller in

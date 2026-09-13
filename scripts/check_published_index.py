@@ -24,6 +24,7 @@ deploy/snapshot-site/README.md.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import urllib.error
@@ -39,12 +40,13 @@ MIN_NAMES = 60_000
 EXPECTED_SOURCES = 4
 
 
-def fetch(url: str, timeout: int) -> dict:
+def fetch(url: str, timeout: int) -> tuple[dict, bytes]:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(request, timeout=timeout) as response:
         if response.status != 200:
             raise RuntimeError(f"HTTP {response.status}")
-        return json.loads(response.read().decode("utf-8"))
+        payload = response.read()
+        return json.loads(payload.decode("utf-8")), payload
 
 
 def parse_timestamp(value: str) -> datetime:
@@ -57,10 +59,19 @@ def main() -> int:
     parser.add_argument("--built", type=Path, help="optional index just rebuilt from the sources")
     parser.add_argument("--max-age-days", type=int, default=7)
     parser.add_argument("--timeout", type=int, default=60)
+    parser.add_argument(
+        "--expected-sha256",
+        help="optional lowercase SHA-256 required for the exact bytes served by --published",
+    )
     args = parser.parse_args()
 
+    if args.expected_sha256 is not None and (
+        len(args.expected_sha256) != 64 or any(char not in "0123456789abcdef" for char in args.expected_sha256)
+    ):
+        parser.error("--expected-sha256 must be 64 lowercase hexadecimal characters")
+
     try:
-        published = fetch(args.published, args.timeout)
+        published, published_bytes = fetch(args.published, args.timeout)
     except (urllib.error.URLError, urllib.error.HTTPError, RuntimeError, ValueError) as exc:
         print(f"the index the worker reads is not being served: {args.published}", file=sys.stderr)
         print(f"  {type(exc).__name__}: {exc}", file=sys.stderr)
@@ -68,6 +79,14 @@ def main() -> int:
         return 1
 
     problems: list[str] = []
+
+    if args.expected_sha256 is not None:
+        actual_sha256 = hashlib.sha256(published_bytes).hexdigest()
+        print(f"published SHA-256: {actual_sha256}")
+        if actual_sha256 != args.expected_sha256:
+            problems.append(
+                f"published SHA-256 is {actual_sha256}, expected the just-built artifact {args.expected_sha256}"
+            )
 
     generated = (published.get("generated_at_utc") or "").strip()
     if not generated:

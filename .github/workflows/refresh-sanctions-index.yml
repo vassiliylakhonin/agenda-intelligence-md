@@ -1,0 +1,157 @@
+# Rebuild and publish the static public-list name index used by the
+# cis_secondary_sanctions worker. The independent watchdog runs one hour later.
+#
+# This workflow is fail-closed. A source failure, malformed/collapsed build,
+# unavailable production baseline, timestamp rollback, or >10% name-count drift
+# stops before Cloudflare. Any complete rebuild remains available as an Actions
+# artifact for a human to inspect or recover manually.
+name: Refresh sanctions name index
+
+on:
+  schedule:
+    # 04:20 UTC daily -- after the US business day, before Almaty morning.
+    - cron: "20 4 * * *"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish after building and passing every gate"
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: refresh-sanctions-index-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and gate candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      compact_sha256: ${{ steps.candidate.outputs.compact_sha256 }}
+    steps:
+      - name: Checkout the immutable triggering commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Use the tested Python runtime
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Verify the immutable source checkout
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+
+      - name: Build from every official source
+        id: source_build
+        run: python3 scripts/sanctions_name_index.py
+
+      - name: Refuse a candidate that lost its shape or canaries
+        run: python3 scripts/verify_sanctions_index.py deploy/snapshot-site/sanctions-name-index-compact.json
+
+      - name: Refuse an anomalous change against production
+        run: |
+          python3 scripts/gate_sanctions_index_publish.py \
+            --candidate deploy/snapshot-site/sanctions-name-index-compact.json \
+            --published https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json \
+            --max-name-drift-ratio 0.10
+
+      - name: Record immutable candidate identity
+        id: candidate
+        shell: bash
+        run: |
+          compact_sha256=$(sha256sum deploy/snapshot-site/sanctions-name-index-compact.json | cut -d ' ' -f 1)
+          echo "compact_sha256=$compact_sha256" >> "$GITHUB_OUTPUT"
+          echo "Candidate compact SHA-256: $compact_sha256" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve the rebuilt candidate
+        if: always() && steps.source_build.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: sanctions-name-index-candidate-${{ github.run_id }}
+          path: |
+            deploy/snapshot-site/index.html
+            deploy/snapshot-site/sanctions-name-index.json
+            deploy/snapshot-site/sanctions-name-index-compact.json
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Publish gated candidate
+    needs: build
+    if: github.event_name == 'schedule' || inputs.publish == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: sanctions-index-production
+      url: https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json
+    steps:
+      - name: Checkout the immutable triggering commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Use the tested Node.js runtime
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Download the exact gated candidate
+        uses: actions/download-artifact@v7
+        with:
+          name: sanctions-name-index-candidate-${{ github.run_id }}
+          path: deploy/snapshot-site
+
+      - name: Recheck candidate identity and shape
+        shell: bash
+        run: |
+          actual_sha256=$(sha256sum deploy/snapshot-site/sanctions-name-index-compact.json | cut -d ' ' -f 1)
+          test "$actual_sha256" = "${{ needs.build.outputs.compact_sha256 }}"
+          python3 scripts/verify_sanctions_index.py deploy/snapshot-site/sanctions-name-index-compact.json
+
+      - name: Record the external decision workspace
+        shell: bash
+        run: |
+          {
+            echo "### Sanctions index deployment decision workspace"
+            echo "- goal: Refresh the public name-screening snapshot from the four declared official sources."
+            echo "- trusted evidence: Commit $GITHUB_SHA; gated candidate ${{ needs.build.outputs.compact_sha256 }}."
+            echo "- suspected unreliable evidence: Any source or production baseline rejected by the preceding gates."
+            echo "- hidden assumptions: Cloudflare serves uploaded static bytes unchanged at the canonical Pages URL."
+            echo "- intended next action: Publish only this artifact to the sanctions-name-index Pages project."
+            echo "- stop or escalate if: Missing credentials, failed gate, hash mismatch, or post-deploy mismatch."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish to the dedicated Cloudflare Pages project
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --yes wrangler@4.122.0 pages deploy deploy/snapshot-site \
+            --project-name=sanctions-name-index \
+            --branch=main \
+            --commit-dirty=true
+
+      - name: Confirm production serves the exact candidate
+        shell: bash
+        run: |
+          for attempt in {1..12}; do
+            if python3 scripts/check_published_index.py \
+              --published https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json \
+              --max-age-days 1 \
+              --expected-sha256 "${{ needs.build.outputs.compact_sha256 }}"; then
+              exit 0
+            fi
+            echo "attempt $attempt: canonical Pages URL has not converged yet"
+            sleep 10
+          done
+          echo "deployment completed but production never served the exact gated artifact" >&2
+          exit 1

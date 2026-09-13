@@ -4,6 +4,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(ci): restore automatic sanctions-index refresh behind fail-closed publication gates.**
+  A credential-free build job now requires all four official sources, validates the compact index's shape and
+  canaries, rejects timestamp rollback or name-count drift above 10% against production, and preserves every complete
+  rebuild as a seven-day recovery artifact. Only a second job in the dedicated `sanctions-index-production` GitHub
+  Environment can deploy that exact artifact; it then requires the canonical Pages URL to serve the candidate's
+  SHA-256 before the run turns green. Manual dispatch is dry-run by default, and the independent credential-free
+  watchdog moves one hour later. Missing sources, an unavailable baseline, anomalous data, missing credentials, or a
+  post-deploy hash mismatch never overwrite the last good snapshot.
+
 - **fix(ci): preserve a verified recovery artifact when the published sanctions index is stale.**
   The watchdog still fails when the served snapshot exceeds its seven-day freshness budget, but it no longer
   skips the independent four-source rebuild after that failure. A successful rebuild is shape-checked and retained
