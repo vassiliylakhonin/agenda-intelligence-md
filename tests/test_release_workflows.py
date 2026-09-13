@@ -32,7 +32,7 @@ def test_sanctions_watchdog_treats_a_fresh_source_outage_as_a_warning():
     assert "continue-on-error: true" in workflow
     assert "if: steps.rebuild.outcome == 'failure'" in workflow
     assert workflow.count("if: steps.rebuild.outcome == 'success'") == 2
-    assert 'cron: "20 5 * * *"' in workflow
+    assert 'cron: "20 4 * * *"' in workflow
 
 
 def test_sanctions_watchdog_preserves_a_recovery_artifact_before_failing_stale_publication():
@@ -48,29 +48,5 @@ def test_sanctions_watchdog_preserves_a_recovery_artifact_before_failing_stale_p
     assert "if: always() && steps.published.outcome == 'failure'" in workflow
 
 
-def test_sanctions_refresh_gates_before_credentialed_deploy_and_checks_exact_bytes():
-    workflow = (ROOT / ".github/workflows/refresh-sanctions-index.yml").read_text()
-
-    source_build = workflow.index("Build from every official source")
-    shape_gate = workflow.index("Refuse a candidate that lost its shape or canaries")
-    drift_gate = workflow.index("Refuse an anomalous change against production")
-    artifact = workflow.index("Preserve the rebuilt candidate")
-    deploy_job = workflow.index("name: Publish gated candidate")
-    deploy = workflow.index("Publish to the dedicated Cloudflare Pages project")
-    post_deploy = workflow.index("Confirm production serves the exact candidate")
-    assert source_build < shape_gate < drift_gate < artifact < deploy_job < deploy < post_deploy
-    assert "environment:\n      name: sanctions-index-production" in workflow
-    assert "secrets.CLOUDFLARE_PAGES_API_TOKEN" in workflow
-    assert "secrets.CLOUDFLARE_ACCOUNT_ID" in workflow
-    assert "wrangler@4.122.0 pages deploy" in workflow
-    assert "--expected-sha256" in workflow
-    assert "if: always() && steps.source_build.outcome == 'success'" in workflow
-
-
-def test_sanctions_refresh_requires_explicit_publish_or_enabled_schedule():
-    workflow = (ROOT / ".github/workflows/refresh-sanctions-index.yml").read_text()
-
-    assert "default: false" in workflow
-    assert "vars.SANCTIONS_INDEX_AUTOPUBLISH_ENABLED == 'true'" in workflow
-    assert "github.event_name == 'workflow_dispatch' && inputs.publish == true" in workflow
-    assert 'cron: "20 4 * * *"' in workflow
+def test_sanctions_index_has_only_one_scheduled_workflow():
+    assert not (ROOT / ".github/workflows/refresh-sanctions-index.yml").exists()

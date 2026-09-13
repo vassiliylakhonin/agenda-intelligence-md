@@ -7,20 +7,19 @@
 # the same quiet way — the gate keeps answering `success` while
 # `generated_at_utc` ages.
 #
-# Publishing uses a separate least-privilege workflow; noticing does not need a
-# credential. This job first
-# gates the public URL itself. It then rebuilds from the official sources and
+# Publishing is a deliberate local operation; noticing does not need a
+# credential. This job first gates the public URL itself. It then rebuilds from
+# the official sources and
 # compares when they are available. A temporary source outage is a warning
 # while the served index is still inside its freshness budget; an unavailable,
 # malformed, or stale served index fails the run. Republishing stays a deliberate
-# command — see deploy/snapshot-site/README.md. It runs one hour after the
-# refresh job so a deployment failure remains independently visible.
+# command — see deploy/snapshot-site/README.md.
 name: Check sanctions name index
 
 on:
   schedule:
-    # One hour after the automatic refresh workflow.
-    - cron: "20 5 * * *"
+    # 04:20 UTC daily — after the US business day, before Almaty morning.
+    - cron: "20 4 * * *"
   workflow_dispatch:
 
 concurrency:
