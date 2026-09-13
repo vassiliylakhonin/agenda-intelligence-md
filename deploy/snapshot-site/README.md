@@ -26,7 +26,11 @@ or older than seven days. A temporary official-source outage is reported as a
 warning while the served index remains within that freshness budget; comparison
 resumes after the source recovers. That turns a real serving stall into an email
 without making one upstream 5xx look like the published index disappeared; the
-republish stays the command above.
+republish stays the command above. When the published snapshot is stale but the
+official sources are available, the workflow still completes the rebuild before
+failing and keeps the verified full and compact JSON files as a seven-day
+Actions artifact. That gives the operator a recovery payload even when local
+TLS policy prevents a rebuild.
 
 The index is a snapshot, not a live query: its freshness is whatever
 `generated_at_utc` says, and the worker reports that date back to the caller in

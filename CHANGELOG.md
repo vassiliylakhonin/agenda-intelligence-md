@@ -4,6 +4,13 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(ci): preserve a verified recovery artifact when the published sanctions index is stale.**
+  The watchdog still fails when the served snapshot exceeds its seven-day freshness budget, but it no longer
+  skips the independent four-source rebuild after that failure. A successful rebuild is shape-checked and retained
+  for seven days as an Actions artifact before the stale-publication failure is enforced, so an operator can recover
+  even when local TLS policy blocks direct source downloads. The workflow also moves its GitHub-maintained actions
+  to their current Node 24-compatible major versions. Publishing remains a deliberate authenticated operation.
+
 - **fix(worker discovery and telemetry): keep external-agent discovery visible without counting its scouts as usage.**
   `GET /.well-known/openapi.json` now serves the same contract as the canonical OpenAPI route, matching the
   path already requested by GAIP discovery clients. Self-identifying scout, test-loop, indexer, and benchmark

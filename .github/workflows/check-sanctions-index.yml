@@ -33,13 +33,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Check the published index is healthy
+        id: published
+        continue-on-error: true
         run: |
           python3 scripts/check_published_index.py \
             --published https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json \
@@ -64,10 +66,27 @@ jobs:
         if: steps.rebuild.outcome == 'success'
         run: python3 scripts/verify_sanctions_index.py deploy/snapshot-site/sanctions-name-index-compact.json
 
-      - name: Compare the published and rebuilt indexes
+      - name: Preserve the rebuilt index for recovery
         if: steps.rebuild.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: sanctions-name-index-${{ github.run_id }}
+          path: |
+            deploy/snapshot-site/sanctions-name-index.json
+            deploy/snapshot-site/sanctions-name-index-compact.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Compare the published and rebuilt indexes
+        if: steps.published.outcome == 'success' && steps.rebuild.outcome == 'success'
         run: |
           python3 scripts/check_published_index.py \
             --published https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json \
             --built deploy/snapshot-site/sanctions-name-index-compact.json \
             --max-age-days 7
+
+      - name: Enforce published-index health after recovery build
+        if: always() && steps.published.outcome == 'failure'
+        run: |
+          echo "The public snapshot is unhealthy or stale. A fresh recovery artifact was preserved when all official sources were available." >&2
+          exit 1

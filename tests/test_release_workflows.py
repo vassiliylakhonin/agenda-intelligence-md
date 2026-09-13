@@ -32,3 +32,16 @@ def test_sanctions_watchdog_treats_a_fresh_source_outage_as_a_warning():
     assert "continue-on-error: true" in workflow
     assert "if: steps.rebuild.outcome == 'failure'" in workflow
     assert workflow.count("if: steps.rebuild.outcome == 'success'") == 2
+
+
+def test_sanctions_watchdog_preserves_a_recovery_artifact_before_failing_stale_publication():
+    workflow = (ROOT / ".github/workflows/check-sanctions-index.yml").read_text()
+
+    published_check = workflow.index("Check the published index is healthy")
+    recovery_artifact = workflow.index("Preserve the rebuilt index for recovery")
+    enforce_health = workflow.index("Enforce published-index health after recovery build")
+    assert published_check < recovery_artifact < enforce_health
+    assert "id: published" in workflow
+    assert "actions/upload-artifact@v7" in workflow
+    assert "sanctions-name-index-${{ github.run_id }}" in workflow
+    assert "if: always() && steps.published.outcome == 'failure'" in workflow
