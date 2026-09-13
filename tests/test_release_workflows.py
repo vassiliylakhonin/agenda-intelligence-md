@@ -67,9 +67,10 @@ def test_sanctions_refresh_gates_before_credentialed_deploy_and_checks_exact_byt
     assert "if: always() && steps.source_build.outcome == 'success'" in workflow
 
 
-def test_manual_sanctions_refresh_is_dry_run_by_default_but_schedule_publishes():
+def test_sanctions_refresh_requires_explicit_publish_or_enabled_schedule():
     workflow = (ROOT / ".github/workflows/refresh-sanctions-index.yml").read_text()
 
     assert "default: false" in workflow
-    assert "if: github.event_name == 'schedule' || inputs.publish == true" in workflow
+    assert "vars.SANCTIONS_INDEX_AUTOPUBLISH_ENABLED == 'true'" in workflow
+    assert "github.event_name == 'workflow_dispatch' && inputs.publish == true" in workflow
     assert 'cron: "20 4 * * *"' in workflow

@@ -30,10 +30,14 @@ deployment in place.
 The environment must contain `CLOUDFLARE_PAGES_API_TOKEN`, limited to deploying
 the `sanctions-name-index` Pages project, and `CLOUDFLARE_ACCOUNT_ID`. Scheduled
 runs cannot pass an approval dialog, so do not configure required reviewers on
-this environment; restrict deployment branches to `main` instead. A manual
+this environment; restrict deployment branches to `main` instead. The repository
+Actions variable `SANCTIONS_INDEX_AUTOPUBLISH_ENABLED` must also equal `true`.
+Keep it `false` until both environment secrets exist, so the daily job remains a
+green build/gate rehearsal rather than failing at authentication. A manual
 dispatch defaults to `publish: false`, which exercises the complete build and
 gate without exposing either credential. Set `publish: true` only to exercise
-the production path.
+the production path; manual publication deliberately does not depend on the
+scheduled-run opt-in variable.
 
 `.github/workflows/check-sanctions-index.yml` remains an independent watchdog
 and runs one hour later. It verifies the URL users actually read, rebuilds from

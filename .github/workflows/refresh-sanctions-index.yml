@@ -87,7 +87,9 @@ jobs:
   deploy:
     name: Publish gated candidate
     needs: build
-    if: github.event_name == 'schedule' || inputs.publish == true
+    if: >-
+      (github.event_name == 'schedule' && vars.SANCTIONS_INDEX_AUTOPUBLISH_ENABLED == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish == true)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
