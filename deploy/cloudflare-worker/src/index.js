@@ -1551,6 +1551,17 @@ function didDocument(request) {
   };
 }
 
+function oauthProtectedResource(request, env) {
+  const origin = originFromRequest(request);
+  return {
+    resource: `${origin}/mcp`,
+    authorization_servers: ["https://vizier.vassiliy-lakhonin.workers.dev"],
+    scopes_supported: ["mcp:tools"],
+    bearer_methods_supported: ["header"],
+    resource_documentation: `${origin}/docs`
+  };
+}
+
 function apiCatalog(request) {
   const origin = originFromRequest(request);
   return {
@@ -1706,6 +1717,30 @@ function openApiDocument(request) {
           responses: {
             200: {
               description: "A2A agent card for the worker.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
+      "/.well-known/agent.json": {
+        get: {
+          tags: ["discovery"],
+          summary: "Legacy A2A agent card alias",
+          responses: {
+            200: {
+              description: "A2A agent card for the worker.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
+      "/.well-known/oauth-protected-resource": {
+        get: {
+          tags: ["discovery"],
+          summary: "RFC 9728 OAuth 2.0 Protected Resource Metadata for MCP",
+          responses: {
+            200: {
+              description: "OAuth protected resource metadata.",
               content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
             }
           }
@@ -9942,7 +9977,7 @@ const FUNNEL_SILENT_PATHS = new Set([
 function funnelStepForPath(pathname) {
   if (FUNNEL_SILENT_PATHS.has(pathname)) return null;
   if (pathname === "/") return "landing";
-  if (pathname === "/.well-known/agent-card.json") return "card";
+  if (pathname === "/.well-known/agent-card.json" || pathname === "/.well-known/agent.json") return "card";
   if (pathname.startsWith("/okf") || pathname.startsWith("/profiles/")) return "docs";
   if (pathname.startsWith("/.well-known/") || pathname === "/entitymap.json" || pathname === "/api/openapi.json") {
     return "discovery";
@@ -13146,7 +13181,10 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return token ? textResponse(token, 200, { "cache-control": "no-store" }) : textResponse("Not found", 404);
   }
 
-  if (request.method === "GET" && url.pathname === "/.well-known/agent-card.json") {
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/agent-card.json" || url.pathname === "/.well-known/agent.json")
+  ) {
     const card = toSpecWireCard(agentCard(request, env));
     const signed = await maybeSignCard(card, env);
     return jsonResponse(signed, 200, aiCatalogHeaders(request));
@@ -13228,6 +13266,17 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 
   if (request.method === "GET" && url.pathname === "/.well-known/did.json") {
     return jsonResponse(didDocument(request), 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/oauth-protected-resource" ||
+      url.pathname === "/.well-known/oauth-protected-resource/mcp")
+  ) {
+    return jsonResponse(oauthProtectedResource(request, env), 200, {
       "cache-control": "public, max-age=3600",
       ...aiCatalogHeaders(request)
     });

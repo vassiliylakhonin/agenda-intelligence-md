@@ -736,6 +736,37 @@ test("/.well-known/glama.json and /glama.json return valid Glama MCP server sche
   assert.deepEqual(rootData, wellKnownData);
 });
 
+test("/.well-known/agent.json serves an identical alias to /.well-known/agent-card.json", async () => {
+  const [cardRes, aliasRes] = await Promise.all([
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/agent-card.json")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/agent.json"))
+  ]);
+
+  assert.equal(aliasRes.status, 200);
+  assert.equal(aliasRes.headers.get("content-type"), "application/json; charset=utf-8");
+  const cardData = await cardRes.json();
+  const aliasData = await aliasRes.json();
+  assert.deepEqual(aliasData, cardData);
+});
+
+test("RFC 9728 OAuth Protected Resource Metadata is served at standard and /mcp paths", async () => {
+  const [standardRes, mcpRes] = await Promise.all([
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/oauth-protected-resource")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/oauth-protected-resource/mcp"))
+  ]);
+
+  assert.equal(standardRes.status, 200);
+  assert.equal(standardRes.headers.get("content-type"), "application/json; charset=utf-8");
+  const standardData = await standardRes.json();
+  assert.equal(standardData.resource, "https://agenda-intelligence-a2a.example.workers.dev/mcp");
+  assert.deepEqual(standardData.authorization_servers, ["https://vizier.vassiliy-lakhonin.workers.dev"]);
+  assert.deepEqual(standardData.scopes_supported, ["mcp:tools"]);
+
+  assert.equal(mcpRes.status, 200);
+  const mcpData = await mcpRes.json();
+  assert.deepEqual(mcpData, standardData);
+});
+
 test("/agents.txt route returns agents policy with text/plain header", async () => {
   const response = await handleRequest(
     new Request("https://agenda-intelligence-a2a.example.workers.dev/agents.txt")
