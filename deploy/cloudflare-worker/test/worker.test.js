@@ -639,6 +639,7 @@ test("AI catalog advertises real agentic resources without traction claims", () 
       "urn:air:agenda-intelligence-a2a.example.workers.dev:server:agenda-intelligence-md-mcp",
       "urn:air:agenda-intelligence-a2a.example.workers.dev:endpoint:message-send",
       "urn:air:agenda-intelligence-a2a.example.workers.dev:api:worker-openapi",
+      "urn:air:agenda-intelligence-a2a.example.workers.dev:auth:oauth-protected-resource",
       "urn:air:agenda-intelligence-a2a.example.workers.dev:knowledge:okf-bundle",
       "urn:air:agenda-intelligence-a2a.example.workers.dev:entitymap:agenda-intelligence-md",
       "urn:air:agenda-intelligence-a2a.example.workers.dev:artifact:confidential-project-room-profile",
@@ -647,7 +648,12 @@ test("AI catalog advertises real agentic resources without traction claims", () 
     ]
   );
   assert.equal(
+    catalog.entries.find((entry) => entry.identifier.endsWith(":auth:oauth-protected-resource")).url,
+    "https://agenda-intelligence-a2a.example.workers.dev/.well-known/oauth-protected-resource"
+  );
+  assert.equal(
     catalog.entries.find((entry) => entry.type === "application/a2a-agent-card+json").url,
+
     "https://agenda-intelligence-a2a.example.workers.dev/.well-known/agent-card.json"
   );
   assert.equal(

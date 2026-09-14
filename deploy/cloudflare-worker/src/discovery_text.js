@@ -14,6 +14,7 @@ Agent-Card: /.well-known/agent-card.json
 AI-Catalog: /.well-known/ai-catalog.json
 ARD: /.well-known/ard.json
 MCP-Server: /.well-known/mcp/server-card.json
+OAuth-Protected-Resource: /.well-known/oauth-protected-resource
 OpenAPI: /api/openapi.json
 `;
 
@@ -32,6 +33,7 @@ export const LLMS_TXT = `# Agenda Intelligence MD
 - [A2A Agent Card](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json): Agent-to-Agent discovery card and capabilities.
 - [MCP Server Manifest](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/mcp/server-card.json): Model Context Protocol server manifest.
 - [Glama MCP Verification](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/glama.json): Glama MCP ownership verification manifest.
+- [OAuth Protected Resource Metadata (RFC 9728)](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/oauth-protected-resource): RFC 9728 OAuth 2.0 protected resource metadata and authorization server discovery.
 - [OpenAPI 3.1 Contract](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/api/openapi.json): Complete OpenAPI 3.1 REST API specification.
 - [API Catalog](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/api-catalog): RFC 6690 linkset discovery catalog.
 - [Entity Map](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json): Machine-readable concept map and knowledge graph.

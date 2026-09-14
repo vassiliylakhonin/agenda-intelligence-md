@@ -51,6 +51,8 @@ Public examples must be synthetic or approved public-only. If a private review c
 - Redacted synthetic example: `/profiles/confidential-project-room/redacted-example.json`
 - Schema: `schemas/v1/confidential-project-room-profile.schema.json`
 - Handling discipline: `docs/trust/confidential-project-workflow.md`
+- Institutional concierge intake: Contact `vassiliy.lakhonin@gmail.com` with subject `[Confidential Project Room Intake]`
+
 
 ## Retrieval instruction
 

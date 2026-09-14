@@ -78,3 +78,19 @@ The reviewer-facing packet should answer:
 ## Public example rule
 
 The bundled `redacted-example.json` is synthetic. Public examples must not include private names, exact deal terms, internal file names, private quotes, direct contact details, or distinctive event sequences that can identify a client or transaction.
+
+## Institutional intake & concierge evaluation
+
+For trading houses, investment committees, project-finance sponsors, and corporate compliance teams (e.g. Singapore / Southeast Asia commodities trade finance, Middle Corridor infrastructure funds, and tech supply-chain secondary sanctions screening) requiring private file review:
+
+### 1. Preparation of Redacted Source Pack
+- Do not transmit raw unredacted commercial agreements, private employee names, or bank account numbers.
+- Replace counterparty names with consistent role aliases (`SponsorCo`, `Trader-A`, `Bank-1`, `Port-Authority-1`).
+- Date items by quarter or approximate age rather than exact internal minute timestamps.
+- Ensure all claims retain reference pointers to specific evidence IDs (`S1`, `S2`).
+
+### 2. Submission & Private Gate Access
+- **Concierge Review Request:** Contact `vassiliy.lakhonin@gmail.com` with subject line `[Confidential Project Room Intake]`.
+- **Private Worker Tenant:** If automated programmatic screening is required for high-volume trade deals or sensitive supply-chain routes, a dedicated zero-data-retention edge deployment can be provisioned with caller-specific bearer keys (`MIDDLE_CORRIDOR_API_KEY`).
+- **Data Boundary Guarantee:** No prompt text, deal documents, or payload bodies are stored in aggregate telemetry. Processing occurs purely in-memory at Cloudflare Edge nodes and is discarded immediately upon verdict generation.
+

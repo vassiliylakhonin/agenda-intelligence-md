@@ -1095,6 +1095,7 @@ function agentCard(request, env = {}) {
           "Use a stable non-personal integration label so aggregate stats can group repeat calls; do not send a person's name, email, token, or secret."
       },
       ai_catalog: `${origin}/.well-known/ai-catalog.json`,
+      oauth_protected_resource: `${origin}/.well-known/oauth-protected-resource`,
       repository: REPOSITORY_URL,
       package: PACKAGE_URL,
       mcp: {
@@ -1124,6 +1125,7 @@ function agentCard(request, env = {}) {
       transport: "https",
       public_endpoint: !productionKey,
       required_authentication: Boolean(productionKey),
+      oauth_protected_resource_metadata: `${origin}/.well-known/oauth-protected-resource`,
       optional_client_identifier_header: "X-Client-Id",
       client_identification: {
         required: false,
@@ -1138,6 +1140,7 @@ function agentCard(request, env = {}) {
       ],
       abuse_contact: `mailto:${SUPPORT_CONTACT_EMAIL}`
     }
+
   };
   const shaped = applyAgentProfile(card, request, env);
   const contracts = toolContractsForProfile(agentProfile(request, env));
@@ -1330,7 +1333,25 @@ function aiCatalog(request, env = {}) {
         updatedAt: DISCOVERY_UPDATED_AT
       },
       {
+        identifier: `urn:air:${host}:auth:oauth-protected-resource`,
+        displayName: "RFC 9728 OAuth 2.0 Protected Resource Metadata",
+        type: "application/json",
+        url: `${origin}/.well-known/oauth-protected-resource`,
+        description:
+          "RFC 9728 discovery document advertising OAuth 2.0 protected resource metadata, authorization servers, and capabilities.",
+        capabilities: ["oauth2", "rfc9728", "resource-metadata", "auth-discovery"],
+        tags: ["oauth", "rfc9728", "security", "authorization"],
+        representativeQueries: [
+          "discover OAuth protected resource metadata",
+          "RFC 9728 authorization servers and resource identifier",
+          "check authentication requirements for Agenda Intelligence MD"
+        ],
+        version: VERSION,
+        updatedAt: DISCOVERY_UPDATED_AT
+      },
+      {
         identifier: `urn:air:${host}:knowledge:okf-bundle`,
+
         displayName: "Agenda Intelligence MD OKF-style knowledge bundle",
         type: "text/markdown",
         url: okfUrl(origin),
