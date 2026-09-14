@@ -87,7 +87,7 @@ import {
   verifyDecisionReceipt
 } from "./decision-receipt.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "./okf_content.js";
-import { AGENTS_TXT, LLMS_TXT } from "./discovery_text.js";
+import { AGENTS_TXT, GLAMA_JSON, LLMS_TXT } from "./discovery_text.js";
 import {
   AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL,
   AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL,
@@ -13200,6 +13200,16 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   ) {
     return jsonResponse(openApiDocument(request), 200, {
       "content-type": "application/vnd.oai.openapi+json; charset=utf-8",
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/glama.json" || url.pathname === "/glama.json")
+  ) {
+    return jsonResponse(GLAMA_JSON, 200, {
       "cache-control": "public, max-age=3600",
       ...aiCatalogHeaders(request)
     });

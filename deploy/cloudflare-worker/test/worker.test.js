@@ -713,6 +713,27 @@ test("/llms.txt route returns markdown policy with text/plain header", async () 
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("content-type"), "text/plain; charset=utf-8");
   assert.ok(text.includes("# Agenda Intelligence MD"));
+  assert.ok(text.includes("## Discovery Surfaces"));
+  assert.ok(text.includes("## Specialized Risk Gates"));
+  assert.ok(text.includes("[ARD (Agent Resource Discovery)]("));
+  assert.ok(text.includes("[Glama MCP Verification]("));
+});
+
+test("/.well-known/glama.json and /glama.json return valid Glama MCP server schema", async () => {
+  const [wellKnownRes, rootRes] = await Promise.all([
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/glama.json")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/glama.json"))
+  ]);
+
+  assert.equal(wellKnownRes.status, 200);
+  assert.equal(wellKnownRes.headers.get("content-type"), "application/json; charset=utf-8");
+  const wellKnownData = await wellKnownRes.json();
+  assert.equal(wellKnownData.$schema, "https://glama.ai/mcp/schemas/server.json");
+  assert.deepEqual(wellKnownData.maintainers, ["vassiliylakhonin"]);
+
+  assert.equal(rootRes.status, 200);
+  const rootData = await rootRes.json();
+  assert.deepEqual(rootData, wellKnownData);
 });
 
 test("/agents.txt route returns agents policy with text/plain header", async () => {
