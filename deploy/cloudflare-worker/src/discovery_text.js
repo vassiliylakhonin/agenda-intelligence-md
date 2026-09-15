@@ -15,6 +15,7 @@ AI-Catalog: /.well-known/ai-catalog.json
 ARD: /.well-known/ard.json
 MCP-Server: /.well-known/mcp/server-card.json
 OAuth-Protected-Resource: /.well-known/oauth-protected-resource
+OAuth-Authorization-Server: /.well-known/oauth-authorization-server
 OpenAPI: /api/openapi.json
 Payment-Manifest: /.well-known/payment-manifest
 X402: /.well-known/x402

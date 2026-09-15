@@ -773,6 +773,25 @@ test("RFC 9728 OAuth Protected Resource Metadata is served at standard and /mcp 
   assert.deepEqual(mcpData, standardData);
 });
 
+test("RFC 8414 OAuth Authorization Server Metadata is served at standard and /mcp paths", async () => {
+  const [authRes, authMcpRes] = await Promise.all([
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/oauth-authorization-server")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/oauth-authorization-server/mcp"))
+  ]);
+
+  assert.equal(authRes.status, 200);
+  assert.equal(authRes.headers.get("content-type"), "application/json; charset=utf-8");
+  const authData = await authRes.json();
+  assert.equal(authData.issuer, "https://vizier.vassiliy-lakhonin.workers.dev");
+  assert.equal(authData.authorization_endpoint, "https://vizier.vassiliy-lakhonin.workers.dev/oauth/authorize");
+  assert.equal(authData.token_endpoint, "https://vizier.vassiliy-lakhonin.workers.dev/oauth/token");
+  assert.deepEqual(authData.scopes_supported, ["mcp:tools", "read", "audit"]);
+
+  assert.equal(authMcpRes.status, 200);
+  const authMcpData = await authMcpRes.json();
+  assert.deepEqual(authMcpData, authData);
+});
+
 test("Agent economy manifests: security.txt, owners.json, x402, payment-manifest, and mpp are served", async () => {
   const [secRes, ownersRes, x402Res, x402JsonRes, payRes, mppRes] = await Promise.all([
     handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/security.txt")),

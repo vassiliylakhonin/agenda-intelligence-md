@@ -1626,6 +1626,23 @@ function oauthProtectedResource(request, env) {
   };
 }
 
+function oauthAuthorizationServer(request, env) {
+  const authOrigin = "https://vizier.vassiliy-lakhonin.workers.dev";
+  const origin = originFromRequest(request);
+  return {
+    issuer: authOrigin,
+    authorization_endpoint: `${authOrigin}/oauth/authorize`,
+    token_endpoint: `${authOrigin}/oauth/token`,
+    jwks_uri: `${origin}/.well-known/jwks.json`,
+    scopes_supported: ["mcp:tools", "read", "audit"],
+    response_types_supported: ["code", "token"],
+    grant_types_supported: ["authorization_code", "client_credentials", "urn:ietf:params:oauth:grant-type:token-exchange"],
+    token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post", "private_key_jwt"],
+    service_documentation: `${origin}/profiles/confidential-project-room`,
+    ui_locales_supported: ["en", "ru"]
+  };
+}
+
 function apiCatalog(request) {
   const origin = originFromRequest(request);
   return {
@@ -13612,6 +13629,17 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       url.pathname === "/.well-known/oauth-protected-resource/mcp")
   ) {
     return jsonResponse(oauthProtectedResource(request, env), 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/oauth-authorization-server" ||
+      url.pathname === "/.well-known/oauth-authorization-server/mcp")
+  ) {
+    return jsonResponse(oauthAuthorizationServer(request, env), 200, {
       "cache-control": "public, max-age=3600",
       ...aiCatalogHeaders(request)
     });
