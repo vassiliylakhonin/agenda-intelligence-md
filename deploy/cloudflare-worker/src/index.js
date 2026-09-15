@@ -87,7 +87,16 @@ import {
   verifyDecisionReceipt
 } from "./decision-receipt.js";
 import { OKF_CONTENT, OKF_PATHS, PROFILE_CONTENT, PROFILE_PATHS } from "./okf_content.js";
-import { AGENTS_TXT, GLAMA_JSON, LLMS_TXT } from "./discovery_text.js";
+import {
+  AGENTS_TXT,
+  GLAMA_JSON,
+  LLMS_TXT,
+  MPP_JSON,
+  OWNERS_JSON,
+  PAYMENT_MANIFEST_JSON,
+  SECURITY_TXT,
+  X402_JSON
+} from "./discovery_text.js";
 import {
   AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL,
   AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL,
@@ -13546,6 +13555,52 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 
   if (request.method === "GET" && url.pathname === "/.well-known/did.json") {
     return jsonResponse(didDocument(request), 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (request.method === "GET" && (url.pathname === "/.well-known/security.txt" || url.pathname === "/security.txt")) {
+    return textResponse(SECURITY_TXT, 200, {
+      "content-type": "text/plain; charset=utf-8",
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (request.method === "GET" && url.pathname === "/.well-known/owners.json") {
+    return jsonResponse(OWNERS_JSON, 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/x402" || url.pathname === "/.well-known/x402.json")
+  ) {
+    return jsonResponse(X402_JSON, 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/payment-manifest" ||
+      url.pathname === "/.well-known/payment-manifest.json")
+  ) {
+    return jsonResponse(PAYMENT_MANIFEST_JSON, 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/mpp" || url.pathname === "/.well-known/mpp.json")
+  ) {
+    return jsonResponse(MPP_JSON, 200, {
       "cache-control": "public, max-age=3600",
       ...aiCatalogHeaders(request)
     });

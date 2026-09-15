@@ -773,6 +773,42 @@ test("RFC 9728 OAuth Protected Resource Metadata is served at standard and /mcp 
   assert.deepEqual(mcpData, standardData);
 });
 
+test("Agent economy manifests: security.txt, owners.json, x402, payment-manifest, and mpp are served", async () => {
+  const [secRes, ownersRes, x402Res, x402JsonRes, payRes, mppRes] = await Promise.all([
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/security.txt")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/owners.json")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/x402")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/x402.json")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/payment-manifest")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/mpp"))
+  ]);
+
+  assert.equal(secRes.status, 200);
+  assert.match(secRes.headers.get("content-type"), /text\/plain/);
+  const secText = await secRes.text();
+  assert.match(secText, /Contact: mailto:vassiliy\.lakhonin@gmail\.com/);
+
+  assert.equal(ownersRes.status, 200);
+  assert.equal(ownersRes.headers.get("content-type"), "application/json; charset=utf-8");
+  const ownersData = await ownersRes.json();
+  assert.equal(ownersData.owners[0].name, "Vassiliy Lakhonin");
+  assert.equal(ownersData.service.security_posture.zero_retention_guarantee, true);
+
+  assert.equal(x402Res.status, 200);
+  assert.equal(x402JsonRes.status, 200);
+  const x402Data = await x402Res.json();
+  assert.equal(x402Data.x402_version, "1.0");
+  assert.equal(x402Data.pricing_models.tier_2_pro.price, 490.0);
+  assert.equal(x402Data.pricing_models.tier_3_deal_dossier.pilot_price, 49.0);
+
+  assert.equal(payRes.status, 200);
+  assert.equal(mppRes.status, 200);
+  const payData = await payRes.json();
+  assert.equal(payData.protocol, "mpp/1.0");
+  assert.equal(payData.monetization.tiers[1].amount, 490);
+  assert.equal(payData.monetization.tiers[2].introductory_amount, 49);
+});
+
 test("/agents.txt route returns agents policy with text/plain header", async () => {
   const response = await handleRequest(
     new Request("https://agenda-intelligence-a2a.example.workers.dev/agents.txt")

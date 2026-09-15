@@ -16,12 +16,164 @@ ARD: /.well-known/ard.json
 MCP-Server: /.well-known/mcp/server-card.json
 OAuth-Protected-Resource: /.well-known/oauth-protected-resource
 OpenAPI: /api/openapi.json
+Payment-Manifest: /.well-known/payment-manifest
+X402: /.well-known/x402
+Owners: /.well-known/owners.json
+Security: /.well-known/security.txt
 `;
 
 export const GLAMA_JSON = {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
   "maintainers": ["vassiliylakhonin"]
 };
+
+export const SECURITY_TXT = `Contact: mailto:vassiliy.lakhonin@gmail.com
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: en, ru
+Canonical: https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/security.txt
+Policy: https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/SECURITY.md
+Hiring: https://github.com/vassiliylakhonin
+Acknowledgments: https://github.com/vassiliylakhonin/agenda-telemetry-vault
+`;
+
+export const OWNERS_JSON = {
+  "$schema": "https://verifymcp.io/schemas/owners-v1.json",
+  "version": "1.0",
+  "owners": [
+    {
+      "name": "Vassiliy Lakhonin",
+      "role": "Founder & Maintainer",
+      "email": "vassiliy.lakhonin@gmail.com",
+      "github": "vassiliylakhonin",
+      "website": "https://github.com/vassiliylakhonin/agenda-intelligence-md"
+    }
+  ],
+  "organization": {
+    "name": "Agenda Intelligence",
+    "github": "vassiliylakhonin",
+    "repo": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
+    "telemetry_vault": "https://github.com/vassiliylakhonin/agenda-telemetry-vault"
+  },
+  "service": {
+    "name": "Agenda Intelligence Compliance & Sanctions Gateway",
+    "description": "Deterministic 5-factor compliance, sanctions screening, and Middle Corridor risk gating on Cloudflare Edge.",
+    "security_contact": "vassiliy.lakhonin@gmail.com",
+    "security_posture": {
+      "zero_retention_guarantee": true,
+      "payload_persistence": "ephemeral_ram_only",
+      "dlp_strip": true
+    }
+  }
+};
+
+export const X402_JSON = {
+  "x402_version": "1.0",
+  "title": "Agenda Intelligence Compliance & Sanctions Gateway",
+  "description": "Deterministic 5-factor sanctions compliance, OFAC 50% Rule, and dual-use screening on Edge.",
+  "currency": "USD",
+  "pricing_models": {
+    "tier_1_sandbox": {
+      "id": "tier-1-sandbox",
+      "name": "Community Sandbox",
+      "price": 0.0,
+      "billing_scheme": "per_day",
+      "rate_limit": "100 queries/day",
+      "auth_required": false,
+      "terms": "Free community sandbox."
+    },
+    "tier_2_pro": {
+      "id": "tier-2-pro",
+      "name": "Dedicated Pro Tenant",
+      "price": 490.0,
+      "billing_scheme": "monthly",
+      "quota": "10,000 queries/month",
+      "auth_required": true,
+      "auth_type": "Bearer",
+      "sla": "99.9%"
+    },
+    "tier_3_deal_dossier": {
+      "id": "tier-3-dossier",
+      "name": "Confidential Deal Dossier",
+      "standard_price": 99.0,
+      "pilot_price": 49.0,
+      "billing_scheme": "per_deal",
+      "turnaround_sla_hours": 24,
+      "deliverables": [
+        "5-factor audit (OFAC 50%, UBO, CHPL dual-use HS Tier 1-4, AIS vessel, Evidence Gaps)",
+        "Cryptographic Vizier JWS receipt for compliance banks"
+      ]
+    }
+  },
+  "payment_rails": [
+    {
+      "method": "direct_invoice",
+      "supported_currencies": ["USD", "EUR", "KZT"],
+      "contact": "vassiliy.lakhonin@gmail.com"
+    },
+    {
+      "method": "stripe_card",
+      "portal_url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room"
+    },
+    {
+      "method": "usdc_on_base",
+      "supported": true,
+      "contact": "vassiliy.lakhonin@gmail.com"
+    }
+  ],
+  "contact": "vassiliy.lakhonin@gmail.com"
+};
+
+export const PAYMENT_MANIFEST_JSON = {
+  "version": "1.0",
+  "protocol": "mpp/1.0",
+  "provider": {
+    "name": "Agenda Intelligence",
+    "operator": "Vassiliy Lakhonin",
+    "contact": "vassiliy.lakhonin@gmail.com",
+    "repo": "https://github.com/vassiliylakhonin/agenda-intelligence-md"
+  },
+  "monetization": {
+    "model": "tiered_subscription_and_audit",
+    "tiers": [
+      {
+        "id": "tier-1-sandbox",
+        "name": "Community Sandbox",
+        "amount": 0,
+        "currency": "USD",
+        "cadence": "daily",
+        "included_calls": 100,
+        "auth": "none"
+      },
+      {
+        "id": "tier-2-pro",
+        "name": "Dedicated Pro Tenant",
+        "amount": 490,
+        "currency": "USD",
+        "cadence": "monthly",
+        "included_calls": 10000,
+        "auth": "bearer_token",
+        "sla": "99.9%"
+      },
+      {
+        "id": "tier-3-dossier",
+        "name": "Confidential Deal Dossier",
+        "amount": 99,
+        "introductory_amount": 49,
+        "currency": "USD",
+        "cadence": "per_deal",
+        "turnaround_hours": 24,
+        "includes_jws_receipt": true
+      }
+    ]
+  },
+  "endpoints": {
+    "mcp": "/mcp",
+    "intake": "/profiles/confidential-project-room",
+    "status": "/status"
+  }
+};
+
+export const MPP_JSON = PAYMENT_MANIFEST_JSON;
 
 export const LLMS_TXT = `# Agenda Intelligence MD
 
