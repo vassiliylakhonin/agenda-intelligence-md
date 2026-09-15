@@ -21,6 +21,9 @@ Payment-Manifest: /.well-known/payment-manifest
 X402: /.well-known/x402
 Owners: /.well-known/owners.json
 Security: /.well-known/security.txt
+AI-Plugin: /.well-known/ai-plugin.json
+Agents-JSON: /.well-known/agents.json
+Brick-Blue: /.well-known/brick-blue.json
 `;
 
 export const GLAMA_JSON = {

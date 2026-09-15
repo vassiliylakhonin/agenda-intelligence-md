@@ -654,6 +654,7 @@ function aiCatalogHeaders(request) {
       `<${origin}/.well-known/api-catalog>; rel="api-catalog"`,
       `<${origin}/api/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"`,
       `<${origin}/.well-known/mcp/server-card.json>; rel="mcp-server-card"`,
+      `<${origin}/.well-known/ai-plugin.json>; rel="ai-plugin"`,
       `<${origin}/.well-known/did.json>; rel="identity"`
     ].join(", ")
   };
@@ -1373,6 +1374,23 @@ function aiCatalog(request, env = {}) {
         updatedAt: DISCOVERY_UPDATED_AT
       },
       {
+        identifier: `urn:air:${host}:plugin:ai-plugin`,
+        displayName: `${card.name} AI Plugin Manifest`,
+        type: "application/json",
+        url: `${origin}/.well-known/ai-plugin.json`,
+        description:
+          "OpenAI, Azure AI Foundry, and Microsoft Copilot Studio compatible AI plugin manifest.",
+        capabilities: ["ai-plugin", "copilot-studio", "azure-ai-foundry", "openai-plugin"],
+        tags: ["ai-plugin", "copilot", "azure", "openai", "discovery"],
+        representativeQueries: [
+          "connect to Microsoft Copilot Studio",
+          "discover AI plugin manifest for Azure AI Foundry",
+          "register agent in OpenAI plugin directory"
+        ],
+        version: VERSION,
+        updatedAt: DISCOVERY_UPDATED_AT
+      },
+      {
         identifier: `urn:air:${host}:knowledge:okf-bundle`,
 
         displayName: "Agenda Intelligence MD OKF-style knowledge bundle",
@@ -1640,6 +1658,75 @@ function oauthAuthorizationServer(request, env) {
     token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post", "private_key_jwt"],
     service_documentation: `${origin}/profiles/confidential-project-room`,
     ui_locales_supported: ["en", "ru"]
+  };
+}
+
+function aiPluginDocument(request, env = {}) {
+  const origin = originFromRequest(request);
+  const card = agentCard(request, env);
+  const profile = agentProfile(request, env);
+  const modelName = profile.replace(/-/g, "_").slice(0, 64);
+  const humanDesc =
+    card.description.length > 120
+      ? card.description.slice(0, 117).trim() + "..."
+      : card.description;
+  return {
+    schema_version: "v1",
+    name_for_human: card.name,
+    name_for_model: modelName,
+    description_for_human: humanDesc,
+    description_for_model: card.description,
+    auth: {
+      type: "none"
+    },
+    api: {
+      type: "openapi",
+      url: `${origin}/api/openapi.json`
+    },
+    logo_url: `${origin}/favicon.ico`,
+    contact_email: "vassiliy.lakhonin@gmail.com",
+    legal_info_url: `${origin}/profiles/confidential-project-room`
+  };
+}
+
+function agentsRegistryDocument(request, env = {}) {
+  const origin = originFromRequest(request);
+  const card = agentCard(request, env);
+  const profile = agentProfile(request, env);
+  return {
+    version: "1.0",
+    agents: [
+      {
+        id: profile,
+        name: card.name,
+        description: card.description,
+        url: `${origin}/.well-known/agent-card.json`,
+        api: `${origin}/message/send`,
+        protocol: "A2A-1.0",
+        mcp: `${origin}/.well-known/mcp/server-card.json`,
+        ai_plugin: `${origin}/.well-known/ai-plugin.json`
+      }
+    ]
+  };
+}
+
+function brickBlueDocument(request, env = {}) {
+  const origin = originFromRequest(request);
+  const card = agentCard(request, env);
+  const profile = agentProfile(request, env);
+  return {
+    version: "1.0",
+    name: card.name,
+    profile,
+    description: card.description,
+    agent_card: `${origin}/.well-known/agent-card.json`,
+    mcp: `${origin}/.well-known/mcp/server-card.json`,
+    ai_plugin: `${origin}/.well-known/ai-plugin.json`,
+    endpoints: {
+      a2a: `${origin}/message/send`,
+      mcp: `${origin}/mcp`,
+      openapi: `${origin}/api/openapi.json`
+    }
   };
 }
 
@@ -13562,7 +13649,8 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   if (
     request.method === "GET" &&
     (url.pathname === "/.well-known/mcp/server-card.json" ||
-      url.pathname === "/.well-known/mcp-server.json")
+      url.pathname === "/.well-known/mcp-server.json" ||
+      url.pathname === "/.well-known/mcp.json")
   ) {
     return jsonResponse(mcpServerCard(request, env), 200, {
       "cache-control": "public, max-age=3600",
@@ -13640,6 +13728,36 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       url.pathname === "/.well-known/oauth-authorization-server/mcp")
   ) {
     return jsonResponse(oauthAuthorizationServer(request, env), 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/ai-plugin.json" || url.pathname === "/ai-plugin.json")
+  ) {
+    return jsonResponse(aiPluginDocument(request, env), 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/agents.json" || url.pathname === "/agents.json")
+  ) {
+    return jsonResponse(agentsRegistryDocument(request, env), 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/brick-blue.json" || url.pathname === "/brick-blue.json")
+  ) {
+    return jsonResponse(brickBlueDocument(request, env), 200, {
       "cache-control": "public, max-age=3600",
       ...aiCatalogHeaders(request)
     });
@@ -13815,7 +13933,10 @@ export {
   a2aResultForCorridorSanctionsAssistant,
   a2aResultForScreenDualUseHsCode,
   verifyGatewayWithVizier,
-  isGatewayVizierEnabled
+  isGatewayVizierEnabled,
+  aiPluginDocument,
+  agentsRegistryDocument,
+  brickBlueDocument
 };
 function generateHtmlDashboard(profile, response) {
   const jsonStr = JSON.stringify(response, null, 2);

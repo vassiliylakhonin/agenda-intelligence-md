@@ -73,6 +73,7 @@ const expectedDiscoveryLinkHeader = [
   '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/api-catalog>; rel="api-catalog"',
   '<https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"',
   '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json>; rel="mcp-server-card"',
+  '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-plugin.json>; rel="ai-plugin"',
   '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/did.json>; rel="identity"'
 ].join(", ");
 
@@ -640,6 +641,7 @@ test("AI catalog advertises real agentic resources without traction claims", () 
       "urn:air:agenda-intelligence-a2a.example.workers.dev:endpoint:message-send",
       "urn:air:agenda-intelligence-a2a.example.workers.dev:api:worker-openapi",
       "urn:air:agenda-intelligence-a2a.example.workers.dev:auth:oauth-protected-resource",
+      "urn:air:agenda-intelligence-a2a.example.workers.dev:plugin:ai-plugin",
       "urn:air:agenda-intelligence-a2a.example.workers.dev:knowledge:okf-bundle",
       "urn:air:agenda-intelligence-a2a.example.workers.dev:entitymap:agenda-intelligence-md",
       "urn:air:agenda-intelligence-a2a.example.workers.dev:artifact:confidential-project-room-profile",
@@ -827,6 +829,41 @@ test("Agent economy manifests: security.txt, owners.json, x402, payment-manifest
   assert.equal(payData.monetization.tiers[1].amount, 490);
   assert.equal(payData.monetization.tiers[2].introductory_amount, 49);
 });
+
+test("Agent ecosystem manifests: ai-plugin.json, agents.json, brick-blue.json, and mcp.json alias are served", async () => {
+  const [pluginRes, pluginAliasRes, agentsRes, brickRes, mcpJsonRes] = await Promise.all([
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-plugin.json")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/ai-plugin.json")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/agents.json")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/brick-blue.json")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp.json"))
+  ]);
+
+  assert.equal(pluginRes.status, 200);
+  assert.equal(pluginAliasRes.status, 200);
+  const pluginData = await pluginRes.json();
+  assert.equal(pluginData.schema_version, "v1");
+  assert.equal(pluginData.name_for_human, "Agenda Intelligence MD");
+  assert.equal(pluginData.api.type, "openapi");
+  assert.ok(pluginData.api.url.endsWith("/api/openapi.json"));
+
+  assert.equal(agentsRes.status, 200);
+  const agentsData = await agentsRes.json();
+  assert.equal(agentsData.version, "1.0");
+  assert.ok(Array.isArray(agentsData.agents));
+  assert.equal(agentsData.agents[0].protocol, "A2A-1.0");
+
+  assert.equal(brickRes.status, 200);
+  const brickData = await brickRes.json();
+  assert.equal(brickData.version, "1.0");
+  assert.ok(brickData.agent_card.endsWith("/.well-known/agent-card.json"));
+  assert.ok(brickData.ai_plugin.endsWith("/.well-known/ai-plugin.json"));
+
+  assert.equal(mcpJsonRes.status, 200);
+  const mcpData = await mcpJsonRes.json();
+  assert.equal(mcpData.transport.command, "agenda-intelligence-mcp");
+});
+
 
 test("/agents.txt route returns agents policy with text/plain header", async () => {
   const response = await handleRequest(
