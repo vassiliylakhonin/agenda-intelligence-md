@@ -50,6 +50,7 @@ Public examples must be synthetic or approved public-only. If a private review c
 - Live profile contract: `/profiles/confidential-project-room`
 - Redacted synthetic example: `/profiles/confidential-project-room/redacted-example.json`
 - Schema: `schemas/v1/confidential-project-room-profile.schema.json`
+- Enterprise engagement tiers: Tier 1 Community Sandbox (Free), Tier 2 Dedicated Pro Tenant ($490/mo), Tier 3 Confidential Deal Dossier ($99/deal, pilot $49)
 - Institutional concierge intake: Contact `vassiliy.lakhonin@gmail.com` with subject `[Confidential Project Room Intake]`
 - Institutional scenarios: Singapore commodities trade finance (grain, metals, oil) and dual-use electronics (CHPL microcontrollers)
 

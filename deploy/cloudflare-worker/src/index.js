@@ -1138,12 +1138,19 @@ function agentCard(request, env = {}) {
       dlp_sanitization: "real_time",
       context_isolation_verified: true,
       eval_framework_safe: true,
+      pricing_model: "tiered_enterprise",
+      engagement_tiers: {
+        tier_1_community_sandbox: "free",
+        tier_2_dedicated_pro_tenant_usd_monthly: 490,
+        tier_3_confidential_deal_dossier_usd: 99,
+        tier_3_pilot_promo_usd: 49
+      },
       data_handling: [
-        "No payment credentials accepted.",
-        "No wallet rails.",
-        "No caller prompt text stored in aggregate stats.",
+        "Zero-retention architecture: queries and parameters are processed purely in ephemeral RAM and discarded.",
+        "No caller prompt text stored in aggregate stats or telemetry logs.",
         "Usage analytics are aggregate operational counters.",
-        "Zero data retention: queries and parameters are processed in-memory and discarded."
+        "No financial credentials processed via agent interface; corporate billing and invoicing handled out-of-band.",
+        "Integrated Vizier Action Firewall for DLP credentials redaction and OFAC 50% Rule screening."
       ],
       abuse_contact: `mailto:${SUPPORT_CONTACT_EMAIL}`
     }
@@ -1542,6 +1549,13 @@ function mcpServerCard(request, env = {}) {
       dlp_sanitization: "real_time",
       context_isolation_verified: true,
       eval_framework_safe: true,
+      pricing_model: "tiered_enterprise",
+      engagement_tiers: {
+        tier_1_community_sandbox: "free",
+        tier_2_dedicated_pro_tenant_usd_monthly: 490,
+        tier_3_confidential_deal_dossier_usd: 99,
+        tier_3_pilot_promo_usd: 49
+      },
       data_handling: [
         "No caller prompt text stored in logs or telemetry.",
         "Zero data retention: processed in-memory and discarded immediately upon verdict generation.",

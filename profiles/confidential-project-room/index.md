@@ -79,9 +79,17 @@ The reviewer-facing packet should answer:
 
 The bundled `redacted-example.json` is synthetic. Public examples must not include private names, exact deal terms, internal file names, private quotes, direct contact details, or distinctive event sequences that can identify a client or transaction.
 
+## Enterprise Engagement & Tiered Pricing Matrix
+
+| Tier | Pricing | Turnaround & Quota | Scope & Deliverables |
+|---|---|---|---|
+| **Tier 1: Community Sandbox** | **Free ($0)** | Up to 100 queries / day | Open evaluation across all 10 A2A and MCP endpoints. Zero-retention ephemeral processing in Edge RAM. No SLA. |
+| **Tier 2: Dedicated Pro Tenant** | **$490 / month** | Up to 10,000 checks / month<br>SLA 99.9% | Dedicated API Bearer key (`Authorization: Bearer <key>`). Priority routing on Cloudflare Edge, custom DLP rules for company identifiers/tokens, and automated risk digest export. |
+| **Tier 3: Confidential Deal Dossier** | **$99 per transaction**<br>*(Introductory pilot: **$49** for 1st deal)* | **24–48 hours** | Full **5-factor institutional audit** of a specific transaction or shipment pack:<br>1. **OFAC 50% Rule & Sanctions:** Aggregate ownership check across all counterparty entities.<br>2. **UBO Beneficial Ownership:** Corporate holding structure trace via GLEIF.<br>3. **Dual-Use HS Code:** 6-digit classification against EU/US CHPL Tier 1–4.<br>4. **Maritime & Port Risk:** Vessel IMO, AIS dark voyage history, and transit port clearance.<br>5. **Evidence Gap Analysis:** Audit of required trade documents (EUC, CT-KZ, clean B/L).<br>Includes official structured report + cryptographic JWS clearance receipt from Vizier for bank credit committees and maritime insurers. |
+
 ## Institutional intake & concierge evaluation
 
-For trading houses, investment committees, project-finance sponsors, and corporate compliance teams (e.g. Singapore / Southeast Asia commodities trade finance, Middle Corridor infrastructure funds, and tech supply-chain secondary sanctions screening) requiring private file review:
+For trading houses, investment committees, project-finance sponsors, and corporate compliance teams (e.g. Singapore / Southeast Asia commodities trade finance, Middle Corridor infrastructure funds, and tech supply-chain secondary sanctions screening) requiring private file review or deal dossier issuance:
 
 ### 1. Preparation of Redacted Source Pack
 - Do not transmit raw unredacted commercial agreements, private employee names, or bank account numbers.
@@ -90,9 +98,10 @@ For trading houses, investment committees, project-finance sponsors, and corpora
 - Ensure all claims retain reference pointers to specific evidence IDs (`S1`, `S2`).
 
 ### 2. Submission & Private Gate Access
-- **Concierge Review Request:** Contact `vassiliy.lakhonin@gmail.com` with subject line `[Confidential Project Room Intake]`.
+- **Deal Dossier / Concierge Intake:** Contact `vassiliy.lakhonin@gmail.com` with subject line `[Confidential Project Room Intake]`.
+- **Pilot Activation:** Quote `$49 Pilot Dossier` for first-transaction promotional pricing.
 - **Private Worker Tenant:** If automated programmatic screening is required for high-volume trade deals or sensitive supply-chain routes, a dedicated zero-data-retention edge deployment can be provisioned with caller-specific bearer keys (`MIDDLE_CORRIDOR_API_KEY`).
-- **Data Boundary Guarantee:** No prompt text, deal documents, or payload bodies are stored in aggregate telemetry. Processing occurs purely in-memory at Cloudflare Edge nodes and is discarded immediately upon verdict generation.
+- **Data Boundary Guarantee:** No prompt text, deal documents, or payload bodies are stored in aggregate telemetry. Processing occurs purely in-memory at Cloudflare Edge nodes and is discarded immediately upon verdict generation. Corporate invoicing and agreements handled out-of-band.
 
 ## Institutional Scenarios
 
