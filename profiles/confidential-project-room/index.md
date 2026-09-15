@@ -94,3 +94,24 @@ For trading houses, investment committees, project-finance sponsors, and corpora
 - **Private Worker Tenant:** If automated programmatic screening is required for high-volume trade deals or sensitive supply-chain routes, a dedicated zero-data-retention edge deployment can be provisioned with caller-specific bearer keys (`MIDDLE_CORRIDOR_API_KEY`).
 - **Data Boundary Guarantee:** No prompt text, deal documents, or payload bodies are stored in aggregate telemetry. Processing occurs purely in-memory at Cloudflare Edge nodes and is discarded immediately upon verdict generation.
 
+## Institutional Scenarios
+
+### 1. Singapore & Global Commodities Trade Finance (Grain, Metals, Oil, Fertilizers)
+- **Target Buyer:** Trade finance desks, LC-issuing banks, and maritime cargo insurers in Singapore (Raffles Place / Collyer Quay), London, Geneva, and Hong Kong.
+- **Problem:** Transactions moving bulk commodities through the Middle Corridor (Trans-Caspian routes via Aktau, Baku, Poti, Batumi) require fast, auditable sanctions and provenance clearance before credit issuance, vessel charter, or cargo insurance bind.
+- **Workflow:**
+  1. Intake deal parameters using role aliases (`Trader-A`, `Origin-Mill-1`, `Charterer-1`) and HS code (e.g. 1001 grain, 7208 steel, 2709 crude oil, 3102 fertilizer).
+  2. Screen logistics handlers and carriers against OFAC 50% Rule and maritime ownership indices via Vizier Action Firewall.
+  3. Verify presence of required provenance evidence (bills of lading, certificates of origin, mill test certs, vessel voyage logs).
+  4. Emit an auditable readiness receipt for credit committee handoff with zero retention of client deal terms.
+
+### 2. High-Priority Dual-Use Technology & Electronics Supply Chains
+- **Target Buyer:** Global hardware OEMs, semiconductor distributors, and corporate trade-compliance teams.
+- **Problem:** Microelectronics transiting Eurasian or Central Asian trade corridors face strict export enforcement and secondary sanctions under OFAC EO 14114 and EU Regulation 833/2014 Annex XL.
+- **Workflow:**
+  1. Intake bill of materials (BOM) with 6-digit HS codes (8542 integrated circuits, 8541 semiconductors, 8471 processing units, 9013 optical sensors).
+  2. Automatic cross-check against Common High Priority Items List (CHPL Tier 1-4) and export control diversion risk.
+  3. Validate end-user certificate (EUC) and transit leg non-diversion undertakings.
+  4. Generate auditable trade-compliance dossier routing for export-control counsel review.
+
+

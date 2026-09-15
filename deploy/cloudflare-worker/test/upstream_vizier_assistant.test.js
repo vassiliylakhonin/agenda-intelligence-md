@@ -372,3 +372,114 @@ test("upstream_vizier_assistant: full A2A handleRequest integration with sanctio
   assert.ok(mdText.includes("Sanctions Screening Warning (OFAC 50% Rule)"));
   assert.ok(mdText.includes("Vizier DLP Security Notice"));
 });
+
+test("corridor_sanctions_assistant: free text mentioning dual-use or HS codes attaches guidance", async () => {
+  const req = new Request("https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/message/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: "test-csa-dual-use-text",
+      method: "message/send",
+      params: {
+        message: {
+          parts: [{ kind: "text", text: "We need to export HS 8542.31 microcontrollers transiting Kazakhstan" }]
+        }
+      }
+    })
+  });
+
+  const resp = await handleRequest(req, {});
+  assert.equal(resp.status, 200);
+  const data = await resp.json();
+  const res = data.result;
+  assert.ok(res.metadata.response.dual_use_guidance);
+  assert.ok(res.metadata.response.dual_use_guidance.includes("screen_dual_use_hs_code"));
+  assert.ok(res.artifacts[0].parts[0].text.includes("High-Priority Dual-Use Commodity Alert"));
+});
+
+test("corridor_sanctions_assistant: MCP tools/call screen_dual_use_hs_code classifies CHPL Tier 1", async () => {
+  const req = new Request("https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/mcp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: "mcp-hs-screen-1",
+      method: "tools/call",
+      params: {
+        name: "screen_dual_use_hs_code",
+        arguments: {
+          hs_code: "8542.31",
+          item_description: "Processors and controllers, whether or not combined with memories",
+          transit_route: "Middle Corridor (Kazakhstan - Caspian - Azerbaijan)"
+        }
+      }
+    })
+  });
+
+  const resp = await handleRequest(req, { AGENT_PROFILE: "corridor_sanctions_assistant" });
+  assert.equal(resp.status, 200);
+  const data = await resp.json();
+  assert.equal(data.jsonrpc, "2.0");
+  assert.equal(data.id, "mcp-hs-screen-1");
+
+  const sc = data.result.structuredContent;
+  assert.equal(sc.hs_code, "8542.31");
+  assert.equal(sc.is_high_priority_item, true);
+  assert.ok(sc.chpl_tier.includes("Tier 1"));
+  assert.equal(sc.clearance_recommendation, "ESCALATE_TO_COMPLIANCE");
+  assert.ok(sc.required_diligence_documents.includes("End-User Certificate (EUC)"));
+  assert.ok(sc.canonical_dossier_gate.includes("dual-use-technology-export"));
+});
+
+test("corridor_sanctions_assistant: MCP tools/call screen_dual_use_hs_code classifies non-CHPL code", async () => {
+  const req = new Request("https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/mcp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: "mcp-hs-screen-2",
+      method: "tools/call",
+      params: {
+        name: "screen_dual_use_hs_code",
+        arguments: {
+          hs_code: "0101.21",
+          item_description: "Pure-bred breeding horses"
+        }
+      }
+    })
+  });
+
+  const resp = await handleRequest(req, { AGENT_PROFILE: "corridor_sanctions_assistant" });
+  assert.equal(resp.status, 200);
+  const data = await resp.json();
+  const sc = data.result.structuredContent;
+  assert.equal(sc.is_high_priority_item, false);
+  assert.equal(sc.clearance_recommendation, "STANDARD_REVIEW");
+  assert.ok(sc.chpl_tier.includes("Non-CHPL"));
+});
+
+test("corridor_sanctions_assistant: MCP tools/call screen_dual_use_hs_code missing hs_code returns failure with schema hint", async () => {
+  const req = new Request("https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/mcp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: "mcp-hs-screen-fail",
+      method: "tools/call",
+      params: {
+        name: "screen_dual_use_hs_code",
+        arguments: {}
+      }
+    })
+  });
+
+  const resp = await handleRequest(req, { AGENT_PROFILE: "corridor_sanctions_assistant" });
+  assert.equal(resp.status, 200);
+  const data = await resp.json();
+  assert.equal(data.result.isError, true);
+  const sc = data.result.structuredContent;
+  assert.ok(sc.schema_hint);
+  assert.deepEqual(sc.schema_hint.required_fields, ["hs_code"]);
+});
+

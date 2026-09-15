@@ -84,6 +84,12 @@ const contractSources = [
     tool: "dual_use_technology_export",
     input: "schemas/v1/dual-use-technology-export-request.schema.json",
     output: "schemas/v1/dual-use-technology-export-response.schema.json"
+  },
+  {
+    profile: "corridor_sanctions_assistant",
+    tool: "screen_dual_use_hs_code",
+    input: "schemas/v1/screen-dual-use-hs-code-request.schema.json",
+    output: "schemas/v1/screen-dual-use-hs-code-response.schema.json"
   }
 ];
 

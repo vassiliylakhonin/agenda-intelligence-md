@@ -5756,5 +5756,96 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
         }
       }
     }
+  },
+  "corridor_sanctions_assistant": {
+    "screen_dual_use_hs_code": {
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/screen-dual-use-hs-code-request.schema.json",
+        "title": "ScreenDualUseHsCodeRequest",
+        "description": "Rapid screening request for Harmonized System (HS) commodity codes against Common High Priority Items List (CHPL) and Middle Corridor diversion risks.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "hs_code"
+        ],
+        "properties": {
+          "hs_code": {
+            "type": "string",
+            "description": "Harmonized System (HS) commodity code (e.g. '8542.31', '8541.10', '8471.50', '9013.80')."
+          },
+          "item_description": {
+            "type": "string",
+            "description": "Optional technical or commercial description of the component or material."
+          },
+          "transit_route": {
+            "type": "string",
+            "description": "Optional planned transit route or transit jurisdiction (e.g. 'Middle Corridor (Kazakhstan - Caspian Sea - Azerbaijan - Georgia)')."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/screen-dual-use-hs-code-response.schema.json",
+        "title": "ScreenDualUseHsCodeResponse",
+        "description": "Rapid screening response for Harmonized System (HS) commodity codes against Common High Priority Items List (CHPL) and Middle Corridor diversion risks.",
+        "x-schema-version": "1",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contract_version",
+          "hs_code",
+          "is_high_priority_item",
+          "clearance_recommendation",
+          "regulatory_framework",
+          "diversion_risk",
+          "canonical_dossier_gate"
+        ],
+        "properties": {
+          "contract_version": {
+            "type": "string"
+          },
+          "hs_code": {
+            "type": "string"
+          },
+          "normalized_hs_prefix": {
+            "type": "string"
+          },
+          "item_description": {
+            "type": "string"
+          },
+          "chpl_tier": {
+            "type": "string"
+          },
+          "is_high_priority_item": {
+            "type": "boolean"
+          },
+          "clearance_recommendation": {
+            "type": "string",
+            "enum": [
+              "STANDARD_REVIEW",
+              "ENHANCED_DUE_DILIGENCE",
+              "ESCALATE_TO_COMPLIANCE"
+            ]
+          },
+          "regulatory_framework": {
+            "type": "string"
+          },
+          "diversion_risk": {
+            "type": "string"
+          },
+          "canonical_dossier_gate": {
+            "type": "string"
+          },
+          "required_diligence_documents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
   }
 });

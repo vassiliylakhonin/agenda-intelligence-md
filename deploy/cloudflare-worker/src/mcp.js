@@ -201,21 +201,24 @@ const PROFILE_TOOLS = {
       "Required fields in 'request': item_description, destination_country, parties, transit_countries, risk_question, decision_stage, dated_sources."
   },
 
-  corridor_sanctions_assistant: {
-    name: "corridor_sanctions_assistant",
-    argKey: "text",
-    // It answers with or without a question, and that is the point: every other
-    // gate's refusal now sends an empty-handed caller here, so this is the one
-    // tool in the fleet that must not turn one away. The schema said the
-    // opposite — text required, nothing else allowed — while the runtime
-    // accepted a number, a null and an unrelated object alike. Declare the
-    // permissive behaviour instead of tightening it, or the routing advice ends
-    // at a refusal.
-    answersWithoutInput: true,
-    summary:
-      "Route a free-text Middle Corridor sanctions question to the matching structured contract and explain what " +
-      "evidence the caller still has to supply. Orientation only: it does not itself triage a deal."
-  },
+  corridor_sanctions_assistant: [
+    {
+      name: "corridor_sanctions_assistant",
+      argKey: "text",
+      answersWithoutInput: true,
+      summary:
+        "Route a free-text Middle Corridor sanctions question to the matching structured contract and explain what " +
+        "evidence the caller still has to supply. Orientation only: it does not itself triage a deal."
+    },
+    {
+      name: "screen_dual_use_hs_code",
+      bringsEvidence: false,
+      argKey: "request",
+      legacyWrapper: false,
+      summary:
+        "Screen 6-digit Harmonized System (HS) commodity codes (e.g. 8542 integrated circuits, 8541 semiconductors, 8471 processing units) against the Common High Priority Items List (CHPL Tier 1-4) and export control diversion risk along the Middle Corridor / Central Asia transit routes."
+    }
+  ],
   agenda: [
     {
       name: "strategic_risk_triage",

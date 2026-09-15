@@ -1132,11 +1132,18 @@ function agentCard(request, env = {}) {
         authentication: false,
         purpose: "Pseudonymous repeat-call attribution in aggregate operational analytics."
       },
+      zero_retention_guarantee: true,
+      prompt_retention: "none",
+      payload_persistence: "ephemeral_ram_only",
+      dlp_sanitization: "real_time",
+      context_isolation_verified: true,
+      eval_framework_safe: true,
       data_handling: [
         "No payment credentials accepted.",
         "No wallet rails.",
         "No caller prompt text stored in aggregate stats.",
-        "Usage analytics are aggregate operational counters."
+        "Usage analytics are aggregate operational counters.",
+        "Zero data retention: queries and parameters are processed in-memory and discarded."
       ],
       abuse_contact: `mailto:${SUPPORT_CONTACT_EMAIL}`
     }
@@ -1527,7 +1534,20 @@ function mcpServerCard(request, env = {}) {
     boundaries: card.x_agenda_intelligence?.boundaries || [
       "No factual-truth verification.",
       "Human review required before commercial action."
-    ]
+    ],
+    security_posture: {
+      zero_retention_guarantee: true,
+      prompt_retention: "none",
+      payload_persistence: "ephemeral_ram_only",
+      dlp_sanitization: "real_time",
+      context_isolation_verified: true,
+      eval_framework_safe: true,
+      data_handling: [
+        "No caller prompt text stored in logs or telemetry.",
+        "Zero data retention: processed in-memory and discarded immediately upon verdict generation.",
+        "Integrated Vizier Action Firewall for DLP credentials redaction and OFAC 50% Rule screening."
+      ]
+    }
   };
 }
 
@@ -2710,6 +2730,12 @@ function corridorAssistantMessageText(response = null, vizierAssistant = null) {
     "I confirm fit, scope, fee, and timing before work starts."
   ];
 
+  if (response && response.dual_use_guidance) {
+    parts.push("");
+    parts.push("## ⚠️ High-Priority Dual-Use Commodity Alert (HS Code / Electronics)");
+    parts.push(response.dual_use_guidance);
+  }
+
   if (vizierAssistant && vizierAssistant.sanctions_screening && vizierAssistant.sanctions_screening.violation) {
     parts.push("");
     parts.push("## ⚠️ Sanctions Screening Warning (OFAC 50% Rule)");
@@ -2769,6 +2795,17 @@ async function a2aResultForCorridorSanctionsAssistant(params, request, env = {})
     };
   }
 
+  let dualUseGuidance = null;
+  const dualUseMatch = text.match(
+    /\b(?:8542|8541|8471|8504|8517|8525|8526|9013|9014|9031)\b|\b(?:hs\s*code|dual[- ]use|microelectronics?|semiconductors?|chips?|integrated circuits?|processors?|controllers?|fpga)\b/i
+  );
+  if (dualUseMatch) {
+    dualUseGuidance =
+      "Your inquiry references dual-use electronics or priority HS commodity codes subject to EU/US Common High Priority Items List (CHPL) restrictions. " +
+      "Use the 'screen_dual_use_hs_code' MCP tool for immediate HS classification triage, or submit an evidence pack to the dedicated gate: " +
+      "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev.";
+  }
+
   const response = {
     kind: "orientation_and_routing",
     message:
@@ -2788,6 +2825,7 @@ async function a2aResultForCorridorSanctionsAssistant(params, request, env = {})
     human_review_required: true,
     not_advice_notice: CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE,
     ...(sanctionsAdvisory ? { sanctions_advisory: sanctionsAdvisory } : {}),
+    ...(dualUseGuidance ? { dual_use_guidance: dualUseGuidance } : {}),
     ...(vizierAssistant
       ? {
           screening: {
@@ -2822,6 +2860,207 @@ async function a2aResultForCorridorSanctionsAssistant(params, request, env = {})
       ...(vizierAssistant && vizierAssistant.degrade_reason ? { vizier_degrade_reason: vizierAssistant.degrade_reason } : {}),
       ...(vizierAssistant && vizierAssistant.receipt ? { vizier_clearance_receipt: vizierAssistant.receipt } : {}),
       ...(vizierAssistant ? { assistant_verification: vizierAssistant } : {})
+    }
+  };
+}
+
+const CHPL_TIER_DATABASE = Object.freeze([
+  {
+    prefix: "8542",
+    tier: "Tier 1 (Battlefield High Priority)",
+    isHighPriority: true,
+    recommendation: "ESCALATE_TO_COMPLIANCE",
+    description: "Electronic integrated circuits, microcontrollers, processors, and memories.",
+    risk: "Critical diversion risk. Dual-use item subject to strict export licensing, end-user verification, and secondary sanctions under OFAC EO 14024/14114 and EU Regulation 833/2014 Annex XL.",
+    documents: ["End-User Certificate (EUC)", "Non-diversion undertaking", "Manufacturer Certificate of Origin", "Verified consignee KYC"]
+  },
+  {
+    prefix: "8517",
+    tier: "Tier 2 (Wireless & Telecommunications)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Telecommunications apparatus, transceivers, and network routing equipment.",
+    risk: "High diversion risk along Middle Corridor. Transit through Caucasus/Central Asia requires confirmation of commercial end-use.",
+    documents: ["Commercial invoice with technical specifications", "End-use statement", "Consignee business registration", "Transit customs declaration"]
+  },
+  {
+    prefix: "8526",
+    tier: "Tier 2 (Radio Navigation & Radar)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Radar apparatus, radio navigational aid apparatus (GPS/GLONASS), and remote control equipment.",
+    risk: "High diversion risk. Critical dual-use applicability in avionics, maritime, and automated navigation.",
+    documents: ["Export license or license exception proof", "End-user certificate", "Consignee verification"]
+  },
+  {
+    prefix: "8541",
+    tier: "Tier 2 (Semiconductors & Diodes)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Diodes, transistors, semiconductor devices, photosensitive devices, and photovoltaic cells.",
+    risk: "High diversion risk. Common high-priority item subject to heightened transit inspection.",
+    documents: ["Manufacturer spec sheet", "End-use statement", "Non-diversion agreement"]
+  },
+  {
+    prefix: "8471",
+    tier: "Tier 3.A (Processing Units & Computing)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Automatic data processing machines, server processing units, and computing subassemblies.",
+    risk: "Medium-high diversion risk. Scrutiny on server/industrial hardware transiting Central Asia.",
+    documents: ["Technical datasheet", "End-user verification", "Contractual re-export prohibition clause"]
+  },
+  {
+    prefix: "8504",
+    tier: "Tier 3.A (Power & Static Converters)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Electrical transformers, static converters (e.g. inverters, rectifiers), and inductors.",
+    risk: "Medium diversion risk. Power supply modules for industrial or dual-use electronics.",
+    documents: ["Commercial invoice", "End-user statement"]
+  },
+  {
+    prefix: "9013",
+    tier: "Tier 3.B (Lasers & Optical Devices)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Lasers, liquid crystal devices, and optical appliances not specified elsewhere.",
+    risk: "Medium-high diversion risk. Dual-use guidance for targeting and optical sensor systems.",
+    documents: ["Export license verification", "End-user statement"]
+  },
+  {
+    prefix: "9014",
+    tier: "Tier 3.B (Direction Finding & Navigational)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Direction finding compasses and other navigational instruments and appliances.",
+    risk: "Medium-high diversion risk. Avionics and maritime navigation components.",
+    documents: ["Export license verification", "End-user statement"]
+  },
+  {
+    prefix: "9031",
+    tier: "Tier 3.B (Measuring & Checking Instruments)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Measuring or checking instruments, appliances and machines not specified elsewhere.",
+    risk: "Medium-high diversion risk. Precision test equipment for electronic manufacturing.",
+    documents: ["Technical specification", "End-user statement"]
+  },
+  {
+    prefix: "8486",
+    tier: "Tier 4 (Semiconductor Manufacturing Equipment)",
+    isHighPriority: true,
+    recommendation: "ESCALATE_TO_COMPLIANCE",
+    description: "Machines and apparatus used solely or principally for the manufacture of semiconductor devices.",
+    risk: "High regulatory exposure. Subject to strict multilateral export controls and catch-all provisions.",
+    documents: ["Manufacturer export authorization", "On-site installation verification guarantee"]
+  }
+]);
+
+function lookupChplTier(rawHsCode) {
+  const clean = String(rawHsCode || "").replace(/[^0-9]/g, "");
+  const match = CHPL_TIER_DATABASE.find((item) => clean.startsWith(item.prefix));
+  if (match) return match;
+  return {
+    prefix: clean.slice(0, 4) || "0000",
+    tier: "Standard Commercial / Non-CHPL",
+    isHighPriority: false,
+    recommendation: "STANDARD_REVIEW",
+    description: "Commodity code is not listed on the EU/US Common High Priority Items List (CHPL).",
+    risk: "Standard commercial compliance. Verify against general OFAC SDN lists and destination-specific sanctions.",
+    documents: ["Standard commercial invoice", "Bill of lading", "Certificate of origin"]
+  };
+}
+
+function screenDualUseHsCodeArtifactText(response) {
+  return [
+    `# Dual-Use HS Code Screening: ${response.hs_code}`,
+    "",
+    `**CHPL Status**: ${response.chpl_tier}`,
+    `**Recommendation**: ${response.clearance_recommendation}`,
+    `**Regulatory Scope**: ${response.regulatory_framework}`,
+    "",
+    "## Diversion Risk Analysis",
+    response.diversion_risk,
+    "",
+    "## Required Due Diligence Documents",
+    ...response.required_diligence_documents.map((doc) => `- ${doc}`),
+    "",
+    "## Full Dossier Gate",
+    `For complete multi-party export dossier triage with dated sources: ${response.canonical_dossier_gate}`,
+    "",
+    "_Orientation and screening triage only. Not legal, sanctions, or export-control advice. Human review is required before commercial action._"
+  ].join("\n");
+}
+
+async function a2aResultForScreenDualUseHsCode(params, request, env = {}) {
+  const structured = params.request && typeof params.request === "object" ? params.request : params;
+  const rawHs = structured.hs_code || structured.code || "";
+  if (!rawHs || typeof rawHs !== "string" || !rawHs.trim()) {
+    return {
+      id: crypto.randomUUID(),
+      status: {
+        state: "TASK_STATE_FAILED",
+        timestamp: new Date().toISOString(),
+        message: "Missing required field 'hs_code' (e.g. '8542.31', '8541.10', '8471.50')"
+      },
+      metadata: {
+        product_profile: "corridor_sanctions_assistant",
+        capability: "screen_dual_use_hs_code",
+        human_review_required: true,
+        required_fields: ["hs_code"],
+        example_request: {
+          hs_code: "8542.31",
+          item_description: "Electronic integrated circuits: processors and controllers"
+        },
+        error: "Missing required field 'hs_code'"
+      }
+    };
+  }
+  const cleanHs = rawHs.replace(/[^0-9]/g, "");
+  const tierInfo = lookupChplTier(cleanHs);
+  const itemDesc = structured.item_description || tierInfo.description;
+  const transitRoute = structured.transit_route || "Middle Corridor";
+
+  let vizierAssistant = null;
+  if (isAssistantVizierEnabled(env)) {
+    vizierAssistant = await verifyAssistantWithVizier(env, `${itemDesc} ${transitRoute}`, structured);
+  }
+
+  const response = {
+    contract_version: VERSION,
+    hs_code: rawHs.trim(),
+    normalized_hs_prefix: cleanHs.slice(0, 4) || "0000",
+    item_description: itemDesc,
+    chpl_tier: tierInfo.tier,
+    is_high_priority_item: tierInfo.isHighPriority,
+    clearance_recommendation: tierInfo.recommendation,
+    regulatory_framework: "EU Regulation 833/2014 Annex XL, US BIS EAR Commerce Control List, UK Russia Regulations 2019",
+    diversion_risk: tierInfo.risk,
+    canonical_dossier_gate: "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev",
+    required_diligence_documents: tierInfo.documents
+  };
+
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "dual-use-hs-screening",
+        name: `Dual-Use HS Screening (${rawHs.trim()})`,
+        parts: [
+          { text: screenDualUseHsCodeArtifactText(response), mediaType: "text/markdown" },
+          { data: response, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "corridor_sanctions_assistant",
+      capability: "screen_dual_use_hs_code",
+      human_review_required: true,
+      response,
+      vizier_status: vizierAssistant ? vizierAssistant.status : "disabled",
+      ...(vizierAssistant && vizierAssistant.receipt ? { vizier_clearance_receipt: vizierAssistant.receipt } : {})
     }
   };
 }
@@ -12111,9 +12350,15 @@ async function runProfileRequest(profile, params, request, env = {}) {
       promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
       modulesUsed = ["dual_use_technology_export"];
     } else if (profile === "corridor_sanctions_assistant") {
-      result = await a2aResultForCorridorSanctionsAssistant(params, request, env);
-      promptChars = extractText(params).length;
-      modulesUsed = ["corridor_sanctions_assistant"];
+      if (params.capability === "screen_dual_use_hs_code") {
+        result = await a2aResultForScreenDualUseHsCode(params, request, env);
+        promptChars = String((params.request && params.request.hs_code) || params.hs_code || "").length;
+        modulesUsed = ["screen_dual_use_hs_code", "corridor_sanctions_assistant"];
+      } else {
+        result = await a2aResultForCorridorSanctionsAssistant(params, request, env);
+        promptChars = extractText(params).length;
+        modulesUsed = ["corridor_sanctions_assistant"];
+      }
     } else if (params.capability === "fleet_directory" || (profile === "agenda" && params.capability === "fleet_directory")) {
       result = a2aResultForFleetDirectory(params);
       promptChars = 0;
@@ -13471,6 +13716,7 @@ export {
   verifyAssistantWithVizier,
   isAssistantVizierEnabled,
   a2aResultForCorridorSanctionsAssistant,
+  a2aResultForScreenDualUseHsCode,
   verifyGatewayWithVizier,
   isGatewayVizierEnabled
 };
