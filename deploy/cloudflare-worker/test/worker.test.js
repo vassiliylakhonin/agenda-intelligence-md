@@ -775,10 +775,12 @@ test("RFC 9728 OAuth Protected Resource Metadata is served at standard and /mcp 
   assert.deepEqual(mcpData, standardData);
 });
 
-test("RFC 8414 OAuth Authorization Server Metadata is served at standard and /mcp paths", async () => {
-  const [authRes, authMcpRes] = await Promise.all([
+test("RFC 8414 OAuth Authorization Server and OpenID Connect Metadata is served at standard and /mcp paths", async () => {
+  const [authRes, authMcpRes, oidcRes, oidcMcpRes] = await Promise.all([
     handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/oauth-authorization-server")),
-    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/oauth-authorization-server/mcp"))
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/oauth-authorization-server/mcp")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/openid-configuration")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/openid-configuration/mcp"))
   ]);
 
   assert.equal(authRes.status, 200);
@@ -792,6 +794,14 @@ test("RFC 8414 OAuth Authorization Server Metadata is served at standard and /mc
   assert.equal(authMcpRes.status, 200);
   const authMcpData = await authMcpRes.json();
   assert.deepEqual(authMcpData, authData);
+
+  assert.equal(oidcRes.status, 200);
+  const oidcData = await oidcRes.json();
+  assert.deepEqual(oidcData, authData);
+
+  assert.equal(oidcMcpRes.status, 200);
+  const oidcMcpData = await oidcMcpRes.json();
+  assert.deepEqual(oidcMcpData, authData);
 });
 
 test("Agent economy manifests: security.txt, owners.json, x402, payment-manifest, and mpp are served", async () => {

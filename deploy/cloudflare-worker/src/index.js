@@ -13725,7 +13725,9 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   if (
     request.method === "GET" &&
     (url.pathname === "/.well-known/oauth-authorization-server" ||
-      url.pathname === "/.well-known/oauth-authorization-server/mcp")
+      url.pathname === "/.well-known/oauth-authorization-server/mcp" ||
+      url.pathname === "/.well-known/openid-configuration" ||
+      url.pathname === "/.well-known/openid-configuration/mcp")
   ) {
     return jsonResponse(oauthAuthorizationServer(request, env), 200, {
       "cache-control": "public, max-age=3600",
