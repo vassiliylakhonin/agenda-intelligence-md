@@ -128,10 +128,13 @@ export const X402_JSON = {
       "chain_id": 8453,
       "asset": "USDC",
       "recipient_address": "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663",
+      "settlement_endpoint": "/v1/settle",
+      "settlement_header": "X-Payment-Tx",
       "supported": true,
       "contact": "vassiliy.lakhonin@gmail.com"
     }
   ],
+  "settlement_endpoint": "/v1/settle",
   "contact": "vassiliy.lakhonin@gmail.com"
 };
 
@@ -147,13 +150,16 @@ export const PAYMENT_MANIFEST_JSON = {
   "monetization": {
     "model": "tiered_subscription_and_audit",
     "receiving_wallet": "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663",
+    "settlement_endpoint": "/v1/settle",
     "payment_rails": [
       {
         "method": "usdc_on_base",
         "chain": "base",
         "chain_id": 8453,
         "asset": "USDC",
-        "recipient_address": "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663"
+        "recipient_address": "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663",
+        "settlement_endpoint": "/v1/settle",
+        "settlement_header": "X-Payment-Tx"
       },
       {
         "method": "paypal",

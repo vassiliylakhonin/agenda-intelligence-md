@@ -122,9 +122,17 @@ import {
   SUPPORT_CONTACT_EMAIL,
   SUPPORT_HOURS_LOCAL,
   SUPPORT_TIMEZONE,
+  TIER_DOSSIER_USDC_AMOUNT,
+  TIER_PRO_USDC_AMOUNT,
   VERSION,
   profileDiscovery
 } from "./profiles.js";
+import {
+  checkDynamicBearerToken,
+  handleSettleRequest,
+  markTransactionSettled,
+  verifyBaseTransactionReceipt
+} from "./settlement.js";
 import {
   MCP_ENDPOINT_PATH,
   MCP_META_PROTOCOL_VERSION,
@@ -866,6 +874,31 @@ async function checkRateLimit(request, env, profile) {
   const limit = rateLimitPerHour(env);
   const kv = env?.AGENDA_USAGE;
   if (!limit || !kv) return { limited: false, limit, count: 0 };
+
+  // 1. Dynamic Dedicated Pro Bearer token check
+  const token = bearerTokenFromRequest(request);
+  if (token && token.startsWith("agy_pro_")) {
+    const pro = await checkDynamicBearerToken(token, env);
+    if (pro) {
+      return { limited: false, limit: 10000, count: pro.used || 0, pro: true };
+    }
+  }
+
+  // 2. Inline Base USDC settlement header (X-Payment-Tx: 0x...)
+  const paymentTx = request.headers.get("x-payment-tx");
+  if (paymentTx && /^0x[0-9a-fA-F]{64}$/.test(paymentTx.trim())) {
+    const verification = await verifyBaseTransactionReceipt(paymentTx.trim(), env);
+    if (verification.valid && verification.amount_usdc >= TIER_DOSSIER_USDC_AMOUNT) {
+      await markTransactionSettled(paymentTx.trim(), {
+        tier: verification.amount_usdc >= TIER_PRO_USDC_AMOUNT ? "tier_2_pro" : "tier_3_deal_dossier",
+        payer: verification.payer,
+        amount_usdc: verification.amount_usdc,
+        settled_via: "x_payment_tx_header"
+      }, env);
+      return { limited: false, limit, count: 0, payment_tx: paymentTx.trim(), settled: true };
+    }
+  }
+
   const ip = clientIpFromRequest(request);
   const hour = new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH
   const key = `rate:${profile || "unknown"}:${ip}:${hour}`;
@@ -1814,9 +1847,40 @@ function openApiDocument(request) {
       { name: "status", description: "Health and status endpoints." },
       { name: "knowledge", description: "OKF and entity-map artifacts for retrieval agents." },
       { name: "jsonrpc", description: "A2A-compatible JSON-RPC endpoint." },
-      { name: "gates", description: "Canonical HTTP endpoints for the triage gates." }
+      { name: "gates", description: "Canonical HTTP endpoints for the triage gates." },
+      { name: "monetization", description: "Autonomous Base USDC settlement and Bearer key provisioning." }
     ],
     paths: {
+      "/v1/settle": {
+        post: {
+          tags: ["monetization"],
+          summary: "Autonomous machine-to-machine payment settlement via USDC on Base",
+          description: "Verifies on-chain Base USDC transaction and provisions a 30-day Pro Bearer token or validates deal dossier payment.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["tx_hash"],
+                  properties: {
+                    tx_hash: { type: "string", description: "Base mainnet transaction hash (0x...)" },
+                    tier: { type: "string", enum: ["tier_2_pro", "tier_3_deal_dossier"] }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: "Settlement confirmation and provisioned Bearer token or clearance receipt.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            },
+            400: { description: "Invalid transaction hash or insufficient payment." },
+            409: { description: "Transaction already claimed." }
+          }
+        }
+      },
       "/": {
         get: {
           tags: ["status"],
@@ -13619,7 +13683,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       headers: {
         "access-control-allow-origin": "*",
         "access-control-allow-methods": "GET, POST, OPTIONS",
-        "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name"
+        "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name, x-payment-tx"
       }
     });
   }
@@ -13892,6 +13956,43 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 
   if (request.method === "POST" && url.pathname === "/v1/evidence-packet/repair-prompt") {
     return handleEvidencePacketRepairPrompt(request, env);
+  }
+
+  if (url.pathname === "/v1/settle" || url.pathname === "/v1/payment/verify") {
+    if (request.method === "POST") {
+      return handleSettleRequest(request, env, ctx);
+    }
+    if (request.method === "GET") {
+      return jsonResponse(
+        {
+          endpoint: "/v1/settle",
+          description: "Autonomous machine-to-machine payment settlement via USDC on Base network.",
+          network: "Base (Chain ID 8453)",
+          asset: "USDC (Circle 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)",
+          recipient_wallet: BASE_USDC_WALLET,
+          supported_tiers: {
+            tier_2_pro: {
+              name: "Dedicated Pro Tenant",
+              amount_usd: 490,
+              benefit: "Dedicated 30-day Bearer token with 10,000 monthly checks."
+            },
+            tier_3_deal_dossier: {
+              name: "Confidential Deal Dossier (Pilot)",
+              amount_usd: 49,
+              benefit: "Expedited 5-factor compliance audit with Vizier JWS receipt."
+            }
+          },
+          instruction:
+            "Send transaction on Base, then POST /v1/settle with {\"tx_hash\": \"0x...\", \"tier\": \"tier_2_pro\"}."
+        },
+        200,
+        { "cache-control": "public, max-age=3600" }
+      );
+    }
+    return new Response("Method not allowed. Use GET or POST.", {
+      status: 405,
+      headers: { allow: "GET, POST", "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" }
+    });
   }
 
   if (request.method === "POST" && Object.hasOwn(DIRECT_V1_ROUTES, url.pathname)) {

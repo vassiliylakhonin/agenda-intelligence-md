@@ -1,0 +1,385 @@
+import {
+  BASE_RPC_URL,
+  BASE_USDC_CONTRACT,
+  BASE_USDBC_CONTRACT,
+  BASE_USDC_WALLET,
+  ERC20_TRANSFER_TOPIC,
+  TIER_DOSSIER_USDC_AMOUNT,
+  TIER_PRO_USDC_AMOUNT,
+  USDC_DECIMALS
+} from "./profiles.js";
+
+export function normalizeAddressForTopic(address) {
+  if (!address || typeof address !== "string") return "";
+  const clean = address.toLowerCase().replace(/^0x/, "");
+  return "0x" + clean.padStart(64, "0");
+}
+
+export function extractAddressFromTopic(topic) {
+  if (!topic || typeof topic !== "string") return "";
+  const clean = topic.toLowerCase().replace(/^0x/, "");
+  return "0x" + clean.slice(-40);
+}
+
+export function parseTransferLog(log, targetRecipient = BASE_USDC_WALLET) {
+  if (!log || typeof log !== "object") return null;
+  const contract = (log.address || "").toLowerCase();
+  const isUsdc =
+    contract === BASE_USDC_CONTRACT.toLowerCase() ||
+    contract === BASE_USDBC_CONTRACT.toLowerCase();
+  if (!isUsdc) return null;
+
+  const topics = Array.isArray(log.topics) ? log.topics : [];
+  if (topics.length < 3) return null;
+
+  const topic0 = (topics[0] || "").toLowerCase();
+  if (topic0 !== ERC20_TRANSFER_TOPIC.toLowerCase()) return null;
+
+  const expectedRecipientTopic = normalizeAddressForTopic(targetRecipient);
+  const actualRecipientTopic = (topics[2] || "").toLowerCase();
+  if (actualRecipientTopic !== expectedRecipientTopic) return null;
+
+  const fromAddress = extractAddressFromTopic(topics[1]);
+  const toAddress = extractAddressFromTopic(topics[2]);
+
+  let rawValue = 0n;
+  try {
+    rawValue = BigInt(log.data || "0x0");
+  } catch (_e) {
+    return null;
+  }
+
+  const amountUsdc = Number(rawValue) / 10 ** USDC_DECIMALS;
+
+  return {
+    contract,
+    from: fromAddress,
+    to: toAddress,
+    raw_value: rawValue.toString(),
+    amount_usdc: amountUsdc
+  };
+}
+
+export async function verifyBaseTransactionReceipt(
+  txHash,
+  env = {},
+  options = {}
+) {
+  if (!txHash || typeof txHash !== "string") {
+    return { valid: false, error: "Missing or invalid tx_hash format" };
+  }
+
+  const cleanTxHash = txHash.trim();
+  if (!/^0x[0-9a-fA-F]{64}$/.test(cleanTxHash)) {
+    return {
+      valid: false,
+      error: "Invalid transaction hash: must be a 64-character hex string starting with 0x"
+    };
+  }
+
+  const kv = env?.AGENDA_USAGE;
+  const replayKey = `settled_tx:${cleanTxHash.toLowerCase()}`;
+
+  if (kv && typeof kv.get === "function") {
+    try {
+      const existing = await kv.get(replayKey);
+      if (existing) {
+        let record = null;
+        try {
+          record = JSON.parse(existing);
+        } catch (_e) {
+          record = { raw: existing };
+        }
+        return {
+          valid: false,
+          code: "already_claimed",
+          error: `Transaction ${cleanTxHash} was already claimed and settled.`,
+          claimed_record: record
+        };
+      }
+    } catch (_kvErr) {
+      // If KV read errors, proceed to verify
+    }
+  }
+
+  const fetchFn = options.fetchFn || globalThis.fetch;
+  const rpcUrl = env?.BASE_RPC_URL || BASE_RPC_URL;
+
+  let rpcResponse;
+  try {
+    rpcResponse = await fetchFn(rpcUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_getTransactionReceipt",
+        params: [cleanTxHash]
+      })
+    });
+  } catch (netErr) {
+    return {
+      valid: false,
+      error: `Failed to query Base RPC endpoint: ${netErr.message || String(netErr)}`
+    };
+  }
+
+  if (!rpcResponse || !rpcResponse.ok) {
+    return {
+      valid: false,
+      error: `Base RPC returned HTTP status ${rpcResponse?.status || "unknown"}`
+    };
+  }
+
+  let rpcJson;
+  try {
+    rpcJson = await rpcResponse.json();
+  } catch (_e) {
+    return { valid: false, error: "Invalid JSON from Base RPC" };
+  }
+
+  const receipt = rpcJson?.result;
+  if (!receipt) {
+    return {
+      valid: false,
+      error: `Transaction ${cleanTxHash} not found on Base mainnet. Ensure the transaction is confirmed before settling.`
+    };
+  }
+
+  if (receipt.status !== "0x1") {
+    return {
+      valid: false,
+      error: `Transaction ${cleanTxHash} reverted or failed on chain (status: ${receipt.status}).`
+    };
+  }
+
+  const logs = Array.isArray(receipt.logs) ? receipt.logs : [];
+  let matchingTransfer = null;
+
+  for (const log of logs) {
+    const parsed = parseTransferLog(log, BASE_USDC_WALLET);
+    if (parsed) {
+      matchingTransfer = parsed;
+      break;
+    }
+  }
+
+  if (!matchingTransfer) {
+    return {
+      valid: false,
+      error: `Transaction ${cleanTxHash} contains no USDC transfer to recipient ${BASE_USDC_WALLET}.`
+    };
+  }
+
+  return {
+    valid: true,
+    tx_hash: cleanTxHash,
+    amount_usdc: matchingTransfer.amount_usdc,
+    payer: matchingTransfer.from,
+    recipient: matchingTransfer.to,
+    contract: matchingTransfer.contract,
+    block_number: receipt.blockNumber
+  };
+}
+
+export async function markTransactionSettled(txHash, details, env = {}) {
+  const kv = env?.AGENDA_USAGE;
+  if (!kv || typeof kv.put !== "function") return;
+  const replayKey = `settled_tx:${txHash.toLowerCase()}`;
+  const payload = JSON.stringify({
+    settled_at: new Date().toISOString(),
+    ...details
+  });
+  // Retain settled transaction markers for 90 days
+  await kv.put(replayKey, payload, { expirationTtl: 90 * 86400 });
+}
+
+export async function provisionProBearerToken(payerAddress, txHash, env = {}) {
+  const kv = env?.AGENDA_USAGE;
+  const rawId = typeof crypto?.randomUUID === "function" ? crypto.randomUUID().replace(/-/g, "") : Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const token = `agy_pro_${rawId}`;
+  const now = Date.now();
+  const validUntil = now + 30 * 86400 * 1000; // 30 days
+
+  const tokenData = {
+    tier: "tier_2_pro",
+    payer: payerAddress,
+    tx_hash: txHash,
+    created_at: new Date(now).toISOString(),
+    valid_until: new Date(validUntil).toISOString(),
+    quota: 10000,
+    used: 0
+  };
+
+  if (kv && typeof kv.put !== "function") {
+    return { token, tokenData };
+  }
+
+  if (kv) {
+    await kv.put(`bearer_token:${token}`, JSON.stringify(tokenData), {
+      expirationTtl: 30 * 86400
+    });
+  }
+
+  return { token, tokenData };
+}
+
+export async function checkDynamicBearerToken(token, env = {}) {
+  if (!token || typeof token !== "string" || !token.startsWith("agy_pro_")) {
+    return null;
+  }
+  const kv = env?.AGENDA_USAGE;
+  if (!kv || typeof kv.get !== "function") return null;
+
+  try {
+    const raw = await kv.get(`bearer_token:${token}`);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    const validUntilMs = new Date(data.valid_until).getTime();
+    if (Date.now() > validUntilMs) {
+      return null;
+    }
+    return data;
+  } catch (_e) {
+    return null;
+  }
+}
+
+export async function handleSettleRequest(request, env = {}, ctx = {}) {
+  if (request.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed. Use POST." }), {
+      status: 405,
+      headers: { allow: "POST", "content-type": "application/json", "cache-control": "no-store" }
+    });
+  }
+
+  let body = {};
+  try {
+    body = await request.json();
+  } catch (_e) {
+    return new Response(
+      JSON.stringify({
+        error: "Malformed JSON payload.",
+        required_fields: ["tx_hash"],
+        example: {
+          tx_hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          tier: "tier_2_pro"
+        }
+      }),
+      { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+    );
+  }
+
+  const txHash = body?.tx_hash;
+  if (!txHash) {
+    return new Response(
+      JSON.stringify({
+        error: "Missing required field: tx_hash",
+        example: {
+          tx_hash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+          tier: "tier_2_pro"
+        }
+      }),
+      { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+    );
+  }
+
+  const verification = await verifyBaseTransactionReceipt(txHash, env);
+  if (!verification.valid) {
+    const status = verification.code === "already_claimed" ? 409 : 400;
+    return new Response(
+      JSON.stringify({
+        error: verification.error,
+        code: verification.code || "settlement_verification_failed",
+        tx_hash: txHash
+      }),
+      { status, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+    );
+  }
+
+  const requestedTier = body?.tier || (verification.amount_usdc >= TIER_PRO_USDC_AMOUNT ? "tier_2_pro" : "tier_3_deal_dossier");
+
+  if (requestedTier === "tier_2_pro") {
+    if (verification.amount_usdc < TIER_PRO_USDC_AMOUNT) {
+      return new Response(
+        JSON.stringify({
+          error: `Insufficient payment for Dedicated Pro Tenant: received ${verification.amount_usdc} USDC, required ${TIER_PRO_USDC_AMOUNT} USDC.`,
+          required_usd: TIER_PRO_USDC_AMOUNT,
+          received_usd: verification.amount_usdc
+        }),
+        { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+      );
+    }
+
+    const { token, tokenData } = await provisionProBearerToken(verification.payer, verification.tx_hash, env);
+    await markTransactionSettled(verification.tx_hash, {
+      tier: "tier_2_pro",
+      payer: verification.payer,
+      amount_usdc: verification.amount_usdc,
+      token
+    }, env);
+
+    return new Response(
+      JSON.stringify({
+        status: "settled",
+        tier: "tier_2_pro",
+        name: "Dedicated Pro Tenant",
+        bearer_token: token,
+        valid_days: 30,
+        valid_until: tokenData.valid_until,
+        monthly_quota: tokenData.quota,
+        receipt: {
+          network: "base",
+          chain_id: 8453,
+          asset: "USDC",
+          amount_usdc: verification.amount_usdc,
+          payer: verification.payer,
+          recipient: verification.recipient,
+          tx_hash: verification.tx_hash,
+          settled_at: new Date().toISOString()
+        },
+        instructions: "Pass 'Authorization: Bearer " + token + "' on all subsequent API and MCP calls."
+      }),
+      { status: 200, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+    );
+  }
+
+  // Tier 3 Deal Dossier ($49 pilot)
+  if (verification.amount_usdc < TIER_DOSSIER_USDC_AMOUNT) {
+    return new Response(
+      JSON.stringify({
+        error: `Insufficient payment for Confidential Deal Dossier: received ${verification.amount_usdc} USDC, required ${TIER_DOSSIER_USDC_AMOUNT} USDC.`,
+        required_usd: TIER_DOSSIER_USDC_AMOUNT,
+        received_usd: verification.amount_usdc
+      }),
+      { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+    );
+  }
+
+  await markTransactionSettled(verification.tx_hash, {
+    tier: "tier_3_deal_dossier",
+    payer: verification.payer,
+    amount_usdc: verification.amount_usdc
+  }, env);
+
+  return new Response(
+    JSON.stringify({
+      status: "settled",
+      tier: "tier_3_deal_dossier",
+      name: "Confidential Deal Dossier",
+      expedited: true,
+      receipt: {
+        network: "base",
+        chain_id: 8453,
+        asset: "USDC",
+        amount_usdc: verification.amount_usdc,
+        payer: verification.payer,
+        recipient: verification.recipient,
+        tx_hash: verification.tx_hash,
+        settled_at: new Date().toISOString()
+      },
+      instructions: "Payment confirmed on Base. Your transaction hash is stamped on the file. Send parameters or submit to /message/send with 'X-Payment-Tx: " + verification.tx_hash + "'."
+    }),
+    { status: 200, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+  );
+}

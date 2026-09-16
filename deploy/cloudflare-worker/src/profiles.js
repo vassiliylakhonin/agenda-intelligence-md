@@ -6,6 +6,13 @@ export const SUPPORT_CONTACT_EMAIL = "vassiliy.lakhonin@gmail.com";
 export const SUPPORT_HOURS_LOCAL = "Mon–Fri 09:00–18:00 Asia/Almaty (UTC+5)";
 export const SUPPORT_TIMEZONE = "Asia/Almaty";
 export const BASE_USDC_WALLET = "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663";
+export const BASE_RPC_URL = "https://mainnet.base.org";
+export const BASE_USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+export const BASE_USDBC_CONTRACT = "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA";
+export const ERC20_TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+export const USDC_DECIMALS = 6;
+export const TIER_PRO_USDC_AMOUNT = 490;
+export const TIER_DOSSIER_USDC_AMOUNT = 49;
 
 export const VERSION = "1.9.0";
 export const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";

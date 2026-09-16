@@ -60,6 +60,18 @@ import {
   matchCounterparty as matchCounterpartyAgainstSnapshot,
   __resetCache as resetSnapshotCache
 } from "../src/upstream_snapshot.js";
+import {
+  parseTransferLog,
+  verifyBaseTransactionReceipt,
+  provisionProBearerToken,
+  checkDynamicBearerToken,
+  normalizeAddressForTopic
+} from "../src/settlement.js";
+import {
+  BASE_USDC_CONTRACT,
+  BASE_USDC_WALLET,
+  ERC20_TRANSFER_TOPIC
+} from "../src/profiles.js";
 
 const request = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
   method: "POST",
@@ -7964,6 +7976,189 @@ test("mcp tool descriptions include required field hints for calling LLMs", asyn
   const dualUseTools = mcpToolsForProfile("dual_use_technology_export");
   assert.match(dualUseTools[0].description, /brings none is refused/);
   assert.match(dualUseTools[0].description, /Required fields in 'request': item_description/);
+});
+
+function mockUsdcTransferReceipt(amountUsdc, recipient = BASE_USDC_WALLET, status = "0x1") {
+  const rawValue = BigInt(Math.round(amountUsdc * 1e6));
+  const hexValue = "0x" + rawValue.toString(16).padStart(64, "0");
+  const recipientTopic = normalizeAddressForTopic(recipient);
+  const payerTopic = "0x000000000000000000000000111122223333444455556666777788889999aaaa";
+  return {
+    status,
+    blockNumber: "0x12345",
+    logs: [
+      {
+        address: BASE_USDC_CONTRACT,
+        topics: [ERC20_TRANSFER_TOPIC, payerTopic, recipientTopic],
+        data: hexValue
+      }
+    ]
+  };
+}
+
+test("parseTransferLog correctly extracts USDC transfers on Base", () => {
+  const log49 = mockUsdcTransferReceipt(49).logs[0];
+  const parsed49 = parseTransferLog(log49);
+  assert.equal(parsed49.amount_usdc, 49);
+  assert.equal(parsed49.to.toLowerCase(), BASE_USDC_WALLET.toLowerCase());
+  assert.equal(parsed49.from.toLowerCase(), "0x111122223333444455556666777788889999aaaa");
+
+  const log490 = mockUsdcTransferReceipt(490).logs[0];
+  const parsed490 = parseTransferLog(log490);
+  assert.equal(parsed490.amount_usdc, 490);
+
+  // Transfer to a different recipient must be ignored
+  const wrongRecipientLog = mockUsdcTransferReceipt(490, "0x000000000000000000000000000000000000dead").logs[0];
+  assert.equal(parseTransferLog(wrongRecipientLog), null);
+
+  // Wrong topic must be ignored
+  const wrongTopicLog = { ...log49, topics: ["0x0", log49.topics[1], log49.topics[2]] };
+  assert.equal(parseTransferLog(wrongTopicLog), null);
+});
+
+test("verifyBaseTransactionReceipt validates confirmed Base RPC receipts and enforces replay protection", async () => {
+  const txHash = "0x1111111111111111111111111111111111111111111111111111111111111111";
+  const mockReceipt = mockUsdcTransferReceipt(490);
+  const fakeFetch = async () =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockReceipt }), {
+      status: 200,
+      headers: { "content-type": "application/json" }
+    });
+
+  const env = { AGENDA_USAGE: fakeRateKv() };
+
+  // First verification: success
+  const res1 = await verifyBaseTransactionReceipt(txHash, env, { fetchFn: fakeFetch });
+  assert.equal(res1.valid, true);
+  assert.equal(res1.amount_usdc, 490);
+  assert.equal(res1.recipient.toLowerCase(), BASE_USDC_WALLET.toLowerCase());
+
+  // Mark settled in KV
+  await env.AGENDA_USAGE.put(`settled_tx:${txHash}`, JSON.stringify({ settled_at: "now", tier: "tier_2_pro" }));
+
+  // Second verification: rejected with already_claimed
+  const res2 = await verifyBaseTransactionReceipt(txHash, env, { fetchFn: fakeFetch });
+  assert.equal(res2.valid, false);
+  assert.equal(res2.code, "already_claimed");
+});
+
+test("GET /v1/settle returns documentation and machine settlement instructions", async () => {
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle");
+  const res = await handleRequest(req, {});
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.equal(data.endpoint, "/v1/settle");
+  assert.equal(data.network, "Base (Chain ID 8453)");
+  assert.equal(data.recipient_wallet, BASE_USDC_WALLET);
+  assert.equal(data.supported_tiers.tier_2_pro.amount_usd, 490);
+  assert.equal(data.supported_tiers.tier_3_deal_dossier.amount_usd, 49);
+});
+
+test("POST /v1/settle provisions a 30-day Pro Bearer key for 490 USDC payment", async () => {
+  const txHash = "0x2222222222222222222222222222222222222222222222222222222222222222";
+  const mockReceipt = mockUsdcTransferReceipt(490);
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockReceipt }), {
+      status: 200,
+      headers: { "content-type": "application/json" }
+    });
+
+  const env = { AGENDA_USAGE: fakeRateKv() };
+
+  try {
+    const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tx_hash: txHash, tier: "tier_2_pro" })
+    });
+
+    const res = await handleRequest(req, env);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.status, "settled");
+    assert.equal(data.tier, "tier_2_pro");
+    assert.ok(data.bearer_token.startsWith("agy_pro_"));
+    assert.equal(data.valid_days, 30);
+    assert.equal(data.receipt.amount_usdc, 490);
+    assert.equal(data.receipt.tx_hash, txHash);
+
+    // Dynamic token can be looked up in KV
+    const lookup = await checkDynamicBearerToken(data.bearer_token, env);
+    assert.ok(lookup);
+    assert.equal(lookup.tier, "tier_2_pro");
+    assert.equal(lookup.quota, 10000);
+
+    // Second call with same tx hash must be rejected as already claimed
+    const req2 = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tx_hash: txHash, tier: "tier_2_pro" })
+    });
+    const res2 = await handleRequest(req2, env);
+    assert.equal(res2.status, 409);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test("checkRateLimit elevates quota for provisioned Pro Bearer key", async () => {
+  const env = { RATE_LIMIT_PER_HOUR: "2", AGENDA_USAGE: fakeRateKv() };
+  const { token } = await provisionProBearerToken("0xpayer", "0xtx", env);
+
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "cf-connecting-ip": "4.4.4.4",
+      authorization: `Bearer ${token}`
+    }
+  });
+
+  // Client past 2 calls is NOT throttled because Pro quota is 10,000
+  for (let i = 0; i < 5; i++) {
+    const rate = await checkRateLimit(req, env, "cis_secondary_sanctions");
+    assert.equal(rate.limited, false);
+    assert.equal(rate.pro, true);
+  }
+});
+
+test("checkRateLimit bypasses 429 when valid X-Payment-Tx header is provided", async () => {
+  const txHash = "0x3333333333333333333333333333333333333333333333333333333333333333";
+  const mockReceipt = mockUsdcTransferReceipt(49);
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockReceipt }), {
+      status: 200,
+      headers: { "content-type": "application/json" }
+    });
+
+  const env = { RATE_LIMIT_PER_HOUR: "1", AGENDA_USAGE: fakeRateKv() };
+
+  try {
+    // Fill up the quota for this IP
+    const fillReq = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
+      method: "POST",
+      headers: { "cf-connecting-ip": "3.3.3.3" }
+    });
+    const first = await checkRateLimit(fillReq, env, "cis_secondary_sanctions");
+    assert.equal(first.limited, false);
+
+    // Second call without payment is limited
+    const second = await checkRateLimit(fillReq, env, "cis_secondary_sanctions");
+    assert.equal(second.limited, true);
+
+    // Call with X-Payment-Tx bypasses the rate limit
+    const paidReq = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
+      method: "POST",
+      headers: { "cf-connecting-ip": "3.3.3.3", "x-payment-tx": txHash }
+    });
+    const paidRate = await checkRateLimit(paidReq, env, "cis_secondary_sanctions");
+    assert.equal(paidRate.limited, false);
+    assert.equal(paidRate.settled, true);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
 });
 
 
