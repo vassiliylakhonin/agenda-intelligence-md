@@ -133,6 +133,7 @@ import {
   markTransactionSettled,
   verifyBaseTransactionReceipt
 } from "./settlement.js";
+import { handleSampleDossierRequest } from "./sample_dossier.js";
 import {
   MCP_ENDPOINT_PATH,
   MCP_META_PROTOCOL_VERSION,
@@ -13270,7 +13271,8 @@ function landingHtml(request, env) {
     <span class="badge">v${escapeHtml(VERSION)}</span>
     <span class="badge">A2A ${escapeHtml(agentCardProtocolVersion(card))}</span>
     <span class="badge">Profile: ${escapeHtml(profile)}</span>
-    <span class="badge" style="color: var(--accent); font-weight: 600;">Pilot Dossier: $49</span>
+    <span class="badge" style="color: var(--accent); font-weight: 600;">Pre-Screen: $49</span>
+    <a href="${origin}/sample-dossier" class="badge" style="color: var(--good); font-weight: 600; text-decoration: none;">📄 View Sample Dossier</a>
     <span class="badge">Zero-Retention</span>
   </div>
 
@@ -13280,21 +13282,32 @@ function landingHtml(request, env) {
 
   <h2>Commercial Clearance & Deal Dossiers</h2>
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
+    <div style="background: #f0f7ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <strong style="color: #0369a1; font-size: 14px;">Institutional Transparency:</strong>
+        <span style="color: var(--muted); font-size: 13px; display: block;">Review an authentic 5-factor forensic sanctions & logistics audit with cryptographic Vizier JWS receipt.</span>
+      </div>
+      <a href="${origin}/sample-dossier" style="background: #0284c7; color: #fff; padding: 6px 16px; border-radius: 4px; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap;">View Sample Redacted Dossier</a>
+    </div>
+
     <p style="font-size: 15px; margin-bottom: 8px;"><strong>Need independent sanctions, UBO, or dual-use clearance for bank compliance or trade finance?</strong></p>
     <p style="color: var(--muted); font-size: 14px; margin-bottom: 14px;">
       Our edge infrastructure delivers institutional 5-factor risk audits with cryptographic Vizier JWS receipts accepted by trade-finance credit committees and compliance banks.
     </p>
     <ul style="font-size: 14px; margin-bottom: 16px; padding-left: 18px;">
-      <li><strong>Tier 1 — Free Community Sandbox:</strong> Basic discovery, schema validation, and lightweight triage (100% free, unmetered).</li>
-      <li><strong>Tier 3 — Confidential Deal Dossier (<span style="color: var(--good); font-weight: 700;">$49 pilot</span> / $99 regular):</strong> Full 5-factor forensic audit (OFAC 50% Rule, UBO ownership graph, CHPL dual-use HS Tier 1–4, AIS deceptive shipping checks, Evidence Gaps) with a signed Vizier JWS receipt for compliance banks. Turnaround &lt; 24h.</li>
-      <li><strong>Tier 2 — Dedicated Pro Tenant ($490 / month):</strong> High-throughput API access (10,000 monthly checks), dedicated bearer token, custom DLP rules, and 99.9% SLA.</li>
+      <li><strong>Tier 1 — Free Community Sandbox:</strong> Basic discovery, schema validation, and lightweight triage (100% free, 50 req/hour).</li>
+      <li><strong>Tier 3 — Instant Algorithmic Pre-Screen (<span style="color: var(--good); font-weight: 700;">$49</span>):</strong> Instant automated single-contract audit in &lt;30 seconds. Designed for trade desks, logistics operators, and analysts before signing letters of intent.</li>
+      <li><strong>Tier 2 — Certified Institutional Deal Dossier (<span style="color: var(--accent); font-weight: 700;">$490</span>):</strong> Bank-grade 5-factor forensic audit (OFAC 50% Rule, UBO ownership graph, CHPL dual-use HS Tier 1–4, AIS deceptive shipping checks, Evidence Gaps) with a signed Vizier ES256 JWS receipt for compliance banks and credit committees. Turnaround &lt; 24h.</li>
+      <li><strong>Enterprise Pro API Tenant ($490 / month):</strong> High-throughput API access (10,000 monthly checks), dedicated bearer token, custom DLP rules, and 99.9% SLA. Programmatic M2M settlement in Base USDC or PayPal.</li>
     </ul>
     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
-      <a href="https://paypal.me/vaskenzy/49USD" target="_blank" rel="noopener noreferrer" style="background: #0070BA; color: #fff; padding: 9px 20px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Instant $49 PayPal / Card</a>
-      <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Confidential Deal Dossier Pilot ($49) — ' + card.name)}" style="background: var(--accent); color: #fff; padding: 9px 20px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Order via Email</a>
+      <a href="${origin}/sample-dossier" style="background: #0f4c81; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">📄 View Sample Dossier</a>
+      <a href="https://paypal.me/vaskenzy/49USD" target="_blank" rel="noopener noreferrer" style="background: #0070BA; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Instant $49 Pre-Screen</a>
+      <a href="https://paypal.me/vaskenzy/490USD" target="_blank" rel="noopener noreferrer" style="background: #166534; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Order $490 Deal Dossier</a>
+      <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Certified Deal Dossier Request — ' + card.name)}" style="background: #fff; color: var(--fg); border: 1px solid var(--line); padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 14px;">Order via Email</a>
     </div>
     <div style="font-size: 13px; color: var(--muted); margin-bottom: 10px; background: rgba(0,0,0,0.03); padding: 8px 12px; border-radius: 6px; border: 1px dashed var(--line);">
-      🤖 <strong>Agentic M2M Settlement (USDC on Base):</strong> <code>${BASE_USDC_WALLET}</code>
+      🤖 <strong>Agentic M2M Settlement (USDC on Base):</strong> <code>${BASE_USDC_WALLET}</code> &bull; <a href="${origin}/v1/settle" style="font-weight: 600;">/v1/settle API</a>
     </div>
     <p style="font-size: 13px; color: var(--muted); margin-top: 8px; margin-bottom: 0;">
       Instant checkout accepts PayPal balance or Debit/Credit Card. For autonomous agents, settle via USDC on Base (Chain ID: 8453). After payment, email your deal parameters (counterparty name, HS codes, route) or tx hash to <a href="mailto:${SUPPORT_CONTACT_EMAIL}">${SUPPORT_CONTACT_EMAIL}</a> for expedited &lt;24h delivery of the signed Vizier JWS receipt.
@@ -13306,6 +13319,8 @@ function landingHtml(request, env) {
 
   <h2>Endpoints</h2>
   <ul class="endpoints">
+    <li><span class="label">Sample dossier:</span> <a href="${origin}/sample-dossier">/sample-dossier</a></li>
+    <li><span class="label">M2M settlement:</span> <a href="${origin}/v1/settle">/v1/settle</a></li>
     <li><span class="label">AI catalog:</span> <a href="${origin}/.well-known/ai-catalog.json">/.well-known/ai-catalog.json</a></li>
     <li><span class="label">Agent card:</span> <a href="${origin}/.well-known/agent-card.json">/.well-known/agent-card.json</a></li>
     <li><span class="label">MCP card:</span> <a href="${origin}/.well-known/mcp/server-card.json">/.well-known/mcp/server-card.json</a></li>
@@ -13948,6 +13963,16 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 
   if (request.method === "GET" && url.pathname === "/stats") {
     return handleStats(request, env);
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/sample-dossier" ||
+      url.pathname === "/sample-dossier.md" ||
+      url.pathname === "/sample-dossier.html" ||
+      url.pathname === "/sample")
+  ) {
+    return handleSampleDossierRequest(request);
   }
 
   if (request.method === "POST" && url.pathname === "/v1/evidence-packet/check") {

@@ -8161,4 +8161,29 @@ test("checkRateLimit bypasses 429 when valid X-Payment-Tx header is provided", a
   }
 });
 
+test("GET /sample-dossier returns HTML and /sample-dossier.md returns Markdown", async () => {
+  const reqHtml = new Request("https://agenda-intelligence-a2a.example.workers.dev/sample-dossier", {
+    method: "GET",
+    headers: { "accept": "text/html" }
+  });
+  const resHtml = await handleRequest(reqHtml, {});
+  assert.equal(resHtml.status, 200);
+  assert.match(resHtml.headers.get("content-type"), /text\/html/);
+  const bodyHtml = await resHtml.text();
+  assert.ok(bodyHtml.includes("Confidential Deal Dossier"));
+  assert.ok(bodyHtml.includes("PRE_SIGNATURE_ESCALATE"));
+  assert.ok(bodyHtml.includes("DOSSIER-REF-2026-09-CASPIAN-4091"));
+
+  const reqMd = new Request("https://agenda-intelligence-a2a.example.workers.dev/sample-dossier.md", {
+    method: "GET"
+  });
+  const resMd = await handleRequest(reqMd, {});
+  assert.equal(resMd.status, 200);
+  assert.match(resMd.headers.get("content-type"), /text\/markdown/);
+  const bodyMd = await resMd.text();
+  assert.ok(bodyMd.includes("# CONFIDENTIAL DEAL DOSSIER"));
+  assert.ok(bodyMd.includes("8481.80.81"));
+});
+
+
 

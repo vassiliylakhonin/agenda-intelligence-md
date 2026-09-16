@@ -29,7 +29,11 @@ Brick-Blue: /.well-known/brick-blue.json
 
 export const GLAMA_JSON = {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
-  "maintainers": ["vassiliylakhonin"]
+  "name": "agenda-intelligence",
+  "description": "Institutional geopolitical risk, sanctions screening, OFAC 50% rule, and dual-use export control gates for AI agents.",
+  "maintainers": ["vassiliylakhonin"],
+  "homepage": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/",
+  "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md"
 };
 
 export const SECURITY_TXT = `Contact: mailto:vassiliy.lakhonin@gmail.com
@@ -201,7 +205,9 @@ export const PAYMENT_MANIFEST_JSON = {
   "endpoints": {
     "mcp": "/mcp",
     "intake": "/profiles/confidential-project-room",
-    "status": "/status"
+    "status": "/status",
+    "sample_dossier": "/sample-dossier",
+    "settle": "/v1/settle"
   }
 };
 
@@ -212,6 +218,7 @@ export const LLMS_TXT = `# Agenda Intelligence MD
 > Deterministic evidence-packet linter, claim verification preflight, and specialized risk gates for AI agent actions.
 
 ## Discovery Surfaces
+- [Sample Redacted Deal Dossier](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/sample-dossier): Real-world 5-factor forensic sanctions and deal-risk audit report with Vizier JWS receipt.
 - [ARD (Agent Resource Discovery)](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ard.json): Machine-readable resource catalog and endpoint registry.
 - [AI Catalog](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json): Canonical AI catalog with machine-readable resource descriptors.
 - [A2A Agent Card](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json): Agent-to-Agent discovery card and capabilities.
@@ -221,6 +228,7 @@ export const LLMS_TXT = `# Agenda Intelligence MD
 - [OpenAPI 3.1 Contract](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/api/openapi.json): Complete OpenAPI 3.1 REST API specification.
 - [API Catalog](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/api-catalog): RFC 6690 linkset discovery catalog.
 - [Entity Map](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json): Machine-readable concept map and knowledge graph.
+- [M2M Crypto Settlement](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/v1/settle): Programmatic Base USDC verification and Pro Bearer key provisioning.
 
 ## Specialized Risk Gates
 - [Middle Corridor Deal Risk Gate](https://middle-corridor-deal-risk-gate.vassiliy-lakhonin.workers.dev): Cross-border logistics, sanctions screening, and trade route risk assessment.
