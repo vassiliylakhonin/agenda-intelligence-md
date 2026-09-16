@@ -1,4 +1,5 @@
 import {
+  BASE_FALLBACK_RPC_URLS,
   BASE_RPC_URL,
   BASE_USDC_CONTRACT,
   BASE_USDBC_CONTRACT,
@@ -105,7 +106,7 @@ export async function verifyBaseTransactionReceipt(
   const fetchFn = options.fetchFn || globalThis.fetch;
   const rpcEndpoints = env?.BASE_RPC_URL
     ? [env.BASE_RPC_URL]
-    : [BASE_RPC_URL, "https://base-rpc.publicnode.com", "https://1rpc.io/base"];
+    : BASE_FALLBACK_RPC_URLS;
 
   let rpcJson = null;
   let lastError = null;
