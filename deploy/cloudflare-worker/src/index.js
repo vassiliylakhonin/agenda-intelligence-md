@@ -100,6 +100,7 @@ import {
 import {
   AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL,
   AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL,
+  BASE_USDC_WALLET,
   CANONICAL_INPUT_MODE,
   CIS_SECONDARY_SANCTIONS_ADR_URL,
   CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL,
@@ -12354,7 +12355,8 @@ async function handleMcpPost(request, env, ctx) {
           upgrade_tier: "tier_2_pro",
           monthly_price_usd: 490,
           contact: SUPPORT_CONTACT_EMAIL,
-          checkout_url: "https://paypal.me/vaskenzy/490USD"
+          checkout_url: "https://paypal.me/vaskenzy/490USD",
+          usdc_base_wallet: BASE_USDC_WALLET
         }),
         429,
         { "retry-after": "3600", "cache-control": "no-store" }
@@ -12653,7 +12655,8 @@ async function handlePost(request, env, ctx) {
             upgrade_tier: "tier_2_pro",
             monthly_price_usd: 490,
             contact: SUPPORT_CONTACT_EMAIL,
-            checkout_url: "https://paypal.me/vaskenzy/490USD"
+            checkout_url: "https://paypal.me/vaskenzy/490USD",
+            usdc_base_wallet: BASE_USDC_WALLET
           }
       );
       logProtocolEvent(request, env, payload.id, method, error, startedAt);
@@ -13226,8 +13229,11 @@ function landingHtml(request, env) {
       <a href="https://paypal.me/vaskenzy/49USD" target="_blank" rel="noopener noreferrer" style="background: #0070BA; color: #fff; padding: 9px 20px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Instant $49 PayPal / Card</a>
       <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Confidential Deal Dossier Pilot ($49) — ' + card.name)}" style="background: var(--accent); color: #fff; padding: 9px 20px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Order via Email</a>
     </div>
+    <div style="font-size: 13px; color: var(--muted); margin-bottom: 10px; background: rgba(0,0,0,0.03); padding: 8px 12px; border-radius: 6px; border: 1px dashed var(--line);">
+      🤖 <strong>Agentic M2M Settlement (USDC on Base):</strong> <code>${BASE_USDC_WALLET}</code>
+    </div>
     <p style="font-size: 13px; color: var(--muted); margin-top: 8px; margin-bottom: 0;">
-      Instant checkout accepts PayPal balance or Debit/Credit Card. After payment, email your deal parameters (counterparty name, HS codes, route) to <a href="mailto:${SUPPORT_CONTACT_EMAIL}">${SUPPORT_CONTACT_EMAIL}</a> for expedited &lt;24h delivery of the signed Vizier JWS receipt.
+      Instant checkout accepts PayPal balance or Debit/Credit Card. For autonomous agents, settle via USDC on Base (Chain ID: 8453). After payment, email your deal parameters (counterparty name, HS codes, route) or tx hash to <a href="mailto:${SUPPORT_CONTACT_EMAIL}">${SUPPORT_CONTACT_EMAIL}</a> for expedited &lt;24h delivery of the signed Vizier JWS receipt.
     </p>
   </div>
 

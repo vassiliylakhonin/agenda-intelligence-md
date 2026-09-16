@@ -5,6 +5,7 @@ import { SNAPSHOT_LICENSE, SNAPSHOT_PROJECT_URL } from "./upstream_snapshot.js";
 export const SUPPORT_CONTACT_EMAIL = "vassiliy.lakhonin@gmail.com";
 export const SUPPORT_HOURS_LOCAL = "Mon–Fri 09:00–18:00 Asia/Almaty (UTC+5)";
 export const SUPPORT_TIMEZONE = "Asia/Almaty";
+export const BASE_USDC_WALLET = "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663";
 
 export const VERSION = "1.9.0";
 export const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";

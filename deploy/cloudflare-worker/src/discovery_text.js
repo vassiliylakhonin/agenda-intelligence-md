@@ -123,6 +123,11 @@ export const X402_JSON = {
     },
     {
       "method": "usdc_on_base",
+      "name": "USDC on Base (Agentic Settlement)",
+      "chain": "base",
+      "chain_id": 8453,
+      "asset": "USDC",
+      "recipient_address": "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663",
       "supported": true,
       "contact": "vassiliy.lakhonin@gmail.com"
     }
@@ -141,6 +146,20 @@ export const PAYMENT_MANIFEST_JSON = {
   },
   "monetization": {
     "model": "tiered_subscription_and_audit",
+    "receiving_wallet": "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663",
+    "payment_rails": [
+      {
+        "method": "usdc_on_base",
+        "chain": "base",
+        "chain_id": 8453,
+        "asset": "USDC",
+        "recipient_address": "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663"
+      },
+      {
+        "method": "paypal",
+        "checkout_url": "https://paypal.me/vaskenzy/49USD"
+      }
+    ],
     "tiers": [
       {
         "id": "tier-1-sandbox",

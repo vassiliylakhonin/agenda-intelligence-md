@@ -834,11 +834,16 @@ test("Agent economy manifests: security.txt, owners.json, x402, payment-manifest
   assert.equal(x402Data.x402_version, "1.0");
   assert.equal(x402Data.pricing_models.tier_2_pro.price, 490.0);
   assert.equal(x402Data.pricing_models.tier_3_deal_dossier.pilot_price, 49.0);
+  const usdcRail = x402Data.payment_rails.find((r) => r.method === "usdc_on_base");
+  assert.equal(usdcRail.chain, "base");
+  assert.equal(usdcRail.chain_id, 8453);
+  assert.equal(usdcRail.recipient_address, "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663");
 
   assert.equal(payRes.status, 200);
   assert.equal(mppRes.status, 200);
   const payData = await payRes.json();
   assert.equal(payData.protocol, "mpp/1.0");
+  assert.equal(payData.monetization.receiving_wallet, "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663");
   assert.equal(payData.monetization.tiers[1].amount, 490);
   assert.equal(payData.monetization.tiers[2].introductory_amount, 49);
 });
@@ -2363,6 +2368,7 @@ test("every landing page offers a human a way to make contact", () => {
     assert.ok(html.includes("Talk to a person"), `${host}: no contact section`);
     assert.ok(html.includes("mailto:vassiliy.lakhonin@gmail.com"), `${host}: no email`);
     assert.ok(html.includes("https://github.com/vassiliylakhonin"), `${host}: no provider link`);
+    assert.ok(html.includes("0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663"), `${host}: no Base USDC wallet`);
   }
 });
 
@@ -4842,6 +4848,33 @@ test("checkRateLimit throttles a client past the per-hour cap", async () => {
   assert.equal(third.limit, 2);
   // A different IP is bucketed independently.
   assert.equal((await checkRateLimit(ipRequest("8.8.8.8"), env, "cis_secondary_sanctions")).limited, false);
+});
+
+test("rate-limited requests return 429 with Dedicated Pro and Base USDC wallet details", async () => {
+  const env = { RATE_LIMIT_PER_HOUR: "1", AGENDA_USAGE: fakeRateKv() };
+  const sendReq = () =>
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cf-connecting-ip": "5.5.5.5" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "rate-test-1",
+        method: "message/send",
+        params: { message: { role: "user", parts: [{ kind: "text", text: "Screen sanctions" }] } }
+      })
+    });
+
+  const res1 = await handleRequest(sendReq(), env);
+  assert.equal(res1.status, 200);
+
+  const res2 = await handleRequest(sendReq(), env);
+  assert.equal(res2.status, 429);
+  const data = await res2.json();
+  assert.equal(data.error.code, -32002);
+  assert.equal(data.error.data.upgrade_tier, "tier_2_pro");
+  assert.equal(data.error.data.monthly_price_usd, 490);
+  assert.equal(data.error.data.checkout_url, "https://paypal.me/vaskenzy/490USD");
+  assert.equal(data.error.data.usdc_base_wallet, "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663");
 });
 
 test("checkRateLimit fails open when KV errors", async () => {
