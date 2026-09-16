@@ -111,13 +111,15 @@ export const X402_JSON = {
   },
   "payment_rails": [
     {
-      "method": "direct_invoice",
-      "supported_currencies": ["USD", "EUR", "KZT"],
+      "method": "paypal",
+      "name": "PayPal & Credit/Debit Card",
+      "checkout_url": "https://paypal.me/vaskenzy/49USD",
       "contact": "vassiliy.lakhonin@gmail.com"
     },
     {
-      "method": "stripe_card",
-      "portal_url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room"
+      "method": "direct_invoice",
+      "supported_currencies": ["USD", "EUR", "KZT"],
+      "contact": "vassiliy.lakhonin@gmail.com"
     },
     {
       "method": "usdc_on_base",

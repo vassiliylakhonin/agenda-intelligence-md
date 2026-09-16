@@ -11156,6 +11156,9 @@ function engagementMarkdown(engagement) {
             `${engagement.client_identification.value}.`
         ]
       : []),
+    ...(engagement.expedited_dossier_url
+      ? [`Expedited checkout: ${engagement.expedited_dossier_url}`]
+      : []),
     `Contact: ${engagement.contact_email} (${engagement.support_hours}). ` +
       `Page for a person to read: ${engagement.human_page}`
   ].join("\n");
@@ -11462,6 +11465,7 @@ function engagementBlock(request, { profile = "agenda", response = null } = {}) 
     next_step:
       `Email a one-line description of ${subject} and the decision or review it feeds. ` +
       "Fit, scope, fee, and timing are confirmed before work starts.",
+    expedited_dossier_url: "https://paypal.me/vaskenzy",
     // The landing page, not the agent card: the card is already in this
     // metadata, and the person behind an integration needs a page they can read.
     human_page: originFromRequest(request)
@@ -12343,9 +12347,13 @@ async function handleMcpPost(request, env, ctx) {
     const rate = await checkRateLimit(request, env, profile);
     if (rate.limited) {
       return jsonResponse(
-        jsonRpcError(payload.id ?? null, -32002, "Rate limit exceeded: too many requests from this client.", {
+        jsonRpcError(payload.id ?? null, -32002, "Rate limit exceeded: free Community Sandbox quota reached. Upgrade to Dedicated Pro Tenant ($490/month) for dedicated Bearer key, SLA 99.9%, and 10,000 monthly checks.", {
           limit_per_hour: rate.limit,
-          profile
+          profile,
+          tier: "tier_1_sandbox",
+          upgrade_tier: "tier_2_pro",
+          contact: SUPPORT_CONTACT_EMAIL,
+          checkout_url: "https://paypal.me/vaskenzy/49USD"
         }),
         429,
         { "retry-after": "3600", "cache-control": "no-store" }
@@ -12636,8 +12644,15 @@ async function handlePost(request, env, ctx) {
       const error = jsonRpcError(
           payload.id ?? null,
           -32002,
-          "Rate limit exceeded: too many requests from this client. Request API access for higher limits.",
-          { limit_per_hour: rate.limit, profile }
+          "Rate limit exceeded: free Community Sandbox quota reached. Upgrade to Dedicated Pro Tenant ($490/month) for dedicated Bearer key, SLA 99.9%, and 10,000 monthly checks.",
+          {
+            limit_per_hour: rate.limit,
+            profile,
+            tier: "tier_1_sandbox",
+            upgrade_tier: "tier_2_pro",
+            contact: SUPPORT_CONTACT_EMAIL,
+            checkout_url: "https://paypal.me/vaskenzy/49USD"
+          }
       );
       logProtocolEvent(request, env, payload.id, method, error, startedAt);
       return jsonResponse(error, 429, {
@@ -13205,9 +13220,13 @@ function landingHtml(request, env) {
       <li><strong>Tier 3 — Confidential Deal Dossier (<span style="color: var(--good); font-weight: 700;">$49 pilot</span> / $99 regular):</strong> Full 5-factor forensic audit (OFAC 50% Rule, UBO ownership graph, CHPL dual-use HS Tier 1–4, AIS deceptive shipping checks, Evidence Gaps) with a signed Vizier JWS receipt for compliance banks. Turnaround &lt; 24h.</li>
       <li><strong>Tier 2 — Dedicated Pro Tenant ($490 / month):</strong> High-throughput API access (10,000 monthly checks), dedicated bearer token, custom DLP rules, and 99.9% SLA.</li>
     </ul>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-      <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Confidential Deal Dossier Pilot ($49) — ' + card.name)}" style="background: var(--accent); color: #fff; padding: 8px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Order $49 Pilot Dossier</a>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+      <a href="https://paypal.me/vaskenzy/49USD" target="_blank" rel="noopener noreferrer" style="background: #0070BA; color: #fff; padding: 9px 20px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Instant $49 PayPal / Card</a>
+      <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Confidential Deal Dossier Pilot ($49) — ' + card.name)}" style="background: var(--accent); color: #fff; padding: 9px 20px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Order via Email</a>
     </div>
+    <p style="font-size: 13px; color: var(--muted); margin-top: 8px; margin-bottom: 0;">
+      Instant checkout accepts PayPal balance or Debit/Credit Card. After payment, email your deal parameters (counterparty name, HS codes, route) to <a href="mailto:${SUPPORT_CONTACT_EMAIL}">${SUPPORT_CONTACT_EMAIL}</a> for expedited &lt;24h delivery of the signed Vizier JWS receipt.
+    </p>
   </div>
 
   <h2>Try it (curl)</h2>

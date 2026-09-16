@@ -9,6 +9,7 @@ enabled = true
 [vars]
 AGENT_PROFILE = "agenda"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+RATE_LIMIT_PER_HOUR = "50"
 
 [[services]]
 binding = "VIZIER"
@@ -32,6 +33,7 @@ workers_dev = true
 [env.middle-corridor-deal-risk-gate.vars]
 AGENT_PROFILE = "kazakhstan"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+RATE_LIMIT_PER_HOUR = "50"
 
 [[env.middle-corridor-deal-risk-gate.services]]
 binding = "VIZIER"
@@ -77,7 +79,7 @@ VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 #     wrangler secret put CIS_SECONDARY_SANCTIONS_API_KEY --env cis-secondary-sanctions
 #   Soft per-IP/hour throttle (keeps the demo usable, caps bulk free use) —
 #     uncomment the line below (best-effort, KV-backed, fails open):
-# RATE_LIMIT_PER_HOUR = "60"
+RATE_LIMIT_PER_HOUR = "50"
 
 [[env.cis-secondary-sanctions.services]]
 binding = "VIZIER"
@@ -94,6 +96,7 @@ workers_dev = true
 [env.agentic-interaction-trust.vars]
 AGENT_PROFILE = "agentic_interaction_trust"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+RATE_LIMIT_PER_HOUR = "50"
 
 [[env.agentic-interaction-trust.services]]
 binding = "VIZIER"
@@ -113,6 +116,7 @@ workers_dev = true
 [env.agent-output-verification.vars]
 AGENT_PROFILE = "agent_output_verification"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+RATE_LIMIT_PER_HOUR = "50"
 
 [[env.agent-output-verification.services]]
 binding = "VIZIER"
@@ -129,6 +133,7 @@ workers_dev = true
 [env.gulf-maritime-exposure.vars]
 AGENT_PROFILE = "gulf_maritime_exposure"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+RATE_LIMIT_PER_HOUR = "50"
 
 [[env.gulf-maritime-exposure.services]]
 binding = "VIZIER"
@@ -148,6 +153,7 @@ workers_dev = true
 [env.kazakhstan-market-entry-readiness.vars]
 AGENT_PROFILE = "market_entry_readiness"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+RATE_LIMIT_PER_HOUR = "50"
 
 [[env.kazakhstan-market-entry-readiness.services]]
 binding = "VIZIER"
@@ -169,6 +175,7 @@ workers_dev = true
 [env.corridor-sanctions-assistant.vars]
 AGENT_PROFILE = "corridor_sanctions_assistant"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+RATE_LIMIT_PER_HOUR = "50"
 
 [[env.corridor-sanctions-assistant.services]]
 binding = "VIZIER"
@@ -188,6 +195,7 @@ workers_dev = true
 [env.critical-minerals-due-diligence.vars]
 AGENT_PROFILE = "critical_minerals_due_diligence"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+RATE_LIMIT_PER_HOUR = "50"
 
 [[env.critical-minerals-due-diligence.services]]
 binding = "VIZIER"
@@ -208,6 +216,7 @@ workers_dev = true
 [env.dual-use-technology-export.vars]
 AGENT_PROFILE = "dual_use_technology_export"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+RATE_LIMIT_PER_HOUR = "50"
 
 [[env.dual-use-technology-export.kv_namespaces]]
 binding = "AGENDA_USAGE"
