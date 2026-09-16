@@ -12352,8 +12352,9 @@ async function handleMcpPost(request, env, ctx) {
           profile,
           tier: "tier_1_sandbox",
           upgrade_tier: "tier_2_pro",
+          monthly_price_usd: 490,
           contact: SUPPORT_CONTACT_EMAIL,
-          checkout_url: "https://paypal.me/vaskenzy/49USD"
+          checkout_url: "https://paypal.me/vaskenzy/490USD"
         }),
         429,
         { "retry-after": "3600", "cache-control": "no-store" }
@@ -12650,8 +12651,9 @@ async function handlePost(request, env, ctx) {
             profile,
             tier: "tier_1_sandbox",
             upgrade_tier: "tier_2_pro",
+            monthly_price_usd: 490,
             contact: SUPPORT_CONTACT_EMAIL,
-            checkout_url: "https://paypal.me/vaskenzy/49USD"
+            checkout_url: "https://paypal.me/vaskenzy/490USD"
           }
       );
       logProtocolEvent(request, env, payload.id, method, error, startedAt);
