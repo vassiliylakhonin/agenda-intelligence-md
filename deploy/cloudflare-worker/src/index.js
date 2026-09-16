@@ -655,7 +655,10 @@ function aiCatalogHeaders(request) {
       `<${origin}/api/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"`,
       `<${origin}/.well-known/mcp/server-card.json>; rel="mcp-server-card"`,
       `<${origin}/.well-known/ai-plugin.json>; rel="ai-plugin"`,
-      `<${origin}/.well-known/did.json>; rel="identity"`
+      `<${origin}/.well-known/did.json>; rel="identity"`,
+      `<${origin}/.well-known/x402>; rel="payment"`,
+      `<${origin}/.well-known/payment-manifest>; rel="payment-manifest"`,
+      `<${origin}/.well-known/security.txt>; rel="security"`
     ].join(", ")
   };
 }
@@ -13123,10 +13126,10 @@ function landingHtml(request, env) {
   }'`;
 
   const flagshipBlock = isKazakhstan
-    ? `<p>This worker is a live Kazakhstan / Middle Corridor Deal Risk Gate demo. It accepts route + cargo + counterparties + dated sources and returns an auditable triage with evidence gaps, missing source categories, decision-readiness score, and a three-value recommendation (insufficient_information, pre_signature_escalate, ready_for_human_review). It has no paying customers yet; usage is illustrative. Human review is required before any commercial action.</p>`
+    ? `<p>This node operates the Kazakhstan / Middle Corridor Deal Risk Gate. It accepts route + cargo + counterparties + dated sources and returns an auditable triage with evidence gaps, missing source categories, decision-readiness score, and a three-value recommendation (insufficient_information, pre_signature_escalate, ready_for_human_review). Deterministic rule-based evaluation. Human review is required before any commercial action.</p>`
     : isAgentic
       ? `<p>This worker is the live Agentic Interaction Trust Gate. It accepts actor + target surface + requested action + dated evidence and returns an auditable trust-routing triage with evidence gaps, missing source categories, decision-readiness score, trust signal, and mandatory human-review routing. It is not a detection engine and does not authorize, deny, or block actions.</p>`
-    : `<p>This worker is the general Agenda Intelligence A2A wrapper — discovery, uptime checks, lightweight strategic-risk triage, and JSON-RPC routing across geography-aware modules. For deeper Kazakhstan / Middle Corridor deal-risk screening, use the dedicated <a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">deal-risk-gate worker</a>.</p>`;
+      : `<p>This worker is the general Agenda Intelligence A2A wrapper — discovery, uptime checks, lightweight strategic-risk triage, and JSON-RPC routing across geography-aware modules. For deeper Kazakhstan / Middle Corridor deal-risk screening, use the dedicated <a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">deal-risk-gate worker</a>.</p>`;
 
   const agenstryListing = isKazakhstan
     ? "https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev"
@@ -13168,7 +13171,7 @@ function landingHtml(request, env) {
   li { margin: 4px 0; }
   .endpoints { font-family: var(--mono); font-size: 13px; }
   .endpoints li { margin: 6px 0; }
-  .endpoints .label { color: var(--muted); display: inline-block; min-width: 130px; }
+  .endpoints .label { color: var(--muted); display: inline-block; min-width: 140px; }
   footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
   footer p { margin: 0 0 6px; }
 </style>
@@ -13183,11 +13186,31 @@ function landingHtml(request, env) {
     <span class="badge">v${escapeHtml(VERSION)}</span>
     <span class="badge">A2A ${escapeHtml(agentCardProtocolVersion(card))}</span>
     <span class="badge">Profile: ${escapeHtml(profile)}</span>
+    <span class="badge" style="color: var(--accent); font-weight: 600;">Pilot Dossier: $49</span>
+    <span class="badge">Zero-Retention</span>
   </div>
 
   <h2>What this is</h2>
   ${flagshipBlock}
   <p><strong>Not</strong> legal, compliance, sanctions, financial, investment, or insurance advice. <strong>Not</strong> a factuality verifier — schemas enforce structure, not truth. <strong>No</strong> autonomous live source retrieval.</p>
+
+  <h2>Commercial Clearance & Deal Dossiers</h2>
+  <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
+    <p style="font-size: 15px; margin-bottom: 8px;"><strong>Need independent sanctions, UBO, or dual-use clearance for bank compliance or trade finance?</strong></p>
+    <p style="color: var(--muted); font-size: 14px; margin-bottom: 14px;">
+      Our edge infrastructure delivers institutional 5-factor risk audits with cryptographic Vizier JWS receipts accepted by trade-finance credit committees and compliance banks.
+    </p>
+    <ul style="font-size: 14px; margin-bottom: 16px; padding-left: 18px;">
+      <li><strong>Tier 1 — Free Community Sandbox:</strong> Basic discovery, schema validation, and lightweight triage (100% free, unmetered).</li>
+      <li><strong>Tier 3 — Confidential Deal Dossier (<span style="color: var(--good); font-weight: 700;">$49 pilot</span> / $99 regular):</strong> Full 5-factor forensic audit (OFAC 50% Rule, UBO ownership graph, CHPL dual-use HS Tier 1–4, AIS deceptive shipping checks, Evidence Gaps) with a signed Vizier JWS receipt for compliance banks. Turnaround &lt; 24h.</li>
+      <li><strong>Tier 2 — Dedicated Pro Tenant ($490 / month):</strong> High-throughput API access (10,000 monthly checks), dedicated bearer token, custom DLP rules, and 99.9% SLA.</li>
+    </ul>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Confidential Deal Dossier Pilot ($49) — ' + card.name)}" style="background: var(--accent); color: #fff; padding: 8px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Order $49 Pilot Dossier</a>
+      <a href="https://t.me/vassiliy_lakhonin" target="_blank" rel="noopener noreferrer" style="background: #229ED9; color: #fff; padding: 8px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Telegram Concierge</a>
+      <a href="${origin}/.well-known/x402" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line); font-size: 14px; color: var(--fg); font-family: var(--mono);">x402 Specs</a>
+    </div>
+  </div>
 
   <h2>Try it (curl)</h2>
   <pre>${escapeHtml(tryItCurl)}</pre>
@@ -13197,6 +13220,13 @@ function landingHtml(request, env) {
     <li><span class="label">AI catalog:</span> <a href="${origin}/.well-known/ai-catalog.json">/.well-known/ai-catalog.json</a></li>
     <li><span class="label">Agent card:</span> <a href="${origin}/.well-known/agent-card.json">/.well-known/agent-card.json</a></li>
     <li><span class="label">MCP card:</span> <a href="${origin}/.well-known/mcp/server-card.json">/.well-known/mcp/server-card.json</a></li>
+    <li><span class="label">x402 pricing:</span> <a href="${origin}/.well-known/x402">/.well-known/x402</a></li>
+    <li><span class="label">Payment manifest:</span> <a href="${origin}/.well-known/payment-manifest">/.well-known/payment-manifest</a></li>
+    <li><span class="label">Security TXT:</span> <a href="${origin}/.well-known/security.txt">/.well-known/security.txt</a></li>
+    <li><span class="label">VerifyMCP:</span> <a href="${origin}/.well-known/owners.json">/.well-known/owners.json</a></li>
+    <li><span class="label">OpenID config:</span> <a href="${origin}/.well-known/openid-configuration">/.well-known/openid-configuration</a></li>
+    <li><span class="label">AI plugin:</span> <a href="${origin}/.well-known/ai-plugin.json">/.well-known/ai-plugin.json</a></li>
+    <li><span class="label">Agents registry:</span> <a href="${origin}/.well-known/agents.json">/.well-known/agents.json</a></li>
     <li><span class="label">DID:</span> <a href="${origin}/.well-known/did.json">/.well-known/did.json</a></li>
     <li><span class="label">API catalog:</span> <a href="${origin}/.well-known/api-catalog">/.well-known/api-catalog</a></li>
     <li><span class="label">OpenAPI:</span> <a href="${origin}/api/openapi.json">/api/openapi.json</a></li>
@@ -13224,7 +13254,7 @@ function landingHtml(request, env) {
   </ul>
 
   <footer>
-    <p>Hosted on Cloudflare Workers. No payments, no wallets, no autonomous live retrieval, no factual-truth verification. Human review required before any commercial action.</p>
+    <p>Hosted on Cloudflare Workers Edge. Zero-Retention security guarantee: ephemeral RAM processing, zero disk persistence, deterministic rule-based evaluation. Human review required before any commercial action.</p>
     <p>This live wrapper is intentionally limited. Full product behavior remains in the installable stdio MCP server (<code>pip install agenda-intelligence-md</code>).</p>
   </footer>
 </main>

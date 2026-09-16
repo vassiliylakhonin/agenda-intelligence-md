@@ -74,7 +74,10 @@ const expectedDiscoveryLinkHeader = [
   '<https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json"',
   '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp/server-card.json>; rel="mcp-server-card"',
   '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/ai-plugin.json>; rel="ai-plugin"',
-  '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/did.json>; rel="identity"'
+  '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/did.json>; rel="identity"',
+  '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/x402>; rel="payment"',
+  '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/payment-manifest>; rel="payment-manifest"',
+  '<https://agenda-intelligence-a2a.example.workers.dev/.well-known/security.txt>; rel="security"'
 ].join(", ");
 
 class MemoryKv {
