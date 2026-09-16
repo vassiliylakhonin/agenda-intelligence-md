@@ -103,39 +103,47 @@ export async function verifyBaseTransactionReceipt(
   }
 
   const fetchFn = options.fetchFn || globalThis.fetch;
-  const rpcUrl = env?.BASE_RPC_URL || BASE_RPC_URL;
+  const rpcEndpoints = env?.BASE_RPC_URL
+    ? [env.BASE_RPC_URL]
+    : [BASE_RPC_URL, "https://base-rpc.publicnode.com", "https://1rpc.io/base"];
 
-  let rpcResponse;
-  try {
-    rpcResponse = await fetchFn(rpcUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_getTransactionReceipt",
-        params: [cleanTxHash]
-      })
-    });
-  } catch (netErr) {
-    return {
-      valid: false,
-      error: `Failed to query Base RPC endpoint: ${netErr.message || String(netErr)}`
-    };
+  let rpcJson = null;
+  let lastError = null;
+
+  for (const endpoint of rpcEndpoints) {
+    try {
+      const rpcResponse = await fetchFn(endpoint, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "user-agent": "AgendaIntelligence/1.9 (+https://github.com/vassiliylakhonin/agenda-intelligence-md)"
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "eth_getTransactionReceipt",
+          params: [cleanTxHash]
+        })
+      });
+
+      if (rpcResponse && rpcResponse.ok) {
+        rpcJson = await rpcResponse.json();
+        if (rpcJson && "result" in rpcJson) {
+          break;
+        }
+      } else if (rpcResponse) {
+        lastError = `Base RPC returned HTTP status ${rpcResponse.status}`;
+      }
+    } catch (netErr) {
+      lastError = `Failed to query Base RPC endpoint: ${netErr.message || String(netErr)}`;
+    }
   }
 
-  if (!rpcResponse || !rpcResponse.ok) {
+  if (!rpcJson || !("result" in rpcJson)) {
     return {
       valid: false,
-      error: `Base RPC returned HTTP status ${rpcResponse?.status || "unknown"}`
+      error: lastError || "Failed to reach Base RPC mainnet"
     };
-  }
-
-  let rpcJson;
-  try {
-    rpcJson = await rpcResponse.json();
-  } catch (_e) {
-    return { valid: false, error: "Invalid JSON from Base RPC" };
   }
 
   const receipt = rpcJson?.result;
