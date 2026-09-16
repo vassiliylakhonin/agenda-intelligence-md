@@ -13207,7 +13207,6 @@ function landingHtml(request, env) {
     </ul>
     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
       <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Confidential Deal Dossier Pilot ($49) — ' + card.name)}" style="background: var(--accent); color: #fff; padding: 8px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Order $49 Pilot Dossier</a>
-      <a href="https://t.me/vassiliy_lakhonin" target="_blank" rel="noopener noreferrer" style="background: #229ED9; color: #fff; padding: 8px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Telegram Concierge</a>
       <a href="${origin}/.well-known/x402" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line); font-size: 14px; color: var(--fg); font-family: var(--mono);">x402 Specs</a>
     </div>
   </div>
