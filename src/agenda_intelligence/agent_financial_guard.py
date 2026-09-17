@@ -9,9 +9,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-DEFAULT_ENDPOINT = (
-    "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/v1/agent-financial/pre-sign-check"
-)
+DEFAULT_ENDPOINT = "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/v1/agent-financial/pre-sign-check"
 
 # Designated high-risk & sanctioned addresses (OFAC SDN, Lazarus Group, Tornado Cash)
 DEFAULT_SANCTIONED_ADDRESSES = {
@@ -154,9 +152,7 @@ class AgentFinancialGuard:
         # 1. Sanctions check
         if recipient in DEFAULT_SANCTIONED_ADDRESSES:
             checks["sanctions_aml"] = False
-            violations.append(
-                f"Recipient address ({recipient}) is designated under OFAC SDN / sanctions blacklist."
-            )
+            violations.append(f"Recipient address ({recipient}) is designated under OFAC SDN / sanctions blacklist.")
 
         # 2. Drainer calldata / infinite approval
         if method == "approve" and INFINITE_APPROVE_HEX in calldata:
