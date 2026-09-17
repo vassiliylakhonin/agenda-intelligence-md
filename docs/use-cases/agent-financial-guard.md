@@ -42,13 +42,11 @@ The gate is exposed across three standard protocols:
   },
   "intent": {
     "prompt": "Settling monthly LLM inference API bill for vendor 0x5b5296a...",
-    "session_id": "session-1082"
+    "caller_task_id": "session-1082"
   },
-  "guard_policies": {
+  "policy_limits": {
     "max_single_limit_usd": 100.0,
-    "rolling_24h_limit_usd": 500.0,
-    "enforce_sanctions": true,
-    "block_infinite_approvals": true
+    "daily_velocity_limit_usd": 500.0
   }
 }
 ```

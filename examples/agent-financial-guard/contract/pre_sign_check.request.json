@@ -10,10 +10,8 @@
   "intent": {
     "prompt": "Settle inference credits payment for vendor"
   },
-  "guard_policies": {
+  "policy_limits": {
     "max_single_limit_usd": 100.0,
-    "rolling_24h_limit_usd": 500.0,
-    "enforce_sanctions": true,
-    "block_infinite_approvals": true
+    "daily_velocity_limit_usd": 500.0
   }
 }
