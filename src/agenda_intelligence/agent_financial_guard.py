@@ -55,6 +55,14 @@ class FinancialGuardVerdict:
     def is_blocked(self) -> bool:
         return self.decision == "reject"
 
+    @property
+    def is_rejected(self) -> bool:
+        return self.decision == "reject"
+
+    @property
+    def requires_human_approval(self) -> bool:
+        return self.status == "escalate"
+
 
 class AgentFinancialGuard:
     """Deterministic pre-sign transaction firewall for autonomous AI agents.
@@ -103,6 +111,31 @@ class AgentFinancialGuard:
                     raise
                 return self._check_local(payload)
         return self._check_local(payload)
+
+    def check_transaction(
+        self,
+        recipient_address: str,
+        amount_usd: float,
+        network: str = "base",
+        calldata: str = "0x",
+        asset: str = "USDC",
+        intent: str = "",
+        policy_limits: Optional[dict[str, Any]] = None,
+        prefer_remote: bool = True,
+    ) -> FinancialGuardVerdict:
+        """Convenience method to check a transaction with discrete parameters."""
+        return self.check(
+            transaction={
+                "recipient": recipient_address,
+                "amount_usd": amount_usd,
+                "network": network,
+                "calldata": calldata,
+                "asset": asset,
+            },
+            intent=intent or "Autonomous agent settlement",
+            policy_limits=policy_limits,
+            prefer_remote=prefer_remote,
+        )
 
     def _check_remote(self, payload: dict[str, Any]) -> FinancialGuardVerdict:
         data = json.dumps(payload).encode("utf-8")

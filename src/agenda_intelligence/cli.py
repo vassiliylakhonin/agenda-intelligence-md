@@ -1351,6 +1351,102 @@ def cmd_doctor(args):
         raise SystemExit(1)
 
 
+def cmd_check_tx(args):
+    from agenda_intelligence.agent_financial_guard import AgentFinancialGuard
+
+    guard = AgentFinancialGuard()
+    prefer_remote = getattr(args, "remote", False)
+    verdict = guard.check_transaction(
+        recipient_address=args.recipient,
+        amount_usd=args.amount,
+        network=args.network,
+        calldata=args.calldata,
+        asset=args.asset,
+        intent=args.intent,
+        prefer_remote=prefer_remote,
+    )
+    if args.format == "json":
+        print(
+            json.dumps(
+                {
+                    "decision": verdict.decision,
+                    "status": verdict.status,
+                    "score": verdict.score,
+                    "checks": verdict.checks,
+                    "violations": verdict.violations,
+                    "execution_advisory": verdict.execution_advisory,
+                    "raw": verdict.raw,
+                },
+                indent=2,
+            )
+        )
+    else:
+        status_icon = "ALLOW" if verdict.is_allowed else "REJECT"
+        print(f"AgentFinancialGuard [{status_icon}] (Risk Score: {verdict.score}/100)")
+        print(f"  Recipient: {args.recipient}")
+        print(f"  Amount:    {args.amount} {args.asset} on {args.network}")
+        if verdict.violations:
+            print("  Violations:")
+            for v in verdict.violations:
+                print(f"    - {v}")
+        if verdict.execution_advisory:
+            print(f"  Advisory:  {verdict.execution_advisory}")
+
+    if verdict.is_blocked:
+        raise SystemExit(2)
+    elif verdict.requires_human_approval:
+        raise SystemExit(1)
+
+
+def cmd_arbitrate(args):
+    from agenda_intelligence.m2m_escrow_arbiter import M2MEscrowArbiter
+
+    p = Path(args.path)
+    if not p.is_file():
+        raise SystemExit(f"File not found: {args.path}")
+    payload = json.loads(p.read_text(encoding="utf-8"))
+
+    arbiter = M2MEscrowArbiter()
+    prefer_remote = getattr(args, "remote", False)
+    ruling = arbiter.evaluate_dispute(payload, prefer_remote=prefer_remote)
+
+    if args.format == "json":
+        print(
+            json.dumps(
+                {
+                    "ruling": ruling.ruling,
+                    "status": ruling.status,
+                    "score": ruling.score,
+                    "escrow_id": ruling.escrow_id,
+                    "payout_breakdown": {
+                        "total_escrow_usd": ruling.payout.total_escrow_usd,
+                        "seller_payout_usd": ruling.payout.seller_payout_usd,
+                        "buyer_refund_usd": ruling.payout.buyer_refund_usd,
+                        "arbiter_fee_usd": ruling.payout.arbiter_fee_usd,
+                    },
+                    "checks": ruling.checks,
+                    "violations": ruling.violations,
+                    "execution_advisory": ruling.execution_advisory,
+                    "vizier_clearance_receipt": ruling.vizier_clearance_receipt,
+                },
+                indent=2,
+            )
+        )
+    else:
+        print(f"M2M Escrow Ruling: [{ruling.ruling}] (Score: {ruling.score}/100)")
+        print(f"  Escrow ID:     {ruling.escrow_id}")
+        print(f"  Total Escrow:  ${ruling.payout.total_escrow_usd:.2f}")
+        print(f"  Seller Payout: ${ruling.payout.seller_payout_usd:.2f}")
+        print(f"  Buyer Refund:  ${ruling.payout.buyer_refund_usd:.2f}")
+        print(f"  Arbiter Fee:   ${ruling.payout.arbiter_fee_usd:.2f}")
+        if ruling.violations:
+            print("  Violations:")
+            for v in ruling.violations:
+                print(f"    - {v}")
+        if ruling.execution_advisory:
+            print(f"  Advisory:      {ruling.execution_advisory}")
+
+
 def main():
     parser = argparse.ArgumentParser(prog="agenda-intelligence", description="Agenda-Intelligence.md helper CLI")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -1650,6 +1746,41 @@ def main():
     )
     p.add_argument("--strict", action="store_true", help="Exit non-zero when any check fails")
     p.set_defaults(func=cmd_doctor)
+    # check-tx – pre-sign transaction firewall for autonomous agent wallets
+    p = sub.add_parser(
+        "check-tx",
+        help="Pre-sign transaction firewall check against OFAC, drainers, and budget limits",
+    )
+    p.add_argument("--recipient", required=True, help="Target recipient wallet or contract address")
+    p.add_argument("--amount", type=float, required=True, help="Transaction amount in USD")
+    p.add_argument("--network", default="base", help="Network/chain identifier (default: base)")
+    p.add_argument("--asset", default="USDC", help="Asset token symbol (default: USDC)")
+    p.add_argument("--calldata", default="0x", help="Hex calldata if interacting with smart contract (default: 0x)")
+    p.add_argument(
+        "--intent",
+        default="CLI transaction execution",
+        help="Natural language intent/prompt for the transaction",
+    )
+    p.add_argument("--format", choices=["text", "json"], default="text", help="Output format (default: text)")
+    p.add_argument(
+        "--remote",
+        action="store_true",
+        help="Query Cloudflare Edge worker directly instead of local rules",
+    )
+    p.set_defaults(func=cmd_check_tx)
+    # arbitrate – autonomous B2B deal dispute resolution and payout allocation
+    p = sub.add_parser(
+        "arbitrate",
+        help="Evaluate an M2M escrow dispute JSON and calculate deterministic payout",
+    )
+    p.add_argument("path", help="Path to dispute request JSON matching m2m-escrow-arbiter schema")
+    p.add_argument("--format", choices=["text", "json"], default="text", help="Output format (default: text)")
+    p.add_argument(
+        "--remote",
+        action="store_true",
+        help="Query Cloudflare Edge worker directly instead of local rules",
+    )
+    p.set_defaults(func=cmd_arbitrate)
 
     args = parser.parse_args()
     args.func(args)
