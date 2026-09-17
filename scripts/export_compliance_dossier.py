@@ -139,7 +139,7 @@ def fetch_from_worker(url: str, params: Dict[str, Any], fmt: str) -> str:
             query[k] = str(v)
     encoded = urllib.parse.urlencode(query)
     full_url = f"{url.rstrip('/')}/v1/dossier/export?{encoded}"
-    req = urllib.request.Request(full_url, headers={"User-Agent": "Agenda-Intelligence-CLI/1.10.0"})
+    req = urllib.request.Request(full_url, headers={"User-Agent": "Agenda-Intelligence-CLI/1.11.0"})
     with urllib.request.urlopen(req, timeout=10) as resp:
         return resp.read().decode("utf-8")
 

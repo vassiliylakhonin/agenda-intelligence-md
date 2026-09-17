@@ -8798,6 +8798,36 @@ test("POST /v1/corridor-bankability/screen rejects missing required fields with 
   assert.ok(data.errors.length >= 5);
 });
 
+test("GET /corridor-bankability returns HTML with Brave Wallet connection", async () => {
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/corridor-bankability");
+  const res = await handleRequest(req, {});
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-type"), /text\/html/);
+  const html = await res.text();
+  assert.ok(html.includes("Trans-Caspian Corridor Bankability Screener"));
+  assert.ok(html.includes("Connect Brave Wallet"));
+  assert.ok(html.includes("Pay $25 USDC with Brave Wallet on Base"));
+  assert.ok(html.includes("0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663"));
+});
+
+test("POST /v1/corridor-bankability/screen supports smart fallback for unstructured prompt", async () => {
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/corridor-bankability/screen", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      prompt: "Screen debt covenants for Aktau ferry terminal expansion CapEx $45M on Aktau-Baku leg"
+    })
+  });
+  const res = await handleRequest(req, {});
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.equal(data.corridor_leg, "Aktau-Baku");
+  assert.equal(data.financial_metrics.total_capex_usd_m, 45.0);
+  assert.ok(data.x402_unlock);
+  assert.equal(data.x402_unlock.amount_usdc, 25.0);
+});
+
+
 
 
 

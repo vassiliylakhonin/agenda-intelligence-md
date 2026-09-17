@@ -141,7 +141,7 @@ import {
   VERSION,
   profileDiscovery
 } from "./profiles.js";
-import { generateBankabilityScreen } from "./corridor_bankability.js";
+import { generateBankabilityScreen, extractBankabilityParameters } from "./corridor_bankability.js";
 import {
   checkDynamicBearerToken,
   generateX402PaymentResponse,
@@ -151,6 +151,7 @@ import {
 } from "./settlement.js";
 import { handleSampleDossierRequest, handleDossierExportRequest } from "./sample_dossier.js";
 import { handleExplorerRequest } from "./explorer.js";
+import { handleBankabilityUiRequest } from "./corridor_bankability_ui.js";
 import {
   MCP_ENDPOINT_PATH,
   MCP_META_PROTOCOL_VERSION,
@@ -5927,7 +5928,10 @@ async function isBankabilityDossierPaid(request, env = {}) {
 }
 
 async function a2aResultForCorridorBankability(params, request, env = {}) {
-  const reqObj = params.request || params || {};
+  let reqObj = params.request || params || {};
+  if (!reqObj.project_name || !reqObj.corridor_leg || reqObj.capex_usd_m === undefined) {
+    reqObj = extractBankabilityParameters(reqObj, params.prompt || params.text || params.query || "");
+  }
   const isPaid = await isBankabilityDossierPaid(request, env);
   const data = generateBankabilityScreen(reqObj, isPaid);
   return {
@@ -15239,6 +15243,15 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 
   if (
     request.method === "GET" &&
+    (url.pathname === "/corridor-bankability" ||
+      url.pathname === "/bankability" ||
+      url.pathname === "/corridor-bankability-screener")
+  ) {
+    return handleBankabilityUiRequest(request, env);
+  }
+
+  if (
+    request.method === "GET" &&
     (url.pathname === "/v1/x402" ||
       url.pathname === "/v1/x402/pricing" ||
       url.pathname === "/v1/pricing/x402")
@@ -15307,15 +15320,39 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       } catch (_e) {
         return jsonResponse({ error: "Malformed JSON payload" }, 400);
       }
-      const structured = body.request || body || {};
-      const errors = [];
-      if (!structured.project_name) errors.push("Missing required field: project_name");
-      if (!structured.corridor_leg) errors.push("Missing required field: corridor_leg");
-      if (structured.capex_usd_m === undefined) errors.push("Missing required field: capex_usd_m");
-      if (structured.ifi_debt_usd_m === undefined) errors.push("Missing required field: ifi_debt_usd_m");
-      if (structured.dscr_min === undefined) errors.push("Missing required field: dscr_min");
-      if (errors.length > 0) {
-        return jsonResponse({ error: "Validation failed", errors }, 400);
+      let structured = body.request || body || {};
+      const hasStrictFields = Boolean(
+        structured.project_name &&
+        structured.corridor_leg &&
+        structured.capex_usd_m !== undefined &&
+        structured.ifi_debt_usd_m !== undefined &&
+        structured.dscr_min !== undefined
+      );
+
+      if (!hasStrictFields) {
+        const hasTextOrHints = Boolean(
+          body.prompt || body.text || body.query || body.message || body.auto_complete ||
+          structured.prompt || structured.text || structured.query || structured.message
+        );
+        if (hasTextOrHints) {
+          structured = extractBankabilityParameters(
+            structured,
+            body.prompt || body.text || body.query || body.message ||
+            structured.prompt || structured.text || structured.query || ""
+          );
+        } else {
+          const errors = [];
+          if (!structured.project_name) errors.push("Missing required field: project_name");
+          if (!structured.corridor_leg) errors.push("Missing required field: corridor_leg");
+          if (structured.capex_usd_m === undefined) errors.push("Missing required field: capex_usd_m");
+          if (structured.ifi_debt_usd_m === undefined) errors.push("Missing required field: ifi_debt_usd_m");
+          if (structured.dscr_min === undefined) errors.push("Missing required field: dscr_min");
+          return jsonResponse({
+            error: "Validation failed",
+            errors,
+            schema_hint: "Provide all 5 structured fields, or include 'prompt': string / 'auto_complete': true for smart fallback."
+          }, 400);
+        }
       }
       const isPaid = await isBankabilityDossierPaid(request, env);
       const data = generateBankabilityScreen(structured, isPaid);

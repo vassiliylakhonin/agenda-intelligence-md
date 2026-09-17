@@ -23,7 +23,7 @@ export const TIER_BANKABILITY_DOSSIER_USDC_AMOUNT = 25;
 export const TIER_MICRO_CHECK_USDC_AMOUNT = 0.05;
 export const TIER_MICRO_DISPUTE_USDC_AMOUNT = 0.50;
 
-export const VERSION = "1.10.0";
+export const VERSION = "1.11.0";
 export const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
 export const DOCS_URL = `${REPOSITORY_URL}/blob/main/MCP.md`;
 export const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";

@@ -7,6 +7,7 @@ and generates Freemium Decision Teasers ($0.00) vs Full IFI Dossiers ($25.00 USD
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -16,7 +17,7 @@ MAX_DEBT_SHARE = 0.80
 TIER_BANKABILITY_DOSSIER_USDC = 25.00
 
 BASE_USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-BASE_USDC_WALLET = "0x5346DA2f47D7D187aCbb7316A3dF73A4125b293B"
+BASE_USDC_WALLET = "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663"
 
 CORRIDOR_BOTTLENECK_MAP: dict[str, str] = {
     "Aktau-Baku": (
@@ -338,6 +339,87 @@ All material quantitative assumptions are deterministic and bound to the submitt
     return base_response
 
 
+def extract_bankability_parameters(
+    input_data: dict[str, Any], raw_text: str = ""
+) -> dict[str, Any]:
+    """Smart fallback parser for unstructured agent queries.
+
+    Extracts project name, corridor segment, capex, leverage, and DSCR from text
+    or supplies intelligent IFI benchmark defaults if fields are omitted.
+    """
+    text = raw_text or ""
+    if not text:
+        text = str(
+            input_data.get("prompt")
+            or input_data.get("query")
+            or input_data.get("text")
+            or input_data.get("message")
+            or ""
+        )
+
+    result: dict[str, Any] = {
+        "project_name": input_data.get("project_name"),
+        "corridor_leg": input_data.get("corridor_leg"),
+        "capex_usd_m": input_data.get("capex_usd_m"),
+        "ifi_debt_usd_m": input_data.get("ifi_debt_usd_m"),
+        "dscr_min": input_data.get("dscr_min"),
+        "currency_mismatch": input_data.get("currency_mismatch", True),
+        "has_sovereign_guarantee": bool(input_data.get("has_sovereign_guarantee", False)),
+        "inferred_parameters": False,
+    }
+
+    if text:
+        lower = text.lower()
+        if not result["corridor_leg"]:
+            if "aktau" in lower and "baku" in lower:
+                result["corridor_leg"] = "Aktau-Baku"
+            elif any(k in lower for k in ("khorgos", "dostyk", "altynkol")):
+                result["corridor_leg"] = "Khorgos-Aktau"
+            elif "poti" in lower and "baku" in lower:
+                result["corridor_leg"] = "Baku-Poti"
+            elif "constanta" in lower or "black sea" in lower:
+                result["corridor_leg"] = "Poti-Constanta"
+            elif any(k in lower for k in ("caspian", "middle corridor", "titr")):
+                result["corridor_leg"] = "Aktau-Baku"
+
+        if result["capex_usd_m"] is None:
+            capex_match = re.search(r"\$?\s*(\d+(?:\.\d+)?)\s*(?:m|million|млн)", text, re.IGNORECASE)
+            if capex_match:
+                result["capex_usd_m"] = float(capex_match.group(1))
+
+        if not result["project_name"]:
+            if "terminal" in lower or "port" in lower:
+                result["project_name"] = "Trans-Caspian Port Terminal Facility"
+            elif "rail" in lower or "railway" in lower:
+                result["project_name"] = "Trans-Caspian Railway Corridor Expansion"
+            elif any(k in lower for k in ("vessel", "fleet", "ship")):
+                result["project_name"] = "Caspian Maritime Feeder Fleet Acquisition"
+
+    inferred = False
+    if not result["project_name"]:
+        result["project_name"] = "Trans-Caspian Strategic Corridor Project"
+        inferred = True
+    if not result["corridor_leg"] or result["corridor_leg"] not in CORRIDOR_BOTTLENECK_MAP:
+        result["corridor_leg"] = "MULTI_LEG"
+        inferred = True
+    if result["capex_usd_m"] is None or result["capex_usd_m"] <= 0:
+        result["capex_usd_m"] = 50.0
+        inferred = True
+    if result["ifi_debt_usd_m"] is None or result["ifi_debt_usd_m"] <= 0:
+        result["ifi_debt_usd_m"] = round(result["capex_usd_m"] * 0.70 * 10) / 10
+        inferred = True
+    if result["dscr_min"] is None or result["dscr_min"] <= 0:
+        result["dscr_min"] = 1.30
+        inferred = True
+
+    result["inferred_parameters"] = inferred
+    return result
+
+
 def screen_corridor_bankability(request_data: dict[str, Any], is_paid: bool = False) -> dict[str, Any]:
     """MCP entrypoint for screening corridor infrastructure project bankability."""
+    # Apply smart fallback if required fields are missing
+    if not request_data.get("project_name") or not request_data.get("corridor_leg") or request_data.get("capex_usd_m") is None:
+        request_data = extract_bankability_parameters(request_data)
     return generate_bankability_screen(request_data, is_paid=is_paid)
+

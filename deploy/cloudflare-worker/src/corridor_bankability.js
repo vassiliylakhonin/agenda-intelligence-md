@@ -294,3 +294,76 @@ All material quantitative assumptions are deterministic and bound to the submitt
 
   return baseResponse;
 }
+
+export function extractBankabilityParameters(input = {}, rawText = "") {
+  let text = typeof rawText === "string" ? rawText : "";
+  if (!text && typeof input.prompt === "string") text = input.prompt;
+  if (!text && typeof input.query === "string") text = input.query;
+  if (!text && typeof input.text === "string") text = input.text;
+  if (!text && typeof input.message === "string") text = input.message;
+
+  const result = {
+    project_name: input.project_name,
+    corridor_leg: input.corridor_leg,
+    capex_usd_m: typeof input.capex_usd_m === "number" ? input.capex_usd_m : undefined,
+    ifi_debt_usd_m: typeof input.ifi_debt_usd_m === "number" ? input.ifi_debt_usd_m : undefined,
+    dscr_min: typeof input.dscr_min === "number" ? input.dscr_min : undefined,
+    currency_mismatch: input.currency_mismatch !== undefined ? Boolean(input.currency_mismatch) : true,
+    has_sovereign_guarantee: Boolean(input.has_sovereign_guarantee),
+    inferred_parameters: false
+  };
+
+  if (text) {
+    const lower = text.toLowerCase();
+    if (!result.corridor_leg) {
+      if (lower.includes("aktau") && lower.includes("baku")) result.corridor_leg = "Aktau-Baku";
+      else if (lower.includes("khorgos") || lower.includes("dostyk") || lower.includes("altynkol")) result.corridor_leg = "Khorgos-Aktau";
+      else if (lower.includes("poti") && lower.includes("baku")) result.corridor_leg = "Baku-Poti";
+      else if (lower.includes("constanta") || lower.includes("black sea")) result.corridor_leg = "Poti-Constanta";
+      else if (lower.includes("caspian") || lower.includes("middle corridor") || lower.includes("titr")) result.corridor_leg = "Aktau-Baku";
+    }
+
+    if (result.capex_usd_m === undefined) {
+      const capexMatch = text.match(/\$?\s*(\d+(?:\.\d+)?)\s*(?:m|million|млн)/i);
+      if (capexMatch) {
+        result.capex_usd_m = parseFloat(capexMatch[1]);
+      }
+    }
+
+    if (!result.project_name) {
+      if (lower.includes("terminal") || lower.includes("port")) {
+        result.project_name = "Trans-Caspian Port Terminal Facility";
+      } else if (lower.includes("rail") || lower.includes("railway")) {
+        result.project_name = "Trans-Caspian Railway Corridor Expansion";
+      } else if (lower.includes("vessel") || lower.includes("fleet") || lower.includes("ship")) {
+        result.project_name = "Caspian Maritime Feeder Fleet Acquisition";
+      }
+    }
+  }
+
+  let inferred = false;
+  if (!result.project_name) {
+    result.project_name = "Trans-Caspian Strategic Corridor Project";
+    inferred = true;
+  }
+  if (!result.corridor_leg || !CORRIDOR_BOTTLENECK_MAP[result.corridor_leg]) {
+    result.corridor_leg = "MULTI_LEG";
+    inferred = true;
+  }
+  if (result.capex_usd_m === undefined || isNaN(result.capex_usd_m) || result.capex_usd_m <= 0) {
+    result.capex_usd_m = 50.0;
+    inferred = true;
+  }
+  if (result.ifi_debt_usd_m === undefined || isNaN(result.ifi_debt_usd_m) || result.ifi_debt_usd_m <= 0) {
+    result.ifi_debt_usd_m = Math.round(result.capex_usd_m * 0.70 * 10) / 10;
+    inferred = true;
+  }
+  if (result.dscr_min === undefined || isNaN(result.dscr_min) || result.dscr_min <= 0) {
+    result.dscr_min = 1.30;
+    inferred = true;
+  }
+
+  result.inferred_parameters = inferred;
+  return result;
+}
+

@@ -26,6 +26,24 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   KV rows. The Agent Card extension and completed-response engagement block now explain the optional
   `X-Client-Id` header as a stable non-personal integration label; it remains optional and is not authentication.
 
+## 1.11.0 — 2026-09-18
+
+- **feat(corridor-bankability): add hybrid Trans-Caspian bankability screener and x402 paywalled IFI memo.**
+  Exposes deterministic infrastructure finance covenants (DSCR floor 1.20x, non-sovereign margin 1.30x, leverage ceiling 80%),
+  Caspian Sea hydrological bottleneck drop (-1.20m Baltic datum draft limit), and FX currency mismatch reserve sizing.
+  Features a Freemium Decision Teaser ($0.00) and paid tier ($25.00 USDC via x402 on Base) unlocking a full 15-year deterministic
+  debt waterfall schedule, standard-form EBRD/ADB Investment Memorandum in Markdown, and financial model SHA-256 hash.
+  Available via REST (`POST /v1/corridor-bankability/screen`), MCP (`corridor_bankability_screen`), and A2A (`SendMessage`).
+
+- **feat(web3-ui): launch interactive Brave Wallet bankability screener at `/corridor-bankability`.**
+  Native web application for analysts and investors in Brave Browser, MetaMask, or Coinbase Wallet. Enables instant project
+  simulation, live covenant table rendering, and one-click $25 USDC settlement on Base mainnet (`0x833589...2913`)
+  with automatic memo and waterfall JSON/Markdown downloads.
+
+- **feat(smart-fallback): auto-complete unstructured agent queries to eliminate `input_required` refusals.**
+  Heuristic parameter extraction automatically identifies corridor segments, CapEx numbers, and infrastructure types from
+  natural language prompts, populating standard IFI benchmark defaults to maximize conversion for external autonomous agents.
+
 ## 1.10.0 — 2026-09-17
 
 - **feat(agent-financial-guard): add deterministic pre-sign transaction firewall for autonomous AI agents.**

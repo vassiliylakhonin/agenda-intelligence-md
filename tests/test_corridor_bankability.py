@@ -121,3 +121,41 @@ def test_mcp_stdio_corridor_bankability_dispatch():
     assert data["project_name"] == "Baku-Tbilisi Rail Terminal"
     assert data["unlocked_full_dossier"] is False
     assert data["x402_unlock"]["amount_usdc"] == 25.0
+
+
+def test_corridor_bankability_smart_fallback():
+    from agenda_intelligence.corridor_bankability import extract_bankability_parameters
+
+    # Case 1: Unstructured prompt text
+    extracted = extract_bankability_parameters(
+        {}, raw_text="Screen debt covenants for Aktau ferry terminal expansion CapEx $45M on Aktau-Baku leg"
+    )
+    assert extracted["corridor_leg"] == "Aktau-Baku"
+    assert extracted["capex_usd_m"] == 45.0
+    assert extracted["ifi_debt_usd_m"] == 31.5
+    assert extracted["dscr_min"] == 1.30
+    assert "Terminal" in extracted["project_name"]
+
+    # Case 2: MCP stdio tool call with partial/prompt argument
+    msg = {
+        "jsonrpc": "2.0",
+        "id": "test-fallback-1",
+        "method": "tools/call",
+        "params": {
+            "name": "corridor_bankability_screen",
+            "arguments": {
+                "prompt": "Evaluate Khorgos logistics dry port expansion $100M",
+            },
+        },
+    }
+    resp = handle_message(msg)
+    assert resp is not None
+    assert "error" not in resp
+    import json
+
+    res_data = json.loads(resp["result"]["content"][0]["text"])
+    assert res_data["corridor_leg"] == "Khorgos-Aktau"
+    assert res_data["financial_metrics"]["total_capex_usd_m"] == 100.0
+    assert res_data["unlocked_full_dossier"] is False
+    assert res_data["x402_unlock"]["amount_usdc"] == 25.0
+
