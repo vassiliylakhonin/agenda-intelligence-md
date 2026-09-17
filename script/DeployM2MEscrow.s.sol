@@ -18,12 +18,12 @@ contract DeployM2MEscrow is Script {
 
         address arbiterSigner = vm.envOr(
             "ARBITER_SIGNER",
-            address(0x70997970C51812dc3A010C7d01b50e0d17dc79C8) // Anvil default #1
+            address(0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663) // Agenda Intelligence Arbiter Quorum
         );
 
         address arbiterTreasury = vm.envOr(
             "ARBITER_TREASURY",
-            address(0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC) // Anvil default #2
+            address(0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663) // Agenda Intelligence Treasury
         );
 
         address usdcAddress;
