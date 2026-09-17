@@ -187,7 +187,8 @@ class AgentFinancialGuard:
         status = "escalate" if has_violations else "decision_ready"
         score = 95 if has_violations else 10
         advisory = (
-            "CRITICAL SECURITY BLOCK: Transaction violates compliance, AML, contract security, or intent boundaries. Execution forbidden."
+            "CRITICAL SECURITY BLOCK: Transaction violates compliance, AML, contract security, "
+            "or intent boundaries. Execution forbidden."
             if has_violations
             else "Transaction verified through deterministic security policies. Ready to sign."
         )

@@ -52,7 +52,10 @@ def test_infinite_approval_drainer_blocked():
         "amount_usd": 0,
         "recipient": "0x111111125421ca6dc452d289314280a0f8842a65",
         "method": "approve",
-        "calldata": "0x095ea7b3000000000000000000000000def1c0ded9bec7f1a1670819833240f027b25effffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "calldata": (
+            "0x095ea7b3000000000000000000000000def1c0ded9bec7f1a1670819833240f027b25e"
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        ),
     }
     verdict = guard.check(tx, "Approve swap router", prefer_remote=False)
 
