@@ -63,6 +63,74 @@ const BRING_EVIDENCE =
   "Grades the evidence you supply and names what is still missing; it does not retrieve sources, so a call that " +
   "brings none is refused. With only a question and no evidence yet, start at corridor_sanctions_assistant.";
 
+export const CORRIDOR_BANKABILITY_SPEC = {
+  name: "corridor_bankability_screen",
+  bringsEvidence: false,
+  argKey: "request",
+  legacyWrapper: false,
+  summary:
+    "Evaluate project finance bankability and IFI covenants (EBRD, ADB, EU Global Gateway) for Trans-Caspian and Middle Corridor infrastructure projects. " +
+    "Evaluates minimum DSCR floor (1.20x), non-sovereign margin (1.30x), leverage ceiling (<=80%), Caspian hydrological water-level constraints (-1.20m Baltic datum), " +
+    "and FX currency mismatch. Returns a free Decision Teaser with covenant pass/fail matrix, bottleneck analysis, and an x402 micropayment invoice to unlock the full 15-year debt waterfall model and IFI memo.",
+  inputSchema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["project_name", "corridor_leg", "capex_usd_m", "ifi_debt_usd_m", "dscr_min"],
+    properties: {
+      project_name: {
+        type: "string",
+        minLength: 2,
+        description: "Name of the corridor infrastructure project (e.g. 'Aktau Port Container Hub Expansion')."
+      },
+      corridor_leg: {
+        type: "string",
+        enum: ["Khorgos-Aktau", "Aktau-Baku", "Baku-Poti", "Poti-Constanta", "MULTI_LEG"],
+        description: "Corridor transit leg under review."
+      },
+      capex_usd_m: {
+        type: "number",
+        minimum: 0.1,
+        description: "Total project capital expenditure in millions USD."
+      },
+      ifi_debt_usd_m: {
+        type: "number",
+        minimum: 0.1,
+        description: "Target IFI senior debt financing in millions USD."
+      },
+      dscr_min: {
+        type: "number",
+        minimum: 0.5,
+        maximum: 5.0,
+        description: "Projected minimum Debt Service Coverage Ratio (DSCR)."
+      },
+      has_sovereign_guarantee: {
+        type: "boolean",
+        description: "Whether an official sovereign loan guarantee is provided."
+      },
+      currency_mismatch: {
+        type: "boolean",
+        description: "Whether tariff revenues are collected in local currency (KZT/AZN/GEL) while debt is in USD/EUR."
+      },
+      evidence_sources: {
+        type: "array",
+        items: { type: "string" },
+        description: "List of feasibility study references, decrees, or project files."
+      }
+    }
+  },
+  outputSchema: {
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    type: "object",
+    required: ["project_name", "bankability_status", "covenant_checks", "unlocked_full_dossier"],
+    properties: {
+      project_name: { type: "string" },
+      corridor_leg: { type: "string" },
+      bankability_status: { type: "string" },
+      unlocked_full_dossier: { type: "boolean" }
+    }
+  }
+};
+
 // One deployment serves one profile and a fixed, small tool set. The names match
 // the stdio server's tool names for the same contract, so an agent that learned
 // the tool locally can call the hosted one without relearning it.
@@ -252,7 +320,8 @@ const PROFILE_TOOLS = {
       summary:
         "List all 11 specialized risk triage and verification gates in the Agenda Intelligence fleet, " +
         "including their MCP/A2A endpoints, supported profiles, primary tool names, input schemas, and required fields."
-    }
+    },
+    CORRIDOR_BANKABILITY_SPEC
   ]
 };
 
@@ -268,6 +337,7 @@ function contractFor(spec, profile) {
 function inputSchemaFor(spec, profile) {
   const contract = contractFor(spec, profile);
   if (contract) return contract.inputSchema;
+  if (spec.inputSchema) return spec.inputSchema;
   if (spec.argKey === "none") {
     return {
       type: "object",
@@ -334,6 +404,7 @@ export function mcpToolsForProfile(profile) {
       }
     };
     if (contract) tool.outputSchema = contract.outputSchema;
+    else if (spec.outputSchema) tool.outputSchema = spec.outputSchema;
     return tool;
   });
 }

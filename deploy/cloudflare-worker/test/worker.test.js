@@ -8693,5 +8693,104 @@ test("POST /v1/settle settles tier_micro_check for 0.05 USDC", async () => {
   }
 });
 
+test("mcp tools/list on agenda profile advertises corridor_bankability_screen", async () => {
+  const { mcpToolsForProfile } = await import("../src/mcp.js");
+  const tools = mcpToolsForProfile("agenda");
+  const toolNames = tools.map((t) => t.name);
+  assert.ok(toolNames.includes("corridor_bankability_screen"), "agenda must include corridor_bankability_screen");
+
+  const bankabilityTool = tools.find((t) => t.name === "corridor_bankability_screen");
+  assert.equal(bankabilityTool.inputSchema.type, "object");
+  assert.ok(bankabilityTool.inputSchema.required.includes("project_name"));
+  assert.ok(bankabilityTool.inputSchema.required.includes("corridor_leg"));
+  assert.ok(bankabilityTool.inputSchema.required.includes("capex_usd_m"));
+  assert.ok(bankabilityTool.inputSchema.required.includes("ifi_debt_usd_m"));
+  assert.ok(bankabilityTool.inputSchema.required.includes("dscr_min"));
+});
+
+test("POST /v1/corridor-bankability/screen returns free decision teaser", async () => {
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/corridor-bankability/screen", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      project_name: "Aktau Port Container Terminal Expansion",
+      corridor_leg: "Aktau-Baku",
+      capex_usd_m: 85.0,
+      ifi_debt_usd_m: 60.0,
+      dscr_min: 1.35,
+      has_sovereign_guarantee: false,
+      currency_mismatch: true
+    })
+  });
+
+  const res = await handleRequest(req, {});
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("x-payment-protocol"), "x402");
+  const data = await res.json();
+  assert.equal(data.project_name, "Aktau Port Container Terminal Expansion");
+  assert.equal(data.corridor_leg, "Aktau-Baku");
+  assert.equal(data.unlocked_full_dossier, false);
+  assert.ok(!data.full_dossier);
+  assert.ok(data.x402_unlock);
+  assert.equal(data.x402_unlock.amount_usdc, 25.0);
+  assert.ok(Array.isArray(data.covenant_checks));
+  assert.ok(data.covenant_checks.some((c) => c.test === "minimum_dscr_floor" && c.result === "PASSES"));
+  assert.ok(data.corridor_bottleneck_analysis.bottleneck_description.includes("water level drop"));
+});
+
+test("POST /v1/corridor-bankability/screen with valid x-payment-tx returns unlocked full dossier", async () => {
+  const txHash = "0x5555555555555555555555555555555555555555555555555555555555555555";
+  const mockReceipt = mockUsdcTransferReceipt(25);
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockReceipt }), {
+      status: 200,
+      headers: { "content-type": "application/json" }
+    });
+
+  try {
+    const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/corridor-bankability/screen", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-payment-tx": txHash
+      },
+      body: JSON.stringify({
+        project_name: "Khorgos Dry Port Intermodal Yard",
+        corridor_leg: "Khorgos-Aktau",
+        capex_usd_m: 120.0,
+        ifi_debt_usd_m: 80.0,
+        dscr_min: 1.25,
+        has_sovereign_guarantee: true,
+        currency_mismatch: false
+      })
+    });
+
+    const res = await handleRequest(req, {});
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.unlocked_full_dossier, true);
+    assert.ok(data.full_dossier);
+    assert.equal(data.full_dossier.waterfall_schedule_15yr.length, 15);
+    assert.ok(data.full_dossier.dossier_markdown.includes("Khorgos Dry Port Intermodal Yard"));
+    assert.ok(data.full_dossier.excel_financial_model_sha256);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test("POST /v1/corridor-bankability/screen rejects missing required fields with 400", async () => {
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/corridor-bankability/screen", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({})
+  });
+  const res = await handleRequest(req, {});
+  assert.equal(res.status, 400);
+  const data = await res.json();
+  assert.ok(data.errors.length >= 5);
+});
+
+
 
 

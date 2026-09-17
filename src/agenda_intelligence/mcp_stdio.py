@@ -845,6 +845,60 @@ TOOLS: dict[str, dict[str, Any]] = {
         ),
         "handler": lambda args: mcp_server.generate_repair_prompt(args["packet_json"]),
     },
+    "corridor_bankability_screen": {
+        "description": (
+            "Evaluate project finance bankability and IFI covenants (EBRD, ADB, EU Global Gateway) for "
+            "Trans-Caspian and Middle Corridor infrastructure projects. Evaluates minimum DSCR floor (1.20x), "
+            "non-sovereign margin (1.30x), leverage ceiling (<=80%), Caspian hydrological water-level constraints "
+            "(-1.20m Baltic datum), and FX currency mismatch. Returns a free Decision Teaser with covenant "
+            "pass/fail matrix, bottleneck analysis, and an x402 micropayment invoice to unlock the full 15-year debt waterfall model."
+        ),
+        "inputSchema": _schema(
+            {
+                "project_name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "description": "Name of the corridor infrastructure project (e.g. 'Aktau Port Container Hub Expansion').",
+                },
+                "corridor_leg": {
+                    "type": "string",
+                    "enum": ["Khorgos-Aktau", "Aktau-Baku", "Baku-Poti", "Poti-Constanta", "MULTI_LEG"],
+                    "description": "Corridor transit leg under review.",
+                },
+                "capex_usd_m": {
+                    "type": "number",
+                    "minimum": 0.1,
+                    "description": "Total project capital expenditure in millions USD.",
+                },
+                "ifi_debt_usd_m": {
+                    "type": "number",
+                    "minimum": 0.1,
+                    "description": "Target IFI senior debt financing in millions USD.",
+                },
+                "dscr_min": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 5.0,
+                    "description": "Projected minimum Debt Service Coverage Ratio (DSCR).",
+                },
+                "has_sovereign_guarantee": {
+                    "type": "boolean",
+                    "description": "Whether an official sovereign loan guarantee is provided.",
+                },
+                "currency_mismatch": {
+                    "type": "boolean",
+                    "description": "Whether tariff revenues are collected in local currency (KZT/AZN/GEL) while debt is in USD/EUR.",
+                },
+                "evidence_sources": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of feasibility study references, decrees, or project files.",
+                },
+            },
+            ["project_name", "corridor_leg", "capex_usd_m", "ifi_debt_usd_m", "dscr_min"],
+        ),
+        "handler": lambda args: mcp_server.screen_corridor_bankability(args),
+    },
 }
 
 

@@ -1817,6 +1817,70 @@
           ],
           "additionalProperties": false
         }
+      },
+      {
+        "name": "corridor_bankability_screen",
+        "since": "v1.9",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "project_name": {
+              "type": "string",
+              "minLength": 2,
+              "description": "Name of the corridor infrastructure project (e.g. 'Aktau Port Container Hub Expansion')."
+            },
+            "corridor_leg": {
+              "type": "string",
+              "enum": [
+                "Khorgos-Aktau",
+                "Aktau-Baku",
+                "Baku-Poti",
+                "Poti-Constanta",
+                "MULTI_LEG"
+              ],
+              "description": "Corridor transit leg under review."
+            },
+            "capex_usd_m": {
+              "type": "number",
+              "minimum": 0.1,
+              "description": "Total project capital expenditure in millions USD."
+            },
+            "ifi_debt_usd_m": {
+              "type": "number",
+              "minimum": 0.1,
+              "description": "Target IFI senior debt financing in millions USD."
+            },
+            "dscr_min": {
+              "type": "number",
+              "minimum": 0.5,
+              "maximum": 5.0,
+              "description": "Projected minimum Debt Service Coverage Ratio (DSCR)."
+            },
+            "has_sovereign_guarantee": {
+              "type": "boolean",
+              "description": "Whether an official sovereign loan guarantee is provided."
+            },
+            "currency_mismatch": {
+              "type": "boolean",
+              "description": "Whether tariff revenues are collected in local currency (KZT/AZN/GEL) while debt is in USD/EUR."
+            },
+            "evidence_sources": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "List of feasibility study references, decrees, or project files."
+            }
+          },
+          "required": [
+            "project_name",
+            "corridor_leg",
+            "capex_usd_m",
+            "ifi_debt_usd_m",
+            "dscr_min"
+          ],
+          "additionalProperties": false
+        }
       }
     ]
   },

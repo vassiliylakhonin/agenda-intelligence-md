@@ -133,6 +133,7 @@ import {
   SUPPORT_CONTACT_EMAIL,
   SUPPORT_HOURS_LOCAL,
   SUPPORT_TIMEZONE,
+  TIER_BANKABILITY_DOSSIER_USDC_AMOUNT,
   TIER_DOSSIER_USDC_AMOUNT,
   TIER_MICRO_CHECK_USDC_AMOUNT,
   TIER_MICRO_DISPUTE_USDC_AMOUNT,
@@ -140,6 +141,7 @@ import {
   VERSION,
   profileDiscovery
 } from "./profiles.js";
+import { generateBankabilityScreen } from "./corridor_bankability.js";
 import {
   checkDynamicBearerToken,
   generateX402PaymentResponse,
@@ -5902,6 +5904,65 @@ function a2aResultForFleetDirectory(params) {
       capability: "fleet_directory",
       human_review_required: false,
       response: directory
+    }
+  };
+}
+
+async function isBankabilityDossierPaid(request, env = {}) {
+  if (!request || !request.headers) return false;
+  const paymentTx = request.headers.get("x-payment-tx");
+  if (paymentTx && /^0x[0-9a-fA-F]{64}$/.test(paymentTx.trim())) {
+    const verification = await verifyBaseTransactionReceipt(paymentTx.trim(), env);
+    if (verification.valid && verification.amount_usdc >= TIER_BANKABILITY_DOSSIER_USDC_AMOUNT) {
+      return true;
+    }
+  }
+  const authHeader = request.headers.get("authorization") || "";
+  if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.replace("Bearer ", "").trim();
+    const pro = await checkDynamicBearerToken(token, env);
+    if (pro) return true;
+  }
+  return false;
+}
+
+async function a2aResultForCorridorBankability(params, request, env = {}) {
+  const reqObj = params.request || params || {};
+  const isPaid = await isBankabilityDossierPaid(request, env);
+  const data = generateBankabilityScreen(reqObj, isPaid);
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "corridor-bankability-screen",
+        name: "corridor bankability screen",
+        parts: [
+          {
+            text: [
+              `# Trans-Caspian Bankability Screen: ${data.project_name}`,
+              "",
+              `Status: **${data.bankability_status}**`,
+              `Corridor Leg: ${data.corridor_leg}`,
+              `Capex: $${data.financial_metrics.total_capex_usd_m}M | Senior Debt: $${data.financial_metrics.ifi_debt_usd_m}M | Min DSCR: ${data.financial_metrics.dscr_minimum}x`,
+              "",
+              `Primary Bottleneck: ${data.corridor_bottleneck_analysis.bottleneck_description}`,
+              "",
+              data.unlocked_full_dossier
+                ? data.full_dossier.dossier_markdown
+                : "Free Decision Teaser. Unlock full IFI Investment Memo and 15-Year Waterfall Model for $25.00 USDC via x402."
+            ].join("\n"),
+            mediaType: "text/markdown"
+          },
+          { data, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "agenda",
+      capability: "corridor_bankability_screen",
+      human_review_required: true,
+      response: data
     }
   };
 }
@@ -12969,6 +13030,10 @@ async function runProfileRequest(profile, params, request, env = {}) {
       result = a2aResultForFleetDirectory(params);
       promptChars = 0;
       modulesUsed = ["fleet_directory"];
+    } else if (params.capability === "corridor_bankability_screen") {
+      result = await a2aResultForCorridorBankability(params, request, env);
+      promptChars = safeJsonLength(params.request || params || {});
+      modulesUsed = ["corridor_bankability_screen", "trans_caspian_quant"];
     } else {
       result = await a2aResult(params, request, env);
       const structuredRequest = structuredDealRiskRequestFromParams(params);
@@ -15199,6 +15264,12 @@ export async function handleRequest(request, env = {}, ctx = {}) {
             amount_raw: String(Math.round(TIER_MICRO_DISPUTE_USDC_AMOUNT * 1e6)),
             applicable_endpoints: ["/v1/m2m-escrow/evaluate-dispute"]
           },
+          tier_bankability_dossier: {
+            name: "Trans-Caspian IFI Bankability Dossier",
+            amount_usd: TIER_BANKABILITY_DOSSIER_USDC_AMOUNT,
+            amount_raw: String(Math.round(TIER_BANKABILITY_DOSSIER_USDC_AMOUNT * 1e6)),
+            applicable_endpoints: ["/v1/corridor-bankability/screen", "/mcp"]
+          },
           tier_deal_dossier: {
             name: "Confidential Deal Dossier",
             amount_usd: TIER_DOSSIER_USDC_AMOUNT,
@@ -15228,6 +15299,37 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return handleEvidencePacketRepairPrompt(request, env);
   }
 
+  if (url.pathname === "/v1/corridor-bankability/screen") {
+    if (request.method === "POST") {
+      let body = {};
+      try {
+        body = await request.json();
+      } catch (_e) {
+        return jsonResponse({ error: "Malformed JSON payload" }, 400);
+      }
+      const structured = body.request || body || {};
+      const errors = [];
+      if (!structured.project_name) errors.push("Missing required field: project_name");
+      if (!structured.corridor_leg) errors.push("Missing required field: corridor_leg");
+      if (structured.capex_usd_m === undefined) errors.push("Missing required field: capex_usd_m");
+      if (structured.ifi_debt_usd_m === undefined) errors.push("Missing required field: ifi_debt_usd_m");
+      if (structured.dscr_min === undefined) errors.push("Missing required field: dscr_min");
+      if (errors.length > 0) {
+        return jsonResponse({ error: "Validation failed", errors }, 400);
+      }
+      const isPaid = await isBankabilityDossierPaid(request, env);
+      const data = generateBankabilityScreen(structured, isPaid);
+      return jsonResponse(data, 200, {
+        "x-payment-protocol": "x402",
+        "cache-control": "no-store"
+      });
+    }
+    return new Response("Method not allowed. Use POST.", {
+      status: 405,
+      headers: { allow: "POST", "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" }
+    });
+  }
+
   if (url.pathname === "/v1/settle" || url.pathname === "/v1/payment/verify") {
     if (request.method === "POST") {
       return handleSettleRequest(request, env, ctx);
@@ -15250,6 +15352,11 @@ export async function handleRequest(request, env = {}, ctx = {}) {
               name: "M2M Escrow Dispute Evaluation",
               amount_usd: TIER_MICRO_DISPUTE_USDC_AMOUNT,
               benefit: "Deterministic B2B dispute ruling and cryptographic clearance receipt."
+            },
+            tier_bankability_dossier: {
+              name: "Trans-Caspian IFI Bankability Dossier",
+              amount_usd: TIER_BANKABILITY_DOSSIER_USDC_AMOUNT,
+              benefit: "Full 15-year deterministic debt waterfall model, EBRD/ADB investment memo, and Excel model hash."
             },
             tier_2_pro: {
               name: "Dedicated Pro Tenant",

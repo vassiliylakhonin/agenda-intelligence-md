@@ -5,6 +5,7 @@ import {
   BASE_USDBC_CONTRACT,
   BASE_USDC_WALLET,
   ERC20_TRANSFER_TOPIC,
+  TIER_BANKABILITY_DOSSIER_USDC_AMOUNT,
   TIER_DOSSIER_USDC_AMOUNT,
   TIER_MICRO_CHECK_USDC_AMOUNT,
   TIER_MICRO_DISPUTE_USDC_AMOUNT,
@@ -355,11 +356,58 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
     );
   }
 
+  // Tier: tier_bankability_dossier ($25.00)
+  if (requestedTier === "tier_bankability_dossier") {
+    if (verification.amount_usdc < TIER_BANKABILITY_DOSSIER_USDC_AMOUNT) {
+      return new Response(
+        JSON.stringify({
+          error: `Insufficient payment for tier_bankability_dossier: received ${verification.amount_usdc} USDC, required ${TIER_BANKABILITY_DOSSIER_USDC_AMOUNT} USDC.`,
+          required_usd: TIER_BANKABILITY_DOSSIER_USDC_AMOUNT,
+          received_usd: verification.amount_usdc
+        }),
+        { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+      );
+    }
+
+    await markTransactionSettled(
+      verification.tx_hash,
+      {
+        tier: "tier_bankability_dossier",
+        payer: verification.payer,
+        amount_usdc: verification.amount_usdc
+      },
+      env
+    );
+
+    return new Response(
+      JSON.stringify({
+        status: "settled",
+        tier: "tier_bankability_dossier",
+        name: "Trans-Caspian IFI Bankability Dossier",
+        receipt: {
+          network: "base",
+          chain_id: 8453,
+          asset: "USDC",
+          amount_usdc: verification.amount_usdc,
+          payer: verification.payer,
+          recipient: verification.recipient,
+          tx_hash: verification.tx_hash,
+          settled_at: new Date().toISOString()
+        },
+        instructions:
+          "Payment confirmed on Base. Pass 'X-Payment-Tx: " +
+          verification.tx_hash +
+          "' on your /v1/corridor-bankability/screen or MCP corridor_bankability_screen call to retrieve the unlocked IFI memo."
+      }),
+      { status: 200, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+    );
+  }
+
   // Micropayment Tiers: tier_micro_check ($0.05) & tier_micro_dispute ($0.50)
   if (
     requestedTier === "tier_micro_check" ||
     requestedTier === "tier_micro_dispute" ||
-    (verification.amount_usdc >= TIER_MICRO_CHECK_USDC_AMOUNT && verification.amount_usdc < TIER_DOSSIER_USDC_AMOUNT)
+    (verification.amount_usdc >= TIER_MICRO_CHECK_USDC_AMOUNT && verification.amount_usdc < TIER_BANKABILITY_DOSSIER_USDC_AMOUNT)
   ) {
     const isDispute =
       requestedTier === "tier_micro_dispute" || verification.amount_usdc >= TIER_MICRO_DISPUTE_USDC_AMOUNT;
