@@ -84,3 +84,102 @@ The gate is exposed across three standard protocols:
 - **Zero-Retention**: No transaction payloads, private keys, or caller tokens are persisted to disk or cloud storage.
 - **Deterministic Edge Execution**: Sub-5ms evaluation at Cloudflare's global edge without third-party network roundtrips.
 - **Cryptographic Receipts**: Integration with the Vizier signing authority for auditable governance records.
+
+## Developer Quickstart & Integration Recipes
+
+### 1. Python SDK (5-line drop-in)
+
+Install the official package from PyPI:
+```bash
+pip install agenda-intelligence-md
+```
+
+Guard any autonomous transfer before signing:
+```python
+from agenda_intelligence import AgentFinancialGuard
+
+guard = AgentFinancialGuard()
+tx = {
+    "network": "base_mainnet",
+    "token": "USDC",
+    "amount_usd": 25.0,
+    "recipient": "0x5b5296a3a7bac0f5f096f93b60c1c121f2e5c663",
+    "method": "transfer",
+}
+
+verdict = guard.check(tx, intent="Pay vendor for monthly LLM inference credits")
+if not verdict.is_allowed:
+    raise RuntimeError(f"Pre-sign blocked: {verdict.violations}")
+
+wallet.transfer(tx)
+```
+
+### 2. Coinbase AgentKit Integration
+
+Integrate as a deterministic pre-execution guard before `wallet_provider.send_transaction`:
+
+```python
+from coinbase_agentkit import WalletProvider
+from agenda_intelligence import AgentFinancialGuard
+
+guard = AgentFinancialGuard()
+
+def safe_agentkit_transfer(
+    wallet: WalletProvider, to_address: str, amount_usdc: float, agent_reasoning: str
+):
+    tx = {
+        "network": "base_mainnet",
+        "token": "USDC",
+        "amount_usd": amount_usdc,
+        "recipient": to_address,
+        "method": "transfer",
+    }
+    verdict = guard.check(tx, intent=agent_reasoning)
+    if not verdict.is_allowed:
+        return f"CRITICAL SECURITY BLOCK: {verdict.violations}"
+
+    return wallet.native_transfer(to_address, amount_usdc)
+```
+
+### 3. Stripe Agent Toolkit & ElizaOS / LangChain (TypeScript)
+
+Drop-in TypeScript fetch guard for ElizaOS actions or LangChain custom tools:
+
+```typescript
+export async function preSignCheck(
+  tx: {
+    network: string;
+    token: string;
+    amount_usd: number;
+    recipient: string;
+    method?: string;
+    calldata?: string;
+  },
+  intentPrompt: string
+) {
+  const res = await fetch(
+    "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/v1/agent-financial/pre-sign-check",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        run_id: `tx-${Date.now()}`,
+        transaction: tx,
+        intent: { prompt: intentPrompt }
+      })
+    }
+  );
+  const data = await res.json();
+  const v = data.financial_guard_verdict;
+  if (v.decision !== "allow") {
+    throw new Error(`Pre-sign firewall block: ${v.violations.join(", ")}`);
+  }
+  return v;
+}
+```
+
+## Programmatic M2M Settlement & Pro Tiers
+
+- **Community Tier**: Free up to 50 requests/hour per IP.
+- **Header Settlement**: Attach `X-Payment-Tx: <base_usdc_tx_hash>` header to bypass rate-limits autonomously.
+- **Dedicated Pro Key**: Transfer 490 USDC on Base to `0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663`, then `POST /v1/settle` with `{"tx_hash": "0x...", "tier": "tier_2_pro"}` to receive an `agy_pro_...` 30-day bearer token for 10,000 requests/month.
