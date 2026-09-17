@@ -129,6 +129,15 @@ export const X402_JSON = {
         "5-factor audit (OFAC 50%, UBO, CHPL dual-use HS Tier 1-4, AIS vessel, Evidence Gaps)",
         "Cryptographic Vizier JWS receipt for compliance banks"
       ]
+    },
+    "tier_bankability_dossier": {
+      "id": "tier-bankability-dossier",
+      "name": "Trans-Caspian IFI Bankability Dossier",
+      "price": 25.0,
+      "billing_scheme": "per_deal",
+      "auth_required": false,
+      "settlement_header": "X-Payment-Tx",
+      "terms": "Full 15-year deterministic debt waterfall model, EBRD/ADB investment memo, and Excel model SHA-256 hash."
     }
   },
   "payment_rails": [
@@ -217,6 +226,15 @@ export const PAYMENT_MANIFEST_JSON = {
         "cadence": "per_deal",
         "turnaround_hours": 24,
         "includes_jws_receipt": true
+      },
+      {
+        "id": "tier-bankability-dossier",
+        "name": "Trans-Caspian IFI Bankability Dossier",
+        "amount": 25,
+        "currency": "USD",
+        "cadence": "per_deal",
+        "turnaround_hours": 0,
+        "includes_waterfall_and_memo": true
       }
     ]
   },
@@ -225,7 +243,8 @@ export const PAYMENT_MANIFEST_JSON = {
     "intake": "/profiles/confidential-project-room",
     "status": "/status",
     "sample_dossier": "/sample-dossier",
-    "settle": "/v1/settle"
+    "settle": "/v1/settle",
+    "bankability_screen": "/v1/corridor-bankability/screen"
   }
 };
 
@@ -247,6 +266,7 @@ export const LLMS_TXT = `# Agenda Intelligence MD
 - [API Catalog](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/api-catalog): RFC 6690 linkset discovery catalog.
 - [Entity Map](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json): Machine-readable concept map and knowledge graph.
 - [M2M Crypto Settlement](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/v1/settle): Programmatic Base USDC verification and Pro Bearer key provisioning.
+- [Corridor Bankability Screen](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/v1/corridor-bankability/screen): Deterministic Trans-Caspian corridor debt service coverage (DSCR), leverage covenants, Caspian Sea hydrology depth bottleneck, and sanctions exposure gate.
 
 ## Specialized Risk Gates
 - [Middle Corridor Deal Risk Gate](https://middle-corridor-deal-risk-gate.vassiliy-lakhonin.workers.dev): Cross-border logistics, sanctions screening, and trade route risk assessment.
@@ -276,6 +296,7 @@ export const LLMS_TXT = `# Agenda Intelligence MD
 - [agent_output_verification](https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp): relay-readiness triage of another agent's claim-backed output.
 - [pre_action_check](https://pre-action-check-a2a.vassiliy-lakhonin.workers.dev/mcp): stateless action-boundary routing from caller-supplied claim evidence, risk, and policy checks.
 - [agent_financial_pre_sign_check](https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/mcp): deterministic pre-sign financial transaction firewall for autonomous agents with wallet keys.
+- [corridor_bankability_screen](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp): evaluates corridor transport/port deal bankability, DSCR, leverage covenants, Caspian Sea hydrology depth drop, and x402 payment challenge.
 - [fleet_directory](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp): enumerates all 11 specialized risk gates with live URLs, canonical REST paths, and capabilities.
 
 ## Commercial Discovery Discipline & Project Room

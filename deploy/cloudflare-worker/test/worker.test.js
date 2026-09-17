@@ -740,6 +740,8 @@ test("/llms.txt route returns markdown policy with text/plain header", async () 
   assert.ok(text.includes("## Specialized Risk Gates"));
   assert.ok(text.includes("[ARD (Agent Resource Discovery)]("));
   assert.ok(text.includes("[Glama MCP Verification]("));
+  assert.ok(text.includes("[Corridor Bankability Screen]("));
+  assert.ok(text.includes("[corridor_bankability_screen]("));
 });
 
 test("/.well-known/glama.json and /glama.json return valid Glama MCP server schema", async () => {
@@ -858,6 +860,11 @@ test("Agent economy manifests: security.txt, owners.json, x402, payment-manifest
   assert.equal(payData.monetization.receiving_wallet, "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663");
   assert.equal(payData.monetization.tiers[1].amount, 490);
   assert.equal(payData.monetization.tiers[2].introductory_amount, 49);
+  assert.equal(x402Data.pricing_models.tier_bankability_dossier.price, 25.0);
+  const bankabilityTier = payData.monetization.tiers.find((t) => t.id === "tier-bankability-dossier");
+  assert.ok(bankabilityTier, "tier-bankability-dossier must be present in payment manifest");
+  assert.equal(bankabilityTier.amount, 25);
+  assert.equal(payData.endpoints.bankability_screen, "/v1/corridor-bankability/screen");
 });
 
 test("Agent ecosystem manifests: ai-plugin.json, agents.json, brick-blue.json, and mcp.json alias are served", async () => {
