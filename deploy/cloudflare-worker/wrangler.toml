@@ -226,6 +226,27 @@ id = "d2228183999246ccbec8aa2d5f130bfc"
 binding = "VIZIER"
 service = "vizier"
 
+# Agent Financial Guard & Autonomous Transaction Firewall Gate
+# Pre-sign compliance, OFAC/AML screening, drainer prevention, and velocity enforcement.
+# Deploy with:
+#   wrangler deploy --env agent-financial-guard
+[env.agent-financial-guard]
+name = "agent-financial-guard-a2a"
+workers_dev = true
+
+[env.agent-financial-guard.vars]
+AGENT_PROFILE = "agent_financial_guard"
+VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+RATE_LIMIT_PER_HOUR = "50"
+
+[[env.agent-financial-guard.kv_namespaces]]
+binding = "AGENDA_USAGE"
+id = "d2228183999246ccbec8aa2d5f130bfc"
+
+[[env.agent-financial-guard.services]]
+binding = "VIZIER"
+service = "vizier"
+
 # Sampled traces on the one profile that makes outbound calls. Measured
 # 2026-08-29 over 22-28 Aug: this Worker is 12.4% of named-script requests but
 # 47.4% of the fleet's CPU, with cpuTimeP99 423ms against a 1.27ms median, and

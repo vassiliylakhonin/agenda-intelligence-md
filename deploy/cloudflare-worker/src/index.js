@@ -77,6 +77,11 @@ import {
   isGatewayVizierEnabled
 } from "./upstream_vizier_gateway.js";
 
+import {
+  evaluateAgentFinancialTransaction,
+  validateFinancialGuardRequest
+} from "./agent_financial_guard.js";
+
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import {
@@ -732,10 +737,10 @@ function agentProfile(request, env = {}) {
     return "kazakhstan";
   }
   if (
-    env.AGENT_PROFILE === "dual_use_technology_export" ||
-    host.includes("dual-use-technology-export-a2a")
+    env.AGENT_PROFILE === "agent_financial_guard" ||
+    host.includes("agent-financial-guard-a2a")
   ) {
-    return "dual_use_technology_export";
+    return "agent_financial_guard";
   }
 
   return "agenda";
@@ -2557,6 +2562,7 @@ function applyAgentProfile(card, request, env = {}) {
   if (profile === "market_entry_readiness") return applyMarketEntryReadinessProfile(card, request);
   if (profile === "critical_minerals_due_diligence") return applyCriticalMineralsProfile(card, request);
   if (profile === "dual_use_technology_export") return applyDualUseTechnologyExportProfile(card, request);
+  if (profile === "agent_financial_guard") return applyAgentFinancialGuardProfile(card, request);
   if (profile === "corridor_sanctions_assistant") return applyCorridorSanctionsAssistantProfile(card, request);
   if (profile !== "kazakhstan") return card;
 
@@ -3261,6 +3267,29 @@ async function a2aResultForScreenDualUseHsCode(params, request, env = {}) {
   };
 }
 
+function applyAgentFinancialGuardProfile(card, request) {
+  const origin = originFromRequest(request);
+  const discovery = profileDiscovery("agent_financial_guard");
+  card.name = "Agent Financial Guard & Autonomous Transaction Firewall";
+  card.documentationUrl = discovery.documentation_url;
+  card.description =
+    "Deterministic pre-sign financial firewall for autonomous agents with wallet capabilities. " +
+    "Screens recipient addresses against OFAC SDN, detects malicious calldata/approvals, enforces spending limits, " +
+    "and evaluates prompt injection before funds leave the treasury." +
+    PROVIDER_FRONT_DOOR_POINTER;
+  card.provider.legalEntity.sameAs = discovery.provider_same_as;
+  card.skills = [
+    {
+      id: "agent-financial-pre-sign-check",
+      name: "Agent financial pre-sign check",
+      description:
+        "Deterministic pre-sign validation for autonomous agents: OFAC/AML screening, drainer prevention, velocity enforcement, and prompt injection defense.",
+      tags: ["finance", "pre-sign", "firewall", "ofac", "web3", "agentkit"]
+    }
+  ];
+  return card;
+}
+
 function applyCorridorSanctionsAssistantProfile(card, request) {
   const origin = originFromRequest(request);
   const discovery = profileDiscovery("corridor_sanctions_assistant");
@@ -3858,6 +3887,40 @@ const GATE_REQUEST_GUIDES = Object.freeze({
         { id: "du-2", source_type: "end_user_statement", title: "Signed end-user statement", date: "2026-08-02" }
       ],
       risk_question: "Is this file complete enough for export-control human review?"
+    }
+  },
+  agent_financial_guard: {
+    title: "Agent Financial Guard & Autonomous Transaction Firewall",
+    schema: "schemas/v1/agent-financial-guard-request.schema.json",
+    required: [
+      "run_id — caller correlation identifier",
+      "transaction — object with network, token, amount_usd, and recipient",
+      "intent — object with prompt (LLM reasoning / justification)",
+      "policy_limits — optional object with max_single_limit_usd, daily_velocity_limit_usd, velocity_24h_usd"
+    ],
+    example: {
+      run_id: "tx-guard-example-001",
+      agent: {
+        id: "procurement-agent-7",
+        model: "claude-3-5-sonnet",
+        operator: "autonomous-finance-corp"
+      },
+      transaction: {
+        network: "base_mainnet",
+        token: "USDC",
+        amount_usd: 150,
+        recipient: "0x5b5296a3a7bac0f5f096f93b60c1c121f2e5c663",
+        method: "transfer"
+      },
+      policy_limits: {
+        max_single_limit_usd: 500,
+        daily_velocity_limit_usd: 2000,
+        velocity_24h_usd: 350
+      },
+      intent: {
+        prompt: "Disburse automated payment for verified API compute consumption.",
+        caller_task_id: "task-compute-bill-99"
+      }
     }
   }
 });
@@ -5606,7 +5669,7 @@ function fleetDirectoryResponse() {
   return {
     fleet_name: "Agenda Intelligence Risk Triage Fleet",
     version: VERSION,
-    total_gates: 10,
+    total_gates: 11,
     repository: REPOSITORY_URL,
     documentation: DOCS_URL,
     gates: [
@@ -5673,6 +5736,14 @@ function fleetDirectoryResponse() {
         description: "Triage dual-use technology export controls, ECCN/HS Codes, and transit route risks for unauthorized diversion.",
         required_fields: ["item_description", "destination_country", "parties", "transit_countries", "risk_question", "decision_stage", "dated_sources"],
         schema_url: `${REPOSITORY_URL}/blob/main/schemas/v1/dual-use-technology-export-request.schema.json`
+      },
+      {
+        profile: "agent_financial_guard",
+        tool_name: "agent_financial_pre_sign_check",
+        canonical_endpoint: "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev",
+        description: "Deterministic pre-sign financial transaction firewall for autonomous agents: OFAC/AML screening, drainer prevention, and velocity enforcement.",
+        required_fields: ["run_id", "transaction", "intent"],
+        schema_url: `${REPOSITORY_URL}/blob/main/schemas/v1/agent-financial-guard-request.schema.json`
       },
       {
         profile: "corridor_sanctions_assistant",
@@ -8007,6 +8078,99 @@ async function a2aResultForDualUseTechnologyExport(params, request, env = {}) {
       ...(vizier_degrade_reason ? { vizier_degrade_reason } : {}),
       ...(vizier_clearance_receipt ? { vizier_clearance_receipt } : {}),
       ...(dual_use_verification ? { dual_use_verification } : {})
+    }
+  };
+}
+
+function structuredAgentFinancialGuardRequestFromParams(params) {
+  if (!params || typeof params !== "object") return null;
+  const candidates = [params.request, params.financial_request, params.transaction_request, params.input, params];
+  const message = params.message;
+  if (message && typeof message === "object") {
+    if (message.data && typeof message.data === "object") candidates.push(message.data);
+    if (Array.isArray(message.parts)) {
+      for (const part of message.parts) {
+        if (!part || typeof part !== "object") continue;
+        candidates.push(part.data, part.json, part.content);
+        const parsed = tryParseJsonObject(part.text);
+        if (parsed) candidates.push(parsed);
+      }
+    }
+  }
+  for (const candidate of candidates) {
+    if (candidate && typeof candidate === "object" && candidate.transaction && candidate.intent) return candidate;
+    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
+    if (parsed && typeof parsed === "object" && parsed.transaction && parsed.intent) return parsed;
+  }
+  return null;
+}
+
+async function a2aResultForAgentFinancialGuard(params, request, env = {}) {
+  const structured = structuredAgentFinancialGuardRequestFromParams(params);
+  if (!structured) {
+    return requestGuidanceResult(
+      "agent_financial_guard",
+      "/v1/agent-financial/pre-sign-check",
+      "schemas/v1/agent-financial-guard-request.schema.json",
+      ["Missing structured agent financial guard request"]
+    );
+  }
+
+  const errors = validateFinancialGuardRequest(structured);
+  if (errors.length > 0) {
+    return invalidRequestResult(
+      "agent_financial_guard",
+      "/v1/agent-financial/pre-sign-check",
+      "schemas/v1/agent-financial-guard-request.schema.json",
+      errors
+    );
+  }
+
+  const evaluation = await evaluateAgentFinancialTransaction(structured, env);
+  const verdict = evaluation.financial_guard_verdict;
+  const artifactText = [
+    "# Agent Financial Guard — Pre-Sign Verification",
+    "",
+    `Decision: ${verdict.decision.toUpperCase()}`,
+    `Status: ${verdict.status}`,
+    `Risk Score: ${verdict.score}/100`,
+    "",
+    "Checks:",
+    `- Sanctions & AML: ${verdict.checks.sanctions_aml ? "PASS" : "FAIL"}`,
+    `- Contract Security: ${verdict.checks.contract_security ? "PASS" : "FAIL"}`,
+    `- Velocity & Limits: ${verdict.checks.velocity_limits ? "PASS" : "FAIL"}`,
+    `- Prompt Injection Defense: ${verdict.checks.prompt_injection ? "PASS" : "FAIL"}`,
+    "",
+    verdict.violations.length ? "Violations:\n" + verdict.violations.map((v) => `- ${v}`).join("\n") + "\n" : "",
+    verdict.evidence_gaps.length ? "Evidence Gaps:\n" + verdict.evidence_gaps.map((g) => `- ${g}`).join("\n") + "\n" : "",
+    `Advisory: ${verdict.execution_advisory}`,
+    verdict.vizier_clearance_receipt ? `\nVizier JWS Attestation: \`${verdict.vizier_clearance_receipt}\`` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "agent-financial-guard-verdict",
+        name: "Agent Financial Guard Verdict",
+        parts: [
+          { text: artifactText, mediaType: "text/markdown" },
+          { data: evaluation, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "agent_financial_guard",
+      canonical_http_endpoint: "/v1/agent-financial/pre-sign-check",
+      schema: "schemas/v1/agent-financial-guard-request.schema.json",
+      capability: "agent_financial_pre_sign_check",
+      human_review_required: verdict.decision !== "allow",
+      response: evaluation,
+      vizier_status: verdict.vizier_status,
+      ...(verdict.vizier_clearance_receipt ? { vizier_clearance_receipt: verdict.vizier_clearance_receipt } : {})
     }
   };
 }
@@ -12555,6 +12719,11 @@ async function runProfileRequest(profile, params, request, env = {}) {
       const structured = structuredDualUseTechnologyExportRequestFromParams(params);
       promptChars = structured && structured.risk_question ? structured.risk_question.length : 0;
       modulesUsed = ["dual_use_technology_export"];
+    } else if (profile === "agent_financial_guard") {
+      result = await a2aResultForAgentFinancialGuard(params, request, env);
+      const structured = structuredAgentFinancialGuardRequestFromParams(params);
+      promptChars = structured && structured.intent ? String(structured.intent.prompt || "").length : 0;
+      modulesUsed = ["agent_financial_guard"];
     } else if (profile === "corridor_sanctions_assistant") {
       if (params.capability === "screen_dual_use_hs_code") {
         result = await a2aResultForScreenDualUseHsCode(params, request, env);
@@ -13798,6 +13967,23 @@ const DIRECT_V1_ROUTES = {
       vizier_degrade_reason: result.vizier_degrade_reason,
       vizier_clearance_receipt: result.vizier_clearance_receipt,
       critical_minerals_verification: result.critical_minerals_verification
+    })
+  },
+  "/v1/agent-financial/pre-sign-check": {
+    label: "agent financial guard pre-sign check",
+    guideProfile: "agent_financial_guard",
+    schema: "schemas/v1/agent-financial-guard-request.schema.json",
+    missing: "Missing structured agent financial guard request",
+    extract: structuredAgentFinancialGuardRequestFromParams,
+    errorsFor: validateFinancialGuardRequest,
+    run: async (structured, request, env) => {
+      const evaluation = await evaluateAgentFinancialTransaction(structured, env);
+      return { response: evaluation, ...evaluation };
+    },
+    provenance: (result) => ({
+      vizier_status: result.financial_guard_verdict?.vizier_status,
+      vizier_clearance_receipt: result.financial_guard_verdict?.vizier_clearance_receipt,
+      execution_advisory: result.financial_guard_verdict?.execution_advisory
     })
   }
 };

@@ -200,6 +200,16 @@ const PROFILE_TOOLS = {
       "Triage dual-use technology export controls, ECCN/HS Codes, and transit route risks for unauthorized diversion. " +
       "Required fields in 'request': item_description, destination_country, parties, transit_countries, risk_question, decision_stage, dated_sources."
   },
+  agent_financial_guard: {
+    name: "agent_financial_pre_sign_check",
+    bringsEvidence: true,
+    argKey: "request",
+    summary:
+      "Deterministic pre-sign financial transaction firewall for autonomous agents with wallet capabilities. " +
+      "Screens recipient addresses against OFAC SDN, detects malicious calldata/approvals, enforces velocity/spending limits, " +
+      "and evaluates prompt injection in transaction reasoning before broadcast. " +
+      "Required fields in 'request': run_id, transaction, intent."
+  },
 
   corridor_sanctions_assistant: [
     {
@@ -231,7 +241,7 @@ const PROFILE_TOOLS = {
       name: "fleet_directory",
       argKey: "none",
       summary:
-        "List all 10 specialized risk triage and verification gates in the Agenda Intelligence fleet, " +
+        "List all 11 specialized risk triage and verification gates in the Agenda Intelligence fleet, " +
         "including their MCP/A2A endpoints, supported profiles, primary tool names, input schemas, and required fields."
     }
   ]

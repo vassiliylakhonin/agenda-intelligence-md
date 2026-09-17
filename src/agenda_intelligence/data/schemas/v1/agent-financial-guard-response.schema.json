@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/agent-financial-guard-response.schema.json",
+  "title": "AgentFinancialGuardResponse",
+  "description": "Standardized response contract for autonomous agent financial transaction pre-sign evaluation.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "profile",
+    "financial_guard_verdict"
+  ],
+  "properties": {
+    "contract_version": { "type": "string" },
+    "profile": { "type": "string", "const": "agent_financial_guard" },
+    "financial_guard_verdict": {
+      "type": "object",
+      "required": [
+        "status",
+        "decision",
+        "score",
+        "checks",
+        "violations",
+        "evidence_gaps"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["decision_ready", "not_decision_ready", "escalate"]
+        },
+        "decision": {
+          "type": "string",
+          "enum": ["allow", "reject", "step_up_human_required"]
+        },
+        "score": {
+          "type": "integer"
+        },
+        "checks": {
+          "type": "object",
+          "required": [
+            "sanctions_aml",
+            "contract_security",
+            "velocity_limits",
+            "prompt_injection"
+          ],
+          "properties": {
+            "sanctions_aml": { "type": "boolean" },
+            "contract_security": { "type": "boolean" },
+            "velocity_limits": { "type": "boolean" },
+            "prompt_injection": { "type": "boolean" }
+          }
+        },
+        "violations": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "evidence_gaps": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "vizier_status": {
+          "type": "string"
+        },
+        "vizier_clearance_receipt": {
+          "type": ["string", "null"]
+        },
+        "execution_advisory": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

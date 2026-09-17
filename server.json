@@ -61,6 +61,10 @@
     {
       "type": "streamable-http",
       "url": "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev/mcp"
+    },
+    {
+      "type": "streamable-http",
+      "url": "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/mcp"
     }
   ]
 }

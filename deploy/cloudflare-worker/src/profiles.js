@@ -70,6 +70,9 @@ export const AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/b
 export const AGENT_OUTPUT_VERIFICATION_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agent-output-verification-response.schema.json`;
 export const PRE_ACTION_CHECK_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/pre-action-check-request.schema.json`;
 export const PRE_ACTION_CHECK_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/pre-action-check-response.schema.json`;
+export const AGENT_FINANCIAL_GUARD_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/agent-financial-guard.md`;
+export const AGENT_FINANCIAL_GUARD_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agent-financial-guard-request.schema.json`;
+export const AGENT_FINANCIAL_GUARD_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agent-financial-guard-response.schema.json`;
 
 // Canonical input mode shared by per-profile product_contract blocks and the
 // top-level x_agent_contract discoverability extension.
@@ -461,6 +464,39 @@ const dualUseExportProfile = Object.freeze({
   live_retrieval: { capability_declared: false, upstream_options: [] }
 });
 
+const agentFinancialGuardProfile = Object.freeze({
+  profile_key: "agent_financial_guard",
+  product_profile: "agent_financial_guard",
+  canonical_product_name: "Agent Financial Guard & Autonomous Transaction Firewall",
+  documentation_url: AGENT_FINANCIAL_GUARD_DOCS_URL,
+  provider_same_as: SHARED_PROVIDER_SAME_AS,
+  wrapper_scope:
+    "Deterministic pre-sign financial transaction compliance, sanctions screening, drainer prevention, and velocity enforcement for autonomous agents",
+  supported_contracts: frozenArray(["agent_financial_guard_contract"]),
+  buyer_use_cases: frozenArray([
+    "pre-sign transaction compliance check for autonomous agents with wallet keys",
+    "OFAC SDN and AML screening of crypto recipient addresses before broadcast",
+    "protection against smart contract wallet drainers and unconstrained infinite approvals",
+    "velocity and daily spending limits enforcement for AI agent purchasing pipelines",
+    "adversarial prompt injection detection in autonomous payment triggers"
+  ]),
+  commercial_positioning:
+    "Deterministic pre-sign financial firewall for autonomous agents with wallet capabilities. Screens recipient addresses against OFAC SDN, detects malicious calldata/approvals, enforces spending limits, and signs a Vizier JWS non-repudiation clearance receipt before funds leave the treasury.",
+  focus: frozenArray([
+    "autonomous agent wallet safety",
+    "OFAC SDN crypto address screening",
+    "smart contract drainer prevention",
+    "velocity and single-transaction limit enforcement",
+    "prompt injection defense in financial workflows"
+  ]),
+  product_contract: productContract({
+    request_schema: AGENT_FINANCIAL_GUARD_REQUEST_SCHEMA_URL,
+    response_schema: AGENT_FINANCIAL_GUARD_RESPONSE_SCHEMA_URL,
+    demo_input_modes: ["structured_json"]
+  }),
+  live_retrieval: { capability_declared: true, upstream_options: [] }
+});
+
 export const PROFILE_REGISTRY = Object.freeze({
   agenda: Object.freeze({
     profile_key: "agenda",
@@ -480,6 +516,7 @@ export const PROFILE_REGISTRY = Object.freeze({
   critical_minerals_due_diligence: criticalMineralsProfile,
   critical_minerals: criticalMineralsProfile,
   dual_use_technology_export: dualUseExportProfile,
+  agent_financial_guard: agentFinancialGuardProfile,
   corridor_sanctions_assistant: corridorSanctionsAssistantProfile,
   confidential_project_room: confidentialProjectRoomProfile
 });

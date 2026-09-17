@@ -235,8 +235,8 @@ test("the gated request names the worker the deploy will actually ship", () => {
 
   // Every declared environment resolves; none inherits another's worker name.
   const targets = fleetEnvironments().map((item) => workerTargetFor(item.env));
-  assert.equal(targets.length, 10);
-  assert.equal(new Set(targets).size, 10, "two environments resolved to one worker");
+  assert.equal(targets.length, 11);
+  assert.equal(new Set(targets).size, 11, "two environments resolved to one worker");
 });
 
 test("an environment this repository does not declare is refused, not defaulted", () => {
@@ -276,8 +276,8 @@ test("the environment list comes from wrangler.toml, not a second hand-kept list
     { env: "two", workerName: "two-a2a" }
   ]);
 
-  // The real file: ten environments, ten names, no gaps.
+  // The real file: eleven environments, eleven names, no gaps.
   const live = fleetEnvironments();
-  assert.equal(live.length, 10);
+  assert.equal(live.length, 11);
   assert.ok(live.every((item) => item.workerName));
 });

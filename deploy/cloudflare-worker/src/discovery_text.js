@@ -256,7 +256,8 @@ export const LLMS_TXT = `# Agenda Intelligence MD
 - [kazakhstan_market_entry_readiness](https://kazakhstan-market-entry-gate.vassiliy-lakhonin.workers.dev/mcp): Kazakhstan market-entry readiness gate for distribution / import / service / showroom / EPC files.
 - [agent_output_verification](https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp): relay-readiness triage of another agent's claim-backed output.
 - [pre_action_check](https://pre-action-check-a2a.vassiliy-lakhonin.workers.dev/mcp): stateless action-boundary routing from caller-supplied claim evidence, risk, and policy checks.
-- [fleet_directory](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp): enumerates all 10 specialized risk gates with live URLs, canonical REST paths, and capabilities.
+- [agent_financial_pre_sign_check](https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/mcp): deterministic pre-sign financial transaction firewall for autonomous agents with wallet keys.
+- [fleet_directory](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp): enumerates all 11 specialized risk gates with live URLs, canonical REST paths, and capabilities.
 
 ## Commercial Discovery Discipline & Project Room
 - [Confidential Project Room](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room): Alias-first, redacted workflow for high-assurance due diligence.

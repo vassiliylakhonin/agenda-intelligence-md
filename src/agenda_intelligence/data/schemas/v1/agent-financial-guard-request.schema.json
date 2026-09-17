@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/agent-financial-guard-request.schema.json",
+  "title": "AgentFinancialGuardRequest",
+  "description": "Deterministic pre-sign financial transaction compliance and firewall check for autonomous AI agents.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "transaction",
+    "intent"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Caller correlation identifier."
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "model": { "type": "string" },
+        "operator": { "type": "string" }
+      }
+    },
+    "transaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "network",
+        "token",
+        "amount_usd",
+        "recipient"
+      ],
+      "properties": {
+        "network": {
+          "type": "string",
+          "enum": [
+            "base_mainnet",
+            "ethereum_mainnet",
+            "arbitrum_one",
+            "optimism_mainnet",
+            "solana_mainnet",
+            "polygon_mainnet",
+            "fiat_ach",
+            "other"
+          ]
+        },
+        "token": {
+          "type": "string",
+          "enum": [
+            "USDC",
+            "USDT",
+            "ETH",
+            "SOL",
+            "WBTC",
+            "USD",
+            "EUR",
+            "other"
+          ]
+        },
+        "amount_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "recipient": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contract_address": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "transfer",
+            "approve",
+            "swap",
+            "contract_call",
+            "disbursement",
+            "unknown"
+          ]
+        },
+        "calldata": {
+          "type": "string"
+        }
+      }
+    },
+    "policy_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_single_limit_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "daily_velocity_limit_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "velocity_24h_usd": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prompt"
+      ],
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "minLength": 1,
+          "description": "LLM intent or justification prompt initiating the transaction."
+        },
+        "caller_task_id": {
+          "type": "string"
+        }
+      }
+    },
+    "dated_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "source_type",
+          "title",
+          "date"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "source_type": { "type": "string" },
+          "title": { "type": "string" },
+          "date": { "type": "string", "format": "date" }
+        }
+      }
+    }
+  }
+}

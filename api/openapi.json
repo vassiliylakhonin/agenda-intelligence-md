@@ -556,6 +556,39 @@
         }
       }
     },
+    "/v1/agent-financial/pre-sign-check": {
+      "post": {
+        "tags": [
+          "rest",
+          "finance",
+          "guardrails"
+        ],
+        "summary": "Agent Financial Guard & Autonomous Transaction Firewall",
+        "description": "Deterministic pre-sign financial transaction compliance, sanctions screening, drainer prevention, and velocity enforcement for autonomous agents with wallet keys.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/agent-financial-guard-request.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Gate triage response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/agent-financial-guard-response.schema.json"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mcp": {
       "post": {
         "tags": [
