@@ -569,9 +569,11 @@ def screen_corridor_bankability(request_json: dict, is_paid: bool = False) -> di
     Returns a free Decision Teaser with DSCR/leverage checks, corridor bottleneck
     analysis, and an x402 unlock challenge for the full 15-year waterfall memo.
     """
-    from agenda_intelligence.corridor_bankability import screen_corridor_bankability as _screen
-    return _screen(request_json, is_paid=is_paid)
+    from agenda_intelligence.corridor_bankability import (
+        screen_corridor_bankability as _screen,
+    )
 
+    return _screen(request_json, is_paid=is_paid)
 
 
 # ---------------------------------------------------------------------------

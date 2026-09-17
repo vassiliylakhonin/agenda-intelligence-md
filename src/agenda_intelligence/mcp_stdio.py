@@ -851,14 +851,17 @@ TOOLS: dict[str, dict[str, Any]] = {
             "Trans-Caspian and Middle Corridor infrastructure projects. Evaluates minimum DSCR floor (1.20x), "
             "non-sovereign margin (1.30x), leverage ceiling (<=80%), Caspian hydrological water-level constraints "
             "(-1.20m Baltic datum), and FX currency mismatch. Returns a free Decision Teaser with covenant "
-            "pass/fail matrix, bottleneck analysis, and an x402 micropayment invoice to unlock the full 15-year debt waterfall model."
+            "pass/fail matrix, bottleneck analysis, and an x402 micropayment invoice to unlock the full 15-year "
+            "debt waterfall model."
         ),
         "inputSchema": _schema(
             {
                 "project_name": {
                     "type": "string",
                     "minLength": 2,
-                    "description": "Name of the corridor infrastructure project (e.g. 'Aktau Port Container Hub Expansion').",
+                    "description": (
+                        "Name of the corridor infrastructure project (e.g. 'Aktau Port Container Hub Expansion')."
+                    ),
                 },
                 "corridor_leg": {
                     "type": "string",
@@ -887,7 +890,10 @@ TOOLS: dict[str, dict[str, Any]] = {
                 },
                 "currency_mismatch": {
                     "type": "boolean",
-                    "description": "Whether tariff revenues are collected in local currency (KZT/AZN/GEL) while debt is in USD/EUR.",
+                    "description": (
+                        "Whether tariff revenues are collected in local currency (KZT/AZN/GEL) "
+                        "while debt is in USD/EUR."
+                    ),
                 },
                 "evidence_sources": {
                     "type": "array",

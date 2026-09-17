@@ -117,6 +117,7 @@ def test_mcp_stdio_corridor_bankability_dispatch():
     assert len(content) > 0
 
     import json
+
     data = json.loads(content[0]["text"])
     assert data["project_name"] == "Baku-Tbilisi Rail Terminal"
     assert data["unlocked_full_dossier"] is False
@@ -158,4 +159,3 @@ def test_corridor_bankability_smart_fallback():
     assert res_data["financial_metrics"]["total_capex_usd_m"] == 100.0
     assert res_data["unlocked_full_dossier"] is False
     assert res_data["x402_unlock"]["amount_usdc"] == 25.0
-
