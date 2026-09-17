@@ -8222,6 +8222,56 @@ test("GET /sample-dossier returns HTML and /sample-dossier.md returns Markdown",
   assert.ok(bodyMd.includes("8481.80.81"));
 });
 
+test("GET /v1/dossier/export returns HTML with @media print and custom parameters", async () => {
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/dossier/export?commodity=Titanium+Sponge&transit=Ust-Kamenogorsk+->+Baku&verdict=HOLD_SANCTIONS_RISK", {
+    method: "GET",
+    headers: { "accept": "text/html" }
+  });
+  const res = await handleRequest(req, {});
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-type"), /text\/html/);
+  const body = await res.text();
+  assert.ok(body.includes("@media print"));
+  assert.ok(body.includes("Titanium Sponge"));
+  assert.ok(body.includes("Ust-Kamenogorsk -&gt; Baku") || body.includes("Ust-Kamenogorsk -> Baku"));
+  assert.ok(body.includes("HOLD_SANCTIONS_RISK"));
+  assert.ok(body.includes("VIZIER ATTESTED"));
+  assert.ok(body.includes("window.print()"));
+});
+
+test("GET /v1/dossier/export?format=md returns Markdown with custom parameters", async () => {
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/dossier/export?format=md&deal_ref=DOSSIER-TEST-999&cargo=Lithium+Hydroxide", {
+    method: "GET"
+  });
+  const res = await handleRequest(req, {});
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-type"), /text\/markdown/);
+  const body = await res.text();
+  assert.ok(body.includes("# CONFIDENTIAL DEAL DOSSIER"));
+  assert.ok(body.includes("DOSSIER-TEST-999"));
+  assert.ok(body.includes("Lithium Hydroxide"));
+});
+
+test("POST /v1/dossier/export parses JSON payload with commodity alias and returns HTML", async () => {
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/dossier/export", {
+    method: "POST",
+    headers: { "content-type": "application/json", "accept": "text/html" },
+    body: JSON.stringify({
+      deal_ref: "REF-JSON-777",
+      commodity: "Semiconductor Stepper Hardware",
+      transit: "Dostyk -> Almaty -> Baku",
+      verdict: "BLOCK_IMMEDIATE"
+    })
+  });
+  const res = await handleRequest(req, {});
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-type"), /text\/html/);
+  const body = await res.text();
+  assert.ok(body.includes("REF-JSON-777"));
+  assert.ok(body.includes("Semiconductor Stepper Hardware"));
+  assert.ok(body.includes("BLOCK_IMMEDIATE"));
+});
+
 test("POST /v1/agent-financial/pre-sign-check permits clean transaction with score 10", async () => {
   const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/agent-financial/pre-sign-check", {
     method: "POST",

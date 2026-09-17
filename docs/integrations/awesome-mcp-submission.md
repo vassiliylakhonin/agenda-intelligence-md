@@ -1,30 +1,36 @@
-# Awesome-MCP & Agent Directory Submission Draft
+# Awesome-MCP & Agent Directory Submission Guide
 
-This document contains ready-to-submit entries for community catalogs, including `punkpepe/awesome-mcp-servers`, the official Model Context Protocol Directory, and Coinbase AgentKit community repositories.
+This document contains ready-to-submit entries for community catalogs, including `punkpepe/awesome-mcp-servers`, the official Model Context Protocol Directory (`modelcontextprotocol/servers`), Smithery.ai, Glama.ai, and Coinbase AgentKit community repositories.
 
 ---
 
-## 1. Awesome-MCP-Servers Entry
+## 1. Awesome-MCP-Servers Entry (`punkpeye/awesome-mcp-servers`)
 
-**Category**: `Finance & Risk Management` / `Security & Compliance`
+**PR Target**: [punkpeye/awesome-mcp-servers](https://github.com/punkpeye/awesome-mcp-servers)  
+**Target File**: `README.md`  
+**Category**: `Finance & FinTech` or `Security & Compliance`  
 
 ```markdown
-- [Agenda Intelligence MD](https://github.com/vassiliylakhonin/agenda-intelligence-md) - Autonomous pre-sign transaction firewall, OFAC/AML sanctions screening, and deterministic M2M escrow arbiter for AI agent economies. Deployed across 12 Cloudflare Edge nodes with sub-10ms latency, Vizier cryptographic gate receipts, and Base Mainnet smart contract settlement.
+- [Agenda Intelligence MD](https://github.com/vassiliylakhonin/agenda-intelligence-md) - Autonomous pre-sign transaction firewall, OFAC/AML sanctions screening, and deterministic M2M escrow arbiter for AI agent economies. Deployed across 12 Cloudflare Edge nodes with sub-10ms latency, Vizier cryptographic gate receipts, x402 Base USDC micropayments, and on-chain Base settlement.
 ```
 
 ---
 
 ## 2. Model Context Protocol Server Entry (`server.json` Snippet)
 
+**Target Repository**: [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers)
+
 ```json
 {
   "name": "agenda-intelligence-md",
+  "displayName": "Agenda Intelligence — Sanctions & Deal-Risk Gates",
   "description": "Agent transaction firewall (OFAC/AML screening, drainer defense, velocity caps) and autonomous B2B escrow arbiter for Base USDC.",
   "version": "1.10.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md"
   },
+  "homepage": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/",
   "endpoints": {
     "mcp_stream": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp",
     "financial_guard": "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/mcp",
@@ -41,7 +47,44 @@ This document contains ready-to-submit entries for community catalogs, including
 
 ---
 
-## 3. Coinbase AgentKit Community Extension PR Template
+## 3. Smithery.ai & Glama.ai Automated Listings
+
+Both platforms auto-index from repository root manifests:
+* **Smithery**: Configured in `smithery.yaml` (stdio via `uvx agenda-intelligence-md`).
+* **Glama**: Configured in `/.well-known/glama.json` (hosted edge endpoints with maintainer attestation).
+
+### Direct Claude Desktop Configuration (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "agenda-intelligence": {
+      "command": "uvx",
+      "args": ["agenda-intelligence-md"]
+    }
+  }
+}
+```
+
+---
+
+## 4. ElizaOS Community Plugin Registry Entry
+
+**NPM Package**: [`@agenda-intelligence/plugin-guard`](https://www.npmjs.com/package/@agenda-intelligence/plugin-guard) (v1.10.0)  
+**PR Target**: [elizaos/plugins](https://github.com/elizaos-plugins) / [awesome-eliza](https://github.com/elizaos/awesome-eliza)
+
+```json
+{
+  "name": "@agenda-intelligence/plugin-guard",
+  "description": "Deterministic transaction firewall and autonomous B2B escrow arbiter for ElizaOS agents on Base.",
+  "npm": "https://www.npmjs.com/package/@agenda-intelligence/plugin-guard",
+  "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/integrations/elizaos",
+  "tags": ["security", "compliance", "ofac", "escrow", "base", "usdc", "x402"]
+}
+```
+
+---
+
+## 5. Coinbase AgentKit Community Extension PR Template
 
 **PR Title**: `feat(community-action-provider): add Agenda Financial Guard pre-sign transaction firewall`
 
@@ -58,20 +101,7 @@ This document contains ready-to-submit entries for community catalogs, including
 
 ---
 
-## 4. ElizaOS Community Plugin Registry Entry
-
-```json
-{
-  "name": "@agenda-intelligence/plugin-guard",
-  "description": "Deterministic transaction firewall and autonomous B2B escrow arbiter for ElizaOS agents on Base.",
-  "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/integrations/elizaos",
-  "tags": ["security", "compliance", "ofac", "escrow", "base", "usdc"]
-}
-```
-
----
-
-## 5. Virtuals Protocol / Morpheus Worker Listing
+## 6. Virtuals Protocol / Morpheus Worker Listing
 
 ```json
 {

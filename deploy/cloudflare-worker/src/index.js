@@ -147,7 +147,7 @@ import {
   markTransactionSettled,
   verifyBaseTransactionReceipt
 } from "./settlement.js";
-import { handleSampleDossierRequest } from "./sample_dossier.js";
+import { handleSampleDossierRequest, handleDossierExportRequest } from "./sample_dossier.js";
 import { handleExplorerRequest } from "./explorer.js";
 import {
   MCP_ENDPOINT_PATH,
@@ -14081,7 +14081,7 @@ async function runBrowserTriage(e) {
     resDiv.style.display = 'block';
     if (text) {
       var escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      resDiv.innerHTML = '<div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:16px; margin-bottom:12px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><strong style="color:var(--accent); font-size:15px;">⚡ Live Algorithmic Risk Triage Result:</strong><span style="font-size:12px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:4px; font-weight:600;">Status: Evaluated</span></div><pre style="white-space:pre-wrap; word-break:break-word; max-height:350px; overflow-y:auto; font-size:12px; background:#0f172a; color:#f8fafc; padding:12px; border-radius:4px;">' + escaped + '</pre><div style="margin-top:14px; padding:12px; background:#fff7ed; border-left:4px solid #ea580c; border-radius:0 4px 4px 0;"><strong style="color:#9a3412; font-size:13px;">⚠️ High-Stakes Risk Protection:</strong><p style="font-size:13px; margin:4px 0 8px; color:var(--fg);">The screening above is an algorithmic pre-flight lead. For bank compliance clearance, letter of credit issuance, or cargo release, order the certified 5-factor Deal Dossier with cryptographic Vizier JWS receipt.</p><div style="display:flex; gap:8px; flex-wrap:wrap;"><a href="https://paypal.me/vaskenzy/49USD" target="_blank" style="background:#0070BA; color:#fff; padding:6px 14px; border-radius:4px; font-size:13px; font-weight:600; text-decoration:none;">Instant $49 Pre-Screen Checkout</a><a href="https://paypal.me/vaskenzy/490USD" target="_blank" style="background:#166534; color:#fff; padding:6px 14px; border-radius:4px; font-size:13px; font-weight:600; text-decoration:none;">Order $490 Certified Dossier</a><a href="${origin}/sample-dossier" style="background:var(--accent); color:#fff; padding:6px 14px; border-radius:4px; font-size:13px; font-weight:600; text-decoration:none;">View Sample Dossier</a></div></div></div>';
+      resDiv.innerHTML = '<div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:16px; margin-bottom:12px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><strong style="color:var(--accent); font-size:15px;">⚡ Live Algorithmic Risk Triage Result:</strong><span style="font-size:12px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:4px; font-weight:600;">Status: Evaluated</span></div><pre style="white-space:pre-wrap; word-break:break-word; max-height:350px; overflow-y:auto; font-size:12px; background:#0f172a; color:#f8fafc; padding:12px; border-radius:4px;">' + escaped + '</pre><div style="margin-top:14px; padding:12px; background:#fff7ed; border-left:4px solid #ea580c; border-radius:0 4px 4px 0;"><strong style="color:#9a3412; font-size:13px;">⚠️ High-Stakes Risk Protection:</strong><p style="font-size:13px; margin:4px 0 8px; color:var(--fg);">The screening above is an algorithmic pre-flight lead. For bank compliance clearance, letter of credit issuance, or cargo release, order the certified 5-factor Deal Dossier with cryptographic Vizier JWS receipt.</p><div style="display:flex; gap:8px; flex-wrap:wrap;"><a href="https://paypal.me/vaskenzy/49USD" target="_blank" style="background:#0070BA; color:#fff; padding:6px 14px; border-radius:4px; font-size:13px; font-weight:600; text-decoration:none;">Instant $49 Pre-Screen Checkout</a><a href="https://paypal.me/vaskenzy/490USD" target="_blank" style="background:#166534; color:#fff; padding:6px 14px; border-radius:4px; font-size:13px; font-weight:600; text-decoration:none;">Order $490 Certified Dossier</a><a href="${origin}/sample-dossier" style="background:var(--accent); color:#fff; padding:6px 14px; border-radius:4px; font-size:13px; font-weight:600; text-decoration:none;">View Sample Dossier</a><a href="${origin}/v1/dossier/export?commodity=\' + encodeURIComponent(cargo) + \'&transit=\' + encodeURIComponent(route) + \'" target="_blank" style="background:#334155; color:#fff; padding:6px 14px; border-radius:4px; font-size:13px; font-weight:600; text-decoration:none;">📄 Export PDF Dossier</a></div></div></div>';
     } else {
       resDiv.innerHTML = '<div style="color:var(--warn); font-size:13px;">Triage response completed. Check developer console for details.</div>';
     }
@@ -15154,6 +15154,16 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   }
 
   if (
+    (request.method === "GET" || request.method === "POST") &&
+    (url.pathname === "/v1/dossier/export" ||
+      url.pathname === "/dossier/export" ||
+      url.pathname === "/v1/dossier/export.md" ||
+      url.pathname === "/dossier/export.md")
+  ) {
+    return handleDossierExportRequest(request);
+  }
+
+  if (
     request.method === "GET" &&
     (url.pathname === "/explorer" ||
       url.pathname === "/m2m-escrow/explorer" ||
@@ -15364,7 +15374,9 @@ export {
   isGatewayVizierEnabled,
   aiPluginDocument,
   agentsRegistryDocument,
-  brickBlueDocument
+  brickBlueDocument,
+  handleSampleDossierRequest,
+  handleDossierExportRequest
 };
 function generateHtmlDashboard(profile, response) {
   const jsonStr = JSON.stringify(response, null, 2);
