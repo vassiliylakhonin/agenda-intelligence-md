@@ -19,6 +19,8 @@ export const ERC20_TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f16
 export const USDC_DECIMALS = 6;
 export const TIER_PRO_USDC_AMOUNT = 490;
 export const TIER_DOSSIER_USDC_AMOUNT = 49;
+export const TIER_MICRO_CHECK_USDC_AMOUNT = 0.05;
+export const TIER_MICRO_DISPUTE_USDC_AMOUNT = 0.50;
 
 export const VERSION = "1.10.0";
 export const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";

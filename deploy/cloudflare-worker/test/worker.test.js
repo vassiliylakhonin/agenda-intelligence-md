@@ -8556,5 +8556,57 @@ test("A2A SendMessage handles m2m_escrow_arbiter profile", async () => {
   assert.equal(json.result.task.metadata.product_profile, "m2m_escrow_arbiter");
 });
 
+test("GET /v1/x402/pricing returns x402 micropayment pricing breakdown", async () => {
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/x402/pricing");
+  const res = await handleRequest(req, {});
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.equal(data.protocol, "x402");
+  assert.equal(data.network, "Base (Chain ID 8453)");
+  assert.equal(data.pricing.tier_micro_check.amount_usd, 0.05);
+  assert.equal(data.pricing.tier_micro_dispute.amount_usd, 0.50);
+});
+
+test("GET /explorer returns M2M Escrow Web3 Explorer HTML", async () => {
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/explorer");
+  const res = await handleRequest(req, {});
+  assert.equal(res.status, 200);
+  assert.ok(res.headers.get("content-type").includes("text/html"));
+  const html = await res.text();
+  assert.ok(html.includes("M2M Escrow Dispute Explorer"));
+  assert.ok(html.includes("Inspect Escrow Deal"));
+  assert.ok(html.includes("Live Arbiter Evaluation"));
+});
+
+test("POST /v1/settle settles tier_micro_check for 0.05 USDC", async () => {
+  const txHash = "0x4444444444444444444444444444444444444444444444444444444444444444";
+  const mockReceipt = mockUsdcTransferReceipt(0.05);
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockReceipt }), {
+      status: 200,
+      headers: { "content-type": "application/json" }
+    });
+
+  const env = { AGENDA_USAGE: fakeRateKv() };
+
+  try {
+    const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tx_hash: txHash, tier: "tier_micro_check" })
+    });
+
+    const res = await handleRequest(req, env);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.status, "settled");
+    assert.equal(data.tier, "tier_micro_check");
+    assert.equal(data.receipt.amount_usdc, 0.05);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
 
 

@@ -100,6 +100,24 @@ export const X402_JSON = {
       "auth_type": "Bearer",
       "sla": "99.9%"
     },
+    "tier_micro_check": {
+      "id": "tier-micro-check",
+      "name": "Agent Financial Pre-Sign Check",
+      "price": 0.05,
+      "billing_scheme": "per_call",
+      "auth_required": false,
+      "settlement_header": "X-Payment-Tx",
+      "terms": "Single deterministic pre-sign transaction security validation."
+    },
+    "tier_micro_dispute": {
+      "id": "tier-micro-dispute",
+      "name": "M2M Escrow Dispute Evaluation",
+      "price": 0.50,
+      "billing_scheme": "per_call",
+      "auth_required": false,
+      "settlement_header": "X-Payment-Tx",
+      "terms": "Deterministic B2B dispute ruling and cryptographic clearance receipt."
+    },
     "tier_3_deal_dossier": {
       "id": "tier-3-dossier",
       "name": "Confidential Deal Dossier",

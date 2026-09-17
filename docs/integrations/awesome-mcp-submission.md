@@ -55,3 +55,36 @@ This document contains ready-to-submit entries for community catalogs, including
 > - **Prompt Injection Shield**: Identifies adversarial jailbreaks injected into transaction intent.
 >
 > Tested with `cdp-agentkit-core` on Base Sepolia and Base Mainnet.
+
+---
+
+## 4. ElizaOS Community Plugin Registry Entry
+
+```json
+{
+  "name": "@agenda-intelligence/plugin-guard",
+  "description": "Deterministic transaction firewall and autonomous B2B escrow arbiter for ElizaOS agents on Base.",
+  "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/integrations/elizaos",
+  "tags": ["security", "compliance", "ofac", "escrow", "base", "usdc"]
+}
+```
+
+---
+
+## 5. Virtuals Protocol / Morpheus Worker Listing
+
+```json
+{
+  "service_name": "agenda_security_guard",
+  "description": "Pre-sign transaction security firewall and M2M escrow arbiter on Base.",
+  "functions": [
+    "check_transaction_safety",
+    "arbitrate_escrow_dispute"
+  ],
+  "monetization": {
+    "protocol": "x402",
+    "price_per_call_usdc": 0.05,
+    "network": "base"
+  }
+}
+```

@@ -1,0 +1,29 @@
+{
+  "name": "@agenda-intelligence/plugin-guard",
+  "version": "1.10.0",
+  "description": "ElizaOS plugin for deterministic transaction defense (OFAC/AML, drainers) and autonomous M2M escrow arbitration on Base.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "elizaos",
+    "eliza",
+    "agent-security",
+    "financial-guard",
+    "escrow",
+    "m2m",
+    "base",
+    "usdc"
+  ],
+  "author": "Vassiliy Lakhonin",
+  "license": "MIT",
+  "dependencies": {},
+  "peerDependencies": {
+    "@elizaos/core": ">=0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

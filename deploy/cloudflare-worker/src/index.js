@@ -133,17 +133,21 @@ import {
   SUPPORT_HOURS_LOCAL,
   SUPPORT_TIMEZONE,
   TIER_DOSSIER_USDC_AMOUNT,
+  TIER_MICRO_CHECK_USDC_AMOUNT,
+  TIER_MICRO_DISPUTE_USDC_AMOUNT,
   TIER_PRO_USDC_AMOUNT,
   VERSION,
   profileDiscovery
 } from "./profiles.js";
 import {
   checkDynamicBearerToken,
+  generateX402PaymentResponse,
   handleSettleRequest,
   markTransactionSettled,
   verifyBaseTransactionReceipt
 } from "./settlement.js";
 import { handleSampleDossierRequest } from "./sample_dossier.js";
+import { handleExplorerRequest } from "./explorer.js";
 import {
   MCP_ENDPOINT_PATH,
   MCP_META_PROTOCOL_VERSION,
@@ -904,15 +908,37 @@ async function checkRateLimit(request, env, profile) {
   // 2. Inline Base USDC settlement header (X-Payment-Tx: 0x...)
   const paymentTx = request.headers.get("x-payment-tx");
   if (paymentTx && /^0x[0-9a-fA-F]{64}$/.test(paymentTx.trim())) {
+    const isDispute = profile === "m2m_escrow_arbiter";
+    const requiredMin = isDispute ? TIER_MICRO_DISPUTE_USDC_AMOUNT : TIER_MICRO_CHECK_USDC_AMOUNT;
     const verification = await verifyBaseTransactionReceipt(paymentTx.trim(), env);
-    if (verification.valid && verification.amount_usdc >= TIER_DOSSIER_USDC_AMOUNT) {
-      await markTransactionSettled(paymentTx.trim(), {
-        tier: verification.amount_usdc >= TIER_PRO_USDC_AMOUNT ? "tier_2_pro" : "tier_3_deal_dossier",
-        payer: verification.payer,
+    if (verification.valid && verification.amount_usdc >= requiredMin) {
+      const tier =
+        verification.amount_usdc >= TIER_PRO_USDC_AMOUNT
+          ? "tier_2_pro"
+          : verification.amount_usdc >= TIER_DOSSIER_USDC_AMOUNT
+            ? "tier_3_deal_dossier"
+            : isDispute
+              ? "tier_micro_dispute"
+              : "tier_micro_check";
+      await markTransactionSettled(
+        paymentTx.trim(),
+        {
+          tier,
+          payer: verification.payer,
+          amount_usdc: verification.amount_usdc,
+          settled_via: "x_payment_tx_header"
+        },
+        env
+      );
+      return {
+        limited: false,
+        limit,
+        count: 0,
+        payment_tx: paymentTx.trim(),
+        settled: true,
         amount_usdc: verification.amount_usdc,
-        settled_via: "x_payment_tx_header"
-      }, env);
-      return { limited: false, limit, count: 0, payment_tx: paymentTx.trim(), settled: true };
+        tier
+      };
     }
   }
 
@@ -15053,6 +15079,63 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return handleSampleDossierRequest(request);
   }
 
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/explorer" ||
+      url.pathname === "/m2m-escrow/explorer" ||
+      url.pathname === "/escrow-explorer")
+  ) {
+    return handleExplorerRequest(request, env);
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/v1/x402" ||
+      url.pathname === "/v1/x402/pricing" ||
+      url.pathname === "/v1/pricing/x402")
+  ) {
+    return jsonResponse(
+      {
+        protocol: "x402",
+        version: "1.0",
+        description: "Autonomous machine-to-machine pay-per-call micropayments via USDC on Base network.",
+        network: "Base (Chain ID 8453)",
+        asset: "USDC (Circle 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)",
+        recipient_wallet: BASE_USDC_WALLET,
+        pricing: {
+          tier_micro_check: {
+            name: "Agent Financial Pre-Sign Check",
+            amount_usd: TIER_MICRO_CHECK_USDC_AMOUNT,
+            amount_raw: String(Math.round(TIER_MICRO_CHECK_USDC_AMOUNT * 1e6)),
+            applicable_endpoints: ["/v1/agent-financial/pre-sign-check"]
+          },
+          tier_micro_dispute: {
+            name: "M2M Escrow Dispute Evaluation",
+            amount_usd: TIER_MICRO_DISPUTE_USDC_AMOUNT,
+            amount_raw: String(Math.round(TIER_MICRO_DISPUTE_USDC_AMOUNT * 1e6)),
+            applicable_endpoints: ["/v1/m2m-escrow/evaluate-dispute"]
+          },
+          tier_deal_dossier: {
+            name: "Confidential Deal Dossier",
+            amount_usd: TIER_DOSSIER_USDC_AMOUNT,
+            amount_raw: String(Math.round(TIER_DOSSIER_USDC_AMOUNT * 1e6)),
+            applicable_endpoints: ["/message/send", "/mcp"]
+          },
+          tier_monthly_pro: {
+            name: "Dedicated Pro Tenant (30-day)",
+            amount_usd: TIER_PRO_USDC_AMOUNT,
+            amount_raw: String(Math.round(TIER_PRO_USDC_AMOUNT * 1e6)),
+            applicable_endpoints: ["all"]
+          }
+        },
+        instruction:
+          "Include 'X-Payment-Tx: <base_tx_hash>' header in your API call to bypass rate limits."
+      },
+      200,
+      { "cache-control": "public, max-age=3600" }
+    );
+  }
+
   if (request.method === "POST" && url.pathname === "/v1/evidence-packet/check") {
     return handleEvidencePacketCheck(request, env);
   }
@@ -15074,6 +15157,16 @@ export async function handleRequest(request, env = {}, ctx = {}) {
           asset: "USDC (Circle 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)",
           recipient_wallet: BASE_USDC_WALLET,
           supported_tiers: {
+            tier_micro_check: {
+              name: "Agent Financial Pre-Sign Check",
+              amount_usd: TIER_MICRO_CHECK_USDC_AMOUNT,
+              benefit: "Single deterministic pre-sign transaction security validation."
+            },
+            tier_micro_dispute: {
+              name: "M2M Escrow Dispute Evaluation",
+              amount_usd: TIER_MICRO_DISPUTE_USDC_AMOUNT,
+              benefit: "Deterministic B2B dispute ruling and cryptographic clearance receipt."
+            },
             tier_2_pro: {
               name: "Dedicated Pro Tenant",
               amount_usd: 490,

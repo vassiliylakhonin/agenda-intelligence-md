@@ -6,6 +6,8 @@ import {
   BASE_USDC_WALLET,
   ERC20_TRANSFER_TOPIC,
   TIER_DOSSIER_USDC_AMOUNT,
+  TIER_MICRO_CHECK_USDC_AMOUNT,
+  TIER_MICRO_DISPUTE_USDC_AMOUNT,
   TIER_PRO_USDC_AMOUNT,
   USDC_DECIMALS
 } from "./profiles.js";
@@ -353,6 +355,62 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
     );
   }
 
+  // Micropayment Tiers: tier_micro_check ($0.05) & tier_micro_dispute ($0.50)
+  if (
+    requestedTier === "tier_micro_check" ||
+    requestedTier === "tier_micro_dispute" ||
+    (verification.amount_usdc >= TIER_MICRO_CHECK_USDC_AMOUNT && verification.amount_usdc < TIER_DOSSIER_USDC_AMOUNT)
+  ) {
+    const isDispute =
+      requestedTier === "tier_micro_dispute" || verification.amount_usdc >= TIER_MICRO_DISPUTE_USDC_AMOUNT;
+    const tierName = isDispute ? "tier_micro_dispute" : "tier_micro_check";
+    const requiredAmount = isDispute ? TIER_MICRO_DISPUTE_USDC_AMOUNT : TIER_MICRO_CHECK_USDC_AMOUNT;
+
+    if (verification.amount_usdc < requiredAmount) {
+      return new Response(
+        JSON.stringify({
+          error: `Insufficient payment for ${tierName}: received ${verification.amount_usdc} USDC, required ${requiredAmount} USDC.`,
+          required_usd: requiredAmount,
+          received_usd: verification.amount_usdc
+        }),
+        { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+      );
+    }
+
+    await markTransactionSettled(
+      verification.tx_hash,
+      {
+        tier: tierName,
+        payer: verification.payer,
+        amount_usdc: verification.amount_usdc
+      },
+      env
+    );
+
+    return new Response(
+      JSON.stringify({
+        status: "settled",
+        tier: tierName,
+        name: isDispute ? "M2M Escrow Dispute Evaluation" : "Agent Financial Pre-Sign Check",
+        receipt: {
+          network: "base",
+          chain_id: 8453,
+          asset: "USDC",
+          amount_usdc: verification.amount_usdc,
+          payer: verification.payer,
+          recipient: verification.recipient,
+          tx_hash: verification.tx_hash,
+          settled_at: new Date().toISOString()
+        },
+        instructions:
+          "Micropayment confirmed on Base. Pass 'X-Payment-Tx: " +
+          verification.tx_hash +
+          "' on your API call for verified machine execution."
+      }),
+      { status: 200, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+    );
+  }
+
   // Tier 3 Deal Dossier ($49 pilot)
   if (verification.amount_usdc < TIER_DOSSIER_USDC_AMOUNT) {
     return new Response(
@@ -365,11 +423,15 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
     );
   }
 
-  await markTransactionSettled(verification.tx_hash, {
-    tier: "tier_3_deal_dossier",
-    payer: verification.payer,
-    amount_usdc: verification.amount_usdc
-  }, env);
+  await markTransactionSettled(
+    verification.tx_hash,
+    {
+      tier: "tier_3_deal_dossier",
+      payer: verification.payer,
+      amount_usdc: verification.amount_usdc
+    },
+    env
+  );
 
   return new Response(
     JSON.stringify({
@@ -387,8 +449,63 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
         tx_hash: verification.tx_hash,
         settled_at: new Date().toISOString()
       },
-      instructions: "Payment confirmed on Base. Your transaction hash is stamped on the file. Send parameters or submit to /message/send with 'X-Payment-Tx: " + verification.tx_hash + "'."
+      instructions:
+        "Payment confirmed on Base. Your transaction hash is stamped on the file. Send parameters or submit to /message/send with 'X-Payment-Tx: " +
+        verification.tx_hash +
+        "'."
     }),
     { status: 200, headers: { "content-type": "application/json", "cache-control": "no-store" } }
   );
+}
+
+export function generateX402PaymentResponse(profile, request, env, reason = "quota_exceeded") {
+  const isFinancialCheck = profile === "agent_financial_guard";
+  const isEscrowDispute = profile === "m2m_escrow_arbiter";
+  const requiredUsdc = isFinancialCheck
+    ? TIER_MICRO_CHECK_USDC_AMOUNT
+    : isEscrowDispute
+      ? TIER_MICRO_DISPUTE_USDC_AMOUNT
+      : TIER_MICRO_CHECK_USDC_AMOUNT;
+  const requiredRaw = String(Math.round(requiredUsdc * 1e6));
+
+  const authHeader = `X402 token="USDC", network="base", chain_id=8453, recipient="${BASE_USDC_WALLET}", amount="${requiredUsdc}", asset="USDC", contract="${BASE_USDC_CONTRACT}"`;
+
+  const body = {
+    error: "payment_required",
+    status: 402,
+    message:
+      reason === "quota_exceeded"
+        ? "Free Community Sandbox hourly quota reached. Direct M2M settlement required for autonomous machine execution."
+        : "Autonomous M2M settlement required for direct execution.",
+    x402: {
+      version: "1.0",
+      protocol: "x402",
+      network: "base",
+      chain_id: 8453,
+      token: "USDC",
+      token_contract: BASE_USDC_CONTRACT,
+      recipient_wallet: BASE_USDC_WALLET,
+      amount_usdc: requiredUsdc,
+      amount_raw: requiredRaw,
+      profile: profile || "agenda",
+      pricing_tiers: {
+        micro_check_usd: TIER_MICRO_CHECK_USDC_AMOUNT,
+        micro_dispute_usd: TIER_MICRO_DISPUTE_USDC_AMOUNT,
+        deal_dossier_usd: TIER_DOSSIER_USDC_AMOUNT,
+        monthly_pro_usd: TIER_PRO_USDC_AMOUNT
+      },
+      how_to_pay:
+        "Send transfer(recipient, amount_raw) to token_contract on Base (Chain ID 8453), then retry this request with header 'X-Payment-Tx: <tx_hash>' or purchase a Pro Bearer key at /v1/settle."
+    }
+  };
+
+  return new Response(JSON.stringify(body, null, 2), {
+    status: 402,
+    headers: {
+      "content-type": "application/json",
+      "www-authenticate": authHeader,
+      "x-payment-protocol": "x402",
+      "cache-control": "no-store"
+    }
+  });
 }
