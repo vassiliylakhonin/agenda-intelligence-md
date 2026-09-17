@@ -20,8 +20,8 @@ jobs:
       - name: Install dependencies
         run: pip install flake8 black isort
       - name: Run flake8
-        run: flake8 src/ tests/ scripts/ --max-line-length=120 --ignore=E203,W503
+        run: flake8 src/ tests/ scripts/ integrations/ --max-line-length=120 --ignore=E203,W503
       - name: Run black (check)
-        run: black --check --line-length=120 src/ tests/ scripts/
+        run: black --check --line-length=120 src/ tests/ scripts/ integrations/
       - name: Run isort (check)
-        run: isort --check-only --profile=black src/ tests/ scripts/
+        run: isort --check-only --profile=black src/ tests/ scripts/ integrations/

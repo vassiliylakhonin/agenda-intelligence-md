@@ -10,10 +10,25 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Optional
 
-from agenda_intelligence.m2m_escrow_arbiter import ArbitrationRuling, M2MEscrowArbiter
+# Ensure src is importable and script dir does not shadow agenda_intelligence package
+_repo_root = Path(__file__).resolve().parents[1]
+_src_path = _repo_root / "src"
+for _p in (_repo_root, _src_path):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
+_script_dir = Path(__file__).resolve().parent
+if str(_script_dir) in sys.path:
+    sys.path.remove(str(_script_dir))
+
+from agenda_intelligence.m2m_escrow_arbiter import (  # noqa: E402
+    ArbitrationRuling,
+    M2MEscrowArbiter,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("BaseEscrowRelayer")

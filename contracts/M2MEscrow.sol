@@ -136,9 +136,6 @@ contract M2MEscrow {
         require(amount > 0, "Amount must be > 0");
         require(deadline > block.timestamp, "Deadline must be in future");
 
-        // Lock USDC from buyer into this contract
-        require(usdcToken.transferFrom(msg.sender, address(this), amount), "USDC transfer failed");
-
         escrows[escrowId] = EscrowDeal({
             escrowId: escrowId,
             buyer: msg.sender,
@@ -154,6 +151,9 @@ contract M2MEscrow {
         });
 
         emit EscrowCreated(escrowId, msg.sender, seller, amount, deadline, expectedArtifactHash);
+
+        // Lock USDC from buyer into this contract (CEI pattern)
+        require(usdcToken.transferFrom(msg.sender, address(this), amount), "USDC transfer failed");
     }
 
     /**
@@ -189,8 +189,8 @@ contract M2MEscrow {
         deal.status = EscrowStatus.SETTLED;
         uint256 amount = deal.amount;
 
-        require(usdcToken.transfer(deal.seller, amount), "Payout failed");
         emit EscrowSettled(escrowId, Ruling.RELEASE_TO_SELLER, amount, 0, 0);
+        require(usdcToken.transfer(deal.seller, amount), "Payout failed");
     }
 
     /**
@@ -206,8 +206,8 @@ contract M2MEscrow {
         deal.status = EscrowStatus.REFUNDED;
         uint256 amount = deal.amount;
 
-        require(usdcToken.transfer(deal.buyer, amount), "Refund transfer failed");
         emit EscrowRefunded(escrowId, deal.buyer, amount);
+        require(usdcToken.transfer(deal.buyer, amount), "Refund transfer failed");
     }
 
     /**
@@ -281,6 +281,7 @@ contract M2MEscrow {
         require(recoveredSigner == arbiterSigner, "Invalid arbiter signature");
 
         deal.status = EscrowStatus.SETTLED;
+        emit EscrowSettled(escrowId, ruling, sellerPayout, buyerRefund, arbiterFee);
 
         // Execute deterministic payouts
         if (sellerPayout > 0) {
@@ -292,12 +293,10 @@ contract M2MEscrow {
         if (arbiterFee > 0) {
             require(usdcToken.transfer(arbiterTreasury, arbiterFee), "Arbiter fee transfer failed");
         }
-
-        emit EscrowSettled(escrowId, ruling, sellerPayout, buyerRefund, arbiterFee);
     }
 
     /**
-     * @notice Standard ECDSA signature recovery helper.
+     * @notice Standard ECDSA signature recovery helper with EIP-2 malleable check.
      */
     function recoverSigner(bytes32 messageHash, bytes memory sig) internal pure returns (address) {
         require(sig.length == 65, "Invalid signature length");
@@ -313,7 +312,14 @@ contract M2MEscrow {
             v += 27;
         }
         require(v == 27 || v == 28, "Invalid signature v value");
-        return ecrecover(messageHash, v, r, s);
+        // EIP-2 signature malleability protection
+        require(
+            uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
+            "Malleable signature"
+        );
+        address signer = ecrecover(messageHash, v, r, s);
+        require(signer != address(0), "Invalid signature");
+        return signer;
     }
 
     /**

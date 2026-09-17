@@ -170,3 +170,18 @@ jobs:
 
       - name: Test the Worker
         run: npm test
+
+  foundry:
+    name: Foundry Smart Contract Tests & Invariants
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run Forge tests & invariants
+        run: forge test -v

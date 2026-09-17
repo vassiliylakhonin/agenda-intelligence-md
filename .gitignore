@@ -14,3 +14,6 @@ dist/
 .wheel-smoke-venv/
 .verification/
 uv.lock
+out/
+cache/
+broadcast/
