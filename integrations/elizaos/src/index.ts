@@ -79,14 +79,17 @@ export class AgendaGuardClient {
     params: TransactionSafetyRequest
   ): Promise<TransactionSafetyVerdict> {
     const payload = {
+      run_id: `elizaos-${Date.now()}`,
       transaction: {
-        recipient: params.recipient,
+        network: params.network || "base_mainnet",
+        token: params.asset || "USDC",
         amount_usd: params.amount_usd,
-        network: params.network || "base",
-        asset: params.asset || "USDC",
+        recipient: params.recipient,
         calldata: params.calldata || "0x",
       },
-      intent: params.intent || "ElizaOS agent transaction execution",
+      intent: {
+        prompt: params.intent || "ElizaOS agent transaction execution",
+      },
     };
 
     const resp = await fetch(
@@ -103,13 +106,14 @@ export class AgendaGuardClient {
     }
 
     const data = await resp.json();
+    const verdict = data.financial_guard_verdict || data;
     return {
-      decision: data.decision,
-      status: data.status,
-      score: data.score,
-      is_safe: data.decision === "allow",
-      violations: data.violations || [],
-      execution_advisory: data.execution_advisory || "",
+      decision: verdict.decision,
+      status: verdict.status,
+      score: verdict.score,
+      is_safe: verdict.decision === "allow",
+      violations: verdict.violations || [],
+      execution_advisory: verdict.execution_advisory || data.execution_advisory || "",
     };
   }
 
@@ -129,7 +133,8 @@ export class AgendaGuardClient {
       throw new Error(`Dispute evaluation failed: HTTP ${resp.status}`);
     }
 
-    return (await resp.json()) as EscrowDisputeRuling;
+    const data = await resp.json();
+    return (data.arbitration_ruling || data) as EscrowDisputeRuling;
   }
 }
 
