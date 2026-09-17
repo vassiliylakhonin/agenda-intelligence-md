@@ -20,7 +20,7 @@ export const USDC_DECIMALS = 6;
 export const TIER_PRO_USDC_AMOUNT = 490;
 export const TIER_DOSSIER_USDC_AMOUNT = 49;
 
-export const VERSION = "1.9.0";
+export const VERSION = "1.10.0";
 export const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";
 export const DOCS_URL = `${REPOSITORY_URL}/blob/main/MCP.md`;
 export const PACKAGE_URL = "https://pypi.org/project/agenda-intelligence-md/";

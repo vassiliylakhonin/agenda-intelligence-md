@@ -26,6 +26,30 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
   KV rows. The Agent Card extension and completed-response engagement block now explain the optional
   `X-Client-Id` header as a stable non-personal integration label; it remains optional and is not authentication.
 
+## 1.10.0 — 2026-09-17
+
+- **feat(agent-financial-guard): add deterministic pre-sign transaction firewall for autonomous AI agents.**
+  Provides sub-5ms multi-layer pre-execution validation before transactions or smart contract interactions
+  are broadcast by wallet-bearing agents (Coinbase AgentKit, Stripe Agent Toolkit, Privy, Circle). Enforces OFAC SDN
+  and AML mixer screening (Tornado Cash, Lazarus, Garantex), drainer calldata defenses (infinite allowance detection),
+  spending limits ($100 single, $500 rolling 24h), and intent prompt-injection scanning. Available via Python SDK
+  (`AgentFinancialGuard`), direct REST (`POST /v1/agent-financial/pre-sign-check`), MCP (`agent_financial_pre_sign_check`),
+  and A2A (`SendMessage`).
+
+- **feat(m2m-escrow-arbiter): add autonomous B2B deal arbiter, settlement engine, and reference Base smart contract.**
+  Deterministic dispute arbitration and milestone verification for Machine-to-Machine (M2M) commerce. Evaluates
+  contract delivery deadlines, artifact SHA-256 integrity, JSON Schema compliance, and telemetry SLO completeness.
+  Computes mathematical payout allocations (`RELEASE_TO_SELLER`, `REFUND_TO_BUYER`, `PARTIAL_SETTLEMENT`) with
+  automated 1% arbiter fee deduction. Ships reference Base USDC smart contract (`contracts/M2MEscrow.sol`) with
+  cryptographic ECDSA ruling verification and replay protection. Available via Python SDK (`M2MEscrowArbiter`),
+  direct REST (`POST /v1/m2m-escrow/evaluate-dispute`), MCP (`m2m_escrow_arbitration_ruling`), and interactive
+  4-scenario simulator on Cloudflare Edge landing page.
+
+- **feat(monetization & fleet): add autonomous Base USDC settlement and expand fleet to 12 edge workers.**
+  Edge workers now accept on-chain Base USDC payments (`0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663`) with
+  automated 30-day Pro Bearer key provisioning (`agy_pro_...`) and instant 429 bypass via `X-Payment-Tx`.
+  Public fleet expanded from 10 to 12 specialized gated edge workers.
+
 ## 1.9.0 — 2026-09-09
 
 - **feat(worker): make agent-to-agent intake tolerant without making sanctions decisions from guesses.**

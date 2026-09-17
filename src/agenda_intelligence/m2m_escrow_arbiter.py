@@ -8,7 +8,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 DEFAULT_ENDPOINT = "https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev/v1/m2m-escrow/evaluate-dispute"
 
@@ -51,6 +51,10 @@ class ArbitrationRuling:
     def is_partial_settlement(self) -> bool:
         return self.ruling == "PARTIAL_SETTLEMENT"
 
+    @property
+    def payout_breakdown(self) -> PayoutBreakdown:
+        return self.payout
+
 
 class M2MEscrowArbiter:
     """Deterministic dispute arbiter for Agent-to-Agent (M2M) autonomous commerce.
@@ -74,22 +78,31 @@ class M2MEscrowArbiter:
 
     def evaluate_dispute(
         self,
-        escrow_id: str,
-        deal_terms: dict[str, Any],
-        specification: dict[str, Any],
-        delivery_submission: dict[str, Any],
+        escrow_id: Union[str, dict[str, Any]],
+        deal_terms: Optional[dict[str, Any]] = None,
+        specification: Optional[dict[str, Any]] = None,
+        delivery_submission: Optional[dict[str, Any]] = None,
         dispute_claim: Optional[dict[str, Any]] = None,
         prefer_remote: bool = True,
     ) -> ArbitrationRuling:
-        """Evaluate an M2M escrow dispute and return binding arbitration ruling."""
-        payload: dict[str, Any] = {
-            "escrow_id": escrow_id,
-            "deal_terms": deal_terms,
-            "specification": specification,
-            "delivery_submission": delivery_submission,
-        }
-        if dispute_claim:
-            payload["dispute_claim"] = dispute_claim
+        """Evaluate an M2M escrow dispute and return binding arbitration ruling.
+
+        Can be called with either a single dict payload matching request schema or
+        discrete arguments for escrow_id, deal_terms, specification, delivery_submission.
+        """
+        if isinstance(escrow_id, dict):
+            payload = dict(escrow_id)
+        else:
+            if deal_terms is None or specification is None or delivery_submission is None:
+                raise TypeError("evaluate_dispute requires 'deal_terms', 'specification', and 'delivery_submission'")
+            payload = {
+                "escrow_id": escrow_id,
+                "deal_terms": deal_terms,
+                "specification": specification,
+                "delivery_submission": delivery_submission,
+            }
+            if dispute_claim:
+                payload["dispute_claim"] = dispute_claim
 
         if prefer_remote:
             try:
@@ -104,7 +117,7 @@ class M2MEscrowArbiter:
         data = json.dumps(payload).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
-            "User-Agent": "agenda-intelligence-python-sdk/1.9.0",
+            "User-Agent": "agenda-intelligence-python-sdk/1.10.0",
         }
         if self.bearer_token:
             headers["Authorization"] = f"Bearer {self.bearer_token}"

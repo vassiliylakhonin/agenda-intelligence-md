@@ -83,7 +83,7 @@ does not include source text in its JSON or Markdown result. See
 Install the pinned release without cloning the source and check your own packet:
 
 ```text
-pip install "agenda-intelligence-md==1.9.0"
+pip install "agenda-intelligence-md==1.10.0"
 agenda-intelligence check /path/to/evidence-packet.json --strict
 ```
 
@@ -406,7 +406,9 @@ These are evaluation fixtures, not customer evidence or production benchmarks.
 | `agenda-intelligence review` local-file workflow | Implemented for UTF-8, Markdown, DOCX, and optional PDF input |
 | `agenda-intelligence review --format html` | Implemented (Generative UI) |
 | `check_evidence_packet` MCP tool | Implemented |
-| AI Fleet (Vertical Workers) | Active (10 profiles deployed) |
+| AI Fleet (Vertical Workers) | Active (12 profiles deployed on Cloudflare Edge) |
+| Agent Financial Guard | Implemented (Pre-sign transaction firewall for AI agents) |
+| M2M Escrow Arbiter & Base Contract | Implemented (Autonomous B2B dispute resolution on Base) |
 | Live Source Retrieval | Optional per profile; currently unconfigured in the hosted fleet |
 
 Current classification: `Ecosystem Expansion & R&D`.

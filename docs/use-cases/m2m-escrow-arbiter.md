@@ -138,3 +138,14 @@ elif ruling.is_partial_settlement:
 elif ruling.is_refunded_to_buyer:
     print(f"Contract breached ({ruling.violations}). Full refund to buyer.")
 ```
+
+## Smart Contract on Base (`M2MEscrow.sol`)
+
+For end-to-end decentralized settlement on Base Mainnet (Chain ID `8453`) using Circle USDC (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`), the reference contract is located at [`contracts/M2MEscrow.sol`](../../contracts/M2MEscrow.sol).
+
+### Settlement Flow
+1. **Deposit**: Buyer calls `createEscrow(escrowId, seller, amount, deadline, expectedArtifactHash, policy)`.
+2. **Submit**: Seller calls `submitDelivery(escrowId, actualArtifactHash)`.
+3. **Dispute**: In case of a dispute, either party invokes `raiseDispute(escrowId, reason)`.
+4. **Resolution**: `m2m-escrow-arbiter` evaluates the dispute, calculates payout allocation (deducting 1% arbiter fee), and signs the ruling.
+5. **On-Chain Settlement**: Any party or relayer calls `settleDisputeWithArbiterRuling(escrowId, ruling, sellerPayout, buyerRefund, arbiterFee, nonce, signature)`. The contract verifies the ECDSA signature, prevents replay, and dispatches the USDC tokens in a single transaction.

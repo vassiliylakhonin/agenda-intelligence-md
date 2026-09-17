@@ -1,8 +1,8 @@
 # Smithery MCP Server Configuration
 name: agenda-intelligence-md
 displayName: "Agenda Intelligence — Sanctions & Deal-Risk Gates"
-description: "Institutional geopolitical risk, OFAC 50% rule, CHPL dual-use export control, and Middle Corridor sanctions screening gates for AI agents. Sub-50ms deterministic edge verification with Zero-Retention security and cryptographic Vizier receipts."
-version: "1.9.0"
+description: "Institutional geopolitical risk, OFAC 50% rule, CHPL dual-use export control, autonomous agent financial guard, and M2M escrow arbitration gates. Sub-50ms deterministic edge verification with Zero-Retention security and cryptographic Vizier receipts."
+version: "1.10.0"
 repository: "https://github.com/vassiliylakhonin/agenda-intelligence-md"
 homepage: "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/"
 keywords:
@@ -15,6 +15,11 @@ keywords:
   - middle-corridor
   - mcp
   - agentic-trust
+  - agent-financial-guard
+  - pre-sign-check
+  - m2m-escrow
+  - autonomous-arbitration
+  - base-usdc
 startCommand:
   type: stdio
   configSchema:
