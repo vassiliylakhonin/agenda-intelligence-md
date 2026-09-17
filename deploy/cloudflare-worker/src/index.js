@@ -13307,13 +13307,16 @@ function landingHtml(request, env) {
   const card = agentCard(request, env);
   const isKazakhstan = profile === "kazakhstan";
   const isAgentic = profile === "agentic_interaction_trust";
+  const isFinancialGuard = profile === "agent_financial_guard";
 
   const title = escapeHtml(card.name);
   const tagline = isKazakhstan
     ? "Pre-compliance evidence triage for Kazakhstan / Middle Corridor deal flow — route, cargo, counterparties, dated sources → auditable risk gate."
     : isAgentic
       ? "Evidence-readiness gate for agent-mediated actions — actor, target surface, requested action, dated evidence → auditable trust-routing triage."
-      : "Evidence-discipline layer for strategic intelligence agents — geography-routed structured risk triage with explicit source provenance.";
+      : isFinancialGuard
+        ? "Deterministic pre-sign financial firewall for autonomous AI agents — OFAC SDN screening, drainer defense, velocity limits, prompt injection prevention."
+        : "Evidence-discipline layer for strategic intelligence agents — geography-routed structured risk triage with explicit source provenance.";
 
   const tryItCurl = isKazakhstan
     ? `curl -X POST ${origin}/message/send \\
@@ -13359,6 +13362,22 @@ function landingHtml(request, env) {
           "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?"
         }}]
       }
+    }
+  }'`
+    : isFinancialGuard
+      ? `curl -X POST ${origin}/v1/agent-financial/pre-sign-check \\
+  -H 'content-type: application/json' \\
+  -d '{
+    "run_id": "demo-pre-sign-1",
+    "transaction": {
+      "network": "base_mainnet",
+      "token": "USDC",
+      "amount_usd": 25,
+      "recipient": "0x5b5296a3a7bac0f5f096f93b60c1c121f2e5c663",
+      "method": "transfer"
+    },
+    "intent": {
+      "prompt": "Vendor payment for monthly telemetry indexing"
     }
   }'`
     : `curl -X POST ${origin}/message/send \\

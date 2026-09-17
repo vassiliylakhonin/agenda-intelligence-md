@@ -240,6 +240,7 @@ export const LLMS_TXT = `# Agenda Intelligence MD
 - [Critical Minerals Due Diligence Gate](https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev): Supply chain provenance, ESG risks, and strategic mineral compliance.
 - [Agent Output Verification Gate](https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev): Deterministic evidence verification and claim linter for LLM outputs.
 - [Pre-Action Check Gate](https://pre-action-check-a2a.vassiliy-lakhonin.workers.dev): Stateless policy boundary pre-flight checks before agent execution.
+- [Agent Financial Guard Gate](https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev): Pre-sign transaction firewall, OFAC/AML sanctions screening, drainer defense, and prompt injection prevention.
 - [Strategic Risk Triage Hub](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev): Multi-domain risk routing and strategic evidence aggregation.
 
 ## Product MCP Tools
