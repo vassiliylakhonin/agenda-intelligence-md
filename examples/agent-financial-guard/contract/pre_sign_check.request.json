@@ -1,0 +1,19 @@
+{
+  "run_id": "example-pre-sign-check",
+  "transaction": {
+    "network": "base_mainnet",
+    "token": "USDC",
+    "amount_usd": 25.0,
+    "recipient": "0x5b5296a3a7bac0f5f096f93b60c1c121f2e5c663",
+    "method": "transfer"
+  },
+  "intent": {
+    "prompt": "Settle inference credits payment for vendor"
+  },
+  "guard_policies": {
+    "max_single_limit_usd": 100.0,
+    "rolling_24h_limit_usd": 500.0,
+    "enforce_sanctions": true,
+    "block_infinite_approvals": true
+  }
+}

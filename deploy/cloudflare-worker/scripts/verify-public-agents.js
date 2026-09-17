@@ -81,6 +81,13 @@ const ACTIVE_AGENTS = [
     representative: {
       data: readJson("examples/dual-use-technology-export/contract/decision_ready.request.json")
     }
+  },
+  {
+    key: "agent-financial-guard",
+    origin: workerOrigin("agent-financial-guard-a2a"),
+    representative: {
+      data: readJson("examples/agent-financial-guard/contract/pre_sign_check.request.json")
+    }
   }
 ];
 
