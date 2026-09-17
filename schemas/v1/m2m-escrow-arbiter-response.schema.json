@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/m2m-escrow-arbiter-response.schema.json",
+  "title": "M2MEscrowArbiterResponse",
+  "description": "Standardized response contract for M2M escrow dispute arbitration and autonomous deal settlement.",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "profile",
+    "arbitration_ruling"
+  ],
+  "properties": {
+    "contract_version": { "type": "string" },
+    "profile": { "type": "string", "const": "m2m_escrow_arbiter" },
+    "arbitration_ruling": {
+      "type": "object",
+      "required": [
+        "status",
+        "ruling",
+        "score",
+        "escrow_id",
+        "payout_breakdown",
+        "checks",
+        "violations",
+        "evidence_gaps"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["decision_ready", "not_decision_ready", "escalate"]
+        },
+        "ruling": {
+          "type": "string",
+          "enum": ["RELEASE_TO_SELLER", "REFUND_TO_BUYER", "PARTIAL_SETTLEMENT", "ESCALATE_HUMAN"]
+        },
+        "score": {
+          "type": "integer"
+        },
+        "escrow_id": {
+          "type": "string"
+        },
+        "payout_breakdown": {
+          "type": "object",
+          "required": [
+            "total_escrow_usd",
+            "seller_payout_usd",
+            "buyer_refund_usd",
+            "arbiter_fee_usd"
+          ],
+          "properties": {
+            "total_escrow_usd": { "type": "number" },
+            "seller_payout_usd": { "type": "number" },
+            "buyer_refund_usd": { "type": "number" },
+            "arbiter_fee_usd": { "type": "number" }
+          }
+        },
+        "checks": {
+          "type": "object",
+          "required": [
+            "deadline_honored",
+            "hash_verified",
+            "schema_verified",
+            "slo_verified"
+          ],
+          "properties": {
+            "deadline_honored": { "type": "boolean" },
+            "hash_verified": { "type": "boolean" },
+            "schema_verified": { "type": "boolean" },
+            "slo_verified": { "type": "boolean" }
+          }
+        },
+        "violations": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "evidence_gaps": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "vizier_status": {
+          "type": "string"
+        },
+        "vizier_clearance_receipt": {
+          "type": ["string", "null"]
+        },
+        "execution_advisory": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

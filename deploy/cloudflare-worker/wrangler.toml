@@ -247,6 +247,27 @@ id = "d2228183999246ccbec8aa2d5f130bfc"
 binding = "VIZIER"
 service = "vizier"
 
+# M2M Escrow Arbiter & Autonomous B2B Deal Settlement Gate
+# Autonomous dispute arbitration, deliverable hash/schema verification, and settlement calculation.
+# Deploy with:
+#   wrangler deploy --env m2m-escrow-arbiter
+[env.m2m-escrow-arbiter]
+name = "m2m-escrow-arbiter-a2a"
+workers_dev = true
+
+[env.m2m-escrow-arbiter.vars]
+AGENT_PROFILE = "m2m_escrow_arbiter"
+VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
+RATE_LIMIT_PER_HOUR = "50"
+
+[[env.m2m-escrow-arbiter.kv_namespaces]]
+binding = "AGENDA_USAGE"
+id = "d2228183999246ccbec8aa2d5f130bfc"
+
+[[env.m2m-escrow-arbiter.services]]
+binding = "VIZIER"
+service = "vizier"
+
 # Sampled traces on the one profile that makes outbound calls. Measured
 # 2026-08-29 over 22-28 Aug: this Worker is 12.4% of named-script requests but
 # 47.4% of the fleet's CPU, with cpuTimeP99 423ms against a 1.27ms median, and

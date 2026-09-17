@@ -210,6 +210,15 @@ const PROFILE_TOOLS = {
       "and evaluates prompt injection in transaction reasoning before broadcast. " +
       "Required fields in 'request': run_id, transaction, intent."
   },
+  m2m_escrow_arbiter: {
+    name: "m2m_escrow_arbitration_ruling",
+    bringsEvidence: true,
+    argKey: "request",
+    summary:
+      "Deterministic dispute arbitration and delivery verification for Agent-to-Agent escrow transactions. " +
+      "Verifies cryptographic SHA-256 deliverable hashes, JSON Schema compliance, and contract deadlines, calculating binding payout allocations. " +
+      "Required fields in 'request': escrow_id, deal_terms, specification, delivery_submission."
+  },
 
   corridor_sanctions_assistant: [
     {

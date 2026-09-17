@@ -73,6 +73,9 @@ export const PRE_ACTION_CHECK_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main
 export const AGENT_FINANCIAL_GUARD_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/agent-financial-guard.md`;
 export const AGENT_FINANCIAL_GUARD_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agent-financial-guard-request.schema.json`;
 export const AGENT_FINANCIAL_GUARD_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/agent-financial-guard-response.schema.json`;
+export const M2M_ESCROW_ARBITER_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/use-cases/m2m-escrow-arbiter.md`;
+export const M2M_ESCROW_ARBITER_REQUEST_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/m2m-escrow-arbiter-request.schema.json`;
+export const M2M_ESCROW_ARBITER_RESPONSE_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/m2m-escrow-arbiter-response.schema.json`;
 
 // Canonical input mode shared by per-profile product_contract blocks and the
 // top-level x_agent_contract discoverability extension.
@@ -497,6 +500,39 @@ const agentFinancialGuardProfile = Object.freeze({
   live_retrieval: { capability_declared: true, upstream_options: [] }
 });
 
+const m2mEscrowArbiterProfile = Object.freeze({
+  profile_key: "m2m_escrow_arbiter",
+  product_profile: "m2m_escrow_arbiter",
+  canonical_product_name: "M2M Escrow Arbiter & Autonomous B2B Deal Settlement",
+  documentation_url: M2M_ESCROW_ARBITER_DOCS_URL,
+  provider_same_as: SHARED_PROVIDER_SAME_AS,
+  wrapper_scope:
+    "Deterministic dispute arbitration, delivery verification, and automated escrow settlement for Agent-to-Agent transactions",
+  supported_contracts: frozenArray(["m2m_escrow_arbiter_contract"]),
+  buyer_use_cases: frozenArray([
+    "autonomous escrow dispute resolution for Agent-to-Agent deliverables",
+    "cryptographic SHA-256 deliverable artifact verification against contract commitment",
+    "JSON Schema compliance validation of delivered machine-readable datasets",
+    "automated Pro-Rata and All-or-Nothing escrow payout calculation",
+    "Vizier JWS-signed clearance rulings for on-chain smart contracts and Web2 payment releases"
+  ]),
+  commercial_positioning:
+    "Autonomous B2B deal arbiter for agentic commerce. Verifies deliverable integrity, deadline compliance, and SLO fulfillment, issuing binding cryptographic rulings with automated fee settlement.",
+  focus: frozenArray([
+    "M2M escrow arbitration",
+    "agentic commerce dispute resolution",
+    "SHA-256 deliverable integrity verification",
+    "pro-rata and all-or-nothing payout allocation",
+    "Vizier non-repudiation arbitration receipts"
+  ]),
+  product_contract: productContract({
+    request_schema: M2M_ESCROW_ARBITER_REQUEST_SCHEMA_URL,
+    response_schema: M2M_ESCROW_ARBITER_RESPONSE_SCHEMA_URL,
+    demo_input_modes: ["structured_json"]
+  }),
+  live_retrieval: { capability_declared: true, upstream_options: [] }
+});
+
 export const PROFILE_REGISTRY = Object.freeze({
   agenda: Object.freeze({
     profile_key: "agenda",
@@ -517,6 +553,7 @@ export const PROFILE_REGISTRY = Object.freeze({
   critical_minerals: criticalMineralsProfile,
   dual_use_technology_export: dualUseExportProfile,
   agent_financial_guard: agentFinancialGuardProfile,
+  m2m_escrow_arbiter: m2mEscrowArbiterProfile,
   corridor_sanctions_assistant: corridorSanctionsAssistantProfile,
   confidential_project_room: confidentialProjectRoomProfile
 });

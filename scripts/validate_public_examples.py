@@ -81,6 +81,7 @@ def validate_examples() -> None:
     evidence_review_schema = load_json(ROOT / "schemas" / "v1" / "evidence-review-request.schema.json")
     pre_action_check_schema = load_json(ROOT / "schemas" / "v1" / "pre-action-check-request.schema.json")
     agent_financial_guard_schema = load_json(ROOT / "schemas" / "v1" / "agent-financial-guard-request.schema.json")
+    m2m_escrow_arbiter_schema = load_json(ROOT / "schemas" / "v1" / "m2m-escrow-arbiter-request.schema.json")
 
     json_files = sorted((ROOT / "examples").glob("**/*.json"))
     if not json_files:
@@ -120,6 +121,8 @@ def validate_examples() -> None:
             continue
         elif path.is_relative_to(ROOT / "examples" / "agent-financial-guard"):
             validate_with_schema(path, agent_financial_guard_schema, "agent-financial-guard-request")
+        elif path.is_relative_to(ROOT / "examples" / "m2m-escrow-arbiter"):
+            validate_with_schema(path, m2m_escrow_arbiter_schema, "m2m-escrow-arbiter-request")
         elif path.name.endswith(".evidence.json") or path.name == "evidence-pack.json":
             validate_with_schema(path, evidence_schema, "evidence-pack")
         elif path.name == "agenda-brief.json" or path.name.endswith(".brief.json"):

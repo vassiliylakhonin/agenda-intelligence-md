@@ -1,0 +1,33 @@
+{
+  "escrow_id": "escrow_deal_0x892a_dataset_mining",
+  "dispute_id": "disp_99182",
+  "dispute_claim": {
+    "claimant": "seller",
+    "reason": "Deliverable completed and submitted on time; buyer unresponsive to release escrow.",
+    "claim_timestamp": "2026-09-17T12:00:00Z"
+  },
+  "deal_terms": {
+    "buyer_id": "did:agent:0x1111111111111111111111111111111111111111",
+    "seller_id": "did:agent:0x2222222222222222222222222222222222222222",
+    "amount_usd": 250.0,
+    "currency": "USDC",
+    "deadline_utc": "2026-09-17T18:00:00Z",
+    "arbitration_policy": "all_or_nothing",
+    "arbitration_fee_pct": 1.0
+  },
+  "specification": {
+    "deliverable_type": "json_data",
+    "expected_artifact_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "min_valid_records_pct": 100.0,
+    "max_latency_seconds": 3600.0
+  },
+  "delivery_submission": {
+    "submitted_at": "2026-09-17T10:30:00Z",
+    "artifact_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "telemetry": {
+      "total_items": 500,
+      "valid_items": 500,
+      "response_time_ms": 420
+    }
+  }
+}

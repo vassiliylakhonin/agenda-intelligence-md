@@ -65,6 +65,10 @@
     {
       "type": "streamable-http",
       "url": "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/mcp"
+    },
+    {
+      "type": "streamable-http",
+      "url": "https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev/mcp"
     }
   ]
 }

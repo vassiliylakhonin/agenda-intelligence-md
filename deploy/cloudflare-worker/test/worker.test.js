@@ -6432,11 +6432,11 @@ test("stats-token rotation covers every environment wrangler.toml declares", asy
   assert.equal(environments[1].workerName, "cis-secondary-sanctions-a2a");
   assert.equal(environments[2].workerName, "dual-use-technology-export-a2a");
 
-  // The real file is the case that matters: eleven environments, eleven names.
+  // The real file is the case that matters: twelve environments, twelve names.
   const live = deployedEnvironments(
     readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8")
   );
-  assert.equal(live.length, 11);
+  assert.equal(live.length, 12);
   assert.ok(live.every((item) => item.workerName));
 });
 
@@ -7941,12 +7941,12 @@ test("mcp tools/call fleet_directory returns all 11 specialized gates with canon
 
   const result = json.result;
   assert.ok(result.content && result.content[0]);
-  assert.match(result.content[0].text, /Agenda Intelligence Fleet Directory: 11 gates available/);
+  assert.match(result.content[0].text, /Agenda Intelligence Fleet Directory: 12 gates available/);
 
   const payload = result.structuredContent;
-  assert.equal(payload.total_gates, 11);
+  assert.equal(payload.total_gates, 12);
   assert.ok(Array.isArray(payload.gates));
-  assert.equal(payload.gates.length, 11);
+  assert.equal(payload.gates.length, 12);
 
   const profiles = payload.gates.map((g) => g.profile);
   assert.ok(profiles.includes("kazakhstan"));
@@ -7958,6 +7958,7 @@ test("mcp tools/call fleet_directory returns all 11 specialized gates with canon
   assert.ok(profiles.includes("critical_minerals_due_diligence"));
   assert.ok(profiles.includes("dual_use_technology_export"));
   assert.ok(profiles.includes("agent_financial_guard"));
+  assert.ok(profiles.includes("m2m_escrow_arbiter"));
   assert.ok(profiles.includes("corridor_sanctions_assistant"));
   assert.ok(profiles.includes("agenda"));
 
@@ -8374,6 +8375,185 @@ test("A2A SendMessage handles agent_financial_guard profile", async () => {
   assert.ok(json.result.task);
   assert.equal(json.result.task.status.state, "TASK_STATE_COMPLETED");
   assert.equal(json.result.task.metadata.product_profile, "agent_financial_guard");
+});
+
+test("GET /health returns m2m_escrow_arbiter metadata", async () => {
+  const req = new Request("https://m2m-escrow-arbiter-a2a.example.workers.dev/health");
+  const res = await handleRequest(req, { AGENT_PROFILE: "m2m_escrow_arbiter" });
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  assert.equal(json.ok, true);
+  assert.equal(json.profile, "m2m_escrow_arbiter");
+  assert.equal(json.name, "M2M Escrow Arbiter & Autonomous B2B Deal Settlement");
+  assert.ok(json.skills.some((s) => s.id === "m2m-escrow-arbitration-ruling"));
+});
+
+test("POST /v1/m2m-escrow/evaluate-dispute full release on clean delivery", async () => {
+  const req = new Request("https://m2m-escrow-arbiter-a2a.example.workers.dev/v1/m2m-escrow/evaluate-dispute", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      escrow_id: "deal-clean-test",
+      deal_terms: {
+        buyer_id: "did:agent:0x1",
+        seller_id: "did:agent:0x2",
+        amount_usd: 500.0,
+        currency: "USDC",
+        deadline_utc: "2026-09-17T20:00:00Z",
+        arbitration_policy: "all_or_nothing",
+        arbitration_fee_pct: 1.0
+      },
+      specification: {
+        deliverable_type: "json_data",
+        expected_artifact_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        min_valid_records_pct: 95.0
+      },
+      delivery_submission: {
+        submitted_at: "2026-09-17T15:00:00Z",
+        artifact_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        telemetry: {
+          total_items: 100,
+          valid_items: 100,
+          response_time_ms: 250
+        }
+      }
+    })
+  });
+  const res = await handleRequest(req, { AGENT_PROFILE: "m2m_escrow_arbiter" });
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  const r = json.arbitration_ruling;
+  assert.equal(r.ruling, "RELEASE_TO_SELLER");
+  assert.equal(r.status, "decision_ready");
+  assert.equal(r.payout_breakdown.total_escrow_usd, 500.0);
+  assert.equal(r.payout_breakdown.seller_payout_usd, 495.0);
+  assert.equal(r.payout_breakdown.buyer_refund_usd, 0.0);
+  assert.equal(r.payout_breakdown.arbiter_fee_usd, 5.0);
+  assert.equal(r.checks.deadline_honored, true);
+  assert.equal(r.checks.hash_verified, true);
+  assert.equal(r.checks.slo_verified, true);
+});
+
+test("POST /v1/m2m-escrow/evaluate-dispute refunds buyer on hash mismatch", async () => {
+  const req = new Request("https://m2m-escrow-arbiter-a2a.example.workers.dev/v1/m2m-escrow/evaluate-dispute", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      escrow_id: "deal-bad-hash-test",
+      deal_terms: {
+        buyer_id: "did:agent:0x1",
+        seller_id: "did:agent:0x2",
+        amount_usd: 500.0,
+        currency: "USDC",
+        deadline_utc: "2026-09-17T20:00:00Z",
+        arbitration_policy: "all_or_nothing",
+        arbitration_fee_pct: 1.0
+      },
+      specification: {
+        deliverable_type: "json_data",
+        expected_artifact_sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      delivery_submission: {
+        submitted_at: "2026-09-17T15:00:00Z",
+        artifact_sha256: "deadbeef00000000000000000000000000000000000000000000000000000000"
+      }
+    })
+  });
+  const res = await handleRequest(req, { AGENT_PROFILE: "m2m_escrow_arbiter" });
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  const r = json.arbitration_ruling;
+  assert.equal(r.ruling, "REFUND_TO_BUYER");
+  assert.equal(r.checks.hash_verified, false);
+  assert.equal(r.payout_breakdown.seller_payout_usd, 0.0);
+  assert.equal(r.payout_breakdown.buyer_refund_usd, 495.0);
+  assert.equal(r.payout_breakdown.arbiter_fee_usd, 5.0);
+});
+
+test("POST /v1/m2m-escrow/evaluate-dispute handles pro-rata partial settlement", async () => {
+  const req = new Request("https://m2m-escrow-arbiter-a2a.example.workers.dev/v1/m2m-escrow/evaluate-dispute", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      escrow_id: "deal-prorata-test",
+      deal_terms: {
+        buyer_id: "did:agent:0x1",
+        seller_id: "did:agent:0x2",
+        amount_usd: 1000.0,
+        currency: "USDC",
+        deadline_utc: "2026-09-17T20:00:00Z",
+        arbitration_policy: "pro_rata",
+        arbitration_fee_pct: 1.0
+      },
+      specification: {
+        deliverable_type: "json_data",
+        min_valid_records_pct: 90.0
+      },
+      delivery_submission: {
+        submitted_at: "2026-09-17T15:00:00Z",
+        telemetry: {
+          total_items: 1000,
+          valid_items: 800
+        }
+      }
+    })
+  });
+  const res = await handleRequest(req, { AGENT_PROFILE: "m2m_escrow_arbiter" });
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  const r = json.arbitration_ruling;
+  assert.equal(r.ruling, "PARTIAL_SETTLEMENT");
+  assert.equal(r.score, 80);
+  assert.equal(r.payout_breakdown.total_escrow_usd, 1000.0);
+  assert.equal(r.payout_breakdown.seller_payout_usd, 792.0);
+  assert.equal(r.payout_breakdown.buyer_refund_usd, 198.0);
+  assert.equal(r.payout_breakdown.arbiter_fee_usd, 10.0);
+});
+
+test("A2A SendMessage handles m2m_escrow_arbiter profile", async () => {
+  const req = new Request("https://m2m-escrow-arbiter-a2a.example.workers.dev/message/send", {
+    method: "POST",
+    headers: { "content-type": "application/json", "A2A-Version": "1.0" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: "a2a-escrow-test",
+      method: "SendMessage",
+      params: {
+        message: {
+          messageId: "msg-escrow-001",
+          role: "ROLE_USER",
+          parts: [{
+            data: {
+              escrow_id: "a2a-escrow-deal-1",
+              deal_terms: {
+                buyer_id: "did:agent:0x1",
+                seller_id: "did:agent:0x2",
+                amount_usd: 300.0,
+                currency: "USDC",
+                deadline_utc: "2026-09-17T20:00:00Z",
+                arbitration_policy: "all_or_nothing"
+              },
+              specification: {
+                deliverable_type: "json_data"
+              },
+              delivery_submission: {
+                submitted_at: "2026-09-17T14:00:00Z",
+                telemetry: { total_items: 50, valid_items: 50 }
+              }
+            }
+          }]
+        }
+      }
+    })
+  });
+  const res = await handleRequest(req, { AGENT_PROFILE: "m2m_escrow_arbiter" });
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  assert.equal(json.jsonrpc, "2.0");
+  assert.equal(json.id, "a2a-escrow-test");
+  assert.ok(json.result.task);
+  assert.equal(json.result.task.status.state, "TASK_STATE_COMPLETED");
+  assert.equal(json.result.task.metadata.product_profile, "m2m_escrow_arbiter");
 });
 
 

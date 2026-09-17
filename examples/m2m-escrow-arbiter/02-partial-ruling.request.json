@@ -1,0 +1,30 @@
+{
+  "escrow_id": "escrow_deal_0x771b_api_scraping",
+  "dispute_id": "disp_99183",
+  "dispute_claim": {
+    "claimant": "buyer",
+    "reason": "Seller delivered 800 out of 1000 required company records.",
+    "claim_timestamp": "2026-09-17T17:00:00Z"
+  },
+  "deal_terms": {
+    "buyer_id": "did:agent:0x3333333333333333333333333333333333333333",
+    "seller_id": "did:agent:0x4444444444444444444444444444444444444444",
+    "amount_usd": 1000.0,
+    "currency": "USDC",
+    "deadline_utc": "2026-09-17T20:00:00Z",
+    "arbitration_policy": "pro_rata",
+    "arbitration_fee_pct": 1.0
+  },
+  "specification": {
+    "deliverable_type": "json_data",
+    "min_valid_records_pct": 70.0
+  },
+  "delivery_submission": {
+    "submitted_at": "2026-09-17T16:00:00Z",
+    "telemetry": {
+      "total_items": 1000,
+      "valid_items": 800,
+      "response_time_ms": 1200
+    }
+  }
+}

@@ -82,6 +82,11 @@ import {
   validateFinancialGuardRequest
 } from "./agent_financial_guard.js";
 
+import {
+  evaluateM2MEscrowArbitration,
+  validateM2MEscrowRequest
+} from "./m2m_escrow_arbiter.js";
+
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
 import {
@@ -741,6 +746,12 @@ function agentProfile(request, env = {}) {
     host.includes("agent-financial-guard-a2a")
   ) {
     return "agent_financial_guard";
+  }
+  if (
+    env.AGENT_PROFILE === "m2m_escrow_arbiter" ||
+    host.includes("m2m-escrow-arbiter-a2a")
+  ) {
+    return "m2m_escrow_arbiter";
   }
 
   return "agenda";
@@ -2563,6 +2574,7 @@ function applyAgentProfile(card, request, env = {}) {
   if (profile === "critical_minerals_due_diligence") return applyCriticalMineralsProfile(card, request);
   if (profile === "dual_use_technology_export") return applyDualUseTechnologyExportProfile(card, request);
   if (profile === "agent_financial_guard") return applyAgentFinancialGuardProfile(card, request);
+  if (profile === "m2m_escrow_arbiter") return applyM2MEscrowArbiterProfile(card, request);
   if (profile === "corridor_sanctions_assistant") return applyCorridorSanctionsAssistantProfile(card, request);
   if (profile !== "kazakhstan") return card;
 
@@ -3290,6 +3302,28 @@ function applyAgentFinancialGuardProfile(card, request) {
   return card;
 }
 
+function applyM2MEscrowArbiterProfile(card, request) {
+  const origin = originFromRequest(request);
+  const discovery = profileDiscovery("m2m_escrow_arbiter");
+  card.name = "M2M Escrow Arbiter & Autonomous B2B Deal Settlement";
+  card.documentationUrl = discovery.documentation_url;
+  card.description =
+    "Deterministic dispute arbitration, delivery verification, and automated escrow settlement for Agent-to-Agent transactions. " +
+    "Verifies cryptographic deliverable hashes, JSON Schema compliance, and SLO fulfillment, issuing binding rulings with automated fee deductions." +
+    PROVIDER_FRONT_DOOR_POINTER;
+  card.provider.legalEntity.sameAs = discovery.provider_same_as;
+  card.skills = [
+    {
+      id: "m2m-escrow-arbitration-ruling",
+      name: "M2M escrow arbitration ruling",
+      description:
+        "Deterministic dispute resolution and settlement calculation for Agent-to-Agent deliverables, verifying hashes, schemas, and milestones.",
+      tags: ["escrow", "arbitration", "m2m", "a2a", "dispute", "settlement"]
+    }
+  ];
+  return card;
+}
+
 function applyCorridorSanctionsAssistantProfile(card, request) {
   const origin = originFromRequest(request);
   const discovery = profileDiscovery("corridor_sanctions_assistant");
@@ -3920,6 +3954,44 @@ const GATE_REQUEST_GUIDES = Object.freeze({
       intent: {
         prompt: "Disburse automated payment for verified API compute consumption.",
         caller_task_id: "task-compute-bill-99"
+      }
+    }
+  },
+  m2m_escrow_arbiter: {
+    title: "M2M Escrow Arbiter & Autonomous B2B Deal Settlement",
+    schema: "schemas/v1/m2m-escrow-arbiter-request.schema.json",
+    required: [
+      "escrow_id — unique identifier of the escrow transaction",
+      "deal_terms — object with buyer_id, seller_id, amount_usd, currency, deadline_utc, arbitration_policy",
+      "specification — object with deliverable_type, optional expected_schema and expected_artifact_sha256",
+      "delivery_submission — object with submitted_at, optional artifact_data, artifact_sha256, telemetry"
+    ],
+    example: {
+      escrow_id: "escrow-m2m-sample-001",
+      dispute_claim: {
+        claimant: "buyer",
+        reason: "Contract deliverable dispute"
+      },
+      deal_terms: {
+        buyer_id: "did:agent:0x1111111111111111111111111111111111111111",
+        seller_id: "did:agent:0x2222222222222222222222222222222222222222",
+        amount_usd: 500,
+        currency: "USDC",
+        deadline_utc: "2026-09-17T18:00:00Z",
+        arbitration_policy: "pro_rata",
+        arbitration_fee_pct: 1.0
+      },
+      specification: {
+        deliverable_type: "json_data",
+        min_valid_records_pct: 95
+      },
+      delivery_submission: {
+        submitted_at: "2026-09-17T12:00:00Z",
+        telemetry: {
+          total_items: 1000,
+          valid_items: 1000,
+          response_time_ms: 320
+        }
       }
     }
   }
@@ -5669,7 +5741,7 @@ function fleetDirectoryResponse() {
   return {
     fleet_name: "Agenda Intelligence Risk Triage Fleet",
     version: VERSION,
-    total_gates: 11,
+    total_gates: 12,
     repository: REPOSITORY_URL,
     documentation: DOCS_URL,
     gates: [
@@ -5744,6 +5816,14 @@ function fleetDirectoryResponse() {
         description: "Deterministic pre-sign financial transaction firewall for autonomous agents: OFAC/AML screening, drainer prevention, and velocity enforcement.",
         required_fields: ["run_id", "transaction", "intent"],
         schema_url: `${REPOSITORY_URL}/blob/main/schemas/v1/agent-financial-guard-request.schema.json`
+      },
+      {
+        profile: "m2m_escrow_arbiter",
+        tool_name: "m2m_escrow_arbitration_ruling",
+        canonical_endpoint: "https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev",
+        description: "Autonomous B2B deal escrow arbiter: verifies deliverable integrity, validates schemas/hashes, and issues binding settlement rulings.",
+        required_fields: ["escrow_id", "deal_terms", "specification", "delivery_submission"],
+        schema_url: `${REPOSITORY_URL}/blob/main/schemas/v1/m2m-escrow-arbiter-request.schema.json`
       },
       {
         profile: "corridor_sanctions_assistant",
@@ -8171,6 +8251,106 @@ async function a2aResultForAgentFinancialGuard(params, request, env = {}) {
       response: evaluation,
       vizier_status: verdict.vizier_status,
       ...(verdict.vizier_clearance_receipt ? { vizier_clearance_receipt: verdict.vizier_clearance_receipt } : {})
+    }
+  };
+}
+
+function structuredM2MEscrowRequestFromParams(params) {
+  if (!params || typeof params !== "object") return null;
+  const candidates = [params.request, params.escrow_request, params.arbitration_request, params.input, params];
+  const message = params.message;
+  if (message && typeof message === "object") {
+    if (message.data && typeof message.data === "object") candidates.push(message.data);
+    if (Array.isArray(message.parts)) {
+      for (const part of message.parts) {
+        if (!part || typeof part !== "object") continue;
+        candidates.push(part.data, part.json, part.content);
+        const parsed = tryParseJsonObject(part.text);
+        if (parsed) candidates.push(parsed);
+      }
+    }
+  }
+  for (const candidate of candidates) {
+    if (candidate && typeof candidate === "object" && candidate.escrow_id && candidate.deal_terms) return candidate;
+    const parsed = typeof candidate === "string" ? tryParseJsonObject(candidate) : null;
+    if (parsed && typeof parsed === "object" && parsed.escrow_id && parsed.deal_terms) return parsed;
+  }
+  return null;
+}
+
+async function a2aResultForM2MEscrowArbiter(params, request, env = {}) {
+  const structured = structuredM2MEscrowRequestFromParams(params);
+  if (!structured) {
+    return requestGuidanceResult(
+      "m2m_escrow_arbiter",
+      "/v1/m2m-escrow/evaluate-dispute",
+      "schemas/v1/m2m-escrow-arbiter-request.schema.json",
+      ["Missing structured M2M escrow arbitration request"]
+    );
+  }
+
+  const errors = validateM2MEscrowRequest(structured);
+  if (errors.length > 0) {
+    return invalidRequestResult(
+      "m2m_escrow_arbiter",
+      "/v1/m2m-escrow/evaluate-dispute",
+      "schemas/v1/m2m-escrow-arbiter-request.schema.json",
+      errors
+    );
+  }
+
+  const evaluation = await evaluateM2MEscrowArbitration(structured, env);
+  const ruling = evaluation.arbitration_ruling;
+  const artifactText = [
+    "# M2M Escrow Arbiter — Autonomous Dispute Ruling",
+    "",
+    `Ruling: ${ruling.ruling}`,
+    `Status: ${ruling.status}`,
+    `Score: ${ruling.score}/100`,
+    `Escrow ID: \`${ruling.escrow_id}\``,
+    "",
+    "Payout Breakdown:",
+    `- Total Escrow: $${ruling.payout_breakdown.total_escrow_usd.toFixed(2)}`,
+    `- Seller Payout: $${ruling.payout_breakdown.seller_payout_usd.toFixed(2)}`,
+    `- Buyer Refund: $${ruling.payout_breakdown.buyer_refund_usd.toFixed(2)}`,
+    `- Arbiter Fee: $${ruling.payout_breakdown.arbiter_fee_usd.toFixed(2)}`,
+    "",
+    "Verification Checks:",
+    `- Deadline Honored: ${ruling.checks.deadline_honored ? "PASS" : "FAIL"}`,
+    `- Hash Integrity: ${ruling.checks.hash_verified ? "PASS" : "FAIL"}`,
+    `- Schema Conformity: ${ruling.checks.schema_verified ? "PASS" : "FAIL"}`,
+    `- SLO Fulfillment: ${ruling.checks.slo_verified ? "PASS" : "FAIL"}`,
+    "",
+    ruling.violations.length ? "Violations:\n" + ruling.violations.map((v) => `- ${v}`).join("\n") + "\n" : "",
+    ruling.evidence_gaps.length ? "Evidence Gaps:\n" + ruling.evidence_gaps.map((g) => `- ${g}`).join("\n") + "\n" : "",
+    `Execution Advisory: ${ruling.execution_advisory}`,
+    ruling.vizier_clearance_receipt ? `\nVizier JWS Attestation: \`${ruling.vizier_clearance_receipt}\`` : ""
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return {
+    id: crypto.randomUUID(),
+    status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
+    artifacts: [
+      {
+        artifactId: "m2m-escrow-ruling",
+        name: "M2M Escrow Arbitration Ruling",
+        parts: [
+          { text: artifactText, mediaType: "text/markdown" },
+          { data: evaluation, mediaType: "application/json" }
+        ]
+      }
+    ],
+    metadata: {
+      product_profile: "m2m_escrow_arbiter",
+      canonical_http_endpoint: "/v1/m2m-escrow/evaluate-dispute",
+      schema: "schemas/v1/m2m-escrow-arbiter-request.schema.json",
+      capability: "m2m_escrow_arbitration_ruling",
+      human_review_required: ruling.ruling === "ESCALATE_HUMAN",
+      response: evaluation,
+      vizier_status: ruling.vizier_status,
+      ...(ruling.vizier_clearance_receipt ? { vizier_clearance_receipt: ruling.vizier_clearance_receipt } : {})
     }
   };
 }
@@ -12724,6 +12904,11 @@ async function runProfileRequest(profile, params, request, env = {}) {
       const structured = structuredAgentFinancialGuardRequestFromParams(params);
       promptChars = structured && structured.intent ? String(structured.intent.prompt || "").length : 0;
       modulesUsed = ["agent_financial_guard"];
+    } else if (profile === "m2m_escrow_arbiter") {
+      result = await a2aResultForM2MEscrowArbiter(params, request, env);
+      const structured = structuredM2MEscrowRequestFromParams(params);
+      promptChars = structured && structured.escrow_id ? structured.escrow_id.length : 0;
+      modulesUsed = ["m2m_escrow_arbiter"];
     } else if (profile === "corridor_sanctions_assistant") {
       if (params.capability === "screen_dual_use_hs_code") {
         result = await a2aResultForScreenDualUseHsCode(params, request, env);
@@ -13308,6 +13493,7 @@ function landingHtml(request, env) {
   const isKazakhstan = profile === "kazakhstan";
   const isAgentic = profile === "agentic_interaction_trust";
   const isFinancialGuard = profile === "agent_financial_guard";
+  const isEscrowArbiter = profile === "m2m_escrow_arbiter";
 
   const title = escapeHtml(card.name);
   const tagline = isKazakhstan
@@ -13316,7 +13502,9 @@ function landingHtml(request, env) {
       ? "Evidence-readiness gate for agent-mediated actions — actor, target surface, requested action, dated evidence → auditable trust-routing triage."
       : isFinancialGuard
         ? "Deterministic pre-sign financial firewall for autonomous AI agents — OFAC SDN screening, drainer defense, velocity limits, prompt injection prevention."
-        : "Evidence-discipline layer for strategic intelligence agents — geography-routed structured risk triage with explicit source provenance.";
+        : isEscrowArbiter
+          ? "Autonomous B2B deal arbiter for agentic commerce — deliverable hash verification, JSON schema compliance, SLO fulfillment, and automated escrow settlement."
+          : "Evidence-discipline layer for strategic intelligence agents — geography-routed structured risk triage with explicit source provenance.";
 
   const tryItCurl = isKazakhstan
     ? `curl -X POST ${origin}/message/send \\
@@ -13380,6 +13568,33 @@ function landingHtml(request, env) {
       "prompt": "Vendor payment for monthly telemetry indexing"
     }
   }'`
+    : isEscrowArbiter
+      ? `curl -X POST ${origin}/v1/m2m-escrow/evaluate-dispute \\
+  -H 'content-type: application/json' \\
+  -d '{
+    "escrow_id": "escrow-demo-001",
+    "deal_terms": {
+      "buyer_id": "did:agent:0x1111111111111111111111111111111111111111",
+      "seller_id": "did:agent:0x2222222222222222222222222222222222222222",
+      "amount_usd": 500,
+      "currency": "USDC",
+      "deadline_utc": "2026-09-17T18:00:00Z",
+      "arbitration_policy": "pro_rata",
+      "arbitration_fee_pct": 1.0
+    },
+    "specification": {
+      "deliverable_type": "json_data",
+      "min_valid_records_pct": 95
+    },
+    "delivery_submission": {
+      "submitted_at": "2026-09-17T12:00:00Z",
+      "telemetry": {
+        "total_items": 1000,
+        "valid_items": 1000,
+        "response_time_ms": 320
+      }
+    }
+  }'`
     : `curl -X POST ${origin}/message/send \\
   -H 'content-type: application/json' \\
   -H 'A2A-Version: 1.0' \\
@@ -13402,7 +13617,9 @@ function landingHtml(request, env) {
     ? `<p>This node operates the Kazakhstan / Middle Corridor Deal Risk Gate. It accepts route + cargo + counterparties + dated sources and returns an auditable triage with evidence gaps, missing source categories, decision-readiness score, and a three-value recommendation (insufficient_information, pre_signature_escalate, ready_for_human_review). Deterministic rule-based evaluation. Human review is required before any commercial action.</p>`
     : isAgentic
       ? `<p>This worker is the live Agentic Interaction Trust Gate. It accepts actor + target surface + requested action + dated evidence and returns an auditable trust-routing triage with evidence gaps, missing source categories, decision-readiness score, trust signal, and mandatory human-review routing. It is not a detection engine and does not authorize, deny, or block actions.</p>`
-      : `<p>This worker is the general Agenda Intelligence A2A wrapper — discovery, uptime checks, lightweight strategic-risk triage, and JSON-RPC routing across geography-aware modules. For deeper Kazakhstan / Middle Corridor deal-risk screening, use the dedicated <a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">deal-risk-gate worker</a>.</p>`;
+      : isEscrowArbiter
+        ? `<p>This node operates the <strong>M2M Escrow Arbiter & Autonomous B2B Deal Settlement Gate</strong>. It resolves disputes between autonomous buyer and seller agents by verifying deliverable integrity (SHA-256 hashes, JSON Schema adherence, deadline observance, and SLO fulfillment) in &lt;5ms. It computes binding mathematical payout allocations and produces a cryptographically signed Vizier JWS clearance receipt for immediate on-chain or Web2 escrow settlement.</p>`
+        : `<p>This worker is the general Agenda Intelligence A2A wrapper — discovery, uptime checks, lightweight strategic-risk triage, and JSON-RPC routing across geography-aware modules. For deeper Kazakhstan / Middle Corridor deal-risk screening, use the dedicated <a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">deal-risk-gate worker</a>.</p>`;
 
   const agenstryListing = isKazakhstan
     ? "https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev"
@@ -13529,6 +13746,80 @@ function landingHtml(request, env) {
       </div>
     </form>
     <div id="fin-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
+  </div>` : isEscrowArbiter ? `
+  <h2>⚖️ Autonomous M2M Escrow &amp; Dispute Resolution Simulator</h2>
+  <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
+    <p style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
+      Test how the deterministic Edge Arbiter resolves Agent-to-Agent escrow disputes, validates deliverable hashes and schemas, and calculates binding mathematical payouts in &lt;5ms.
+    </p>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+      <button type="button" onclick="loadEscrowScenario('clean')" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">✅ Clean Delivery ($500 Full Release)</button>
+      <button type="button" onclick="loadEscrowScenario('bad_hash')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚫 Corrupted Hash / Spoof</button>
+      <button type="button" onclick="loadEscrowScenario('pro_rata')" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⚖️ Pro-Rata (75% Valid Data)</button>
+      <button type="button" onclick="loadEscrowScenario('expired')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⏰ Missed Deadline Refund</button>
+    </div>
+    <form id="escrow-form" onsubmit="runEscrowArbitrationSimulation(event)" style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Escrow ID &amp; Currency</label>
+          <div style="display: flex; gap: 6px;">
+            <input id="escrow-id" type="text" value="escrow-deal-892a" style="flex: 1; padding: 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; font-family: var(--mono);" required />
+            <select id="escrow-currency" style="width: 90px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px;">
+              <option value="USDC">USDC</option>
+              <option value="USDT">USDT</option>
+              <option value="ETH">ETH</option>
+            </select>
+          </div>
+        </div>
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Escrow Pool ($) &amp; Policy</label>
+          <div style="display: flex; gap: 6px;">
+            <input id="escrow-amount" type="number" value="500" style="width: 100px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px;" />
+            <select id="escrow-policy" style="flex: 1; padding: 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px;">
+              <option value="all_or_nothing">all_or_nothing</option>
+              <option value="pro_rata">pro_rata</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 220px;">
+          <label style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Contract Expected SHA-256</label>
+          <input id="escrow-exp-hash" type="text" value="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-family: var(--mono);" />
+        </div>
+        <div style="flex: 1; min-width: 220px;">
+          <label style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Delivered Artifact SHA-256</label>
+          <input id="escrow-act-hash" type="text" value="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-family: var(--mono);" />
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 160px;">
+          <label style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Deadline UTC</label>
+          <input id="escrow-deadline" type="text" value="2026-09-17T18:00:00Z" style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-family: var(--mono);" />
+        </div>
+        <div style="flex: 1; min-width: 160px;">
+          <label style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Submitted At UTC</label>
+          <input id="escrow-submitted" type="text" value="2026-09-17T12:00:00Z" style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-family: var(--mono);" />
+        </div>
+        <div style="flex: 1; min-width: 160px;">
+          <label style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Valid Items / Total Items</label>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <input id="escrow-valid-items" type="number" value="1000" style="flex: 1; padding: 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px;" />
+            <span>/</span>
+            <input id="escrow-total-items" type="number" value="1000" style="flex: 1; padding: 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px;" />
+          </div>
+        </div>
+      </div>
+      <div>
+        <label style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Dispute Claim Reason</label>
+        <input id="escrow-claim" type="text" value="Seller delivered verified dataset matching schema; requesting automated escrow release." style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px;" />
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
+        <button id="escrow-btn" type="submit" style="background: var(--accent); color: #fff; border: none; padding: 9px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">⚖️ Run Edge Dispute Arbitration</button>
+        <span id="escrow-status" style="font-size: 13px; color: var(--muted);">Zero-Retention: evaluated in Edge RAM in &lt;5ms.</span>
+      </div>
+    </form>
+    <div id="escrow-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
   </div>` : `
   <h2>Instant Deal Risk & Sanctions Pre-Screen (Free Triage)</h2>
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
@@ -13850,6 +14141,182 @@ async function runFinancialGuardSimulation(e) {
   } finally {
     btn.disabled = false;
     btn.innerText = '⚡ Run Pre-Sign Security Evaluation';
+  }
+}
+
+var ESCROW_SCENARIOS = {
+  clean: {
+    id: 'escrow-clean-001',
+    amount: 500,
+    policy: 'all_or_nothing',
+    expHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    actHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    deadline: '2026-09-17T18:00:00Z',
+    submitted: '2026-09-17T12:00:00Z',
+    validItems: 1000,
+    totalItems: 1000,
+    claim: 'Seller delivered verified dataset on time.'
+  },
+  bad_hash: {
+    id: 'escrow-bad-hash-002',
+    amount: 500,
+    policy: 'all_or_nothing',
+    expHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    actHash: '0000deadbeefbadf00d112233445566778899aabbccddeeff001122334455667',
+    deadline: '2026-09-17T18:00:00Z',
+    submitted: '2026-09-17T12:00:00Z',
+    validItems: 1000,
+    totalItems: 1000,
+    claim: 'Buyer disputes: delivered artifact does not match expected SHA-256 hash.'
+  },
+  pro_rata: {
+    id: 'escrow-pro-rata-003',
+    amount: 1000,
+    policy: 'pro_rata',
+    expHash: '',
+    actHash: '',
+    deadline: '2026-09-17T20:00:00Z',
+    submitted: '2026-09-17T15:00:00Z',
+    validItems: 750,
+    totalItems: 1000,
+    claim: 'Seller delivered 750 of 1000 valid company profiles. Requesting pro-rata release.'
+  },
+  expired: {
+    id: 'escrow-expired-004',
+    amount: 500,
+    policy: 'all_or_nothing',
+    expHash: '',
+    actHash: '',
+    deadline: '2026-09-17T12:00:00Z',
+    submitted: '2026-09-17T16:30:00Z',
+    validItems: 500,
+    totalItems: 500,
+    claim: 'Buyer disputes: seller missed contract deadline by over 4 hours.'
+  }
+};
+
+function loadEscrowScenario(name) {
+  var s = ESCROW_SCENARIOS[name];
+  if (!s) return;
+  document.getElementById('escrow-id').value = s.id;
+  document.getElementById('escrow-amount').value = s.amount;
+  document.getElementById('escrow-policy').value = s.policy;
+  document.getElementById('escrow-exp-hash').value = s.expHash;
+  document.getElementById('escrow-act-hash').value = s.actHash;
+  document.getElementById('escrow-deadline').value = s.deadline;
+  document.getElementById('escrow-submitted').value = s.submitted;
+  document.getElementById('escrow-valid-items').value = s.validItems;
+  document.getElementById('escrow-total-items').value = s.totalItems;
+  document.getElementById('escrow-claim').value = s.claim;
+  runEscrowArbitrationSimulation();
+}
+
+async function runEscrowArbitrationSimulation(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  var btn = document.getElementById('escrow-btn');
+  var status = document.getElementById('escrow-status');
+  var resDiv = document.getElementById('escrow-result');
+  if (!btn || !resDiv) return;
+
+  btn.disabled = true;
+  btn.innerText = 'Arbitrating on Edge...';
+  status.innerText = 'Checking delivery deadline, hash integrity, schema validity & SLO...';
+
+  var t0 = performance.now();
+  try {
+    var payload = {
+      escrow_id: document.getElementById('escrow-id').value.trim(),
+      dispute_claim: {
+        claimant: 'buyer',
+        reason: document.getElementById('escrow-claim').value.trim()
+      },
+      deal_terms: {
+        buyer_id: 'did:agent:0x1111111111111111111111111111111111111111',
+        seller_id: 'did:agent:0x2222222222222222222222222222222222222222',
+        amount_usd: Number(document.getElementById('escrow-amount').value) || 0,
+        currency: document.getElementById('escrow-currency').value,
+        deadline_utc: document.getElementById('escrow-deadline').value.trim(),
+        arbitration_policy: document.getElementById('escrow-policy').value,
+        arbitration_fee_pct: 1.0
+      },
+      specification: {
+        deliverable_type: 'json_data',
+        expected_artifact_sha256: document.getElementById('escrow-exp-hash').value.trim() || undefined,
+        min_valid_records_pct: 95
+      },
+      delivery_submission: {
+        submitted_at: document.getElementById('escrow-submitted').value.trim(),
+        artifact_sha256: document.getElementById('escrow-act-hash').value.trim() || undefined,
+        telemetry: {
+          total_items: Number(document.getElementById('escrow-total-items').value) || 0,
+          valid_items: Number(document.getElementById('escrow-valid-items').value) || 0,
+          response_time_ms: 320
+        }
+      }
+    };
+
+    var resp = await fetch('${origin}/v1/m2m-escrow/evaluate-dispute', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    var elapsed = Math.round(performance.now() - t0);
+    var data = await resp.json();
+    var r = data.arbitration_ruling || {};
+
+    resDiv.style.display = 'block';
+    var isRelease = r.ruling === 'RELEASE_TO_SELLER';
+    var isPartial = r.ruling === 'PARTIAL_SETTLEMENT';
+    var bg = isRelease ? '#f0fdf4' : (isPartial ? '#eff6ff' : '#fef2f2');
+    var border = isRelease ? '#86efac' : (isPartial ? '#93c5fd' : '#fca5a5');
+    var color = isRelease ? '#15803d' : (isPartial ? '#1d4ed8' : '#b91c1c');
+
+    var checksHtml = '';
+    if (r.checks) {
+      checksHtml = '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:6px; margin:10px 0;">' +
+        '<div style="padding:6px 8px; border-radius:4px; font-size:12px; background:' + (r.checks.deadline_honored ? '#dcfce7; color:#166534' : '#fee2e2; color:#991b1b') + '"><strong>Deadline:</strong> ' + (r.checks.deadline_honored ? '✓ ON TIME' : '✗ BREACH') + '</div>' +
+        '<div style="padding:6px 8px; border-radius:4px; font-size:12px; background:' + (r.checks.hash_verified ? '#dcfce7; color:#166534' : '#fee2e2; color:#991b1b') + '"><strong>Hash Integrity:</strong> ' + (r.checks.hash_verified ? '✓ VERIFIED' : '✗ MISMATCH') + '</div>' +
+        '<div style="padding:6px 8px; border-radius:4px; font-size:12px; background:' + (r.checks.schema_verified ? '#dcfce7; color:#166534' : '#fee2e2; color:#991b1b') + '"><strong>Schema Format:</strong> ' + (r.checks.schema_verified ? '✓ VALID' : '✗ INVALID') + '</div>' +
+        '<div style="padding:6px 8px; border-radius:4px; font-size:12px; background:' + (r.checks.slo_verified ? '#dcfce7; color:#166534' : '#fee2e2; color:#991b1b') + '"><strong>SLO Delivery:</strong> ' + (r.checks.slo_verified ? '✓ PASS' : '✗ DEFICIT') + '</div>' +
+        '</div>';
+    }
+
+    var payoutHtml = '';
+    if (r.payout_breakdown) {
+      var p = r.payout_breakdown;
+      payoutHtml = '<div style="display:flex; gap:12px; flex-wrap:wrap; margin:10px 0; padding:10px; background:#fff; border:1px solid ' + border + '; border-radius:6px;">' +
+        '<div><strong>Seller Payout:</strong> <span style="color:#15803d; font-weight:700;">$' + p.seller_payout_usd.toFixed(2) + '</span></div>' +
+        '<div><strong>Buyer Refund:</strong> <span style="color:#b91c1c; font-weight:700;">$' + p.buyer_refund_usd.toFixed(2) + '</span></div>' +
+        '<div><strong>Arbiter Fee (1%):</strong> <span style="color:var(--muted); font-weight:600;">$' + p.arbiter_fee_usd.toFixed(2) + '</span></div>' +
+        '</div>';
+    }
+
+    var violationsHtml = '';
+    if (r.violations && r.violations.length > 0) {
+      violationsHtml = '<div style="margin:10px 0; padding:10px; background:#fff1f2; border-left:4px solid #e11d48; border-radius:0 4px 4px 0;"><strong style="color:#9f1239; font-size:13px;">Violations Detected:</strong><ul style="margin:4px 0 0 16px; padding:0; font-size:12px; color:#881337;">' +
+        r.violations.map(function(item) { return '<li>' + item + '</li>'; }).join('') +
+        '</ul></div>';
+    }
+
+    resDiv.innerHTML = '<div style="background:' + bg + '; border:1px solid ' + border + '; border-radius:6px; padding:16px;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">' +
+      '<span style="font-size:14px; font-weight:700; color:' + color + ';">Binding Ruling: ' + r.ruling + '</span>' +
+      '<span style="font-size:12px; font-family:var(--mono); background:#fff; padding:2px 8px; border-radius:4px; border:1px solid ' + border + ';">Confidence Score: ' + (r.score || 0) + '/100 • ' + elapsed + 'ms edge latency</span>' +
+      '</div>' +
+      payoutHtml +
+      checksHtml +
+      violationsHtml +
+      '<div style="font-size:13px; color:var(--muted); margin-top:8px;"><strong>Execution Advisory:</strong> ' + (r.execution_advisory || '') + '</div>' +
+      (r.vizier_clearance_receipt ? '<div style="margin-top:8px; font-size:11px; font-family:var(--mono); color:#475569;">Vizier Attestation Receipt: ' + r.vizier_clearance_receipt + '</div>' : '') +
+      '</div>';
+    status.innerText = 'Arbitration ruling completed in ' + elapsed + 'ms on Edge.';
+  } catch (err) {
+    resDiv.style.display = 'block';
+    resDiv.innerHTML = '<div style="color:var(--danger); font-size:13px;">Arbitration failed: ' + err.message + '</div>';
+    status.innerText = 'Arbitration error.';
+  } finally {
+    btn.disabled = false;
+    btn.innerText = '⚖️ Run Edge Dispute Arbitration';
   }
 }
 
@@ -14203,6 +14670,23 @@ const DIRECT_V1_ROUTES = {
       vizier_status: result.financial_guard_verdict?.vizier_status,
       vizier_clearance_receipt: result.financial_guard_verdict?.vizier_clearance_receipt,
       execution_advisory: result.financial_guard_verdict?.execution_advisory
+    })
+  },
+  "/v1/m2m-escrow/evaluate-dispute": {
+    label: "m2m escrow arbitration dispute evaluation",
+    guideProfile: "m2m_escrow_arbiter",
+    schema: "schemas/v1/m2m-escrow-arbiter-request.schema.json",
+    missing: "Missing structured M2M escrow arbitration request",
+    extract: structuredM2MEscrowRequestFromParams,
+    errorsFor: validateM2MEscrowRequest,
+    run: async (structured, request, env) => {
+      const evaluation = await evaluateM2MEscrowArbitration(structured, env);
+      return { response: evaluation, ...evaluation };
+    },
+    provenance: (result) => ({
+      vizier_status: result.arbitration_ruling?.vizier_status,
+      vizier_clearance_receipt: result.arbitration_ruling?.vizier_clearance_receipt,
+      execution_advisory: result.arbitration_ruling?.execution_advisory
     })
   }
 };
