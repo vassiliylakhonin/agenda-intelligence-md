@@ -283,7 +283,7 @@ Under hydrological stress scenarios (Caspian Sea Baltic Datum variations), feede
 """ + "\n".join(
         f"- **{c['test']}**: {c['result']} (Observed: {c.get('observed_dscr') or str(c.get('observed_debt_share_pct', '')) + '%' or 'N/A'}, Threshold: {c['threshold']})"
         for c in checks
-    ) + f"""
+    ) + """
 
 ### Outstanding Conditions Precedent:
 """ + "\n".join(

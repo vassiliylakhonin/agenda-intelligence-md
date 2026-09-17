@@ -2,7 +2,6 @@
 
 from agenda_intelligence.corridor_bankability import (
     evaluate_covenants,
-    generate_bankability_screen,
     screen_corridor_bankability,
 )
 from agenda_intelligence.mcp_stdio import handle_message
