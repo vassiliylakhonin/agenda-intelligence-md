@@ -70,4 +70,17 @@ jobs:
           exit 1
 
       - name: Publish server to MCP Registry
-        run: ./mcp-publisher publish
+        run: |
+          set +e
+          output=$(./mcp-publisher publish 2>&1)
+          exit_code=$?
+          echo "$output"
+          if [ $exit_code -eq 0 ]; then
+            echo "Successfully published to MCP Registry."
+            exit 0
+          elif echo "$output" | grep -qi "duplicate version"; then
+            echo "Version ${{ steps.version.outputs.version }} is already published to MCP Registry. Skipping."
+            exit 0
+          else
+            exit $exit_code
+          fi
