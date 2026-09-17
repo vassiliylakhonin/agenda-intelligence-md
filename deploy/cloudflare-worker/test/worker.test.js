@@ -4881,12 +4881,47 @@ test("rate-limited requests return 429 with Dedicated Pro and Base USDC wallet d
 
   const res2 = await handleRequest(sendReq(), env);
   assert.equal(res2.status, 429);
+  assert.ok(res2.headers.get("www-authenticate")?.includes("X402 token=\"USDC\""));
+  assert.equal(res2.headers.get("x-payment-protocol"), "x402");
   const data = await res2.json();
   assert.equal(data.error.code, -32002);
   assert.equal(data.error.data.upgrade_tier, "tier_2_pro");
   assert.equal(data.error.data.monthly_price_usd, 490);
+  assert.equal(data.error.data.x402.protocol, "x402");
+  assert.equal(data.error.data.x402.network, "base");
   assert.equal(data.error.data.checkout_url, "https://paypal.me/vaskenzy/490USD");
   assert.equal(data.error.data.usdc_base_wallet, "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663");
+});
+
+test("rate-limited direct v1 calls return HTTP 402 with canonical x402 challenge", async () => {
+  const env = { RATE_LIMIT_PER_HOUR: "1", AGENDA_USAGE: fakeRateKv() };
+  const req = () =>
+    new Request("https://agent-financial-guard-a2a.example.workers.dev/v1/agent-financial/pre-sign-check", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cf-connecting-ip": "9.9.9.9" },
+      body: JSON.stringify({
+        run_id: "test-direct-1",
+        transaction: {
+          network: "base_mainnet",
+          token: "USDC",
+          amount_usd: 10,
+          recipient: "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663"
+        },
+        intent: { prompt: "Test payment" }
+      })
+    });
+
+  const res1 = await handleRequest(req(), env);
+  assert.equal(res1.status, 200);
+
+  const res2 = await handleRequest(req(), env);
+  assert.equal(res2.status, 402);
+  assert.ok(res2.headers.get("www-authenticate")?.includes("X402"));
+  assert.equal(res2.headers.get("x-payment-protocol"), "x402");
+  const data = await res2.json();
+  assert.equal(data.status, 402);
+  assert.equal(data.x402.protocol, "x402");
+  assert.equal(data.x402.amount_usdc, 0.05);
 });
 
 test("checkRateLimit fails open when KV errors", async () => {

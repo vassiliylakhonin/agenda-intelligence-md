@@ -110,6 +110,7 @@ import {
 import {
   AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL,
   AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL,
+  BASE_USDC_CONTRACT,
   BASE_USDC_WALLET,
   CANONICAL_INPUT_MODE,
   CIS_SECONDARY_SANCTIONS_ADR_URL,
@@ -12782,19 +12783,38 @@ async function handleMcpPost(request, env, ctx) {
     }
     const rate = await checkRateLimit(request, env, profile);
     if (rate.limited) {
+      const isDispute = profile === "m2m_escrow_arbiter";
+      const requiredUsdc = isDispute ? TIER_MICRO_DISPUTE_USDC_AMOUNT : TIER_MICRO_CHECK_USDC_AMOUNT;
+      const authHeader = `X402 token="USDC", network="base", chain_id=8453, recipient="${BASE_USDC_WALLET}", amount="${requiredUsdc}", asset="USDC", contract="${BASE_USDC_CONTRACT}"`;
       return jsonResponse(
-        jsonRpcError(payload.id ?? null, -32002, "Rate limit exceeded: free Community Sandbox quota reached. Upgrade to Dedicated Pro Tenant ($490/month) for dedicated Bearer key, SLA 99.9%, and 10,000 monthly checks.", {
+        jsonRpcError(payload.id ?? null, -32002, "Rate limit exceeded: free Community Sandbox quota reached. Settle via x402 on Base with 'X-Payment-Tx' header, or upgrade to Dedicated Pro Tenant ($490/month).", {
           limit_per_hour: rate.limit,
           profile,
           tier: "tier_1_sandbox",
           upgrade_tier: "tier_2_pro",
           monthly_price_usd: 490,
+          x402: {
+            protocol: "x402",
+            version: "1.0",
+            network: "base",
+            chain_id: 8453,
+            token: "USDC",
+            token_contract: BASE_USDC_CONTRACT,
+            recipient_wallet: BASE_USDC_WALLET,
+            amount_usdc: requiredUsdc,
+            header_instruction: "Include 'X-Payment-Tx: <base_tx_hash>' in headers"
+          },
           contact: SUPPORT_CONTACT_EMAIL,
           checkout_url: "https://paypal.me/vaskenzy/490USD",
           usdc_base_wallet: BASE_USDC_WALLET
         }),
         429,
-        { "retry-after": "3600", "cache-control": "no-store" }
+        {
+          "retry-after": "3600",
+          "www-authenticate": authHeader,
+          "x-payment-protocol": "x402",
+          "cache-control": "no-store"
+        }
       );
     }
   }
@@ -13089,16 +13109,30 @@ async function handlePost(request, env, ctx) {
     }
     const rate = await checkRateLimit(request, env, profile);
     if (rate.limited) {
+      const isDispute = profile === "m2m_escrow_arbiter";
+      const requiredUsdc = isDispute ? TIER_MICRO_DISPUTE_USDC_AMOUNT : TIER_MICRO_CHECK_USDC_AMOUNT;
+      const authHeader = `X402 token="USDC", network="base", chain_id=8453, recipient="${BASE_USDC_WALLET}", amount="${requiredUsdc}", asset="USDC", contract="${BASE_USDC_CONTRACT}"`;
       const error = jsonRpcError(
           payload.id ?? null,
           -32002,
-          "Rate limit exceeded: free Community Sandbox quota reached. Upgrade to Dedicated Pro Tenant ($490/month) for dedicated Bearer key, SLA 99.9%, and 10,000 monthly checks.",
+          "Rate limit exceeded: free Community Sandbox quota reached. Settle via x402 on Base with 'X-Payment-Tx' header, or upgrade to Dedicated Pro Tenant ($490/month).",
           {
             limit_per_hour: rate.limit,
             profile,
             tier: "tier_1_sandbox",
             upgrade_tier: "tier_2_pro",
             monthly_price_usd: 490,
+            x402: {
+              protocol: "x402",
+              version: "1.0",
+              network: "base",
+              chain_id: 8453,
+              token: "USDC",
+              token_contract: BASE_USDC_CONTRACT,
+              recipient_wallet: BASE_USDC_WALLET,
+              amount_usdc: requiredUsdc,
+              header_instruction: "Include 'X-Payment-Tx: <base_tx_hash>' in headers"
+            },
             contact: SUPPORT_CONTACT_EMAIL,
             checkout_url: "https://paypal.me/vaskenzy/490USD",
             usdc_base_wallet: BASE_USDC_WALLET
@@ -13107,6 +13141,8 @@ async function handlePost(request, env, ctx) {
       logProtocolEvent(request, env, payload.id, method, error, startedAt);
       return jsonResponse(error, 429, {
         "retry-after": "3600",
+        "www-authenticate": authHeader,
+        "x-payment-protocol": "x402",
         "cache-control": "no-store"
       });
     }
@@ -13851,7 +13887,11 @@ function landingHtml(request, env) {
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
     <p style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
       Enter your counterparty, commodity or HS code, and transit route to run an instant, zero-retention compliance triage against OFAC EO 14114, EU secondary sanctions, and CHPL dual-use lists.
-    </p>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+      <button type="button" onclick="loadTriagePreset('rare_metals')" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⛏️ KZ Rare Metals (Aktau → Poti)</button>
+      <button type="button" onclick="loadTriagePreset('block_train')" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚆 Middle Corridor Block Train</button>
+      <button type="button" onclick="loadTriagePreset('dual_use')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⚙️ Dual-Use CNC & Electronics</button>
+    </div>
     <form id="triage-form" onsubmit="runBrowserTriage(event)" style="display: flex; flex-direction: column; gap: 10px;">
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 240px;">
@@ -13906,12 +13946,21 @@ function landingHtml(request, env) {
         Connect any Web3 wallet (MetaMask, Coinbase Wallet, Brave Wallet) to settle instantly on Base L2. Automatic receipt and Pro key provisioning via <code>/v1/settle</code>.
       </p>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button type="button" onclick="payWithBaseWallet(0.05)" style="background: #0284c7; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+          <span>⚡ Pay 0.05 USDC (Micro Check)</span>
+        </button>
+        <button type="button" onclick="payWithBaseWallet(0.50)" style="background: #6366f1; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+          <span>⚖️ Pay 0.50 USDC (Micro Dispute)</span>
+        </button>
         <button type="button" onclick="payWithBaseWallet(49)" style="background: #0052FF; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
           <span>⚡ Pay 49 USDC (Pre-Screen)</span>
         </button>
         <button type="button" onclick="payWithBaseWallet(490)" style="background: #0f172a; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
           <span>⚡ Pay 490 USDC (Pro Tenant)</span>
         </button>
+        <a href="${origin}/explorer" style="background: #10b981; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+          <span>🔍 Web3 Escrow Explorer</span>
+        </a>
       </div>
       <div id="web3-status" style="display: none; margin-top: 10px; font-size: 13px; font-family: var(--mono); padding: 8px 12px; border-radius: 4px;"></div>
       <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">
@@ -13972,6 +14021,21 @@ function landingHtml(request, env) {
   </footer>
 </main>
 <script>
+function loadTriagePreset(preset) {
+  var cargo = document.getElementById('triage-cargo');
+  var route = document.getElementById('triage-route');
+  if (!cargo || !route) return;
+  if (preset === 'rare_metals') {
+    cargo.value = 'Ulba Metallurgical / Beryllium, Tantalum, Lithium concentrates';
+    route.value = 'Ust-Kamenogorsk -> Almaty -> Aktau Port -> Baku -> Poti -> Rotterdam';
+  } else if (preset === 'block_train') {
+    cargo.value = 'Trans-Caspian Container Freight (General Cargo & Machinery)';
+    route.value = 'Dostyk -> Khorgos -> Zhezkazgan -> Aktau -> Baku -> Constanta';
+  } else if (preset === 'dual_use') {
+    cargo.value = '8458.11 Computer-controlled horizontal lathes & microcontrollers';
+    route.value = 'Shenzhen -> Alashankou -> Dostyk -> Almaty -> Tashkent';
+  }
+}
 async function runBrowserTriage(e) {
   e.preventDefault();
   var cargo = document.getElementById('triage-cargo').value.trim();
@@ -14391,7 +14455,7 @@ async function payWithBaseWallet(amountUsd) {
     statusDiv.innerText = 'Preparing ' + amountUsd + ' USDC transfer on Base...';
     var usdcContract = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
     var targetAddress = '${BASE_USDC_WALLET}'.toLowerCase().replace('0x', '').padStart(64, '0');
-    var rawAmount = BigInt(amountUsd) * 1000000n;
+    var rawAmount = BigInt(Math.round(Number(amountUsd) * 1000000));
     var hexAmount = rawAmount.toString(16).padStart(64, '0');
     var calldata = '0xa9059cbb' + targetAddress + hexAmount;
 
@@ -14748,6 +14812,16 @@ function directV1Rejection(endpoint, route, errors) {
 }
 
 async function handleDirectV1(endpoint, route, request, env) {
+  const rate = await checkRateLimit(request, env, route.profile);
+  if (rate.limited) {
+    return generateX402PaymentResponse(
+      route.profile,
+      request,
+      env,
+      "quota_exceeded"
+    );
+  }
+
   let body;
   try {
     body = await request.json();
