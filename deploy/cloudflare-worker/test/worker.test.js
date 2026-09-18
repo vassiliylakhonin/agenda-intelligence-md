@@ -914,26 +914,39 @@ test("/agents.txt route returns agents policy with text/plain header", async () 
   assert.ok(text.includes("LLMs-txt: /llms.txt"));
 });
 
-test("Agenstry ownership proof route serves only a valid configured token", async () => {
-  const url = "https://agenda-intelligence-a2a.example.workers.dev/.well-known/agenstry-verify";
-  const configured = await handleRequest(new Request(url), {
-    AGENSTRY_VERIFY_TOKEN: "  af-verify-test_token-123  "
-  });
-  assert.equal(configured.status, 200);
-  assert.equal(configured.headers.get("content-type"), "text/plain; charset=utf-8");
-  assert.equal(configured.headers.get("cache-control"), "no-store");
-  assert.equal(await configured.text(), "af-verify-test_token-123");
+test("Agenstry ownership proof routes serve valid configured token on all 8 probe paths", async () => {
+  const paths = [
+    "/.well-known/agenstry-verify",
+    "/.well-known/agenstry.txt",
+    "/.well-known/agenstry-verification.txt",
+    "/.well-known/agenstry-challenge.txt",
+    "/.well-known/agenstry",
+    "/.well-known/agenstry-verification",
+    "/agenstry.txt",
+    "/agenstry-verification.txt"
+  ];
 
-  for (const env of [{}, { AGENSTRY_VERIFY_TOKEN: "not-an-agenstry-token" }]) {
-    const missing = await handleRequest(new Request(url), env);
-    assert.equal(missing.status, 404);
-    assert.equal(await missing.text(), "Not found");
+  for (const path of paths) {
+    const url = `https://agenda-intelligence-a2a.example.workers.dev${path}`;
+    const configured = await handleRequest(new Request(url), {
+      AGENSTRY_VERIFY_TOKEN: "  af-verify-test_token-123  "
+    });
+    assert.equal(configured.status, 200, `Expected 200 for ${path}`);
+    assert.equal(configured.headers.get("content-type"), "text/plain; charset=utf-8");
+    assert.equal(configured.headers.get("cache-control"), "no-store");
+    assert.equal(await configured.text(), "af-verify-test_token-123");
+
+    for (const env of [{}, { AGENSTRY_VERIFY_TOKEN: "not-an-agenstry-token" }]) {
+      const missing = await handleRequest(new Request(url), env);
+      assert.equal(missing.status, 404, `Expected 404 for unconfigured ${path}`);
+      assert.equal(await missing.text(), "Not found");
+    }
+
+    const wrongMethod = await handleRequest(new Request(url, { method: "POST" }), {
+      AGENSTRY_VERIFY_TOKEN: "af-verify-test_token-123"
+    });
+    assert.equal(wrongMethod.status, 404);
   }
-
-  const wrongMethod = await handleRequest(new Request(url, { method: "POST" }), {
-    AGENSTRY_VERIFY_TOKEN: "af-verify-test_token-123"
-  });
-  assert.equal(wrongMethod.status, 404);
 });
 
 test("API catalog and OpenAPI routes advertise the public worker HTTP contract", async () => {
@@ -8996,6 +9009,96 @@ test("POST /v1/gulf-maritime/exposure supports smart fallback with prompt", asyn
   assert.equal(json.voyage.chokepoint, "bab_el_mandeb");
   assert.equal(json.cargo, "crude oil");
 });
+
+test("GET on DIRECT_V1_ROUTES returns interactive HTML for browsers and self-describing JSON guide for machines", async () => {
+  const url = "https://cis-secondary-sanctions-a2a.example.workers.dev/v1/cis-secondary-sanctions/exposure";
+  const env = { AGENT_PROFILE: "cis_secondary_sanctions" };
+
+  // Browser request with Accept: text/html
+  const browserResp = await handleRequest(
+    new Request(url, { headers: { accept: "text/html,application/xhtml+xml" } }),
+    env
+  );
+  assert.equal(browserResp.status, 200);
+  assert.equal(browserResp.headers.get("content-type"), "text/html; charset=utf-8");
+  const html = await browserResp.text();
+  assert.match(html, /Interactive Test Console/);
+  assert.match(html, /POST \/v1\/cis-secondary-sanctions\/exposure/);
+  assert.match(html, /Send POST Request/);
+
+  // Machine request (Accept: */* or application/json)
+  const machineResp = await handleRequest(
+    new Request(url, { headers: { accept: "application/json" } }),
+    env
+  );
+  assert.equal(machineResp.status, 200);
+  assert.equal(machineResp.headers.get("content-type"), "application/json; charset=utf-8");
+  const json = await machineResp.json();
+  assert.equal(json.ok, true);
+  assert.equal(json.method, "POST");
+  assert.equal(json.endpoint, "/v1/cis-secondary-sanctions/exposure");
+  assert.ok(json.schema);
+  assert.ok(Array.isArray(json.required_fields));
+  assert.ok(json.example_curl);
+  assert.match(json.example_curl, /curl -X POST/);
+
+  // Unsupported method returns 405 Method Not Allowed
+  const putResp = await handleRequest(
+    new Request(url, { method: "PUT" }),
+    env
+  );
+  assert.equal(putResp.status, 405);
+  assert.equal(putResp.headers.get("allow"), "GET, POST, OPTIONS");
+});
+
+test("GET on /message/send returns landing HTML for browsers and JSON-RPC guide for machines", async () => {
+  const url = "https://agenda-intelligence-a2a.example.workers.dev/message/send";
+  const env = { AGENT_PROFILE: "agenda" };
+
+  // Browser request with Accept: text/html
+  const browserResp = await handleRequest(
+    new Request(url, { headers: { accept: "text/html" } }),
+    env
+  );
+  assert.equal(browserResp.status, 200);
+  assert.equal(browserResp.headers.get("content-type"), "text/html; charset=utf-8");
+  const html = await browserResp.text();
+  assert.match(html, /<!doctype html>/i);
+
+  // Machine request
+  const machineResp = await handleRequest(
+    new Request(url, { headers: { accept: "application/json" } }),
+    env
+  );
+  assert.equal(machineResp.status, 200);
+  assert.equal(machineResp.headers.get("content-type"), "application/json; charset=utf-8");
+  const json = await machineResp.json();
+  assert.equal(json.ok, true);
+  assert.equal(json.endpoint, "/message/send");
+  assert.equal(json.protocol, "A2A JSON-RPC 2.0");
+  assert.equal(json.method, "POST");
+  assert.ok(json.example_curl);
+  assert.match(json.example_curl, /curl -X POST/);
+
+  // Unsupported method returns 405
+  const deleteResp = await handleRequest(
+    new Request(url, { method: "DELETE" }),
+    env
+  );
+  assert.equal(deleteResp.status, 405);
+  assert.equal(deleteResp.headers.get("allow"), "GET, POST, OPTIONS");
+});
+
+test("GET /corridor-bankability includes mobile MetaMask deep linking", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/corridor-bankability")
+  );
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /metamask\.app\.link\/dapp\//);
+  assert.match(html, /Open in MetaMask/);
+});
+
 
 
 

@@ -464,8 +464,18 @@ export function handleBankabilityUiRequest(request, env = {}) {
         }
       };
     } else {
-      btnConnect.innerText = "No Web3 Wallet";
-      btnConnect.disabled = true;
+      var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        btnConnect.innerText = "🦊 Open in MetaMask";
+        btnConnect.disabled = false;
+        btnConnect.onclick = function() {
+          var dappUrl = location.host + location.pathname;
+          window.location.href = "https://metamask.app.link/dapp/" + dappUrl;
+        };
+      } else {
+        btnConnect.innerText = "No Web3 Wallet";
+        btnConnect.disabled = true;
+      }
     }
 
     async function ensureBaseNetwork() {
@@ -557,6 +567,12 @@ export function handleBankabilityUiRequest(request, env = {}) {
     // Pay $25 USDC with Brave Wallet on Base
     btnPayUnlock.onclick = async function() {
       if (!window.ethereum) {
+        var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isMobile) {
+          var dappUrl = location.host + location.pathname;
+          window.location.href = "https://metamask.app.link/dapp/" + dappUrl;
+          return;
+        }
         alert("Please use Brave Browser with Brave Wallet or install MetaMask.");
         return;
       }

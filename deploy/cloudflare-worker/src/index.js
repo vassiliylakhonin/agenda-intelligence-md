@@ -169,6 +169,16 @@ import {
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 
 const AGENSTRY_VERIFICATION_PATH = "/.well-known/agenstry-verify";
+const AGENSTRY_VERIFICATION_PATHS = new Set([
+  "/.well-known/agenstry-verify",
+  "/.well-known/agenstry.txt",
+  "/.well-known/agenstry-verification.txt",
+  "/.well-known/agenstry-challenge.txt",
+  "/.well-known/agenstry",
+  "/.well-known/agenstry-verification",
+  "/agenstry.txt",
+  "/agenstry-verification.txt"
+]);
 const CIS_REVIEW_INTAKE_PATH = "/intake/cis-review";
 // The intake form used to be hosted off-Worker and its origin was allow-listed
 // here. That host was never published, so no browser can present it; only local
@@ -11523,7 +11533,7 @@ const FUNNEL_SILENT_PATHS = new Set([
   "/stats",
   "/decisions",
   "/.well-known/jwks.json",
-  AGENSTRY_VERIFICATION_PATH
+  ...AGENSTRY_VERIFICATION_PATHS
 ]);
 
 function funnelStepForPath(pathname) {
@@ -11532,6 +11542,9 @@ function funnelStepForPath(pathname) {
   if (pathname === "/.well-known/agent-card.json" || pathname === "/.well-known/agent.json") return "card";
   if (pathname.startsWith("/okf") || pathname.startsWith("/profiles/")) return "docs";
   if (pathname.startsWith("/.well-known/") || pathname === "/entitymap.json" || pathname === "/api/openapi.json") {
+    return "discovery";
+  }
+  if (Object.hasOwn(DIRECT_V1_ROUTES, pathname) || pathname === "/message/send") {
     return "discovery";
   }
   return null;
@@ -15564,6 +15577,229 @@ function directV1Rejection(endpoint, route, errors) {
   };
 }
 
+function directRouteJson(endpoint, route, request) {
+  const origin = originFromRequest(request);
+  const guide = route.guide || GATE_REQUEST_GUIDES[route.guideProfile];
+  const example = guide?.example || {};
+  return {
+    ok: true,
+    endpoint,
+    canonical_http_endpoint: `${origin}${endpoint}`,
+    label: route.label,
+    method: "POST",
+    instruction: `This endpoint accepts HTTP POST requests with a JSON payload. Send a POST request matching the schema or example below.`,
+    schema: `${origin}/${route.schema}`,
+    required_fields: guide?.required || [],
+    example_request: example,
+    example_curl: `curl -X POST ${origin}${endpoint} \\\n  -H 'content-type: application/json' \\\n  -d '${JSON.stringify(example)}'`,
+    agent_card: `${origin}/.well-known/agent.json`,
+    documentation: `${origin}/`,
+    front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+    support_contact: SUPPORT_CONTACT_EMAIL
+  };
+}
+
+function messageSendGuideJson(request, env) {
+  const origin = originFromRequest(request);
+  const example = {
+    jsonrpc: "2.0",
+    id: "demo-1",
+    method: "SendMessage",
+    params: {
+      message: {
+        messageId: "msg-1",
+        role: "ROLE_USER",
+        parts: [{ text: "Screen sanctions exposure for cargo transit." }]
+      }
+    }
+  };
+  return {
+    ok: true,
+    endpoint: "/message/send",
+    canonical_http_endpoint: `${origin}/message/send`,
+    protocol: "A2A JSON-RPC 2.0",
+    method: "POST",
+    instruction: "This endpoint accepts HTTP POST requests with an A2A JSON-RPC 2.0 message payload.",
+    headers: {
+      "content-type": "application/json",
+      "A2A-Version": "1.0"
+    },
+    example_request: example,
+    example_curl: `curl -X POST ${origin}/message/send \\\n  -H 'content-type: application/json' \\\n  -H 'A2A-Version: 1.0' \\\n  -d '${JSON.stringify(example)}'`,
+    agent_card: `${origin}/.well-known/agent.json`,
+    documentation: `${origin}/`,
+    support_contact: SUPPORT_CONTACT_EMAIL
+  };
+}
+
+function directRouteHtml(endpoint, route, request, env) {
+  const origin = originFromRequest(request);
+  const guide = route.guide || GATE_REQUEST_GUIDES[route.guideProfile];
+  const exampleJson = JSON.stringify(guide?.example || {}, null, 2);
+  const requiredList = (guide?.required || []).map((f) => `<code>${escapeHtml(f)}</code>`).join(", ") || "None";
+  const title = `${escapeHtml(route.label)} — REST API Endpoint`;
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${title}</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --good: #34d399;
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 16px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+  }
+  .container { max-width: 860px; margin: 0 auto; }
+  header { margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    border-radius: 999px; font-size: 12px; font-family: var(--font-mono);
+    border: 1px solid var(--border); background: var(--card); color: var(--text);
+  }
+  .badge-good { color: var(--good); border-color: rgba(52,211,153,0.3); }
+  .badge-accent { color: var(--accent); border-color: rgba(56,189,248,0.3); }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; margin-bottom: 20px;
+  }
+  h1 { font-size: 24px; margin: 0 0 8px; color: #fff; }
+  h2 { font-size: 17px; margin: 0 0 12px; color: var(--accent); }
+  p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { font-family: var(--font-mono); font-size: 13px; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; color: #e2e8f0; }
+  pre {
+    background: #0b1120; border: 1px solid var(--border); border-radius: 6px;
+    padding: 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px;
+    color: #e2e8f0; margin: 0 0 14px; line-height: 1.5;
+  }
+  textarea {
+    width: 100%; height: 180px; background: #0b1120; border: 1px solid var(--border);
+    border-radius: 6px; color: #e2e8f0; font-family: var(--font-mono); font-size: 13px;
+    padding: 12px; resize: vertical; margin-bottom: 12px; outline: none;
+  }
+  textarea:focus { border-color: var(--accent); }
+  button {
+    background: var(--accent); color: #0f172a; border: none; padding: 10px 20px;
+    border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  #resultBox {
+    display: none; margin-top: 14px; background: #0b1120; border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px; font-family: var(--font-mono); font-size: 13px;
+    white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto;
+  }
+  footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>${escapeHtml(route.label)}</h1>
+    <p>Direct HTTP REST API Endpoint &bull; <code>POST ${escapeHtml(endpoint)}</code></p>
+    <div class="badge-row">
+      <span class="badge badge-good">&#9679; Live Edge</span>
+      <span class="badge badge-accent">POST Only</span>
+      <span class="badge">Zero-Retention</span>
+      <a href="${origin}/" class="badge">🏠 Hub</a>
+      <a href="${origin}/.well-known/agent.json" class="badge">🤖 Agent Card</a>
+      <a href="${origin}/api/openapi.json" class="badge">📄 OpenAPI</a>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2>Interactive Test Console</h2>
+    <p>This endpoint processes requests via <code>POST</code> with a JSON body. Edit the payload below and execute directly against the live edge worker:</p>
+    <form id="testForm" onsubmit="sendTest(event)">
+      <textarea id="jsonPayload">${escapeHtml(exampleJson)}</textarea>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button type="submit" id="btnSend">⚡ Send POST Request</button>
+        <span id="testStatus" style="font-size:13px; color:var(--muted);"></span>
+      </div>
+    </form>
+    <pre id="resultBox"></pre>
+  </div>
+
+  <div class="card">
+    <h2>cURL Example</h2>
+    <pre>curl -X POST ${origin}${escapeHtml(endpoint)} \\
+  -H "content-type: application/json" \\
+  -d '${escapeHtml(JSON.stringify(guide?.example || {}))}'</pre>
+  </div>
+
+  <div class="card">
+    <h2>Contract Specification</h2>
+    <p><strong>Required Fields:</strong> ${requiredList}</p>
+    <p><strong>Canonical Schema:</strong> <a href="${origin}/${escapeHtml(route.schema)}" target="_blank">${escapeHtml(route.schema)}</a></p>
+    <p><strong>Support &amp; Desk:</strong> <a href="mailto:${SUPPORT_CONTACT_EMAIL}">${SUPPORT_CONTACT_EMAIL}</a></p>
+  </div>
+
+  <footer>
+    <p>Agenda Intelligence Edge Network &bull; Zero-Retention RAM Processing &bull; Cloudflare Workers</p>
+  </footer>
+</div>
+
+<script>
+async function sendTest(e) {
+  e.preventDefault();
+  var btn = document.getElementById("btnSend");
+  var status = document.getElementById("testStatus");
+  var box = document.getElementById("resultBox");
+  var raw = document.getElementById("jsonPayload").value;
+
+  try {
+    JSON.parse(raw);
+  } catch (err) {
+    status.innerText = "❌ Invalid JSON: " + err.message;
+    return;
+  }
+
+  btn.disabled = true;
+  status.innerText = "⏳ Sending POST to ${escapeHtml(endpoint)}...";
+  box.style.display = "none";
+
+  try {
+    var resp = await fetch("${endpoint}", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: raw
+    });
+    var data = await resp.json();
+    status.innerText = "Status: " + resp.status + " " + (resp.ok ? "OK" : "Error");
+    box.innerText = JSON.stringify(data, null, 2);
+    box.style.display = "block";
+    box.style.borderColor = resp.ok ? "var(--good)" : "#f87171";
+  } catch (err) {
+    status.innerText = "❌ Network error: " + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>`;
+}
+
 async function handleDirectV1(endpoint, route, request, env) {
   const rate = await checkRateLimit(request, env, route.profile);
   if (rate.limited) {
@@ -15634,7 +15870,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     });
   }
 
-  if (request.method === "GET" && url.pathname === AGENSTRY_VERIFICATION_PATH) {
+  if (request.method === "GET" && (AGENSTRY_VERIFICATION_PATHS.has(url.pathname) || url.pathname === AGENSTRY_VERIFICATION_PATH)) {
     const token = agenstryVerificationToken(env);
     return token ? textResponse(token, 200, { "cache-control": "no-store" }) : textResponse("Not found", 404);
   }
@@ -16107,6 +16343,28 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return handleDirectV1(url.pathname, DIRECT_V1_ROUTES[url.pathname], request, env);
   }
 
+  if ((request.method === "GET" || request.method === "HEAD") && Object.hasOwn(DIRECT_V1_ROUTES, url.pathname)) {
+    const route = DIRECT_V1_ROUTES[url.pathname];
+    if (acceptsHtml(request)) {
+      return htmlResponse(directRouteHtml(url.pathname, route, request, env), 200, {
+        allow: "GET, POST, OPTIONS",
+        ...aiCatalogHeaders(request)
+      });
+    }
+    return jsonResponse(directRouteJson(url.pathname, route, request), 200, {
+      allow: "GET, POST, OPTIONS",
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (Object.hasOwn(DIRECT_V1_ROUTES, url.pathname)) {
+    return new Response("Method not allowed. Use GET or POST.", {
+      status: 405,
+      headers: { allow: "GET, POST, OPTIONS", "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" }
+    });
+  }
+
   if (request.method === "POST" && url.pathname === MCP_ENDPOINT_PATH) {
     return handleMcpPost(request, env, ctx);
   }
@@ -16137,6 +16395,27 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return handlePost(request, env, ctx);
   }
 
+  if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/message/send") {
+    if (acceptsHtml(request)) {
+      return htmlResponse(landingHtml(request, env), 200, {
+        allow: "GET, POST, OPTIONS",
+        ...aiCatalogHeaders(request)
+      });
+    }
+    return jsonResponse(messageSendGuideJson(request, env), 200, {
+      allow: "GET, POST, OPTIONS",
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (url.pathname === "/message/send") {
+    return new Response("Method not allowed. Use GET or POST.", {
+      status: 405,
+      headers: { allow: "GET, POST, OPTIONS", "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" }
+    });
+  }
+
   return textResponse("Not found", 404);
 }
 
@@ -16159,6 +16438,10 @@ export {
   handleCisReviewIntake,
   handleCisReviewIntakeList,
   DIRECT_V1_ROUTES,
+  directRouteHtml,
+  directRouteJson,
+  messageSendGuideJson,
+  AGENSTRY_VERIFICATION_PATHS,
   handleDirectV1,
   handleEvidencePacketCheck,
   handleEvidencePacketRepairPrompt,

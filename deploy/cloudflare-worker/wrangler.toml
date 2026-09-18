@@ -10,6 +10,7 @@ enabled = true
 AGENT_PROFILE = "agenda"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
+AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 
 [[services]]
 binding = "VIZIER"
@@ -34,6 +35,7 @@ workers_dev = true
 AGENT_PROFILE = "kazakhstan"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
+AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 
 [[env.middle-corridor-deal-risk-gate.services]]
 binding = "VIZIER"
@@ -80,6 +82,7 @@ VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 #   Soft per-IP/hour throttle (keeps the demo usable, caps bulk free use) —
 #     uncomment the line below (best-effort, KV-backed, fails open):
 RATE_LIMIT_PER_HOUR = "50"
+AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 
 [[env.cis-secondary-sanctions.services]]
 binding = "VIZIER"
@@ -97,6 +100,7 @@ workers_dev = true
 AGENT_PROFILE = "agentic_interaction_trust"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
+AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 
 [[env.agentic-interaction-trust.services]]
 binding = "VIZIER"
@@ -117,6 +121,7 @@ workers_dev = true
 AGENT_PROFILE = "agent_output_verification"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
+AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 
 [[env.agent-output-verification.services]]
 binding = "VIZIER"
@@ -134,6 +139,7 @@ workers_dev = true
 AGENT_PROFILE = "gulf_maritime_exposure"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
+AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 
 [[env.gulf-maritime-exposure.services]]
 binding = "VIZIER"
@@ -154,6 +160,7 @@ workers_dev = true
 AGENT_PROFILE = "market_entry_readiness"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
+AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 
 [[env.kazakhstan-market-entry-readiness.services]]
 binding = "VIZIER"
@@ -176,6 +183,7 @@ workers_dev = true
 AGENT_PROFILE = "corridor_sanctions_assistant"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
+AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 
 [[env.corridor-sanctions-assistant.services]]
 binding = "VIZIER"
@@ -196,6 +204,7 @@ workers_dev = true
 AGENT_PROFILE = "critical_minerals_due_diligence"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
+AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 
 [[env.critical-minerals-due-diligence.services]]
 binding = "VIZIER"
@@ -217,6 +226,7 @@ workers_dev = true
 AGENT_PROFILE = "dual_use_technology_export"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
+AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 
 [[env.dual-use-technology-export.kv_namespaces]]
 binding = "AGENDA_USAGE"
@@ -238,6 +248,7 @@ workers_dev = true
 AGENT_PROFILE = "agent_financial_guard"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
+AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 
 [[env.agent-financial-guard.kv_namespaces]]
 binding = "AGENDA_USAGE"
@@ -259,6 +270,7 @@ workers_dev = true
 AGENT_PROFILE = "m2m_escrow_arbiter"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
+AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 
 [[env.m2m-escrow-arbiter.kv_namespaces]]
 binding = "AGENDA_USAGE"
