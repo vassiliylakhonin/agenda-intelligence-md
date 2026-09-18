@@ -4285,6 +4285,164 @@ def _critical_minerals_readiness_and_triage(
     )
 
 
+def extract_critical_minerals_parameters(request_json: dict | None = None, raw_text: str = "") -> dict[str, Any]:
+    """Extract structured Critical Minerals parameters from unstructured text or partial input."""
+    input_data = request_json if isinstance(request_json, dict) else {}
+    text = raw_text if isinstance(raw_text, str) else ""
+    if not text:
+        if isinstance(input_data.get("prompt"), str):
+            text = input_data["prompt"]
+        elif isinstance(input_data.get("query"), str):
+            text = input_data["query"]
+        elif isinstance(input_data.get("text"), str):
+            text = input_data["text"]
+
+    defaulted: list[str] = []
+    commodity = input_data.get("commodity")
+    origin_jurisdiction = input_data.get("origin_jurisdiction")
+    processing_jurisdiction = input_data.get("processing_jurisdiction")
+    decision_stage = input_data.get("decision_stage")
+    project_name = input_data.get("project_name")
+    decision_question = input_data.get("decision_question")
+
+    raw_sources = input_data.get("supplied_sources")
+    if isinstance(raw_sources, list):
+        supplied_sources = [
+            {"source_type": s} if isinstance(s, str) else s for s in raw_sources if isinstance(s, (dict, str))
+        ]
+    else:
+        supplied_sources = []
+        defaulted.append("supplied_sources")
+
+    lower = (text or "").lower()
+
+    if not commodity and text:
+        if "lithium" in lower or "литий" in lower:
+            commodity = "lithium"
+        elif "rare earth" in lower or "редкоземельн" in lower or "ree" in lower or "рзм" in lower:
+            commodity = "rare_earth_elements"
+        elif "gallium" in lower or "галлий" in lower or "germanium" in lower or "германий" in lower:
+            commodity = "gallium_germanium"
+        elif "graphite" in lower or "графит" in lower:
+            commodity = "graphite"
+        elif "cobalt" in lower or "кобальт" in lower:
+            commodity = "cobalt"
+        elif "nickel" in lower or "никель" in lower:
+            commodity = "nickel"
+        elif "copper" in lower or "медь" in lower:
+            commodity = "copper"
+        elif "tungsten" in lower or "вольфрам" in lower:
+            commodity = "tungsten"
+        elif "manganese" in lower or "марганец" in lower:
+            commodity = "manganese"
+        elif any(
+            k in lower
+            for k in [
+                "antimony",
+                "титан",
+                "titanium",
+                "tantalum",
+                "тантал",
+                "niobium",
+                "beryllium",
+                "uranium",
+                "bauxite",
+                "platinum",
+                "palladium",
+                "silicon",
+            ]
+        ):
+            commodity = "other_critical_mineral"
+
+    if not origin_jurisdiction and text:
+        if any(k in lower for k in ["kazakhstan", "казахстан", "karaganda", "astana", "almaty"]):
+            origin_jurisdiction = "Kazakhstan"
+        elif any(k in lower for k in ["uzbekistan", "узбекистан", "tashkent", "navoi"]):
+            origin_jurisdiction = "Uzbekistan"
+        elif any(k in lower for k in ["kyrgyzstan", "кыргызстан", "bishkek"]):
+            origin_jurisdiction = "Kyrgyzstan"
+        elif any(k in lower for k in ["mongolia", "монголия"]):
+            origin_jurisdiction = "Mongolia"
+        elif any(k in lower for k in ["armenia", "армения"]):
+            origin_jurisdiction = "Armenia"
+        elif any(k in lower for k in ["georgia", "грузия"]):
+            origin_jurisdiction = "Georgia"
+        elif any(k in lower for k in ["azerbaijan", "азербайджан"]):
+            origin_jurisdiction = "Azerbaijan"
+        elif any(k in lower for k in ["turkey", "турция", "türkiye"]):
+            origin_jurisdiction = "Turkey"
+        elif any(k in lower for k in ["drc", "congo", "конго"]):
+            origin_jurisdiction = "Democratic Republic of the Congo"
+        elif any(k in lower for k in ["chile", "чили"]):
+            origin_jurisdiction = "Chile"
+        elif any(k in lower for k in ["australia", "австралия"]):
+            origin_jurisdiction = "Australia"
+        elif any(k in lower for k in ["china", "китай"]):
+            origin_jurisdiction = "China"
+
+    if not processing_jurisdiction and text:
+        if any(k in lower for k in ["china", "chinese smelter", "китай"]):
+            processing_jurisdiction = "China"
+        elif any(k in lower for k in ["russia", "россия"]):
+            processing_jurisdiction = "Russia"
+        elif any(k in lower for k in ["eu", "europe", "европ"]):
+            processing_jurisdiction = "European Union"
+
+    if not decision_stage and text:
+        if any(k in lower for k in ["offtake", "офтейк", "supply contract"]):
+            decision_stage = "pre_offtake_agreement"
+        elif any(k in lower for k in ["investment", "инвестиц", "financing"]):
+            decision_stage = "pre_investment_decision"
+        elif any(k in lower for k in ["export", "экспорт", "shipment", "отгруз"]):
+            decision_stage = "pre_export_shipment"
+        elif any(k in lower for k in ["exploration", "геологоразведк", "разведк"]):
+            decision_stage = "pre_exploration"
+        elif any(k in lower for k in ["processing", "переработк", "обогащен"]):
+            decision_stage = "pre_processing_contract"
+
+    if not commodity:
+        commodity = "rare_earth_elements"
+        defaulted.append("commodity")
+    if not origin_jurisdiction:
+        origin_jurisdiction = "Kazakhstan"
+        defaulted.append("origin_jurisdiction")
+    if not decision_stage:
+        decision_stage = "pre_offtake_agreement"
+        defaulted.append("decision_stage")
+    if not project_name:
+        project_name = f"{origin_jurisdiction} {commodity.replace('_', ' ').title()} Strategic Supply Project"
+        defaulted.append("project_name")
+    if not decision_question:
+        decision_question = (
+            f"What compliance, traceability, and ESG sources are required before entering a "
+            f"{decision_stage.replace('_', ' ')} for {commodity} originating from {origin_jurisdiction}?"
+        )
+        defaulted.append("decision_question")
+
+    result: dict[str, Any] = {
+        "project_name": project_name,
+        "commodity": commodity,
+        "origin_jurisdiction": origin_jurisdiction,
+        "decision_stage": decision_stage,
+        "decision_question": decision_question,
+        "supplied_sources": supplied_sources,
+        "inferred_parameters": bool(defaulted),
+    }
+    if processing_jurisdiction:
+        result["processing_jurisdiction"] = processing_jurisdiction
+    if "target_market" in input_data and input_data["target_market"] in {
+        "eu",
+        "us",
+        "uk",
+        "japan_korea",
+        "global",
+        "domestic",
+    }:
+        result["target_market"] = input_data["target_market"]
+
+    return result
+
+
 def critical_minerals_due_diligence(request_json: dict) -> dict:
     """Build a structured Critical Minerals & Strategic Raw Materials due-diligence response.
 
@@ -4292,11 +4450,34 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
     Does not perform mineral assay testing, verify factual truth, or provide
     legal / sanctions / trade-compliance / ESG certification / investment advice.
     """
-    request_failure = _validation_failure(
-        _validate_json(request_json, "critical-minerals-due-diligence-request.schema.json")
-    )
-    if request_failure is not None:
-        return request_failure
+    if not isinstance(request_json, dict):
+        return _validation_failure({"valid": False, "errors": ["request must be a JSON object"]})
+
+    inferred = bool(request_json.get("inferred_parameters", False))
+    clean_request = {k: v for k, v in request_json.items() if k != "inferred_parameters"}
+
+    validation = _validate_json(clean_request, "critical-minerals-due-diligence-request.schema.json")
+    if not validation.get("valid"):
+        has_fallback_hint = bool(
+            request_json.get("auto_complete")
+            or request_json.get("prompt")
+            or request_json.get("query")
+            or request_json.get("text")
+        )
+        if has_fallback_hint:
+            raw_text = str(request_json.get("prompt") or request_json.get("query") or request_json.get("text") or "")
+            extracted = extract_critical_minerals_parameters(request_json, raw_text)
+            clean_fallback = {k: v for k, v in extracted.items() if k != "inferred_parameters"}
+            fallback_validation = _validate_json(clean_fallback, "critical-minerals-due-diligence-request.schema.json")
+            if fallback_validation.get("valid"):
+                inferred = extracted.get("inferred_parameters", True)
+                clean_request = clean_fallback
+            else:
+                return _validation_failure(validation)
+        else:
+            return _validation_failure(validation)
+
+    request_json = clean_request
 
     supplied_sources = _critical_minerals_supplied_types(request_json)
     (
@@ -4408,4 +4589,5 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
         "valid": True,
         "errors": [],
         "response": response,
+        "inferred_parameters": inferred,
     }

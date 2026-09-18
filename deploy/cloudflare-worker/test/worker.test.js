@@ -8827,6 +8827,82 @@ test("POST /v1/corridor-bankability/screen supports smart fallback for unstructu
   assert.equal(data.x402_unlock.amount_usdc, 25.0);
 });
 
+test("critical_minerals_due_diligence supports smart fallback for unstructured prompt", async () => {
+  const env = { AGENT_PROFILE: "critical_minerals_due_diligence" };
+  const response = await handleRequest(
+    new Request("https://critical-minerals-due-diligence-a2a.example.workers.dev/message/send", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "a2a-smart-fallback-minerals",
+        method: "message/send",
+        params: {
+          prompt: "Due diligence for rare earth extraction project in East Kazakhstan for EU offtake"
+        }
+      })
+    }),
+    env,
+    {}
+  );
+  const json = await response.json();
+  const task = json.result.task || json.result;
+  assert.equal(task.status.state, "TASK_STATE_COMPLETED");
+  assert.equal(task.metadata.inferred_parameters, true);
+  assert.equal(task.metadata.product_profile, "critical_minerals_due_diligence");
+  assert.ok(task.artifacts && task.artifacts.length > 0);
+  const text = task.artifacts[0].parts[0].text;
+  assert.match(text, /rare[_ ]earth/i);
+  assert.match(text, /Kazakhstan/i);
+});
+
+test("POST /v1/critical-minerals/due-diligence supports smart fallback with prompt", async () => {
+  const env = { AGENT_PROFILE: "critical_minerals_due_diligence" };
+  const response = await handleRequest(
+    new Request("https://critical-minerals-due-diligence-a2a.example.workers.dev/v1/critical-minerals/due-diligence", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Diligence for lithium mine in Karaganda"
+      })
+    }),
+    env,
+    {}
+  );
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.commodity, "lithium");
+  assert.equal(json.origin_jurisdiction, "Kazakhstan");
+});
+
+test("dual_use_technology_export supports smart fallback for unstructured prompt", async () => {
+  const env = { AGENT_PROFILE: "dual_use_technology_export" };
+  const response = await handleRequest(
+    new Request("https://dual-use-technology-export-a2a.example.workers.dev/message/send", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "a2a-smart-fallback-dual-use",
+        method: "message/send",
+        params: {
+          prompt: "Export 5-axis CNC machining center HS 8457.10 from Germany to Kazakhstan"
+        }
+      })
+    }),
+    env,
+    {}
+  );
+  const json = await response.json();
+  const task = json.result.task || json.result;
+  assert.equal(task.status.state, "TASK_STATE_COMPLETED");
+  assert.equal(task.metadata.inferred_parameters, true);
+  assert.equal(task.metadata.product_profile, "dual_use_technology_export");
+  const text = task.artifacts[0].parts[0].text;
+  assert.match(text, /Dual-Use Technology/i);
+});
+
+
 
 
 

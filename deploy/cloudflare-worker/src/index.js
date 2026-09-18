@@ -7898,6 +7898,137 @@ function criticalMineralsArtifactText(response) {
   ].join("\n");
 }
 
+export function extractCriticalMineralsParameters(input = {}, rawText = "") {
+  let text = typeof rawText === "string" ? rawText : "";
+  if (!text) text = extractText(input);
+  if (!text && typeof input.prompt === "string") text = input.prompt;
+  if (!text && typeof input.query === "string") text = input.query;
+
+  const defaulted = [];
+  let commodity = input.commodity;
+  let origin_jurisdiction = input.origin_jurisdiction;
+  let processing_jurisdiction = input.processing_jurisdiction;
+  let decision_stage = input.decision_stage;
+  let project_name = input.project_name;
+  let decision_question = input.decision_question;
+  const supplied_sources = Array.isArray(input.supplied_sources) ? input.supplied_sources : [];
+
+  const lower = (text || "").toLowerCase();
+
+  if (!commodity && text) {
+    if (lower.includes("lithium") || lower.includes("литий")) commodity = "lithium";
+    else if (lower.includes("rare earth") || lower.includes("редкоземельн") || lower.includes("ree") || lower.includes("рзм")) {
+      commodity = "rare_earth_elements";
+    } else if (lower.includes("gallium") || lower.includes("галлий") || lower.includes("germanium") || lower.includes("германий")) {
+      commodity = "gallium_germanium";
+    } else if (lower.includes("graphite") || lower.includes("графит")) commodity = "graphite";
+    else if (lower.includes("cobalt") || lower.includes("кобальт")) commodity = "cobalt";
+    else if (lower.includes("nickel") || lower.includes("никель")) commodity = "nickel";
+    else if (lower.includes("copper") || lower.includes("медь")) commodity = "copper";
+    else if (lower.includes("tungsten") || lower.includes("вольфрам")) commodity = "tungsten";
+    else if (lower.includes("manganese") || lower.includes("марганец")) commodity = "manganese";
+    else if (
+      lower.includes("antimony") || lower.includes("титан") || lower.includes("titanium") ||
+      lower.includes("tantalum") || lower.includes("тантал") || lower.includes("niobium") ||
+      lower.includes("beryllium") || lower.includes("uranium") || lower.includes("bauxite") ||
+      lower.includes("platinum") || lower.includes("palladium") || lower.includes("silicon")
+    ) {
+      commodity = "other_critical_mineral";
+    }
+  }
+
+  if (!origin_jurisdiction && text) {
+    if (lower.includes("kazakhstan") || lower.includes("казахстан") || lower.includes("karaganda") || lower.includes("astana") || lower.includes("almaty")) {
+      origin_jurisdiction = "Kazakhstan";
+    } else if (lower.includes("uzbekistan") || lower.includes("узбекистан") || lower.includes("tashkent") || lower.includes("navoi")) {
+      origin_jurisdiction = "Uzbekistan";
+    } else if (lower.includes("kyrgyzstan") || lower.includes("кыргызстан") || lower.includes("bishkek")) {
+      origin_jurisdiction = "Kyrgyzstan";
+    } else if (lower.includes("mongolia") || lower.includes("монголия")) {
+      origin_jurisdiction = "Mongolia";
+    } else if (lower.includes("armenia") || lower.includes("армения")) {
+      origin_jurisdiction = "Armenia";
+    } else if (lower.includes("georgia") || lower.includes("грузия")) {
+      origin_jurisdiction = "Georgia";
+    } else if (lower.includes("azerbaijan") || lower.includes("азербайджан")) {
+      origin_jurisdiction = "Azerbaijan";
+    } else if (lower.includes("turkey") || lower.includes("турция") || lower.includes("türkiye")) {
+      origin_jurisdiction = "Turkey";
+    } else if (lower.includes("drc") || lower.includes("congo") || lower.includes("конго")) {
+      origin_jurisdiction = "Democratic Republic of the Congo";
+    } else if (lower.includes("chile") || lower.includes("чили")) {
+      origin_jurisdiction = "Chile";
+    } else if (lower.includes("australia") || lower.includes("австралия")) {
+      origin_jurisdiction = "Australia";
+    } else if (lower.includes("china") || lower.includes("китай")) {
+      origin_jurisdiction = "China";
+    }
+  }
+
+  if (!processing_jurisdiction && text) {
+    if (lower.includes("china") || lower.includes("chinese smelter") || lower.includes("китай")) {
+      processing_jurisdiction = "China";
+    } else if (lower.includes("russia") || lower.includes("россия")) {
+      processing_jurisdiction = "Russia";
+    } else if (lower.includes("eu") || lower.includes("europe") || lower.includes("европ")) {
+      processing_jurisdiction = "European Union";
+    }
+  }
+
+  if (!decision_stage && text) {
+    if (lower.includes("offtake") || lower.includes("офтейк") || lower.includes("supply contract")) {
+      decision_stage = "pre_offtake_agreement";
+    } else if (lower.includes("investment") || lower.includes("инвестиц") || lower.includes("financing")) {
+      decision_stage = "pre_investment_decision";
+    } else if (lower.includes("export") || lower.includes("экспорт") || lower.includes("shipment") || lower.includes("отгруз")) {
+      decision_stage = "pre_export_shipment";
+    } else if (lower.includes("exploration") || lower.includes("геологоразведк") || lower.includes("разведк")) {
+      decision_stage = "pre_exploration";
+    } else if (lower.includes("processing") || lower.includes("переработк") || lower.includes("обогащен")) {
+      decision_stage = "pre_processing_contract";
+    }
+  }
+
+  if (!commodity) {
+    commodity = "rare_earth_elements";
+    defaulted.push("commodity");
+  }
+  if (!origin_jurisdiction) {
+    origin_jurisdiction = "Kazakhstan";
+    defaulted.push("origin_jurisdiction");
+  }
+  if (!decision_stage) {
+    decision_stage = "pre_offtake_agreement";
+    defaulted.push("decision_stage");
+  }
+  if (!project_name) {
+    project_name = `${origin_jurisdiction} ${commodity.charAt(0).toUpperCase() + commodity.slice(1)} Strategic Supply Project`;
+    defaulted.push("project_name");
+  }
+  if (!decision_question) {
+    decision_question = `What compliance, traceability, and ESG sources are required before entering a ${decision_stage.replace(/_/g, " ")} for ${commodity} originating from ${origin_jurisdiction}?`;
+    defaulted.push("decision_question");
+  }
+  if (!Array.isArray(input.supplied_sources)) {
+    defaulted.push("supplied_sources");
+  }
+
+  const result = {
+    project_name,
+    commodity,
+    origin_jurisdiction,
+    decision_stage,
+    decision_question,
+    supplied_sources,
+    inferred_parameters: defaulted.length > 0
+  };
+  if (processing_jurisdiction) result.processing_jurisdiction = processing_jurisdiction;
+  if (input.target_market) result.target_market = input.target_market;
+
+  Object.defineProperty(result, DEFAULTED_REQUEST_FIELDS, { value: defaulted, enumerable: false });
+  return result;
+}
+
 function structuredCriticalMineralsRequestFromParams(params) {
   if (!params || typeof params !== "object") return null;
   const candidates = [
@@ -7929,7 +8060,17 @@ function structuredCriticalMineralsRequestFromParams(params) {
 }
 
 async function a2aResultForCriticalMinerals(params, request, env = {}) {
-  const structured = structuredCriticalMineralsRequestFromParams(params);
+  let structured = structuredCriticalMineralsRequestFromParams(params);
+  if (!structured) {
+    const hasFallbackHint = Boolean(
+      params.auto_complete || params.prompt ||
+      (params.request && (params.request.auto_complete || params.request.prompt))
+    );
+    if (hasFallbackHint) {
+      const rawText = (extractText(params) || params.prompt || params.query || params.text || "").trim();
+      structured = extractCriticalMineralsParameters(params.request || params || {}, rawText);
+    }
+  }
   if (!structured) {
     return requestGuidanceResult(
       "critical_minerals_due_diligence",
@@ -7977,6 +8118,7 @@ async function a2aResultForCriticalMinerals(params, request, env = {}) {
       product_profile: "critical_minerals_due_diligence",
       canonical_http_endpoint: "/v1/critical-minerals/due-diligence",
       schema: "schemas/v1/critical-minerals-due-diligence-request.schema.json",
+      inferred_parameters: Boolean(structured.inferred_parameters),
       human_review_required: result.response.human_review_required,
       not_advice_notice: result.response.not_advice_notice,
       vizier_status: result.vizier_status,
@@ -8062,6 +8204,141 @@ function dualUseTechnologyExportErrors(request) {
     errors.push("risk_question is required");
   }
   return errors;
+}
+
+export function extractDualUseParameters(input = {}, rawText = "") {
+  let text = typeof rawText === "string" ? rawText : "";
+  if (!text) text = extractText(input);
+  if (!text && typeof input.prompt === "string") text = input.prompt;
+  if (!text && typeof input.query === "string") text = input.query;
+
+  const defaulted = [];
+  const rawShipment = (input.shipment && typeof input.shipment === "object") ? input.shipment : input;
+  let hs_code = rawShipment.hs_code;
+  let description = rawShipment.description;
+  let origin = rawShipment.origin;
+  let destination = rawShipment.destination;
+  let end_user_sector = rawShipment.end_user_sector;
+  const transit_countries = Array.isArray(rawShipment.transit_countries) ? rawShipment.transit_countries : [];
+  const dated_sources = Array.isArray(input.dated_sources) ? input.dated_sources : [];
+  let risk_question = input.risk_question;
+
+  const lower = (text || "").toLowerCase();
+
+  // 1. HS Code
+  if (!hs_code && text) {
+    const hsMatch = text.match(/\bHS(?:\s*code)?\s*[:#-]?\s*(\d{4}(?:\.\d{2,4})?|\d{6,10})\b/i);
+    if (hsMatch) {
+      hs_code = hsMatch[1];
+    } else {
+      const codeMatch = text.match(/\b(8457(?:\.\d+)?|8542(?:\.\d+)?|8806(?:\.\d+)?|9013(?:\.\d+)?|8526(?:\.\d+)?|8471(?:\.\d+)?)\b/);
+      if (codeMatch) hs_code = codeMatch[1];
+    }
+  }
+
+  // 2. Route
+  if ((!origin || !destination) && text) {
+    const routeMatch = text.match(
+      /\bfrom\s+([\p{L}][\p{L} .'-]{1,38}?)\s+to\s+([\p{L}][\p{L} .'-]{1,38}?)(?=[,;.!?]|\s+(?:via|with|for)\b|$)/iu
+    );
+    if (routeMatch) {
+      if (!origin) origin = boundedText(routeMatch[1], 40);
+      if (!destination) destination = boundedText(routeMatch[2], 40);
+    }
+  }
+
+  if (!origin && text) {
+    if (lower.includes("germany") || lower.includes("германия") || lower.includes("deutschland")) origin = "DE";
+    else if (lower.includes("united states") || lower.includes("usa") || lower.includes("сша")) origin = "US";
+    else if (lower.includes("china") || lower.includes("китай")) origin = "CN";
+    else if (lower.includes("taiwan") || lower.includes("тайвань")) origin = "TW";
+    else if (lower.includes("japan") || lower.includes("япония")) origin = "JP";
+  }
+
+  if (!destination && text) {
+    if (lower.includes("kazakhstan") || lower.includes("казахстан") || lower.includes("almaty") || lower.includes("astana")) destination = "KZ";
+    else if (lower.includes("uzbekistan") || lower.includes("узбекистан") || lower.includes("tashkent")) destination = "UZ";
+    else if (lower.includes("kyrgyzstan") || lower.includes("кыргызстан") || lower.includes("bishkek")) destination = "KG";
+    else if (lower.includes("russia") || lower.includes("россия") || lower.includes("moscow")) destination = "RU";
+    else if (lower.includes("turkey") || lower.includes("турция")) destination = "TR";
+    else if (lower.includes("uae") || lower.includes("dubai") || lower.includes("оаэ")) destination = "AE";
+  }
+
+  // 3. Description
+  if (!description && text) {
+    if (lower.includes("cnc") || lower.includes("milling") || lower.includes("machining") || lower.includes("станки") || lower.includes("станок")) {
+      description = "CNC Machining centers for working metal";
+    } else if (lower.includes("microchip") || lower.includes("semiconductor") || lower.includes("processor") || lower.includes("чип") || lower.includes("микросхем")) {
+      description = "Electronic integrated circuits and microcontrollers";
+    } else if (lower.includes("drone") || lower.includes("uav") || lower.includes("бпла") || lower.includes("дрон")) {
+      description = "Unmanned aerial vehicles (drones) and avionics components";
+    } else if (lower.includes("laser") || lower.includes("optical") || lower.includes("лазер") || lower.includes("оптик")) {
+      description = "Lasers and precision optical equipment";
+    } else if (lower.includes("radar") || lower.includes("gnss") || lower.includes("радар") || lower.includes("навигац")) {
+      description = "Radar apparatus and radio navigation equipment";
+    }
+  }
+
+  // 4. End user sector
+  if (!end_user_sector && text) {
+    if (lower.includes("military") || lower.includes("военн") || lower.includes("defense") || lower.includes("оборон")) {
+      end_user_sector = "military";
+    } else if (lower.includes("aerospace") || lower.includes("авиац") || lower.includes("космос")) {
+      end_user_sector = "aerospace";
+    } else if (lower.includes("commercial") || lower.includes("коммерческ")) {
+      end_user_sector = "commercial";
+    } else if (lower.includes("industrial") || lower.includes("промышленн") || lower.includes("manufacturing")) {
+      end_user_sector = "industrial";
+    }
+  }
+
+  // 5. Defaults
+  if (!hs_code) {
+    hs_code = "8457.10";
+    defaulted.push("shipment.hs_code");
+  }
+  if (!description) {
+    description = "Machining centers for working metal";
+    defaulted.push("shipment.description");
+  }
+  if (!origin) {
+    origin = "DE";
+    defaulted.push("shipment.origin");
+  }
+  if (!destination) {
+    destination = "KZ";
+    defaulted.push("shipment.destination");
+  }
+  if (!end_user_sector) {
+    end_user_sector = "industrial";
+    defaulted.push("shipment.end_user_sector");
+  }
+  if (!risk_question) {
+    risk_question = `What export control licenses, end-user verification, and diversion risks apply to exporting ${description} (HS ${hs_code}) from ${origin} to ${destination}?`;
+    defaulted.push("risk_question");
+  }
+  if (!Array.isArray(input.dated_sources)) {
+    defaulted.push("dated_sources");
+  }
+
+  const shipment = {
+    hs_code,
+    description,
+    origin,
+    destination,
+    end_user_sector,
+    transit_countries
+  };
+
+  const result = {
+    shipment,
+    dated_sources,
+    risk_question,
+    inferred_parameters: defaulted.length > 0
+  };
+
+  Object.defineProperty(result, DEFAULTED_REQUEST_FIELDS, { value: defaulted, enumerable: false });
+  return result;
 }
 
 function structuredDualUseTechnologyExportRequestFromParams(params) {
@@ -8184,7 +8461,17 @@ function dualUseTechnologyExportArtifactText(response) {
 }
 
 async function a2aResultForDualUseTechnologyExport(params, request, env = {}) {
-  const structured = structuredDualUseTechnologyExportRequestFromParams(params);
+  let structured = structuredDualUseTechnologyExportRequestFromParams(params);
+  if (!structured) {
+    const hasFallbackHint = Boolean(
+      params.auto_complete || params.prompt ||
+      (params.request && (params.request.auto_complete || params.request.prompt))
+    );
+    if (hasFallbackHint) {
+      const rawText = (extractText(params) || params.prompt || params.query || params.text || "").trim();
+      structured = extractDualUseParameters(params.request || params || {}, rawText);
+    }
+  }
   if (!structured) {
     const text = extractText(params).trim();
     if (text) {
@@ -8244,6 +8531,7 @@ async function a2aResultForDualUseTechnologyExport(params, request, env = {}) {
     metadata: {
       product_profile: "dual_use_technology_export",
       schema: "schemas/v1/dual-use-technology-export-request.schema.json",
+      inferred_parameters: Boolean(structured.inferred_parameters),
       human_review_required: true,
       response,
       ...(vizier_status ? { vizier_status } : {}),
@@ -14798,7 +15086,15 @@ const DIRECT_V1_ROUTES = {
     guideProfile: "critical_minerals_due_diligence",
     schema: "schemas/v1/critical-minerals-due-diligence-request.schema.json",
     missing: "Missing structured critical minerals due diligence request",
-    extract: structuredCriticalMineralsRequestFromParams,
+    extract: (params) => {
+      const strict = structuredCriticalMineralsRequestFromParams(params);
+      if (strict) return strict;
+      const rawText = (extractText(params) || params.prompt || params.query || params.text || "").trim();
+      if (rawText || params.auto_complete) {
+        return extractCriticalMineralsParameters(params.request || params || {}, rawText);
+      }
+      return null;
+    },
     errorsFor: criticalMineralsErrors,
     run: async (structured, request, env) => {
       let vizierMinerals = null;

@@ -7,7 +7,11 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
-from agenda_intelligence.services import critical_minerals_due_diligence
+from agenda_intelligence import a2a_adapter
+from agenda_intelligence.services import (
+    critical_minerals_due_diligence,
+    extract_critical_minerals_parameters,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUEST_SCHEMA_PATH = ROOT / "schemas" / "v1" / "critical-minerals-due-diligence-request.schema.json"
@@ -51,3 +55,48 @@ def test_dual_copy_parity():
     ]
     for src, dst in pairs:
         assert src.read_bytes() == dst.read_bytes(), f"Mismatch between {src} and {dst}"
+
+
+def test_extract_critical_minerals_parameters_unstructured_prompt():
+    prompt = "Due diligence for rare earth extraction project in East Kazakhstan for EU offtake"
+    extracted = extract_critical_minerals_parameters(raw_text=prompt)
+    assert extracted["commodity"] == "rare_earth_elements"
+    assert extracted["origin_jurisdiction"] == "Kazakhstan"
+    assert extracted["decision_stage"] == "pre_offtake_agreement"
+    assert extracted["inferred_parameters"] is True
+    assert isinstance(extracted["supplied_sources"], list)
+
+    validator = Draft202012Validator(load_json(REQUEST_SCHEMA_PATH))
+    clean = {k: v for k, v in extracted.items() if k != "inferred_parameters"}
+    validator.validate(clean)
+
+
+def test_critical_minerals_due_diligence_smart_fallback():
+    prompt_req = {
+        "prompt": "Evaluate lithium supply chain from Karaganda, Kazakhstan",
+        "auto_complete": True,
+    }
+    result = critical_minerals_due_diligence(prompt_req)
+    assert result["valid"] is True
+    assert result["inferred_parameters"] is True
+    assert result["response"]["commodity"] == "lithium"
+    assert result["response"]["origin_jurisdiction"] == "Kazakhstan"
+
+
+def test_a2a_critical_minerals_smart_fallback():
+    payload = {
+        "jsonrpc": "2.0",
+        "id": "req-smart-fallback-cm",
+        "method": "message/send",
+        "params": {
+            "capability": "critical_minerals_due_diligence",
+            "prompt": "Due diligence for rare earth extraction project in East Kazakhstan",
+        },
+    }
+    response = a2a_adapter.handle_jsonrpc(payload)
+    assert "error" not in response
+    task = response["result"]
+    assert task["status"]["state"] == "TASK_STATE_COMPLETED"
+    assert task["metadata"]["inferred_parameters"] is True
+    assert task["metadata"]["product_profile"] == "critical_minerals_due_diligence"
+    assert len(task["artifacts"]) > 0

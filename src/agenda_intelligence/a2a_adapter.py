@@ -539,6 +539,47 @@ def _candidate_objects_from_params(params: dict) -> list[dict]:
     return parsed_candidates
 
 
+def _extract_text_from_params(params: dict) -> str:
+    if not isinstance(params, dict):
+        return ""
+    if isinstance(params.get("text"), str) and params["text"].strip():
+        return params["text"].strip()
+    if isinstance(params.get("prompt"), str) and params["prompt"].strip():
+        return params["prompt"].strip()
+    if isinstance(params.get("query"), str) and params["query"].strip():
+        return params["query"].strip()
+    if isinstance(params.get("message"), str) and params["message"].strip():
+        return params["message"].strip()
+
+    req = params.get("request")
+    if isinstance(req, dict):
+        if isinstance(req.get("text"), str) and req["text"].strip():
+            return req["text"].strip()
+        if isinstance(req.get("prompt"), str) and req["prompt"].strip():
+            return req["prompt"].strip()
+        if isinstance(req.get("query"), str) and req["query"].strip():
+            return req["query"].strip()
+
+    message = params.get("message")
+    if isinstance(message, dict):
+        if isinstance(message.get("text"), str) and message["text"].strip():
+            return message["text"].strip()
+        parts = message.get("parts")
+        if isinstance(parts, list):
+            texts = []
+            for part in parts:
+                if not isinstance(part, dict):
+                    continue
+                if isinstance(part.get("text"), str) and part["text"].strip():
+                    texts.append(part["text"].strip())
+                elif isinstance(part.get("content"), str) and part["content"].strip():
+                    texts.append(part["content"].strip())
+            if texts:
+                return "\n".join(texts)
+
+    return ""
+
+
 def _capability_from_params(params: dict) -> str | None:
     for key in ["capability", "tool", "skill"]:
         value = params.get(key)
@@ -696,6 +737,20 @@ def critical_minerals_request_from_params(params: dict) -> dict | None:
     for candidate in candidates:
         if _looks_like_critical_minerals_request(candidate):
             return candidate
+
+    has_fallback_hint = bool(
+        params.get("auto_complete")
+        or params.get("prompt")
+        or (
+            isinstance(params.get("request"), dict)
+            and (params["request"].get("auto_complete") or params["request"].get("prompt"))
+        )
+    )
+    if has_fallback_hint:
+        raw_text = _extract_text_from_params(params)
+        req_candidate = params.get("request") if isinstance(params.get("request"), dict) else params
+        return services.extract_critical_minerals_parameters(req_candidate, raw_text)
+
     return None
 
 
@@ -1121,6 +1176,7 @@ def a2a_result_for_critical_minerals_due_diligence(request_json: dict) -> dict:
         }
 
     response = result["response"]
+    inferred = bool(result.get("inferred_parameters", request_json.get("inferred_parameters", False)))
     return {
         "id": "agenda-intelligence-a2a-result",
         "status": {"state": "TASK_STATE_COMPLETED"},
@@ -1135,6 +1191,7 @@ def a2a_result_for_critical_minerals_due_diligence(request_json: dict) -> dict:
             "product_profile": "critical_minerals_due_diligence",
             "canonical_http_endpoint": CRITICAL_MINERALS_ENDPOINT,
             "schema": CRITICAL_MINERALS_SCHEMA,
+            "inferred_parameters": inferred,
             "human_review_required": response["human_review_required"],
             "not_advice_notice": response["not_advice_notice"],
             "response": response,
