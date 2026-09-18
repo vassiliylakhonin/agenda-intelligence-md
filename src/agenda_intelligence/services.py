@@ -4451,7 +4451,8 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
     legal / sanctions / trade-compliance / ESG certification / investment advice.
     """
     if not isinstance(request_json, dict):
-        return _validation_failure({"valid": False, "errors": ["request must be a JSON object"]})
+        failure = _validation_failure({"valid": False, "errors": ["request must be a JSON object"]})
+        return failure if failure is not None else {}
 
     inferred = bool(request_json.get("inferred_parameters", False))
     clean_request = {k: v for k, v in request_json.items() if k != "inferred_parameters"}
@@ -4473,9 +4474,11 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
                 inferred = extracted.get("inferred_parameters", True)
                 clean_request = clean_fallback
             else:
-                return _validation_failure(validation)
+                failure = _validation_failure(validation)
+                return failure if failure is not None else {}
         else:
-            return _validation_failure(validation)
+            failure = _validation_failure(validation)
+            return failure if failure is not None else {}
 
     request_json = clean_request
 
