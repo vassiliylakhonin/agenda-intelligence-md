@@ -651,6 +651,20 @@ def cis_secondary_sanctions_request_from_params(params: dict) -> dict | None:
     for candidate in candidates:
         if _looks_like_cis_secondary_sanctions_request(candidate):
             return candidate
+
+    has_fallback_hint = bool(
+        params.get("auto_complete")
+        or params.get("prompt")
+        or (
+            isinstance(params.get("request"), dict)
+            and (params["request"].get("auto_complete") or params["request"].get("prompt"))
+        )
+    )
+    if has_fallback_hint:
+        raw_text = _extract_text_from_params(params)
+        req_candidate = params.get("request") if isinstance(params.get("request"), dict) else params
+        return services.extract_cis_secondary_sanctions_parameters(req_candidate, raw_text)
+
     return None
 
 
@@ -679,6 +693,20 @@ def gulf_maritime_request_from_params(params: dict) -> dict | None:
     for candidate in candidates:
         if _looks_like_gulf_maritime_request(candidate):
             return candidate
+
+    has_fallback_hint = bool(
+        params.get("auto_complete")
+        or params.get("prompt")
+        or (
+            isinstance(params.get("request"), dict)
+            and (params["request"].get("auto_complete") or params["request"].get("prompt"))
+        )
+    )
+    if has_fallback_hint:
+        raw_text = _extract_text_from_params(params)
+        req_candidate = params.get("request") if isinstance(params.get("request"), dict) else params
+        return services.extract_gulf_maritime_parameters(req_candidate, raw_text)
+
     return None
 
 
@@ -988,6 +1016,7 @@ def a2a_result_for_cis_secondary_sanctions(request_json: dict) -> dict:
             "product_profile": "cis_secondary_sanctions",
             "canonical_http_endpoint": CIS_SECONDARY_SANCTIONS_ENDPOINT,
             "schema": CIS_SECONDARY_SANCTIONS_SCHEMA,
+            "inferred_parameters": bool(result.get("inferred_parameters", False)),
             "live_retrieval_status": live_retrieval_status,
             "auto_fetched_sources": result.get("auto_fetched_sources", []),
             "upstream_attribution": result.get("upstream_attribution"),
@@ -1059,6 +1088,7 @@ def a2a_result_for_gulf_maritime_exposure(request_json: dict) -> dict:
             "product_profile": "gulf_maritime_exposure",
             "canonical_http_endpoint": GULF_MARITIME_ENDPOINT,
             "schema": GULF_MARITIME_SCHEMA,
+            "inferred_parameters": bool(result.get("inferred_parameters", False)),
             "human_review_required": response["human_review_required"],
             "not_advice_notice": response["not_advice_notice"],
             "response": response,

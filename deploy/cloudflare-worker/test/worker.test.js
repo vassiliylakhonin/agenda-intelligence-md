@@ -8902,6 +8902,102 @@ test("dual_use_technology_export supports smart fallback for unstructured prompt
   assert.match(text, /Dual-Use Technology/i);
 });
 
+test("cis_secondary_sanctions supports smart fallback for unstructured prompt", async () => {
+  const env = { AGENT_PROFILE: "cis_secondary_sanctions", OPENSANCTIONS_DISABLED: "1" };
+  const response = await handleRequest(
+    new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/message/send", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "a2a-smart-fallback-cis",
+        method: "message/send",
+        params: {
+          prompt: "Screen LLP KazTransSupply in Kazakhstan for secondary sanctions and transit re-export risk"
+        }
+      })
+    }),
+    env,
+    {}
+  );
+  const json = await response.json();
+  const task = json.result.task || json.result;
+  assert.equal(task.status.state, "TASK_STATE_COMPLETED");
+  assert.equal(task.metadata.inferred_parameters, true);
+  assert.equal(task.metadata.product_profile, "cis_secondary_sanctions");
+  const text = task.artifacts[0].parts[0].text;
+  assert.match(text, /transit or re-export exposure/i);
+  assert.equal(task.metadata.response.counterparty.jurisdiction, "Kazakhstan");
+  assert.equal(task.metadata.response.counterparty.name, "LLP KazTransSupply");
+});
+
+test("POST /v1/cis-secondary-sanctions/exposure supports smart fallback with prompt", async () => {
+  const env = { AGENT_PROFILE: "cis_secondary_sanctions", OPENSANCTIONS_DISABLED: "1" };
+  const response = await handleRequest(
+    new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/v1/cis-secondary-sanctions/exposure", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Check LLP Eurasia Logistics in Kazakhstan"
+      })
+    }),
+    env,
+    {}
+  );
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.counterparty.jurisdiction, "Kazakhstan");
+  assert.ok(json.exposure_facets.length > 0);
+});
+
+test("gulf_maritime_exposure supports smart fallback for unstructured prompt", async () => {
+  const env = { AGENT_PROFILE: "gulf_maritime_exposure", MARITIME_VIZIER_DISABLED: "1" };
+  const response = await handleRequest(
+    new Request("https://gulf-maritime-exposure-a2a.example.workers.dev/message/send", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "a2a-smart-fallback-gulf",
+        method: "message/send",
+        params: {
+          prompt: "Assess MT Gulf Pioneer transiting Strait of Hormuz carrying crude oil for dark fleet indicators"
+        }
+      })
+    }),
+    env,
+    {}
+  );
+  const json = await response.json();
+  const task = json.result.task || json.result;
+  assert.equal(task.status.state, "TASK_STATE_COMPLETED");
+  assert.equal(task.metadata.inferred_parameters, true);
+  assert.equal(task.metadata.product_profile, "gulf_maritime_exposure");
+  assert.ok(task.artifacts && task.artifacts.length > 0);
+  const text = task.artifacts[0].parts[0].text;
+  assert.match(text, /Gulf maritime exposure/i);
+});
+
+test("POST /v1/gulf-maritime/exposure supports smart fallback with prompt", async () => {
+  const env = { AGENT_PROFILE: "gulf_maritime_exposure", MARITIME_VIZIER_DISABLED: "1" };
+  const response = await handleRequest(
+    new Request("https://gulf-maritime-exposure-a2a.example.workers.dev/v1/gulf-maritime/exposure", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Transit via Bab-el-Mandeb with crude oil"
+      })
+    }),
+    env,
+    {}
+  );
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.voyage.chokepoint, "bab_el_mandeb");
+  assert.equal(json.cargo, "crude oil");
+});
+
+
 
 
 

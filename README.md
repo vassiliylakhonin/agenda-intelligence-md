@@ -396,6 +396,33 @@ These are evaluation fixtures, not customer evidence or production benchmarks.
 
 ---
 
+## Web3 UI & Autonomous Micropayment Rails (x402 on Base)
+
+Agenda Intelligence MD natively integrates the **x402 protocol** on **Base** (Chain ID `8453`, USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`), unlocking zero-custody, machine-to-machine micropayments and self-service compliance intelligence for autonomous AI agents and institutional reviewers.
+
+### Interactive Web3 Screener: `/corridor-bankability`
+
+Visit the interactive Trans-Caspian Corridor Bankability Screener at `/corridor-bankability` on any hosted Worker (e.g., [`https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/corridor-bankability`](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/corridor-bankability)):
+- **Brave / Web3 Wallet Connection**: Native browser wallet connect via Base network.
+- **Instant CapEx & Covenant Stress-Testing**: Evaluate debt covenants, sovereign guarantee backing, and DSCR metrics across Aktau-Baku, Poti-Constanța, and Middle Corridor transit legs.
+- **On-Chain $25 USDC Unlock**: Pay the $25.00 IFI Dossier unlock directly with your wallet to receive an unredacted institutional bankability report with full sensitivity tables and multilateral bank readiness scores.
+
+### Autonomous Agent Discovery & x402 Pricing Tiers
+
+Every agent in the fleet advertises native x402 metadata via `agentCard` to autonomous registries (e.g., `skillget.dev`, `AgenstryBot`, `ZeroMockProof`):
+
+| Tier | Price (USDC on Base) | Scope & Capability | Endpoint |
+|---|---|---|---|
+| **Micro-Check** | `$0.05` | Instant single-probe compliance & screening triage | `/v1/settle` |
+| **Corridor Bankability Dossier** | `$25.00` | Full unredacted IFI deal dossier with debt metrics | `/v1/corridor-bankability/screen` |
+| **Dedicated Pro Tenant** | `$490.00` / mo | High-throughput dedicated rate limits & API token | `/v1/settle` |
+
+### Smart Fallback for Autonomous AI Agents
+
+Autonomous agents interacting over A2A (`message/send`) or REST (`/v1/...`) can send natural language prompts (e.g., *"Screen LLP KazTransSupply in Kazakhstan for secondary sanctions"*, *"Due diligence for rare earth extraction in East Kazakhstan"*, or *"Assess MT Gulf Pioneer transiting Hormuz"*). The smart fallback engine heuristics extract counterparties, commodities, chokepoints, and jurisdictions with sensible defaults while explicitly declaring `inferred_parameters: true` to guarantee compliance traceability.
+
+---
+
 ## Status
 
 | Surface | Status |
@@ -407,6 +434,8 @@ These are evaluation fixtures, not customer evidence or production benchmarks.
 | `agenda-intelligence review --format html` | Implemented (Generative UI) |
 | `check_evidence_packet` MCP tool | Implemented |
 | AI Fleet (Vertical Workers) | Active (12 profiles deployed on Cloudflare Edge) |
+| Interactive Web3 UI (`/corridor-bankability`) | Active (Brave / Web3 Wallet on Base) |
+| x402 Base Micropayments | Active (USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) |
 | Agent Financial Guard | Implemented (Pre-sign transaction firewall for AI agents) |
 | M2M Escrow Arbiter & Base Contract | Implemented (Autonomous B2B dispute resolution on Base) |
 | Live Source Retrieval | Optional per profile; currently unconfigured in the hosted fleet |

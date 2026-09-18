@@ -159,3 +159,51 @@ def test_price_cap_attestation_supplied_clears_gap_without_moving_score():
     assert not any("not yet evidenced" in d for d in supplied["top_exposure_dimensions"])
     # the new source type is not in required/context -> decision_readiness_score is unchanged
     assert supplied["decision_readiness_score"] == base["decision_readiness_score"]
+
+
+def test_extract_gulf_maritime_parameters_unstructured_prompt():
+    prompt = "Assess MT Gulf Pioneer transiting Strait of Hormuz carrying crude oil for dark fleet indicators"
+    extracted = services.extract_gulf_maritime_parameters(raw_text=prompt)
+    assert extracted["voyage"]["chokepoint"] == "strait_of_hormuz"
+    assert extracted["cargo"] == "crude oil"
+    assert extracted["vessel"]["name"] == "MT Gulf Pioneer"
+    assert "dark_fleet_indicators" in extracted["exposure_facets"]
+    assert extracted["inferred_parameters"] is True
+    assert isinstance(extracted["dated_sources"], list)
+
+    validator = Draft202012Validator(load_json(REQUEST_SCHEMA_PATH))
+    clean = {k: v for k, v in extracted.items() if k != "inferred_parameters"}
+    validator.validate(clean)
+
+
+def test_gulf_maritime_exposure_smart_fallback():
+    prompt_req = {
+        "prompt": "Evaluate crude oil transit via Bab-el-Mandeb",
+        "auto_complete": True,
+    }
+    result = services.gulf_maritime_exposure(prompt_req)
+    assert result["valid"] is True
+    assert result["inferred_parameters"] is True
+    assert result["response"]["voyage"]["chokepoint"] == "bab_el_mandeb"
+    assert result["response"]["cargo"] == "crude oil"
+
+
+def test_a2a_gulf_maritime_smart_fallback():
+    from agenda_intelligence import a2a_adapter
+
+    payload = {
+        "jsonrpc": "2.0",
+        "id": "req-smart-fallback-gulf",
+        "method": "message/send",
+        "params": {
+            "capability": "gulf_maritime_exposure",
+            "prompt": "Transit through Strait of Hormuz carrying crude oil",
+        },
+    }
+    response = a2a_adapter.handle_jsonrpc(payload)
+    assert "error" not in response
+    task = response["result"]
+    assert task["status"]["state"] == "TASK_STATE_COMPLETED"
+    assert task["metadata"]["inferred_parameters"] is True
+    assert task["metadata"]["product_profile"] == "gulf_maritime_exposure"
+    assert len(task["artifacts"]) > 0

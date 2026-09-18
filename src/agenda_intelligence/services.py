@@ -3106,6 +3106,371 @@ def _cis_top_exposure_dimensions(
     return list(dict.fromkeys(dims))
 
 
+CIS_TEXT_JURISDICTIONS: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"(?:\bkazakhstan\b|\bkz\b|\bastana\b|\balmaty\b|казахстан|астана|алматы)", re.I), "Kazakhstan"),
+    (re.compile(r"(?:\bkyrgyzstan\b|\bkg\b|\bbishkek\b|кыргызстан|киргизия|бишкек)", re.I), "Kyrgyzstan"),
+    (re.compile(r"(?:\buzbekistan\b|\buz\b|\btashkent\b|узбекистан|ташкент)", re.I), "Uzbekistan"),
+    (re.compile(r"(?:\bgeorgia\b|\btbilisi\b|грузия|тбилиси)", re.I), "Georgia"),
+    (re.compile(r"(?:\barmenia\b|\byerevan\b|армения|ереван)", re.I), "Armenia"),
+    (re.compile(r"(?:\bazerbaijan\b|\bbaku\b|азербайджан|баку)", re.I), "Azerbaijan"),
+    (re.compile(r"(?:\bmoldova\b|\bchisinau\b|молдова|кишинев|кишинёв)", re.I), "Moldova"),
+    (re.compile(r"(?:\btajikistan\b|\bdushanbe\b|таджикистан|душанбе)", re.I), "Tajikistan"),
+    (re.compile(r"(?:\bturkmenistan\b|\bashgabat\b|туркменистан|ашхабад)", re.I), "Turkmenistan"),
+]
+
+
+def extract_cis_secondary_sanctions_parameters(request_json: dict | None = None, raw_text: str = "") -> dict[str, Any]:
+    """Extract structured CIS secondary sanctions parameters from unstructured text or partial input."""
+    input_data = request_json if isinstance(request_json, dict) else {}
+    text = raw_text if isinstance(raw_text, str) else ""
+    if not text:
+        if isinstance(input_data.get("prompt"), str):
+            text = input_data["prompt"]
+        elif isinstance(input_data.get("query"), str):
+            text = input_data["query"]
+        elif isinstance(input_data.get("text"), str):
+            text = input_data["text"]
+
+    defaulted: list[str] = []
+    raw_cp_val = input_data.get("counterparty")
+    raw_cp: dict[str, Any] = raw_cp_val if isinstance(raw_cp_val, dict) else {}
+    name = (
+        raw_cp.get("name")
+        or input_data.get("name")
+        or input_data.get("company")
+        or input_data.get("entity")
+        or input_data.get("counterparty_name")
+    )
+    jurisdiction = raw_cp.get("jurisdiction") or input_data.get("jurisdiction")
+    sector = raw_cp.get("sector") or input_data.get("sector")
+
+    raw_facets = input_data.get("exposure_facets")
+    exposure_facets = list(raw_facets) if isinstance(raw_facets, list) else None
+    decision_stage = input_data.get("decision_stage")
+    risk_question = input_data.get("risk_question")
+
+    raw_sources = input_data.get("dated_sources")
+    if isinstance(raw_sources, list):
+        dated_sources = [s for s in raw_sources if isinstance(s, dict)]
+    else:
+        dated_sources = []
+        defaulted.append("dated_sources")
+
+    lower = (text or "").lower()
+
+    if not name and text:
+        cp_match = re.search(
+            r"(?:counterparty|company|entity|контрагент|компания|организация)\s*[:#-]?\s*"
+            r"([A-Za-z0-9\u0400-\u04FF&.'’()_-](?:[A-Za-z0-9\u0400-\u04FF&.'’()_\- ]{0,118}?))"
+            r"(?=\s+(?:in|from|based\s+in|registered\s+in|в|из)\s+|[,;.!?]|$)",
+            text,
+            re.IGNORECASE,
+        )
+        if cp_match:
+            name = cp_match.group(1).strip()
+        else:
+            legal_match = re.search(
+                r"\b(?:LLP|TOO|ТОО|JSC|AO|АО|CJSC|ЗАО|OJSC|ОАО)\s+([A-Za-z0-9\u0400-\u04FF\s.'’\"«»-]+?)"
+                r"(?=[,;.!?]|\s+(?:in|from|based\s+in|for|against)\b|$)",
+                text,
+                re.IGNORECASE,
+            )
+            if legal_match:
+                name = legal_match.group(0).strip()
+            else:
+                action_match = re.search(
+                    r"\b(?:screen|check|audit|diligence\s+for|sanctions\s+check\s+on)\s+"
+                    r"([A-Za-z0-9\u0400-\u04FF\s.'’\"«»-]+?)"
+                    r"(?=\s+(?:in|from|based\s+in|for|against)\b|[,;.!?]|$)",
+                    text,
+                    re.IGNORECASE,
+                )
+                if action_match:
+                    name = action_match.group(1).strip()
+
+    if not jurisdiction and text:
+        for pattern, jur in CIS_TEXT_JURISDICTIONS:
+            if pattern.search(text):
+                jurisdiction = jur
+                break
+
+    if not sector and text:
+        if any(k in lower for k in ["trading", "трейдинг", "торгов"]):
+            sector = "trading_house"
+        elif any(k in lower for k in ["logistics", "forwarder", "логистик", "экспедитор"]):
+            sector = "logistics_forwarder"
+        elif any(k in lower for k in ["bank", "банк"]):
+            sector = "bank"
+        elif any(k in lower for k in ["fintech", "финтех"]):
+            sector = "fintech"
+        elif any(k in lower for k in ["electronics", "ict", "электроник"]):
+            sector = "ict_or_electronics"
+
+    if not exposure_facets and text:
+        facets = []
+        if any(k in lower for k in ["transit", "re-export", "reexport", "транзит", "реэкспорт"]):
+            facets.append("transit_or_re_export")
+        if any(k in lower for k in ["ownership", "control", "beneficial", "собственност", "владел"]):
+            facets.append("ownership_or_control")
+        if any(k in lower for k in ["financial", "payment", "settlement", "платеж", "расчет"]):
+            facets.append("financial_flows")
+        if any(k in lower for k in ["dual use", "dual-use", "ict", "двойн"]):
+            facets.append("ict_or_dual_use_goods")
+        if any(k in lower for k in ["metals", "mining", "металл"]):
+            facets.append("metals_or_mining")
+        if any(k in lower for k in ["energy", "oil", "petrochem", "нефт", "газ"]):
+            facets.append("energy_or_petrochem")
+        if any(k in lower for k in ["grain", "agribusiness", "зерно", "агро"]):
+            facets.append("agribusiness_or_grain")
+        if any(k in lower for k in ["correspondent", "корр"]):
+            facets.append("correspondent_banking")
+        if any(k in lower for k in ["enabler", "intermediary", "посредник"]):
+            facets.append("professional_enablers")
+        if any(k in lower for k in ["shell", "layered", "пустышк"]):
+            facets.append("shell_or_layered_structure")
+        if facets:
+            exposure_facets = facets
+
+    if not decision_stage and text:
+        if any(k in lower for k in ["onboarding", "онбординг"]):
+            decision_stage = "onboarding"
+        elif any(k in lower for k in ["periodic", "периодическ"]):
+            decision_stage = "periodic_review"
+        elif any(k in lower for k in ["transaction", "pre-transaction", "сделк"]):
+            decision_stage = "pre_transaction"
+        elif any(k in lower for k in ["alert", "алерт"]):
+            decision_stage = "post_alert"
+        elif any(k in lower for k in ["committee", "комитет"]):
+            decision_stage = "committee_review"
+
+    if not name:
+        name = "LLP Eurasia Transit Trade"
+        defaulted.append("counterparty.name")
+    if not jurisdiction:
+        jurisdiction = "Kazakhstan"
+        defaulted.append("counterparty.jurisdiction")
+    if not exposure_facets:
+        exposure_facets = ["transit_or_re_export"]
+        defaulted.append("exposure_facets")
+    if not decision_stage:
+        decision_stage = "pre_transaction"
+        defaulted.append("decision_stage")
+    if not risk_question:
+        risk_question = (
+            f"What secondary sanctions exposure, circumvention indicators, and beneficial ownership risks "
+            f"apply to {name} in {jurisdiction}?"
+        )
+        defaulted.append("risk_question")
+
+    counterparty: dict[str, Any] = {"name": name, "jurisdiction": jurisdiction}
+    if sector:
+        counterparty["sector"] = sector
+
+    return {
+        "counterparty": counterparty,
+        "exposure_facets": exposure_facets,
+        "dated_sources": dated_sources,
+        "risk_question": risk_question,
+        "decision_stage": decision_stage,
+        "inferred_parameters": bool(defaulted),
+    }
+
+
+def extract_gulf_maritime_parameters(request_json: dict | None = None, raw_text: str = "") -> dict[str, Any]:
+    """Extract structured Gulf maritime parameters from unstructured text or partial input."""
+    input_data = request_json if isinstance(request_json, dict) else {}
+    text = raw_text if isinstance(raw_text, str) else ""
+    if not text:
+        if isinstance(input_data.get("prompt"), str):
+            text = input_data["prompt"]
+        elif isinstance(input_data.get("query"), str):
+            text = input_data["query"]
+        elif isinstance(input_data.get("text"), str):
+            text = input_data["text"]
+
+    defaulted: list[str] = []
+    raw_voyage_val = input_data.get("voyage")
+    raw_voyage: dict[str, Any] = raw_voyage_val if isinstance(raw_voyage_val, dict) else {}
+    chokepoint = raw_voyage.get("chokepoint") or input_data.get("chokepoint")
+    origin = raw_voyage.get("origin") or input_data.get("origin")
+    destination = raw_voyage.get("destination") or input_data.get("destination")
+
+    raw_vessel_val = input_data.get("vessel")
+    raw_vessel: dict[str, Any] = raw_vessel_val if isinstance(raw_vessel_val, dict) else {}
+    vessel_name = raw_vessel.get("name") or input_data.get("vessel_name")
+    imo = raw_vessel.get("imo") or input_data.get("imo")
+    flag = raw_vessel.get("flag") or input_data.get("flag")
+
+    cargo = input_data.get("cargo")
+    raw_facets = input_data.get("exposure_facets")
+    exposure_facets = list(raw_facets) if isinstance(raw_facets, list) else None
+    decision_stage = input_data.get("decision_stage")
+    risk_question = input_data.get("risk_question")
+
+    raw_sources = input_data.get("dated_sources")
+    if isinstance(raw_sources, list):
+        dated_sources = [s for s in raw_sources if isinstance(s, dict)]
+    else:
+        dated_sources = []
+        defaulted.append("dated_sources")
+
+    lower = (text or "").lower()
+
+    # 1. Chokepoint
+    if not chokepoint and text:
+        if "hormuz" in lower or "ормуз" in lower:
+            chokepoint = "strait_of_hormuz"
+        elif "persian gulf" in lower or "arabian gulf" in lower or "персидск" in lower:
+            chokepoint = "persian_gulf"
+        elif "gulf of oman" in lower or "оманск" in lower:
+            chokepoint = "gulf_of_oman"
+        elif any(k in lower for k in ["bab-el-mandeb", "bab el mandeb", "баб-эль-мандеб", "баб эль мандеб"]):
+            chokepoint = "bab_el_mandeb"
+        elif "red sea" in lower or "красн" in lower:
+            chokepoint = "red_sea"
+        elif "suez" in lower or "суэц" in lower:
+            chokepoint = "suez_canal"
+
+    # 2. Vessel name & IMO
+    if not vessel_name and text:
+        vessel_match = re.search(
+            r"\b(?:vessel|tanker|ship|судно|танкер)\s*[:#-]?\s*([A-Za-z0-9\s.'-]{2,40}?)"
+            r"(?=[,;.!?]|\s+(?:imo|transiting|sailing|flagged|from|to)\b|$)",
+            text,
+            re.IGNORECASE,
+        )
+        if vessel_match:
+            vessel_name = vessel_match.group(1).strip()
+        else:
+            mt_match = re.search(
+                r"\b(?:MT|MV)\s+([A-Za-z0-9\s.'-]{2,40}?)(?=[,;.!?]|\s+(?:imo|transiting|sailing|flagged|from|to)\b|$)",
+                text,
+                re.IGNORECASE,
+            )
+            if mt_match:
+                vessel_name = mt_match.group(0).strip()
+
+    if not imo and text:
+        imo_match = re.search(r"\bIMO\s*[:#-]?\s*(\d{7})\b", text, re.IGNORECASE)
+        if imo_match:
+            imo = imo_match.group(1)
+
+    # 3. Route
+    if (not origin or not destination) and text:
+        route_match = re.search(
+            r"\bfrom\s+([A-Za-z0-9\u0400-\u04FF .'-]{1,38}?)\s+to\s+([A-Za-z0-9\u0400-\u04FF .'-]{1,38}?)"
+            r"(?=[,;.!?]|\s+(?:via|with|for|transiting)\b|$)",
+            text,
+            re.IGNORECASE,
+        )
+        if route_match:
+            if not origin:
+                origin = route_match.group(1).strip()
+            if not destination:
+                destination = route_match.group(2).strip()
+
+    # 4. Cargo
+    if not cargo and text:
+        if "crude oil" in lower or "сырая нефть" in lower or "нефть" in lower:
+            cargo = "crude oil"
+        elif "fuel oil" in lower or "мазут" in lower:
+            cargo = "fuel oil"
+        elif "lng" in lower or "спг" in lower:
+            cargo = "LNG"
+        elif "lpg" in lower or "суг" in lower:
+            cargo = "LPG"
+        elif "condensate" in lower or "конденсат" in lower:
+            cargo = "gas condensate"
+        elif "refined products" in lower or "нефтепродукт" in lower:
+            cargo = "refined petroleum products"
+
+    # 5. Exposure facets
+    if not exposure_facets and text:
+        facets = []
+        if any(k in lower for k in ["iran", "иран", "nioc", "kharg"]):
+            facets.append("iran_oil_exposure")
+        if any(k in lower for k in ["price cap", "price-cap", "потолок цен", "urals", "espo"]):
+            facets.append("russia_oil_price_cap")
+        if any(k in lower for k in ["dark fleet", "shadow fleet", "теневой флот"]):
+            facets.append("dark_fleet_indicators")
+        if any(k in lower for k in ["sts", "ship-to-ship", "борт-в-борт"]):
+            facets.append("sts_transfer")
+        if any(k in lower for k in ["flag hopping", "flag-hopping", "смена флага"]):
+            facets.append("flag_hopping")
+        if any(k in lower for k in ["p&i", "insurance", "страховк"]):
+            facets.append("insurance_or_pi_gap")
+        if any(k in lower for k in ["ais", "spoof", "dark activity", "отключение ais"]):
+            facets.append("ais_manipulation")
+        if any(k in lower for k in ["ownership", "owner", "владелец", "собственник"]):
+            facets.append("ownership_or_control")
+        if any(k in lower for k in ["dual use", "dual-use", "двойного назначения"]):
+            facets.append("dual_use_cargo")
+        if any(k in lower for k in ["chokepoint", "security", "houthi", "хусит", "attack"]):
+            facets.append("chokepoint_disruption")
+        if facets:
+            exposure_facets = facets
+
+    # 6. Decision stage
+    if not decision_stage and text:
+        if any(k in lower for k in ["fixture", "charter", "фрахт"]):
+            decision_stage = "pre_fixture"
+        elif any(k in lower for k in ["voyage", "transit", "рейс", "переход"]):
+            decision_stage = "pre_voyage"
+        elif any(k in lower for k in ["port call", "судозаход"]):
+            decision_stage = "pre_port_call"
+        elif any(k in lower for k in ["alert", "алерт"]):
+            decision_stage = "post_alert"
+        elif any(k in lower for k in ["committee", "комитет"]):
+            decision_stage = "committee_review"
+
+    # 7. Defaults
+    if not chokepoint:
+        chokepoint = "strait_of_hormuz"
+        defaulted.append("voyage.chokepoint")
+    if not exposure_facets:
+        exposure_facets = ["chokepoint_disruption"]
+        defaulted.append("exposure_facets")
+    if not decision_stage:
+        decision_stage = "pre_fixture"
+        defaulted.append("decision_stage")
+    if not risk_question:
+        vessel_label = vessel_name or "the vessel"
+        risk_question = (
+            f"What sanctions, dark-fleet, and chokepoint risks apply to {vessel_label} "
+            f"transiting {chokepoint.replace('_', ' ')}?"
+        )
+        defaulted.append("risk_question")
+
+    voyage: dict[str, Any] = {"chokepoint": chokepoint}
+    if origin:
+        voyage["origin"] = origin
+    if destination:
+        voyage["destination"] = destination
+
+    result: dict[str, Any] = {
+        "voyage": voyage,
+        "exposure_facets": exposure_facets,
+        "decision_stage": decision_stage,
+        "dated_sources": dated_sources,
+        "risk_question": risk_question,
+        "inferred_parameters": bool(defaulted),
+    }
+
+    if vessel_name or imo or flag:
+        vessel: dict[str, Any] = {}
+        if vessel_name:
+            vessel["name"] = vessel_name
+        if imo:
+            vessel["imo"] = imo
+        if flag:
+            vessel["flag"] = flag
+        result["vessel"] = vessel
+    if cargo:
+        result["cargo"] = cargo
+
+    return result
+
+
 def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval: bool = True) -> dict:
     """Build a structured CIS secondary-sanctions exposure response.
 
@@ -3120,9 +3485,37 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
     ``live_retrieval_status: degraded`` and triage is based on user-supplied
     evidence only.
     """
-    request_failure = _validation_failure(_validate_json(request_json, "cis-secondary-sanctions-request.schema.json"))
-    if request_failure is not None:
-        return request_failure
+    if not isinstance(request_json, dict):
+        failure = _validation_failure({"valid": False, "errors": ["request must be a JSON object"]})
+        return failure if failure is not None else {}
+
+    inferred = bool(request_json.get("inferred_parameters", False))
+    clean_request = {k: v for k, v in request_json.items() if k != "inferred_parameters"}
+
+    validation = _validate_json(clean_request, "cis-secondary-sanctions-request.schema.json")
+    if not validation.get("valid"):
+        has_fallback_hint = bool(
+            request_json.get("auto_complete")
+            or request_json.get("prompt")
+            or request_json.get("query")
+            or request_json.get("text")
+        )
+        if has_fallback_hint:
+            raw_text = str(request_json.get("prompt") or request_json.get("query") or request_json.get("text") or "")
+            extracted = extract_cis_secondary_sanctions_parameters(request_json, raw_text)
+            clean_fallback = {k: v for k, v in extracted.items() if k != "inferred_parameters"}
+            fallback_validation = _validate_json(clean_fallback, "cis-secondary-sanctions-request.schema.json")
+            if fallback_validation.get("valid"):
+                inferred = extracted.get("inferred_parameters", True)
+                clean_request = clean_fallback
+            else:
+                failure = _validation_failure(validation)
+                return failure if failure is not None else {}
+        else:
+            failure = _validation_failure(validation)
+            return failure if failure is not None else {}
+
+    request_json = clean_request
 
     supplied_sources = _supplied_source_types(request_json)
     auto_fetched_sources: list[dict] = []
@@ -3259,6 +3652,7 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
         "live_retrieval_status": live_retrieval_status,
         "auto_fetched_sources": auto_fetched_sources,
         "upstream_attribution": upstream_attribution,
+        "inferred_parameters": inferred,
     }
 
 
@@ -3390,9 +3784,37 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
     Does not resolve vessel ownership, verify identity, perform factual-truth verification,
     or provide legal / sanctions / compliance / financial / investment / insurance / trading advice.
     """
-    request_failure = _validation_failure(_validate_json(request_json, "gulf-maritime-exposure-request.schema.json"))
-    if request_failure is not None:
-        return request_failure
+    if not isinstance(request_json, dict):
+        failure = _validation_failure({"valid": False, "errors": ["request must be a JSON object"]})
+        return failure if failure is not None else {}
+
+    inferred = bool(request_json.get("inferred_parameters", False))
+    clean_request = {k: v for k, v in request_json.items() if k != "inferred_parameters"}
+
+    validation = _validate_json(clean_request, "gulf-maritime-exposure-request.schema.json")
+    if not validation.get("valid"):
+        has_fallback_hint = bool(
+            request_json.get("auto_complete")
+            or request_json.get("prompt")
+            or request_json.get("query")
+            or request_json.get("text")
+        )
+        if has_fallback_hint:
+            raw_text = str(request_json.get("prompt") or request_json.get("query") or request_json.get("text") or "")
+            extracted = extract_gulf_maritime_parameters(request_json, raw_text)
+            clean_fallback = {k: v for k, v in extracted.items() if k != "inferred_parameters"}
+            fallback_validation = _validate_json(clean_fallback, "gulf-maritime-exposure-request.schema.json")
+            if fallback_validation.get("valid"):
+                inferred = extracted.get("inferred_parameters", True)
+                clean_request = clean_fallback
+            else:
+                failure = _validation_failure(validation)
+                return failure if failure is not None else {}
+        else:
+            failure = _validation_failure(validation)
+            return failure if failure is not None else {}
+
+    request_json = clean_request
 
     supplied_sources = _supplied_source_types(request_json)
     missing_sources = [s for s in GULF_MARITIME_REQUIRED_BEFORE_REVIEW if s not in supplied_sources]
@@ -3454,6 +3876,7 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
         "valid": response_validation.get("valid"),
         "errors": response_validation.get("errors", []),
         "response": response,
+        "inferred_parameters": inferred,
     }
 
 

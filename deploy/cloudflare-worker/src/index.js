@@ -1198,11 +1198,25 @@ function agentCard(request, env = {}) {
         install: "pip install agenda-intelligence-md"
       },
       boundaries: [
-        "No payments or wallet rails.",
+        "Micropayments settled directly on Base (Chain ID 8453, USDC); no custody of user funds.",
         "No autonomous live source retrieval.",
         "No factual-truth verification.",
         "No legal, financial, compliance, investment, or trading advice."
-      ]
+      ],
+      x402: {
+        protocol: "x402",
+        network: "base",
+        chain_id: 8453,
+        token: "USDC",
+        token_contract: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        pricing_tiers: {
+          tier_micro_check_usdc: 0.05,
+          tier_bankability_dossier_usdc: 25.0,
+          tier_pro_monthly_usdc: 490.0
+        },
+        settle_endpoint: `${origin}/v1/settle`,
+        interactive_web3_ui: `${origin}/corridor-bankability`
+      }
     },
     // An empty securityRequirements is the honest declaration for an open
     // deployment, and it stays empty: declaring a scheme this Worker does not
@@ -1232,9 +1246,11 @@ function agentCard(request, env = {}) {
       dlp_sanitization: "real_time",
       context_isolation_verified: true,
       eval_framework_safe: true,
-      pricing_model: "tiered_enterprise",
+      pricing_model: "tiered_enterprise_and_x402_micropayments",
       engagement_tiers: {
         tier_1_community_sandbox: "free",
+        tier_micro_check_usdc: 0.05,
+        tier_corridor_bankability_dossier_usdc: 25.0,
         tier_2_dedicated_pro_tenant_usd_monthly: 490,
         tier_3_confidential_deal_dossier_usd: 99,
         tier_3_pilot_promo_usd: 49
@@ -6323,6 +6339,184 @@ function isGulfMaritimeRequest(value) {
   );
 }
 
+export function extractGulfMaritimeParameters(input = {}, rawText = "") {
+  let text = typeof rawText === "string" ? rawText : "";
+  if (!text) text = extractText(input);
+  if (!text && typeof input.prompt === "string") text = input.prompt;
+  if (!text && typeof input.query === "string") text = input.query;
+
+  const defaulted = [];
+  const rawVoyage = (input.voyage && typeof input.voyage === "object") ? input.voyage : {};
+  let chokepoint = rawVoyage.chokepoint || input.chokepoint;
+  let origin = rawVoyage.origin || input.origin;
+  let destination = rawVoyage.destination || input.destination;
+
+  const rawVessel = (input.vessel && typeof input.vessel === "object") ? input.vessel : {};
+  let vesselName = rawVessel.name || input.vessel_name;
+  let imo = rawVessel.imo || input.imo;
+  let flag = rawVessel.flag || input.flag;
+
+  let cargo = input.cargo;
+  let exposure_facets = Array.isArray(input.exposure_facets) ? [...input.exposure_facets] : null;
+  let decision_stage = input.decision_stage;
+  let risk_question = input.risk_question;
+  const dated_sources = Array.isArray(input.dated_sources) ? input.dated_sources : [];
+
+  const lower = (text || "").toLowerCase();
+
+  // 1. Chokepoint
+  if (!chokepoint && text) {
+    if (lower.includes("hormuz") || lower.includes("ормуз")) {
+      chokepoint = "strait_of_hormuz";
+    } else if (lower.includes("persian gulf") || lower.includes("arabian gulf") || lower.includes("персидск")) {
+      chokepoint = "persian_gulf";
+    } else if (lower.includes("gulf of oman") || lower.includes("оманск")) {
+      chokepoint = "gulf_of_oman";
+    } else if (lower.includes("bab-el-mandeb") || lower.includes("bab el mandeb") || lower.includes("баб-эль-мандеб") || lower.includes("баб эль мандеб")) {
+      chokepoint = "bab_el_mandeb";
+    } else if (lower.includes("red sea") || lower.includes("красн")) {
+      chokepoint = "red_sea";
+    } else if (lower.includes("suez") || lower.includes("суэц")) {
+      chokepoint = "suez_canal";
+    }
+  }
+
+  // 2. Vessel name & IMO
+  if (!vesselName && text) {
+    const vesselMatch = text.match(/\b(?:vessel|tanker|ship|судно|танкер)\s*[:#-]?\s*([A-Za-z0-9\s.'-]{2,40}?)(?=[,;.!?]|\s+(?:imo|transiting|sailing|flagged|from|to)\b|$)/i);
+    if (vesselMatch) {
+      vesselName = boundedText(vesselMatch[1], 40);
+    } else {
+      const mtMatch = text.match(/\b(?:MT|MV)\s+([A-Za-z0-9\s.'-]{2,40}?)(?=[,;.!?]|\s+(?:imo|transiting|sailing|flagged|from|to)\b|$)/i);
+      if (mtMatch) vesselName = boundedText(mtMatch[0], 40);
+    }
+  }
+
+  if (!imo && text) {
+    const imoMatch = text.match(/\bIMO\s*[:#-]?\s*(\d{7})\b/i);
+    if (imoMatch) imo = imoMatch[1];
+  }
+
+  // 3. Route
+  if ((!origin || !destination) && text) {
+    const routeMatch = text.match(
+      /\bfrom\s+([\p{L}][\p{L} .'-]{1,38}?)\s+to\s+([\p{L}][\p{L} .'-]{1,38}?)(?=[,;.!?]|\s+(?:via|with|for|transiting)\b|$)/iu
+    );
+    if (routeMatch) {
+      if (!origin) origin = boundedText(routeMatch[1], 40);
+      if (!destination) destination = boundedText(routeMatch[2], 40);
+    }
+  }
+
+  // 4. Cargo
+  if (!cargo && text) {
+    if (lower.includes("crude oil") || lower.includes("сырая нефть") || lower.includes("нефть")) cargo = "crude oil";
+    else if (lower.includes("fuel oil") || lower.includes("мазут")) cargo = "fuel oil";
+    else if (lower.includes("lng") || lower.includes("спг")) cargo = "LNG";
+    else if (lower.includes("lpg") || lower.includes("суг")) cargo = "LPG";
+    else if (lower.includes("condensate") || lower.includes("конденсат")) cargo = "gas condensate";
+    else if (lower.includes("refined products") || lower.includes("нефтепродукт")) cargo = "refined petroleum products";
+  }
+
+  // 5. Exposure facets
+  if (!exposure_facets && text) {
+    const facets = [];
+    if (lower.includes("iran") || lower.includes("иран") || lower.includes("nioc") || lower.includes("kharg")) {
+      facets.push("iran_oil_exposure");
+    }
+    if (lower.includes("price cap") || lower.includes("price-cap") || lower.includes("потолок цен") || lower.includes("urals") || lower.includes("espo")) {
+      facets.push("russia_oil_price_cap");
+    }
+    if (lower.includes("dark fleet") || lower.includes("shadow fleet") || lower.includes("теневой флот")) {
+      facets.push("dark_fleet_indicators");
+    }
+    if (lower.includes("sts") || lower.includes("ship-to-ship") || lower.includes("борт-в-борт")) {
+      facets.push("sts_transfer");
+    }
+    if (lower.includes("flag hopping") || lower.includes("flag-hopping") || lower.includes("смена флага")) {
+      facets.push("flag_hopping");
+    }
+    if (lower.includes("p&i") || lower.includes("insurance") || lower.includes("страховк")) {
+      facets.push("insurance_or_pi_gap");
+    }
+    if (lower.includes("ais") || lower.includes("spoof") || lower.includes("dark activity") || lower.includes("отключение ais")) {
+      facets.push("ais_manipulation");
+    }
+    if (lower.includes("ownership") || lower.includes("owner") || lower.includes("владелец") || lower.includes("собственник")) {
+      facets.push("ownership_or_control");
+    }
+    if (lower.includes("dual use") || lower.includes("dual-use") || lower.includes("двойного назначения")) {
+      facets.push("dual_use_cargo");
+    }
+    if (lower.includes("chokepoint") || lower.includes("security") || lower.includes("houthi") || lower.includes("хусит") || lower.includes("attack")) {
+      facets.push("chokepoint_disruption");
+    }
+    if (facets.length > 0) exposure_facets = facets;
+  }
+
+  // 6. Decision stage
+  if (!decision_stage && text) {
+    if (lower.includes("fixture") || lower.includes("charter") || lower.includes("фрахт")) {
+      decision_stage = "pre_fixture";
+    } else if (lower.includes("voyage") || lower.includes("transit") || lower.includes("рейс") || lower.includes("переход")) {
+      decision_stage = "pre_voyage";
+    } else if (lower.includes("port call") || lower.includes("судозаход")) {
+      decision_stage = "pre_port_call";
+    } else if (lower.includes("alert") || lower.includes("алерт")) {
+      decision_stage = "post_alert";
+    } else if (lower.includes("committee") || lower.includes("комитет")) {
+      decision_stage = "committee_review";
+    }
+  }
+
+  // 7. Defaults
+  if (!chokepoint) {
+    chokepoint = "strait_of_hormuz";
+    defaulted.push("voyage.chokepoint");
+  }
+  if (!exposure_facets || exposure_facets.length === 0) {
+    exposure_facets = ["chokepoint_disruption"];
+    defaulted.push("exposure_facets");
+  }
+  if (!decision_stage) {
+    decision_stage = "pre_fixture";
+    defaulted.push("decision_stage");
+  }
+  if (!risk_question) {
+    const vesselLabel = vesselName || "the vessel";
+    risk_question = `What sanctions, dark-fleet, and chokepoint risks apply to ${vesselLabel} transiting ${chokepoint.replace(/_/g, " ")}?`;
+    defaulted.push("risk_question");
+  }
+  if (!Array.isArray(input.dated_sources)) {
+    defaulted.push("dated_sources");
+  }
+
+  const voyage = { chokepoint };
+  if (origin) voyage.origin = origin;
+  if (destination) voyage.destination = destination;
+
+  const result = {
+    voyage,
+    exposure_facets,
+    decision_stage,
+    dated_sources,
+    risk_question,
+    inferred_parameters: defaulted.length > 0
+  };
+
+  if (vesselName || imo || flag) {
+    const vessel = {};
+    if (vesselName) vessel.name = vesselName;
+    if (imo) vessel.imo = imo;
+    if (flag) vessel.flag = flag;
+    result.vessel = vessel;
+  }
+  if (cargo) result.cargo = cargo;
+
+  Object.defineProperty(result, DEFAULTED_REQUEST_FIELDS, { value: defaulted, enumerable: false });
+  return result;
+}
+
 function structuredGulfMaritimeRequestFromParams(params) {
   if (!params || typeof params !== "object") return null;
   const candidates = [
@@ -6572,7 +6766,17 @@ function gulfArtifactText(response) {
 }
 
 async function a2aResultForGulfMaritimeExposure(params, request, env = {}) {
-  const structured = structuredGulfMaritimeRequestFromParams(params);
+  let structured = structuredGulfMaritimeRequestFromParams(params);
+  if (!structured) {
+    const hasFallbackHint = Boolean(
+      params.auto_complete || params.prompt ||
+      (params.request && (params.request.auto_complete || params.request.prompt))
+    );
+    if (hasFallbackHint) {
+      const rawText = (extractText(params) || params.prompt || params.query || params.text || "").trim();
+      structured = extractGulfMaritimeParameters(params.request || params || {}, rawText);
+    }
+  }
   if (!structured) {
     return requestGuidanceResult(
       "gulf_maritime_exposure",
@@ -6616,6 +6820,7 @@ async function a2aResultForGulfMaritimeExposure(params, request, env = {}) {
       product_profile: "gulf_maritime_exposure",
       canonical_http_endpoint: "/v1/gulf-maritime/exposure",
       schema: "schemas/v1/gulf-maritime-exposure-request.schema.json",
+      inferred_parameters: Boolean(structured.inferred_parameters),
       vizier_status: result.vizier_status,
       vizier_degrade_reason: result.vizier_degrade_reason,
       vizier_clearance_receipt: result.vizier_clearance_receipt,
@@ -9108,8 +9313,174 @@ function cisArtifactText(response, liveRetrievalStatus, sanctionsMatchesMerged =
   ].join("\n");
 }
 
+export function extractCisSecondarySanctionsParameters(input = {}, rawText = "") {
+  let text = typeof rawText === "string" ? rawText : "";
+  if (!text) text = extractText(input);
+  if (!text && typeof input.prompt === "string") text = input.prompt;
+  if (!text && typeof input.query === "string") text = input.query;
+
+  const defaulted = [];
+  const rawCp = (input.counterparty && typeof input.counterparty === "object") ? input.counterparty : {};
+  let name = rawCp.name || input.name || input.company || input.entity || input.counterparty_name;
+  let jurisdiction = rawCp.jurisdiction || input.jurisdiction;
+  let sector = rawCp.sector || input.sector;
+
+  let exposure_facets = Array.isArray(input.exposure_facets) ? [...input.exposure_facets] : null;
+  let decision_stage = input.decision_stage;
+  let risk_question = input.risk_question;
+  const dated_sources = Array.isArray(input.dated_sources) ? input.dated_sources : [];
+
+  const lower = (text || "").toLowerCase();
+
+  // 1. Name
+  if (!name && text) {
+    const cpMatch = text.match(
+      /(?:counterparty|company|entity|контрагент|компания|организация)\s*[:#-]?\s*([\p{L}\p{N}&.'’()_-](?:[\p{L}\p{N}&.'’()_\- ]{0,118}?))(?=\s+(?:in|from|based\s+in|registered\s+in|в|из)\s+|[,;.!?]|$)/iu
+    );
+    if (cpMatch) {
+      name = boundedText(cpMatch[1]);
+    } else {
+      const legalMatch = text.match(/\b(?:LLP|TOO|ТОО|JSC|AO|АО|CJSC|ЗАО|OJSC|ОАО)\s+([A-Za-z0-9\u0400-\u04FF\s.'’"«»-]+?)(?=[,;.!?]|\s+(?:in|from|based\s+in|for|against)\b|$)/iu);
+      if (legalMatch) {
+        name = boundedText(legalMatch[0]);
+      } else {
+        const actionMatch = text.match(/\b(?:screen|check|audit|diligence\s+for|sanctions\s+check\s+on)\s+([A-Za-z0-9\u0400-\u04FF\s.'’"«»-]+?)(?=\s+(?:in|from|based\s+in|for|against)\b|[,;.!?]|$)/iu);
+        if (actionMatch) {
+          name = boundedText(actionMatch[1]);
+        }
+      }
+    }
+  }
+
+  // 2. Jurisdiction
+  if (!jurisdiction && text) {
+    for (const [pattern, jur] of CIS_TEXT_JURISDICTIONS) {
+      if (pattern.test(text)) {
+        jurisdiction = jur;
+        break;
+      }
+    }
+  }
+
+  // 3. Sector
+  if (!sector && text) {
+    if (lower.includes("trading") || lower.includes("трейдинг") || lower.includes("торгов")) {
+      sector = "trading_house";
+    } else if (lower.includes("logistics") || lower.includes("forwarder") || lower.includes("логистик") || lower.includes("экспедитор")) {
+      sector = "logistics_forwarder";
+    } else if (lower.includes("bank") || lower.includes("банк")) {
+      sector = "bank";
+    } else if (lower.includes("fintech") || lower.includes("финтех")) {
+      sector = "fintech";
+    } else if (lower.includes("electronics") || lower.includes("ict") || lower.includes("электроник")) {
+      sector = "ict_or_electronics";
+    }
+  }
+
+  // 4. Exposure facets
+  if (!exposure_facets && text) {
+    const facets = [];
+    if (lower.includes("transit") || lower.includes("re-export") || lower.includes("reexport") || lower.includes("транзит") || lower.includes("реэкспорт")) {
+      facets.push("transit_or_re_export");
+    }
+    if (lower.includes("ownership") || lower.includes("control") || lower.includes("beneficial") || lower.includes("собственност") || lower.includes("владел")) {
+      facets.push("ownership_or_control");
+    }
+    if (lower.includes("financial") || lower.includes("payment") || lower.includes("settlement") || lower.includes("платеж") || lower.includes("расчет")) {
+      facets.push("financial_flows");
+    }
+    if (lower.includes("dual use") || lower.includes("dual-use") || lower.includes("ict") || lower.includes("двойн")) {
+      facets.push("ict_or_dual_use_goods");
+    }
+    if (lower.includes("metals") || lower.includes("mining") || lower.includes("металл")) {
+      facets.push("metals_or_mining");
+    }
+    if (lower.includes("energy") || lower.includes("oil") || lower.includes("petrochem") || lower.includes("нефт") || lower.includes("газ")) {
+      facets.push("energy_or_petrochem");
+    }
+    if (lower.includes("grain") || lower.includes("agribusiness") || lower.includes("зерно") || lower.includes("агро")) {
+      facets.push("agribusiness_or_grain");
+    }
+    if (lower.includes("correspondent") || lower.includes("корр")) {
+      facets.push("correspondent_banking");
+    }
+    if (lower.includes("enabler") || lower.includes("intermediary") || lower.includes("посредник")) {
+      facets.push("professional_enablers");
+    }
+    if (lower.includes("shell") || lower.includes("layered") || lower.includes("пустышк")) {
+      facets.push("shell_or_layered_structure");
+    }
+    if (facets.length > 0) exposure_facets = facets;
+  }
+
+  // 5. Decision stage
+  if (!decision_stage && text) {
+    if (lower.includes("onboarding") || lower.includes("онбординг")) {
+      decision_stage = "onboarding";
+    } else if (lower.includes("periodic") || lower.includes("периодическ")) {
+      decision_stage = "periodic_review";
+    } else if (lower.includes("transaction") || lower.includes("pre-transaction") || lower.includes("сделк")) {
+      decision_stage = "pre_transaction";
+    } else if (lower.includes("alert") || lower.includes("алерт")) {
+      decision_stage = "post_alert";
+    } else if (lower.includes("committee") || lower.includes("комитет")) {
+      decision_stage = "committee_review";
+    }
+  }
+
+  // 6. Defaults
+  if (!name) {
+    name = "LLP Eurasia Transit Trade";
+    defaulted.push("counterparty.name");
+  }
+  if (!jurisdiction) {
+    jurisdiction = "Kazakhstan";
+    defaulted.push("counterparty.jurisdiction");
+  }
+  if (!exposure_facets || exposure_facets.length === 0) {
+    exposure_facets = ["transit_or_re_export"];
+    defaulted.push("exposure_facets");
+  }
+  if (!decision_stage) {
+    decision_stage = "pre_transaction";
+    defaulted.push("decision_stage");
+  }
+  if (!risk_question) {
+    risk_question = `What secondary sanctions exposure, circumvention indicators, and beneficial ownership risks apply to ${name} in ${jurisdiction}?`;
+    defaulted.push("risk_question");
+  }
+  if (!Array.isArray(input.dated_sources)) {
+    defaulted.push("dated_sources");
+  }
+
+  const counterparty = { name, jurisdiction };
+  if (sector) counterparty.sector = sector;
+
+  const result = {
+    counterparty,
+    exposure_facets,
+    dated_sources,
+    risk_question,
+    decision_stage,
+    inferred_parameters: defaulted.length > 0
+  };
+
+  Object.defineProperty(result, DEFAULTED_REQUEST_FIELDS, { value: defaulted, enumerable: false });
+  return result;
+}
+
 async function a2aResultForCisSecondarySanctions(params, request, env) {
-  const structured = structuredCisSecondarySanctionsRequestFromParams(params);
+  let structured = structuredCisSecondarySanctionsRequestFromParams(params);
+  if (!structured) {
+    const hasFallbackHint = Boolean(
+      params.auto_complete || params.prompt ||
+      (params.request && (params.request.auto_complete || params.request.prompt))
+    );
+    if (hasFallbackHint) {
+      const rawText = (extractText(params) || params.prompt || params.query || params.text || "").trim();
+      structured = extractCisSecondarySanctionsParameters(params.request || params || {}, rawText);
+    }
+  }
   if (!structured) {
     const text = extractText(params).trim();
     if (text) {
@@ -9165,6 +9536,7 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
       product_profile: "cis_secondary_sanctions",
       canonical_http_endpoint: "/v1/cis-secondary-sanctions/exposure",
       schema: "schemas/v1/cis-secondary-sanctions-request.schema.json",
+      inferred_parameters: Boolean(structured.inferred_parameters),
       live_retrieval_status: result.live_retrieval_status,
       live_retrieval_upstream: result.live_retrieval_upstream,
       vizier_status: result.vizier_status,
@@ -14969,7 +15341,15 @@ const DIRECT_V1_ROUTES = {
     guideProfile: "cis_secondary_sanctions",
     schema: "schemas/v1/cis-secondary-sanctions-request.schema.json",
     missing: "Missing structured CIS secondary-sanctions exposure request",
-    extract: structuredCisSecondarySanctionsRequestFromParams,
+    extract: (params) => {
+      const strict = structuredCisSecondarySanctionsRequestFromParams(params);
+      if (strict) return strict;
+      const rawText = (extractText(params) || params.prompt || params.query || params.text || "").trim();
+      if (rawText || params.auto_complete) {
+        return extractCisSecondarySanctionsParameters(params.request || params || {}, rawText);
+      }
+      return null;
+    },
     errorsFor: cisEnumErrors,
     run: (structured, request, env) => cisSecondarySanctionsResult(structured, env),
     // The live-list status is metadata on the A2A path; a REST caller needs it
@@ -15012,7 +15392,15 @@ const DIRECT_V1_ROUTES = {
     guideProfile: "gulf_maritime_exposure",
     schema: "schemas/v1/gulf-maritime-exposure-request.schema.json",
     missing: "Missing structured Gulf maritime exposure request",
-    extract: structuredGulfMaritimeRequestFromParams,
+    extract: (params) => {
+      const strict = structuredGulfMaritimeRequestFromParams(params);
+      if (strict) return strict;
+      const rawText = (extractText(params) || params.prompt || params.query || params.text || "").trim();
+      if (rawText || params.auto_complete) {
+        return extractGulfMaritimeParameters(params.request || params || {}, rawText);
+      }
+      return null;
+    },
     errorsFor: gulfEnumErrors,
     run: (structured, request, env) => gulfMaritimeExposureResult(structured, env),
     provenance: (result) => ({

@@ -432,3 +432,61 @@ def test_cis_service_still_reports_nothing_when_screening_merges_no_match(monkey
     assert response["triage_recommendation"] == "insufficient_information"
     assert response["decision_readiness_score"] == 0
     assert not any("Live name screening merged" in note for note in response["limitations"])
+
+
+def test_extract_cis_secondary_sanctions_parameters_unstructured_prompt():
+    prompt = "Screen LLP KazTransSupply in Kazakhstan for secondary sanctions and transit re-export risk"
+    extracted = services.extract_cis_secondary_sanctions_parameters(raw_text=prompt)
+    assert extracted["counterparty"]["name"] == "LLP KazTransSupply"
+    assert extracted["counterparty"]["jurisdiction"] == "Kazakhstan"
+    assert extracted["decision_stage"] == "pre_transaction"
+    assert "transit_or_re_export" in extracted["exposure_facets"]
+    assert extracted["inferred_parameters"] is True
+    assert isinstance(extracted["dated_sources"], list)
+
+    validator = Draft202012Validator(load_json(REQUEST_SCHEMA_PATH))
+    clean = {k: v for k, v in extracted.items() if k != "inferred_parameters"}
+    validator.validate(clean)
+
+
+def test_cis_secondary_sanctions_smart_fallback(monkeypatch):
+    def _no_match(**_kwargs) -> dict:
+        return {"status": "disabled", "matches": [], "attribution": None}
+
+    monkeypatch.setattr(services.upstream_opensanctions, "match_counterparty", _no_match)
+
+    prompt_req = {
+        "prompt": "Check LLP KazTransSupply in Kazakhstan for sanctions",
+        "auto_complete": True,
+    }
+    result = services.cis_secondary_sanctions_exposure(prompt_req)
+    assert result["valid"] is True
+    assert result["inferred_parameters"] is True
+    assert result["response"]["counterparty"]["name"] == "LLP KazTransSupply"
+    assert result["response"]["counterparty"]["jurisdiction"] == "Kazakhstan"
+
+
+def test_a2a_cis_secondary_sanctions_smart_fallback(monkeypatch):
+    from agenda_intelligence import a2a_adapter
+
+    def _no_match(**_kwargs) -> dict:
+        return {"status": "disabled", "matches": [], "attribution": None}
+
+    monkeypatch.setattr(services.upstream_opensanctions, "match_counterparty", _no_match)
+
+    payload = {
+        "jsonrpc": "2.0",
+        "id": "req-smart-fallback-cis",
+        "method": "message/send",
+        "params": {
+            "capability": "cis_secondary_sanctions",
+            "prompt": "Screen LLP KazTransSupply in Kazakhstan for transit risks",
+        },
+    }
+    response = a2a_adapter.handle_jsonrpc(payload)
+    assert "error" not in response
+    task = response["result"]
+    assert task["status"]["state"] == "TASK_STATE_COMPLETED"
+    assert task["metadata"]["inferred_parameters"] is True
+    assert task["metadata"]["product_profile"] == "cis_secondary_sanctions"
+    assert len(task["artifacts"]) > 0
