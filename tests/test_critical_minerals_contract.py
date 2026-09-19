@@ -113,7 +113,7 @@ def test_critical_minerals_us_ira_feoc_assessment():
     assert resp["commodity"] == "lithium"
     assert resp["target_market"] == "us"
     assert any("FEOC Disqualification" in r["category"] for r in resp["top_risks"])
-    assert any("FEOC 25% Threshold" in l["layer"] for l in resp["exposure_layers"])
+    assert any("FEOC 25% Threshold" in layer["layer"] for layer in resp["exposure_layers"])
 
 
 def test_critical_minerals_uranium_safeguards_gate():
@@ -126,7 +126,7 @@ def test_critical_minerals_uranium_safeguards_gate():
     resp = result["response"]
     assert resp["commodity"] == "uranium"
     assert any("Nuclear Regulatory" in r["category"] for r in resp["top_risks"])
-    assert any("IAEA Safeguards" in l["layer"] for l in resp["exposure_layers"])
+    assert any("IAEA Safeguards" in layer["layer"] for layer in resp["exposure_layers"])
 
 
 def test_critical_minerals_titanium_aerospace_gate():
@@ -139,4 +139,3 @@ def test_critical_minerals_titanium_aerospace_gate():
     resp = result["response"]
     assert resp["commodity"] == "titanium"
     assert any("Aerospace Grade Certification" in r["category"] for r in resp["top_risks"])
-

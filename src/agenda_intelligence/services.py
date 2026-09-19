@@ -4990,7 +4990,8 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
                 "severity": "high" if is_feoc else "low",
                 "description": (
                     f"Processing or extraction in {processing or origin} triggers Foreign Entity of Concern (FEOC) "
-                    "disqualification under 10 CFR Part 371 & 26 U.S.C. § 30D, barring clean vehicle tax credits ($7,500/vehicle)."
+                    "disqualification under 10 CFR Part 371 & 26 U.S.C. § 30D, barring clean vehicle tax credits "
+                    "($7,500/vehicle)."
                     if is_feoc
                     else "Target market is US: 25% FEOC ownership/control verification required under IRA Section 30D."
                 ),
@@ -5001,7 +5002,8 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
                 "layer": "US IRA FEOC 25% Threshold Audit",
                 "level": "gap" if is_feoc else "verified",
                 "summary": (
-                    f"Covered nation processing ({processing or origin}) disqualifies offtake from US clean energy tax credits."
+                    f"Covered nation processing ({processing or origin}) disqualifies offtake from US clean energy "
+                    "tax credits."
                     if is_feoc
                     else "No covered FEOC processing jurisdiction identified; beneficial ownership audit recommended."
                 ),
@@ -5025,7 +5027,9 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
             {
                 "layer": "IAEA Safeguards & Euratom Compliance",
                 "level": "verified" if "iaea_safeguards_and_euratom_co_signature" in supplied_sources else "gap",
-                "summary": "Nuclear non-proliferation tracking, Euratom ESA Article 52 approval, and TITR Caspian routing.",
+                "summary": (
+                    "Nuclear non-proliferation tracking, Euratom ESA Article 52 approval, and TITR Caspian routing."
+                ),
             }
         )
         watch_next.extend([
@@ -5045,7 +5049,8 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
                 "severity": "medium",
                 "description": (
                     "Aerospace titanium supply requires certified mill test reports (AMS 4911 / AMS 4928, ASTM B265) "
-                    "and non-Russian raw sponge chain-of-custody verification to satisfy Western OEM (Boeing/Airbus) diversification quotas."
+                    "and non-Russian raw sponge chain-of-custody verification to satisfy Western OEM (Boeing/Airbus) "
+                    "diversification quotas."
                 ),
             }
         )
