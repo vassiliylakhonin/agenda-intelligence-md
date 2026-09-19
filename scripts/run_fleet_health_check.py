@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Master Edge Fleet Health Check & Drift Guard Runner.
-Executes zero-mock live proofs against all 11 Cloudflare Workers:
+Executes live proofs for configured Cloudflare Workers, plus external Vizier.
+Legacy specialized proofs:
 1. Vizier Security Kernel (OFAC 50% Rule, DLP Scanner, Web Console)
 2. CIS Secondary Sanctions A2A
 3. Gulf Maritime Exposure A2A
@@ -17,6 +18,7 @@ Executes zero-mock live proofs against all 11 Cloudflare Workers:
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 import time
@@ -25,7 +27,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).parent / "fleet_health"
 
-WORKERS = [
+LEGACY_PROOFS = [
     {
         "id": 1,
         "name": "vizier",
@@ -106,12 +108,42 @@ WORKERS = [
 ]
 
 
+def fleet_workers() -> list[dict]:
+    """Derive deployment coverage from Wrangler; preserve stable legacy proof IDs."""
+    config = BASE_DIR.parents[1] / "deploy/cloudflare-worker/wrangler.toml"
+    names = re.findall(r'^name\s*=\s*"([^"\n]+)"', config.read_text(), re.MULTILINE)
+    proofs = {worker["name"]: worker for worker in LEGACY_PROOFS}
+    workers = [proofs["vizier"]]
+    next_id = max(worker["id"] for worker in LEGACY_PROOFS) + 1
+    for name in names:
+        if name in proofs:
+            workers.append(proofs[name])
+        else:
+            workers.append(
+                {
+                    "id": next_id,
+                    "name": name,
+                    "title": name,
+                    "url": f"https://{name}.vassiliy-lakhonin.workers.dev",
+                    "script": "proof_configured_worker.py",
+                    "args": [name],
+                }
+            )
+            next_id += 1
+    return workers
+
+
+WORKERS = fleet_workers()
+
+
 def run_proof(worker: dict) -> dict:
     script_path = BASE_DIR / worker["script"]
     start_time = time.perf_counter()
 
     try:
-        proc = subprocess.run([sys.executable, str(script_path)], capture_output=True, text=True, timeout=40)
+        proc = subprocess.run(
+            [sys.executable, str(script_path), *worker.get("args", [])], capture_output=True, text=True, timeout=40
+        )
         duration = time.perf_counter() - start_time
         success = proc.returncode == 0
         return {

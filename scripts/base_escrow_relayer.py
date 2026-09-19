@@ -115,6 +115,13 @@ class BaseEscrowRelayer:
         ruling: ArbitrationRuling = self.arbiter.evaluate_dispute(request_payload)
         logger.info(f"Arbitration verdict: {ruling.ruling} (Score: {ruling.score}/100)")
 
+        if ruling.status != "decision_ready" or ruling.ruling not in {
+            "RELEASE_TO_SELLER",
+            "REFUND_TO_BUYER",
+            "PARTIAL_SETTLEMENT",
+        }:
+            raise ValueError("Escrow evaluation requires human review; no settlement calldata may be prepared")
+
         # Convert float USD to 6-decimal USDC integer units
         total_raw = event.amount_usdc_raw
         fee_raw = int(round(ruling.payout.arbiter_fee_usd * 1_000_000))

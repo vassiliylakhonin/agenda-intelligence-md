@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "test": "npm run build && node --test test/*.test.cjs"
   },
   "files": [
     "dist",

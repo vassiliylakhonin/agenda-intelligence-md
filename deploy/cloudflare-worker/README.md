@@ -1,5 +1,15 @@
 # Agenda Intelligence A2A Worker
 
+
+Financial Guard and Escrow enforce the evidence boundaries documented in
+[ADR 0027](../../docs/adr/0027-financial-and-escrow-evidence-boundaries.md).
+Financial Guard requires human review when spending history and current sanctions
+status are unverified. Escrow validates supported offline schemas and escalates
+unsupported schemas or missing artifacts. Neither profile issues a Vizier
+clearance or executes a transaction. `npm test` covers these boundaries;
+`scripts/run_fleet_health_check.py` derives live coverage from `wrangler.toml`.
+
+
 Free hosted A2A/JSON-RPC discovery and lightweight triage wrapper for Agenda Intelligence MD.
 
 This Worker is intentionally small:

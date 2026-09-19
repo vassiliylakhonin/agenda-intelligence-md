@@ -1,8 +1,9 @@
+import { validateEscrowArtifact } from "./escrow-schema.js";
 // M2M Escrow Arbiter & Autonomous B2B Deal Settlement Engine
 // Deterministic dispute resolution and delivery verification for Agent-to-Agent transactions.
-// Zero-Retention: All evaluations run strictly in volatile Edge memory and are never persisted.
+// Evaluation is stateless; transport telemetry has its own retention policy.
 
-import { isTrustVizierEnabled, VIZIER_DEFAULT_URL } from "./upstream_vizier_trust.js";
+
 
 export const M2M_ESCROW_ARBITER_CONTRACT_VERSION = "1.0.0";
 export const M2M_ESCROW_ARBITER_PROFILE_KEY = "m2m_escrow_arbiter";
@@ -73,7 +74,7 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
   const terms = requestBody.deal_terms || {};
   const spec = requestBody.specification || {};
   const submission = requestBody.delivery_submission || {};
-  const disputeClaim = requestBody.dispute_claim || {};
+  let needsReview = false;
 
   const violations = [];
   const evidenceGaps = [];
@@ -85,9 +86,12 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
 
   if (isNaN(deadlineMs)) {
     evidenceGaps.push("Unparseable deal_terms.deadline_utc timestamp.");
+    deadlineHonored = false;
+    needsReview = true;
   } else if (isNaN(submittedMs)) {
     evidenceGaps.push("Unparseable delivery_submission.submitted_at timestamp.");
     deadlineHonored = false;
+    needsReview = true;
   } else if (submittedMs > deadlineMs) {
     deadlineHonored = false;
     const delaySec = Math.round((submittedMs - deadlineMs) / 1000);
@@ -113,15 +117,15 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
     }
   }
 
-  // Check 3: Schema & Structural Verification
+  // A supplied digest cannot stand in for the actual instance being checked.
   let schemaVerified = true;
-  if (spec.expected_schema) {
-    if (!submission.artifact_data && !submission.artifact_sha256) {
-      schemaVerified = false;
-      violations.push("No artifact data or verifiable payload provided to validate against expected_schema.");
-    } else if (submission.artifact_data && typeof submission.artifact_data !== "object") {
-      schemaVerified = false;
-      violations.push("Artifact data format error: expected structured JSON object matching contract schema.");
+  if (Object.hasOwn(spec, "expected_schema")) {
+    const validation = validateEscrowArtifact(spec.expected_schema, submission.artifact_data, Object.hasOwn(submission, "artifact_data"));
+    schemaVerified = validation.status === "valid";
+    if (validation.status === "invalid") violations.push(...validation.errors);
+    if (validation.status === "unverified") {
+      evidenceGaps.push(...validation.errors);
+      needsReview = true;
     }
   }
 
@@ -154,7 +158,7 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
   let buyerRefund = 0;
   let advisory = "Deliverable verified deterministically against contract specification. Full escrow release approved.";
 
-  const isCompleteFailure = !deadlineHonored || !hashVerified || (!schemaVerified && spec.expected_schema);
+  const isCompleteFailure = !deadlineHonored || !hashVerified || !schemaVerified;
 
   if (isCompleteFailure) {
     ruling = "REFUND_TO_BUYER";
@@ -181,43 +185,21 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
     }
   }
 
-  // Layer 5: Optional Vizier Quorum & Attestation
-  let vizierStatus = "edge_evaluated";
-  let vizierReceipt = null;
-
-  if (isTrustVizierEnabled(env)) {
-    try {
-      const vizierBase = (env.VIZIER_BASE_URL || VIZIER_DEFAULT_URL).replace(/\/+$/, "");
-      const fetcher = (env.VIZIER && typeof env.VIZIER.fetch === "function")
-        ? (url, init) => env.VIZIER.fetch(url, init)
-        : (url, init) => globalThis.fetch(url, init);
-
-      const resp = await fetcher(`${vizierBase}/v1/quorum/propose`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "m2m_escrow_arbitration_ruling",
-          parameters: {
-            escrow_id: requestBody.escrow_id,
-            buyer_id: terms.buyer_id,
-            seller_id: terms.seller_id,
-            ruling,
-            total_escrow_usd: totalEscrow,
-            seller_payout_usd: sellerPayout,
-            buyer_refund_usd: buyerRefund,
-            arbiter_fee_usd: arbiterFee
-          }
-        })
-      });
-      if (resp && resp.ok) {
-        const vData = await resp.json();
-        vizierStatus = "vizier_verified";
-        vizierReceipt = vData.receipt || vData.jws || `jws_m2m_arbiter_${Date.now()}`;
-      }
-    } catch (_e) {
-      vizierStatus = "vizier_fallback_degraded";
-    }
+  if (needsReview) {
+    ruling = "ESCALATE_HUMAN";
+    status = "not_decision_ready";
+    score = 0;
+    sellerPayout = 0;
+    buyerRefund = 0;
+    advisory = "Required evidence could not be verified. Hold escrow pending human review; no payout is authorized.";
   }
+
+  // /v1/quorum/propose creates a pending proposal, not a clearance receipt.
+  // No attestation protocol is configured for this evaluator. Never fabricate
+  // a token or treat HTTP success as verification, and do not create proposals
+  // as a side effect of an evidence check.
+  const vizierStatus = "attestation_unavailable";
+  const vizierReceipt = null;
 
   return {
     contract_version: M2M_ESCROW_ARBITER_CONTRACT_VERSION,
@@ -231,7 +213,7 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
         total_escrow_usd: totalEscrow,
         seller_payout_usd: sellerPayout,
         buyer_refund_usd: buyerRefund,
-        arbiter_fee_usd: arbiterFee
+        arbiter_fee_usd: needsReview ? 0 : arbiterFee
       },
       checks: {
         deadline_honored: deadlineHonored,
@@ -243,6 +225,8 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
       evidence_gaps: evidenceGaps,
       vizier_status: vizierStatus,
       vizier_clearance_receipt: vizierReceipt,
+      human_review_required: true,
+      not_advice_notice: "Evaluation of supplied evidence only; this response does not execute or authorize settlement.",
       execution_advisory: advisory
     }
   };

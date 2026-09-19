@@ -8292,7 +8292,7 @@ test("POST /v1/dossier/export parses JSON payload with commodity alias and retur
   assert.ok(body.includes("BLOCK_IMMEDIATE"));
 });
 
-test("POST /v1/agent-financial/pre-sign-check permits clean transaction with score 10", async () => {
+test("POST /v1/agent-financial/pre-sign-check requires review for unverified spending and sanctions", async () => {
   const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/agent-financial/pre-sign-check", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -8320,12 +8320,12 @@ test("POST /v1/agent-financial/pre-sign-check permits clean transaction with sco
   const json = await res.json();
   assert.equal(json.contract_version, "1.0.0");
   assert.equal(json.profile, "agent_financial_guard");
-  assert.equal(json.financial_guard_verdict.decision, "allow");
-  assert.equal(json.financial_guard_verdict.status, "decision_ready");
-  assert.equal(json.financial_guard_verdict.score, 10);
-  assert.equal(json.financial_guard_verdict.checks.sanctions_aml, true);
+  assert.equal(json.financial_guard_verdict.decision, "step_up_human_required");
+  assert.equal(json.financial_guard_verdict.status, "not_decision_ready");
+  assert.equal(json.financial_guard_verdict.score, 55);
+  assert.equal(json.financial_guard_verdict.checks.sanctions_aml, false);
   assert.equal(json.financial_guard_verdict.checks.contract_security, true);
-  assert.equal(json.financial_guard_verdict.checks.velocity_limits, true);
+  assert.equal(json.financial_guard_verdict.checks.velocity_limits, false);
   assert.equal(json.financial_guard_verdict.checks.prompt_injection, true);
 });
 
@@ -8353,7 +8353,7 @@ test("POST /v1/agent-financial/pre-sign-check blocks sanctioned recipient addres
   assert.equal(json.financial_guard_verdict.decision, "reject");
   assert.equal(json.financial_guard_verdict.status, "escalate");
   assert.equal(json.financial_guard_verdict.checks.sanctions_aml, false);
-  assert.ok(json.financial_guard_verdict.violations.some(v => v.includes("OFAC SDN")));
+  assert.ok(json.financial_guard_verdict.violations.some(v => v.includes("local risk denylist")));
 });
 
 test("POST /v1/agent-financial/pre-sign-check blocks unlimited allowance approval", async () => {

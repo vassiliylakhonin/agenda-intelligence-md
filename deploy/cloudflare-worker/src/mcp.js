@@ -274,8 +274,8 @@ const PROFILE_TOOLS = {
     argKey: "request",
     summary:
       "Deterministic pre-sign financial transaction firewall for autonomous agents with wallet capabilities. " +
-      "Screens recipient addresses against OFAC SDN, detects malicious calldata/approvals, enforces velocity/spending limits, " +
-      "and evaluates prompt injection in transaction reasoning before broadcast. " +
+      "Checks local risk rules and intent patterns; spending history and current sanctions status remain unverified. " +
+      "Non-rejected requests require human review; this tool does not authorize transactions. " +
       "Required fields in 'request': run_id, transaction, intent."
   },
   m2m_escrow_arbiter: {
@@ -284,7 +284,7 @@ const PROFILE_TOOLS = {
     argKey: "request",
     summary:
       "Deterministic dispute arbitration and delivery verification for Agent-to-Agent escrow transactions. " +
-      "Verifies cryptographic SHA-256 deliverable hashes, JSON Schema compliance, and contract deadlines, calculating binding payout allocations. " +
+      "Checks supplied hashes, supported offline JSON schemas and deadlines, proposing allocations for human review. No settlement or clearance is issued. " +
       "Required fields in 'request': escrow_id, deal_terms, specification, delivery_submission."
   },
 

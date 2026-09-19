@@ -123,7 +123,7 @@ class AgendaFinancialGuardActionProvider:
                 prefer_remote=self.prefer_remote,
             )
 
-            if verdict.is_blocked:
+            if not verdict.is_allowed:
                 raise PermissionError(
                     f"[AgendaFinancialGuard BLOCKED] Transaction rejected (Risk Score: {verdict.score}/100): "
                     f"{'; '.join(verdict.violations)}"
