@@ -5032,16 +5032,17 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
                 ),
             }
         )
-        watch_next.extend([
-            "US Public Law 118-67 Russian uranium import ban enforcement and waiver schedules",
-            "Euratom Supply Agency (ESA) bilateral delivery authorizations",
-            "IAEA Additional Protocol safeguards and transit verification",
-        ])
+        watch_next.extend(
+            [
+                "US Public Law 118-67 Russian uranium import ban enforcement and waiver schedules",
+                "Euratom Supply Agency (ESA) bilateral delivery authorizations",
+                "IAEA Additional Protocol safeguards and transit verification",
+            ]
+        )
 
     if commodity == "titanium":
         has_assay = (
-            "certified_ore_assay_report" in supplied_sources
-            or "port_of_loading_assay_verification" in supplied_sources
+            "certified_ore_assay_report" in supplied_sources or "port_of_loading_assay_verification" in supplied_sources
         )
         top_risks.append(
             {
@@ -5061,10 +5062,12 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
                 "summary": "AMS/ASTM certified lab assay and non-Russian titanium sponge origin verification.",
             }
         )
-        watch_next.extend([
-            "Western aerospace OEM (Boeing/Airbus) titanium qualification and long-term agreements",
-            "Kazakhstan UKTMP vs VSMPO-Avisma market share reallocation",
-        ])
+        watch_next.extend(
+            [
+                "Western aerospace OEM (Boeing/Airbus) titanium qualification and long-term agreements",
+                "Kazakhstan UKTMP vs VSMPO-Avisma market share reallocation",
+            ]
+        )
 
     response = {
         "triage_recommendation": triage,
