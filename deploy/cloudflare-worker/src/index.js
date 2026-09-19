@@ -8446,7 +8446,7 @@ export function extractDualUseParameters(input = {}, rawText = "") {
     if (hsMatch) {
       hs_code = hsMatch[1];
     } else {
-      const codeMatch = text.match(/\b(8457(?:\.\d+)?|8542(?:\.\d+)?|8806(?:\.\d+)?|9013(?:\.\d+)?|8526(?:\.\d+)?|8471(?:\.\d+)?)\b/);
+      const codeMatch = text.match(/\b(8457(?:\d{2,6}|\.\d+)?|8542(?:\d{2,6}|\.\d+)?|8806(?:\d{2,6}|\.\d+)?|9013(?:\d{2,6}|\.\d+)?|8526(?:\d{2,6}|\.\d+)?|8471(?:\d{2,6}|\.\d+)?)\b/);
       if (codeMatch) hs_code = codeMatch[1];
     }
   }
@@ -8477,6 +8477,16 @@ export function extractDualUseParameters(input = {}, rawText = "") {
     else if (lower.includes("russia") || lower.includes("россия") || lower.includes("moscow")) destination = "RU";
     else if (lower.includes("turkey") || lower.includes("турция")) destination = "TR";
     else if (lower.includes("uae") || lower.includes("dubai") || lower.includes("оаэ")) destination = "AE";
+  }
+
+  // 2b. Transit
+  if (!transit_countries.length && text) {
+    const viaMatch = text.match(/\bvia\s+([A-Za-z]{2}|[\p{L} .'-]{2,20})(?=[,;.!?]|\s+(?:with|for|to)\b|$)/iu);
+    if (viaMatch) {
+      const country = viaMatch[1].trim();
+      const code = country.toUpperCase();
+      transit_countries.push(code.length === 2 ? code : country);
+    }
   }
 
   // 3. Description
@@ -12325,6 +12335,9 @@ function engagementMarkdown(engagement) {
     "Person-led work:",
     engagement.offer,
     engagement.next_step,
+    ...(engagement.sample_dossier_url
+      ? [`Sample verified bank dossier: ${engagement.sample_dossier_url}`]
+      : []),
     ...(engagement.client_identification
       ? [
           `Optional attribution: send ${engagement.client_identification.header} with ` +
@@ -12594,6 +12607,7 @@ async function a2aResult(params, request, env = {}) {
       related_agents: relatedAgents,
       hosted_mcp_tools: hostedMcpTools,
       engagement,
+      commercial_offer: buildCommercialOffer(originFromRequest(request)),
       vizier_status: vizierGateway
         ? vizierGateway.status
         : vizierCorridor
@@ -12622,7 +12636,21 @@ async function a2aResult(params, request, env = {}) {
 // referer and no origin. Such a caller cannot be identified from the logs and
 // will never render an HTML page — so the response itself is the only surface
 // that can hand it a way back. This block is that surface and nothing more: no
-// price, no customer claim, no urgency.
+function buildCommercialOffer(origin) {
+  return {
+    instant_pre_screen_usdc: String(TIER_MICRO_CHECK_USDC_AMOUNT),
+    certified_bank_dossier_usdc: String(TIER_BANKABILITY_DOSSIER_USDC_AMOUNT),
+    pro_tenant_monthly_usdc: String(TIER_PRO_USDC_AMOUNT),
+    payment_network: "base",
+    chain_id: 8453,
+    recipient_address: BASE_USDC_WALLET,
+    usdc_contract: BASE_USDC_CONTRACT,
+    settlement_endpoint: `${origin}/v1/settle`,
+    sample_dossier_url: `${origin}/sample-dossier`,
+    x402_pricing_endpoint: `${origin}/.well-known/x402`
+  };
+}
+
 function engagementBlock(request, { profile = "agenda", response = null } = {}) {
   const subject = ENGAGEMENT_SUBJECTS[profile] || ENGAGEMENT_SUBJECTS.agenda;
   const open = engagementOpenItems(response);
@@ -12641,6 +12669,7 @@ function engagementBlock(request, { profile = "agenda", response = null } = {}) 
       `Email a one-line description of ${subject} and the decision or review it feeds. ` +
       "Fit, scope, fee, and timing are confirmed before work starts.",
     expedited_dossier_url: "https://paypal.me/vaskenzy",
+    sample_dossier_url: `${originFromRequest(request)}/sample-dossier`,
     // The landing page, not the agent card: the card is already in this
     // metadata, and the person behind an integration needs a page they can read.
     human_page: originFromRequest(request)
@@ -13745,16 +13774,33 @@ function withEngagementOffer(result, profile, request) {
   if (!result || result.status?.state !== "TASK_STATE_COMPLETED") return result;
   if (hasEngagement(result)) return result;
   const artifacts = Array.isArray(result.artifacts) ? result.artifacts : [];
+  const origin = originFromRequest(request);
   const engagement = engagementBlock(request, {
     profile,
     response: engagementResponsePayload(result, artifacts)
   });
+  const commercialOffer = {
+    instant_pre_screen_usdc: String(TIER_MICRO_CHECK_USDC_AMOUNT),
+    certified_bank_dossier_usdc: String(TIER_BANKABILITY_DOSSIER_USDC_AMOUNT),
+    pro_tenant_monthly_usdc: String(TIER_PRO_USDC_AMOUNT),
+    payment_network: "base",
+    chain_id: 8453,
+    recipient_address: BASE_USDC_WALLET,
+    usdc_contract: BASE_USDC_CONTRACT,
+    settlement_endpoint: `${origin}/v1/settle`,
+    sample_dossier_url: `${origin}/sample-dossier`,
+    x402_pricing_endpoint: `${origin}/.well-known/x402`
+  };
   return {
     ...result,
     artifacts: artifacts.map((artifact, index) =>
       index === 0 ? { ...artifact, parts: partsWithEngagement(artifact.parts, engagement) } : artifact
     ),
-    metadata: { ...(result.metadata || {}), engagement }
+    metadata: {
+      ...(result.metadata || {}),
+      engagement,
+      commercial_offer: commercialOffer
+    }
   };
 }
 
@@ -14485,6 +14531,35 @@ function landingHtml(request, env) {
     <span class="badge">Zero-Retention</span>
   </div>
 
+  <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border-radius: 8px; padding: 18px 20px; margin: 16px 0 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+      <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: #38bdf8; color: #090d16; padding: 2px 8px; border-radius: 4px;">Top Market Flagships</span>
+      <span style="font-size: 12px; color: #94a3b8;">High-Velocity Cross-Border Clearance</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+      <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 12px 14px;">
+        <strong style="color: #38bdf8; font-size: 14px; display: block; margin-bottom: 4px;">⛏️ Critical Minerals &amp; Energy Supply Chains</strong>
+        <p style="font-size: 12px; color: #cbd5e1; margin: 0 0 10px; line-height: 1.4;">
+          Forensic due diligence for Lithium, Uranium, Titanium, and Rare Earth supply chains via Caspian ports (Aktau &bull; Baku &bull; Poti). Sanctions, UBO control, and evidence gap audit.
+        </p>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <a href="${origin}/v1/critical-minerals/due-diligence" style="background: #0284c7; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; text-decoration: none;">Interactive Console &rarr;</a>
+          <a href="${origin}/sample-dossier" style="color: #7dd3fc; font-size: 12px; font-weight: 600; text-decoration: none;">Sample Dossier</a>
+        </div>
+      </div>
+      <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 12px 14px;">
+        <strong style="color: #4ade80; font-size: 14px; display: block; margin-bottom: 4px;">⚙️ Dual-Use Technology &amp; Export Controls</strong>
+        <p style="font-size: 12px; color: #cbd5e1; margin: 0 0 10px; line-height: 1.4;">
+          Instant screening against Common High Priority Lists (CHPL Tier 1&ndash;4), microelectronics, CNC tooling, and secondary sanctions risk (OFAC EO 14114 &bull; EU Annex VII).
+        </p>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <a href="${origin}/v1/dual-use/technology-export" style="background: #16a34a; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; text-decoration: none;">Interactive Console &rarr;</a>
+          <a href="${origin}/v1/dual-use/screen" style="color: #86efac; font-size: 12px; font-weight: 600; text-decoration: none;">REST API</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <h2>What this is</h2>
   ${flagshipBlock}
   <p><strong>Not</strong> legal, compliance, sanctions, financial, investment, or insurance advice. <strong>Not</strong> a factuality verifier — schemas enforce structure, not truth. <strong>No</strong> autonomous live source retrieval.</p>
@@ -14655,12 +14730,15 @@ function landingHtml(request, env) {
 
   <h2>Commercial Clearance & Deal Dossiers</h2>
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
-    <div style="background: #f0f7ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+    <div style="background: #f0f7ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 14px 18px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
       <div>
-        <strong style="color: #0369a1; font-size: 14px;">Institutional Transparency:</strong>
-        <span style="color: var(--muted); font-size: 13px; display: block;">Review an authentic 5-factor forensic sanctions & logistics audit with cryptographic Vizier JWS receipt.</span>
+        <strong style="color: #0369a1; font-size: 15px; display: block; margin-bottom: 2px;">📄 Sample Bank-Grade Deal Dossier Available:</strong>
+        <span style="color: var(--muted); font-size: 13px; display: block;">Review an authentic 5-factor forensic sanctions & logistics audit with cryptographic Vizier JWS receipt. Formatted for credit committee submission.</span>
       </div>
-      <a href="${origin}/sample-dossier" style="background: #0284c7; color: #fff; padding: 6px 16px; border-radius: 4px; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap;">View Sample Redacted Dossier</a>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="${origin}/sample-dossier" style="background: #0284c7; color: #fff; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap;">Preview Dossier</a>
+        <a href="${origin}/v1/dossier/export" target="_blank" style="background: #0f172a; color: #fff; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap;">🖨️ A4 Print / PDF</a>
+      </div>
     </div>
 
     <p style="font-size: 15px; margin-bottom: 8px;"><strong>Need independent sanctions, UBO, or dual-use clearance for bank compliance or trade finance?</strong></p>
@@ -15543,6 +15621,64 @@ const DIRECT_V1_ROUTES = {
       vizier_status: result.arbitration_ruling?.vizier_status,
       vizier_clearance_receipt: result.arbitration_ruling?.vizier_clearance_receipt,
       execution_advisory: result.arbitration_ruling?.execution_advisory
+    })
+  },
+  "/v1/dual-use/technology-export": {
+    label: "dual-use technology export controls",
+    guideProfile: "dual_use_technology_export",
+    schema: "schemas/v1/dual-use-technology-export-request.schema.json",
+    missing: "Missing structured dual-use technology export request",
+    extract: (params) => {
+      const strict = structuredDualUseTechnologyExportRequestFromParams(params);
+      if (strict) return strict;
+      const rawText = (extractText(params) || params.prompt || params.query || params.text || "").trim();
+      if (rawText || params.auto_complete) {
+        return extractDualUseParameters(params.request || params || {}, rawText);
+      }
+      return null;
+    },
+    errorsFor: dualUseTechnologyExportErrors,
+    run: async (structured, request, env) => {
+      let vizierDualUse = null;
+      if (isDualUseVizierEnabled(env)) {
+        vizierDualUse = await verifyDualUseWithVizier(env, structured);
+      }
+      return dualUseTechnologyExportResult(structured, vizierDualUse);
+    },
+    provenance: (result) => ({
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
+      dual_use_verification: result.dual_use_verification
+    })
+  },
+  "/v1/dual-use/screen": {
+    label: "dual-use technology export controls",
+    guideProfile: "dual_use_technology_export",
+    schema: "schemas/v1/dual-use-technology-export-request.schema.json",
+    missing: "Missing structured dual-use technology export request",
+    extract: (params) => {
+      const strict = structuredDualUseTechnologyExportRequestFromParams(params);
+      if (strict) return strict;
+      const rawText = (extractText(params) || params.prompt || params.query || params.text || "").trim();
+      if (rawText || params.auto_complete) {
+        return extractDualUseParameters(params.request || params || {}, rawText);
+      }
+      return null;
+    },
+    errorsFor: dualUseTechnologyExportErrors,
+    run: async (structured, request, env) => {
+      let vizierDualUse = null;
+      if (isDualUseVizierEnabled(env)) {
+        vizierDualUse = await verifyDualUseWithVizier(env, structured);
+      }
+      return dualUseTechnologyExportResult(structured, vizierDualUse);
+    },
+    provenance: (result) => ({
+      vizier_status: result.vizier_status,
+      vizier_degrade_reason: result.vizier_degrade_reason,
+      vizier_clearance_receipt: result.vizier_clearance_receipt,
+      dual_use_verification: result.dual_use_verification
     })
   }
 };

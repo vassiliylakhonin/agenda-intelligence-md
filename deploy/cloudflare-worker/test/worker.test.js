@@ -9099,6 +9099,93 @@ test("GET /corridor-bankability includes mobile MetaMask deep linking", async ()
   assert.match(html, /Open in MetaMask/);
 });
 
+test("A2A completed task metadata includes commercial_offer and sample_dossier_url", async () => {
+  const response = await handleJsonRpc(
+    {
+      jsonrpc: "2.0",
+      id: "test-commercial-1",
+      method: "message/send",
+      params: { message: { role: "user", parts: [{ kind: "text", text: "Kazakhstan corridor sanctions exposure" }] } }
+    },
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST" })
+  );
+
+  assert.equal(response.result.status.state, "TASK_STATE_COMPLETED");
+  const engagement = response.result.metadata.engagement;
+  assert.ok(engagement.sample_dossier_url);
+  assert.match(engagement.sample_dossier_url, /\/sample-dossier$/);
+
+  const offer = response.result.metadata.commercial_offer;
+  assert.ok(offer);
+  assert.equal(offer.payment_network, "base");
+  assert.equal(offer.chain_id, 8453);
+  assert.equal(offer.instant_pre_screen_usdc, "0.05");
+  assert.equal(offer.certified_bank_dossier_usdc, "25");
+  assert.equal(offer.pro_tenant_monthly_usdc, "490");
+  assert.ok(offer.recipient_address);
+  assert.ok(offer.settlement_endpoint.includes("/v1/settle"));
+});
+
+test("GET / contains Top Market Flagships and Sample Dossier preview", async () => {
+  const response = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/", {
+      headers: { accept: "text/html" }
+    })
+  );
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Top Market Flagships/);
+  assert.match(html, /Critical Minerals &amp; Energy Supply Chains/);
+  assert.match(html, /Dual-Use Technology &amp; Export Controls/);
+  assert.match(html, /\/v1\/critical-minerals\/due-diligence/);
+  assert.match(html, /\/v1\/dual-use\/technology-export/);
+  assert.match(html, /Sample Bank-Grade Deal Dossier Available/);
+  assert.match(html, /\/sample-dossier/);
+});
+
+test("GET and POST /v1/dual-use/technology-export return valid responses", async () => {
+  const env = { AGENT_PROFILE: "dual_use_technology_export" };
+  const url = "https://dual-use-technology-export-a2a.example.workers.dev/v1/dual-use/technology-export";
+
+  // GET with HTML
+  const htmlResp = await handleRequest(
+    new Request(url, { headers: { accept: "text/html" } }),
+    env
+  );
+  assert.equal(htmlResp.status, 200);
+  const html = await htmlResp.text();
+  assert.match(html, /Interactive Test Console/);
+  assert.match(html, /dual-use technology export controls/i);
+
+  // GET with JSON
+  const jsonResp = await handleRequest(
+    new Request(url, { headers: { accept: "application/json" } }),
+    env
+  );
+  assert.equal(jsonResp.status, 200);
+  const json = await jsonResp.json();
+  assert.ok(json.schema);
+  assert.ok(json.example_request);
+
+  // POST with smart prompt
+  const postResp = await handleRequest(
+    new Request(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Screen dual-use export for 854231 microcontrollers shipped from DE to KZ via TR"
+      })
+    }),
+    env
+  );
+  assert.equal(postResp.status, 200);
+  const postJson = await postResp.json();
+  assert.equal(postJson.profile, "dual_use_technology_export");
+  assert.ok(postJson.export_risk_triage);
+  assert.ok(postJson.export_risk_triage.status);
+  assert.ok(postJson.export_risk_triage.primary_risk_vectors.some(v => v.includes("Transit countries")));
+});
+
 
 
 
