@@ -4565,6 +4565,7 @@ CRITICAL_MINERALS_QUOTA_RESTRICTED = {
     "gallium_germanium",
     "graphite",
     "tungsten",
+    "antimony",
 }
 
 CRITICAL_MINERALS_HIGH_RISK_PROCESSING_JURISDICTIONS = {
@@ -4758,17 +4759,19 @@ def extract_critical_minerals_parameters(request_json: dict | None = None, raw_t
             commodity = "tungsten"
         elif "manganese" in lower or "марганец" in lower:
             commodity = "manganese"
+        elif "uranium" in lower or "уран" in lower or "yellowcake" in lower or "u3o8" in lower:
+            commodity = "uranium"
+        elif "titanium" in lower or "титан" in lower or "титанов" in lower:
+            commodity = "titanium"
+        elif "antimony" in lower or "сурьма" in lower:
+            commodity = "antimony"
         elif any(
             k in lower
             for k in [
-                "antimony",
-                "титан",
-                "titanium",
                 "tantalum",
                 "тантал",
                 "niobium",
                 "beryllium",
-                "uranium",
                 "bauxite",
                 "platinum",
                 "palladium",
@@ -4853,7 +4856,18 @@ def extract_critical_minerals_parameters(request_json: dict | None = None, raw_t
     }
     if processing_jurisdiction:
         result["processing_jurisdiction"] = processing_jurisdiction
-    if "target_market" in input_data and input_data["target_market"] in {
+    target_market = input_data.get("target_market")
+    if not target_market and text:
+        if re.search(r"\b(us|usa|united states|сша|ira)\b", lower):
+            target_market = "us"
+        elif any(k in lower for k in ["eu", "europe", "европ", "crma"]):
+            target_market = "eu"
+        elif any(k in lower for k in ["uk", "британи"]):
+            target_market = "uk"
+        elif any(k in lower for k in ["japan", "korea", "япони", "коре"]):
+            target_market = "japan_korea"
+
+    if target_market and target_market in {
         "eu",
         "us",
         "uk",
@@ -4861,7 +4875,7 @@ def extract_critical_minerals_parameters(request_json: dict | None = None, raw_t
         "global",
         "domestic",
     }:
-        result["target_market"] = input_data["target_market"]
+        result["target_market"] = target_market
 
     return result
 
@@ -4962,6 +4976,90 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
         "Refinery tolling fee and capacity bottlenecks",
         "CSDDD supply-chain due diligence compliance audits",
     ]
+
+    target_market = request_json.get("target_market", "")
+    commodity = request_json.get("commodity", "")
+    processing = request_json.get("processing_jurisdiction", "")
+    origin = request_json.get("origin_jurisdiction", "")
+
+    if target_market == "us":
+        is_feoc = processing in ("China", "Russia") or origin in ("China", "Russia")
+        top_risks.append(
+            {
+                "category": "US IRA Section 30D FEOC Disqualification",
+                "severity": "high" if is_feoc else "low",
+                "description": (
+                    f"Processing or extraction in {processing or origin} triggers Foreign Entity of Concern (FEOC) "
+                    "disqualification under 10 CFR Part 371 & 26 U.S.C. § 30D, barring clean vehicle tax credits ($7,500/vehicle)."
+                    if is_feoc
+                    else "Target market is US: 25% FEOC ownership/control verification required under IRA Section 30D."
+                ),
+            }
+        )
+        exposure_layers.append(
+            {
+                "layer": "US IRA FEOC 25% Threshold Audit",
+                "level": "gap" if is_feoc else "verified",
+                "summary": (
+                    f"Covered nation processing ({processing or origin}) disqualifies offtake from US clean energy tax credits."
+                    if is_feoc
+                    else "No covered FEOC processing jurisdiction identified; beneficial ownership audit recommended."
+                ),
+            }
+        )
+        watch_next.append("US Treasury / IRS FEOC 25% beneficial ownership rules under IRA Section 30D")
+
+    if commodity == "uranium":
+        top_risks.append(
+            {
+                "category": "Nuclear Regulatory & Sanctions Transit Corridor",
+                "severity": "high",
+                "description": (
+                    "Uranium shipments must comply with US Public Law 118-67 (Russian Uranium Import Ban). "
+                    "Russian port transit (St. Petersburg) is prohibited for US delivery; Trans-Caspian TITR corridor "
+                    "requires Euratom Supply Agency (ESA) Article 52 co-signature and IAEA Safeguards verification."
+                ),
+            }
+        )
+        exposure_layers.append(
+            {
+                "layer": "IAEA Safeguards & Euratom Compliance",
+                "level": "verified" if "iaea_safeguards_and_euratom_co_signature" in supplied_sources else "gap",
+                "summary": "Nuclear non-proliferation tracking, Euratom ESA Article 52 approval, and TITR Caspian routing.",
+            }
+        )
+        watch_next.extend([
+            "US Public Law 118-67 Russian uranium import ban enforcement and waiver schedules",
+            "Euratom Supply Agency (ESA) bilateral delivery authorizations",
+            "IAEA Additional Protocol safeguards and transit verification",
+        ])
+
+    if commodity == "titanium":
+        has_assay = (
+            "certified_ore_assay_report" in supplied_sources
+            or "port_of_loading_assay_verification" in supplied_sources
+        )
+        top_risks.append(
+            {
+                "category": "Aerospace Grade Certification & Provenance",
+                "severity": "medium",
+                "description": (
+                    "Aerospace titanium supply requires certified mill test reports (AMS 4911 / AMS 4928, ASTM B265) "
+                    "and non-Russian raw sponge chain-of-custody verification to satisfy Western OEM (Boeing/Airbus) diversification quotas."
+                ),
+            }
+        )
+        exposure_layers.append(
+            {
+                "layer": "Aerospace Qualification & Sponge Origin",
+                "level": "verified" if has_assay else "gap",
+                "summary": "AMS/ASTM certified lab assay and non-Russian titanium sponge origin verification.",
+            }
+        )
+        watch_next.extend([
+            "Western aerospace OEM (Boeing/Airbus) titanium qualification and long-term agreements",
+            "Kazakhstan UKTMP vs VSMPO-Avisma market share reallocation",
+        ])
 
     response = {
         "triage_recommendation": triage,

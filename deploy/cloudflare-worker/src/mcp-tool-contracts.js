@@ -5090,6 +5090,9 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "manganese",
               "tungsten",
               "gallium_germanium",
+              "uranium",
+              "titanium",
+              "antimony",
               "other_critical_mineral"
             ]
           },

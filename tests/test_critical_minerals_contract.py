@@ -100,3 +100,43 @@ def test_a2a_critical_minerals_smart_fallback():
     assert task["metadata"]["inferred_parameters"] is True
     assert task["metadata"]["product_profile"] == "critical_minerals_due_diligence"
     assert len(task["artifacts"]) > 0
+
+
+def test_critical_minerals_us_ira_feoc_assessment():
+    req = {
+        "prompt": "Lithium spodumene offtake from Kazakhstan refined in China for US clean vehicle market",
+        "auto_complete": True,
+    }
+    result = critical_minerals_due_diligence(req)
+    assert result["valid"] is True
+    resp = result["response"]
+    assert resp["commodity"] == "lithium"
+    assert resp["target_market"] == "us"
+    assert any("FEOC Disqualification" in r["category"] for r in resp["top_risks"])
+    assert any("FEOC 25% Threshold" in l["layer"] for l in resp["exposure_layers"])
+
+
+def test_critical_minerals_uranium_safeguards_gate():
+    req = {
+        "prompt": "Uranium yellowcake U3O8 offtake from Kazakhstan via Caspian Middle Corridor",
+        "auto_complete": True,
+    }
+    result = critical_minerals_due_diligence(req)
+    assert result["valid"] is True
+    resp = result["response"]
+    assert resp["commodity"] == "uranium"
+    assert any("Nuclear Regulatory" in r["category"] for r in resp["top_risks"])
+    assert any("IAEA Safeguards" in l["layer"] for l in resp["exposure_layers"])
+
+
+def test_critical_minerals_titanium_aerospace_gate():
+    req = {
+        "prompt": "Titanium aerospace sponge from Ust-Kamenogorsk Kazakhstan for EU offtake",
+        "auto_complete": True,
+    }
+    result = critical_minerals_due_diligence(req)
+    assert result["valid"] is True
+    resp = result["response"]
+    assert resp["commodity"] == "titanium"
+    assert any("Aerospace Grade Certification" in r["category"] for r in resp["top_risks"])
+

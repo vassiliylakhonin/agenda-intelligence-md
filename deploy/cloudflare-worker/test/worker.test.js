@@ -9186,6 +9186,101 @@ test("GET and POST /v1/dual-use/technology-export return valid responses", async
   assert.ok(postJson.export_risk_triage.primary_risk_vectors.some(v => v.includes("Transit countries")));
 });
 
+test("dual_use_technology_export: classifies CHPL Tier 4.A CNC machine tools and attaches E.O. 14114 warning on Tier 1", async () => {
+  const env = { AGENT_PROFILE: "dual_use_technology_export" };
+  const url = "https://dual-use-technology-export-a2a.example.workers.dev/v1/dual-use/technology-export";
+
+  // Tier 4.A CNC Machining Center
+  const cncResp = await handleRequest(
+    new Request(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Export 5-axis CNC machining center HS 8457.10 from Germany to Kazakhstan via TR"
+      })
+    }),
+    env
+  );
+  assert.equal(cncResp.status, 200);
+  const cncJson = await cncResp.json();
+  assert.equal(cncJson.profile, "dual_use_technology_export");
+  const cncVectors = cncJson.export_risk_triage.primary_risk_vectors;
+  assert.ok(cncVectors.some(v => v.includes("Tier 4.A")));
+  assert.ok(cncVectors.some(v => v.includes("CNC Metalworking Alert")));
+
+  // Tier 1 Microcontrollers E.O. 14114 FFI Warning
+  const t1Resp = await handleRequest(
+    new Request(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Ship 854231 microcontrollers from Japan to Almaty via Turkey"
+      })
+    }),
+    env
+  );
+  assert.equal(t1Resp.status, 200);
+  const t1Json = await t1Resp.json();
+  const t1Vectors = t1Json.export_risk_triage.primary_risk_vectors;
+  assert.ok(t1Vectors.some(v => v.includes("OFAC E.O. 14114 Warning")));
+});
+
+test("critical_minerals: evaluates US IRA FEOC 25%, Uranium P.L. 118-67, and Titanium aerospace gates", async () => {
+  const env = { AGENT_PROFILE: "critical_minerals_due_diligence" };
+  const url = "https://critical-minerals-due-diligence-a2a.example.workers.dev/v1/critical-minerals/due-diligence";
+
+  // 1. US IRA FEOC Disqualification (China processing -> US market)
+  const feocResp = await handleRequest(
+    new Request(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Lithium carbonate offtake from Kazakhstan refined in China for USA market"
+      })
+    }),
+    env
+  );
+  assert.equal(feocResp.status, 200);
+  const feocJson = await feocResp.json();
+  assert.equal(feocJson.commodity, "lithium");
+  assert.equal(feocJson.target_market, "us");
+  assert.ok(feocJson.top_risks.some(r => r.category.includes("FEOC Disqualification")));
+  assert.ok(feocJson.exposure_layers.some(l => l.layer.includes("FEOC 25% Threshold")));
+
+  // 2. Uranium Nuclear Regulatory & Sanctions Transit Corridor (P.L. 118-67, IAEA, Euratom)
+  const uraniumResp = await handleRequest(
+    new Request(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Uranium yellowcake U3O8 offtake from Kazakhstan via Caspian Middle Corridor"
+      })
+    }),
+    env
+  );
+  assert.equal(uraniumResp.status, 200);
+  const uJson = await uraniumResp.json();
+  assert.equal(uJson.commodity, "uranium");
+  assert.ok(uJson.top_risks.some(r => r.category.includes("Nuclear Regulatory")));
+  assert.ok(uJson.exposure_layers.some(l => l.layer.includes("IAEA Safeguards")));
+
+  // 3. Titanium Aerospace Specification & Sponge Origin (AMS 4911 / ASTM B265)
+  const tiResp = await handleRequest(
+    new Request(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        prompt: "Titanium aerospace sponge from Ust-Kamenogorsk Kazakhstan for EU aerospace offtake"
+      })
+    }),
+    env
+  );
+  assert.equal(tiResp.status, 200);
+  const tiJson = await tiResp.json();
+  assert.equal(tiJson.commodity, "titanium");
+  assert.ok(tiJson.top_risks.some(r => r.category.includes("Aerospace Grade Certification")));
+});
+
 
 
 

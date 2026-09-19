@@ -222,7 +222,7 @@ export interface CISSecondarySanctionsExposureResponse {
 /** Product-grade structured request contract for Critical Minerals & Strategic Raw Materials evidence triage (EU Critical Raw Materials Act, EU CSDDD, US Inflation Reduction Act, and export-control compliance). This schema describes caller-supplied mineral commodity, extraction jurisdiction, processing route, counterparty, and decision-stage inputs. It does not enable live retrieval, factual-truth verification, legal advice, compliance advice, sanctions advice, or ESG certification. */
 export interface CriticalMineralsDueDiligenceRequest {
   project_name: string;
-  commodity: "lithium" | "rare_earth_elements" | "nickel" | "cobalt" | "copper" | "graphite" | "manganese" | "tungsten" | "gallium_germanium" | "other_critical_mineral";
+  commodity: "lithium" | "rare_earth_elements" | "nickel" | "cobalt" | "copper" | "graphite" | "manganese" | "tungsten" | "gallium_germanium" | "uranium" | "titanium" | "antimony" | "other_critical_mineral";
   origin_jurisdiction: string;
   processing_jurisdiction?: string;
   target_market?: "eu" | "us" | "uk" | "japan_korea" | "global" | "domestic";

@@ -3218,12 +3218,102 @@ const CHPL_TIER_DATABASE = Object.freeze([
   },
   {
     prefix: "8486",
-    tier: "Tier 4 (Semiconductor Manufacturing Equipment)",
+    tier: "Tier 4.B (Semiconductor Manufacturing Equipment)",
     isHighPriority: true,
     recommendation: "ESCALATE_TO_COMPLIANCE",
     description: "Machines and apparatus used solely or principally for the manufacture of semiconductor devices.",
     risk: "High regulatory exposure. Subject to strict multilateral export controls and catch-all provisions.",
     documents: ["Manufacturer export authorization", "On-site installation verification guarantee"]
+  },
+  {
+    prefix: "8457",
+    tier: "Tier 4.A (Advanced CNC Machining Centers)",
+    isHighPriority: true,
+    recommendation: "ESCALATE_TO_COMPLIANCE",
+    description: "Machining centers, unit construction machines (single station) and multi-station transfer machines for working metal.",
+    risk: "Critical diversion risk. High-precision CNC machinery subject to G7/EU/US multilateral export controls and secondary sanctions under OFAC EO 14114.",
+    documents: ["Technical specification datasheet (axes, repeatability)", "End-User Certificate (EUC)", "Installation site verification guarantee", "Non-diversion undertaking"]
+  },
+  {
+    prefix: "8458",
+    tier: "Tier 4.A (CNC Lathes & Turning Machines)",
+    isHighPriority: true,
+    recommendation: "ESCALATE_TO_COMPLIANCE",
+    description: "Horizontal and other lathes for removing metal, numerically controlled (CNC).",
+    risk: "High diversion risk for military production. Subject to enhanced transit controls and end-use verification.",
+    documents: ["Manufacturer spec sheet", "End-User Certificate (EUC)", "Factory consignee KYC"]
+  },
+  {
+    prefix: "8459",
+    tier: "Tier 4.A (CNC Milling Machines)",
+    isHighPriority: true,
+    recommendation: "ESCALATE_TO_COMPLIANCE",
+    description: "Machine tools for drilling, boring, milling, threading or tapping by removing metal, numerically controlled (CNC).",
+    risk: "High diversion risk for defense manufacturing. Catch-all export licensing requirements apply.",
+    documents: ["Manufacturer spec sheet", "End-User Certificate (EUC)", "Non-diversion undertaking"]
+  },
+  {
+    prefix: "8466",
+    tier: "Tier 4.A (Machine Tool Parts & Toolholders)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Parts and accessories for machine tools of headings 8456 to 8465, toolholders and workholders.",
+    risk: "Medium-high diversion risk for sustaining sanctioned industrial CNC machinery.",
+    documents: ["Commercial invoice with part numbers", "End-use statement", "Consignee business registration"]
+  },
+  {
+    prefix: "8482",
+    tier: "Tier 3.B (Precision Bearings)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Ball or roller bearings (cylindrical, needle, spherical) and bearing assemblies.",
+    risk: "Critical diversion risk. Common high-priority component essential for UAVs, aerospace assemblies, and military vehicle drivetrains.",
+    documents: ["Technical datasheet", "End-User Certificate (EUC)", "Consignee verification"]
+  },
+  {
+    prefix: "8532",
+    tier: "Tier 2 (Capacitors)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Electrical capacitors, fixed, variable or adjustable (tantalum, ceramic multilayer).",
+    risk: "High diversion risk. Critical passive components heavily documented in military UAV and missile navigation modules.",
+    documents: ["Manufacturer spec sheet", "End-use statement", "Non-diversion agreement"]
+  },
+  {
+    prefix: "8536",
+    tier: "Tier 3.A (Electrical Switching & Connectors)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Electrical apparatus for switching or protecting electrical circuits, relays, connectors for voltage not exceeding 1,000 V.",
+    risk: "Medium diversion risk. Interconnect and circuit protection hardware for defense electronics.",
+    documents: ["Commercial invoice with part numbers", "End-use statement"]
+  },
+  {
+    prefix: "8548",
+    tier: "Tier 2 (Machinery Electrical Parts)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Electrical parts of machinery or apparatus, not specified elsewhere in Chapter 85.",
+    risk: "High diversion risk under EU Regulation 833/2014 Annex XL.",
+    documents: ["Commercial invoice", "End-use statement"]
+  },
+  {
+    prefix: "9027",
+    tier: "Tier 4.B (Physical / Chemical Analysis Instruments)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Instruments and apparatus for physical or chemical analysis (spectrometers, chromatographs).",
+    risk: "Dual-use application in chemical, materials, and semiconductor R&D.",
+    documents: ["Export license proof", "End-use statement"]
+  },
+  {
+    prefix: "9030",
+    tier: "Tier 4.B (Oscilloscopes & Test Equipment)",
+    isHighPriority: true,
+    recommendation: "ENHANCED_DUE_DILIGENCE",
+    description: "Oscilloscopes, spectrum analyzers, multimeters, and instruments for measuring electrical quantities.",
+    risk: "Dual-use test equipment essential for military electronics repair and radar integration.",
+    documents: ["Technical specification", "End-user statement"]
   }
 ]);
 
@@ -3929,7 +4019,7 @@ const GATE_REQUEST_GUIDES = Object.freeze({
     schema: "schemas/v1/critical-minerals-due-diligence-request.schema.json",
     required: [
       "project_name — the offtake, investment or shipment file",
-      "commodity — one of lithium, rare_earth_elements, nickel, cobalt, copper, graphite, manganese, tungsten, gallium_germanium, other_critical_mineral",
+      "commodity — one of lithium, rare_earth_elements, nickel, cobalt, copper, graphite, manganese, tungsten, gallium_germanium, uranium, titanium, antimony, other_critical_mineral",
       "origin_jurisdiction — where the material is mined",
       "decision_question — one sentence naming the decision",
       "decision_stage — pre_exploration, pre_offtake_agreement, pre_processing_contract, pre_export_shipment, pre_investment_decision",
@@ -7781,7 +7871,8 @@ const CRITICAL_MINERALS_QUOTA_RESTRICTED = new Set([
   "rare_earth_elements",
   "gallium_germanium",
   "graphite",
-  "tungsten"
+  "tungsten",
+  "antimony"
 ]);
 
 const CRITICAL_MINERALS_HIGH_RISK_PROCESSING_JURISDICTIONS = new Set([
@@ -8041,6 +8132,57 @@ function criticalMineralsResult(request, vizierMinerals = null) {
     "CSDDD supply-chain due diligence compliance audits"
   ];
 
+  // Specialized Industry Regulatory Gates: US IRA FEOC, Uranium, Titanium
+  if (request.target_market === "us") {
+    const isFeoc = processing === "China" || processing === "Russia" || origin === "China" || origin === "Russia";
+    topRisks.push({
+      category: "US IRA Section 30D FEOC Disqualification",
+      severity: isFeoc ? "high" : "low",
+      description: isFeoc
+        ? `Processing or extraction in ${processing || origin} triggers Foreign Entity of Concern (FEOC) disqualification under 10 CFR Part 371 & 26 U.S.C. § 30D, barring clean vehicle tax credits ($7,500/vehicle).`
+        : "Target market is US: 25% FEOC ownership/control verification required under IRA Section 30D."
+    });
+    exposureLayers.push({
+      layer: "US IRA FEOC 25% Threshold Audit",
+      level: isFeoc ? "gap" : "verified",
+      summary: isFeoc
+        ? `Covered nation processing (${processing || origin}) disqualifies offtake from US clean energy tax credits.`
+        : "No covered FEOC processing jurisdiction identified; beneficial ownership audit recommended."
+    });
+    watchNext.push("US Treasury / IRS FEOC 25% beneficial ownership rules under IRA Section 30D");
+  }
+
+  if (commodity === "uranium") {
+    topRisks.push({
+      category: "Nuclear Regulatory & Sanctions Transit Corridor",
+      severity: "high",
+      description: "Uranium shipments must comply with US Public Law 118-67 (Russian Uranium Import Ban). Russian port transit (St. Petersburg) is prohibited for US delivery; Trans-Caspian TITR corridor requires Euratom Supply Agency (ESA) Article 52 co-signature and IAEA Safeguards verification."
+    });
+    exposureLayers.push({
+      layer: "IAEA Safeguards & Euratom Compliance",
+      level: suppliedSources.includes("iaea_safeguards_and_euratom_co_signature") ? "verified" : "gap",
+      summary: "Nuclear non-proliferation tracking, Euratom ESA Article 52 approval, and TITR Caspian routing."
+    });
+    watchNext.push("US Public Law 118-67 Russian uranium import ban enforcement and waiver schedules");
+    watchNext.push("Euratom Supply Agency (ESA) bilateral delivery authorizations");
+    watchNext.push("IAEA Additional Protocol safeguards and transit verification");
+  }
+
+  if (commodity === "titanium") {
+    topRisks.push({
+      category: "Aerospace Grade Certification & Provenance",
+      severity: "medium",
+      description: "Aerospace titanium supply requires certified mill test reports (AMS 4911 / AMS 4928, ASTM B265) and non-Russian raw sponge chain-of-custody verification to satisfy Western OEM (Boeing/Airbus) diversification quotas."
+    });
+    exposureLayers.push({
+      layer: "Aerospace Qualification & Sponge Origin",
+      level: hasAssay ? "verified" : "gap",
+      summary: "AMS/ASTM certified lab assay and non-Russian titanium sponge origin verification."
+    });
+    watchNext.push("Western aerospace OEM (Boeing/Airbus) titanium qualification and long-term agreements");
+    watchNext.push("Kazakhstan UKTMP vs VSMPO-Avisma market share reallocation");
+  }
+
   const response = {
     triage_recommendation: triage,
     risk_signal: riskSignal,
@@ -8142,10 +8284,15 @@ export function extractCriticalMineralsParameters(input = {}, rawText = "") {
     else if (lower.includes("copper") || lower.includes("медь")) commodity = "copper";
     else if (lower.includes("tungsten") || lower.includes("вольфрам")) commodity = "tungsten";
     else if (lower.includes("manganese") || lower.includes("марганец")) commodity = "manganese";
-    else if (
-      lower.includes("antimony") || lower.includes("титан") || lower.includes("titanium") ||
+    else if (lower.includes("uranium") || lower.includes("уран") || lower.includes("yellowcake") || lower.includes("u3o8")) {
+      commodity = "uranium";
+    } else if (lower.includes("titanium") || lower.includes("титан") || lower.includes("титанов")) {
+      commodity = "titanium";
+    } else if (lower.includes("antimony") || lower.includes("сурьма")) {
+      commodity = "antimony";
+    } else if (
       lower.includes("tantalum") || lower.includes("тантал") || lower.includes("niobium") ||
-      lower.includes("beryllium") || lower.includes("uranium") || lower.includes("bauxite") ||
+      lower.includes("beryllium") || lower.includes("bauxite") ||
       lower.includes("platinum") || lower.includes("palladium") || lower.includes("silicon")
     ) {
       commodity = "other_critical_mineral";
@@ -8238,7 +8385,19 @@ export function extractCriticalMineralsParameters(input = {}, rawText = "") {
     inferred_parameters: defaulted.length > 0
   };
   if (processing_jurisdiction) result.processing_jurisdiction = processing_jurisdiction;
-  if (input.target_market) result.target_market = input.target_market;
+  let target_market = input.target_market;
+  if (!target_market && text) {
+    if (/\b(us|usa|united states|сша|ira)\b/i.test(lower)) {
+      target_market = "us";
+    } else if (lower.includes("eu") || lower.includes("europe") || lower.includes("европ") || lower.includes("crma")) {
+      target_market = "eu";
+    } else if (lower.includes("uk") || lower.includes("британи")) {
+      target_market = "uk";
+    } else if (lower.includes("japan") || lower.includes("korea") || lower.includes("япони") || lower.includes("коре")) {
+      target_market = "japan_korea";
+    }
+  }
+  if (target_market) result.target_market = target_market;
 
   Object.defineProperty(result, DEFAULTED_REQUEST_FIELDS, { value: defaulted, enumerable: false });
   return result;
@@ -8591,10 +8750,28 @@ function structuredDualUseTechnologyExportRequestFromParams(params) {
 }
 
 function dualUseTechnologyExportResult(request, vizierDualUse = null) {
-  const shipment = request.shipment;
-  const sources = request.dated_sources;
+  const shipment = request.shipment || {};
+  const sources = Array.isArray(request.dated_sources) ? request.dated_sources : [];
   const riskVectors = [];
   let score = 40;
+
+  // 1. CHPL classification & G7/BIS/EU priority triage
+  const chplInfo = lookupChplTier(shipment.hs_code);
+  let isChplHighPriority = false;
+  if (chplInfo && chplInfo.isHighPriority) {
+    isChplHighPriority = true;
+    riskVectors.push(`CHPL Status: ${chplInfo.tier} matched (HS ${shipment.hs_code || chplInfo.prefix}). Heightened diversion risk under EU Reg 833/2014 Annex XL, US BIS EAR Common High Priority List, and UK Russia Regulations.`);
+    if (chplInfo.tier.includes("Tier 1") || chplInfo.tier.includes("Tier 2")) {
+      riskVectors.push("OFAC E.O. 14114 Warning: Secondary sanctions exposure for Foreign Financial Institutions (FFIs) facilitating transactions involving CHPL Tier 1–2 items.");
+    }
+    if (chplInfo.tier.includes("Tier 4.A")) {
+      riskVectors.push("Tier 4.A CNC Metalworking Alert: Verification of on-site installation, end-user factory inspection, and dual-use catch-all clearance mandatory.");
+    }
+    const hasEuc = sources.some(s => s && (s.source_type === "end_user_statement" || s.source_type === "end_user_certificate" || (s.title && s.title.toLowerCase().includes("end-user"))));
+    if (!hasEuc) {
+      riskVectors.push("CHPL Advisory: End-User Certificate (EUC) and non-diversion undertaking recommended before export authorization.");
+    }
+  }
 
   if (typeof shipment.eccn === "string" && shipment.eccn.trim()) score += 20;
   else riskVectors.push("No caller-supplied ECCN classification; obtain a classification note before human review.");
@@ -8635,7 +8812,7 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
   }
 
   const hasMissingEvidence = riskVectors.some(
-    (item) => item.startsWith("No ") || item.startsWith("End-user")
+    (item) => item.startsWith("No ") || item.startsWith("End-user") || item.startsWith("Missing ")
   );
   const status =
     shipment.end_user_sector === "military" || vizierEscalation
@@ -8644,6 +8821,14 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
         ? "not_decision_ready"
         : "decision_ready";
 
+  const evidenceLedger = sources.map(
+    (source) =>
+      `${String(source?.id || "source")}: ${String(source?.source_type || "unspecified")} — ${String(source?.title || "untitled")} (${String(source?.date || "undated")})`
+  );
+  if (isChplHighPriority) {
+    evidenceLedger.push(`Regulatory Classification: ${chplInfo.tier} — ${chplInfo.description}`);
+  }
+
   const response = {
     contract_version: VERSION,
     profile: "dual_use_technology_export",
@@ -8651,10 +8836,7 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
       status,
       score,
       primary_risk_vectors: riskVectors,
-      evidence_ledger: sources.map(
-        (source) =>
-          `${String(source?.id || "source")}: ${String(source?.source_type || "unspecified")} — ${String(source?.title || "untitled")} (${String(source?.date || "undated")})`
-      )
+      evidence_ledger: evidenceLedger
     }
   };
 

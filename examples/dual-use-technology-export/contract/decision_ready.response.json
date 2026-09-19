@@ -5,11 +5,14 @@
     "status": "decision_ready",
     "score": 100,
     "primary_risk_vectors": [
+      "CHPL Status: Tier 1 (Battlefield High Priority) matched (HS 854231). Heightened diversion risk under EU Reg 833/2014 Annex XL, US BIS EAR Common High Priority List, and UK Russia Regulations.",
+      "OFAC E.O. 14114 Warning: Secondary sanctions exposure for Foreign Financial Institutions (FFIs) facilitating transactions involving CHPL Tier 1–2 items.",
       "Transit countries are present; human review must assess diversion and re-export controls for each leg."
     ],
     "evidence_ledger": [
       "du-1: classification_note — Exporter ECCN self-classification note (2026-08-01)",
-      "du-2: end_user_statement — Signed end-use / end-user statement from the Kazakhstan consignee (2026-08-05)"
+      "du-2: end_user_statement — Signed end-use / end-user statement from the Kazakhstan consignee (2026-08-05)",
+      "Regulatory Classification: Tier 1 (Battlefield High Priority) — Electronic integrated circuits, microcontrollers, processors, and memories."
     ]
   }
 }
