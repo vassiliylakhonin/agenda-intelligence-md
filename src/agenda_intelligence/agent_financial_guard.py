@@ -84,6 +84,16 @@ class AgentFinancialGuard:
         self.timeout = timeout
         self.local_fallback = local_fallback
 
+    def collect_base_usdc_history(self, wallet_address: str) -> dict[str, Any]:
+        """Read finalized Base native-USDC evidence; never authorize a payment.
+
+        This separate network operation does not change verdicts or accept a
+        caller-provided spending total. RPC failure raises EvidenceUnavailable.
+        """
+        from .base_wallet_evidence import collect_base_usdc_history
+
+        return collect_base_usdc_history(wallet_address)
+
     def check(
         self,
         transaction: dict[str, Any],

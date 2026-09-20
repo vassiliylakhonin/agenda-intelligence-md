@@ -4,6 +4,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **feat(base wallet evidence):** add a bounded read-only native-USDC transfer
+  collector using the official Base RPC. Pin a finalized 24-hour window, reject
+  partial/malformed responses, retain exact base units and explicit scope.
+  Expose it separately on the Python Financial Guard SDK; verdicts still require
+  human review and no wallet signing, sanctions clearance or USD valuation is added.
+
 ## 1.11.1 — 2026-09-20
 
 - **fix(elizaos release):** expose schema and escalation types, map Worker payout
