@@ -18,14 +18,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies and build plugin
         working-directory: integrations/elizaos
         run: |
           npm ci
-          npm run build
+          npm test
 
       - name: Verify package bundle
         working-directory: integrations/elizaos

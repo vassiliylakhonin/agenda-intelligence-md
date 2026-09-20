@@ -1,7 +1,7 @@
 {
   "name": "@agenda-intelligence/plugin-guard",
-  "version": "1.11.0",
-  "description": "ElizaOS plugin for deterministic transaction defense (OFAC/AML, drainers) and autonomous M2M escrow arbitration on Base.",
+  "version": "1.11.1",
+  "description": "Evidence checks for proposed transactions and escrow deliveries, with explicit human review and no settlement authorization.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
