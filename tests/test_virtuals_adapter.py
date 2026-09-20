@@ -26,9 +26,9 @@ def test_virtuals_transaction_check(adapter: AgendaVirtualsAdapter) -> None:
         amount_usd=50.0,
         intent="Payment to vendor",
     )
-    assert res["decision"] == "allow"
-    assert res["is_safe"] is True
-    assert res["risk_score"] == 10
+    assert res["decision"] == "step_up_human_required"
+    assert res["is_safe"] is False
+    assert res["risk_score"] == 55
 
     # Tornado cash check
     res_blocked = adapter.execute_transaction_check(

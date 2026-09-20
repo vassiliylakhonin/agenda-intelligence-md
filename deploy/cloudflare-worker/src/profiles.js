@@ -477,22 +477,22 @@ const agentFinancialGuardProfile = Object.freeze({
   documentation_url: AGENT_FINANCIAL_GUARD_DOCS_URL,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
-    "Deterministic pre-sign financial transaction compliance, sanctions screening, drainer prevention, and velocity enforcement for autonomous agents",
+    "Pre-sign evidence review with local risk heuristics and mandatory human review for unverified authority",
   supported_contracts: frozenArray(["agent_financial_guard_contract"]),
   buyer_use_cases: frozenArray([
     "pre-sign transaction compliance check for autonomous agents with wallet keys",
-    "OFAC SDN and AML screening of crypto recipient addresses before broadcast",
+    "local denylist matching with explicit limits on current sanctions coverage",
     "protection against smart contract wallet drainers and unconstrained infinite approvals",
     "velocity and daily spending limits enforcement for AI agent purchasing pipelines",
     "adversarial prompt injection detection in autonomous payment triggers"
   ]),
   commercial_positioning:
-    "Deterministic pre-sign financial firewall for autonomous agents with wallet capabilities. Screens recipient addresses against OFAC SDN, detects malicious calldata/approvals, enforces spending limits, and signs a Vizier JWS non-repudiation clearance receipt before funds leave the treasury.",
+    "Pre-sign evidence review for wallet-bearing agents. Checks local risk rules and intent; unverified spending history and current sanctions status require human review. No transaction authorization or clearance receipt is issued.",
   focus: frozenArray([
     "autonomous agent wallet safety",
-    "OFAC SDN crypto address screening",
+    "local risk denylist matching",
     "smart contract drainer prevention",
-    "velocity and single-transaction limit enforcement",
+    "caller-reported spending assessment, not ledger enforcement",
     "prompt injection defense in financial workflows"
   ]),
   product_contract: productContract({
@@ -500,7 +500,7 @@ const agentFinancialGuardProfile = Object.freeze({
     response_schema: AGENT_FINANCIAL_GUARD_RESPONSE_SCHEMA_URL,
     demo_input_modes: ["structured_json"]
   }),
-  live_retrieval: { capability_declared: true, upstream_options: [] }
+  live_retrieval: { capability_declared: false, upstream_options: [] }
 });
 
 const m2mEscrowArbiterProfile = Object.freeze({
@@ -510,30 +510,30 @@ const m2mEscrowArbiterProfile = Object.freeze({
   documentation_url: M2M_ESCROW_ARBITER_DOCS_URL,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
-    "Deterministic dispute arbitration, delivery verification, and automated escrow settlement for Agent-to-Agent transactions",
+    "Deterministic delivery-evidence review and proposed escrow allocation for human review",
   supported_contracts: frozenArray(["m2m_escrow_arbiter_contract"]),
   buyer_use_cases: frozenArray([
     "autonomous escrow dispute resolution for Agent-to-Agent deliverables",
     "cryptographic SHA-256 deliverable artifact verification against contract commitment",
     "JSON Schema compliance validation of delivered machine-readable datasets",
     "automated Pro-Rata and All-or-Nothing escrow payout calculation",
-    "Vizier JWS-signed clearance rulings for on-chain smart contracts and Web2 payment releases"
+    "explicit escalation when schema constraints or evidence cannot be verified"
   ]),
   commercial_positioning:
-    "Autonomous B2B deal arbiter for agentic commerce. Verifies deliverable integrity, deadline compliance, and SLO fulfillment, issuing binding cryptographic rulings with automated fee settlement.",
+    "Evaluates supplied delivery evidence, supported offline schemas and deadlines. Returns proposed allocations or human-review escalation; no automatic settlement or clearance attestation.",
   focus: frozenArray([
     "M2M escrow arbitration",
     "agentic commerce dispute resolution",
     "SHA-256 deliverable integrity verification",
     "pro-rata and all-or-nothing payout allocation",
-    "Vizier non-repudiation arbitration receipts"
+    "human-review evidence gaps"
   ]),
   product_contract: productContract({
     request_schema: M2M_ESCROW_ARBITER_REQUEST_SCHEMA_URL,
     response_schema: M2M_ESCROW_ARBITER_RESPONSE_SCHEMA_URL,
     demo_input_modes: ["structured_json"]
   }),
-  live_retrieval: { capability_declared: true, upstream_options: [] }
+  live_retrieval: { capability_declared: false, upstream_options: [] }
 });
 
 export const PROFILE_REGISTRY = Object.freeze({

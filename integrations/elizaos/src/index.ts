@@ -19,8 +19,8 @@ export interface TransactionSafetyRequest {
 }
 
 export interface TransactionSafetyVerdict {
-  decision: "allow" | "reject";
-  status: "clear" | "escalate";
+  decision: "allow" | "reject" | "step_up_human_required";
+  status: "clear" | "decision_ready" | "not_decision_ready" | "escalate";
   score: number;
   is_safe: boolean;
   violations: string[];
@@ -108,12 +108,15 @@ export class AgendaGuardClient {
     const data = await resp.json();
     const verdict = data.financial_guard_verdict || data;
     return {
-      decision: verdict.decision,
-      status: verdict.status,
+      decision: verdict.decision === "allow" ? "step_up_human_required" : verdict.decision,
+      status: verdict.decision === "allow" ? "not_decision_ready" : verdict.status,
       score: verdict.score,
-      is_safe: verdict.decision === "allow",
+      // Legacy endpoints cannot supply authoritative wallet history.
+      is_safe: false,
       violations: verdict.violations || [],
-      execution_advisory: verdict.execution_advisory || data.execution_advisory || "",
+      execution_advisory: verdict.decision === "allow"
+        ? "Legacy authorization is unverified; human review is required before signing."
+        : verdict.execution_advisory || data.execution_advisory || "",
     };
   }
 
@@ -134,7 +137,11 @@ export class AgendaGuardClient {
     }
 
     const data = await resp.json();
-    return (data.arbitration_ruling || data) as EscrowDisputeRuling;
+    return {
+      ...(data.arbitration_ruling || data),
+      vizier_status: "attestation_unavailable",
+      vizier_clearance_receipt: null,
+    } as EscrowDisputeRuling;
   }
 }
 

@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       worker:
-        description: "Specific worker to test (leave blank for all 11)"
+        description: "Specific worker to test (leave blank for all configured Workers)"
         required: false
         default: ""
         type: string
@@ -29,7 +29,7 @@ permissions:
 
 jobs:
   health-check:
-    name: Synthetic Health Check (11 Edge Workers)
+    name: Synthetic Health Check (configured fleet)
     runs-on: ubuntu-latest
     timeout-minutes: 10
 

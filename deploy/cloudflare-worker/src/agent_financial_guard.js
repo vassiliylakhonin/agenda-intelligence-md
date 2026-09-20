@@ -1,13 +1,13 @@
 // Agent Financial Guard & Autonomous Transaction Firewall Engine
 // Deterministic pre-sign validation for autonomous agents with wallet capabilities.
-// Zero-Retention: All data is evaluated in volatile Edge memory and never persisted.
+// Evaluation is stateless; transport telemetry has its own retention policy.
 
-import { isTrustVizierEnabled, VIZIER_DEFAULT_URL } from "./upstream_vizier_trust.js";
+
 
 export const AGENT_FINANCIAL_GUARD_CONTRACT_VERSION = "1.0.0";
 export const AGENT_FINANCIAL_GUARD_PROFILE_KEY = "agent_financial_guard";
 
-// High-impact known OFAC SDN / sanctioned addresses & mixer contracts (normalized lowercase)
+// Legacy local risk denylist. Not an authoritative or current sanctions dataset.
 export const SANCTIONED_CRYPTO_ADDRESSES = new Set([
   // Tornado Cash core routers & proxies (OFAC SDN designated)
   "0xd90e2f925da726b50c4ed8d0fb90ad053324f31b",
@@ -57,11 +57,22 @@ export function validateFinancialGuardRequest(body) {
     const tx = body.transaction;
     if (!tx.network || typeof tx.network !== "string") errors.push("Missing transaction.network");
     if (!tx.token || typeof tx.token !== "string") errors.push("Missing transaction.token");
-    if (typeof tx.amount_usd !== "number" || tx.amount_usd < 0) errors.push("Invalid or missing transaction.amount_usd (must be >= 0)");
+    if (!Number.isFinite(tx.amount_usd) || tx.amount_usd < 0) errors.push("Invalid or missing transaction.amount_usd (must be >= 0)");
     if (!tx.recipient || typeof tx.recipient !== "string") errors.push("Missing transaction.recipient");
   }
-  if (!body.intent || typeof body.intent !== "object" || !body.intent.prompt) {
+  if (!body.intent || typeof body.intent !== "object" || typeof body.intent.prompt !== "string" || !body.intent.prompt) {
     errors.push("Missing required object: intent.prompt");
+  }
+  if (body.policy_limits !== undefined) {
+    if (!body.policy_limits || typeof body.policy_limits !== "object" || Array.isArray(body.policy_limits)) {
+      errors.push("policy_limits must be an object");
+    } else {
+      for (const key of ["max_single_limit_usd", "daily_velocity_limit_usd", "velocity_24h_usd"]) {
+        if (Object.hasOwn(body.policy_limits, key) && (!Number.isFinite(body.policy_limits[key]) || body.policy_limits[key] < 0)) {
+          errors.push(`Invalid policy_limits.${key}`);
+        }
+      }
+    }
   }
   return errors;
 }
@@ -86,7 +97,7 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}) {
   const rawRecipient = (tx.recipient || "").trim().toLowerCase();
   if (SANCTIONED_CRYPTO_ADDRESSES.has(rawRecipient)) {
     sanctionsPassed = false;
-    violations.push(`Recipient address (${rawRecipient}) is designated under OFAC SDN / sanctions blacklist.`);
+    violations.push(`Recipient address (${rawRecipient}) matches the local risk denylist; current sanctions status is not established.`);
   }
 
   // Layer 2: Smart Contract & Drainer Heuristics
@@ -106,11 +117,9 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}) {
   const dailyVelocity = limits.daily_velocity_limit_usd ?? 5000;
   const currentVelocity = limits.velocity_24h_usd ?? 0;
 
-  let limitExceeded = false;
   let requiresStepUp = false;
 
   if (tx.amount_usd > maxSingle) {
-    limitExceeded = true;
     requiresStepUp = true;
     evidenceGaps.push(`Transaction amount ($${tx.amount_usd.toFixed(2)}) exceeds single-action policy limit ($${maxSingle.toFixed(2)}).`);
   }
@@ -131,10 +140,10 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}) {
   }
 
   // Synthesize Decision & Score
-  let decision = "allow";
-  let status = "decision_ready";
-  let score = 10;
-  let advisory = "Transaction verified through deterministic security policies. Ready to sign.";
+  let decision = "step_up_human_required";
+  let status = "not_decision_ready";
+  let score = 55;
+  let advisory = "Human review required before signing.";
 
   const hasCriticalViolations = !sanctionsPassed || !contractSecurityPassed || !promptInjectionPassed || (!velocityLimitsPassed && violations.length > 0);
 
@@ -150,41 +159,27 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}) {
     advisory = "POLICY ESCALATION: Transaction exceeds autonomous spending ceiling. Human operator 2FA/approval token required before signing.";
   }
 
-  // Layer 5: Optional Vizier Cryptographic Attestation
-  let vizierStatus = "edge_evaluated";
-  let vizierReceipt = null;
-
-  if (isTrustVizierEnabled(env)) {
-    try {
-      const vizierBase = (env.VIZIER_BASE_URL || VIZIER_DEFAULT_URL).replace(/\/+$/, "");
-      const fetcher = (env.VIZIER && typeof env.VIZIER.fetch === "function")
-        ? (url, init) => env.VIZIER.fetch(url, init)
-        : (url, init) => globalThis.fetch(url, init);
-
-      const resp = await fetcher(`${vizierBase}/v1/quorum/propose`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "agent_financial_pre_sign_check",
-          parameters: {
-            run_id: requestBody.run_id,
-            network: tx.network,
-            token: tx.token,
-            amount_usd: tx.amount_usd,
-            recipient: tx.recipient,
-            decision
-          }
-        })
-      });
-      if (resp && resp.ok) {
-        const vData = await resp.json();
-        vizierStatus = "vizier_verified";
-        vizierReceipt = vData.receipt || vData.jws || `jws_vizier_${Date.now()}`;
-      }
-    } catch (_e) {
-      vizierStatus = "vizier_fallback_degraded";
-    }
+  // The caller controls both the spending policy and reported history. Neither
+  // authorizes a wallet action, and absence from this local list is not an AML
+  // clearance. Until an authenticated wallet ledger and authoritative screening
+  // are integrated, all non-rejected requests require independent human review.
+  evidenceGaps.push("Authoritative wallet spending history and enforced policy are unavailable; caller-reported velocity is unverified.");
+  evidenceGaps.push("Current network-specific sanctions/AML screening is unavailable; only a local risk denylist was checked.");
+  sanctionsPassed = false;
+  velocityLimitsPassed = false;
+  if (!hasCriticalViolations) {
+    decision = "step_up_human_required";
+    status = "not_decision_ready";
+    score = 55;
+    advisory = "Human review required before signing: spending history, policy authority, and current sanctions status are unverified.";
   }
+
+  // /v1/quorum/propose creates a pending proposal, not a clearance receipt.
+  // No attestation protocol is configured for this evaluator. Never fabricate
+  // a token or treat HTTP success as verification, and do not create proposals
+  // as a side effect of an evidence check.
+  const vizierStatus = "attestation_unavailable";
+  const vizierReceipt = null;
 
   return {
     contract_version: AGENT_FINANCIAL_GUARD_CONTRACT_VERSION,
@@ -203,6 +198,9 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}) {
       evidence_gaps: evidenceGaps,
       vizier_status: vizierStatus,
       vizier_clearance_receipt: vizierReceipt,
+      human_review_required: true,
+      not_advice_notice: "Heuristic pre-sign review only; not transaction authorization or sanctions clearance.",
+      check_scope: { sanctions_aml: "local_denylist_only", velocity_limits: "caller_reported_unverified" },
       execution_advisory: advisory
     }
   };

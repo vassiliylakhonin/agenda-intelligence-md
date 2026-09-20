@@ -1,7 +1,9 @@
+from unittest.mock import patch
+
 from agenda_intelligence import AgentFinancialGuard, FinancialGuardVerdict
 
 
-def test_clean_transaction_allowed():
+def test_clean_transaction_requires_review():
     guard = AgentFinancialGuard()
     tx = {
         "network": "base_mainnet",
@@ -14,14 +16,14 @@ def test_clean_transaction_allowed():
     verdict = guard.check(tx, intent, prefer_remote=False)
 
     assert isinstance(verdict, FinancialGuardVerdict)
-    assert verdict.is_allowed is True
+    assert verdict.is_allowed is False
     assert verdict.is_blocked is False
-    assert verdict.decision == "allow"
-    assert verdict.status == "decision_ready"
-    assert verdict.score == 10
-    assert verdict.checks["sanctions_aml"] is True
+    assert verdict.decision == "step_up_human_required"
+    assert verdict.status == "not_decision_ready"
+    assert verdict.score == 55
+    assert verdict.checks["sanctions_aml"] is False
     assert verdict.checks["contract_security"] is True
-    assert verdict.checks["velocity_limits"] is True
+    assert verdict.checks["velocity_limits"] is False
     assert verdict.checks["prompt_injection"] is True
     assert len(verdict.violations) == 0
 
@@ -41,7 +43,7 @@ def test_sanctioned_recipient_blocked():
     assert verdict.is_blocked is True
     assert verdict.decision == "reject"
     assert verdict.checks["sanctions_aml"] is False
-    assert any("OFAC SDN" in v for v in verdict.violations)
+    assert any("local risk denylist" in v for v in verdict.violations)
 
 
 def test_infinite_approval_drainer_blocked():
@@ -98,7 +100,7 @@ def test_spending_limit_step_up():
     assert any("exceeds configured limit" in v for v in verdict.violations)
 
 
-def test_remote_edge_worker_live():
+def test_remote_error_fallback_cannot_authorize():
     guard = AgentFinancialGuard()
     tx = {
         "network": "base_mainnet",
@@ -107,8 +109,10 @@ def test_remote_edge_worker_live():
         "recipient": "0x5b5296a3a7bac0f5f096f93b60c1c121f2e5c663",
         "method": "transfer",
     }
-    verdict = guard.check(tx, "Vendor payout test", prefer_remote=True)
+    with patch("urllib.request.urlopen", side_effect=OSError("offline")):
+        verdict = guard.check(tx, "Vendor payout test", prefer_remote=True)
+    assert verdict.requires_human_approval is True
 
-    assert verdict.is_allowed is True
-    assert verdict.decision == "allow"
-    assert verdict.score == 10
+    assert verdict.is_allowed is False
+    assert verdict.decision == "step_up_human_required"
+    assert verdict.score == 55

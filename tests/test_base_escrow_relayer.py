@@ -83,3 +83,15 @@ def test_process_dispute_refund_all_or_nothing(relayer: BaseEscrowRelayer) -> No
     assert res["arbiter_fee_usdc"] == 2_000_000  # 1% of 200 = 2 USDC
     assert res["buyer_refund_usdc"] == 198_000_000
     assert res["seller_payout_usdc"] + res["buyer_refund_usdc"] + res["arbiter_fee_usdc"] == event.amount_usdc_raw
+
+
+@pytest.mark.parametrize("state", ["ESCALATE_HUMAN", "UNKNOWN_RULING"])
+def test_relayer_never_turns_review_into_partial_payout(relayer, state, monkeypatch):
+    from unittest.mock import Mock
+
+    ruling = Mock(ruling=state, status="not_decision_ready", score=0)
+    monkeypatch.setattr(relayer.arbiter, "evaluate_dispute", lambda request: ruling)
+    monkeypatch.setattr(relayer, "build_dispute_request", lambda event: {})
+    event = Mock(escrow_id="hold", raised_by="buyer")
+    with pytest.raises(ValueError, match="human review"):
+        relayer.process_dispute(event)

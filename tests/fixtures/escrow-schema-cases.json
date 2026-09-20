@@ -1,0 +1,419 @@
+[
+  {
+    "name": "required",
+    "schema": {
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
+    "artifact": {},
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "nested type",
+    "schema": {
+      "properties": {
+        "user": {
+          "properties": {
+            "id": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "artifact": {
+      "user": {
+        "id": "1"
+      }
+    },
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "extra fields",
+    "schema": {
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifact": {
+      "id": 1,
+      "extra": true
+    },
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "items",
+    "schema": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "artifact": [
+      1,
+      "2"
+    ],
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "enum",
+    "schema": {
+      "enum": [
+        "yes",
+        "no"
+      ]
+    },
+    "artifact": "maybe",
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "const",
+    "schema": {
+      "const": {
+        "x": 1
+      }
+    },
+    "artifact": {
+      "x": 2
+    },
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "minimum",
+    "schema": {
+      "minimum": 2
+    },
+    "artifact": 1,
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "maximum",
+    "schema": {
+      "maximum": 2
+    },
+    "artifact": 3,
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "exclusive minimum",
+    "schema": {
+      "exclusiveMinimum": 2
+    },
+    "artifact": 2,
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "string length",
+    "schema": {
+      "minLength": 2
+    },
+    "artifact": "a",
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "array length",
+    "schema": {
+      "maxItems": 1
+    },
+    "artifact": [
+      1,
+      2
+    ],
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "unique items",
+    "schema": {
+      "uniqueItems": true
+    },
+    "artifact": [
+      {
+        "a": 1,
+        "b": 2
+      },
+      {
+        "b": 2,
+        "a": 1
+      }
+    ],
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "object size",
+    "schema": {
+      "maxProperties": 1
+    },
+    "artifact": {
+      "a": 1,
+      "b": 2
+    },
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "allOf",
+    "schema": {
+      "allOf": [
+        {
+          "type": "number"
+        },
+        {
+          "minimum": 5
+        }
+      ]
+    },
+    "artifact": 2,
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "anyOf",
+    "schema": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "const": "valid"
+        }
+      ]
+    },
+    "artifact": "other",
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "oneOf",
+    "schema": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "minimum": 0
+        }
+      ]
+    },
+    "artifact": 2,
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "not",
+    "schema": {
+      "not": {
+        "const": false
+      }
+    },
+    "artifact": false,
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "boolean false JSON",
+    "schema": "false",
+    "artifact": {},
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "string encoded schema",
+    "schema": "{\"type\": \"object\", \"required\": [\"name\"]}",
+    "artifact": {},
+    "status": "invalid",
+    "missing": false
+  },
+  {
+    "name": "external ref",
+    "schema": {
+      "$ref": "https://example.invalid/schema.json"
+    },
+    "artifact": {},
+    "status": "unverified",
+    "missing": false
+  },
+  {
+    "name": "unsupported keyword",
+    "schema": {
+      "format": "email"
+    },
+    "artifact": "bad",
+    "status": "unverified",
+    "missing": false
+  },
+  {
+    "name": "unsupported keyword in unused branch",
+    "schema": {
+      "anyOf": [
+        {},
+        {
+          "$ref": "file:///etc/passwd"
+        }
+      ]
+    },
+    "artifact": {},
+    "status": "unverified",
+    "missing": false
+  },
+  {
+    "name": "malformed schema string",
+    "schema": "named-schema-v1",
+    "artifact": {},
+    "status": "unverified",
+    "missing": false
+  },
+  {
+    "name": "malformed keyword",
+    "schema": {
+      "required": "name"
+    },
+    "artifact": {},
+    "status": "unverified",
+    "missing": false
+  },
+  {
+    "name": "unsupported dialect",
+    "schema": {
+      "$schema": "https://example.invalid/dialect"
+    },
+    "artifact": {},
+    "status": "unverified",
+    "missing": false
+  },
+  {
+    "name": "hash-only insufficient",
+    "schema": {
+      "type": "object"
+    },
+    "artifact": null,
+    "status": "unverified",
+    "missing": true
+  },
+  {
+    "name": "valid zero",
+    "schema": {},
+    "artifact": 0,
+    "status": "valid",
+    "missing": false
+  },
+  {
+    "name": "valid false",
+    "schema": {},
+    "artifact": false,
+    "status": "valid",
+    "missing": false
+  },
+  {
+    "name": "valid empty string",
+    "schema": {},
+    "artifact": "",
+    "status": "valid",
+    "missing": false
+  },
+  {
+    "name": "valid empty object",
+    "schema": {},
+    "artifact": {},
+    "status": "valid",
+    "missing": false
+  },
+  {
+    "name": "valid null",
+    "schema": {},
+    "artifact": null,
+    "status": "valid",
+    "missing": false
+  },
+  {
+    "name": "valid empty array",
+    "schema": {},
+    "artifact": [],
+    "status": "valid",
+    "missing": false
+  },
+  {
+    "name": "valid nested",
+    "schema": {
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifact": {
+      "items": [
+        1,
+        2
+      ]
+    },
+    "status": "valid",
+    "missing": false
+  },
+  {
+    "name": "unicode codepoints",
+    "schema": {
+      "minLength": 1,
+      "maxLength": 1
+    },
+    "artifact": "\ud83d\ude00",
+    "status": "valid",
+    "missing": false
+  },
+  {
+    "name": "unsafe integer in encoded schema",
+    "schema": "{\"const\":9007199254740993}",
+    "artifact": 9007199254740992,
+    "status": "unverified",
+    "missing": false
+  },
+  {
+    "name": "unsafe negative bound",
+    "schema": {
+      "minimum": -9007199254740993
+    },
+    "artifact": 0,
+    "status": "unverified",
+    "missing": false
+  },
+  {
+    "name": "unsafe artifact",
+    "schema": {},
+    "artifact": 9007199254740993,
+    "status": "unverified",
+    "missing": false
+  },
+  {
+    "name": "safe integer boundary",
+    "schema": {
+      "const": 9007199254740991
+    },
+    "artifact": 9007199254740991,
+    "status": "valid",
+    "missing": false
+  }
+]

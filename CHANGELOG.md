@@ -4,6 +4,18 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- **fix(worker trust boundaries):** remove fabricated Vizier clearance and quorum
+  proposal side effects from Financial Guard and Escrow. Require human review
+  for unverified spending/sanctions evidence; enforce the same boundary in Python
+  fallbacks and wallet adapters. Validate escrow artifacts against supported
+  offline JSON Schema constraints, and hold unsupported or missing evidence for
+  review. Relayers reject escalated rulings before preparing calldata.
+- **fix(fleet coverage):** derive monitored Workers from Wrangler configuration
+  and add Financial Guard / Escrow negative safety proofs.
+- **refactor(worker):** extract browser presentation and telemetry from the shared
+  request handler. See ADR 0027 for behavior, supported schemas and migration.
+
+
 - **feat(ops): make manual sanctions-index publication a single fail-closed command.**
   `scripts/publish_sanctions_index.py` defaults to a non-mutating rehearsal that rebuilds all four official sources,
   checks shape and canaries, rejects timestamp rollback or name-count drift above 10% against production, and records

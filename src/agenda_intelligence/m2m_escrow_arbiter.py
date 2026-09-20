@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional, Union
 
+from .escrow_schema import validate_escrow_artifact
+
 DEFAULT_ENDPOINT = "https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev/v1/m2m-escrow/evaluate-dispute"
 
 
@@ -104,6 +106,17 @@ class M2MEscrowArbiter:
             if dispute_claim:
                 payload["dispute_claim"] = dispute_claim
 
+        # Enforce this locally even when a legacy remote deployment is selected.
+        # A remote schema_verified flag must not bypass the current validator.
+        spec = payload.get("specification", {})
+        sub = payload.get("delivery_submission", {})
+        if "expected_schema" in spec:
+            validation, _ = validate_escrow_artifact(
+                spec["expected_schema"], sub.get("artifact_data"), "artifact_data" in sub
+            )
+            if validation != "valid":
+                return self._evaluate_local(payload)
+
         if prefer_remote:
             try:
                 return self._evaluate_remote(payload)
@@ -127,6 +140,13 @@ class M2MEscrowArbiter:
             body = json.loads(resp.read().decode("utf-8"))
 
         ruling_data = body.get("arbitration_ruling", body)
+        if not isinstance(ruling_data, dict):
+            raise ValueError("Invalid escrow ruling")
+        # No remote attestation is trusted until a signature and binding
+        # protocol is implemented; this includes legacy response aliases.
+        for item in (body, ruling_data):
+            item["vizier_status"] = "attestation_unavailable"
+            item["vizier_clearance_receipt"] = None
         payout_dict = ruling_data.get("payout_breakdown", {})
         payout = PayoutBreakdown(
             total_escrow_usd=float(payout_dict.get("total_escrow_usd", 0.0)),
@@ -156,6 +176,8 @@ class M2MEscrowArbiter:
         sub = payload.get("delivery_submission", {})
 
         violations: list[str] = []
+        evidence_gaps: list[str] = []
+        needs_review = False
 
         # 1. Deadline check
         deadline_str = terms.get("deadline_utc", "")
@@ -171,7 +193,8 @@ class M2MEscrowArbiter:
                 violations.append(f"Deadline breach: deliverable submitted {delay_sec}s past contract deadline.")
         except Exception:
             deadline_honored = False
-            violations.append("Unable to parse contract deadline or submission timestamp.")
+            evidence_gaps.append("Unable to parse contract deadline or submission timestamp.")
+            needs_review = True
 
         # 2. Hash integrity check
         exp_hash = (spec.get("expected_artifact_sha256") or "").lower().strip()
@@ -190,12 +213,18 @@ class M2MEscrowArbiter:
                 hash_verified = False
                 violations.append(f"Cryptographic hash mismatch: expected '{exp_hash}', received '{act_hash}'.")
 
-        # 3. Schema & structural verification
+        # A digest does not supply the actual JSON instance for schema validation.
         schema_verified = True
-        if spec.get("expected_schema"):
-            if not sub.get("artifact_data") and not act_hash:
-                schema_verified = False
-                violations.append("No artifact data or verifiable payload provided for schema check.")
+        if "expected_schema" in spec:
+            validation, errors = validate_escrow_artifact(
+                spec["expected_schema"], sub.get("artifact_data"), "artifact_data" in sub
+            )
+            schema_verified = validation == "valid"
+            if validation == "invalid":
+                violations.extend(errors)
+            elif validation == "unverified":
+                evidence_gaps.extend(errors)
+                needs_review = True
 
         # 4. SLO & delivery percentage
         telemetry = sub.get("telemetry", {})
@@ -255,6 +284,15 @@ class M2MEscrowArbiter:
             buyer_refund = 0.0
             advisory = "Deliverable verified deterministically against contract specification. Full release approved."
 
+        if needs_review:
+            ruling = "ESCALATE_HUMAN"
+            status = "not_decision_ready"
+            score = 0
+            seller_payout = buyer_refund = arbiter_fee = 0.0
+            advisory = (
+                "Required evidence could not be verified. Hold escrow pending human review; no payout is authorized."
+            )
+
         payout = PayoutBreakdown(
             total_escrow_usd=total_escrow,
             seller_payout_usd=seller_payout,
@@ -291,5 +329,8 @@ class M2MEscrowArbiter:
                 },
                 "checks": checks,
                 "violations": violations,
+                "evidence_gaps": evidence_gaps,
+                "human_review_required": True,
+                "not_advice_notice": "Evaluation of supplied evidence only; not settlement authorization.",
             },
         )

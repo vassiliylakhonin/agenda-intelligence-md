@@ -11,7 +11,7 @@ from typing import Any, Optional
 
 DEFAULT_ENDPOINT = "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/v1/agent-financial/pre-sign-check"
 
-# Designated high-risk & sanctioned addresses (OFAC SDN, Lazarus Group, Tornado Cash)
+# Legacy local risk denylist; not an authoritative or current sanctions dataset.
 DEFAULT_SANCTIONED_ADDRESSES = {
     "0xd90e2f925da726b50c4ed8d0fb90ad053324f31b",  # Tornado Cash router
     "0x8589427373d6d84e98730d7795d8f6f8731fda16",  # Tornado Cash 0.1 ETH
@@ -38,7 +38,7 @@ INFINITE_APPROVE_HEX = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 class FinancialGuardVerdict:
     """Evaluation verdict from the pre-sign financial firewall."""
 
-    decision: str  # "allow" | "reject"
+    decision: str  # "allow" | "reject" | "step_up_human_required"
     status: str  # "decision_ready" | "escalate"
     score: int  # 0 - 100 risk score
     checks: dict[str, bool] = field(default_factory=dict)
@@ -49,7 +49,7 @@ class FinancialGuardVerdict:
 
     @property
     def is_allowed(self) -> bool:
-        return self.decision == "allow"
+        return self.decision == "allow" and self.status == "decision_ready" and not self.requires_human_approval
 
     @property
     def is_blocked(self) -> bool:
@@ -61,7 +61,7 @@ class FinancialGuardVerdict:
 
     @property
     def requires_human_approval(self) -> bool:
-        return self.status == "escalate"
+        return self.decision == "step_up_human_required" or self.status in {"escalate", "not_decision_ready"}
 
 
 class AgentFinancialGuard:
@@ -130,7 +130,7 @@ class AgentFinancialGuard:
                 "amount_usd": amount_usd,
                 "network": network,
                 "calldata": calldata,
-                "asset": asset,
+                "token": asset,
             },
             intent=intent or "Autonomous agent settlement",
             policy_limits=policy_limits,
@@ -151,6 +151,21 @@ class AgentFinancialGuard:
             body = json.loads(resp.read().decode("utf-8"))
 
         verdict_data = body.get("financial_guard_verdict", body)
+        if not isinstance(verdict_data, dict) or verdict_data.get("decision") not in {
+            "allow",
+            "reject",
+            "step_up_human_required",
+        }:
+            raise ValueError("Invalid financial guard verdict")
+        # A legacy server's receipt is not a verified attestation. Normalize
+        # both the parsed verdict and exposed raw response, including aliases.
+        for item in (body, verdict_data):
+            item["vizier_status"] = "attestation_unavailable"
+            item["vizier_clearance_receipt"] = None
+        # Legacy remote deployments may still return allow from caller-reported
+        # spending data. This SDK must not turn that into wallet authorization.
+        if verdict_data.get("decision") == "allow":
+            return self._check_local(payload)
         return FinancialGuardVerdict(
             decision=verdict_data.get("decision", "reject"),
             status=verdict_data.get("status", "escalate"),
@@ -185,7 +200,10 @@ class AgentFinancialGuard:
         # 1. Sanctions check
         if recipient in DEFAULT_SANCTIONED_ADDRESSES:
             checks["sanctions_aml"] = False
-            violations.append(f"Recipient address ({recipient}) is designated under OFAC SDN / sanctions blacklist.")
+            violations.append(
+                f"Recipient address ({recipient}) matches the local risk denylist; "
+                "current sanctions status is not established."
+            )
 
         # 2. Drainer calldata / infinite approval
         if method == "approve" and INFINITE_APPROVE_HEX in calldata:
@@ -212,14 +230,19 @@ class AgentFinancialGuard:
                 break
 
         has_violations = len(violations) > 0
-        decision = "reject" if has_violations else "allow"
-        status = "escalate" if has_violations else "decision_ready"
-        score = 95 if has_violations else 10
+        decision = "reject" if has_violations else "step_up_human_required"
+        status = "escalate" if has_violations else "not_decision_ready"
+        score = 95 if has_violations else 55
+        checks["sanctions_aml"] = False
+        checks["velocity_limits"] = False
+        evidence_gaps = [
+            "Authoritative wallet spending history and enforced policy are unavailable; caller velocity is unverified.",
+            "Current network-specific sanctions/AML screening is unavailable; only a local risk denylist was checked.",
+        ]
         advisory = (
-            "CRITICAL SECURITY BLOCK: Transaction violates compliance, AML, contract security, "
-            "or intent boundaries. Execution forbidden."
+            "Transaction rejected by local risk rules. Execution forbidden."
             if has_violations
-            else "Transaction verified through deterministic security policies. Ready to sign."
+            else "Human review required before signing: spending history, policy and sanctions are unverified."
         )
 
         return FinancialGuardVerdict(
@@ -237,5 +260,8 @@ class AgentFinancialGuard:
                 "checks": checks,
                 "violations": violations,
                 "execution_advisory": advisory,
+                "evidence_gaps": evidence_gaps,
+                "human_review_required": True,
+                "not_advice_notice": "Heuristic pre-sign review only; not authorization or sanctions clearance.",
             },
         )

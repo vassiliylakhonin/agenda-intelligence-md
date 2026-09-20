@@ -9,7 +9,7 @@ import pytest
 from agenda_intelligence.cli import main
 
 
-def test_cli_check_tx_allowed(capsys):
+def test_cli_check_tx_review(capsys):
     with patch(
         "sys.argv",
         [
@@ -21,9 +21,11 @@ def test_cli_check_tx_allowed(capsys):
             "25",
         ],
     ):
-        main()
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 1
     captured = capsys.readouterr()
-    assert "AgentFinancialGuard [ALLOW]" in captured.out
+    assert "AgentFinancialGuard [REVIEW]" in captured.out
     assert "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663" in captured.out
 
 
@@ -44,7 +46,7 @@ def test_cli_check_tx_blocked(capsys):
         assert exc_info.value.code == 2
     captured = capsys.readouterr()
     assert "AgentFinancialGuard [REJECT]" in captured.out
-    assert "OFAC SDN" in captured.out
+    assert "local risk denylist" in captured.out
 
 
 def test_cli_check_tx_json(capsys):
@@ -61,11 +63,13 @@ def test_cli_check_tx_json(capsys):
             "json",
         ],
     ):
-        main()
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 1
     captured = capsys.readouterr()
     data = json.loads(captured.out)
-    assert data["decision"] == "allow"
-    assert data["score"] == 10
+    assert data["decision"] == "step_up_human_required"
+    assert data["score"] == 55
 
 
 def test_cli_arbitrate_clean(capsys):

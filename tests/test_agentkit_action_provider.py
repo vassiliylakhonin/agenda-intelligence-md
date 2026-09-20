@@ -25,9 +25,9 @@ def test_action_provider_clean_transaction(provider: AgendaFinancialGuardActionP
         intent="Payment for data service",
     )
     res = json.loads(res_raw)
-    assert res["decision"] == "allow"
-    assert res["is_safe"] is True
-    assert res["risk_score"] == 10
+    assert res["decision"] == "step_up_human_required"
+    assert res["is_safe"] is False
+    assert res["risk_score"] == 55
     assert len(res["violations"]) == 0
 
 
@@ -42,7 +42,7 @@ def test_action_provider_blocked_tornado_cash(provider: AgendaFinancialGuardActi
     assert res["decision"] == "reject"
     assert res["is_safe"] is False
     assert res["risk_score"] == 95
-    assert any("OFAC SDN" in v or "sanctions blacklist" in v for v in res["violations"])
+    assert any("local risk denylist" in v for v in res["violations"])
 
 
 def test_action_provider_wrap_wallet_provider_blocking(
@@ -57,10 +57,10 @@ def test_action_provider_wrap_wallet_provider_blocking(
 
     guarded_send = provider.wrap_wallet_provider(mock_send_transaction)
 
-    # 1. Clean transaction should succeed and execute
-    tx_hash = guarded_send(to="0xCleanRecipientAddress", value_usd=20.0)
-    assert tx_hash == "0xtxhash123"
-    assert mock_called is True
+    # Unverified clean-looking input must not call the wallet.
+    with pytest.raises(PermissionError):
+        guarded_send(to="0xCleanRecipientAddress", value_usd=20.0)
+    assert mock_called is False
 
     # 2. Blocked transaction should raise PermissionError and NEVER call send_transaction
     mock_called = False

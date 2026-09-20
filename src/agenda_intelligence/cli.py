@@ -1381,7 +1381,7 @@ def cmd_check_tx(args):
             )
         )
     else:
-        status_icon = "ALLOW" if verdict.is_allowed else "REJECT"
+        status_icon = "ALLOW" if verdict.is_allowed else ("REJECT" if verdict.is_rejected else "REVIEW")
         print(f"AgentFinancialGuard [{status_icon}] (Risk Score: {verdict.score}/100)")
         print(f"  Recipient: {args.recipient}")
         print(f"  Amount:    {args.amount} {args.asset} on {args.network}")
