@@ -4,6 +4,13 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## 1.11.1 — 2026-09-20
+
+- **fix(elizaos release):** expose schema and escalation types, map Worker payout
+  fields to the client contract, hold unknown rulings for review, remove the
+  placeholder evaluator and document explicit wallet integration. Publish tests
+  now run before the npm release; package and lockfile versions are aligned.
+
 - **fix(worker trust boundaries):** remove fabricated Vizier clearance and quorum
   proposal side effects from Financial Guard and Escrow. Require human review
   for unverified spending/sanctions evidence; enforce the same boundary in Python

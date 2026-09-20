@@ -1,12 +1,7 @@
 /**
- * ElizaOS Plugin: Agenda Financial Guard & M2M Escrow Arbiter.
- *
- * Intercepts autonomous agent actions to prevent:
- * 1. Transfers to OFAC SDN blacklisted addresses (Tornado Cash, Lazarus).
- * 2. Smart contract drainers & infinite token allowances.
- * 3. Treasury velocity limit breaches.
- *
- * Provides autonomous arbitration for B2B agent-to-agent deliverable disputes.
+ * Evidence checks for proposed transactions and escrow deliveries.
+ * These checks do not sign transactions, perform live sanctions clearance,
+ * or authorize settlement. Human review remains required.
  */
 
 export interface TransactionSafetyRequest {
@@ -44,17 +39,23 @@ export interface EscrowDisputeRequest {
   };
   specification: {
     deliverable_type: string;
-    expected_artifact_sha256: string;
+    expected_artifact_sha256?: string;
+    expected_schema?: Record<string, unknown> | boolean | string;
+    min_valid_records_pct?: number;
   };
   delivery_submission: {
     submitted_at: string;
-    artifact_sha256: string;
+    artifact_sha256?: string;
+    artifact_data?: unknown;
     telemetry?: Record<string, any>;
   };
 }
 
 export interface EscrowDisputeRuling {
-  ruling: "RELEASE_TO_SELLER" | "REFUND_TO_BUYER" | "PARTIAL_SETTLEMENT";
+  ruling: "RELEASE_TO_SELLER" | "REFUND_TO_BUYER" | "PARTIAL_SETTLEMENT" | "ESCALATE_HUMAN";
+  status: "decision_ready" | "not_decision_ready";
+  human_review_required: true;
+  vizier_status: "attestation_unavailable";
   score: number;
   payout: {
     total_escrow_usd: number;
@@ -63,7 +64,7 @@ export interface EscrowDisputeRuling {
     arbiter_fee_usd: number;
   };
   execution_advisory: string;
-  vizier_clearance_receipt?: string;
+  vizier_clearance_receipt: null;
 }
 
 export class AgendaGuardClient {
@@ -137,11 +138,26 @@ export class AgendaGuardClient {
     }
 
     const data = await resp.json();
+    const result = data.arbitration_ruling || data;
+    const ready = result.status === "decision_ready" &&
+      ["RELEASE_TO_SELLER", "REFUND_TO_BUYER", "PARTIAL_SETTLEMENT"].includes(result.ruling);
+    const payout = result.payout_breakdown || result.payout || {};
     return {
-      ...(data.arbitration_ruling || data),
+      score: ready ? result.score : 0,
+      ruling: ready ? result.ruling : "ESCALATE_HUMAN",
+      status: ready ? "decision_ready" : "not_decision_ready",
+      payout: ready ? payout : {
+        total_escrow_usd: payout.total_escrow_usd ?? params.deal_terms?.amount_usd ?? 0,
+        seller_payout_usd: 0,
+        buyer_refund_usd: 0,
+        arbiter_fee_usd: 0,
+      },
+      human_review_required: true,
       vizier_status: "attestation_unavailable",
       vizier_clearance_receipt: null,
-    } as EscrowDisputeRuling;
+      execution_advisory: ready ? result.execution_advisory || "" :
+        "Hold escrow pending human review; no payout is authorized.",
+    };
   }
 }
 
@@ -151,12 +167,12 @@ export class AgendaGuardClient {
 export const agendaGuardPlugin = {
   name: "agenda-guard",
   description:
-    "Pre-sign transaction firewall and autonomous B2B escrow arbiter for ElizaOS agents on Base.",
+    "Evidence checks for proposed transactions and escrow deliveries; human review is required.",
   actions: [
     {
       name: "CHECK_TRANSACTION_SAFETY",
       description:
-        "Validates an on-chain transaction against OFAC sanctions, drainers, and treasury limits before signing.",
+        "Checks supplied transaction evidence and known risk patterns; does not authorize signing.",
       validate: async () => true,
       handler: async (runtime: any, message: any, state: any, options: any, callback: any) => {
         const client = new AgendaGuardClient();
@@ -171,17 +187,8 @@ export const agendaGuardPlugin = {
       },
     },
   ],
-  evaluators: [
-    {
-      name: "TRANSACTION_RISK_EVALUATOR",
-      description: "Evaluates outgoing proposed transactions for safety and compliance.",
-      validate: async () => true,
-      handler: async (runtime: any, message: any) => {
-        // Intercepts outgoing financial intents
-        return true;
-      },
-    },
-  ],
+  // No wallet interception or automatic compliance evaluator is implemented.
+  evaluators: [],
 };
 
 export default agendaGuardPlugin;
