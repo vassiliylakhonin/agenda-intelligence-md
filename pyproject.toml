@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agenda-intelligence-md"
-version = "1.11.1"
+version = "1.12.0"
 description = "Deterministic evidence-packet linter for claim-backed AI output"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -30,7 +30,10 @@ Repository = "https://github.com/vassiliylakhonin/agenda-intelligence-md.git"
 Documentation = "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/docs"
 
 [project.optional-dependencies]
+reviews = ["cryptography>=43", "rfc8785>=0.1.4"]
 dev = [
+    "cryptography>=43",
+    "rfc8785>=0.1.4",
     "pytest>=7.0",
     "pytest-cov",
     "mypy>=1.0",

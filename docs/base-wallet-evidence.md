@@ -1,6 +1,6 @@
 # Read-only Base wallet evidence
 
-`AgentFinancialGuard.collect_base_usdc_history(wallet_address)` collects outgoing native-USDC Transfer events directly from `https://mainnet.base.org`. It does not accept a caller-supplied spending total and does not change a Financial Guard decision. This method is available from source after the change; it is not part of the already published 1.11.1 artifacts.
+`AgentFinancialGuard.collect_base_usdc_history(wallet_address)` collects outgoing native-USDC Transfer events directly from `https://mainnet.base.org`. It does not accept a caller-supplied spending total and does not change a Financial Guard decision. This method is available from source after the change; it is not part of the already published 1.12.0 artifacts.
 
 ```python
 from agenda_intelligence import AgentFinancialGuard
@@ -46,3 +46,5 @@ Errors raise `EvidenceUnavailable` without returning a total. Up to 128 read-onl
 The window ends at finalization, not at the present instant. It excludes pending/unfinalized activity, other tokens, native ETH, approvals, offchain transactions and reservations for concurrent payments. It is therefore insufficient for wallet-wide rolling velocity enforcement. No live sanctions clearance or price assumption is introduced.
 
 Sources: [Base network details](https://docs.base.org/get-started/connect-to-base) and [Base eth_getLogs semantics and range guidance](https://docs.base.org/base-chain/api-reference/ethereum-json-rpc-api/eth_getLogs).
+
+For explicit submission with an exact proposed transfer, see [human review](financial-human-review.md).

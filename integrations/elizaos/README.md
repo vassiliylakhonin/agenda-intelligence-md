@@ -5,7 +5,7 @@ Checks evidence supplied with proposed transactions and escrow deliveries. It do
 ## Install
 
 ```bash
-npm install @agenda-intelligence/plugin-guard@1.11.1
+npm install @agenda-intelligence/plugin-guard@1.12.0
 ```
 
 ## Use

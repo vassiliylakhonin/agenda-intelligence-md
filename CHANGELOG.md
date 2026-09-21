@@ -4,6 +4,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## 1.12.0 — 2026-09-21
+
+- Add explicit Base native-USDC review preparation and optional authenticated Vizier review client with ES256 verification and one-time claims.
+- Ship the finalized Base USDC history collector in the Python package.
+- Preserve Guard rejection and manual wallet confirmation; no signing, broadcasting or automatic ALLOW.
+
 - **feat(base wallet evidence):** add a bounded read-only native-USDC transfer
   collector using the official Base RPC. Pin a finalized 24-hour window, reject
   partial/malformed responses, retain exact base units and explicit scope.
