@@ -41,7 +41,15 @@ export const ADVERSARIAL_INTENT_PATTERNS = [
   /send\s+all\s+(funds|balance|usdc|eth)/i
 ];
 
-export function evaluateLocalFallback(input: TransactionCheckInput): TransactionCheckResult {
+export interface LocalFallbackOptions {
+  /** If true, offline fallback operates in fail-closed mode, escalating all unverified offline checks to step_up_human_required */
+  failClosed?: boolean;
+}
+
+export function evaluateLocalFallback(
+  input: TransactionCheckInput,
+  options?: LocalFallbackOptions
+): TransactionCheckResult {
   const violations: string[] = [];
   const evidenceGaps: string[] = ["Offline local fallback evaluation used; authoritative edge screening unavailable."];
 
@@ -133,6 +141,25 @@ export function evaluateLocalFallback(input: TransactionCheckInput): Transaction
         prompt_injection: true
       },
       violations,
+      evidence_gaps: evidenceGaps,
+      human_review_required: true,
+      evaluated_by: "local_fallback"
+    };
+  }
+
+  if (options?.failClosed) {
+    return {
+      isSafe: false,
+      decision: "step_up_human_required",
+      score: 50,
+      advisory: "OFFLINE FAIL-CLOSED: Authoritative edge verification unavailable. Human authorization required before signing.",
+      checks: {
+        sanctions_aml: true,
+        contract_security: true,
+        velocity_limits: true,
+        prompt_injection: true
+      },
+      violations: [],
       evidence_gaps: evidenceGaps,
       human_review_required: true,
       evaluated_by: "local_fallback"

@@ -163,6 +163,8 @@ export interface ClientConfig {
   timeoutMs?: number;
   /** Enable offline local fallback heuristic if network request fails. Default: true */
   enableLocalFallback?: boolean;
+  /** If true, offline fallback operates in fail-closed mode, escalating all offline checks to step_up_human_required. Default: false */
+  offlineFailClosed?: boolean;
   /** Injected fetch implementation (useful for tests or custom environments). */
   fetch?: typeof fetch;
 }

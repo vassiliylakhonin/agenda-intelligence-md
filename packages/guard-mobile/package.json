@@ -1,6 +1,6 @@
 {
   "name": "@agenda-intelligence/guard-mobile",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Ultra-lightweight, zero-dependency mobile and edge SDK for autonomous AI agents. Pre-sign financial transaction firewall, prompt injection heuristics, and M2M escrow settlement.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

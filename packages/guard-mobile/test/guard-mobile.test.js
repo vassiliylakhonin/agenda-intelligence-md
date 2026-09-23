@@ -201,3 +201,54 @@ test("Zero-Boilerplate protect(): Intercepts and blocks malicious transaction wi
 
   assert.strictEqual(executed, false, "Execution callback must NOT run if blocked!");
 });
+
+test("Local Fallback: offlineFailClosed escalates clean transaction to step_up_human_required", () => {
+  const result = evaluateLocalFallback(
+    {
+      recipient: "0x1111111111111111111111111111111111111111",
+      amount_usd: 25.0,
+      intent_prompt: "Safe transfer"
+    },
+    { failClosed: true }
+  );
+
+  assert.strictEqual(result.isSafe, false);
+  assert.strictEqual(result.decision, "step_up_human_required");
+  assert.strictEqual(result.human_review_required, true);
+  assert.ok(result.advisory.includes("OFFLINE FAIL-CLOSED"));
+});
+
+test("AgentFinancialGuardClient: offlineFailClosed with strictMode intercepts offline transaction", async () => {
+  const guard = new AgentFinancialGuardClient({
+    enableLocalFallback: true,
+    offlineFailClosed: true,
+    financialGuardUrl: "http://127.0.0.1:59999/v1/pre-sign-check",
+    timeoutMs: 100
+  });
+
+  let executed = false;
+  await assert.rejects(
+    async () => {
+      await guard.protect(
+        {
+          recipient: "0x1111111111111111111111111111111111111111",
+          amount_usd: 15.0,
+          intent_prompt: "Routine coffee micropayment"
+        },
+        async () => {
+          executed = true;
+          return { status: "OK" };
+        },
+        { strictMode: true }
+      );
+    },
+    (err) => {
+      assert.strictEqual(err.name, "TransactionStepUpRequiredError");
+      assert.strictEqual(err.decision, "step_up_human_required");
+      return true;
+    }
+  );
+
+  assert.strictEqual(executed, false);
+});
+

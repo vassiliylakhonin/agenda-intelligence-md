@@ -20,12 +20,14 @@ export class AgentFinancialGuardClient {
   private readonly endpoint: string;
   private readonly timeoutMs: number;
   private readonly enableLocalFallback: boolean;
+  private readonly offlineFailClosed: boolean;
   private readonly fetchImpl: typeof fetch;
 
   constructor(config: ClientConfig = {}) {
     this.endpoint = config.financialGuardUrl || DEFAULT_FINANCIAL_GUARD_URL;
     this.timeoutMs = config.timeoutMs || 8000;
     this.enableLocalFallback = config.enableLocalFallback ?? true;
+    this.offlineFailClosed = config.offlineFailClosed ?? false;
     this.fetchImpl = config.fetch || (typeof fetch !== "undefined" ? fetch.bind(globalThis) : undefined as unknown as typeof fetch);
 
     if (!this.fetchImpl) {
@@ -189,7 +191,7 @@ export class AgentFinancialGuardClient {
       clearTimeout(timeoutId);
 
       if (this.enableLocalFallback) {
-        return evaluateLocalFallback(input);
+        return evaluateLocalFallback(input, { failClosed: this.offlineFailClosed });
       }
 
       throw new Error(
