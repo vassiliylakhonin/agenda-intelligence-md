@@ -21,7 +21,11 @@ export const SANCTIONED_CRYPTO_ADDRESSES = new Set([
   "0x53b6936513e738f44fb50d2b9476730c0ab3bfc1",
   // Garantex main deposit & liquidation routing addresses (OFAC designated)
   "0x61f2382e87903264426543b591b6e4b85c13e488",
-  "0x2f389904178ea3c113502280ce42964e7c3a0df4"
+  "0x2f389904178ea3c113502280ce42964e7c3a0df4",
+  // Solana exploit & designated clusters
+  "9wzdxwbbmkg8ztbnmquxvqrayrzzdsgydlvl9zytawwm",
+  "5q544fkrfoe6tseb7s8emxgtjyakttvhaw5q5pge4j1",
+  "4pu12z8m8a4qyvk4uw4n4wwc9u4z3p5gb6q4g3q7g8x9"
 ]);
 
 // Drainer & Phishing calldata signatures
@@ -110,6 +114,9 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}) {
       contractSecurityPassed = false;
       violations.push("Unconstrained infinite token approval (approve max uint256) detected. Potential wallet drainer vector.");
     }
+  } else if (method === "setauthority" || method === "closeaccount") {
+    contractSecurityPassed = false;
+    violations.push(`Dangerous account authority modification method detected: '${method}'. Potential account takeover vector.`);
   }
 
   // Layer 3: Velocity & Spending Limits

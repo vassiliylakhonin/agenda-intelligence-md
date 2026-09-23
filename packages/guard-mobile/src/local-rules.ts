@@ -18,8 +18,14 @@ export const LOCAL_SANCTIONED_ADDRESSES = new Set([
   "0x53b6936513e738f44fb50d2b9476730c0ab3bfc1",
   // Garantex main deposit addresses
   "0x61f2382e87903264426543b591b6e4b85c13e488",
-  "0x2f389904178ea3c113502280ce42964e7c3a0df4"
+  "0x2f389904178ea3c113502280ce42964e7c3a0df4",
+  // Solana known exploit & designated clusters
+  "9wzdxwbbmkg8ztbnmquxvqrayrzzdsgydlvl9zytawwm",
+  "5q544fkrfoe6tseb7s8emxgtjyakttvhaw5q5pge4j1",
+  "4pu12z8m8a4qyvk4uw4n4wwc9u4z3p5gb6q4g3q7g8x9"
 ]);
+
+export const SOLANA_BASE58_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 export const UNLIMITED_ALLOWANCE_PATTERNS = [
   /ffffffffffffffffffffffffffffffff/i,
@@ -44,14 +50,15 @@ export function evaluateLocalFallback(input: TransactionCheckInput): Transaction
   let velocityLimitsPassed = true;
   let promptInjectionPassed = true;
 
-  // 1. Sanctions / Denylist Check
-  const recipient = (input.recipient || "").trim().toLowerCase();
-  if (LOCAL_SANCTIONED_ADDRESSES.has(recipient)) {
+  // 1. Sanctions / Denylist Check (EVM & Solana)
+  const rawRecipient = (input.recipient || "").trim();
+  const recipientLower = rawRecipient.toLowerCase();
+  if (LOCAL_SANCTIONED_ADDRESSES.has(recipientLower) || LOCAL_SANCTIONED_ADDRESSES.has(rawRecipient)) {
     sanctionsPassed = false;
-    violations.push(`Recipient address (${recipient}) matches known OFAC/SDN or exploit denylist.`);
+    violations.push(`Recipient address (${rawRecipient}) matches known OFAC/SDN or exploit denylist.`);
   }
 
-  // 2. Contract Drainer Check
+  // 2. Contract Drainer Check (EVM approvals & Solana authority transfers)
   const method = (input.method || "").toLowerCase();
   const calldata = (input.calldata || "").toLowerCase();
   if (method === "approve" || calldata.startsWith("0x095ea7b3")) {
@@ -60,6 +67,9 @@ export function evaluateLocalFallback(input: TransactionCheckInput): Transaction
       contractSecurityPassed = false;
       violations.push("Unconstrained infinite token approval (approve max uint256) detected.");
     }
+  } else if (method === "setauthority" || method === "closeaccount") {
+    contractSecurityPassed = false;
+    violations.push(`Dangerous account authority modification method detected: '${method}'.`);
   }
 
   // 3. Velocity & Spending Limits

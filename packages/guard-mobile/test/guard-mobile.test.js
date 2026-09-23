@@ -121,3 +121,83 @@ test("M2MEscrowClient: Live Edge Dispute Evaluation works and calculates 1% fee"
   assert.strictEqual(result.checks.deadline_honored, true);
   assert.strictEqual(result.checks.hash_verified, true);
 });
+
+test("Solana Multi-Chain: Blocks known exploit/drainer Solana address", () => {
+  const result = evaluateLocalFallback({
+    recipient: "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+    amount_usd: 500.0,
+    network: "solana_mainnet",
+    token: "SOL",
+    intent_prompt: "Send SOL to liquidity pool"
+  });
+
+  assert.strictEqual(result.isSafe, false);
+  assert.strictEqual(result.decision, "reject");
+  assert.strictEqual(result.checks.sanctions_aml, false);
+  assert.ok(result.violations[0].includes("OFAC/SDN or exploit denylist"));
+});
+
+test("Solana Multi-Chain: Blocks dangerous account authority change", () => {
+  const result = evaluateLocalFallback({
+    recipient: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+    amount_usd: 0,
+    network: "solana_mainnet",
+    method: "setAuthority",
+    intent_prompt: "Delegate token authority"
+  });
+
+  assert.strictEqual(result.isSafe, false);
+  assert.strictEqual(result.decision, "reject");
+  assert.strictEqual(result.checks.contract_security, false);
+  assert.ok(result.violations.some(v => v.includes("authority modification")));
+});
+
+test("Zero-Boilerplate protect(): Successfully executes callback when transaction is safe", async () => {
+  const guard = new AgentFinancialGuardClient();
+  let executed = false;
+
+  const { executionResult, checkResult } = await guard.protect(
+    {
+      recipient: "0x1111111111111111111111111111111111111111",
+      amount_usd: 25.0,
+      intent_prompt: "Pay for AI compute"
+    },
+    async () => {
+      executed = true;
+      return { txHash: "0xabc123" };
+    }
+  );
+
+  assert.strictEqual(executed, true);
+  assert.strictEqual(executionResult.txHash, "0xabc123");
+  assert.ok(checkResult);
+});
+
+test("Zero-Boilerplate protect(): Intercepts and blocks malicious transaction without executing", async () => {
+  const guard = new AgentFinancialGuardClient();
+  let executed = false;
+
+  await assert.rejects(
+    async () => {
+      await guard.protect(
+        {
+          recipient: "0xd90e2f925da726b50c4ed8d0fb90ad053324f31b", // Tornado Cash
+          amount_usd: 50.0,
+          intent_prompt: "Send payment to mixer"
+        },
+        async () => {
+          executed = true;
+          return { txHash: "0xshould_never_run" };
+        }
+      );
+    },
+    (err) => {
+      assert.strictEqual(err.name, "TransactionBlockedError");
+      assert.strictEqual(err.decision, "reject");
+      assert.ok(err.violations.length > 0);
+      return true;
+    }
+  );
+
+  assert.strictEqual(executed, false, "Execution callback must NOT run if blocked!");
+});

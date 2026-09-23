@@ -1,6 +1,6 @@
 {
   "name": "@agenda-intelligence/guard-mobile",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Ultra-lightweight, zero-dependency mobile and edge SDK for autonomous AI agents. Pre-sign financial transaction firewall, prompt injection heuristics, and M2M escrow settlement.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,7 +11,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "node ../../integrations/elizaos/node_modules/typescript/bin/tsc || tsc",
     "test": "npm run build && node --test test/*.test.js"
   },
   "keywords": [
@@ -27,6 +27,7 @@
     "mcp",
     "x402",
     "base",
+    "solana",
     "usdc",
     "escrow"
   ],

@@ -3,7 +3,14 @@
  * High-performance, zero-dependency client for pre-sign transaction safety checks on Cloudflare Edge.
  */
 
-import type { ClientConfig, TransactionCheckInput, TransactionCheckResult } from "./types.js";
+import {
+  type ClientConfig,
+  type ProtectOptions,
+  type TransactionCheckInput,
+  type TransactionCheckResult,
+  TransactionBlockedError,
+  TransactionStepUpRequiredError
+} from "./types.js";
 import { evaluateLocalFallback } from "./local-rules.js";
 
 export const DEFAULT_FINANCIAL_GUARD_URL =
@@ -35,6 +42,44 @@ export class AgentFinancialGuardClient {
   async isSafe(input: TransactionCheckInput): Promise<boolean> {
     const res = await this.check(input);
     return res.isSafe;
+  }
+
+  /**
+   * Zero-boilerplate execution wrapper.
+   * Evaluates transaction safety BEFORE calling the user's execution callback.
+   * Throws `TransactionBlockedError` if decision === "reject".
+   * Throws `TransactionStepUpRequiredError` if strictMode is enabled and decision === "step_up_human_required".
+   *
+   * @example
+   * const { executionResult, checkResult } = await guard.protect(
+   *   tx,
+   *   () => wallet.sendTransaction(tx)
+   * );
+   */
+  async protect<T>(
+    input: TransactionCheckInput,
+    executor: () => Promise<T> | T,
+    options: ProtectOptions = {}
+  ): Promise<{ executionResult: T; checkResult: TransactionCheckResult }> {
+    const checkResult = await this.check(input);
+
+    if (checkResult.decision === "reject") {
+      throw new TransactionBlockedError(checkResult);
+    }
+
+    if (checkResult.decision === "step_up_human_required") {
+      if (options.onStepUp) {
+        const approved = await options.onStepUp(checkResult);
+        if (!approved) {
+          throw new TransactionStepUpRequiredError(checkResult);
+        }
+      } else if (options.strictMode) {
+        throw new TransactionStepUpRequiredError(checkResult);
+      }
+    }
+
+    const executionResult = await executor();
+    return { executionResult, checkResult };
   }
 
   /**

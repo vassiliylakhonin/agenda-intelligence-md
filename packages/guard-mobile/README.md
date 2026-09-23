@@ -60,6 +60,52 @@ if (!result.isSafe) {
 // 2. Safe to proceed with wallet.signTransaction()!
 ```
 
+## 🛡️ Zero-Boilerplate Safe Execution: `guard.protect()`
+
+Wrap your wallet's `sendTransaction` in a single line. If the transaction violates security policies (OFAC denylist, drainer approval, prompt injection), it is intercepted and an exception is thrown **before your private key signs**:
+
+```typescript
+import { AgentFinancialGuardClient, TransactionBlockedError } from "@agenda-intelligence/guard-mobile";
+
+const guard = new AgentFinancialGuardClient();
+
+try {
+  // Evaluates safety on Cloudflare Edge before invoking executor:
+  const { executionResult, checkResult } = await guard.protect(
+    {
+      recipient: "0x5b5296a3a7bac0f5f096f93b60c1c121f2e5c663",
+      amount_usd: 25.0,
+      token: "USDC",
+      network: "base_mainnet",
+      intent_prompt: "Vendor payment for telemetry indexing"
+    },
+    () => wallet.sendTransaction(tx)
+  );
+  console.log("Tx broadcast safely:", executionResult.hash);
+} catch (err) {
+  if (err instanceof TransactionBlockedError) {
+    console.error("Blocked by Guard!", err.violations, err.advisory);
+  }
+}
+```
+
+---
+
+## ⚡ Multi-Chain: Base (EVM) + Solana Support
+
+Supports EVM (Base, Ethereum, Arbitrum, Polygon) and Solana Base58 addresses out-of-the-box:
+
+```typescript
+// Solana On-Device Agent Check
+const solResult = await guard.check({
+  recipient: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+  amount_usd: 15.0,
+  token: "SOL",
+  network: "solana_mainnet",
+  intent_prompt: "Micropayment to on-device Solana RPC node"
+});
+```
+
 ---
 
 ## ⚡ 1-Line Convenience Check

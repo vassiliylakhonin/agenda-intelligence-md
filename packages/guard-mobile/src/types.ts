@@ -150,3 +150,52 @@ export interface ClientConfig {
   /** Injected fetch implementation (useful for tests or custom environments). */
   fetch?: typeof fetch;
 }
+
+export interface ProtectOptions {
+  /**
+   * If true, even "step_up_human_required" decisions throw TransactionStepUpRequiredError.
+   * Default: false (only hard "reject" decisions throw TransactionBlockedError).
+   */
+  strictMode?: boolean;
+  /**
+   * Optional custom step-up handler invoked when decision is "step_up_human_required".
+   * Return true to proceed with execution, or false to abort and throw.
+   */
+  onStepUp?: (result: TransactionCheckResult) => Promise<boolean> | boolean;
+}
+
+export class TransactionBlockedError extends Error {
+  readonly decision: GuardDecision;
+  readonly score: number;
+  readonly violations: string[];
+  readonly advisory: string;
+  readonly checkResult: TransactionCheckResult;
+
+  constructor(checkResult: TransactionCheckResult) {
+    super(`Transaction blocked by Financial Guard: ${checkResult.advisory}`);
+    this.name = "TransactionBlockedError";
+    this.decision = checkResult.decision;
+    this.score = checkResult.score;
+    this.violations = checkResult.violations;
+    this.advisory = checkResult.advisory;
+    this.checkResult = checkResult;
+  }
+}
+
+export class TransactionStepUpRequiredError extends Error {
+  readonly decision: GuardDecision;
+  readonly score: number;
+  readonly evidenceGaps: string[];
+  readonly advisory: string;
+  readonly checkResult: TransactionCheckResult;
+
+  constructor(checkResult: TransactionCheckResult) {
+    super(`Transaction requires human 2FA approval: ${checkResult.advisory}`);
+    this.name = "TransactionStepUpRequiredError";
+    this.decision = checkResult.decision;
+    this.score = checkResult.score;
+    this.evidenceGaps = checkResult.evidence_gaps;
+    this.advisory = checkResult.advisory;
+    this.checkResult = checkResult;
+  }
+}
