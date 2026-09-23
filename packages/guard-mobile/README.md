@@ -3,6 +3,8 @@
 > **The ultra-lightweight, zero-dependency Mobile & Edge Security SDK for AI Agents.**  
 > Pre-sign financial transaction firewall, prompt injection shield, and M2M escrow arbiter for on-device and mobile agents (Muse, Instinct, ElizaOS, AgentKit, React Native, iOS, Android).
 
+![Agenda Guard Mobile Banner](https://raw.githubusercontent.com/vassiliylakhonin/agenda-intelligence-md/main/assets/guard_mobile_banner.jpg)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)]()
 [![Edge Latency](https://img.shields.io/badge/Edge%20Latency-%3C20ms-success.svg)]()
