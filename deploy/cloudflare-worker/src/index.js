@@ -3452,7 +3452,7 @@ async function a2aResultForScreenDualUseHsCode(params, request, env = {}) {
 function applyAgentFinancialGuardProfile(card, request) {
   const origin = originFromRequest(request);
   const discovery = profileDiscovery("agent_financial_guard");
-  card.name = "Agent Financial Guard & Autonomous Transaction Firewall";
+  card.name = "Agent Financial Guard — Pre-Sign Evidence Review";
   card.documentationUrl = discovery.documentation_url;
   card.description =
     "Heuristic pre-sign review for wallet-bearing agents. " +
@@ -3475,7 +3475,7 @@ function applyAgentFinancialGuardProfile(card, request) {
 function applyM2MEscrowArbiterProfile(card, request) {
   const origin = originFromRequest(request);
   const discovery = profileDiscovery("m2m_escrow_arbiter");
-  card.name = "M2M Escrow Arbiter & Autonomous B2B Deal Settlement";
+  card.name = "M2M Escrow Arbiter — Delivery Evidence Review";
   card.documentationUrl = discovery.documentation_url;
   card.description =
     "Deterministic evaluation of supplied delivery evidence and proposed escrow allocations. " +
@@ -4094,7 +4094,7 @@ const GATE_REQUEST_GUIDES = Object.freeze({
     }
   },
   agent_financial_guard: {
-    title: "Agent Financial Guard & Autonomous Transaction Firewall",
+    title: "Agent Financial Guard — Pre-Sign Evidence Review",
     schema: "schemas/v1/agent-financial-guard-request.schema.json",
     required: [
       "run_id — caller correlation identifier",
@@ -4128,7 +4128,7 @@ const GATE_REQUEST_GUIDES = Object.freeze({
     }
   },
   m2m_escrow_arbiter: {
-    title: "M2M Escrow Arbiter & Autonomous B2B Deal Settlement",
+    title: "M2M Escrow Arbiter — Delivery Evidence Review",
     schema: "schemas/v1/m2m-escrow-arbiter-request.schema.json",
     required: [
       "escrow_id — unique identifier of the escrow transaction",

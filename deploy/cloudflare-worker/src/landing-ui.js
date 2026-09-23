@@ -14,7 +14,7 @@ function landingHtml(request, env) {
 
   const title = escapeHtml(card.name);
   const presentation = {
-    agenda: ["Evidence review for agent workflows", "Discover structured evidence checks, inspect their limits, and route a case to human review.", null],
+    agenda: ["Agenda Intelligence — evidence review", "Discover structured evidence checks, inspect their limits, and route a case to human review.", null],
     kazakhstan: ["Middle Corridor deal evidence review", "Review route, cargo, counterparties and dated evidence before a human commercial decision.", "kazakhstan"],
     agentic_interaction_trust: ["Agent interaction evidence review", "Check identity and action evidence before routing an interaction to a reviewer. This is not a probability that an agent is safe.", "agentic_interaction_trust"],
     agent_output_verification: ["Agent Output Evidence Linter", "Find broken evidence references and structural gaps in agent output. Optional DLP scanning is separate from factual verification.", "agent_output_verification"],
@@ -50,7 +50,7 @@ function landingHtml(request, env) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${title}</title>
+<title>${escapeHtml(presentation[0])}</title>
 <meta name="description" content="${escapeHtml(tagline)}">
 <link rel="ai-catalog" href="${origin}/.well-known/ai-catalog.json">
 <style>
@@ -62,6 +62,8 @@ function landingHtml(request, env) {
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
   }
   * { box-sizing: border-box; }
+  input, select, textarea { min-width: 0; max-width: 100%; }
+  .card, li, nav { overflow-wrap: anywhere; }
   body { font-family: var(--sans); color: var(--fg); background: var(--bg); margin: 0; line-height: 1.55; }
   main { max-width: 760px; margin: 0 auto; padding: 48px 24px 96px; }
   h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.01em; }
@@ -180,12 +182,12 @@ function landingHtml(request, env) {
   <h2>Escrow evidence simulator</h2>
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
     <p style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
-      Test how the deterministic Edge Arbiter resolves Agent-to-Agent escrow disputes, validates deliverable hashes and schemas, and calculates proposed allocations for human review. Unsupported schemas hold the evaluation.
+      Inspect reported delivery evidence. This demo does not supply artifact content or authenticated telemetry, so its scenarios require human review and authorize no payout.
     </p>
     <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
       <button type="button" onclick="loadEscrowScenario('clean')" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🟡 Delivery evidence ($500; review required)</button>
       <button type="button" onclick="loadEscrowScenario('bad_hash')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚫 Corrupted Hash / Spoof</button>
-      <button type="button" onclick="loadEscrowScenario('pro_rata')" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⚖️ Pro-Rata (75% Valid Data)</button>
+      <button type="button" onclick="loadEscrowScenario('pro_rata')" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⚖️ Reported 75% completion</button>
       <button type="button" onclick="loadEscrowScenario('expired')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⏰ Reported missed deadline</button>
     </div>
     <form id="escrow-form" onsubmit="runEscrowArbitrationSimulation(event)" style="display: flex; flex-direction: column; gap: 10px;">
@@ -246,10 +248,21 @@ function landingHtml(request, env) {
       </div>
       <div style="display: flex; gap: 12px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
         <button id="escrow-btn" type="submit" style="background: var(--accent); color: #fff; border: none; padding: 9px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">⚖️ Run Edge Dispute Arbitration</button>
-        <span id="escrow-status" style="font-size: 13px; color: var(--muted);">Zero-Retention: evaluated in Edge RAM in &lt;5ms.</span>
+        <span id="escrow-status" style="font-size: 13px; color: var(--muted);">Synthetic evaluation; review data boundaries before submitting evidence.</span>
       </div>
     </form>
     <div id="escrow-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
+  </div>` : guide?.example && endpoint && profile !== "kazakhstan" ? `
+  <h2>Evaluate a synthetic example</h2>
+  <div class="card">
+    <p>Edit the profile-specific request below. Use synthetic data only; the result is evidence review, not authorization.</p>
+    <form onsubmit="runProfileExample(event)">
+      <label for="profile-request">Structured request</label>
+      <textarea id="profile-request" rows="15" style="width:100%;font:13px/1.5 var(--mono);padding:12px;box-sizing:border-box">${escapeHtml(JSON.stringify(guide.example, null, 2))}</textarea>
+      <button id="profile-run" type="submit">Evaluate evidence</button>
+      <p id="profile-status" role="status"></p>
+    </form>
+    <pre id="profile-result" style="display:none;max-height:600px;overflow:auto"></pre>
   </div>` : `
   <h2>Instant Deal Risk & Sanctions Pre-Screen (Free Triage)</h2>
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
@@ -294,7 +307,7 @@ function landingHtml(request, env) {
   <h2>Endpoints</h2>
   <ul class="endpoints">
     <li><span class="label">Sample dossier:</span> <a href="${origin}/sample-dossier">/sample-dossier</a></li>
-    <li><span class="label">M2M settlement:</span> <a href="${origin}/v1/settle">/v1/settle</a></li>
+    <li><span class="label">API payment:</span> <a href="${origin}/v1/settle">/v1/settle</a></li>
     <li><span class="label">AI catalog:</span> <a href="${origin}/.well-known/ai-catalog.json">/.well-known/ai-catalog.json</a></li>
     <li><span class="label">Agent card:</span> <a href="${origin}/.well-known/agent-card.json">/.well-known/agent-card.json</a></li>
     <li><span class="label">MCP card:</span> <a href="${origin}/.well-known/mcp/server-card.json">/.well-known/mcp/server-card.json</a></li>
@@ -337,6 +350,37 @@ function landingHtml(request, env) {
   </footer>
 </main>
 <script>
+function safeHtml(value) {
+  var element = document.createElement('span');
+  element.textContent = String(value == null ? '' : value);
+  return element.innerHTML;
+}
+function evidenceGapsHtml(result) {
+  return result.evidence_gaps && result.evidence_gaps.length
+    ? '<div style="margin-top:10px"><strong>Evidence requiring review:</strong><ul>' + result.evidence_gaps.map(function(item) { return '<li>' + safeHtml(item) + '</li>'; }).join('') + '</ul></div>'
+    : '';
+}
+
+async function runProfileExample(event) {
+  event.preventDefault();
+  var button = document.getElementById('profile-run');
+  var status = document.getElementById('profile-status');
+  var result = document.getElementById('profile-result');
+  button.disabled = true;
+  status.textContent = 'Evaluating supplied evidence…';
+  try {
+    var payload = JSON.parse(document.getElementById('profile-request').value);
+    var response = await fetch('${origin}${endpoint || '/message/send'}', {
+      method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify(payload)
+    });
+    var body = await response.json();
+    result.style.display = 'block';
+    result.textContent = JSON.stringify(body, null, 2);
+    status.textContent = response.ok ? 'Evaluation returned. Inspect evidence gaps and limitations before acting.' : 'Request failed (HTTP ' + response.status + '). See the response below.';
+  } catch (error) {
+    status.textContent = 'Evaluation failed: ' + error.message;
+  } finally { button.disabled = false; }
+}
 function loadTriagePreset(preset) {
   var cargo = document.getElementById('triage-cargo');
   var route = document.getElementById('triage-route');
@@ -363,7 +407,7 @@ async function runBrowserTriage(e) {
 
   btn.disabled = true;
   btn.innerText = 'Analyzing Exposure...';
-  status.innerText = 'Evaluating OFAC EO 14114, EU sanctions & CHPL lists...';
+  status.innerText = 'Reviewing the supplied trade scenario; no clearance is issued...';
 
   try {
     var prompt = 'Screen sanctions exposure, OFAC EO 14114 risk, and trade compliance for cargo/commodity: ' + cargo + ', transit route: ' + route;
@@ -384,6 +428,7 @@ async function runBrowserTriage(e) {
       })
     });
     var data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));
     var text = '';
     if (data && data.result && data.result.artifacts && data.result.artifacts[0] && data.result.artifacts[0].parts) {
       var part = data.result.artifacts[0].parts.find(function(p) { return p.mediaType === 'text/markdown' || p.text; });
@@ -404,7 +449,7 @@ async function runBrowserTriage(e) {
     status.innerText = 'Triage completed in <500ms.';
   } catch (err) {
     resDiv.style.display = 'block';
-    resDiv.innerHTML = '<div style="color:var(--danger); font-size:13px;">Network error: ' + err.message + '</div>';
+    resDiv.innerHTML = '<div style="color:var(--danger); font-size:13px;">Network error: ' + safeHtml(err.message) + '</div>';
     status.innerText = 'Evaluation failed.';
   } finally {
     btn.disabled = false;
@@ -517,6 +562,7 @@ async function runFinancialGuardSimulation(e) {
     });
     var elapsed = Math.round(performance.now() - t0);
     var data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));
     var v = data.financial_guard_verdict || {};
 
     resDiv.style.display = 'block';
@@ -524,7 +570,9 @@ async function runFinancialGuardSimulation(e) {
     var bg = isAllow ? '#f0fdf4' : '#fef2f2';
     var border = isAllow ? '#86efac' : '#fca5a5';
     var color = isAllow ? '#15803d' : '#b91c1c';
-    var badge = isAllow ? 'ALLOW (Verified & Safe)' : 'REJECT (Blocked by Guard)';
+    var isReject = v.decision === 'reject';
+    var badge = isAllow ? 'LOCAL CHECKS PASSED — authorization still required' : isReject ? 'REJECT — risk rule matched' : 'REVIEW — evidence incomplete';
+    if (!isAllow && !isReject) { bg = '#fffbeb'; border = '#fcd34d'; color = '#92400e'; }
 
     var checksHtml = '';
     if (v.checks) {
@@ -539,18 +587,18 @@ async function runFinancialGuardSimulation(e) {
     var violationsHtml = '';
     if (v.violations && v.violations.length > 0) {
       violationsHtml = '<div style="margin:10px 0; padding:10px; background:#fff1f2; border-left:4px solid #e11d48; border-radius:0 4px 4px 0;"><strong style="color:#9f1239; font-size:13px;">Security Violations Detected:</strong><ul style="margin:4px 0 0 16px; padding:0; font-size:12px; color:#881337;">' +
-        v.violations.map(function(item) { return '<li>' + item + '</li>'; }).join('') +
+        v.violations.map(function(item) { return '<li>' + safeHtml(item) + '</li>'; }).join('') +
         '</ul></div>';
     }
 
     resDiv.innerHTML = '<div style="background:' + bg + '; border:1px solid ' + border + '; border-radius:6px; padding:16px;">' +
       '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">' +
       '<span style="font-size:14px; font-weight:700; color:' + color + ';">Verdict: ' + badge + '</span>' +
-      '<span style="font-size:12px; font-family:var(--mono); background:#fff; padding:2px 8px; border-radius:4px; border:1px solid ' + border + ';">Risk Score: ' + (v.score || 0) + '/100 • ' + elapsed + 'ms edge latency</span>' +
+      '<span style="font-size:12px; font-family:var(--mono); background:#fff; padding:2px 8px; border-radius:4px; border:1px solid ' + border + ';">Risk Score: ' + (v.score || 0) + '/100 • ' + elapsed + 'ms request round trip</span>' +
       '</div>' +
       checksHtml +
-      violationsHtml +
-      '<div style="font-size:13px; color:var(--muted); margin-top:8px;"><strong>Execution Advisory:</strong> ' + (v.execution_advisory || '') + '</div>' +
+      violationsHtml + evidenceGapsHtml(v) +
+      '<div style="font-size:13px; color:var(--muted); margin-top:8px;"><strong>Execution Advisory:</strong> ' + safeHtml(v.execution_advisory) + '</div>' +
       '<div style="margin-top:12px; background:#0f172a; padding:10px 14px; border-radius:6px; color:#e2e8f0; font-family:var(--mono); font-size:11px; line-height:1.6;">' +
       '<div style="color:#94a3b8; font-weight:600; margin-bottom:4px; display:flex; justify-content:space-between; flex-wrap:wrap;"><span>🛡️ Zero-Boilerplate Mobile SDK Protect:</span><a href="https://www.npmjs.com/package/@agenda-intelligence/guard-mobile" target="_blank" style="color:#38bdf8; text-decoration:none;">npm i @agenda-intelligence/guard-mobile &rarr;</a></div>' +
       '<code><span style="color:#f472b6;">import</span> { AgentFinancialGuardClient } <span style="color:#f472b6;">from</span> <span style="color:#a7f3d0;">"@agenda-intelligence/guard-mobile"</span>;<br/>' +
@@ -565,7 +613,7 @@ async function runFinancialGuardSimulation(e) {
     status.innerText = 'Evaluation finished in ' + elapsed + 'ms on Edge.';
   } catch (err) {
     resDiv.style.display = 'block';
-    resDiv.innerHTML = '<div style="color:var(--danger); font-size:13px;">Evaluation failed: ' + err.message + '</div>';
+    resDiv.innerHTML = '<div style="color:var(--danger); font-size:13px;">Evaluation failed: ' + safeHtml(err.message) + '</div>';
     status.innerText = 'Evaluation error.';
   } finally {
     btn.disabled = false;
@@ -691,6 +739,7 @@ async function runEscrowArbitrationSimulation(e) {
     });
     var elapsed = Math.round(performance.now() - t0);
     var data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));
     var r = data.arbitration_ruling || {};
 
     resDiv.style.display = 'block';
@@ -716,32 +765,32 @@ async function runEscrowArbitrationSimulation(e) {
       payoutHtml = '<div style="display:flex; gap:12px; flex-wrap:wrap; margin:10px 0; padding:10px; background:#fff; border:1px solid ' + border + '; border-radius:6px;">' +
         '<div><strong>Seller Payout:</strong> <span style="color:#15803d; font-weight:700;">$' + p.seller_payout_usd.toFixed(2) + '</span></div>' +
         '<div><strong>Buyer Refund:</strong> <span style="color:#b91c1c; font-weight:700;">$' + p.buyer_refund_usd.toFixed(2) + '</span></div>' +
-        '<div><strong>Arbiter Fee (1%):</strong> <span style="color:var(--muted); font-weight:600;">$' + p.arbiter_fee_usd.toFixed(2) + '</span></div>' +
+        '<div><strong>Authorized fee:</strong> <span style="color:var(--muted); font-weight:600;">$' + p.arbiter_fee_usd.toFixed(2) + '</span></div>' +
         '</div>';
     }
 
     var violationsHtml = '';
     if (r.violations && r.violations.length > 0) {
       violationsHtml = '<div style="margin:10px 0; padding:10px; background:#fff1f2; border-left:4px solid #e11d48; border-radius:0 4px 4px 0;"><strong style="color:#9f1239; font-size:13px;">Violations Detected:</strong><ul style="margin:4px 0 0 16px; padding:0; font-size:12px; color:#881337;">' +
-        r.violations.map(function(item) { return '<li>' + item + '</li>'; }).join('') +
+        r.violations.map(function(item) { return '<li>' + safeHtml(item) + '</li>'; }).join('') +
         '</ul></div>';
     }
 
     resDiv.innerHTML = '<div style="background:' + bg + '; border:1px solid ' + border + '; border-radius:6px; padding:16px;">' +
       '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">' +
-      '<span style="font-size:14px; font-weight:700; color:' + color + ';">Binding Ruling: ' + r.ruling + '</span>' +
-      '<span style="font-size:12px; font-family:var(--mono); background:#fff; padding:2px 8px; border-radius:4px; border:1px solid ' + border + ';">Confidence Score: ' + (r.score || 0) + '/100 • ' + elapsed + 'ms edge latency</span>' +
+      '<span style="font-size:14px; font-weight:700; color:' + color + ';">Review outcome: ' + safeHtml(r.ruling) + '</span>' +
+      '<span style="font-size:12px; font-family:var(--mono); background:#fff; padding:2px 8px; border-radius:4px; border:1px solid ' + border + ';">Evidence readiness: ' + (r.score || 0) + '/100 • ' + elapsed + 'ms request round trip</span>' +
       '</div>' +
       payoutHtml +
       checksHtml +
-      violationsHtml +
-      '<div style="font-size:13px; color:var(--muted); margin-top:8px;"><strong>Execution Advisory:</strong> ' + (r.execution_advisory || '') + '</div>' +
-      (r.vizier_clearance_receipt ? '<div style="margin-top:8px; font-size:11px; font-family:var(--mono); color:#475569;">Vizier Attestation Receipt: ' + r.vizier_clearance_receipt + '</div>' : '') +
+      violationsHtml + evidenceGapsHtml(r) +
+      '<div style="font-size:13px; color:var(--muted); margin-top:8px;"><strong>Execution Advisory:</strong> ' + safeHtml(r.execution_advisory) + '</div>' +
+      (r.vizier_clearance_receipt ? '<div style="margin-top:8px; font-size:11px; font-family:var(--mono); color:#475569;">Vizier Attestation Receipt: ' + safeHtml(r.vizier_clearance_receipt) + '</div>' : '') +
       '</div>';
-    status.innerText = 'Arbitration ruling completed in ' + elapsed + 'ms on Edge.';
+    status.innerText = 'Review response received in ' + elapsed + 'ms.';
   } catch (err) {
     resDiv.style.display = 'block';
-    resDiv.innerHTML = '<div style="color:var(--danger); font-size:13px;">Arbitration failed: ' + err.message + '</div>';
+    resDiv.innerHTML = '<div style="color:var(--danger); font-size:13px;">Arbitration failed: ' + safeHtml(err.message) + '</div>';
     status.innerText = 'Arbitration error.';
   } finally {
     btn.disabled = false;

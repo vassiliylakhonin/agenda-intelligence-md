@@ -8489,7 +8489,7 @@ test("GET /health returns m2m_escrow_arbiter metadata", async () => {
   const json = await res.json();
   assert.equal(json.ok, true);
   assert.equal(json.profile, "m2m_escrow_arbiter");
-  assert.equal(json.name, "M2M Escrow Arbiter & Autonomous B2B Deal Settlement");
+  assert.equal(json.name, "M2M Escrow Arbiter — Delivery Evidence Review");
   assert.ok(json.skills.some((s) => s.id === "m2m-escrow-arbitration-ruling"));
 });
 

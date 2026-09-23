@@ -473,7 +473,7 @@ const dualUseExportProfile = Object.freeze({
 const agentFinancialGuardProfile = Object.freeze({
   profile_key: "agent_financial_guard",
   product_profile: "agent_financial_guard",
-  canonical_product_name: "Agent Financial Guard & Autonomous Transaction Firewall",
+  canonical_product_name: "Agent Financial Guard — Pre-Sign Evidence Review",
   documentation_url: AGENT_FINANCIAL_GUARD_DOCS_URL,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
@@ -506,7 +506,7 @@ const agentFinancialGuardProfile = Object.freeze({
 const m2mEscrowArbiterProfile = Object.freeze({
   profile_key: "m2m_escrow_arbiter",
   product_profile: "m2m_escrow_arbiter",
-  canonical_product_name: "M2M Escrow Arbiter & Autonomous B2B Deal Settlement",
+  canonical_product_name: "M2M Escrow Arbiter — Delivery Evidence Review",
   documentation_url: M2M_ESCROW_ARBITER_DOCS_URL,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
