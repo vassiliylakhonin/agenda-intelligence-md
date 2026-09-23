@@ -199,7 +199,7 @@ function landingHtml(request, env) {
     <span class="badge">Profile: ${escapeHtml(profile)}</span>
     <span class="badge" style="color: var(--accent); font-weight: 600;">Pre-Screen: $49</span>
     <a href="${origin}/sample-dossier" class="badge" style="color: var(--good); font-weight: 600; text-decoration: none;">📄 View Sample Dossier</a>
-    <a href="https://t.me/vaskenzy" target="_blank" rel="noopener noreferrer" class="badge" style="color: #0284c7; font-weight: 600; text-decoration: none;">💬 Telegram Concierge: @vaskenzy</a>
+    <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent(card.name)}" class="badge" style="color: #0284c7; font-weight: 600; text-decoration: none;">✉️ Compliance Desk: ${escapeHtml(SUPPORT_CONTACT_EMAIL)}</a>
     <span class="badge">Zero-Retention</span>
   </div>
 
@@ -430,7 +430,6 @@ function landingHtml(request, env) {
       <a href="https://paypal.me/vaskenzy/49USD" target="_blank" rel="noopener noreferrer" style="background: #0070BA; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Instant $49 Pre-Screen (Card/PayPal)</a>
       <a href="https://paypal.me/vaskenzy/490USD" target="_blank" rel="noopener noreferrer" style="background: #166534; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Order $490 Dossier (Card/PayPal)</a>
       <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Corporate Bank Invoice Request — ' + card.name)}&body=${encodeURIComponent('Company Name / Juridical Entity:\nTax ID / BIN / VAT:\nCountry & Address:\nTarget Counterparty or Contract to Audit:\nPreferred Payment Currency (EUR / USD / KZT):\n')}" style="background: #4338ca; color: #fff; border: 1px solid #3730a3; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;">🏢 Request Bank Invoice ($490)</a>
-      <a href="https://t.me/vaskenzy" target="_blank" rel="noopener noreferrer" style="background: #0284c7; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;">💬 Telegram Concierge</a>
       <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Certified Deal Dossier Request — ' + card.name)}" style="background: #fff; color: var(--fg); border: 1px solid var(--line); padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 14px;">Order via Email</a>
     </div>
     <div style="background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 14px 18px; margin-top: 14px; margin-bottom: 12px;">
@@ -511,17 +510,9 @@ function landingHtml(request, env) {
   <h2>Talk to a person</h2>
   <p>${escapeHtml(SUPPORT_HOURS_LOCAL)}. If you have a live file, say what decision it feeds and when it is due — that is enough to start.</p>
   <ul>
-    <li><span class="label">Telegram Concierge:</span> <a href="https://t.me/vaskenzy" target="_blank" rel="noopener noreferrer">@vaskenzy</a> (Direct B2B desk, instant response &lt;15m)</li>
     <li><span class="label">Email:</span> <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent(card.name)}">${SUPPORT_CONTACT_EMAIL}</a></li>
     <li><span class="label">Who runs this:</span> <a href="${PROVIDER_SITE_URL}">${PROVIDER_SITE_URL.replace("https://", "")}</a></li>
   </ul>
-
-  <aside style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; box-shadow: 0 4px 14px rgba(0,0,0,0.18); border-radius: 30px;">
-    <a href="https://t.me/vaskenzy" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; gap: 8px; background: #0284c7; color: #fff; padding: 10px 18px; border-radius: 30px; font-weight: 700; font-size: 13px; text-decoration: none; border: 2px solid #fff; letter-spacing: 0.2px;">
-      <span style="font-size: 16px;">💬</span>
-      <span>Compliance Desk (@vaskenzy)</span>
-    </a>
-  </aside>
 
   <footer>
     <p>Hosted on Cloudflare Workers Edge. Zero-Retention security guarantee: ephemeral RAM processing, zero disk persistence, deterministic rule-based evaluation. Human review required before any commercial action.</p>
