@@ -2,7 +2,7 @@
 name: agenda-intelligence-md
 displayName: "Agenda Intelligence — Sanctions & Deal-Risk Gates"
 description: "Institutional geopolitical risk, Critical Minerals due diligence, CHPL dual-use export control, OFAC 50% rule, autonomous agent financial guard, and M2M escrow arbitration gates. Sub-50ms deterministic edge verification with Zero-Retention security and cryptographic Vizier receipts."
-version: "1.12.0"
+version: "1.12.1"
 repository: "https://github.com/vassiliylakhonin/agenda-intelligence-md"
 homepage: "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/"
 keywords:

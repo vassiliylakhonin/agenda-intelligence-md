@@ -21,6 +21,9 @@ ADDRESS = re.compile(r"0x[0-9a-fA-F]{40}\Z")
 HASH = re.compile(r"0x[0-9a-fA-F]{64}\Z")
 QUANTITY = re.compile(r"0x(?:0|[1-9a-fA-F][0-9a-fA-F]*)\Z")
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
+# The official public endpoint currently rejects eth_getLogs ranges above
+# 1,000 blocks. Keep the full 24-hour sweep within that observed RPC limit.
+MAX_LOG_BLOCK_SPAN = 1000
 
 
 class EvidenceUnavailable(ValueError):
@@ -109,8 +112,8 @@ def _collect(wallet: str, rpc: Callable[[str, list[Any]], Any]) -> dict[str, Any
     transfers: list[dict[str, Any]] = []
     seen: set[tuple[str, int]] = set()
     chunks = 0
-    for first in range(first_block, end_number + 1, 1999):
-        last = min(first + 1998, end_number)
+    for first in range(first_block, end_number + 1, MAX_LOG_BLOCK_SPAN):
+        last = min(first + MAX_LOG_BLOCK_SPAN - 1, end_number)
         logs = rpc(
             "eth_getLogs",
             [

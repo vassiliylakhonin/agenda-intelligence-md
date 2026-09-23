@@ -235,7 +235,7 @@ def test_transport_identifies_client_bounds_response_and_blocks_redirects(monkey
     monkeypatch.setattr(client._opener, "open", opened)
     assert client.get_review(REVIEW_ID) == {}
     req = opened.call_args.args[0]
-    assert req.get_header("User-agent") == "agenda-intelligence-human-review/1.12.0"
+    assert req.get_header("User-agent") == "agenda-intelligence-human-review/1.12.1"
     response.read.assert_called_once_with(131073)
     with pytest.raises(HumanReviewError, match="redirects"):
         _NoRedirect().redirect_request(req, None, 302, "redirect", {}, "https://other.example")
