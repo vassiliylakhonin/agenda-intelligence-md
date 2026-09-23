@@ -89,7 +89,7 @@ class HumanReviewClient:
         self._opener = urllib.request.build_opener(_NoRedirect())
 
     def _json(self, path: str, body: Any = None, authenticated: bool = True) -> dict[str, Any]:
-        headers = {"Content-Type": "application/json", "User-Agent": "agenda-intelligence-human-review/1.12.0"}
+        headers = {"Content-Type": "application/json", "User-Agent": "agenda-intelligence-human-review/1.12.1"}
         if authenticated:
             headers["Authorization"] = f"Bearer {self._api_key}"
         req = urllib.request.Request(

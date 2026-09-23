@@ -4,6 +4,9 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## 1.12.1 — 2026-09-23
+
+- Fix the Base native-USDC history collector to query at most 1,000 blocks per `eth_getLogs` call, matching the observed public RPC cap while preserving fail-closed whole-window coverage.
 - Document Vizier workflow reservations, owner-configured limits, extended financial retention and finalized Base reconciliation for the existing Python review integration.
 
 ## 1.12.0 — 2026-09-21

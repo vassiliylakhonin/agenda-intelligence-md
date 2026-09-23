@@ -59,11 +59,12 @@ def test_empty_complete_history_has_explicit_scope_and_no_authorization():
     result = _collect(WALLET, rpc)
     assert result["total_outgoing_base_units"] == "0"
     assert result["start_block"] == END - 43200
-    assert result["successful_chunks"] == 22
+    assert result["successful_chunks"] == 44
     assert result["authorization"] == "not_authorized"
     assert result["unfinalized_gap_seconds"] >= 900
     ranges = [p[0] for m, p in calls if m == "eth_getLogs"]
     assert all(int(b["fromBlock"], 16) == int(a["toBlock"], 16) + 1 for a, b in zip(ranges, ranges[1:]))
+    assert all(1 <= int(part["toBlock"], 16) - int(part["fromBlock"], 16) + 1 <= 1000 for part in ranges)
 
 
 def test_amounts_are_exact_base_units_not_floats_or_usd():

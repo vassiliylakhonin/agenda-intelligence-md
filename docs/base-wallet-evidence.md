@@ -1,6 +1,6 @@
 # Read-only Base wallet evidence
 
-`AgentFinancialGuard.collect_base_usdc_history(wallet_address)` collects outgoing native-USDC Transfer events directly from `https://mainnet.base.org`. It does not accept a caller-supplied spending total and does not change a Financial Guard decision. This method is available from source after the change; it is not part of the already published 1.12.0 artifacts.
+`AgentFinancialGuard.collect_base_usdc_history(wallet_address)` collects outgoing native-USDC Transfer events directly from `https://mainnet.base.org`. It does not accept a caller-supplied spending total and does not change a Financial Guard decision. This method is included in the Python SDK; the bounded 1,000-block RPC range is fixed in 1.12.1.
 
 ```python
 from agenda_intelligence import AgentFinancialGuard
@@ -41,7 +41,7 @@ except EvidenceUnavailable:
 | `authorization` | Always `not_authorized` |
 | `limitations` | Provider trust, asset/window scope and missing authorization evidence |
 
-Errors raise `EvidenceUnavailable` without returning a total. Up to 128 read-only RPC calls and 180 seconds are allowed; each response is capped at 4 MiB. Logs are fetched in ranges below 2,000 blocks. A finalized anchor older than one hour is rejected. The helper contains no signing or broadcast methods and requires no wallet/private key.
+Errors raise `EvidenceUnavailable` without returning a total. Up to 128 read-only RPC calls and 180 seconds are allowed; each response is capped at 4 MiB. Logs are fetched in ranges of at most 1,000 blocks, the limit observed on the official public Base RPC. A finalized anchor older than one hour is rejected. The helper contains no signing or broadcast methods and requires no wallet/private key.
 
 The window ends at finalization, not at the present instant. It excludes pending/unfinalized activity, other tokens, native ETH, approvals, offchain transactions and reservations for concurrent payments. It is therefore insufficient for wallet-wide rolling velocity enforcement. No live sanctions clearance or price assumption is introduced.
 
