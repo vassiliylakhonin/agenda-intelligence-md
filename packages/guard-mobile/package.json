@@ -1,0 +1,37 @@
+{
+  "name": "@agenda-intelligence/guard-mobile",
+  "version": "1.0.0",
+  "description": "Ultra-lightweight, zero-dependency mobile and edge SDK for autonomous AI agents. Pre-sign financial transaction firewall, prompt injection heuristics, and M2M escrow settlement.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test test/*.test.js"
+  },
+  "keywords": [
+    "ai-agents",
+    "mobile-ai",
+    "on-device-ai",
+    "muse",
+    "instinct",
+    "elizaos",
+    "coinbase-agentkit",
+    "financial-guard",
+    "firewall",
+    "mcp",
+    "x402",
+    "base",
+    "usdc",
+    "escrow"
+  ],
+  "author": "Vassiliy Lakhonin",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
