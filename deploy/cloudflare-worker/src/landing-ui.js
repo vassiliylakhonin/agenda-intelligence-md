@@ -187,6 +187,11 @@ function landingHtml(request, env) {
   <h1>${title}</h1>
   <p class="tagline">${escapeHtml(tagline)}</p>
 
+  <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid var(--accent); padding: 10px 16px; border-radius: 6px; margin: 0 0 18px; font-size: 14px; line-height: 1.5; color: var(--fg);">
+    <strong style="color: var(--accent);">⚡ Instant 5-Factor Sanctions, UBO &amp; Dual-Use Clearance:</strong>
+    Automated pre-flight risk audit for trading desks, freight forwarders, and trade finance banks on the Middle Corridor and Gulf. Pre-screen in &lt;10s &bull; Certified Dossiers for Bank Credit Committees.
+  </div>
+
   <div class="status-row">
     <span class="badge badge-live">Live</span>
     <span class="badge">v${escapeHtml(VERSION)}</span>
@@ -194,6 +199,7 @@ function landingHtml(request, env) {
     <span class="badge">Profile: ${escapeHtml(profile)}</span>
     <span class="badge" style="color: var(--accent); font-weight: 600;">Pre-Screen: $49</span>
     <a href="${origin}/sample-dossier" class="badge" style="color: var(--good); font-weight: 600; text-decoration: none;">📄 View Sample Dossier</a>
+    <a href="https://t.me/vaskenzy" target="_blank" rel="noopener noreferrer" class="badge" style="color: #0284c7; font-weight: 600; text-decoration: none;">💬 Telegram Concierge: @vaskenzy</a>
     <span class="badge">Zero-Retention</span>
   </div>
 
@@ -370,6 +376,8 @@ function landingHtml(request, env) {
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
     <p style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
       Enter your counterparty, commodity or HS code, and transit route to run an instant, zero-retention compliance triage against OFAC EO 14114, EU secondary sanctions, and CHPL dual-use lists.
+      <br><span style="font-size: 13px; color: #0369a1;"><em>🇷🇺 Проверка сделки на вторичные санкции, правило 50% OFAC и экспортный контроль ТН ВЭД.</em></span>
+    </p>
     <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
       <button type="button" onclick="loadTriagePreset('rare_metals')" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⛏️ KZ Rare Metals (Aktau → Poti)</button>
       <button type="button" onclick="loadTriagePreset('block_train')" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚆 Middle Corridor Block Train</button>
@@ -419,8 +427,10 @@ function landingHtml(request, env) {
     </ul>
     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
       <a href="${origin}/sample-dossier" style="background: #0f4c81; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">📄 View Sample Dossier</a>
-      <a href="https://paypal.me/vaskenzy/49USD" target="_blank" rel="noopener noreferrer" style="background: #0070BA; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Instant $49 Pre-Screen</a>
-      <a href="https://paypal.me/vaskenzy/490USD" target="_blank" rel="noopener noreferrer" style="background: #166534; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Order $490 Deal Dossier</a>
+      <a href="https://paypal.me/vaskenzy/49USD" target="_blank" rel="noopener noreferrer" style="background: #0070BA; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Instant $49 Pre-Screen (Card/PayPal)</a>
+      <a href="https://paypal.me/vaskenzy/490USD" target="_blank" rel="noopener noreferrer" style="background: #166534; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Order $490 Dossier (Card/PayPal)</a>
+      <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Corporate Bank Invoice Request — ' + card.name)}&body=${encodeURIComponent('Company Name / Juridical Entity:\nTax ID / BIN / VAT:\nCountry & Address:\nTarget Counterparty or Contract to Audit:\nPreferred Payment Currency (EUR / USD / KZT):\n')}" style="background: #4338ca; color: #fff; border: 1px solid #3730a3; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;">🏢 Request Bank Invoice ($490)</a>
+      <a href="https://t.me/vaskenzy" target="_blank" rel="noopener noreferrer" style="background: #0284c7; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;">💬 Telegram Concierge</a>
       <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Certified Deal Dossier Request — ' + card.name)}" style="background: #fff; color: var(--fg); border: 1px solid var(--line); padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 14px;">Order via Email</a>
     </div>
     <div style="background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 14px 18px; margin-top: 14px; margin-bottom: 12px;">
@@ -458,8 +468,12 @@ function landingHtml(request, env) {
     </p>
   </div>
 
-  <h2>Try it (curl)</h2>
-  <pre>${escapeHtml(tryItCurl)}</pre>
+  <details style="margin: 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; background: #fafafa;">
+    <summary style="font-weight: 700; cursor: pointer; font-size: 15px; color: var(--fg);">🛠️ Try it (curl &amp; AI Agent Integration)</summary>
+    <div style="margin-top: 12px;">
+      <pre style="margin: 0; overflow-x: auto;">${escapeHtml(tryItCurl)}</pre>
+    </div>
+  </details>
 
   <h2>Endpoints</h2>
   <ul class="endpoints">
@@ -497,9 +511,17 @@ function landingHtml(request, env) {
   <h2>Talk to a person</h2>
   <p>${escapeHtml(SUPPORT_HOURS_LOCAL)}. If you have a live file, say what decision it feeds and when it is due — that is enough to start.</p>
   <ul>
+    <li><span class="label">Telegram Concierge:</span> <a href="https://t.me/vaskenzy" target="_blank" rel="noopener noreferrer">@vaskenzy</a> (Direct B2B desk, instant response &lt;15m)</li>
     <li><span class="label">Email:</span> <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent(card.name)}">${SUPPORT_CONTACT_EMAIL}</a></li>
     <li><span class="label">Who runs this:</span> <a href="${PROVIDER_SITE_URL}">${PROVIDER_SITE_URL.replace("https://", "")}</a></li>
   </ul>
+
+  <aside style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; box-shadow: 0 4px 14px rgba(0,0,0,0.18); border-radius: 30px;">
+    <a href="https://t.me/vaskenzy" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; gap: 8px; background: #0284c7; color: #fff; padding: 10px 18px; border-radius: 30px; font-weight: 700; font-size: 13px; text-decoration: none; border: 2px solid #fff; letter-spacing: 0.2px;">
+      <span style="font-size: 16px;">💬</span>
+      <span>Compliance Desk (@vaskenzy)</span>
+    </a>
+  </aside>
 
   <footer>
     <p>Hosted on Cloudflare Workers Edge. Zero-Retention security guarantee: ephemeral RAM processing, zero disk persistence, deterministic rule-based evaluation. Human review required before any commercial action.</p>
