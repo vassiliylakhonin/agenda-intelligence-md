@@ -151,6 +151,12 @@ console.log("Payout Details:", ruling.payout);
 
 ---
 
+## Recipes & Code Examples
+
+- **[Pre-Flight Guard & Wallet Execution Flow](./examples/safe-transaction-flow.ts)**: A complete, runnable TypeScript recipe demonstrating how an autonomous agent intercepts transaction intentions, queries `AgendaGuardClient`, gates wallet signing behind `step_up_human_required`, and aborts high-risk or drainer transfers.
+
+---
+
 ## Security Boundaries & Guarantees
 
 - **No Settlement Authorization**: This plugin does not hold private keys, sign transactions, or move funds. Applications must explicitly query the check before their own signing workflows.
