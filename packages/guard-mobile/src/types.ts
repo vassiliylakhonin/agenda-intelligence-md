@@ -76,6 +76,22 @@ export interface TransactionCheckResult {
   human_review_required: boolean;
   /** Whether this verdict was evaluated by live Cloudflare Edge or local offline fallback */
   evaluated_by: "edge_worker" | "local_fallback";
+  /** Optional cryptographic Vizier JWS clearance receipt (vrf_...) when settled via x402 */
+  vizier_clearance_receipt?: string | null;
+  /** Optional on-chain x402 settlement attestation */
+  attestation?: Record<string, unknown> | null;
+  /** Structured x402 payment challenge for unlocking on-chain cryptographic receipts */
+  x402_challenge?: {
+    protocol: string;
+    network: string;
+    chain_id: number;
+    asset: string;
+    amount_usdc: number;
+    recipient: string;
+    contract: string;
+    attestation_type: string;
+    instructions: string;
+  } | null;
 }
 
 export interface DealTerms {

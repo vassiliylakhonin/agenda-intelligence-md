@@ -8995,7 +8995,13 @@ async function a2aResultForAgentFinancialGuard(params, request, env = {}) {
     );
   }
 
-  const evaluation = await evaluateAgentFinancialTransaction(structured, env);
+  const paymentTx = (request?.headers && request.headers.get("x-payment-tx")) || structured?.x402_payment_tx;
+  let paymentProof = null;
+  if (paymentTx) {
+    paymentProof = await verifyBaseTransactionReceipt(paymentTx.trim(), env, { expectedAmountUsdc: 0.05 });
+  }
+
+  const evaluation = await evaluateAgentFinancialTransaction(structured, env, { paymentProof });
   const verdict = evaluation.financial_guard_verdict;
   const artifactText = [
     "# Agent Financial Guard — Pre-Sign Verification",
@@ -9039,6 +9045,8 @@ async function a2aResultForAgentFinancialGuard(params, request, env = {}) {
       human_review_required: verdict.decision !== "allow",
       response: evaluation,
       vizier_status: verdict.vizier_status,
+      x402_challenge: verdict.x402_challenge,
+      ...(verdict.attestation ? { attestation: verdict.attestation } : {}),
       ...(verdict.vizier_clearance_receipt ? { vizier_clearance_receipt: verdict.vizier_clearance_receipt } : {})
     }
   };
@@ -13981,13 +13989,20 @@ const DIRECT_V1_ROUTES = {
     extract: structuredAgentFinancialGuardRequestFromParams,
     errorsFor: validateFinancialGuardRequest,
     run: async (structured, request, env) => {
-      const evaluation = await evaluateAgentFinancialTransaction(structured, env);
+      const paymentTx = (request?.headers && request.headers.get("x-payment-tx")) || structured?.x402_payment_tx;
+      let paymentProof = null;
+      if (paymentTx) {
+        paymentProof = await verifyBaseTransactionReceipt(paymentTx.trim(), env, { expectedAmountUsdc: 0.05 });
+      }
+      const evaluation = await evaluateAgentFinancialTransaction(structured, env, { paymentProof });
       return { response: evaluation, ...evaluation };
     },
     provenance: (result) => ({
       vizier_status: result.financial_guard_verdict?.vizier_status,
       vizier_clearance_receipt: result.financial_guard_verdict?.vizier_clearance_receipt,
-      execution_advisory: result.financial_guard_verdict?.execution_advisory
+      execution_advisory: result.financial_guard_verdict?.execution_advisory,
+      x402_challenge: result.financial_guard_verdict?.x402_challenge,
+      attestation: result.financial_guard_verdict?.attestation
     })
   },
   "/v1/m2m-escrow/evaluate-dispute": {

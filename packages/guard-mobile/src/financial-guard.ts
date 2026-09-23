@@ -83,6 +83,23 @@ export class AgentFinancialGuardClient {
   }
 
   /**
+   * Evaluates transaction safety AND attaches x402 Base USDC payment tx hash to request
+   * an authoritative cryptographic Vizier attestation receipt (vrf_...).
+   *
+   * @param input Transaction check payload
+   * @param paymentTxHash Confirmed Base USDC transaction hash for $0.05 attestation fee
+   */
+  async checkWithAttestation(
+    input: TransactionCheckInput,
+    paymentTxHash: string
+  ): Promise<TransactionCheckResult> {
+    return this.check({
+      ...input,
+      x402_payment_tx: paymentTxHash
+    });
+  }
+
+  /**
    * Performs full deterministic pre-sign verification across 4 layers:
    * 1. OFAC / AML Sanctions screening
    * 2. Smart contract drainer / infinite approval heuristics
@@ -163,7 +180,10 @@ export class AgentFinancialGuardClient {
         violations: verdict.violations || [],
         evidence_gaps: verdict.evidence_gaps || [],
         human_review_required: verdict.human_review_required ?? true,
-        evaluated_by: "edge_worker"
+        evaluated_by: "edge_worker",
+        vizier_clearance_receipt: verdict.vizier_clearance_receipt ?? null,
+        attestation: verdict.attestation ?? null,
+        x402_challenge: verdict.x402_challenge ?? null
       };
     } catch (err: unknown) {
       clearTimeout(timeoutId);

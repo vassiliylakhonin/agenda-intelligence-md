@@ -120,6 +120,8 @@ test("REST, MCP and A2A preserve financial human-review decisions", async () => 
   });
   const rest = await (await handleRequest(req, env)).json();
   assert.equal(rest.financial_guard_verdict.decision, "step_up_human_required");
+  assert.equal(rest.financial_guard_verdict.x402_challenge.protocol, "x402");
+  assert.equal(rest.financial_guard_verdict.x402_challenge.amount_usdc, 0.05);
   const mcp = await handleMcpJsonRpc(
     {
       jsonrpc: "2.0",
