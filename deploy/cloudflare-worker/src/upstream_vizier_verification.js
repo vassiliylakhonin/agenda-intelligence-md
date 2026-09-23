@@ -18,7 +18,7 @@
 export const VIZIER_DEFAULT_URL = "https://vizier.vassiliy-lakhonin.workers.dev";
 export const DEFAULT_TIMEOUT_MS = 5000;
 export const VERIFICATION_NOTICE =
-  "Output verification, DLP secret/PII firewall & JWS cryptographic clearance via Vizier Action Firewall (https://vizier.vassiliy-lakhonin.workers.dev).";
+  "DLP pattern screening via Vizier; any signed receipt covers only that scan, not factual verification or authorization. Vizier Action Firewall (https://vizier.vassiliy-lakhonin.workers.dev).";
 
 export function verificationAttributionBlock() {
   return {

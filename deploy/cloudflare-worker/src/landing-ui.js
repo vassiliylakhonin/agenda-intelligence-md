@@ -1,7 +1,8 @@
+import { pricingHtml } from "./commercial-catalog.js";
 // Browser presentation only. Runtime decisions are supplied by the controller.
 import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL } from "./profiles.js";
 
-export function createLandingRenderer({ originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL }) {
+export function createLandingRenderer({ originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES }) {
 function landingHtml(request, env) {
   const origin = originFromRequest(request);
   const profile = agentProfile(request, env);
@@ -12,130 +13,33 @@ function landingHtml(request, env) {
   const isEscrowArbiter = profile === "m2m_escrow_arbiter";
 
   const title = escapeHtml(card.name);
-  const tagline = isKazakhstan
-    ? "Pre-compliance evidence triage for Kazakhstan / Middle Corridor deal flow — route, cargo, counterparties, dated sources → auditable risk gate."
-    : isAgentic
-      ? "Evidence-readiness gate for agent-mediated actions — actor, target surface, requested action, dated evidence → auditable trust-routing triage."
-      : isFinancialGuard
-        ? "Pre-sign evidence review — local risk rules and intent checks. Current sanctions status and spending history require human review."
-        : isEscrowArbiter
-          ? "Escrow evidence review — deliverable hashes, supported JSON schemas, SLO evidence and proposed allocations for review."
-          : "Evidence-discipline layer for strategic intelligence agents — geography-routed structured risk triage with explicit source provenance.";
-
-  const tryItCurl = isKazakhstan
-    ? `curl -X POST ${origin}/message/send \\
-  -H 'content-type: application/json' \\
-  -H 'A2A-Version: 1.0' \\
-  -d '{
-    "jsonrpc": "2.0",
-    "id": "demo-1",
-    "method": "SendMessage",
-    "params": {
-      "message": {
-        "messageId": "message-demo-1",
-        "role": "ROLE_USER",
-        "parts": [
-          { "text": "Screen Kazakhstan Middle Corridor sanctions exposure for a logistics route." }
-        ]
-      }
-    }
-  }'`
-    : isAgentic
-      ? `curl -X POST ${origin}/message/send \\
-  -H 'content-type: application/json' \\
-  -H 'A2A-Version: 1.0' \\
-  -d '{
-    "jsonrpc": "2.0",
-    "id": "agentic-demo-1",
-    "method": "SendMessage",
-    "params": {
-      "message": {
-        "messageId": "message-agentic-demo-1",
-        "role": "ROLE_USER",
-        "parts": [{"data": {
-          "actor": {"declared_type": "ai_agent", "declared_name": "Example Shopping Agent", "operator": "Example Consumer", "authentication_context": "session_cookie"},
-          "target_surface": "checkout",
-          "requested_action": "complete purchase of two restricted-delivery items",
-          "asset_or_resource": "order-123",
-          "decision_stage": "pre_execution",
-          "dated_sources": [
-            {"id": "ait-1", "source_type": "agent_identity_claim", "title": "Declared agent identity header", "date": "2026-05-28"},
-            {"id": "ait-2", "source_type": "session_authentication_evidence", "title": "Authenticated checkout session", "date": "2026-05-28"},
-            {"id": "ait-3", "source_type": "transaction_or_target_action_evidence", "title": "Order summary", "date": "2026-05-28"}
-          ],
-          "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?"
-        }}]
-      }
-    }
-  }'`
-    : isFinancialGuard
-      ? `curl -X POST ${origin}/v1/agent-financial/pre-sign-check \\
-  -H 'content-type: application/json' \\
-  -d '{
-    "run_id": "demo-pre-sign-1",
-    "transaction": {
-      "network": "base_mainnet",
-      "token": "USDC",
-      "amount_usd": 25,
-      "recipient": "0x5b5296a3a7bac0f5f096f93b60c1c121f2e5c663",
-      "method": "transfer"
-    },
-    "intent": {
-      "prompt": "Vendor payment for monthly telemetry indexing"
-    }
-  }'`
-    : isEscrowArbiter
-      ? `curl -X POST ${origin}/v1/m2m-escrow/evaluate-dispute \\
-  -H 'content-type: application/json' \\
-  -d '{
-    "escrow_id": "escrow-demo-001",
-    "deal_terms": {
-      "buyer_id": "did:agent:0x1111111111111111111111111111111111111111",
-      "seller_id": "did:agent:0x2222222222222222222222222222222222222222",
-      "amount_usd": 500,
-      "currency": "USDC",
-      "deadline_utc": "2026-09-17T18:00:00Z",
-      "arbitration_policy": "pro_rata",
-      "arbitration_fee_pct": 1.0
-    },
-    "specification": {
-      "deliverable_type": "json_data",
-      "min_valid_records_pct": 95
-    },
-    "delivery_submission": {
-      "submitted_at": "2026-09-17T12:00:00Z",
-      "telemetry": {
-        "total_items": 1000,
-        "valid_items": 1000,
-        "response_time_ms": 320
-      }
-    }
-  }'`
-    : `curl -X POST ${origin}/message/send \\
-  -H 'content-type: application/json' \\
-  -H 'A2A-Version: 1.0' \\
-  -d '{
-    "jsonrpc": "2.0",
-    "id": "demo-1",
-    "method": "SendMessage",
-    "params": {
-      "message": {
-        "messageId": "message-demo-1",
-        "role": "ROLE_USER",
-        "parts": [
-          { "text": "Screen sanctions and policy risk for Red Sea shipping disruption and Kazakhstan transit exposure." }
-        ]
-      }
-    }
-  }'`;
-
-  const flagshipBlock = isKazakhstan
-    ? `<p>This node operates the Kazakhstan / Middle Corridor Deal Risk Gate. It accepts route + cargo + counterparties + dated sources and returns an auditable triage with evidence gaps, missing source categories, decision-readiness score, and a three-value recommendation (insufficient_information, pre_signature_escalate, ready_for_human_review). Deterministic rule-based evaluation. Human review is required before any commercial action.</p>`
-    : isAgentic
-      ? `<p>This worker is the live Agentic Interaction Trust Gate. It accepts actor + target surface + requested action + dated evidence and returns an auditable trust-routing triage with evidence gaps, missing source categories, decision-readiness score, trust signal, and mandatory human-review routing. It is not a detection engine and does not authorize, deny, or block actions.</p>`
-      : isEscrowArbiter
-        ? `<p>This node operates the <strong>M2M Escrow Arbiter & Autonomous B2B Deal Settlement Gate</strong>. It evaluates supplied hashes, supported JSON Schema constraints, deadlines and SLO evidence. Unsupported schemas or missing artifacts require human review. Allocations are proposals only: this service neither executes settlement nor issues Vizier clearance receipts.</p>`
-        : `<p>This worker is the general Agenda Intelligence A2A wrapper — discovery, uptime checks, lightweight strategic-risk triage, and JSON-RPC routing across geography-aware modules. For deeper Kazakhstan / Middle Corridor deal-risk screening, use the dedicated <a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">deal-risk-gate worker</a>.</p>`;
+  const presentation = {
+    agenda: ["Evidence review for agent workflows", "Discover structured evidence checks, inspect their limits, and route a case to human review.", null],
+    kazakhstan: ["Middle Corridor deal evidence review", "Review route, cargo, counterparties and dated evidence before a human commercial decision.", "kazakhstan"],
+    agentic_interaction_trust: ["Agent interaction evidence review", "Check identity and action evidence before routing an interaction to a reviewer. This is not a probability that an agent is safe.", "agentic_interaction_trust"],
+    agent_output_verification: ["Agent Output Evidence Linter", "Find broken evidence references and structural gaps in agent output. Optional DLP scanning is separate from factual verification.", "agent_output_verification"],
+    agent_financial_guard: ["Agent Financial Guard", "Review local transaction risk indicators before signing. Current sanctions status, spending history and enforced wallet limits are not established by this evaluation.", "agent_financial_guard"],
+    m2m_escrow_arbiter: ["M2M Escrow Evidence Review", "Compare supplied artifact content with hashes and supported schemas. Missing or untrusted evidence requires review. This service never moves escrow funds.", "m2m_escrow_arbiter"],
+    cis_secondary_sanctions: ["CIS counterparty evidence review", "Inspect ownership and sanctions evidence gaps. Optional configured screening sources report their own freshness and availability.", "cis_secondary_sanctions"],
+    gulf_maritime_exposure: ["Gulf maritime evidence review", "Review vessel, voyage and insurance evidence. This is not continuous AIS or maritime threat monitoring.", "gulf_maritime_exposure"],
+    market_entry_readiness: ["Kazakhstan market-entry readiness", "Identify missing project, partner and regulatory evidence before a market-entry review.", "kazakhstan_market_entry_readiness"],
+    critical_minerals_due_diligence: ["Critical minerals evidence review", "Inspect supplied origin, ownership and supply-chain evidence for a human due-diligence review.", "critical_minerals_due_diligence"],
+    dual_use_technology_export: ["Dual-use export evidence review", "Review supplied product classifications, end-user and diversion-risk evidence. A classification flag is not an export licence or clearance.", "dual_use_technology_export"],
+    corridor_sanctions_assistant: ["Corridor & Sanctions Request Assistant", "Structure your question and find the appropriate evidence-review profile. This assistant does not issue sanctions decisions.", null]
+  }[profile] || [card.name, card.description, null];
+  const tagline = presentation[1];
+  const guide = GATE_REQUEST_GUIDES[presentation[2]];
+  const endpoint = {
+    kazakhstan: "/message/send", agentic_interaction_trust: "/v1/agentic-interaction/trust",
+    agent_output_verification: "/v1/agent-output/verification", agent_financial_guard: "/v1/agent-financial/pre-sign-check",
+    m2m_escrow_arbiter: "/v1/m2m-escrow/evaluate-dispute", cis_secondary_sanctions: "/v1/cis-secondary-sanctions/exposure",
+    gulf_maritime_exposure: "/v1/gulf-maritime/exposure", market_entry_readiness: "/v1/market-entry/readiness",
+    critical_minerals_due_diligence: "/v1/critical-minerals/due-diligence", dual_use_technology_export: "/v1/dual-use/technology-export"
+  }[profile];
+  const tryItCurl = endpoint && guide?.example
+    ? `curl -X POST ${origin}${endpoint} -H 'content-type: application/json' --data '${JSON.stringify(profile === "kazakhstan" ? {jsonrpc:"2.0",id:"demo",method:"SendMessage",params:{message:{messageId:"demo",role:"ROLE_USER",parts:[{data:guide.example}]}}} : guide.example, null, 2)}'`
+    : `curl ${origin}/.well-known/agent-card.json`;
+  const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="${endpoint ? origin + endpoint : origin + '/api/openapi.json'}">Open this profile’s API example</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>`;
 
   const agenstryListing = isKazakhstan
     ? "https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev"
@@ -184,66 +88,24 @@ function landingHtml(request, env) {
 </head>
 <body>
 <main>
-  <h1>${title}</h1>
+  <h1>${escapeHtml(presentation[0])}</h1>
   <p class="tagline">${escapeHtml(tagline)}</p>
 
-  <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid var(--accent); padding: 10px 16px; border-radius: 6px; margin: 0 0 18px; font-size: 14px; line-height: 1.5; color: var(--fg);">
-    <strong style="color: var(--accent);">⚡ Instant 5-Factor Sanctions, UBO &amp; Dual-Use Clearance:</strong>
-    Automated pre-flight risk audit for trading desks, freight forwarders, and trade finance banks on the Middle Corridor and Gulf. Pre-screen in &lt;10s &bull; Certified Dossiers for Bank Credit Committees.
-  </div>
-
-  <div class="status-row">
-    <span class="badge badge-live">Live</span>
-    <span class="badge">v${escapeHtml(VERSION)}</span>
-    <span class="badge">A2A ${escapeHtml(agentCardProtocolVersion(card))}</span>
-    <span class="badge">Profile: ${escapeHtml(profile)}</span>
-    <span class="badge" style="color: var(--accent); font-weight: 600;">Pre-Screen: $49</span>
-    <a href="${origin}/sample-dossier" class="badge" style="color: var(--good); font-weight: 600; text-decoration: none;">📄 View Sample Dossier</a>
-    <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent(card.name)}" class="badge" style="color: #0284c7; font-weight: 600; text-decoration: none;">✉️ Compliance Desk: ${escapeHtml(SUPPORT_CONTACT_EMAIL)}</a>
-    <span class="badge">Zero-Retention</span>
-  </div>
-
-  <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border-radius: 8px; padding: 18px 20px; margin: 16px 0 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-      <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: #38bdf8; color: #090d16; padding: 2px 8px; border-radius: 4px;">Top Market Flagships</span>
-      <span style="font-size: 12px; color: #94a3b8;">High-Velocity Cross-Border Clearance</span>
-    </div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
-      <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 12px 14px;">
-        <strong style="color: #38bdf8; font-size: 14px; display: block; margin-bottom: 4px;">⛏️ Critical Minerals &amp; Energy Supply Chains</strong>
-        <p style="font-size: 12px; color: #cbd5e1; margin: 0 0 10px; line-height: 1.4;">
-          Forensic due diligence for Lithium, Uranium, Titanium, and Rare Earth supply chains via Caspian ports (Aktau &bull; Baku &bull; Poti). Sanctions, UBO control, and evidence gap audit.
-        </p>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <a href="${origin}/v1/critical-minerals/due-diligence" style="background: #0284c7; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; text-decoration: none;">Interactive Console &rarr;</a>
-          <a href="${origin}/sample-dossier" style="color: #7dd3fc; font-size: 12px; font-weight: 600; text-decoration: none;">Sample Dossier</a>
-        </div>
-      </div>
-      <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 12px 14px;">
-        <strong style="color: #4ade80; font-size: 14px; display: block; margin-bottom: 4px;">⚙️ Dual-Use Technology &amp; Export Controls</strong>
-        <p style="font-size: 12px; color: #cbd5e1; margin: 0 0 10px; line-height: 1.4;">
-          Instant screening against Common High Priority Lists (CHPL Tier 1&ndash;4), microelectronics, CNC tooling, and secondary sanctions risk (OFAC EO 14114 &bull; EU Annex VII).
-        </p>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <a href="${origin}/v1/dual-use/technology-export" style="background: #16a34a; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; text-decoration: none;">Interactive Console &rarr;</a>
-          <a href="${origin}/v1/dual-use/screen" style="color: #86efac; font-size: 12px; font-weight: 600; text-decoration: none;">REST API</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <nav><a href="https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/">All profiles</a> · <a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
+  <div class="status-row"><span class="badge">Live evaluation · v${escapeHtml(VERSION)}</span><span class="badge">Human review required</span><span class="badge">Profile: ${escapeHtml(profile)}</span></div>
+  ${profile === "agenda" ? `<div class="card"><h2>Agent security and trade evidence</h2><p><a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier</a> checks proposed agent actions. Financial Guard, Interaction Trust and Output Verification review the evidence around those actions.</p><p><a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">Middle Corridor</a> and the regional and supply-chain profiles structure evidence for human trade-risk review.</p><a href="${origin}/.well-known/agents.json">Browse the complete profile registry</a></div>` : ""}
   <h2>What this is</h2>
   ${flagshipBlock}
-  <p><strong>Not</strong> legal, compliance, sanctions, financial, investment, or insurance advice. <strong>Not</strong> a factuality verifier — schemas enforce structure, not truth. <strong>No</strong> autonomous live source retrieval.</p>
+  <p><strong>Not</strong> legal, compliance, sanctions, financial, investment, or insurance advice. <strong>Not</strong> a factuality verifier — schemas enforce structure, not truth. <strong>Source availability varies by profile and configuration; inspect the response provenance.</p>
 
   ${isFinancialGuard ? `
   <div style="background: linear-gradient(135deg, #1e1e2f 0%, #0d1117 100%); border: 1px solid #30363d; border-radius: 8px; padding: 18px 20px; margin: 16px 0 24px; color: #f0f6fc;">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
       <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: #6366f1; color: #fff; padding: 3px 8px; border-radius: 4px;">Developer &amp; Agent Ecosystem</span>
-      <span style="font-size: 12px; color: #8b949e;">Dual EVM + Solana Engine &bull; Sub-20ms Anycast Edge</span>
+      <span style="font-size: 12px; color: #8b949e;">EVM and Solana input examples</span>
     </div>
     <p style="font-size: 13px; color: #c9d1d9; margin: 0 0 12px; line-height: 1.45;">
-      Zero-dependency pre-sign security firewall for on-device mobile AI agents (Meta Muse, Apple Intelligence), trading bots, and Web3 agent frameworks.
+      Integration examples for pre-sign evidence review. Enforcement depends on the host wallet and its trusted policies.
     </p>
     <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
       <a href="https://www.npmjs.com/package/@agenda-intelligence/guard-mobile" target="_blank" style="background: #cb3837; color: #fff; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">📦 npm i @agenda-intelligence/guard-mobile</a>
@@ -255,14 +117,14 @@ function landingHtml(request, env) {
   <h2>⚡ Pre-Sign Transaction Firewall &amp; Attack Simulator</h2>
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
     <p style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
-      Test how the deterministic pre-sign gate intercepts sanctions, malicious calldata, drainer approvals, prompt injections, and Solana exploits in &lt;5ms before funds leave your treasury.
+      Evaluate local risk indicators and inspect missing evidence. This simulator does not sign transactions, verify current sanctions status or enforce spending limits.
     </p>
     <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
-      <button type="button" onclick="loadFinScenario('clean')" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">✅ Clean Payout ($25 Base)</button>
+      <button type="button" onclick="loadFinScenario('clean')" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🟡 Review payout ($25 Base)</button>
       <button type="button" onclick="loadFinScenario('tornado')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚫 Tornado Cash Mixer</button>
       <button type="button" onclick="loadFinScenario('drainer')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚫 Infinite Drainer Approve</button>
       <button type="button" onclick="loadFinScenario('injection')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚫 Prompt Injection Attack</button>
-      <button type="button" onclick="loadFinScenario('solana_clean')" style="background: #faf5ff; border: 1px solid #e9d5ff; color: #6b21a8; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🟣 Solana Safe ($15 SOL)</button>
+      <button type="button" onclick="loadFinScenario('solana_clean')" style="background: #faf5ff; border: 1px solid #e9d5ff; color: #6b21a8; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🟣 Review Solana ($15 SOL)</button>
       <button type="button" onclick="loadFinScenario('solana_exploit')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚫 Solana Exploit Drainer</button>
     </div>
     <form id="fin-form" onsubmit="runFinancialGuardSimulation(event)" style="display: flex; flex-direction: column; gap: 10px;">
@@ -310,21 +172,21 @@ function landingHtml(request, env) {
       </div>
       <div style="display: flex; gap: 12px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
         <button id="fin-btn" type="submit" style="background: var(--accent); color: #fff; border: none; padding: 9px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">⚡ Run Pre-Sign Security Evaluation</button>
-        <span id="fin-status" style="font-size: 13px; color: var(--muted);">Zero-Retention: verified in Edge RAM in &lt;5ms.</span>
+        <span id="fin-status" style="font-size: 13px; color: var(--muted);">Evaluation only. See Privacy for data boundaries.</span>
       </div>
     </form>
     <div id="fin-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
   </div>` : isEscrowArbiter ? `
-  <h2>⚖️ Autonomous M2M Escrow &amp; Dispute Resolution Simulator</h2>
+  <h2>Escrow evidence simulator</h2>
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
     <p style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
       Test how the deterministic Edge Arbiter resolves Agent-to-Agent escrow disputes, validates deliverable hashes and schemas, and calculates proposed allocations for human review. Unsupported schemas hold the evaluation.
     </p>
     <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
-      <button type="button" onclick="loadEscrowScenario('clean')" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">✅ Clean Delivery ($500 Full Release)</button>
+      <button type="button" onclick="loadEscrowScenario('clean')" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🟡 Delivery evidence ($500; review required)</button>
       <button type="button" onclick="loadEscrowScenario('bad_hash')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚫 Corrupted Hash / Spoof</button>
       <button type="button" onclick="loadEscrowScenario('pro_rata')" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⚖️ Pro-Rata (75% Valid Data)</button>
-      <button type="button" onclick="loadEscrowScenario('expired')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⏰ Missed Deadline Refund</button>
+      <button type="button" onclick="loadEscrowScenario('expired')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⏰ Reported missed deadline</button>
     </div>
     <form id="escrow-form" onsubmit="runEscrowArbitrationSimulation(event)" style="display: flex; flex-direction: column; gap: 10px;">
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -380,7 +242,7 @@ function landingHtml(request, env) {
       </div>
       <div>
         <label style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Dispute Claim Reason</label>
-        <input id="escrow-claim" type="text" value="Seller delivered verified dataset matching schema; requesting automated escrow release." style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px;" />
+        <input id="escrow-claim" type="text" value="Seller claims dataset delivery; requesting review of the supplied evidence." style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px;" />
       </div>
       <div style="display: flex; gap: 12px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
         <button id="escrow-btn" type="submit" style="background: var(--accent); color: #fff; border: none; padding: 9px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">⚖️ Run Edge Dispute Arbitration</button>
@@ -392,7 +254,7 @@ function landingHtml(request, env) {
   <h2>Instant Deal Risk & Sanctions Pre-Screen (Free Triage)</h2>
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
     <p style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
-      Enter your counterparty, commodity or HS code, and transit route to run an instant, zero-retention compliance triage against OFAC EO 14114, EU secondary sanctions, and CHPL dual-use lists.
+      Enter your counterparty, commodity or HS code, and transit route to run an instant, evidence-readiness triage for human review.
       <br><span style="font-size: 13px; color: #0369a1;"><em>🇷🇺 Проверка сделки на вторичные санкции, правило 50% OFAC и экспортный контроль ТН ВЭД.</em></span>
     </p>
     <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
@@ -413,76 +275,14 @@ function landingHtml(request, env) {
       </div>
       <div style="display: flex; gap: 12px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
         <button id="triage-btn" type="submit" style="background: var(--accent); color: #fff; border: none; padding: 9px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">⚡ Run Instant Pre-Screen</button>
-        <span id="triage-status" style="font-size: 13px; color: var(--muted);">Zero-Retention: processed in volatile Edge RAM.</span>
+        <span id="triage-status" style="font-size: 13px; color: var(--muted);">Evidence evaluation; see Privacy for data boundaries.</span>
       </div>
     </form>
     <div id="triage-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
   </div>`}
 
-  <h2>Commercial Clearance & Deal Dossiers</h2>
-  <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
-    <div style="background: #f0f7ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 14px 18px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-      <div>
-        <strong style="color: #0369a1; font-size: 15px; display: block; margin-bottom: 2px;">📄 Sample Bank-Grade Deal Dossier Available:</strong>
-        <span style="color: var(--muted); font-size: 13px; display: block;">Review an authentic 5-factor forensic sanctions & logistics audit with cryptographic Vizier JWS receipt. Formatted for credit committee submission.</span>
-      </div>
-      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <a href="${origin}/sample-dossier" style="background: #0284c7; color: #fff; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap;">Preview Dossier</a>
-        <a href="${origin}/v1/dossier/export" target="_blank" style="background: #0f172a; color: #fff; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap;">🖨️ A4 Print / PDF</a>
-      </div>
-    </div>
-
-    <p style="font-size: 15px; margin-bottom: 8px;"><strong>Need independent sanctions, UBO, or dual-use clearance for bank compliance or trade finance?</strong></p>
-    <p style="color: var(--muted); font-size: 14px; margin-bottom: 14px;">
-      Our edge infrastructure delivers institutional 5-factor risk audits with cryptographic Vizier JWS receipts accepted by trade-finance credit committees and compliance banks.
-    </p>
-    <ul style="font-size: 14px; margin-bottom: 16px; padding-left: 18px;">
-      <li><strong>Tier 1 — Free Community Sandbox:</strong> Basic discovery, schema validation, and lightweight triage (100% free, 50 req/hour).</li>
-      <li><strong>Tier 3 — Instant Algorithmic Pre-Screen (<span style="color: var(--good); font-weight: 700;">$49</span>):</strong> Instant automated single-contract audit in &lt;30 seconds. Designed for trade desks, logistics operators, and analysts before signing letters of intent.</li>
-      <li><strong>Tier 2 — Certified Institutional Deal Dossier (<span style="color: var(--accent); font-weight: 700;">$490</span>):</strong> Bank-grade 5-factor forensic audit (OFAC 50% Rule, UBO ownership graph, CHPL dual-use HS Tier 1–4, AIS deceptive shipping checks, Evidence Gaps) with a signed Vizier ES256 JWS receipt for compliance banks and credit committees. Turnaround &lt; 24h.</li>
-      <li><strong>Enterprise Pro API Tenant ($490 / month):</strong> High-throughput API access (10,000 monthly checks), dedicated bearer token, custom DLP rules, and 99.9% SLA. Programmatic M2M settlement in Base USDC or PayPal.</li>
-    </ul>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
-      <a href="${origin}/sample-dossier" style="background: #0f4c81; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">📄 View Sample Dossier</a>
-      <a href="https://paypal.me/vaskenzy/49USD" target="_blank" rel="noopener noreferrer" style="background: #0070BA; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Instant $49 Pre-Screen (Card/PayPal)</a>
-      <a href="https://paypal.me/vaskenzy/490USD" target="_blank" rel="noopener noreferrer" style="background: #166534; color: #fff; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; border: none; font-size: 14px;">Order $490 Dossier (Card/PayPal)</a>
-      <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Corporate Bank Invoice Request — ' + card.name)}&body=${encodeURIComponent('Company Name / Juridical Entity:\nTax ID / BIN / VAT:\nCountry & Address:\nTarget Counterparty or Contract to Audit:\nPreferred Payment Currency (EUR / USD / KZT):\n')}" style="background: #4338ca; color: #fff; border: 1px solid #3730a3; padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;">🏢 Request Bank Invoice ($490)</a>
-      <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent('Certified Deal Dossier Request — ' + card.name)}" style="background: #fff; color: var(--fg); border: 1px solid var(--line); padding: 9px 18px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 14px;">Order via Email</a>
-    </div>
-    <div style="background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 14px 18px; margin-top: 14px; margin-bottom: 12px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
-        <strong style="font-size: 14px; color: var(--fg);">⚡ Web3 Instant Settlement (USDC on Base):</strong>
-        <span style="font-size: 12px; font-family: var(--mono); color: var(--good); background: #dcfce7; padding: 2px 8px; border-radius: 4px; font-weight: 600;">Chain ID: 8453 • Sub-second</span>
-      </div>
-      <p style="font-size: 13px; color: var(--muted); margin-bottom: 10px;">
-        Connect any Web3 wallet (MetaMask, Coinbase Wallet, Brave Wallet) to settle instantly on Base L2. Automatic receipt and Pro key provisioning via <code>/v1/settle</code>.
-      </p>
-      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <button type="button" onclick="payWithBaseWallet(0.05)" style="background: #0284c7; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-          <span>⚡ Pay 0.05 USDC (Micro Check)</span>
-        </button>
-        <button type="button" onclick="payWithBaseWallet(0.50)" style="background: #6366f1; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-          <span>⚖️ Pay 0.50 USDC (Micro Dispute)</span>
-        </button>
-        <button type="button" onclick="payWithBaseWallet(49)" style="background: #0052FF; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-          <span>⚡ Pay 49 USDC (Pre-Screen)</span>
-        </button>
-        <button type="button" onclick="payWithBaseWallet(490)" style="background: #0f172a; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-          <span>⚡ Pay 490 USDC (Pro Tenant)</span>
-        </button>
-        <a href="${origin}/explorer" style="background: #10b981; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-          <span>🔍 Web3 Escrow Explorer</span>
-        </a>
-      </div>
-      <div id="web3-status" style="display: none; margin-top: 10px; font-size: 13px; font-family: var(--mono); padding: 8px 12px; border-radius: 4px;"></div>
-      <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">
-        Manual Transfer / Bot Wallet: <code style="user-select: all;">${BASE_USDC_WALLET}</code> &bull; <a href="${origin}/v1/settle" style="font-weight: 600;">/v1/settle API</a>
-      </div>
-    </div>
-    <p style="font-size: 13px; color: var(--muted); margin-top: 8px; margin-bottom: 0;">
-      Instant checkout accepts PayPal balance or Debit/Credit Card. For autonomous agents, settle via USDC on Base (Chain ID: 8453). After payment, email your deal parameters (counterparty name, HS codes, route) or tx hash to <a href="mailto:${SUPPORT_CONTACT_EMAIL}">${SUPPORT_CONTACT_EMAIL}</a> for expedited &lt;24h delivery of the signed Vizier JWS receipt.
-    </p>
-  </div>
+  <h2>Evaluation and paid services</h2>
+  <div class="card">${pricingHtml(escapeHtml)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
 
   <details style="margin: 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; background: #fafafa;">
     <summary style="font-weight: 700; cursor: pointer; font-size: 15px; color: var(--fg);">🛠️ Try it (curl &amp; AI Agent Integration)</summary>
@@ -532,7 +332,7 @@ function landingHtml(request, env) {
   </ul>
 
   <footer>
-    <p>Hosted on Cloudflare Workers Edge. Zero-Retention security guarantee: ephemeral RAM processing, zero disk persistence, deterministic rule-based evaluation. Human review required before any commercial action.</p>
+    <p>Hosted on Cloudflare Workers Edge. Evaluation is stateless; telemetry and payment records have separate data boundaries. See Privacy. Human review required before any commercial action.</p>
     <p>This live wrapper is intentionally limited. Full product behavior remains in the installable stdio MCP server (<code>pip install agenda-intelligence-md</code>).</p>
   </footer>
 </main>
@@ -597,7 +397,7 @@ async function runBrowserTriage(e) {
     resDiv.style.display = 'block';
     if (text) {
       var escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      resDiv.innerHTML = '<div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:16px; margin-bottom:12px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><strong style="color:var(--accent); font-size:15px;">⚡ Live Algorithmic Risk Triage Result:</strong><span style="font-size:12px; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:4px; font-weight:600;">Status: Evaluated</span></div><pre style="white-space:pre-wrap; word-break:break-word; max-height:350px; overflow-y:auto; font-size:12px; background:#0f172a; color:#f8fafc; padding:12px; border-radius:4px;">' + escaped + '</pre><div style="margin-top:14px; padding:12px; background:#fff7ed; border-left:4px solid #ea580c; border-radius:0 4px 4px 0;"><strong style="color:#9a3412; font-size:13px;">⚠️ High-Stakes Risk Protection:</strong><p style="font-size:13px; margin:4px 0 8px; color:var(--fg);">The screening above is an algorithmic pre-flight lead. For bank compliance clearance, letter of credit issuance, or cargo release, order the certified 5-factor Deal Dossier with cryptographic Vizier JWS receipt.</p><div style="display:flex; gap:8px; flex-wrap:wrap;"><a href="https://paypal.me/vaskenzy/49USD" target="_blank" style="background:#0070BA; color:#fff; padding:6px 14px; border-radius:4px; font-size:13px; font-weight:600; text-decoration:none;">Instant $49 Pre-Screen Checkout</a><a href="https://paypal.me/vaskenzy/490USD" target="_blank" style="background:#166534; color:#fff; padding:6px 14px; border-radius:4px; font-size:13px; font-weight:600; text-decoration:none;">Order $490 Certified Dossier</a><a href="${origin}/sample-dossier" style="background:var(--accent); color:#fff; padding:6px 14px; border-radius:4px; font-size:13px; font-weight:600; text-decoration:none;">View Sample Dossier</a><a href="${origin}/v1/dossier/export?commodity=\' + encodeURIComponent(cargo) + \'&transit=\' + encodeURIComponent(route) + \'" target="_blank" style="background:#334155; color:#fff; padding:6px 14px; border-radius:4px; font-size:13px; font-weight:600; text-decoration:none;">📄 Export PDF Dossier</a></div></div></div>';
+      resDiv.innerHTML = '<pre style="white-space:pre-wrap;overflow-wrap:anywhere">' + escaped + '</pre><p>Evidence review only. No commercial action is authorized. <a href="/trust">Read the limitations</a>.</p>';
     } else {
       resDiv.innerHTML = '<div style="color:var(--warn); font-size:13px;">Triage response completed. Check developer console for details.</div>';
     }
@@ -784,7 +584,7 @@ var ESCROW_SCENARIOS = {
     submitted: '2026-09-17T12:00:00Z',
     validItems: 1000,
     totalItems: 1000,
-    claim: 'Seller delivered verified dataset on time.'
+    claim: 'Seller reports dataset delivery on time.'
   },
   bad_hash: {
     id: 'escrow-bad-hash-002',
@@ -904,9 +704,9 @@ async function runEscrowArbitrationSimulation(e) {
     if (r.checks) {
       checksHtml = '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:6px; margin:10px 0;">' +
         '<div style="padding:6px 8px; border-radius:4px; font-size:12px; background:' + (r.checks.deadline_honored ? '#dcfce7; color:#166534' : '#fee2e2; color:#991b1b') + '"><strong>Deadline:</strong> ' + (r.checks.deadline_honored ? '✓ ON TIME' : '✗ BREACH') + '</div>' +
-        '<div style="padding:6px 8px; border-radius:4px; font-size:12px; background:' + (r.checks.hash_verified ? '#dcfce7; color:#166534' : '#fee2e2; color:#991b1b') + '"><strong>Hash Integrity:</strong> ' + (r.checks.hash_verified ? '✓ VERIFIED' : '✗ MISMATCH') + '</div>' +
-        '<div style="padding:6px 8px; border-radius:4px; font-size:12px; background:' + (r.checks.schema_verified ? '#dcfce7; color:#166534' : '#fee2e2; color:#991b1b') + '"><strong>Schema Format:</strong> ' + (r.checks.schema_verified ? '✓ VALID' : '✗ INVALID') + '</div>' +
-        '<div style="padding:6px 8px; border-radius:4px; font-size:12px; background:' + (r.checks.slo_verified ? '#dcfce7; color:#166534' : '#fee2e2; color:#991b1b') + '"><strong>SLO Delivery:</strong> ' + (r.checks.slo_verified ? '✓ PASS' : '✗ DEFICIT') + '</div>' +
+        '<div style="padding:6px 8px; border-radius:4px; font-size:12px; background:' + (r.checks.hash_verified ? '#dcfce7; color:#166534' : '#fee2e2; color:#991b1b') + '"><strong>Hash Integrity:</strong> ' + (r.checks.hash_verified ? '✓ VERIFIED' : 'NOT VERIFIED — inspect evidence gaps') + '</div>' +
+        '<div style="padding:6px 8px; border-radius:4px; font-size:12px; background:' + (r.checks.schema_verified ? '#dcfce7; color:#166534' : '#fee2e2; color:#991b1b') + '"><strong>Schema Format:</strong> ' + (r.checks.schema_verified ? '✓ VALID' : 'NOT VERIFIED — inspect evidence gaps') + '</div>' +
+        '<div style="padding:6px 8px; border-radius:4px; font-size:12px; background:' + (r.checks.slo_verified ? '#dcfce7; color:#166534' : '#fee2e2; color:#991b1b') + '"><strong>SLO Delivery:</strong> ' + (r.checks.slo_verified ? '✓ PASS' : 'NOT VERIFIED') + '</div>' +
         '</div>';
     }
 

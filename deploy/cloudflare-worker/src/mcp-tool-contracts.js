@@ -2625,6 +2625,12 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
             "items": {
               "type": "string"
             }
+          },
+          "score_scope": {
+            "const": "declared_evidence_structure_only"
+          },
+          "factual_verification_performed": {
+            "const": false
           }
         }
       }

@@ -38,7 +38,7 @@ def test_build_dispute_request(relayer: BaseEscrowRelayer) -> None:
     assert req["delivery_submission"]["telemetry"]["valid_items"] == 50
 
 
-def test_process_dispute_split(relayer: BaseEscrowRelayer) -> None:
+def test_reported_partial_delivery_cannot_prepare_settlement(relayer: BaseEscrowRelayer) -> None:
     event = OnChainDisputeEvent(
         escrow_id="0x" + "2" * 64,
         raised_by="0xBuyerAddress",
@@ -53,16 +53,11 @@ def test_process_dispute_split(relayer: BaseEscrowRelayer) -> None:
         telemetry={"total_items": 1000, "valid_items": 750},
     )
 
-    res = relayer.process_dispute(event)
-    assert res["escrow_id"] == event.escrow_id
-    assert res["ruling_enum"] == 2  # SPLIT_PAYOUT
-    assert res["seller_payout_usdc"] == 742_500_000
-    assert res["buyer_refund_usdc"] == 247_500_000
-    assert res["arbiter_fee_usdc"] == 10_000_000
-    assert res["seller_payout_usdc"] + res["buyer_refund_usdc"] + res["arbiter_fee_usdc"] == event.amount_usdc_raw
+    with pytest.raises(ValueError, match="human review"):
+        relayer.process_dispute(event)
 
 
-def test_process_dispute_refund_all_or_nothing(relayer: BaseEscrowRelayer) -> None:
+def test_reported_hash_mismatch_cannot_prepare_refund(relayer: BaseEscrowRelayer) -> None:
     event = OnChainDisputeEvent(
         escrow_id="0x" + "3" * 64,
         raised_by="0xBuyerAddress",
@@ -77,12 +72,8 @@ def test_process_dispute_refund_all_or_nothing(relayer: BaseEscrowRelayer) -> No
         telemetry={"total_items": 10, "valid_items": 0},
     )
 
-    res = relayer.process_dispute(event)
-    assert res["ruling_enum"] == 1  # REFUND_TO_BUYER
-    assert res["seller_payout_usdc"] == 0
-    assert res["arbiter_fee_usdc"] == 2_000_000  # 1% of 200 = 2 USDC
-    assert res["buyer_refund_usdc"] == 198_000_000
-    assert res["seller_payout_usdc"] + res["buyer_refund_usdc"] + res["arbiter_fee_usdc"] == event.amount_usdc_raw
+    with pytest.raises(ValueError, match="human review"):
+        relayer.process_dispute(event)
 
 
 @pytest.mark.parametrize("state", ["ESCALATE_HUMAN", "UNKNOWN_RULING"])

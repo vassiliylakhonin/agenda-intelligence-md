@@ -113,7 +113,7 @@ def test_legacy_remote_receipts_are_not_attestations(envelope):
             else:
                 request = escrow_request()
                 request["specification"].pop("expected_schema")
-                result = M2MEscrowArbiter(local_fallback=False).evaluate_dispute(request)
+                result = M2MEscrowArbiter(local_fallback=False)._evaluate_remote(request)
         assert result.vizier_status == "attestation_unavailable"
         assert "vizier_verified" not in json.dumps(result.raw)
         assert "jws_" not in json.dumps(result.raw)

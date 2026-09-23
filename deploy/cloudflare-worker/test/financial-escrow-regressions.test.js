@@ -62,7 +62,8 @@ test("escrow validates required properties rather than merely accepting an objec
 test("valid schema and delivery remain supported", async () => {
   const result = (await evaluateM2MEscrowArbitration(escrow(), {})).arbitration_ruling;
   assert.equal(result.checks.schema_verified, true);
-  assert.equal(result.ruling, "RELEASE_TO_SELLER");
+  assert.equal(result.ruling, "ESCALATE_HUMAN");
+  assert.equal(result.settlement_authorized, false);
 });
 
 import { readFileSync } from "node:fs";

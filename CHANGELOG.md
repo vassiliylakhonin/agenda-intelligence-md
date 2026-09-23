@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Enterprise readiness corrections — 2026-09-23
+
+- Escrow verifies artifact content and holds unverified delivery evidence; additive per-check status (contract 1.1.0).
+- Scoped product pages, shared price catalog, synthetic dossiers, public trust/privacy/terms, JSON Schema routes and explicit DLP receipt scope.
+- No new autonomous settlement, live fact-checking or institutional certification is claimed.
+
+
+
 ## 1.12.1 — 2026-09-23
 
 - Fix the Base native-USDC history collector to query at most 1,000 blocks per `eth_getLogs` call, matching the observed public RPC cap while preserving fail-closed whole-window coverage.
