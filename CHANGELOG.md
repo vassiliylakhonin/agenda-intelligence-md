@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Document Vizier workflow reservations, owner-configured limits, extended financial retention and finalized Base reconciliation for the existing Python review integration.
+
 ## 1.12.0 — 2026-09-21
 
 - Add explicit Base native-USDC review preparation and optional authenticated Vizier review client with ES256 verification and one-time claims.
