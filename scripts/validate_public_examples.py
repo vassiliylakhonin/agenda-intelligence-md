@@ -109,9 +109,12 @@ def validate_examples() -> None:
     pre_action_fixture_dir = ROOT / "examples" / "pre-action-check"
 
     for path in json_files:
-        load_json(path)
+        data = load_json(path)
 
-        if path in trace_request_files:
+        if path.name == "package.json":
+            if not isinstance(data, dict) or data.get("private") is not True:
+                raise SystemExit(f"Example package manifest must be private: {path.relative_to(ROOT)}")
+        elif path in trace_request_files:
             validate_with_schema(path, request_schema, "agenda-request")
         elif path in trace_doc_files:
             continue
