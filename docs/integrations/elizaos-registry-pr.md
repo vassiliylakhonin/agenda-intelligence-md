@@ -1,14 +1,19 @@
 # ElizaOS Community Plugin Registry Submission
 
-This document contains the exact title, tags, and description for submitting `@agenda-intelligence/plugin-guard` to the official [elizaos/plugins](https://github.com/elizaos-plugins) or [awesome-eliza](https://github.com/elizaos/awesome-eliza) catalog.
+> **Status Notice (September 2026):**
+> PR [#31592](https://github.com/elizaOS/eliza/pull/31592) was reviewed and validated (65/65 tests passed, merge recommended).
+> However, elizaOS decided to **retire the community plugin registry** (tracked in [#32219](https://github.com/elizaOS/eliza/issues/32219)) to focus on core runtime and first-party packages.
+> Consequently, `@agenda-intelligence/plugin-guard` is distributed directly via **npm** (`pnpm add @agenda-intelligence/plugin-guard`) and community catalogs such as `awesome-eliza`.
+
+This document retains the metadata and catalog description for submitting `@agenda-intelligence/plugin-guard` to community catalogs (e.g., [awesome-eliza](https://github.com/elizaos/awesome-eliza)).
 
 ---
 
-## PR Details
+## PR Details (Archived)
 
-**Title:** `feat(plugins): add @agenda-intelligence/plugin-guard - transaction firewall & M2M escrow arbiter`
+**Title:** `feat(registry): add @agenda-intelligence/plugin-guard`
 
-**Branch:** `feat/plugin-agenda-guard`
+**PR Number:** `#31592` (Closed upstream due to registry deprecation)
 
 ---
 
