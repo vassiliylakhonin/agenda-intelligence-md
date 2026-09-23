@@ -5,7 +5,7 @@ ES256 verification and canonical JSON dependencies; ordinary linting does not
 require them. This workflow supports **native USDC transfers on Base (8453)**.
 It cannot sign or broadcast a transaction and never changes a Guard verdict.
 
-Vizier 0.5.0 requires an enabled owner policy before accepting these financial
+Vizier 0.5.1 requires an enabled owner policy before accepting these financial
 reviews. In `/reviews`, the operator sets the lowercase wallet address and
 per-transfer / rolling-24-hour limits using the separate reviewer credential.
 Limits are exact USDC base units (six decimals), with no default active policy.
