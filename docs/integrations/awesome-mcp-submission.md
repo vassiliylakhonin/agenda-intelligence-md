@@ -25,7 +25,7 @@ This document contains ready-to-submit entries for community catalogs, including
   "name": "agenda-intelligence-md",
   "displayName": "Agenda Intelligence — Sanctions & Deal-Risk Gates",
   "description": "Agent transaction firewall (OFAC/AML screening, drainer defense, velocity caps) and autonomous B2B escrow arbiter for Base USDC.",
-  "version": "1.10.0",
+  "version": "1.12.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md"
@@ -69,7 +69,7 @@ Both platforms auto-index from repository root manifests:
 
 ## 4. ElizaOS Community Plugin Registry Entry
 
-**NPM Package**: [`@agenda-intelligence/plugin-guard`](https://www.npmjs.com/package/@agenda-intelligence/plugin-guard) (v1.10.0)  
+**NPM Package**: [`@agenda-intelligence/plugin-guard`](https://www.npmjs.com/package/@agenda-intelligence/plugin-guard) (v1.12.0)  
 **PR Target**: [elizaos/plugins](https://github.com/elizaos-plugins) / [awesome-eliza](https://github.com/elizaos/awesome-eliza)
 
 ```json
