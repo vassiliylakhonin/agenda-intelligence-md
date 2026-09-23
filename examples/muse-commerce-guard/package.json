@@ -1,0 +1,11 @@
+{
+  "name": "example-muse-commerce-guard",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node run.mjs"
+  },
+  "dependencies": {
+    "@agenda-intelligence/guard-mobile": "../../packages/guard-mobile"
+  }
+}
