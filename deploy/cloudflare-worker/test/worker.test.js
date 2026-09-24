@@ -1153,6 +1153,8 @@ test("landing HTML advertises AI catalog endpoint and Link header", async () => 
   assert.match(body, /<link rel="ai-catalog" href="https:\/\/agenda-intelligence-a2a\.example\.workers\.dev\/\.well-known\/ai-catalog\.json">/);
   assert.ok(body.includes("/.well-known/ai-catalog.json"));
   assert.ok(body.includes("/profiles/confidential-project-room"));
+  assert.match(body, /Run a worked example/);
+  assert.match(body, /Discuss enterprise integration/);
 });
 
 test("robots.txt advertises Agentmap for the AI catalog", async () => {
@@ -1169,6 +1171,52 @@ test("robots.txt advertises Agentmap for the AI catalog", async () => {
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("content-type"), "text/plain; charset=utf-8");
   assert.match(responseBody, /Agentmap:/);
+  assert.match(responseBody, /Sitemap: .*\/sitemap\.xml/);
+});
+
+test("shared discovery compatibility routes serve assets and canonical redirects", async () => {
+  const [favicon, sitemap, directory, probing] = await Promise.all([
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/favicon.ico")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/sitemap.xml")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/agent-directory.json")),
+    handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/.well-known/mcp-probing.json"))
+  ]);
+
+  assert.equal(favicon.status, 200);
+  assert.match(favicon.headers.get("content-type"), /image\/svg\+xml/);
+  assert.equal(sitemap.status, 200);
+  assert.match(await sitemap.text(), /<urlset/);
+  assert.equal(directory.status, 200);
+  assert.ok(Array.isArray((await directory.json()).agents));
+  assert.equal(probing.status, 200);
+  assert.equal((await probing.json()).liveness, "ok");
+
+  for (const alias of ["/api/mcp", "/mcp/v1", "/sse"]) {
+    const response = await handleRequest(
+      new Request(`https://agenda-intelligence-a2a.example.workers.dev${alias}`)
+    );
+    assert.equal(response.status, 308);
+    assert.equal(response.headers.get("location"), "https://agenda-intelligence-a2a.example.workers.dev/mcp");
+  }
+});
+
+test("GET and HEAD /mcp expose liveness without executing a tool", async () => {
+  const getResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/mcp")
+  );
+  assert.equal(getResponse.status, 200);
+  assert.equal(getResponse.headers.get("allow"), "GET, HEAD, POST, OPTIONS");
+  assert.equal(getResponse.headers.get("accept-post"), "application/json");
+  const body = await getResponse.json();
+  assert.equal(body.liveness, "ok");
+  assert.equal(body.invocation.method, "POST");
+  assert.equal(body.supports_sse_get, false);
+
+  const headResponse = await handleRequest(
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/mcp", { method: "HEAD" })
+  );
+  assert.equal(headResponse.status, 200);
+  assert.equal(await headResponse.text(), "");
 });
 
 // The verifier reads a card off the wire, so it must be handed the wire shape.
@@ -6062,22 +6110,31 @@ test("the front door declares that it answers without a question", async () => {
   assert.equal(triage.inputSchema.additionalProperties, false);
 });
 
-// 404 on the MCP endpoint does not say "wrong method" — it says there is no MCP
-// server at this address, and that is what the registry probes were told. The
-// endpoint is advertised as streamable-http, whose client may open the stream
-// with GET, so the honest answer for a POST-only server is 405.
-test("the mcp endpoint answers a non-POST with 405, not 404", async () => {
+// Registry probes commonly open the advertised MCP URL with GET or HEAD before
+// they attempt a JSON-RPC call. Give those probes a bounded capability document
+// while continuing to reject methods that cannot inspect or invoke the server.
+test("the mcp endpoint exposes capabilities and rejects unsupported methods", async () => {
   const { default: worker } = await import("../src/index.js");
   const env = { AGENT_PROFILE: "agenda" };
 
-  for (const method of ["GET", "HEAD", "PUT", "DELETE"]) {
+  for (const method of ["GET", "HEAD"]) {
     const response = await worker.fetch(
       new Request("https://agenda-intelligence-a2a.example.workers.dev/mcp", { method }),
       env,
       { waitUntil() {} }
     );
-    assert.equal(response.status, 405, `${method} /mcp must not read as a missing endpoint`);
-    assert.equal(response.headers.get("allow"), "POST", `${method} must be told what is allowed`);
+    assert.equal(response.status, 200, `${method} /mcp must be discoverable`);
+    assert.equal(response.headers.get("allow"), "GET, HEAD, POST, OPTIONS");
+  }
+
+  for (const method of ["PUT", "DELETE"]) {
+    const response = await worker.fetch(
+      new Request("https://agenda-intelligence-a2a.example.workers.dev/mcp", { method }),
+      env,
+      { waitUntil() {} }
+    );
+    assert.equal(response.status, 405, `${method} /mcp must be rejected explicitly`);
+    assert.equal(response.headers.get("allow"), "GET, HEAD, POST, OPTIONS");
   }
 
   // A path that really is absent still says so.
@@ -9271,9 +9328,6 @@ test("critical_minerals: evaluates US IRA FEOC 25%, Uranium P.L. 118-67, and Tit
   assert.equal(tiJson.commodity, "titanium");
   assert.ok(tiJson.top_risks.some(r => r.category.includes("Aerospace Grade Certification")));
 });
-
-
-
 
 
 

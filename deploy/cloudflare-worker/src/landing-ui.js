@@ -76,6 +76,9 @@ function landingHtml(request, env) {
   .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-family: var(--mono); border: 1px solid var(--line); background: var(--card); }
   .badge-live { color: var(--good); }
   .badge-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); display: inline-block; }
+  .primary-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 16px 0 24px; }
+  .primary-action { display: inline-flex; padding: 9px 14px; border-radius: 6px; border: 1px solid var(--accent); font-weight: 650; }
+  .primary-action-main { color: #fff; background: var(--accent); }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; margin: 0 0 16px; }
   pre { background: #1a1a1a; color: #f0f0f0; padding: 16px; border-radius: 6px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.5; margin: 0; }
   code { font-family: var(--mono); font-size: 13px; background: rgba(0,0,0,0.05); padding: 1px 5px; border-radius: 3px; }
@@ -95,6 +98,11 @@ function landingHtml(request, env) {
 
   <nav><a href="https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/">All profiles</a> · <a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
   <div class="status-row"><span class="badge">Live evaluation · v${escapeHtml(VERSION)}</span><span class="badge">Human review required</span><span class="badge">Profile: ${escapeHtml(profile)}</span></div>
+  <div class="primary-actions">
+    <a class="primary-action primary-action-main" href="${endpoint ? origin + endpoint : origin + '/.well-known/agent-card.json'}">Run a worked example</a>
+    <a class="primary-action" href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent(`Enterprise integration — ${card.name}`)}">Discuss enterprise integration</a>
+    <a class="primary-action" href="${origin}/profiles/confidential-project-room">Open confidential project room</a>
+  </div>
   ${profile === "agenda" ? `<div class="card"><h2>Agent security and trade evidence</h2><p><a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier</a> checks proposed agent actions. Financial Guard, Interaction Trust and Output Verification review the evidence around those actions.</p><p><a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">Middle Corridor</a> and the regional and supply-chain profiles structure evidence for human trade-risk review.</p><a href="${origin}/.well-known/agents.json">Browse the complete profile registry</a></div>` : ""}
   <h2>What this is</h2>
   ${flagshipBlock}

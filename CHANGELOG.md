@@ -4,6 +4,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Agent discovery compatibility — 2026-09-24
+
+- Serve a non-executing MCP capability document on `GET`/`HEAD /mcp`, while retaining POST-only tool invocation.
+- Add canonical redirects for common MCP aliases, crawler assets, sitemap discovery, a favicon, an agent-directory alias and an MCP probing document across the shared Worker fleet.
+- Put the worked example, enterprise contact and confidential project-room actions above the fold; preserve the existing evidence and human-review boundaries.
+
 ### Enterprise readiness corrections — 2026-09-23
 
 - Escrow verifies artifact content and holds unverified delivery evidence; additive per-check status (contract 1.1.0).

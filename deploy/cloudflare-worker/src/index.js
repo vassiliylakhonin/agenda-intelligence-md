@@ -2007,6 +2007,30 @@ function openApiDocument(request) {
           }
         }
       },
+      "/mcp": {
+        get: {
+          tags: ["discovery"],
+          summary: "Inspect MCP transport capabilities without invoking a tool",
+          responses: {
+            200: {
+              description: "MCP transport capability document.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        },
+        post: {
+          tags: ["jsonrpc"],
+          summary: "MCP JSON-RPC endpoint",
+          description: "Lists and invokes the hosted MCP tools over HTTP.",
+          requestBody: { $ref: "#/components/requestBodies/JsonRpcRequest" },
+          responses: {
+            200: {
+              description: "MCP JSON-RPC response.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        }
+      },
       "/health": {
         get: {
           tags: ["status"],
@@ -13735,9 +13759,54 @@ function robotsTxt(request) {
     "User-agent: PerplexityBot",
     "Allow: /",
     "",
-    `Agentmap: ${origin}/.well-known/ai-catalog.json`
+    `Agentmap: ${origin}/.well-known/ai-catalog.json`,
+    `Sitemap: ${origin}/sitemap.xml`
   ].join("\n");
 }
+
+function sitemapXml(request) {
+  const origin = originFromRequest(request);
+  const paths = [
+    "/", "/trust", "/privacy", "/terms", "/sample-dossier",
+    "/profiles/confidential-project-room", "/.well-known/agent-card.json",
+    "/.well-known/ai-catalog.json", "/.well-known/mcp/server-card.json",
+    "/api/openapi.json", "/llms.txt"
+  ];
+  const urls = paths.map((path) => `  <url><loc>${origin}${path}</loc></url>`).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+}
+
+function mcpCapabilityDocument(request, env = {}) {
+  const origin = originFromRequest(request);
+  const card = mcpServerCard(request, env);
+  return {
+    ok: true,
+    protocol: "Model Context Protocol",
+    transport: "streamable-http",
+    endpoint: `${origin}${MCP_ENDPOINT_PATH}`,
+    invocation: {
+      method: "POST",
+      content_type: "application/json",
+      accept: ["application/json", "text/event-stream"]
+    },
+    supports_sse_get: false,
+    supported_protocol_versions: MCP_SUPPORTED_PROTOCOL_VERSIONS,
+    server_card: `${origin}/.well-known/mcp/server-card.json`,
+    tools: card.tools || [],
+    liveness: "ok"
+  };
+}
+
+const DISCOVERY_REDIRECTS = Object.freeze({
+  "/api/mcp": MCP_ENDPOINT_PATH,
+  "/mcp/v1": MCP_ENDPOINT_PATH,
+  "/sse": MCP_ENDPOINT_PATH,
+  "/discovery/resources": "/.well-known/ai-catalog.json",
+  "/sitemap-index.xml": "/sitemap.xml",
+  "/sitemap_index.xml": "/sitemap.xml"
+});
+
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#173f5f"/><path d="M14 45 28 14h9l13 31h-9l-3-8H26l-3 8zm15-16h7l-3-9z" fill="#fff"/></svg>`;
 
 const landingHtml = createLandingRenderer({
   originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES
@@ -14409,6 +14478,17 @@ async function handleDirectV1(endpoint, route, request, env) {
 
 export async function handleRequest(request, env = {}, ctx = {}) {
   const url = new URL(request.url);
+  const discoveryRedirect = DISCOVERY_REDIRECTS[url.pathname];
+  if ((request.method === "GET" || request.method === "HEAD") && discoveryRedirect) {
+    return new Response(null, {
+      status: 308,
+      headers: {
+        location: `${url.origin}${discoveryRedirect}`,
+        "cache-control": "public, max-age=3600",
+        ...aiCatalogHeaders(request)
+      }
+    });
+  }
   if (request.method === "GET" && PUBLIC_SCHEMAS[url.pathname.slice(1)]) {
     return jsonResponse(PUBLIC_SCHEMAS[url.pathname.slice(1)], 200, {"cache-control": "public, max-age=300"});
   }
@@ -14525,7 +14605,9 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     request.method === "GET" &&
     (url.pathname === "/.well-known/mcp/server-card.json" ||
       url.pathname === "/.well-known/mcp-server.json" ||
-      url.pathname === "/.well-known/mcp.json")
+      url.pathname === "/.well-known/mcp.json" ||
+      url.pathname === "/.well-known/mcp" ||
+      url.pathname === "/mcp.json")
   ) {
     return jsonResponse(mcpServerCard(request, env), 200, {
       "cache-control": "public, max-age=3600",
@@ -14696,6 +14778,44 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 
   if (request.method === "GET" && url.pathname === "/robots.txt") {
     return textResponse(robotsTxt(request), 200, aiCatalogHeaders(request));
+  }
+
+  if (request.method === "GET" && url.pathname === "/sitemap.xml") {
+    return new Response(sitemapXml(request), {
+      status: 200,
+      headers: {
+        "content-type": "application/xml; charset=utf-8",
+        "cache-control": "public, max-age=3600",
+        ...aiCatalogHeaders(request)
+      }
+    });
+  }
+
+  if (request.method === "GET" && (url.pathname === "/favicon.ico" || url.pathname === "/favicon.svg")) {
+    return new Response(FAVICON_SVG, {
+      status: 200,
+      headers: {
+        "content-type": "image/svg+xml; charset=utf-8",
+        "cache-control": "public, max-age=86400"
+      }
+    });
+  }
+
+  if (
+    request.method === "GET" &&
+    (url.pathname === "/.well-known/agent-directory.json" || url.pathname === "/agent-directory.json")
+  ) {
+    return jsonResponse(agentsRegistryDocument(request, env), 200, {
+      "cache-control": "public, max-age=3600",
+      ...aiCatalogHeaders(request)
+    });
+  }
+
+  if (request.method === "GET" && url.pathname === "/.well-known/mcp-probing.json") {
+    return jsonResponse(mcpCapabilityDocument(request, env), 200, {
+      "cache-control": "public, max-age=300",
+      ...aiCatalogHeaders(request)
+    });
   }
 
   if (request.method === "GET" && url.pathname === "/decisions") {
@@ -14943,26 +15063,30 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return handleMcpPost(request, env, ctx);
   }
 
-  // The endpoint is advertised as `streamable-http`, and that transport lets a
-  // client open the stream with GET. A server that does not offer SSE there
-  // answers 405; falling through to the catch-all answered 404, which does not
-  // mean "wrong method" — it means there is no MCP server at this address, and
-  // that is what the probes were told. Measured over the 24h to 2026-09-03:
-  // 148 GET and 9 HEAD on /mcp across the fleet, all 404, from io.verifymcp,
-  // mcp-scraper (mcp-cloud.ai), AIVE-MCP-EndpointProbe, reliability-bureau and
-  // SentinelOracle — registries and monitors, deciding whether to list the
-  // endpoint at all. 115 of them asked for text/event-stream, so they were
-  // opening the transport, not guessing at a URL. vizier already answers 405
-  // here; this brings the fleet in line with it.
+  // Registries routinely probe a published MCP URL with GET before attempting
+  // initialize. Return a cheap capability document without opening an SSE
+  // stream or executing a tool. POST remains the only invocation method.
+  if ((request.method === "GET" || request.method === "HEAD") && url.pathname === MCP_ENDPOINT_PATH) {
+    const headers = {
+      allow: "GET, HEAD, POST, OPTIONS",
+      "accept-post": "application/json",
+      "cache-control": "public, max-age=300",
+      ...aiCatalogHeaders(request)
+    };
+    if (request.method === "HEAD") return new Response(null, { status: 200, headers });
+    return jsonResponse(mcpCapabilityDocument(request, env), 200, headers);
+  }
+
   if (url.pathname === MCP_ENDPOINT_PATH) {
-    return new Response("Method not allowed. This MCP endpoint is POST-only.", {
-      status: 405,
-      headers: {
-        allow: "POST",
-        "content-type": "text/plain; charset=utf-8",
-        "cache-control": "no-store"
-      }
-    });
+    return jsonResponse(
+      {
+        error: "method_not_allowed",
+        allowed_methods: ["GET", "HEAD", "POST", "OPTIONS"],
+        server_card: `${url.origin}/.well-known/mcp/server-card.json`
+      },
+      405,
+      { allow: "GET, HEAD, POST, OPTIONS", "cache-control": "no-store" }
+    );
   }
 
   if (request.method === "POST" && (url.pathname === "/message/send" || url.pathname === "/")) {
