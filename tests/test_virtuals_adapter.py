@@ -49,8 +49,8 @@ def test_virtuals_arbitration(adapter: AgendaVirtualsAdapter) -> None:
         total_items=1000,
         policy="pro_rata",
     )
-    assert res["ruling"] == "PARTIAL_SETTLEMENT"
-    assert res["score"] == 80
-    assert res["payout"]["seller_usd"] == 792.0
-    assert res["payout"]["buyer_usd"] == 198.0
-    assert res["payout"]["fee_usd"] == 10.0
+    assert res["ruling"] == "ESCALATE_HUMAN"
+    assert res["score"] == 0
+    assert res["payout"]["seller_usd"] == 0.0
+    assert res["payout"]["buyer_usd"] == 0.0
+    assert res["payout"]["fee_usd"] == 0.0

@@ -79,48 +79,12 @@ The reviewer-facing packet should answer:
 
 The bundled `redacted-example.json` is synthetic. Public examples must not include private names, exact deal terms, internal file names, private quotes, direct contact details, or distinctive event sequences that can identify a client or transaction.
 
-## Enterprise Engagement & Tiered Pricing Matrix
+## Evaluation and human review
 
-| Tier | Pricing | Turnaround & Quota | Scope & Deliverables |
-|---|---|---|---|
-| **Tier 1: Community Sandbox** | **Free ($0)** | Up to 100 queries / day | Open evaluation across all 10 A2A and MCP endpoints. Zero-retention ephemeral processing in Edge RAM. No SLA. |
-| **Tier 2: Dedicated Pro Tenant** | **$490 / month** | Up to 10,000 checks / month<br>SLA 99.9% | Dedicated API Bearer key (`Authorization: Bearer <key>`). Priority routing on Cloudflare Edge, custom DLP rules for company identifiers/tokens, and automated risk digest export. |
-| **Tier 3: Confidential Deal Dossier** | **$99 per transaction**<br>*(Introductory pilot: **$49** for 1st deal)* | **24–48 hours** | Full **5-factor institutional audit** of a specific transaction or shipment pack:<br>1. **OFAC 50% Rule & Sanctions:** Aggregate ownership check across all counterparty entities.<br>2. **UBO Beneficial Ownership:** Corporate holding structure trace via GLEIF.<br>3. **Dual-Use HS Code:** 6-digit classification against EU/US CHPL Tier 1–4.<br>4. **Maritime & Port Risk:** Vessel IMO, AIS dark voyage history, and transit port clearance.<br>5. **Evidence Gap Analysis:** Audit of required trade documents (EUC, CT-KZ, clean B/L).<br>Includes official structured report + cryptographic JWS clearance receipt from Vizier for bank credit committees and maritime insurers. |
+This profile structures a redacted evidence pack for human review. It does not verify live sanctions, trace ownership or AIS history automatically, provide a legal opinion, or issue bank clearance.
 
-## Institutional intake & concierge evaluation
+Current prices are published at https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/x402 and generated from the service catalog. Confirm the scope and delivery date of human-reviewed work before payment. No certification, signature or bank acceptance is guaranteed.
 
-For trading houses, investment committees, project-finance sponsors, and corporate compliance teams (e.g. Singapore / Southeast Asia commodities trade finance, Middle Corridor infrastructure funds, and tech supply-chain secondary sanctions screening) requiring private file review or deal dossier issuance:
+Use synthetic or redacted inputs. Processing runs in memory but telemetry, hashes, payment and entitlement records have separate retention boundaries. Read https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/privacy and agree any DPA, retention and service terms before sharing confidential data.
 
-### 1. Preparation of Redacted Source Pack
-- Do not transmit raw unredacted commercial agreements, private employee names, or bank account numbers.
-- Replace counterparty names with consistent role aliases (`SponsorCo`, `Trader-A`, `Bank-1`, `Port-Authority-1`).
-- Date items by quarter or approximate age rather than exact internal minute timestamps.
-- Ensure all claims retain reference pointers to specific evidence IDs (`S1`, `S2`).
-
-### 2. Submission & Private Gate Access
-- **Deal Dossier / Concierge Intake:** Contact `vassiliy.lakhonin@gmail.com` with subject line `[Confidential Project Room Intake]`.
-- **Pilot Activation:** Quote `$49 Pilot Dossier` for first-transaction promotional pricing.
-- **Private Worker Tenant:** If automated programmatic screening is required for high-volume trade deals or sensitive supply-chain routes, a dedicated zero-data-retention edge deployment can be provisioned with caller-specific bearer keys (`MIDDLE_CORRIDOR_API_KEY`).
-- **Data Boundary Guarantee:** No prompt text, deal documents, or payload bodies are stored in aggregate telemetry. Processing occurs purely in-memory at Cloudflare Edge nodes and is discarded immediately upon verdict generation. Corporate invoicing and agreements handled out-of-band.
-
-## Institutional Scenarios
-
-### 1. Singapore & Global Commodities Trade Finance (Grain, Metals, Oil, Fertilizers)
-- **Target Buyer:** Trade finance desks, LC-issuing banks, and maritime cargo insurers in Singapore (Raffles Place / Collyer Quay), London, Geneva, and Hong Kong.
-- **Problem:** Transactions moving bulk commodities through the Middle Corridor (Trans-Caspian routes via Aktau, Baku, Poti, Batumi) require fast, auditable sanctions and provenance clearance before credit issuance, vessel charter, or cargo insurance bind.
-- **Workflow:**
-  1. Intake deal parameters using role aliases (`Trader-A`, `Origin-Mill-1`, `Charterer-1`) and HS code (e.g. 1001 grain, 7208 steel, 2709 crude oil, 3102 fertilizer).
-  2. Screen logistics handlers and carriers against OFAC 50% Rule and maritime ownership indices via Vizier Action Firewall.
-  3. Verify presence of required provenance evidence (bills of lading, certificates of origin, mill test certs, vessel voyage logs).
-  4. Emit an auditable readiness receipt for credit committee handoff with zero retention of client deal terms.
-
-### 2. High-Priority Dual-Use Technology & Electronics Supply Chains
-- **Target Buyer:** Global hardware OEMs, semiconductor distributors, and corporate trade-compliance teams.
-- **Problem:** Microelectronics transiting Eurasian or Central Asian trade corridors face strict export enforcement and secondary sanctions under OFAC EO 14114 and EU Regulation 833/2014 Annex XL.
-- **Workflow:**
-  1. Intake bill of materials (BOM) with 6-digit HS codes (8542 integrated circuits, 8541 semiconductors, 8471 processing units, 9013 optical sensors).
-  2. Automatic cross-check against Common High Priority Items List (CHPL Tier 1-4) and export control diversion risk.
-  3. Validate end-user certificate (EUC) and transit leg non-diversion undertakings.
-  4. Generate auditable trade-compliance dossier routing for export-control counsel review.
-
-
+Contact: vassiliy.lakhonin@gmail.com. No customer adoption or institutional approval is implied by this demonstration.

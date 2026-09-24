@@ -25,13 +25,13 @@ def test_m2m_escrow_solidity_contract_exists():
     assert "recoverSigner" in content
 
 
-def test_m2m_escrow_ruling_payout_conservation():
-    """Verify that every ruling preserves the invariant: seller_payout + buyer_refund + arbiter_fee == total."""
+def test_unverified_escrow_retains_funds():
+    """Unverified delivery retains the escrow and authorizes no allocation."""
     from agenda_intelligence.m2m_escrow_arbiter import M2MEscrowArbiter
 
     arbiter = M2MEscrowArbiter()
 
-    # 1. Clean release
+    # 1. Matching declared hashes do not establish delivery
     ruling_clean = arbiter.evaluate_dispute(
         {
             "escrow_id": "deal-test-01",
@@ -55,11 +55,14 @@ def test_m2m_escrow_ruling_payout_conservation():
         }
     )
     pb = ruling_clean.payout_breakdown
-    assert pb.seller_payout_usd + pb.buyer_refund_usd + pb.arbiter_fee_usd == pb.total_escrow_usd
-    assert pb.seller_payout_usd == 990.0
-    assert pb.arbiter_fee_usd == 10.0
+    assert pb.seller_payout_usd + pb.buyer_refund_usd + pb.arbiter_fee_usd == 0
+    assert pb.seller_payout_usd == 0.0
+    assert pb.arbiter_fee_usd == 0.0
 
-    # 2. Pro-rata split
+    assert ruling_clean.ruling == "ESCALATE_HUMAN"
+    assert pb.total_escrow_usd == 1000
+
+    # 2. Caller telemetry does not establish completion
     ruling_pr = arbiter.evaluate_dispute(
         {
             "escrow_id": "deal-test-02",
@@ -86,7 +89,10 @@ def test_m2m_escrow_ruling_payout_conservation():
         }
     )
     pb2 = ruling_pr.payout_breakdown
-    assert pb2.seller_payout_usd + pb2.buyer_refund_usd + pb2.arbiter_fee_usd == pb2.total_escrow_usd
-    assert pb2.arbiter_fee_usd == 5.0
-    assert pb2.seller_payout_usd == 371.25
-    assert pb2.buyer_refund_usd == 123.75
+    assert pb2.seller_payout_usd + pb2.buyer_refund_usd + pb2.arbiter_fee_usd == 0
+    assert pb2.arbiter_fee_usd == 0.0
+    assert pb2.seller_payout_usd == 0.0
+    assert pb2.buyer_refund_usd == 0.0
+
+    assert ruling_pr.ruling == "ESCALATE_HUMAN"
+    assert pb2.total_escrow_usd == 500

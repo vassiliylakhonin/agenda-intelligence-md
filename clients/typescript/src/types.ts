@@ -33,6 +33,8 @@ export interface AgentOutputVerificationResponse {
   human_review_required: boolean;
   not_advice_notice: string;
   limitations: string[];
+  score_scope?: "declared_evidence_structure_only";
+  factual_verification_performed?: false;
 }
 
 export interface AgenticInteractionTrustRequestActor {

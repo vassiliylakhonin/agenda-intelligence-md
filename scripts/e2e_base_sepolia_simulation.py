@@ -1,19 +1,13 @@
 #!/usr/bin/env python3
-"""Autonomous End-to-End Base Sepolia M2M Escrow & Live Edge Arbitration Simulator.
+"""Synthetic escrow review demonstration; no chain transactions are sent.
 
-Runs a complete lifecycle:
-1. Buyer Agent funds deal ($1,000 USDC on Base Sepolia).
-2. Seller Agent submits deliverable (80% milestone completion).
-3. Buyer flags dispute.
-4. Autonomous Relayer intercepts dispute and queries live Cloudflare Edge worker
-   (https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev/v1/m2m-escrow/evaluate-dispute).
-5. Edge Arbiter issues deterministic ruling + cryptographic Vizier receipt.
-6. Relayer validates balance conservation and formats settlement calldata.
+The fixture contains caller-reported telemetry and digests, not authenticated
+artifact delivery. The evaluator must hold it for human review; the relayer
+must not prepare settlement calldata.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import sys
 import time
@@ -42,8 +36,8 @@ LIVE_EDGE_ENDPOINT = "https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.d
 BASE_SEPOLIA_USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
 
 
-def run_e2e_simulation(use_remote_edge: bool = True) -> dict[str, Any]:
-    logger.info("=== Starting Autonomous M2M Escrow E2E Simulation on Base Sepolia ===")
+def run_e2e_simulation(use_remote_edge: bool = False) -> dict[str, Any]:
+    logger.info("=== Synthetic escrow evidence-review simulation; no on-chain execution ===")
 
     # Step 1: Agent Deal Initialization
     buyer_agent = "0x" + "1" * 40
@@ -52,7 +46,7 @@ def run_e2e_simulation(use_remote_edge: bool = True) -> dict[str, Any]:
     deal_amount_usdc = 1000 * 1_000_000  # 1,000 USDC (6 decimals)
     expected_artifact_hash = "0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
 
-    logger.info(f"[Step 1] Buyer Agent ({buyer_agent[:10]}...) creates escrow for 1,000 USDC on Base Sepolia")
+    logger.info(f"[Step 1] Buyer Agent ({buyer_agent[:10]}...) is represented in a synthetic 1,000 USDC fixture")
     logger.info(f"         Contract: M2MEscrow, Settlement Token: {BASE_SEPOLIA_USDC}")
 
     # Step 2: Seller Delivers Partial Dataset (800 of 1000 valid items)
@@ -77,7 +71,7 @@ def run_e2e_simulation(use_remote_edge: bool = True) -> dict[str, Any]:
         policy="pro_rata",
         telemetry={"total_items": total_items, "valid_items": delivered_items},
     )
-    logger.info(f"[Step 3] Dispute event raised on-chain: '{dispute_event.reason}'")
+    logger.info(f"[Step 3] Synthetic dispute event: '{dispute_event.reason}'")
 
     # Step 4: Autonomous Relayer queries live Edge Arbiter
     endpoint = LIVE_EDGE_ENDPOINT if use_remote_edge else None
@@ -87,38 +81,20 @@ def run_e2e_simulation(use_remote_edge: bool = True) -> dict[str, Any]:
     )
 
     logger.info(f"[Step 4] Querying m2m-escrow-arbiter at {endpoint or 'local fallback'}...")
-    settlement = relayer.process_dispute(dispute_event)
-
-    # Step 5: Verification of Financial Mathematics & Balance Conservation
-    seller_payout_usdc = settlement["seller_payout_usdc"]
-    buyer_refund_usdc = settlement["buyer_refund_usdc"]
-    arbiter_fee_usdc = settlement["arbiter_fee_usdc"]
-
-    assert (
-        seller_payout_usdc + buyer_refund_usdc + arbiter_fee_usdc == deal_amount_usdc
-    ), "Fatal: Balance conservation broken!"
-
-    # 80% completion with 1% total fee ($10 USDC):
-    # Gross seller: $800, net: $792 (792,000,000 units)
-    # Gross buyer refund: $200, net: $198 (198,000,000 units)
-    # Arbiter fee: $10 (10,000,000 units)
-    assert seller_payout_usdc == 792_000_000, f"Expected 792 USDC, got {seller_payout_usdc / 1e6}"
-    assert buyer_refund_usdc == 198_000_000, f"Expected 198 USDC, got {buyer_refund_usdc / 1e6}"
-    assert arbiter_fee_usdc == 10_000_000, f"Expected 10 USDC, got {arbiter_fee_usdc / 1e6}"
-
-    logger.info("[Step 5] Deterministic Settlement Math Verified:")
-    logger.info(f"         Seller Payout:  ${seller_payout_usdc / 1e6:.2f} USDC (79.2%)")
-    logger.info(f"         Buyer Refund:   ${buyer_refund_usdc / 1e6:.2f} USDC (19.8%)")
-    logger.info(f"         Arbiter Fee:    ${arbiter_fee_usdc / 1e6:.2f} USDC (1.0%)")
-    logger.info(f"         Ruling Enum:    {settlement['ruling_enum']} (PARTIAL_SETTLEMENT)")
-    logger.info(f"         Advisory:       {settlement['advisory']}")
-
-    # Step 6: Prepared On-Chain Transaction Payload
-    logger.info("[Step 6] Calldata prepared for M2MEscrow.settleDisputeWithArbiterRuling:")
-    logger.info(json.dumps(settlement, indent=2))
-    logger.info("=== Autonomous E2E M2M Escrow Cycle Completed Successfully! ===")
-    return settlement
+    try:
+        relayer.process_dispute(dispute_event)
+    except ValueError as exc:
+        if "requires human review" not in str(exc):
+            raise
+        logger.info("Expected hold: no settlement calldata prepared.")
+        return {
+            "escrow_id": escrow_id,
+            "status": "not_decision_ready",
+            "settlement_authorized": False,
+            "retained_usdc": deal_amount_usdc,
+        }
+    raise AssertionError("Unverified synthetic evidence unexpectedly produced settlement calldata")
 
 
 if __name__ == "__main__":
-    run_e2e_simulation(use_remote_edge=True)
+    run_e2e_simulation(use_remote_edge=False)

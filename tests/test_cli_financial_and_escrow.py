@@ -77,9 +77,9 @@ def test_cli_arbitrate_clean(capsys):
     with patch("sys.argv", ["agenda-intelligence", "arbitrate", str(req_file)]):
         main()
     captured = capsys.readouterr()
-    assert "M2M Escrow Ruling: [RELEASE_TO_SELLER]" in captured.out
-    assert "$247.50" in captured.out
-    assert "$2.50" in captured.out
+    assert "M2M Escrow Ruling: [ESCALATE_HUMAN]" in captured.out
+    assert "$0.00" in captured.out
+    assert "$0.00" in captured.out
 
 
 def test_cli_arbitrate_json(capsys):
@@ -88,6 +88,6 @@ def test_cli_arbitrate_json(capsys):
         main()
     captured = capsys.readouterr()
     data = json.loads(captured.out)
-    assert data["ruling"] == "RELEASE_TO_SELLER"
-    assert data["payout_breakdown"]["seller_payout_usd"] == 247.5
-    assert data["payout_breakdown"]["arbiter_fee_usd"] == 2.5
+    assert data["ruling"] == "ESCALATE_HUMAN"
+    assert data["payout_breakdown"]["seller_payout_usd"] == 0.0
+    assert data["payout_breakdown"]["arbiter_fee_usd"] == 0.0

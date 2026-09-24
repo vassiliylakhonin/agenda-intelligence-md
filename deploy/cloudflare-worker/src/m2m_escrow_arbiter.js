@@ -5,7 +5,7 @@ import { validateEscrowArtifact } from "./escrow-schema.js";
 
 
 
-export const M2M_ESCROW_ARBITER_CONTRACT_VERSION = "1.0.0";
+export const M2M_ESCROW_ARBITER_CONTRACT_VERSION = "1.1.0";
 export const M2M_ESCROW_ARBITER_PROFILE_KEY = "m2m_escrow_arbiter";
 
 /**
@@ -68,7 +68,7 @@ async function computeSha256(data) {
 }
 
 /**
- * Deterministically evaluates the M2M escrow dispute and delivers binding payout allocation.
+ * Deterministically evaluates the M2M escrow dispute and calculates non-binding allocation proposals.
  */
 export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
   const terms = requestBody.deal_terms || {};
@@ -98,52 +98,51 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
     violations.push(`Deadline breach: deliverable submitted ${delaySec}s past contract deadline.`);
   }
 
-  // Check 2: Cryptographic Hash & Integrity
-  let hashVerified = true;
-  if (spec.expected_artifact_sha256) {
-    const expHash = spec.expected_artifact_sha256.toLowerCase().trim();
-    let actHash = (submission.artifact_sha256 || "").toLowerCase().trim();
-
-    if (!actHash && submission.artifact_data) {
-      actHash = await computeSha256(submission.artifact_data);
-    }
-
-    if (!actHash) {
+  // Verification requires the artifact itself, not a caller-supplied digest.
+  let hashVerified = false;
+  let hashStatus = "not_evaluated";
+  const hasArtifact = Object.hasOwn(submission, "artifact_data");
+  if (typeof spec.expected_artifact_sha256 !== "string" || !/^[a-f0-9]{64}$/i.test(spec.expected_artifact_sha256)) {
+    evidenceGaps.push("A valid expected artifact SHA-256 is required.");
+    needsReview = true;
+  } else if (!hasArtifact) {
+    evidenceGaps.push("Artifact content is missing; a supplied digest is not proof of delivery.");
+    needsReview = true;
+  } else {
+    const actual = await computeSha256(submission.artifact_data);
+    hashVerified = actual === spec.expected_artifact_sha256.toLowerCase();
+    hashStatus = hashVerified ? "passed" : "failed";
+    if (!hashVerified) violations.push("Cryptographic hash mismatch for supplied artifact content.");
+    if (submission.artifact_sha256 && submission.artifact_sha256.toLowerCase() !== actual) {
       hashVerified = false;
-      violations.push("Missing artifact SHA-256 hash in delivery submission.");
-    } else if (actHash !== expHash) {
-      hashVerified = false;
-      violations.push(`Cryptographic hash mismatch: expected '${expHash}', received '${actHash}'.`);
+      hashStatus = "failed";
+      violations.push("Declared artifact digest does not match supplied content.");
     }
   }
 
-  // A supplied digest cannot stand in for the actual instance being checked.
-  let schemaVerified = true;
+  let schemaVerified = false;
+  let schemaStatus = "not_evaluated";
   if (Object.hasOwn(spec, "expected_schema")) {
-    const validation = validateEscrowArtifact(spec.expected_schema, submission.artifact_data, Object.hasOwn(submission, "artifact_data"));
+    const validation = validateEscrowArtifact(spec.expected_schema, submission.artifact_data, hasArtifact);
     schemaVerified = validation.status === "valid";
+    schemaStatus = schemaVerified ? "passed" : validation.status === "invalid" ? "failed" : "not_evaluated";
     if (validation.status === "invalid") violations.push(...validation.errors);
-    if (validation.status === "unverified") {
-      evidenceGaps.push(...validation.errors);
-      needsReview = true;
-    }
+    if (validation.status === "unverified") { evidenceGaps.push(...validation.errors); needsReview = true; }
+  } else {
+    evidenceGaps.push("No expected schema was supplied; schema validation was not performed.");
+    needsReview = true;
   }
 
-  // Check 4: SLO & Completeness
-  let sloVerified = true;
-  let deliveryPct = 100.0;
+  // Caller telemetry is an assertion, not independently verified SLO evidence.
   const telemetry = submission.telemetry || {};
-
-  if (typeof telemetry.total_items === "number" && telemetry.total_items > 0) {
-    const valid = typeof telemetry.valid_items === "number" ? telemetry.valid_items : telemetry.total_items;
-    deliveryPct = Math.min(100.0, Math.max(0.0, (valid / telemetry.total_items) * 100.0));
-  }
-
-  const minRequiredPct = spec.min_valid_records_pct ?? 95.0;
-  if (deliveryPct < minRequiredPct) {
-    sloVerified = false;
-    violations.push(`SLO threshold failure: deliverable validity score ${deliveryPct.toFixed(1)}% is below contract minimum ${minRequiredPct.toFixed(1)}%.`);
-  }
+  const validCounts = Number.isFinite(telemetry.total_items) && telemetry.total_items > 0 &&
+    Number.isFinite(telemetry.valid_items) && telemetry.valid_items >= 0 && telemetry.valid_items <= telemetry.total_items;
+  const deliveryPct = validCounts ? telemetry.valid_items / telemetry.total_items * 100 : 0;
+  const minRequiredPct = spec.min_valid_records_pct ?? 95;
+  const sloVerified = false;
+  evidenceGaps.push("SLO telemetry and submission time are caller-reported; independent delivery evidence requires human review.");
+  needsReview = true;
+  if (validCounts && deliveryPct < minRequiredPct) violations.push("Declared delivery completeness is below the contract threshold.");
 
   // Synthesize Ruling & Payouts
   const totalEscrow = Number(terms.amount_usd) || 0;
@@ -156,7 +155,7 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
   let score = 95;
   let sellerPayout = netPool;
   let buyerRefund = 0;
-  let advisory = "Deliverable verified deterministically against contract specification. Full escrow release approved.";
+  let advisory = "Deliverable verified deterministically against contract specification. Proposed allocation only; human approval is required.";
 
   const isCompleteFailure = !deadlineHonored || !hashVerified || !schemaVerified;
 
@@ -166,7 +165,7 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
     score = 10;
     sellerPayout = 0;
     buyerRefund = netPool;
-    advisory = "CRITICAL BREACH: Contract specification or deadline violated. Escrow refunded to buyer.";
+    advisory = "CRITICAL BREACH: Contract specification or deadline violated. Proposed refund only; no funds moved.";
   } else if (!sloVerified) {
     if (terms.arbitration_policy === "pro_rata" && deliveryPct > 0) {
       ruling = "PARTIAL_SETTLEMENT";
@@ -174,7 +173,7 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
       score = Math.round(deliveryPct);
       sellerPayout = Math.round(netPool * (deliveryPct / 100) * 100) / 100;
       buyerRefund = Math.round((netPool - sellerPayout) * 100) / 100;
-      advisory = `PRO-RATA SETTLEMENT: Verified ${deliveryPct.toFixed(1)}% deliverable completion. Proportional payout released to seller, remainder refunded to buyer.`;
+      advisory = `PRO-RATA SETTLEMENT: Verified ${deliveryPct.toFixed(1)}% deliverable completion. Proposed proportional allocation only; no funds moved.`;
     } else {
       ruling = "REFUND_TO_BUYER";
       status = "decision_ready";
@@ -221,6 +220,12 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
         schema_verified: schemaVerified,
         slo_verified: sloVerified
       },
+      check_status: {
+        deadline: isNaN(deadlineMs) || isNaN(submittedMs) ? "not_evaluated" : deadlineHonored ? "passed" : "failed",
+        hash: hashStatus, schema: schemaStatus, slo: "not_evaluated"
+      },
+      evaluation_scope: "supplied_artifact_only",
+      settlement_authorized: false,
       violations,
       evidence_gaps: evidenceGaps,
       vizier_status: vizierStatus,

@@ -9,10 +9,10 @@ def test_discovery_x402_json_contains_micropayments() -> None:
     discovery_file = Path("deploy/cloudflare-worker/src/discovery_text.js")
     content = discovery_file.read_text(encoding="utf-8")
 
-    assert "tier_micro_check" in content
-    assert "tier_micro_dispute" in content
-    assert "0.05" in content
-    assert "0.50" in content
+    assert "import { PRICING_MODELS }" in content
+    catalog = Path("deploy/cloudflare-worker/src/commercial-catalog.js").read_text(encoding="utf-8")
+    assert "tier_micro_check" in catalog
+    assert "tier_micro_dispute" in catalog
 
 
 def test_profiles_micropayment_constants() -> None:

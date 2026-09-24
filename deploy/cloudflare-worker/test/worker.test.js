@@ -840,7 +840,7 @@ test("Agent economy manifests: security.txt, owners.json, x402, payment-manifest
   assert.equal(ownersRes.headers.get("content-type"), "application/json; charset=utf-8");
   const ownersData = await ownersRes.json();
   assert.equal(ownersData.owners[0].name, "Vassiliy Lakhonin");
-  assert.equal(ownersData.service.security_posture.zero_retention_guarantee, true);
+  assert.equal(ownersData.service.security_posture.zero_retention_guarantee, false);
 
   assert.equal(x402Res.status, 200);
   assert.equal(x402JsonRes.status, 200);
@@ -859,7 +859,7 @@ test("Agent economy manifests: security.txt, owners.json, x402, payment-manifest
   assert.equal(payData.protocol, "mpp/1.0");
   assert.equal(payData.monetization.receiving_wallet, "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663");
   assert.equal(payData.monetization.tiers[1].amount, 490);
-  assert.equal(payData.monetization.tiers[2].introductory_amount, 49);
+  assert.equal(payData.monetization.tiers.find(t => t.id === "tier-3-dossier").pilot_price, 49);
   assert.equal(x402Data.pricing_models.tier_bankability_dossier.price, 25.0);
   const bankabilityTier = payData.monetization.tiers.find((t) => t.id === "tier-bankability-dossier");
   assert.ok(bankabilityTier, "tier-bankability-dossier must be present in payment manifest");
@@ -957,7 +957,7 @@ test("API catalog and OpenAPI routes advertise the public worker HTTP contract",
     catalog.linkset[0]["service-desc"][0].href,
     "https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json"
   );
-  assert.equal(openapi.openapi, "3.0.3");
+  assert.equal(openapi.openapi, "3.1.0");
   assert.equal(openapi.info.version, VERSION);
   assert.ok(openapi.paths["/message/send"].post);
   assert.ok(openapi.paths["/.well-known/ai-catalog.json"].get);
@@ -973,7 +973,7 @@ test("API catalog and OpenAPI routes advertise the public worker HTTP contract",
   assert.equal(catalogResponse.status, 200);
   assert.equal(catalogResponse.headers.get("content-type"), "application/linkset+json; charset=utf-8");
   assert.equal(catalogResponse.headers.get("link"), expectedDiscoveryLinkHeader);
-  assert.equal(catalogBody.linkset[0]["service-desc"][0].title, "Agenda Intelligence MD Worker API (OpenAPI 3.0)");
+  assert.equal(catalogBody.linkset[0]["service-desc"][0].title, "Agenda Intelligence MD Worker API (OpenAPI 3.1)");
 
   const openapiResponse = await handleRequest(
     new Request("https://agenda-intelligence-a2a.example.workers.dev/api/openapi.json")
@@ -8227,9 +8227,9 @@ test("GET /sample-dossier returns HTML and /sample-dossier.md returns Markdown",
   assert.equal(resHtml.status, 200);
   assert.match(resHtml.headers.get("content-type"), /text\/html/);
   const bodyHtml = await resHtml.text();
-  assert.ok(bodyHtml.includes("Confidential Deal Dossier"));
-  assert.ok(bodyHtml.includes("PRE_SIGNATURE_ESCALATE"));
-  assert.ok(bodyHtml.includes("DOSSIER-REF-2026-09-CASPIAN-4091"));
+  assert.ok(bodyHtml.includes("Synthetic evidence-review dossier"));
+  assert.ok(bodyHtml.includes("INSUFFICIENT_INFORMATION"));
+  assert.ok(bodyHtml.includes("SYNTHETIC-CASPIAN-001"));
 
   const reqMd = new Request("https://agenda-intelligence-a2a.example.workers.dev/sample-dossier.md", {
     method: "GET"
@@ -8238,8 +8238,8 @@ test("GET /sample-dossier returns HTML and /sample-dossier.md returns Markdown",
   assert.equal(resMd.status, 200);
   assert.match(resMd.headers.get("content-type"), /text\/markdown/);
   const bodyMd = await resMd.text();
-  assert.ok(bodyMd.includes("# CONFIDENTIAL DEAL DOSSIER"));
-  assert.ok(bodyMd.includes("8481.80.81"));
+  assert.ok(bodyMd.includes("# Synthetic evidence-review dossier"));
+  assert.ok(bodyMd.includes("8481.80"));
 });
 
 test("GET /v1/dossier/export returns HTML with @media print and custom parameters", async () => {
@@ -8254,8 +8254,8 @@ test("GET /v1/dossier/export returns HTML with @media print and custom parameter
   assert.ok(body.includes("@media print"));
   assert.ok(body.includes("Titanium Sponge"));
   assert.ok(body.includes("Ust-Kamenogorsk -&gt; Baku") || body.includes("Ust-Kamenogorsk -> Baku"));
-  assert.ok(body.includes("HOLD_SANCTIONS_RISK"));
-  assert.ok(body.includes("VIZIER ATTESTED"));
+  assert.ok(body.includes("INSUFFICIENT_INFORMATION"));
+  assert.ok(body.includes("INSUFFICIENT_INFORMATION"));
   assert.ok(body.includes("window.print()"));
 });
 
@@ -8267,7 +8267,7 @@ test("GET /v1/dossier/export?format=md returns Markdown with custom parameters",
   assert.equal(res.status, 200);
   assert.match(res.headers.get("content-type"), /text\/markdown/);
   const body = await res.text();
-  assert.ok(body.includes("# CONFIDENTIAL DEAL DOSSIER"));
+  assert.ok(body.includes("# Synthetic evidence-review dossier"));
   assert.ok(body.includes("DOSSIER-TEST-999"));
   assert.ok(body.includes("Lithium Hydroxide"));
 });
@@ -8289,7 +8289,7 @@ test("POST /v1/dossier/export parses JSON payload with commodity alias and retur
   const body = await res.text();
   assert.ok(body.includes("REF-JSON-777"));
   assert.ok(body.includes("Semiconductor Stepper Hardware"));
-  assert.ok(body.includes("BLOCK_IMMEDIATE"));
+  assert.ok(body.includes("INSUFFICIENT_INFORMATION"));
 });
 
 test("POST /v1/agent-financial/pre-sign-check requires review for unverified spending and sanctions", async () => {
@@ -8489,11 +8489,11 @@ test("GET /health returns m2m_escrow_arbiter metadata", async () => {
   const json = await res.json();
   assert.equal(json.ok, true);
   assert.equal(json.profile, "m2m_escrow_arbiter");
-  assert.equal(json.name, "M2M Escrow Arbiter & Autonomous B2B Deal Settlement");
+  assert.equal(json.name, "M2M Escrow Arbiter — Delivery Evidence Review");
   assert.ok(json.skills.some((s) => s.id === "m2m-escrow-arbitration-ruling"));
 });
 
-test("POST /v1/m2m-escrow/evaluate-dispute full release on clean delivery", async () => {
+test("POST /v1/m2m-escrow/evaluate-dispute holds caller-reported delivery", async () => {
   const req = new Request("https://m2m-escrow-arbiter-a2a.example.workers.dev/v1/m2m-escrow/evaluate-dispute", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -8528,18 +8528,18 @@ test("POST /v1/m2m-escrow/evaluate-dispute full release on clean delivery", asyn
   assert.equal(res.status, 200);
   const json = await res.json();
   const r = json.arbitration_ruling;
-  assert.equal(r.ruling, "RELEASE_TO_SELLER");
-  assert.equal(r.status, "decision_ready");
+  assert.equal(r.ruling, "ESCALATE_HUMAN");
+  assert.equal(r.status, "not_decision_ready");
   assert.equal(r.payout_breakdown.total_escrow_usd, 500.0);
-  assert.equal(r.payout_breakdown.seller_payout_usd, 495.0);
+  assert.equal(r.payout_breakdown.seller_payout_usd, 0.0);
   assert.equal(r.payout_breakdown.buyer_refund_usd, 0.0);
-  assert.equal(r.payout_breakdown.arbiter_fee_usd, 5.0);
+  assert.equal(r.payout_breakdown.arbiter_fee_usd, 0.0);
   assert.equal(r.checks.deadline_honored, true);
-  assert.equal(r.checks.hash_verified, true);
-  assert.equal(r.checks.slo_verified, true);
+  assert.equal(r.checks.hash_verified, false);
+  assert.equal(r.checks.slo_verified, false);
 });
 
-test("POST /v1/m2m-escrow/evaluate-dispute refunds buyer on hash mismatch", async () => {
+test("POST /v1/m2m-escrow/evaluate-dispute holds unverified digest", async () => {
   const req = new Request("https://m2m-escrow-arbiter-a2a.example.workers.dev/v1/m2m-escrow/evaluate-dispute", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -8568,14 +8568,14 @@ test("POST /v1/m2m-escrow/evaluate-dispute refunds buyer on hash mismatch", asyn
   assert.equal(res.status, 200);
   const json = await res.json();
   const r = json.arbitration_ruling;
-  assert.equal(r.ruling, "REFUND_TO_BUYER");
+  assert.equal(r.ruling, "ESCALATE_HUMAN");
   assert.equal(r.checks.hash_verified, false);
   assert.equal(r.payout_breakdown.seller_payout_usd, 0.0);
-  assert.equal(r.payout_breakdown.buyer_refund_usd, 495.0);
-  assert.equal(r.payout_breakdown.arbiter_fee_usd, 5.0);
+  assert.equal(r.payout_breakdown.buyer_refund_usd, 0.0);
+  assert.equal(r.payout_breakdown.arbiter_fee_usd, 0.0);
 });
 
-test("POST /v1/m2m-escrow/evaluate-dispute handles pro-rata partial settlement", async () => {
+test("POST /v1/m2m-escrow/evaluate-dispute holds unverified pro-rata telemetry", async () => {
   const req = new Request("https://m2m-escrow-arbiter-a2a.example.workers.dev/v1/m2m-escrow/evaluate-dispute", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -8607,12 +8607,12 @@ test("POST /v1/m2m-escrow/evaluate-dispute handles pro-rata partial settlement",
   assert.equal(res.status, 200);
   const json = await res.json();
   const r = json.arbitration_ruling;
-  assert.equal(r.ruling, "PARTIAL_SETTLEMENT");
-  assert.equal(r.score, 80);
+  assert.equal(r.ruling, "ESCALATE_HUMAN");
+  assert.equal(r.score, 0);
   assert.equal(r.payout_breakdown.total_escrow_usd, 1000.0);
-  assert.equal(r.payout_breakdown.seller_payout_usd, 792.0);
-  assert.equal(r.payout_breakdown.buyer_refund_usd, 198.0);
-  assert.equal(r.payout_breakdown.arbiter_fee_usd, 10.0);
+  assert.equal(r.payout_breakdown.seller_payout_usd, 0.0);
+  assert.equal(r.payout_breakdown.buyer_refund_usd, 0.0);
+  assert.equal(r.payout_breakdown.arbiter_fee_usd, 0.0);
 });
 
 test("A2A SendMessage handles m2m_escrow_arbiter profile", async () => {
@@ -9120,27 +9120,18 @@ test("A2A completed task metadata includes commercial_offer and sample_dossier_u
   assert.equal(offer.payment_network, "base");
   assert.equal(offer.chain_id, 8453);
   assert.equal(offer.instant_pre_screen_usdc, "0.05");
-  assert.equal(offer.certified_bank_dossier_usdc, "25");
+  assert.equal(offer.financial_model_export_usdc, "25");
   assert.equal(offer.pro_tenant_monthly_usdc, "490");
   assert.ok(offer.recipient_address);
   assert.ok(offer.settlement_endpoint.includes("/v1/settle"));
 });
 
-test("GET / contains Top Market Flagships and Sample Dossier preview", async () => {
-  const response = await handleRequest(
-    new Request("https://agenda-intelligence-a2a.example.workers.dev/", {
-      headers: { accept: "text/html" }
-    })
-  );
-  assert.equal(response.status, 200);
-  const html = await response.text();
-  assert.match(html, /Top Market Flagships/);
-  assert.match(html, /Critical Minerals &amp; Energy Supply Chains/);
-  assert.match(html, /Dual-Use Technology &amp; Export Controls/);
-  assert.match(html, /\/v1\/critical-minerals\/due-diligence/);
-  assert.match(html, /\/v1\/dual-use\/technology-export/);
-  assert.match(html, /Sample Bank-Grade Deal Dossier Available/);
-  assert.match(html, /\/sample-dossier/);
+test("GET / presents scoped products and synthetic sample", async () => {
+ const res = await handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/", {headers:{accept:"text/html"}}));
+ const html = await res.text();
+ assert.match(html, /Agent security and trade evidence/);
+ assert.match(html, /Synthetic sample dossier/);
+ assert.doesNotMatch(html, /accepted by trade-finance|Certified Institutional|99\.9% SLA|Zero-Retention security guarantee/);
 });
 
 test("GET and POST /v1/dual-use/technology-export return valid responses", async () => {

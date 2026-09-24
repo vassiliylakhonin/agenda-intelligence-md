@@ -1,3 +1,4 @@
+import { PRICING_MODELS } from "./commercial-catalog.js";
 // Generated discovery documents for edge serving.
 // llms.txt follows https://llmstxt.org / AnswerDotAI convention.
 // agents.txt follows draft-car-agents-txt-wellknown convention.
@@ -68,8 +69,8 @@ export const OWNERS_JSON = {
     "description": "Deterministic 5-factor compliance, sanctions screening, and Middle Corridor risk gating on Cloudflare Edge.",
     "security_contact": "vassiliy.lakhonin@gmail.com",
     "security_posture": {
-      "zero_retention_guarantee": true,
-      "payload_persistence": "ephemeral_ram_only",
+      "zero_retention_guarantee": false,
+      "payload_persistence": "See /privacy for evaluation, telemetry and payment data boundaries",
       "dlp_strip": true
     }
   }
@@ -77,69 +78,11 @@ export const OWNERS_JSON = {
 
 export const X402_JSON = {
   "x402_version": "1.0",
+  "integration_status": "Legacy transaction-hash payment integration; standard x402 client interoperability is not certified",
   "title": "Agenda Intelligence Compliance & Sanctions Gateway",
-  "description": "Deterministic 5-factor sanctions compliance, OFAC 50% Rule, and dual-use screening on Edge.",
+  "description": "Deterministic evidence review. Human review required; no sanctions clearance.",
   "currency": "USD",
-  "pricing_models": {
-    "tier_1_sandbox": {
-      "id": "tier-1-sandbox",
-      "name": "Community Sandbox",
-      "price": 0.0,
-      "billing_scheme": "per_day",
-      "rate_limit": "100 queries/day",
-      "auth_required": false,
-      "terms": "Free community sandbox."
-    },
-    "tier_2_pro": {
-      "id": "tier-2-pro",
-      "name": "Dedicated Pro Tenant",
-      "price": 490.0,
-      "billing_scheme": "monthly",
-      "quota": "10,000 queries/month",
-      "auth_required": true,
-      "auth_type": "Bearer",
-      "sla": "99.9%"
-    },
-    "tier_micro_check": {
-      "id": "tier-micro-check",
-      "name": "Agent Financial Pre-Sign Check",
-      "price": 0.05,
-      "billing_scheme": "per_call",
-      "auth_required": false,
-      "settlement_header": "X-Payment-Tx",
-      "terms": "Single deterministic pre-sign transaction security validation."
-    },
-    "tier_micro_dispute": {
-      "id": "tier-micro-dispute",
-      "name": "M2M Escrow Dispute Evaluation",
-      "price": 0.50,
-      "billing_scheme": "per_call",
-      "auth_required": false,
-      "settlement_header": "X-Payment-Tx",
-      "terms": "Deterministic B2B dispute ruling and cryptographic clearance receipt."
-    },
-    "tier_3_deal_dossier": {
-      "id": "tier-3-dossier",
-      "name": "Confidential Deal Dossier",
-      "standard_price": 99.0,
-      "pilot_price": 49.0,
-      "billing_scheme": "per_deal",
-      "turnaround_sla_hours": 24,
-      "deliverables": [
-        "5-factor audit (OFAC 50%, UBO, CHPL dual-use HS Tier 1-4, AIS vessel, Evidence Gaps)",
-        "Cryptographic Vizier JWS receipt for compliance banks"
-      ]
-    },
-    "tier_bankability_dossier": {
-      "id": "tier-bankability-dossier",
-      "name": "Trans-Caspian IFI Bankability Dossier",
-      "price": 25.0,
-      "billing_scheme": "per_deal",
-      "auth_required": false,
-      "settlement_header": "X-Payment-Tx",
-      "terms": "Full 15-year deterministic debt waterfall model, EBRD/ADB investment memo, and Excel model SHA-256 hash."
-    }
-  },
+  "pricing_models": PRICING_MODELS,
   "payment_rails": [
     {
       "method": "paypal",
@@ -197,46 +140,7 @@ export const PAYMENT_MANIFEST_JSON = {
         "checkout_url": "https://paypal.me/vaskenzy/49USD"
       }
     ],
-    "tiers": [
-      {
-        "id": "tier-1-sandbox",
-        "name": "Community Sandbox",
-        "amount": 0,
-        "currency": "USD",
-        "cadence": "daily",
-        "included_calls": 100,
-        "auth": "none"
-      },
-      {
-        "id": "tier-2-pro",
-        "name": "Dedicated Pro Tenant",
-        "amount": 490,
-        "currency": "USD",
-        "cadence": "monthly",
-        "included_calls": 10000,
-        "auth": "bearer_token",
-        "sla": "99.9%"
-      },
-      {
-        "id": "tier-3-dossier",
-        "name": "Confidential Deal Dossier",
-        "amount": 99,
-        "introductory_amount": 49,
-        "currency": "USD",
-        "cadence": "per_deal",
-        "turnaround_hours": 24,
-        "includes_jws_receipt": true
-      },
-      {
-        "id": "tier-bankability-dossier",
-        "name": "Trans-Caspian IFI Bankability Dossier",
-        "amount": 25,
-        "currency": "USD",
-        "cadence": "per_deal",
-        "turnaround_hours": 0,
-        "includes_waterfall_and_memo": true
-      }
-    ]
+    "tiers": Object.values(PRICING_MODELS).map(p => ({ ...p, amount: p.price, currency: "USD", cadence: p.billing_scheme }))
   },
   "endpoints": {
     "mcp": "/mcp",
@@ -255,7 +159,7 @@ export const LLMS_TXT = `# Agenda Intelligence MD
 > Deterministic evidence-packet linter, claim verification preflight, and specialized risk gates for AI agent actions.
 
 ## Discovery Surfaces
-- [Sample Redacted Deal Dossier](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/sample-dossier): Real-world 5-factor forensic sanctions and deal-risk audit report with Vizier JWS receipt.
+- [Sample Redacted Deal Dossier](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/sample-dossier): Synthetic evidence-review example; not a completed client audit; no signature or certification.
 - [ARD (Agent Resource Discovery)](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ard.json): Machine-readable resource catalog and endpoint registry.
 - [AI Catalog](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json): Canonical AI catalog with machine-readable resource descriptors.
 - [A2A Agent Card](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json): Agent-to-Agent discovery card and capabilities.

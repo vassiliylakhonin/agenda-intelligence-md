@@ -1,3 +1,5 @@
+import { PUBLIC_SCHEMAS } from "./public-schemas.js";
+import { trustPage } from "./trust-pages.js";
 import { createLandingRenderer } from "./landing-ui.js";
 import { createTelemetry } from "./telemetry.js";
 import {
@@ -1851,8 +1853,8 @@ function apiCatalog(request) {
         "service-desc": [
           {
             href: `${origin}/api/openapi.json`,
-            type: "application/vnd.oai.openapi+json;version=3.0",
-            title: "Agenda Intelligence MD Worker API (OpenAPI 3.0)"
+            type: "application/vnd.oai.openapi+json;version=3.1",
+            title: "Agenda Intelligence MD Worker API (OpenAPI 3.1)"
           }
         ]
       }
@@ -1863,6 +1865,26 @@ function apiCatalog(request) {
 // The /v1 gate endpoints are documented from the same table that serves them,
 // so a route can never be advertised in the spec without being routed, or routed
 // without being documented.
+function responseSchemaFor(path) {
+  const special = { "evidence-audit.schema.json": "agent-output-verification-response.schema.json", "evidence-packet.schema.json": "check-evidence-packet-response.schema.json" };
+  const name = path.split("/").pop();
+  const candidate = `schemas/v1/${special[name] || name.replace("-request.schema", "-response.schema")}`;
+  if (!PUBLIC_SCHEMAS[candidate] || candidate === path) throw new Error(`Missing response schema for ${path}`);
+  return candidate;
+}
+
+function transportResponseSchema(path) {
+  const canonicalPath = responseSchemaFor(path);
+  // Local references must still resolve against the canonical schema after embedding.
+  const schema = JSON.parse(JSON.stringify(PUBLIC_SCHEMAS[canonicalPath]), (key, value) =>
+    key === "$ref" && typeof value === "string" && value.startsWith("#") ? `/${canonicalPath}${value}` : value
+  );
+  delete schema.$id;
+  schema.additionalProperties = true; // REST adds upstream provenance metadata.
+  schema["x-canonical-schema"] = `/${canonicalPath}`;
+  return schema;
+}
+
 function directV1OpenApiPaths() {
   const paths = {};
   for (const [endpoint, route] of Object.entries(DIRECT_V1_ROUTES)) {
@@ -1881,7 +1903,7 @@ function directV1OpenApiPaths() {
           required: true,
           content: {
             "application/json": {
-              schema: { type: "object", additionalProperties: true },
+              schema: { $ref: `/${route.schema}` },
               ...(guide && guide.example ? { example: guide.example } : {})
             }
           }
@@ -1889,7 +1911,7 @@ function directV1OpenApiPaths() {
         responses: {
           200: {
             description: "Gate triage response.",
-            content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            content: { "application/json": { schema: transportResponseSchema(route.schema) } }
           },
           400: {
             description:
@@ -1909,7 +1931,7 @@ function directV1OpenApiPaths() {
 function openApiDocument(request) {
   const origin = originFromRequest(request);
   return {
-    openapi: "3.0.3",
+    openapi: "3.1.0",
     info: {
       title: "Agenda Intelligence MD Worker API",
       version: VERSION,
@@ -3430,7 +3452,7 @@ async function a2aResultForScreenDualUseHsCode(params, request, env = {}) {
 function applyAgentFinancialGuardProfile(card, request) {
   const origin = originFromRequest(request);
   const discovery = profileDiscovery("agent_financial_guard");
-  card.name = "Agent Financial Guard & Autonomous Transaction Firewall";
+  card.name = "Agent Financial Guard — Pre-Sign Evidence Review";
   card.documentationUrl = discovery.documentation_url;
   card.description =
     "Heuristic pre-sign review for wallet-bearing agents. " +
@@ -3453,7 +3475,7 @@ function applyAgentFinancialGuardProfile(card, request) {
 function applyM2MEscrowArbiterProfile(card, request) {
   const origin = originFromRequest(request);
   const discovery = profileDiscovery("m2m_escrow_arbiter");
-  card.name = "M2M Escrow Arbiter & Autonomous B2B Deal Settlement";
+  card.name = "M2M Escrow Arbiter — Delivery Evidence Review";
   card.documentationUrl = discovery.documentation_url;
   card.description =
     "Deterministic evaluation of supplied delivery evidence and proposed escrow allocations. " +
@@ -4072,7 +4094,7 @@ const GATE_REQUEST_GUIDES = Object.freeze({
     }
   },
   agent_financial_guard: {
-    title: "Agent Financial Guard & Autonomous Transaction Firewall",
+    title: "Agent Financial Guard — Pre-Sign Evidence Review",
     schema: "schemas/v1/agent-financial-guard-request.schema.json",
     required: [
       "run_id — caller correlation identifier",
@@ -4106,7 +4128,7 @@ const GATE_REQUEST_GUIDES = Object.freeze({
     }
   },
   m2m_escrow_arbiter: {
-    title: "M2M Escrow Arbiter & Autonomous B2B Deal Settlement",
+    title: "M2M Escrow Arbiter — Delivery Evidence Review",
     schema: "schemas/v1/m2m-escrow-arbiter-request.schema.json",
     required: [
       "escrow_id — unique identifier of the escrow transaction",
@@ -5648,6 +5670,8 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     verdict,
     trust_signal: trustSignal,
     readiness_score: readinessScore,
+    score_scope: "declared_evidence_structure_only",
+    factual_verification_performed: false,
     readiness_label: readinessLabel,
     claim_count: claimCount,
     grounded_claim_count: grounded,
@@ -5670,6 +5694,7 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     vizier_status: vizierDlp ? vizierDlp.status : "disabled",
     vizier_degrade_reason: vizierDlp ? vizierDlp.degrade_reason : null,
     vizier_clearance_receipt: vizierDlp ? vizierDlp.receipt : null,
+    receipt_scope: vizierDlp?.receipt ? "dlp_scan_only" : null,
     dlp_screening: vizierDlp
       ? {
           clean: vizierDlp.clean,
@@ -6317,6 +6342,7 @@ async function a2aResultForAgentOutputVerification(params, request, env = {}) {
         vizier_status: vizierDlp ? vizierDlp.status : "disabled",
         vizier_degrade_reason: vizierDlp ? vizierDlp.degrade_reason : null,
         vizier_clearance_receipt: vizierDlp ? vizierDlp.receipt : null,
+        receipt_scope: vizierDlp?.receipt ? "dlp_scan_only" : null,
         dlp_screening: vizierDlp
           ? {
               clean: vizierDlp.clean,
@@ -6375,6 +6401,7 @@ async function a2aResultForAgentOutputVerification(params, request, env = {}) {
       vizier_status: result.vizier_status,
       vizier_degrade_reason: result.vizier_degrade_reason,
       vizier_clearance_receipt: result.vizier_clearance_receipt,
+      receipt_scope: result.receipt_scope,
       dlp_screening: result.dlp_screening,
       response: result.response
     }
@@ -9116,7 +9143,7 @@ async function a2aResultForM2MEscrowArbiter(params, request, env = {}) {
     `- Deadline Honored: ${ruling.checks.deadline_honored ? "PASS" : "FAIL"}`,
     `- Hash Integrity: ${ruling.checks.hash_verified ? "PASS" : "FAIL"}`,
     `- Schema Conformity: ${ruling.checks.schema_verified ? "PASS" : "FAIL"}`,
-    `- SLO Fulfillment: ${ruling.checks.slo_verified ? "PASS" : "FAIL"}`,
+    `- SLO Fulfillment: ${ruling.checks.slo_verified ? "PASS" : "NOT VERIFIED"}`,
     "",
     ruling.violations.length ? "Violations:\n" + ruling.violations.map((v) => `- ${v}`).join("\n") + "\n" : "",
     ruling.evidence_gaps.length ? "Evidence Gaps:\n" + ruling.evidence_gaps.map((g) => `- ${g}`).join("\n") + "\n" : "",
@@ -11708,7 +11735,7 @@ function engagementMarkdown(engagement) {
     engagement.offer,
     engagement.next_step,
     ...(engagement.sample_dossier_url
-      ? [`Sample verified bank dossier: ${engagement.sample_dossier_url}`]
+      ? [`Synthetic sample dossier: ${engagement.sample_dossier_url}`]
       : []),
     ...(engagement.client_identification
       ? [
@@ -12011,7 +12038,9 @@ async function a2aResult(params, request, env = {}) {
 function buildCommercialOffer(origin) {
   return {
     instant_pre_screen_usdc: String(TIER_MICRO_CHECK_USDC_AMOUNT),
-    certified_bank_dossier_usdc: String(TIER_BANKABILITY_DOSSIER_USDC_AMOUNT),
+    financial_model_export_usdc: String(TIER_BANKABILITY_DOSSIER_USDC_AMOUNT),
+    evidence_review_pilot_usdc: String(TIER_DOSSIER_USDC_AMOUNT),
+    certification_included: false,
     pro_tenant_monthly_usdc: String(TIER_PRO_USDC_AMOUNT),
     payment_network: "base",
     chain_id: 8453,
@@ -13153,7 +13182,9 @@ function withEngagementOffer(result, profile, request) {
   });
   const commercialOffer = {
     instant_pre_screen_usdc: String(TIER_MICRO_CHECK_USDC_AMOUNT),
-    certified_bank_dossier_usdc: String(TIER_BANKABILITY_DOSSIER_USDC_AMOUNT),
+    financial_model_export_usdc: String(TIER_BANKABILITY_DOSSIER_USDC_AMOUNT),
+    evidence_review_pilot_usdc: String(TIER_DOSSIER_USDC_AMOUNT),
+    certification_included: false,
     pro_tenant_monthly_usdc: String(TIER_PRO_USDC_AMOUNT),
     payment_network: "base",
     chain_id: 8453,
@@ -13709,7 +13740,7 @@ function robotsTxt(request) {
 }
 
 const landingHtml = createLandingRenderer({
-  originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL
+  originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES
 });
 
 function buildRepairPromptJs(packet, response) {
@@ -13932,6 +13963,7 @@ const DIRECT_V1_ROUTES = {
       vizier_status: result.vizier_status,
       vizier_degrade_reason: result.vizier_degrade_reason,
       vizier_clearance_receipt: result.vizier_clearance_receipt,
+      receipt_scope: result.receipt_scope,
       dlp_screening: result.dlp_screening
     })
   },
@@ -14377,6 +14409,13 @@ async function handleDirectV1(endpoint, route, request, env) {
 
 export async function handleRequest(request, env = {}, ctx = {}) {
   const url = new URL(request.url);
+  if (request.method === "GET" && PUBLIC_SCHEMAS[url.pathname.slice(1)]) {
+    return jsonResponse(PUBLIC_SCHEMAS[url.pathname.slice(1)], 200, {"cache-control": "public, max-age=300"});
+  }
+  if (request.method === "GET" && ["/trust", "/privacy", "/terms"].includes(url.pathname)) {
+    return htmlResponse(trustPage(url.pathname), 200);
+  }
+
 
   if (request.method === "GET") {
     logFunnelEvent(request, funnelStepForPath(url.pathname));
@@ -14843,12 +14882,12 @@ export async function handleRequest(request, env = {}, ctx = {}) {
             tier_micro_dispute: {
               name: "M2M Escrow Dispute Evaluation",
               amount_usd: TIER_MICRO_DISPUTE_USDC_AMOUNT,
-              benefit: "Deterministic B2B dispute ruling and cryptographic clearance receipt."
+              benefit: "Delivery-evidence review; no settlement authorization or guaranteed receipt."
             },
             tier_bankability_dossier: {
               name: "Trans-Caspian IFI Bankability Dossier",
               amount_usd: TIER_BANKABILITY_DOSSIER_USDC_AMOUNT,
-              benefit: "Full 15-year deterministic debt waterfall model, EBRD/ADB investment memo, and Excel model hash."
+              benefit: "Illustrative financial-model export; no lender acceptance or certification."
             },
             tier_2_pro: {
               name: "Dedicated Pro Tenant",
@@ -14858,7 +14897,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
             tier_3_deal_dossier: {
               name: "Confidential Deal Dossier (Pilot)",
               amount_usd: 49,
-              benefit: "Expedited 5-factor compliance audit with Vizier JWS receipt."
+              benefit: "Human evidence-review pilot; confirm scope and delivery date before payment. No certification."
             }
           },
           instruction:

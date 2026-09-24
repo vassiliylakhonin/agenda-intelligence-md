@@ -1,3 +1,9 @@
+# Escrow evidence review: current deployed contract
+
+The evaluator requires artifact content to check its hash, an expected schema to validate structure, and independent human review of delivery/SLO claims. A caller-supplied digest or telemetry cannot establish delivery. Missing or untrusted evidence returns ESCALATE_HUMAN with zero authorized allocations. check_status distinguishes not_evaluated from failed. No funds are released, refunded or authorized by this endpoint; no clearance receipt is issued.
+
+See ADR 0030. The historical product examples below describe proposals and must not be used as authorization to move funds.
+
 # M2M Escrow Arbiter & Autonomous B2B Deal Settlement
 
 Status: shipped 2026-09-17. Vertical worker service function `m2m_escrow_arbiter`. Schema family v1, additive (non-breaking under [ADR 0003](../adr/0003-v1-compatibility-policy.md)).

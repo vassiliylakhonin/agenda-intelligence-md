@@ -473,17 +473,17 @@ const dualUseExportProfile = Object.freeze({
 const agentFinancialGuardProfile = Object.freeze({
   profile_key: "agent_financial_guard",
   product_profile: "agent_financial_guard",
-  canonical_product_name: "Agent Financial Guard & Autonomous Transaction Firewall",
+  canonical_product_name: "Agent Financial Guard — Pre-Sign Evidence Review",
   documentation_url: AGENT_FINANCIAL_GUARD_DOCS_URL,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
     "Pre-sign evidence review with local risk heuristics and mandatory human review for unverified authority",
   supported_contracts: frozenArray(["agent_financial_guard_contract"]),
   buyer_use_cases: frozenArray([
-    "pre-sign transaction compliance check for autonomous agents with wallet keys",
+    "pre-sign evidence review for agents with wallet keys",
     "local denylist matching with explicit limits on current sanctions coverage",
-    "protection against smart contract wallet drainers and unconstrained infinite approvals",
-    "velocity and daily spending limits enforcement for AI agent purchasing pipelines",
+    "flags known risky destinations and unconstrained infinite approvals",
+    "compares caller-reported spending against declared limits; no ledger enforcement",
     "adversarial prompt injection detection in autonomous payment triggers"
   ]),
   commercial_positioning:
@@ -506,17 +506,17 @@ const agentFinancialGuardProfile = Object.freeze({
 const m2mEscrowArbiterProfile = Object.freeze({
   profile_key: "m2m_escrow_arbiter",
   product_profile: "m2m_escrow_arbiter",
-  canonical_product_name: "M2M Escrow Arbiter & Autonomous B2B Deal Settlement",
+  canonical_product_name: "M2M Escrow Arbiter — Delivery Evidence Review",
   documentation_url: M2M_ESCROW_ARBITER_DOCS_URL,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
     "Deterministic delivery-evidence review and proposed escrow allocation for human review",
   supported_contracts: frozenArray(["m2m_escrow_arbiter_contract"]),
   buyer_use_cases: frozenArray([
-    "autonomous escrow dispute resolution for Agent-to-Agent deliverables",
+    "delivery-evidence review for Agent-to-Agent disputes",
     "cryptographic SHA-256 deliverable artifact verification against contract commitment",
     "JSON Schema compliance validation of delivered machine-readable datasets",
-    "automated Pro-Rata and All-or-Nothing escrow payout calculation",
+    "withholds payout recommendations when delivery evidence is unverified",
     "explicit escalation when schema constraints or evidence cannot be verified"
   ]),
   commercial_positioning:

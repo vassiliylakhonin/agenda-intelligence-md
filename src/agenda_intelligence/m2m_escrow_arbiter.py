@@ -63,7 +63,7 @@ class M2MEscrowArbiter:
 
     Verifies delivery artifacts against contract specifications (SHA-256 hashes,
     JSON Schema compliance, contract deadlines, and SLO completeness thresholds),
-    issuing binding payout allocations with automated fee settlement.
+    reporting evidence gaps for human review without authorizing settlement.
     """
 
     def __init__(
@@ -87,7 +87,7 @@ class M2MEscrowArbiter:
         dispute_claim: Optional[dict[str, Any]] = None,
         prefer_remote: bool = True,
     ) -> ArbitrationRuling:
-        """Evaluate an M2M escrow dispute and return binding arbitration ruling.
+        """Evaluate an M2M escrow dispute and return an evidence-review result.
 
         Can be called with either a single dict payload matching request schema or
         discrete arguments for escrow_id, deal_terms, specification, delivery_submission.
@@ -106,16 +106,11 @@ class M2MEscrowArbiter:
             if dispute_claim:
                 payload["dispute_claim"] = dispute_claim
 
-        # Enforce this locally even when a legacy remote deployment is selected.
-        # A remote schema_verified flag must not bypass the current validator.
-        spec = payload.get("specification", {})
-        sub = payload.get("delivery_submission", {})
-        if "expected_schema" in spec:
-            validation, _ = validate_escrow_artifact(
-                spec["expected_schema"], sub.get("artifact_data"), "artifact_data" in sub
-            )
-            if validation != "valid":
-                return self._evaluate_local(payload)
+        # A legacy or compromised remote must not turn unverified evidence into
+        # settlement authority. Apply the conservative local readiness gate first.
+        local_review = self._evaluate_local(payload)
+        if local_review.status != "decision_ready":
+            return local_review
 
         if prefer_remote:
             try:
@@ -196,51 +191,61 @@ class M2MEscrowArbiter:
             evidence_gaps.append("Unable to parse contract deadline or submission timestamp.")
             needs_review = True
 
-        # 2. Hash integrity check
-        exp_hash = (spec.get("expected_artifact_sha256") or "").lower().strip()
-        act_hash = (sub.get("artifact_sha256") or "").lower().strip()
-        hash_verified = True
-
-        if exp_hash:
-            if not act_hash and sub.get("artifact_data"):
-                raw_bytes = json.dumps(sub["artifact_data"]).encode("utf-8")
-                act_hash = hashlib.sha256(raw_bytes).hexdigest().lower()
-
-            if not act_hash:
+        # Verify supplied content, never trust a submitted digest as proof.
+        exp_hash = str(spec.get("expected_artifact_sha256") or "").lower().strip()
+        has_artifact = "artifact_data" in sub
+        hash_verified = False
+        hash_status = "not_evaluated"
+        if len(exp_hash) != 64 or any(c not in "0123456789abcdef" for c in exp_hash):
+            evidence_gaps.append("A valid expected artifact SHA-256 is required.")
+            needs_review = True
+        elif not has_artifact:
+            evidence_gaps.append("Artifact content is missing; a supplied digest is not proof of delivery.")
+            needs_review = True
+        else:
+            artifact = sub["artifact_data"]
+            serialized = (
+                artifact
+                if isinstance(artifact, str)
+                else json.dumps(artifact, separators=(",", ":"), ensure_ascii=False)
+            )
+            act_hash = hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+            hash_verified = act_hash == exp_hash
+            if sub.get("artifact_sha256") and str(sub["artifact_sha256"]).lower() != act_hash:
                 hash_verified = False
-                violations.append("Missing artifact SHA-256 hash in delivery submission.")
-            elif act_hash != exp_hash:
-                hash_verified = False
-                violations.append(f"Cryptographic hash mismatch: expected '{exp_hash}', received '{act_hash}'.")
+            hash_status = "passed" if hash_verified else "failed"
+            if not hash_verified:
+                violations.append("Cryptographic hash mismatch for supplied artifact content.")
 
-        # A digest does not supply the actual JSON instance for schema validation.
-        schema_verified = True
+        schema_verified = False
+        schema_status = "not_evaluated"
         if "expected_schema" in spec:
             validation, errors = validate_escrow_artifact(
-                spec["expected_schema"], sub.get("artifact_data"), "artifact_data" in sub
+                spec["expected_schema"], sub.get("artifact_data"), has_artifact
             )
             schema_verified = validation == "valid"
+            schema_status = "passed" if schema_verified else "failed" if validation == "invalid" else "not_evaluated"
             if validation == "invalid":
                 violations.extend(errors)
             elif validation == "unverified":
                 evidence_gaps.extend(errors)
                 needs_review = True
+        else:
+            evidence_gaps.append("No expected schema was supplied; schema validation was not performed.")
+            needs_review = True
 
-        # 4. SLO & delivery percentage
         telemetry = sub.get("telemetry", {})
         total_items = telemetry.get("total_items", 0)
-        valid_items = telemetry.get("valid_items", total_items)
-        delivery_pct = 100.0
-        if total_items > 0:
-            delivery_pct = min(100.0, max(0.0, (valid_items / total_items) * 100.0))
-
-        min_pct = float(spec.get("min_valid_records_pct", 95.0))
-        slo_verified = delivery_pct >= min_pct
-        if not slo_verified:
-            violations.append(
-                f"SLO threshold failure: deliverable validity score {delivery_pct:.1f}% "
-                f"is below contract minimum {min_pct:.1f}%."
-            )
+        valid_items = telemetry.get("valid_items", 0)
+        delivery_pct = 0.0
+        if isinstance(total_items, (int, float)) and isinstance(valid_items, (int, float)) and total_items > 0:
+            delivery_pct = min(100.0, max(0.0, valid_items / total_items * 100.0))
+        slo_verified = False
+        evidence_gaps.append(
+            "SLO telemetry and submission time are caller-reported; "
+            "independent delivery evidence requires human review."
+        )
+        needs_review = True
 
         # 5. Payout math
         total_escrow = float(terms.get("amount_usd", 0.0))
@@ -328,6 +333,8 @@ class M2MEscrowArbiter:
                     "arbiter_fee_usd": arbiter_fee,
                 },
                 "checks": checks,
+                "check_status": {"hash": hash_status, "schema": schema_status, "slo": "not_evaluated"},
+                "settlement_authorized": False,
                 "violations": violations,
                 "evidence_gaps": evidence_gaps,
                 "human_review_required": True,
