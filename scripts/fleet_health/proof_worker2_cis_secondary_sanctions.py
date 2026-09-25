@@ -80,7 +80,7 @@ def test_rest_endpoint():
 def test_a2a_endpoint():
     print("\n=======================================================")
     print("Test 2: A2A JSON-RPC POST /message/send")
-    print("Screening entity with clean 100% legitimate ownership")
+    print("Screening entity with unverified ownership chain (zero false clean)")
     print("=======================================================")
 
     url = f"{BASE_URL}/message/send"
@@ -171,11 +171,12 @@ def test_a2a_endpoint():
     assert (
         metadata.get("vizier_status") == "success"
     ), f"Expected vizier_status 'success', got {metadata.get('vizier_status')}"
-    assert clearance.get("clean") is True, "Expected clean to be True"
+    assert clearance.get("clean") is None, f"Expected clean to be None (zero-false-clean standard), got {clearance.get('clean')}"
     assert clearance.get("violation") is False, "Expected violation to be False"
-    assert receipt and receipt.startswith("eyJ"), "Expected valid compact JWS receipt starting with eyJ"
+    assert clearance.get("status") == "ownership_unknown", f"Expected status 'ownership_unknown', got {clearance.get('status')}"
+    assert receipt is None, f"Expected no false clean receipt for unverified ownership chain, got {receipt}"
 
-    print("\n>>> A2A TEST PASSED! Clean entity cleared via Service Binding with JWS receipt! <<<")
+    print("\n>>> A2A TEST PASSED! Unverified ownership chain safely flagged ownership_unknown (zero false clean) <<<")
     return True
 
 

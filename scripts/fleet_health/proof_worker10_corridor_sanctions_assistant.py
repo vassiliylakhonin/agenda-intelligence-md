@@ -105,8 +105,37 @@ def test_clean_corridor_query():
     assert ast_ver.get("clean") is True, "Expected clean == True"
     assert ast_ver.get("violation") is False, "Expected violation == False"
     assert contract_res.get("kind") == "orientation_and_routing"
-    assert len(contract_res.get("gates", [])) >= 4
-    print("  -> PASS: Clean corridor inquiry cleared with authentic JWS receipt.")
+    selected_route = contract_res.get("selected_route")
+    assert selected_route is not None, "Expected selected_route to be populated for route-specific inquiry"
+    assert selected_route.get("profile") in ("gulf_maritime_exposure", "middle_corridor_deal_risk")
+    assert len(contract_res.get("gates", [])) == 1, "Expected single targeted gate when route is recognized"
+    print("  -> PASS: Targeted corridor inquiry routed to specialized gate.")
+
+    # Also verify that a generic intake question returns all available gates
+    generic_payload = {
+        "jsonrpc": "2.0",
+        "id": "live-csa-generic-01",
+        "method": "SendMessage",
+        "params": {
+            "message": {
+                "messageId": "msg-csa-generic-01",
+                "role": "ROLE_USER",
+                "parts": [
+                    {
+                        "kind": "text",
+                        "text": "General question: what compliance review options are available?",
+                    }
+                ],
+            }
+        },
+    }
+    gen_res = post_json(f"{WORKER_URL}/message/send", generic_payload)
+    gen_task = gen_res.get("result", {}).get("task", gen_res.get("result", {}))
+    gen_contract = gen_task.get("metadata", {}).get("response", {})
+    assert gen_contract.get("kind") == "orientation_and_routing"
+    assert gen_contract.get("selected_route") is None
+    assert len(gen_contract.get("gates", [])) >= 4
+    print("  -> PASS: Generic corridor inquiry returned full gate catalog (>= 4 gates).")
 
 
 def test_sanctioned_counterparty_ofac50():
