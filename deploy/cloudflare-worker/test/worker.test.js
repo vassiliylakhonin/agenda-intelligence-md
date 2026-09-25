@@ -3904,7 +3904,7 @@ test("cis worker scores a merged name match instead of reporting nothing was fou
 
     const task = response.result;
     assert.equal(task.status.state, "TASK_STATE_COMPLETED");
-    assert.equal(task.metadata.live_retrieval_status, "success");
+    assert.equal(task.metadata.live_retrieval_status, "static_snapshot");
     assert.ok(task.metadata.auto_fetched_sources.length >= 1, "the fixture entity is on the indexed OFAC list");
 
     const data = task.artifacts[0].parts.find((part) => part.mediaType === "application/json").data;
@@ -3961,7 +3961,7 @@ test("cis worker still reports it has nothing when screening merges no match", a
     );
 
     const task = response.result;
-    assert.equal(task.metadata.live_retrieval_status, "success");
+    assert.equal(task.metadata.live_retrieval_status, "static_snapshot");
     assert.deepEqual(task.metadata.auto_fetched_sources, []);
 
     const data = task.artifacts[0].parts.find((part) => part.mediaType === "application/json").data;
@@ -4443,7 +4443,9 @@ test("corridor_sanctions_assistant message/send returns a deterministic orientat
     assert.equal(result.metadata.human_review_required, true);
     const resp = result.metadata.response;
     assert.equal(resp.kind, "orientation_and_routing");
-    assert.equal(resp.gates.length, 4);
+    assert.equal(resp.gates.length, 1);
+    assert.equal(resp.selected_route.profile, "middle_corridor_deal_risk");
+    assert.match(resp.next_gate_input, /route, cargo, counterparties/);
     assert.equal(resp.engagement.contact_email, "vassiliy.lakhonin@gmail.com");
     assert.match(resp.engagement.offer, /scoped and quoted before work starts/);
     assert.match(resp.engagement.next_step, /Fit, scope, fee, and timing/);
@@ -9333,3 +9335,81 @@ test("critical_minerals: evaluates US IRA FEOC 25%, Uranium P.L. 118-67, and Tit
 
 
 
+
+test("every advertised A2A example routes through SendMessage on its own profile", async () => {
+  const hosts = [
+    ["agenda-intelligence-a2a", "agenda"],
+    ["middle-corridor-deal-risk-gate-a2a", "kazakhstan"],
+    ["cis-secondary-sanctions-a2a", "cis_secondary_sanctions"],
+    ["gulf-maritime-exposure-a2a", "gulf_maritime_exposure"],
+    ["kazakhstan-market-entry-readiness-a2a", "market_entry_readiness"],
+    ["dual-use-technology-export-a2a", "dual_use_technology_export"],
+    ["critical-minerals-due-diligence-a2a", "critical_minerals_due_diligence"],
+    ["agentic-interaction-trust-a2a", "agentic_interaction_trust"],
+    ["agent-output-verification-a2a", "agent_output_verification"],
+    ["agent-financial-guard-a2a", "agent_financial_guard"],
+    ["m2m-escrow-arbiter-a2a", "m2m_escrow_arbiter"],
+    ["corridor-sanctions-assistant-a2a", "corridor_sanctions_assistant"]
+  ];
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    for (const [host, profile] of hosts) {
+      const req = new Request(`https://${host}.example.workers.dev/message/send`, { method: "POST" });
+      const card = agentCard(req, { AGENT_PROFILE: profile });
+      const example = card.x_agenda_intelligence.a2a_send_message_example;
+      assert.ok(example, `${profile} missing an example`);
+      assert.equal(example.request.params.message.parts.length, 1);
+      const response = await handleJsonRpc(example.request, req, { AGENT_PROFILE: profile });
+      assert.equal(response.result?.status?.state, example.expected.task_state,
+        `${profile}: ${response.result?.status?.message || JSON.stringify(response.error)}`);
+    }
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("corridor assistant refuses empty request and picks one gate for a concrete route", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const empty = await handleJsonRpc({ jsonrpc: "2.0", id: "empty", method: "message/send", params: { message: { parts: [] } } }, corridorAssistantRequest);
+    assert.equal(empty.result.status.state, "TASK_STATE_INPUT_REQUIRED");
+    const concrete = await handleJsonRpc({ jsonrpc: "2.0", id: "route", method: "message/send", params: { message: { parts: [{ kind: "text", text: "Cargo via Middle Corridor from Aktau to Baku: what evidence do I need?" }] } } }, corridorAssistantRequest);
+    assert.equal(concrete.result.metadata.response.selected_route.profile, "middle_corridor_deal_risk");
+    assert.equal(concrete.result.metadata.response.gates.length, 1);
+  } finally { console.log = originalLog; }
+});
+
+test("placeholder evidence cannot give output verification review-ready status", async () => {
+  const audit = groundedAuditFixture();
+  audit.evidence[0].source_type = "illustrative_placeholder";
+  audit.evidence[0].url = "https://example.com/illustration";
+  const resp = (await agentOutputVerificationResponseFor(audit)).result.metadata.response;
+  assert.equal(resp.readiness_score, 0);
+  assert.equal(resp.readiness_label, "not_decision_ready");
+  assert.equal(resp.verdict, "verify_before_relay");
+});
+
+test("CIS unknown owners never receive a clean clearance or receipt", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const response = await handleJsonRpc({ jsonrpc: "2.0", id: "unknown-owners", method: "message/send", params: { message: { parts: [{ kind: "data", data: cisSampleStructuredRequest }] } } }, cisRequest, {
+      VIZIER: { fetch: async () => new Response(JSON.stringify({ status: "success", violation: false, clean: true, aggregate_blocked_percentage: 0, explanation: "cleared OFAC 50% Rule", receipt: { id: "unsafe-clearance" } }), { status: 200 }) }
+    });
+    const clearance = response.result.metadata.response.beneficial_ownership_clearance;
+    assert.equal(clearance.status, "ownership_unknown");
+    assert.equal(clearance.clean, null);
+    assert.equal(clearance.receipt, null);
+    assert.equal(response.result.metadata.vizier_clearance_receipt, null);
+    assert.doesNotMatch(clearance.explanation, /cleared OFAC/);
+  } finally { console.log = originalLog; }
+});
+
+test("no vessel is not a clean vessel screening", async () => {
+  const { screenMaritimeExposureWithVizier } = await import("../src/upstream_vizier_maritime.js");
+  const result = await screenMaritimeExposureWithVizier({ VIZIER_ENABLED: "1" }, {});
+  assert.equal(result.status, "not_checked");
+  assert.equal(result.clean, null);
+});

@@ -1283,6 +1283,22 @@ function agentCard(request, env = {}) {
   const shaped = applyAgentProfile(card, request, env);
   const contracts = toolContractsForProfile(agentProfile(request, env));
   if (contracts) shaped.x_tool_contracts = contracts;
+  const profile = agentProfile(request, env);
+  const guide = GATE_REQUEST_GUIDES[profile] || (profile === "market_entry_readiness" ? GATE_REQUEST_GUIDES.kazakhstan_market_entry_readiness : null);
+  const sample = guide?.example || (profile === "agenda" || profile === "corridor_sanctions_assistant"
+    ? "What evidence is needed before shipping from Aktau to Baku?" : null);
+  const part = typeof sample === "string" ? { kind: "text", text: sample } : { kind: "data", data: sample };
+  if (sample) shaped.x_agenda_intelligence.a2a_send_message_example = {
+    endpoint: `${origin}/message/send`,
+    request: { jsonrpc: "2.0", id: "example-1", method: "message/send", params: { message: { role: "user", parts: [part] } } },
+    expected: { task_state: "TASK_STATE_COMPLETED", note: "Triage output only, not authorization or clearance." }
+  };
+  shaped.description = `Free A2A triage, supplied-evidence only; mandatory human review before commercial action. No independent factual verification or clearance. ${shaped.description}`;
+  shaped.x_agenda_intelligence.free_a2a_triage = {
+    scope: "Free A2A evidence triage; supplied evidence is not independently verified.",
+    decision_boundary: "No legal, sanctions, financial or trading clearance. Human review before any commercial action.",
+    price: "Free A2A triage. Optional paid paths (where offered): x402 micro-check 0.05 USDC, bankability dossier 25 USDC, Pro 490 USD/month. Check the live pricing manifest before paying."
+  };
   return shaped;
 }
 
@@ -1305,7 +1321,7 @@ function toolContractsForProfile(profile) {
   if (!tools.length) return null;
   return {
     contract_version: VERSION,
-    note: "Each entry is the contract of the hosted MCP tool of the same name. SendMessage params.request and tools/call arguments reach one dispatch, so the input schema describes both.",
+    note: "These are MCP tool schemas, not A2A envelope schemas. For A2A SendMessage use x_agenda_intelligence.a2a_send_message_example; structured gate fields go directly in message.parts[0].data, and free text goes in message.parts[0].text.",
     tools: tools.map((tool) => ({
       name: tool.name,
       input_schema: tool.inputSchema,
@@ -3034,14 +3050,37 @@ const CORRIDOR_ASSISTANT_GATES = Object.freeze([
   }
 ]);
 
+function corridorAssistantSelectRoute(text) {
+  const normalized = String(text).toLowerCase();
+  const choices = [
+    [/(?:hs\s*\d{4,10}|dual[- ]use|microelectronics|semiconductor|export control|экспортн|двойн)/iu, "dual_use_technology_export"],
+    [/(?:vessel|tanker|ship|imo\s*\d|hormuz|red sea|судно|танкер|красное море)/iu, "gulf_maritime_exposure"],
+    [/(?:market.entry|entry into kazakhstan|distribution in kazakhstan|выход на рынок|дистрибуц)/iu, "kazakhstan_market_entry_readiness"],
+    [/(?:sanction|ofac|ownership|counterparty|контрагент|санкц|бенефициар)/iu, "cis_secondary_sanctions"],
+    [/(?:corridor|route|shipment|cargo|port|freight|коридор|маршрут|груз|порт|логист)/iu, "middle_corridor_deal_risk"]
+  ];
+  for (const [pattern, profile] of choices) {
+    if (pattern.test(normalized)) return CORRIDOR_ASSISTANT_GATES.find((gate) => gate.profile === profile) || null;
+  }
+  return null;
+}
+
+function corridorAssistantNextInput(route) {
+  const guide = GATE_REQUEST_GUIDES[route.profile === "middle_corridor_deal_risk" ? "kazakhstan" : route.profile];
+  return guide ? `Send a structured request to ${route.a2a}/message/send with ${guide.required.map((field) => field.split(/\s+[—–]\s+/, 1)[0]).join(", ")}. See the agent-card for a copy-paste envelope.`
+    : "Read the selected gate's agent-card and supply its required fields.";
+}
+
 function corridorAssistantMessageText(response = null, vizierAssistant = null) {
+  const selected = response?.selected_route;
   const parts = [
     "# Corridor & Sanctions Risk Assistant",
     "",
     "Front door to the corridor and sanctions evidence-readiness gates. I orient and route. I do not screen, score, or retrieve.",
     "",
-    "## Which gate fits",
-    ...CORRIDOR_ASSISTANT_GATES.map((gate) => `- **${gate.name}**: use when ${gate.use_when}. A2A: ${gate.a2a}`),
+    "## Selected route",
+    selected ? `- **${selected.name}**: ${selected.a2a}` : "- No confident single route; specify the decision and subject.",
+    selected ? `- Next: ${response.next_gate_input}` : "- Available gates: " + CORRIDOR_ASSISTANT_GATES.map((gate) => gate.name).join(", "),
     "",
     "## If you need person-led work",
     `Email a one-line description of the route or counterparty and the next decision or review to ${SUPPORT_CONTACT_EMAIL} (${SUPPORT_HOURS_LOCAL}).`,
@@ -3081,6 +3120,7 @@ function corridorAssistantMessageText(response = null, vizierAssistant = null) {
 
 async function a2aResultForCorridorSanctionsAssistant(params, request, env = {}) {
   const text = extractText(params);
+  if (!text.trim()) return emptyRequestResult("corridor_sanctions_assistant", request);
   let vizierAssistant = null;
   if (isAssistantVizierEnabled(env)) {
     vizierAssistant = await verifyAssistantWithVizier(env, text, params);
@@ -3124,15 +3164,18 @@ async function a2aResultForCorridorSanctionsAssistant(params, request, env = {})
       "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev.";
   }
 
+  const selectedRoute = corridorAssistantSelectRoute(text);
   const response = {
     kind: "orientation_and_routing",
+    selected_route: selectedRoute,
+    next_gate_input: selectedRoute ? corridorAssistantNextInput(selectedRoute) : "Clarify the route, counterparty or vessel and the decision pending.",
     message:
       "Corridor & sanctions orientation: routing to the structured gates and person-led work. " +
       "No triage or screening performed here." +
       sanctionsNotice +
       securityNotice,
     caller_text: sanitizedText ? sanitizedText.slice(0, 500) : "",
-    gates: CORRIDOR_ASSISTANT_GATES.map((gate) => ({ ...gate })),
+    gates: selectedRoute ? [{ ...selectedRoute }] : CORRIDOR_ASSISTANT_GATES.map((gate) => ({ ...gate })),
     engagement: {
       offer: "Person-led review of a current deal or counterparty, scoped and quoted before work starts.",
       contact_email: SUPPORT_CONTACT_EMAIL,
@@ -3509,7 +3552,7 @@ function applyM2MEscrowArbiterProfile(card, request) {
   card.skills = [
     {
       id: "m2m-escrow-arbitration-ruling",
-      name: "M2M escrow arbitration ruling",
+      name: "M2M escrow evidence review",
       description:
         "Deterministic dispute resolution and settlement calculation for Agent-to-Agent deliverables, verifying hashes, schemas, and milestones.",
       tags: ["escrow", "arbitration", "m2m", "a2a", "dispute", "settlement"]
@@ -3963,10 +4006,9 @@ const GATE_REQUEST_GUIDES = Object.freeze({
     schema: "schemas/v1/evidence-audit.schema.json",
     required: [
       "claims — non-empty array of { claim_id, claim, support_level, evidence_ids }",
-      "support_level — direct, partial, weak, unsupported",
-      "evidence_ids — at least one id per claim that also appears in evidence; a support_level nothing in the pack backs is a caller assertion, scores nothing, and cannot reach review_ready",
       "evidence — array of { evidence_id, source_type }, optionally name, url, freshness"
     ],
+    optional: ["claims[].evidence_ids — at least one matching id needed for grounded scoring", "claims[].supporting_quotes — span-level support"],
     // Same drift PRE_ACTION_CHECK_GUIDE carried until 2026-09-02, on the gate
     // that names evidence-audit.schema.json: the evidence items were
     // { evidence_id, title, date }, and that schema sets additionalProperties
@@ -4097,8 +4139,10 @@ const GATE_REQUEST_GUIDES = Object.freeze({
       "shipment — object with hs_code, description, origin, and destination",
       "dated_sources — array of { id, source_type, title, date }",
       "risk_question — one sentence naming the decision",
-      "shipment.eccn — optional classification supplied by the caller",
-      "shipment.end_user_sector — optional sector: military, civilian, aerospace, semiconductor, or unknown"
+    ],
+    optional: [
+      "shipment.eccn — caller-supplied classification, not verified by HS code",
+      "shipment.end_user_sector — military, civilian, aerospace, semiconductor, or unknown"
     ],
     example: {
       shipment: {
@@ -4123,9 +4167,9 @@ const GATE_REQUEST_GUIDES = Object.freeze({
     required: [
       "run_id — caller correlation identifier",
       "transaction — object with network, token, amount_usd, and recipient",
-      "intent — object with prompt (LLM reasoning / justification)",
-      "policy_limits — optional object with max_single_limit_usd, daily_velocity_limit_usd, velocity_24h_usd"
+      "intent — object with prompt (LLM reasoning / justification)"
     ],
+    optional: ["policy_limits — object with max_single_limit_usd, daily_velocity_limit_usd, velocity_24h_usd"],
     example: {
       run_id: "tx-guard-example-001",
       agent: {
@@ -4304,6 +4348,7 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
     "## What it needs",
     ...guide.required.map((field) => `- ${field}`),
     "",
+    ...(guide.optional?.length ? ["", "## Optional context", ...guide.optional.map((field) => `- ${field}`)] : []),
     "## A request that works",
     "```json",
     JSON.stringify(guide.example, null, 2),
@@ -4328,6 +4373,7 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
     canonical_endpoint: endpoint,
     schema,
     required_fields: guide.required,
+    optional_fields: guide.optional || [],
     example_request: guide.example,
     instruction: `Resubmit your request as structured JSON matching example_request to ${endpoint} or as params.message.parts[0].data.`
   };
@@ -4363,6 +4409,7 @@ function invalidRequestResult(profile, endpoint, schema, errors, guideOverride =
         canonical_endpoint: endpoint,
         schema,
         required_fields: guide.required,
+        optional_fields: guide.optional || [],
         example_request: guide.example,
         instruction: `Resubmit your request as structured JSON matching example_request to ${endpoint} or as params.message.parts[0].data.`
       }
@@ -4385,6 +4432,7 @@ function invalidRequestResult(profile, endpoint, schema, errors, guideOverride =
       ...(guide
         ? {
             required_fields: guide.required,
+            optional_fields: guide.optional || [],
             example_request: guide.example,
             ...(guide.exampleNote ? { example_note: guide.exampleNote } : {}),
             front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
@@ -4492,6 +4540,7 @@ function textIntakeResult(profile, endpoint, schema, candidate, guideOverride = 
     canonical_endpoint: endpoint,
     schema,
     required_fields: guide?.required || [],
+    optional_fields: guide?.optional || [],
     candidate_inferred: candidate,
     example_request: guide?.example || null,
     instruction: "Confirm inferred candidate fields, supply every required field, and resubmit structured JSON."
@@ -4503,6 +4552,7 @@ function textIntakeResult(profile, endpoint, schema, candidate, guideOverride = 
     candidate,
     schema_hint: schemaHint,
     required_fields: guide?.required || [],
+    optional_fields: guide?.optional || [],
     example_request: guide?.example || null,
     canonical_http_endpoint: endpoint,
     schema,
@@ -5610,6 +5660,11 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
   }
   const rawScore = claimCount ? Math.round((corroboratedWeight / claimCount) * 100) : 0;
   let readinessScore = Math.max(0, rawScore - 10 * unsafeClaims.length - 5 * unsupportedStatements.length);
+  // A claimed direct support is not a grounded claim, and placeholder evidence is not review proof.
+  const placeholderEvidence = (Array.isArray(request.evidence) ? request.evidence : []).some((item) =>
+    /(?:example\.com|placeholder|illustrative|synthetic)/iu.test(JSON.stringify(item))
+  );
+  if (!grounded || placeholderEvidence) readinessScore = 0;
 
   let verdict;
   if (unsafeClaims.length || unsupportedStatements.length) {
@@ -5617,6 +5672,9 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     readinessScore = Math.min(readinessScore, 49);
   } else if (!claimCount) {
     verdict = "insufficient_information";
+  } else if (placeholderEvidence) {
+    verdict = "verify_before_relay";
+    evidenceGaps.push("Illustrative or placeholder evidence cannot establish decision readiness; provide original dated sources.");
   } else if (!corroboratedClaimCount) {
     // Nothing in the request backs anything in it. The declared levels are the
     // caller's own word, so there is no material here to verdict on.
@@ -5639,7 +5697,7 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     readinessLabel = "insufficient_information";
   } else if (verdict === "block_unsafe_claims") {
     readinessLabel = "not_decision_ready";
-  } else if (readinessScore >= 85) {
+  } else if (readinessScore >= 85 && grounded === claimCount && !placeholderEvidence) {
     readinessLabel = "review_ready";
   } else if (readinessScore >= 50) {
     readinessLabel = "partial";
@@ -6882,7 +6940,8 @@ async function gulfMaritimeExposureResult(request, env = {}) {
     vizier_clearance_receipt: vizierMaritimeResult ? vizierMaritimeResult.receipt : null,
     maritime_screening: vizierMaritimeResult
       ? {
-          clean: vizierMaritimeResult.clean,
+          status: request.vessel?.name || request.vessel?.imo ? "vessel_subject_supplied" : "vessel_not_screened",
+          clean: request.vessel?.name || request.vessel?.imo ? vizierMaritimeResult.clean : null,
           violation: vizierMaritimeResult.violation,
           matches: vizierMaritimeResult.matches || []
         }
@@ -8225,15 +8284,15 @@ function criticalMineralsResult(request, vizierMinerals = null) {
     topRisks.push({
       category: "Aerospace Grade Certification & Provenance",
       severity: "medium",
-      description: "Aerospace titanium supply requires certified mill test reports (AMS 4911 / AMS 4928, ASTM B265) and non-Russian raw sponge chain-of-custody verification to satisfy Western OEM (Boeing/Airbus) diversification quotas."
+      description: "If aerospace use is relevant, ask the buyer which grade standards and chain-of-custody proof apply; no OEM requirement has been verified from this request."
     });
     exposureLayers.push({
       layer: "Aerospace Qualification & Sponge Origin",
       level: hasAssay ? "verified" : "gap",
-      summary: "AMS/ASTM certified lab assay and non-Russian titanium sponge origin verification."
+      summary: "Buyer-specific grade and material-origin proof are unverified until dated records are supplied."
     });
-    watchNext.push("Western aerospace OEM (Boeing/Airbus) titanium qualification and long-term agreements");
-    watchNext.push("Kazakhstan UKTMP vs VSMPO-Avisma market share reallocation");
+    watchNext.push("Check applicable buyer grade standards and dated qualification records.");
+    watchNext.push("Verify current supplier and origin claims against dated primary sources before reliance.");
   }
 
   const response = {
@@ -9062,7 +9121,7 @@ async function a2aResultForAgentFinancialGuard(params, request, env = {}) {
     `Risk Score: ${verdict.score}/100`,
     "",
     "Checks:",
-    `- Sanctions & AML: ${verdict.checks.sanctions_aml ? "PASS" : "FAIL"}`,
+    `- Sanctions & AML: ${verdict.checks.sanctions_aml === false && verdict.violations.some((v) => /denylist|sanction/i.test(v)) ? "LOCAL DENYLIST HIT" : "UNKNOWN (no live AML check)"}`,
     `- Contract Security: ${verdict.checks.contract_security ? "PASS" : "FAIL"}`,
     `- Velocity & Limits: ${verdict.checks.velocity_limits ? "PASS" : "FAIL"}`,
     `- Prompt Injection Defense: ${verdict.checks.prompt_injection ? "PASS" : "FAIL"}`,
@@ -9150,7 +9209,7 @@ async function a2aResultForM2MEscrowArbiter(params, request, env = {}) {
   const evaluation = await evaluateM2MEscrowArbitration(structured, env);
   const ruling = evaluation.arbitration_ruling;
   const artifactText = [
-    "# M2M Escrow Arbiter — Autonomous Dispute Ruling",
+    ruling.ruling === "ESCALATE_HUMAN" ? "# M2M Escrow Arbiter — Evidence Review (Human Hold)" : "# M2M Escrow Arbiter — Proposed Allocation for Human Review",
     "",
     `Ruling: ${ruling.ruling}`,
     `Status: ${ruling.status}`,
@@ -9165,8 +9224,8 @@ async function a2aResultForM2MEscrowArbiter(params, request, env = {}) {
     "",
     "Verification Checks:",
     `- Deadline Honored: ${ruling.checks.deadline_honored ? "PASS" : "FAIL"}`,
-    `- Hash Integrity: ${ruling.checks.hash_verified ? "PASS" : "FAIL"}`,
-    `- Schema Conformity: ${ruling.checks.schema_verified ? "PASS" : "FAIL"}`,
+    `- Hash Integrity: ${ruling.check_status?.hash === "not_evaluated" ? "UNKNOWN" : ruling.checks.hash_verified ? "PASS" : "FAIL"}`,
+    `- Schema Conformity: ${ruling.check_status?.schema === "not_evaluated" ? "UNKNOWN" : ruling.checks.schema_verified ? "PASS" : "FAIL"}`,
     `- SLO Fulfillment: ${ruling.checks.slo_verified ? "PASS" : "NOT VERIFIED"}`,
     "",
     ruling.violations.length ? "Violations:\n" + ruling.violations.map((v) => `- ${v}`).join("\n") + "\n" : "",
@@ -9183,7 +9242,7 @@ async function a2aResultForM2MEscrowArbiter(params, request, env = {}) {
     artifacts: [
       {
         artifactId: "m2m-escrow-ruling",
-        name: "M2M Escrow Arbitration Ruling",
+        name: "M2M Escrow Evidence Review",
         parts: [
           { text: artifactText, mediaType: "text/markdown" },
           { data: evaluation, mediaType: "application/json" }
@@ -9486,16 +9545,19 @@ async function cisSecondarySanctionsResult(request, env) {
     limitations
   };
   if (vizierResult && vizierResult.status === "success") {
+    // Caller-supplied ownership details and an automated result do not verify the entire ownership chain.
+    const ownershipVerified = false;
     response.beneficial_ownership_clearance = {
+      status: vizierResult.violation ? "potential_blocked_ownership_escalate" : ownershipVerified ? "screened_disclosed_chain" : "ownership_unknown",
       engine: vizierResult.engine,
       violation: vizierResult.violation,
-      clean: vizierResult.clean,
+      clean: vizierResult.violation ? false : ownershipVerified ? vizierResult.clean : null,
       aggregate_blocked_percentage: vizierResult.aggregate_blocked_percentage,
       threshold_percentage: vizierResult.threshold_percentage,
       blocked_shareholders: vizierResult.blocked_shareholders,
       reason_codes: vizierResult.reason_codes,
-      explanation: vizierResult.explanation,
-      receipt: vizierResult.receipt
+      explanation: vizierResult.violation ? vizierResult.explanation : ownershipVerified ? vizierResult.explanation : "Ownership chain not verified; no OFAC 50% Rule clearance is available.",
+      receipt: vizierResult.violation ? vizierResult.receipt : ownershipVerified ? vizierResult.receipt : null
     };
   }
   if (Array.isArray(request[NORMALIZATIONS_APPLIED]) && request[NORMALIZATIONS_APPLIED].length) {
@@ -9509,15 +9571,15 @@ async function cisSecondarySanctionsResult(request, env) {
 
   return {
     response,
-    live_retrieval_status: upstreamResult.status,
+    live_retrieval_status: upstream_name === "Snapshot" && upstreamResult.status === "success" ? "static_snapshot" : upstreamResult.status,
     live_retrieval_upstream: upstream_name,
     vizier_status: vizierResult ? vizierResult.status : "disabled",
     vizier_degrade_reason: vizierResult ? vizierResult.degrade_reason : null,
     vizier_clearance_receipt:
-      vizierResult && vizierResult.receipt
-        ? typeof vizierResult.receipt === "string"
-          ? vizierResult.receipt
-          : vizierResult.receipt.id || null
+      response.beneficial_ownership_clearance?.receipt
+        ? typeof response.beneficial_ownership_clearance.receipt === "string"
+          ? response.beneficial_ownership_clearance.receipt
+          : response.beneficial_ownership_clearance.receipt.id || null
         : null,
     // A bounded, privacy-safe operator signal. The upstream adapters retain a
     // human-readable reason for local diagnosis, but that text may contain an
@@ -9555,7 +9617,7 @@ function cisArtifactText(response, liveRetrievalStatus, sanctionsMatchesMerged =
     // to name the match in the same breath — and name what it is not. Only a
     // successful run may report an absence of matches; on the disabled and
     // degraded paths nothing was screened, and the status line above says so.
-    ...(liveRetrievalStatus === "success"
+    ...(["success", "static_snapshot"].includes(liveRetrievalStatus)
       ? [
           sanctionsMatchesMerged
             ? `Name screening: ${sanctionsMatchesMerged} public-list name ` +
@@ -11767,9 +11829,6 @@ function engagementMarkdown(engagement) {
             `${engagement.client_identification.value}.`
         ]
       : []),
-    ...(engagement.expedited_dossier_url
-      ? [`Expedited checkout: ${engagement.expedited_dossier_url}`]
-      : []),
     `Contact: ${engagement.contact_email} (${engagement.support_hours}). ` +
       `Page for a person to read: ${engagement.human_page}`
   ].join("\n");
@@ -12093,7 +12152,6 @@ function engagementBlock(request, { profile = "agenda", response = null } = {}) 
     next_step:
       `Email a one-line description of ${subject} and the decision or review it feeds. ` +
       "Fit, scope, fee, and timing are confirmed before work starts.",
-    expedited_dossier_url: "https://paypal.me/vaskenzy",
     sample_dossier_url: `${originFromRequest(request)}/sample-dossier`,
     // The landing page, not the agent card: the card is already in this
     // metadata, and the person behind an integration needs a page they can read.
@@ -14190,6 +14248,7 @@ function directV1Rejection(endpoint, route, errors) {
         canonical_endpoint: endpoint,
         schema: route.schema,
         required_fields: guide.required,
+        optional_fields: guide.optional || [],
         example_request: guide.example,
         instruction: `POST valid JSON matching example_request to ${endpoint}`
       }
@@ -14226,6 +14285,7 @@ function directRouteJson(endpoint, route, request) {
     instruction: `This endpoint accepts HTTP POST requests with a JSON payload. Send a POST request matching the schema or example below.`,
     schema: `${origin}/${route.schema}`,
     required_fields: guide?.required || [],
+    optional_fields: guide?.optional || [],
     example_request: example,
     example_curl: `curl -X POST ${origin}${endpoint} \\\n  -H 'content-type: application/json' \\\n  -d '${JSON.stringify(example)}'`,
     agent_card: `${origin}/.well-known/agent.json`,

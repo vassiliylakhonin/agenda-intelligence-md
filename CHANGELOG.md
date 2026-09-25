@@ -4,6 +4,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### A2A fleet contract and evidence safety (proposed, 2026-09-25)
+
+- Advertise runnable A2A SendMessage envelopes for each shared Worker profile and distinguish A2A parts from MCP tool arguments.
+- Remove the expedited PayPal URL from triage output; retain separately described pricing paths.
+- Refuse empty Corridor Assistant requests, choose a single route when identifiable, and separate required from optional input fields.
+- Downgrade placeholder output evidence, unknown CIS ownership, missing vessel subjects, and unevaluated escrow/financial checks instead of emitting a false clean signal.
+- Mark sanctions index retrieval as a dated static snapshot rather than live success, and remove unsourced OEM-specific titanium claims.
+- These status/score changes can affect clients that branch on existing labels. Review downstream consumers and deploy deliberately; no settlement behavior was changed.
+
 ### Agent discovery compatibility — 2026-09-24
 
 - Serve a non-executing MCP capability document on `GET`/`HEAD /mcp`, while retaining POST-only tool invocation.

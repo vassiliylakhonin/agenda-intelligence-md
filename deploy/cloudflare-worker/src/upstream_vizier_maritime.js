@@ -63,7 +63,7 @@ export async function screenMaritimeExposureWithVizier(env = {}, request = {}) {
     return {
       status: "disabled",
       violation: false,
-      clean: true,
+      clean: null,
       matches: [],
       attribution: maritimeAttributionBlock(),
       queried_at: nowIso(),
@@ -103,9 +103,9 @@ export async function screenMaritimeExposureWithVizier(env = {}, request = {}) {
 
   if (candidates.length === 0) {
     return {
-      status: "success",
+      status: "not_checked",
       violation: false,
-      clean: true,
+      clean: null,
       matches: [],
       receipt: null,
       attribution: maritimeAttributionBlock(),
