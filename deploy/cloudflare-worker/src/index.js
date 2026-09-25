@@ -1291,7 +1291,9 @@ function agentCard(request, env = {}) {
   if (sample) shaped.x_agenda_intelligence.a2a_send_message_example = {
     endpoint: `${origin}/message/send`,
     request: { jsonrpc: "2.0", id: "example-1", method: "message/send", params: { message: { role: "user", parts: [part] } } },
-    expected: { task_state: "TASK_STATE_COMPLETED", note: "Triage output only, not authorization or clearance." }
+    expected: { task_state: "TASK_STATE_COMPLETED", note: "Triage output only, not authorization or clearance." },
+    trace: "Optional: send an X-Trace-Id header (8-80 chars of A-Za-z0-9._:-) or a top-level params.trace_id. " +
+      "It is echoed in task metadata.trace_id and recorded in telemetry, so your call can be correlated end to end."
   };
   shaped.description = `Free A2A triage, supplied-evidence only; mandatory human review before commercial action. No independent factual verification or clearance. ${shaped.description}`;
   shaped.x_agenda_intelligence.free_a2a_triage = {
@@ -3057,7 +3059,7 @@ function corridorAssistantSelectRoute(text) {
     [/(?:vessel|tanker|ship|imo\s*\d|hormuz|red sea|судно|танкер|красное море)/iu, "gulf_maritime_exposure"],
     [/(?:market.entry|entry into kazakhstan|distribution in kazakhstan|выход на рынок|дистрибуц)/iu, "kazakhstan_market_entry_readiness"],
     [/(?:sanction|ofac|ownership|counterparty|контрагент|санкц|бенефициар)/iu, "cis_secondary_sanctions"],
-    [/(?:corridor|route|shipment|cargo|port|freight|коридор|маршрут|груз|порт|логист)/iu, "middle_corridor_deal_risk"]
+    [/(?:corridor|route|shipment|cargo|port\b|freight|alumini?um|aktau|poti\b|baku\b|batumi|kuryk|turkmenbashi|caspian|trans[- ]?caspian|ferry|letter of credit|bank review|коридор|маршрут|груз|порт|логист|алюминий|актау|поти|баку|каспи)/iu, "middle_corridor_deal_risk"]
   ];
   for (const [pattern, profile] of choices) {
     if (pattern.test(normalized)) return CORRIDOR_ASSISTANT_GATES.find((gate) => gate.profile === profile) || null;
@@ -4507,6 +4509,112 @@ function cisTextIntakeCandidate(text) {
   return candidate;
 }
 
+// Every extractor below is deterministic: it lifts only what the text
+// literally contains (a name after a label, an address by shape, a keyword
+// from a fixed list) and never invents a value. What it cannot read stays
+// absent, and the intake response tells the caller exactly that.
+function agenticTrustTextIntakeCandidate(text) {
+  const candidate = {};
+  const nameMatch = text.match(
+    /(?:agent|bot|actor|агент|бот)\s*(?:named|called|по имени)?\s*[:#-]?\s*"?([\p{L}\p{N}][\p{L}\p{N} ._'-]{1,60}?)"?(?=[,;.!?]|\s+(?:wants?|asks?|is trying|пыт|хочет)|$)/iu
+  );
+  if (nameMatch) candidate.actor = { declared_name: boundedText(nameMatch[1], 60) };
+  const surface = text.match(/\b(checkout|account|api|mcp_tool|a2a_endpoint|auth_flow)\b/i);
+  if (surface) candidate.target_surface = surface[1].toLowerCase();
+  const action = text.match(/(?:wants? to|asks? to|is trying to|пытается|хочет)\s+(.{3,120}?)(?=[.;!?]|$)/iu);
+  if (action) candidate.requested_action = boundedText(action[1], 120);
+  return candidate;
+}
+
+function marketEntryTextIntakeCandidate(text) {
+  const candidate = {};
+  const company = text.match(
+    /(?:company|partner|компания|партн[её]р)\s*[:#-]?\s*"?([\p{L}\p{N}][\p{L}\p{N} &.'()-]{1,60}?)"?(?=[,;.!?]|\s+(?:is\s+|are\s+)?(?:entering|plans?|seeks?|вход|для|хочет)|$)/iu
+  );
+  if (company) candidate.partner_or_company = boundedText(company[1], 60);
+  if (/kazakhstan|казахстан/iu.test(text)) candidate.market = "Kazakhstan";
+  const question = text.match(/(?:can we|should we|is it ready|готовы ли|можем ли|стоит ли)\s+(.{5,150}?)(?=[.;!?]|$)/iu);
+  if (question) candidate.decision_question = boundedText(question[0], 150);
+  return candidate;
+}
+
+function gulfTextIntakeCandidate(text) {
+  const candidate = {};
+  const lower = text.toLowerCase();
+  const chokepoints = [
+    ["hormuz", "strait_of_hormuz"],
+    ["ормуз", "strait_of_hormuz"],
+    ["persian gulf", "persian_gulf"],
+    ["arabian gulf", "persian_gulf"],
+    ["персидск", "persian_gulf"],
+    ["gulf of oman", "gulf_of_oman"],
+    ["bab-el-mandeb", "bab_el_mandeb"],
+    ["bab el mandeb", "bab_el_mandeb"],
+    ["red sea", "red_sea"],
+    ["красн", "red_sea"],
+    ["suez", "suez_canal"],
+    ["суэц", "suez_canal"]
+  ];
+  for (const [needle, value] of chokepoints) {
+    if (lower.includes(needle)) {
+      candidate.voyage = { chokepoint: value };
+      break;
+    }
+  }
+  const vesselMatch = text.match(
+    /\b(?:vessel|tanker|ship|судно|танкер)\s*[:#-]?\s*([A-Za-z0-9\s.'-]{2,40}?)(?=[,;.!?]|\s+(?:imo|transiting|sailing|flagged|from|to)\b|$)/i
+  );
+  const imoMatch = text.match(/\bIMO\s*[:#-]?\s*(\d{7})\b/i);
+  if (vesselMatch || imoMatch) {
+    candidate.vessel = {};
+    if (vesselMatch) candidate.vessel.name = boundedText(vesselMatch[1], 40);
+    if (imoMatch) candidate.vessel.imo = imoMatch[1];
+  }
+  return candidate;
+}
+
+const CRITICAL_MINERALS_TEXT_COMMODITIES = [
+  [/rare[- ]earth|редкозем/iu, "rare_earth_elements"],
+  [/lithium|литий/iu, "lithium"],
+  [/nickel|никель/iu, "nickel"],
+  [/cobalt|кобальт/iu, "cobalt"],
+  [/copper|медь|медн/iu, "copper"],
+  [/graphite|графит/iu, "graphite"],
+  [/manganese|марганец/iu, "manganese"],
+  [/tungsten|вольфрам/iu, "tungsten"],
+  [/gallium|germanium|галлий|германий/iu, "gallium_germanium"],
+  [/uranium|уран/iu, "uranium"],
+  [/titanium|титан/iu, "titanium"],
+  [/antimony|сурьм/iu, "antimony"]
+];
+
+function criticalMineralsTextIntakeCandidate(text) {
+  const candidate = {};
+  for (const [pattern, commodity] of CRITICAL_MINERALS_TEXT_COMMODITIES) {
+    if (pattern.test(text)) {
+      candidate.commodity = commodity;
+      break;
+    }
+  }
+  if (/kazakhstan|казахстан/iu.test(text)) candidate.origin_jurisdiction = "KZ";
+  return candidate;
+}
+
+function agentFinancialGuardTextIntakeCandidate(text) {
+  const candidate = {};
+  const tx = {};
+  const address = text.match(/\b0x[a-fA-F0-9]{40}\b/);
+  const amount = text.match(/\$\s?(\d+(?:[.,]\d+)?)/);
+  const network = text.match(/\b(base(?:[-_ ]?mainnet)?|ethereum|polygon|arbitrum|optimism|solana)\b/i);
+  const token = text.match(/\b(USDC|USDT|WETH|DAI|ETH)\b/);
+  if (address) tx.recipient = address[0];
+  if (amount) tx.amount_usd = Number(amount[1].replace(",", "."));
+  if (network) tx.network = network[1].toLowerCase().replace(/[- ]/g, "_");
+  if (token) tx.token = token[1].toUpperCase();
+  if (Object.keys(tx).length) candidate.transaction = tx;
+  return candidate;
+}
+
 function dualUseTextIntakeCandidate(text) {
   const shipment = {};
   const hsMatch = text.match(/\bHS(?:\s*code)?\s*[:#-]?\s*(\d{4,10})\b/iu);
@@ -5400,6 +5508,15 @@ function agenticArtifactText(response) {
 async function a2aResultForAgenticInteractionTrust(params, request, env = {}) {
   const structured = structuredAgenticInteractionTrustRequestFromParams(params);
   if (!structured) {
+    const text = extractText(params).trim();
+    if (text) {
+      return textIntakeResult(
+        "agentic_interaction_trust",
+        "/v1/agentic-interaction/trust",
+        "schemas/v1/agentic-interaction-trust-request.schema.json",
+        agenticTrustTextIntakeCandidate(text)
+      );
+    }
     return requestGuidanceResult(
       "agentic_interaction_trust",
       "/v1/agentic-interaction/trust",
@@ -6361,6 +6478,18 @@ function agentOutputVerificationArtifactText(response) {
 async function a2aResultForAgentOutputVerification(params, request, env = {}) {
   const structured = structuredAgentOutputVerificationRequestFromParams(params);
   if (!structured) {
+    const text = extractText(params).trim();
+    if (text) {
+      // The pasted text is the claim under review, asserted at the weakest
+      // support level — nothing is verified on intake, only restated for
+      // confirmation.
+      return textIntakeResult(
+        "agent_output_verification",
+        "/v1/agent-output/verification",
+        "schemas/v1/evidence-audit.schema.json",
+        { claims: [{ claim_id: "c1", claim: text.slice(0, 500), support_level: "unsupported", evidence_ids: [] }], evidence: [] }
+      );
+    }
     return requestGuidanceResult(
       "agent_output_verification",
       "/v1/agent-output/verification",
@@ -6990,6 +7119,15 @@ async function a2aResultForGulfMaritimeExposure(params, request, env = {}) {
     }
   }
   if (!structured) {
+    const text = extractText(params).trim();
+    if (text) {
+      return textIntakeResult(
+        "gulf_maritime_exposure",
+        "/v1/gulf-maritime/exposure",
+        "schemas/v1/gulf-maritime-exposure-request.schema.json",
+        gulfTextIntakeCandidate(text)
+      );
+    }
     return requestGuidanceResult(
       "gulf_maritime_exposure",
       "/v1/gulf-maritime/exposure",
@@ -7872,6 +8010,15 @@ function structuredMarketEntryReadinessRequestFromParams(params) {
 async function a2aResultForMarketEntryReadiness(params, request, env = {}) {
   const structured = structuredMarketEntryReadinessRequestFromParams(params);
   if (!structured) {
+    const text = extractText(params).trim();
+    if (text) {
+      return textIntakeResult(
+        "kazakhstan_market_entry_readiness",
+        "/v1/market-entry/readiness",
+        "schemas/v1/market-entry-readiness-request.schema.json",
+        marketEntryTextIntakeCandidate(text)
+      );
+    }
     return requestGuidanceResult(
       "kazakhstan_market_entry_readiness",
       "/v1/market-entry/readiness",
@@ -8558,6 +8705,15 @@ async function a2aResultForCriticalMinerals(params, request, env = {}) {
     }
   }
   if (!structured) {
+    const text = extractText(params).trim();
+    if (text) {
+      return textIntakeResult(
+        "critical_minerals_due_diligence",
+        "/v1/critical-minerals/due-diligence",
+        "schemas/v1/critical-minerals-due-diligence-request.schema.json",
+        criticalMineralsTextIntakeCandidate(text)
+      );
+    }
     return requestGuidanceResult(
       "critical_minerals_due_diligence",
       "/v1/critical-minerals/due-diligence",
@@ -9084,9 +9240,32 @@ function structuredAgentFinancialGuardRequestFromParams(params) {
   return null;
 }
 
+// The guard forces velocity_limits=false on every run because the caller
+// controls both the spending policy and the reported history. Printing that
+// as FAIL accused every caller of a breach most never triggered; the honest
+// label is UNKNOWN unless a caller-supplied policy was actually exceeded.
+function financialGuardVelocityLine(verdict, structured) {
+  const breached =
+    verdict.violations.some((v) => /velocity budget/i.test(v)) ||
+    (Array.isArray(verdict.evidence_gaps) && verdict.evidence_gaps.some((g) => /single-action policy limit/i.test(g)));
+  if (breached) return "FAIL";
+  return structured?.policy_limits
+    ? "UNKNOWN (caller-reported limits unverified)"
+    : "UNKNOWN (no caller policy supplied)";
+}
+
 async function a2aResultForAgentFinancialGuard(params, request, env = {}) {
   const structured = structuredAgentFinancialGuardRequestFromParams(params);
   if (!structured) {
+    const text = extractText(params).trim();
+    if (text) {
+      return textIntakeResult(
+        "agent_financial_guard",
+        "/v1/agent-financial/pre-sign-check",
+        "schemas/v1/agent-financial-guard-request.schema.json",
+        agentFinancialGuardTextIntakeCandidate(text)
+      );
+    }
     return requestGuidanceResult(
       "agent_financial_guard",
       "/v1/agent-financial/pre-sign-check",
@@ -9123,7 +9302,7 @@ async function a2aResultForAgentFinancialGuard(params, request, env = {}) {
     "Checks:",
     `- Sanctions & AML: ${verdict.checks.sanctions_aml === false && verdict.violations.some((v) => /denylist|sanction/i.test(v)) ? "LOCAL DENYLIST HIT" : "UNKNOWN (no live AML check)"}`,
     `- Contract Security: ${verdict.checks.contract_security ? "PASS" : "FAIL"}`,
-    `- Velocity & Limits: ${verdict.checks.velocity_limits ? "PASS" : "FAIL"}`,
+    `- Velocity & Limits: ${financialGuardVelocityLine(verdict, structured)}`,
     `- Prompt Injection Defense: ${verdict.checks.prompt_injection ? "PASS" : "FAIL"}`,
     "",
     verdict.violations.length ? "Violations:\n" + verdict.violations.map((v) => `- ${v}`).join("\n") + "\n" : "",
@@ -9188,6 +9367,17 @@ function structuredM2MEscrowRequestFromParams(params) {
 async function a2aResultForM2MEscrowArbiter(params, request, env = {}) {
   const structured = structuredM2MEscrowRequestFromParams(params);
   if (!structured) {
+    const text = extractText(params).trim();
+    if (text) {
+      // Escrow terms are too specific to infer from prose; the intake returns
+      // the working example and required fields without guessing any value.
+      return textIntakeResult(
+        "m2m_escrow_arbiter",
+        "/v1/m2m-escrow/evaluate-dispute",
+        "schemas/v1/m2m-escrow-arbiter-request.schema.json",
+        {}
+      );
+    }
     return requestGuidanceResult(
       "m2m_escrow_arbiter",
       "/v1/m2m-escrow/evaluate-dispute",
@@ -11559,6 +11749,7 @@ const {
   liveRetrievalReasonCode,
   billableUpstreamCost,
   buildUsageEvent,
+  traceIdFromRequest,
   logUsageEvent,
   funnelStepForPath,
   logFunnelEvent,
@@ -12363,15 +12554,93 @@ export function verificationStatus(profile) {
   };
 }
 
+// Fleet-wide structured verdict (agenda-structured-verdict/v1). One block,
+// the same shape on every task, built only from fields the response already
+// carries — it derives and labels, it never asserts a new fact.
+function verdictStandardBlock(task) {
+  const metadata = task?.metadata && typeof task.metadata === "object" ? task.metadata : {};
+  const response = metadata.response && typeof metadata.response === "object" ? metadata.response : {};
+  const contract =
+    response.readiness_contract && typeof response.readiness_contract === "object" ? response.readiness_contract : {};
+  const state = task?.status?.state || "";
+
+  let reason_code;
+  if (state === "TASK_STATE_INPUT_REQUIRED") reason_code = metadata.input_required_reason || "missing_required_input";
+  else if (state === "TASK_STATE_FAILED") reason_code = "invalid_request";
+  else reason_code = contract.routing?.value || contract.status || "completed";
+
+  const humanReview = Boolean(metadata.human_review_required ?? response.human_review_required ?? true);
+
+  let next_permitted_action;
+  if (state === "TASK_STATE_INPUT_REQUIRED") next_permitted_action = "resubmit_with_required_fields";
+  else if (state === "TASK_STATE_FAILED") next_permitted_action = "fix_request_and_resubmit";
+  else next_permitted_action = humanReview ? "human_review_before_any_action" : "review_output_before_use";
+
+  const liveStatus = typeof metadata.live_retrieval_status === "string" ? metadata.live_retrieval_status : null;
+  const snapshotAsOf =
+    typeof metadata.live_retrieval_snapshot_generated_at === "string" ? metadata.live_retrieval_snapshot_generated_at : null;
+  const autoFetched = Array.isArray(metadata.auto_fetched_sources) ? metadata.auto_fetched_sources : [];
+  const supplied = Array.isArray(response.supplied_sources)
+    ? response.supplied_sources.filter((item) => typeof item === "string")
+    : [];
+
+  const sources = [
+    ...supplied.slice(0, 16).map((type) => ({ source_id: type, label: "caller_supplied", as_of: null })),
+    ...autoFetched.slice(0, 16).map((item) => ({
+      source_id: typeof item?.title === "string" ? item.title : item?.source_type || "auto_fetched",
+      label: liveStatus === "static_snapshot" ? "static_snapshot" : "auto_fetched",
+      as_of: snapshotAsOf
+    }))
+  ];
+
+  const evidenceGaps = Array.isArray(response.evidence_gaps)
+    ? response.evidence_gaps
+    : Array.isArray(contract.blocking_gaps)
+      ? contract.blocking_gaps
+      : [];
+
+  return {
+    standard: "agenda-structured-verdict/v1",
+    generated_at: task?.status?.timestamp || new Date().toISOString(),
+    reason_code,
+    next_permitted_action,
+    human_review_required: humanReview,
+    evidence_gaps: evidenceGaps.slice(0, 16),
+    confidence_basis: {
+      basis:
+        liveStatus === "static_snapshot"
+          ? "static_snapshot"
+          : liveStatus === "success"
+            ? "live_retrieval"
+            : autoFetched.length
+              ? "mixed_caller_and_auto_fetched"
+              : "caller_supplied",
+      caller_supplied_source_count: supplied.length,
+      auto_fetched_source_count: autoFetched.length,
+      live_retrieval: liveStatus
+        ? { status: liveStatus, upstream: metadata.live_retrieval_upstream || null, snapshot_as_of: snapshotAsOf }
+        : null,
+      note: "Caller-supplied evidence is not independently verified unless a live_retrieval or static_snapshot " +
+        "label says otherwise. This gate issues no clearance and performs no action."
+    },
+    sources
+  };
+}
+
 function withVerificationStatus(task, request, env = {}) {
   if (!task || typeof task !== "object") return task;
   const metadata = task.metadata && typeof task.metadata === "object" ? task.metadata : {};
+  const enriched = {
+    ...metadata,
+    trace_id: metadata.trace_id || traceIdFromRequest(request),
+    verdict_standard: metadata.verdict_standard || verdictStandardBlock(task)
+  };
   // A profile that already reported its own verification keeps what it said.
-  if (metadata.verification) return task;
+  if (metadata.verification) return { ...task, metadata: enriched };
   const profile = metadata.product_profile || agentProfile(request, env);
   return {
     ...task,
-    metadata: { ...metadata, verification: verificationStatus(profile) }
+    metadata: { ...enriched, verification: verificationStatus(profile) }
   };
 }
 
@@ -12418,7 +12687,12 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
     const profile = agentProfile(request, env);
     const { result, promptChars, structuredChars, modulesUsed } = await runProfileRequest(profile, params, request, env);
     const probeReason = actionProbeReason(request, promptChars);
-    const event = logUsageEvent(request, {
+    // One id per call, from the caller's X-Trace-Id / params.trace_id when
+    // sent, generated otherwise. Stamped on the task before logging so the
+    // usage row and the response carry the same value.
+    const traceId = traceIdFromRequest(request, { trace_id: params.trace_id });
+    result.metadata = { ...(result.metadata || {}), trace_id: traceId };
+    const event = await logUsageEvent(request, {
       jsonrpc_method: payload.method,
       jsonrpc_id_present: payload.id !== undefined,
       agent_profile: result.metadata.product_profile,
@@ -12428,8 +12702,9 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
       live_retrieval: billableUpstreamCost(result),
       likely_probe: Boolean(probeReason),
       probe_reason: probeReason,
-      outcome: callOutcome(result)
-    });
+      outcome: callOutcome(result),
+      trace_id: traceId
+    }, env);
     const statsPromise = recordUsageStats(env, event).catch((error) => {
       console.warn("usage stats write failed", error);
     });
@@ -12760,7 +13035,9 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
     const callParams = mcpArgumentsToParams(profile, toolArguments, name);
     const { result, promptChars, structuredChars, modulesUsed } = await runProfileRequest(profile, callParams, request, env);
     const probeReason = actionProbeReason(request, promptChars);
-    const event = logUsageEvent(request, {
+    const traceId = traceIdFromRequest(request);
+    result.metadata = { ...(result.metadata || {}), trace_id: traceId };
+    const event = await logUsageEvent(request, {
       jsonrpc_method: "tools/call",
       jsonrpc_id_present: payload.id !== undefined,
       agent_profile: result.metadata.product_profile,
@@ -12770,8 +13047,9 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
       live_retrieval: billableUpstreamCost(result),
       likely_probe: Boolean(probeReason),
       probe_reason: probeReason,
-      outcome: callOutcome(result)
-    });
+      outcome: callOutcome(result),
+      trace_id: traceId
+    }, env);
     const statsPromise = recordUsageStats(env, event).catch((error) => {
       console.warn("usage stats write failed", error);
     });
@@ -14558,7 +14836,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 
 
   if (request.method === "GET") {
-    logFunnelEvent(request, funnelStepForPath(url.pathname));
+    await logFunnelEvent(request, funnelStepForPath(url.pathname), env);
   }
 
   if (url.pathname === CIS_REVIEW_INTAKE_PATH && request.method === "OPTIONS") {
@@ -14579,7 +14857,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       headers: {
         "access-control-allow-origin": "*",
         "access-control-allow-methods": "GET, POST, OPTIONS",
-        "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name, x-payment-tx"
+        "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name, x-payment-tx, x-trace-id"
       }
     });
   }

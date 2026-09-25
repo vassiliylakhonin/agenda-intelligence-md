@@ -4,6 +4,14 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Growth readiness: intake, observability and verdict standard (proposed, 2026-09-25)
+
+- Free-text intake on every vertical gate: unstructured text returns a typed INPUT_REQUIRED with a deterministic candidate (recognized vs unconfirmed), required fields and a working example; nothing is screened or guessed on intake, and high-stakes gates stay strict.
+- Observability: end-to-end trace ids (X-Trace-Id header / params.trace_id / generated and echoed in task metadata), privacy-safe hashed caller identity, owner-synthetic (X-Client-Id instinct-owner-*) and named-benchmark (ZeroMockProof, ProofBench, mcpqueen) caller buckets, an x402 payment-header signal, and a qualified demand chain in /stats (unique caller -> usable completion -> repeat -> paid).
+- Fleet-wide structured verdict block (agenda-structured-verdict/v1) on every v1 task: reason_code, next_permitted_action, human_review_required, evidence gaps, confidence basis and caller_supplied/auto_fetched/static_snapshot source labels.
+- Financial Guard velocity check now reads UNKNOWN unless a caller-supplied policy was actually breached; Corridor Assistant routing recognizes commodities, corridor ports and bank-review phrasing.
+- Usage event v8 / funnel event v4; historical rows remain readable (new buckets repair at read time like earlier probes).
+
 ### A2A fleet contract and evidence safety (proposed, 2026-09-25)
 
 - Advertise runnable A2A SendMessage envelopes for each shared Worker profile and distinguish A2A parts from MCP tool arguments.

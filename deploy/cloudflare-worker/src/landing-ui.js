@@ -378,13 +378,14 @@ async function runProfileExample(event) {
   status.textContent = 'Evaluating supplied evidence…';
   try {
     var payload = JSON.parse(document.getElementById('profile-request').value);
+    var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
     var response = await fetch('${origin}${endpoint || '/message/send'}', {
-      method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify(payload)
+      method: 'POST', headers: {'content-type':'application/json', 'x-trace-id': traceId}, body: JSON.stringify(payload)
     });
     var body = await response.json();
     result.style.display = 'block';
     result.textContent = JSON.stringify(body, null, 2);
-    status.textContent = response.ok ? 'Evaluation returned. Inspect evidence gaps and limitations before acting.' : 'Request failed (HTTP ' + response.status + '). See the response below.';
+    status.textContent = (response.ok ? 'Evaluation returned. Inspect evidence gaps and limitations before acting.' : 'Request failed (HTTP ' + response.status + '). See the response below.') + ' Trace: ' + traceId;
   } catch (error) {
     status.textContent = 'Evaluation failed: ' + error.message;
   } finally { button.disabled = false; }
@@ -419,9 +420,10 @@ async function runBrowserTriage(e) {
 
   try {
     var prompt = 'Screen sanctions exposure, OFAC EO 14114 risk, and trade compliance for cargo/commodity: ' + cargo + ', transit route: ' + route;
+    var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
     var resp = await fetch('${origin}/message/send', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'A2A-Version': '1.0' },
+      headers: { 'content-type': 'application/json', 'A2A-Version': '1.0', 'x-trace-id': traceId },
       body: JSON.stringify({
         jsonrpc: '2.0',
         id: 'web-triage-' + Date.now(),

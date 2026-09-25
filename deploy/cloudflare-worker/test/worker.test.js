@@ -2268,7 +2268,7 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   });
 
   assert.equal(event.event, "agenda_intelligence_a2a_usage");
-  assert.equal(event.event_version, 7);
+  assert.equal(event.event_version, 8);
   assert.equal(event.path, "/message/send");
   assert.equal(event.jsonrpc_method, "message/send");
   assert.equal(event.request_kind, "a2a_action");
@@ -2367,7 +2367,7 @@ test("a prose question to a gate is measured by what arrived, not by what parsed
   assert.equal(event.prompt_chars, question.length, "prompt_chars is the size of what the caller sent");
   assert.equal(event.structured_chars, 0, "structured_chars still reports what the gate could parse");
   assert.equal(event.likely_probe, false, "a request this size is not a probe because a schema rejected it");
-  assert.equal(event.event_version, 7);
+  assert.equal(event.event_version, 8);
   assert.equal(event.outcome.reason_code, "missing_structured_request");
   assert.ok(event.outcome.required_fields.includes("counterparty"));
   assert.ok(event.outcome.required_fields.includes("risk_question"));
@@ -2477,8 +2477,8 @@ test("funnel events cover the steps before a call and skip operational noise", (
   assert.equal(step("/.well-known/agenstry-verify"), null);
 });
 
-test("funnel event names the visitor without storing an address", () => {
-  const event = logFunnelEvent(
+test("funnel event names the visitor without storing an address", async () => {
+  const event = await logFunnelEvent(
     {
       url: "https://cis-secondary-sanctions-a2a.example.workers.dev/.well-known/agent-card.json",
       method: "GET",
@@ -2489,7 +2489,7 @@ test("funnel event names the visitor without storing an address", () => {
   );
 
   assert.equal(event.event, "agenda_intelligence_a2a_funnel");
-  assert.equal(event.event_version, 3);
+  assert.equal(event.event_version, 4);
   assert.equal(event.step, "card");
   assert.equal(event.request_kind, "discovery");
   assert.equal(event.traffic_class, "machine_client");
@@ -2978,8 +2978,12 @@ test("caller classification separates our own runs, probes, and callers who sign
   // The prefix is ours, not a substring anyone can carry mid-string.
   assert.equal(kindFor({ "user-agent": "curl/8.7.1 agenda-intelligence-live-smoke" }), "external");
   assert.equal(kindFor({ "user-agent": "AgenstryBot/0.3.0 (+https://agenstry.com/bot)" }), "service_probe");
-  assert.equal(kindFor({ "user-agent": "ProofBench/0.1 (+https://proofbench.dev/about/probe)" }), "service_probe");
-  assert.equal(kindFor({ "user-agent": "mcpqueen-grader/0.3 (+https://mcpqueen.com)" }), "service_probe");
+  // Named benchmark harnesses get their own bucket (benchmark_probe) rather
+  // than the generic probe one: conformance replays are protocol traffic, not
+  // demand, and separating them keeps `external` readable.
+  assert.equal(kindFor({ "user-agent": "ProofBench/0.1 (+https://proofbench.dev/about/probe)" }), "benchmark_probe");
+  assert.equal(kindFor({ "user-agent": "mcpqueen-grader/0.3 (+https://mcpqueen.com)" }), "benchmark_probe");
+  assert.equal(kindFor({ "user-agent": "ZeroMockProof/1.0" }), "benchmark_probe");
   // Self-identification by convention, not vocabulary. These two are the
   // highest-volume crawlers against these endpoints and neither says "bot",
   // "crawler" or anything else the keyword list looks for: measured
@@ -3045,7 +3049,7 @@ test("traffic class and request kind separate people, machines, probes, and self
   assert.equal(eventFor("/message/send", {}, { jsonrpc_method: "message/send" }).request_kind, "a2a_action");
 });
 
-test("calling Worker zone is recorded from cf-worker and nothing else is", () => {
+test("calling Worker zone is recorded from cf-worker and nothing else is", async () => {
   const eventFor = (headers) =>
     buildUsageEvent(
       new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST", headers }),
@@ -3062,7 +3066,7 @@ test("calling Worker zone is recorded from cf-worker and nothing else is", () =>
   // header stays visible instead of looking like an ordinary request.
   assert.equal(eventFor({ "cf-worker": "not a hostname" }).caller_zone, "malformed");
 
-  const funnel = logFunnelEvent(
+  const funnel = await logFunnelEvent(
     {
       url: "https://agenda-intelligence-a2a.example.workers.dev/.well-known/agent-card.json",
       method: "GET",
@@ -7964,7 +7968,7 @@ test("mcp tools/call refusal includes schema_hint and detailed error summary in 
   assert.match(errorText, /Example arguments:/);
 });
 
-test("a2a requestGuidanceResult includes status.message and metadata.schema_hint", async () => {
+test("a2a free text on a vertical gate returns typed intake with a candidate and schema_hint", async () => {
   const env = { AGENT_PROFILE: "critical_minerals_due_diligence" };
   const response = await handleRequest(
     new Request("https://critical-minerals-due-diligence-a2a.example.workers.dev/message/send", {
@@ -7990,11 +7994,14 @@ test("a2a requestGuidanceResult includes status.message and metadata.schema_hint
   const json = await response.json();
   const task = json.result.task || json.result;
   assert.equal(task.status.state, "TASK_STATE_INPUT_REQUIRED");
-  assert.match(task.status.message, /Input required:/i);
+  assert.match(task.status.message, /Confirmation required:/i);
   assert.ok(task.metadata.schema_hint, "a2a metadata must contain schema_hint");
   assert.equal(task.metadata.schema_hint.canonical_endpoint, "/v1/critical-minerals/due-diligence");
   assert.ok(Array.isArray(task.metadata.schema_hint.required_fields));
   assert.ok(task.metadata.schema_hint.example_request);
+  // The deterministic candidate lifts only what the text literally says.
+  assert.equal(task.metadata.candidate.commodity, "lithium");
+  assert.equal(task.metadata.screening_performed, false, "nothing is screened on intake");
 });
 
 test("direct v1 rejection returns schema_hint for self-healing callers", async () => {
@@ -9412,4 +9419,405 @@ test("no vessel is not a clean vessel screening", async () => {
   const result = await screenMaritimeExposureWithVizier({ VIZIER_ENABLED: "1" }, {});
   assert.equal(result.status, "not_checked");
   assert.equal(result.clean, null);
+});
+
+// ---------------------------------------------------------------------------
+// Round-2 growth improvements (2026-09-25): velocity UNKNOWN consistency,
+// corridor routing coverage, owner/benchmark classification, trace ids,
+// fleet-wide free-text intake, and the structured verdict standard.
+// ---------------------------------------------------------------------------
+
+test("Financial Guard velocity check is UNKNOWN unless a caller policy was breached", async () => {
+  const guardRequest = (data) =>
+    new Request("https://agent-financial-guard-a2a.example.workers.dev/message/send", {
+      method: "POST",
+      headers: { "content-type": "application/json", "A2A-Version": "1.0" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "velocity-label",
+        method: "SendMessage",
+        params: { message: { messageId: "m-vel", role: "ROLE_USER", parts: [{ data }] } }
+      })
+    });
+  const transaction = {
+    network: "base_mainnet",
+    token: "USDC",
+    amount_usd: 100,
+    recipient: "0x5b5296a3a7bac0f5f096f93b60c1c121f2e5c663",
+    method: "transfer"
+  };
+  const intent = { prompt: "Routine invoice payment." };
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    // No policy supplied: nothing was checked against anything, so UNKNOWN.
+    let res = await handleRequest(guardRequest({ run_id: "r1", transaction, intent }), {
+      AGENT_PROFILE: "agent_financial_guard"
+    });
+    let text = (await res.json()).result.task.artifacts[0].parts[0].text;
+    assert.ok(text.includes("Velocity & Limits: UNKNOWN (no caller policy supplied)"), text);
+    assert.ok(!text.includes("Velocity & Limits: FAIL"), text);
+
+    // Policy supplied, nothing breached: still caller-reported, still UNKNOWN.
+    res = await handleRequest(
+      guardRequest({
+        run_id: "r2",
+        transaction,
+        intent,
+        policy_limits: { max_single_limit_usd: 500, daily_velocity_limit_usd: 2000, velocity_24h_usd: 100 }
+      }),
+      { AGENT_PROFILE: "agent_financial_guard" }
+    );
+    text = (await res.json()).result.task.artifacts[0].parts[0].text;
+    assert.ok(text.includes("Velocity & Limits: UNKNOWN (caller-reported limits unverified)"), text);
+
+    // Policy supplied and breached: FAIL is earned, not assumed.
+    res = await handleRequest(
+      guardRequest({
+        run_id: "r3",
+        transaction,
+        intent,
+        policy_limits: { daily_velocity_limit_usd: 150, velocity_24h_usd: 100 }
+      }),
+      { AGENT_PROFILE: "agent_financial_guard" }
+    );
+    text = (await res.json()).result.task.artifacts[0].parts[0].text;
+    assert.ok(text.includes("Velocity & Limits: FAIL"), text);
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("Corridor Assistant routes a commodity-and-ports question to the Middle Corridor gate", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const res = await handleRequest(
+      new Request("https://corridor-sanctions-assistant-a2a.example.workers.dev/message/send", {
+        method: "POST",
+        headers: { "content-type": "application/json", "A2A-Version": "1.0" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "route-aluminium",
+          method: "SendMessage",
+          params: {
+            message: {
+              messageId: "m-route",
+              role: "ROLE_USER",
+              parts: [{ text: "aluminium Aktau to Poti, what documents before bank review" }]
+            }
+          }
+        })
+      }),
+      { AGENT_PROFILE: "corridor_sanctions_assistant" }
+    );
+    const task = (await res.json()).result.task;
+    assert.equal(task.metadata.response.selected_route.profile, "middle_corridor_deal_risk");
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("owner-synthetic and benchmark callers are classified apart and never count as demand", async () => {
+  const eventFor = (headers) =>
+    buildUsageEvent(
+      new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST", headers }),
+      { jsonrpc_method: "message/send" }
+    );
+  const owner = eventFor({
+    "x-client-id": "instinct-owner-verify-synthetic",
+    "user-agent": "InstinctOwnerVerifySynthetic/1.0"
+  });
+  assert.equal(owner.caller_kind, "owner_synthetic");
+  assert.equal(owner.traffic_class, "owner_synthetic");
+  const bench = eventFor({ "user-agent": "ZeroMockProof/1.0" });
+  assert.equal(bench.caller_kind, "benchmark_probe");
+  assert.equal(bench.traffic_class, "benchmark_probe");
+
+  const kv = new MemoryKv();
+  const env = { AGENDA_USAGE: kv };
+  const base = {
+    event: "agenda_intelligence_a2a_usage",
+    timestamp: "2026-09-25T10:00:00.000Z",
+    agent_profile: "agenda",
+    likely_probe: false,
+    prompt_chars: 400,
+    outcome: { decision: "completed", score: null }
+  };
+  await recordUsageStats(env, {
+    ...base,
+    caller_kind: "owner_synthetic",
+    traffic_class: "owner_synthetic",
+    probe_reason: "owner_synthetic"
+  });
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-09-25T10:01:00.000Z",
+    caller_kind: "benchmark_probe",
+    traffic_class: "benchmark_probe",
+    probe_reason: "known_benchmark",
+    user_agent: "ZeroMockProof/1.0"
+  });
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-09-25T10:02:00.000Z",
+    caller_kind: "external",
+    traffic_class: "machine_client",
+    caller_hash: "abc123def456",
+    user_agent: "PartnerRuntime/2.0"
+  });
+  const stats = await usageStats(env, "2026-09-25");
+  assert.equal(stats.counters.external_non_probe, 1, "only the real caller counts");
+  assert.equal(stats.counters.likely_probe, 2, "owner and benchmark runs stay out of demand");
+  assert.deepEqual(stats.probe_reasons, [
+    { name: "known_benchmark", count: 1 },
+    { name: "owner_synthetic", count: 1 }
+  ]);
+});
+
+test("usage stats reports the qualified demand chain per caller hash", async () => {
+  const kv = new MemoryKv();
+  const env = { AGENDA_USAGE: kv };
+  const base = {
+    event: "agenda_intelligence_a2a_usage",
+    timestamp: "2026-09-25T11:00:00.000Z",
+    agent_profile: "middle_corridor_deal_risk",
+    caller_kind: "external",
+    traffic_class: "machine_client",
+    likely_probe: false,
+    prompt_chars: 400,
+    user_agent: "PartnerRuntime/2.0"
+  };
+  // Caller A: two calls, one usable completion, one carrying an x402 header.
+  await recordUsageStats(env, { ...base, caller_hash: "hash-a", outcome: { decision: "completed", score: 80 } });
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-09-25T11:05:00.000Z",
+    caller_hash: "hash-a",
+    outcome: { decision: "input_required" },
+    payment: { header_present: true }
+  });
+  // Caller B: one call, nothing usable yet.
+  await recordUsageStats(env, {
+    ...base,
+    timestamp: "2026-09-25T11:10:00.000Z",
+    caller_hash: "hash-b",
+    outcome: { decision: "input_required" }
+  });
+  const stats = await usageStats(env, "2026-09-25");
+  const chain = stats.counters.qualified_chain;
+  assert.equal(chain.unique_callers, 2);
+  assert.equal(chain.usable_completions, 1);
+  assert.equal(chain.callers_with_completion, 1);
+  assert.equal(chain.repeat_callers, 1);
+  assert.equal(chain.paid_calls, 1);
+});
+
+test("trace id propagates from the caller header into the task and the usage event", async () => {
+  const logged = [];
+  const originalLog = console.log;
+  console.log = (event) => {
+    if (event && event.event === "agenda_intelligence_a2a_usage") logged.push(event);
+  };
+  try {
+    const res = await handleRequest(
+      new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/message/send", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "A2A-Version": "1.0",
+          "X-Trace-Id": "trace-owner-0001",
+          "user-agent": "PartnerRuntime/2.0"
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "trace-1",
+          method: "SendMessage",
+          params: {
+            message: { messageId: "m-trace", role: "ROLE_USER", parts: [{ text: "screen Acme LLP in Kazakhstan" }] }
+          }
+        })
+      }),
+      { AGENT_PROFILE: "cis_secondary_sanctions" }
+    );
+    const task = (await res.json()).result.task;
+    assert.equal(task.metadata.trace_id, "trace-owner-0001");
+    assert.equal(logged.length, 1, "the call produces exactly one usage event");
+    assert.equal(logged[0].trace_id, "trace-owner-0001");
+    assert.ok(logged[0].caller_hash, "a privacy-safe caller hash is recorded");
+    assert.equal(logged[0].payment.header_present, false);
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("a trace id is generated and echoed when the caller sends none", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const res = await handleRequest(
+      new Request("https://gulf-maritime-exposure-a2a.example.workers.dev/message/send", {
+        method: "POST",
+        headers: { "content-type": "application/json", "A2A-Version": "1.0" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "trace-2",
+          method: "SendMessage",
+          params: { message: { messageId: "m-trace-2", role: "ROLE_USER", parts: [{ text: "tanker near Hormuz" }] } }
+        })
+      }),
+      { AGENT_PROFILE: "gulf_maritime_exposure" }
+    );
+    const task = (await res.json()).result.task;
+    assert.match(task.metadata.trace_id, /^[0-9a-f-]{36}$/);
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("free text returns typed intake on every vertical gate, screening nothing", async () => {
+  const cases = [
+    [
+      "agent_financial_guard",
+      "Pay $250 in USDC on base to 0x1111111111111111111111111111111111111111 for API compute",
+      (md) => {
+        assert.equal(md.candidate.transaction.recipient, "0x1111111111111111111111111111111111111111");
+        assert.equal(md.candidate.transaction.amount_usd, 250);
+        assert.equal(md.candidate.transaction.token, "USDC");
+      }
+    ],
+    [
+      "m2m_escrow_arbiter",
+      "The seller delivered garbage and we dispute the escrow release",
+      (md) => {
+        assert.deepEqual(md.candidate, {}, "escrow terms are never guessed");
+        assert.ok(md.example_request.deal_terms, "the working example is attached");
+      }
+    ],
+    [
+      "gulf_maritime_exposure",
+      "Tanker Example Star transiting Hormuz next week, IMO 1234567",
+      (md) => {
+        assert.equal(md.candidate.voyage.chokepoint, "strait_of_hormuz");
+        assert.equal(md.candidate.vessel.imo, "1234567");
+      }
+    ],
+    [
+      "agentic_interaction_trust",
+      "An agent named ShopBot wants to checkout on behalf of a user",
+      (md) => {
+        assert.equal(md.candidate.actor.declared_name, "ShopBot");
+        assert.equal(md.candidate.target_surface, "checkout");
+      }
+    ],
+    [
+      "kazakhstan_market_entry_readiness",
+      "Our company Acme Mobility is entering Kazakhstan with EV distribution",
+      (md) => {
+        assert.equal(md.candidate.partner_or_company, "Acme Mobility");
+        assert.equal(md.candidate.market, "Kazakhstan");
+      }
+    ],
+    [
+      "agent_output_verification",
+      "The counterparty is not on any sanctions list as of last week",
+      (md) => {
+        assert.equal(md.candidate.claims[0].support_level, "unsupported", "pasted text is asserted at the weakest level");
+      }
+    ]
+  ];
+  const hostFor = {
+    agent_financial_guard: "agent-financial-guard-a2a",
+    m2m_escrow_arbiter: "m2m-escrow-arbiter-a2a",
+    gulf_maritime_exposure: "gulf-maritime-exposure-a2a",
+    agentic_interaction_trust: "agentic-interaction-trust-a2a",
+    kazakhstan_market_entry_readiness: "kazakhstan-market-entry-readiness-a2a",
+    agent_output_verification: "agent-output-verification-a2a"
+  };
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    for (const [profile, text, check] of cases) {
+      const res = await handleRequest(
+        new Request(`https://${hostFor[profile]}.example.workers.dev/message/send`, {
+          method: "POST",
+          headers: { "content-type": "application/json", "A2A-Version": "1.0" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: `intake-${profile}`,
+            method: "SendMessage",
+            params: { message: { messageId: "m-intake", role: "ROLE_USER", parts: [{ text }] } }
+          })
+        }),
+        { AGENT_PROFILE: profile }
+      );
+      const task = (await res.json()).result.task;
+      assert.equal(task.status.state, "TASK_STATE_INPUT_REQUIRED", profile);
+      assert.match(task.status.message, /Confirmation required/, profile);
+      assert.equal(task.metadata.screening_performed, false, profile);
+      assert.ok(task.metadata.example_request, profile);
+      check(task.metadata);
+    }
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test("every v1 task carries the fleet structured verdict block", async () => {
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    // A completed task: the block names the routing outcome and the only
+    // permitted next step.
+    let res = await handleRequest(
+      new Request("https://corridor-sanctions-assistant-a2a.example.workers.dev/message/send", {
+        method: "POST",
+        headers: { "content-type": "application/json", "A2A-Version": "1.0" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "verdict-1",
+          method: "SendMessage",
+          params: {
+            message: {
+              messageId: "m-verdict",
+              role: "ROLE_USER",
+              parts: [{ text: "sanctions exposure for a counterparty in Kazakhstan" }]
+            }
+          }
+        })
+      }),
+      { AGENT_PROFILE: "corridor_sanctions_assistant" }
+    );
+    let task = (await res.json()).result.task;
+    let verdict = task.metadata.verdict_standard;
+    assert.equal(verdict.standard, "agenda-structured-verdict/v1");
+    assert.equal(verdict.human_review_required, true);
+    assert.equal(verdict.next_permitted_action, "human_review_before_any_action");
+    assert.ok(verdict.reason_code);
+    assert.ok(verdict.generated_at);
+
+    // An input-required task: the block tells the caller to resubmit.
+    res = await handleRequest(
+      new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/message/send", {
+        method: "POST",
+        headers: { "content-type": "application/json", "A2A-Version": "1.0" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "verdict-2",
+          method: "SendMessage",
+          params: {
+            message: { messageId: "m-verdict-2", role: "ROLE_USER", parts: [{ text: "screen Acme LLP" }] }
+          }
+        })
+      }),
+      { AGENT_PROFILE: "cis_secondary_sanctions" }
+    );
+    task = (await res.json()).result.task;
+    verdict = task.metadata.verdict_standard;
+    assert.equal(verdict.standard, "agenda-structured-verdict/v1");
+    assert.equal(verdict.reason_code, "missing_structured_request");
+    assert.equal(verdict.next_permitted_action, "resubmit_with_required_fields");
+  } finally {
+    console.log = originalLog;
+  }
 });

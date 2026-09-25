@@ -130,10 +130,24 @@ function isServiceProbeUserAgent(raw) {
   );
 }
 
+// The owner's own verification traffic declares itself out-of-band: every
+// synthetic check carries `X-Client-Id: instinct-owner-*`. Without this bucket
+// those runs land in `external` and read as demand — which is exactly the
+// confusion a header is there to prevent.
+const OWNER_SYNTHETIC_CLIENT_ID = /^instinct-owner/i;
+
+// Named benchmark harnesses observed replaying conformance packets against the
+// fleet. Real protocol traffic, but not demand: they get their own bucket
+// instead of inflating `external`.
+const BENCHMARK_USER_AGENT = /zeromockproof|proofbench|mcpqueen/i;
+
 function callerKind(request) {
+  const clientId = (request.headers.get("x-client-id") || "").trim();
+  if (clientId && OWNER_SYNTHETIC_CLIENT_ID.test(clientId)) return "owner_synthetic";
   const raw = (request.headers.get("user-agent") || "").trim();
   if (!raw) return "unsigned_external";
   if (SELF_TEST_USER_AGENT.test(raw)) return "self_test";
+  if (BENCHMARK_USER_AGENT.test(raw)) return "benchmark_probe";
   if (isServiceProbeUserAgent(raw)) return "service_probe";
   return "external";
 }
@@ -144,6 +158,8 @@ function callerKind(request) {
 function trafficClass(request, likelyProbe = false) {
   const kind = callerKind(request);
   if (kind === "self_test") return "self_test";
+  if (kind === "owner_synthetic") return "owner_synthetic";
+  if (kind === "benchmark_probe") return "benchmark_probe";
   if (kind === "service_probe" || likelyProbe) return "machine_probe";
   if (classifyClient(request) === "browser") return "human_browser";
   return "machine_client";
@@ -156,7 +172,10 @@ function trafficClass(request, likelyProbe = false) {
 // bounded so operators can see which signal made the decision without storing
 // any more request data.
 function actionProbeReason(request, promptChars) {
-  if (callerKind(request) === "service_probe") return "self_identified_service";
+  const kind = callerKind(request);
+  if (kind === "owner_synthetic") return "owner_synthetic";
+  if (kind === "benchmark_probe") return "known_benchmark";
+  if (kind === "service_probe") return "self_identified_service";
   if (classifyClient(request) === "agenstry") return "agenstry_client";
   if (promptChars < PROBE_PROMPT_CHAR_THRESHOLD) return "short_prompt";
   return null;
@@ -229,6 +248,53 @@ function billableUpstreamCost(result) {
   return { status, upstream, reason_code: null, billable: true, cost_eur: unit };
 }
 
+// End-to-end correlation id. A caller (or the landing-page console) sends
+// `X-Trace-Id` (or a `trace_id` query/param value); card, funnel and usage
+// events then share one id, so the path from opening the card to invoking the
+// gate is readable as a single journey. Absent a caller value a fresh id is
+// generated and echoed back in the task metadata, so even an untagged caller
+// can be followed.
+function traceIdFromRequest(request, details = {}) {
+  const candidates = [
+    details.trace_id,
+    request.headers && typeof request.headers.get === "function" ? request.headers.get("x-trace-id") : null,
+    (() => {
+      try {
+        return new URL(request.url).searchParams.get("trace_id");
+      } catch (_error) {
+        return null;
+      }
+    })()
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate !== "string") continue;
+    const normalized = candidate.trim();
+    if (/^[A-Za-z0-9._:-]{8,80}$/.test(normalized)) return normalized;
+  }
+  return crypto.randomUUID();
+}
+
+// Privacy-safe caller identity for the demand chain: a truncated SHA-256 over
+// the client id, connecting IP and user agent, so repeat callers can be
+// counted without storing any of them. A server-side salt (CALLER_HASH_SALT)
+// is mixed in when configured; without it the hash stays stable but an IPv4
+// address is brute-forceable, which only ever reveals "an address that called
+// a public endpoint" — acceptable, and documented here so the tradeoff is
+// explicit rather than accidental.
+const CALLER_HASH_FALLBACK_PEPPER = "agenda-fleet-caller-hash-v1";
+
+async function callerHash(request, env = {}) {
+  const header = (name) =>
+    request.headers && typeof request.headers.get === "function" ? (request.headers.get(name) || "").trim() : "";
+  const clientId = header("x-client-id");
+  const ip = header("cf-connecting-ip");
+  const ua = header("user-agent");
+  if (!clientId && !ip && !ua) return null;
+  const salt = typeof env?.CALLER_HASH_SALT === "string" && env.CALLER_HASH_SALT ? env.CALLER_HASH_SALT : CALLER_HASH_FALLBACK_PEPPER;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${salt}|${clientId}|${ip}|${ua}`));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+}
+
 function buildUsageEvent(request, details = {}) {
   const url = new URL(request.url);
   const cf = request.cf || {};
@@ -240,6 +306,7 @@ function buildUsageEvent(request, details = {}) {
 
   return {
     event: "agenda_intelligence_a2a_usage",
+    // 8: adds trace_id, caller_hash and the x402 payment-header signal.
     // 7: adds bounded input-required diagnostics to outcome. Version 6 added
     // the bounded probe_reason behind likely_probe. Version 5 added
     // traffic_class, request_kind, and live-retrieval reason codes. Version 4
@@ -247,7 +314,7 @@ function buildUsageEvent(request, details = {}) {
     // the size of what this profile could parse, with structured_chars carrying
     // the latter. Rows at version 3 and below measured a plain-text request to
     // a gate as zero, and their likely_probe follows from that number.
-    event_version: 7,
+    event_version: 8,
     timestamp: new Date().toISOString(),
     source: "cloudflare_worker",
     method: request.method,
@@ -275,12 +342,20 @@ function buildUsageEvent(request, details = {}) {
     },
     outcome: details.outcome || { decision: null, status: null, score: null },
     likely_probe: likelyProbe,
-    probe_reason: details.probe_reason || null
+    probe_reason: details.probe_reason || null,
+    trace_id: details.trace_id || null,
+    caller_hash: details.caller_hash || null,
+    payment: details.payment || { header_present: false }
   };
 }
 
-function logUsageEvent(request, details) {
-  const event = buildUsageEvent(request, details);
+async function logUsageEvent(request, details = {}, env = {}) {
+  const event = buildUsageEvent(request, {
+    ...details,
+    trace_id: details.trace_id ?? traceIdFromRequest(request, details),
+    caller_hash: details.caller_hash ?? (await callerHash(request, env)),
+    payment: details.payment ?? { header_present: Boolean(request.headers.get("x-payment-tx")) }
+  });
   console.log(event);
   return event;
 }
@@ -316,13 +391,15 @@ function funnelStepForPath(pathname) {
   return null;
 }
 
-function logFunnelEvent(request, step) {
+async function logFunnelEvent(request, step, env = {}) {
   if (!step) return null;
   const url = new URL(request.url);
   const cf = request.cf || {};
   const event = {
     event: "agenda_intelligence_a2a_funnel",
-    event_version: 3,
+    // 4: adds trace_id and caller_hash, aligning funnel rows with usage rows
+    // so a card-to-invoke journey can be followed per caller.
+    event_version: 4,
     timestamp: new Date().toISOString(),
     step,
     request_kind: funnelRequestKind(step),
@@ -337,7 +414,9 @@ function logFunnelEvent(request, step) {
     referrer_host: headerHost(request, "referer"),
     country: cf.country || null,
     as_org: cf.asOrganization || null,
-    colo: cf.colo || null
+    colo: cf.colo || null,
+    trace_id: traceIdFromRequest(request),
+    caller_hash: await callerHash(request, env)
   };
   console.log(event);
   return event;
@@ -590,6 +669,9 @@ async function recordUsageStats(env, event) {
       as_org: event.cf?.as_org || "unknown",
       outcome: event.outcome?.decision || "unknown",
       outcome_score: Number.isInteger(event.outcome?.score) ? event.outcome.score : null,
+      trace_id: event.trace_id || null,
+      caller_hash: event.caller_hash || null,
+      payment_header_present: Boolean(event.payment?.header_present),
       input_required_reason: event.outcome?.reason_code || null,
       input_required_fields: Array.isArray(event.outcome?.required_fields) ? event.outcome.required_fields : [],
       modules_used: Array.isArray(event.modules_used) ? event.modules_used : [],
@@ -619,13 +701,19 @@ function usageEventIsProbe(event) {
   return Boolean(
     event.likely_probe ||
       event.caller_kind === "service_probe" ||
+      event.caller_kind === "owner_synthetic" ||
+      event.caller_kind === "benchmark_probe" ||
       event.traffic_class === "machine_probe" ||
+      event.traffic_class === "owner_synthetic" ||
+      event.traffic_class === "benchmark_probe" ||
       isServiceProbeUserAgent(event.user_agent)
   );
 }
 
 function usageEventProbeReason(event) {
   if (event.probe_reason) return event.probe_reason;
+  if (event.caller_kind === "owner_synthetic" || event.traffic_class === "owner_synthetic") return "owner_synthetic";
+  if (event.caller_kind === "benchmark_probe" || event.traffic_class === "benchmark_probe") return "known_benchmark";
   if (event.caller_kind === "service_probe" || isServiceProbeUserAgent(event.user_agent)) {
     return "self_identified_service";
   }
@@ -703,6 +791,10 @@ async function usageStats(env, date) {
   let promptChars = 0;
   let billableCalls = 0;
   let estimatedCostEur = 0;
+  // The demand chain, per qualified caller hash: unique caller -> usable
+  // completion -> repeat -> paid. Qualified means external and not a probe,
+  // self-test, benchmark or owner-synthetic run.
+  const qualifiedCallers = new Map();
 
   for (const event of events) {
     const eventIsProbe = usageEventIsProbe(event);
@@ -763,7 +855,32 @@ async function usageStats(env, date) {
     for (const moduleName of Array.isArray(event.modules_used) ? event.modules_used : []) {
       incrementMap(modules, moduleName);
     }
+    if (eventIsExternalNonProbe && typeof event.caller_hash === "string" && event.caller_hash) {
+      const entry = qualifiedCallers.get(event.caller_hash) || { calls: 0, completions: 0, paid: 0 };
+      entry.calls += 1;
+      if (
+        event.outcome !== "insufficient_information" &&
+        event.outcome !== "invalid_request" &&
+        event.outcome !== "input_required"
+      ) {
+        entry.completions += 1;
+      }
+      if (event.payment_header_present) entry.paid += 1;
+      qualifiedCallers.set(event.caller_hash, entry);
+    }
   }
+
+  const qualifiedCallerRows = [...qualifiedCallers.values()];
+  const qualifiedChain = {
+    unique_callers: qualifiedCallerRows.length,
+    usable_completions: qualifiedCallerRows.reduce((total, row) => total + row.completions, 0),
+    callers_with_completion: qualifiedCallerRows.filter((row) => row.completions > 0).length,
+    repeat_callers: qualifiedCallerRows.filter((row) => row.calls > 1).length,
+    paid_calls: qualifiedCallerRows.reduce((total, row) => total + row.paid, 0),
+    note: "Qualified = external caller, not a probe, self-test, benchmark or owner-synthetic run. " +
+      "Repeats are counted within this day; cross-day repeat and paid attribution join caller_hash across daily files. " +
+      "paid_calls counts calls carrying an X-Payment-Tx header, not settled revenue."
+  };
 
   const total = events.length;
   const nonProbe = total - likelyProbe;
@@ -785,6 +902,7 @@ async function usageStats(env, date) {
       external_empty_handed: externalEmptyHanded,
       external_input_required: externalInputRequired,
       external_input_required_unparsed: externalInputRequiredUnparsed,
+      qualified_chain: qualifiedChain,
       human_requests: trafficClasses.get("human_browser") || 0,
       machine_requests:
         (trafficClasses.get("machine_client") || 0) + (trafficClasses.get("machine_probe") || 0),
@@ -856,6 +974,8 @@ return {
   liveRetrievalReasonCode,
   billableUpstreamCost,
   buildUsageEvent,
+  traceIdFromRequest,
+  callerHash,
   logUsageEvent,
   funnelStepForPath,
   logFunnelEvent,
