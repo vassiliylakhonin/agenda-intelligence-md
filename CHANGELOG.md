@@ -4,6 +4,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Landing conversion, runnable v1 curl, and honest pricing catalog (2026-09-25)
+
+- Profile-specific conversion on landing pages: console preloaded with realistic synthetic fixtures, worked example buttons, canonical/OG metadata, and self-referencing agent-card links.
+- Verified runnable A2A 1.0 SendMessage curl snippets with `A2A-Version: 1.0`, `X-Trace-Id: example-trace-001`, and concrete fixture response output shapes.
+- Honest pricing display scoped per profile (micro-check/dispute, deal dossier, sandbox) with explicit notice that legacy payment integration is not certified for standard x402 clients.
+
 ### Growth readiness: intake, observability and verdict standard (proposed, 2026-09-25)
 
 - Free-text intake on every vertical gate: unstructured text returns a typed INPUT_REQUIRED with a deterministic candidate (recognized vs unconfirmed), required fields and a working example; nothing is screened or guessed on intake, and high-stakes gates stay strict.

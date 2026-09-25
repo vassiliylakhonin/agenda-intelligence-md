@@ -1290,7 +1290,8 @@ function agentCard(request, env = {}) {
   const part = typeof sample === "string" ? { kind: "text", text: sample } : { kind: "data", data: sample };
   if (sample) shaped.x_agenda_intelligence.a2a_send_message_example = {
     endpoint: `${origin}/message/send`,
-    request: { jsonrpc: "2.0", id: "example-1", method: "message/send", params: { message: { role: "user", parts: [part] } } },
+    headers: { "Content-Type": "application/json", "A2A-Version": "1.0", "X-Trace-Id": "example-trace-001" },
+    request: { jsonrpc: "2.0", id: "example-1", method: "SendMessage", params: { message: { messageId: "example-msg-1", role: "ROLE_USER", parts: [part] } } },
     expected: { task_state: "TASK_STATE_COMPLETED", note: "Triage output only, not authorization or clearance." },
     trace: "Optional: send an X-Trace-Id header (8-80 chars of A-Za-z0-9._:-) or a top-level params.trace_id. " +
       "It is echoed in task metadata.trace_id and recorded in telemetry, so your call can be correlated end to end."

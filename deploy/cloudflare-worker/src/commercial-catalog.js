@@ -8,6 +8,12 @@ export const PRICING_MODELS = {
   tier_3_deal_dossier: { id: "tier-3-dossier", name: "Evidence Review Pilot", price: TIER_DOSSIER_USDC_AMOUNT, pilot_price: TIER_DOSSIER_USDC_AMOUNT, billing_scheme: "per_deal", terms: "Confirm scope and delivery date by email before payment. Human-reviewed evidence gaps; no legal opinion, certification or bank acceptance guarantee.", deliverables: ["Source and evidence-gap review within agreed scope", "Human-review handoff; no guaranteed JWS attestation"] },
   tier_bankability_dossier: { id: "tier-bankability-dossier", name: "Corridor financial-model export", price: TIER_BANKABILITY_DOSSIER_USDC_AMOUNT, billing_scheme: "per_deal", terms: "Illustrative model export based on supplied assumptions; no lender approval or investment advice." }
 };
-export function pricingHtml(escapeHtml) {
-  return `<ul>${Object.values(PRICING_MODELS).map(p => `<li><strong>${escapeHtml(p.name)} — $${p.price}${p.billing_scheme === "monthly" ? " / month" : ""}</strong>: ${escapeHtml(p.terms)}${p.rate_limit ? ` ${escapeHtml(p.rate_limit)}.` : ""}${p.quota ? ` ${escapeHtml(p.quota)}.` : ""}</li>`).join("")}</ul>`;
+export function pricingHtml(escapeHtml, profile = "agenda") {
+  const featured = profile === "agent_financial_guard" ? "tier_micro_check"
+    : profile === "m2m_escrow_arbiter" ? "tier_micro_dispute"
+    : ["kazakhstan", "cis_secondary_sanctions"].includes(profile) ? "tier_3_deal_dossier"
+    : null;
+  const sandbox = PRICING_MODELS.tier_1_sandbox;
+  const terms = [sandbox, ...(featured ? [PRICING_MODELS[featured]] : [])];
+  return `<ul>${terms.map(p => `<li><strong>${escapeHtml(p.name)} — $${p.price}${p.billing_scheme === "monthly" ? " / month" : ""}</strong>: ${escapeHtml(p.terms)}${p.rate_limit ? ` ${escapeHtml(p.rate_limit)}.` : ""}</li>`).join("")}</ul><p>Other terms vary by service; see <a href="/.well-known/x402">the pricing manifest</a>. The legacy payment integration is not certified for standard x402 clients.</p>`;
 }

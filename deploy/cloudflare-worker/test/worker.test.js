@@ -9362,14 +9362,20 @@ test("every advertised A2A example routes through SendMessage on its own profile
   console.log = () => {};
   try {
     for (const [host, profile] of hosts) {
-      const req = new Request(`https://${host}.example.workers.dev/message/send`, { method: "POST" });
+      const req = new Request(`https://${host}.example.workers.dev/message/send`, { method: "POST", headers: { "A2A-Version": "1.0", "X-Trace-Id": "example-trace-001" } });
       const card = agentCard(req, { AGENT_PROFILE: profile });
       const example = card.x_agenda_intelligence.a2a_send_message_example;
       assert.ok(example, `${profile} missing an example`);
       assert.equal(example.request.params.message.parts.length, 1);
+      assert.equal(example.request.method, "SendMessage");
+      assert.equal(example.request.params.message.role, "ROLE_USER");
+      assert.equal(example.headers["A2A-Version"], "1.0");
+      assert.ok(example.request.params.message.messageId);
       const response = await handleJsonRpc(example.request, req, { AGENT_PROFILE: profile });
-      assert.equal(response.result?.status?.state, example.expected.task_state,
-        `${profile}: ${response.result?.status?.message || JSON.stringify(response.error)}`);
+      assert.equal(response.result?.task?.status?.state, example.expected.task_state,
+        `${profile}: ${response.result?.task?.status?.message || JSON.stringify(response.error)}`);
+      assert.equal(response.result?.task?.metadata?.trace_id, "example-trace-001");
+      assert.equal(response.result?.task?.metadata?.verdict_standard?.standard, "agenda-structured-verdict/v1");
     }
   } finally {
     console.log = originalLog;
@@ -9820,4 +9826,32 @@ test("every v1 task carries the fleet structured verdict block", async () => {
   } finally {
     console.log = originalLog;
   }
+});
+
+test("landing conversion: each profile has a usable console, v1 curl, honest pricing, and self URL", () => {
+  for (const [host, profile] of [
+    ["agenda-intelligence-a2a", "agenda"],
+    ["middle-corridor-deal-risk-gate-a2a", "kazakhstan"],
+    ["cis-secondary-sanctions-a2a", "cis_secondary_sanctions"],
+    ["agent-financial-guard-a2a", "agent_financial_guard"],
+    ["m2m-escrow-arbiter-a2a", "m2m_escrow_arbiter"],
+    ["agent-output-verification-a2a", "agent_output_verification"]
+  ]) {
+    const origin = `https://${host}.example.workers.dev`;
+    const html = landingHtml(new Request(`${origin}/`), { AGENT_PROFILE: profile });
+    assert.ok(html.includes(`<link rel="canonical" href="${origin}/">`));
+    assert.ok(html.includes(`<meta property="og:url" content="${origin}/">`));
+    assert.ok(html.includes(`href="${origin}/.well-known/agent-card.json"`));
+    assert.match(html, /onclick="(?:loadFinScenario|loadEscrowScenario|loadTriagePreset|document\.getElementById)/);
+    assert.match(html, /-H &#39;A2A-Version: 1\.0&#39;/);
+    assert.match(html, /method&quot;: &quot;SendMessage&quot;/);
+    assert.match(html, /agenda-structured-verdict\/v1/);
+    assert.match(html, /50 queries\/hour/);
+    assert.match(html, /not certified for standard x402 clients/);
+    assert.ok(!html.includes("Agenstry listing:"));
+  }
+  const corridor = landingHtml(new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/"), {});
+  assert.match(corridor, /No counterparty registry extract supplied/);
+  const cis = landingHtml(new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/"), {});
+  assert.match(cis, /No EU consolidated sanctions list extract supplied/);
 });

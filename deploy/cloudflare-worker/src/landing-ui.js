@@ -36,14 +36,49 @@ function landingHtml(request, env) {
     gulf_maritime_exposure: "/v1/gulf-maritime/exposure", market_entry_readiness: "/v1/market-entry/readiness",
     critical_minerals_due_diligence: "/v1/critical-minerals/due-diligence", dual_use_technology_export: "/v1/dual-use/technology-export"
   }[profile];
-  const tryItCurl = endpoint && guide?.example
-    ? `curl -X POST ${origin}${endpoint} -H 'content-type: application/json' --data '${JSON.stringify(profile === "kazakhstan" ? {jsonrpc:"2.0",id:"demo",method:"SendMessage",params:{message:{messageId:"demo",role:"ROLE_USER",parts:[{data:guide.example}]}}} : guide.example, null, 2)}'`
+  const sampleRequest = card.x_agenda_intelligence?.a2a_send_message_example?.request;
+  const tryItCurl = sampleRequest
+    ? `curl -sS -X POST '${origin}/message/send' -H 'Content-Type: application/json' -H 'A2A-Version: 1.0' -H 'X-Trace-Id: example-trace-001' --data-binary @- <<'JSON'\n${JSON.stringify(sampleRequest, null, 2)}\nJSON`
     : `curl ${origin}/.well-known/agent-card.json`;
-  const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="${endpoint ? origin + endpoint : origin + '/api/openapi.json'}">Open this profile’s API example</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>`;
-
-  const agenstryListing = isKazakhstan
-    ? "https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev"
-    : "https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev";
+  const sampleOutput = {
+    result: { status: { state: "TASK_STATE_COMPLETED or TASK_STATE_INPUT_REQUIRED" }, metadata: {
+      trace_id: "example-trace-001",
+      verdict_standard: { standard: "agenda-structured-verdict/v1", reason_code: "missing_required_input",
+        next_permitted_action: "resubmit_with_required_fields", human_review_required: true,
+        evidence_gaps: ["Supply the missing dated evidence for this profile"],
+        confidence_basis: { basis: "caller_supplied" },
+        sources: [{ source_id: "caller-provided document", label: "caller_supplied", as_of: null }] }
+    } } };
+  if (profile === "kazakhstan" || profile === "cis_secondary_sanctions") {
+    const corridor = profile === "kazakhstan";
+    sampleOutput.result.status.state = "TASK_STATE_COMPLETED";
+    sampleOutput.result.metadata.verdict_standard.reason_code = corridor ? "escalate_before_signature" : "escalate_before_onboarding";
+    sampleOutput.result.metadata.verdict_standard.next_permitted_action = "human_review_before_any_action";
+    sampleOutput.result.metadata.verdict_standard.evidence_gaps = corridor
+      ? ["No counterparty registry extract supplied.", "No beneficial ownership source supplied."]
+      : ["No EU consolidated sanctions list extract supplied.", "No bank correspondent evidence supplied."];
+    sampleOutput.result.metadata.verdict_standard.sources = corridor
+      ? [{ source_id: "port_operator_notice", label: "caller_supplied", as_of: null }]
+      : [{ source_id: "ofac_sdn_extract", label: "caller_supplied", as_of: null }];
+  }
+  const fixtureVerdict = profile === "kazakhstan" || profile === "cis_secondary_sanctions";
+  const heroExample = {
+    agenda: "Question → selected evidence-review profile + missing inputs",
+    kazakhstan: "Aktau → Poti shipment → document gaps before bank review",
+    cis_secondary_sanctions: "Counterparty ownership → ownership and sanctions evidence gaps",
+    corridor_sanctions_assistant: "Route question → selected gate and required fields",
+    agent_financial_guard: "Proposed transfer → local risk flags + UNKNOWN limits when policy is absent",
+    m2m_escrow_arbiter: "Delivery claim → artifact evidence gaps; no settlement",
+    agent_output_verification: "Agent answer → unsupported claims + evidence gaps",
+    agentic_interaction_trust: "Third-party agent request → identity and action evidence gaps",
+    gulf_maritime_exposure: "Gulf voyage → vessel, insurance and port-document gaps",
+    market_entry_readiness: "Kazakhstan entry plan → partner and permit evidence gaps",
+    critical_minerals_due_diligence: "Mineral supply chain → origin and ownership evidence gaps",
+    dual_use_technology_export: "Electronics shipment → HS/ECCN and end-user evidence gaps"
+  }[profile] || "Supplied case → evidence gaps + next human-review step";
+  const consoleId = isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : guide?.example && endpoint && profile !== "kazakhstan" ? "profile-console" : "triage-form";
+  const exampleAction = isFinancialGuard ? "loadFinScenario('clean')" : isEscrowArbiter ? "loadEscrowScenario('clean')" : consoleId === "triage-form" ? "loadTriagePreset('rare_metals'); document.getElementById('triage-form').requestSubmit()" : "document.getElementById('profile-console').requestSubmit()";
+  const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">Try the synthetic example below</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -52,6 +87,11 @@ function landingHtml(request, env) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(presentation[0])}</title>
 <meta name="description" content="${escapeHtml(tagline)}">
+<link rel="canonical" href="${escapeHtml(origin)}/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="${escapeHtml(origin)}/">
+<meta property="og:title" content="${escapeHtml(presentation[0])}">
+<meta property="og:description" content="${escapeHtml(tagline)}">
 <link rel="ai-catalog" href="${origin}/.well-known/ai-catalog.json">
 <style>
   :root {
@@ -77,7 +117,7 @@ function landingHtml(request, env) {
   .badge-live { color: var(--good); }
   .badge-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); display: inline-block; }
   .primary-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 16px 0 24px; }
-  .primary-action { display: inline-flex; padding: 9px 14px; border-radius: 6px; border: 1px solid var(--accent); font-weight: 650; }
+  .primary-action { display: inline-flex; padding: 9px 14px; border-radius: 6px; border: 1px solid var(--accent); font-weight: 650; background: #fff; font: inherit; cursor: pointer; }
   .primary-action-main { color: #fff; background: var(--accent); }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; margin: 0 0 16px; }
   pre { background: #1a1a1a; color: #f0f0f0; padding: 16px; border-radius: 6px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.5; margin: 0; }
@@ -96,17 +136,23 @@ function landingHtml(request, env) {
   <h1>${escapeHtml(presentation[0])}</h1>
   <p class="tagline">${escapeHtml(tagline)}</p>
 
-  <nav><a href="https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/">All profiles</a> · <a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
   <div class="status-row"><span class="badge">Live evaluation · v${escapeHtml(VERSION)}</span><span class="badge">Human review required</span><span class="badge">Profile: ${escapeHtml(profile)}</span></div>
   <div class="primary-actions">
-    <a class="primary-action primary-action-main" href="${endpoint ? origin + endpoint : origin + '/.well-known/agent-card.json'}">Run a worked example</a>
+    <a class="primary-action primary-action-main" href="#${consoleId}">Try free (50 requests/hour)</a>
+    <button type="button" class="primary-action" onclick="${exampleAction}" style="cursor:pointer">Run a worked example</button>
     <a class="primary-action" href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent(`Enterprise integration — ${card.name}`)}">Discuss enterprise integration</a>
     <a class="primary-action" href="${origin}/profiles/confidential-project-room">Open confidential project room</a>
   </div>
+  <div class="card" aria-label="Example result"><strong>Example, synthetic input:</strong> ${escapeHtml(heroExample)}<br>
+    ${fixtureVerdict
+      ? `<strong>Example output:</strong> ${escapeHtml(sampleOutput.result.metadata.verdict_standard.reason_code)} · ${escapeHtml(sampleOutput.result.metadata.verdict_standard.next_permitted_action)} · Gap: ${escapeHtml(sampleOutput.result.metadata.verdict_standard.evidence_gaps[0])}`
+      : `<strong>Example output:</strong> a structured verdict with reason_code, evidence_gaps, next_permitted_action and labeled sources. Run the demo for the actual result.`}<br>
+    <small>Supplied facts are not independently verified; a source with no verified date is labeled as_of: null. Human review before action.</small></div>
+  <nav><a href="https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/">All profiles</a> · <a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
   ${profile === "agenda" ? `<div class="card"><h2>Agent security and trade evidence</h2><p><a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier</a> checks proposed agent actions. Financial Guard, Interaction Trust and Output Verification review the evidence around those actions.</p><p><a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">Middle Corridor</a> and the regional and supply-chain profiles structure evidence for human trade-risk review.</p><a href="${origin}/.well-known/agents.json">Browse the complete profile registry</a></div>` : ""}
   <h2>What this is</h2>
   ${flagshipBlock}
-  <p><strong>Not</strong> legal, compliance, sanctions, financial, investment, or insurance advice. <strong>Not</strong> a factuality verifier — schemas enforce structure, not truth. <strong>Source availability varies by profile and configuration; inspect the response provenance.</p>
+  <p><strong>Not</strong> legal, compliance, sanctions, financial, investment, or insurance advice. <strong>Not</strong> a factuality verifier — schemas enforce structure, not truth. <strong>Source availability varies by profile and configuration; inspect the response provenance.</strong></p>
 
   ${isFinancialGuard ? `
   <div style="background: linear-gradient(135deg, #1e1e2f 0%, #0d1117 100%); border: 1px solid #30363d; border-radius: 8px; padding: 18px 20px; margin: 16px 0 24px; color: #f0f6fc;">
@@ -124,7 +170,7 @@ function landingHtml(request, env) {
     </div>
   </div>
 
-  <h2>⚡ Pre-Sign Transaction Firewall &amp; Attack Simulator</h2>
+  <h2>Pre-sign evidence review simulator (not a firewall or wallet enforcement)</h2>
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
     <p style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
       Evaluate local risk indicators and inspect missing evidence. This simulator does not sign transactions, verify current sanctions status or enforce spending limits.
@@ -264,7 +310,7 @@ function landingHtml(request, env) {
   <h2>Evaluate a synthetic example</h2>
   <div class="card">
     <p>Edit the profile-specific request below. Use synthetic data only; the result is evidence review, not authorization.</p>
-    <form onsubmit="runProfileExample(event)">
+    <form id="profile-console" onsubmit="runProfileExample(event)">
       <label for="profile-request">Structured request</label>
       <textarea id="profile-request" rows="15" style="width:100%;font:13px/1.5 var(--mono);padding:12px;box-sizing:border-box">${escapeHtml(JSON.stringify(guide.example, null, 2))}</textarea>
       <button id="profile-run" type="submit">Evaluate evidence</button>
@@ -303,16 +349,19 @@ function landingHtml(request, env) {
   </div>`}
 
   <h2>Evaluation and paid services</h2>
-  <div class="card">${pricingHtml(escapeHtml)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
+  <div class="card">${pricingHtml(escapeHtml, profile)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
 
   <details style="margin: 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; background: #fafafa;">
     <summary style="font-weight: 700; cursor: pointer; font-size: 15px; color: var(--fg);">🛠️ Try it (curl &amp; AI Agent Integration)</summary>
     <div style="margin-top: 12px;">
+      <p>Copy this A2A 1.0 request. The trace ID in the response must match the header. Synthetic input only; an incomplete input may return TASK_STATE_INPUT_REQUIRED.</p>
       <pre style="margin: 0; overflow-x: auto;">${escapeHtml(tryItCurl)}</pre>
+      <p>Response shape (Middle Corridor and CIS examples are derived from local synthetic fixtures; other profiles are illustrative; actual fields and source dates vary):</p>
+      <pre>${escapeHtml(JSON.stringify(sampleOutput, null, 2))}</pre>
     </div>
   </details>
 
-  <h2>Endpoints</h2>
+  <details><summary>Machine discovery and API endpoints</summary>
   <ul class="endpoints">
     <li><span class="label">Sample dossier:</span> <a href="${origin}/sample-dossier">/sample-dossier</a></li>
     <li><span class="label">API payment:</span> <a href="${origin}/v1/settle">/v1/settle</a></li>
@@ -335,13 +384,13 @@ function landingHtml(request, env) {
     <li><span class="label">JSON-RPC:</span> <code>POST ${origin}/message/send</code></li>
     <li><span class="label">Status:</span> <a href="${origin}/status">/status</a></li>
     <li><span class="label">Health (JSON):</span> <a href="${origin}/health">/health</a></li>
-  </ul>
+  </ul></details>
 
   <h2>Where the code lives</h2>
   <ul>
     <li>Source: <a href="${REPOSITORY_URL}">${REPOSITORY_URL.replace("https://", "")}</a></li>
     <li>Install: <a href="${PACKAGE_URL}">PyPI — agenda-intelligence-md</a></li>
-    <li>Agenstry listing: <a href="${agenstryListing}">${agenstryListing.replace("https://", "")}</a></li>
+    <li>Profile-specific agent card: <a href="${origin}/.well-known/agent-card.json">/.well-known/agent-card.json</a></li>
     <li>${isKazakhstan ? `Use case: <a href="${MIDDLE_CORRIDOR_DOCS_URL}">Kazakhstan / Middle Corridor</a>` : `Docs: <a href="${DOCS_URL}">MCP integration</a>`}</li>
   </ul>
 
@@ -380,7 +429,7 @@ async function runProfileExample(event) {
     var payload = JSON.parse(document.getElementById('profile-request').value);
     var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
     var response = await fetch('${origin}${endpoint || '/message/send'}', {
-      method: 'POST', headers: {'content-type':'application/json', 'x-trace-id': traceId}, body: JSON.stringify(payload)
+      method: 'POST', headers: {'content-type':'application/json', 'A2A-Version':'1.0', 'x-trace-id': traceId}, body: JSON.stringify(payload)
     });
     var body = await response.json();
     result.style.display = 'block';
