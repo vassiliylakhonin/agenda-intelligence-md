@@ -2,11 +2,102 @@
 
 # Agenda Intelligence MD
 
-[![PyPI version](https://img.shields.io/pypi/v/agenda-intelligence-md?style=flat-square)](https://pypi.org/project/agenda-intelligence-md/) [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+**Check whether an AI-generated claim has a usable evidence trail before a person acts on it.** This repository contains a local evidence-packet checker and 12 hosted, domain-specific review demos. It is for analysts, reviewers, and developers who need to see missing sources and unresolved questions rather than receive a false "approved" label.
 
-**Agenda Intelligence MD** is a deterministic evidence-packet linter and compliance orchestration engine for claim-backed AI output. It provides verifiable trust boundaries, guardrail enforcement, and evidence-readiness triage across **A2A (Agent-to-Agent)**, **MCP (Model Context Protocol)**, **CLI / Python API**, and **Serverless Edge Workers (Cloudflare)**.
+A typical result says which documents are present, which evidence is missing, what to check next, and whether a human must review it. It does **not** establish that a claim is true or that a trade, payment, or deal is cleared.
+
+[Try the Middle Corridor demo](https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/) · [Try the CIS sanctions demo](https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev/) · [Run the local checker](#try-the-local-checker) · [See all profiles](deploy/cloudflare-worker/)
+
+## Start with a synthetic example
+
+A logistics reviewer has a proposed Aktau-Baku-Poti shipment but only partial counterparty and sanctions evidence. [Middle Corridor Deal-Risk Gate](https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/) flags missing documents and routes the file to human review before signature. Its synthetic example reports `reason_code: escalate_before_signature`, `next_permitted_action: human_review_before_any_action`, and an evidence gap such as `No counterparty registry extract supplied`. These are review prompts, not a compliance verdict.
+
+Open the demo and press **Run a worked example**; no key or checkout is needed for the free sandbox (50 requests/hour). For an API integration, this synthetic A2A v1 request is from the [live agent card](https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json):
+
+```bash
+curl -sS 'https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send' \
+  -H 'Content-Type: application/json' \
+  -H 'A2A-Version: 1.0' \
+  -H 'X-Trace-Id: example-trace-001' \
+  --data-binary @- <<'JSON'
+{
+  "jsonrpc": "2.0",
+  "id": "example-1",
+  "method": "SendMessage",
+  "params": {
+    "message": {
+      "messageId": "example-msg-1",
+      "role": "ROLE_USER",
+      "parts": [
+        {
+          "kind": "data",
+          "data": {
+            "route": "Aktau — Baku — Poti",
+            "cargo": "industrial equipment",
+            "counterparties": [
+              {
+                "role": "forwarder",
+                "name": "Example Forwarding",
+                "jurisdiction": "KZ"
+              }
+            ],
+            "dated_sources": [
+              {
+                "id": "mc-1",
+                "source_type": "port_operator_notice",
+                "title": "Aktau port notice",
+                "date": "2026-08-01"
+              },
+              {
+                "id": "mc-2",
+                "source_type": "sanctions_list_extract",
+                "title": "EU consolidated extract",
+                "date": "2026-08-02"
+              }
+            ],
+            "risk_question": "Is this shipment ready for a pre-signature human review?",
+            "decision_stage": "pre_signature"
+          }
+        }
+      ]
+    }
+  }
+}
+JSON
+```
+
+Expect a JSON-RPC task in `TASK_STATE_COMPLETED` with a profile verdict, evidence gaps, `human_review_required`, and the trace ID echoed in task metadata. A completed task means triage ran, **not** that the shipment was approved. The [agent card](https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) is the maintained source of the example; use it when integrating another profile.
+
+## Which part of this repository do I need?
+
+- **Local evidence review:** supply claims, citations and source text to the CLI, Python API or MCP tool. It checks references, quotes, numbers and lexical support without fetching outside sources. [Request schema](schemas/v1/evidence-packet-request.schema.json) · [Runnable sample](examples/evidence-packet/request.json).
+- **Hosted domain triage:** 12 Cloudflare Worker profiles share one implementation but expose different evidence requirements for corridors, sanctions, maritime risk, agent transactions and output review. Start with [Middle Corridor](https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/) or [CIS Secondary Sanctions](https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev/). Each profile's live card defines its input and API example.
+- **Architecture in one line:** one deterministic evidence/checking core, adapters for CLI/Python/MCP, and a shared Cloudflare Worker deployed with profile-specific routing. [Technical docs](docs/quickstart.md).
+
+## Try the local checker
+
+```bash
+git clone https://github.com/vassiliylakhonin/agenda-intelligence-md
+cd agenda-intelligence-md
+python3 -m venv .venv
+.venv/bin/python -m pip install -e .
+.venv/bin/agenda-intelligence check examples/evidence-packet/request.json
+```
+
+The sample reports `packet_status=packet_complete`, two claims and one source, with `factuality=not_assessed`. Complete means the **supplied packet** passed structural and lexical checks; an inaccurate or stale source could still pass. For JSON output or a failing CI gate, use `--format json` or `--strict`. See [the evidence contract](#the-evidence-packet-contract) below.
+
+## Boundaries and availability
+
+- No autonomous live source retrieval in the hosted fleet. A source can be absent, stale, or wrong. Missing evidence is `UNKNOWN` or a gap, never automatic clearance. Human review is required for high-stakes decisions.
+- The hosted response's verdict v1 carries `reason_code`, dated sources (or `as_of: null` when not known), `evidence_gaps`, `next_permitted_action` and `human_review_required`; a `trace_id` helps follow one run. Free-text input is a demo convenience: inferred fields are labelled, not verified facts.
+- The free sandbox is limited to 50 requests/hour. Paid terms differ by profile; inspect that profile's landing page and manifest before buying anything. The existing payment integration is **not certified for standard x402 clients** and should not be described as plug-and-play x402.
+- This is pre-compliance review support, not legal, sanctions, financial, investment, insurance, trading or factuality advice. [Source policy](SOURCE_POLICY.md) · [Evaluation notes](docs/evaluation.md).
+
+**License:** [MIT](LICENSE). **Questions or pilot discussion:** [open a GitHub issue](https://github.com/vassiliylakhonin/agenda-intelligence-md/issues).
 
 ---
+
+## Technical reference
 
 ## Core concepts
 
@@ -23,7 +114,7 @@ It reports **packet completeness**, not whether a claim is true:
 
 ---
 
-## First run
+## First run (other options)
 
 Run the canonical synthetic packet from a source checkout:
 
@@ -396,32 +487,9 @@ These are evaluation fixtures, not customer evidence or production benchmarks.
 
 ---
 
-## Web3 UI & Autonomous Micropayment Rails (x402 on Base)
+## Hosted payment surfaces (experimental)
 
-Agenda Intelligence MD natively integrates the **x402 protocol** on **Base** (Chain ID `8453`, USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`), unlocking zero-custody, machine-to-machine micropayments and self-service compliance intelligence for autonomous AI agents and institutional reviewers.
-
-### Interactive Web3 Screener: `/corridor-bankability`
-
-Visit the interactive Trans-Caspian Corridor Bankability Screener at `/corridor-bankability` on any hosted Worker (e.g., [`https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/corridor-bankability`](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/corridor-bankability)):
-- **Brave / Web3 Wallet Connection**: Native browser wallet connect via Base network.
-- **Instant CapEx & Covenant Stress-Testing**: Evaluate debt covenants, sovereign guarantee backing, and DSCR metrics across Aktau-Baku, Poti-Constanța, and Middle Corridor transit legs.
-- **On-Chain $25 USDC Unlock**: Pay the $25.00 IFI Dossier unlock directly with your wallet to receive an unredacted institutional bankability report with full sensitivity tables and multilateral bank readiness scores.
-
-### Autonomous Agent Discovery & x402 Pricing Tiers
-
-Every agent in the fleet advertises native x402 metadata via `agentCard` to autonomous registries (e.g., `skillget.dev`, `AgenstryBot`, `ZeroMockProof`):
-
-| Tier | Price (USDC on Base) | Scope & Capability | Endpoint |
-|---|---|---|---|
-| **Micro-Check** | `$0.05` | Instant single-probe compliance & screening triage | `/v1/settle` |
-| **Corridor Bankability Dossier** | `$25.00` | Full unredacted IFI deal dossier with debt metrics | `/v1/corridor-bankability/screen` |
-| **Dedicated Pro Tenant** | `$490.00` / mo | High-throughput dedicated rate limits & API token | `/v1/settle` |
-
-### Smart Fallback for Autonomous AI Agents
-
-Autonomous agents interacting over A2A (`message/send`) or REST (`/v1/...`) can send natural language prompts (e.g., *"Screen LLP KazTransSupply in Kazakhstan for secondary sanctions"*, *"Due diligence for rare earth extraction in East Kazakhstan"*, or *"Assess MT Gulf Pioneer transiting Hormuz"*). The smart fallback engine heuristics extract counterparties, commodities, chokepoints, and jurisdictions with sensible defaults while explicitly declaring `inferred_parameters: true` to guarantee compliance traceability.
-
----
+The hosted profiles expose their own current pricing and free sandbox limits. The integration at `/v1/settle` and the browser corridor screen exist, but do not assume a standard x402 client can complete payment: the integration is not certified for that interoperability. The local evidence-packet checker does not require a wallet. See each profile's live landing page and [the hosted manifest](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/) for current terms.
 
 ## Status
 
@@ -435,10 +503,10 @@ Autonomous agents interacting over A2A (`message/send`) or REST (`/v1/...`) can 
 | `check_evidence_packet` MCP tool | Implemented |
 | AI Fleet (Vertical Workers) | Active (12 profiles deployed on Cloudflare Edge) |
 | Interactive Web3 UI (`/corridor-bankability`) | Active (Brave / Web3 Wallet on Base) |
-| x402 Base Micropayments | Active (USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) |
+| Payment integration | Experimental; not certified for standard x402 clients |
 | Agent Financial Guard | Implemented (Pre-sign transaction firewall for AI agents) |
 | M2M Escrow Arbiter & Base Contract | Implemented (Autonomous B2B dispute resolution on Base) |
-| Live Source Retrieval | Optional per profile; currently unconfigured in the hosted fleet |
+| Live Source Retrieval | Not configured in the hosted fleet |
 
 Current classification: `Ecosystem Expansion & R&D`.
 
