@@ -32,7 +32,7 @@ curl -sS 'https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.d
         {
           "kind": "data",
           "data": {
-            "route": "Aktau — Baku — Poti",
+            "route": "Aktau - Baku - Poti",
             "cargo": "industrial equipment",
             "counterparties": [
               {
