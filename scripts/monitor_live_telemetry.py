@@ -13,16 +13,27 @@ Usage:
 import argparse
 import datetime
 import json
+import os
 import subprocess
 import sys
 import urllib.request
 
-STATS_TOKEN = "037ad1c7556b4880fb415c17f967ac033d62877aafe67f99f7f4b8ad932d92e0"
+# The token used to live here in plaintext in a public repo (leak flagged
+# 2026-09-25, still unrotated as of 2026-09-26). Read it from the environment
+# instead; rotate the deployed token so the committed one is worthless.
+STATS_TOKEN = os.environ.get("AGENDA_STATS_TOKEN", "")
 DEFAULT_BASE_URL = "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/stats"
 KV_NAMESPACE_ID = "d2228183999246ccbec8aa2d5f130bfc"
 
 
 def fetch_stats(date_str: str, base_url: str = DEFAULT_BASE_URL) -> dict:
+    if not STATS_TOKEN:
+        print(
+            "Error: AGENDA_STATS_TOKEN is not set. Export the rotated stats token "
+            "in the environment instead of keeping it in the repo.",
+            file=sys.stderr,
+        )
+        return {}
     url = f"{base_url}?token={STATS_TOKEN}&date={date_str}"
     req = urllib.request.Request(url, headers={"User-Agent": "curl/8.4.0"})
     try:

@@ -490,9 +490,9 @@ test("Snapshot adapter matches exact + token overlap against the compact index",
     return new Response(SNAPSHOT_FIXTURE, { status: 200, headers: { "content-type": "application/json" } });
   };
   try {
-    const env = { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" };
+    const env = { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json", SNAPSHOT_MAX_AGE_HOURS: "100000" };
 
-    const exact = await matchCounterpartyAgainstSnapshot(env, { name: "Gazprom Export" });
+    const exact = await matchCounterpartyAgainstSnapshot(env, { name: "Gazprom Export", maxAgeMs: Number.MAX_SAFE_INTEGER });
     assert.equal(exact.status, "success");
     assert.equal(calls.length, 1);
     assert.equal(exact.matches[0].name, "GAZPROM EXPORT");
@@ -505,13 +505,13 @@ test("Snapshot adapter matches exact + token overlap against the compact index",
     assert.equal(inits[0].cf, undefined);
 
     // Second call reuses the module-global cache (no new fetch).
-    const token = await matchCounterpartyAgainstSnapshot(env, { name: "Gazprom Neft" });
+    const token = await matchCounterpartyAgainstSnapshot(env, { name: "Gazprom Neft", maxAgeMs: Number.MAX_SAFE_INTEGER });
     assert.equal(token.status, "success");
     assert.equal(calls.length, 1);
     assert.equal(token.matches[0].name, "GAZPROM NEFT PJSC");
 
     // An unrelated name finds no match (no false positive).
-    const none = await matchCounterpartyAgainstSnapshot(env, { name: "Totally Different Holding" });
+    const none = await matchCounterpartyAgainstSnapshot(env, { name: "Totally Different Holding", maxAgeMs: Number.MAX_SAFE_INTEGER });
     assert.equal(none.status, "success");
     assert.deepEqual(none.matches, []);
   } finally {
@@ -545,19 +545,19 @@ test("Snapshot adapter reports the entity type the authority published, not Comp
   globalThis.fetch = async () =>
     new Response(SNAPSHOT_FIXTURE_V2, { status: 200, headers: { "content-type": "application/json" } });
   try {
-    const env = { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" };
+    const env = { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json", SNAPSHOT_MAX_AGE_HOURS: "100000" };
 
-    const vessel = await matchCounterpartyAgainstSnapshot(env, { name: "Example KZ Trading LLP" });
+    const vessel = await matchCounterpartyAgainstSnapshot(env, { name: "Example KZ Trading LLP", maxAgeMs: Number.MAX_SAFE_INTEGER });
     assert.equal(vessel.matches[0].entity_type, "vessel");
     assert.equal(vessel.matches[0].schema, "Vessel");
 
     resetSnapshotCache();
-    const company = await matchCounterpartyAgainstSnapshot(env, { name: "Gazprom Neft PJSC" });
+    const company = await matchCounterpartyAgainstSnapshot(env, { name: "Gazprom Neft PJSC", maxAgeMs: Number.MAX_SAFE_INTEGER });
     assert.equal(company.matches[0].entity_type, "entity");
     assert.equal(company.matches[0].schema, "Company");
 
     resetSnapshotCache();
-    const person = await matchCounterpartyAgainstSnapshot(env, { name: "Some Listed Person" });
+    const person = await matchCounterpartyAgainstSnapshot(env, { name: "Some Listed Person", maxAgeMs: Number.MAX_SAFE_INTEGER });
     assert.equal(person.matches[0].entity_type, "individual");
     assert.equal(person.matches[0].schema, "Person");
   } finally {
@@ -573,8 +573,8 @@ test("Snapshot adapter says unknown rather than guessing when the index has no t
     new Response(SNAPSHOT_FIXTURE, { status: 200, headers: { "content-type": "application/json" } });
   try {
     const result = await matchCounterpartyAgainstSnapshot(
-      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" },
-      { name: "Gazprom Export" }
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json", SNAPSHOT_MAX_AGE_HOURS: "100000" },
+      { name: "Gazprom Export", maxAgeMs: Number.MAX_SAFE_INTEGER }
     );
     assert.equal(result.matches[0].entity_type, "unknown");
     // Not "Company": an unknown type must not be dressed up as a known one.
@@ -3861,7 +3861,7 @@ test("cis worker surfaces the snapshot provenance date in A2A metadata", async (
     const withSnapshot = await handleJsonRpc(
       { jsonrpc: "2.0", id: "cis-snap", method: "message/send", params: { message: { data: cisSampleStructuredRequest } } },
       cisRequest,
-      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" }
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json", SNAPSHOT_MAX_AGE_HOURS: "100000" }
     );
     assert.equal(withSnapshot.result.metadata.live_retrieval_upstream, "Snapshot");
     assert.equal(withSnapshot.result.metadata.live_retrieval_snapshot_generated_at, "2026-06-26T05:36:01+00:00");
@@ -3892,6 +3892,8 @@ test("cis worker scores a merged name match instead of reporting nothing was fou
   globalThis.fetch = async () =>
     new Response(SNAPSHOT_FIXTURE, { status: 200, headers: { "content-type": "application/json" } });
   try {
+    // The fixture carries a fixed past publication date; exempt these flow
+    // tests from the 72h staleness gate.
     const response = await handleJsonRpc(
       {
         jsonrpc: "2.0",
@@ -3905,7 +3907,7 @@ test("cis worker scores a merged name match instead of reporting nothing was fou
         }
       },
       cisRequest,
-      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" }
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json", SNAPSHOT_MAX_AGE_HOURS: "100000" }
     );
 
     const task = response.result;
@@ -3950,6 +3952,8 @@ test("cis worker still reports it has nothing when screening merges no match", a
   globalThis.fetch = async () =>
     new Response(SNAPSHOT_FIXTURE, { status: 200, headers: { "content-type": "application/json" } });
   try {
+    // The fixture carries a fixed past publication date; exempt these flow
+    // tests from the 72h staleness gate.
     const response = await handleJsonRpc(
       {
         jsonrpc: "2.0",
@@ -3963,7 +3967,7 @@ test("cis worker still reports it has nothing when screening merges no match", a
         }
       },
       cisRequest,
-      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" }
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json", SNAPSHOT_MAX_AGE_HOURS: "100000" }
     );
 
     const task = response.result;
@@ -4000,7 +4004,7 @@ test("cis worker logs a bounded reason code when live retrieval degrades", async
     const response = await handleJsonRpc(
       { jsonrpc: "2.0", id: "cis-degraded", method: "message/send", params: { message: { data: cisSampleStructuredRequest } } },
       cisRequest,
-      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" }
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json", SNAPSHOT_MAX_AGE_HOURS: "100000" }
     );
     assert.equal(response.result.metadata.live_retrieval_status, "degraded");
     assert.equal(response.result.metadata.live_retrieval_reason_code, "upstream_http_503");
@@ -4052,7 +4056,7 @@ test("cis worker does not call a listed ship a match on the counterparty", async
     const response = await handleJsonRpc(
       { jsonrpc: "2.0", id: "cis-vessel", method: "message/send", params: { message: { data: cisSampleStructuredRequest } } },
       cisRequest,
-      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" }
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json", SNAPSHOT_MAX_AGE_HOURS: "100000" }
     );
     const body = response.result.metadata.response;
     const dims = body.top_exposure_dimensions;
@@ -4099,7 +4103,7 @@ test("cis worker still reports a real company match as a direct match", async ()
     const response = await handleJsonRpc(
       { jsonrpc: "2.0", id: "cis-company", method: "message/send", params: { message: { data: request } } },
       cisRequest,
-      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" }
+      { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json", SNAPSHOT_MAX_AGE_HOURS: "100000" }
     );
     const dims = response.result.metadata.response.top_exposure_dimensions;
     assert.ok(
@@ -4224,7 +4228,7 @@ test("statusInfo exposes inactive per-profile live_retrieval capability for cis_
 });
 
 test("statusInfo flips live_retrieval boundary to true with Snapshot when SNAPSHOT_INDEX_URL is set", () => {
-  const status = statusInfo(cisRequest, { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json" });
+  const status = statusInfo(cisRequest, { SNAPSHOT_INDEX_URL: "https://example.github.io/sanctions-name-index-compact.json", SNAPSHOT_MAX_AGE_HOURS: "100000" });
   assert.equal(status.boundaries.live_retrieval, true);
   assert.equal(status.live_retrieval.active, true);
   assert.equal(status.live_retrieval.active_upstream, "Snapshot");
@@ -5586,7 +5590,15 @@ function groundedAuditFixture() {
         supporting_quotes: [{ evidence_id: "e1", quote: "in force from 1 May 2026" }]
       }
     ],
-    evidence: [{ evidence_id: "e1", source_type: "official_document", name: "Official gazette" }]
+    evidence: [
+      {
+        evidence_id: "e1",
+        source_type: "official_document",
+        name: "Official gazette",
+        // Quote corroboration needs evidence content to match against.
+        content: "Regulation 2026/171 enters in force from 1 May 2026 across the Union."
+      }
+    ]
   };
 }
 
@@ -5695,13 +5707,16 @@ test("agent-output-verification keeps Python parity across twenty pre-action rep
   }
 });
 
-test("agent-output-verification allows relay on a grounded claim set (Python parity)", async () => {
+test("agent-output-verification caps a grounded claim set at verify_before_relay (Python parity)", async () => {
+  // Caller-declared packs never earn allow_relay / trust high, even with
+  // every quote matched (2026-09-26 fabricated-quote bypass).
   const response = await agentOutputVerificationResponseFor(groundedAuditFixture());
   assert.equal(response.result.status.state, "TASK_STATE_COMPLETED");
   const resp = response.result.metadata.response;
-  assert.equal(resp.verdict, "allow_relay");
-  assert.equal(resp.trust_signal, "high");
-  assert.equal(resp.human_review_required, false);
+  assert.equal(resp.verdict, "verify_before_relay");
+  assert.equal(resp.trust_signal, "medium");
+  assert.equal(resp.human_review_required, true);
+  assert.equal(resp.grounded_claim_count, 1);
   assert.deepEqual(resp.unsafe_claims, []);
 });
 
@@ -5770,11 +5785,12 @@ test("agent-output-verification keeps an uncorroborated claim out of the review_
   assert.ok(resp.evidence_gaps.some((gap) => gap.includes("c2")));
 });
 
-test("agent-output-verification still scores a corroborated claim set at full readiness (Python parity)", async () => {
+test("agent-output-verification caps a corroborated claim set at partial readiness (Python parity)", async () => {
+  // Caller-declared packs never reach 100 / review_ready (2026-09-26).
   const response = await agentOutputVerificationResponseFor(groundedAuditFixture());
   const resp = response.result.metadata.response;
-  assert.equal(resp.readiness_score, 100);
-  assert.equal(resp.readiness_label, "review_ready");
+  assert.equal(resp.readiness_score, 84);
+  assert.equal(resp.readiness_label, "partial");
 });
 
 test("agent-output-verification asks for input on a non-audit request shape", async () => {
@@ -5895,9 +5911,9 @@ test("mcp tools/call returns the same verdict as the A2A route", async () => {
 
   const viaMcp = mcp.result.structuredContent;
   assert.equal(mcp.result.isError, false);
-  assert.equal(viaMcp.verdict, "allow_relay");
+  assert.equal(viaMcp.verdict, "verify_before_relay");
   assert.deepEqual(viaMcp, a2a.result.metadata.response);
-  assert.match(mcp.result.content[0].text, /verdict=allow_relay/);
+  assert.match(mcp.result.content[0].text, /verdict=verify_before_relay/);
   assert.ok(mcp.result.content[0].text.length < 500);
   assert.ok(!("artifacts" in viaMcp));
   assert.ok(Buffer.byteLength(JSON.stringify(mcp)) < 12_000);
@@ -5910,8 +5926,8 @@ test("mcp tools/call keeps the legacy request wrapper as an input compatibility 
     method: "tools/call",
     params: { name: "agent_output_verification", arguments: { request: groundedAuditFixture() } }
   });
-  assert.equal(response.result.structuredContent.metadata.response.verdict, "allow_relay");
-  assert.equal(JSON.parse(response.result.content[0].text).metadata.response.verdict, "allow_relay");
+  assert.equal(response.result.structuredContent.metadata.response.verdict, "verify_before_relay");
+  assert.equal(JSON.parse(response.result.content[0].text).metadata.response.verdict, "verify_before_relay");
 });
 
 test("mcp tools/call on an unsupported claim blocks relay", async () => {
@@ -6925,7 +6941,8 @@ test("direct REST POST /v1/evidence-packet/check validates packet and returns re
         evidence_id: "e1",
         source_type: "insurance_certificate",
         title: "Gard P&I Certificate",
-        date: "2026-05-01"
+        date: "2026-05-01",
+        content: "Gard confirms active P&I cover for the entered vessel through 30 April 2027."
       }
     ]
   };
@@ -6941,7 +6958,8 @@ test("direct REST POST /v1/evidence-packet/check validates packet and returns re
   assert.equal(response.status, 200);
   const json = await response.json();
   assert.equal(json.valid, true);
-  assert.equal(json.packet_status, "review_ready");
+  // Caller-declared packets cap at partial readiness (2026-09-26).
+  assert.equal(json.packet_status, "partial");
   assert.equal(json.response.claim_count, 1);
   assert.equal(json.response.grounded_claim_count, 1);
   assert.match(json.response.repair_guidance, /# Evidence Packet Repair Prompt/);
@@ -8103,11 +8121,17 @@ test("mcp tool descriptions include required field hints for calling LLMs", asyn
   assert.match(dualUseTools[0].description, /Required fields in 'request': item_description/);
 });
 
-function mockUsdcTransferReceipt(amountUsdc, recipient = BASE_USDC_WALLET, status = "0x1") {
+const MOCK_PAYER = "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a"; // eth-account test key 0x1111...1111
+// EIP-191 personal_sign by MOCK_PAYER over the settlement challenge for
+// tx 0x2222...2222 (generated with eth-account for this test).
+const MOCK_PAYER_SIGNATURE_TX2222 =
+  "0xea86d8b03a08b53ca440e3e1ec6c2d4cbcef1a6c69163f4b0d022ba8fd5a560c72eda0d8e70543904522dab2320911ae1531ad9f35526f78e6c4f91fa697e6cd1b";
+
+function mockUsdcTransferReceipt(amountUsdc, recipient = BASE_USDC_WALLET, status = "0x1", payer = MOCK_PAYER) {
   const rawValue = BigInt(Math.round(amountUsdc * 1e6));
   const hexValue = "0x" + rawValue.toString(16).padStart(64, "0");
   const recipientTopic = normalizeAddressForTopic(recipient);
-  const payerTopic = "0x000000000000000000000000111122223333444455556666777788889999aaaa";
+  const payerTopic = normalizeAddressForTopic(payer);
   return {
     status,
     blockNumber: "0x12345",
@@ -8126,7 +8150,7 @@ test("parseTransferLog correctly extracts USDC transfers on Base", () => {
   const parsed49 = parseTransferLog(log49);
   assert.equal(parsed49.amount_usdc, 49);
   assert.equal(parsed49.to.toLowerCase(), BASE_USDC_WALLET.toLowerCase());
-  assert.equal(parsed49.from.toLowerCase(), "0x111122223333444455556666777788889999aaaa");
+  assert.equal(parsed49.from.toLowerCase(), MOCK_PAYER);
 
   const log490 = mockUsdcTransferReceipt(490).logs[0];
   const parsed490 = parseTransferLog(log490);
@@ -8179,6 +8203,45 @@ test("GET /v1/settle returns documentation and machine settlement instructions",
   assert.equal(data.supported_tiers.tier_3_deal_dossier.amount_usd, 49);
 });
 
+test("POST /v1/settle requires the payer signature before any credential exists", async () => {
+  const txHash = "0x2222222222222222222222222222222222222222222222222222222222222222";
+  const mockReceipt = mockUsdcTransferReceipt(490);
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockReceipt }), {
+      status: 200,
+      headers: { "content-type": "application/json" }
+    });
+
+  const env = { AGENDA_USAGE: fakeRateKv() };
+
+  try {
+    // No signature: 400 with the challenge to sign, nothing claimed.
+    const unsigned = await handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tx_hash: txHash, tier: "tier_2_pro" })
+    }), env);
+    assert.equal(unsigned.status, 400);
+    const unsignedBody = await unsigned.json();
+    assert.equal(unsignedBody.error, "Missing required field: payer_signature");
+    assert.ok(unsignedBody.challenge_message.includes(txHash));
+    assert.ok(unsignedBody.challenge_message.includes(MOCK_PAYER));
+    assert.equal(await env.AGENDA_USAGE.get(`settled_tx:${txHash}`), null);
+
+    // Wrong signature: 403, still nothing claimed.
+    const wrongSig = await handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tx_hash: txHash, tier: "tier_2_pro", payer_signature: "0x" + "12".repeat(65) })
+    }), env);
+    assert.equal(wrongSig.status, 403);
+    assert.equal(await env.AGENDA_USAGE.get(`settled_tx:${txHash}`), null);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
 test("POST /v1/settle provisions a 30-day Pro Bearer key for 490 USDC payment", async () => {
   const txHash = "0x2222222222222222222222222222222222222222222222222222222222222222";
   const mockReceipt = mockUsdcTransferReceipt(490);
@@ -8195,7 +8258,7 @@ test("POST /v1/settle provisions a 30-day Pro Bearer key for 490 USDC payment", 
     const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tx_hash: txHash, tier: "tier_2_pro" })
+      body: JSON.stringify({ tx_hash: txHash, tier: "tier_2_pro", payer_signature: MOCK_PAYER_SIGNATURE_TX2222 })
     });
 
     const res = await handleRequest(req, env);
@@ -8214,14 +8277,25 @@ test("POST /v1/settle provisions a 30-day Pro Bearer key for 490 USDC payment", 
     assert.equal(lookup.tier, "tier_2_pro");
     assert.equal(lookup.quota, 10000);
 
-    // Second call with same tx hash must be rejected as already claimed
+    // Second call with same tx hash must be rejected as already claimed, even
+    // with the valid payer signature, and the 409 must not leak the stored
+    // marker (it used to carry the bearer token out to any hash-knowing
+    // caller via claimed_record).
     const req2 = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tx_hash: txHash, tier: "tier_2_pro" })
+      body: JSON.stringify({ tx_hash: txHash, tier: "tier_2_pro", payer_signature: MOCK_PAYER_SIGNATURE_TX2222 })
     });
     const res2 = await handleRequest(req2, env);
     assert.equal(res2.status, 409);
+    const replayBody = await res2.json();
+    assert.ok(!("claimed_record" in replayBody));
+    assert.ok(!JSON.stringify(replayBody).includes(data.bearer_token));
+
+    // The stored marker carries only the token's SHA-256 fingerprint.
+    const marker = JSON.parse(await env.AGENDA_USAGE.get(`settled_tx:${txHash}`));
+    assert.ok(!("token" in marker));
+    assert.ok(/^[0-9a-f]{64}$/.test(marker.token_hash));
   } finally {
     globalThis.fetch = origFetch;
   }

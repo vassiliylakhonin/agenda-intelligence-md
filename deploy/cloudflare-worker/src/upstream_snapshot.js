@@ -34,6 +34,12 @@ export const SNAPSHOT_ATTRIBUTION =
 export const DEFAULT_TIMEOUT_MS = 8000;
 export const DEFAULT_MAX_MATCHES = 5;
 export const DEFAULT_CACHE_TTL_MS = 6 * 3600 * 1000;
+// A "no match" against an old snapshot is not a clean signal: on 2026-09-26 a
+// snapshot generated 2026-09-20 still answered "no match against the current
+// snapshot". Sanctions lists change daily and this index is rebuilt by hand,
+// so past 72h (env SNAPSHOT_MAX_AGE_HOURS overrides) the result is stale and
+// reports unknown instead.
+export const DEFAULT_SNAPSHOT_MAX_AGE_MS = 72 * 3600 * 1000;
 // Tokens appearing in more than this many names are corporate noise
 // ("TRADING", "COMPANY", "LLC"...); skipped from postings to bound memory/CPU.
 const MAX_TOKEN_POSTINGS = 1500;
@@ -75,8 +81,43 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+// Lookalike-script folding. Screening on [A-Z0-9] alone meant a listed name
+// typed with Cyrillic homoglyphs (\u0410\u0412\u0415\u041a...) or a fully Cyrillic spelling
+// normalized to a different key than the Latin list entry and slipped past the
+// match. NFC first, then fold Cyrillic (full transliteration, covering the
+// homoglyph subset) and Greek capital lookalikes onto Latin before filtering.
+const CYRILLIC_FOLD = {
+  "\u0410": "A", "\u0430": "a", "\u0411": "B", "\u0431": "b", "\u0412": "V", "\u0432": "v",
+  "\u0413": "G", "\u0433": "g", "\u0414": "D", "\u0434": "d", "\u0415": "E", "\u0435": "e",
+  "\u0401": "E", "\u0451": "e", "\u0416": "ZH", "\u0436": "zh", "\u0417": "Z", "\u0437": "z",
+  "\u0418": "I", "\u0438": "i", "\u0419": "Y", "\u0439": "y", "\u041a": "K", "\u043a": "k",
+  "\u041b": "L", "\u043b": "l", "\u041c": "M", "\u043c": "m", "\u041d": "N", "\u043d": "n",
+  "\u041e": "O", "\u043e": "o", "\u041f": "P", "\u043f": "p", "\u0420": "R", "\u0440": "r",
+  "\u0421": "S", "\u0441": "s", "\u0422": "T", "\u0442": "t", "\u0423": "U", "\u0443": "u",
+  "\u0424": "F", "\u0444": "f", "\u0425": "KH", "\u0445": "kh", "\u0426": "TS", "\u0446": "ts",
+  "\u0427": "CH", "\u0447": "ch", "\u0428": "SH", "\u0448": "sh", "\u0429": "SCH", "\u0449": "sch",
+  "\u042a": "", "\u044a": "", "\u042b": "Y", "\u044b": "y", "\u042c": "", "\u044c": "",
+  "\u042d": "E", "\u044d": "e", "\u042e": "YU", "\u044e": "yu", "\u042f": "YA", "\u044f": "ya",
+  // Ukrainian / legacy Cyrillic lookalikes
+  "\u0404": "E", "\u0454": "e", "\u0406": "I", "\u0456": "i", "\u0407": "YI", "\u0457": "yi",
+  "\u0405": "S", "\u0455": "s", "\u0408": "J", "\u0458": "j", "\u0490": "G", "\u0491": "g"
+};
+const GREEK_CAPITAL_FOLD = {
+  "\u0391": "A", "\u0392": "B", "\u0395": "E", "\u0396": "Z", "\u0397": "H",
+  "\u0399": "I", "\u039a": "K", "\u039c": "M", "\u039d": "N", "\u039f": "O",
+  "\u03a1": "P", "\u03a4": "T", "\u03a5": "Y", "\u03a7": "X"
+};
+
+function foldLookalikes(value) {
+  let out = "";
+  for (const ch of value) {
+    out += CYRILLIC_FOLD[ch] ?? GREEK_CAPITAL_FOLD[ch] ?? ch;
+  }
+  return out;
+}
+
 function normalizeName(value) {
-  return String(value == null ? "" : value)
+  return foldLookalikes(String(value == null ? "" : value).normalize("NFC"))
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, " ")
     .replace(/\s+/g, " ")
@@ -313,15 +354,46 @@ export async function matchCounterparty(env, options = {}) {
     }
   }
 
+  // Staleness gate: an index older than maxAge (or with no publication date
+  // at all) must not speak as "the current snapshot" - stale means unknown.
+  const maxAgeMs = snapshotMaxAgeMs(env, options);
+  const generatedAt = INDEX_CACHE.index.generated_at_utc;
+  const generatedMs = generatedAt ? Date.parse(generatedAt) : NaN;
+  const snapshotAgeMs = Number.isFinite(generatedMs) ? Date.now() - generatedMs : null;
+  const stale = snapshotAgeMs === null || snapshotAgeMs > maxAgeMs;
+  if (stale) {
+    return {
+      status: "stale",
+      matches: [],
+      attribution: attributionBlock(),
+      queried_at: nowIso(),
+      snapshot_generated_at: generatedAt,
+      snapshot_age_ms: snapshotAgeMs,
+      snapshot_max_age_ms: maxAgeMs,
+      degrade_reason:
+        snapshotAgeMs === null
+          ? "snapshot carries no generated_at_utc; freshness cannot be established"
+          : `snapshot is ${Math.round(snapshotAgeMs / 3600000)}h old, older than the ${Math.round(maxAgeMs / 3600000)}h maximum`
+    };
+  }
+
   const matches = matchInIndex(INDEX_CACHE.index, name, maxMatches);
   return {
     status: "success",
     matches,
     attribution: attributionBlock(),
     queried_at: nowIso(),
-    snapshot_generated_at: INDEX_CACHE.index.generated_at_utc,
+    snapshot_generated_at: generatedAt,
+    snapshot_age_ms: snapshotAgeMs,
     degrade_reason: null
   };
+}
+
+export function snapshotMaxAgeMs(env = {}, options = {}) {
+  if (Number.isFinite(options.maxAgeMs) && options.maxAgeMs > 0) return options.maxAgeMs;
+  const hours = Number.parseFloat(env?.SNAPSHOT_MAX_AGE_HOURS || "");
+  if (Number.isFinite(hours) && hours > 0) return hours * 3600 * 1000;
+  return DEFAULT_SNAPSHOT_MAX_AGE_MS;
 }
 
 // Test seam: reset the module-global cache between unit tests.

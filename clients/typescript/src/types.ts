@@ -3,14 +3,14 @@
 
 /** Structured verdict for whether one agent's claim-backed output is ready for a consuming agent to relay or act on. Wraps a claim-level evidence audit (evidence-audit.schema.json) and returns a machine-actionable relay verdict, weak/unsafe claim triage, evidence gaps, and owner actions. Schema-level and structural only: it does not verify that any claim or quote is factually true, does not fetch or validate cited sources, and does not authorize an action or provide legal, compliance, sanctions, financial, or investment advice. */
 export interface AgentOutputVerificationResponse {
-  /** Machine-actionable relay verdict. allow_relay: every claim is grounded and none is unsupported. verify_before_relay: claims are declared-supported but carry weak support or span-grounding gaps. block_unsafe_claims: at least one claim is marked unsupported or cites evidence that is not present. not_decision_ready / insufficient_information: not enough structured claim material to verdict, or no claim cites evidence present in the supplied pack. A declared support_level is a caller assertion, not a verified fact: it counts only where the claim cites an evidence_id the caller actually supplied. */
+  /** Machine-actionable relay verdict. verify_before_relay: claims are declared-supported and structurally consistent; the pack is caller-declared and never externally verified here, so this is the best possible routing and human review is mandatory. block_unsafe_claims: at least one claim is marked unsupported or cites evidence that is not present. not_decision_ready / insufficient_information: not enough structured claim material to verdict, or no claim cites evidence present in the supplied pack. allow_relay is reserved and never issued from caller-declared packs: this gate performs no external verification, so nothing it returns may be read as relay-ready. A declared support_level is a caller assertion, not a verified fact: it counts only where the claim cites an evidence_id the caller actually supplied. */
   verdict: "allow_relay" | "verify_before_relay" | "block_unsafe_claims" | "not_decision_ready" | "insufficient_information";
   trust_signal: "low" | "medium" | "medium_high" | "high" | "unknown";
-  /** Heuristic 0-100 score for how ready the supplied claim set is for relay. Only claims that cite an evidence_id present in the supplied evidence contribute to it; a claim whose declared support_level nothing in the pack corroborates weighs nothing, and any such claim holds the score below the review_ready band. Not approval, clearance, or factual verification. */
+  /** Heuristic 0-100 score over declared evidence structure, capped below the review_ready band (max 84) because caller-declared packs are never externally verified here. Only claims that cite an evidence_id present in the supplied evidence contribute to it; a claim whose declared support_level nothing in the pack corroborates weighs nothing. Not approval, clearance, or factual verification. */
   readiness_score: number;
   readiness_label: "insufficient_information" | "not_decision_ready" | "partial" | "review_ready";
   claim_count: number;
-  /** Number of claims that carry at least one supporting quote span. */
+  /** Number of claims with at least one supporting quote whose normalized text appears in the cited evidence item's content fields. A quote that is only declared, with no matching evidence content, does not count. */
   grounded_claim_count: number;
   /** Claims that must not be relayed as fact: marked unsupported, or citing evidence_ids absent from the supplied evidence. */
   unsafe_claims: Array<{
@@ -721,6 +721,22 @@ export interface PreActionCheckRequestEvidenceItem {
   freshness?: string;
   supports?: string[];
   limits?: string[];
+  /** Optional source text extract. supporting_quotes corroborate only by matching their text against evidence content fields; without one, quotes are caller assertions. */
+  content?: string;
+  /** Alias content field; treated like 'content' for quote corroboration. */
+  text?: string;
+  /** Alias content field; treated like 'content' for quote corroboration. */
+  body?: string;
+  /** Alias content field; treated like 'content' for quote corroboration. */
+  excerpt?: string;
+  /** Alias content field; treated like 'content' for quote corroboration. */
+  quote?: string;
+  /** Alias content field; treated like 'content' for quote corroboration. */
+  snippet?: string;
+  /** Alias content field; treated like 'content' for quote corroboration. */
+  summary?: string;
+  /** Alias content field; treated like 'content' for quote corroboration. */
+  full_text?: string;
 }
 
 export interface PreActionCheckRequestPolicyContext {

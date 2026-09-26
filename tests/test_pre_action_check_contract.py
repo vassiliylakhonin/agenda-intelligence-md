@@ -28,7 +28,15 @@ def _request(risk_tier: str = "low") -> dict:
                 "supporting_quotes": [{"evidence_id": "e1", "quote": "Registration active"}],
             }
         ],
-        "evidence": [{"evidence_id": "e1", "source_type": "official_document", "name": "Registry extract"}],
+        "evidence": [
+            {
+                "evidence_id": "e1",
+                "source_type": "official_document",
+                "name": "Registry extract",
+                # Quote corroboration needs evidence content to match against.
+                "content": "Registration active",
+            }
+        ],
     }
 
 

@@ -221,6 +221,7 @@ function liveRetrievalReasonCode(status, reason) {
   const value = typeof reason === "string" ? reason.trim() : "";
   if (/no live-retrieval upstream is configured/i.test(value)) return "not_configured";
   if (status === "disabled") return "disabled";
+  if (status === "stale") return "stale_snapshot";
   if (!value) return status ? "unknown" : null;
   if (/^network error:/i.test(value)) return "network_error";
   const httpStatus = value.match(/^upstream HTTP (\d{3})$/i);

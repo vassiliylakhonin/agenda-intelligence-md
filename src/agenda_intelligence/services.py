@@ -11,6 +11,7 @@ import copy
 import hashlib
 import json
 import re
+import unicodedata
 import uuid
 from datetime import date
 from importlib import resources
@@ -314,8 +315,9 @@ def audit_claims(audit_json: dict) -> dict:
 AGENT_OUTPUT_VERIFICATION_NOT_ADVICE_NOTICE = (
     "Agent-output relay-readiness triage only. Schema-level and structural: it does not verify that any "
     "claim or quote is factually true, does not fetch or validate cited sources, and does not authorize "
-    "an action or provide legal, compliance, sanctions, financial, or investment advice. Human review is "
-    "required before a consuming agent acts on any verdict other than allow_relay."
+    "an action or provide legal, compliance, sanctions, financial, or investment advice. This gate never "
+    "issues allow_relay from caller-declared packs: human review is required before a consuming agent "
+    "acts on any verdict it returns."
 )
 
 # A declared ``support_level`` is a caller assertion about its own output, not a
@@ -336,6 +338,64 @@ AGENT_OUTPUT_UNCORROBORATED_READINESS_CAP = 84
 def _claim_is_corroborated(claim: dict, evidence_ids: set) -> bool:
     """True when the claim cites at least one evidence_id present in the pack."""
     return any(eid in evidence_ids for eid in (claim.get("evidence_ids") or []))
+
+
+# A caller can declare any quote it likes; until 2026-09-26 the gate counted
+# every claim carrying a supporting_quotes entry as "grounded" without ever
+# looking inside the cited evidence, so a fabricated quote plus a made-up URL
+# scored a full allow_relay / trust high / 100. A quote corroborates only
+# when its normalized text actually appears inside the cited evidence item's
+# own content fields. URLs, source_type labels and names are caller
+# assertions and never count as content. Kept in step with
+# claimHasMatchedQuote in deploy/cloudflare-worker/src/index.js.
+AGENT_OUTPUT_QUOTE_CONTENT_FIELDS = (
+    "content",
+    "text",
+    "body",
+    "excerpt",
+    "quote",
+    "snippet",
+    "summary",
+    "full_text",
+)
+AGENT_OUTPUT_MIN_QUOTE_CHARS = 8
+
+
+def _normalize_quote_text(value) -> str:
+    text = " ".join(unicodedata.normalize("NFC", str(value or "")).lower().split())
+    # Edge punctuation (a trailing full stop, wrapping quotes) must not decide
+    # whether the same words appear in the evidence.
+    return text.strip(" \t\"'.,;:!?()[]{}")
+
+
+def _evidence_item_content_text(item) -> str:
+    if not isinstance(item, dict):
+        return ""
+    parts = [item[field] for field in AGENT_OUTPUT_QUOTE_CONTENT_FIELDS if isinstance(item.get(field), str) and item[field]]
+    return _normalize_quote_text("\n".join(parts))
+
+
+def _quote_matches_evidence_content(quote_text, item) -> bool:
+    needle = _normalize_quote_text(quote_text)
+    if len(needle) < AGENT_OUTPUT_MIN_QUOTE_CHARS:
+        return False
+    haystack = _evidence_item_content_text(item)
+    return bool(haystack) and needle in haystack
+
+
+def _claim_has_matched_quote(claim: dict, evidence_by_id: dict) -> bool:
+    quotes = claim.get("supporting_quotes") or []
+    if not quotes:
+        return False
+    for sq in quotes:
+        if not isinstance(sq, dict):
+            continue
+        item = evidence_by_id.get(sq.get("evidence_id"))
+        if item is None:
+            continue
+        if _quote_matches_evidence_content(sq.get("quote") or sq.get("text") or "", item):
+            return True
+    return False
 
 
 def agent_output_verification(request_json: dict) -> dict:
@@ -362,7 +422,17 @@ def agent_output_verification(request_json: dict) -> dict:
     span_orphans = summary.get("span_orphans", []) or []
 
     claim_count = len(claims)
-    grounded_claim_count = summary.get("grounded_claim_count", 0)
+    # Grounded means the quote text was found inside the cited evidence
+    # content, not merely that a supporting_quotes entry exists
+    # (summary.grounded_claim_count counts declarations; declarations are what
+    # the 2026-09-26 fabricated-quote bypass fed on).
+    evidence_by_id = {item.get("evidence_id"): item for item in (request_json.get("evidence") or [])}
+    grounded_claim_count = sum(1 for claim in claims if _claim_has_matched_quote(claim, evidence_by_id))
+    unmatched_quote_claims = [
+        claim
+        for claim in claims
+        if (claim.get("supporting_quotes") or []) and not _claim_has_matched_quote(claim, evidence_by_id)
+    ]
 
     unsafe_claims: list[dict] = []
     weak_claims: list[dict] = []
@@ -411,6 +481,13 @@ def agent_output_verification(request_json: dict) -> dict:
             f"Claim {entry.get('claim_id')} quote attributed to evidence {entry.get('evidence_id')} "
             f"({entry.get('reason')})."
         )
+    for claim in unmatched_quote_claims:
+        if claim["claim_id"] in seen_unsafe:
+            continue
+        evidence_gaps.append(
+            f"Claim {claim['claim_id']} supplies supporting_quotes whose text does not appear in the cited "
+            f"evidence content; a caller-declared quote is not corroboration."
+        )
     for claim in uncorroborated_claims:
         evidence_gaps.append(
             f"Claim {claim['claim_id']} declares support_level {claim.get('support_level')} "
@@ -427,6 +504,11 @@ def agent_output_verification(request_json: dict) -> dict:
     else:
         raw_score = 0
     readiness_score = max(0, raw_score - 10 * len(unsafe_claims) - 5 * len(unsupported_statements))
+    # A declared direct support is not a grounded claim: when no quote was
+    # matched against evidence content, the pack scores nothing (parity with
+    # the worker gate).
+    if not grounded_claim_count:
+        readiness_score = 0
 
     if unsafe_claims or unsupported_statements:
         verdict = "block_unsafe_claims"
@@ -440,20 +522,23 @@ def agent_output_verification(request_json: dict) -> dict:
         readiness_score = 0
     elif weak_claims or span_orphans:
         verdict = "verify_before_relay"
-    elif grounded_claim_count == claim_count and not uncorroborated_claims:
-        verdict = "allow_relay"
     else:
+        # Every pack reaching this gate is caller-declared and nothing here
+        # verifies it externally, so the ceiling is verify_before_relay with
+        # mandatory human review. Issuing allow_relay / trust high for
+        # unverified caller input is how a fabricated quote with a made-up URL
+        # scored relay-ready 100/100 on 2026-09-26.
         verdict = "verify_before_relay"
 
     if uncorroborated_claims:
         readiness_score = min(readiness_score, AGENT_OUTPUT_UNCORROBORATED_READINESS_CAP)
+    # Structural-only scoring never enters the review_ready band.
+    readiness_score = min(readiness_score, AGENT_OUTPUT_UNCORROBORATED_READINESS_CAP)
 
     if verdict == "insufficient_information":
         readiness_label = "insufficient_information"
     elif verdict == "block_unsafe_claims":
         readiness_label = "not_decision_ready"
-    elif readiness_score >= 85:
-        readiness_label = "review_ready"
     elif readiness_score >= 50:
         readiness_label = "partial"
     else:
@@ -465,9 +550,9 @@ def agent_output_verification(request_json: dict) -> dict:
         trust_signal = "unknown"
     elif verdict == "verify_before_relay":
         trust_signal = "medium"
-    elif grounded_claim_count == claim_count:
-        trust_signal = "high"
     else:
+        # allow_relay is unreachable from caller-declared packs; nothing here
+        # may report trust "high".
         trust_signal = "medium_high"
 
     owner_actions: list[str] = []
@@ -505,6 +590,9 @@ def agent_output_verification(request_json: dict) -> dict:
         "limitations": [
             "Schema-level and structural only. Does not verify that any claim or quote is factually true.",
             "Does not fetch or validate cited sources; it checks declared support structure only.",
+            "Caller-declared evidence is never externally verified here, so allow_relay and trust high are "
+            "never issued from this gate: the best possible routing is verify_before_relay with mandatory "
+            "human review. A quote counts as grounded only when its text appears in the cited evidence content.",
         ],
     }
 
@@ -598,10 +686,20 @@ def pre_action_check(request_json: dict) -> dict:
     elif verification.get("verdict") == "block_unsafe_claims":
         decision = "stop"
         reason_code = "unsafe_claims"
-    elif evidence_checks or verification.get("verdict") != "allow_relay":
+    elif (
+        evidence_checks
+        or verification.get("verdict") != "verify_before_relay"
+        or verification.get("weak_claims")
+        or verification.get("evidence_gaps")
+        or verification.get("grounded_claim_count") != verification.get("claim_count")
+    ):
         decision = "request_evidence"
         reason_code = "evidence_gaps"
     else:
+        # Only a fully quote-matched pack reaches the risk-tier approval gate,
+        # and its verdict is still verify_before_relay (the best a
+        # caller-declared pack can earn since 2026-09-26): structurally
+        # consistent, never externally verified here.
         approval_risk_tiers = {"high", "critical"}
         if policy_profile == "agentic_interaction_trust":
             approval_risk_tiers.add("medium")

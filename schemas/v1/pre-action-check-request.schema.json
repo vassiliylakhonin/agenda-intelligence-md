@@ -33,7 +33,12 @@
     },
     "risk_tier": {
       "type": "string",
-      "enum": ["low", "medium", "high", "critical"]
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
     },
     "claims": {
       "type": "array",
@@ -65,7 +70,10 @@
     "actor": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "type"],
+      "required": [
+        "id",
+        "type"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -73,7 +81,14 @@
         },
         "type": {
           "type": "string",
-          "enum": ["ai_agent", "automation", "api_client", "human_delegated_agent", "unknown", "other"]
+          "enum": [
+            "ai_agent",
+            "automation",
+            "api_client",
+            "human_delegated_agent",
+            "unknown",
+            "other"
+          ]
         },
         "operator": {
           "type": "string",
@@ -84,7 +99,10 @@
     "target": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "type"],
+      "required": [
+        "id",
+        "type"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -99,7 +117,11 @@
     "claim": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["claim_id", "claim", "support_level"],
+      "required": [
+        "claim_id",
+        "claim",
+        "support_level"
+      ],
       "properties": {
         "claim_id": {
           "type": "string",
@@ -130,7 +152,12 @@
         },
         "support_level": {
           "type": "string",
-          "enum": ["direct", "partial", "weak", "unsupported"]
+          "enum": [
+            "direct",
+            "partial",
+            "weak",
+            "unsupported"
+          ]
         },
         "uncertainty": {
           "type": "string"
@@ -143,7 +170,10 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["evidence_id", "quote"],
+            "required": [
+              "evidence_id",
+              "quote"
+            ],
             "properties": {
               "evidence_id": {
                 "type": "string",
@@ -161,7 +191,10 @@
     "evidence_item": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["evidence_id", "source_type"],
+      "required": [
+        "evidence_id",
+        "source_type"
+      ],
       "properties": {
         "evidence_id": {
           "type": "string",
@@ -191,6 +224,38 @@
           "items": {
             "type": "string"
           }
+        },
+        "content": {
+          "type": "string",
+          "description": "Optional source text extract. supporting_quotes corroborate only by matching their text against evidence content fields; without one, quotes are caller assertions."
+        },
+        "text": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "body": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "excerpt": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "quote": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "snippet": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "full_text": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
         }
       }
     },
@@ -200,14 +265,20 @@
       "properties": {
         "profile": {
           "type": "string",
-          "enum": ["default", "agentic_interaction_trust"]
+          "enum": [
+            "default",
+            "agentic_interaction_trust"
+          ]
         },
         "checks": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["check_id", "status"],
+            "required": [
+              "check_id",
+              "status"
+            ],
             "properties": {
               "check_id": {
                 "type": "string",
@@ -215,7 +286,11 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["passed", "needs_evidence", "failed"]
+                "enum": [
+                  "passed",
+                  "needs_evidence",
+                  "failed"
+                ]
               },
               "evidence_gap": {
                 "type": "string",
@@ -229,11 +304,17 @@
     "approval": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["status"],
+      "required": [
+        "status"
+      ],
       "properties": {
         "status": {
           "type": "string",
-          "enum": ["not_requested", "approved", "rejected"]
+          "enum": [
+            "not_requested",
+            "approved",
+            "rejected"
+          ]
         },
         "reference": {
           "type": "string",

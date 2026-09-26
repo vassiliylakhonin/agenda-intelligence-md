@@ -23,20 +23,65 @@ def _grounded_audit() -> dict:
             }
         ],
         "evidence": [
-            {"evidence_id": "e1", "source_type": "official_document", "name": "Official gazette"},
+            {
+                "evidence_id": "e1",
+                "source_type": "official_document",
+                "name": "Official gazette",
+                # Quote corroboration needs evidence content to match against;
+                # a name/url alone is a caller assertion.
+                "content": "Regulation 2026/171 enters in force from 1 May 2026 across the Union.",
+            },
         ],
     }
 
 
-def test_grounded_output_allows_relay():
+def test_grounded_output_still_routes_to_verify_before_relay():
+    # The pack is caller-declared and never externally verified here, so even a
+    # fully quote-matched pack cannot earn allow_relay / trust high
+    # (2026-09-26 fabricated-quote bypass).
     result = services.agent_output_verification(_grounded_audit())
     assert result["valid"] is True
     response = result["response"]
     Draft202012Validator(RESPONSE_SCHEMA).validate(response)
-    assert response["verdict"] == "allow_relay"
-    assert response["trust_signal"] == "high"
-    assert response["human_review_required"] is False
+    assert response["verdict"] == "verify_before_relay"
+    assert response["trust_signal"] == "medium"
+    assert response["human_review_required"] is True
+    assert response["grounded_claim_count"] == 1
     assert response["unsafe_claims"] == []
+
+
+def test_fabricated_quote_with_made_up_source_cannot_relay():
+    """Regression for the 2026-09-26 bypass: a caller-supplied quote plus a
+    nonexistent official_document URL used to score allow_relay/high/100 with
+    human_review_required=false."""
+    audit = {
+        "claims": [
+            {
+                "claim_id": "c1",
+                "claim": "Example Fabrications LLP is cleared OFAC today",
+                "support_level": "direct",
+                "evidence_ids": ["e1"],
+                "supporting_quotes": [{"evidence_id": "e1", "quote": "cleared of all OFAC sanctions as of today"}],
+            }
+        ],
+        "evidence": [
+            {
+                "evidence_id": "e1",
+                "source_type": "official_document",
+                "name": "OFAC notice",
+                "url": "https://no-such-source.invalid/doc",
+            }
+        ],
+    }
+    result = services.agent_output_verification(audit)
+    response = result["response"]
+    Draft202012Validator(RESPONSE_SCHEMA).validate(response)
+    assert response["verdict"] == "verify_before_relay"
+    assert response["trust_signal"] == "medium"
+    assert response["readiness_score"] == 0
+    assert response["grounded_claim_count"] == 0
+    assert response["human_review_required"] is True
+    assert any("does not appear in the cited evidence content" in gap for gap in response["evidence_gaps"])
 
 
 def test_unsupported_claim_blocks_relay():
@@ -110,11 +155,13 @@ def test_uncorroborated_claim_stays_out_of_the_review_ready_band():
     assert any("c2" in gap for gap in response["evidence_gaps"])
 
 
-def test_corroborated_claim_set_still_scores_full_readiness():
+def test_corroborated_claim_set_scores_below_the_review_ready_band():
+    # Structural-only scoring is capped at 84: caller-declared packs never
+    # reach the review_ready band even when every quote matches.
     result = services.agent_output_verification(_grounded_audit())
     response = result["response"]
-    assert response["readiness_score"] == 100
-    assert response["readiness_label"] == "review_ready"
+    assert response["readiness_score"] == 84
+    assert response["readiness_label"] == "partial"
 
 
 def test_invalid_input_reports_validation_failure():
@@ -127,7 +174,7 @@ def test_invalid_input_reports_validation_failure():
 def test_http_route_returns_verdict():
     status, body = http_api.handle_post("/v1/agent-output/verification", _grounded_audit())
     assert status == 200
-    assert body["verdict"] == "allow_relay"
+    assert body["verdict"] == "verify_before_relay"
 
 
 def test_http_route_rejects_invalid_request():
@@ -147,7 +194,7 @@ def test_a2a_dispatch_returns_completed_artifact():
     result = response["result"]
     assert result["status"]["state"] == "TASK_STATE_COMPLETED"
     assert result["metadata"]["product_profile"] == "agent_output_verification"
-    assert result["metadata"]["response"]["verdict"] == "allow_relay"
+    assert result["metadata"]["response"]["verdict"] == "verify_before_relay"
 
 
 def test_a2a_dispatch_missing_request_errors():

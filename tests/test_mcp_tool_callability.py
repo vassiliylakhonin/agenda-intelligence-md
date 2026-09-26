@@ -112,7 +112,7 @@ def test_market_entry_tool_reports_schema_errors_on_a_bad_request():
     assert result["errors"]
 
 
-def test_output_verification_tool_allows_relay_on_a_grounded_audit():
+def test_output_verification_tool_caps_grounded_audit_at_verify_before_relay():
     audit = {
         "topic": "corridor status",
         "claims": [
@@ -124,13 +124,21 @@ def test_output_verification_tool_allows_relay_on_a_grounded_audit():
                 "supporting_quotes": [{"evidence_id": "e1", "quote": "in force from 1 May 2026"}],
             }
         ],
-        "evidence": [{"evidence_id": "e1", "source_type": "official_document", "name": "Official gazette"}],
+        "evidence": [
+            {
+                "evidence_id": "e1",
+                "source_type": "official_document",
+                "name": "Official gazette",
+                "content": "Regulation 2026/171 enters in force from 1 May 2026 across the Union.",
+            }
+        ],
     }
 
     result = TOOLS["agent_output_verification"]["handler"]({"audit_json": audit})
 
     assert result["valid"] is True
-    assert result["response"]["verdict"] == "allow_relay"
+    # Caller-declared packs never earn allow_relay (2026-09-26).
+    assert result["response"]["verdict"] == "verify_before_relay"
     assert result["response"]["not_advice_notice"]
 
 
@@ -157,7 +165,7 @@ def test_pre_action_check_tool_routes_high_risk_output_to_approval():
                 "supporting_quotes": [{"evidence_id": "e1", "quote": "Release available"}],
             }
         ],
-        "evidence": [{"evidence_id": "e1", "source_type": "official_document"}],
+        "evidence": [{"evidence_id": "e1", "source_type": "official_document", "content": "Release available on the portal."}],
     }
 
     result = TOOLS["pre_action_check"]["handler"]({"action_request": request})

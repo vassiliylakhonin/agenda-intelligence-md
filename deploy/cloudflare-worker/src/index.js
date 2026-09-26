@@ -1192,7 +1192,7 @@ function agentCard(request, env = {}) {
     x_agenda_intelligence: {
       hosted_wrapper: true,
       operational_health: { status: "ok", version: VERSION, checked_at: new Date().toISOString(), url: `${origin}/health` },
-      task_continuity: { store: "KV (24-hour TTL, status-only without input or artifacts)", supported_methods: ["SendMessage", "GetTask"], cancellation: "unsupported for synchronous tasks" },
+      task_continuity: { store: "KV (24-hour TTL, status-only without input or artifacts)", supported_methods: ["SendMessage", "GetTask"], cancellation: "unsupported for synchronous tasks", tenant_binding: "tasks are bound to the caller's X-Client-Id label; GetTask and continuation require the same label and answer TASK_NOT_FOUND otherwise; tasks created without a label live in the shared anonymous scope" },
       wrapper_scope: "A2A/JSON-RPC discovery, lightweight triage, and routing response only",
       jsonrpc_endpoint: `${origin}/message/send`,
       protocol_version: "1.0",
@@ -5600,8 +5600,9 @@ async function a2aResultForAgenticInteractionTrust(params, request, env = {}) {
 const AGENT_OUTPUT_VERIFICATION_NOT_ADVICE_NOTICE =
   "Agent-output relay-readiness triage only. Schema-level and structural: it does not verify that any " +
   "claim or quote is factually true, does not fetch or validate cited sources, and does not authorize " +
-  "an action or provide legal, compliance, sanctions, financial, or investment advice. Human review is " +
-  "required before a consuming agent acts on any verdict other than allow_relay.";
+  "an action or provide legal, compliance, sanctions, financial, or investment advice. This gate never " +
+  "issues allow_relay from caller-declared packs: human review is required before a consuming agent " +
+  "acts on any verdict it returns.";
 
 const AGENT_OUTPUT_VERIFICATION_SUPPORT_LEVELS = ["direct", "partial", "weak", "unsupported"];
 
@@ -5623,6 +5624,56 @@ const AGENT_OUTPUT_UNCORROBORATED_READINESS_CAP = 84;
 function claimIsCorroborated(claim, evidenceIds) {
   const declared = Array.isArray(claim && claim.evidence_ids) ? claim.evidence_ids : [];
   return declared.some((eid) => evidenceIds.has(eid));
+}
+
+// A caller can declare any quote it likes; until 2026-09-26 the gate counted
+// every claim carrying a supporting_quotes entry as "grounded" without ever
+// looking inside the cited evidence, so a fabricated quote plus a made-up URL
+// scored a full allow_relay / trust high / 100. A quote corroborates only
+// when its normalized text actually appears inside the cited evidence item's
+// own content fields. URLs, source_type labels and names are caller
+// assertions and never count as content.
+const AGENT_OUTPUT_QUOTE_CONTENT_FIELDS = [
+  "content", "text", "body", "excerpt", "quote", "snippet", "summary", "full_text"
+];
+const AGENT_OUTPUT_MIN_QUOTE_CHARS = 8;
+
+function normalizeQuoteText(value) {
+  return String(value == null ? "" : value)
+    .normalize("NFC")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim()
+    // Edge punctuation (a trailing full stop, wrapping quotes) must not decide
+    // whether the same words appear in the evidence.
+    .replace(/^[\s"'.,;:!?()\[\]{}]+|[\s"'.,;:!?()\[\]{}]+$/g, "");
+}
+
+function evidenceItemContentText(item) {
+  if (!item || typeof item !== "object") return "";
+  const parts = [];
+  for (const field of AGENT_OUTPUT_QUOTE_CONTENT_FIELDS) {
+    if (typeof item[field] === "string" && item[field]) parts.push(item[field]);
+  }
+  return normalizeQuoteText(parts.join("\n"));
+}
+
+function quoteMatchesEvidenceContent(quoteText, item) {
+  const needle = normalizeQuoteText(quoteText);
+  if (needle.length < AGENT_OUTPUT_MIN_QUOTE_CHARS) return false;
+  const haystack = evidenceItemContentText(item);
+  return haystack.length > 0 && haystack.includes(needle);
+}
+
+function claimHasMatchedQuote(claim, evidenceById) {
+  const quotes = Array.isArray(claim && claim.supporting_quotes) ? claim.supporting_quotes : [];
+  if (!quotes.length) return false;
+  return quotes.some((sq) => {
+    if (!sq || typeof sq !== "object") return false;
+    const item = evidenceById.get(sq.evidence_id);
+    if (!item) return false;
+    return quoteMatchesEvidenceContent(sq.quote || sq.text || "", item);
+  });
 }
 
 function isAgentOutputVerificationRequest(value) {
@@ -5714,7 +5765,20 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     (item) => String(item)
   );
   const claimCount = summary.claimCount;
-  const grounded = summary.grounded;
+  // Grounded means the quote text was found inside the cited evidence content,
+  // not merely that a supporting_quotes entry exists (summary.grounded counts
+  // declarations; declarations are what the 2026-09-26 fabricated-quote bypass
+  // fed on).
+  const evidenceById = new Map(
+    (Array.isArray(request.evidence) ? request.evidence : []).map((item) => [item && item.evidence_id, item])
+  );
+  const grounded = claims.filter((claim) => claimHasMatchedQuote(claim, evidenceById)).length;
+  const unmatchedQuoteClaims = claims.filter(
+    (claim) =>
+      Array.isArray(claim.supporting_quotes) &&
+      claim.supporting_quotes.length > 0 &&
+      !claimHasMatchedQuote(claim, evidenceById)
+  );
 
   const unsafeClaims = [];
   const weakClaims = [];
@@ -5783,6 +5847,13 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
   for (const entry of summary.spanOrphans) {
     evidenceGaps.push(`Claim ${entry.claim_id} quote attributed to evidence ${entry.evidence_id} (${entry.reason}).`);
   }
+  for (const claim of unmatchedQuoteClaims) {
+    if (seenUnsafe.has(claim.claim_id)) continue;
+    evidenceGaps.push(
+      `Claim ${claim.claim_id} supplies supporting_quotes whose text does not appear in the cited ` +
+        "evidence content; a caller-declared quote is not corroboration."
+    );
+  }
   for (const claim of uncorroboratedClaims) {
     evidenceGaps.push(
       `Claim ${claim.claim_id} declares support_level ${claim.support_level} ` +
@@ -5819,23 +5890,26 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     readinessScore = 0;
   } else if (weakClaims.length || summary.spanOrphans.length) {
     verdict = "verify_before_relay";
-  } else if (grounded === claimCount && !uncorroboratedClaims.length) {
-    verdict = "allow_relay";
   } else {
+    // Every pack reaching this gate is caller-declared and nothing here
+    // verifies it externally, so the ceiling is verify_before_relay with
+    // mandatory human review. Issuing allow_relay / trust high for unverified
+    // caller input is how a fabricated quote with a made-up URL scored
+    // relay-ready 100/100 on 2026-09-26.
     verdict = "verify_before_relay";
   }
 
   if (uncorroboratedClaims.length) {
     readinessScore = Math.min(readinessScore, AGENT_OUTPUT_UNCORROBORATED_READINESS_CAP);
   }
+  // Structural-only scoring never enters the review_ready band.
+  readinessScore = Math.min(readinessScore, AGENT_OUTPUT_UNCORROBORATED_READINESS_CAP);
 
   let readinessLabel;
   if (verdict === "insufficient_information") {
     readinessLabel = "insufficient_information";
   } else if (verdict === "block_unsafe_claims") {
     readinessLabel = "not_decision_ready";
-  } else if (readinessScore >= 85 && grounded === claimCount && !placeholderEvidence) {
-    readinessLabel = "review_ready";
   } else if (readinessScore >= 50) {
     readinessLabel = "partial";
   } else {
@@ -5849,9 +5923,9 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     trustSignal = "unknown";
   } else if (verdict === "verify_before_relay") {
     trustSignal = "medium";
-  } else if (grounded === claimCount) {
-    trustSignal = "high";
   } else {
+    // allow_relay is unreachable from caller-declared packs; nothing here may
+    // report trust "high".
     trustSignal = "medium_high";
   }
 
@@ -5879,7 +5953,10 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
 
   const limitations = [
     "Schema-level and structural only. Does not verify that any claim or quote is factually true.",
-    "Does not fetch or validate cited sources; it checks declared support structure only."
+    "Does not fetch or validate cited sources; it checks declared support structure only.",
+    "Caller-declared evidence is never externally verified here, so allow_relay and trust high are " +
+      "never issued from this gate: the best possible routing is verify_before_relay with mandatory " +
+      "human review. A quote counts as grounded only when its text appears in the cited evidence content."
   ];
   if (vizierDlp && vizierDlp.attribution) {
     limitations.unshift(vizierDlp.attribution.notice);
@@ -6037,10 +6114,20 @@ function preActionCheckResult(request, vizierDlp = null) {
   } else if (verification.verdict === "block_unsafe_claims") {
     decision = "stop";
     reasonCode = "unsafe_claims";
-  } else if (evidenceChecks.length || verification.verdict !== "allow_relay") {
+  } else if (
+    evidenceChecks.length ||
+    verification.verdict !== "verify_before_relay" ||
+    (verification.weak_claims || []).length ||
+    (verification.evidence_gaps || []).length ||
+    verification.grounded_claim_count !== verification.claim_count
+  ) {
     decision = "request_evidence";
     reasonCode = "evidence_gaps";
   } else {
+    // Only a fully quote-matched pack reaches the risk-tier approval gate,
+    // and its verdict is still verify_before_relay (the best a
+    // caller-declared pack can earn since 2026-09-26): structurally
+    // consistent, never externally verified here.
     const approvalRiskTiers = new Set(["high", "critical"]);
     if (policyProfile === "agentic_interaction_trust") approvalRiskTiers.add("medium");
     if (approvalRiskTiers.has(request.risk_tier) && approvalStatus !== "approved") {
@@ -9827,15 +9914,20 @@ function cisArtifactText(response, liveRetrievalStatus, sanctionsMatchesMerged =
     // to name the match in the same breath — and name what it is not. Only a
     // successful run may report an absence of matches; on the disabled and
     // degraded paths nothing was screened, and the status line above says so.
-    ...(["success", "static_snapshot"].includes(liveRetrievalStatus)
+    ...(liveRetrievalStatus === "stale"
       ? [
-          sanctionsMatchesMerged
-            ? `Name screening: ${sanctionsMatchesMerged} public-list name ` +
-              `match${sanctionsMatchesMerged === 1 ? "" : "es"} merged as evidence ` +
-              "(possible string match, not identity verification)"
-            : "Name screening: no public-list name match against the current snapshot"
+          "Name screening: UNKNOWN - the public-list snapshot is stale (older than the freshness " +
+            "maximum) or carries no publication date; no name screening was performed against current lists"
         ]
-      : []),
+      : ["success", "static_snapshot"].includes(liveRetrievalStatus)
+        ? [
+            sanctionsMatchesMerged
+              ? `Name screening: ${sanctionsMatchesMerged} public-list name ` +
+                `match${sanctionsMatchesMerged === 1 ? "" : "es"} merged as evidence ` +
+                "(possible string match, not identity verification)"
+              : "Name screening: no public-list name match against the current snapshot"
+          ]
+        : []),
     `Human review required: ${String(response.human_review_required)}`,
     "",
     "Top exposure dimensions:",
@@ -12690,6 +12782,35 @@ const TASK_TTL_SECONDS = 24 * 60 * 60;
 const TASK_KEY_PREFIX = "a2a-task:v1:";
 const LOCAL_TASKS = new Map(); // Development/tests only; KV is required for durable production continuity.
 function taskKey(profile, id) { return `${TASK_KEY_PREFIX}${profile}:${id}`; }
+
+// Tenant binding: a stored task belongs to the caller label (X-Client-Id)
+// that created it. Before 2026-09-26 any caller that learned a taskId could
+// GetTask it or continue it (verified live against production): the store is
+// keyed by profile+UUID alone. The label is a shared integration identifier,
+// not strong authentication; what it restores is tenant-to-tenant isolation.
+// Tasks created without a label live in the shared anonymous scope: any
+// anonymous caller holding the task id can read or continue it.
+async function taskOwnerKey(request) {
+  const label = request?.headers?.get?.("x-client-id");
+  if (!label || typeof label !== "string") return null;
+  const trimmed = label.trim();
+  if (!trimmed) return null;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(trimmed));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// The task may be read or continued only inside the scope that owns it: a
+// task bound to an X-Client-Id is visible only to that tenant, and a task
+// created without one lives in the shared anonymous scope, continuable by
+// any anonymous caller holding the (unguessable) task id. Unknown and
+// cross-scope lookups all collapse to TASK_NOT_FOUND so the error does not
+// disclose that the id exists.
+function taskVisibleTo(task, ownerKey) {
+  if (!task || typeof task !== "object") return false;
+  const owner = typeof task.owner === "string" && task.owner ? task.owner : null;
+  return owner === (ownerKey || null);
+}
+
 async function storedTask(env, profile, id) {
   if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id)) return null;
   if (!env?.AGENDA_USAGE) {
@@ -12703,16 +12824,16 @@ async function storedTask(env, profile, id) {
     return raw ? JSON.parse(raw) : null;
   } catch (error) { console.warn("task store read failed", error); return null; }
 }
-async function saveTask(env, profile, task) {
+async function saveTask(env, profile, task, ownerKey = null) {
   if (!env?.AGENDA_USAGE) {
     LOCAL_TASKS.set(taskKey(profile, task.id), {
-      task: { id: task.id, contextId: task.contextId, status: { state: task.status.state, timestamp: task.status.timestamp } },
+      task: { id: task.id, contextId: task.contextId, status: { state: task.status.state, timestamp: task.status.timestamp }, owner: ownerKey },
       expires: Date.now() + TASK_TTL_SECONDS * 1000
     });
     return true;
   }
   try {
-    const stored = { id: task.id, contextId: task.contextId, status: { state: task.status.state, timestamp: task.status.timestamp } };
+    const stored = { id: task.id, contextId: task.contextId, status: { state: task.status.state, timestamp: task.status.timestamp }, owner: ownerKey };
     await env.AGENDA_USAGE.put(taskKey(profile, task.id), JSON.stringify(stored), { expirationTtl: TASK_TTL_SECONDS });
     return true;
   } catch (error) { console.warn("task store write failed", error); return false; }
@@ -12761,9 +12882,11 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
     const profile = agentProfile(request, env);
     if (!isProductionAuthorized(request, env, profile)) return jsonRpcError(id, -32001, "Unauthorized");
     const task = await storedTask(env, profile, taskId);
-    if (!task) return taskNotFound(id);
+    const ownerKey = await taskOwnerKey(request);
+    if (!taskVisibleTo(task, ownerKey)) return taskNotFound(id);
     if (payload.method === "CancelTask") return unsupportedTaskOperation(id, "TASK_NOT_CANCELABLE");
-    return { jsonrpc: "2.0", id, result: task };
+    const { owner: _owner, ...publicTask } = task;
+    return { jsonrpc: "2.0", id, result: publicTask };
   }
 
   const isV1SendMessage = V1_MESSAGE_SEND_METHODS.has(payload.method);
@@ -12786,7 +12909,8 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
         { field: "message.taskId", description: "A non-empty task id is required" }
       ]);
       prior = await storedTask(env, profile, priorId);
-      if (!prior) return taskNotFound(id);
+      const callerKey = await taskOwnerKey(request);
+      if (!taskVisibleTo(prior, callerKey)) return taskNotFound(id);
       if (params.message.contextId && params.message.contextId !== prior.contextId) return invalidParamsError(id, [
         { field: "message.contextId", description: "contextId does not match the referenced task" }
       ]);
@@ -12806,7 +12930,7 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
       const task = v1SendMessageResponse(result, request, env).task;
       responseTask = task;
       // A store failure must not suggest the task can be resumed when it cannot.
-      if (!(await saveTask(env, profile, task))) {
+      if (!(await saveTask(env, profile, task, await taskOwnerKey(request)))) {
         return jsonRpcError(id, -32603, "Task storage unavailable");
       }
     }
@@ -15485,7 +15609,10 @@ export async function handleRequest(request, env = {}, ctx = {}) {
             }
           },
           instruction:
-            "Send transaction on Base, then POST /v1/settle with {\"tx_hash\": \"0x...\", \"tier\": \"tier_2_pro\"}."
+            "Send transaction on Base, then POST /v1/settle with {\"tx_hash\": \"0x...\", \"tier\": \"tier_2_pro\", " +
+            "\"payer_signature\": \"0x...\"}. payer_signature is an EIP-191 personal_sign by the funding wallet over " +
+            "'Agenda Intelligence MD pro-tenant settlement\\ntx_hash: <hash>\\npayer: <address>'; it proves the claim " +
+            "comes from the payer, not from someone who read the public tx_hash. Non-pro tiers need only tx_hash."
         },
         200,
         { "cache-control": "public, max-age=3600" }

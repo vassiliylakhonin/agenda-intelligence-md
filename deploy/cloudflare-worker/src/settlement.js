@@ -12,6 +12,24 @@ import {
   TIER_PRO_USDC_AMOUNT,
   USDC_DECIMALS
 } from "./profiles.js";
+import { verifyPersonalSignature } from "./ethsig.js";
+
+// EIP-191 challenge a payer signs to prove control of the address that funded
+// a Pro-tier settlement. The message binds the exact tx_hash and the on-chain
+// payer address, so a signature is worthless for any other payment.
+export const SETTLEMENT_CHALLENGE_PREFIX = "Agenda Intelligence MD pro-tenant settlement";
+export function settlementChallengeMessage(txHash, payer) {
+  return (
+    SETTLEMENT_CHALLENGE_PREFIX +
+    "\ntx_hash: " + String(txHash || "").toLowerCase() +
+    "\npayer: " + String(payer || "").toLowerCase()
+  );
+}
+
+async function sha256Hex(text) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 export function normalizeAddressForTopic(address) {
   if (!address || typeof address !== "string") return "";
@@ -88,17 +106,13 @@ export async function verifyBaseTransactionReceipt(
     try {
       const existing = await kv.get(replayKey);
       if (existing) {
-        let record = null;
-        try {
-          record = JSON.parse(existing);
-        } catch (_e) {
-          record = { raw: existing };
-        }
+        // Never echo the stored marker: before 2026-09-26 it contained the
+        // provisioned Pro bearer token in plaintext, so anyone who knew the
+        // public tx_hash could recover the paid credential from the 409.
         return {
           valid: false,
           code: "already_claimed",
-          error: `Transaction ${cleanTxHash} was already claimed and settled.`,
-          claimed_record: record
+          error: `Transaction ${cleanTxHash} was already claimed and settled.`
         };
       }
     } catch (_kvErr) {
@@ -198,12 +212,59 @@ export async function markTransactionSettled(txHash, details, env = {}) {
   const kv = env?.AGENDA_USAGE;
   if (!kv || typeof kv.put !== "function") return;
   const replayKey = `settled_tx:${txHash.toLowerCase()}`;
+  const safeDetails = { ...details };
+  // A settled marker is replay evidence, not a credential store: a bearer
+  // token persisted here in plaintext leaked back out through the old 409
+  // `claimed_record` path. Store only its SHA-256 fingerprint.
+  if (typeof safeDetails.token === "string") {
+    safeDetails.token_hash = await sha256Hex(safeDetails.token);
+    delete safeDetails.token;
+  }
   const payload = JSON.stringify({
     settled_at: new Date().toISOString(),
-    ...details
+    ...safeDetails
   });
   // Retain settled transaction markers for 90 days
   await kv.put(replayKey, payload, { expirationTtl: 90 * 86400 });
+}
+
+// Optimistic atomic claim of a tx_hash before any credential is provisioned.
+// The marker is written first with a random claim nonce and read back: a
+// concurrent settler that loses the race sees the winner's nonce and is
+// rejected. LIMITATION: Workers KV is eventually consistent and has no
+// put-if-absent, so a tight cross-region race can still double-claim; closing
+// that fully needs a Durable Object or D1 unique insert. The nonce read-back
+// plus the pre-claim replay check in verifyBaseTransactionReceipt shrink the
+// window to the KV propagation delay; until the storage moves, Pro-tier
+// issuance additionally requires the payer-signed challenge, so a lost race
+// cannot hand the token to a non-payer.
+export async function claimTransactionSettlement(txHash, details, env = {}) {
+  const kv = env?.AGENDA_USAGE;
+  if (!kv || typeof kv.put !== "function") return { claimed: true, durable: false };
+  const replayKey = `settled_tx:${txHash.toLowerCase()}`;
+  try {
+    const existing = await kv.get(replayKey);
+    if (existing) return { claimed: false, code: "already_claimed" };
+    const nonce = crypto.randomUUID();
+    await kv.put(
+      replayKey,
+      JSON.stringify({ claim_nonce: nonce, claimed_at: new Date().toISOString(), ...details }),
+      { expirationTtl: 90 * 86400 }
+    );
+    const confirm = await kv.get(replayKey);
+    if (!confirm) return { claimed: true, durable: false };
+    try {
+      if (JSON.parse(confirm).claim_nonce !== nonce) {
+        return { claimed: false, code: "already_claimed" };
+      }
+    } catch (_e) {
+      return { claimed: false, code: "already_claimed" };
+    }
+    return { claimed: true, durable: true };
+  } catch (_kvErr) {
+    // A KV outage must not hand out paid credentials by default.
+    return { claimed: false, code: "settlement_store_unavailable" };
+  }
 }
 
 export async function provisionProBearerToken(payerAddress, txHash, env = {}) {
@@ -323,6 +384,61 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
       );
     }
 
+    // A tx_hash alone proves only that *someone* paid the wallet: hashes are
+    // public on-chain, so the first caller to present one used to walk away
+    // with the payer's Pro bearer token. Bearer issuance now requires an
+    // EIP-191 personal_sign over the settlement challenge from the on-chain
+    // payer address itself.
+    const payerSignature = body?.payer_signature;
+    if (!payerSignature || typeof payerSignature !== "string") {
+      return new Response(
+        JSON.stringify({
+          error: "Missing required field: payer_signature",
+          required_fields: ["tx_hash", "tier", "payer_signature"],
+          challenge_message: settlementChallengeMessage(verification.tx_hash, verification.payer),
+          how_to_sign:
+            "Sign the challenge_message with the payer wallet as an EIP-191 personal_sign " +
+            "(eth_sign / personal_sign) and resubmit. This proves the claim comes from the " +
+            "address that funded the payment, not from someone who read the public tx_hash."
+        }),
+        { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+      );
+    }
+    const challenge = settlementChallengeMessage(verification.tx_hash, verification.payer);
+    if (!verifyPersonalSignature(challenge, payerSignature, verification.payer)) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "payer_signature verification failed: the signature does not recover the on-chain " +
+            `payer address ${verification.payer} for this tx_hash. Only the funding wallet can ` +
+            "claim a Pro bearer token.",
+          code: "payer_signature_invalid"
+        }),
+        { status: 403, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+      );
+    }
+
+    // Claim the tx_hash before any credential exists; a replay or lost race is
+    // rejected without ever provisioning a token.
+    const claim = await claimTransactionSettlement(verification.tx_hash, {
+      tier: "tier_2_pro",
+      payer: verification.payer,
+      amount_usdc: verification.amount_usdc
+    }, env);
+    if (!claim.claimed) {
+      const unavailable = claim.code === "settlement_store_unavailable";
+      return new Response(
+        JSON.stringify({
+          error: unavailable
+            ? "Settlement store unavailable; no credential issued. Retry later."
+            : `Transaction ${verification.tx_hash} was already claimed and settled.`,
+          code: unavailable ? "settlement_store_unavailable" : "already_claimed",
+          tx_hash: verification.tx_hash
+        }),
+        { status: unavailable ? 503 : 409, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+      );
+    }
+
     const { token, tokenData } = await provisionProBearerToken(verification.payer, verification.tx_hash, env);
     await markTransactionSettled(verification.tx_hash, {
       tier: "tier_2_pro",
@@ -369,7 +485,7 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
       );
     }
 
-    await markTransactionSettled(
+    const __claim = await claimTransactionSettlement(
       verification.tx_hash,
       {
         tier: "tier_bankability_dossier",
@@ -378,6 +494,20 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
       },
       env
     );
+      if (!__claim.claimed) {
+        return new Response(
+          JSON.stringify({
+            error:
+              __claim.code === "settlement_store_unavailable"
+                ? "Settlement store unavailable; nothing settled. Retry later."
+                : `Transaction ${verification.tx_hash} was already claimed and settled.`,
+            code: __claim.code === "settlement_store_unavailable" ? "settlement_store_unavailable" : "already_claimed",
+            tx_hash: verification.tx_hash
+          }),
+          { status: __claim.code === "settlement_store_unavailable" ? 503 : 409, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+        );
+      }
+
 
     return new Response(
       JSON.stringify({
@@ -425,7 +555,7 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
       );
     }
 
-    await markTransactionSettled(
+    const __claim = await claimTransactionSettlement(
       verification.tx_hash,
       {
         tier: tierName,
@@ -434,6 +564,20 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
       },
       env
     );
+      if (!__claim.claimed) {
+        return new Response(
+          JSON.stringify({
+            error:
+              __claim.code === "settlement_store_unavailable"
+                ? "Settlement store unavailable; nothing settled. Retry later."
+                : `Transaction ${verification.tx_hash} was already claimed and settled.`,
+            code: __claim.code === "settlement_store_unavailable" ? "settlement_store_unavailable" : "already_claimed",
+            tx_hash: verification.tx_hash
+          }),
+          { status: __claim.code === "settlement_store_unavailable" ? 503 : 409, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+        );
+      }
+
 
     return new Response(
       JSON.stringify({
@@ -471,7 +615,7 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
     );
   }
 
-  await markTransactionSettled(
+  const __claim = await claimTransactionSettlement(
     verification.tx_hash,
     {
       tier: "tier_3_deal_dossier",
@@ -480,6 +624,20 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
     },
     env
   );
+    if (!__claim.claimed) {
+      return new Response(
+        JSON.stringify({
+          error:
+            __claim.code === "settlement_store_unavailable"
+              ? "Settlement store unavailable; nothing settled. Retry later."
+              : `Transaction ${verification.tx_hash} was already claimed and settled.`,
+          code: __claim.code === "settlement_store_unavailable" ? "settlement_store_unavailable" : "already_claimed",
+          tx_hash: verification.tx_hash
+        }),
+        { status: __claim.code === "settlement_store_unavailable" ? 503 : 409, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+      );
+    }
+
 
   return new Response(
     JSON.stringify({

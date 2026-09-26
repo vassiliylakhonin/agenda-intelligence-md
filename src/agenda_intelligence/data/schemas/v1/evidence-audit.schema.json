@@ -150,6 +150,38 @@
           "items": {
             "type": "string"
           }
+        },
+        "content": {
+          "type": "string",
+          "description": "Optional source text extract. When present, supporting_quotes are corroborated by matching their text against this content; without a content field, caller-declared quotes count as unverified assertions."
+        },
+        "text": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "body": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "excerpt": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "quote": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "snippet": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "full_text": {
+          "type": "string",
+          "description": "Alias content field; treated like 'content' for quote corroboration."
         }
       }
     }

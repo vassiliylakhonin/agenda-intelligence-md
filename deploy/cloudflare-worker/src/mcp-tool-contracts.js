@@ -2465,6 +2465,38 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "items": {
                   "type": "string"
                 }
+              },
+              "content": {
+                "type": "string",
+                "description": "Optional source text extract. When present, supporting_quotes are corroborated by matching their text against this content; without a content field, caller-declared quotes count as unverified assertions."
+              },
+              "text": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "body": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "excerpt": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "quote": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "snippet": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "summary": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "full_text": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
               }
             }
           }
@@ -2505,7 +2537,7 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "not_decision_ready",
               "insufficient_information"
             ],
-            "description": "Machine-actionable relay verdict. allow_relay: every claim is grounded and none is unsupported. verify_before_relay: claims are declared-supported but carry weak support or span-grounding gaps. block_unsafe_claims: at least one claim is marked unsupported or cites evidence that is not present. not_decision_ready / insufficient_information: not enough structured claim material to verdict, or no claim cites evidence present in the supplied pack. A declared support_level is a caller assertion, not a verified fact: it counts only where the claim cites an evidence_id the caller actually supplied."
+            "description": "Machine-actionable relay verdict. verify_before_relay: claims are declared-supported and structurally consistent; the pack is caller-declared and never externally verified here, so this is the best possible routing and human review is mandatory. block_unsafe_claims: at least one claim is marked unsupported or cites evidence that is not present. not_decision_ready / insufficient_information: not enough structured claim material to verdict, or no claim cites evidence present in the supplied pack. allow_relay is reserved and never issued from caller-declared packs: this gate performs no external verification, so nothing it returns may be read as relay-ready. A declared support_level is a caller assertion, not a verified fact: it counts only where the claim cites an evidence_id the caller actually supplied."
           },
           "trust_signal": {
             "type": "string",
@@ -2521,7 +2553,7 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
             "type": "integer",
             "minimum": 0,
             "maximum": 100,
-            "description": "Heuristic 0-100 score for how ready the supplied claim set is for relay. Only claims that cite an evidence_id present in the supplied evidence contribute to it; a claim whose declared support_level nothing in the pack corroborates weighs nothing, and any such claim holds the score below the review_ready band. Not approval, clearance, or factual verification."
+            "description": "Heuristic 0-100 score over declared evidence structure, capped below the review_ready band (max 84) because caller-declared packs are never externally verified here. Only claims that cite an evidence_id present in the supplied evidence contribute to it; a claim whose declared support_level nothing in the pack corroborates weighs nothing. Not approval, clearance, or factual verification."
           },
           "readiness_label": {
             "type": "string",
@@ -2539,7 +2571,7 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           "grounded_claim_count": {
             "type": "integer",
             "minimum": 0,
-            "description": "Number of claims that carry at least one supporting quote span."
+            "description": "Number of claims with at least one supporting quote whose normalized text appears in the cited evidence item's content fields. A quote that is only declared, with no matching evidence content, does not count."
           },
           "unsafe_claims": {
             "type": "array",
@@ -2862,6 +2894,38 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "items": {
                   "type": "string"
                 }
+              },
+              "content": {
+                "type": "string",
+                "description": "Optional source text extract. supporting_quotes corroborate only by matching their text against evidence content fields; without one, quotes are caller assertions."
+              },
+              "text": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "body": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "excerpt": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "quote": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "snippet": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "summary": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "full_text": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
               }
             }
           },
@@ -3513,6 +3577,38 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "items": {
                   "type": "string"
                 }
+              },
+              "content": {
+                "type": "string",
+                "description": "Optional source text extract. supporting_quotes corroborate only by matching their text against evidence content fields; without one, quotes are caller assertions."
+              },
+              "text": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "body": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "excerpt": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "quote": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "snippet": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "summary": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "full_text": {
+                "type": "string",
+                "description": "Alias content field; treated like 'content' for quote corroboration."
               }
             }
           },

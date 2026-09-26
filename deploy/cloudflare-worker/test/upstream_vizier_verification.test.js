@@ -164,7 +164,12 @@ test("e2e: agent_output_verification allows clean claims and attaches Vizier rec
           }
         ],
         evidence: [
-          { evidence_id: "e1", name: "Registry extract", source_type: "official_document" }
+          {
+            evidence_id: "e1",
+            name: "Registry extract",
+            source_type: "official_document",
+            content: "Clean standing verified by the registry on 1 May 2026."
+          }
         ]
       }
     }
@@ -186,10 +191,11 @@ test("e2e: agent_output_verification allows clean claims and attaches Vizier rec
   assert.equal(metadata.dlp_screening.clean, true);
 
   const responseBody = metadata.response;
-  assert.equal(responseBody.verdict, "allow_relay");
-  assert.equal(responseBody.readiness_label, "review_ready");
-  assert.equal(responseBody.readiness_score, 100);
-  assert.equal(responseBody.human_review_required, false);
+  // Caller-declared packs cap at verify_before_relay / medium / 84 (2026-09-26).
+  assert.equal(responseBody.verdict, "verify_before_relay");
+  assert.equal(responseBody.readiness_label, "partial");
+  assert.equal(responseBody.readiness_score, 84);
+  assert.equal(responseBody.human_review_required, true);
 });
 
 test("e2e: agent_output_verification blocks relay when secret leak is detected by Vizier DLP", async () => {
@@ -306,7 +312,7 @@ test("e2e: REST POST /v1/agent-output/verification attaches Vizier provenance an
   assert.equal(response.status, 200);
   const data = await response.json();
 
-  assert.equal(data.verdict, "allow_relay");
+  assert.equal(data.verdict, "verify_before_relay");
   assert.equal(data.vizier_status, "success");
   assert.equal(data.vizier_clearance_receipt, fakeJws);
   assert.equal(data.dlp_screening.clean, true);

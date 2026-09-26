@@ -13,6 +13,7 @@ import csv
 import hashlib
 import json
 import re
+import unicodedata
 import sys
 import tempfile
 import time
@@ -105,8 +106,40 @@ def public_url(url: str) -> str:
     return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
 
 
+# Lookalike-script folding, kept in step with normalizeName in
+# deploy/cloudflare-worker/src/upstream_snapshot.js: screening on [A-Z0-9]
+# alone let a listed name typed with Cyrillic homoglyphs (or a fully Cyrillic
+# spelling) normalize to a different key than the Latin list entry. NFC first,
+# then fold Cyrillic (full transliteration, covering the homoglyph subset) and
+# Greek capital lookalikes onto Latin before filtering.
+_CYRILLIC_FOLD = {
+    "\u0410": "A", "\u0430": "a", "\u0411": "B", "\u0431": "b", "\u0412": "V", "\u0432": "v",
+    "\u0413": "G", "\u0433": "g", "\u0414": "D", "\u0434": "d", "\u0415": "E", "\u0435": "e",
+    "\u0401": "E", "\u0451": "e", "\u0416": "ZH", "\u0436": "zh", "\u0417": "Z", "\u0437": "z",
+    "\u0418": "I", "\u0438": "i", "\u0419": "Y", "\u0439": "y", "\u041a": "K", "\u043a": "k",
+    "\u041b": "L", "\u043b": "l", "\u041c": "M", "\u043c": "m", "\u041d": "N", "\u043d": "n",
+    "\u041e": "O", "\u043e": "o", "\u041f": "P", "\u043f": "p", "\u0420": "R", "\u0440": "r",
+    "\u0421": "S", "\u0441": "s", "\u0422": "T", "\u0442": "t", "\u0423": "U", "\u0443": "u",
+    "\u0424": "F", "\u0444": "f", "\u0425": "KH", "\u0445": "kh", "\u0426": "TS", "\u0446": "ts",
+    "\u0427": "CH", "\u0447": "ch", "\u0428": "SH", "\u0448": "sh", "\u0429": "SCH", "\u0449": "sch",
+    "\u042a": "", "\u044a": "", "\u042b": "Y", "\u044b": "y", "\u042c": "", "\u044c": "",
+    "\u042d": "E", "\u044d": "e", "\u042e": "YU", "\u044e": "yu", "\u042f": "YA", "\u044f": "ya",
+    "\u0404": "E", "\u0454": "e", "\u0406": "I", "\u0456": "i", "\u0407": "YI", "\u0457": "yi",
+    "\u0405": "S", "\u0455": "s", "\u0408": "J", "\u0458": "j", "\u0490": "G", "\u0491": "g",
+}
+_GREEK_CAPITAL_FOLD = {
+    "\u0391": "A", "\u0392": "B", "\u0395": "E", "\u0396": "Z", "\u0397": "H",
+    "\u0399": "I", "\u039a": "K", "\u039c": "M", "\u039d": "N", "\u039f": "O",
+    "\u03a1": "P", "\u03a4": "T", "\u03a5": "Y", "\u03a7": "X",
+}
+
+
+def _fold_lookalikes(value: str) -> str:
+    return "".join(_CYRILLIC_FOLD.get(ch, _GREEK_CAPITAL_FOLD.get(ch, ch)) for ch in value)
+
+
 def normalized_name(value: str) -> str:
-    value = value.upper()
+    value = _fold_lookalikes(unicodedata.normalize("NFC", value)).upper()
     value = re.sub(r"[^A-Z0-9]+", " ", value)
     return " ".join(value.split())
 
