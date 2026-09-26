@@ -371,7 +371,9 @@ def _normalize_quote_text(value) -> str:
 def _evidence_item_content_text(item) -> str:
     if not isinstance(item, dict):
         return ""
-    parts = [item[field] for field in AGENT_OUTPUT_QUOTE_CONTENT_FIELDS if isinstance(item.get(field), str) and item[field]]
+    parts = [
+        item[field] for field in AGENT_OUTPUT_QUOTE_CONTENT_FIELDS if isinstance(item.get(field), str) and item[field]
+    ]
     return _normalize_quote_text("\n".join(parts))
 
 

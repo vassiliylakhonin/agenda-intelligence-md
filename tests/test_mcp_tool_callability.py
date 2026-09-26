@@ -165,7 +165,9 @@ def test_pre_action_check_tool_routes_high_risk_output_to_approval():
                 "supporting_quotes": [{"evidence_id": "e1", "quote": "Release available"}],
             }
         ],
-        "evidence": [{"evidence_id": "e1", "source_type": "official_document", "content": "Release available on the portal."}],
+        "evidence": [
+            {"evidence_id": "e1", "source_type": "official_document", "content": "Release available on the portal."}
+        ],
     }
 
     result = TOOLS["pre_action_check"]["handler"]({"action_request": request})
