@@ -174,7 +174,7 @@ does not include source text in its JSON or Markdown result. See
 Install the pinned release without cloning the source and check your own packet:
 
 ```text
-pip install "agenda-intelligence-md==1.12.1"
+pip install "agenda-intelligence-md==1.13.0"
 agenda-intelligence check /path/to/evidence-packet.json --strict
 ```
 
@@ -576,4 +576,4 @@ See [`ROADMAP.md`](ROADMAP.md) for the active expansion initiatives.
 [MIT](LICENSE)
 
 
-For explicit Base native-USDC operator review, see [Financial Guard human review](docs/financial-human-review.md). Install the optional `agenda-intelligence-md[reviews]==1.12.1` extra.
+For explicit Base native-USDC operator review, see [Financial Guard human review](docs/financial-human-review.md). Install the optional `agenda-intelligence-md[reviews]==1.13.0` extra.

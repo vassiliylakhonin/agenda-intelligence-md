@@ -5,7 +5,7 @@ Demonstrates:
 1. Native Cloudflare Service Binding interconnect to Vizier security kernel.
 2. Real-time pre-action DLP secret & PII leak prevention.
 3. Cryptographic JWS clearance receipts minted by Vizier.
-4. Backward-compatible ADR 0003 contract compliance.
+4. Caller-declared evidence remains review-only, including fabricated quotes.
 """
 
 import base64
@@ -28,7 +28,13 @@ def decode_jws_payload(token: str) -> dict:
 def post_json(url: str, payload: dict) -> dict:
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
-        url, data=data, headers={"Content-Type": "application/json", "User-Agent": "ZeroMockProof/1.0"}
+        url,
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": "ZeroMockProof/1.0",
+            "X-Client-Id": "instinct-owner-verify-synthetic",
+        },
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read().decode("utf-8"))
@@ -53,7 +59,12 @@ def test_clean_output_verification():
                     }
                 ],
                 "evidence": [
-                    {"evidence_id": "e1", "name": "Official Trade Registry Extract", "source_type": "official_document"}
+                    {
+                        "evidence_id": "e1",
+                        "name": "QA Trade Registry Extract",
+                        "source_type": "official_document",
+                        "content": "The counterparty is not subject to export bans in this QA record.",
+                    }
                 ],
             },
         },
@@ -80,13 +91,16 @@ def test_clean_output_verification():
         f"engine={receipt_payload.get('engine')}, clean={receipt_payload.get('clean')}"
     )
 
-    assert response.get("verdict") == "allow_relay", f"Expected allow_relay, got {response.get('verdict')}"
-    assert response.get("readiness_score") == 100
-    assert response.get("readiness_label") == "review_ready"
-    assert response.get("human_review_required") is False
+    assert response.get("verdict") == "verify_before_relay", response
+    assert response.get("trust_signal") == "medium", response
+    assert response.get("grounded_claim_count") == 1, response
+    assert response.get("readiness_score") == 84, response
+    assert response.get("readiness_label") == "partial", response
+    assert response.get("human_review_required") is True, response
     assert metadata.get("vizier_status") == "success"
     assert metadata.get("dlp_screening", {}).get("clean") is True
-    print(">>> PASS: Clean output approved with authentic Vizier cryptographic clearance!\n")
+    assert metadata.get("receipt_scope") == "dlp_scan_only"
+    print(">>> PASS: Matched quote stays review-only; Vizier receipt covers DLP only!\n")
 
 
 def test_leaked_secret_dlp_firewall():
@@ -153,7 +167,14 @@ def test_rest_endpoint_provenance():
                 "supporting_quotes": [{"evidence_id": "e1", "quote": "conform to standard specifications"}],
             }
         ],
-        "evidence": [{"evidence_id": "e1", "name": "Quality Certificate", "source_type": "official_document"}],
+        "evidence": [
+            {
+                "evidence_id": "e1",
+                "name": "QA Quality Certificate",
+                "source_type": "official_document",
+                "content": "All goods conform to standard specifications in this QA record.",
+            }
+        ],
     }
     res = post_json(f"{WORKER_URL}/v1/agent-output/verification", payload)
     print(f"Verdict: {res.get('verdict')}")
@@ -162,11 +183,66 @@ def test_rest_endpoint_provenance():
     print(f"Vizier Receipt: {str(res.get('vizier_clearance_receipt'))[:40]}...")
     print(f"DLP Clean: {res.get('dlp_screening', {}).get('clean')}")
 
-    assert res.get("verdict") == "allow_relay"
+    assert res.get("verdict") == "verify_before_relay", res
+    assert res.get("trust_signal") == "medium", res
+    assert res.get("grounded_claim_count") == 1, res
+    assert res.get("readiness_score") == 84, res
+    assert res.get("readiness_label") == "partial", res
+    assert res.get("human_review_required") is True, res
     assert res.get("vizier_status") == "success"
     assert res.get("vizier_clearance_receipt") is not None
+    assert res.get("receipt_scope") == "dlp_scan_only"
     assert res.get("dlp_screening", {}).get("clean") is True
-    print(">>> PASS: REST endpoint returned proper provenance and authentic JWS clearance receipt!\n")
+    print(">>> PASS: REST endpoint keeps matched evidence review-only and DLP receipt scoped!\n")
+
+
+def test_fabricated_quote_never_relayed():
+    print("=== TEST CASE 4: Fabricated Quote Cannot Earn Relay (A2A JSON-RPC) ===")
+    payload = {
+        "jsonrpc": "2.0",
+        "id": "live-fabricated-04",
+        "method": "message/send",
+        "params": {
+            "capability": "agent_output_verification",
+            "request": {
+                "claims": [
+                    {
+                        "claim_id": "c1",
+                        "claim": "Entity X was delisted on 12 March 2026.",
+                        "support_level": "direct",
+                        "evidence_ids": ["e1"],
+                        "supporting_quotes": [
+                            {"evidence_id": "e1", "quote": "delisted from the consolidated list on 12 March 2026"}
+                        ],
+                    }
+                ],
+                "evidence": [
+                    {
+                        "evidence_id": "e1",
+                        "source_type": "official_document",
+                        "name": "QA Official Journal",
+                        "url": "https://registry.test.invalid/qa-record",
+                        "content": "This QA document contains no delisting announcement.",
+                    }
+                ],
+            },
+        },
+    }
+    res = post_json(f"{WORKER_URL}/message/send", payload)
+    assert res.get("result", {}).get("status", {}).get("state") == "TASK_STATE_COMPLETED", res
+    response = res["result"]["metadata"]["response"]
+    print(f"Verdict: {response.get('verdict')}; grounded claims: {response.get('grounded_claim_count')}")
+    print(f"Evidence gaps: {response.get('evidence_gaps')}")
+    assert response.get("verdict") == "verify_before_relay", response
+    assert response.get("trust_signal") == "medium", response
+    assert response.get("grounded_claim_count") == 0, response
+    assert response.get("readiness_score") == 0, response
+    assert response.get("readiness_label") == "not_decision_ready", response
+    assert response.get("human_review_required") is True, response
+    assert any(
+        "does not appear in the cited evidence content" in gap for gap in response.get("evidence_gaps", [])
+    ), response
+    print(">>> PASS: Fabricated quote is not grounded and cannot earn relay!\n")
 
 
 if __name__ == "__main__":
@@ -174,6 +250,7 @@ if __name__ == "__main__":
         test_clean_output_verification()
         test_leaked_secret_dlp_firewall()
         test_rest_endpoint_provenance()
+        test_fabricated_quote_never_relayed()
         print("ALL ZERO-MOCK LIVE EDGE TESTS PASSED 100%!")
     except Exception as e:
         print(f"FAILED: {e}")

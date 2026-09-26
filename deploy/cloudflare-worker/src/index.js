@@ -1192,7 +1192,7 @@ function agentCard(request, env = {}) {
     x_agenda_intelligence: {
       hosted_wrapper: true,
       operational_health: { status: "ok", version: VERSION, checked_at: new Date().toISOString(), url: `${origin}/health` },
-      task_continuity: { store: "KV (24-hour TTL, status-only without input or artifacts)", supported_methods: ["SendMessage", "GetTask"], cancellation: "unsupported for synchronous tasks", tenant_binding: "tasks are bound to the caller's X-Client-Id label; GetTask and continuation require the same label and answer TASK_NOT_FOUND otherwise; tasks created without a label live in the shared anonymous scope" },
+      task_continuity: { store: "KV (24-hour TTL, status-only without input or artifacts)", supported_methods: ["SendMessage", "GetTask"], cancellation: "unsupported for synchronous tasks", tenant_binding: "tasks are bound to the caller's X-Client-Id label; GetTask and continuation require the same label and answer TASK_NOT_FOUND otherwise. Tasks created without a label are scoped to anonymous callers only: any caller without an X-Client-Id who holds the task id can read or continue them, and labeled tenants cannot" },
       wrapper_scope: "A2A/JSON-RPC discovery, lightweight triage, and routing response only",
       jsonrpc_endpoint: `${origin}/message/send`,
       protocol_version: "1.0",
@@ -2918,14 +2918,14 @@ function applyAgentOutputVerificationProfile(card, request) {
   card.name = "Agent Output Verification";
   card.documentationUrl = discovery.documentation_url;
   card.description =
-    "Before you relay or act on a claim-backed answer from another agent, check whether every claim is grounded. An A2A-compatible relay-readiness gate for agent-to-agent output hand-off: bring the claim set and its evidence; get a machine-actionable verdict — allow_relay, verify_before_relay, or block_unsafe_claims — with the unsafe and weak claims, evidence gaps, and owner actions. Schema-level and structural only — not factual-truth verification, source retrieval, or an approval.";
+    "Before you relay or act on a claim-backed answer from another agent, check whether every claim is grounded. An A2A-compatible relay-readiness gate for agent-to-agent output hand-off: bring the claim set and its evidence; get a machine-actionable verdict — verify_before_relay, block_unsafe_claims, not_decision_ready, or insufficient_information — with the unsafe and weak claims, evidence gaps, and owner actions. Caller-declared evidence is never externally verified here, so allow_relay is never issued: the strongest verdict is verify_before_relay with mandatory human review, and a quote counts as grounded only when its text appears in the cited evidence content. Schema-level and structural only — not factual-truth verification, source retrieval, or an approval.";
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
       id: "agent-output-verification",
       name: "Agent output relay-readiness gate",
       description:
-        "Turns another agent's claim set and evidence into a machine-actionable relay verdict — allow_relay, verify_before_relay, or block_unsafe_claims — with the ungrounded and weak claims, evidence gaps, and the owner actions needed before the output is safe to relay. Structural claim-support triage, not factual-truth verification.",
+        "Turns another agent's claim set and evidence into a machine-actionable relay verdict — verify_before_relay, block_unsafe_claims, not_decision_ready, or insufficient_information — with the ungrounded and weak claims, evidence gaps, and the owner actions needed before the output is safe to relay. allow_relay is never issued from caller-declared evidence; human review is mandatory before any relay. Structural claim-support triage, not factual-truth verification.",
       tags: [
         "agentic-ai",
         "a2a",
@@ -2995,7 +2995,7 @@ function applyAgentOutputVerificationProfile(card, request) {
     "No live source retrieval; it does not fetch or validate cited sources.",
     "No legal, compliance, financial, investment, insurance, or trading advice.",
     "No approval, clearance, authorization, or final decision.",
-    "Human review is required for any verdict other than allow_relay."
+    "Human review is required for every verdict: caller-declared evidence never earns allow_relay, so the strongest routing is verify_before_relay."
   ];
   return card;
 }

@@ -34,7 +34,7 @@ bun add @agenda-intelligence/plugin-guard
 npm install @agenda-intelligence/plugin-guard
 
 # Pin this release when a reproducible install is needed
-npm install @agenda-intelligence/plugin-guard@1.12.1
+npm install @agenda-intelligence/plugin-guard@1.13.0
 ```
 
 ---

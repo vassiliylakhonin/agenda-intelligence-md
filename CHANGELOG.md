@@ -4,6 +4,23 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+## 1.13.0 — 2026-09-26
+
+### Security hardening (round 5, breaking)
+
+- `/v1/settle` Pro tier (`tier_2_pro`) now requires `payer_signature`: an EIP-191 personal_sign by the funding wallet over the settlement challenge (`Agenda Intelligence MD pro-tenant settlement\ntx_hash: <hash>\npayer: <address>`). A public tx_hash alone no longer issues a bearer token, replayed claims answer 409 without any token material, and the KV marker stores only the token's SHA-256 fingerprint.
+- Agent Output Verification never issues `allow_relay` or trust `high` from caller-declared evidence packs; the ceiling is `verify_before_relay` with mandatory human review, and a quote counts as grounded only when its text appears in the cited evidence content.
+- A2A tasks are tenant-bound to the caller's X-Client-Id label: cross-tenant GetTask/continuation answers TASK_NOT_FOUND; unlabeled tasks are scoped to anonymous callers only.
+- CIS name screening treats a public-list snapshot older than the freshness maximum (default 72h, `SNAPSHOT_MAX_AGE_HOURS`) as UNKNOWN instead of "no match", and name normalization covers Cyrillic and homoglyph variants.
+- The live telemetry stats token is read from `AGENDA_STATS_TOKEN` env, not from the repository.
+
+### Contract and metadata alignment (round 5b)
+
+- Agent Output Verification card, skill, boundaries, and the Python MCP tool description no longer advertise `allow_relay`; they state the `verify_before_relay` ceiling and mandatory human review.
+- Card `task_continuity.tenant_binding` states that unlabeled tasks are visible to anonymous callers only, not to labeled tenants.
+- `docs/use-cases/agent-financial-guard.md` documents the `payer_signature` requirement for the Dedicated Pro Key.
+- Landing-page "Pay Pro (Base USDC)" flow signs the EIP-191 settlement challenge with the paying wallet before calling `/v1/settle`, so browser Pro activation keeps working after the round-5 change, and surfaces settlement errors instead of staying silent.
+
 ### Landing conversion, runnable v1 curl, and honest pricing catalog (2026-09-25)
 
 - Profile-specific conversion on landing pages: console preloaded with realistic synthetic fixtures, worked example buttons, canonical/OG metadata, and self-referencing agent-card links.

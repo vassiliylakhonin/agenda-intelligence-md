@@ -443,7 +443,9 @@ def agent_card(base_url: str = "http://localhost:8080") -> dict:
                 "description": (
                     "Verifies whether one agent's claim-backed output is ready for a consuming agent to relay "
                     "or act on. Wraps a claim-level evidence audit and returns a machine-actionable relay "
-                    "verdict (allow_relay / verify_before_relay / block_unsafe_claims), unsafe and weak claims, "
+                    "verdict (verify_before_relay / block_unsafe_claims / not_decision_ready / "
+                    "insufficient_information; allow_relay is never issued from caller-declared evidence), "
+                    "unsafe and weak claims, "
                     "evidence gaps, and owner actions. Schema-level and structural only: it does not verify "
                     "factual truth, fetch cited sources, or authorize an action."
                 ),

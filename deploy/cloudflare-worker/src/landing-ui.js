@@ -921,16 +921,39 @@ async function payWithBaseWallet(amountUsd) {
     statusDiv.innerHTML = '<strong>Payment Submitted!</strong> Tx: <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:#0284c7; text-decoration:underline;">' + txHash.slice(0, 10) + '...' + txHash.slice(-8) + '</a><br>Verifying settlement on-chain...';
 
     try {
+      // Pro-tier settlement requires proof the claim comes from the payer: an
+      // EIP-191 personal_sign over the settlement challenge, matching
+      // settlementChallengeMessage() in src/settlement.js. The only call site
+      // is the 490 USDC Pro button, so the tier is fixed here.
+      var challengeMessage = 'Agenda Intelligence MD pro-tenant settlement' +
+        '\\ntx_hash: ' + String(txHash).toLowerCase() +
+        '\\npayer: ' + String(accounts[0]).toLowerCase();
+      var challengeHex = '0x' + Array.from(new TextEncoder().encode(challengeMessage))
+        .map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+      statusDiv.innerHTML += '<br>Sign the settlement challenge in your wallet to prove the payment is yours...';
+      var payerSignature;
+      try {
+        payerSignature = await window.ethereum.request({
+          method: 'personal_sign',
+          params: [challengeHex, accounts[0]]
+        });
+      } catch (_signErr) {
+        statusDiv.innerHTML += '<br><strong>Signature declined.</strong> Your payment is on-chain but the Pro key was not issued: the settlement challenge must be signed by the paying wallet. Email ' +
+          'vassiliy.lakhonin@gmail.com with your tx hash to complete activation.';
+        throw _signErr;
+      }
       var settleResp = await fetch('${origin}/v1/settle', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ tx_hash: txHash })
+        body: JSON.stringify({ tx_hash: txHash, tier: 'tier_2_pro', payer_signature: payerSignature })
       });
       var settleData = await settleResp.json();
       if (settleData && settleData.provisioned_bearer_token) {
         statusDiv.innerHTML += '<br><strong>Pro API Key Activated:</strong> <code style="user-select:all; background:#fff; padding:3px 6px; font-weight:700;">' + settleData.provisioned_bearer_token + '</code> (Valid 30 days, 10k requests).';
       } else if (settleData && settleData.ok) {
         statusDiv.innerHTML += '<br><strong>Settlement Confirmed:</strong> Receipt Ref: ' + (settleData.receipt_ref || 'OK');
+      } else if (settleData && settleData.error) {
+        statusDiv.innerHTML += '<br><strong>Settlement not completed:</strong> ' + (settleData.error.message || settleData.error);
       }
     } catch (_e) {
       statusDiv.innerHTML += '<br>Node will auto-verify within 30 seconds once confirmed on-chain.';

@@ -1,6 +1,6 @@
 # Read-only Base wallet evidence
 
-`AgentFinancialGuard.collect_base_usdc_history(wallet_address)` collects outgoing native-USDC Transfer events directly from `https://mainnet.base.org`. It does not accept a caller-supplied spending total and does not change a Financial Guard decision. This method is included in the Python SDK; the bounded 1,000-block RPC range is fixed in 1.12.1.
+`AgentFinancialGuard.collect_base_usdc_history(wallet_address)` collects outgoing native-USDC Transfer events directly from `https://mainnet.base.org`. It does not accept a caller-supplied spending total and does not change a Financial Guard decision. This method is included in the Python SDK; the bounded 1,000-block RPC range is fixed in 1.13.0.
 
 ```python
 from agenda_intelligence import AgentFinancialGuard

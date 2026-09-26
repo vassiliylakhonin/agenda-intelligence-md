@@ -1,6 +1,6 @@
 # Explicit Financial Guard human review
 
-Install `agenda-intelligence-md[reviews]==1.12.1`. The optional extra installs
+Install `agenda-intelligence-md[reviews]==1.13.0`. The optional extra installs
 ES256 verification and canonical JSON dependencies; ordinary linting does not
 require them. This workflow supports **native USDC transfers on Base (8453)**.
 It cannot sign or broadcast a transaction and never changes a Guard verdict.
@@ -90,7 +90,7 @@ Before claim, the reviewer can cancel the request to free its reservation.
 After claim, neither token expiry nor cancellation releases it. Claimed reviews
 remain stored until resolved, then at least seven days after the verified block
 time. Other reviews retain the seven-day policy. Policy audit persists until
-operator removal. The existing Python SDK 1.12.1 remains compatible; transaction
+operator removal. The existing Python SDK 1.13.0 remains compatible; transaction
 reconciliation is available through the console or the documented REST endpoint.
 
 The request expires after 60–3600 seconds (default 1800), and is capped at 32 KiB.
