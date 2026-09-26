@@ -50,6 +50,29 @@ This Worker is intentionally small:
 | POST | `/mcp` | JSON-RPC 2.0 | MCP over Streamable HTTP, stateless |
 | POST | `/v1/cis-secondary-sanctions/exposure/batch` | JSON | CIS batch triage for 1–10 independent requests |
 
+### A2A task continuity
+
+`SendMessage` returns a server-generated task ID. Follow-ups for an `INPUT_REQUIRED`
+task send that ID as `params.message.taskId`, optionally with the matching
+`contextId`. `GetTask` (`params.id`) returns its latest state. Unknown IDs
+return `TASK_NOT_FOUND`; a terminal task cannot accept another message.
+`CancelTask` reports `TASK_NOT_CANCELABLE` (-32002) because processing is synchronous.
+A2A responses carry `A2A-Version: 1.0` and TaskStatus.message is a Message
+object. The 0.3 aliases retain their existing envelope.
+
+The 24-hour task store uses the existing `AGENDA_USAGE` KV binding, scoped by
+profile. It retains only task ID, context ID, state and timestamp, not caller
+text, artifacts or result metadata. KV is eventually consistent; immediate
+cross-colo follow-up may need a retry. A missing KV binding uses process-local
+memory for development only; production must configure KV on every profile.
+Task IDs are bearer-like references within a profile: do not expose them to
+other callers. This minimal store has no per-caller ownership check, so it is
+not suitable for tenant-isolated production use until caller scoping is added.
+Old tasks expire, and the client must send complete structured data again on
+follow-up, because the store intentionally does not retain sensitive inputs.
+`/health` and the card's `x_agenda_intelligence.operational_health` are
+self-reported liveness, not independent uptime monitoring or an SLA.
+
 ### MCP endpoint
 
 `POST /mcp` speaks MCP **2026-07-28**. That revision removed protocol sessions,

@@ -14,3 +14,5 @@
 | **Corridor & Sanctions Risk Assistant** | ✅ Online | [agent-card.json](https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) |
 | **Critical Minerals & Strategic Raw Materials Due Diligence Gate** | ✅ Online | [agent-card.json](https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) |
 | **Dual-Use Technology & Export Controls Gate** | ✅ Online | [agent-card.json](https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) |
+| **Agent Financial Guard** | ✅ Online | [agent-card.json](https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) |
+| **M2M Escrow Arbiter** | ✅ Online | [agent-card.json](https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json) |

@@ -1191,6 +1191,8 @@ function agentCard(request, env = {}) {
     },
     x_agenda_intelligence: {
       hosted_wrapper: true,
+      operational_health: { status: "ok", version: VERSION, checked_at: new Date().toISOString(), url: `${origin}/health` },
+      task_continuity: { store: "KV (24-hour TTL, status-only without input or artifacts)", supported_methods: ["SendMessage", "GetTask"], cancellation: "unsupported for synchronous tasks" },
       wrapper_scope: "A2A/JSON-RPC discovery, lightweight triage, and routing response only",
       jsonrpc_endpoint: `${origin}/message/send`,
       protocol_version: "1.0",
@@ -1285,6 +1287,7 @@ function agentCard(request, env = {}) {
   if (contracts) shaped.x_tool_contracts = contracts;
   const profile = agentProfile(request, env);
   const guide = GATE_REQUEST_GUIDES[profile] || (profile === "market_entry_readiness" ? GATE_REQUEST_GUIDES.kazakhstan_market_entry_readiness : null);
+  if (guide) shaped.x_agenda_intelligence.preferred_input = "structured_json; free-text candidates are unconfirmed and may be empty";
   const sample = guide?.example || (profile === "agenda" || profile === "corridor_sanctions_assistant"
     ? "What evidence is needed before shipping from Aktau to Baku?" : null);
   const part = typeof sample === "string" ? { kind: "text", text: sample } : { kind: "data", data: sample };
@@ -4343,7 +4346,7 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
     "Nothing was screened. This gate reads a structured request, not a plain-language question.",
     "",
     "> [!NOTE]",
-    "> **Instruction for AI Agents:** Resubmit your request as structured JSON containing the required fields below.",
+    "> **Required fields for structured submission are listed below.**",
     "",
     "## Why it stopped",
     ...errors.map((error) => `- ${error}`),
@@ -4361,7 +4364,7 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
     // above reads as a payload that was truncated.
     ...(guide.exampleNote ? ["", guide.exampleNote] : []),
     "",
-    `Send it as \`params.message.parts[0].data\` to \`message/send\`, or POST it to \`${endpoint}\`.`,
+    `Structured submission: \`params.message.parts[0].data\` to \`message/send\`, or POST to \`${endpoint}\`.`,
     `Full field list: \`${schema}\`.`,
     "",
     "## If you would rather talk to a person",
@@ -4378,7 +4381,7 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
     required_fields: guide.required,
     optional_fields: guide.optional || [],
     example_request: guide.example,
-    instruction: `Resubmit your request as structured JSON matching example_request to ${endpoint} or as params.message.parts[0].data.`
+    instruction: `Required structured JSON matches example_request at ${endpoint} or params.message.parts[0].data.`
   };
   return {
     artifactId: `${profile.replace(/_/g, "-")}-request-guidance`,
@@ -4414,7 +4417,7 @@ function invalidRequestResult(profile, endpoint, schema, errors, guideOverride =
         required_fields: guide.required,
         optional_fields: guide.optional || [],
         example_request: guide.example,
-        instruction: `Resubmit your request as structured JSON matching example_request to ${endpoint} or as params.message.parts[0].data.`
+        instruction: `Required structured JSON matches example_request at ${endpoint} or params.message.parts[0].data.`
       }
     : null;
   return {
@@ -4463,17 +4466,21 @@ function invalidRequestResult(profile, endpoint, schema, errors, guideOverride =
 // and now gets TASK_STATE_INPUT_REQUIRED carrying the same guide. A caller who
 // sent a structured request that does not validate still gets
 // TASK_STATE_FAILED with the field errors, because that request did fail.
-function requestGuidanceResult(profile, endpoint, schema, errors, guideOverride = null) {
+function requestGuidanceResult(profile, endpoint, schema, errors, guideOverride = null, candidate = {}) {
   const result = invalidRequestResult(profile, endpoint, schema, errors, guideOverride);
   const guide = guideOverride || GATE_REQUEST_GUIDES[profile];
   const requiredNames = guide?.required
     ? guide.required.map((f) => f.split(/\s+[—–]\s+/, 1)[0].replace(/^or\s+/i, "").trim()).filter(Boolean)
     : [];
+  const missing = requiredNames.filter((name) => {
+    const value = candidate[name];
+    return !(typeof value === "string" ? value.trim() : Array.isArray(value) && value.length > 0);
+  });
   return {
     ...result,
     status: {
       state: "TASK_STATE_INPUT_REQUIRED",
-      message: `Input required: this gate requires structured input. Missing fields: ${requiredNames.join(", ") || "structured request"}.`,
+      message: `Input required: this gate requires structured input. Missing fields: ${missing.join(", ") || "structured request"}.`,
       timestamp: new Date().toISOString()
     }
   };
@@ -4501,6 +4508,11 @@ function cisTextIntakeCandidate(text) {
     /(?:counterparty|company|entity|контрагент|компания|организация)\s*[:#-]?\s*([\p{L}\p{N}&.'’()_-](?:[\p{L}\p{N}&.'’()_\- ]{0,118}?))(?=\s+(?:in|from|based\s+in|registered\s+in|в|из)\s+|[,;.!?]|$)/iu
   );
   if (nameMatch) candidate.name = boundedText(nameMatch[1]);
+  // Explicit legal-form names are common even without a "company:" label.
+  if (!candidate.name) {
+    const legalName = text.match(/\b(?:LLP|LLC|Ltd\.?|JSC)\s+([A-Z][A-Za-z0-9&.'_-]{1,60})\b/);
+    if (legalName) candidate.name = boundedText(legalName[0]);
+  }
   for (const [pattern, jurisdiction] of CIS_TEXT_JURISDICTIONS) {
     if (pattern.test(text)) {
       candidate.jurisdiction = jurisdiction;
@@ -4652,7 +4664,7 @@ function textIntakeResult(profile, endpoint, schema, candidate, guideOverride = 
     optional_fields: guide?.optional || [],
     candidate_inferred: candidate,
     example_request: guide?.example || null,
-    instruction: "Confirm inferred candidate fields, supply every required field, and resubmit structured JSON."
+    instruction: "Candidate fields need confirmation; structured JSON needs every required field."
   };
   const data = {
     valid: false,
@@ -4687,7 +4699,7 @@ function textIntakeResult(profile, endpoint, schema, candidate, guideOverride = 
               "Review the candidate, add the required evidence fields, and resend it as structured JSON.",
               "",
               "> [!NOTE]",
-              "> **Instruction for AI Agents:** Resubmit your request as structured JSON containing the required fields below.",
+              "> **Required fields for structured submission are listed below.**",
               "",
               "## What it needs",
               ...(guide?.required || []).map((field) => `- ${field}`),
@@ -12182,6 +12194,15 @@ async function a2aResult(params, request, env = {}) {
   }
   const text = structuredRequest ? textFromStructuredDealRiskRequest(structuredRequest) : extractText(params);
   const profile = agentProfile(request, env);
+  if (profile === "kazakhstan" && !structuredRequest) {
+    const partial = params?.message?.parts?.find((part) => part?.data && typeof part.data === "object")?.data
+      || params.request || params.middle_corridor_deal_risk_request || params.input;
+    if (partial && typeof partial === "object" && !Array.isArray(partial) && Object.keys(partial).length) {
+      return requestGuidanceResult(profile, "/v1/middle-corridor/deal-risk",
+        "schemas/v1/middle-corridor-deal-risk-request.schema.json",
+        ["Incomplete structured deal-risk request"], null, partial);
+    }
+  }
   if (!structuredRequest && !text.trim()) {
     return emptyRequestResult(profile, request);
   }
@@ -12645,14 +12666,66 @@ function withVerificationStatus(task, request, env = {}) {
   };
 }
 
+// A2A v1 TaskStatus.message is a Message, not a display string. Keep the
+// legacy wire shape untouched; convert only at the v1 transport boundary.
+function specTask(task) {
+  const status = { ...task.status };
+  if (typeof status.message === "string") {
+    status.message = {
+      messageId: crypto.randomUUID(), role: "ROLE_AGENT",
+      parts: [{ kind: "text", text: status.message }]
+    };
+  }
+  return { ...task, status, contextId: task.contextId || crypto.randomUUID() };
+}
+
+const TASK_TTL_SECONDS = 24 * 60 * 60;
+const TASK_KEY_PREFIX = "a2a-task:v1:";
+const LOCAL_TASKS = new Map(); // Development/tests only; KV is required for durable production continuity.
+function taskKey(profile, id) { return `${TASK_KEY_PREFIX}${profile}:${id}`; }
+async function storedTask(env, profile, id) {
+  if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id)) return null;
+  if (!env?.AGENDA_USAGE) {
+    const record = LOCAL_TASKS.get(taskKey(profile, id));
+    if (record && record.expires > Date.now()) return record.task;
+    LOCAL_TASKS.delete(taskKey(profile, id));
+    return null;
+  }
+  try {
+    const raw = await env.AGENDA_USAGE.get(taskKey(profile, id));
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) { console.warn("task store read failed", error); return null; }
+}
+async function saveTask(env, profile, task) {
+  if (!env?.AGENDA_USAGE) {
+    LOCAL_TASKS.set(taskKey(profile, task.id), {
+      task: { id: task.id, contextId: task.contextId, status: { state: task.status.state, timestamp: task.status.timestamp } },
+      expires: Date.now() + TASK_TTL_SECONDS * 1000
+    });
+    return true;
+  }
+  try {
+    const stored = { id: task.id, contextId: task.contextId, status: { state: task.status.state, timestamp: task.status.timestamp } };
+    await env.AGENDA_USAGE.put(taskKey(profile, task.id), JSON.stringify(stored), { expirationTtl: TASK_TTL_SECONDS });
+    return true;
+  } catch (error) { console.warn("task store write failed", error); return false; }
+}
+function taskNotFound(id) {
+  return jsonRpcError(id, -32001, "Task not found", [{
+    "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+    reason: "TASK_NOT_FOUND", domain: "a2a-protocol.org"
+  }]);
+}
+function unsupportedTaskOperation(id, reason = "UNSUPPORTED_OPERATION") {
+  return jsonRpcError(id, reason === "TASK_NOT_CANCELABLE" ? -32002 : -32004,
+    reason === "TASK_NOT_CANCELABLE" ? "Task not cancelable" : "Operation not supported", [{
+    "@type": "type.googleapis.com/google.rpc.ErrorInfo", reason, domain: "a2a-protocol.org"
+  }]);
+}
+
 function v1SendMessageResponse(task, request, env = {}) {
   const shaped = withVerificationStatus(task, request, env);
-  return {
-    task: {
-      ...shaped,
-      contextId: shaped.contextId || crypto.randomUUID()
-    }
-  };
+  return { task: specTask(shaped) };
 }
 
 async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
@@ -12673,6 +12746,19 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
     return versionNotSupportedError(id, version || request.headers.get("a2a-version"));
   }
 
+  if (version === A2A_PROTOCOL_VERSION && ["GetTask", "CancelTask"].includes(payload.method)) {
+    const taskId = payload.params?.id;
+    if (typeof taskId !== "string" || !taskId.trim()) return invalidParamsError(id, [
+      { field: "params.id", description: "A non-empty task id is required" }
+    ]);
+    const profile = agentProfile(request, env);
+    if (!isProductionAuthorized(request, env, profile)) return jsonRpcError(id, -32001, "Unauthorized");
+    const task = await storedTask(env, profile, taskId);
+    if (!task) return taskNotFound(id);
+    if (payload.method === "CancelTask") return unsupportedTaskOperation(id, "TASK_NOT_CANCELABLE");
+    return { jsonrpc: "2.0", id, result: task };
+  }
+
   const isV1SendMessage = V1_MESSAGE_SEND_METHODS.has(payload.method);
   const isLegacySendMessage = LEGACY_MESSAGE_SEND_METHODS.has(payload.method);
   const methodMatchesVersion =
@@ -12686,6 +12772,19 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
     }
     const params = payload.params ?? {};
     const profile = agentProfile(request, env);
+    const priorId = isV1SendMessage ? params.message.taskId : null;
+    let prior = null;
+    if (priorId !== null && priorId !== undefined) {
+      if (typeof priorId !== "string" || !priorId.trim()) return invalidParamsError(id, [
+        { field: "message.taskId", description: "A non-empty task id is required" }
+      ]);
+      prior = await storedTask(env, profile, priorId);
+      if (!prior) return taskNotFound(id);
+      if (params.message.contextId && params.message.contextId !== prior.contextId) return invalidParamsError(id, [
+        { field: "message.contextId", description: "contextId does not match the referenced task" }
+      ]);
+      if (prior.status.state !== "TASK_STATE_INPUT_REQUIRED") return unsupportedTaskOperation(id);
+    }
     const { result, promptChars, structuredChars, modulesUsed } = await runProfileRequest(profile, params, request, env);
     const probeReason = actionProbeReason(request, promptChars);
     // One id per call, from the caller's X-Trace-Id / params.trace_id when
@@ -12693,6 +12792,17 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
     // usage row and the response carry the same value.
     const traceId = traceIdFromRequest(request, { trace_id: params.trace_id });
     result.metadata = { ...(result.metadata || {}), trace_id: traceId };
+    let responseTask = null;
+    if (isV1SendMessage) {
+      if (prior) { result.id = prior.id; result.contextId = prior.contextId; }
+      else if (params.message.contextId) result.contextId = params.message.contextId;
+      const task = v1SendMessageResponse(result, request, env).task;
+      responseTask = task;
+      // A store failure must not suggest the task can be resumed when it cannot.
+      if (!(await saveTask(env, profile, task))) {
+        return jsonRpcError(id, -32603, "Task storage unavailable");
+      }
+    }
     const event = await logUsageEvent(request, {
       jsonrpc_method: payload.method,
       jsonrpc_id_present: payload.id !== undefined,
@@ -12728,7 +12838,7 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
     return {
       jsonrpc: "2.0",
       id,
-      result: isV1SendMessage ? v1SendMessageResponse(result, request, env) : result
+      result: isV1SendMessage ? { task: responseTask } : result
     };
   }
 
@@ -12756,7 +12866,7 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
   return jsonRpcError(id, -32601, "Method not found", {
     supported_methods:
       version === A2A_PROTOCOL_VERSION
-        ? ["SendMessage"]
+        ? ["SendMessage", "GetTask", "CancelTask"]
         : ["message/send", "tasks/send", "agent/card"]
   });
 }
@@ -13595,6 +13705,10 @@ function partsWithEngagement(parts, engagement) {
   });
 }
 
+function a2aJsonResponse(body, status = 200, headers = {}) {
+  return jsonResponse(body, status, { "A2A-Version": A2A_PROTOCOL_VERSION, ...headers });
+}
+
 async function handlePost(request, env, ctx) {
   const startedAt = Date.now();
   const contentType = request.headers.get("content-type") || "";
@@ -13608,7 +13722,7 @@ async function handlePost(request, env, ctx) {
       }
     ]);
     logProtocolEvent(request, env, null, null, error, startedAt);
-    return jsonResponse(error, 415);
+    return a2aJsonResponse(error, 415);
   }
 
   const declaredLength = Number.parseInt(request.headers.get("content-length") || "0", 10);
@@ -13620,7 +13734,7 @@ async function handlePost(request, env, ctx) {
       }
     ]);
     logProtocolEvent(request, env, null, null, error, startedAt);
-    return jsonResponse(error, 413);
+    return a2aJsonResponse(error, 413);
   }
 
   const rawBody = await request.text();
@@ -13632,7 +13746,7 @@ async function handlePost(request, env, ctx) {
       }
     ]);
     logProtocolEvent(request, env, null, null, error, startedAt);
-    return jsonResponse(error, 413);
+    return a2aJsonResponse(error, 413);
   }
 
   let payload;
@@ -13641,10 +13755,10 @@ async function handlePost(request, env, ctx) {
   } catch (_error) {
     const error = jsonRpcError(null, -32700, "Invalid JSON payload");
     logProtocolEvent(request, env, null, null, error, startedAt);
-    return jsonResponse(error, 200);
+    return a2aJsonResponse(error, 200);
   }
   const method = payload && typeof payload === "object" ? payload.method : null;
-  if (MESSAGE_SEND_METHODS.has(method)) {
+  if (MESSAGE_SEND_METHODS.has(method) || method === "GetTask" || method === "CancelTask") {
     const profile = agentProfile(request, env);
     if (!isProductionAuthorized(request, env, profile)) {
       const error = jsonRpcError(
@@ -13654,12 +13768,13 @@ async function handlePost(request, env, ctx) {
           { security_scheme: "productionBearer", profile }
       );
       logProtocolEvent(request, env, payload.id, method, error, startedAt);
-      return jsonResponse(error, 401, {
+      return a2aJsonResponse(error, 401, {
         "www-authenticate": "Bearer",
         "cache-control": "no-store"
       });
     }
-    const rate = await checkRateLimit(request, env, profile);
+    const rate = method === "GetTask" || method === "CancelTask"
+      ? { limited: false } : await checkRateLimit(request, env, profile);
     if (rate.limited) {
       const isDispute = profile === "m2m_escrow_arbiter";
       const requiredUsdc = isDispute ? TIER_MICRO_DISPUTE_USDC_AMOUNT : TIER_MICRO_CHECK_USDC_AMOUNT;
@@ -13691,7 +13806,7 @@ async function handlePost(request, env, ctx) {
           }
       );
       logProtocolEvent(request, env, payload.id, method, error, startedAt);
-      return jsonResponse(error, 429, {
+      return a2aJsonResponse(error, 429, {
         "retry-after": "3600",
         "www-authenticate": authHeader,
         "x-payment-protocol": "x402",
@@ -13701,7 +13816,7 @@ async function handlePost(request, env, ctx) {
   }
   const response = await handleJsonRpc(payload, request, env, ctx);
   logProtocolEvent(request, env, payload?.id, method, response, startedAt);
-  return jsonResponse(response);
+  return a2aJsonResponse(response, 200, { "A2A-Version": requestedA2aVersion(request, payload) || A2A_PROTOCOL_VERSION });
 }
 
 function logProtocolEvent(request, env, requestId, method, response, startedAt) {
@@ -13981,6 +14096,8 @@ function healthInfo(request, env) {
   const origin = originFromRequest(request);
   return {
     ok: true,
+    operational_status: "ok",
+    checked_at: new Date().toISOString(),
     name: card.name,
     // Some directories register the origin root as the card URL and never
     // follow the agent_card link below. Observed 2026-08-14 on
@@ -14026,6 +14143,7 @@ function statusInfo(request, env) {
   const liveRetrievalActive = isLiveRetrievalActive(profile, env);
   const status = {
     status: "ok",
+    checked_at: new Date().toISOString(),
     name: card.name,
     version: VERSION,
     profile,

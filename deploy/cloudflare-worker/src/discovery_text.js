@@ -173,15 +173,15 @@ export const LLMS_TXT = `# Agenda Intelligence MD
 - [Corridor Bankability Screen](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/v1/corridor-bankability/screen): Deterministic Trans-Caspian corridor debt service coverage (DSCR), leverage covenants, Caspian Sea hydrology depth bottleneck, and sanctions exposure gate.
 
 ## Specialized Risk Gates
-- [Middle Corridor Deal Risk Gate](https://middle-corridor-deal-risk-gate.vassiliy-lakhonin.workers.dev): Cross-border logistics, sanctions screening, and trade route risk assessment.
-- [CIS Secondary Sanctions Exposure](https://cis-secondary-sanctions-exposure.vassiliy-lakhonin.workers.dev): Secondary-sanctions exposure triage for EU/UK/OFAC compliance.
-- [Agentic Interaction Trust Gate](https://agentic-interaction-trust-gate.vassiliy-lakhonin.workers.dev): Pre-action trust evaluation for multi-agent autonomous interactions.
-- [Gulf Maritime Exposure Gate](https://gulf-maritime-exposure-gate.vassiliy-lakhonin.workers.dev): Maritime sanctions, vessel tracking, and chokepoint transit risk triage.
-- [Kazakhstan Market Entry Readiness](https://kazakhstan-market-entry-gate.vassiliy-lakhonin.workers.dev): Regulatory, compliance, and counterparty readiness for market entry.
+- [Middle Corridor Deal Risk Gate](https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev): Cross-border logistics, sanctions screening, and trade route risk assessment.
+- [CIS Secondary Sanctions Exposure](https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev): Secondary-sanctions exposure triage for EU/UK/OFAC compliance.
+- [Agentic Interaction Trust Gate](https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev): Pre-action trust evaluation for multi-agent autonomous interactions.
+- [Gulf Maritime Exposure Gate](https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev): Maritime sanctions, vessel tracking, and chokepoint transit risk triage.
+- [Kazakhstan Market Entry Readiness](https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev): Regulatory, compliance, and counterparty readiness for market entry.
 - [Dual-Use Technology Export Gate](https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev): Export control classification, ECCN mapping, and dual-use tech screening.
 - [Critical Minerals Due Diligence Gate](https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev): Supply chain provenance, ESG risks, and strategic mineral compliance.
 - [Agent Output Verification Gate](https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev): Deterministic evidence verification and claim linter for LLM outputs.
-- [Pre-Action Check Gate](https://pre-action-check-a2a.vassiliy-lakhonin.workers.dev): Stateless policy boundary pre-flight checks before agent execution.
+- [Pre-Action Check Gate](https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev): Stateless policy boundary pre-flight checks before agent execution.
 - [Agent Financial Guard Gate](https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev): Pre-sign transaction firewall, OFAC/AML sanctions screening, drainer defense, and prompt injection prevention.
 - [Strategic Risk Triage Hub](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev): Multi-domain risk routing and strategic evidence aggregation.
 
@@ -192,13 +192,13 @@ export const LLMS_TXT = `# Agenda Intelligence MD
 - [check_memo_quality](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp): checks schema validity plus post-hoc evidence-readiness quality guardrails for a third-party memo.
 - [list_signals / get_signal](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp): read access to the vendored Global Think Tank Analyst signal archive.
 - [deep_dive](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp): reserved stub; returns a v2 placeholder pointing callers at analyze with depth: scenario or red_team.
-- [middle_corridor_deal_risk](https://middle-corridor-deal-risk-gate.vassiliy-lakhonin.workers.dev/mcp): Kazakhstan / Middle Corridor deal-risk gate; structured deal_risk_request in, triage recommendation + decision-readiness + evidence gaps out.
-- [cis_secondary_sanctions_exposure](https://cis-secondary-sanctions-exposure.vassiliy-lakhonin.workers.dev/mcp): CIS counterparty secondary-sanctions exposure triage for EU/UK/UAE/Singapore EDD.
-- [agentic_interaction_trust](https://agentic-interaction-trust-gate.vassiliy-lakhonin.workers.dev/mcp): trust-evidence triage for an agent-mediated interaction before a high-stakes action.
-- [gulf_maritime_exposure](https://gulf-maritime-exposure-gate.vassiliy-lakhonin.workers.dev/mcp): maritime sanctions + chokepoint-disruption exposure triage for a vessel/voyage transiting Strait of Hormuz / Persian Gulf / Red Sea.
-- [kazakhstan_market_entry_readiness](https://kazakhstan-market-entry-gate.vassiliy-lakhonin.workers.dev/mcp): Kazakhstan market-entry readiness gate for distribution / import / service / showroom / EPC files.
+- [middle_corridor_deal_risk](https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/mcp): Kazakhstan / Middle Corridor deal-risk gate; structured deal_risk_request in, triage recommendation + decision-readiness + evidence gaps out.
+- [cis_secondary_sanctions_exposure](https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev/mcp): CIS counterparty secondary-sanctions exposure triage for EU/UK/UAE/Singapore EDD.
+- [agentic_interaction_trust](https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev/mcp): trust-evidence triage for an agent-mediated interaction before a high-stakes action.
+- [gulf_maritime_exposure](https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev/mcp): maritime sanctions + chokepoint-disruption exposure triage for a vessel/voyage transiting Strait of Hormuz / Persian Gulf / Red Sea.
+- [kazakhstan_market_entry_readiness](https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/mcp): Kazakhstan market-entry readiness gate for distribution / import / service / showroom / EPC files.
 - [agent_output_verification](https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp): relay-readiness triage of another agent's claim-backed output.
-- [pre_action_check](https://pre-action-check-a2a.vassiliy-lakhonin.workers.dev/mcp): stateless action-boundary routing from caller-supplied claim evidence, risk, and policy checks.
+- [pre_action_check](https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp): stateless action-boundary routing from caller-supplied claim evidence, risk, and policy checks.
 - [agent_financial_pre_sign_check](https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/mcp): deterministic pre-sign financial transaction firewall for autonomous agents with wallet keys.
 - [corridor_bankability_screen](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp): evaluates corridor transport/port deal bankability, DSCR, leverage covenants, Caspian Sea hydrology depth drop, and x402 payment challenge.
 - [fleet_directory](https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp): enumerates all 11 specialized risk gates with live URLs, canonical REST paths, and capabilities.

@@ -771,6 +771,8 @@ test("/.well-known/agent.json serves an identical alias to /.well-known/agent-ca
   assert.equal(aliasRes.headers.get("content-type"), "application/json; charset=utf-8");
   const cardData = await cardRes.json();
   const aliasData = await aliasRes.json();
+  aliasData.capabilities.extensions[0].params.x_agenda_intelligence.operational_health.checked_at =
+    cardData.capabilities.extensions[0].params.x_agenda_intelligence.operational_health.checked_at;
   assert.deepEqual(aliasData, cardData);
 });
 
@@ -7608,8 +7610,8 @@ test("no call site pairs a request guide with a schema that guide does not name"
   assert.equal(forwarding.length, 1, "requestGuidanceResult forwarding its own arguments is the only pass-through call");
   assert.equal(
     dynamicProfile.length,
-    1,
-    "emptyRequestResult is the only site that picks a guide from a runtime profile; a second one needs its own check"
+    2,
+    "emptyRequestResult and the Middle Corridor partial-input path are the runtime-profile guide sites"
   );
 
   const mismatches = guideSchemaMismatches(WORKER_SOURCE);
@@ -7994,7 +7996,7 @@ test("a2a free text on a vertical gate returns typed intake with a candidate and
   const json = await response.json();
   const task = json.result.task || json.result;
   assert.equal(task.status.state, "TASK_STATE_INPUT_REQUIRED");
-  assert.match(task.status.message, /Confirmation required:/i);
+  assert.match(typeof task.status.message === "string" ? task.status.message : task.status.message.parts[0].text, /Confirmation required:/i);
   assert.ok(task.metadata.schema_hint, "a2a metadata must contain schema_hint");
   assert.equal(task.metadata.schema_hint.canonical_endpoint, "/v1/critical-minerals/due-diligence");
   assert.ok(Array.isArray(task.metadata.schema_hint.required_fields));
@@ -9759,7 +9761,7 @@ test("free text returns typed intake on every vertical gate, screening nothing",
       );
       const task = (await res.json()).result.task;
       assert.equal(task.status.state, "TASK_STATE_INPUT_REQUIRED", profile);
-      assert.match(task.status.message, /Confirmation required/, profile);
+      assert.match(task.status.message.parts[0].text, /Confirmation required/, profile);
       assert.equal(task.metadata.screening_performed, false, profile);
       assert.ok(task.metadata.example_request, profile);
       check(task.metadata);
@@ -9854,4 +9856,85 @@ test("landing conversion: each profile has a usable console, v1 curl, honest pri
   assert.match(corridor, /No counterparty registry extract supplied/);
   const cis = landingHtml(new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/"), {});
   assert.match(cis, /No EU consolidated sanctions list extract supplied/);
+});
+
+test("fleet discovery hosts map to configured Worker profiles and serve cards", async () => {
+  const docs = [
+    readFileSync(new URL("../src/discovery_text.js", import.meta.url), "utf8"),
+    readFileSync(new URL("../../../FLEET_DIRECTORY.md", import.meta.url), "utf8")
+  ];
+  const toml = readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8");
+  const deployed = new Set([...toml.matchAll(/^name = "([a-z0-9-]+)"/gm)].map((match) => match[1]));
+  const hosts = new Set([...docs.join("\n").matchAll(/https:\/\/([a-z0-9-]+)\.vassiliy-lakhonin\.workers\.dev/g)].map((match) => match[1]));
+  assert.deepEqual(hosts, deployed);
+  for (const host of hosts) {
+    const response = await handleRequest(new Request(`https://${host}.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json`));
+    assert.equal(response.status, 200, host);
+    const card = await response.json();
+    assert.ok(card.name && card.supportedInterfaces?.length, host);
+  }
+});
+
+test("v1 task continuity uses same id and context, rejects unknown, mismatched and terminal tasks", async () => {
+  const kv = new MemoryKv();
+  const env = { AGENT_PROFILE: "kazakhstan", AGENDA_USAGE: kv };
+  const url = "https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/message/send";
+  const post = (method, params, id = "rpc") => handleRequest(new Request(url, {
+    method: "POST", headers: { "content-type": "application/json", "A2A-Version": "1.0" },
+    body: JSON.stringify({ jsonrpc: "2.0", id, method, params })
+  }), env);
+  const message = (data, taskId, contextId) => ({ messageId: crypto.randomUUID(), role: "ROLE_USER",
+    ...(taskId ? { taskId } : {}), ...(contextId ? { contextId } : {}), parts: [{ data }] });
+  const firstResponse = await post("SendMessage", { message: message({ route: "Aktau to Baku" }) });
+  assert.equal(firstResponse.headers.get("A2A-Version"), "1.0");
+  const first = (await firstResponse.json()).result.task;
+  assert.equal(first.status.state, "TASK_STATE_INPUT_REQUIRED");
+  assert.match(first.status.message.parts[0].text, /Missing fields:/);
+  assert.doesNotMatch(first.status.message.parts[0].text, /Missing fields: route/);
+  assert.equal(first.status.message.role, "ROLE_AGENT");
+  const stored = (await (await post("GetTask", { id: first.id })).json()).result;
+  assert.equal(stored.id, first.id);
+  assert.equal(stored.status.state, "TASK_STATE_INPUT_REQUIRED");
+  assert.equal(stored.artifacts, undefined, "no caller evidence retained in task KV");
+  const unknown = await (await post("SendMessage", { message: message({ route: "Aktau" }, crypto.randomUUID()) })).json();
+  assert.equal(unknown.error.data[0].reason, "TASK_NOT_FOUND");
+  const mismatched = await (await post("SendMessage", { message: message({ route: "Aktau" }, first.id, crypto.randomUUID()) })).json();
+  assert.equal(mismatched.error.code, -32602);
+  const follow = (await (await post("SendMessage", { message: message({ route: "Aktau to Baku", cargo: "equipment",
+    counterparties: [], dated_sources: [], risk_question: "Review?", decision_stage: "pre_signature" }, first.id, first.contextId) })).json()).result.task;
+  assert.equal(follow.id, first.id);
+  assert.equal(follow.contextId, first.contextId);
+  assert.equal(follow.status.state, "TASK_STATE_COMPLETED");
+  const terminal = await (await post("SendMessage", { message: message({ route: "Aktau" }, first.id) })).json();
+  assert.equal(terminal.error.data[0].reason, "UNSUPPORTED_OPERATION");
+  const canceled = await (await post("CancelTask", { id: first.id })).json();
+  assert.equal(canceled.error.code, -32002);
+  assert.equal(canceled.error.data[0].reason, "TASK_NOT_CANCELABLE");
+});
+
+test("all fleet profiles expose health and card operational status", async () => {
+  for (const profile of ["agenda", "kazakhstan", "cis_secondary_sanctions", "agentic_interaction_trust",
+    "agent_output_verification", "gulf_maritime_exposure", "market_entry_readiness", "corridor_sanctions_assistant",
+    "critical_minerals_due_diligence", "dual_use_technology_export", "agent_financial_guard", "m2m_escrow_arbiter"]) {
+    const env = { AGENT_PROFILE: profile };
+    const request = new Request("https://example.test/health");
+    const response = await handleRequest(request, env);
+    const health = await response.json();
+    assert.equal(response.status, 200, profile);
+    assert.equal(health.operational_status, "ok", profile);
+    assert.ok(Date.parse(health.checked_at), profile);
+    const card = agentCard(request, env);
+    assert.equal(card.x_agenda_intelligence.operational_health.version, VERSION, profile);
+    assert.equal(card.x_agenda_intelligence.operational_health.status, "ok", profile);
+  }
+});
+
+test("CIS text candidate extracts an explicit legal-form name without a company label", async () => {
+  const response = await handleJsonRpc({ jsonrpc: "2.0", id: "cis-name", method: "SendMessage",
+    params: { message: { messageId: "cis-name", role: "ROLE_USER", parts: [{ text: "Screen LLP KazTransSupply in Kazakhstan for sanctions" }] } }
+  }, new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/message/send", {
+    method: "POST", headers: { "A2A-Version": "1.0" }
+  }), { AGENT_PROFILE: "cis_secondary_sanctions", OPENSANCTIONS_DISABLED: "1" });
+  assert.equal(response.result.task.metadata.schema_hint.candidate_inferred.name, "LLP KazTransSupply");
+  assert.equal(response.result.task.metadata.schema_hint.candidate_inferred.jurisdiction, "Kazakhstan");
 });
