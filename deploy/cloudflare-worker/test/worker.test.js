@@ -9938,3 +9938,24 @@ test("CIS text candidate extracts an explicit legal-form name without a company 
   assert.equal(response.result.task.metadata.schema_hint.candidate_inferred.name, "LLP KazTransSupply");
   assert.equal(response.result.task.metadata.schema_hint.candidate_inferred.jurisdiction, "Kazakhstan");
 });
+
+test("CIS text candidate extracts names with suffix legal forms and Russian forms", async () => {
+  const examples = [
+    ["Screen Altai Logistics LLP in Kazakhstan.", "Altai Logistics LLP", "Kazakhstan"],
+    ["Altai Logistics LLP (KZ) sanctions exposure", "Altai Logistics LLP", "Kazakhstan"],
+    ["ТОО Altai Logistics, Казахстан, проверь санкции", "ТОО Altai Logistics", "Kazakhstan"],
+    ["Проверь Altai Logistics ТОО в Казахстане", "Altai Logistics ТОО", "Kazakhstan"],
+    ["АО КазТрансСнаб, Казахстан", "АО КазТрансСнаб", "Kazakhstan"],
+    ["ИП Иванов в Казахстане", "ИП Иванов", "Kazakhstan"],
+    ["Check Example Trading LLC in Kazakhstan", "Example Trading LLC", "Kazakhstan"]
+  ];
+  for (const [text, name, jurisdiction] of examples) {
+    const response = await handleJsonRpc({ jsonrpc: "2.0", id: "cis-legal-form", method: "SendMessage",
+      params: { message: { messageId: "cis-legal-form", role: "ROLE_USER", parts: [{ text }] } }
+    }, new Request("https://cis-secondary-sanctions-a2a.example.workers.dev/message/send", {
+      method: "POST", headers: { "A2A-Version": "1.0" }
+    }), { AGENT_PROFILE: "cis_secondary_sanctions", OPENSANCTIONS_DISABLED: "1" });
+    assert.equal(response.result.task.metadata.schema_hint.candidate_inferred.name, name, text);
+    assert.equal(response.result.task.metadata.schema_hint.candidate_inferred.jurisdiction, jurisdiction, text);
+  }
+});

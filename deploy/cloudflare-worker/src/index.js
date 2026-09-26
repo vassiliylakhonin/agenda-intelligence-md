@@ -4508,10 +4508,17 @@ function cisTextIntakeCandidate(text) {
     /(?:counterparty|company|entity|контрагент|компания|организация)\s*[:#-]?\s*([\p{L}\p{N}&.'’()_-](?:[\p{L}\p{N}&.'’()_\- ]{0,118}?))(?=\s+(?:in|from|based\s+in|registered\s+in|в|из)\s+|[,;.!?]|$)/iu
   );
   if (nameMatch) candidate.name = boundedText(nameMatch[1]);
-  // Explicit legal-form names are common even without a "company:" label.
+  // Recognize the legal form on either side of a capitalized company name.
+  // Unicode-aware edges are needed for Cyrillic forms: JS \b only works for ASCII words.
   if (!candidate.name) {
-    const legalName = text.match(/\b(?:LLP|LLC|Ltd\.?|JSC)\s+([A-Z][A-Za-z0-9&.'_-]{1,60})\b/);
-    if (legalName) candidate.name = boundedText(legalName[0]);
+    const form = "(?:LLP|LLC|Ltd\\.?|JSC|ТОО|АО|ИП)";
+    const word = "\\p{Lu}[\\p{L}\\p{N}&.'_-]*";
+    const prefix = text.match(new RegExp(`(?<![\\p{L}\\p{N}])${form}\\s+${word}(?:\\s+${word}){0,3}`, "u"));
+    // Do not include sentence-initial screening verbs as part of a suffix-form name.
+    const suffix = text.match(new RegExp(
+      `(?<![\\p{L}\\p{N}])(?!(?:Screen|Check|Review|Assess|Verify|Evaluate|Проверь|Проверить)(?![\\p{L}\\p{N}]))${word}(?:\\s+${word}){0,3}\\s+${form}(?![\\p{L}\\p{N}])`, "u"
+    ));
+    if (prefix || suffix) candidate.name = boundedText((prefix || suffix)[0]);
   }
   for (const [pattern, jurisdiction] of CIS_TEXT_JURISDICTIONS) {
     if (pattern.test(text)) {
