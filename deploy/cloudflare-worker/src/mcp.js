@@ -182,9 +182,10 @@ const PROFILE_TOOLS = {
       bringsEvidence: true,
       argKey: "request",
       summary:
-        "Decide whether another agent's claim-backed output is safe to relay onward. Returns a relay verdict with " +
+        "Lint caller-provided claim evidence for relay-readiness review. Returns a review-only verdict with " +
         "per-claim findings, orphaned evidence references, and owner actions. It does not fetch or validate the " +
-        "cited sources. Required fields in 'request': output_under_review, claims."
+        "cited sources; verify_before_relay is the ceiling, never permission to relay, and human review is required " +
+        "for every verdict. Required fields: claims, evidence."
     },
     {
       name: "pre_action_check",
@@ -397,7 +398,9 @@ export function mcpToolsForProfile(profile) {
         .join(" "),
       inputSchema: inputSchemaFor(spec, profile),
       annotations: {
-        readOnlyHint: true,
+        // Calls for this profile update usage and quota state; decision_check
+        // can also issue a receipt. This is a conservative write annotation.
+        readOnlyHint: profile !== "agent_output_verification",
         destructiveHint: false,
         idempotentHint: spec.idempotent !== false,
         openWorldHint: profile === "cis_secondary_sanctions"
