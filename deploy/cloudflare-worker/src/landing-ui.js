@@ -948,8 +948,8 @@ async function payWithBaseWallet(amountUsd) {
         body: JSON.stringify({ tx_hash: txHash, tier: 'tier_2_pro', payer_signature: payerSignature })
       });
       var settleData = await settleResp.json();
-      if (settleData && settleData.provisioned_bearer_token) {
-        statusDiv.innerHTML += '<br><strong>Pro API Key Activated:</strong> <code style="user-select:all; background:#fff; padding:3px 6px; font-weight:700;">' + settleData.provisioned_bearer_token + '</code> (Valid 30 days, 10k requests).';
+      if (settleData && settleData.bearer_token) {
+        statusDiv.innerHTML += '<br><strong>Pro API Key Activated:</strong> <code style="user-select:all; background:#fff; padding:3px 6px; font-weight:700;">' + settleData.bearer_token + '</code> (Valid 30 days, 10k requests).';
       } else if (settleData && settleData.ok) {
         statusDiv.innerHTML += '<br><strong>Settlement Confirmed:</strong> Receipt Ref: ' + (settleData.receipt_ref || 'OK');
       } else if (settleData && settleData.error) {

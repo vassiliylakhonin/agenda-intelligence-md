@@ -1637,7 +1637,7 @@ function mcpServerCard(request, env = {}) {
   const card = agentCard(request, env);
   return {
     serverInfo: {
-      name: "Agenda Intelligence MD MCP Server",
+      name: `${profileDiscovery(agentProfile(request, env)).canonical_product_name} MCP Server`,
       version: VERSION
     },
     description:
@@ -13002,11 +13002,13 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
   });
 }
 
-function mcpServerIdentity() {
-  return { name: "agenda-intelligence-md", version: VERSION };
+function mcpServerIdentity(profile = "agenda") {
+  // Stable, distinct MCP identifiers, including the older Agenda identity.
+  const slug = profile === "agenda" ? "agenda-intelligence-md" : `agenda-${profile.replaceAll("_", "-")}`;
+  return { name: slug, version: VERSION };
 }
 
-function mcpResponse(id, result) {
+function mcpResponse(id, result, profile = "agenda") {
   return {
     jsonrpc: "2.0",
     id: id ?? null,
@@ -13016,7 +13018,7 @@ function mcpResponse(id, result) {
       // "input_required" interim result: triage is a pure function of the
       // supplied evidence, so it never has to stop and ask the human mid-call.
       resultType: "complete",
-      _meta: { [MCP_META_SERVER_INFO]: mcpServerIdentity() }
+      _meta: { [MCP_META_SERVER_INFO]: mcpServerIdentity(profile) }
     }
   };
 }
@@ -13189,18 +13191,19 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
   const instructions = outputVerificationPlugin
     ? "Call agent_output_verification with caller-supplied claims and evidence. It checks structure only; every verdict requires human review before relay."
     : profileInstructions(profile);
+  const respond = (responseId, result) => mcpResponse(responseId, result, profile);
 
   if (payload.method === "notifications/initialized") return null;
 
   if (payload.method === "server/discover") {
-    return mcpResponse(id, {
+    return respond(id, {
       protocolVersions: [...MCP_SUPPORTED_PROTOCOL_VERSIONS],
       capabilities: {
         tools: { listChanged: false },
         resources: { listChanged: false, subscribe: false },
         prompts: { listChanged: false }
       },
-      serverInfo: mcpServerIdentity(),
+      serverInfo: mcpServerIdentity(profile),
       instructions
     });
   }
@@ -13209,22 +13212,22 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
   // have not moved. There is no session to create, so this costs nothing.
   if (payload.method === "initialize") {
     const echoed = typeof params.protocolVersion === "string" ? params.protocolVersion : MCP_PROTOCOL_VERSION;
-    return mcpResponse(id, {
+    return respond(id, {
       protocolVersion: echoed,
       capabilities: {
         tools: { listChanged: false },
         resources: { listChanged: false, subscribe: false },
         prompts: { listChanged: false }
       },
-      serverInfo: mcpServerIdentity(),
+      serverInfo: mcpServerIdentity(profile),
       instructions
     });
   }
 
-  if (payload.method === "ping") return mcpResponse(id, {});
+  if (payload.method === "ping") return respond(id, {});
 
   if (payload.method === "resources/list") {
-    return mcpResponse(id, {
+    return respond(id, {
       resources: outputVerificationPlugin ? [] : mcpResourcesList()
     });
   }
@@ -13239,13 +13242,13 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
     if (!resource) {
       return jsonRpcError(id, -32602, `Resource not found: ${uri}`);
     }
-    return mcpResponse(id, {
+    return respond(id, {
       contents: [resource]
     });
   }
 
   if (payload.method === "prompts/list") {
-    return mcpResponse(id, {
+    return respond(id, {
       prompts: outputVerificationPlugin ? [] : mcpPromptsList()
     });
   }
@@ -13260,11 +13263,11 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
     if (!prompt) {
       return jsonRpcError(id, -32602, `Prompt not found: ${name}`);
     }
-    return mcpResponse(id, prompt);
+    return respond(id, prompt);
   }
 
   if (payload.method === "tools/list") {
-    return mcpResponse(id, {
+    return respond(id, {
       tools: mcpToolsForProfile(profile).filter((tool) =>
         !outputVerificationPlugin || tool.name === "agent_output_verification"),
       ttlMs: MCP_TOOL_LIST_TTL_MS,
@@ -13282,7 +13285,7 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
       const available = mcpToolsForProfile(profile)
         .map((tool) => tool.name)
         .filter((toolName) => !outputVerificationPlugin || toolName === "agent_output_verification");
-      return mcpResponse(id, mcpToolResult({ error: `Unknown tool: ${name}`, available }, true));
+      return respond(id, mcpToolResult({ error: `Unknown tool: ${name}`, available }, true));
     }
     const toolArguments = params.arguments ?? {};
     const legacyRequestWrapper = mcpUsesLegacyRequestWrapper(profile, toolArguments, name);
@@ -13309,10 +13312,10 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
     });
     if (typeof ctx.waitUntil === "function") ctx.waitUntil(statsPromise);
     if (legacyRequestWrapper) {
-      return mcpResponse(id, mcpLegacyToolResult(result, Boolean(result.error)));
+      return respond(id, mcpLegacyToolResult(result, Boolean(result.error)));
     }
     const toolPayload = mcpPayloadForResult(result);
-    return mcpResponse(
+    return respond(
       id,
       mcpToolResult(toolPayload, mcpTaskFailed(result) || mcpTaskNeedsInput(result) || Boolean(result.error))
     );
