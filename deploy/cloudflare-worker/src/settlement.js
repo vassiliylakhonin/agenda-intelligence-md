@@ -82,6 +82,22 @@ export function parseTransferLog(log, targetRecipient = BASE_USDC_WALLET) {
   };
 }
 
+// A header payment can be upgraded to Pro only by its on-chain payer.
+// Legacy markers without a tier/payer or completed Pro claims never qualify.
+function isHeaderProClaim(raw, payer, amount) {
+  try {
+    const marker = JSON.parse(raw);
+    return marker && marker.settled_via === "x_payment_tx_header" &&
+      marker.tier === "tier_2_pro" &&
+      typeof marker.payer === "string" &&
+      (payer === undefined || marker.payer.toLowerCase() === payer.toLowerCase()) &&
+      (amount === undefined || marker.amount_usdc === amount) &&
+      !marker.token_hash && !marker.claim_nonce;
+  } catch (_e) {
+    return false;
+  }
+}
+
 export async function verifyBaseTransactionReceipt(
   txHash,
   env = {},
@@ -105,7 +121,7 @@ export async function verifyBaseTransactionReceipt(
   if (kv && typeof kv.get === "function") {
     try {
       const existing = await kv.get(replayKey);
-      if (existing) {
+      if (existing && !(options.allowHeaderClaim && isHeaderProClaim(existing))) {
         // Never echo the stored marker: before 2026-09-26 it contained the
         // provisioned Pro bearer token in plaintext, so anyone who knew the
         // public tx_hash could recover the paid credential from the 409.
@@ -238,13 +254,15 @@ export async function markTransactionSettled(txHash, details, env = {}) {
 // window to the KV propagation delay; until the storage moves, Pro-tier
 // issuance additionally requires the payer-signed challenge, so a lost race
 // cannot hand the token to a non-payer.
-export async function claimTransactionSettlement(txHash, details, env = {}) {
+export async function claimTransactionSettlement(txHash, details, env = {}, options = {}) {
   const kv = env?.AGENDA_USAGE;
   if (!kv || typeof kv.put !== "function") return { claimed: true, durable: false };
   const replayKey = `settled_tx:${txHash.toLowerCase()}`;
   try {
     const existing = await kv.get(replayKey);
-    if (existing) return { claimed: false, code: "already_claimed" };
+    if (existing && !(options.allowHeaderClaim && isHeaderProClaim(existing, details.payer, details.amount_usdc))) {
+      return { claimed: false, code: "already_claimed" };
+    }
     const nonce = crypto.randomUUID();
     await kv.put(
       replayKey,
@@ -357,7 +375,7 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
     );
   }
 
-  const verification = await verifyBaseTransactionReceipt(txHash, env);
+  const verification = await verifyBaseTransactionReceipt(txHash, env, { allowHeaderClaim: true });
   if (!verification.valid) {
     const status = verification.code === "already_claimed" ? 409 : 400;
     return new Response(
@@ -371,6 +389,17 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
   }
 
   const requestedTier = body?.tier || (verification.amount_usdc >= TIER_PRO_USDC_AMOUNT ? "tier_2_pro" : "tier_3_deal_dossier");
+
+  // Only signed Pro issuance may upgrade a header-settled Pro payment.
+  if (requestedTier !== "tier_2_pro") {
+    const replay = await verifyBaseTransactionReceipt(txHash, env);
+    if (!replay.valid) {
+      return new Response(JSON.stringify({ error: replay.error, code: replay.code || "settlement_verification_failed", tx_hash: txHash }), {
+        status: replay.code === "already_claimed" ? 409 : 400,
+        headers: { "content-type": "application/json", "cache-control": "no-store" }
+      });
+    }
+  }
 
   if (requestedTier === "tier_2_pro") {
     if (verification.amount_usdc < TIER_PRO_USDC_AMOUNT) {
@@ -424,7 +453,7 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
       tier: "tier_2_pro",
       payer: verification.payer,
       amount_usdc: verification.amount_usdc
-    }, env);
+    }, env, { allowHeaderClaim: true });
     if (!claim.claimed) {
       const unavailable = claim.code === "settlement_store_unavailable";
       return new Response(

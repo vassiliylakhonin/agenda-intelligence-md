@@ -6,6 +6,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 - Package Output Verification as a portable OpenAI/Claude plugin with a dedicated single-tool MCP URL, explicit human-review skill, and synthetic reviewer cases. Add the OpenAI domain-challenge route, conservative tool annotations, and local/live package checks.
 
+### Pro activation and MCP identity (round 6)
+
+- Landing Pro activation now reads the `bearer_token` field returned by `/v1/settle`; a mocked wallet-to-settlement browser-script regression test checks that the buyer sees the issued key.
+- An `X-Payment-Tx` header-settled Pro payment can be claimed for a Pro key only once, with the funding wallet's EIP-191 signature and matching payer/amount/tier in the existing settlement marker. Completed claims still return 409 without exposing the key. Workers KV remains eventually consistent, so this is not an atomic cross-region replay guarantee.
+- MCP discovery, initialize and response metadata now expose distinct server names per profile; the server-card display name follows the profile identity.
+
 ## 1.13.0 — 2026-09-26
 
 ### Security hardening (round 5, breaking)

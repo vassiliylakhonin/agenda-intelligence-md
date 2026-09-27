@@ -5829,9 +5829,28 @@ test("mcp server/discover advertises the stateless revision and identity", async
   const response = await mcpCall({ jsonrpc: "2.0", id: 1, method: "server/discover" });
   const result = response.result;
   assert.equal(result.protocolVersions[0], "2026-07-28");
-  assert.equal(result.serverInfo.name, "agenda-intelligence-md");
+  assert.equal(result.serverInfo.name, "agenda-agent-output-verification");
   assert.equal(result.resultType, "complete");
-  assert.equal(result._meta["io.modelcontextprotocol/serverInfo"].name, "agenda-intelligence-md");
+  assert.equal(result._meta["io.modelcontextprotocol/serverInfo"].name, "agenda-agent-output-verification");
+});
+
+test("all fleet MCP identities are distinct and consistent in discovery, initialize, metadata and cards", async () => {
+  const profiles = ["agenda", "kazakhstan", "agentic_interaction_trust", "agent_output_verification", "gulf_maritime_exposure", "cis_secondary_sanctions", "market_entry_readiness", "critical_minerals_due_diligence", "dual_use_technology_export", "agent_financial_guard", "m2m_escrow_arbiter", "corridor_sanctions_assistant"];
+  const names = new Set();
+  for (const profile of profiles) {
+    const request = new Request("https://fleet.example.workers.dev/mcp", { method: "POST" });
+    const env = { AGENT_PROFILE: profile };
+    const discover = await mcpCall({ jsonrpc: "2.0", id: 1, method: "server/discover" }, request, env);
+    const initialize = await mcpCall({ jsonrpc: "2.0", id: 2, method: "initialize" }, request, env);
+    const listed = await mcpCall({ jsonrpc: "2.0", id: 3, method: "tools/list" }, request, env);
+    const name = discover.result.serverInfo.name;
+    assert.equal(initialize.result.serverInfo.name, name);
+    assert.equal(listed.result._meta["io.modelcontextprotocol/serverInfo"].name, name);
+    assert.match(mcpServerCard(request, env).serverInfo.name, /MCP Server$/);
+    assert.ok(!names.has(name), `duplicate MCP identity: ${name}`);
+    names.add(name);
+  }
+  assert.ok(names.has("agenda-intelligence-md"));
 });
 
 test("OpenAI domain challenge serves only the exact configured token on Output Verification", async () => {
@@ -8361,6 +8380,86 @@ test("POST /v1/settle provisions a 30-day Pro Bearer key for 490 USDC payment", 
     assert.ok(/^[0-9a-f]{64}$/.test(marker.token_hash));
   } finally {
     globalThis.fetch = origFetch;
+  }
+});
+
+test("header-settled Pro payment upgrades only with payer signature; completed claims never replay", async () => {
+  const txHash = "0x2222222222222222222222222222222222222222222222222222222222222222";
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockUsdcTransferReceipt(490) }), { status: 200 });
+  const env = { AGENDA_USAGE: fakeRateKv(), RATE_LIMIT_PER_HOUR: "1" };
+  const url = "https://agenda-intelligence-a2a.example.workers.dev/v1/settle";
+  const settle = (tier, signature) => handleRequest(new Request(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tx_hash: txHash, tier, ...(signature ? { payer_signature: signature } : {}) }) }), env);
+  try {
+    const header = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST", headers: { "x-payment-tx": txHash } });
+    const paid = await checkRateLimit(header, env, "agenda");
+    assert.equal(paid.settled, true);
+    assert.equal(paid.tier, "tier_2_pro");
+    assert.equal((await settle("tier_2_pro")).status, 400);
+    assert.equal((await settle("tier_2_pro", "0x" + "12".repeat(65))).status, 403);
+    assert.equal((await settle("tier_3_deal_dossier")).status, 409);
+    assert.equal(JSON.parse(await env.AGENDA_USAGE.get(`settled_tx:${txHash}`)).settled_via, "x_payment_tx_header");
+    const done = await settle("tier_2_pro", MOCK_PAYER_SIGNATURE_TX2222);
+    assert.equal(done.status, 200);
+    const data = await done.json();
+    assert.ok(data.bearer_token.startsWith("agy_pro_"));
+    assert.equal((await settle("tier_2_pro", MOCK_PAYER_SIGNATURE_TX2222)).status, 409);
+    const marker = JSON.parse(await env.AGENDA_USAGE.get(`settled_tx:${txHash}`));
+    assert.ok(!("token" in marker));
+    assert.ok(marker.token_hash);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("header claim refuses mismatched payer, tier or already-provisioned marker", async () => {
+  const txHash = "0x2222222222222222222222222222222222222222222222222222222222222222";
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockUsdcTransferReceipt(490) }), { status: 200 });
+  const env = { AGENDA_USAGE: fakeRateKv() };
+  const key = `settled_tx:${txHash}`;
+  const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tx_hash: txHash, tier: "tier_2_pro", payer_signature: MOCK_PAYER_SIGNATURE_TX2222 }) });
+  try {
+    for (const changes of [{ payer: "0x0000000000000000000000000000000000000001" }, { tier: "tier_3_deal_dossier" }, { amount_usdc: 49 }, { token_hash: "f".repeat(64) }]) {
+      await env.AGENDA_USAGE.put(key, JSON.stringify({ tier: "tier_2_pro", payer: MOCK_PAYER, amount_usdc: 490, settled_via: "x_payment_tx_header", ...changes }));
+      const response = await handleRequest(req.clone(), env);
+      assert.equal(response.status, 409);
+      assert.equal((await response.json()).code, "already_claimed");
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Pro landing payment and signed settlement display the issued bearer token", async () => {
+  const txHash = "0x2222222222222222222222222222222222222222222222222222222222222222";
+  const html = landingHtml(new Request("https://agenda-intelligence-a2a.example.workers.dev/"), {});
+  const source = html.slice(html.indexOf("async function payWithBaseWallet("), html.indexOf("</script>", html.indexOf("async function payWithBaseWallet(")));
+  const statusDiv = { style: {}, innerText: "", innerHTML: "" };
+  const calls = [];
+  const window = { ethereum: { request: async ({ method }) => {
+    calls.push(method);
+    if (method === "eth_requestAccounts") return [MOCK_PAYER];
+    if (method === "eth_sendTransaction") return txHash;
+    if (method === "personal_sign") return MOCK_PAYER_SIGNATURE_TX2222;
+    return null;
+  } } };
+  const originalFetch = globalThis.fetch;
+  const env = { AGENDA_USAGE: fakeRateKv() };
+  const fetch = async (url, options) => {
+    if (String(url).includes("/v1/settle")) return handleRequest(new Request(url, options), env);
+    return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockUsdcTransferReceipt(490) }), { status: 200 });
+  };
+  globalThis.fetch = fetch;
+  try {
+    const pay = new Function("window", "document", "fetch", `${source}; return payWithBaseWallet;`)(window, { getElementById: () => statusDiv }, fetch);
+    await pay(490);
+    assert.deepEqual(calls, ["eth_requestAccounts", "wallet_switchEthereumChain", "eth_sendTransaction", "personal_sign"]);
+    assert.match(statusDiv.innerHTML, /Pro API Key Activated/);
+    assert.match(statusDiv.innerHTML, /agy_pro_[a-z0-9]+/);
+    assert.ok(!statusDiv.innerHTML.includes("Node will auto-verify"));
+  } finally {
+    globalThis.fetch = originalFetch;
   }
 });
 
