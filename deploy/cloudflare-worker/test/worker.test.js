@@ -5834,6 +5834,69 @@ test("mcp server/discover advertises the stateless revision and identity", async
   assert.equal(result._meta["io.modelcontextprotocol/serverInfo"].name, "agenda-intelligence-md");
 });
 
+test("OpenAI domain challenge serves only the exact configured token on Output Verification", async () => {
+  const url = "https://agent-output-verification-a2a.example.workers.dev/.well-known/openai-apps-challenge";
+  const request = new Request(url);
+  const missing = await handleRequest(request, { AGENT_PROFILE: "agent_output_verification" });
+  assert.equal(missing.status, 404);
+  const invalid = await handleRequest(request, {
+    AGENT_PROFILE: "agent_output_verification", OPENAI_APPS_CHALLENGE_TOKEN: "token\nother"
+  });
+  assert.equal(invalid.status, 404);
+  const token = "portal-issued-token-123456";
+  const served = await handleRequest(request, {
+    AGENT_PROFILE: "agent_output_verification", OPENAI_APPS_CHALLENGE_TOKEN: token
+  });
+  assert.equal(served.status, 200);
+  assert.equal(await served.text(), token);
+  assert.equal(served.headers.get("cache-control"), "no-store");
+  const wrongProfile = await handleRequest(request, {
+    AGENT_PROFILE: "kazakhstan", OPENAI_APPS_CHALLENGE_TOKEN: token
+  });
+  assert.equal(wrongProfile.status, 404);
+});
+
+test("Output Verification plugin MCP URL exposes only its review tool", async () => {
+  const request = new Request("https://agent-output-verification-a2a.example.workers.dev/mcp/output-verification", {
+    method: "POST", headers: { "user-agent": "node:test" }
+  });
+  const listed = await mcpCall({ jsonrpc: "2.0", id: 1, method: "tools/list" }, request);
+  assert.deepEqual(listed.result.tools.map((tool) => tool.name), ["agent_output_verification"]);
+  assert.equal(listed.result.tools[0].annotations.readOnlyHint, false);
+  assert.deepEqual(listed.result.tools[0].inputSchema.required, ["claims", "evidence"]);
+  const reviewed = await mcpCall({
+    jsonrpc: "2.0", id: 4, method: "tools/call",
+    params: { name: "agent_output_verification", arguments: groundedAuditFixture() }
+  }, request);
+  assert.equal(reviewed.result.isError, false);
+  assert.equal(reviewed.result.structuredContent.verdict, "verify_before_relay");
+  assert.equal(reviewed.result.structuredContent.human_review_required, true);
+  const resources = await mcpCall({ jsonrpc: "2.0", id: 1, method: "resources/list" }, request);
+  const prompts = await mcpCall({ jsonrpc: "2.0", id: 1, method: "prompts/list" }, request);
+  assert.deepEqual(resources.result.resources, []);
+  assert.deepEqual(prompts.result.prompts, []);
+  const blocked = await mcpCall({
+    jsonrpc: "2.0", id: 2, method: "tools/call",
+    params: { name: "decision_check", arguments: {} }
+  }, request);
+  assert.equal(blocked.result.isError, true);
+  assert.deepEqual(blocked.result.structuredContent.available, ["agent_output_verification"]);
+  const probe = await handleRequest(new Request(request.url), MCP_ENV);
+  assert.equal(probe.status, 200);
+  assert.deepEqual((await probe.json()).tools, ["agent_output_verification"]);
+  const post = await handleRequest(new Request(request.url, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 3, method: "tools/list", params: {} })
+  }), MCP_ENV);
+  assert.equal(post.status, 200);
+  assert.deepEqual((await post.json()).result.tools.map((tool) => tool.name), ["agent_output_verification"]);
+  const wrongProfile = await handleRequest(
+    new Request("https://kazakhstan-a2a.example.workers.dev/mcp/output-verification"),
+    { AGENT_PROFILE: "kazakhstan" }
+  );
+  assert.equal(wrongProfile.status, 404);
+});
+
 test("mcp tools/list is cacheable and profile-scoped", async () => {
   const response = await mcpCall({ jsonrpc: "2.0", id: 2, method: "tools/list" });
   const result = response.result;
@@ -5857,14 +5920,14 @@ test("mcp tools/list is cacheable and profile-scoped", async () => {
   assert.ok(result.tools[1].outputSchema.required.includes("decision"));
   for (const tool of result.tools.filter((tool) => tool.name !== "decision_check")) {
     assert.deepEqual(tool.annotations, {
-      readOnlyHint: true,
+      readOnlyHint: false,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false
     });
   }
   assert.deepEqual(result.tools.find((tool) => tool.name === "decision_check").annotations, {
-    readOnlyHint: true,
+    readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: false,
     openWorldHint: false

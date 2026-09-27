@@ -13182,6 +13182,13 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
   }
 
   const profile = agentProfile(request, env);
+  const outputVerificationPlugin = new URL(request.url).pathname === "/mcp/output-verification";
+  if (outputVerificationPlugin && profile !== "agent_output_verification") {
+    return jsonRpcError(id, -32601, "Method not found");
+  }
+  const instructions = outputVerificationPlugin
+    ? "Call agent_output_verification with caller-supplied claims and evidence. It checks structure only; every verdict requires human review before relay."
+    : profileInstructions(profile);
 
   if (payload.method === "notifications/initialized") return null;
 
@@ -13194,7 +13201,7 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
         prompts: { listChanged: false }
       },
       serverInfo: mcpServerIdentity(),
-      instructions: profileInstructions(profile)
+      instructions
     });
   }
 
@@ -13210,7 +13217,7 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
         prompts: { listChanged: false }
       },
       serverInfo: mcpServerIdentity(),
-      instructions: profileInstructions(profile)
+      instructions
     });
   }
 
@@ -13218,11 +13225,12 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
 
   if (payload.method === "resources/list") {
     return mcpResponse(id, {
-      resources: mcpResourcesList()
+      resources: outputVerificationPlugin ? [] : mcpResourcesList()
     });
   }
 
   if (payload.method === "resources/read") {
+    if (outputVerificationPlugin) return jsonRpcError(id, -32602, "Resource not found");
     const uri = params.uri;
     if (typeof uri !== "string") {
       return jsonRpcError(id, -32602, "resources/read requires a string uri parameter");
@@ -13238,11 +13246,12 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
 
   if (payload.method === "prompts/list") {
     return mcpResponse(id, {
-      prompts: mcpPromptsList()
+      prompts: outputVerificationPlugin ? [] : mcpPromptsList()
     });
   }
 
   if (payload.method === "prompts/get") {
+    if (outputVerificationPlugin) return jsonRpcError(id, -32602, "Prompt not found");
     const name = params.name;
     if (typeof name !== "string") {
       return jsonRpcError(id, -32602, "prompts/get requires a string name parameter");
@@ -13256,7 +13265,8 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
 
   if (payload.method === "tools/list") {
     return mcpResponse(id, {
-      tools: mcpToolsForProfile(profile),
+      tools: mcpToolsForProfile(profile).filter((tool) =>
+        !outputVerificationPlugin || tool.name === "agent_output_verification"),
       ttlMs: MCP_TOOL_LIST_TTL_MS,
       cacheScope: MCP_TOOL_LIST_CACHE_SCOPE
     });
@@ -13268,8 +13278,10 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
       return jsonRpcError(id, -32602, "tools/call requires a string tool name");
     }
     const spec = mcpToolSpecForProfile(profile, name);
-    if (!spec) {
-      const available = mcpToolsForProfile(profile).map((tool) => tool.name);
+    if (!spec || (outputVerificationPlugin && name !== "agent_output_verification")) {
+      const available = mcpToolsForProfile(profile)
+        .map((tool) => tool.name)
+        .filter((toolName) => !outputVerificationPlugin || toolName === "agent_output_verification");
       return mcpResponse(id, mcpToolResult({ error: `Unknown tool: ${name}`, available }, true));
     }
     const toolArguments = params.arguments ?? {};
@@ -15112,6 +15124,15 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     });
   }
 
+  if (request.method === "GET" && url.pathname === "/.well-known/openai-apps-challenge") {
+    const token = env.AGENT_PROFILE === "agent_output_verification" &&
+      typeof env.OPENAI_APPS_CHALLENGE_TOKEN === "string"
+      ? env.OPENAI_APPS_CHALLENGE_TOKEN : "";
+    return token && /^[\x21-\x7e]{1,2048}$/.test(token)
+      ? textResponse(token, 200, { "cache-control": "no-store" })
+      : textResponse("Not found", 404, { "cache-control": "no-store" });
+  }
+
   if (request.method === "GET" && (AGENSTRY_VERIFICATION_PATHS.has(url.pathname) || url.pathname === AGENSTRY_VERIFICATION_PATH)) {
     const token = agenstryVerificationToken(env);
     return token ? textResponse(token, 200, { "cache-control": "no-store" }) : textResponse("Not found", 404);
@@ -15650,14 +15671,18 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     });
   }
 
-  if (request.method === "POST" && url.pathname === MCP_ENDPOINT_PATH) {
+  const outputVerificationMcpPath = url.pathname === "/mcp/output-verification";
+  if (outputVerificationMcpPath && agentProfile(request, env) !== "agent_output_verification") {
+    return textResponse("Not found", 404);
+  }
+  if (request.method === "POST" && (url.pathname === MCP_ENDPOINT_PATH || outputVerificationMcpPath)) {
     return handleMcpPost(request, env, ctx);
   }
 
   // Registries routinely probe a published MCP URL with GET before attempting
   // initialize. Return a cheap capability document without opening an SSE
   // stream or executing a tool. POST remains the only invocation method.
-  if ((request.method === "GET" || request.method === "HEAD") && url.pathname === MCP_ENDPOINT_PATH) {
+  if ((request.method === "GET" || request.method === "HEAD") && (url.pathname === MCP_ENDPOINT_PATH || outputVerificationMcpPath)) {
     const headers = {
       allow: "GET, HEAD, POST, OPTIONS",
       "accept-post": "application/json",
@@ -15665,10 +15690,15 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       ...aiCatalogHeaders(request)
     };
     if (request.method === "HEAD") return new Response(null, { status: 200, headers });
-    return jsonResponse(mcpCapabilityDocument(request, env), 200, headers);
+    const document = mcpCapabilityDocument(request, env);
+    if (outputVerificationMcpPath) {
+      document.endpoint = `${url.origin}/mcp/output-verification`;
+      document.tools = ["agent_output_verification"];
+    }
+    return jsonResponse(document, 200, headers);
   }
 
-  if (url.pathname === MCP_ENDPOINT_PATH) {
+  if (url.pathname === MCP_ENDPOINT_PATH || outputVerificationMcpPath) {
     return jsonResponse(
       {
         error: "method_not_allowed",

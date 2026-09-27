@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Package Output Verification as a portable OpenAI/Claude plugin with a dedicated single-tool MCP URL, explicit human-review skill, and synthetic reviewer cases. Add the OpenAI domain-challenge route, conservative tool annotations, and local/live package checks.
+
 ## 1.13.0 — 2026-09-26
 
 ### Security hardening (round 5, breaking)
