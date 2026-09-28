@@ -5851,6 +5851,8 @@ test("all fleet MCP identities are distinct and consistent in discovery, initial
     names.add(name);
   }
   assert.ok(names.has("agenda-intelligence-md"));
+  assert.equal(names.has("agenda-middle-corridor-deal-risk"), true);
+  assert.equal(names.has("agenda-kazakhstan"), false);
 });
 
 test("OpenAI domain challenge serves only the exact configured token on Output Verification", async () => {

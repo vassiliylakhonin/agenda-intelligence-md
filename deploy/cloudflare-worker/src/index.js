@@ -13004,7 +13004,7 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
 
 function mcpServerIdentity(profile = "agenda") {
   // Stable, distinct MCP identifiers, including the older Agenda identity.
-  const slug = profile === "agenda" ? "agenda-intelligence-md" : `agenda-${profile.replaceAll("_", "-")}`;
+  const slug = profile === "agenda" ? "agenda-intelligence-md" : profile === "kazakhstan" ? "agenda-middle-corridor-deal-risk" : `agenda-${profile.replaceAll("_", "-")}`;
   return { name: slug, version: VERSION };
 }
 
