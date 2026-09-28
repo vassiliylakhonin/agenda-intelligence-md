@@ -10195,3 +10195,35 @@ test("CIS text candidate extracts names with suffix legal forms and Russian form
     assert.equal(response.result.task.metadata.schema_hint.candidate_inferred.jurisdiction, jurisdiction, text);
   }
 });
+
+test("industry-language copy describes external evidence review without claiming enforcement", () => {
+  const profiles = [
+    ["agenda-intelligence-a2a", "agenda"],
+    ["middle-corridor-deal-risk-gate-a2a", "kazakhstan"],
+    ["agentic-interaction-trust-a2a", "agentic_interaction_trust"],
+    ["agent-output-verification-a2a", "agent_output_verification"],
+    ["agent-financial-guard-a2a", "agent_financial_guard"],
+    ["m2m-escrow-arbiter-a2a", "m2m_escrow_arbiter"],
+    ["cis-secondary-sanctions-a2a", "cis_secondary_sanctions"],
+    ["gulf-maritime-exposure-a2a", "gulf_maritime_exposure"],
+    ["kazakhstan-market-entry-readiness-a2a", "market_entry_readiness"],
+    ["critical-minerals-due-diligence-a2a", "critical_minerals_due_diligence"],
+    ["dual-use-technology-export-a2a", "dual_use_technology_export"],
+    ["corridor-sanctions-assistant-a2a", "corridor_sanctions_assistant"]
+  ];
+  for (const [host, profile] of profiles) {
+    const req = new Request(`https://${host}.vassiliy-lakhonin.workers.dev/`);
+    const env = { AGENT_PROFILE: profile };
+    const html = landingHtml(req, env);
+    const card = agentCard(req, env);
+    assert.match(html, /outside the calling model/);
+    assert.match(html, /caller must invoke it and enforce/);
+    assert.match(card.description, /Caller must invoke and enforce/);
+    assert.match(card.description, /mandatory human review/);
+    assert.doesNotMatch(html, /NVIDIA secures your agents|attested telemetry is issued/i);
+  }
+  const req = new Request("https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/");
+  const card = agentCard(req, { AGENT_PROFILE: "agent_output_verification" });
+  assert.match(card.description, /allow_relay is never issued/);
+  assert.match(card.description, /verify_before_relay with mandatory human review/);
+});

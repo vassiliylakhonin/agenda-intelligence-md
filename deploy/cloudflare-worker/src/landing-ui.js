@@ -14,18 +14,18 @@ function landingHtml(request, env) {
 
   const title = escapeHtml(card.name);
   const presentation = {
-    agenda: ["Agenda Intelligence — evidence review", "Discover structured evidence checks, inspect their limits, and route a case to human review.", null],
-    kazakhstan: ["Middle Corridor deal evidence review", "Review route, cargo, counterparties and dated evidence before a human commercial decision.", "kazakhstan"],
-    agentic_interaction_trust: ["Agent interaction evidence review", "Check identity and action evidence before routing an interaction to a reviewer. This is not a probability that an agent is safe.", "agentic_interaction_trust"],
-    agent_output_verification: ["Agent Output Evidence Linter", "Find broken evidence references and structural gaps in agent output. Optional DLP scanning is separate from factual verification.", "agent_output_verification"],
-    agent_financial_guard: ["Agent Financial Guard", "Review local transaction risk indicators before signing. Current sanctions status, spending history and enforced wallet limits are not established by this evaluation.", "agent_financial_guard"],
-    m2m_escrow_arbiter: ["M2M Escrow Evidence Review", "Compare supplied artifact content with hashes and supported schemas. Missing or untrusted evidence requires review. This service never moves escrow funds.", "m2m_escrow_arbiter"],
-    cis_secondary_sanctions: ["CIS counterparty evidence review", "Inspect ownership and sanctions evidence gaps. Optional configured screening sources report their own freshness and availability.", "cis_secondary_sanctions"],
-    gulf_maritime_exposure: ["Gulf maritime evidence review", "Review vessel, voyage and insurance evidence. This is not continuous AIS or maritime threat monitoring.", "gulf_maritime_exposure"],
-    market_entry_readiness: ["Kazakhstan market-entry readiness", "Identify missing project, partner and regulatory evidence before a market-entry review.", "kazakhstan_market_entry_readiness"],
-    critical_minerals_due_diligence: ["Critical minerals evidence review", "Inspect supplied origin, ownership and supply-chain evidence for a human due-diligence review.", "critical_minerals_due_diligence"],
-    dual_use_technology_export: ["Dual-use export evidence review", "Review supplied product classifications, end-user and diversion-risk evidence. A classification flag is not an export licence or clearance.", "dual_use_technology_export"],
-    corridor_sanctions_assistant: ["Corridor & Sanctions Request Assistant", "Structure your question and find the appropriate evidence-review profile. This assistant does not issue sanctions decisions.", null]
+    agenda: ["Agenda Intelligence — evidence review", "Route agent requests through an external evidence-review boundary. See the missing inputs and hand the decision to a person.", null],
+    kazakhstan: ["Middle Corridor deal evidence review", "External evidence gate for a corridor deal: review route, cargo, counterparties and dated sources before a human decision.", "kazakhstan"],
+    agentic_interaction_trust: ["Agent interaction evidence review", "Zero-trust review of a counterparty agent request: inspect claimed identity, action and dated evidence before human review. No identity verification.", "agentic_interaction_trust"],
+    agent_output_verification: ["Agent Output Evidence Linter", "Check another agent's claims at a relay boundary: find missing support and require human review before relay. Not factual verification.", "agent_output_verification"],
+    agent_financial_guard: ["Agent Financial Guard", "External pre-sign evidence check for agent wallets. Local risk flags are not current sanctions clearance, verified spending history or enforced limits.", "agent_financial_guard"],
+    m2m_escrow_arbiter: ["M2M Escrow Evidence Review", "Review supplied agent-to-agent delivery evidence against hashes and supported schemas. No automatic payout; missing evidence goes to a person.", "m2m_escrow_arbiter"],
+    cis_secondary_sanctions: ["CIS counterparty evidence review", "External evidence gate for CIS counterparties: inspect ownership and sanctions gaps, with source freshness shown where available.", "cis_secondary_sanctions"],
+    gulf_maritime_exposure: ["Gulf maritime evidence review", "External evidence gate for vessel, voyage and insurance files. Not continuous AIS or threat monitoring.", "gulf_maritime_exposure"],
+    market_entry_readiness: ["Kazakhstan market-entry readiness", "External evidence gate for Kazakhstan market entry: identify missing project, partner and regulatory sources before human review.", "kazakhstan_market_entry_readiness"],
+    critical_minerals_due_diligence: ["Critical minerals evidence review", "External evidence gate for supplied origin, ownership and supply-chain records before human due-diligence review.", "critical_minerals_due_diligence"],
+    dual_use_technology_export: ["Dual-use export evidence review", "External evidence gate for supplied HS/ECCN, end-user and diversion-risk records. No classification, licence or clearance.", "dual_use_technology_export"],
+    corridor_sanctions_assistant: ["Corridor & Sanctions Request Assistant", "Find the right external evidence-review gate for a corridor question. Routing only; no sanctions decision.", null]
   }[profile] || [card.name, card.description, null];
   const tagline = presentation[1];
   const guide = GATE_REQUEST_GUIDES[presentation[2]];
@@ -147,10 +147,11 @@ function landingHtml(request, env) {
     ${fixtureVerdict
       ? `<strong>Example output:</strong> ${escapeHtml(sampleOutput.result.metadata.verdict_standard.reason_code)} · ${escapeHtml(sampleOutput.result.metadata.verdict_standard.next_permitted_action)} · Gap: ${escapeHtml(sampleOutput.result.metadata.verdict_standard.evidence_gaps[0])}`
       : `<strong>Example output:</strong> a structured verdict with reason_code, evidence_gaps, next_permitted_action and labeled sources. Run the demo for the actual result.`}<br>
-    <small>Supplied facts are not independently verified; a source with no verified date is labeled as_of: null. Human review before action.</small></div>
+    <small>Supplied facts are not independently verified; a source with no verified date is labeled as_of: null. This traceable verdict is not attested telemetry or authorization. Human review before action.</small></div>
   <nav><a href="https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/">All profiles</a> · <a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
   ${profile === "agenda" ? `<div class="card"><h2>Agent security and trade evidence</h2><p><a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier</a> checks proposed agent actions. Financial Guard, Interaction Trust and Output Verification review the evidence around those actions.</p><p><a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">Middle Corridor</a> and the regional and supply-chain profiles structure evidence for human trade-risk review.</p><a href="${origin}/.well-known/agents.json">Browse the complete profile registry</a></div>` : ""}
   <h2>What this is</h2>
+  <p>The review service sits outside the calling model, but the caller must invoke it and enforce the returned route. This is an application-level policy boundary, not a sandbox, independent monitor, or hardware control. Supplied evidence remains unverified; configured upstream checks are identified in the response when available.</p>
   ${flagshipBlock}
   <p><strong>Not</strong> legal, compliance, sanctions, financial, investment, or insurance advice. <strong>Not</strong> a factuality verifier — schemas enforce structure, not truth. <strong>Source availability varies by profile and configuration; inspect the response provenance.</strong></p>
 

@@ -2,9 +2,11 @@
 
 # Agenda Intelligence MD
 
-**Check whether an AI-generated claim has a usable evidence trail before a person acts on it.** This repository contains a local evidence-packet checker and 12 hosted, domain-specific review demos. It is for analysts, reviewers, and developers who need to see missing sources and unresolved questions rather than receive a false "approved" label.
+**Put an application-level evidence check outside the calling model before a person acts on an AI-generated claim.** This repository contains a local evidence-packet checker and 12 hosted, domain-specific review demos. It is for analysts, reviewers, and developers who need to see missing sources and unresolved questions rather than receive a false "approved" label.
 
 A typical result says which documents are present, which evidence is missing, what to check next, and whether a human must review it. It does **not** establish that a claim is true or that a trade, payment, or deal is cleared.
+
+The hosted gates are an external policy boundary only when the operator wires them into a workflow and enforces their result. They do not isolate the agent or monitor it continuously. For agent-to-agent work, this is a zero-trust *evidence-review step*: ask what another agent has supplied before trusting its output or proposed action. It does not authenticate that agent or confer authority. The Output Verification gate never returns `allow_relay` for caller-declared evidence; its ceiling is `verify_before_relay` plus mandatory human review.
 
 [Try the Middle Corridor demo](https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/) · [Try the CIS sanctions demo](https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev/) · [Run the local checker](#try-the-local-checker) · [See all profiles](deploy/cloudflare-worker/)
 
@@ -89,7 +91,7 @@ The sample reports `packet_status=packet_complete`, two claims and one source, w
 ## Boundaries and availability
 
 - No autonomous live source retrieval in the hosted fleet. A source can be absent, stale, or wrong. Missing evidence is `UNKNOWN` or a gap, never automatic clearance. Human review is required for high-stakes decisions.
-- The hosted response's verdict v1 carries `reason_code`, dated sources (or `as_of: null` when not known), `evidence_gaps`, `next_permitted_action` and `human_review_required`; a `trace_id` helps follow one run. Free-text input is a demo convenience: inferred fields are labelled, not verified facts.
+- The hosted response's verdict v1 carries `reason_code`, dated sources (or `as_of: null` when not known), `evidence_gaps`, `next_permitted_action` and `human_review_required`; a `trace_id` helps follow one run. Free-text input is a demo convenience: inferred fields are labelled, not verified facts. A traceable verdict is not an attested record. Where the hosted Decision Gate is configured, its short-lived signed readiness receipt is bound to request and action hashes; it proves that gate's result and binding, not external source truth or permission to act. Do not describe ordinary trace IDs or DLP notices as attested telemetry.
 - The free sandbox is limited to 50 requests/hour. Paid terms differ by profile; inspect that profile's landing page and manifest before buying anything. The existing payment integration is **not certified for standard x402 clients** and should not be described as plug-and-play x402.
 - This is pre-compliance review support, not legal, sanctions, financial, investment, insurance, trading or factuality advice. [Source policy](SOURCE_POLICY.md) · [Evaluation notes](docs/evaluation.md).
 
