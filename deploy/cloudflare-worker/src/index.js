@@ -1299,7 +1299,7 @@ function agentCard(request, env = {}) {
     trace: "Optional: send an X-Trace-Id header (8-80 chars of A-Za-z0-9._:-) or a top-level params.trace_id. " +
       "It is echoed in task metadata.trace_id and recorded in telemetry, so your call can be correlated end to end."
   };
-  shaped.description = `Free A2A triage, supplied-evidence only; mandatory human review before commercial action. No independent factual verification or clearance. ${shaped.description}`;
+  shaped.description = `External application-level evidence gate for agent workflows. Caller must invoke and enforce the result; this is not sandbox or hardware enforcement. Free A2A triage, supplied-evidence only; mandatory human review before commercial action. No independent factual verification or clearance. ${shaped.description}`;
   shaped.x_agenda_intelligence.free_a2a_triage = {
     scope: "Free A2A evidence triage; supplied evidence is not independently verified.",
     decision_boundary: "No legal, sanctions, financial or trading clearance. Human review before any commercial action.",
@@ -2859,7 +2859,7 @@ function applyAgenticInteractionTrustProfile(card, request) {
   card.name = "Agentic Interaction Trust Gate";
   card.documentationUrl = discovery.documentation_url;
   card.description =
-    "Before you let a counterparty agent transact or invoke a capability, check whether the evidence to trust that interaction is present. An A2A-compatible evidence-readiness gate for agent-to-agent and agent-mediated actions across A2A endpoint, MCP tool, checkout, account, and API surfaces. Bring the actor's identity claim, target surface, requested action, and dated evidence; get trust-routing triage, the missing source categories, evidence gaps, watch-next indicators, a decision-readiness score, a trust signal, and human-review routing. Evidence-readiness only — not identity verification, authentication, or transaction authorization.";
+    "Zero-trust evidence review for agent-to-agent interactions: before a counterparty agent transacts or invokes a capability, check what identity and authority evidence is present. An A2A-compatible evidence-readiness gate for agent-to-agent and agent-mediated actions across A2A endpoint, MCP tool, checkout, account, and API surfaces. Bring the actor's identity claim, target surface, requested action, and dated evidence; get trust-routing triage, the missing source categories, evidence gaps, watch-next indicators, a decision-readiness score, a trust signal, and human-review routing. Evidence-readiness only — not identity verification, authentication, or transaction authorization.";
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
@@ -2918,7 +2918,7 @@ function applyAgentOutputVerificationProfile(card, request) {
   card.name = "Agent Output Verification";
   card.documentationUrl = discovery.documentation_url;
   card.description =
-    "Before you relay or act on a claim-backed answer from another agent, check whether every claim is grounded. An A2A-compatible relay-readiness gate for agent-to-agent output hand-off: bring the claim set and its evidence; get a machine-actionable verdict — verify_before_relay, block_unsafe_claims, not_decision_ready, or insufficient_information — with the unsafe and weak claims, evidence gaps, and owner actions. Caller-declared evidence is never externally verified here, so allow_relay is never issued: the strongest verdict is verify_before_relay with mandatory human review, and a quote counts as grounded only when its text appears in the cited evidence content. Schema-level and structural only — not factual-truth verification, source retrieval, or an approval.";
+    "Before relaying another agent's answer, use an external evidence-review boundary to check the claims against supplied source text. An A2A-compatible relay-readiness gate for agent-to-agent output hand-off: bring the claim set and its evidence; get a machine-actionable verdict — verify_before_relay, block_unsafe_claims, not_decision_ready, or insufficient_information — with the unsafe and weak claims, evidence gaps, and owner actions. Caller-declared evidence is never externally verified here, so allow_relay is never issued: the strongest verdict is verify_before_relay with mandatory human review, and a quote counts as grounded only when its text appears in the cited evidence content. Schema-level and structural only — not factual-truth verification, source retrieval, or an approval.";
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
@@ -3528,7 +3528,7 @@ function applyAgentFinancialGuardProfile(card, request) {
   card.name = "Agent Financial Guard — Pre-Sign Evidence Review";
   card.documentationUrl = discovery.documentation_url;
   card.description =
-    "Heuristic pre-sign review for wallet-bearing agents. " +
+    "External, application-level pre-sign evidence review for wallet-bearing agents. " +
     "Checks a local risk denylist, approval patterns and intent; caller-reported spending history is unverified. " +
     "Non-rejected transactions require human review. No transaction authorization or current sanctions clearance." +
     PROVIDER_FRONT_DOOR_POINTER;
@@ -3551,7 +3551,7 @@ function applyM2MEscrowArbiterProfile(card, request) {
   card.name = "M2M Escrow Arbiter — Delivery Evidence Review";
   card.documentationUrl = discovery.documentation_url;
   card.description =
-    "Deterministic evaluation of supplied delivery evidence and proposed escrow allocations. " +
+    "External evidence review for agent-to-agent delivery disputes and proposed escrow allocations. " +
     "Checks hashes, a bounded offline JSON Schema subset and SLO evidence. Unsupported schemas require human review; no settlement is executed or authorized." +
     PROVIDER_FRONT_DOOR_POINTER;
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
