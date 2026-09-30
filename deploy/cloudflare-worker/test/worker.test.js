@@ -6162,10 +6162,10 @@ test("the free-text profile names its one argument when it refuses over mcp", as
 
 // A description that promises "evidence gaps" without saying evidence must be
 // supplied reads, to an agent holding only a question, as a tool it can call.
-// It cannot: the call is refused. The precondition belongs next to the promise.
+// The description must distinguish evidence grading from source retrieval and give a next step.
 test("a tool that grades supplied evidence says so in its description", async () => {
   const { mcpToolsForProfile } = await import("../src/mcp.js");
-  const precondition = "brings none is refused";
+  const precondition = "Grades supplied evidence";
 
   for (const profile of ["kazakhstan", "cis_secondary_sanctions", "gulf_maritime_exposure"]) {
     const [tool] = mcpToolsForProfile(profile);
@@ -8198,11 +8198,11 @@ test("mcp tools/call fleet_directory returns all 11 specialized gates with canon
 test("mcp tool descriptions include required field hints for calling LLMs", async () => {
   const { mcpToolsForProfile } = await import("../src/mcp.js");
   const kazakhstanTools = mcpToolsForProfile("kazakhstan");
-  assert.match(kazakhstanTools[0].description, /Required fields in 'request': route, cargo/);
+  assert.match(kazakhstanTools[0].description, /Required tool arguments: route, cargo/);
 
   const dualUseTools = mcpToolsForProfile("dual_use_technology_export");
-  assert.match(dualUseTools[0].description, /brings none is refused/);
-  assert.match(dualUseTools[0].description, /Required fields in 'request': item_description/);
+  assert.match(dualUseTools[0].description, /Grades supplied evidence/);
+  assert.match(dualUseTools[0].description, /Required tool arguments: shipment, dated_sources, risk_question/);
 });
 
 const MOCK_PAYER = "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a"; // eth-account test key 0x1111...1111

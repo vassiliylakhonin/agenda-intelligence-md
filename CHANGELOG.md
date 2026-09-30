@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Hosted MCP discovery now derives required arguments from published schemas, provides illustrative first-call examples and evidence-specific next steps, and advertises actual deployment Bearer/quota settings without exposing secrets. Pricing manifest identity follows the serving profile registry. HTTP contract tests cover examples, missing evidence, authorization, quota exhaustion, plugin isolation and signed receipt binding.
+
 - Package Output Verification as a portable OpenAI/Claude plugin with a dedicated single-tool MCP URL, explicit human-review skill, and synthetic reviewer cases. Add the OpenAI domain-challenge route, conservative tool annotations, and local/live package checks.
 
 ### Pro activation and MCP identity (round 6)
