@@ -45,3 +45,18 @@ def test_all_configured_workers_plus_vizier():
     assert len(names) == 13
     assert names.count("vizier") == 1
     assert "m2m-escrow-arbiter-a2a" in names
+
+
+def test_missing_or_renamed_tool_is_a_regression():
+    tool = SimpleNamespace(name="test", inputSchema={"type": "object"})
+    with pytest.raises(ValueError, match="catalog drift"):
+        monitor.validate_catalog([tool], ["test", "required_tool"])
+    with pytest.raises(ValueError, match="catalog drift"):
+        monitor.validate_catalog([tool], ["old_name"])
+
+
+def test_baseline_covers_fleet():
+    import json
+
+    baseline = json.loads((monitor.ROOT / "scripts/fleet_health/mcp-catalog-baseline.json").read_text())
+    assert set(baseline) == set(monitor.fleet_names())

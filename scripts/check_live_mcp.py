@@ -68,7 +68,7 @@ def classify_edge(response):
     return "other_http_or_protocol_failure"
 
 
-def validate_catalog(tools):
+def validate_catalog(tools, expected=None):
     if not tools:
         raise ValueError("Empty MCP tool catalog")
     names = [tool.name for tool in tools]
@@ -77,10 +77,15 @@ def validate_catalog(tools):
     for tool in tools:
         if tool.inputSchema.get("type") != "object":
             raise ValueError(f"Invalid input schema: {tool.name}")
+    if expected is not None and set(names) != set(expected):
+        raise ValueError(
+            f"MCP catalog drift: missing={sorted(set(expected) - set(names))}; "
+            f"unexpected={sorted(set(names) - set(expected))}"
+        )
     return names
 
 
-async def sdk_discovery(url):
+async def sdk_discovery(url, expected):
     # Deliberately no custom headers: exercise the normal MCP SDK client identity.
     from mcp import ClientSession
     from mcp.client.streamable_http import streamablehttp_client
@@ -91,11 +96,12 @@ async def sdk_discovery(url):
         async with ClientSession(read, write) as session:
             initialized = await session.initialize()
             catalog = await session.list_tools()
-            return {"protocol": initialized.protocolVersion, "tools": validate_catalog(catalog.tools)}
+            return {"protocol": initialized.protocolVersion, "tools": validate_catalog(catalog.tools, expected)}
 
 
 async def check_host(name):
     origin = f"https://{name}.vassiliy-lakhonin.workers.dev"
+    baseline = json.loads((ROOT / "scripts/fleet_health/mcp-catalog-baseline.json").read_text())
     checks = []
     for label, path in [("health", "/health"), ("a2a_card", "/.well-known/agent-card.json")]:
         try:
@@ -108,7 +114,7 @@ async def check_host(name):
         except Exception as error:
             checks.append({"check": label, "passed": False, "error": str(error)[:500]})
     try:
-        discovery = await asyncio.wait_for(sdk_discovery(origin + "/mcp"), timeout=50)
+        discovery = await asyncio.wait_for(sdk_discovery(origin + "/mcp", baseline[name]), timeout=50)
         checks.append({"check": "mcp_sdk_default_identity", "passed": True, **discovery})
     except Exception as error:
         checks.append({"check": "mcp_sdk_default_identity", "passed": False, "error": str(error)[:500]})
