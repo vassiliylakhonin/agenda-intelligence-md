@@ -1348,6 +1348,80 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           },
           "readiness_contract": {
             "$ref": "#/$defs/readiness_contract"
+          },
+          "beneficial_ownership_clearance": {
+            "type": "object",
+            "required": [
+              "status",
+              "clean",
+              "violation"
+            ],
+            "properties": {
+              "status": {
+                "enum": [
+                  "ownership_unknown",
+                  "potential_blocked_ownership_escalate",
+                  "screened_disclosed_chain"
+                ]
+              },
+              "clean": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "violation": {
+                "type": "boolean"
+              }
+            }
+          },
+          "live_retrieval_status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "live_retrieval_upstream": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "live_retrieval_reason_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "live_retrieval_snapshot_generated_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vizier_status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vizier_clearance_receipt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "auto_fetched_sources": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "upstream_attribution": {
+            "type": [
+              "object",
+              "null"
+            ]
           }
         },
         "$defs": {
@@ -3340,6 +3414,9 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                     "items": false
                   }
                 }
+              },
+              "unicode_normalization": {
+                "const": "none"
               }
             }
           },
@@ -5819,7 +5896,7 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
         "properties": {
           "contract_version": {
             "type": "string",
-            "const": "1.7.1"
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
           },
           "profile": {
             "type": "string",
@@ -5830,7 +5907,12 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
             "required": [
               "status",
               "score",
-              "evidence_ledger"
+              "evidence_ledger",
+              "human_review_required",
+              "not_advice_notice",
+              "score_scope",
+              "factual_verification_performed",
+              "evidence_gaps"
             ],
             "properties": {
               "status": {
@@ -5838,7 +5920,8 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "enum": [
                   "decision_ready",
                   "not_decision_ready",
-                  "escalate"
+                  "escalate",
+                  "ready_for_human_review"
                 ]
               },
               "score": {
@@ -5855,8 +5938,47 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "items": {
                   "type": "string"
                 }
+              },
+              "score_scope": {
+                "const": "declared_evidence_structure_only"
+              },
+              "factual_verification_performed": {
+                "const": false
+              },
+              "human_review_required": {
+                "const": true
+              },
+              "not_advice_notice": {
+                "type": "string"
+              },
+              "evidence_gaps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             }
+          },
+          "vizier_status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vizier_degrade_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vizier_clearance_receipt": {
+            "type": "null"
+          },
+          "dual_use_verification": {
+            "type": [
+              "object",
+              "null"
+            ]
           }
         }
       }

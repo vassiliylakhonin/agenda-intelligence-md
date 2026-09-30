@@ -1847,12 +1847,12 @@
             },
             "ifi_debt_usd_m": {
               "type": "number",
-              "minimum": 0.1,
+              "minimum": 0,
               "description": "Target IFI senior debt financing in millions USD."
             },
             "dscr_min": {
               "type": "number",
-              "minimum": 0.5,
+              "minimum": 0,
               "maximum": 5.0,
               "description": "Projected minimum Debt Service Coverage Ratio (DSCR)."
             },

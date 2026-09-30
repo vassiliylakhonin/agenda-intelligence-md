@@ -7211,8 +7211,8 @@ test("dual-use technology profile routes structured MCP requests to its declared
 
   assert.equal(response.result.isError, false);
   assert.equal(response.result.structuredContent.profile, "dual_use_technology_export");
-  assert.equal(response.result.structuredContent.export_risk_triage.status, "decision_ready");
-  assert.equal(response.result.structuredContent.export_risk_triage.score, 100);
+  assert.equal(response.result.structuredContent.export_risk_triage.status, "ready_for_human_review");
+  assert.equal(response.result.structuredContent.export_risk_triage.score, 69);
 });
 
 test("dual-use free text creates an intake candidate without classifying goods", async () => {
@@ -9099,7 +9099,8 @@ test("POST /v1/corridor-bankability/screen with valid x-payment-tx returns unloc
     assert.ok(data.full_dossier);
     assert.equal(data.full_dossier.waterfall_schedule_15yr.length, 15);
     assert.ok(data.full_dossier.dossier_markdown.includes("Khorgos Dry Port Intermodal Yard"));
-    assert.ok(data.full_dossier.excel_financial_model_sha256);
+    assert.equal(data.full_dossier.excel_financial_model_sha256, null);
+    assert.equal(data.full_dossier.provenance_status, "no_workbook_generated");
   } finally {
     globalThis.fetch = origFetch;
   }
@@ -9129,7 +9130,7 @@ test("GET /corridor-bankability returns HTML with Brave Wallet connection", asyn
   assert.ok(html.includes("0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663"));
 });
 
-test("POST /v1/corridor-bankability/screen supports smart fallback for unstructured prompt", async () => {
+test("POST /v1/corridor-bankability/screen refuses invented financial metrics from an incomplete prompt", async () => {
   const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/corridor-bankability/screen", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -9138,12 +9139,10 @@ test("POST /v1/corridor-bankability/screen supports smart fallback for unstructu
     })
   });
   const res = await handleRequest(req, {});
-  assert.equal(res.status, 200);
+  assert.equal(res.status, 400);
   const data = await res.json();
-  assert.equal(data.corridor_leg, "Aktau-Baku");
-  assert.equal(data.financial_metrics.total_capex_usd_m, 45.0);
-  assert.ok(data.x402_unlock);
-  assert.equal(data.x402_unlock.amount_usdc, 25.0);
+  assert.ok(data.errors.some((error) => error.includes("ifi_debt_usd_m")));
+  assert.ok(data.errors.some((error) => error.includes("dscr_min")));
 });
 
 test("critical_minerals_due_diligence supports smart fallback for unstructured prompt", async () => {

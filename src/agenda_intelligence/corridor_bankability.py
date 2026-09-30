@@ -7,6 +7,7 @@ and generates Freemium Decision Teasers ($0.00) vs Full IFI Dossiers ($25.00 USD
 
 from __future__ import annotations
 
+import math
 import re
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -147,28 +148,27 @@ def generate_bankability_screen(
     is_paid: bool = False,
     origin: str = "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev",
 ) -> dict[str, Any]:
-    project_name = (
-        request.get("project_name", "").strip()
-        if isinstance(request.get("project_name"), str) and request.get("project_name", "").strip()
-        else "Unnamed Corridor Infrastructure Project"
-    )
-    raw_corridor_leg = request.get("corridor_leg")
-    corridor_leg = (
-        raw_corridor_leg
-        if isinstance(raw_corridor_leg, str) and raw_corridor_leg in CORRIDOR_BOTTLENECK_MAP
-        else "MULTI_LEG"
-    )
-
-    raw_capex = request.get("capex_usd_m")
-    capex_usd_m = float(raw_capex) if isinstance(raw_capex, (int, float)) and raw_capex > 0 else 100.0
-
-    raw_ifi_debt = request.get("ifi_debt_usd_m")
-    ifi_debt_usd_m = float(raw_ifi_debt) if isinstance(raw_ifi_debt, (int, float)) and raw_ifi_debt > 0 else 60.0
-
-    raw_dscr = request.get("dscr_min")
-    dscr_min = float(raw_dscr) if isinstance(raw_dscr, (int, float)) else 1.25
-
-    has_sovereign_guarantee = bool(request.get("has_sovereign_guarantee"))
+    if not isinstance(request, dict):
+        raise ValueError("Request must be an object")
+    if not isinstance(request.get("project_name"), str) or len(request["project_name"].strip()) < 2:
+        raise ValueError("project_name must be a nonempty string")
+    if not isinstance(request.get("corridor_leg"), str) or request["corridor_leg"] not in CORRIDOR_BOTTLENECK_MAP:
+        raise ValueError("corridor_leg must be a supported corridor leg")
+    for key in ("capex_usd_m", "ifi_debt_usd_m", "dscr_min"):
+        value = request.get(key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+            raise ValueError(f"{key} must be a finite nonnegative number")
+    if request["capex_usd_m"] < 0.1 or request["ifi_debt_usd_m"] > request["capex_usd_m"]:
+        raise ValueError("Capex must be positive and debt cannot exceed capex")
+    for key in ("has_sovereign_guarantee", "currency_mismatch"):
+        if key in request and not isinstance(request[key], bool):
+            raise ValueError(f"{key} must be a boolean")
+    project_name = request["project_name"].strip()
+    corridor_leg = request["corridor_leg"]
+    capex_usd_m = float(request["capex_usd_m"])
+    ifi_debt_usd_m = float(request["ifi_debt_usd_m"])
+    dscr_min = float(request["dscr_min"])
+    has_sovereign_guarantee = request.get("has_sovereign_guarantee") is True
     currency_mismatch = request.get("currency_mismatch") is not False  # default True for CIS corridor projects
 
     debt_share = ifi_debt_usd_m / capex_usd_m if capex_usd_m > 0 else None
@@ -249,6 +249,10 @@ def generate_bankability_screen(
         },
         "credit_committee_risk_matrix": credit_risks,
         "human_signoff_notice": HUMAN_SIGNOFF_NOTICE,
+        "human_review_required": True,
+        "human_signoff_required": True,
+        "evidence_label": "caller_supplied_unverified",
+        "model_scope": "illustrative_internal_thresholds_not_lender_approval",
         "unlocked_full_dossier": is_paid,
     }
 
@@ -264,9 +268,9 @@ def generate_bankability_screen(
             "amount_raw": str(round(TIER_BANKABILITY_DOSSIER_USDC * 1e6)),
             "includes_in_full_tier": [
                 "15-Year Deterministic Debt Service Waterfall Model",
-                "EBRD / ADB / Global Gateway Standard Form Investment Memo (Markdown/PDF)",
-                "Claim Ledger with primary source document traceability",
-                "Deterministic Excel financial model with SHA-256 provenance verification",
+                "Illustrative scenario memo (Markdown only; no lender endorsement)",
+                "List of caller-supplied evidence references for human review",
+                "15-year JSON schedule with explicit scenario assumptions; no Excel/PDF file",
             ],
             "how_to_unlock": (
                 f"Send transfer({BASE_USDC_WALLET}, {round(TIER_BANKABILITY_DOSSIER_USDC * 1e6)}) on Base "
@@ -275,8 +279,7 @@ def generate_bankability_screen(
         }
         return base_response
 
-    simulated_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    debt_share_val = debt_share or 0.6
+    debt_share_val = debt_share if debt_share is not None else 0
     full_memo_markdown = (
         f"# IFI Corridor Bankability & Investment Memorandum\n"
         f"**Project**: {project_name}\n"
@@ -321,12 +324,12 @@ def generate_bankability_screen(
         )
         + "\n\n### Outstanding Conditions Precedent:\n"
         + "\n".join(f"{i + 1}. {cond}" for i, cond in enumerate(conditions))
-        + f"\n\n---\n\n"
-        f"## 5. Audit & Claim Ledger\n"
-        f"All material quantitative assumptions are deterministic and bound to the submitted project brief. "
-        f"No unsourced revenue escalation factors were permitted.\n\n"
-        f"- **Financial Model Workbook SHA-256**: `{simulated_hash}`\n"
-        f"- **Sign-off Requirement**: Mandatory human credit analyst review before board presentation.\n"
+        + "\n\n---\n\n"
+        "## 5. Audit & Claim Ledger\n"
+        "Input figures are caller-supplied. "
+        "The 15-year tenor and 5.5% interest are illustrative assumptions; inputs are unverified.\n\n"
+        "- **Workbook provenance**: No Excel workbook or PDF was generated; no file digest is available.\n"
+        "- **Sign-off Requirement**: Mandatory human credit analyst review before board presentation.\n"
     )
 
     waterfall: list[dict[str, Any]] = []
@@ -359,8 +362,15 @@ def generate_bankability_screen(
     base_response["full_dossier"] = {
         "status": "UNLOCKED",
         "dossier_markdown": full_memo_markdown,
-        "financial_model_sha256": simulated_hash,
-        "excel_financial_model_sha256": simulated_hash,
+        "financial_model_sha256": None,
+        "excel_financial_model_sha256": None,
+        "provenance_status": "no_workbook_generated",
+        "model_assumptions": {
+            "tenor_years": 15,
+            "interest_rate": 0.055,
+            "dscr": dscr_min,
+            "scope": "illustrative_scenario_not_forecast",
+        },
         "waterfall_schedule_15yr": waterfall,
         "settlement_network": "base",
         "settlement_currency": "USDC",
@@ -374,7 +384,7 @@ def extract_bankability_parameters(input_data: dict[str, Any], raw_text: str = "
     """Smart fallback parser for unstructured agent queries.
 
     Extracts project name, corridor segment, capex, leverage, and DSCR from text
-    or supplies intelligent IFI benchmark defaults if fields are omitted.
+    Missing financial figures remain missing and require caller evidence.
     """
     text = raw_text or ""
     if not text:
@@ -393,7 +403,7 @@ def extract_bankability_parameters(input_data: dict[str, Any], raw_text: str = "
         "ifi_debt_usd_m": input_data.get("ifi_debt_usd_m"),
         "dscr_min": input_data.get("dscr_min"),
         "currency_mismatch": input_data.get("currency_mismatch", True),
-        "has_sovereign_guarantee": bool(input_data.get("has_sovereign_guarantee", False)),
+        "has_sovereign_guarantee": input_data.get("has_sovereign_guarantee", False),
         "inferred_parameters": False,
     }
 
@@ -424,24 +434,7 @@ def extract_bankability_parameters(input_data: dict[str, Any], raw_text: str = "
             elif any(k in lower for k in ("vessel", "fleet", "ship")):
                 result["project_name"] = "Caspian Maritime Feeder Fleet Acquisition"
 
-    inferred = False
-    if not result["project_name"]:
-        result["project_name"] = "Trans-Caspian Strategic Corridor Project"
-        inferred = True
-    if not result["corridor_leg"] or result["corridor_leg"] not in CORRIDOR_BOTTLENECK_MAP:
-        result["corridor_leg"] = "MULTI_LEG"
-        inferred = True
-    if result["capex_usd_m"] is None or result["capex_usd_m"] <= 0:
-        result["capex_usd_m"] = 50.0
-        inferred = True
-    if result["ifi_debt_usd_m"] is None or result["ifi_debt_usd_m"] <= 0:
-        result["ifi_debt_usd_m"] = round(result["capex_usd_m"] * 0.70 * 10) / 10
-        inferred = True
-    if result["dscr_min"] is None or result["dscr_min"] <= 0:
-        result["dscr_min"] = 1.30
-        inferred = True
-
-    result["inferred_parameters"] = inferred
+    result["inferred_parameters"] = bool(text)
     return result
 
 

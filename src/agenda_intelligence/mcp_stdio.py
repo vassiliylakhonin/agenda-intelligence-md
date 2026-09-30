@@ -847,12 +847,10 @@ TOOLS: dict[str, dict[str, Any]] = {
     },
     "corridor_bankability_screen": {
         "description": (
-            "Evaluate project finance bankability and IFI covenants (EBRD, ADB, EU Global Gateway) for "
-            "Trans-Caspian and Middle Corridor infrastructure projects. Evaluates minimum DSCR floor (1.20x), "
-            "non-sovereign margin (1.30x), leverage ceiling (<=80%), Caspian hydrological water-level constraints "
-            "(-1.20m Baltic datum), and FX currency mismatch. Returns a free Decision Teaser with covenant "
-            "pass/fail matrix, bottleneck analysis, and an x402 micropayment invoice to unlock the full 15-year "
-            "debt waterfall model."
+            "Illustrative corridor project finance screen using supplied financial figures and internal "
+            "DSCR/leverage thresholds. Missing financial data is rejected. Mandatory human review; "
+            "no lender approval or current hydrological verification. Optional paid output is a scenario "
+            "Markdown memo and 15-year JSON schedule; no Excel/PDF artifact is generated."
         ),
         "inputSchema": _schema(
             {
@@ -875,12 +873,12 @@ TOOLS: dict[str, dict[str, Any]] = {
                 },
                 "ifi_debt_usd_m": {
                     "type": "number",
-                    "minimum": 0.1,
+                    "minimum": 0,
                     "description": "Target IFI senior debt financing in millions USD.",
                 },
                 "dscr_min": {
                     "type": "number",
-                    "minimum": 0.5,
+                    "minimum": 0,
                     "maximum": 5.0,
                     "description": "Projected minimum Debt Service Coverage Ratio (DSCR).",
                 },

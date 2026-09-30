@@ -49,16 +49,19 @@ const ADVERSARIAL_INTENT_PATTERNS = [
  */
 export function validateFinancialGuardRequest(body) {
   const errors = [];
-  if (!body || typeof body !== "object") {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
     return ["Request body must be a JSON object"];
   }
   if (!body.run_id || typeof body.run_id !== "string") {
     errors.push("Missing required field: run_id");
   }
-  if (!body.transaction || typeof body.transaction !== "object") {
+  if (!body.transaction || typeof body.transaction !== "object" || Array.isArray(body.transaction)) {
     errors.push("Missing required object: transaction");
   } else {
     const tx = body.transaction;
+    for (const key of ["method", "calldata"]) {
+      if (tx[key] !== undefined && typeof tx[key] !== "string") errors.push(`transaction.${key} must be a string`);
+    }
     if (!tx.network || typeof tx.network !== "string") errors.push("Missing transaction.network");
     if (!tx.token || typeof tx.token !== "string") errors.push("Missing transaction.token");
     if (!Number.isFinite(tx.amount_usd) || tx.amount_usd < 0) errors.push("Invalid or missing transaction.amount_usd (must be >= 0)");
@@ -108,8 +111,20 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}, o
   const method = (tx.method || "").toLowerCase();
   const calldata = (tx.calldata || "").toLowerCase();
 
-  if (method === "approve") {
-    const isUnlimited = UNLIMITED_ALLOWANCE_PATTERNS.some(pat => pat.test(calldata)) || (tx.amount_usd > 1000000);
+  const encodedApprove = calldata.startsWith("0x095ea7b3");
+  if (encodedApprove && method && method !== "approve") {
+    contractSecurityPassed = false;
+    violations.push("Declared method disagrees with encoded ERC-20 approve selector.");
+  }
+  if (encodedApprove || method === "approve") {
+    const wellFormedApprove = /^0x095ea7b3[0-9a-f]{128}$/.test(calldata);
+    const isUnlimited = wellFormedApprove
+      ? BigInt(`0x${calldata.slice(-64)}`) === (1n << 256n) - 1n
+      : UNLIMITED_ALLOWANCE_PATTERNS.some(pat => pat.test(calldata));
+    if (encodedApprove && !wellFormedApprove) {
+      contractSecurityPassed = false;
+      violations.push("Malformed ERC-20 approve calldata; signing requires independent decoding.");
+    }
     if (isUnlimited) {
       contractSecurityPassed = false;
       violations.push("Unconstrained infinite token approval (approve max uint256) detected. Potential wallet drainer vector.");
@@ -186,8 +201,7 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}, o
   let attestation = null;
 
   if (options.paymentProof && options.paymentProof.valid) {
-    vizierStatus = "attestation_cleared";
-    vizierReceipt = `vrf_${crypto.randomUUID()}`;
+    // A verified payment is not a security clearance or a signed Vizier receipt.
     attestation = {
       protocol: "x402",
       network: "base",
@@ -216,7 +230,7 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}, o
       evidence_gaps: evidenceGaps,
       vizier_status: vizierStatus,
       vizier_clearance_receipt: vizierReceipt,
-      ...(attestation ? { attestation } : {}),
+      ...(attestation ? { payment_status: "verified", payment_receipt: attestation } : {}),
       x402_challenge: {
         protocol: "x402",
         network: "base",
@@ -225,8 +239,8 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}, o
         amount_usdc: 0.05,
         recipient: "0x5b5296a3a7bac0f5f096f93b60c1c121f2e5c663",
         contract: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-        attestation_type: "vizier_cryptographic_clearance_receipt",
-        instructions: "Attach Base USDC tx hash in 'X-Payment-Tx' header to unlock on-chain cryptographic Vizier receipt."
+        attestation_type: "payment_confirmation_only",
+        instructions: "Payment confirmation does not authorize signing or provide a security clearance."
       },
       human_review_required: true,
       not_advice_notice: "Heuristic pre-sign review only; not transaction authorization or sanctions clearance.",

@@ -146,7 +146,7 @@ import {
   VERSION,
   profileDiscovery
 } from "./profiles.js";
-import { generateBankabilityScreen, extractBankabilityParameters } from "./corridor_bankability.js";
+import { generateBankabilityScreen, extractBankabilityParameters, validateBankabilityRequest } from "./corridor_bankability.js";
 import {
   checkDynamicBearerToken,
   generateX402PaymentResponse,
@@ -1953,9 +1953,11 @@ function openApiDocument(request) {
                 schema: {
                   type: "object",
                   required: ["tx_hash"],
+                  allOf: [{ if: { required: ["tier"], properties: { tier: { const: "tier_2_pro" } } }, then: { required: ["payer_signature"] } }],
                   properties: {
                     tx_hash: { type: "string", description: "Base mainnet transaction hash (0x...)" },
-                    tier: { type: "string", enum: ["tier_2_pro", "tier_3_deal_dossier"] }
+                    tier: { type: "string", enum: ["tier_2_pro", "tier_3_deal_dossier", "tier_micro_check", "tier_micro_dispute", "tier_bankability_dossier"] },
+                    payer_signature: { type: "string", description: "Required whenever the explicit or amount-inferred tier is tier_2_pro. EIP-191 personal_sign proof by the funding wallet over settlementChallengeMessage(tx_hash, on_chain_payer): Agenda Intelligence MD pro-tenant settlement, followed by newline tx_hash: <lowercase hash>, then newline payer: <lowercase address>." }
                   }
                 }
               }
@@ -1963,7 +1965,7 @@ function openApiDocument(request) {
           },
           responses: {
             200: {
-              description: "Settlement confirmation and provisioned Bearer token or clearance receipt.",
+              description: "Payment confirmation and, for Pro, a provisioned Bearer token. Payment is not security clearance.",
               content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
             },
             400: { description: "Invalid transaction hash or insufficient payment." },
@@ -3929,6 +3931,14 @@ function agenticEnumErrors(r) {
 // example, and pointed at no human. The gate still refuses the request; it now
 // says what it needs, shows one request that works, and names the front door.
 const GATE_REQUEST_GUIDES = Object.freeze({
+  corridor_bankability: {
+    title: "Corridor Project Finance Scenario Screen",
+    schema: "schemas/v1/corridor-bankability-request.schema.json",
+    required: ["project_name", "corridor_leg", "capex_usd_m", "ifi_debt_usd_m", "dscr_min"],
+    optional: ["has_sovereign_guarantee", "currency_mismatch", "evidence_sources"],
+    example: { project_name: "Illustrative terminal", corridor_leg: "Aktau-Baku", capex_usd_m: 100, ifi_debt_usd_m: 60, dscr_min: 1.3, has_sovereign_guarantee: false },
+    exampleNote: "Illustrative inputs only; replace every financial figure with documented project data."
+  },
   cis_secondary_sanctions: {
     title: "CIS Secondary-Sanctions Exposure Gate",
     schema: "schemas/v1/cis-secondary-sanctions-request.schema.json",
@@ -5404,7 +5414,7 @@ function agenticInteractionTrustResult(request, vizierTrust = null) {
       );
       evidenceGaps.unshift(`Operator or principal '${op}' is subject to sanctions.`);
     }
-    if (vizierTrust.dlp_screening && !vizierTrust.dlp_screening.clean) {
+    if (vizierTrust.dlp_screening && vizierTrust.dlp_screening.clean === false) {
       triage = "block_until_verified";
       trustSignal = "low";
       for (const finding of vizierTrust.dlp_screening.findings || []) {
@@ -5460,10 +5470,14 @@ function agenticInteractionTrustResult(request, vizierTrust = null) {
     response,
     vizier_status: vizierTrust ? vizierTrust.status : "disabled",
     vizier_degrade_reason: vizierTrust ? vizierTrust.degrade_reason : null,
-    vizier_clearance_receipt: vizierTrust ? vizierTrust.receipt : null,
+    vizier_clearance_receipt: null,
     trust_verification: vizierTrust
       ? {
           clean: vizierTrust.clean,
+          ownership_status: "unverified",
+          receipt_scope: vizierTrust.receipt_scope,
+          signature_verified: false,
+          dlp_receipt: vizierTrust.receipt_scope === "dlp_scan_only" ? vizierTrust.receipt : null,
           violation: vizierTrust.violation,
           operator_screening: vizierTrust.operator_screening,
           dlp_screening: vizierTrust.dlp_screening
@@ -5746,8 +5760,6 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
   const grounded = claims.filter((claim) => claimHasMatchedQuote(claim, evidenceById)).length;
   const unmatchedQuoteClaims = claims.filter(
     (claim) =>
-      Array.isArray(claim.supporting_quotes) &&
-      claim.supporting_quotes.length > 0 &&
       !claimHasMatchedQuote(claim, evidenceById)
   );
 
@@ -5821,8 +5833,9 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
   for (const claim of unmatchedQuoteClaims) {
     if (seenUnsafe.has(claim.claim_id)) continue;
     evidenceGaps.push(
-      `Claim ${claim.claim_id} supplies supporting_quotes whose text does not appear in the cited ` +
-        "evidence content; a caller-declared quote is not corroboration."
+      Array.isArray(claim.supporting_quotes) && claim.supporting_quotes.length
+        ? `Claim ${claim.claim_id} supplies supporting_quotes whose text does not appear in the cited evidence content; a caller-declared quote is not corroboration.`
+        : `Claim ${claim.claim_id} has no supporting quote matched to cited evidence content; provide source content and an attributable verbatim excerpt.`
     );
   }
   for (const claim of uncorroboratedClaims) {
@@ -5900,7 +5913,7 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     trustSignal = "medium_high";
   }
 
-  const ownerActions = [];
+  const ownerActions = unmatchedQuoteClaims.map((claim) => `Supply cited source content and a matching supporting quote for claim ${claim.claim_id}, or mark it unsupported.`);
   for (const finding of dlpFindings) {
     ownerActions.push(`Remove or redact leaked secret/PII in ${finding.path || "claim"} (${finding.detector}).`);
   }
@@ -6352,6 +6365,8 @@ async function a2aResultForCorridorBankability(params, request, env = {}) {
   if (!reqObj.project_name || !reqObj.corridor_leg || reqObj.capex_usd_m === undefined) {
     reqObj = extractBankabilityParameters(reqObj, params.prompt || params.text || params.query || "");
   }
+  const errors = validateBankabilityRequest(reqObj);
+  if (errors.length) return invalidRequestResult("corridor_bankability", "/v1/corridor-bankability/screen", "schemas/v1/corridor-bankability-request.schema.json", errors);
   const isPaid = await isBankabilityDossierPaid(request, env);
   const data = generateBankabilityScreen(reqObj, isPaid);
   return {
@@ -6374,7 +6389,7 @@ async function a2aResultForCorridorBankability(params, request, env = {}) {
               "",
               data.unlocked_full_dossier
                 ? data.full_dossier.dossier_markdown
-                : "Free Decision Teaser. Unlock full IFI Investment Memo and 15-Year Waterfall Model for $25.00 USDC via x402."
+                : "Free Decision Teaser. Unlock illustrative Markdown scenario memo and 15-year JSON schedule for $25.00 USDC via x402."
             ].join("\n"),
             mediaType: "text/markdown"
           },
@@ -9148,7 +9163,7 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
       riskVectors.unshift(`Vizier Action Firewall detected counterparty/destination blocked under OFAC 50% Rule: ${matchNames}. Immediate escalation to export-control counsel required.`);
     }
 
-    if (vizierDualUse.dlp_screening && !vizierDualUse.dlp_screening.clean) {
+    if (vizierDualUse.dlp_screening && vizierDualUse.dlp_screening.clean === false) {
       vizierEscalation = true;
       score = Math.min(score, 20);
       const findings = vizierDualUse.dlp_screening.findings || [];
@@ -9165,7 +9180,7 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
       ? "escalate"
       : hasMissingEvidence
         ? "not_decision_ready"
-        : "decision_ready";
+        : "ready_for_human_review";
 
   const evidenceLedger = sources.map(
     (source) =>
@@ -9180,7 +9195,12 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
     profile: "dual_use_technology_export",
     export_risk_triage: {
       status,
-      score,
+      score: Math.min(score, 69),
+      score_scope: "declared_evidence_structure_only",
+      factual_verification_performed: false,
+      human_review_required: true,
+      not_advice_notice: NOT_ADVICE_NOTICE,
+      evidence_gaps: ["Source content, classification, licensing requirements and end-use have not been independently verified."],
       primary_risk_vectors: riskVectors,
       evidence_ledger: evidenceLedger
     }
@@ -9190,7 +9210,7 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
     response,
     vizier_status: vizierDualUse ? vizierDualUse.status : "not_configured",
     vizier_degrade_reason: vizierDualUse ? vizierDualUse.degrade_reason : null,
-    vizier_clearance_receipt: vizierDualUse ? vizierDualUse.receipt : null,
+    vizier_clearance_receipt: null,
     dual_use_verification: vizierDualUse
   };
 }
@@ -15539,6 +15559,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       } catch (_e) {
         return jsonResponse({ error: "Malformed JSON payload" }, 400);
       }
+      if (!body || typeof body !== "object" || Array.isArray(body)) return jsonResponse({ error: "Request must be an object" }, 400);
       let structured = body.request || body || {};
       const hasStrictFields = Boolean(
         structured.project_name &&
@@ -15569,10 +15590,12 @@ export async function handleRequest(request, env = {}, ctx = {}) {
           return jsonResponse({
             error: "Validation failed",
             errors,
-            schema_hint: "Provide all 5 structured fields, or include 'prompt': string / 'auto_complete': true for smart fallback."
+            schema_hint: "Supply project_name, corridor_leg, capex_usd_m, ifi_debt_usd_m and dscr_min. Text hints cannot replace missing financial data."
           }, 400);
         }
       }
+      const validationErrors = validateBankabilityRequest(structured);
+      if (validationErrors.length) return jsonResponse({ error: "Validation failed", errors: validationErrors }, 400);
       const isPaid = await isBankabilityDossierPaid(request, env);
       const data = generateBankabilityScreen(structured, isPaid);
       return jsonResponse(data, 200, {

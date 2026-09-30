@@ -10,6 +10,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Reject missing/invented bankability figures and non-boolean guarantees across hosted and Python tools; preserve legitimate zero-debt inputs and require human signoff. Scenario output no longer fabricates Excel provenance or promises files it does not generate.
+- Validate malformed financial/escrow fields before evaluation; decode ERC-20 approve independently of the declared method, and reject invalid arbitration policies/fees.
+- Align Dual-Use, CIS and decision-policy MCP schemas with runtime output; validate protocol results with full JSON Schema in CI. Dual-Use JSON carries a structural-only score and mandatory human-review boundaries.
+- Separate DLP receipt forwarding from unverified ownership and payment confirmation from security clearance. Report missing source quotes/content and actionable repair steps in Python and hosted output verification.
+- Document machine-client User-Agent requirements, payment signature scope, and production deployment prerequisites. Add an explicitly authorized manual, main-only rollout for existing Workers through protected CI and a separate signed grant per target.
+
 - Fix fleet health checks for required signed delegation: unsigned tenant requests must return BLOCK/GRANT_REQUIRED, require protected credentials, and revoke temporary keys even when assertions fail.
 
 - Hosted MCP discovery now derives required arguments from published schemas, provides illustrative first-call examples and evidence-specific next steps, and advertises actual deployment Bearer/quota settings without exposing secrets. Pricing manifest identity follows the serving profile registry. HTTP contract tests cover examples, missing evidence, authorization, quota exhaustion, plugin isolation and signed receipt binding.

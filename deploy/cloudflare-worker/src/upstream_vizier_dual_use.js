@@ -14,7 +14,7 @@
 // Boundary discipline:
 //   - Graceful degrade: network failure, non-200, or timeout returns status !== "success"
 //     without failing benign caller requests.
-//   - Cryptographic verification: captures and forwards Vizier's signed JWS clearance receipt.
+//   - Receipt forwarding only: signatures are not verified here; DLP receipts are not ownership clearance.
 
 export const VIZIER_DEFAULT_URL = "https://vizier.vassiliy-lakhonin.workers.dev";
 export const DEFAULT_TIMEOUT_MS = 5000;
@@ -69,10 +69,13 @@ export async function verifyDualUseWithVizier(env = {}, request = {}, options = 
   if (!isDualUseVizierEnabled(env)) {
     return {
       status: "disabled",
-      clean: true,
+      ownership_status: "unverified",
+      receipt_scope: "none",
+      signature_verified: false,
+      clean: null,
       violation: false,
       sanctions_screening: { checked: false, entities_screened: [], violation: false, matches: [] },
-      dlp_screening: { clean: true, findings: [], total_leaks_prevented: 0 },
+      dlp_screening: { clean: null, findings: [], total_leaks_prevented: 0 },
       receipt: null,
       attribution: dualUseAttributionBlock(),
       queried_at: nowIso(),
@@ -101,7 +104,6 @@ export async function verifyDualUseWithVizier(env = {}, request = {}, options = 
     headers["X-Vizier-Key"] = apiKey;
   }
 
-  let latestReceipt = null;
   const entitiesToScreen = [];
   const seenNames = new Set();
 
@@ -116,13 +118,6 @@ export async function verifyDualUseWithVizier(env = {}, request = {}, options = 
   }
 
   const shipment = request.shipment || {};
-  if (shipment.origin) addEntity(shipment.origin, "origin_jurisdiction");
-  if (shipment.destination) addEntity(shipment.destination, "destination_jurisdiction");
-  if (Array.isArray(shipment.transit_countries)) {
-    for (const tc of shipment.transit_countries) {
-      addEntity(tc, "transit_jurisdiction");
-    }
-  }
   if (typeof shipment.consignee === "string") addEntity(shipment.consignee, "consignee");
   else if (shipment.consignee && typeof shipment.consignee.name === "string") {
     addEntity(shipment.consignee.name, "consignee");
@@ -179,16 +174,19 @@ export async function verifyDualUseWithVizier(env = {}, request = {}, options = 
       if (!sanctionsRes.ok) {
         return {
           status: "degraded",
-          clean: false,
-          violation: false,
+          ownership_status: "unverified",
+          receipt_scope: "none",
+          signature_verified: false,
+          clean: sanctionsViolation ? false : null,
+          violation: sanctionsViolation,
           sanctions_screening: {
             checked: true,
             entities_screened: entitiesToScreen.map((e) => e.name),
-            violation: false,
-            matches: []
+            violation: sanctionsViolation,
+            matches: sanctionsMatches
           },
-          dlp_screening: { clean: true, findings: [], total_leaks_prevented: 0 },
-          receipt: latestReceipt,
+          dlp_screening: { clean: null, findings: [], total_leaks_prevented: 0 },
+          receipt: null,
           attribution: dualUseAttributionBlock(),
           queried_at: nowIso(),
           degrade_reason: `Vizier returned HTTP status ${sanctionsRes.status} on sanctions screen for ${entity.name}`
@@ -196,9 +194,6 @@ export async function verifyDualUseWithVizier(env = {}, request = {}, options = 
       }
 
       const sanctionsData = await sanctionsRes.json();
-      if (sanctionsData.receipt) {
-        latestReceipt = sanctionsData.receipt;
-      }
       if (sanctionsData.violation) {
         sanctionsViolation = true;
         sanctionsMatches.push({
@@ -235,16 +230,19 @@ export async function verifyDualUseWithVizier(env = {}, request = {}, options = 
     if (!dlpRes.ok) {
       return {
         status: "degraded",
-        clean: false,
-        violation: false,
+        ownership_status: "unverified",
+        receipt_scope: "none",
+        signature_verified: false,
+        clean: sanctionsViolation ? false : null,
+        violation: sanctionsViolation,
         sanctions_screening: {
           checked: entitiesToScreen.length > 0,
           entities_screened: entitiesToScreen.map((e) => e.name),
           violation: sanctionsViolation,
           matches: sanctionsMatches
         },
-        dlp_screening: { clean: false, findings: [], total_leaks_prevented: 0 },
-        receipt: latestReceipt,
+        dlp_screening: { clean: null, findings: [], total_leaks_prevented: 0 },
+        receipt: null,
         attribution: dualUseAttributionBlock(),
         queried_at: nowIso(),
         degrade_reason: `Vizier returned HTTP status ${dlpRes.status} on DLP scan`
@@ -252,19 +250,19 @@ export async function verifyDualUseWithVizier(env = {}, request = {}, options = 
     }
 
     const dlpData = await dlpRes.json();
-    if (dlpData.receipt) {
-      latestReceipt = dlpData.receipt;
-    }
-    const dlpClean = Boolean(dlpData.clean);
+    const dlpClean = typeof dlpData.clean === "boolean" ? dlpData.clean : null;
     const dlpFindings = Array.isArray(dlpData.findings) ? dlpData.findings : [];
 
-    const isViolation = sanctionsViolation || !dlpClean;
-    const isClean = !sanctionsViolation && dlpClean;
+    const isViolation = sanctionsViolation || dlpClean === false;
+    const isClean = isViolation ? false : null;
 
     return {
       status: "success",
       engine: "vizier_dual_use",
       clean: isClean,
+      ownership_status: "unverified",
+      receipt_scope: dlpData.receipt ? "dlp_scan_only" : "none",
+      signature_verified: false,
       violation: isViolation,
       sanctions_screening: {
         checked: entitiesToScreen.length > 0,
@@ -277,23 +275,26 @@ export async function verifyDualUseWithVizier(env = {}, request = {}, options = 
         findings: dlpFindings,
         total_leaks_prevented: dlpFindings.length
       },
-      receipt: latestReceipt,
+      receipt: dlpData.receipt || null,
       attribution: dualUseAttributionBlock(),
       queried_at: nowIso()
     };
   } catch (error) {
     return {
       status: "degraded",
-      clean: false,
-      violation: false,
+      ownership_status: "unverified",
+      receipt_scope: "none",
+      signature_verified: false,
+      clean: sanctionsViolation ? false : null,
+      violation: sanctionsViolation,
       sanctions_screening: {
         checked: entitiesToScreen.length > 0,
         entities_screened: entitiesToScreen.map((e) => e.name),
-        violation: false,
-        matches: []
+        violation: sanctionsViolation,
+        matches: sanctionsMatches
       },
-      dlp_screening: { clean: false, findings: [], total_leaks_prevented: 0 },
-      receipt: latestReceipt,
+      dlp_screening: { clean: null, findings: [], total_leaks_prevented: 0 },
+      receipt: null,
       attribution: dualUseAttributionBlock(),
       queried_at: nowIso(),
       degrade_reason: error instanceof Error ? error.message : "Network error"

@@ -13,41 +13,47 @@ export const M2M_ESCROW_ARBITER_PROFILE_KEY = "m2m_escrow_arbiter";
  */
 export function validateM2MEscrowRequest(body) {
   const errors = [];
-  if (!body || typeof body !== "object") {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
     return ["Request body must be a JSON object"];
   }
   if (!body.escrow_id || typeof body.escrow_id !== "string") {
     errors.push("Missing required field: escrow_id");
   }
-  if (!body.deal_terms || typeof body.deal_terms !== "object") {
+  if (!body.deal_terms || typeof body.deal_terms !== "object" || Array.isArray(body.deal_terms)) {
     errors.push("Missing required object: deal_terms");
   } else {
     const terms = body.deal_terms;
+    if (terms.arbitration_fee_pct !== undefined && (!Number.isFinite(terms.arbitration_fee_pct) || terms.arbitration_fee_pct < 0 || terms.arbitration_fee_pct > 100)) errors.push("arbitration_fee_pct must be between 0 and 100");
+    if (!["all_or_nothing", "pro_rata", "slo_penalty"].includes(terms.arbitration_policy)) errors.push("Unsupported arbitration_policy");
     if (!terms.buyer_id || typeof terms.buyer_id !== "string") errors.push("Missing deal_terms.buyer_id");
     if (!terms.seller_id || typeof terms.seller_id !== "string") errors.push("Missing deal_terms.seller_id");
-    if (typeof terms.amount_usd !== "number" || terms.amount_usd < 0) {
+    if (!Number.isFinite(terms.amount_usd) || terms.amount_usd < 0) {
       errors.push("Invalid or missing deal_terms.amount_usd (must be >= 0)");
     }
+    if (!["USDC", "USDT", "ETH", "SOL", "USD", "EUR", "other"].includes(terms.currency)) errors.push("Unsupported currency");
     if (!terms.currency || typeof terms.currency !== "string") errors.push("Missing deal_terms.currency");
     if (!terms.deadline_utc || typeof terms.deadline_utc !== "string") errors.push("Missing deal_terms.deadline_utc");
     if (!terms.arbitration_policy || typeof terms.arbitration_policy !== "string") {
       errors.push("Missing deal_terms.arbitration_policy");
     }
   }
-  if (!body.specification || typeof body.specification !== "object") {
+  if (!body.specification || typeof body.specification !== "object" || Array.isArray(body.specification)) {
     errors.push("Missing required object: specification");
   } else {
+    if (!["json_data", "code_artifact", "model_weights", "api_service", "analysis_report", "other"].includes(body.specification.deliverable_type)) errors.push("Unsupported deliverable_type");
     if (!body.specification.deliverable_type || typeof body.specification.deliverable_type !== "string") {
       errors.push("Missing specification.deliverable_type");
     }
   }
-  if (!body.delivery_submission || typeof body.delivery_submission !== "object") {
+  if (!body.delivery_submission || typeof body.delivery_submission !== "object" || Array.isArray(body.delivery_submission)) {
     errors.push("Missing required object: delivery_submission");
   } else {
+    if (body.delivery_submission.artifact_sha256 !== undefined && (typeof body.delivery_submission.artifact_sha256 !== "string" || !/^[a-f0-9]{64}$/i.test(body.delivery_submission.artifact_sha256))) errors.push("artifact_sha256 must be a 64-character hexadecimal string");
     if (!body.delivery_submission.submitted_at || typeof body.delivery_submission.submitted_at !== "string") {
       errors.push("Missing delivery_submission.submitted_at");
     }
   }
+  if (body.specification?.min_valid_records_pct !== undefined && (!Number.isFinite(body.specification.min_valid_records_pct) || body.specification.min_valid_records_pct < 0 || body.specification.min_valid_records_pct > 100)) errors.push("min_valid_records_pct must be between 0 and 100");
   return errors;
 }
 
