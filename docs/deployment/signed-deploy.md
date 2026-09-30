@@ -27,3 +27,18 @@ This protects the repository deployment workflow. Cloudflare administrators
 still control direct deployment credentials. Other fleet targets need their own
 scoped grant. Required mode applies globally to Vizier authorization entrypoints;
 unsigned callers, including legacy covenant authorization, are blocked.
+
+## Daily fleet health check
+
+The health-check workflow uses the existing production Environment's
+`VIZIER_API_KEY` for its API-key lifecycle probe. It has no signing-key input.
+The Vizier probe requires `/docs` to advertise required mode, then verifies
+that an authenticated tenant request without a grant returns HTTP 200 with
+`BLOCK / GRANT_REQUIRED`. HTTP 401 is an authentication failure, and an
+unsigned ALLOW or optional mode is a health-check failure. The signed ALLOW
+path is exercised by the protected production deployment workflow.
+
+Every created probe key is revoked in a `finally` block, including when a
+verification assertion fails. On success the probe also checks that the
+revoked key is rejected with HTTP 401. Local runs must supply `VIZIER_API_KEY`
+from protected storage; there is no embedded credential fallback.
