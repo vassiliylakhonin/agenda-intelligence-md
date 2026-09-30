@@ -99,10 +99,7 @@ export const CORRIDOR_BANKABILITY_SPEC = {
   bringsEvidence: false,
   argKey: "request",
   legacyWrapper: false,
-  summary:
-    "Evaluate project finance bankability and IFI covenants (EBRD, ADB, EU Global Gateway) for Trans-Caspian and Middle Corridor infrastructure projects. " +
-    "Evaluates minimum DSCR floor (1.20x), non-sovereign margin (1.30x), leverage ceiling (<=80%), Caspian hydrological water-level constraints (-1.20m Baltic datum), " +
-    "and FX currency mismatch. Returns a free Decision Teaser with covenant pass/fail matrix, bottleneck analysis, and an x402 micropayment invoice to unlock the full 15-year debt waterfall model and IFI memo.",
+  summary: "Illustrative corridor project finance screen using supplied financial figures and internal DSCR/leverage thresholds. Mandatory human review; no lender approval, current hydrological verification, or guarantee of financing. Missing financial data is rejected.",
   inputSchema: {
     type: "object",
     additionalProperties: false,
@@ -125,12 +122,12 @@ export const CORRIDOR_BANKABILITY_SPEC = {
       },
       ifi_debt_usd_m: {
         type: "number",
-        minimum: 0.1,
+        minimum: 0,
         description: "Target IFI senior debt financing in millions USD."
       },
       dscr_min: {
         type: "number",
-        minimum: 0.5,
+        minimum: 0,
         maximum: 5.0,
         description: "Projected minimum Debt Service Coverage Ratio (DSCR)."
       },

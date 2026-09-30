@@ -12,23 +12,91 @@
     "export_risk_triage"
   ],
   "properties": {
-    "contract_version": { "type": "string", "const": "1.7.1" },
-    "profile": { "type": "string", "const": "dual_use_technology_export" },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "profile": {
+      "type": "string",
+      "const": "dual_use_technology_export"
+    },
     "export_risk_triage": {
       "type": "object",
-      "required": ["status", "score", "evidence_ledger"],
+      "required": [
+        "status",
+        "score",
+        "evidence_ledger",
+        "human_review_required",
+        "not_advice_notice",
+        "score_scope",
+        "factual_verification_performed",
+        "evidence_gaps"
+      ],
       "properties": {
-        "status": { "type": "string", "enum": ["decision_ready", "not_decision_ready", "escalate"] },
-        "score": { "type": "integer" },
+        "status": {
+          "type": "string",
+          "enum": [
+            "decision_ready",
+            "not_decision_ready",
+            "escalate",
+            "ready_for_human_review"
+          ]
+        },
+        "score": {
+          "type": "integer"
+        },
         "primary_risk_vectors": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "evidence_ledger": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
+        },
+        "score_scope": {
+          "const": "declared_evidence_structure_only"
+        },
+        "factual_verification_performed": {
+          "const": false
+        },
+        "human_review_required": {
+          "const": true
+        },
+        "not_advice_notice": {
+          "type": "string"
+        },
+        "evidence_gaps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
+    },
+    "vizier_status": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "vizier_degrade_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "vizier_clearance_receipt": {
+      "type": "null"
+    },
+    "dual_use_verification": {
+      "type": [
+        "object",
+        "null"
+      ]
     }
   }
 }

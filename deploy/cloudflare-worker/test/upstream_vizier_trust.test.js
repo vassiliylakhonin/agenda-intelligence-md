@@ -82,7 +82,9 @@ test("upstream_vizier_trust: verifies clean agent interaction and captures JWS r
 
   const res = await verifyAgenticTrustWithVizier(mockEnv, req);
   assert.equal(res.status, "success");
-  assert.equal(res.clean, true);
+  assert.equal(res.clean, null);
+  assert.equal(res.ownership_status, "unverified");
+  assert.equal(res.receipt_scope, "dlp_scan_only");
   assert.equal(res.violation, false);
   assert.equal(res.operator_screening.checked, true);
   assert.equal(res.operator_screening.violation, false);
@@ -230,7 +232,7 @@ test("upstream_vizier_trust: gracefully degrades on upstream error", async () =>
 
   const res = await verifyAgenticTrustWithVizier(mockEnv, req);
   assert.equal(res.status, "degraded");
-  assert.equal(res.clean, false);
+  assert.equal(res.clean, null);
   assert.ok(res.degrade_reason.includes("502"));
 });
 
@@ -298,8 +300,9 @@ test("e2e: agentic_interaction_trust allows clean agent interaction and attaches
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
-  assert.equal(metadata.trust_verification.clean, true);
+  assert.ok(!metadata.vizier_clearance_receipt);
+  assert.equal(metadata.trust_verification.clean, null);
+  assert.equal(metadata.trust_verification.dlp_receipt, fakeJws);
   assert.equal(metadata.trust_verification.violation, false);
 
   const responseBody = metadata.response;
@@ -373,7 +376,7 @@ test("e2e: agentic_interaction_trust blocks sanctioned operator under OFAC 50% R
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
+  assert.ok(!metadata.vizier_clearance_receipt);
   assert.equal(metadata.trust_verification.violation, true);
   assert.equal(metadata.trust_verification.operator_screening.violation, true);
 
@@ -456,7 +459,7 @@ test("e2e: agentic_interaction_trust blocks leaked secrets detected by Vizier DL
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
+  assert.ok(!metadata.vizier_clearance_receipt);
   assert.equal(metadata.trust_verification.violation, true);
   assert.equal(metadata.trust_verification.dlp_screening.clean, false);
 
@@ -520,8 +523,9 @@ test("e2e: REST POST /v1/agentic-interaction/trust attaches Vizier provenance an
   const data = await response.json();
 
   assert.equal(data.vizier_status, "success");
-  assert.equal(data.vizier_clearance_receipt, fakeJws);
-  assert.equal(data.trust_verification.clean, true);
+  assert.equal(data.vizier_clearance_receipt, null);
+  assert.equal(data.trust_verification.clean, null);
+  assert.equal(data.trust_verification.dlp_receipt, fakeJws);
   assert.equal(data.trust_verification.violation, false);
   assert.equal(data.trust_signal, "high");
   assert.equal(data.triage_recommendation, "allow_low_risk");

@@ -6,7 +6,12 @@
   "x-schema-version": "1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["policies", "receipt_format", "binding", "not_authorization_notice"],
+  "required": [
+    "policies",
+    "receipt_format",
+    "binding",
+    "not_authorization_notice"
+  ],
   "properties": {
     "policies": {
       "type": "array",
@@ -48,10 +53,18 @@
           "decisions": {
             "type": "array",
             "prefixItems": [
-              { "const": "continue" },
-              { "const": "request_evidence" },
-              { "const": "require_approval" },
-              { "const": "stop" }
+              {
+                "const": "continue"
+              },
+              {
+                "const": "request_evidence"
+              },
+              {
+                "const": "require_approval"
+              },
+              {
+                "const": "stop"
+              }
             ],
             "items": false
           },
@@ -73,36 +86,68 @@
     "binding": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["request_hash", "action_hash"],
+      "required": [
+        "request_hash",
+        "action_hash"
+      ],
       "properties": {
         "request_hash": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["algorithm", "canonicalization", "input"],
+          "required": [
+            "algorithm",
+            "canonicalization",
+            "input"
+          ],
           "properties": {
-            "algorithm": { "const": "SHA-256" },
-            "canonicalization": { "const": "RFC8785-JCS" },
-            "input": { "const": "complete_request" }
+            "algorithm": {
+              "const": "SHA-256"
+            },
+            "canonicalization": {
+              "const": "RFC8785-JCS"
+            },
+            "input": {
+              "const": "complete_request"
+            }
           }
         },
         "action_hash": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["algorithm", "canonicalization", "fields"],
+          "required": [
+            "algorithm",
+            "canonicalization",
+            "fields"
+          ],
           "properties": {
-            "algorithm": { "const": "SHA-256" },
-            "canonicalization": { "const": "RFC8785-JCS" },
+            "algorithm": {
+              "const": "SHA-256"
+            },
+            "canonicalization": {
+              "const": "RFC8785-JCS"
+            },
             "fields": {
               "type": "array",
               "prefixItems": [
-                { "const": "actor" },
-                { "const": "requested_action" },
-                { "const": "target" },
-                { "const": "risk_tier" }
+                {
+                  "const": "actor"
+                },
+                {
+                  "const": "requested_action"
+                },
+                {
+                  "const": "target"
+                },
+                {
+                  "const": "risk_tier"
+                }
               ],
               "items": false
             }
           }
+        },
+        "unicode_normalization": {
+          "const": "none"
         }
       }
     },

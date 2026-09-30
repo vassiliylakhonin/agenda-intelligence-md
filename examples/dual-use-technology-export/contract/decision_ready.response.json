@@ -1,18 +1,25 @@
 {
-  "contract_version": "1.11.1",
+  "contract_version": "1.13.0",
   "profile": "dual_use_technology_export",
   "export_risk_triage": {
-    "status": "decision_ready",
-    "score": 100,
+    "status": "ready_for_human_review",
+    "score": 69,
     "primary_risk_vectors": [
       "CHPL Status: Tier 1 (Battlefield High Priority) matched (HS 854231). Heightened diversion risk under EU Reg 833/2014 Annex XL, US BIS EAR Common High Priority List, and UK Russia Regulations.",
-      "OFAC E.O. 14114 Warning: Secondary sanctions exposure for Foreign Financial Institutions (FFIs) facilitating transactions involving CHPL Tier 1–2 items.",
+      "OFAC E.O. 14114 Warning: Secondary sanctions exposure for Foreign Financial Institutions (FFIs) facilitating transactions involving CHPL Tier 1\u20132 items.",
       "Transit countries are present; human review must assess diversion and re-export controls for each leg."
     ],
     "evidence_ledger": [
-      "du-1: classification_note — Exporter ECCN self-classification note (2026-08-01)",
-      "du-2: end_user_statement — Signed end-use / end-user statement from the Kazakhstan consignee (2026-08-05)",
-      "Regulatory Classification: Tier 1 (Battlefield High Priority) — Electronic integrated circuits, microcontrollers, processors, and memories."
+      "du-1: classification_note \u2014 Exporter ECCN self-classification note (2026-08-01)",
+      "du-2: end_user_statement \u2014 Signed end-use / end-user statement from the Kazakhstan consignee (2026-08-05)",
+      "Regulatory Classification: Tier 1 (Battlefield High Priority) \u2014 Electronic integrated circuits, microcontrollers, processors, and memories."
+    ],
+    "score_scope": "declared_evidence_structure_only",
+    "factual_verification_performed": false,
+    "human_review_required": true,
+    "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
+    "evidence_gaps": [
+      "Source content, classification, licensing requirements and end-use have not been independently verified."
     ]
   }
 }

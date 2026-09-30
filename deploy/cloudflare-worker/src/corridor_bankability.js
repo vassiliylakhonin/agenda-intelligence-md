@@ -15,7 +15,7 @@ export const MAX_DEBT_SHARE = 0.80;
 export const TIER_BANKABILITY_DOSSIER_USDC = 25.00;
 
 export const CORRIDOR_BOTTLENECK_MAP = {
-  "Aktau-Baku": "Aktau-Baku Caspian feeder crossing: water level drop (-1.20m Baltic datum) restricting vessel draft, wind-induced weather delays, and port turnaround times.",
+  "Aktau-Baku": "Aktau-Baku Caspian feeder crossing: water level drop (current levels require dated operator evidence) restricting vessel draft, wind-induced weather delays, and port turnaround times.",
   "Khorgos-Aktau": "Khorgos-Aktau rail transit: 1520mm / 1435mm gauge interchange at Dostyk/Altynkol and domestic wagon availability on Kazakhstan Temir Zholy (KTZ).",
   "Baku-Poti": "Baku-Poti Trans-Caucasus rail spine: Baku-Tbilisi-Kars (BTK) tunnel capacity and Georgian mountain pass single-track limits.",
   "Poti-Constanta": "Poti-Constanta Black Sea maritime leg: feeder schedule reliability, weather closures, and Romanian container terminal congestion at Constanta.",
@@ -102,14 +102,32 @@ export function evaluateCovenants(dscrMin, debtShare, hasSovereignGuarantee) {
   return { checks, conditions };
 }
 
+export function validateBankabilityRequest(request) {
+  if (!request || typeof request !== "object" || Array.isArray(request)) return ["Request must be an object"];
+  const errors = [];
+  if (typeof request.project_name !== "string" || request.project_name.trim().length < 2) errors.push("project_name must be a nonempty string");
+  if (!Object.hasOwn(CORRIDOR_BOTTLENECK_MAP, request.corridor_leg)) errors.push("corridor_leg must be a supported corridor leg");
+  for (const key of ["capex_usd_m", "ifi_debt_usd_m", "dscr_min"]) {
+    if (!Number.isFinite(request[key]) || request[key] < 0 || (key === "capex_usd_m" && request[key] < 0.1)) errors.push(`${key} must be a finite ${key === "capex_usd_m" ? "positive" : "nonnegative"} number`);
+  }
+  if (request.ifi_debt_usd_m > request.capex_usd_m) errors.push("ifi_debt_usd_m cannot exceed capex_usd_m");
+  for (const key of ["has_sovereign_guarantee", "currency_mismatch"]) {
+    if (request[key] !== undefined && typeof request[key] !== "boolean") errors.push(`${key} must be a boolean`);
+  }
+  if (request.evidence_sources !== undefined && !Array.isArray(request.evidence_sources)) errors.push("evidence_sources must be an array");
+  return errors;
+}
+
 export function generateBankabilityScreen(request = {}, isPaid = false, origin = "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev") {
-  const projectName = typeof request.project_name === "string" ? request.project_name.trim() : "Unnamed Corridor Infrastructure Project";
-  const corridorLeg = typeof request.corridor_leg === "string" && CORRIDOR_BOTTLENECK_MAP[request.corridor_leg] ? request.corridor_leg : "MULTI_LEG";
-  const capexUsdM = typeof request.capex_usd_m === "number" && request.capex_usd_m > 0 ? request.capex_usd_m : 100.0;
-  const ifiDebtUsdM = typeof request.ifi_debt_usd_m === "number" && request.ifi_debt_usd_m > 0 ? request.ifi_debt_usd_m : 60.0;
-  const dscrMin = typeof request.dscr_min === "number" ? request.dscr_min : 1.25;
-  const hasSovereignGuarantee = Boolean(request.has_sovereign_guarantee);
-  const currencyMismatch = request.currency_mismatch !== false; // default true for CIS corridor projects
+  const errors = validateBankabilityRequest(request);
+  if (errors.length) throw new TypeError(errors.join("; "));
+  const projectName = request.project_name.trim();
+  const corridorLeg = request.corridor_leg;
+  const capexUsdM = request.capex_usd_m;
+  const ifiDebtUsdM = request.ifi_debt_usd_m;
+  const dscrMin = request.dscr_min;
+  const hasSovereignGuarantee = request.has_sovereign_guarantee === true;
+  const currencyMismatch = request.currency_mismatch !== false;
   const evidenceSources = Array.isArray(request.evidence_sources) ? request.evidence_sources : [];
 
   const debtShare = capexUsdM > 0 ? ifiDebtUsdM / capexUsdM : null;
@@ -177,6 +195,11 @@ export function generateBankabilityScreen(request = {}, isPaid = false, origin =
     },
     credit_committee_risk_matrix: creditRisks,
     human_signoff_notice: HUMAN_SIGNOFF_NOTICE,
+    human_review_required: true,
+    human_signoff_required: true,
+    evidence_label: "caller_supplied_unverified",
+    model_scope: "illustrative_internal_thresholds_not_lender_approval",
+    assumptions: { currency_mismatch: request.currency_mismatch === undefined ? "assumed_true" : "caller_supplied" },
     unlocked_full_dossier: isPaid
   };
 
@@ -193,9 +216,9 @@ export function generateBankabilityScreen(request = {}, isPaid = false, origin =
       amount_raw: String(Math.round(TIER_BANKABILITY_DOSSIER_USDC * 1e6)),
       includes_in_full_tier: [
         "15-Year Deterministic Debt Service Waterfall Model",
-        "EBRD / ADB / Global Gateway Standard Form Investment Memo (Markdown/PDF)",
-        "Claim Ledger with primary source document traceability",
-        "Deterministic Excel financial model with SHA-256 provenance verification"
+        "Illustrative scenario memo (Markdown only; no lender endorsement)",
+        "List of caller-supplied evidence references for human review",
+        "15-year JSON schedule with explicit scenario assumptions; no Excel/PDF file"
       ],
       how_to_unlock:
         `Send transfer(${BASE_USDC_WALLET}, ${String(Math.round(TIER_BANKABILITY_DOSSIER_USDC * 1e6))}) on Base (Chain ID 8453), then retry this request with header 'X-Payment-Tx: <tx_hash>'.`
@@ -204,12 +227,11 @@ export function generateBankabilityScreen(request = {}, isPaid = false, origin =
   }
 
   // When paid: synthesize the full 7-section IFI Bankability Memo and financial waterfall
-  const simulatedHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"; // deterministic model hash
   const fullMemoMarkdown = `# IFI Corridor Bankability & Investment Memorandum
 **Project**: ${projectName}  
 **Corridor Leg**: ${corridorLeg}  
 **Target Financial Institution**: European Bank for Reconstruction and Development (EBRD) / Asian Development Bank (ADB)  
-**Standard**: EU Global Gateway / Middle Corridor Sustainable Connectivity  
+**Scope**: Illustrative internal scenario; no EBRD, ADB or EU template certification
 
 ---
 
@@ -235,7 +257,7 @@ Minimum Debt Service Coverage Ratio (DSCR): **${dscrMin.toFixed(2)}x** against a
 Primary physical and regulatory chokepoint on this segment:
 > ${primaryBottleneck}
 
-Under hydrological stress scenarios (Caspian Sea Baltic Datum variations), feeder vessel load factors must be limited to 70% draft capacity, which requires a minimum container yard holding buffer at the port terminal.
+Obtain current operator and port records to assess draft capacity, load factors and terminal buffers; no site-specific operating limit has been verified.
 
 ---
 
@@ -248,9 +270,9 @@ ${conditions.map((c, i) => `${i + 1}. ${c}`).join("\n")}
 ---
 
 ## 5. Audit & Claim Ledger
-All material quantitative assumptions are deterministic and bound to the submitted project brief. No unsourced revenue escalation factors were permitted.
+Input figures are caller-supplied and unverified. The 15-year tenor and 5.5% interest rate are illustrative assumptions; required CFADS is a calculated requirement, not a revenue forecast.
 
-- **Financial Model Workbook SHA-256**: \`${simulatedHash}\`
+- **Workbook provenance**: No Excel workbook or PDF was generated; no file digest is available.
 - **Sign-off Requirement**: Mandatory human credit analyst review before board presentation.
 `;
 
@@ -284,8 +306,10 @@ All material quantitative assumptions are deterministic and bound to the submitt
   baseResponse.full_dossier = {
     status: "UNLOCKED",
     dossier_markdown: fullMemoMarkdown,
-    financial_model_sha256: simulatedHash,
-    excel_financial_model_sha256: simulatedHash,
+    financial_model_sha256: null,
+    excel_financial_model_sha256: null,
+    provenance_status: "no_workbook_generated",
+    model_assumptions: { tenor_years: 15, interest_rate: 0.055, dscr: dscrMin, scope: "illustrative_scenario_not_forecast" },
     waterfall_schedule_15yr: waterfall,
     settlement_network: "base",
     settlement_currency: "USDC",
@@ -305,11 +329,12 @@ export function extractBankabilityParameters(input = {}, rawText = "") {
   const result = {
     project_name: input.project_name,
     corridor_leg: input.corridor_leg,
-    capex_usd_m: typeof input.capex_usd_m === "number" ? input.capex_usd_m : undefined,
-    ifi_debt_usd_m: typeof input.ifi_debt_usd_m === "number" ? input.ifi_debt_usd_m : undefined,
-    dscr_min: typeof input.dscr_min === "number" ? input.dscr_min : undefined,
-    currency_mismatch: input.currency_mismatch !== undefined ? Boolean(input.currency_mismatch) : true,
-    has_sovereign_guarantee: Boolean(input.has_sovereign_guarantee),
+    capex_usd_m: input.capex_usd_m,
+    ifi_debt_usd_m: input.ifi_debt_usd_m,
+    dscr_min: input.dscr_min,
+    currency_mismatch: input.currency_mismatch !== undefined ? input.currency_mismatch : true,
+    has_sovereign_guarantee: input.has_sovereign_guarantee,
+    evidence_sources: input.evidence_sources,
     inferred_parameters: false
   };
 
@@ -341,29 +366,7 @@ export function extractBankabilityParameters(input = {}, rawText = "") {
     }
   }
 
-  let inferred = false;
-  if (!result.project_name) {
-    result.project_name = "Trans-Caspian Strategic Corridor Project";
-    inferred = true;
-  }
-  if (!result.corridor_leg || !CORRIDOR_BOTTLENECK_MAP[result.corridor_leg]) {
-    result.corridor_leg = "MULTI_LEG";
-    inferred = true;
-  }
-  if (result.capex_usd_m === undefined || isNaN(result.capex_usd_m) || result.capex_usd_m <= 0) {
-    result.capex_usd_m = 50.0;
-    inferred = true;
-  }
-  if (result.ifi_debt_usd_m === undefined || isNaN(result.ifi_debt_usd_m) || result.ifi_debt_usd_m <= 0) {
-    result.ifi_debt_usd_m = Math.round(result.capex_usd_m * 0.70 * 10) / 10;
-    inferred = true;
-  }
-  if (result.dscr_min === undefined || isNaN(result.dscr_min) || result.dscr_min <= 0) {
-    result.dscr_min = 1.30;
-    inferred = true;
-  }
-
-  result.inferred_parameters = inferred;
+  // Text hints may help identify the project, but cannot invent underwriting metrics.
+  result.inferred_parameters = Boolean(text);
   return result;
 }
-

@@ -219,6 +219,24 @@ export interface CISSecondarySanctionsExposureResponse {
     to: string;
   }>;
   readiness_contract?: CISSecondarySanctionsExposureResponseReadinessContract;
+  beneficial_ownership_clearance?: {
+    status: "ownership_unknown" | "potential_blocked_ownership_escalate" | "screened_disclosed_chain";
+    clean: boolean | null;
+    violation: boolean;
+    [key: string]: unknown;
+  };
+  live_retrieval_status?: string | null;
+  live_retrieval_upstream?: string | null;
+  live_retrieval_reason_code?: string | null;
+  live_retrieval_snapshot_generated_at?: string | null;
+  vizier_status?: string | null;
+  vizier_clearance_receipt?: string | null;
+  auto_fetched_sources?: Array<{
+    [key: string]: unknown;
+  }>;
+  upstream_attribution?: {
+    [key: string]: unknown;
+  } | null;
 }
 
 /** Product-grade structured request contract for Critical Minerals & Strategic Raw Materials evidence triage (EU Critical Raw Materials Act, EU CSDDD, US Inflation Reduction Act, and export-control compliance). This schema describes caller-supplied mineral commodity, extraction jurisdiction, processing route, counterparty, and decision-stage inputs. It does not enable live retrieval, factual-truth verification, legal advice, compliance advice, sanctions advice, or ESG certification. */

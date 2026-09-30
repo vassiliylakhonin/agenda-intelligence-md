@@ -116,3 +116,41 @@ def test_remote_error_fallback_cannot_authorize():
     assert verdict.is_allowed is False
     assert verdict.decision == "step_up_human_required"
     assert verdict.score == 55
+
+
+def test_encoded_approve_cannot_hide_behind_declared_transfer():
+    guard = AgentFinancialGuard()
+    calldata = "0x095ea7b3" + "0" * 24 + "1" * 40 + "f" * 64
+    verdict = guard.check(
+        {
+            "network": "base",
+            "token": "USDC",
+            "amount_usd": 1,
+            "recipient": "0x" + "1" * 40,
+            "method": "transfer",
+            "calldata": calldata,
+        },
+        "Pay invoice",
+        prefer_remote=False,
+    )
+    assert verdict.is_blocked
+    assert verdict.checks["contract_security"] is False
+
+
+def test_finite_encoded_approve_is_not_an_infinite_allowance():
+    guard = AgentFinancialGuard()
+    calldata = "0x095ea7b3" + "0" * 24 + "1" * 40 + "0" * 32 + "f" * 32
+    verdict = guard.check(
+        {
+            "network": "base",
+            "token": "USDC",
+            "amount_usd": 1,
+            "recipient": "0x" + "1" * 40,
+            "method": "approve",
+            "calldata": calldata,
+        },
+        "Allow bounded invoice payment",
+        prefer_remote=False,
+    )
+    assert verdict.checks["contract_security"] is True
+    assert verdict.is_allowed is False
