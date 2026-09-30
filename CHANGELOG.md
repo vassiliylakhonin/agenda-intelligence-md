@@ -2,6 +2,12 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
+## Unreleased — signed production deployment
+
+- Require an owner-signed grant and principal-signed, identity/expiry/request-bound ALLOW before the gated Worker deploy invokes Wrangler.
+- Mint a ten-minute, single-Worker delegation in a separate protected GitHub Environment step; private signing key is absent from the deployment step. Grant files are bounded and removed after the job.
+- Missing, expired, mismatched or caller-asserted authorization stops deployment. Existing direct administrator access remains outside this gate.
+
 ## Unreleased
 
 - Hosted MCP discovery now derives required arguments from published schemas, provides illustrative first-call examples and evidence-specific next steps, and advertises actual deployment Bearer/quota settings without exposing secrets. Pricing manifest identity follows the serving profile registry. HTTP contract tests cover examples, missing evidence, authorization, quota exhaustion, plugin isolation and signed receipt binding.

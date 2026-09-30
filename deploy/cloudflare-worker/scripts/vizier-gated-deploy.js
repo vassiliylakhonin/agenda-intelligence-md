@@ -1,6 +1,7 @@
 import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
+import { open } from "node:fs/promises";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { DIGEST_PREFIX, bundleDigest, fleetEnvironments } from "./deploy-all.js";
@@ -59,7 +60,7 @@ export function requestHash(request) {
   return createHash("sha256").update(canonicalize(request)).digest("hex");
 }
 
-export function createDeployRequest(metadata, env = DEFAULT_ENV) {
+export function createDeployRequest(metadata, env = DEFAULT_ENV, grant = undefined) {
   const target = workerTargetFor(env);
   return {
     agent: { id: `${env || "top-level"}-deployer`, owner: "vassiliy-lakhonin" },
@@ -69,11 +70,8 @@ export function createDeployRequest(metadata, env = DEFAULT_ENV) {
       target,
       parameters: { git_commit: metadata.commit, dirty_worktree: metadata.dirty }
     },
-    // The authority envelope is declared by this caller, so an ALLOW proves the
-    // deploy went through the gate and produced a receipt bound to this exact
-    // request -- not that some external authority approved it. Narrow it to the
-    // one target anyway: a request that would allow any worker could be replayed
-    // against any worker.
+    // This exact authority must match the owner-signed grant. The signer is a
+    // separate operator-controlled step, not part of the protected deploy process.
     authority: {
       allowed_actions: ["deploy_worker"],
       constraints: {
@@ -81,7 +79,8 @@ export function createDeployRequest(metadata, env = DEFAULT_ENV) {
         allowed_sensitive_actions: ["deploy_worker"]
       }
     },
-    context: { request_id: null, timestamp: null, source: "rest" }
+    context: { request_id: null, timestamp: null, source: "rest" },
+    ...(grant === undefined ? {} : { grant })
   };
 }
 
@@ -146,6 +145,15 @@ export function validateVizierResponse(value, request) {
     !equalArrays(value.reason_codes, policyReasonCodes)
   ) {
     throw new Error("Vizier returned an invalid response contract.");
+  }
+  if (value.decision === "ALLOW") {
+    const grant = receipt.grant;
+    if (receipt.authority_provenance !== "principal_signed" || !isRecord(grant) ||
+        grant.issuer !== request.principal.id || grant.subject !== request.agent.id ||
+        typeof grant.expires_at !== "string" || !Number.isFinite(Date.parse(grant.expires_at)) ||
+        Date.parse(grant.expires_at) <= Date.now()) {
+      throw new Error("Vizier ALLOW is missing valid owner-signed delegation proof.");
+    }
   }
   return value;
 }
@@ -212,9 +220,12 @@ async function verifyWithVizier(request, apiKey, fetchImpl) {
   }
 }
 
-export async function runGatedDeploy({ metadata, apiKey, fetchImpl = fetch, execute, env = DEFAULT_ENV }) {
+export async function runGatedDeploy({ metadata, apiKey, grant, fetchImpl = fetch, execute, env = DEFAULT_ENV }) {
   assertCleanWorktree(metadata);
-  const request = createDeployRequest(metadata, env);
+  if (typeof grant !== "string" || grant.length === 0 || grant.length > 32_768) {
+    throw new Error("An owner-signed deployment grant is required before verification.");
+  }
+  const request = createDeployRequest(metadata, env, grant);
   const response = await verifyWithVizier(request, apiKey, fetchImpl);
   if (response.decision !== "ALLOW") {
     return {
@@ -281,6 +292,28 @@ export async function readVizierCredential({ environment = process.env, readKeyc
   return secret;
 }
 
+export async function readDeploymentGrant(environment = process.env) {
+  const filename = environment.VIZIER_DEPLOY_GRANT_FILE;
+  if (!filename) throw new Error("VIZIER_DEPLOY_GRANT_FILE is required; unsigned deployment is disabled.");
+  const file = await open(filename, "r");
+  try {
+    if (!(await file.stat()).isFile()) throw new Error("Deployment grant must be a regular file.");
+    const buffer = Buffer.alloc(32_769);
+    let size = 0;
+    while (size < buffer.length) {
+      const part = await file.read(buffer, size, buffer.length-size, null);
+      if (part.bytesRead === 0) break;
+      size += part.bytesRead;
+    }
+    if (size > 32_768) throw new Error("Deployment grant exceeds size limit.");
+    const grant = buffer.subarray(0, size).toString("utf8").trim();
+    if (!grant) throw new Error("Deployment grant is empty.");
+    return grant;
+  } finally {
+    await file.close();
+  }
+}
+
 function executeWranglerDeploy(receiptId, digest, env = DEFAULT_ENV) {
   // The receipt says the gate allowed this deploy; the digest says what was
   // deployed. deploy-all.js --check reads both from the same message, and
@@ -335,7 +368,9 @@ async function main() {
     throw new Error("vizier-gated-deploy accepts --env <name> or --top-level, and nothing else.");
   }
   const env = envFromArgv(process.argv.slice(2));
-  const [metadata, apiKey] = await Promise.all([collectDeployMetadata(), readVizierCredential()]);
+  const [metadata, apiKey, grant] = await Promise.all([
+    collectDeployMetadata(), readVizierCredential(), readDeploymentGrant()
+  ]);
   // The gate already refused a dirty worktree above, so a digest is always
   // available here; the fallback exists so a change to that rule cannot turn a
   // missing digest into a crash mid-deploy.
@@ -343,6 +378,7 @@ async function main() {
   const result = await runGatedDeploy({
     metadata,
     apiKey,
+    grant,
     env,
     execute: (receiptId) => executeWranglerDeploy(receiptId, digest, env)
   });
@@ -354,7 +390,7 @@ async function main() {
       decision: result.decision,
       receipt_id: result.receiptId,
       reason_codes: result.reasonCodes,
-      ...(result.status === "stopped" ? {} : { exit_code: result.exitCode })
+      ...(result.status === "stopped" ? {} : { exit_code: result.exitCode, authority_provenance: "principal_signed" })
     })
   );
   return result.status === "stopped" ? 2 : result.exitCode;

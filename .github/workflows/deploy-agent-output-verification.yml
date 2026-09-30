@@ -8,6 +8,7 @@ on:
       - .github/workflows/deploy-agent-output-verification.yml
       - deploy/cloudflare-worker/package.json
       - deploy/cloudflare-worker/scripts/vizier-gated-deploy.js
+      - deploy/cloudflare-worker/scripts/mint-deploy-grant.js
       - deploy/cloudflare-worker/src/**
       - deploy/cloudflare-worker/wrangler.toml
   workflow_dispatch:
@@ -91,9 +92,19 @@ jobs:
             echo "stop_or_escalate_if=Dirty checkout, invalid receipt, REVIEW, BLOCK, timeout, or failed tests"
           } | tee "$RUNNER_TEMP/vizier-decision-workspace.txt"
 
+      - name: Mint short-lived owner delegation
+        env:
+          VIZIER_DELEGATION_SIGNING_KEY: ${{ secrets.VIZIER_DELEGATION_SIGNING_KEY }}
+        run: node scripts/mint-deploy-grant.js --out "$RUNNER_TEMP/vizier-deploy-grant.jws"
+
       - name: Verify with Vizier and deploy
         env:
           VIZIER_API_KEY: ${{ secrets.VIZIER_API_KEY }}
+          VIZIER_DEPLOY_GRANT_FILE: ${{ runner.temp }}/vizier-deploy-grant.jws
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npm run deploy:agent-output-verification:gated
+
+      - name: Remove delegation token
+        if: always()
+        run: rm -f "$RUNNER_TEMP/vizier-deploy-grant.jws"
