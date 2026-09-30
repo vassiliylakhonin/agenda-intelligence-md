@@ -10,6 +10,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Publish outputSchema for all hosted Agenda MCP tools, including Financial Guard and Escrow legacy task envelopes, strategic triage, fleet directory and corridor orientation. Validate successful output and controlled refusals without changing request or response formats. Mark legacy Financial Guard/Escrow INPUT_REQUIRED refusals as MCP errors.
+
 - Preserve signed numeric facts (including Unicode minus), require contextual support for numbers across documents, and prevent unrelated verbatim quotes from upgrading grounded_check. Ambiguous numeric context requires human review; matching values in relevant sentences can still support multi-source claims.
 
 - Ship a zero-dependency urllib JSON MCP discovery example with an explicit application identity; require application-identified urllib discovery to pass the hosted monitor while keeping unmodified urllib 1010 visible separately. Telemetry identifies itself rather than claiming to be curl.

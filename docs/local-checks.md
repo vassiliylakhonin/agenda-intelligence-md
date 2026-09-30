@@ -54,4 +54,4 @@ Change the paired copy in the same commit. `tests/test_package_consistency.py` e
 
 ## Hosted protocol contracts
 
-`make verify-local` includes `tests/test_worker_runtime_contracts.py`. It invokes the real MCP handlers for every published schema-backed tool and both CIS/Dual-Use REST routes, then validates results using Draft 2020-12. Error-shaped refusals remain errors, rather than successful output contracts.
+`make verify-local` includes `tests/test_worker_runtime_contracts.py`. It invokes the real MCP handlers for every published schema-backed tool and both CIS/Dual-Use REST routes, then validates results using Draft 2020-12. All 20 hosted Agenda MCP tools publish outputSchema. Financial Guard and Escrow schemas describe both direct service responses and legacy A2A task envelopes; refused legacy calls set isError=true. Error-shaped refusals remain errors, rather than successful output contracts.
