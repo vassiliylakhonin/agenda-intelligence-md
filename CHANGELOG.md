@@ -10,6 +10,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Preserve signed numeric facts (including Unicode minus), require contextual support for numbers across documents, and prevent unrelated verbatim quotes from upgrading grounded_check. Ambiguous numeric context requires human review; matching values in relevant sentences can still support multi-source claims.
+
 - Ship a zero-dependency urllib JSON MCP discovery example with an explicit application identity; require application-identified urllib discovery to pass the hosted monitor while keeping unmodified urllib 1010 visible separately. Telemetry identifies itself rather than claiming to be curl.
 
 - Monitor all configured hosted MCP endpoints plus Vizier using the ordinary MCP SDK identity, health and A2A discovery. Keep Cloudflare default-urllib error 1010 visible separately; add scheduled and post-deploy reports without credentials, paid calls or state-changing proofs.
