@@ -14,7 +14,7 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 - Validate malformed financial/escrow fields before evaluation; decode ERC-20 approve independently of the declared method, and reject invalid arbitration policies/fees.
 - Align Dual-Use, CIS and decision-policy MCP schemas with runtime output; validate protocol results with full JSON Schema in CI. Dual-Use JSON carries a structural-only score and mandatory human-review boundaries.
 - Separate DLP receipt forwarding from unverified ownership and payment confirmation from security clearance. Report missing source quotes/content and actionable repair steps in Python and hosted output verification.
-- Document machine-client User-Agent requirements, payment signature scope, and production deployment prerequisites.
+- Document machine-client User-Agent requirements, payment signature scope, and production deployment prerequisites. Add an explicitly authorized manual, main-only rollout for existing Workers through protected CI and a separate signed grant per target.
 
 - Fix fleet health checks for required signed delegation: unsigned tenant requests must return BLOCK/GRANT_REQUIRED, require protected credentials, and revoke temporary keys even when assertions fail.
 

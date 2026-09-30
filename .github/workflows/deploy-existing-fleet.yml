@@ -1,0 +1,106 @@
+name: Deploy existing Worker fleet through Vizier
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: existing-worker-fleet-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.fleet.outputs.matrix }}
+    defaults:
+      run:
+        working-directory: deploy/cloudflare-worker
+    steps:
+      - name: Checkout the immutable main commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+      - name: Use the tested Node.js runtime
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - name: Verify the deployment source
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+          npm test
+      - name: Derive only already configured Worker targets
+        id: fleet
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          import { deployedEnvironments } from './scripts/deploy-all.js';
+          const fleet = deployedEnvironments(readFileSync('wrangler.toml', 'utf8'));
+          if (!fleet.length || fleet.some(({env, workerName}) =>
+            !/^[a-z0-9-]*$/.test(env) || !/^[a-z0-9-]+$/.test(workerName))) {
+            throw new Error('Invalid configured Worker fleet');
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT, `matrix=${JSON.stringify({include:fleet})}\n`);
+          JS
+
+  deploy:
+    needs: verify
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.verify.outputs.matrix) }}
+    # Reuse the existing protected owner-controlled credential boundary.
+    environment:
+      name: agent-output-verification-production
+    defaults:
+      run:
+        working-directory: deploy/cloudflare-worker
+    env:
+      WORKER_ENV: ${{ matrix.env }}
+    steps:
+      - name: Checkout the same tested commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+      - name: Use the tested Node.js runtime
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - name: Verify clean immutable source again
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+      - name: Mint a separate short-lived grant for this Worker
+        env:
+          VIZIER_DELEGATION_SIGNING_KEY: ${{ secrets.VIZIER_DELEGATION_SIGNING_KEY }}
+        run: |
+          if [ -n "$WORKER_ENV" ]; then
+            node scripts/mint-deploy-grant.js --out "$RUNNER_TEMP/vizier-deploy-grant.jws" --env "$WORKER_ENV"
+          else
+            node scripts/mint-deploy-grant.js --out "$RUNNER_TEMP/vizier-deploy-grant.jws" --top-level
+          fi
+      - name: Require matching Vizier ALLOW before this deployment
+        env:
+          VIZIER_API_KEY: ${{ secrets.VIZIER_API_KEY }}
+          VIZIER_DEPLOY_GRANT_FILE: ${{ runner.temp }}/vizier-deploy-grant.jws
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$WORKER_ENV" ]; then
+            node scripts/vizier-gated-deploy.js --env "$WORKER_ENV"
+          else
+            node scripts/vizier-gated-deploy.js --top-level
+          fi
+      - name: Remove delegation token
+        if: always()
+        run: rm -f "$RUNNER_TEMP/vizier-deploy-grant.jws"

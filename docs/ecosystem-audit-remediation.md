@@ -41,4 +41,6 @@ For an MCP SDK client, pass the same explicit header through its HTTP transport.
 
 Run deployments through `scripts/vizier-gated-deploy.js` or `npm run deploy:all`. The gate requires a clean committed checkout, a short-lived owner-signed deployment grant, and a matching principal-signed Vizier ALLOW before Wrangler runs. The operator-controlled signer is separate from the deployment step. Never create an unsigned substitute, retrieve signing secrets into audit output, or use direct Wrangler deployment to bypass this gate.
 
+The manual `Deploy existing Worker fleet through Vizier` GitHub workflow can deploy all existing TOML-configured targets from an immutable tested main commit. It reuses the existing protected production environment and mints a separate ten-minute, single-target grant per job. No local signing key is needed; it never deploys a PR branch or bypasses a BLOCK/REVIEW. The independent Vizier Worker is outside this fleet.
+
 Cloudflare OAuth alone is insufficient. An unset VIZIER_DEPLOY_GRANT_FILE / unavailable operator signer leaves rollout pending. Source fixes and local test evidence do not establish that public sites have been updated. After authorized deployment, repeat SDK, REST refusal and A2A probes against each live hostname, and separately retest default urllib connectivity.
