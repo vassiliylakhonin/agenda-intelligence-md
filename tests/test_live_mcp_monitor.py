@@ -58,5 +58,5 @@ def test_missing_or_renamed_tool_is_a_regression():
 def test_baseline_covers_fleet():
     import json
 
-    baseline = json.loads((monitor.ROOT / "scripts/fleet_health/mcp-catalog-baseline.json").read_text())
+    baseline = json.loads((monitor.ROOT / "scripts/mcp-catalog-baseline.json").read_text())
     assert set(baseline) == set(monitor.fleet_names())

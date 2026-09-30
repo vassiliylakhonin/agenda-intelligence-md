@@ -7,7 +7,7 @@ on:
   pull_request:
     paths:
       - "scripts/check_live_mcp.py"
-      - "scripts/fleet_health/mcp-catalog-baseline.json"
+      - "scripts/mcp-catalog-baseline.json"
       - "tests/test_live_mcp_monitor.py"
       - ".github/workflows/live-mcp-monitor.yml"
   workflow_run:

@@ -101,7 +101,7 @@ async def sdk_discovery(url, expected):
 
 async def check_host(name):
     origin = f"https://{name}.vassiliy-lakhonin.workers.dev"
-    baseline = json.loads((ROOT / "scripts/fleet_health/mcp-catalog-baseline.json").read_text())
+    baseline = json.loads((ROOT / "scripts/mcp-catalog-baseline.json").read_text())
     checks = []
     for label, path in [("health", "/health"), ("a2a_card", "/.well-known/agent-card.json")]:
         try:
