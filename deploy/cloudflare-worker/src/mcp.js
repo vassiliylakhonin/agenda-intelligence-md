@@ -13,6 +13,7 @@
 
 import { PROFILE_REGISTRY } from "./profiles.js";
 import { MCP_TOOL_CONTRACTS } from "./mcp-tool-contracts.js";
+import { hostedAccessNote } from "./hosted-access.js";
 
 export const MCP_PROTOCOL_VERSION = "2026-07-28";
 
@@ -46,22 +47,52 @@ const NOT_ADVICE =
   "Evidence triage only: no factual-truth verification, no legal, compliance, sanctions, or financial advice. " +
   "Human review is required before any commercial action.";
 
-// A summary says what comes back. It does not say what the caller has to bring,
-// and these gates will not answer without it — each one requires the caller's
-// own evidence up front. An agent reading "returns ... evidence gaps" while
-// holding only a question reasonably concludes it can ask what it is missing,
-// calls, and is refused. Measured over the 72h to 2026-09-02: 18,048
-// tools/list calls across the ten gates, one genuine tools/call, and that one
-// went to a tool whose only argument is text.
-//
-// So the precondition is stated where it is read, next to the promise it
-// qualifies, and the caller who has nothing yet is sent somewhere that can take
-// them. Marked per tool rather than inferred from argKey: decision_policies_list
-// takes no arguments and decision_verify takes a receipt, and neither grades
-// evidence.
-const BRING_EVIDENCE =
-  "Grades the evidence you supply and names what is still missing; it does not retrieve sources, so a call that " +
-  "brings none is refused. With only a question and no evidence yet, start at corridor_sanctions_assistant.";
+// Onboarding is derived from the same schemas the dispatcher publishes.
+// Examples are illustrative caller data, never evidence or authority to act.
+const AUDIT_EXAMPLE = {
+  claims: [{ claim_id: "c1", claim: "The example record says registration is active.",
+    support_level: "direct", evidence_ids: ["e1"],
+    supporting_quotes: [{ evidence_id: "e1", quote: "Registration active" }] }],
+  evidence: [{ evidence_id: "e1", name: "Synthetic registry excerpt", source_type: "official_document",
+    content: "Registration active" }]
+};
+
+function onboardingExample(spec, inputSchema, example) {
+  if (spec.name === "decision_verify") return null;
+  if (spec.argKey === "none") return {};
+  if (spec.argKey === "text") return { text: spec.name === "corridor_sanctions_assistant"
+    ? "What evidence is needed before shipping industrial equipment from Aktau to Baku?"
+    : "What evidence is needed before entering the Kazakhstan market?" };
+  if (spec.name === "corridor_bankability_screen") return {
+    project_name: "Synthetic Aktau project", corridor_leg: "Aktau-Baku", capex_usd_m: 100,
+    ifi_debt_usd_m: 60, dscr_min: 1.3
+  };
+  if (spec.name === "screen_dual_use_hs_code") return { hs_code: "854231" };
+  if (spec.name === "agent_output_verification") return structuredClone(AUDIT_EXAMPLE);
+  if (["pre_action_check", "decision_check"].includes(spec.name)) return {
+    run_id: "synthetic-readiness-001", actor: { id: "example-agent", type: "ai_agent", operator: "Example owner" },
+    requested_action: "prepare a supplier recommendation for review",
+    target: { id: "example-supplier", type: "counterparty" }, risk_tier: "low",
+    ...structuredClone(AUDIT_EXAMPLE)
+  };
+  const payload = inputSchema.examples?.[0] || example;
+  if (!payload) return null;
+  if (spec.name === "cis_secondary_sanctions_batch") return { requests: [structuredClone(payload)] };
+  return inputSchema.required?.includes("request")
+    ? { request: structuredClone(payload) } : structuredClone(payload);
+}
+
+function evidenceNextStep(profile, spec) {
+  if (spec.name === "decision_verify") return "First obtain a real signed receipt from decision_check. Compute expected_request_hash and expected_action_hash from your own intended request/action; do not copy bindings blindly from the receipt. Never fabricate a receipt.";
+  if (spec.name === "decision_check") return "Supply claim evidence and configure the deployment's ES256 signing key; without it the receipt is unavailable. A receipt is not authorization.";
+  if (!spec.bringsEvidence) return "Follow inputSchema; this tool does not require a prior evidence packet unless the schema asks for one.";
+  if (spec.name === "pre_action_check") return "Before an action, supply the actor, intended action, target, risk tier, actual claim evidence, and any required approval reference. Missing evidence requires collection; do not invent it or treat the result as authorization.";
+  if (profile === "agent_output_verification") return "Extract claims from the answer and attach the actual source text, evidence_ids, and matching quotes. If evidence is unavailable, report that gap; do not invent sources or treat the result as permission to relay.";
+  const base = "Grades supplied evidence; it does not independently verify source truth. Obtain the source records requested by inputSchema before asking for a decision-ready result. Do not fabricate missing evidence.";
+  return ["kazakhstan", "cis_secondary_sanctions", "gulf_maritime_exposure", "dual_use_technology_export", "critical_minerals_due_diligence"].includes(profile)
+    ? `${base} For a Middle Corridor sanctions question without evidence, use corridor_sanctions_assistant at https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/mcp for orientation only.`
+    : base;
+}
 
 export const CORRIDOR_BANKABILITY_SPEC = {
   name: "corridor_bankability_screen",
@@ -142,8 +173,7 @@ const PROFILE_TOOLS = {
     summary:
       "Screen a Kazakhstan / Middle Corridor (Trans-Caspian) trade deal for sanctions-adjacent and corridor risk " +
       "before signature, shipment, insurer handoff, or committee review. Returns a triage recommendation, risk " +
-      "signal, decision-readiness score, supplied vs. minimum-required source categories, and evidence gaps. " +
-      "Required fields in 'request': route, cargo, counterparties, dated_sources, risk_question, decision_stage."
+      "signal, decision-readiness score, supplied vs. minimum-required source categories, and evidence gaps. "
   },
   cis_secondary_sanctions: [
     {
@@ -153,8 +183,7 @@ const PROFILE_TOOLS = {
       summary:
         "Triage secondary-sanctions exposure for a CIS-domiciled counterparty against OFAC EO 14114, the EU " +
         "sanctions package, UK OFSI, and FATF / EAG typologies. Returns a triage recommendation, exposure " +
-        "dimensions, missing evidence, and mandatory human-review routing. A name match is not identity verification. " +
-        "Required fields in 'request': counterparty, risk_question, decision_stage, dated_sources."
+        "dimensions, missing evidence, and mandatory human-review routing. A name match is not identity verification. "
     },
     {
       name: "cis_secondary_sanctions_batch",
@@ -162,8 +191,7 @@ const PROFILE_TOOLS = {
       argKey: "request",
       summary:
         "Triage up to 10 CIS counterparties as one caller-supplied chain. Returns independent per-item results, " +
-        "partial input errors, the highest exposure signal, and mandatory human-review routing. " +
-        "Required fields in 'request': items."
+        "partial input errors, the highest exposure signal, and mandatory human-review routing. "
     }
   ],
   agentic_interaction_trust: {
@@ -173,8 +201,7 @@ const PROFILE_TOOLS = {
     summary:
       "Triage the trust evidence for an agent-mediated interaction (identity, operator or principal " +
       "authorization, tool scope, session authentication, action intent) before a high-stakes action executes. " +
-      "Returns a triage recommendation, trust signal, and the specific missing trust evidence. " +
-      "Required fields in 'request': interaction_id, initiating_agent, target_surface, decision_question, decision_stage, dated_sources."
+      "Returns a triage recommendation, trust signal, and the specific missing trust evidence. "
   },
   agent_output_verification: [
     {
@@ -185,7 +212,7 @@ const PROFILE_TOOLS = {
         "Lint caller-provided claim evidence for relay-readiness review. Returns a review-only verdict with " +
         "per-claim findings, orphaned evidence references, and owner actions. It does not fetch or validate the " +
         "cited sources; verify_before_relay is the ceiling, never permission to relay, and human review is required " +
-        "for every verdict. Required fields: claims, evidence."
+        "for every verdict. "
     },
     {
       name: "pre_action_check",
@@ -196,8 +223,7 @@ const PROFILE_TOOLS = {
       summary:
         "Route a caller-controlled action to continue, request_evidence, require_approval, or stop using supplied " +
         "claim evidence, risk tier, policy checks, and an optional external approval reference. Resubmit the same " +
-        "run_id after adding evidence or approval. The caller remains responsible for enforcement. " +
-        "Required fields in 'request': run_id, proposed_action, risk_tier, claims, dated_sources, policy_context."
+        "run_id after adding evidence or approval. The caller remains responsible for enforcement. "
     },
     {
       name: "decision_policies_list",
@@ -227,7 +253,7 @@ const PROFILE_TOOLS = {
       summary:
         "Verify a signed readiness receipt against the caller's expected request and action hashes. Returns " +
         "gate_passed only for a valid, unexpired, exactly bound continue decision. This does not authorize or " +
-        "perform the action. Required fields in 'request': receipt, expected_request_sha256, expected_action_sha256."
+        "perform the action. "
     }
   ],
   gulf_maritime_exposure: {
@@ -237,8 +263,7 @@ const PROFILE_TOOLS = {
     summary:
       "Triage maritime sanctions and chokepoint-disruption exposure for a vessel/voyage transiting the Strait of " +
       "Hormuz, the Gulf, Bab-el-Mandeb, or the Red Sea. Returns an exposure signal, decision-readiness score, " +
-      "supplied vs. minimum-required sources, and evidence gaps. It does not resolve vessel ownership. " +
-      "Required fields in 'request': vessel_name, imo_number, flag, voyage_path, cargo, risk_question, decision_stage, dated_sources."
+      "supplied vs. minimum-required sources, and evidence gaps. It does not resolve vessel ownership. "
   },
   market_entry_readiness: {
     name: "kazakhstan_market_entry_readiness",
@@ -247,8 +272,7 @@ const PROFILE_TOOLS = {
     summary:
       "Grade a Kazakhstan market-entry file against a staged source-requirement taxonomy before a launch, budget, " +
       "or partner commitment. Returns a gate decision, readiness label, evidence gaps, claim audit, owner " +
-      "actions, and watch-next indicators. " +
-      "Required fields in 'request': market, sector, entry_mode, decision_question, decision_stage, dated_sources."
+      "actions, and watch-next indicators. "
   },
   critical_minerals_due_diligence: {
     name: "critical_minerals_due_diligence",
@@ -258,16 +282,14 @@ const PROFILE_TOOLS = {
       "Triage origin tracing, export quota restrictions, and CSDDD supply-chain due diligence for critical minerals " +
       "(lithium, rare earths, nickel, cobalt, copper, graphite, manganese, tungsten, gallium/germanium) before offtake " +
       "or investment commitment. Returns origin traceability status, export quota flags, top supply-chain risks, " +
-      "and evidence gaps. " +
-      "Required fields in 'request': project_name, commodity, origin_jurisdiction, decision_question, decision_stage, supplied_sources."
+      "and evidence gaps. "
   },
   dual_use_technology_export: {
     name: "dual_use_technology_export",
     bringsEvidence: true,
     argKey: "request",
     summary:
-      "Triage dual-use technology export controls, ECCN/HS Codes, and transit route risks for unauthorized diversion. " +
-      "Required fields in 'request': item_description, destination_country, parties, transit_countries, risk_question, decision_stage, dated_sources."
+      "Triage dual-use technology export controls, ECCN/HS Codes, and transit route risks for unauthorized diversion. "
   },
   agent_financial_guard: {
     name: "agent_financial_pre_sign_check",
@@ -276,8 +298,7 @@ const PROFILE_TOOLS = {
     summary:
       "Deterministic pre-sign financial transaction firewall for autonomous agents with wallet capabilities. " +
       "Checks local risk rules and intent patterns; spending history and current sanctions status remain unverified. " +
-      "Non-rejected requests require human review; this tool does not authorize transactions. " +
-      "Required fields in 'request': run_id, transaction, intent."
+      "Non-rejected requests require human review; this tool does not authorize transactions. "
   },
   m2m_escrow_arbiter: {
     name: "m2m_escrow_arbitration_ruling",
@@ -285,8 +306,7 @@ const PROFILE_TOOLS = {
     argKey: "request",
     summary:
       "Deterministic dispute arbitration and delivery verification for Agent-to-Agent escrow transactions. " +
-      "Checks supplied hashes, supported offline JSON schemas and deadlines, proposing allocations for human review. No settlement or clearance is issued. " +
-      "Required fields in 'request': escrow_id, deal_terms, specification, delivery_submission."
+      "Checks supplied hashes, supported offline JSON schemas and deadlines, proposing allocations for human review. No settlement or clearance is issued. "
   },
 
   corridor_sanctions_assistant: [
@@ -388,15 +408,36 @@ export function mcpToolSpecForProfile(profile, name) {
   return name ? specs.find((spec) => spec.name === name) : specs[0];
 }
 
-export function mcpToolsForProfile(profile) {
+export function mcpToolsForProfile(profile, options = {}) {
   return toolSpecsForProfile(profile).map((spec) => {
     const contract = contractFor(spec, profile);
+    const inputSchema = inputSchemaFor(spec, profile);
+    const example = onboardingExample(spec, inputSchema, options.example);
+    const nextStep = evidenceNextStep(profile, spec);
+    const summary = spec.summary.trim();
+    const required = inputSchema.required || [];
     const tool = {
       name: spec.name,
-      description: [spec.summary, spec.bringsEvidence ? BRING_EVIDENCE : null, NOT_ADVICE]
+      description: [summary,
+        required.length ? `Required tool arguments: ${required.join(", ")}.` : "No arguments are required.",
+        nextStep,
+        example === null ? null : `Illustrative example arguments (synthetic; replace with your own data): ${JSON.stringify(example)}.`,
+        hostedAccessNote(options.access), NOT_ADVICE]
         .filter(Boolean)
         .join(" "),
-      inputSchema: inputSchemaFor(spec, profile),
+      inputSchema,
+      _meta: {
+        "com.agenda/readiness": {
+          schema_version: 1,
+          required_arguments: required,
+          example_arguments: example,
+          example_is_synthetic: true,
+          ...(spec.name === "decision_verify" ? { example_from_tool: "decision_check" } : {}),
+          next_step: nextStep,
+          expected_output_fields: (contract?.outputSchema || spec.outputSchema)?.required || [],
+          ...(options.access ? { access: options.access } : {})
+        }
+      },
       annotations: {
         // Calls for this profile update usage and quota state; decision_check
         // can also issue a receipt. This is a conservative write annotation.
