@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 """
 Zero-mock live edge proof for Worker #5: agentic-interaction-trust-a2a.
-Demonstrates:
-1. Native Cloudflare Service Binding interconnect to Vizier security kernel.
-2. Real-time operator & principal sanctions screening under OFAC 50% Rule.
-3. Real-time interaction payload DLP firewall preventing secret leaks.
-4. Cryptographic JWS clearance receipts minted by Vizier.
-5. Strict ADR 0003 contract integrity and provenance retention.
+Checks built-in name matches, synthetic secret detection, DLP-only receipt
+provenance and mandatory human review. No live list freshness, ownership
+verification, signature verification or action authorization is asserted.
 """
 
 import base64
@@ -24,6 +21,21 @@ def decode_jws_payload(token: str) -> dict:
         return {}
     padded = parts[1] + "=" * ((4 - len(parts[1]) % 4) % 4)
     return json.loads(base64.urlsafe_b64decode(padded.encode()))
+
+
+def assert_scoped_provenance(metadata, expected_violation):
+    verification = metadata["trust_verification"]
+    assert not metadata.get("vizier_clearance_receipt"), "DLP must not become full clearance"
+    assert verification["ownership_status"] == "unverified"
+    assert verification["signature_verified"] is False
+    assert verification["receipt_scope"] == "dlp_scan_only"
+    assert verification["violation"] is expected_violation
+    assert verification["clean"] is (False if expected_violation else None)
+    claims = decode_jws_payload(verification["dlp_receipt"])
+    # Payload inspection checks scope consistency; it does not verify the signature.
+    assert claims["scope"] == "dlp_scan_only"
+    assert claims["engine"] == "vizier_dlp_firewall"
+    assert claims["clean"] is verification["dlp_screening"]["clean"]
 
 
 def post_json(url: str, payload: dict) -> dict:
@@ -92,26 +104,19 @@ def test_clean_agent_interaction():
     print(f"Operator Screening: checked={op_screen.get('checked')}, " f"violation={op_screen.get('violation')}")
     print(f"DLP Screening: clean={trust_verif.get('dlp_screening', {}).get('clean')}")
 
-    receipt = metadata.get("vizier_clearance_receipt")
-    assert receipt, "Expected authentic Vizier clearance receipt!"
-    print(f"Vizier Receipt (JWS): {receipt[:40]}... (len: {len(receipt)})")
-
-    receipt_payload = decode_jws_payload(receipt)
-    print(
-        f"Decoded JWS: iss={receipt_payload.get('iss')}, "
-        f"engine={receipt_payload.get('engine')}, clean={receipt_payload.get('clean')}"
-    )
+    assert_scoped_provenance(metadata, False)
+    assert response["human_review_required"] is True
 
     assert response.get("triage_recommendation") == "allow_low_risk"
     assert response.get("trust_signal") == "high"
     assert metadata.get("vizier_status") == "success"
-    assert trust_verif.get("clean") is True
+    assert trust_verif.get("clean") is None
     assert trust_verif.get("violation") is False
-    print(">>> PASS: Clean agent interaction verified with authentic Vizier cryptographic clearance!\n")
+    print(">>> PASS: DLP clean; ownership remains unverified and human review required.\n")
 
 
 def test_sanctioned_operator_screening():
-    print("=== TEST CASE 2: Sanctioned Operator Interception under OFAC 50% Rule (A2A JSON-RPC) ===")
+    print("=== TEST CASE 2: Built-in Blocked Operator Match (A2A JSON-RPC) ===")
     payload = {
         "jsonrpc": "2.0",
         "id": "live-sanctions-02",
@@ -148,9 +153,8 @@ def test_sanctioned_operator_screening():
     print(f"Operator Screening Violation: {op_screen.get('violation')}")
     print(f"Operator Screening Match: {op_screen.get('match')}")
 
-    receipt = metadata.get("vizier_clearance_receipt")
-    assert receipt, "Expected authentic Vizier clearance receipt!"
-    print(f"Vizier Receipt (JWS): {receipt[:40]}... (len: {len(receipt)})")
+    assert_scoped_provenance(metadata, True)
+    assert response["human_review_required"] is True
 
     assert response.get("triage_recommendation") == "block_until_verified"
     assert response.get("trust_signal") == "low"
@@ -159,7 +163,7 @@ def test_sanctioned_operator_screening():
     assert op_screen.get("violation") is True
     assert any("Sanctioned operator/principal" in d for d in response.get("top_risk_dimensions", []))
     assert any("subject to sanctions" in g for g in response.get("evidence_gaps", []))
-    print(">>> PASS: Sanctioned operator blocked in real time under OFAC 50% Rule with Vizier receipt!\n")
+    print(">>> PASS: Built-in blocked-name match preserved despite clean DLP scan.\n")
 
 
 def test_payload_dlp_firewall():
@@ -203,9 +207,8 @@ def test_payload_dlp_firewall():
     for f in dlp_screen.get("findings", []):
         print(f"  - Detector: {f.get('detector')}, Masked: {f.get('snippet_masked')}")
 
-    receipt = metadata.get("vizier_clearance_receipt")
-    assert receipt, "Expected authentic Vizier clearance receipt!"
-    print(f"Vizier Receipt (JWS): {receipt[:40]}... (len: {len(receipt)})")
+    assert_scoped_provenance(metadata, True)
+    assert response["human_review_required"] is True
 
     assert response.get("triage_recommendation") == "block_until_verified"
     assert response.get("trust_signal") == "low"
@@ -244,9 +247,10 @@ def test_rest_endpoint_provenance():
     assert res.get("triage_recommendation") == "allow_low_risk"
     assert res.get("trust_signal") == "high"
     assert res.get("vizier_status") == "success"
-    assert res.get("vizier_clearance_receipt") is not None
-    assert trust_verif.get("clean") is True
-    print(">>> PASS: REST endpoint returned proper provenance and authentic JWS clearance receipt!\n")
+    assert_scoped_provenance(res, False)
+    assert res["human_review_required"] is True
+    assert trust_verif.get("clean") is None
+    print(">>> PASS: REST endpoint preserved DLP-only provenance and human review.\n")
 
 
 if __name__ == "__main__":

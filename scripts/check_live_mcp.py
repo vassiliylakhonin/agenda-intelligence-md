@@ -3,9 +3,12 @@
 
 import argparse
 import asyncio
+import http.client
 import json
 import os
 import re
+import socket
+import ssl
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -14,6 +17,49 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 USER_AGENT = "Agenda-MCP-Monitor/1.0"
 MAX_BYTES = 1_000_000
+
+
+def transient_transport_error(error):
+    """Retry transport interruptions only, never HTTP, TLS trust or contract failures."""
+    cause = error
+    seen = set()
+    while isinstance(cause, BaseException) and id(cause) not in seen:
+        seen.add(id(cause))
+        if isinstance(cause, ssl.SSLCertVerificationError):
+            return False
+        cause = cause.__cause__ or cause.__context__
+    nested = getattr(error, "exceptions", None)
+    if nested is not None:
+        return bool(nested) and all(transient_transport_error(item) for item in nested)
+    if isinstance(error, urllib.error.HTTPError):
+        return False
+    if isinstance(error, urllib.error.URLError):
+        return transient_transport_error(error.reason)
+    if isinstance(error, ssl.SSLCertVerificationError):
+        return False
+    if isinstance(error, (ConnectionError, TimeoutError, socket.gaierror, ssl.SSLEOFError, http.client.IncompleteRead)):
+        return True
+    # SDK HTTP transport failures may be wrapped in an AnyIO exception group.
+    try:
+        import httpx
+    except ImportError:
+        return False
+
+    return isinstance(error, (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError))
+
+
+async def transport_retry(operation, label, events, delay=0.5):
+    """At most three attempts for read-only discovery; retain every interruption."""
+    for attempt in range(1, 4):
+        try:
+            return await operation()
+        except Exception as error:
+            if not transient_transport_error(error):
+                raise
+            events.append({"check": label, "attempt": attempt, "error": str(error)[:500]})
+            if attempt == 3:
+                raise
+            await asyncio.sleep(delay * attempt)
 
 
 def fleet_names():
@@ -103,9 +149,14 @@ async def check_host(name):
     origin = f"https://{name}.vassiliy-lakhonin.workers.dev"
     baseline = json.loads((ROOT / "scripts/mcp-catalog-baseline.json").read_text())
     checks = []
+    transport_events = []
+
+    async def read_probe(label, *args):
+        return await transport_retry(lambda: asyncio.to_thread(probe, *args), label, transport_events)
+
     for label, path in [("health", "/health"), ("a2a_card", "/.well-known/agent-card.json")]:
         try:
-            response = await asyncio.to_thread(probe, origin + path)
+            response = await read_probe(label, origin + path)
             data = response["data"]
             valid = response["status"] == 200 and bool(data)
             if label == "a2a_card":
@@ -114,14 +165,20 @@ async def check_host(name):
         except Exception as error:
             checks.append({"check": label, "passed": False, "error": str(error)[:500]})
     try:
-        discovery = await asyncio.wait_for(sdk_discovery(origin + "/mcp", baseline[name]), timeout=50)
+        discovery = await transport_retry(
+            lambda: asyncio.wait_for(sdk_discovery(origin + "/mcp", baseline[name]), timeout=50),
+            "mcp_sdk_default_identity",
+            transport_events,
+        )
         checks.append({"check": "mcp_sdk_default_identity", "passed": True, **discovery})
     except Exception as error:
         checks.append({"check": "mcp_sdk_default_identity", "passed": False, "error": str(error)[:500]})
     try:
-        initialized = await asyncio.to_thread(probe, origin + "/mcp", default_initialize())
-        listing = await asyncio.to_thread(
-            probe, origin + "/mcp", {"jsonrpc": "2.0", "id": "urllib-tools", "method": "tools/list", "params": {}}
+        initialized = await read_probe("urllib_application_initialize", origin + "/mcp", default_initialize())
+        listing = await read_probe(
+            "urllib_application_tools",
+            origin + "/mcp",
+            {"jsonrpc": "2.0", "id": "urllib-tools", "method": "tools/list", "params": {}},
         )
         tools = listing["data"].get("result", {}).get("tools", [])
         names = [tool["name"] for tool in tools]
@@ -135,7 +192,7 @@ async def check_host(name):
     except Exception as error:
         checks.append({"check": "urllib_application_identity", "passed": False, "error": str(error)[:500]})
     try:
-        response = await asyncio.to_thread(probe, origin + "/mcp", default_initialize(), False)
+        response = await read_probe("default_urllib", origin + "/mcp", default_initialize(), False)
         compatible = compatible_initialize(response)
         compatibility = {
             "passed": compatible,
@@ -145,7 +202,7 @@ async def check_host(name):
         }
     except Exception as error:
         compatibility = {"passed": False, "classification": "transport_error", "error": str(error)[:500]}
-    return {"host": name, "checks": checks, "default_urllib": compatibility}
+    return {"host": name, "checks": checks, "default_urllib": compatibility, "transport_events": transport_events}
 
 
 def failed(report, require_default_urllib=False):
