@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 """
 Zero-mock live edge proof for Worker #9: dual-use-technology-export-a2a.
-Demonstrates:
-1. Native Cloudflare Service Binding interconnect to Vizier security kernel.
-2. Real-time counterparty & transit sanctions screening under OFAC 50% Rule.
-3. Real-time export dossier DLP firewall preventing credential and secret leaks.
-4. Cryptographic JWS clearance receipts minted by Vizier.
-5. Strict ADR 0003 contract integrity across A2A JSON-RPC and MCP protocols.
+Checks built-in name matches, synthetic secret detection, DLP-only receipt
+provenance and structural readiness for human review. No live list freshness,
+ownership verification, signature verification or export clearance is asserted.
 """
 
 import base64
@@ -23,6 +20,28 @@ def decode_jws_payload(token: str) -> dict:
         return {}
     padded = parts[1] + "=" * ((4 - len(parts[1]) % 4) % 4)
     return json.loads(base64.urlsafe_b64decode(padded.encode()))
+
+
+def assert_scoped_provenance(metadata, expected_violation):
+    verification = metadata["dual_use_verification"]
+    assert not metadata.get("vizier_clearance_receipt"), "DLP must not become full clearance"
+    assert verification["ownership_status"] == "unverified"
+    assert verification["signature_verified"] is False
+    assert verification["receipt_scope"] == "dlp_scan_only"
+    assert verification["violation"] is expected_violation
+    assert verification["clean"] is (False if expected_violation else None)
+    claims = decode_jws_payload(verification["receipt"])
+    # Payload inspection checks scope consistency; it does not verify the signature.
+    assert claims["scope"] == "dlp_scan_only"
+    assert claims["engine"] == "vizier_dlp_firewall"
+    assert claims["clean"] is verification["dlp_screening"]["clean"]
+
+
+def assert_review_boundary(triage):
+    assert triage["human_review_required"] is True
+    assert triage["factual_verification_performed"] is False
+    assert triage["score_scope"] == "declared_evidence_structure_only"
+    assert 0 <= triage["score"] <= 69
 
 
 def post_json(url: str, payload: dict) -> dict:
@@ -88,12 +107,6 @@ def test_clean_dual_use_file():
 
     print(f"  Status: {task.get('status', {}).get('state')}")
     print(f"  Vizier Status: {meta.get('vizier_status')}")
-    print(f"  Vizier Clearance Receipt: {meta.get('vizier_clearance_receipt', '')[:35]}...")
-
-    jws_claims = decode_jws_payload(meta.get("vizier_clearance_receipt", ""))
-    print(f"  Receipt Issuer: {jws_claims.get('iss')}")
-    print(f"  Receipt Subject: {jws_claims.get('sub')}")
-
     du_ver = meta.get("dual_use_verification", {})
     print(f"  Screening Clean: {du_ver.get('clean')}")
     print(f"  Screening Violation: {du_ver.get('violation')}")
@@ -107,11 +120,15 @@ def test_clean_dual_use_file():
     print(f"  Primary Risk Vectors: {triage.get('primary_risk_vectors')}")
 
     assert meta.get("vizier_status") == "success", f"Expected success, got {meta.get('vizier_status')}"
-    assert du_ver.get("clean") is True, "Expected clean == True"
+    assert_scoped_provenance(meta, False)
+    assert du_ver["dlp_screening"]["clean"] is True
+    assert_review_boundary(triage)
     assert du_ver.get("violation") is False, "Expected violation == False"
-    assert triage.get("status") == "decision_ready", f"Expected decision_ready, got {triage.get('status')}"
-    assert triage.get("score") == 100, f"Expected 100, got {triage.get('score')}"
-    print("  -> PASS: Clean dual-use export file cleared with authentic JWS receipt.")
+    assert (
+        triage.get("status") == "ready_for_human_review"
+    ), f"Expected ready_for_human_review, got {triage.get('status')}"
+    assert triage.get("score") == 69, f"Expected capped structural score 69, got {triage.get('score')}"
+    print("  -> PASS: Complete declared structure still requires human review; no clearance issued.")
 
 
 def test_sanctioned_counterparty_ofac50():
@@ -152,6 +169,8 @@ def test_sanctioned_counterparty_ofac50():
     print(f"  Primary Risk Vectors: {triage.get('primary_risk_vectors')[:1]}")
 
     assert meta.get("vizier_status") == "success"
+    assert_scoped_provenance(meta, True)
+    assert_review_boundary(triage)
     assert du_ver.get("violation") is True
     assert sanctions_screen.get("violation") is True
     assert triage.get("status") == "escalate"
@@ -196,6 +215,8 @@ def test_dlp_secret_leak():
     print(f"  Primary Risk Vectors: {triage.get('primary_risk_vectors')[:1]}")
 
     assert meta.get("vizier_status") == "success"
+    assert_scoped_provenance(meta, True)
+    assert_review_boundary(triage)
     assert du_ver.get("violation") is True
     assert dlp_screen.get("clean") is False
     assert triage.get("status") == "escalate"
@@ -223,6 +244,7 @@ def test_mcp_tools_call():
     print(f"  Structured Score: {triage.get('score')}")
     print(f"  Structured Risk Vectors: {triage.get('primary_risk_vectors', [])[:1]}")
 
+    assert_review_boundary(triage)
     assert triage.get("status") == "escalate"
     assert triage.get("score") == 0
     assert any("OFAC 50% Rule" in r for r in triage.get("primary_risk_vectors", []))

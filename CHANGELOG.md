@@ -10,6 +10,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Align live Trust and Dual-Use health proofs with DLP-only receipts, unverified ownership and mandatory human review; retain blocked-name and synthetic secret detection checks. Retry read-only MCP discovery transport interruptions at most three times and preserve each failed attempt in reports; persistent transport, HTTP and contract failures remain visible.
+
 - Publish outputSchema for all hosted Agenda MCP tools, including Financial Guard and Escrow legacy task envelopes, strategic triage, fleet directory and corridor orientation. Validate successful output and controlled refusals without changing request or response formats. Mark legacy Financial Guard/Escrow INPUT_REQUIRED refusals as MCP errors.
 
 - Preserve signed numeric facts (including Unicode minus), require contextual support for numbers across documents, and prevent unrelated verbatim quotes from upgrading grounded_check. Ambiguous numeric context requires human review; matching values in relevant sentences can still support multi-source claims.
