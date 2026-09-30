@@ -818,8 +818,7 @@ def grounded_check(request_json: dict) -> dict:
             status = "weakly_grounded"
         else:
             status = "ungrounded"
-        if quote_statuses and all(s == "present" for s in quote_statuses):
-            status = "grounded"
+        # Quote presence validates the quotation, not support for the claim.
         if "absent" in quote_statuses:
             status = "ungrounded"
         if unmatched_numbers and status == "grounded":
@@ -854,7 +853,8 @@ def grounded_check(request_json: dict) -> dict:
         if unmatched_numbers:
             owner_actions.append(
                 f"Verify numeric value(s) in claim {claim_id} against a source: "
-                f"{', '.join(unmatched_numbers)} not found anywhere in the supplied corpus."
+                f"{', '.join(unmatched_numbers)} not supported by a relevant number-bearing sentence "
+                "in the supplied corpus."
             )
         if polarity_conflict:
             owner_actions.append(
@@ -1065,7 +1065,8 @@ def check_evidence_packet(request_json: dict) -> dict:
             review_issues.append("unmatched_numbers")
             add_action(
                 f"Verify numeric value(s) in claim {claim_id}: "
-                f"{', '.join(unmatched_numbers)} not found in its referenced sources."
+                f"{', '.join(unmatched_numbers)} not supported by a relevant number-bearing sentence "
+                "in its referenced sources."
             )
 
         if structural_issues:
