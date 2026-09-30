@@ -52,3 +52,9 @@ Cloudflare OAuth alone is insufficient. An unset VIZIER_DEPLOY_GRANT_FILE / unav
 The `Live MCP client compatibility` workflow runs every four hours and after successful protected deployments. It uploads the JSON report, emits visible warnings for default-urllib incompatibility, and fails on SDK/health/A2A regressions. Pull requests changing the monitor also run it. Existing daily stateful fleet proofs remain separate. Scheduled GitHub Actions are best-effort, not an uptime SLA; GitHub notification delivery follows the repository owner's Actions settings.
 
 Removing the default-urllib block is an infrastructure follow-up: a supported exception on the managed hostname, or an owner-controlled custom domain with a machine-route-scoped Browser Integrity Check rule. This account currently has no such domain; no domain purchase or support message was performed.
+
+## urllib without a domain or paid service
+
+Run `python3 scripts/urllib_mcp_client.py` for root discovery, or pass an existing Worker MCP URL as its argument. This standard-library-only example returns `{server, tools}` JSON using an explicit `Agenda-urllib-client/1.0` identity. It is a minimal JSON discovery example for the deployed stateless Workers, not a general session/SSE MCP transport. Use the official MCP SDK for general protocol support. No global urllib monkey patch, browser impersonation or infrastructure change is needed.
+
+Financial, escrow, human-review and fleet-proof Python clients already send explicit application headers. Telemetry now identifies itself truthfully. The live monitor requires application-identified urllib initialize/tools-list to succeed and match the reviewed catalog, independently of ordinary SDK checks. The untouched default-urllib probe remains separately reported; its 403 is not described as fixed on the server.

@@ -119,6 +119,22 @@ async def check_host(name):
     except Exception as error:
         checks.append({"check": "mcp_sdk_default_identity", "passed": False, "error": str(error)[:500]})
     try:
+        initialized = await asyncio.to_thread(probe, origin + "/mcp", default_initialize())
+        listing = await asyncio.to_thread(
+            probe, origin + "/mcp", {"jsonrpc": "2.0", "id": "urllib-tools", "method": "tools/list", "params": {}}
+        )
+        tools = listing["data"].get("result", {}).get("tools", [])
+        names = [tool["name"] for tool in tools]
+        valid = (
+            compatible_initialize(initialized)
+            and listing["status"] == 200
+            and len(names) == len(set(names))
+            and set(names) == set(baseline[name])
+        )
+        checks.append({"check": "urllib_application_identity", "passed": valid, "tools": names})
+    except Exception as error:
+        checks.append({"check": "urllib_application_identity", "passed": False, "error": str(error)[:500]})
+    try:
         response = await asyncio.to_thread(probe, origin + "/mcp", default_initialize(), False)
         compatible = compatible_initialize(response)
         compatibility = {
@@ -156,7 +172,7 @@ async def main():
     report = {"checked_at": datetime.now(timezone.utc).isoformat(), "read_only": True, "hosts": hosts}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
-    lines = ["# Live MCP discovery", "", "| Host | SDK / health / A2A | Default urllib |", "|---|---|---|"]
+    lines = ["# Live MCP discovery", "", "| Host | SDK / urllib app / health / A2A | Default urllib |", "|---|---|---|"]
     for host in hosts:
         passed = all(check["passed"] for check in host["checks"])
         lines.append(

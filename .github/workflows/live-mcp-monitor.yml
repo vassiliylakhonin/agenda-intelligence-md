@@ -7,6 +7,8 @@ on:
   pull_request:
     paths:
       - "scripts/check_live_mcp.py"
+      - "scripts/urllib_mcp_client.py"
+      - "tests/test_urllib_mcp_client.py"
       - "scripts/mcp-catalog-baseline.json"
       - "tests/test_live_mcp_monitor.py"
       - ".github/workflows/live-mcp-monitor.yml"
@@ -33,7 +35,7 @@ jobs:
           python-version: '3.12'
       - name: Install MCP SDK
         run: python -m pip install 'mcp==1.30.0'
-      - name: Check normal SDK discovery, health and A2A
+      - name: Check normal SDK, urllib application client, health and A2A
         run: python scripts/check_live_mcp.py --output live-mcp-report.json
       - name: Save report including default urllib limitations
         if: always()
