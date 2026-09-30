@@ -170,7 +170,7 @@ def test_check_host_recovers_health_transport_but_reports_default_403(monkeypatc
 def test_sdk_wrapped_certificate_failure_is_not_transient():
     import ssl
 
-    import httpx
+    httpx = pytest.importorskip("httpx")
 
     try:
         try:
@@ -179,3 +179,17 @@ def test_sdk_wrapped_certificate_failure_is_not_transient():
             raise httpx.ConnectError("TLS connect failed") from error
     except httpx.ConnectError as error:
         assert not monitor.transient_transport_error(error)
+
+
+def test_transport_classification_works_without_optional_sdk(monkeypatch):
+    import builtins
+
+    original_import = builtins.__import__
+
+    def without_httpx(name, *args, **kwargs):
+        if name == "httpx":
+            raise ImportError("SDK not installed")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", without_httpx)
+    assert not monitor.transient_transport_error(ValueError("catalog drift"))

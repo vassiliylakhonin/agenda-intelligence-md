@@ -40,7 +40,10 @@ def transient_transport_error(error):
     if isinstance(error, (ConnectionError, TimeoutError, socket.gaierror, ssl.SSLEOFError, http.client.IncompleteRead)):
         return True
     # SDK HTTP transport failures may be wrapped in an AnyIO exception group.
-    import httpx
+    try:
+        import httpx
+    except ImportError:
+        return False
 
     return isinstance(error, (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError))
 
