@@ -141,3 +141,13 @@ test("receipt onboarding verifies a real signed receipt and rejects a mismatched
   }, env);
   assert.equal(wrong.body.result.structuredContent.gate_passed, false);
 });
+
+test("every hosted tool publishes a structured output contract", async () => {
+  for (const profile of canonicalProfiles) {
+    const listing = await rpc(profile, "tools/list");
+    for (const tool of listing.body.result.tools) {
+      assert.equal(tool.outputSchema?.type, "object", `${profile}/${tool.name}`);
+      assert.equal(tool.outputSchema?.$schema, "https://json-schema.org/draft/2020-12/schema");
+    }
+  }
+});

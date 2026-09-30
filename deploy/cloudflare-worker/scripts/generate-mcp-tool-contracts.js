@@ -7,6 +7,11 @@ const repositoryRoot = resolve(scriptDirectory, "../../..");
 const outputPath = resolve(scriptDirectory, "../src/mcp-tool-contracts.js");
 
 const contractSources = [
+  {"profile": "agenda", "tool": "strategic_risk_triage", "output": "schemas/v1/strategic-risk-triage-response.schema.json"},
+  {"profile": "agenda", "tool": "fleet_directory", "output": "schemas/v1/fleet-directory-response.schema.json"},
+  {"profile": "corridor_sanctions_assistant", "tool": "corridor_sanctions_assistant", "output": "schemas/v1/corridor-orientation-response.schema.json"},
+  {"profile": "agent_financial_guard", "tool": "agent_financial_pre_sign_check", "output": "schemas/v1/agent-financial-guard-response.schema.json", "legacyEnvelope": true},
+  {"profile": "m2m_escrow_arbiter", "tool": "m2m_escrow_arbitration_ruling", "output": "schemas/v1/m2m-escrow-arbiter-response.schema.json", "legacyEnvelope": true},
   {
     profile: "kazakhstan",
     tool: "middle_corridor_deal_risk",
@@ -97,13 +102,38 @@ function schema(relativePath) {
   return JSON.parse(readFileSync(resolve(repositoryRoot, relativePath), "utf8"));
 }
 
+// Legacy request wrappers return the existing A2A task envelope. Describe both
+// response forms without changing the input contract or dispatcher behavior.
+function legacyOutputSchema(response) {
+  const embedded = structuredClone(response);
+  delete embedded.$id;
+  return {
+    $schema: response.$schema,
+    title: `${response.title}McpCompatibility`,
+    type: "object",
+    anyOf: [embedded, {
+      type: "object",
+      required: ["id", "status", "artifacts", "metadata"],
+      properties: {
+        id: { type: "string" },
+        status: { type: "object", required: ["state"], properties: { state: { type: "string" } } },
+        artifacts: { type: "array", items: { type: "object" } },
+        metadata: { type: "object", required: ["response", "human_review_required"], properties: {
+          response: embedded,
+          human_review_required: { const: true }
+        } }
+      }
+    }]
+  };
+}
+
 function generatedContracts() {
   const contracts = {};
   for (const source of contractSources) {
     contracts[source.profile] ||= {};
     contracts[source.profile][source.tool] = {
-      inputSchema: schema(source.input),
-      outputSchema: schema(source.output)
+      ...(source.input ? { inputSchema: schema(source.input) } : {}),
+      outputSchema: source.legacyEnvelope ? legacyOutputSchema(schema(source.output)) : schema(source.output)
     };
   }
   return contracts;

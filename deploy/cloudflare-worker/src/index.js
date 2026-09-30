@@ -13301,7 +13301,7 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
     });
     if (typeof ctx.waitUntil === "function") ctx.waitUntil(statsPromise);
     if (legacyRequestWrapper) {
-      return respond(id, mcpLegacyToolResult(result, Boolean(result.error)));
+      return respond(id, mcpLegacyToolResult(result, mcpTaskFailed(result) || mcpTaskNeedsInput(result) || Boolean(result.error)));
     }
     const toolPayload = mcpPayloadForResult(result);
     return respond(

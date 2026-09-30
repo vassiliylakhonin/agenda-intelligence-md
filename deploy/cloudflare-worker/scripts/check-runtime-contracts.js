@@ -53,6 +53,15 @@ for (const profile of Object.keys(MCP_TOOL_CONTRACTS)) {
       payload: result.result?.structuredContent,
       isError: result.result?.isError,
     });
+    // Every declared success contract must also reject malformed input without
+    // presenting the refusal as a successful result.
+    if (["agent_financial_pre_sign_check", "m2m_escrow_arbitration_ruling", "strategic_risk_triage", "corridor_sanctions_assistant"].includes(tool.name)) {
+      const refused = await handleMcpJsonRpc({ jsonrpc: "2.0", id: "refusal", method: "tools/call",
+        params: { name: tool.name, arguments: tool.name.includes("financial") || tool.name.includes("escrow") ? { request: {} } : {} }
+      }, request, env);
+      responses.push({ profile, tool: tool.name, scenario: "missing_input", schema: tool.outputSchema,
+        payload: refused.result?.structuredContent, isError: refused.result?.isError });
+    }
     const endpoint = {
       cis_secondary_sanctions_exposure: "/v1/cis-secondary-sanctions/exposure",
       dual_use_technology_export: "/v1/dual-use/technology-export",

@@ -354,7 +354,7 @@ function contractFor(spec, profile) {
 
 function inputSchemaFor(spec, profile) {
   const contract = contractFor(spec, profile);
-  if (contract) return contract.inputSchema;
+  if (contract?.inputSchema) return contract.inputSchema;
   if (spec.inputSchema) return spec.inputSchema;
   if (spec.argKey === "none") {
     return {
