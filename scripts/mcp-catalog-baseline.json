@@ -1,0 +1,49 @@
+{
+  "agenda-intelligence-a2a": [
+    "strategic_risk_triage",
+    "fleet_directory",
+    "corridor_bankability_screen"
+  ],
+  "middle-corridor-deal-risk-gate-a2a": [
+    "middle_corridor_deal_risk"
+  ],
+  "cis-secondary-sanctions-a2a": [
+    "cis_secondary_sanctions_exposure",
+    "cis_secondary_sanctions_batch"
+  ],
+  "agentic-interaction-trust-a2a": [
+    "agentic_interaction_trust"
+  ],
+  "agent-output-verification-a2a": [
+    "agent_output_verification",
+    "pre_action_check",
+    "decision_policies_list",
+    "decision_check",
+    "decision_verify"
+  ],
+  "gulf-maritime-exposure-a2a": [
+    "gulf_maritime_exposure"
+  ],
+  "kazakhstan-market-entry-readiness-a2a": [
+    "kazakhstan_market_entry_readiness"
+  ],
+  "corridor-sanctions-assistant-a2a": [
+    "corridor_sanctions_assistant",
+    "screen_dual_use_hs_code"
+  ],
+  "critical-minerals-due-diligence-a2a": [
+    "critical_minerals_due_diligence"
+  ],
+  "dual-use-technology-export-a2a": [
+    "dual_use_technology_export"
+  ],
+  "agent-financial-guard-a2a": [
+    "agent_financial_pre_sign_check"
+  ],
+  "m2m-escrow-arbiter-a2a": [
+    "m2m_escrow_arbitration_ruling"
+  ],
+  "vizier": [
+    "vizier_verify_action"
+  ]
+}

@@ -1,0 +1,57 @@
+name: Live MCP client compatibility
+
+on:
+  schedule:
+    - cron: "17 */4 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/check_live_mcp.py"
+      - "scripts/mcp-catalog-baseline.json"
+      - "tests/test_live_mcp_monitor.py"
+      - ".github/workflows/live-mcp-monitor.yml"
+  workflow_run:
+    workflows: ["Deploy existing Worker fleet through Vizier", "Deploy Agent Output Verification"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-mcp-monitor-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  discovery:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install MCP SDK
+        run: python -m pip install 'mcp==1.30.0'
+      - name: Check normal SDK discovery, health and A2A
+        run: python scripts/check_live_mcp.py --output live-mcp-report.json
+      - name: Save report including default urllib limitations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-mcp-report
+          path: live-mcp-report.json
+          retention-days: 14
+      - name: Surface default urllib incompatibility
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = Path("live-mcp-report.json")
+          if not report.exists():
+              raise SystemExit(1)
+          for host in json.loads(report.read_text())["hosts"]:
+              if not host["default_urllib"]["passed"]:
+                  print(f"::warning::{host['host']}: default urllib {host['default_urllib']['classification']}")
+          PY
