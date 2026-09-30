@@ -31,7 +31,7 @@ with urlopen(request, timeout=15) as response:
     print(response.status)
 ```
 
-For an MCP SDK client, pass the same explicit header through its HTTP transport. Existing Python financial/escrow clients already identify themselves. Do not retry with rotating/spoofed identities or disable protection globally. Removing the requirement for default urllib clients needs an administrator to identify the specific Cloudflare rule and apply a narrowly scoped machine-route exception, where supported for the deployed hostname. The audit does not establish which rule produced the block.
+For an MCP SDK client, pass the same explicit header through its HTTP transport. Existing Python financial/escrow clients already identify themselves. Do not retry with rotating/spoofed identities or disable protection globally. Removing the requirement for default urllib clients needs an administrator to identify the specific Cloudflare rule and apply a narrowly scoped machine-route exception, where supported for the deployed hostname. The follow-up response identifies Cloudflare error 1010 (`browser_signature_banned`). Cloudflare documents Browser Integrity Check as a relevant setting. The authenticated account currently has no owned domain zones, and the inspected Worker settings expose no Browser Integrity Check exception for `workers.dev`. The specific internal managed rule ID remains unavailable. No protection was disabled.
 
 ## Payment contract
 
@@ -44,3 +44,11 @@ Run deployments through `scripts/vizier-gated-deploy.js` or `npm run deploy:all`
 The manual `Deploy existing Worker fleet through Vizier` GitHub workflow can deploy all existing TOML-configured targets from an immutable tested main commit. It reuses the existing protected production environment and mints a separate ten-minute, single-target grant per job. No local signing key is needed; it never deploys a PR branch or bypasses a BLOCK/REVIEW. The independent Vizier Worker is outside this fleet.
 
 Cloudflare OAuth alone is insufficient. An unset VIZIER_DEPLOY_GRANT_FILE / unavailable operator signer leaves rollout pending. Source fixes and local test evidence do not establish that public sites have been updated. After authorized deployment, repeat SDK, REST refusal and A2A probes against each live hostname, and separately retest default urllib connectivity.
+
+## Continuous read-only discovery monitoring
+
+`python scripts/check_live_mcp.py --output live-mcp-report.json` requires the official `mcp==1.30.0` SDK. It derives the fleet from Wrangler TOML and includes independent Vizier. Each host gets health, A2A-card and ordinary SDK initialize/tools-list checks with no SDK header override. No tool execution, payments, grants or keys are performed. Default Python urllib initialize is reported separately; it never gets disguised as a successful compatibility check. `--require-default-urllib` additionally makes that limitation fail the process.
+
+The `Live MCP client compatibility` workflow runs every four hours and after successful protected deployments. It uploads the JSON report, emits visible warnings for default-urllib incompatibility, and fails on SDK/health/A2A regressions. Pull requests changing the monitor also run it. Existing daily stateful fleet proofs remain separate. Scheduled GitHub Actions are best-effort, not an uptime SLA; GitHub notification delivery follows the repository owner's Actions settings.
+
+Removing the default-urllib block is an infrastructure follow-up: a supported exception on the managed hostname, or an owner-controlled custom domain with a machine-route-scoped Browser Integrity Check rule. This account currently has no such domain; no domain purchase or support message was performed.

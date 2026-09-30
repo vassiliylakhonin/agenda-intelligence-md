@@ -10,6 +10,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Monitor all configured hosted MCP endpoints plus Vizier using the ordinary MCP SDK identity, health and A2A discovery. Keep Cloudflare default-urllib error 1010 visible separately; add scheduled and post-deploy reports without credentials, paid calls or state-changing proofs.
+
 - Reject missing/invented bankability figures and non-boolean guarantees across hosted and Python tools; preserve legitimate zero-debt inputs and require human signoff. Scenario output no longer fabricates Excel provenance or promises files it does not generate.
 - Validate malformed financial/escrow fields before evaluation; decode ERC-20 approve independently of the declared method, and reject invalid arbitration policies/fees.
 - Align Dual-Use, CIS and decision-policy MCP schemas with runtime output; validate protocol results with full JSON Schema in CI. Dual-Use JSON carries a structural-only score and mandatory human-review boundaries.
