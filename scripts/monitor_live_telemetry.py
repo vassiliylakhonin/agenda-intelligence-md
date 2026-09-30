@@ -35,7 +35,7 @@ def fetch_stats(date_str: str, base_url: str = DEFAULT_BASE_URL) -> dict:
         )
         return {}
     url = f"{base_url}?token={STATS_TOKEN}&date={date_str}"
-    req = urllib.request.Request(url, headers={"User-Agent": "curl/8.4.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "agenda-intelligence-telemetry/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=10.0) as resp:
             return json.loads(resp.read().decode("utf-8"))
