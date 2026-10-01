@@ -320,11 +320,11 @@ export function handleExplorerRequest(request, env = {}) {
 
         if (!resp.ok) throw new Error(JSON.stringify(data));
         var ruling = data.arbitration_ruling;
-        if (ruling && ruling.payout) {
+        if (ruling && ruling.payout_breakdown) {
           payoutGrid.style.display = "grid";
-          document.getElementById("valSeller").innerText = "$" + ruling.payout.seller_payout_usd.toFixed(2);
-          document.getElementById("valBuyer").innerText = "$" + ruling.payout.buyer_refund_usd.toFixed(2);
-          document.getElementById("valFee").innerText = "$" + ruling.payout.arbiter_fee_usd.toFixed(2);
+          document.getElementById("valSeller").innerText = "$" + ruling.payout_breakdown.seller_payout_usd.toFixed(2);
+          document.getElementById("valBuyer").innerText = "$" + ruling.payout_breakdown.buyer_refund_usd.toFixed(2);
+          document.getElementById("valFee").innerText = "$" + ruling.payout_breakdown.arbiter_fee_usd.toFixed(2);
         }
       } catch (e) {
         arbiterOutput.innerText = "Error: " + e.message;

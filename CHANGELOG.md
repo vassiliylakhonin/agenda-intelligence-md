@@ -10,6 +10,10 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Fleet website contract integration follow-up (2026-10-01)
+
+- Exercise Explorer and zero-debt Bankability forms against actual REST handlers. Read `arbitration_ruling.payout_breakdown`, require the API numeric DSCR input before payment, and mark the fixed illustrative interest rate read-only.
+
 ### Fleet website alignment (2026-10-01)
 
 - Align Explorer with the arbitration response envelope; preserve zero delivery counts, validate explicit deadlines, and replace fabricated contract state and autonomous settlement claims with caller-supplied evidence boundaries.
