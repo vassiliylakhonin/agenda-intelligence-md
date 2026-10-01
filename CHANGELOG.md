@@ -4,6 +4,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Fleet operations and payment ledger (2026-10-01)
+
+- Enforce configured deployment Bearer authorization on every POST `/v1/*` execution alias, and bound JSON reads while streaming (1 MiB).
+- Replace settlement replay claims and Pro quota counters with one shared D1 ledger: atomic claims, permanent transaction uniqueness, hashed Pro credentials, and atomic quota consumption even when the free limiter is disabled. New claims require a Base block timestamp within seven days. Missing D1 denies settlement. This supersedes the KV-only limitation below.
+- Deployed A2A task continuation now requires a server-issued private `X-Task-Token`; caller labels remain telemetry only. Old tasks must be recreated. Local legacy label mode remains available.
+- Generate directory required fields from MCP schemas; empty Assistant MCP calls return the advertised directory.
+- Identify technical verification and owner traffic separately. Journal v2 compares full canonical inputs only within the same profile, capability, contract, engine and source snapshot; historical partial hashes remain explicitly marked.
+- Add `/health/dependencies`, propagate source age and digest, reject future-dated snapshots, and align published-index CI with the runtime's 72-hour freshness limit. See ADR 0031 and the fleet operations runbook.
+
 - Package Output Verification as a portable OpenAI/Claude plugin with a dedicated single-tool MCP URL, explicit human-review skill, and synthetic reviewer cases. Add the OpenAI domain-challenge route, conservative tool annotations, and local/live package checks.
 
 ### Pro activation and MCP identity (round 6)

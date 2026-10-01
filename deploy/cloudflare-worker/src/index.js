@@ -1,3 +1,6 @@
+import { snapshotHealth } from "./upstream_snapshot.js";
+import { consumeProQuota } from "./payment-ledger.js";
+import { readBoundedJson } from "./request-body.js";
 import { PUBLIC_SCHEMAS } from "./public-schemas.js";
 import { trustPage } from "./trust-pages.js";
 import { createLandingRenderer } from "./landing-ui.js";
@@ -147,10 +150,10 @@ import {
 } from "./profiles.js";
 import { generateBankabilityScreen, extractBankabilityParameters } from "./corridor_bankability.js";
 import {
-  checkDynamicBearerToken,
   generateX402PaymentResponse,
   handleSettleRequest,
   markTransactionSettled,
+  claimTransactionSettlement,
   verifyBaseTransactionReceipt
 } from "./settlement.js";
 import { handleSampleDossierRequest, handleDossierExportRequest } from "./sample_dossier.js";
@@ -909,18 +912,24 @@ function clientIpFromRequest(request) {
 
 // Returns { limited, limit, count }. Fails open: a KV hiccup never blocks a
 // legitimate call. Buckets per profile + client IP + UTC hour.
+const paidRequestEntitlements = new WeakMap();
+
 async function checkRateLimit(request, env, profile) {
   const limit = rateLimitPerHour(env);
   const kv = env?.AGENDA_USAGE;
-  if (!limit || !kv) return { limited: false, limit, count: 0 };
-
+  // Paid entitlements are enforced even when the free hourly limiter is off.
   // 1. Dynamic Dedicated Pro Bearer token check
   const token = bearerTokenFromRequest(request);
   if (token && token.startsWith("agy_pro_")) {
-    const pro = await checkDynamicBearerToken(token, env);
-    if (pro) {
-      return { limited: false, limit: 10000, count: pro.used || 0, pro: true };
+    let pro = null;
+    try { pro = await consumeProQuota(token, env); } catch (_error) {
+      return { limited: true, limit: 10000, count: 0, reason: "entitlement_store_unavailable" };
     }
+    if (pro) {
+      paidRequestEntitlements.set(request, { pro: true });
+      return { limited: false, limit: pro.quota, count: pro.used, pro: true };
+    }
+    return { limited: true, limit: 10000, count: 10000, reason: "invalid_or_exhausted_entitlement" };
   }
 
   // 2. Inline Base USDC settlement header (X-Payment-Tx: 0x...)
@@ -938,6 +947,11 @@ async function checkRateLimit(request, env, profile) {
             : isDispute
               ? "tier_micro_dispute"
               : "tier_micro_check";
+      const claim = await claimTransactionSettlement(paymentTx.trim(), {
+        tier, payer: verification.payer, amount_usdc: verification.amount_usdc,
+        settled_via: "x_payment_tx_header"
+      }, env);
+      if (!claim.claimed) return { limited: true, limit, count: 0, reason: claim.code };
       await markTransactionSettled(
         paymentTx.trim(),
         {
@@ -948,6 +962,7 @@ async function checkRateLimit(request, env, profile) {
         },
         env
       );
+      paidRequestEntitlements.set(request, { amount_usdc: verification.amount_usdc });
       return {
         limited: false,
         limit,
@@ -960,6 +975,7 @@ async function checkRateLimit(request, env, profile) {
     }
   }
 
+  if (!limit || !kv) return { limited: false, limit, count: 0 };
   const ip = clientIpFromRequest(request);
   const hour = new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH
   const key = `rate:${profile || "unknown"}:${ip}:${hour}`;
@@ -1192,7 +1208,7 @@ function agentCard(request, env = {}) {
     x_agenda_intelligence: {
       hosted_wrapper: true,
       operational_health: { status: "ok", version: VERSION, checked_at: new Date().toISOString(), url: `${origin}/health` },
-      task_continuity: { store: "KV (24-hour TTL, status-only without input or artifacts)", supported_methods: ["SendMessage", "GetTask"], cancellation: "unsupported for synchronous tasks", tenant_binding: "tasks are bound to the caller's X-Client-Id label; GetTask and continuation require the same label and answer TASK_NOT_FOUND otherwise. Tasks created without a label are scoped to anonymous callers only: any caller without an X-Client-Id who holds the task id can read or continue them, and labeled tenants cannot" },
+      task_continuity: { store: "KV (24-hour TTL, status-only without input or artifacts)", supported_methods: ["SendMessage", "GetTask"], cancellation: "unsupported for synchronous tasks", tenant_binding: "when TASK_SCOPE_AUTH_REQUIRED=1, task creation issues a private continuation.token; GetTask and continuation require it in X-Task-Token and otherwise answer TASK_NOT_FOUND. X-Client-Id is a telemetry label. Legacy local mode uses label scoping only" },
       wrapper_scope: "A2A/JSON-RPC discovery, lightweight triage, and routing response only",
       jsonrpc_endpoint: `${origin}/message/send`,
       protocol_version: "1.0",
@@ -3126,7 +3142,12 @@ function corridorAssistantMessageText(response = null, vizierAssistant = null) {
 
 async function a2aResultForCorridorSanctionsAssistant(params, request, env = {}) {
   const text = extractText(params);
-  if (!text.trim()) return emptyRequestResult("corridor_sanctions_assistant", request);
+  if (!text.trim()) {
+    if (params.capability !== "corridor_sanctions_assistant") return emptyRequestResult("corridor_sanctions_assistant", request);
+    const result = a2aResultForFleetDirectory(params);
+    result.metadata.product_profile = "corridor_sanctions_assistant";
+    return result;
+  }
   let vizierAssistant = null;
   if (isAssistantVizierEnabled(env)) {
     vizierAssistant = await verifyAssistantWithVizier(env, text, params);
@@ -6320,7 +6341,10 @@ function fleetDirectoryResponse() {
         required_fields: ["text"],
         schema_url: null
       }
-    ]
+    ].map(gate => {
+      const tool = mcpToolsForProfile(gate.profile).find(item => item.name === gate.tool_name);
+      return { ...gate, required_fields: tool ? (tool.inputSchema.required || []) : gate.required_fields };
+    })
   };
 }
 
@@ -6360,18 +6384,19 @@ function a2aResultForFleetDirectory(params) {
 
 async function isBankabilityDossierPaid(request, env = {}) {
   if (!request || !request.headers) return false;
+  // MCP/A2A already consumed this request's entitlement; REST helper calls
+  // must consume it here. The cache lives only as long as this Request object.
+  const entitlement = paidRequestEntitlements.get(request);
+  if (entitlement) return Boolean(entitlement.pro || entitlement.amount_usdc >= TIER_BANKABILITY_DOSSIER_USDC_AMOUNT);
+  const token = bearerTokenFromRequest(request);
+  if (token.startsWith("agy_pro_")) {
+    const rate = await checkRateLimit(request, env, agentProfile(request, env));
+    return !rate.limited && Boolean(rate.pro);
+  }
   const paymentTx = request.headers.get("x-payment-tx");
   if (paymentTx && /^0x[0-9a-fA-F]{64}$/.test(paymentTx.trim())) {
-    const verification = await verifyBaseTransactionReceipt(paymentTx.trim(), env);
-    if (verification.valid && verification.amount_usdc >= TIER_BANKABILITY_DOSSIER_USDC_AMOUNT) {
-      return true;
-    }
-  }
-  const authHeader = request.headers.get("authorization") || "";
-  if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.replace("Bearer ", "").trim();
-    const pro = await checkDynamicBearerToken(token, env);
-    if (pro) return true;
+    const rate = await checkRateLimit(request, env, agentProfile(request, env));
+    return !rate.limited && rate.amount_usdc >= TIER_BANKABILITY_DOSSIER_USDC_AMOUNT;
   }
   return false;
 }
@@ -9888,6 +9913,9 @@ async function cisSecondarySanctionsResult(request, env) {
     // snapshot is a static file rebuilt by hand, so a caller cannot otherwise
     // tell whether a "no match" reflects the current lists or a stale index.
     live_retrieval_snapshot_generated_at: upstreamResult.snapshot_generated_at ?? null,
+    live_retrieval_snapshot_digest: upstreamResult.snapshot_digest ?? null,
+    live_retrieval_snapshot_age_ms: upstreamResult.snapshot_age_ms ?? null,
+    live_retrieval_snapshot_max_age_ms: upstreamResult.snapshot_max_age_ms ?? null,
     auto_fetched_sources: autoFetched,
     // Sanctions-list matches only (ownership enrichment excluded), so the
     // markdown can name what the exposure signal was scored from.
@@ -10171,6 +10199,9 @@ async function a2aResultForCisSecondarySanctions(params, request, env) {
       vizier_clearance_receipt: result.vizier_clearance_receipt,
       live_retrieval_reason_code: result.live_retrieval_reason_code,
       live_retrieval_snapshot_generated_at: result.live_retrieval_snapshot_generated_at,
+      live_retrieval_snapshot_digest: result.live_retrieval_snapshot_digest,
+      live_retrieval_snapshot_age_ms: result.live_retrieval_snapshot_age_ms,
+      live_retrieval_snapshot_max_age_ms: result.live_retrieval_snapshot_max_age_ms,
       auto_fetched_sources: result.auto_fetched_sources,
       upstream_attribution: result.upstream_attribution,
       human_review_required: result.response.human_review_required,
@@ -10275,6 +10306,9 @@ async function cisSecondarySanctionsBatchResult(batch, env) {
           live_retrieval_upstream: result.live_retrieval_upstream,
           live_retrieval_reason_code: result.live_retrieval_reason_code,
           live_retrieval_snapshot_generated_at: result.live_retrieval_snapshot_generated_at,
+      live_retrieval_snapshot_digest: result.live_retrieval_snapshot_digest,
+      live_retrieval_snapshot_age_ms: result.live_retrieval_snapshot_age_ms,
+      live_retrieval_snapshot_max_age_ms: result.live_retrieval_snapshot_max_age_ms,
           auto_fetched_sources: result.auto_fetched_sources,
           upstream_attribution: result.upstream_attribution
         }
@@ -12790,7 +12824,12 @@ function taskKey(profile, id) { return `${TASK_KEY_PREFIX}${profile}:${id}`; }
 // not strong authentication; what it restores is tenant-to-tenant isolation.
 // Tasks created without a label live in the shared anonymous scope: any
 // anonymous caller holding the task id can read or continue it.
-async function taskOwnerKey(request) {
+async function taskOwnerKey(request, env = {}, issuedToken = null) {
+  if (env.TASK_SCOPE_AUTH_REQUIRED === "1") {
+    const token = issuedToken || request?.headers?.get?.("x-task-token");
+    if (typeof token !== "string" || !/^[a-f0-9]{64}$/.test(token)) return "unverified:no-task-token";
+    return "capability:v2:" + (await sha256Jcs(token));
+  }
   const label = request?.headers?.get?.("x-client-id");
   if (!label || typeof label !== "string") return null;
   const trimmed = label.trim();
@@ -12882,7 +12921,7 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
     const profile = agentProfile(request, env);
     if (!isProductionAuthorized(request, env, profile)) return jsonRpcError(id, -32001, "Unauthorized");
     const task = await storedTask(env, profile, taskId);
-    const ownerKey = await taskOwnerKey(request);
+    const ownerKey = await taskOwnerKey(request, env);
     if (!taskVisibleTo(task, ownerKey)) return taskNotFound(id);
     if (payload.method === "CancelTask") return unsupportedTaskOperation(id, "TASK_NOT_CANCELABLE");
     const { owner: _owner, ...publicTask } = task;
@@ -12909,7 +12948,7 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
         { field: "message.taskId", description: "A non-empty task id is required" }
       ]);
       prior = await storedTask(env, profile, priorId);
-      const callerKey = await taskOwnerKey(request);
+      const callerKey = await taskOwnerKey(request, env);
       if (!taskVisibleTo(prior, callerKey)) return taskNotFound(id);
       if (params.message.contextId && params.message.contextId !== prior.contextId) return invalidParamsError(id, [
         { field: "message.contextId", description: "contextId does not match the referenced task" }
@@ -12930,7 +12969,16 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
       const task = v1SendMessageResponse(result, request, env).task;
       responseTask = task;
       // A store failure must not suggest the task can be resumed when it cannot.
-      if (!(await saveTask(env, profile, task, await taskOwnerKey(request)))) {
+      let issuedToken = null;
+      if (!prior && env.TASK_SCOPE_AUTH_REQUIRED === "1") {
+        const bytes = crypto.getRandomValues(new Uint8Array(32));
+        issuedToken = [...bytes].map(b => b.toString(16).padStart(2, "0")).join("");
+        task.metadata = { ...(task.metadata || {}), continuation: {
+          token: issuedToken, header: "X-Task-Token",
+          instruction: "Keep this capability private; supply it to GetTask or continuation of this task."
+        } };
+      }
+      if (!(await saveTask(env, profile, task, await taskOwnerKey(request, env, issuedToken)))) {
         return jsonRpcError(id, -32603, "Task storage unavailable");
       }
     }
@@ -13548,9 +13596,9 @@ function profileInstructions(profile) {
 async function handleMcpPost(request, env, ctx) {
   let payload;
   try {
-    payload = await request.json();
+    payload = await readBoundedJson(request);
   } catch (_error) {
-    return jsonResponse(jsonRpcError(null, -32700, "Parse error"), 200);
+    return jsonResponse(jsonRpcError(null, _error.status === 413 ? -32602 : -32700, _error.message), _error.status === 413 ? 413 : 200);
   }
   // tools/call is the production route, so it inherits the same access gate and
   // throttle as message/send. Discovery and listing stay open, like agent/card.
@@ -13871,37 +13919,15 @@ async function handlePost(request, env, ctx) {
     return a2aJsonResponse(error, 415);
   }
 
-  const declaredLength = Number.parseInt(request.headers.get("content-length") || "0", 10);
-  if (Number.isFinite(declaredLength) && declaredLength > MAX_JSON_RPC_BODY_BYTES) {
-    const error = invalidParamsError(null, [
-      {
-        field: "body",
-        description: `JSON-RPC body exceeds ${MAX_JSON_RPC_BODY_BYTES} bytes`
-      }
-    ]);
-    logProtocolEvent(request, env, null, null, error, startedAt);
-    return a2aJsonResponse(error, 413);
-  }
-
-  const rawBody = await request.text();
-  if (new TextEncoder().encode(rawBody).byteLength > MAX_JSON_RPC_BODY_BYTES) {
-    const error = invalidParamsError(null, [
-      {
-        field: "body",
-        description: `JSON-RPC body exceeds ${MAX_JSON_RPC_BODY_BYTES} bytes`
-      }
-    ]);
-    logProtocolEvent(request, env, null, null, error, startedAt);
-    return a2aJsonResponse(error, 413);
-  }
-
   let payload;
   try {
-    payload = JSON.parse(rawBody);
+    payload = await readBoundedJson(request, MAX_JSON_RPC_BODY_BYTES);
   } catch (_error) {
-    const error = jsonRpcError(null, -32700, "Invalid JSON payload");
+    const error = _error.status === 413
+      ? invalidParamsError(null, [{ field: "body", description: _error.message }])
+      : jsonRpcError(null, -32700, "Invalid JSON payload");
     logProtocolEvent(request, env, null, null, error, startedAt);
-    return a2aJsonResponse(error, 200);
+    return a2aJsonResponse(error, _error.status === 413 ? 413 : 200);
   }
   const method = payload && typeof payload === "object" ? payload.method : null;
   if (MESSAGE_SEND_METHODS.has(method) || method === "GetTask" || method === "CancelTask") {
@@ -14134,7 +14160,7 @@ async function handleCisReviewIntake(request, env, ctx, notificationFetcher = fe
 
   let payload;
   try {
-    payload = await request.json();
+    payload = await readBoundedJson(request);
   } catch (_error) {
     return jsonResponse({ error: "Request must be valid JSON" }, 400, headers);
   }
@@ -14451,9 +14477,9 @@ function buildRepairPromptJs(packet, response) {
 async function handleEvidencePacketCheck(request, env) {
   let body;
   try {
-    body = await request.json();
+    body = await readBoundedJson(request);
   } catch (_e) {
-    return jsonResponse({ ok: false, error: "Invalid JSON payload" }, 400);
+    return jsonResponse({ ok: false, error: _e.status === 413 ? _e.message : "Invalid JSON payload" }, _e.status === 413 ? 413 : 400);
   }
   const packet = body.packet || body;
   if (!packet || typeof packet !== "object") {
@@ -14481,9 +14507,9 @@ async function handleEvidencePacketCheck(request, env) {
 async function handleEvidencePacketRepairPrompt(request, env) {
   let body;
   try {
-    body = await request.json();
+    body = await readBoundedJson(request);
   } catch (_e) {
-    return jsonResponse({ ok: false, error: "Invalid JSON payload" }, 400);
+    return jsonResponse({ ok: false, error: _e.status === 413 ? _e.message : "Invalid JSON payload" }, _e.status === 413 ? 413 : 400);
   }
   const packet = body.packet || body;
   const verification =
@@ -14546,6 +14572,9 @@ const DIRECT_V1_ROUTES = {
       vizier_clearance_receipt: result.vizier_clearance_receipt,
       live_retrieval_reason_code: result.live_retrieval_reason_code,
       live_retrieval_snapshot_generated_at: result.live_retrieval_snapshot_generated_at,
+      live_retrieval_snapshot_digest: result.live_retrieval_snapshot_digest,
+      live_retrieval_snapshot_age_ms: result.live_retrieval_snapshot_age_ms,
+      live_retrieval_snapshot_max_age_ms: result.live_retrieval_snapshot_max_age_ms,
       auto_fetched_sources: result.auto_fetched_sources,
       upstream_attribution: result.upstream_attribution
     })
@@ -15040,10 +15069,18 @@ async function sendTest(e) {
 }
 
 async function handleDirectV1(endpoint, route, request, env) {
-  const rate = await checkRateLimit(request, env, route.profile);
+  // Authorize the deployment profile, as MCP/A2A do; all REST aliases inherit it.
+  // Discovery remains public.
+  const profile = agentProfile(request, env);
+  if (!isProductionAuthorized(request, env, profile)) {
+    return jsonResponse({ ok: false, error: "Unauthorized", profile }, 401, {
+      "www-authenticate": "Bearer", "cache-control": "no-store"
+    });
+  }
+  const rate = await checkRateLimit(request, env, profile);
   if (rate.limited) {
     return generateX402PaymentResponse(
-      route.profile,
+      profile,
       request,
       env,
       "quota_exceeded"
@@ -15052,9 +15089,9 @@ async function handleDirectV1(endpoint, route, request, env) {
 
   let body;
   try {
-    body = await request.json();
+    body = await readBoundedJson(request);
   } catch (_e) {
-    return jsonResponse({ ok: false, error: "Invalid JSON payload" }, 400);
+    return jsonResponse({ ok: false, error: _e.status === 413 ? _e.message : "Invalid JSON payload" }, _e.status === 413 ? 413 : 400);
   }
 
   const structured = route.extract(body);
@@ -15081,6 +15118,15 @@ async function handleDirectV1(endpoint, route, request, env) {
 
 export async function handleRequest(request, env = {}, ctx = {}) {
   const url = new URL(request.url);
+  // All REST execution routes inherit the deployment gate, including aliases,
+  // packet helpers and payment verification outside DIRECT_V1_ROUTES.
+  const deploymentProfile = agentProfile(request, env);
+  if (request.method === "POST" && url.pathname.startsWith("/v1/") &&
+      !isProductionAuthorized(request, env, deploymentProfile)) {
+    return jsonResponse({ ok: false, error: "Unauthorized", profile: deploymentProfile }, 401, {
+      "www-authenticate": "Bearer", "cache-control": "no-store"
+    });
+  }
   const discoveryRedirect = DISCOVERY_REDIRECTS[url.pathname];
   if ((request.method === "GET" || request.method === "HEAD") && discoveryRedirect) {
     return new Response(null, {
@@ -15122,7 +15168,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       headers: {
         "access-control-allow-origin": "*",
         "access-control-allow-methods": "GET, POST, OPTIONS",
-        "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name, x-payment-tx, x-trace-id"
+        "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name, x-payment-tx, x-trace-id, x-task-token"
       }
     });
   }
@@ -15380,6 +15426,14 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return jsonResponse(healthInfo(request, env), 200, aiCatalogHeaders(request));
   }
 
+  if (request.method === "GET" && url.pathname === "/health/dependencies") {
+    const snapshot = await snapshotHealth(env);
+    return jsonResponse({ checked_at: new Date().toISOString(), snapshot,
+      payment_ledger: { configured: Boolean(env.PAYMENT_LEDGER?.prepare) },
+      note: "Dependency availability and source freshness; not a domain clearance." },
+      snapshot.status === "stale" || snapshot.status === "degraded" ? 503 : 200,
+      { "cache-control": "no-store" });
+  }
   if (request.method === "GET" && url.pathname === "/health") {
     return jsonResponse(healthInfo(request, env), 200, aiCatalogHeaders(request));
   }
@@ -15542,7 +15596,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     if (request.method === "POST") {
       let body = {};
       try {
-        body = await request.json();
+        body = await readBoundedJson(request);
       } catch (_e) {
         return jsonResponse({ error: "Malformed JSON payload" }, 400);
       }

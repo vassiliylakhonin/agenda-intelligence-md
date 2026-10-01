@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import json
+import os
 import time
 import urllib.error
 import urllib.request
 
 BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
-MASTER_KEY = "ec58711dc36374de8d3d264236a922ac15f10d9016fe0a2169156d8653e69e2f"
+MASTER_KEY = os.environ.get("VIZIER_API_KEY", "")
 
 
 def post(endpoint, data, token=MASTER_KEY, headers_extra=None):
@@ -52,6 +53,9 @@ def get(endpoint, token=MASTER_KEY, headers_extra=None):
         except Exception:
             return e.code, raw
 
+
+if not MASTER_KEY:
+    raise SystemExit("Set VIZIER_API_KEY before running this live administrative proof.")
 
 print("=== STARTING LIVE ZERO-MOCK PROOF ===")
 print(f"Target: {BASE_URL}\n")

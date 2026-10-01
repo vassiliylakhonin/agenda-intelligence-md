@@ -1,3 +1,5 @@
+import { readBoundedJson } from "./request-body.js";
+import { paymentLedger, claimPayment, readPayment, tokenHash } from "./payment-ledger.js";
 import {
   BASE_FALLBACK_RPC_URLS,
   BASE_RPC_URL,
@@ -132,10 +134,20 @@ export async function verifyBaseTransactionReceipt(
         };
       }
     } catch (_kvErr) {
-      // If KV read errors, proceed to verify
+      return { valid: false, code: "settlement_store_unavailable", error: "Replay store unavailable" };
     }
   }
 
+  if (env.PAYMENT_LEDGER) {
+    try {
+      const existing = await readPayment(env, cleanTxHash);
+      if (existing && !(options.allowHeaderClaim && isHeaderProClaim(JSON.stringify(existing)))) {
+        return { valid: false, code: "already_claimed", error: "Transaction already claimed" };
+      }
+    } catch (_error) {
+      return { valid: false, code: "settlement_store_unavailable", error: "Payment ledger unavailable" };
+    }
+  }
   const fetchFn = options.fetchFn || globalThis.fetch;
   const rpcEndpoints = env?.BASE_RPC_URL
     ? [env.BASE_RPC_URL]
@@ -157,7 +169,8 @@ export async function verifyBaseTransactionReceipt(
           id: 1,
           method: "eth_getTransactionReceipt",
           params: [cleanTxHash]
-        })
+        }),
+        signal: AbortSignal.timeout(10000)
       });
 
       if (rpcResponse && rpcResponse.ok) {
@@ -213,6 +226,28 @@ export async function verifyBaseTransactionReceipt(
     };
   }
 
+  if (Number.isFinite(options.expectedAmountUsdc) && matchingTransfer.amount_usdc < options.expectedAmountUsdc) {
+    return { valid: false, error: "Payment amount is below the required minimum" };
+  }
+  // Legacy KV markers expire after 90 days. Accepting only recent on-chain
+  // payments prevents expired legacy markers from reopening old payments.
+  if (env.PAYMENT_LEDGER) {
+    try {
+      const blockResponse = await fetchFn(env.BASE_RPC_URL || BASE_RPC_URL, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "eth_getBlockByNumber", params: [receipt.blockNumber, false] }),
+        signal: AbortSignal.timeout(10000)
+      });
+      const block = await blockResponse.json();
+      const minedAt = Number(BigInt(block?.result?.timestamp)) * 1000;
+      const age = Date.now() - minedAt;
+      if (!blockResponse.ok || !Number.isFinite(minedAt) || age < -300000 || age > 7 * 86400000) {
+        return { valid: false, code: "payment_age_invalid", error: "Payment must have a verified block time within the last seven days" };
+      }
+    } catch (_error) {
+      return { valid: false, code: "payment_time_unavailable", error: "Unable to verify payment block time" };
+    }
+  }
   return {
     valid: true,
     tx_hash: cleanTxHash,
@@ -241,53 +276,31 @@ export async function markTransactionSettled(txHash, details, env = {}) {
     ...safeDetails
   });
   // Retain settled transaction markers for 90 days
-  await kv.put(replayKey, payload, { expirationTtl: 90 * 86400 });
+  await kv.put(replayKey, payload);
 }
 
-// Optimistic atomic claim of a tx_hash before any credential is provisioned.
-// The marker is written first with a random claim nonce and read back: a
-// concurrent settler that loses the race sees the winner's nonce and is
-// rejected. LIMITATION: Workers KV is eventually consistent and has no
-// put-if-absent, so a tight cross-region race can still double-claim; closing
-// that fully needs a Durable Object or D1 unique insert. The nonce read-back
-// plus the pre-claim replay check in verifyBaseTransactionReceipt shrink the
-// window to the KV propagation delay; until the storage moves, Pro-tier
-// issuance additionally requires the payer-signed challenge, so a lost race
-// cannot hand the token to a non-payer.
+// The unique tx key is claimed atomically on D1; never fall back to KV.
 export async function claimTransactionSettlement(txHash, details, env = {}, options = {}) {
-  const kv = env?.AGENDA_USAGE;
-  if (!kv || typeof kv.put !== "function") return { claimed: true, durable: false };
-  const replayKey = `settled_tx:${txHash.toLowerCase()}`;
   try {
-    const existing = await kv.get(replayKey);
-    if (existing && !(options.allowHeaderClaim && isHeaderProClaim(existing, details.payer, details.amount_usdc))) {
-      return { claimed: false, code: "already_claimed" };
+    const legacy = await env?.AGENDA_USAGE?.get?.(`settled_tx:${txHash.toLowerCase()}`);
+    if (legacy) await claimPayment(env, txHash, JSON.parse(legacy));
+    let claimed = await claimPayment(env, txHash, details);
+    if (!claimed && options.allowHeaderClaim) {
+      // Upgrade the same payer's header settlement only once, in one write.
+      const update = await paymentLedger(env).prepare(
+        "UPDATE payment_claims SET details = ?1 WHERE tx_hash = ?2 AND json_extract(details, '$.settled_via') = 'x_payment_tx_header' AND json_extract(details, '$.tier') = 'tier_2_pro' AND lower(json_extract(details, '$.payer')) = ?3 AND json_extract(details, '$.amount_usdc') = ?4"
+      ).bind(JSON.stringify(details), txHash.toLowerCase(), details.payer.toLowerCase(), details.amount_usdc).run();
+      claimed = update.meta.changes === 1;
     }
-    const nonce = crypto.randomUUID();
-    await kv.put(
-      replayKey,
-      JSON.stringify({ claim_nonce: nonce, claimed_at: new Date().toISOString(), ...details }),
-      { expirationTtl: 90 * 86400 }
-    );
-    const confirm = await kv.get(replayKey);
-    if (!confirm) return { claimed: true, durable: false };
-    try {
-      if (JSON.parse(confirm).claim_nonce !== nonce) {
-        return { claimed: false, code: "already_claimed" };
-      }
-    } catch (_e) {
-      return { claimed: false, code: "already_claimed" };
-    }
-    return { claimed: true, durable: true };
-  } catch (_kvErr) {
-    // A KV outage must not hand out paid credentials by default.
+    return { claimed, durable: true, ...(claimed ? {} : { code: "already_claimed" }) };
+  } catch (_error) {
     return { claimed: false, code: "settlement_store_unavailable" };
   }
 }
 
 export async function provisionProBearerToken(payerAddress, txHash, env = {}) {
-  const kv = env?.AGENDA_USAGE;
-  const rawId = typeof crypto?.randomUUID === "function" ? crypto.randomUUID().replace(/-/g, "") : Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const db = paymentLedger(env);
+  const rawId = crypto.randomUUID().replace(/-/g, "");
   const token = `agy_pro_${rawId}`;
   const now = Date.now();
   const validUntil = now + 30 * 86400 * 1000; // 30 days
@@ -302,15 +315,9 @@ export async function provisionProBearerToken(payerAddress, txHash, env = {}) {
     used: 0
   };
 
-  if (kv && typeof kv.put !== "function") {
-    return { token, tokenData };
-  }
-
-  if (kv) {
-    await kv.put(`bearer_token:${token}`, JSON.stringify(tokenData), {
-      expirationTtl: 30 * 86400
-    });
-  }
+  await db.prepare(
+    "INSERT INTO pro_tokens(token_hash, tx_hash, details, valid_until_ms, quota, used) VALUES (?1, ?2, ?3, ?4, ?5, 0)"
+  ).bind(await tokenHash(token), txHash.toLowerCase(), JSON.stringify(tokenData), validUntil, tokenData.quota).run();
 
   return { token, tokenData };
 }
@@ -319,19 +326,12 @@ export async function checkDynamicBearerToken(token, env = {}) {
   if (!token || typeof token !== "string" || !token.startsWith("agy_pro_")) {
     return null;
   }
-  const kv = env?.AGENDA_USAGE;
-  if (!kv || typeof kv.get !== "function") return null;
-
   try {
-    const raw = await kv.get(`bearer_token:${token}`);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    const validUntilMs = new Date(data.valid_until).getTime();
-    if (Date.now() > validUntilMs) {
-      return null;
-    }
-    return data;
-  } catch (_e) {
+    const row = await paymentLedger(env).prepare(
+      "SELECT details, used, quota FROM pro_tokens WHERE token_hash = ?1 AND valid_until_ms > ?2"
+    ).bind(await tokenHash(token), Date.now()).first();
+    return row ? { ...JSON.parse(row.details), used: row.used, quota: row.quota } : null;
+  } catch (_error) {
     return null;
   }
 }
@@ -344,9 +344,14 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
     });
   }
 
+  if (!env?.PAYMENT_LEDGER?.prepare) {
+    return new Response(JSON.stringify({ code: "settlement_store_unavailable", error: "Payment settlement is unavailable; no credential issued." }), {
+      status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" }
+    });
+  }
   let body = {};
   try {
-    body = await request.json();
+    body = await readBoundedJson(request);
   } catch (_e) {
     return new Response(
       JSON.stringify({
@@ -377,7 +382,7 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
 
   const verification = await verifyBaseTransactionReceipt(txHash, env, { allowHeaderClaim: true });
   if (!verification.valid) {
-    const status = verification.code === "already_claimed" ? 409 : 400;
+    const status = verification.code === "already_claimed" ? 409 : verification.code === "settlement_store_unavailable" ? 503 : 400;
     return new Response(
       JSON.stringify({
         error: verification.error,

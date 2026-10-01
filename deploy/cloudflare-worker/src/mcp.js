@@ -393,7 +393,12 @@ export function mcpToolsForProfile(profile) {
     const contract = contractFor(spec, profile);
     const tool = {
       name: spec.name,
-      description: [spec.summary, spec.bringsEvidence ? BRING_EVIDENCE : null, NOT_ADVICE]
+      description: [
+        spec.summary.replace(/Required fields(?: in 'request')?:[^.]+\./g, ""),
+        inputSchemaFor(spec, profile).required?.length
+          ? `Required arguments: ${inputSchemaFor(spec, profile).required.join(", ")}. See inputSchema for structure and constraints.`
+          : null,
+        spec.bringsEvidence ? BRING_EVIDENCE : null, NOT_ADVICE]
         .filter(Boolean)
         .join(" "),
       inputSchema: inputSchemaFor(spec, profile),

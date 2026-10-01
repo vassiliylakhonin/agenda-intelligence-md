@@ -3,11 +3,22 @@ main = "src/index.js"
 compatibility_date = "2026-05-22"
 workers_dev = true
 
+
+[[d1_databases]]
+binding = "PAYMENT_LEDGER"
+database_name = "agenda-fleet-payments"
+database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
+migrations_dir = "migrations"
+
+[version_metadata]
+binding = "CF_VERSION_METADATA"
+
 [observability]
 enabled = true
 
 [vars]
 AGENT_PROFILE = "agenda"
+TASK_SCOPE_AUTH_REQUIRED = "1"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -33,6 +44,7 @@ workers_dev = true
 
 [env.middle-corridor-deal-risk-gate.vars]
 AGENT_PROFILE = "kazakhstan"
+TASK_SCOPE_AUTH_REQUIRED = "1"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -54,6 +66,16 @@ id = "d2228183999246ccbec8aa2d5f130bfc"
 #   wrangler secret put OPENSANCTIONS_API_KEY --env cis-secondary-sanctions
 # Without either secret, the profile responds gracefully with
 # live_retrieval_status: disabled and triage based on user-supplied evidence.
+
+[env.middle-corridor-deal-risk-gate.version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[env.middle-corridor-deal-risk-gate.d1_databases]]
+binding = "PAYMENT_LEDGER"
+database_name = "agenda-fleet-payments"
+database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
+migrations_dir = "migrations"
+
 [env.cis-secondary-sanctions]
 name = "cis-secondary-sanctions-a2a"
 workers_dev = true
@@ -61,6 +83,7 @@ workers_dev = true
 [env.cis-secondary-sanctions.vars]
 
 AGENT_PROFILE = "cis_secondary_sanctions"
+TASK_SCOPE_AUTH_REQUIRED = "1"
 # Snapshot upstream (ADR 0014, activated by ADR 0020): $0 server-side name
 # screening against a compact public-list index served over HTTP. Not a secret
 # (public URL), so it belongs in [vars] rather than a secret.
@@ -92,12 +115,23 @@ service = "vizier"
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
 
+
+[env.cis-secondary-sanctions.version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[env.cis-secondary-sanctions.d1_databases]]
+binding = "PAYMENT_LEDGER"
+database_name = "agenda-fleet-payments"
+database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
+migrations_dir = "migrations"
+
 [env.agentic-interaction-trust]
 name = "agentic-interaction-trust-a2a"
 workers_dev = true
 
 [env.agentic-interaction-trust.vars]
 AGENT_PROFILE = "agentic_interaction_trust"
+TASK_SCOPE_AUTH_REQUIRED = "1"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -113,12 +147,23 @@ id = "d2228183999246ccbec8aa2d5f130bfc"
 # Agent Output Verification — relay-readiness triage of another agent's claim set.
 # Evidence-readiness only, no live retrieval. Open free demo (no API key). Deploy:
 #   wrangler deploy --env agent-output-verification
+
+[env.agentic-interaction-trust.version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[env.agentic-interaction-trust.d1_databases]]
+binding = "PAYMENT_LEDGER"
+database_name = "agenda-fleet-payments"
+database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
+migrations_dir = "migrations"
+
 [env.agent-output-verification]
 name = "agent-output-verification-a2a"
 workers_dev = true
 
 [env.agent-output-verification.vars]
 AGENT_PROFILE = "agent_output_verification"
+TASK_SCOPE_AUTH_REQUIRED = "1"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -131,12 +176,23 @@ service = "vizier"
 binding = "AGENDA_USAGE"
 id = "d2228183999246ccbec8aa2d5f130bfc"
 
+
+[env.agent-output-verification.version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[env.agent-output-verification.d1_databases]]
+binding = "PAYMENT_LEDGER"
+database_name = "agenda-fleet-payments"
+database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
+migrations_dir = "migrations"
+
 [env.gulf-maritime-exposure]
 name = "gulf-maritime-exposure-a2a"
 workers_dev = true
 
 [env.gulf-maritime-exposure.vars]
 AGENT_PROFILE = "gulf_maritime_exposure"
+TASK_SCOPE_AUTH_REQUIRED = "1"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -152,12 +208,23 @@ id = "d2228183999246ccbec8aa2d5f130bfc"
 # Kazakhstan Market-Entry Readiness Gate — evidence triage only, no live
 # retrieval. Open free demo (no API key). Deploy with:
 #   wrangler deploy --env kazakhstan-market-entry-readiness
+
+[env.gulf-maritime-exposure.version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[env.gulf-maritime-exposure.d1_databases]]
+binding = "PAYMENT_LEDGER"
+database_name = "agenda-fleet-payments"
+database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
+migrations_dir = "migrations"
+
 [env.kazakhstan-market-entry-readiness]
 name = "kazakhstan-market-entry-readiness-a2a"
 workers_dev = true
 
 [env.kazakhstan-market-entry-readiness.vars]
 AGENT_PROFILE = "market_entry_readiness"
+TASK_SCOPE_AUTH_REQUIRED = "1"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -175,12 +242,23 @@ id = "d2228183999246ccbec8aa2d5f130bfc"
 # hands off to person-led work after fit, scope, fee, and timing are confirmed.
 # No triage, scoring, screening, or retrieval of its own. Open free demo (no API key). Deploy with:
 #   wrangler deploy --env corridor-sanctions-assistant
+
+[env.kazakhstan-market-entry-readiness.version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[env.kazakhstan-market-entry-readiness.d1_databases]]
+binding = "PAYMENT_LEDGER"
+database_name = "agenda-fleet-payments"
+database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
+migrations_dir = "migrations"
+
 [env.corridor-sanctions-assistant]
 name = "corridor-sanctions-assistant-a2a"
 workers_dev = true
 
 [env.corridor-sanctions-assistant.vars]
 AGENT_PROFILE = "corridor_sanctions_assistant"
+TASK_SCOPE_AUTH_REQUIRED = "1"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -196,12 +274,23 @@ id = "d2228183999246ccbec8aa2d5f130bfc"
 # Critical Minerals & Strategic Raw Materials Due Diligence Gate — origin tracing and CSDDD compliance.
 # Evidence triage only, no live retrieval. Open free demo (no API key). Deploy with:
 #   wrangler deploy --env critical-minerals-due-diligence
+
+[env.corridor-sanctions-assistant.version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[env.corridor-sanctions-assistant.d1_databases]]
+binding = "PAYMENT_LEDGER"
+database_name = "agenda-fleet-payments"
+database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
+migrations_dir = "migrations"
+
 [env.critical-minerals-due-diligence]
 name = "critical-minerals-due-diligence-a2a"
 workers_dev = true
 
 [env.critical-minerals-due-diligence.vars]
 AGENT_PROFILE = "critical_minerals_due_diligence"
+TASK_SCOPE_AUTH_REQUIRED = "1"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -218,12 +307,23 @@ id = "d2228183999246ccbec8aa2d5f130bfc"
 # Dual-Use Technology & Export Controls Gate - ECCN/HS Code screening.
 # Evidence triage only, no live retrieval. Open free demo (no API key). Deploy with:
 #   wrangler deploy --env dual-use-technology-export
+
+[env.critical-minerals-due-diligence.version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[env.critical-minerals-due-diligence.d1_databases]]
+binding = "PAYMENT_LEDGER"
+database_name = "agenda-fleet-payments"
+database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
+migrations_dir = "migrations"
+
 [env.dual-use-technology-export]
 name = "dual-use-technology-export-a2a"
 workers_dev = true
 
 [env.dual-use-technology-export.vars]
 AGENT_PROFILE = "dual_use_technology_export"
+TASK_SCOPE_AUTH_REQUIRED = "1"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -240,12 +340,23 @@ service = "vizier"
 # Pre-sign compliance, OFAC/AML screening, drainer prevention, and velocity enforcement.
 # Deploy with:
 #   wrangler deploy --env agent-financial-guard
+
+[env.dual-use-technology-export.version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[env.dual-use-technology-export.d1_databases]]
+binding = "PAYMENT_LEDGER"
+database_name = "agenda-fleet-payments"
+database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
+migrations_dir = "migrations"
+
 [env.agent-financial-guard]
 name = "agent-financial-guard-a2a"
 workers_dev = true
 
 [env.agent-financial-guard.vars]
 AGENT_PROFILE = "agent_financial_guard"
+TASK_SCOPE_AUTH_REQUIRED = "1"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -262,12 +373,23 @@ service = "vizier"
 # Autonomous dispute arbitration, deliverable hash/schema verification, and settlement calculation.
 # Deploy with:
 #   wrangler deploy --env m2m-escrow-arbiter
+
+[env.agent-financial-guard.version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[env.agent-financial-guard.d1_databases]]
+binding = "PAYMENT_LEDGER"
+database_name = "agenda-fleet-payments"
+database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
+migrations_dir = "migrations"
+
 [env.m2m-escrow-arbiter]
 name = "m2m-escrow-arbiter-a2a"
 workers_dev = true
 
 [env.m2m-escrow-arbiter.vars]
 AGENT_PROFILE = "m2m_escrow_arbiter"
+TASK_SCOPE_AUTH_REQUIRED = "1"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -304,3 +426,12 @@ enabled = true
 [env.cis-secondary-sanctions.observability.traces]
 enabled = true
 head_sampling_rate = 0.1
+
+[env.m2m-escrow-arbiter.version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[env.m2m-escrow-arbiter.d1_databases]]
+binding = "PAYMENT_LEDGER"
+database_name = "agenda-fleet-payments"
+database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
+migrations_dir = "migrations"

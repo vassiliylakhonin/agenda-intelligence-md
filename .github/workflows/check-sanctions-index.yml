@@ -46,7 +46,7 @@ jobs:
         run: |
           python3 scripts/check_published_index.py \
             --published https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json \
-            --max-age-days 7
+            --max-age-days 3
 
       # Rebuilding provides the sharper drift signal when every source is
       # available. The public-index gate above remains authoritative during a
@@ -57,11 +57,11 @@ jobs:
         run: python3 scripts/sanctions_name_index.py
 
       - name: Report an official-source outage
-        if: steps.rebuild.outcome == 'failure'
+        if: steps.rebuild.outcome == 'failure' && steps.published.outcome == 'success'
         run: |
           echo "::warning title=Official sanctions source unavailable::Fresh rebuild failed after retries; the served index passed availability, shape, and freshness checks. Drift comparison is deferred."
           echo "### Official sanctions source unavailable" >> "$GITHUB_STEP_SUMMARY"
-          echo "The fresh rebuild failed after retries. The served index remains within its 7-day freshness budget, so this run is a warning; drift comparison is deferred." >> "$GITHUB_STEP_SUMMARY"
+          echo "The fresh rebuild failed after retries. The served index remains within its 72-hour freshness budget, so this run is a warning; drift comparison is deferred." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check the rebuilt index still has its shape
         if: steps.rebuild.outcome == 'success'
@@ -84,7 +84,7 @@ jobs:
           python3 scripts/check_published_index.py \
             --published https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json \
             --built deploy/snapshot-site/sanctions-name-index-compact.json \
-            --max-age-days 7
+            --max-age-days 3
 
       - name: Enforce published-index health after recovery build
         if: always() && steps.published.outcome == 'failure'
