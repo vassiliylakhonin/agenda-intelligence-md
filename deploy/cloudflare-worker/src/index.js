@@ -885,7 +885,7 @@ function clientIpFromRequest(request) {
 // legitimate call. Buckets per profile + client IP + UTC hour.
 const paidRequestEntitlements = new WeakMap();
 
-async function checkRateLimit(request, env, profile) {
+async function checkRateLimit(request, env, profile, billingProfile = profile) {
   const limit = rateLimitPerHour(env);
   const kv = env?.AGENDA_USAGE;
   // Paid entitlements are enforced even when the free hourly limiter is off.
@@ -906,7 +906,7 @@ async function checkRateLimit(request, env, profile) {
   // 2. Inline Base USDC settlement header (X-Payment-Tx: 0x...)
   const paymentTx = request.headers.get("x-payment-tx");
   if (paymentTx && /^0x[0-9a-fA-F]{64}$/.test(paymentTx.trim())) {
-    const isDispute = profile === "m2m_escrow_arbiter";
+    const isDispute = billingProfile === "m2m_escrow_arbiter";
     const requiredMin = isDispute ? TIER_MICRO_DISPUTE_USDC_AMOUNT : TIER_MICRO_CHECK_USDC_AMOUNT;
     const verification = await verifyBaseTransactionReceipt(paymentTx.trim(), env);
     if (verification.valid && verification.amount_usdc >= requiredMin) {
@@ -15090,10 +15090,11 @@ async function handleDirectV1(endpoint, route, request, env) {
       "www-authenticate": "Bearer", "cache-control": "no-store"
     });
   }
-  const rate = await checkRateLimit(request, env, profile);
+  const billingProfile = route.guideProfile || profile;
+  const rate = await checkRateLimit(request, env, profile, billingProfile);
   if (rate.limited) {
     return generateX402PaymentResponse(
-      profile,
+      billingProfile,
       request,
       env,
       "quota_exceeded"

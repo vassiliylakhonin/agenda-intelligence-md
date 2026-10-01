@@ -138,3 +138,16 @@ test("dependency health distinguishes current, stale and future snapshots", asyn
     }
   } finally { globalThis.fetch = originalFetch; resetSnapshotCache(); }
 });
+
+
+test("REST escrow pricing follows the operation while auth follows the host", async () => {
+  const env = { AGENT_PROFILE: "cis_secondary_sanctions", CIS_SECONDARY_SANCTIONS_API_KEY: "synthetic-host-key",
+    RATE_LIMIT_PER_HOUR: "1", AGENDA_USAGE: { async get() { return "1"; }, async put() {} } };
+  const response = await handleRequest(new Request("https://example.test/v1/m2m-escrow/evaluate-dispute", {
+    method: "POST", headers: { authorization: "Bearer synthetic-host-key" }, body: "{}"
+  }), env);
+  assert.equal(response.status, 402);
+  const body = await response.json();
+  assert.equal(body.x402.profile, "m2m_escrow_arbiter");
+  assert.equal(body.x402.amount_usdc, 0.5);
+});
