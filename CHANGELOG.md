@@ -2,6 +2,10 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
+## Unreleased
+
+- Separate privacy-bounded payment stage events expose 402/401 payment admission, verified execution and response replay with deployment versions. Declared integration-check clients are excluded from candidate usage.
+
 ## 1.14.0 — 2026-10-01
 
 - Hosted pay-per-call v2 requires funding-wallet signatures bound to the exact URL, JSON request and task/protocol context. Public transaction hashes and inline body aliases cannot grant paid access.

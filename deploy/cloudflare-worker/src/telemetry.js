@@ -136,7 +136,7 @@ function isServiceProbeUserAgent(raw) {
 // confusion a header is there to prevent.
 const OWNER_SYNTHETIC_CLIENT_ID = /^instinct[-_]?owner/i;
 const OWNER_SYNTHETIC_USER_AGENT = /^instinct[-_]?owner(?:verify|feedback|[-_])/i;
-const TECHNICAL_VERIFICATION_USER_AGENT = /^agenda-ecosystem-verification\//i;
+const TECHNICAL_VERIFICATION_USER_AGENT = /^(?:agenda-ecosystem-verification|agenda-urllib-client|agenda-plugin-client-path)\//i;
 
 // Named benchmark harnesses observed replaying conformance packets against the
 // fleet. Real protocol traffic, but not demand: they get their own bucket
@@ -328,7 +328,7 @@ function buildUsageEvent(request, details = {}) {
     // the latter. Rows at version 3 and below measured a plain-text request to
     // a gate as zero, and their likely_probe follows from that number.
     event_version: 9,
-    classification_version: 2,
+    classification_version: 3,
     origin_verification: "unverified",
     timestamp: new Date().toISOString(),
     source: "cloudflare_worker",
@@ -362,6 +362,22 @@ function buildUsageEvent(request, details = {}) {
     caller_hash: details.caller_hash || null,
     payment: details.payment || { header_present: false }
   };
+}
+
+// Payment attempts are separate from evaluated usage and from revenue.
+// Never retain transaction hashes, signatures, tokens, query strings or input.
+function logPaymentEvent(request, env, { stage, attempt_id, profile, minimum_usdc, reason = null, status = null }) {
+  try {
+    const url = new URL(request.url);
+    console.log({ event: "agenda_intelligence_payment", event_version: 1,
+      timestamp: new Date().toISOString(), attempt_id, stage, reason, status,
+      host: url.hostname, transport: url.pathname.startsWith('/mcp') ? 'mcp' :
+        (url.pathname === '/message/send' || url.pathname === '/') ? 'a2a' : 'rest',
+      agent_profile: profile, minimum_usdc,
+      code_version: VERSION, engine_version: env?.CF_VERSION_METADATA?.id || env?.DEPLOYMENT_VERSION || VERSION,
+      caller_kind: callerKind(request), traffic_class: trafficClass(request),
+      classification_version: 3, origin_verification: "unverified" });
+  } catch { /* Observability must never change payment admission or execution. */ }
 }
 
 async function logUsageEvent(request, details = {}, env = {}) {
@@ -1007,6 +1023,7 @@ return {
   traceIdFromRequest,
   callerHash,
   logUsageEvent,
+  logPaymentEvent,
   funnelStepForPath,
   logFunnelEvent,
   callOutcome,

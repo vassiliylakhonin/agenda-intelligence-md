@@ -11857,6 +11857,7 @@ const {
   logUsageEvent,
   funnelStepForPath,
   logFunnelEvent,
+  logPaymentEvent,
   callOutcome,
   dateKeyFromRequest,
   isStatsAuthorized,
@@ -15187,14 +15188,23 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     if (wantsPayment) return jsonResponse({ code: 'payment_not_applicable' }, 400);
     return operation?.free ? handleRequestInner(request, { ...env, BILLING_MODE: 'freemium' }, ctx) : execute();
   }
+  const attempt_id = crypto.randomUUID();
+  const emit = (stage, reason = null, status = null) => logPaymentEvent(request, env,
+    { stage, reason, status, attempt_id, profile: operation.profile, minimum_usdc: operation.minimum });
+  emit('request_received');
   if (operation.errors?.length) {
-    if (wantsPayment || env.BILLING_MODE === 'pay_per_call' || bearerTokenFromRequest(request).startsWith('agy_pro_')) return jsonResponse({ code: 'invalid_paid_request', errors: operation.errors }, 400);
+    if (wantsPayment || env.BILLING_MODE === 'pay_per_call' || bearerTokenFromRequest(request).startsWith('agy_pro_')) { emit('payment_rejected', 'invalid_paid_request', 400); return jsonResponse({ code: 'invalid_paid_request', errors: operation.errors }, 400); }
     return execute();
   }
-  if (wantsPayment && bearerTokenFromRequest(request).startsWith('agy_pro_')) return jsonResponse({ code: 'choose_one_payment_method' }, 400);
-  if (wantsPayment) return executePaidRequest(request, body, env, operation.minimum, execute);
+  if (wantsPayment && bearerTokenFromRequest(request).startsWith('agy_pro_')) { emit('payment_rejected', 'choose_one_payment_method', 400); return jsonResponse({ code: 'choose_one_payment_method' }, 400); }
+  if (wantsPayment) return executePaidRequest(request, body, env, operation.minimum, execute, emit);
   if (env.BILLING_MODE === 'pay_per_call' && !bearerTokenFromRequest(request).startsWith('agy_pro_')) {
-    if (operation.minimum === 25) return handleRequestInner(request, { ...env, BILLING_MODE: 'freemium' }, ctx);
+    if (operation.minimum === 25) {
+      const response = await handleRequestInner(request, { ...env, BILLING_MODE: 'freemium' }, ctx);
+      if (response.status === 402) emit('payment_required', 'payment_required', 402);
+      return response;
+    }
+    emit('payment_required', 'payment_required', 402);
     return generateX402PaymentResponse(operation.profile, request, env, 'payment_required');
   }
   if (path.startsWith('/v1/evidence-packet/') && bearerTokenFromRequest(request).startsWith('agy_pro_')) {
