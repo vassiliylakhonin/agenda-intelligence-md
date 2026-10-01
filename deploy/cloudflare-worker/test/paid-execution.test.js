@@ -179,3 +179,26 @@ test('expired result recovery and scheduled purge never reopen the permanent cla
   assert.equal((await handleRequest(req.clone(), env)).status, 410);
   assert.equal((await readPayment(env, tx)).settled_via, 'signed_call');
 }));
+
+test('payment stages expose refusals, verification and replay without retaining secrets', async () => mocked(0.05, async () => {
+  const env = environment();
+  const events = [];
+  const originalLog = console.log;
+  console.log = value => { if (value?.event === 'agenda_intelligence_payment') events.push(value); };
+  try {
+    const headers = { 'user-agent': 'Agenda-Plugin-Client-Path/1.0' };
+    const plain = () => new Request(endpoint + '?private=secret-query', { method: 'POST', headers, body: JSON.stringify(fixture) });
+    assert.equal((await handleRequest(plain(), env)).status, 402);
+    assert.equal((await handleRequest(new Request(endpoint, { method: 'POST', headers: { ...headers, 'x-payment-tx': tx }, body: JSON.stringify(fixture) }), env)).status, 401);
+    const signed = await signedRequest(endpoint, fixture, tx);
+    assert.equal((await handleRequest(signed.clone(), env)).status, 200);
+    assert.equal((await handleRequest(signed.clone(), env)).status, 200);
+    for (const stage of ['request_received', 'payment_required', 'signature_required', 'payment_verified', 'execution_started', 'execution_completed', 'execution_replayed']) assert.ok(events.some(e => e.stage === stage), stage);
+    assert.equal(events.filter(e => e.stage === 'execution_completed').length, 1);
+    assert.equal(events.filter(e => e.stage === 'execution_replayed').length, 1);
+    assert.ok(events.filter(e => e.stage === 'payment_required').every(e => e.caller_kind === 'verification_probe'));
+    const serialized = JSON.stringify(events);
+    for (const secret of [tx, signed.headers.get('x-payment-signature'), payer, 'Example supplied text', 'secret-query']) assert.ok(!serialized.includes(secret), secret);
+    assert.ok(events.every(e => e.attempt_id && e.code_version === '1.14.0' && e.engine_version));
+  } finally { console.log = originalLog; }
+}));
