@@ -17,7 +17,7 @@ python3 -m venv .venv
 .venv/bin/agenda-intelligence check examples/evidence-packet/request.json --format json
 ```
 
-For the versioned package, use `python -m pip install "agenda-intelligence-md==1.13.0"` instead of the editable install. The example commands above use files from this checkout.
+For the versioned package, use `python -m pip install "agenda-intelligence-md==1.14.0"` instead of the editable install. The example commands above use files from this checkout.
 
 The bundled synthetic packet reports `packet_status=packet_complete` and `factuality=not_assessed`. A stale or inaccurate source can still pass. Add `--strict` when packet findings should fail a CI step.
 

@@ -1,3 +1,4 @@
+import { executePaidRequest, paidContext } from "./paid-execution.js";
 import { snapshotHealth } from "./upstream_snapshot.js";
 import { consumeProQuota } from "./payment-ledger.js";
 import { readBoundedJson } from "./request-body.js";
@@ -592,7 +593,7 @@ function jsonResponse(body, status = 200, extraHeaders = {}) {
       "content-type": "application/json; charset=utf-8",
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET, POST, OPTIONS",
-      "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name",
+      "access-control-allow-headers": "content-type, x-client-id, authorization, x-production-key, x-payment-tx, x-payment-signature, x-task-token, mcp-protocol-version, a2a-version, mcp-method, mcp-name",
       ...extraHeaders
     }
   });
@@ -903,48 +904,14 @@ async function checkRateLimit(request, env, profile, billingProfile = profile) {
     return { limited: true, limit: 10000, count: 10000, reason: "invalid_or_exhausted_entitlement" };
   }
 
-  // 2. Inline Base USDC settlement header (X-Payment-Tx: 0x...)
-  const paymentTx = request.headers.get("x-payment-tx");
-  if (paymentTx && /^0x[0-9a-fA-F]{64}$/.test(paymentTx.trim())) {
-    const isDispute = billingProfile === "m2m_escrow_arbiter";
-    const requiredMin = isDispute ? TIER_MICRO_DISPUTE_USDC_AMOUNT : TIER_MICRO_CHECK_USDC_AMOUNT;
-    const verification = await verifyBaseTransactionReceipt(paymentTx.trim(), env);
-    if (verification.valid && verification.amount_usdc >= requiredMin) {
-      const tier =
-        verification.amount_usdc >= TIER_PRO_USDC_AMOUNT
-          ? "tier_2_pro"
-          : verification.amount_usdc >= TIER_DOSSIER_USDC_AMOUNT
-            ? "tier_3_deal_dossier"
-            : isDispute
-              ? "tier_micro_dispute"
-              : "tier_micro_check";
-      const claim = await claimTransactionSettlement(paymentTx.trim(), {
-        tier, payer: verification.payer, amount_usdc: verification.amount_usdc,
-        settled_via: "x_payment_tx_header"
-      }, env);
-      if (!claim.claimed) return { limited: true, limit, count: 0, reason: claim.code };
-      await markTransactionSettled(
-        paymentTx.trim(),
-        {
-          tier,
-          payer: verification.payer,
-          amount_usdc: verification.amount_usdc,
-          settled_via: "x_payment_tx_header"
-        },
-        env
-      );
-      paidRequestEntitlements.set(request, { amount_usdc: verification.amount_usdc });
-      return {
-        limited: false,
-        limit,
-        count: 0,
-        payment_tx: paymentTx.trim(),
-        settled: true,
-        amount_usdc: verification.amount_usdc,
-        tier
-      };
-    }
+  // Signed payments are admitted once by the shared execution boundary.
+  const entitlement = paidContext(request);
+  if (entitlement) {
+    paidRequestEntitlements.set(request, entitlement);
+    return { limited: false, limit, count: 0, settled: true, amount_usdc: entitlement.amount_usdc };
   }
+  if (request.headers.has("x-payment-tx")) return { limited: true, limit, count: 0, reason: "signed_payment_required" };
+  if (env.BILLING_MODE === "pay_per_call") return { limited: true, limit, count: 0, reason: "payment_required" };
 
   if (!limit || !kv) return { limited: false, limit, count: 0 };
   const ip = clientIpFromRequest(request);
@@ -974,7 +941,7 @@ function bearerTokenFromRequest(request) {
 function isProductionAuthorized(request, env, profile) {
   const key = productionAuthKey(profile, env);
   if (!key) return true;
-  return bearerTokenFromRequest(request) === key;
+  return bearerTokenFromRequest(request) === key || request.headers.get("x-production-key") === key;
 }
 
 function agentCard(request, env = {}) {
@@ -6370,7 +6337,7 @@ async function isBankabilityDossierPaid(request, env = {}) {
   if (!request || !request.headers) return false;
   // MCP/A2A already consumed this request's entitlement; REST helper calls
   // must consume it here. The cache lives only as long as this Request object.
-  const entitlement = paidRequestEntitlements.get(request);
+  const entitlement = paidContext(request) || paidRequestEntitlements.get(request);
   if (entitlement) return Boolean(entitlement.pro || entitlement.amount_usdc >= TIER_BANKABILITY_DOSSIER_USDC_AMOUNT);
   const token = bearerTokenFromRequest(request);
   if (token.startsWith("agy_pro_")) {
@@ -9410,7 +9377,7 @@ async function a2aResultForAgentFinancialGuard(params, request, env = {}) {
   const paymentTx = (request?.headers && request.headers.get("x-payment-tx")) || structured?.x402_payment_tx;
   let paymentProof = null;
   if (paymentTx) {
-    paymentProof = await verifyBaseTransactionReceipt(paymentTx.trim(), env, { expectedAmountUsdc: 0.05 });
+    paymentProof = paidContext(request) || null;
   }
 
   const evaluation = await evaluateAgentFinancialTransaction(structured, env, { paymentProof });
@@ -13602,7 +13569,7 @@ function x402Document(request, env) {
     title: entry?.canonical_product_name || X402_JSON.title,
     description: entry?.wrapper_scope || X402_JSON.description,
     x_agenda_access: hostedAccess(profile, env, originFromRequest(request)),
-    pricing_scope: "Shared optional commercial offerings; availability varies by tool. Base evidence triage is free, subject to deployment access and quota settings."
+    pricing_scope: env.BILLING_MODE === "pay_per_call" ? "Signed payment per evaluation; discovery and bankability preview are free." : "Shared optional commercial offerings; availability varies by tool. Base evidence triage is free, subject to deployment access and quota settings."
   };
 }
 
@@ -13626,6 +13593,9 @@ async function handleMcpPost(request, env, ctx) {
         401,
         { "www-authenticate": "Bearer", "cache-control": "no-store" }
       );
+    }
+    if (!mcpToolSpecForProfile(profile, payload.params?.name) || payload.jsonrpc !== '2.0') {
+      return jsonResponse(await handleMcpJsonRpc(payload, request, env, ctx), 200);
     }
     const rate = await checkRateLimit(request, env, profile);
     if (rate.limited) {
@@ -14736,7 +14706,7 @@ const DIRECT_V1_ROUTES = {
       const paymentTx = (request?.headers && request.headers.get("x-payment-tx")) || structured?.x402_payment_tx;
       let paymentProof = null;
       if (paymentTx) {
-        paymentProof = await verifyBaseTransactionReceipt(paymentTx.trim(), env, { expectedAmountUsdc: 0.05 });
+        paymentProof = paidContext(request) || null;
       }
       const evaluation = await evaluateAgentFinancialTransaction(structured, env, { paymentProof });
       return { response: evaluation, ...evaluation };
@@ -15130,7 +15100,111 @@ async function handleDirectV1(endpoint, route, request, env) {
   return jsonResponse(provenance ? { ...result.response, ...provenance } : result.response, 200);
 }
 
+// Resolve the same operation/validators as the dispatcher before reserving money.
+function paidOperation(request, body, profile) {
+  const path = new URL(request.url).pathname;
+  let route = DIRECT_V1_ROUTES[path];
+  let params = body;
+  let name = path;
+  if (path === "/mcp" || path === "/mcp/output-verification") {
+    if (body?.method !== "tools/call") return null;
+    const spec = mcpToolSpecForProfile(profile, body.params?.name);
+    if (!spec || (path === "/mcp/output-verification" && body.params?.name !== "agent_output_verification")) return null;
+    const version = mcpRequestedProtocolVersion(body.params || {});
+    if (version && !MCP_SUPPORTED_PROTOCOL_VERSIONS.includes(version)) return { errors: ["Unsupported MCP version"] };
+    params = mcpArgumentsToParams(profile, body.params?.arguments || {}, body.params.name);
+    name = body.params.name;
+  } else if (path === "/message/send" || path === "/") {
+    if (!MESSAGE_SEND_METHODS.has(body?.method)) return null;
+    const version = requestedA2aVersion(request, body);
+    if ((version === A2A_PROTOCOL_VERSION && body.method !== "SendMessage") ||
+        (version === A2A_LEGACY_PROTOCOL_VERSION && body.method === "SendMessage") ||
+        ![A2A_PROTOCOL_VERSION, A2A_LEGACY_PROTOCOL_VERSION].includes(version)) return { errors: ["Unsupported A2A version/method"] };
+    if (body.method === "SendMessage") {
+      const errors = v1MessageViolations(body.params);
+      if (errors.length) return { errors };
+    }
+    params = body.params || {};
+  } else if (!route && !["/v1/corridor-bankability/screen", "/v1/evidence-packet/check", "/v1/evidence-packet/repair-prompt"].includes(path)) return null;
+  if ((path.startsWith('/mcp') || path === '/message/send' || path === '/') && body.jsonrpc !== '2.0') return { errors: ['Invalid JSON-RPC envelope'] };
+  if (!params || typeof params !== 'object' || Array.isArray(params)) return { errors: ['Request must be an object'] };
+  const protocolCall = path.startsWith('/mcp') || path === '/message/send' || path === '/';
+  if (protocolCall && ((profile === 'agenda' && params.capability === 'fleet_directory') ||
+      (profile === 'agent_output_verification' && params.capability === 'decision_policies_list') ||
+      (profile === 'corridor_sanctions_assistant' && name === 'corridor_sanctions_assistant' && !extractText(params).trim()))) return { free: true };
+  if ((protocolCall && ["agenda", "kazakhstan"].includes(profile) && params.capability === "corridor_bankability_screen") || path === "/v1/corridor-bankability/screen") {
+    return { minimum: 25, profile, errors: validateBankabilityRequest(params.request || params) };
+  }
+  if (!route) {
+    const paths = { cis_secondary_sanctions: '/v1/cis-secondary-sanctions/exposure', agentic_interaction_trust: '/v1/agentic-interaction/trust',
+      agent_output_verification: '/v1/agent-output/verification', gulf_maritime_exposure: '/v1/gulf-maritime/exposure',
+      market_entry_readiness: '/v1/market-entry/readiness', critical_minerals_due_diligence: '/v1/critical-minerals/due-diligence',
+      dual_use_technology_export: '/v1/dual-use/screen', agent_financial_guard: '/v1/agent-financial/pre-sign-check', m2m_escrow_arbiter: '/v1/m2m-escrow/evaluate-dispute' };
+    route = DIRECT_V1_ROUTES[paths[profile]];
+    if (profile === 'agent_output_verification' && params.capability === 'decision_check') route = DIRECT_V1_ROUTES['/v1/agent-output/pre-action-check'];
+    if (profile === 'agent_output_verification' && params.capability === 'decision_verify') return { minimum: 0.05, profile, errors: decisionVerifyErrors(params.request || params) };
+    if (profile === 'cis_secondary_sanctions' && params.capability === 'cis_secondary_sanctions_batch') route = DIRECT_V1_ROUTES['/v1/cis-secondary-sanctions/exposure/batch'];
+  }
+  if (path.startsWith('/v1/evidence-packet/')) route = DIRECT_V1_ROUTES['/v1/agent-output/verification'];
+  if (route) {
+    const value = route.extract(params.packet || params);
+    return { minimum: route.guideProfile === 'm2m_escrow_arbiter' ? 0.5 : 0.05,
+      profile: route.guideProfile, errors: value ? route.errorsFor(value) : [route.missing] };
+  }
+  return { minimum: profile === 'm2m_escrow_arbiter' ? 0.5 : 0.05, profile,
+    errors: extractText(params).trim() || structuredDealRiskRequestFromParams(params) ? [] : ['Supply evaluation input'] };
+}
+function containsInlinePayment(value) {
+  const pending = [value];
+  while (pending.length) {
+    const item = pending.pop();
+    if (!item || typeof item !== 'object') continue;
+    for (const [key, child] of Object.entries(item)) {
+      if (key === 'x402_payment_tx' && child) return true;
+      if (child && typeof child === 'object') pending.push(child);
+    }
+  }
+  return false;
+}
+
 export async function handleRequest(request, env = {}, ctx = {}) {
+  const execute = () => handleRequestInner(request, env, ctx);
+  if (request.method !== 'POST') return execute();
+  const path = new URL(request.url).pathname;
+  const candidate = path.startsWith('/v1/') || path.startsWith('/mcp') || path === '/message/send' || path === '/';
+  if (!candidate) return execute();
+  const profile = agentProfile(request, env);
+  if (!isProductionAuthorized(request, env, profile)) return execute();
+  const wantsPayment = request.headers.has('x-payment-tx');
+  if (!wantsPayment && env.BILLING_MODE !== 'pay_per_call' && !bearerTokenFromRequest(request).startsWith('agy_pro_')) return execute();
+  let body;
+  try { body = await readBoundedJson(request); request = new Request(request, { body: JSON.stringify(body) }); }
+  catch (error) { return jsonResponse({ error: 'Invalid JSON payload' }, error.status || 400); }
+  if (containsInlinePayment(body)) return jsonResponse({ code: 'payment_headers_required',
+    error: 'Use X-Payment-Tx and X-Payment-Signature; body transaction hashes do not grant access.' }, 400);
+  const operation = paidOperation(request, body, profile);
+  if (!operation || operation.free) {
+    if (wantsPayment) return jsonResponse({ code: 'payment_not_applicable' }, 400);
+    return operation?.free ? handleRequestInner(request, { ...env, BILLING_MODE: 'freemium' }, ctx) : execute();
+  }
+  if (operation.errors?.length) {
+    if (wantsPayment || env.BILLING_MODE === 'pay_per_call' || bearerTokenFromRequest(request).startsWith('agy_pro_')) return jsonResponse({ code: 'invalid_paid_request', errors: operation.errors }, 400);
+    return execute();
+  }
+  if (wantsPayment && bearerTokenFromRequest(request).startsWith('agy_pro_')) return jsonResponse({ code: 'choose_one_payment_method' }, 400);
+  if (wantsPayment) return executePaidRequest(request, body, env, operation.minimum, execute);
+  if (env.BILLING_MODE === 'pay_per_call' && !bearerTokenFromRequest(request).startsWith('agy_pro_')) {
+    if (operation.minimum === 25) return handleRequestInner(request, { ...env, BILLING_MODE: 'freemium' }, ctx);
+    return generateX402PaymentResponse(operation.profile, request, env, 'payment_required');
+  }
+  if (path.startsWith('/v1/evidence-packet/') && bearerTokenFromRequest(request).startsWith('agy_pro_')) {
+    const rate = await checkRateLimit(request, env, profile);
+    if (rate.limited) return generateX402PaymentResponse(operation.profile, request, env, 'payment_required');
+  }
+  return execute();
+}
+
+async function handleRequestInner(request, env = {}, ctx = {}) {
   const url = new URL(request.url);
   // All REST execution routes inherit the deployment gate, including aliases,
   // packet helpers and payment verification outside DIRECT_V1_ROUTES.
@@ -15182,7 +15256,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
       headers: {
         "access-control-allow-origin": "*",
         "access-control-allow-methods": "GET, POST, OPTIONS",
-        "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name, x-payment-tx, x-trace-id, x-task-token"
+        "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name, x-payment-tx, x-payment-signature, x-production-key, mcp-protocol-version, a2a-version, x-trace-id, x-task-token"
       }
     });
   }
@@ -15324,7 +15398,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     (url.pathname === "/.well-known/payment-manifest" ||
       url.pathname === "/.well-known/payment-manifest.json")
   ) {
-    return jsonResponse(PAYMENT_MANIFEST_JSON, 200, {
+    return jsonResponse({ ...PAYMENT_MANIFEST_JSON, x_agenda_access: hostedAccess(agentProfile(request, env), env, originFromRequest(request)) }, 200, {
       "cache-control": "public, max-age=3600",
       ...aiCatalogHeaders(request)
     });
@@ -15591,7 +15665,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
           }
         },
         instruction:
-          "Include 'X-Payment-Tx: <base_tx_hash>' header in your API call to bypass rate limits."
+          "Submit X-Payment-Tx to obtain an exact-request signing challenge, then send the funding-wallet proof in X-Payment-Signature. Keep the original proof for identical retries within 24 hours."
       },
       200,
       { "cache-control": "public, max-age=3600" }
@@ -15707,7 +15781,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
             "Send transaction on Base, then POST /v1/settle with {\"tx_hash\": \"0x...\", \"tier\": \"tier_2_pro\", " +
             "\"payer_signature\": \"0x...\"}. payer_signature is an EIP-191 personal_sign by the funding wallet over " +
             "'Agenda Intelligence MD pro-tenant settlement\\ntx_hash: <hash>\\npayer: <address>'; it proves the claim " +
-            "comes from the payer, not from someone who read the public tx_hash. Non-pro tiers need only tx_hash."
+            "comes from the payer, not from someone who read the public tx_hash. Non-Pro activation also requires the funding wallet signature. Paid execution requires X-Payment-Signature for the exact request; identical retries recover the same result for 24 hours."
         },
         200,
         { "cache-control": "public, max-age=3600" }
@@ -15813,7 +15887,10 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 }
 
 export default {
-  fetch: handleRequest
+  fetch: handleRequest,
+  async scheduled(_event, env) {
+    if (env.PAYMENT_LEDGER) await env.PAYMENT_LEDGER.prepare("UPDATE paid_executions SET response_ciphertext = NULL WHERE response_expires_ms <= ?1 AND response_ciphertext IS NOT NULL").bind(Date.now()).run();
+  }
 };
 
 export {

@@ -1,3 +1,5 @@
+import { signedRequest, sign } from "./helpers/payments.js";
+import { paymentActivationChallenge, markTransactionSettled } from "../src/settlement.js";
 import { memoryD1 } from "./helpers/d1.js";
 import { claimPayment } from "../src/payment-ledger.js";
 import assert from "node:assert/strict";
@@ -8397,10 +8399,9 @@ test("header-settled Pro payment upgrades only with payer signature; completed c
   const url = "https://agenda-intelligence-a2a.example.workers.dev/v1/settle";
   const settle = (tier, signature) => handleRequest(new Request(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tx_hash: txHash, tier, ...(signature ? { payer_signature: signature } : {}) }) }), env);
   try {
-    const header = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", { method: "POST", headers: { "x-payment-tx": txHash } });
-    const paid = await checkRateLimit(header, env, "agenda");
-    assert.equal(paid.settled, true);
-    assert.equal(paid.tier, "tier_2_pro");
+    const legacy = { settled_via: "x_payment_tx_header", tier: "tier_2_pro", payer: MOCK_PAYER, amount_usdc: 490 };
+    await claimPayment(env, txHash, legacy);
+    await markTransactionSettled(txHash, legacy, env);
     assert.equal((await settle("tier_2_pro")).status, 400);
     assert.equal((await settle("tier_2_pro", "0x" + "12".repeat(65))).status, 403);
     assert.equal((await settle("tier_3_deal_dossier")).status, 409);
@@ -8492,7 +8493,7 @@ test("checkRateLimit elevates quota for provisioned Pro Bearer key", async () =>
   }
 });
 
-test("checkRateLimit bypasses 429 when valid X-Payment-Tx header is provided", async () => {
+test("checkRateLimit refuses unsigned public X-Payment-Tx hashes", async () => {
   const txHash = "0x3333333333333333333333333333333333333333333333333333333333333333";
   const mockReceipt = mockUsdcTransferReceipt(49);
   const origFetch = globalThis.fetch;
@@ -8523,8 +8524,8 @@ test("checkRateLimit bypasses 429 when valid X-Payment-Tx header is provided", a
       headers: { "cf-connecting-ip": "3.3.3.3", "x-payment-tx": txHash }
     });
     const paidRate = await checkRateLimit(paidReq, env, "cis_secondary_sanctions");
-    assert.equal(paidRate.limited, false);
-    assert.equal(paidRate.settled, true);
+    assert.equal(paidRate.limited, true);
+    assert.equal(paidRate.reason, "signed_payment_required");
   } finally {
     globalThis.fetch = origFetch;
   }
@@ -8995,7 +8996,7 @@ test("GET /explorer returns M2M Escrow Web3 Explorer HTML", async () => {
   assert.ok(html.includes("Live Arbiter Evaluation"));
 });
 
-test("POST /v1/settle settles tier_micro_check for 0.05 USDC", async () => {
+test("POST /v1/settle activates signed tier_micro_check without consuming execution", async () => {
   const txHash = "0x4444444444444444444444444444444444444444444444444444444444444444";
   const mockReceipt = mockUsdcTransferReceipt(0.05);
   const origFetch = globalThis.fetch;
@@ -9011,13 +9012,14 @@ test("POST /v1/settle settles tier_micro_check for 0.05 USDC", async () => {
     const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tx_hash: txHash, tier: "tier_micro_check" })
+      body: JSON.stringify({ tx_hash: txHash, tier: "tier_micro_check", payer_signature: sign(paymentActivationChallenge(txHash, MOCK_PAYER, "tier_micro_check")) })
     });
 
     const res = await handleRequest(req, env);
     assert.equal(res.status, 200);
     const data = await res.json();
-    assert.equal(data.status, "settled");
+    assert.equal(data.status, "activated");
+    assert.equal(data.execution_credit, 1);
     assert.equal(data.tier, "tier_micro_check");
     assert.equal(data.receipt.amount_usdc, 0.05);
   } finally {
@@ -9081,22 +9083,10 @@ test("POST /v1/corridor-bankability/screen with valid x-payment-tx returns unloc
     });
 
   try {
-    const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/corridor-bankability/screen", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-payment-tx": txHash
-      },
-      body: JSON.stringify({
-        project_name: "Khorgos Dry Port Intermodal Yard",
-        corridor_leg: "Khorgos-Aktau",
-        capex_usd_m: 120.0,
-        ifi_debt_usd_m: 80.0,
-        dscr_min: 1.25,
-        has_sovereign_guarantee: true,
-        currency_mismatch: false
-      })
-    });
+    const req = await signedRequest("https://agenda-intelligence-a2a.example.workers.dev/v1/corridor-bankability/screen", {
+      project_name: "Khorgos Dry Port Intermodal Yard", corridor_leg: "Khorgos-Aktau", capex_usd_m: 120.0,
+      ifi_debt_usd_m: 80.0, dscr_min: 1.25, has_sovereign_guarantee: true, currency_mismatch: false
+    }, txHash);
 
     const res = await handleRequest(req, { PAYMENT_LEDGER: memoryD1() });
     assert.equal(res.status, 200);

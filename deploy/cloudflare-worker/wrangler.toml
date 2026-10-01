@@ -19,6 +19,7 @@ enabled = true
 [vars]
 AGENT_PROFILE = "agenda"
 TASK_SCOPE_AUTH_REQUIRED = "1"
+BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -45,6 +46,7 @@ workers_dev = true
 [env.middle-corridor-deal-risk-gate.vars]
 AGENT_PROFILE = "kazakhstan"
 TASK_SCOPE_AUTH_REQUIRED = "1"
+BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -84,6 +86,7 @@ workers_dev = true
 
 AGENT_PROFILE = "cis_secondary_sanctions"
 TASK_SCOPE_AUTH_REQUIRED = "1"
+BILLING_MODE = "pay_per_call"
 # Snapshot upstream (ADR 0014, activated by ADR 0020): $0 server-side name
 # screening against a compact public-list index served over HTTP. Not a secret
 # (public URL), so it belongs in [vars] rather than a secret.
@@ -132,6 +135,7 @@ workers_dev = true
 [env.agentic-interaction-trust.vars]
 AGENT_PROFILE = "agentic_interaction_trust"
 TASK_SCOPE_AUTH_REQUIRED = "1"
+BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -164,6 +168,7 @@ workers_dev = true
 [env.agent-output-verification.vars]
 AGENT_PROFILE = "agent_output_verification"
 TASK_SCOPE_AUTH_REQUIRED = "1"
+BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -193,6 +198,7 @@ workers_dev = true
 [env.gulf-maritime-exposure.vars]
 AGENT_PROFILE = "gulf_maritime_exposure"
 TASK_SCOPE_AUTH_REQUIRED = "1"
+BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -225,6 +231,7 @@ workers_dev = true
 [env.kazakhstan-market-entry-readiness.vars]
 AGENT_PROFILE = "market_entry_readiness"
 TASK_SCOPE_AUTH_REQUIRED = "1"
+BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -259,6 +266,7 @@ workers_dev = true
 [env.corridor-sanctions-assistant.vars]
 AGENT_PROFILE = "corridor_sanctions_assistant"
 TASK_SCOPE_AUTH_REQUIRED = "1"
+BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -291,6 +299,7 @@ workers_dev = true
 [env.critical-minerals-due-diligence.vars]
 AGENT_PROFILE = "critical_minerals_due_diligence"
 TASK_SCOPE_AUTH_REQUIRED = "1"
+BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -324,6 +333,7 @@ workers_dev = true
 [env.dual-use-technology-export.vars]
 AGENT_PROFILE = "dual_use_technology_export"
 TASK_SCOPE_AUTH_REQUIRED = "1"
+BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -357,6 +367,7 @@ workers_dev = true
 [env.agent-financial-guard.vars]
 AGENT_PROFILE = "agent_financial_guard"
 TASK_SCOPE_AUTH_REQUIRED = "1"
+BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -390,6 +401,7 @@ workers_dev = true
 [env.m2m-escrow-arbiter.vars]
 AGENT_PROFILE = "m2m_escrow_arbiter"
 TASK_SCOPE_AUTH_REQUIRED = "1"
+BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
@@ -435,3 +447,6 @@ binding = "PAYMENT_LEDGER"
 database_name = "agenda-fleet-payments"
 database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
 migrations_dir = "migrations"
+
+[triggers]
+crons = ["17 * * * *"]

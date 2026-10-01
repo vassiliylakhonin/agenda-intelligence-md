@@ -113,11 +113,15 @@ def fleet_workers() -> list[dict]:
     config = BASE_DIR.parents[1] / "deploy/cloudflare-worker/wrangler.toml"
     names = re.findall(r'^name\s*=\s*"([^"\n]+)"', config.read_text(), re.MULTILINE)
     proofs = {worker["name"]: worker for worker in LEGACY_PROOFS}
+    paid_mode = 'BILLING_MODE = "pay_per_call"' in config.read_text()
     workers = [proofs["vizier"]]
     next_id = max(worker["id"] for worker in LEGACY_PROOFS) + 1
     for name in names:
         if name in proofs:
-            workers.append(proofs[name])
+            if paid_mode:
+                workers.append({**proofs[name], "script": "proof_configured_worker.py", "args": [name]})
+            else:
+                workers.append(proofs[name])
         else:
             workers.append(
                 {

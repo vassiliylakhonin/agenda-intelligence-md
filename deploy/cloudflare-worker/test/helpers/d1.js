@@ -1,10 +1,12 @@
 import { DatabaseSync } from "node:sqlite";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 
 // Execute production SQL against SQLite rather than mocking query outcomes.
 export function memoryD1() {
   const db = new DatabaseSync(":memory:");
-  db.exec(readFileSync(new URL("../../migrations/0001_payment_ledger.sql", import.meta.url), "utf8"));
+  for (const name of readdirSync(new URL("../../migrations/", import.meta.url)).filter(n => n.endsWith(".sql")).sort()) {
+    db.exec(readFileSync(new URL("../../migrations/" + name, import.meta.url), "utf8"));
+  }
   return { prepare(sql) {
     let values = [];
     const statement = db.prepare(sql);

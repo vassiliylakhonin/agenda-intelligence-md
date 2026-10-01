@@ -5,18 +5,24 @@ from __future__ import annotations
 
 import json
 import sys
+import urllib.error
 import urllib.request
 
 
-def request_json(origin: str, path: str, payload: dict | None = None) -> dict:
+def request_json(origin: str, path: str, payload: dict | None = None, expected_status: int = 200) -> dict:
     request = urllib.request.Request(
         origin + path,
         data=json.dumps(payload).encode() if payload is not None else None,
         headers={"Content-Type": "application/json", "User-Agent": "agenda-intelligence-fleet-health/1.0"},
     )
-    with urllib.request.urlopen(request, timeout=10) as response:
-        if response.status != 200:
-            raise AssertionError(f"Unexpected HTTP status {response.status}")
+    try:
+        response = urllib.request.urlopen(request, timeout=10)
+    except urllib.error.HTTPError as error:
+        if error.code != expected_status:
+            raise
+        response = error
+    with response:
+        assert response.status == expected_status, f"Unexpected HTTP status {response.status}"
         return json.load(response)
 
 
@@ -24,6 +30,27 @@ def check_worker(name: str) -> None:
     origin = f"https://{name}.vassiliy-lakhonin.workers.dev"
     health = request_json(origin, "/health")
     assert health.get("profile"), "Worker must expose its profile"
+    access = request_json(origin, "/.well-known/x402").get("x_agenda_access", {})
+    if access.get("billing_mode") == "pay_per_call":
+        discovery = request_json(origin, "/mcp", {"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+        tools = discovery["result"]["tools"]
+        tool = next(
+            t
+            for t in tools
+            if t["name"]
+            not in {"fleet_directory", "decision_policies_list", "decision_verify", "corridor_bankability_screen"}
+        )
+        example = tool["_meta"]["com.agenda/readiness"]["example_arguments"]
+        assert example, "Paid health probe requires the published nonempty synthetic example"
+        expected = 401 if access.get("authentication") == "bearer_required" else 402
+        request_json(
+            origin,
+            "/mcp",
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": tool["name"], "arguments": example}},
+            expected_status=expected,
+        )
+        print(f"PASS {name}: liveness, free discovery and payment/access enforcement; no paid evaluation run")
+        return
     if name == "agent-financial-guard-a2a":
         verdict = request_json(
             origin,
