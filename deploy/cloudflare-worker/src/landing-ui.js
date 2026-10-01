@@ -357,6 +357,7 @@ function landingHtml(request, env) {
     <div style="margin-top: 12px;">
       <p>Copy this A2A 1.0 request. The trace ID in the response must match the header. Synthetic input only; an incomplete input may return TASK_STATE_INPUT_REQUIRED.</p>
       <pre style="margin: 0; overflow-x: auto;">${escapeHtml(tryItCurl)}</pre>
+      <p>Keep the issued <code>task.metadata.continuation.token</code> private. GetTask and continuation require <code>X-Task-Token</code>; <code>X-Client-Id</code> is a telemetry label, not authorization. Task status expires after 24 hours; recreate older tasks.</p>
       <p>Response shape (Middle Corridor and CIS examples are derived from local synthetic fixtures; other profiles are illustrative; actual fields and source dates vary):</p>
       <pre>${escapeHtml(JSON.stringify(sampleOutput, null, 2))}</pre>
     </div>
@@ -364,6 +365,7 @@ function landingHtml(request, env) {
 
   <details><summary>Machine discovery and API endpoints</summary>
   <ul class="endpoints">
+    <li><span class="label">Source freshness and configured dependencies:</span> <a href="${origin}/health/dependencies">/health/dependencies</a></li>
     <li><span class="label">Sample dossier:</span> <a href="${origin}/sample-dossier">/sample-dossier</a></li>
     <li><span class="label">API payment:</span> <a href="${origin}/v1/settle">/v1/settle</a></li>
     <li><span class="label">AI catalog:</span> <a href="${origin}/.well-known/ai-catalog.json">/.well-known/ai-catalog.json</a></li>
@@ -859,6 +861,8 @@ async function runEscrowArbitrationSimulation(e) {
 }
 
 async function payWithBaseWallet(amountUsd) {
+  if (payWithBaseWallet.busy) return;
+  if (payWithBaseWallet.pending) return retryProActivation();
   var statusDiv = document.getElementById('web3-status');
   statusDiv.style.display = 'block';
   statusDiv.style.background = '#f1f5f9';
@@ -873,6 +877,7 @@ async function payWithBaseWallet(amountUsd) {
   }
 
   try {
+    payWithBaseWallet.busy = true;
     statusDiv.innerText = 'Requesting wallet connection...';
     var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     if (!accounts || !accounts[0]) throw new Error('No account authorized');
@@ -900,6 +905,9 @@ async function payWithBaseWallet(amountUsd) {
       }
     }
 
+    var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (Number(chainId) !== 8453) throw new Error('Base network is required before payment');
+
     statusDiv.innerText = 'Preparing ' + amountUsd + ' USDC transfer on Base...';
     var usdcContract = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
     var targetAddress = '${BASE_USDC_WALLET}'.toLowerCase().replace('0x', '').padStart(64, '0');
@@ -921,50 +929,51 @@ async function payWithBaseWallet(amountUsd) {
     statusDiv.style.color = '#166534';
     statusDiv.innerHTML = '<strong>Payment Submitted!</strong> Tx: <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:#0284c7; text-decoration:underline;">' + txHash.slice(0, 10) + '...' + txHash.slice(-8) + '</a><br>Verifying settlement on-chain...';
 
-    try {
-      // Pro-tier settlement requires proof the claim comes from the payer: an
-      // EIP-191 personal_sign over the settlement challenge, matching
-      // settlementChallengeMessage() in src/settlement.js. The only call site
-      // is the 490 USDC Pro button, so the tier is fixed here.
-      var challengeMessage = 'Agenda Intelligence MD pro-tenant settlement' +
-        '\\ntx_hash: ' + String(txHash).toLowerCase() +
-        '\\npayer: ' + String(accounts[0]).toLowerCase();
-      var challengeHex = '0x' + Array.from(new TextEncoder().encode(challengeMessage))
-        .map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
-      statusDiv.innerHTML += '<br>Sign the settlement challenge in your wallet to prove the payment is yours...';
-      var payerSignature;
-      try {
-        payerSignature = await window.ethereum.request({
-          method: 'personal_sign',
-          params: [challengeHex, accounts[0]]
-        });
-      } catch (_signErr) {
-        statusDiv.innerHTML += '<br><strong>Signature declined.</strong> Your payment is on-chain but the Pro key was not issued: the settlement challenge must be signed by the paying wallet. Email ' +
-          'vassiliy.lakhonin@gmail.com with your tx hash to complete activation.';
-        throw _signErr;
-      }
-      var settleResp = await fetch('${origin}/v1/settle', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ tx_hash: txHash, tier: 'tier_2_pro', payer_signature: payerSignature })
-      });
-      var settleData = await settleResp.json();
-      if (settleData && settleData.bearer_token) {
-        statusDiv.innerHTML += '<br><strong>Pro API Key Activated:</strong> <code style="user-select:all; background:#fff; padding:3px 6px; font-weight:700;">' + settleData.bearer_token + '</code> (Valid 30 days, 10k requests).';
-      } else if (settleData && settleData.ok) {
-        statusDiv.innerHTML += '<br><strong>Settlement Confirmed:</strong> Receipt Ref: ' + (settleData.receipt_ref || 'OK');
-      } else if (settleData && settleData.error) {
-        statusDiv.innerHTML += '<br><strong>Settlement not completed:</strong> ' + (settleData.error.message || settleData.error);
-      }
-    } catch (_e) {
-      statusDiv.innerHTML += '<br>Node will auto-verify within 30 seconds once confirmed on-chain.';
-    }
+    payWithBaseWallet.pending = { txHash: txHash, payer: accounts[0], signature: null };
+    await retryProActivation();
   } catch (err) {
     statusDiv.style.background = '#fef2f2';
     statusDiv.style.color = '#991b1b';
     statusDiv.innerText = 'Payment canceled or failed: ' + (err.message || err);
+  } finally {
+    payWithBaseWallet.busy = false;
   }
 }
+async function retryProActivation() {
+  var statusDiv = document.getElementById('web3-status');
+  var pending = payWithBaseWallet.pending;
+  if (!pending || retryProActivation.busy) return;
+  retryProActivation.busy = true;
+  try {
+    if (!pending.signature) {
+      var challengeMessage = 'Agenda Intelligence MD pro-tenant settlement' +
+        '\\ntx_hash: ' + String(pending.txHash).toLowerCase() +
+        '\\npayer: ' + String(pending.payer).toLowerCase();
+      var challengeHex = '0x' + Array.from(new TextEncoder().encode(challengeMessage))
+        .map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+      pending.signature = await window.ethereum.request({ method: 'personal_sign', params: [challengeHex, pending.payer] });
+    }
+    var response = await fetch('${origin}/v1/settle', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tx_hash: pending.txHash, tier: 'tier_2_pro', payer_signature: pending.signature })
+    });
+    var data = await response.json();
+    if (!response.ok || !data.bearer_token) throw new Error(data.error && (data.error.message || data.error) || data.code || 'No Pro key returned');
+    statusDiv.innerText = 'Pro API Key Activated: ' + data.bearer_token + ' (Valid 30 days, 10,000 evaluation attempts). Save this key privately.';
+    payWithBaseWallet.pending = null;
+  } catch (err) {
+    statusDiv.innerText = 'Activation incomplete for ' + pending.txHash + ': ' + (err.message || err) +
+      '. No automatic activation is scheduled. Retry uses this same payment. If already claimed, contact ${SUPPORT_CONTACT_EMAIL} before paying again. Keep your transaction hash if you close this page.';
+    var retry = document.createElement('button');
+    retry.type = 'button';
+    retry.innerText = 'Retry activation (no new payment)';
+    retry.onclick = retryProActivation;
+    statusDiv.appendChild(retry);
+  } finally {
+    retryProActivation.busy = false;
+  }
+}
+
 </script>
 </main>
 </body>

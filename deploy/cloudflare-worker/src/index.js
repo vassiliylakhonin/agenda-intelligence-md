@@ -15001,7 +15001,7 @@ function directRouteHtml(endpoint, route, request, env) {
     <div class="badge-row">
       <span class="badge badge-good">&#9679; Live Edge</span>
       <span class="badge badge-accent">POST Only</span>
-      <span class="badge">Zero-Retention</span>
+      <span class="badge">Stateless Evaluation</span>
       <a href="${origin}/" class="badge">🏠 Hub</a>
       <a href="${origin}/.well-known/agent.json" class="badge">🤖 Agent Card</a>
       <a href="${origin}/api/openapi.json" class="badge">📄 OpenAPI</a>
@@ -15036,7 +15036,7 @@ function directRouteHtml(endpoint, route, request, env) {
   </div>
 
   <footer>
-    <p>Agenda Intelligence Edge Network &bull; Zero-Retention RAM Processing &bull; Cloudflare Workers</p>
+    <p>Agenda Intelligence Edge Network &bull; Stateless Evaluation; Separate Telemetry and Payment Records &bull; Cloudflare Workers</p>
   </footer>
 </div>
 

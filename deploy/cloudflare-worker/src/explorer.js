@@ -135,7 +135,7 @@ export function handleExplorerRequest(request, env = {}) {
           ⚖️ M2M Escrow Dispute Explorer
           <span class="badge-live">Base Mainnet &amp; Sepolia</span>
         </div>
-        <p style="color:var(--muted); font-size:13px; margin-top:4px;">Autonomous B2B deal dispute resolution and cryptographic settlement arbiter.</p>
+        <p style="color:var(--muted); font-size:13px; margin-top:4px;">Caller-supplied dispute evidence review. No contract state lookup or automated payout.</p>
       </div>
       <div>
         <button class="btn btn-secondary" id="btnConnect" style="width:auto; padding:8px 16px;">Connect Wallet</button>
@@ -161,8 +161,8 @@ export function handleExplorerRequest(request, env = {}) {
         <label>Expected Artifact Hash (SHA-256)</label>
         <input type="text" id="expHashInput" placeholder="0x..." value="0x9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08">
 
-        <button class="btn" id="btnInspect">Inspect Escrow Parameters</button>
-        <div class="status-box" id="inspectOutput">Click 'Inspect Escrow Parameters' to load contract state.</div>
+        <button class="btn" id="btnInspect">Preview Supplied Parameters</button>
+        <div class="status-box" id="inspectOutput">Click 'Preview Supplied Parameters' to preview your inputs. No on-chain state is queried.</div>
       </div>
 
       <!-- Right Card: Live Dispute Arbiter Playground -->
@@ -187,6 +187,9 @@ export function handleExplorerRequest(request, env = {}) {
         <label>Deal Amount (USDC)</label>
         <input type="number" id="amountUsdcInput" placeholder="1000" value="1000">
 
+        <label>Caller-supplied Deadline (UTC, example only)</label>
+        <input type="text" id="deadlineInput" placeholder="YYYY-MM-DDTHH:mm:ssZ">
+        <p>Example inputs are unverified. Payout figures are proposed allocations, not transfers.</p>
         <button class="btn" id="btnEvaluate">Evaluate Dispute via Edge Arbiter</button>
 
         <div class="payout-grid" id="payoutGrid" style="display:none;">
@@ -199,7 +202,7 @@ export function handleExplorerRequest(request, env = {}) {
             <div class="payout-val" id="valBuyer" style="color:var(--accent);">$0.00</div>
           </div>
           <div class="payout-item">
-            <span style="font-size:11px; color:var(--muted);">Arbiter Fee (1%)</span>
+            <span style="font-size:11px; color:var(--muted);">Proposed Policy Fee</span>
             <div class="payout-val" id="valFee" style="color:var(--warn);">$0.00</div>
           </div>
         </div>
@@ -211,9 +214,9 @@ export function handleExplorerRequest(request, env = {}) {
     <!-- Bottom Action Banner -->
     <div class="card" style="margin-top:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
       <div>
-        <h4 style="font-size:14px; color:#fff;">Autonomous On-Chain Settlement</h4>
+        <h4 style="font-size:14px; color:#fff;">Evidence Evaluation Only — No Transfers</h4>
         <p style="font-size:12px; color:var(--muted); margin-top:2px;">
-          Smart Contract: <code style="color:var(--accent);">${BASE_USDC_CONTRACT}</code> (USDC Base) &bull; Arbiter Signer: <code style="color:var(--accent);">${BASE_USDC_WALLET}</code>
+          USDC Token Contract: <code style="color:var(--accent);">${BASE_USDC_CONTRACT}</code> (USDC Base) &bull; Service Payment Recipient: <code style="color:var(--accent);">${BASE_USDC_WALLET}</code>
         </p>
       </div>
       <div style="display:flex; gap:10px;">
@@ -224,6 +227,7 @@ export function handleExplorerRequest(request, env = {}) {
   </div>
 
   <script>
+    document.getElementById("deadlineInput").value = new Date(Date.now() + 86400000).toISOString();
     var currentAccount = null;
     var btnConnect = document.getElementById("btnConnect");
     var btnInspect = document.getElementById("btnInspect");
@@ -257,20 +261,25 @@ export function handleExplorerRequest(request, env = {}) {
       inspectOutput.innerText = JSON.stringify({
         escrow_id: id,
         network: net === "8453" ? "Base Mainnet" : "Base Sepolia",
-        status: "DISPUTED",
+        kind: "caller_supplied_preview",
+        on_chain_state: "not_queried",
         settlement_token: "USDC",
-        amount_usd: 1000.00,
         expected_hash: expHash,
-        dispute_reason: "Partial deliverable completion claim",
-        balance_conservation: "VERIFIED"
+        evidence_boundary: "Hashes and delivery counts are caller claims; artifact content is not supplied."
       }, null, 2);
     };
 
     btnEvaluate.onclick = async function() {
       arbiterOutput.innerText = "Evaluating dispute via Cloudflare Edge arbiter...";
-      var amount = parseFloat(document.getElementById("amountUsdcInput").value) || 1000;
-      var valid = parseInt(document.getElementById("validItemsInput").value) || 800;
-      var total = parseInt(document.getElementById("totalItemsInput").value) || 1000;
+      payoutGrid.style.display = "none";
+      var amount = Number(document.getElementById("amountUsdcInput").value.trim() || NaN);
+      var valid = Number(document.getElementById("validItemsInput").value.trim() || NaN);
+      var total = Number(document.getElementById("totalItemsInput").value.trim() || NaN);
+      var deadline = document.getElementById("deadlineInput").value.trim();
+      if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(valid) || !Number.isInteger(total) || total <= 0 || valid < 0 || valid > total || !Number.isFinite(Date.parse(deadline))) {
+        arbiterOutput.innerText = "Enter a positive amount, valid integer delivery counts (0 ≤ valid ≤ total), and a UTC deadline.";
+        return;
+      }
       var policy = document.getElementById("policySelect").value;
       var expHash = document.getElementById("expHashInput").value.trim();
 
@@ -285,7 +294,7 @@ export function handleExplorerRequest(request, env = {}) {
           seller_id: "0x2222222222222222222222222222222222222222",
           amount_usd: amount,
           currency: "USDC",
-          deadline_utc: "2026-10-01T00:00:00Z",
+          deadline_utc: new Date(deadline).toISOString(),
           arbitration_policy: policy,
           arbitration_fee_pct: 1.0
         },
@@ -309,11 +318,13 @@ export function handleExplorerRequest(request, env = {}) {
         var data = await resp.json();
         arbiterOutput.innerText = JSON.stringify(data, null, 2);
 
-        if (data && data.payout) {
+        if (!resp.ok) throw new Error(JSON.stringify(data));
+        var ruling = data.arbitration_ruling;
+        if (ruling && ruling.payout) {
           payoutGrid.style.display = "grid";
-          document.getElementById("valSeller").innerText = "$" + data.payout.seller_payout_usd.toFixed(2);
-          document.getElementById("valBuyer").innerText = "$" + data.payout.buyer_refund_usd.toFixed(2);
-          document.getElementById("valFee").innerText = "$" + data.payout.arbiter_fee_usd.toFixed(2);
+          document.getElementById("valSeller").innerText = "$" + ruling.payout.seller_payout_usd.toFixed(2);
+          document.getElementById("valBuyer").innerText = "$" + ruling.payout.buyer_refund_usd.toFixed(2);
+          document.getElementById("valFee").innerText = "$" + ruling.payout.arbiter_fee_usd.toFixed(2);
         }
       } catch (e) {
         arbiterOutput.innerText = "Error: " + e.message;

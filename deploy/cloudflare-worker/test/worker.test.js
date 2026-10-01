@@ -8446,6 +8446,7 @@ test("Pro landing payment and signed settlement display the issued bearer token"
   const window = { ethereum: { request: async ({ method }) => {
     calls.push(method);
     if (method === "eth_requestAccounts") return [MOCK_PAYER];
+    if (method === "eth_chainId") return "0x2105";
     if (method === "eth_sendTransaction") return txHash;
     if (method === "personal_sign") return MOCK_PAYER_SIGNATURE_TX2222;
     return null;
@@ -8460,9 +8461,9 @@ test("Pro landing payment and signed settlement display the issued bearer token"
   try {
     const pay = new Function("window", "document", "fetch", `${source}; return payWithBaseWallet;`)(window, { getElementById: () => statusDiv }, fetch);
     await pay(490);
-    assert.deepEqual(calls, ["eth_requestAccounts", "wallet_switchEthereumChain", "eth_sendTransaction", "personal_sign"]);
-    assert.match(statusDiv.innerHTML, /Pro API Key Activated/);
-    assert.match(statusDiv.innerHTML, /agy_pro_[a-z0-9]+/);
+    assert.deepEqual(calls, ["eth_requestAccounts", "wallet_switchEthereumChain", "eth_chainId", "eth_sendTransaction", "personal_sign"]);
+    assert.match(statusDiv.innerText, /Pro API Key Activated/);
+    assert.match(statusDiv.innerText, /agy_pro_[a-z0-9]+/);
     assert.ok(!statusDiv.innerHTML.includes("Node will auto-verify"));
   } finally {
     globalThis.fetch = originalFetch;
@@ -10232,4 +10233,106 @@ test("industry-language copy describes external evidence review without claiming
   const card = agentCard(req, { AGENT_PROFILE: "agent_output_verification" });
   assert.match(card.description, /allow_relay is never issued/);
   assert.match(card.description, /verify_before_relay with mandatory human review/);
+});
+
+test("Pro activation retries the original transfer after a transport failure", async () => {
+  const html = landingHtml(new Request("https://agenda-intelligence-a2a.example.workers.dev/"), {});
+  const start = html.indexOf("async function payWithBaseWallet(");
+  const source = html.slice(start, html.indexOf("</script>", start));
+  const status = { style: {}, innerText: "", appendChild() {} };
+  const calls = [], bodies = [];
+  const wallet = { ethereum: { request: async ({ method }) => {
+    calls.push(method);
+    return method === "eth_requestAccounts" ? [MOCK_PAYER] : method === "eth_chainId" ? "0x2105" : method === "eth_sendTransaction" ? "0x" + "2".repeat(64) : method === "personal_sign" ? MOCK_PAYER_SIGNATURE_TX2222 : null;
+  } } };
+  const fetch = async (_url, options) => {
+    bodies.push(JSON.parse(options.body));
+    if (bodies.length === 1) throw new Error("Network disconnected");
+    return new Response(JSON.stringify({ bearer_token: "agy_pro_test" }));
+  };
+  const pay = new Function("window", "document", "fetch", source + "; return payWithBaseWallet;")(wallet, { getElementById: () => status, createElement: () => ({}) }, fetch);
+  await pay(490);
+  assert.match(status.innerText, /No automatic activation/);
+  await pay(490);
+  assert.deepEqual(bodies[0], bodies[1]);
+  assert.equal(calls.filter(m => m === "eth_sendTransaction").length, 1);
+  assert.equal(calls.filter(m => m === "personal_sign").length, 1);
+  assert.match(status.innerText, /agy_pro_test/);
+});
+
+function uiDocument(values = {}) {
+  const elements = new Map();
+  return {
+    getElementById(id) {
+      if (!elements.has(id)) elements.set(id, { value: values[id] ?? "", checked: false, style: {}, innerText: "", innerHTML: "", children: [], click() {}, appendChild(child) { this.children.push(child); } });
+      return elements.get(id);
+    },
+    createElement() { return { innerHTML: "" }; }
+  };
+}
+
+test("Escrow explorer preserves zero delivery and unwraps the current API envelope", async () => {
+  const response = await handleRequest(new Request("https://m2m-escrow-arbiter-a2a.example.workers.dev/explorer"), {});
+  const html = await response.text();
+  const source = html.slice(html.indexOf("<script>") + 8, html.indexOf("</script>"));
+  const document = uiDocument({ amountUsdcInput: "1000", validItemsInput: "0", totalItemsInput: "1000", expHashInput: "a".repeat(64), netSelect: "8453", escrowIdInput: "example", policySelect: "pro_rata" });
+  let payload, requests = 0;
+  const fetch = async (_url, options) => {
+    requests++;
+    payload = JSON.parse(options.body);
+    return new Response(JSON.stringify({ arbitration_ruling: { payout: { seller_payout_usd: 0, buyer_refund_usd: 1000, arbiter_fee_usd: 0 } } }));
+  };
+  new Function("window", "document", "fetch", "alert", source)({}, document, fetch, () => {});
+  document.getElementById("btnInspect").onclick();
+  const preview = JSON.parse(document.getElementById("inspectOutput").innerText);
+  assert.equal(preview.on_chain_state, "not_queried");
+  assert.equal(preview.status, undefined);
+  await document.getElementById("btnEvaluate").onclick();
+  assert.equal(payload.delivery_submission.telemetry.valid_items, 0);
+  assert.equal(document.getElementById("valBuyer").innerText, "$1000.00");
+  document.getElementById("amountUsdcInput").value = "";
+  await document.getElementById("btnEvaluate").onclick();
+  assert.equal(requests, 1);
+  assert.equal(document.getElementById("payoutGrid").style.display, "none");
+});
+
+test("Bankability UI keeps zero debt, rejects blanks, and renders debt-free DSCR", async () => {
+  const response = await handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/corridor-bankability"), {});
+  const html = await response.text();
+  const source = html.slice(html.indexOf("<script>") + 8, html.indexOf("</script>"));
+  const document = uiDocument({ projectName: "Example", capexUsdM: "45", ifiDebtUsdM: "0", dscrMin: "", corridorLeg: "trans_caspian" });
+  const ui = new Function("window", "document", source + "; return {getFormPayload, renderFullDossier, ensureBaseNetwork};")({}, document);
+  assert.equal(ui.getFormPayload().ifi_debt_usd_m, 0);
+  assert.equal(ui.getFormPayload().dscr_min, null);
+  document.getElementById("capexUsdM").value = "";
+  assert.throws(() => ui.getFormPayload(), /positive CAPEX/);
+  ui.renderFullDossier({ waterfall_schedule_15yr: [{ year: 1, senior_debt_opening_usd_m: 0, principal_usd_m: 0, interest_usd_m: 0, total_debt_service_usd_m: 0, senior_debt_closing_usd_m: 0, required_cfads_usd_m: 0, projected_dscr: null }] });
+  assert.match(document.getElementById("waterfallRows").children[0].innerHTML, /Not applicable/);
+  const denied = new Error("User refused network switch");
+  const networkUi = new Function("window", "document", source + "; return ensureBaseNetwork;")({ ethereum: { request: async () => { throw denied; } } }, document);
+  await assert.rejects(networkUi(), /User refused/);
+});
+
+test("Bankability paid retry preserves its request and never transfers twice", async () => {
+  const response = await handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/corridor-bankability"), {});
+  const html = await response.text();
+  const source = html.slice(html.indexOf("<script>") + 8, html.indexOf("</script>"));
+  const document = uiDocument({ projectName: "Example", capexUsdM: "45", ifiDebtUsdM: "0", dscrMin: "", corridorLeg: "trans_caspian" });
+  const methods = [], requests = [];
+  const window = { ethereum: { request: async ({ method }) => {
+    methods.push(method);
+    return method === "eth_requestAccounts" ? [MOCK_PAYER] : method === "eth_chainId" ? "0x2105" : "0x" + "2".repeat(64);
+  } } };
+  const fetch = async (_url, options) => {
+    requests.push(options);
+    if (requests.length === 1) throw new Error("Disconnected");
+    return new Response(JSON.stringify({ unlocked_full_dossier: true, full_dossier: { dossier_markdown: "Example" } }));
+  };
+  new Function("window", "document", "fetch", "alert", source)(window, document, fetch, () => {});
+  await document.getElementById("btnPayUnlock").onclick();
+  document.getElementById("capexUsdM").value = "99";
+  await document.getElementById("btnPayUnlock").onclick();
+  assert.equal(methods.filter(m => m === "eth_sendTransaction").length, 1);
+  assert.deepEqual(requests[0], requests[1]);
+  assert.equal(document.getElementById("unlockedView").style.display, "block");
 });

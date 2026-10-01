@@ -499,35 +499,47 @@ export function handleBankabilityUiRequest(request, env = {}) {
               }]
             });
           } catch (addError) {
-            console.error("Failed to add Base network:", addError);
+            throw addError;
           }
+        } else {
+          throw switchError;
         }
       }
+      var chainId = await window.ethereum.request({ method: "eth_chainId" });
+      if (Number(chainId) !== 8453) throw new Error("Base network is required before payment");
+    }
+
+    function formNumber(id) {
+      var value = document.getElementById(id).value.trim();
+      return value !== "" && Number.isFinite(Number(value)) ? Number(value) : null;
     }
 
     function getFormPayload() {
-      return {
+      var payload = {
         project_name: document.getElementById("projectName").value.trim(),
         corridor_leg: document.getElementById("corridorLeg").value,
-        capex_usd_m: parseFloat(document.getElementById("capexUsdM").value) || 45.0,
-        ifi_debt_usd_m: parseFloat(document.getElementById("ifiDebtUsdM").value) || 31.5,
-        dscr_min: parseFloat(document.getElementById("dscrMin").value) || 1.30,
+        capex_usd_m: formNumber("capexUsdM"),
+        ifi_debt_usd_m: formNumber("ifiDebtUsdM"),
+        dscr_min: formNumber("dscrMin"),
         currency_mismatch: document.getElementById("currencyMismatch").checked,
         has_sovereign_guarantee: document.getElementById("sovereignGuarantee").checked
       };
+      if (!payload.project_name || payload.capex_usd_m === null || payload.capex_usd_m <= 0 || payload.ifi_debt_usd_m === null || payload.ifi_debt_usd_m < 0 || (payload.ifi_debt_usd_m > 0 && (payload.dscr_min === null || payload.dscr_min <= 0))) throw new Error("Enter project name, positive CAPEX, nonnegative debt, and DSCR for debt-funded projects.");
+      return payload;
     }
 
     // Run Free Screen
     btnScreen.onclick = async function() {
-      var payload = getFormPayload();
       btnScreen.innerText = "Simulating Covenants...";
       try {
+        var payload = getFormPayload();
         var resp = await fetch("/v1/corridor-bankability/screen", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(payload)
         });
         var data = await resp.json();
+        if (!resp.ok) throw new Error(JSON.stringify(data));
         renderTeaser(data);
       } catch (e) {
         alert("Screening failed: " + e.message);
@@ -546,7 +558,7 @@ export function handleBankabilityUiRequest(request, env = {}) {
         document.getElementById("kpiVerdict").style.color = "var(--bad)";
       }
 
-      document.getElementById("kpiDscr").innerText = (data.financial_metrics.dscr_minimum || 0).toFixed(2) + "x";
+      document.getElementById("kpiDscr").innerText = (data.financial_metrics.dscr_minimum == null ? "Not applicable" : data.financial_metrics.dscr_minimum.toFixed(2) + "x");
       document.getElementById("kpiLeverage").innerText = (data.financial_metrics.debt_share_pct || 0).toFixed(1) + "%";
 
       if (data.corridor_bottleneck_analysis) {
@@ -564,8 +576,10 @@ export function handleBankabilityUiRequest(request, env = {}) {
       });
     }
 
+    var pendingDossierPayment = null;
     // Pay $25 USDC with Brave Wallet on Base
     btnPayUnlock.onclick = async function() {
+      if (btnPayUnlock.disabled) return;
       if (!window.ethereum) {
         var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         if (isMobile) {
@@ -578,6 +592,8 @@ export function handleBankabilityUiRequest(request, env = {}) {
       }
 
       try {
+        var payload = pendingDossierPayment ? pendingDossierPayment.payload : getFormPayload();
+        btnPayUnlock.disabled = true;
         if (!currentAccount) {
           var accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
           if (!accounts || !accounts[0]) throw new Error("No account selected.");
@@ -598,7 +614,7 @@ export function handleBankabilityUiRequest(request, env = {}) {
         var amountRawHex = (25000000).toString(16).padStart(64, "0");
         var txData = "0xa9059cbb" + paddedTo + amountRawHex;
 
-        var txHash = await window.ethereum.request({
+        var txHash = pendingDossierPayment ? pendingDossierPayment.txHash : await window.ethereum.request({
           method: "eth_sendTransaction",
           params: [{
             from: currentAccount,
@@ -609,8 +625,8 @@ export function handleBankabilityUiRequest(request, env = {}) {
 
         payStatus.innerHTML = "🔗 Transaction broadcast: <code style='color:var(--accent);'>" + txHash.slice(0, 10) + "..." + txHash.slice(-8) + "</code>. Verifying with Cloudflare Edge...";
 
-        // Now call the endpoint with x-payment-tx header
-        var payload = getFormPayload();
+        pendingDossierPayment = { txHash: txHash, payload: payload };
+        // Retry the same request and payment, never send a second transfer.
         var resp = await fetch("/v1/corridor-bankability/screen", {
           method: "POST",
           headers: {
@@ -622,7 +638,9 @@ export function handleBankabilityUiRequest(request, env = {}) {
 
         var data = await resp.json();
 
+        if (!resp.ok) throw new Error(JSON.stringify(data));
         if (data.unlocked_full_dossier && data.full_dossier) {
+          pendingDossierPayment = null;
           cachedUnlockedDossier = data;
           unlockBanner.style.display = "none";
           tierBadge.innerText = "Unlocked ($25 USDC)";
@@ -634,11 +652,12 @@ export function handleBankabilityUiRequest(request, env = {}) {
           renderFullDossier(data.full_dossier);
           alert("🎉 Bankability Dossier successfully unlocked via Base USDC!");
         } else {
-          payStatus.innerHTML = "⚠️ Settlement pending verification. Tx: " + txHash;
+          throw new Error("No unlocked dossier returned");
         }
 
       } catch (err) {
-        payStatus.innerHTML = "❌ Payment failed or rejected: " + err.message;
+        payStatus.innerText = "Payment or evaluation incomplete: " + err.message + (pendingDossierPayment ? ". Retry reuses payment " + pendingDossierPayment.txHash + ". If already claimed, contact support before paying again. Keep the hash if you close this page." : "");
+        if (pendingDossierPayment) btnPayUnlock.innerText = "Retry dossier (no new payment)";
       } finally {
         btnPayUnlock.disabled = false;
       }
@@ -658,7 +677,7 @@ export function handleBankabilityUiRequest(request, env = {}) {
           "<td style='font-weight:700;'>$" + row.total_debt_service_usd_m.toFixed(2) + "M</td>" +
           "<td>$" + row.senior_debt_closing_usd_m.toFixed(2) + "M</td>" +
           "<td>$" + row.required_cfads_usd_m.toFixed(2) + "M</td>" +
-          "<td style='color:var(--accent); font-weight:700;'>" + row.projected_dscr.toFixed(2) + "x</td>";
+          "<td style='color:var(--accent); font-weight:700;'>" + (row.projected_dscr == null ? "Not applicable" : row.projected_dscr.toFixed(2) + "x") + "</td>";
         wfRows.appendChild(tr);
       });
     }
