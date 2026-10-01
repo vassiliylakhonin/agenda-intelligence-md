@@ -156,16 +156,103 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["field", "from", "to"],
+        "required": [
+          "field",
+          "from",
+          "to"
+        ],
         "properties": {
-          "field": { "type": "string", "minLength": 1 },
-          "from": { "type": "string", "minLength": 1 },
-          "to": { "type": "string", "minLength": 1 }
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "from": {
+            "type": "string",
+            "minLength": 1
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
     "readiness_contract": {
       "$ref": "#/$defs/readiness_contract"
+    },
+    "beneficial_ownership_clearance": {
+      "type": "object",
+      "required": [
+        "status",
+        "clean",
+        "violation"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "ownership_unknown",
+            "potential_blocked_ownership_escalate",
+            "screened_disclosed_chain"
+          ]
+        },
+        "clean": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "violation": {
+          "type": "boolean"
+        }
+      }
+    },
+    "live_retrieval_status": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "live_retrieval_upstream": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "live_retrieval_reason_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "live_retrieval_snapshot_generated_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "vizier_status": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "vizier_clearance_receipt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "auto_fetched_sources": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "upstream_attribution": {
+      "type": [
+        "object",
+        "null"
+      ]
     }
   },
   "$defs": {
@@ -330,7 +417,7 @@
       "typology_refs": [
         {
           "framework": "fatf",
-          "label": "Trade-based money laundering — third-party intermediation"
+          "label": "Trade-based money laundering \u2014 third-party intermediation"
         }
       ],
       "watch_next": [

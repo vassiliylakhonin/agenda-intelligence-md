@@ -2,6 +2,12 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
+## Unreleased — signed production deployment
+
+- Require an owner-signed grant and principal-signed, identity/expiry/request-bound ALLOW before the gated Worker deploy invokes Wrangler.
+- Mint a ten-minute, single-Worker delegation in a separate protected GitHub Environment step; private signing key is absent from the deployment step. Grant files are bounded and removed after the job.
+- Missing, expired, mismatched or caller-asserted authorization stops deployment. Existing direct administrator access remains outside this gate.
+
 ## Unreleased
 
 ### Fleet operations and payment ledger (2026-10-01)
@@ -12,6 +18,26 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 - Generate directory required fields from MCP schemas; empty Assistant MCP calls return the advertised directory.
 - Identify technical verification and owner traffic separately. Journal v2 compares full canonical inputs only within the same profile, capability, contract, engine and source snapshot; historical partial hashes remain explicitly marked.
 - Add `/health/dependencies`, propagate source age and digest, reject future-dated snapshots, and align published-index CI with the runtime's 72-hour freshness limit. See ADR 0031 and the fleet operations runbook.
+
+- Align live Trust and Dual-Use health proofs with DLP-only receipts, unverified ownership and mandatory human review; retain blocked-name and synthetic secret detection checks. Retry read-only MCP discovery transport interruptions at most three times and preserve each failed attempt in reports; persistent transport, HTTP and contract failures remain visible.
+
+- Publish outputSchema for all hosted Agenda MCP tools, including Financial Guard and Escrow legacy task envelopes, strategic triage, fleet directory and corridor orientation. Validate successful output and controlled refusals without changing request or response formats. Mark legacy Financial Guard/Escrow INPUT_REQUIRED refusals as MCP errors.
+
+- Preserve signed numeric facts (including Unicode minus), require contextual support for numbers across documents, and prevent unrelated verbatim quotes from upgrading grounded_check. Ambiguous numeric context requires human review; matching values in relevant sentences can still support multi-source claims.
+
+- Ship a zero-dependency urllib JSON MCP discovery example with an explicit application identity; require application-identified urllib discovery to pass the hosted monitor while keeping unmodified urllib 1010 visible separately. Telemetry identifies itself rather than claiming to be curl.
+
+- Monitor all configured hosted MCP endpoints plus Vizier using the ordinary MCP SDK identity, health and A2A discovery. Keep Cloudflare default-urllib error 1010 visible separately; add scheduled and post-deploy reports without credentials, paid calls or state-changing proofs.
+
+- Reject missing/invented bankability figures and non-boolean guarantees across hosted and Python tools; preserve legitimate zero-debt inputs and require human signoff. Scenario output no longer fabricates Excel provenance or promises files it does not generate.
+- Validate malformed financial/escrow fields before evaluation; decode ERC-20 approve independently of the declared method, and reject invalid arbitration policies/fees.
+- Align Dual-Use, CIS and decision-policy MCP schemas with runtime output; validate protocol results with full JSON Schema in CI. Dual-Use JSON carries a structural-only score and mandatory human-review boundaries.
+- Separate DLP receipt forwarding from unverified ownership and payment confirmation from security clearance. Report missing source quotes/content and actionable repair steps in Python and hosted output verification.
+- Document machine-client User-Agent requirements, payment signature scope, and production deployment prerequisites. Add an explicitly authorized manual, main-only rollout for existing Workers through protected CI and a separate signed grant per target.
+
+- Fix fleet health checks for required signed delegation: unsigned tenant requests must return BLOCK/GRANT_REQUIRED, require protected credentials, and revoke temporary keys even when assertions fail.
+
+- Hosted MCP discovery now derives required arguments from published schemas, provides illustrative first-call examples and evidence-specific next steps, and advertises actual deployment Bearer/quota settings without exposing secrets. Pricing manifest identity follows the serving profile registry. HTTP contract tests cover examples, missing evidence, authorization, quota exhaustion, plugin isolation and signed receipt binding.
 
 - Package Output Verification as a portable OpenAI/Claude plugin with a dedicated single-tool MCP URL, explicit human-review skill, and synthetic reviewer cases. Add the OpenAI domain-challenge route, conservative tool annotations, and local/live package checks.
 

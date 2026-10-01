@@ -85,9 +85,11 @@ test("upstream_vizier_dual_use: verifies clean dual-use file and captures JWS re
 
   const res = await verifyDualUseWithVizier(mockEnv, SAMPLE_DUAL_USE_REQUEST);
   assert.equal(res.status, "success");
-  assert.equal(res.clean, true);
+  assert.equal(res.clean, null);
+  assert.equal(res.ownership_status, "unverified");
+  assert.equal(res.receipt_scope, "dlp_scan_only");
   assert.equal(res.violation, false);
-  assert.equal(res.sanctions_screening.checked, true);
+  assert.equal(res.sanctions_screening.checked, false);
   assert.equal(res.sanctions_screening.violation, false);
   assert.equal(res.dlp_screening.clean, true);
   assert.equal(res.receipt, fakeJws);
@@ -214,7 +216,7 @@ test("upstream_vizier_dual_use: gracefully degrades on upstream error", async ()
 
   const res = await verifyDualUseWithVizier(mockEnv, SAMPLE_DUAL_USE_REQUEST);
   assert.equal(res.status, "degraded");
-  assert.equal(res.clean, false);
+  assert.equal(res.clean, null);
   assert.ok(res.degrade_reason.includes("504"));
 });
 
@@ -279,14 +281,15 @@ test("e2e: dual-use-technology-export allows clean file and attaches Vizier rece
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
-  assert.equal(metadata.dual_use_verification.clean, true);
+  assert.ok(!metadata.vizier_clearance_receipt);
+  assert.equal(metadata.dual_use_verification.clean, null);
+  assert.equal(metadata.dual_use_verification.receipt_scope, "dlp_scan_only");
   assert.equal(metadata.dual_use_verification.violation, false);
 
   const contractResponse = metadata.response;
   assert.equal(contractResponse.profile, "dual_use_technology_export");
-  assert.equal(contractResponse.export_risk_triage.status, "decision_ready");
-  assert.equal(contractResponse.export_risk_triage.score, 100);
+  assert.equal(contractResponse.export_risk_triage.status, "ready_for_human_review");
+  assert.equal(contractResponse.export_risk_triage.score, 69);
 });
 
 test("e2e: dual-use-technology-export escalates file when sanctioned counterparty is identified", async () => {
@@ -359,7 +362,7 @@ test("e2e: dual-use-technology-export escalates file when sanctioned counterpart
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
+  assert.ok(!metadata.vizier_clearance_receipt);
   assert.equal(metadata.dual_use_verification.violation, true);
   assert.equal(metadata.dual_use_verification.sanctions_screening.violation, true);
 
@@ -435,7 +438,7 @@ test("e2e: dual-use-technology-export escalates file when secret leak is detecte
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
+  assert.ok(!metadata.vizier_clearance_receipt);
   assert.equal(metadata.dual_use_verification.violation, true);
   assert.equal(metadata.dual_use_verification.dlp_screening.clean, false);
 

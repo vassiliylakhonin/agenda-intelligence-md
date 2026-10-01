@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-schema-version": "1",
+  "type": "object",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/fleet-directory-response.schema.json",
+  "title": "FleetDirectoryResponse",
+  "properties": {
+    "fleet_name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "total_gates": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "repository": {
+      "type": "string"
+    },
+    "documentation": {
+      "type": "string"
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "type": "string"
+          },
+          "tool_name": {
+            "type": "string"
+          },
+          "canonical_endpoint": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "required_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "schema_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "profile",
+          "tool_name",
+          "canonical_endpoint",
+          "description",
+          "required_fields",
+          "schema_url"
+        ]
+      }
+    }
+  },
+  "required": [
+    "fleet_name",
+    "version",
+    "total_gates",
+    "repository",
+    "documentation",
+    "gates"
+  ]
+}

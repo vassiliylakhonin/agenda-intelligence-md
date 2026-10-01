@@ -13,7 +13,7 @@
 // Boundary discipline:
 //   - Graceful degrade: network failure, non-200, or timeout returns status !== "success"
 //     without failing benign caller requests.
-//   - Cryptographic verification: captures and forwards Vizier's signed JWS clearance receipt.
+//   - Receipt forwarding only: signatures are not verified here; DLP receipts are not ownership clearance.
 
 export const VIZIER_DEFAULT_URL = "https://vizier.vassiliy-lakhonin.workers.dev";
 export const DEFAULT_TIMEOUT_MS = 5000;
@@ -68,10 +68,13 @@ export async function verifyAgenticTrustWithVizier(env = {}, request = {}, optio
   if (!isTrustVizierEnabled(env)) {
     return {
       status: "disabled",
-      clean: true,
+      ownership_status: "unverified",
+      receipt_scope: "none",
+      signature_verified: false,
+      clean: null,
       violation: false,
       operator_screening: { checked: false, operator: null, violation: false, match: null },
-      dlp_screening: { clean: true, findings: [], total_leaks_prevented: 0 },
+      dlp_screening: { clean: null, findings: [], total_leaks_prevented: 0 },
       receipt: null,
       attribution: trustAttributionBlock(),
       queried_at: nowIso(),
@@ -100,7 +103,6 @@ export async function verifyAgenticTrustWithVizier(env = {}, request = {}, optio
     headers["X-Vizier-Key"] = apiKey;
   }
 
-  let latestReceipt = null;
   let operatorSanctionsViolation = false;
   let operatorSanctionsMatch = null;
   const operatorName =
@@ -129,10 +131,13 @@ export async function verifyAgenticTrustWithVizier(env = {}, request = {}, optio
       if (!sanctionsRes.ok) {
         return {
           status: "degraded",
-          clean: false,
-          violation: false,
-          operator_screening: { checked: true, operator: operatorName, violation: false, match: null },
-          dlp_screening: { clean: true, findings: [], total_leaks_prevented: 0 },
+          ownership_status: "unverified",
+          receipt_scope: "none",
+          signature_verified: false,
+          clean: operatorSanctionsViolation ? false : null,
+          violation: operatorSanctionsViolation,
+          operator_screening: { checked: true, operator: operatorName, violation: operatorSanctionsViolation, match: operatorSanctionsMatch },
+          dlp_screening: { clean: null, findings: [], total_leaks_prevented: 0 },
           receipt: null,
           attribution: trustAttributionBlock(),
           queried_at: nowIso(),
@@ -141,9 +146,6 @@ export async function verifyAgenticTrustWithVizier(env = {}, request = {}, optio
       }
 
       const sanctionsData = await sanctionsRes.json();
-      if (sanctionsData.receipt) {
-        latestReceipt = sanctionsData.receipt;
-      }
       if (sanctionsData.violation) {
         operatorSanctionsViolation = true;
         operatorSanctionsMatch = {
@@ -181,11 +183,14 @@ export async function verifyAgenticTrustWithVizier(env = {}, request = {}, optio
     if (!dlpRes.ok) {
       return {
         status: "degraded",
-        clean: false,
-        violation: false,
+        ownership_status: "unverified",
+        receipt_scope: "none",
+        signature_verified: false,
+        clean: operatorSanctionsViolation ? false : null,
+        violation: operatorSanctionsViolation,
         operator_screening: { checked: Boolean(operatorName), operator: operatorName || null, violation: operatorSanctionsViolation, match: operatorSanctionsMatch },
-        dlp_screening: { clean: false, findings: [], total_leaks_prevented: 0 },
-        receipt: latestReceipt,
+        dlp_screening: { clean: null, findings: [], total_leaks_prevented: 0 },
+        receipt: null,
         attribution: trustAttributionBlock(),
         queried_at: nowIso(),
         degrade_reason: `Vizier returned HTTP status ${dlpRes.status} on DLP scan`
@@ -193,19 +198,19 @@ export async function verifyAgenticTrustWithVizier(env = {}, request = {}, optio
     }
 
     const dlpData = await dlpRes.json();
-    if (dlpData.receipt) {
-      latestReceipt = dlpData.receipt;
-    }
-    const dlpClean = Boolean(dlpData.clean);
+    const dlpClean = typeof dlpData.clean === "boolean" ? dlpData.clean : null;
     const dlpFindings = Array.isArray(dlpData.findings) ? dlpData.findings : [];
 
-    const isViolation = operatorSanctionsViolation || !dlpClean;
-    const isClean = !operatorSanctionsViolation && dlpClean;
+    const isViolation = operatorSanctionsViolation || dlpClean === false;
+    const isClean = isViolation ? false : null;
 
     return {
       status: "success",
       engine: "vizier_agentic_trust",
       clean: isClean,
+      ownership_status: "unverified",
+      receipt_scope: dlpData.receipt ? "dlp_scan_only" : "none",
+      signature_verified: false,
       violation: isViolation,
       operator_screening: {
         checked: Boolean(operatorName),
@@ -218,18 +223,21 @@ export async function verifyAgenticTrustWithVizier(env = {}, request = {}, optio
         findings: dlpFindings,
         total_leaks_prevented: dlpFindings.length
       },
-      receipt: latestReceipt,
+      receipt: dlpData.receipt || null,
       attribution: trustAttributionBlock(),
       queried_at: nowIso()
     };
   } catch (error) {
     return {
       status: "degraded",
-      clean: false,
-      violation: false,
-      operator_screening: { checked: Boolean(operatorName), operator: operatorName || null, violation: false, match: null },
-      dlp_screening: { clean: false, findings: [], total_leaks_prevented: 0 },
-      receipt: latestReceipt,
+      ownership_status: "unverified",
+      receipt_scope: "none",
+      signature_verified: false,
+      clean: operatorSanctionsViolation ? false : null,
+      violation: operatorSanctionsViolation,
+      operator_screening: { checked: Boolean(operatorName), operator: operatorName || null, violation: operatorSanctionsViolation, match: operatorSanctionsMatch },
+      dlp_screening: { clean: null, findings: [], total_leaks_prevented: 0 },
+      receipt: null,
       attribution: trustAttributionBlock(),
       queried_at: nowIso(),
       degrade_reason: error instanceof Error ? error.message : "Network error"

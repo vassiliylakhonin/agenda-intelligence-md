@@ -289,7 +289,7 @@ export function handleBankabilityUiRequest(request, env = {}) {
         <button class="btn" id="btnScreen">⚡ Screen Corridor Bankability</button>
 
         <div class="zero-retention">
-          🔒 Zero-Retention Guarantee: All evaluations run in RAM on Cloudflare Edge; no deal data is saved to disk or KV.
+          Evaluation is stateless. Transport and usage telemetry follow the published privacy policy; this is not a zero-retention guarantee.
         </div>
       </div>
 
@@ -306,7 +306,7 @@ export function handleBankabilityUiRequest(request, env = {}) {
         <div class="kpi-grid">
           <div class="kpi-item">
             <div class="kpi-label">Verdict</div>
-            <div class="kpi-val" id="kpiVerdict" style="color:var(--good); font-size:14px; margin-top:8px;">READY</div>
+            <div class="kpi-val" id="kpiVerdict" style="color:var(--good); font-size:14px; margin-top:8px;">ILLUSTRATIVE EXAMPLE</div>
           </div>
           <div class="kpi-item">
             <div class="kpi-label">DSCR vs 1.20x Floor</div>
@@ -363,9 +363,9 @@ export function handleBankabilityUiRequest(request, env = {}) {
         <div class="unlock-banner" id="unlockBanner">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
             <div>
-              <h4 style="font-size:15px; color:#fff; font-weight:700;">🚀 Unlock Full IFI Investment Dossier</h4>
+              <h4 style="font-size:15px; color:#fff; font-weight:700;">Unlock Scenario Memo and JSON Schedule</h4>
               <p style="font-size:12px; color:var(--muted); margin-top:2px;">
-                Includes complete 15-Year Debt Waterfall schedule, EBRD/ADB investment memorandum, and Excel financial model SHA-256 hash.
+                Includes an illustrative 15-year JSON debt schedule and Markdown scenario memo. Assumptions: 15-year tenor, 5.5% interest rate. No Excel/PDF file or lender certification.
               </p>
             </div>
             <div style="text-align:right;">

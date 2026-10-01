@@ -106,3 +106,12 @@ not verify factual truth, source reputation, or whether a claimed
 `support_level` is semantically justified. `evidence-pack.schema.json` remains
 the primary evidence-pack contract; `evidence-audit.schema.json` adds
 claim-level traceability when that granularity is needed.
+
+
+## Numeric and quote support boundaries
+
+The core packet checker and compatibility `grounded_check` preserve positive and negative numeric values, including Unicode minus and currency prefixes. Equivalent signed formats normalize together; reversing the sign requires review.
+
+A quoted fragment being present in a document validates the quotation only. It does not independently upgrade an unrelated claim to `grounded`.
+
+A numeric value must occur in a number-bearing sentence with relevant lexical context (at least 0.4 weighted overlap of nonnumeric claim terms). Relevant sentences may come from different declared sources; a value in an unrelated sentence/document does not count. `unmatched_numbers` therefore includes numbers without contextual support, even if their digits appear somewhere in the corpus. Ambiguous context requires source review. This conservative heuristic can under-detect valid split-sentence or paraphrased support and does not establish semantic entailment or factual truth.

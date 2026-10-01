@@ -111,7 +111,7 @@ _UNIT_PATTERN = (
     r"eur|euros?|евро|gbp|pounds?|фунт(?:а|ов|ы)?|rub|руб(?:\.|ля|лей)?|kzt|₸|тенге)"
 )
 _NUMERIC_EXPRESSION_PATTERN = re.compile(
-    rf"(?<![\w])(?P<prefix>[$€£₽₸])?\s*(?P<number>{_NUMBER_PATTERN})"
+    rf"(?<![\w])(?P<sign>[+\-−])?\s*(?P<prefix>[$€£₽₸])?\s*(?P<number>[+\-−]?{_NUMBER_PATTERN})"
     rf"(?:\s*(?P<scale>{_SCALE_PATTERN}))?(?:\s*(?P<unit>{_UNIT_PATTERN}))?(?![\w])",
     re.IGNORECASE,
 )
@@ -144,7 +144,7 @@ def _grounded_normalize(text: str) -> str:
 
 
 def _decimal_value(raw: str) -> Decimal | None:
-    compact = re.sub(r"[ \u00a0\u202f_]", "", raw)
+    compact = re.sub(r"[ \u00a0\u202f_]", "", raw).replace("−", "-")
     if "," in compact and "." in compact:
         if compact.rfind(".") > compact.rfind(","):
             compact = compact.replace(",", "")
@@ -236,7 +236,8 @@ def _numeric_mentions(text: str) -> list[dict]:
     for match in _NUMERIC_EXPRESSION_PATTERN.finditer(normalized):
         if any(match.start() < item["end"] and match.end() > item["start"] for item in mentions):
             continue
-        value = _decimal_value(match.group("number"))
+        signed_number = (match.group("sign") or "") + match.group("number")
+        value = _decimal_value(signed_number)
         if value is None:
             continue
         scale = match.group("scale")
@@ -252,7 +253,7 @@ def _numeric_mentions(text: str) -> list[dict]:
             key = f"numpercent-{rendered}"
         else:
             key = f"numnumber-{rendered}"
-        display = match.group("number")
+        display = signed_number
         if unit == "%":
             display += "%"
         elif match.group("scale") and match.start("scale") == match.end("number"):
@@ -475,7 +476,7 @@ class GroundingMatch:
 class _IndexedDocument:
     text: str
     terms: frozenset[str]
-    numeric_facts: frozenset[str]
+    sentence_numeric_facts: tuple[frozenset[str], ...]
     sentences: tuple[str, ...]
     sentence_terms: tuple[frozenset[str], ...]
 
@@ -500,7 +501,7 @@ class GroundingIndex:
             indexed[document_id] = _IndexedDocument(
                 text=text,
                 terms=term_set,
-                numeric_facts=frozenset(_numeric_fact_keys(text)),
+                sentence_numeric_facts=tuple(frozenset(_numeric_fact_keys(sentence)) for sentence in sentences),
                 sentences=sentences,
                 sentence_terms=sentence_terms,
             )
@@ -569,9 +570,20 @@ class GroundingIndex:
         best_terms = self._documents[best_document_id].terms if best_document_id is not None else frozenset()
         missing_terms = tuple(displays[term] for term in ordered_terms if term not in best_terms)
 
+        # A number elsewhere in the corpus is not support for this claim.
+        # Retain multi-source support when the number-bearing sentence shares
+        # meaningful claim context; ambiguous topical matches require review.
+        context_terms = {
+            term
+            for term in claim_terms
+            if not term.startswith(("numnumber-", "numdate-", "numpercent-", "numcurrency-"))
+        }
         candidate_numeric_facts: set[str] = set()
         for document_id in candidate_ids:
-            candidate_numeric_facts.update(self._documents[document_id].numeric_facts)
+            document = self._documents[document_id]
+            for terms, numeric_facts in zip(document.sentence_terms, document.sentence_numeric_facts):
+                if not context_terms or self._weighted_overlap(context_terms, terms) >= 0.4:
+                    candidate_numeric_facts.update(numeric_facts)
         unmatched_numbers = tuple(
             sorted(
                 {

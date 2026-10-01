@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-schema-version": "1",
+  "type": "object",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/corridor-orientation-response.schema.json",
+  "title": "CorridorOrientationResponse",
+  "properties": {
+    "kind": {
+      "const": "orientation_and_routing"
+    },
+    "selected_route": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "use_when": {
+              "type": "string"
+            },
+            "a2a": {
+              "type": "string"
+            },
+            "profile": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "use_when",
+            "a2a",
+            "profile"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "next_gate_input": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "caller_text": {
+      "type": "string"
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "use_when": {
+            "type": "string"
+          },
+          "a2a": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "use_when",
+          "a2a",
+          "profile"
+        ]
+      }
+    },
+    "engagement": {
+      "type": "object"
+    },
+    "human_review_required": {
+      "const": true
+    },
+    "not_advice_notice": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "selected_route",
+    "next_gate_input",
+    "message",
+    "caller_text",
+    "gates",
+    "engagement",
+    "human_review_required",
+    "not_advice_notice"
+  ]
+}

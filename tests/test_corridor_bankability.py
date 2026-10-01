@@ -72,8 +72,8 @@ def test_corridor_bankability_paid_dossier():
     memo = full_dossier["dossier_markdown"]
     assert "Khorgos Dry Port Yard Expansion" in memo
     assert "European Bank for Reconstruction and Development (EBRD)" in memo
-    assert full_dossier["financial_model_sha256"]
-    assert full_dossier["excel_financial_model_sha256"]
+    assert full_dossier["financial_model_sha256"] is None
+    assert full_dossier["excel_financial_model_sha256"] is None
 
 
 def test_sovereign_guarantee_covenants():
@@ -133,8 +133,8 @@ def test_corridor_bankability_smart_fallback():
     )
     assert extracted["corridor_leg"] == "Aktau-Baku"
     assert extracted["capex_usd_m"] == 45.0
-    assert extracted["ifi_debt_usd_m"] == 31.5
-    assert extracted["dscr_min"] == 1.30
+    assert extracted["ifi_debt_usd_m"] is None
+    assert extracted["dscr_min"] is None
     assert "Terminal" in extracted["project_name"]
 
     # Case 2: MCP stdio tool call with partial/prompt argument
@@ -151,11 +151,22 @@ def test_corridor_bankability_smart_fallback():
     }
     resp = handle_message(msg)
     assert resp is not None
-    assert "error" not in resp
-    import json
+    assert resp.get("error") or resp.get("result", {}).get("isError"), resp
 
-    res_data = json.loads(resp["result"]["content"][0]["text"])
-    assert res_data["corridor_leg"] == "Khorgos-Aktau"
-    assert res_data["financial_metrics"]["total_capex_usd_m"] == 100.0
-    assert res_data["unlocked_full_dossier"] is False
-    assert res_data["x402_unlock"]["amount_usdc"] == 25.0
+
+def test_bankability_rejects_empty_and_string_guarantee():
+    import pytest
+
+    with pytest.raises(ValueError):
+        screen_corridor_bankability({})
+    with pytest.raises(ValueError, match="boolean"):
+        screen_corridor_bankability(
+            {
+                "project_name": "Terminal",
+                "corridor_leg": "Aktau-Baku",
+                "capex_usd_m": 100,
+                "ifi_debt_usd_m": 60,
+                "dscr_min": 0.8,
+                "has_sovereign_guarantee": "false",
+            }
+        )

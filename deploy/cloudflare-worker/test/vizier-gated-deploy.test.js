@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
-  createDeployRequest,
+  createDeployRequest as unsignedDeployRequest,
   envFromArgv,
   readVizierCredential,
   requestHash,
@@ -11,6 +11,11 @@ import {
   workerTargetFor
 } from "../scripts/vizier-gated-deploy.js";
 import { deployedEnvironments, fleetEnvironments } from "../scripts/deploy-all.js";
+
+const TEST_GRANT = "test-owner-grant";
+function createDeployRequest(metadata, env) {
+  return unsignedDeployRequest(metadata, env, TEST_GRANT);
+}
 
 function responseFor(request, decision, reasonCodes = []) {
   const policyResults = [
@@ -34,7 +39,10 @@ function responseFor(request, decision, reasonCodes = []) {
       decision,
       risk_score: decision === "ALLOW" ? 0 : 0.5,
       policy_rule_ids: ["test.policy"],
-      reason_codes: reasonCodes
+      reason_codes: reasonCodes,
+      authority_provenance: "principal_signed",
+      grant: { jti: "test-grant", key_id: "test-key", issuer: request.principal.id,
+        subject: request.agent.id, expires_at: new Date(Date.now()+600_000).toISOString() }
     }
   };
 }
@@ -44,6 +52,7 @@ test("gated deploy stops before Wrangler when Vizier requires review", async () 
   const request = createDeployRequest(metadata);
   let executed = false;
   const result = await runGatedDeploy({
+    grant: TEST_GRANT,
     metadata,
     apiKey: "test-secret",
     fetchImpl: async (_url, init) => {
@@ -94,6 +103,7 @@ test("gated deploy invokes Wrangler only after a validated ALLOW receipt", async
   const request = createDeployRequest(metadata);
   let receivedReceiptId = null;
   const result = await runGatedDeploy({
+    grant: TEST_GRANT,
     metadata,
     apiKey: "test-secret",
     fetchImpl: async () => Response.json(responseFor(request, "ALLOW")),
@@ -122,6 +132,7 @@ test("gated deploy rejects an ALLOW receipt bound to another request", async () 
 
   await assert.rejects(
     runGatedDeploy({
+    grant: TEST_GRANT,
       metadata,
       apiKey: "test-secret",
       fetchImpl: async () => Response.json(response),
@@ -139,6 +150,7 @@ test("gated deploy refuses a dirty Git worktree before calling Vizier", async ()
   let fetched = false;
   await assert.rejects(
     runGatedDeploy({
+    grant: TEST_GRANT,
       metadata: { commit: "e".repeat(40), dirty: true },
       apiKey: "test-secret",
       fetchImpl: async () => {
@@ -156,6 +168,7 @@ test("gated deploy rejects an invalid commit before calling Vizier", async () =>
   let fetched = false;
   await assert.rejects(
     runGatedDeploy({
+    grant: TEST_GRANT,
       metadata: { commit: "main", dirty: false },
       apiKey: "test-secret",
       fetchImpl: async () => {
@@ -174,6 +187,7 @@ test("gated deploy does not invoke Wrangler when Vizier blocks the target", asyn
   const request = createDeployRequest(metadata);
   let executed = false;
   const result = await runGatedDeploy({
+    grant: TEST_GRANT,
     metadata,
     apiKey: "test-secret",
     fetchImpl: async () => Response.json(responseFor(request, "BLOCK", ["TARGET_NOT_ALLOWED"])),
@@ -281,3 +295,21 @@ test("the environment list comes from wrangler.toml, not a second hand-kept list
   assert.equal(live.length, 12);
   assert.ok(live.every((item) => item.workerName));
 });
+
+
+test("missing delegation stops before network and execution", async () => {
+  await assert.rejects(runGatedDeploy({ metadata: { commit: "a".repeat(40), dirty: false }, apiKey: "test",
+    fetchImpl: () => assert.fail("must not fetch"), execute: () => assert.fail("must not deploy") }), /owner-signed/);
+});
+
+for (const scenario of ["unsigned", "expired", "wrong-subject"]) {
+  test(`ALLOW with ${scenario} authority stops deployment`, async () => {
+    const metadata = { commit: "a".repeat(40), dirty: false };
+    const response = responseFor(createDeployRequest(metadata), "ALLOW");
+    if (scenario === "unsigned") response.receipt.authority_provenance = "caller_asserted";
+    if (scenario === "expired") response.receipt.grant.expires_at = "2020-01-01T00:00:00Z";
+    if (scenario === "wrong-subject") response.receipt.grant.subject = "other-agent";
+    await assert.rejects(runGatedDeploy({ metadata, apiKey: "test", grant: TEST_GRANT,
+      fetchImpl: async () => Response.json(response), execute: () => assert.fail("must not deploy") }), /owner-signed delegation proof/);
+  });
+}

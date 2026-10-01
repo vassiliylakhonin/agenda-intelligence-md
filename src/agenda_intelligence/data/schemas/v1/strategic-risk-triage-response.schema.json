@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-schema-version": "1",
+  "type": "object",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/strategic-risk-triage-response.schema.json",
+  "title": "StrategicRiskTriageResponse",
+  "properties": {
+    "intent": {
+      "type": "string"
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "module": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "module",
+          "role"
+        ]
+      }
+    },
+    "signal_screen": {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "type": "string"
+        },
+        "risk_signal": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "object"
+        },
+        "source_categories_required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_gaps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_requests": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "watch_next": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "confidence": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "intent",
+        "risk_signal",
+        "source_categories_required",
+        "evidence_gaps",
+        "confidence"
+      ]
+    },
+    "deal_risk_gate": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "deal_risk_contract": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "source_plan": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "quality_gates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "install": {
+      "type": "object",
+      "properties": {
+        "package": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "mcp_server_command": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "package",
+        "command",
+        "mcp_server_command"
+      ]
+    }
+  },
+  "required": [
+    "intent",
+    "modules",
+    "signal_screen",
+    "deal_risk_gate",
+    "deal_risk_contract",
+    "source_plan",
+    "quality_gates",
+    "next_actions",
+    "install"
+  ]
+}

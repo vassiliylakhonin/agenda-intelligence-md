@@ -289,9 +289,12 @@ class AgentFinancialGuard:
         intent = payload.get("intent", {})
         policies = payload.get("policy_limits", {})
 
+        for key in ("method", "calldata"):
+            if key in tx and not isinstance(tx[key], str):
+                raise ValueError(f"transaction.{key} must be a string")
         recipient = str(tx.get("recipient", "")).lower().strip()
         calldata = str(tx.get("calldata", "")).lower().strip()
-        method = str(tx.get("method", "transfer")).lower().strip()
+        method = str(tx.get("method", "")).lower().strip()
         amount_usd = float(tx.get("amount_usd", 0) or 0)
         prompt = str(intent.get("prompt", ""))
 
@@ -312,7 +315,16 @@ class AgentFinancialGuard:
             )
 
         # 2. Drainer calldata / infinite approval
-        if method == "approve" and INFINITE_APPROVE_HEX in calldata:
+        encoded_approve = calldata.startswith("0x095ea7b3")
+        well_formed_approve = bool(re.fullmatch(r"0x095ea7b3[0-9a-f]{128}", calldata))
+        if encoded_approve and method and method != "approve":
+            checks["contract_security"] = False
+            violations.append("Declared method disagrees with encoded ERC-20 approve selector.")
+        if encoded_approve and not well_formed_approve:
+            checks["contract_security"] = False
+            violations.append("Malformed ERC-20 approve calldata; independent decoding is required.")
+        unlimited = int(calldata[-64:], 16) == 2**256 - 1 if well_formed_approve else INFINITE_APPROVE_HEX in calldata
+        if (encoded_approve or method == "approve") and unlimited:
             checks["contract_security"] = False
             violations.append(
                 "Unconstrained infinite token approval (approve max uint256) detected. Potential wallet drainer vector."

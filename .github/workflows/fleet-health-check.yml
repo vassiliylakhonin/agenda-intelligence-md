@@ -32,6 +32,8 @@ jobs:
     name: Synthetic Health Check (configured fleet)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment:
+      name: agent-output-verification-production
 
     steps:
       - name: Check out repository
@@ -45,6 +47,7 @@ jobs:
       - name: Run Edge Fleet Health Check
         env:
           TARGET_WORKER: ${{ inputs.worker }}
+          VIZIER_API_KEY: ${{ secrets.VIZIER_API_KEY }}
         run: |
           if [ -n "$TARGET_WORKER" ]; then
             python3 scripts/run_fleet_health_check.py --worker "$TARGET_WORKER"

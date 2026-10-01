@@ -5853,6 +5853,8 @@ test("all fleet MCP identities are distinct and consistent in discovery, initial
     names.add(name);
   }
   assert.ok(names.has("agenda-intelligence-md"));
+  assert.equal(names.has("agenda-middle-corridor-deal-risk"), true);
+  assert.equal(names.has("agenda-kazakhstan"), false);
 });
 
 test("OpenAI domain challenge serves only the exact configured token on Output Verification", async () => {
@@ -6162,10 +6164,10 @@ test("the free-text profile names its one argument when it refuses over mcp", as
 
 // A description that promises "evidence gaps" without saying evidence must be
 // supplied reads, to an agent holding only a question, as a tool it can call.
-// It cannot: the call is refused. The precondition belongs next to the promise.
+// The description must distinguish evidence grading from source retrieval and give a next step.
 test("a tool that grades supplied evidence says so in its description", async () => {
   const { mcpToolsForProfile } = await import("../src/mcp.js");
-  const precondition = "brings none is refused";
+  const precondition = "Grades supplied evidence";
 
   for (const profile of ["kazakhstan", "cis_secondary_sanctions", "gulf_maritime_exposure"]) {
     const [tool] = mcpToolsForProfile(profile);
@@ -7211,8 +7213,8 @@ test("dual-use technology profile routes structured MCP requests to its declared
 
   assert.equal(response.result.isError, false);
   assert.equal(response.result.structuredContent.profile, "dual_use_technology_export");
-  assert.equal(response.result.structuredContent.export_risk_triage.status, "decision_ready");
-  assert.equal(response.result.structuredContent.export_risk_triage.score, 100);
+  assert.equal(response.result.structuredContent.export_risk_triage.status, "ready_for_human_review");
+  assert.equal(response.result.structuredContent.export_risk_triage.score, 69);
 });
 
 test("dual-use free text creates an intake candidate without classifying goods", async () => {
@@ -8199,11 +8201,11 @@ test("mcp tools/call fleet_directory returns all 11 specialized gates with canon
 test("mcp tool descriptions include required field hints for calling LLMs", async () => {
   const { mcpToolsForProfile } = await import("../src/mcp.js");
   const kazakhstanTools = mcpToolsForProfile("kazakhstan");
-  assert.match(kazakhstanTools[0].description, /Required arguments: route, cargo/);
+  assert.match(kazakhstanTools[0].description, /Required tool arguments: route, cargo/);
 
   const dualUseTools = mcpToolsForProfile("dual_use_technology_export");
-  assert.match(dualUseTools[0].description, /brings none is refused/);
-  assert.match(dualUseTools[0].description, /Required arguments: shipment/);
+  assert.match(dualUseTools[0].description, /Grades supplied evidence/);
+  assert.match(dualUseTools[0].description, /Required tool arguments: shipment, dated_sources, risk_question/);
 });
 
 const MOCK_PAYER = "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a"; // eth-account test key 0x1111...1111
@@ -9102,7 +9104,8 @@ test("POST /v1/corridor-bankability/screen with valid x-payment-tx returns unloc
     assert.ok(data.full_dossier);
     assert.equal(data.full_dossier.waterfall_schedule_15yr.length, 15);
     assert.ok(data.full_dossier.dossier_markdown.includes("Khorgos Dry Port Intermodal Yard"));
-    assert.ok(data.full_dossier.excel_financial_model_sha256);
+    assert.equal(data.full_dossier.excel_financial_model_sha256, null);
+    assert.equal(data.full_dossier.provenance_status, "no_workbook_generated");
   } finally {
     globalThis.fetch = origFetch;
   }
@@ -9132,7 +9135,7 @@ test("GET /corridor-bankability returns HTML with Brave Wallet connection", asyn
   assert.ok(html.includes("0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663"));
 });
 
-test("POST /v1/corridor-bankability/screen supports smart fallback for unstructured prompt", async () => {
+test("POST /v1/corridor-bankability/screen refuses invented financial metrics from an incomplete prompt", async () => {
   const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/corridor-bankability/screen", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -9141,12 +9144,10 @@ test("POST /v1/corridor-bankability/screen supports smart fallback for unstructu
     })
   });
   const res = await handleRequest(req, {});
-  assert.equal(res.status, 200);
+  assert.equal(res.status, 400);
   const data = await res.json();
-  assert.equal(data.corridor_leg, "Aktau-Baku");
-  assert.equal(data.financial_metrics.total_capex_usd_m, 45.0);
-  assert.ok(data.x402_unlock);
-  assert.equal(data.x402_unlock.amount_usdc, 25.0);
+  assert.ok(data.errors.some((error) => error.includes("ifi_debt_usd_m")));
+  assert.ok(data.errors.some((error) => error.includes("dscr_min")));
 });
 
 test("critical_minerals_due_diligence supports smart fallback for unstructured prompt", async () => {
@@ -10199,4 +10200,36 @@ test("CIS text candidate extracts names with suffix legal forms and Russian form
     assert.equal(response.result.task.metadata.schema_hint.candidate_inferred.name, name, text);
     assert.equal(response.result.task.metadata.schema_hint.candidate_inferred.jurisdiction, jurisdiction, text);
   }
+});
+
+test("industry-language copy describes external evidence review without claiming enforcement", () => {
+  const profiles = [
+    ["agenda-intelligence-a2a", "agenda"],
+    ["middle-corridor-deal-risk-gate-a2a", "kazakhstan"],
+    ["agentic-interaction-trust-a2a", "agentic_interaction_trust"],
+    ["agent-output-verification-a2a", "agent_output_verification"],
+    ["agent-financial-guard-a2a", "agent_financial_guard"],
+    ["m2m-escrow-arbiter-a2a", "m2m_escrow_arbiter"],
+    ["cis-secondary-sanctions-a2a", "cis_secondary_sanctions"],
+    ["gulf-maritime-exposure-a2a", "gulf_maritime_exposure"],
+    ["kazakhstan-market-entry-readiness-a2a", "market_entry_readiness"],
+    ["critical-minerals-due-diligence-a2a", "critical_minerals_due_diligence"],
+    ["dual-use-technology-export-a2a", "dual_use_technology_export"],
+    ["corridor-sanctions-assistant-a2a", "corridor_sanctions_assistant"]
+  ];
+  for (const [host, profile] of profiles) {
+    const req = new Request(`https://${host}.vassiliy-lakhonin.workers.dev/`);
+    const env = { AGENT_PROFILE: profile };
+    const html = landingHtml(req, env);
+    const card = agentCard(req, env);
+    assert.match(html, /outside the calling model/);
+    assert.match(html, /caller must invoke it and enforce/);
+    assert.match(card.description, /Caller must invoke and enforce/);
+    assert.match(card.description, /mandatory human review/);
+    assert.doesNotMatch(html, /NVIDIA secures your agents|attested telemetry is issued/i);
+  }
+  const req = new Request("https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/");
+  const card = agentCard(req, { AGENT_PROFILE: "agent_output_verification" });
+  assert.match(card.description, /allow_relay is never issued/);
+  assert.match(card.description, /verify_before_relay with mandatory human review/);
 });

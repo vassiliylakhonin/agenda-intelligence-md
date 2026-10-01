@@ -430,11 +430,7 @@ def agent_output_verification(request_json: dict) -> dict:
     # the 2026-09-26 fabricated-quote bypass fed on).
     evidence_by_id = {item.get("evidence_id"): item for item in (request_json.get("evidence") or [])}
     grounded_claim_count = sum(1 for claim in claims if _claim_has_matched_quote(claim, evidence_by_id))
-    unmatched_quote_claims = [
-        claim
-        for claim in claims
-        if (claim.get("supporting_quotes") or []) and not _claim_has_matched_quote(claim, evidence_by_id)
-    ]
+    unmatched_quote_claims = [claim for claim in claims if not _claim_has_matched_quote(claim, evidence_by_id)]
 
     unsafe_claims: list[dict] = []
     weak_claims: list[dict] = []
@@ -487,8 +483,13 @@ def agent_output_verification(request_json: dict) -> dict:
         if claim["claim_id"] in seen_unsafe:
             continue
         evidence_gaps.append(
-            f"Claim {claim['claim_id']} supplies supporting_quotes whose text does not appear in the cited "
-            f"evidence content; a caller-declared quote is not corroboration."
+            (
+                f"Claim {claim['claim_id']} supplies supporting_quotes whose text does not appear in the cited "
+                "evidence content; a caller-declared quote is not corroboration."
+                if claim.get("supporting_quotes")
+                else f"Claim {claim['claim_id']} has no supporting quote matched to cited evidence content; "
+                "provide source content and an attributable verbatim excerpt."
+            )
         )
     for claim in uncorroborated_claims:
         evidence_gaps.append(
@@ -557,7 +558,11 @@ def agent_output_verification(request_json: dict) -> dict:
         # may report trust "high".
         trust_signal = "medium_high"
 
-    owner_actions: list[str] = []
+    owner_actions: list[str] = [
+        f"Supply cited source content and a matching supporting quote for claim {claim['claim_id']}, "
+        "or mark it unsupported."
+        for claim in unmatched_quote_claims
+    ]
     for item in unsafe_claims:
         owner_actions.append(f"Ground or remove claim {item['claim_id']}: {item['reason']}.")
     for statement in unsupported_statements:
@@ -813,8 +818,7 @@ def grounded_check(request_json: dict) -> dict:
             status = "weakly_grounded"
         else:
             status = "ungrounded"
-        if quote_statuses and all(s == "present" for s in quote_statuses):
-            status = "grounded"
+        # Quote presence validates the quotation, not support for the claim.
         if "absent" in quote_statuses:
             status = "ungrounded"
         if unmatched_numbers and status == "grounded":
@@ -849,7 +853,8 @@ def grounded_check(request_json: dict) -> dict:
         if unmatched_numbers:
             owner_actions.append(
                 f"Verify numeric value(s) in claim {claim_id} against a source: "
-                f"{', '.join(unmatched_numbers)} not found anywhere in the supplied corpus."
+                f"{', '.join(unmatched_numbers)} not supported by a relevant number-bearing sentence "
+                "in the supplied corpus."
             )
         if polarity_conflict:
             owner_actions.append(
@@ -1060,7 +1065,8 @@ def check_evidence_packet(request_json: dict) -> dict:
             review_issues.append("unmatched_numbers")
             add_action(
                 f"Verify numeric value(s) in claim {claim_id}: "
-                f"{', '.join(unmatched_numbers)} not found in its referenced sources."
+                f"{', '.join(unmatched_numbers)} not supported by a relevant number-bearing sentence "
+                "in its referenced sources."
             )
 
         if structural_issues:
