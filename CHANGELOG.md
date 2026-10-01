@@ -10,6 +10,12 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Fleet website alignment (2026-10-01)
+
+- Align Explorer with the arbitration response envelope; preserve zero delivery counts, validate explicit deadlines, and replace fabricated contract state and autonomous settlement claims with caller-supplied evidence boundaries.
+- Keep submitted wallet payments in page memory for activation/evaluation retries without another transfer; show incomplete activation honestly, preserve payer signatures, and stop payment on refused network switches or invalid bankability inputs.
+- Preserve zero-debt bankability inputs and render debt-free DSCR as not applicable. Publish private A2A continuation and source freshness guidance; clarify separate telemetry and payment retention.
+
 ### Fleet operations and payment ledger (2026-10-01)
 
 - Enforce configured deployment Bearer authorization on every POST `/v1/*` execution alias, and bound JSON reads while streaming (1 MiB). REST payment amounts follow the requested operation while authorization follows the host.
