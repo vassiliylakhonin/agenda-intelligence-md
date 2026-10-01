@@ -10275,12 +10275,14 @@ test("Escrow explorer preserves zero delivery and unwraps the current API envelo
   const response = await handleRequest(new Request("https://m2m-escrow-arbiter-a2a.example.workers.dev/explorer"), {});
   const html = await response.text();
   const source = html.slice(html.indexOf("<script>") + 8, html.indexOf("</script>"));
-  const document = uiDocument({ amountUsdcInput: "1000", validItemsInput: "0", totalItemsInput: "1000", expHashInput: "a".repeat(64), netSelect: "8453", escrowIdInput: "example", policySelect: "pro_rata" });
+  const document = uiDocument({ amountUsdcInput: "1000", validItemsInput: "0", totalItemsInput: "1000", expHashInput: "a".repeat(64), netSelect: "8453", escrowIdInput: "0x" + "a".repeat(64), policySelect: "pro_rata" });
   let payload, requests = 0;
   const fetch = async (_url, options) => {
     requests++;
     payload = JSON.parse(options.body);
-    return new Response(JSON.stringify({ arbitration_ruling: { payout: { seller_payout_usd: 0, buyer_refund_usd: 1000, arbiter_fee_usd: 0 } } }));
+    const response = await handleRequest(new Request("https://m2m-escrow-arbiter-a2a.example.workers.dev" + _url, options), {});
+    assert.equal(response.status, 200, await response.clone().text());
+    return response;
   };
   new Function("window", "document", "fetch", "alert", source)({}, document, fetch, () => {});
   document.getElementById("btnInspect").onclick();
@@ -10289,7 +10291,8 @@ test("Escrow explorer preserves zero delivery and unwraps the current API envelo
   assert.equal(preview.status, undefined);
   await document.getElementById("btnEvaluate").onclick();
   assert.equal(payload.delivery_submission.telemetry.valid_items, 0);
-  assert.equal(document.getElementById("valBuyer").innerText, "$1000.00");
+  assert.equal(document.getElementById("valBuyer").innerText, "$0.00");
+  assert.equal(document.getElementById("payoutGrid").style.display, "grid");
   document.getElementById("amountUsdcInput").value = "";
   await document.getElementById("btnEvaluate").onclick();
   assert.equal(requests, 1);
@@ -10300,10 +10303,15 @@ test("Bankability UI keeps zero debt, rejects blanks, and renders debt-free DSCR
   const response = await handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/corridor-bankability"), {});
   const html = await response.text();
   const source = html.slice(html.indexOf("<script>") + 8, html.indexOf("</script>"));
-  const document = uiDocument({ projectName: "Example", capexUsdM: "45", ifiDebtUsdM: "0", dscrMin: "", corridorLeg: "trans_caspian" });
+  const document = uiDocument({ projectName: "Example", capexUsdM: "45", ifiDebtUsdM: "0", dscrMin: "0", corridorLeg: "Aktau-Baku" });
   const ui = new Function("window", "document", source + "; return {getFormPayload, renderFullDossier, ensureBaseNetwork};")({}, document);
   assert.equal(ui.getFormPayload().ifi_debt_usd_m, 0);
-  assert.equal(ui.getFormPayload().dscr_min, null);
+  assert.equal(ui.getFormPayload().dscr_min, 0);
+  const screenResponse = await handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/corridor-bankability/screen", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(ui.getFormPayload()) }), {});
+  assert.equal(screenResponse.status, 200, await screenResponse.clone().text());
+  document.getElementById("dscrMin").value = "";
+  assert.throws(() => ui.getFormPayload(), /numeric nonnegative DSCR/);
+  document.getElementById("dscrMin").value = "0";
   document.getElementById("capexUsdM").value = "";
   assert.throws(() => ui.getFormPayload(), /positive CAPEX/);
   ui.renderFullDossier({ waterfall_schedule_15yr: [{ year: 1, senior_debt_opening_usd_m: 0, principal_usd_m: 0, interest_usd_m: 0, total_debt_service_usd_m: 0, senior_debt_closing_usd_m: 0, required_cfads_usd_m: 0, projected_dscr: null }] });
@@ -10317,7 +10325,7 @@ test("Bankability paid retry preserves its request and never transfers twice", a
   const response = await handleRequest(new Request("https://agenda-intelligence-a2a.example.workers.dev/corridor-bankability"), {});
   const html = await response.text();
   const source = html.slice(html.indexOf("<script>") + 8, html.indexOf("</script>"));
-  const document = uiDocument({ projectName: "Example", capexUsdM: "45", ifiDebtUsdM: "0", dscrMin: "", corridorLeg: "trans_caspian" });
+  const document = uiDocument({ projectName: "Example", capexUsdM: "45", ifiDebtUsdM: "0", dscrMin: "0", corridorLeg: "Aktau-Baku" });
   const methods = [], requests = [];
   const window = { ethereum: { request: async ({ method }) => {
     methods.push(method);

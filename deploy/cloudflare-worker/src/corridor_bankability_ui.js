@@ -271,8 +271,8 @@ export function handleBankabilityUiRequest(request, env = {}) {
             <input type="number" id="dscrMin" value="1.30" step="0.01" min="0.5">
           </div>
           <div>
-            <label>Interest Margin (%)</label>
-            <input type="number" id="marginPct" value="5.5" step="0.1" min="1">
+            <label>Illustrative Fixed Interest Rate (%)</label>
+            <input type="number" id="marginPct" value="5.5" readonly>
           </div>
         </div>
 
@@ -424,7 +424,7 @@ export function handleBankabilityUiRequest(request, env = {}) {
     <!-- Bottom Footer -->
     <div class="card" style="margin-top:24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
       <div style="font-size:12px; color:var(--muted);">
-        Smart Contract: <code style="color:var(--accent);">${BASE_USDC_CONTRACT}</code> &bull; Version: <code style="color:var(--accent);">v${VERSION}</code>
+        USDC Token Contract: <code style="color:var(--accent);">${BASE_USDC_CONTRACT}</code> &bull; Version: <code style="color:var(--accent);">v${VERSION}</code>
       </div>
       <div style="display:flex; gap:10px;">
         <a href="${origin}/explorer" target="_blank" class="btn btn-secondary" style="width:auto; text-decoration:none; padding:6px 14px; font-size:12px;">M2M Escrow Explorer</a>
@@ -524,13 +524,18 @@ export function handleBankabilityUiRequest(request, env = {}) {
         currency_mismatch: document.getElementById("currencyMismatch").checked,
         has_sovereign_guarantee: document.getElementById("sovereignGuarantee").checked
       };
-      if (!payload.project_name || payload.capex_usd_m === null || payload.capex_usd_m <= 0 || payload.ifi_debt_usd_m === null || payload.ifi_debt_usd_m < 0 || (payload.ifi_debt_usd_m > 0 && (payload.dscr_min === null || payload.dscr_min <= 0))) throw new Error("Enter project name, positive CAPEX, nonnegative debt, and DSCR for debt-funded projects.");
+      if (payload.project_name.length < 2 || payload.capex_usd_m === null || payload.capex_usd_m < 0.1 || payload.ifi_debt_usd_m === null || payload.ifi_debt_usd_m < 0 || payload.ifi_debt_usd_m > payload.capex_usd_m || payload.dscr_min === null || payload.dscr_min < 0) throw new Error("Enter project name, positive CAPEX, nonnegative debt not exceeding CAPEX, and a numeric nonnegative DSCR.");
       return payload;
     }
 
     // Run Free Screen
     btnScreen.onclick = async function() {
       btnScreen.innerText = "Simulating Covenants...";
+      document.getElementById("kpiVerdict").innerText = "Not evaluated";
+      document.getElementById("kpiDscr").innerText = "—";
+      document.getElementById("kpiLeverage").innerText = "—";
+      document.getElementById("covenantRows").innerHTML = "";
+      document.getElementById("bottleneckText").innerText = "";
       try {
         var payload = getFormPayload();
         var resp = await fetch("/v1/corridor-bankability/screen", {
