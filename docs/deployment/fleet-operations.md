@@ -2,7 +2,7 @@
 
 ## Deployment
 
-Run `make verify-local`, then validate every Wrangler environment with `wrangler deploy --dry-run`. Apply `deploy/cloudflare-worker/migrations/0001_payment_ledger.sql` to the shared `agenda-fleet-payments` D1 database before release. All environments bind it as `PAYMENT_LEDGER`.
+Run `make verify-local`, then validate every Wrangler environment with `wrangler deploy --dry-run`. Apply all `deploy/cloudflare-worker/migrations/*.sql` to the shared `agenda-fleet-payments` D1 database before release. All environments bind it as `PAYMENT_LEDGER`.
 
 From a clean committed tree, run `npm run deploy:all` in `deploy/cloudflare-worker`. This requests a signed Vizier ALLOW receipt for every environment. The sanctioned deploy credential is `VIZIER_API_KEY` or macOS Keychain service `com.vizier.gated-deploy`, account `VIZIER_API_KEY`. Never embed or print it. Signed-grant mode also requires a separate ten-minute owner grant for each target (see [signed deployment](signed-deploy.md)). Prefer the protected `Deploy existing Worker fleet through Vizier` workflow on immutable main: its isolated signer step supplies the existing owner key without exposing it locally. Run `npm run deploy:all -- --check` after release to compare receipt stamps and bundle digests. Direct deployment would omit the required gate.
 
@@ -14,9 +14,9 @@ From a clean committed tree, run `npm run deploy:all` in `deploy/cloudflare-work
 
 D1 transaction uniqueness is permanent. Pro tokens are stored as SHA-256 fingerprints with a 30-day expiry and a 10,000-request quota. Each paid evaluation attempt consumes quota; validation failures may consume a request. Free per-IP hourly limits use eventually consistent KV and are only an abuse deterrent. All paid paths require an available authoritative ledger. The bankability helper consumes one Pro request; MCP/A2A reuse that request's already-consumed entitlement.
 
-An inline payment header claims one evaluation. A replay cannot unlock another evaluation. Pro activation requires the paying wallet signature. New claims require a receipt block timestamp within seven days and reject dates more than five minutes ahead. This does not establish confirmation depth or immunity to chain reorganizations.
+Hosted payment execution v2 is documented in [payment-execution.md](payment-execution.md) and ADR 0032. Production evaluation requires signed payment or Pro; discovery and bankability preview are free. Non-Pro activation reserves one execution. Exact signed retries recover encrypted responses for 24 hours. An hourly cleanup clears expired response ciphertext; transaction claims remain permanent. Apply migration 0002 before release.
 
-If a ledger claim succeeds but token provisioning, KV mirroring or response delivery fails, retain the claim and reconcile manually against the receipt, tier, payer and ledger records. Do not delete a claim to retry automatically. No credential recovery endpoint is supplied. D1 claims and credential issuance are separate operations; claim exclusivity does not guarantee successful delivery of every paid result.
+Pro activation still requires the payer signature and has a manual delivery-recovery boundary. Do not delete old claims to retry. Legacy consumed payments and expired response recovery require reconciliation with support. New payment claims require a receipt block timestamp within seven days and reject dates more than five minutes ahead; this does not establish confirmation depth or immunity to chain reorganizations.
 
 ## Task continuation
 

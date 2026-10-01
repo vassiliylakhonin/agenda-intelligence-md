@@ -28,6 +28,11 @@ export function settlementChallengeMessage(txHash, payer) {
   );
 }
 
+export function paymentActivationChallenge(txHash, payer, tier) {
+  return "Agenda Intelligence MD payment activation v2\ntx_hash: " + txHash.toLowerCase() +
+    "\npayer: " + payer.toLowerCase() + "\ntier: " + tier;
+}
+
 async function sha256Hex(text) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
@@ -141,7 +146,8 @@ export async function verifyBaseTransactionReceipt(
   if (env.PAYMENT_LEDGER) {
     try {
       const existing = await readPayment(env, cleanTxHash);
-      if (existing && !(options.allowHeaderClaim && isHeaderProClaim(JSON.stringify(existing)))) {
+      if (existing && !(options.allowHeaderClaim && isHeaderProClaim(JSON.stringify(existing))) &&
+          !((options.allowCallClaim || options.allowActivation) && existing.settled_via === "signed_activation")) {
         return { valid: false, code: "already_claimed", error: "Transaction already claimed" };
       }
     } catch (_error) {
@@ -227,7 +233,7 @@ export async function verifyBaseTransactionReceipt(
   }
 
   if (Number.isFinite(options.expectedAmountUsdc) && matchingTransfer.amount_usdc < options.expectedAmountUsdc) {
-    return { valid: false, error: "Payment amount is below the required minimum" };
+    return { valid: false, code: "insufficient_payment", error: "Payment amount is below the required minimum" };
   }
   // Legacy KV markers expire after 90 days. Accepting only recent on-chain
   // payments prevents expired legacy markers from reopening old payments.
@@ -380,7 +386,7 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
     );
   }
 
-  const verification = await verifyBaseTransactionReceipt(txHash, env, { allowHeaderClaim: true });
+  const verification = await verifyBaseTransactionReceipt(txHash, env, { allowHeaderClaim: true, allowActivation: true });
   if (!verification.valid) {
     const status = verification.code === "already_claimed" ? 409 : verification.code === "settlement_store_unavailable" ? 503 : 400;
     return new Response(
@@ -395,17 +401,10 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
 
   const requestedTier = body?.tier || (verification.amount_usdc >= TIER_PRO_USDC_AMOUNT ? "tier_2_pro" : "tier_3_deal_dossier");
 
-  // Only signed Pro issuance may upgrade a header-settled Pro payment.
   if (requestedTier !== "tier_2_pro") {
-    const replay = await verifyBaseTransactionReceipt(txHash, env);
-    if (!replay.valid) {
-      return new Response(JSON.stringify({ error: replay.error, code: replay.code || "settlement_verification_failed", tx_hash: txHash }), {
-        status: replay.code === "already_claimed" ? 409 : 400,
-        headers: { "content-type": "application/json", "cache-control": "no-store" }
-      });
-    }
+    const existing = await readPayment(env, verification.tx_hash);
+    if (existing && existing.settled_via !== "signed_activation") return Response.json({ code: "already_claimed" }, { status: 409 });
   }
-
   if (requestedTier === "tier_2_pro") {
     if (verification.amount_usdc < TIER_PRO_USDC_AMOUNT) {
       return new Response(
@@ -506,196 +505,38 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
     );
   }
 
-  // Tier: tier_bankability_dossier ($25.00)
-  if (requestedTier === "tier_bankability_dossier") {
-    if (verification.amount_usdc < TIER_BANKABILITY_DOSSIER_USDC_AMOUNT) {
-      return new Response(
-        JSON.stringify({
-          error: `Insufficient payment for tier_bankability_dossier: received ${verification.amount_usdc} USDC, required ${TIER_BANKABILITY_DOSSIER_USDC_AMOUNT} USDC.`,
-          required_usd: TIER_BANKABILITY_DOSSIER_USDC_AMOUNT,
-          received_usd: verification.amount_usdc
-        }),
-        { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } }
-      );
+  const amounts = {
+    tier_micro_check: TIER_MICRO_CHECK_USDC_AMOUNT,
+    tier_micro_dispute: TIER_MICRO_DISPUTE_USDC_AMOUNT,
+    tier_bankability_dossier: TIER_BANKABILITY_DOSSIER_USDC_AMOUNT,
+    tier_3_deal_dossier: TIER_DOSSIER_USDC_AMOUNT
+  };
+  if (!(requestedTier in amounts)) return Response.json({ error: "Unknown payment tier" }, { status: 400 });
+  if (verification.amount_usdc < amounts[requestedTier]) return Response.json({
+    error: "Insufficient payment", required_usdc: amounts[requestedTier]
+  }, { status: 402 });
+  const challenge = paymentActivationChallenge(verification.tx_hash, verification.payer, requestedTier);
+  if (!body.payer_signature) return Response.json({ code: "payer_signature_required", challenge_message: challenge }, {
+    status: 401, headers: { "cache-control": "no-store" }
+  });
+  if (!verifyPersonalSignature(challenge, body.payer_signature, verification.payer)) return Response.json({
+    code: "payer_signature_invalid"
+  }, { status: 403, headers: { "cache-control": "no-store" } });
+  const details = { settled_via: "signed_activation", tier: requestedTier, payer: verification.payer,
+    amount_usdc: verification.amount_usdc, recipient: verification.recipient, contract: verification.contract };
+  try {
+    await claimPayment(env, verification.tx_hash, details);
+    const existing = await readPayment(env, verification.tx_hash);
+    if (existing?.settled_via !== "signed_activation" || existing.payer !== details.payer || existing.tier !== requestedTier) {
+      return Response.json({ code: "already_claimed" }, { status: 409 });
     }
-
-    const __claim = await claimTransactionSettlement(
-      verification.tx_hash,
-      {
-        tier: "tier_bankability_dossier",
-        payer: verification.payer,
-        amount_usdc: verification.amount_usdc
-      },
-      env
-    );
-      if (!__claim.claimed) {
-        return new Response(
-          JSON.stringify({
-            error:
-              __claim.code === "settlement_store_unavailable"
-                ? "Settlement store unavailable; nothing settled. Retry later."
-                : `Transaction ${verification.tx_hash} was already claimed and settled.`,
-            code: __claim.code === "settlement_store_unavailable" ? "settlement_store_unavailable" : "already_claimed",
-            tx_hash: verification.tx_hash
-          }),
-          { status: __claim.code === "settlement_store_unavailable" ? 503 : 409, headers: { "content-type": "application/json", "cache-control": "no-store" } }
-        );
-      }
-
-
-    return new Response(
-      JSON.stringify({
-        status: "settled",
-        tier: "tier_bankability_dossier",
-        name: "Trans-Caspian IFI Bankability Dossier",
-        receipt: {
-          network: "base",
-          chain_id: 8453,
-          asset: "USDC",
-          amount_usdc: verification.amount_usdc,
-          payer: verification.payer,
-          recipient: verification.recipient,
-          tx_hash: verification.tx_hash,
-          settled_at: new Date().toISOString()
-        },
-        instructions:
-          "Payment confirmed on Base. Pass 'X-Payment-Tx: " +
-          verification.tx_hash +
-          "' on your /v1/corridor-bankability/screen or MCP corridor_bankability_screen call to retrieve the unlocked IFI memo."
-      }),
-      { status: 200, headers: { "content-type": "application/json", "cache-control": "no-store" } }
-    );
+    return Response.json({ status: "activated", tier: requestedTier, execution_credit: 1,
+      receipt: { network: "base", chain_id: 8453, asset: "USDC", ...verification },
+      instructions: "Credit is not consumed by activation. Submit one exact API request with X-Payment-Tx and X-Payment-Signature. An unsigned request returns its challenge. Sign with the funding wallet and retain that exact signature for identical retries; completed results can be recovered for 24 hours."
+    }, { headers: { "cache-control": "no-store" } });
+  } catch {
+    return Response.json({ code: "settlement_store_unavailable" }, { status: 503 });
   }
-
-  // Micropayment Tiers: tier_micro_check ($0.05) & tier_micro_dispute ($0.50)
-  if (
-    requestedTier === "tier_micro_check" ||
-    requestedTier === "tier_micro_dispute" ||
-    (verification.amount_usdc >= TIER_MICRO_CHECK_USDC_AMOUNT && verification.amount_usdc < TIER_BANKABILITY_DOSSIER_USDC_AMOUNT)
-  ) {
-    const isDispute =
-      requestedTier === "tier_micro_dispute" || verification.amount_usdc >= TIER_MICRO_DISPUTE_USDC_AMOUNT;
-    const tierName = isDispute ? "tier_micro_dispute" : "tier_micro_check";
-    const requiredAmount = isDispute ? TIER_MICRO_DISPUTE_USDC_AMOUNT : TIER_MICRO_CHECK_USDC_AMOUNT;
-
-    if (verification.amount_usdc < requiredAmount) {
-      return new Response(
-        JSON.stringify({
-          error: `Insufficient payment for ${tierName}: received ${verification.amount_usdc} USDC, required ${requiredAmount} USDC.`,
-          required_usd: requiredAmount,
-          received_usd: verification.amount_usdc
-        }),
-        { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } }
-      );
-    }
-
-    const __claim = await claimTransactionSettlement(
-      verification.tx_hash,
-      {
-        tier: tierName,
-        payer: verification.payer,
-        amount_usdc: verification.amount_usdc
-      },
-      env
-    );
-      if (!__claim.claimed) {
-        return new Response(
-          JSON.stringify({
-            error:
-              __claim.code === "settlement_store_unavailable"
-                ? "Settlement store unavailable; nothing settled. Retry later."
-                : `Transaction ${verification.tx_hash} was already claimed and settled.`,
-            code: __claim.code === "settlement_store_unavailable" ? "settlement_store_unavailable" : "already_claimed",
-            tx_hash: verification.tx_hash
-          }),
-          { status: __claim.code === "settlement_store_unavailable" ? 503 : 409, headers: { "content-type": "application/json", "cache-control": "no-store" } }
-        );
-      }
-
-
-    return new Response(
-      JSON.stringify({
-        status: "settled",
-        tier: tierName,
-        name: isDispute ? "M2M Escrow Dispute Evaluation" : "Agent Financial Pre-Sign Check",
-        receipt: {
-          network: "base",
-          chain_id: 8453,
-          asset: "USDC",
-          amount_usdc: verification.amount_usdc,
-          payer: verification.payer,
-          recipient: verification.recipient,
-          tx_hash: verification.tx_hash,
-          settled_at: new Date().toISOString()
-        },
-        instructions:
-          "Micropayment confirmed on Base. Pass 'X-Payment-Tx: " +
-          verification.tx_hash +
-          "' on your API call for verified machine execution."
-      }),
-      { status: 200, headers: { "content-type": "application/json", "cache-control": "no-store" } }
-    );
-  }
-
-  // Tier 3 Deal Dossier ($49 pilot)
-  if (verification.amount_usdc < TIER_DOSSIER_USDC_AMOUNT) {
-    return new Response(
-      JSON.stringify({
-        error: `Insufficient payment for Confidential Deal Dossier: received ${verification.amount_usdc} USDC, required ${TIER_DOSSIER_USDC_AMOUNT} USDC.`,
-        required_usd: TIER_DOSSIER_USDC_AMOUNT,
-        received_usd: verification.amount_usdc
-      }),
-      { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } }
-    );
-  }
-
-  const __claim = await claimTransactionSettlement(
-    verification.tx_hash,
-    {
-      tier: "tier_3_deal_dossier",
-      payer: verification.payer,
-      amount_usdc: verification.amount_usdc
-    },
-    env
-  );
-    if (!__claim.claimed) {
-      return new Response(
-        JSON.stringify({
-          error:
-            __claim.code === "settlement_store_unavailable"
-              ? "Settlement store unavailable; nothing settled. Retry later."
-              : `Transaction ${verification.tx_hash} was already claimed and settled.`,
-          code: __claim.code === "settlement_store_unavailable" ? "settlement_store_unavailable" : "already_claimed",
-          tx_hash: verification.tx_hash
-        }),
-        { status: __claim.code === "settlement_store_unavailable" ? 503 : 409, headers: { "content-type": "application/json", "cache-control": "no-store" } }
-      );
-    }
-
-
-  return new Response(
-    JSON.stringify({
-      status: "settled",
-      tier: "tier_3_deal_dossier",
-      name: "Confidential Deal Dossier",
-      expedited: true,
-      receipt: {
-        network: "base",
-        chain_id: 8453,
-        asset: "USDC",
-        amount_usdc: verification.amount_usdc,
-        payer: verification.payer,
-        recipient: verification.recipient,
-        tx_hash: verification.tx_hash,
-        settled_at: new Date().toISOString()
-      },
-      instructions:
-        "Payment confirmed on Base. Your transaction hash is stamped on the file. Send parameters or submit to /message/send with 'X-Payment-Tx: " +
-        verification.tx_hash +
-        "'."
-    }),
-    { status: 200, headers: { "content-type": "application/json", "cache-control": "no-store" } }
-  );
 }
 
 export function generateX402PaymentResponse(profile, request, env, reason = "quota_exceeded") {
@@ -735,7 +576,7 @@ export function generateX402PaymentResponse(profile, request, env, reason = "quo
         monthly_pro_usd: TIER_PRO_USDC_AMOUNT
       },
       how_to_pay:
-        "Send transfer(recipient, amount_raw) to token_contract on Base (Chain ID 8453), then retry this request with header 'X-Payment-Tx: <tx_hash>' or purchase a Pro Bearer key at /v1/settle."
+        "Send transfer(recipient, amount_raw) to token_contract on Base (Chain ID 8453), then retry this exact request with 'X-Payment-Tx: <tx_hash>' and funding-wallet 'X-Payment-Signature: <personal_sign proof>' or purchase a Pro Bearer key at /v1/settle."
     }
   };
 

@@ -1,3 +1,4 @@
+import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { pricingHtml } from "./commercial-catalog.js";
 // Browser presentation only. Runtime decisions are supplied by the controller.
 import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL } from "./profiles.js";
@@ -138,7 +139,7 @@ function landingHtml(request, env) {
 
   <div class="status-row"><span class="badge">Live evaluation · v${escapeHtml(VERSION)}</span><span class="badge">Human review required</span><span class="badge">Profile: ${escapeHtml(profile)}</span></div>
   <div class="primary-actions">
-    <a class="primary-action primary-action-main" href="#${consoleId}">Try free (50 requests/hour)</a>
+    <a class="primary-action primary-action-main" href="#${consoleId}">${env.BILLING_MODE === "pay_per_call" ? "Evaluate with a signed payment" : "Try free (50 requests/hour)"}</a>
     <button type="button" class="primary-action" onclick="${exampleAction}" style="cursor:pointer">Run a worked example</button>
     <a class="primary-action" href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent(`Enterprise integration — ${card.name}`)}">Discuss enterprise integration</a>
     <a class="primary-action" href="${origin}/profiles/confidential-project-room">Open confidential project room</a>
@@ -319,7 +320,7 @@ function landingHtml(request, env) {
     </form>
     <pre id="profile-result" style="display:none;max-height:600px;overflow:auto"></pre>
   </div>` : `
-  <h2>Instant Deal Risk & Sanctions Pre-Screen (Free Triage)</h2>
+  <h2>Deal Risk & Sanctions Evidence Pre-Screen</h2>
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
     <p style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
       Enter your counterparty, commodity or HS code, and transit route to run an instant, evidence-readiness triage for human review.
@@ -350,7 +351,7 @@ function landingHtml(request, env) {
   </div>`}
 
   <h2>Evaluation and paid services</h2>
-  <div class="card">${pricingHtml(escapeHtml, profile)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
+  <div class="card">${pricingHtml(escapeHtml, profile, env.BILLING_MODE)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
 
   <details style="margin: 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; background: #fafafa;">
     <summary style="font-weight: 700; cursor: pointer; font-size: 15px; color: var(--fg);">🛠️ Try it (curl &amp; AI Agent Integration)</summary>
@@ -410,6 +411,7 @@ function landingHtml(request, env) {
   </footer>
 </main>
 <script>
+${PAYMENT_CLIENT_SCRIPT}
 function safeHtml(value) {
   var element = document.createElement('span');
   element.textContent = String(value == null ? '' : value);
@@ -431,9 +433,9 @@ async function runProfileExample(event) {
   try {
     var payload = JSON.parse(document.getElementById('profile-request').value);
     var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
-    var response = await fetch('${origin}${endpoint || '/message/send'}', {
+    var response = await agendaPaidFetch('${origin}${endpoint || '/message/send'}', {
       method: 'POST', headers: {'content-type':'application/json', 'A2A-Version':'1.0', 'x-trace-id': traceId}, body: JSON.stringify(payload)
-    });
+    }, ${isEscrowArbiter ? '0.5' : '0.05'});
     var body = await response.json();
     result.style.display = 'block';
     result.textContent = JSON.stringify(body, null, 2);
@@ -473,7 +475,7 @@ async function runBrowserTriage(e) {
   try {
     var prompt = 'Screen sanctions exposure, OFAC EO 14114 risk, and trade compliance for cargo/commodity: ' + cargo + ', transit route: ' + route;
     var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
-    var resp = await fetch('${origin}/message/send', {
+    var resp = await agendaPaidFetch('${origin}/message/send', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'A2A-Version': '1.0', 'x-trace-id': traceId },
       body: JSON.stringify({
@@ -488,7 +490,7 @@ async function runBrowserTriage(e) {
           }
         }
       })
-    });
+    }, ${isEscrowArbiter ? '0.5' : '0.05'});
     var data = await resp.json();
     if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));
     var text = '';
@@ -617,11 +619,11 @@ async function runFinancialGuardSimulation(e) {
       }
     };
 
-    var resp = await fetch('${origin}/v1/agent-financial/pre-sign-check', {
+    var resp = await agendaPaidFetch('${origin}/v1/agent-financial/pre-sign-check', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload)
-    });
+    }, 0.05);
     var elapsed = Math.round(performance.now() - t0);
     var data = await resp.json();
     if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));
@@ -794,11 +796,11 @@ async function runEscrowArbitrationSimulation(e) {
       }
     };
 
-    var resp = await fetch('${origin}/v1/m2m-escrow/evaluate-dispute', {
+    var resp = await agendaPaidFetch('${origin}/v1/m2m-escrow/evaluate-dispute', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload)
-    });
+    }, 0.5);
     var elapsed = Math.round(performance.now() - t0);
     var data = await resp.json();
     if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));

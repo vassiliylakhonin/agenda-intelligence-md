@@ -2,6 +2,14 @@
 
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
+## 1.14.0 — 2026-10-01
+
+- Hosted pay-per-call v2 requires funding-wallet signatures bound to the exact URL, JSON request and task/protocol context. Public transaction hashes and inline body aliases cannot grant paid access.
+- Signed non-Pro activation reserves one execution rather than consuming it. Identical signed retries recover the encrypted completed response for 24 hours; concurrent calls share an atomic execution lease.
+- Validate paid inputs and operation prices before reservation, including the $25 bankability unlock. Financial receipts reuse verified request context and report the actual payer.
+- Configure the deployed fleet for mandatory payment on evaluation, retain free discovery and bankability preview, and add browser checkout with original-payment retries. Apply D1 migration 0002 before gate release.
+- See ADR 0032 and the payment execution contract for this intentional hosted payment compatibility change. Pro credential issuance retains its existing manual recovery boundary.
+
 ## Unreleased — signed production deployment
 
 - Require an owner-signed grant and principal-signed, identity/expiry/request-bound ALLOW before the gated Worker deploy invokes Wrangler.

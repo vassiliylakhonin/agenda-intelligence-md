@@ -19,8 +19,10 @@ export function hostedAccess(profile, env, origin) {
   const quota = rateLimitPerHour(env);
   return {
     authentication: productionAuthKey(profile, env) ? "bearer_required" : "none",
-    base_call_price: "free",
-    quota_per_hour: quota && env?.AGENDA_USAGE ? quota : null,
+    base_call_price: env?.BILLING_MODE === "pay_per_call" ? "paid" : "free",
+    billing_mode: env?.BILLING_MODE || "freemium",
+    discovery_is_free: true,
+    quota_per_hour: env?.BILLING_MODE === "pay_per_call" ? null : quota && env?.AGENDA_USAGE ? quota : null,
     quota_enforcement: quota && env?.AGENDA_USAGE ? "best_effort" : "not_configured",
     pricing_url: `${origin}/.well-known/x402`,
     on_quota_exceeded: "Wait for the next UTC hour or review optional paid access; do not pay automatically.",
@@ -30,6 +32,7 @@ export function hostedAccess(profile, env, origin) {
 
 export function hostedAccessNote(access) {
   if (!access) return "Hosted base calls are free; authentication and hourly quotas depend on deployment configuration. Check the serving endpoint's /.well-known/x402 before calling or paying.";
+  if (access.billing_mode === "pay_per_call") return `Evaluation requires a signed Base USDC payment for the exact request, or Pro access. Discovery is free. Keep the original request and X-Payment-Signature for result recovery within 24 hours. Current prices: ${access.pricing_url}. Do not pay automatically.`;
   const auth = access.authentication === "bearer_required"
     ? "A Bearer access key is required; a missing or incorrect key returns HTTP 401."
     : "No account or authentication is required for this deployment.";

@@ -104,6 +104,9 @@ export const X402_JSON = {
       "recipient_address": "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663",
       "settlement_endpoint": "/v1/settle",
       "settlement_header": "X-Payment-Tx",
+      "signature_header": "X-Payment-Signature",
+      "proof": "Funding-wallet EIP-191 signature of the exact request challenge",
+      "result_recovery_hours": 24,
       "supported": true,
       "contact": "vassiliy.lakhonin@gmail.com"
     }

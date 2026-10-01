@@ -207,7 +207,7 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}, o
       network: "base",
       asset: "USDC",
       settlement_tx: options.paymentProof.tx_hash || requestBody.x402_payment_tx || "verified_onchain",
-      payer: options.paymentProof.from || "verified_agent",
+      payer: options.paymentProof.payer || "verified_agent",
       amount_usdc: options.paymentProof.amount_usdc || 0.05,
       timestamp: new Date().toISOString()
     };

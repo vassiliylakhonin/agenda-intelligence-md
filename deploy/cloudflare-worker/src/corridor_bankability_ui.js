@@ -1,3 +1,4 @@
+import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { BASE_USDC_CONTRACT, BASE_USDC_WALLET, VERSION } from "./profiles.js";
 
 export function handleBankabilityUiRequest(request, env = {}) {
@@ -435,6 +436,7 @@ export function handleBankabilityUiRequest(request, env = {}) {
   </div>
 
   <script>
+${PAYMENT_CLIENT_SCRIPT}
     var BASE_USDC = "${BASE_USDC_CONTRACT}";
     var RECIPIENT = "${BASE_USDC_WALLET}";
     var currentAccount = null;
@@ -630,18 +632,21 @@ export function handleBankabilityUiRequest(request, env = {}) {
 
         payStatus.innerHTML = "🔗 Transaction broadcast: <code style='color:var(--accent);'>" + txHash.slice(0, 10) + "..." + txHash.slice(-8) + "</code>. Verifying with Cloudflare Edge...";
 
-        pendingDossierPayment = { txHash: txHash, payload: payload };
-        // Retry the same request and payment, never send a second transfer.
-        var resp = await fetch("/v1/corridor-bankability/screen", {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "x-payment-tx": txHash
-          },
-          body: JSON.stringify(payload)
-        });
-
+        pendingDossierPayment = pendingDossierPayment || { txHash: txHash, payload: payload, signature: null };
+        // Obtain and sign the server's exact-request challenge; retain proof on retry.
+        var options = { method: "POST", headers: { "content-type": "application/json", "x-payment-tx": txHash }, body: JSON.stringify(payload) };
+        agendaShowRecovery({ url: "${origin}/v1/corridor-bankability/screen", options: options, tx: txHash, payer: currentAccount, signature: pendingDossierPayment.signature });
+        if (pendingDossierPayment.signature) options.headers["x-payment-signature"] = pendingDossierPayment.signature;
+        var resp = await fetch("/v1/corridor-bankability/screen", options);
         var data = await resp.json();
+        if (resp.status === 401 && data.challenge_message && !pendingDossierPayment.signature) {
+          var hex = "0x" + Array.from(new TextEncoder().encode(data.challenge_message)).map(function(b) { return b.toString(16).padStart(2, "0"); }).join("");
+          pendingDossierPayment.signature = await window.ethereum.request({ method: "personal_sign", params: [hex, currentAccount] });
+          agendaShowRecovery({ url: "${origin}/v1/corridor-bankability/screen", options: options, tx: txHash, payer: currentAccount, signature: pendingDossierPayment.signature });
+          options.headers["x-payment-signature"] = pendingDossierPayment.signature;
+          resp = await fetch("/v1/corridor-bankability/screen", options);
+          data = await resp.json();
+        }
 
         if (!resp.ok) throw new Error(JSON.stringify(data));
         if (data.unlocked_full_dossier && data.full_dossier) {

@@ -1,3 +1,4 @@
+import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { BASE_USDC_CONTRACT, BASE_USDC_WALLET, VERSION } from "./profiles.js";
 
 export function handleExplorerRequest(request, env = {}) {
@@ -227,6 +228,7 @@ export function handleExplorerRequest(request, env = {}) {
   </div>
 
   <script>
+${PAYMENT_CLIENT_SCRIPT}
     document.getElementById("deadlineInput").value = new Date(Date.now() + 86400000).toISOString();
     var currentAccount = null;
     var btnConnect = document.getElementById("btnConnect");
@@ -310,11 +312,11 @@ export function handleExplorerRequest(request, env = {}) {
       };
 
       try {
-        var resp = await fetch("/v1/m2m-escrow/evaluate-dispute", {
+        var resp = await agendaPaidFetch("/v1/m2m-escrow/evaluate-dispute", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(payload)
-        });
+        }, 0.5);
         var data = await resp.json();
         arbiterOutput.innerText = JSON.stringify(data, null, 2);
 
