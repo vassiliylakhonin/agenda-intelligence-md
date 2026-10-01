@@ -237,6 +237,12 @@ export interface CISSecondarySanctionsExposureResponse {
   upstream_attribution?: {
     [key: string]: unknown;
   } | null;
+  /** SHA-256 JCS digest of the static source snapshot. */
+  live_retrieval_snapshot_digest?: string | null;
+  /** Snapshot age in milliseconds; future dates have negative age and are rejected. */
+  live_retrieval_snapshot_age_ms?: number | null;
+  /** Configured freshness limit in milliseconds. */
+  live_retrieval_snapshot_max_age_ms?: number | null;
 }
 
 /** Product-grade structured request contract for Critical Minerals & Strategic Raw Materials evidence triage (EU Critical Raw Materials Act, EU CSDDD, US Inflation Reduction Act, and export-control compliance). This schema describes caller-supplied mineral commodity, extraction jurisdiction, processing route, counterparty, and decision-stage inputs. It does not enable live retrieval, factual-truth verification, legal advice, compliance advice, sanctions advice, or ESG certification. */

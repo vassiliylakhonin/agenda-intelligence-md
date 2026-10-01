@@ -10,6 +10,15 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+### Fleet operations and payment ledger (2026-10-01)
+
+- Enforce configured deployment Bearer authorization on every POST `/v1/*` execution alias, and bound JSON reads while streaming (1 MiB). REST payment amounts follow the requested operation while authorization follows the host.
+- Replace settlement replay claims and Pro quota counters with one shared D1 ledger: atomic claims, permanent transaction uniqueness, hashed Pro credentials, and atomic quota consumption even when the free limiter is disabled. New claims require a Base block timestamp within seven days. Missing D1 denies settlement. This supersedes the KV-only limitation below.
+- Deployed A2A task continuation now requires a server-issued private `X-Task-Token`; caller labels remain telemetry only. Old tasks must be recreated. Local legacy label mode remains available.
+- Generate directory required fields from MCP schemas; empty Assistant MCP calls return the advertised directory.
+- Identify technical verification and owner traffic separately. Journal v2 compares full canonical inputs only within the same profile, capability, contract, engine and source snapshot; historical partial hashes remain explicitly marked.
+- Add `/health/dependencies`, propagate source age and digest, reject future-dated snapshots, and align published-index CI with the runtime's 72-hour freshness limit. See ADR 0031 and the fleet operations runbook.
+
 - Align live Trust and Dual-Use health proofs with DLP-only receipts, unverified ownership and mandatory human review; retain blocked-name and synthetic secret detection checks. Retry read-only MCP discovery transport interruptions at most three times and preserve each failed attempt in reports; persistent transport, HTTP and contract failures remain visible.
 
 - Publish outputSchema for all hosted Agenda MCP tools, including Financial Guard and Escrow legacy task envelopes, strategic triage, fleet directory and corridor orientation. Validate successful output and controlled refusals without changing request or response formats. Mark legacy Financial Guard/Escrow INPUT_REQUIRED refusals as MCP errors.

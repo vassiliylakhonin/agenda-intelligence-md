@@ -33,7 +33,7 @@ local Wrangler login.
 `.github/workflows/check-sanctions-index.yml` is the independent daily watchdog.
 It verifies the URL users actually read, rebuilds from
 the sources, compares drift when possible, and fails when the served index is
-missing, malformed, or older than seven days. A temporary source outage is only
+missing, malformed, or older than 72 hours. A temporary source outage is only
 a warning while the served index is fresh. When production is stale and a
 rebuild succeeds, the watchdog preserves another seven-day recovery artifact
 before failing.

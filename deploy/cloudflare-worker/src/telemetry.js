@@ -134,7 +134,9 @@ function isServiceProbeUserAgent(raw) {
 // synthetic check carries `X-Client-Id: instinct-owner-*`. Without this bucket
 // those runs land in `external` and read as demand — which is exactly the
 // confusion a header is there to prevent.
-const OWNER_SYNTHETIC_CLIENT_ID = /^instinct-owner/i;
+const OWNER_SYNTHETIC_CLIENT_ID = /^instinct[-_]?owner/i;
+const OWNER_SYNTHETIC_USER_AGENT = /^instinct[-_]?owner(?:verify|feedback|[-_])/i;
+const TECHNICAL_VERIFICATION_USER_AGENT = /^agenda-ecosystem-verification\//i;
 
 // Named benchmark harnesses observed replaying conformance packets against the
 // fleet. Real protocol traffic, but not demand: they get their own bucket
@@ -146,6 +148,8 @@ function callerKind(request) {
   if (clientId && OWNER_SYNTHETIC_CLIENT_ID.test(clientId)) return "owner_synthetic";
   const raw = (request.headers.get("user-agent") || "").trim();
   if (!raw) return "unsigned_external";
+  if (OWNER_SYNTHETIC_USER_AGENT.test(raw)) return "owner_synthetic";
+  if (TECHNICAL_VERIFICATION_USER_AGENT.test(raw)) return "verification_probe";
   if (SELF_TEST_USER_AGENT.test(raw)) return "self_test";
   if (BENCHMARK_USER_AGENT.test(raw)) return "benchmark_probe";
   if (isServiceProbeUserAgent(raw)) return "service_probe";
@@ -160,6 +164,7 @@ function trafficClass(request, likelyProbe = false) {
   if (kind === "self_test") return "self_test";
   if (kind === "owner_synthetic") return "owner_synthetic";
   if (kind === "benchmark_probe") return "benchmark_probe";
+  if (kind === "verification_probe") return "verification_probe";
   if (kind === "service_probe" || likelyProbe) return "machine_probe";
   if (classifyClient(request) === "browser") return "human_browser";
   return "machine_client";
@@ -175,6 +180,7 @@ function actionProbeReason(request, promptChars) {
   const kind = callerKind(request);
   if (kind === "owner_synthetic") return "owner_synthetic";
   if (kind === "benchmark_probe") return "known_benchmark";
+  if (kind === "verification_probe") return "technical_verification";
   if (kind === "service_probe") return "self_identified_service";
   if (classifyClient(request) === "agenstry") return "agenstry_client";
   if (promptChars < PROBE_PROMPT_CHAR_THRESHOLD) return "short_prompt";
@@ -242,11 +248,17 @@ function billableUpstreamCost(result) {
   const status = result?.metadata?.live_retrieval_status ?? null;
   const upstream = result?.metadata?.live_retrieval_upstream ?? null;
   const reasonCode = result?.metadata?.live_retrieval_reason_code ?? null;
+  const snapshot = {
+    snapshot_generated_at: result?.metadata?.live_retrieval_snapshot_generated_at || null,
+    snapshot_digest: result?.metadata?.live_retrieval_snapshot_digest || null,
+    snapshot_age_ms: result?.metadata?.live_retrieval_snapshot_age_ms ?? null,
+    snapshot_max_age_ms: result?.metadata?.live_retrieval_snapshot_max_age_ms ?? null
+  };
   const unit = upstream ? BILLABLE_UPSTREAM_EUR[upstream] : undefined;
   if (status !== "success" || !unit) {
-    return { status, upstream, reason_code: reasonCode, billable: false, cost_eur: 0 };
+    return { status, upstream, ...snapshot, reason_code: reasonCode, billable: false, cost_eur: 0 };
   }
-  return { status, upstream, reason_code: null, billable: true, cost_eur: unit };
+  return { status, upstream, ...snapshot, reason_code: null, billable: true, cost_eur: unit };
 }
 
 // End-to-end correlation id. A caller (or the landing-page console) sends
@@ -315,7 +327,9 @@ function buildUsageEvent(request, details = {}) {
     // the size of what this profile could parse, with structured_chars carrying
     // the latter. Rows at version 3 and below measured a plain-text request to
     // a gate as zero, and their likely_probe follows from that number.
-    event_version: 8,
+    event_version: 9,
+    classification_version: 2,
+    origin_verification: "unverified",
     timestamp: new Date().toISOString(),
     source: "cloudflare_worker",
     method: request.method,
@@ -539,6 +553,11 @@ async function recordDecision(env, { params, profile, result, timestamp }) {
     // across a version bump is a different fact from one that changed on the
     // same contract, and without this the two are indistinguishable.
     contract_version: VERSION,
+    journal_version: 2,
+    capability: params?.capability || null,
+    engine_version: env?.CF_VERSION_METADATA?.id || env?.DEPLOYMENT_VERSION || VERSION,
+    source_snapshot: result?.metadata?.live_retrieval_snapshot_digest ||
+      result?.metadata?.live_retrieval_snapshot_generated_at || null,
     input_hash: await sha256Jcs(canonicalDecisionInput(params)),
     decision: outcome.decision,
     status: outcome.status,
@@ -556,16 +575,14 @@ async function recordDecision(env, { params, profile, result, timestamp }) {
 // Message ids and task ids are new on every call and would make each run a
 // fresh hash, which is the one thing this must not do.
 function canonicalDecisionInput(params) {
-  const message = params?.message;
-  const parts = Array.isArray(message?.parts) ? message.parts : [];
-  return {
-    request: params?.request ?? null,
-    capability: params?.capability ?? null,
-    parts: parts.map((part) => ({
-      text: typeof part?.text === "string" ? part.text : null,
-      data: part?.data ?? null
-    }))
-  };
+  // Preserve all decision-bearing parameters. Only transport identifiers are
+  // removed; different free text and unknown structured fields must not collide.
+  const { messageId, taskId, contextId, id, trace_id, ...input } = params || {};
+  if (input.message && typeof input.message === "object") {
+    const { messageId, taskId, contextId, ...message } = input.message;
+    input.message = message;
+  }
+  return input;
 }
 
 // Runs grouped by input: the same file, answered more than once. A repeated
@@ -575,17 +592,29 @@ function canonicalDecisionInput(params) {
 function decisionRuns(records) {
   const byInput = new Map();
   for (const record of records) {
-    const list = byInput.get(record.input_hash) || [];
+    const key = JSON.stringify([
+      record.journal_version || 1, record.agent_profile || "legacy_unknown",
+      record.capability || null, record.input_hash, record.contract_version,
+      record.engine_version || null, record.source_snapshot || null
+    ]);
+    const list = byInput.get(key) || [];
     list.push(record);
-    byInput.set(record.input_hash, list);
+    byInput.set(key, list);
   }
   const repeated = [];
-  for (const [inputHash, runs] of byInput) {
+  for (const runs of byInput.values()) {
     if (runs.length < 2) continue;
     const ordered = [...runs].sort((left, right) => left.timestamp.localeCompare(right.timestamp));
     const verdicts = ordered.map((run) => `${run.decision}/${run.status}/${run.score}/${run.contract_version}`);
     repeated.push({
-      input_hash: inputHash,
+      input_hash: ordered[0].input_hash,
+      journal_version: ordered[0].journal_version || 1,
+      agent_profile: ordered[0].agent_profile || null,
+      capability: ordered[0].capability || null,
+      contract_version: ordered[0].contract_version,
+      engine_version: ordered[0].engine_version || null,
+      source_snapshot: ordered[0].source_snapshot || null,
+      comparison_scope: ordered[0].journal_version === 2 ? "same_execution_context" : "legacy_partial_input",
       runs: ordered.length,
       changed: new Set(verdicts).size > 1,
       first: ordered[0].timestamp,

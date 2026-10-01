@@ -174,7 +174,7 @@ Deploy:
 
 ```bash
 cd deploy/cloudflare-worker
-wrangler deploy
+npm run deploy:all
 ```
 
 Recommended deploy checklist:
@@ -747,3 +747,8 @@ curl https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/a
 Re-run `node scripts/generate-signing-key.js` and re-set
 `AGENT_CARD_SIGNING_KEY`. The new `kid` shows up in
 `/.well-known/jwks.json` automatically on next request. No code change.
+
+
+## Fleet operations (2026-10-01)
+
+Use the [fleet operations runbook](../../docs/deployment/fleet-operations.md) for shared D1 migration, gated release, payment recovery, dependency freshness, telemetry exclusions and private task continuation. Deployed task retrieval requires the issued `X-Task-Token`; a caller label alone is insufficient.

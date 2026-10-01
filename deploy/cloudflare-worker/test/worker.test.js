@@ -1,3 +1,5 @@
+import { memoryD1 } from "./helpers/d1.js";
+import { claimPayment } from "../src/payment-ledger.js";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -2270,7 +2272,7 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   });
 
   assert.equal(event.event, "agenda_intelligence_a2a_usage");
-  assert.equal(event.event_version, 8);
+  assert.equal(event.event_version, 9);
   assert.equal(event.path, "/message/send");
   assert.equal(event.jsonrpc_method, "message/send");
   assert.equal(event.request_kind, "a2a_action");
@@ -2369,7 +2371,7 @@ test("a prose question to a gate is measured by what arrived, not by what parsed
   assert.equal(event.prompt_chars, question.length, "prompt_chars is the size of what the caller sent");
   assert.equal(event.structured_chars, 0, "structured_chars still reports what the gate could parse");
   assert.equal(event.likely_probe, false, "a request this size is not a probe because a schema rejected it");
-  assert.equal(event.event_version, 8);
+  assert.equal(event.event_version, 9);
   assert.equal(event.outcome.reason_code, "missing_structured_request");
   assert.ok(event.outcome.required_fields.includes("counterparty"));
   assert.ok(event.outcome.required_fields.includes("risk_question"));
@@ -6207,7 +6209,7 @@ test("the front door declares that it answers without a question", async () => {
 
   const [door] = mcpToolsForProfile("corridor_sanctions_assistant");
   assert.equal(door.name, "corridor_sanctions_assistant");
-  assert.ok(!door.inputSchema.required, "the front door must not require an argument it answers without");
+  assert.ok(!door.inputSchema.required);
   assert.equal(door.inputSchema.additionalProperties, true);
   assert.ok(door.inputSchema.properties.text.description.includes("Optional"));
 
@@ -8019,7 +8021,7 @@ test("a changed verdict on an unchanged input is reported as changed", () => {
     { input_hash: "sha256:c", timestamp: "2026-08-27T09:00:00.000Z", decision: "proceed", status: "proceed", score: 80, contract_version: "1.7.0" },
     { input_hash: "sha256:c", timestamp: "2026-08-28T09:00:00.000Z", decision: "proceed", status: "proceed", score: 80, contract_version: "1.7.1" }
   ]);
-  assert.equal(acrossVersions[0].changed, true);
+  assert.equal(acrossVersions.length, 0, "different contract versions are separate comparison contexts");
 });
 
 // Message and task identifiers are new on every call. Including them would give
@@ -8191,7 +8193,8 @@ test("mcp tools/call fleet_directory returns all 11 specialized gates with canon
   for (const gate of payload.gates) {
     assert.ok(gate.canonical_endpoint.startsWith("https://"));
     assert.ok(Array.isArray(gate.required_fields));
-    assert.ok(gate.required_fields.length > 0);
+    const catalogTool = mcpToolsForProfile(gate.profile).find(tool => tool.name === gate.tool_name);
+    assert.deepEqual(gate.required_fields, catalogTool.inputSchema.required || []);
   }
 });
 
@@ -8218,6 +8221,7 @@ function mockUsdcTransferReceipt(amountUsdc, recipient = BASE_USDC_WALLET, statu
   const payerTopic = normalizeAddressForTopic(payer);
   return {
     status,
+    timestamp: "0x" + Math.floor(Date.now() / 1000).toString(16),
     blockNumber: "0x12345",
     logs: [
       {
@@ -8297,7 +8301,7 @@ test("POST /v1/settle requires the payer signature before any credential exists"
       headers: { "content-type": "application/json" }
     });
 
-  const env = { AGENDA_USAGE: fakeRateKv() };
+  const env = { AGENDA_USAGE: fakeRateKv(), PAYMENT_LEDGER: memoryD1() };
 
   try {
     // No signature: 400 with the challenge to sign, nothing claimed.
@@ -8336,7 +8340,7 @@ test("POST /v1/settle provisions a 30-day Pro Bearer key for 490 USDC payment", 
       headers: { "content-type": "application/json" }
     });
 
-  const env = { AGENDA_USAGE: fakeRateKv() };
+  const env = { AGENDA_USAGE: fakeRateKv(), PAYMENT_LEDGER: memoryD1() };
 
   try {
     const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", {
@@ -8389,7 +8393,7 @@ test("header-settled Pro payment upgrades only with payer signature; completed c
   const txHash = "0x2222222222222222222222222222222222222222222222222222222222222222";
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockUsdcTransferReceipt(490) }), { status: 200 });
-  const env = { AGENDA_USAGE: fakeRateKv(), RATE_LIMIT_PER_HOUR: "1" };
+  const env = { AGENDA_USAGE: fakeRateKv(), PAYMENT_LEDGER: memoryD1(), RATE_LIMIT_PER_HOUR: "1" };
   const url = "https://agenda-intelligence-a2a.example.workers.dev/v1/settle";
   const settle = (tier, signature) => handleRequest(new Request(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tx_hash: txHash, tier, ...(signature ? { payer_signature: signature } : {}) }) }), env);
   try {
@@ -8418,7 +8422,7 @@ test("header claim refuses mismatched payer, tier or already-provisioned marker"
   const txHash = "0x2222222222222222222222222222222222222222222222222222222222222222";
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockUsdcTransferReceipt(490) }), { status: 200 });
-  const env = { AGENDA_USAGE: fakeRateKv() };
+  const env = { AGENDA_USAGE: fakeRateKv(), PAYMENT_LEDGER: memoryD1() };
   const key = `settled_tx:${txHash}`;
   const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tx_hash: txHash, tier: "tier_2_pro", payer_signature: MOCK_PAYER_SIGNATURE_TX2222 }) });
   try {
@@ -8447,7 +8451,7 @@ test("Pro landing payment and signed settlement display the issued bearer token"
     return null;
   } } };
   const originalFetch = globalThis.fetch;
-  const env = { AGENDA_USAGE: fakeRateKv() };
+  const env = { AGENDA_USAGE: fakeRateKv(), PAYMENT_LEDGER: memoryD1() };
   const fetch = async (url, options) => {
     if (String(url).includes("/v1/settle")) return handleRequest(new Request(url, options), env);
     return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockUsdcTransferReceipt(490) }), { status: 200 });
@@ -8466,7 +8470,8 @@ test("Pro landing payment and signed settlement display the issued bearer token"
 });
 
 test("checkRateLimit elevates quota for provisioned Pro Bearer key", async () => {
-  const env = { RATE_LIMIT_PER_HOUR: "2", AGENDA_USAGE: fakeRateKv() };
+  const env = { RATE_LIMIT_PER_HOUR: "2", AGENDA_USAGE: fakeRateKv(), PAYMENT_LEDGER: memoryD1() };
+  await claimPayment(env, "0xtx", { tier: "tier_2_pro" });
   const { token } = await provisionProBearerToken("0xpayer", "0xtx", env);
 
   const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
@@ -8496,7 +8501,7 @@ test("checkRateLimit bypasses 429 when valid X-Payment-Tx header is provided", a
       headers: { "content-type": "application/json" }
     });
 
-  const env = { RATE_LIMIT_PER_HOUR: "1", AGENDA_USAGE: fakeRateKv() };
+  const env = { RATE_LIMIT_PER_HOUR: "1", AGENDA_USAGE: fakeRateKv(), PAYMENT_LEDGER: memoryD1() };
 
   try {
     // Fill up the quota for this IP
@@ -8999,7 +9004,7 @@ test("POST /v1/settle settles tier_micro_check for 0.05 USDC", async () => {
       headers: { "content-type": "application/json" }
     });
 
-  const env = { AGENDA_USAGE: fakeRateKv() };
+  const env = { AGENDA_USAGE: fakeRateKv(), PAYMENT_LEDGER: memoryD1() };
 
   try {
     const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", {
@@ -9092,7 +9097,7 @@ test("POST /v1/corridor-bankability/screen with valid x-payment-tx returns unloc
       })
     });
 
-    const res = await handleRequest(req, {});
+    const res = await handleRequest(req, { PAYMENT_LEDGER: memoryD1() });
     assert.equal(res.status, 200);
     const data = await res.json();
     assert.equal(data.unlocked_full_dossier, true);

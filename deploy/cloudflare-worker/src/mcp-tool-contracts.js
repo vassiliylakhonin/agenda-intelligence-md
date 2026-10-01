@@ -2438,6 +2438,27 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "object",
               "null"
             ]
+          },
+          "live_retrieval_snapshot_digest": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "SHA-256 JCS digest of the static source snapshot."
+          },
+          "live_retrieval_snapshot_age_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Snapshot age in milliseconds; future dates have negative age and are rejected."
+          },
+          "live_retrieval_snapshot_max_age_ms": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Configured freshness limit in milliseconds."
           }
         },
         "$defs": {

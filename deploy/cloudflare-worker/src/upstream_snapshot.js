@@ -1,3 +1,4 @@
+import { sha256Jcs } from "./decision-receipt.js";
 // Snapshot live-retrieval adapter for the Cloudflare Worker.
 //
 // Server-side name screening against a fresh, compact public-list name index
@@ -348,7 +349,7 @@ export async function matchCounterparty(env, options = {}) {
       return degradedResult("snapshot index is malformed JSON");
     }
     try {
-      INDEX_CACHE = { url, builtAt: Date.now(), index: buildIndex(raw) };
+      INDEX_CACHE = { url, builtAt: Date.now(), index: buildIndex(raw), digest: await sha256Jcs(raw) };
     } catch (error) {
       return degradedResult(`snapshot index build failed: ${error && error.name ? error.name : "unknown"}`);
     }
@@ -360,7 +361,7 @@ export async function matchCounterparty(env, options = {}) {
   const generatedAt = INDEX_CACHE.index.generated_at_utc;
   const generatedMs = generatedAt ? Date.parse(generatedAt) : NaN;
   const snapshotAgeMs = Number.isFinite(generatedMs) ? Date.now() - generatedMs : null;
-  const stale = snapshotAgeMs === null || snapshotAgeMs > maxAgeMs;
+  const stale = snapshotAgeMs === null || snapshotAgeMs < -5 * 60 * 1000 || snapshotAgeMs > maxAgeMs;
   if (stale) {
     return {
       status: "stale",
@@ -368,11 +369,13 @@ export async function matchCounterparty(env, options = {}) {
       attribution: attributionBlock(),
       queried_at: nowIso(),
       snapshot_generated_at: generatedAt,
+      snapshot_digest: INDEX_CACHE.digest,
       snapshot_age_ms: snapshotAgeMs,
       snapshot_max_age_ms: maxAgeMs,
       degrade_reason:
         snapshotAgeMs === null
           ? "snapshot carries no generated_at_utc; freshness cannot be established"
+          : snapshotAgeMs < 0 ? "snapshot publication date is in the future"
           : `snapshot is ${Math.round(snapshotAgeMs / 3600000)}h old, older than the ${Math.round(maxAgeMs / 3600000)}h maximum`
     };
   }
@@ -384,7 +387,9 @@ export async function matchCounterparty(env, options = {}) {
     attribution: attributionBlock(),
     queried_at: nowIso(),
     snapshot_generated_at: generatedAt,
+      snapshot_digest: INDEX_CACHE.digest,
     snapshot_age_ms: snapshotAgeMs,
+    snapshot_max_age_ms: maxAgeMs,
     degrade_reason: null
   };
 }
@@ -399,4 +404,17 @@ export function snapshotMaxAgeMs(env = {}, options = {}) {
 // Test seam: reset the module-global cache between unit tests.
 export function __resetCache() {
   INDEX_CACHE = null;
+}
+
+// Separate dependency probe: HTTP liveness never implies a current source.
+export async function snapshotHealth(env, options = {}) {
+  const result = await matchCounterparty(env, { ...options, name: "__snapshot_dependency_probe__" });
+  return {
+    status: result.status, checked_at: result.queried_at,
+    generated_at: result.snapshot_generated_at || null,
+    age_ms: result.snapshot_age_ms ?? null,
+    max_age_ms: result.snapshot_max_age_ms ?? snapshotMaxAgeMs(env, options),
+    digest: result.snapshot_digest || null,
+    reason: result.degrade_reason || null
+  };
 }
