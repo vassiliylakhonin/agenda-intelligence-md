@@ -3115,14 +3115,11 @@ function corridorAssistantMessageText(response = null, vizierAssistant = null) {
 
 async function a2aResultForCorridorSanctionsAssistant(params, request, env = {}) {
   const text = extractText(params);
-  if (!text.trim()) {
-    if (params.capability !== "corridor_sanctions_assistant") return emptyRequestResult("corridor_sanctions_assistant", request);
-    const result = a2aResultForFleetDirectory(params);
-    result.metadata.product_profile = "corridor_sanctions_assistant";
-    return result;
+  if (!text.trim() && params.capability !== "corridor_sanctions_assistant") {
+    return emptyRequestResult("corridor_sanctions_assistant", request);
   }
   let vizierAssistant = null;
-  if (isAssistantVizierEnabled(env)) {
+  if (text.trim() && isAssistantVizierEnabled(env)) {
     vizierAssistant = await verifyAssistantWithVizier(env, text, params);
   }
 
@@ -3175,7 +3172,10 @@ async function a2aResultForCorridorSanctionsAssistant(params, request, env = {})
       sanctionsNotice +
       securityNotice,
     caller_text: sanitizedText ? sanitizedText.slice(0, 500) : "",
-    gates: selectedRoute ? [{ ...selectedRoute }] : CORRIDOR_ASSISTANT_GATES.map((gate) => ({ ...gate })),
+    gates: !text.trim()
+      ? fleetDirectoryResponse().gates.map(gate => ({ name: gate.tool_name, use_when: gate.description,
+          a2a: gate.canonical_endpoint, profile: gate.profile, required_fields: gate.required_fields }))
+      : selectedRoute ? [{ ...selectedRoute }] : CORRIDOR_ASSISTANT_GATES.map((gate) => ({ ...gate })),
     engagement: {
       offer: "Person-led review of a current deal or counterparty, scoped and quoted before work starts.",
       contact_email: SUPPORT_CONTACT_EMAIL,

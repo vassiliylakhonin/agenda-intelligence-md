@@ -4,7 +4,7 @@
 
 Run `make verify-local`, then validate every Wrangler environment with `wrangler deploy --dry-run`. Apply `deploy/cloudflare-worker/migrations/0001_payment_ledger.sql` to the shared `agenda-fleet-payments` D1 database before release. All environments bind it as `PAYMENT_LEDGER`.
 
-From a clean committed tree, run `npm run deploy:all` in `deploy/cloudflare-worker`. This requests a signed Vizier ALLOW receipt for every environment. The sanctioned deploy credential is `VIZIER_API_KEY` or macOS Keychain service `com.vizier.gated-deploy`, account `VIZIER_API_KEY`. Never embed or print it. Run `npm run deploy:all -- --check` after release to compare receipt stamps and bundle digests. Direct deployment would omit the required gate.
+From a clean committed tree, run `npm run deploy:all` in `deploy/cloudflare-worker`. This requests a signed Vizier ALLOW receipt for every environment. The sanctioned deploy credential is `VIZIER_API_KEY` or macOS Keychain service `com.vizier.gated-deploy`, account `VIZIER_API_KEY`. Never embed or print it. Signed-grant mode also requires a separate ten-minute owner grant for each target (see [signed deployment](signed-deploy.md)). Prefer the protected `Deploy existing Worker fleet through Vizier` workflow on immutable main: its isolated signer step supplies the existing owner key without exposing it locally. Run `npm run deploy:all -- --check` after release to compare receipt stamps and bundle digests. Direct deployment would omit the required gate.
 
 ## Dependency health
 
