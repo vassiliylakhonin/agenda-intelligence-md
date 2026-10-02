@@ -960,7 +960,9 @@ test("Agenstry file-verified domains keep their issued per-domain ownership proo
   // A fleet-wide placeholder can pass syntax tests but expires real ownership.
   const issuedProofs = {
     "agent-output-verification": "af-verify-tl6QgNMCzIA1pndb3zHju7arGREcjwt0gzNgWs6PJ6w",
-    "kazakhstan-market-entry-readiness": "af-verify-mwcG4yRjqUHqxk3tQ2NJyydW_b6RwAfRj7G13W-rQ6c"
+    "kazakhstan-market-entry-readiness": "af-verify-mwcG4yRjqUHqxk3tQ2NJyydW_b6RwAfRj7G13W-rQ6c",
+    "agent-financial-guard": "af-verify-UIQ8_xYUHvoQnPdmRF5F1tHO6Bhj8Cc6Dm4-Sj3tBfg",
+    "m2m-escrow-arbiter": "af-verify-a_m8PP8zJsdkT2B3jG_OrojQ7WiNd2yV2yaLhIrTmm4"
   };
   const toml = readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8");
   for (const [envName, issued] of Object.entries(issuedProofs)) {
