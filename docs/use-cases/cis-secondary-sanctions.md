@@ -141,3 +141,10 @@ A2A (JSON-RPC over the worker `/message/send` endpoint):
 ## Honest traction note
 
 As of 2026-05-26, the worker has zero paying customers, zero named pilot users, and no usage above operator smoke tests. The `cis_secondary_sanctions` profile is shipped as a portfolio-grade vertical worker — useful as a concrete artifact for technical evaluators and as a contract that real practitioners can inspect, not as a claim of production traction. See the root [`README.md`](../../README.md#status) status table and [`docs/agenstry/demo-pack.md`](../agenstry/demo-pack.md) for live smoke examples.
+
+
+## Hosted connection
+
+For remote MCP initialization, free discovery and A2A heartbeat, see the
+[hosted quickstart](../deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
+the signed payment flow; the saved worked example on the site is free.

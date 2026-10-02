@@ -106,3 +106,10 @@ The dark-fleet, ship-to-ship, and AIS-manipulation facets this worker flags are 
 ## Honest traction note
 
 As of 2026-06-03, this worker has zero paying customers, zero named pilot users, and no usage above operator smoke tests. It is shipped as a portfolio-grade, topical vertical worker — a concrete artifact for technical evaluators and a contract real practitioners can inspect — not a claim of production traction. The deployed Cloudflare Worker A2A endpoint and its `wrangler` env are a deploy-time follow-up; the Python service, HTTP route, and A2A profile are live in-package.
+
+
+## Hosted connection
+
+For remote MCP initialization, free discovery and A2A heartbeat, see the
+[hosted quickstart](../deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
+the signed payment flow; the saved worked example on the site is free.

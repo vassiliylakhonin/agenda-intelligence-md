@@ -137,3 +137,10 @@ Helpful context includes MCP/A2A endpoint metadata, rate-limit or abuse signals,
 This contract should not be presented as a detection engine. It is a structured evidence gate. It can help a team see what is missing before they let a policy engine, fraud analyst, trust-and-safety reviewer, or security owner make a routing decision.
 
 No autonomous blocking. No identity verification. No factual-truth verification. No legal, compliance, financial, or cybersecurity advice. Human review remains required for consequential decisions.
+
+
+## Hosted connection
+
+For remote MCP initialization, free discovery and A2A heartbeat, see the
+[hosted quickstart](../deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
+the signed payment flow; the saved worked example on the site is free.

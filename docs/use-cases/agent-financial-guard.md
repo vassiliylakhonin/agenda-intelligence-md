@@ -183,3 +183,10 @@ export async function preSignCheck(
 - **Community Tier**: Free up to 50 requests/hour per IP.
 - **Header Settlement**: Attach `X-Payment-Tx: <base_usdc_tx_hash>` header to bypass rate-limits autonomously.
 - **Dedicated Pro Key**: Transfer 490 USDC on Base to `0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663`, sign the EIP-191 personal_sign challenge `Agenda Intelligence MD pro-tenant settlement\ntx_hash: <hash>\npayer: <address>` with the funding wallet, then `POST /v1/settle` with `{"tx_hash": "0x...", "tier": "tier_2_pro", "payer_signature": "0x..."}` to receive an `agy_pro_...` 30-day bearer token for 10,000 requests/month. The signature proves the claim comes from the payer wallet; a public tx_hash alone no longer issues a key.
+
+
+## Hosted connection
+
+For remote MCP initialization, free discovery and A2A heartbeat, see the
+[hosted quickstart](../deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
+the signed payment flow; the saved worked example on the site is free.
