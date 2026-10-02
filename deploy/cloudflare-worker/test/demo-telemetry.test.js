@@ -12,7 +12,7 @@ test('free preview closes its attempt without claiming payment or paid execution
  assert.deepEqual(payment.map(e=>e.stage),['request_received','preview_completed']);assert.equal(payment[0].attempt_id,payment[1].attempt_id);
 });
 test('worked example telemetry is fixed empty same-origin POST, never evaluated usage',async()=>{
- const {response,events}=await capture(()=>handleRequest(new Request(origin+'/telemetry/worked-example',{method:'POST',headers:{origin,'x-example-trace-id':trace}}),env));
+ const {response,events}=await capture(()=>handleRequest(new Request(origin+'/telemetry/worked-example',{method:'POST',headers:{origin,'x-example-trace-id':trace},body:''}),env));
  assert.equal(response.status,204);assert.equal(events.length,1);assert.equal(events[0].step,'worked_example');assert.equal(events[0].demo_trace_id,trace);
  for(const request of [new Request(origin+'/telemetry/worked-example',{method:'POST',headers:{origin:'https://foreign.test'}}),new Request(origin+'/telemetry/worked-example',{method:'POST',headers:{origin},body:'secret'})])assert.ok((await handleRequest(request,env)).status>=400);
 });
