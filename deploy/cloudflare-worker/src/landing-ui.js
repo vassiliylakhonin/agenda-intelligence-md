@@ -43,7 +43,7 @@ function landingHtml(request, env) {
     ? `curl -sS -X POST '${origin}/message/send' -H 'Content-Type: application/json' -H 'A2A-Version: 1.0' -H 'X-Trace-Id: example-trace-001' --data-binary @- <<'JSON'\n${JSON.stringify(sampleRequest, null, 2)}\nJSON`
     : `curl ${origin}/.well-known/agent-card.json`;
   const sampleOutput = {
-    result: { status: { state: "TASK_STATE_COMPLETED or TASK_STATE_INPUT_REQUIRED" }, metadata: {
+    result: { status: { state: "TASK_STATE_COMPLETED" }, metadata: {
       trace_id: "example-trace-001",
       verdict_standard: { standard: "agenda-structured-verdict/v1", reason_code: "missing_required_input",
         next_permitted_action: "resubmit_with_required_fields", human_review_required: true,
@@ -81,7 +81,7 @@ function landingHtml(request, env) {
   const consoleId = isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : guide?.example && endpoint && profile !== "kazakhstan" ? "profile-console" : "triage-form";
   const exampleAction = "showWorkedExample()";
   const workedExample = WORKED_EXAMPLES[profile];
-  const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">Try the synthetic example below</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>`;
+  const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">Open live paid evaluation</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -363,11 +363,15 @@ function landingHtml(request, env) {
   <details style="margin: 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; background: #fafafa;">
     <summary style="font-weight: 700; cursor: pointer; font-size: 15px; color: var(--fg);">🛠️ Try it (curl &amp; AI Agent Integration)</summary>
     <div style="margin-top: 12px;">
-      <p>This is a paid A2A 1.0 evaluation request; without payment it returns HTTP 402. Free worked examples above never submit a live request. The trace ID in the response must match the header. Synthetic input only; an incomplete input may return TASK_STATE_INPUT_REQUIRED.</p>
+      <p>Remote MCP endpoint: <code>${origin}/mcp</code>. Discovery is free; evaluating your own input requires the signed payment flow. A client that only discovers tools can connect without a wallet, but cannot automatically run paid tools without a payment adapter.</p>
+      <p>Free connectivity check — lists tools without evaluating evidence or requesting payment:</p>
+      <pre>${escapeHtml(`curl -sS '${origin}/mcp' -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' --data-binary '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`)}</pre>
+      <p>Read <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/deployment/hosted-quickstart.md">the hosted MCP / A2A quickstart</a> for initialization, heartbeat and paid-call handling.</p>
+      <p>This is a paid A2A 1.0 evaluation request. A valid unpaid request returns HTTP 402; invalid input may return HTTP 400. Free worked examples above never submit a live evaluation. Task trace IDs and continuation tokens apply only after successful admission.</p>
       <pre style="margin: 0; overflow-x: auto;">${escapeHtml(tryItCurl)}</pre>
       <p>Keep the issued <code>task.metadata.continuation.token</code> private. GetTask and continuation require <code>X-Task-Token</code>; <code>X-Client-Id</code> is a telemetry label, not authorization. Task status expires after 24 hours; recreate older tasks.</p>
-      <p>Response shape (Middle Corridor and CIS examples are derived from local synthetic fixtures; other profiles are illustrative; actual fields and source dates vary):</p>
-      <pre>${escapeHtml(JSON.stringify(sampleOutput, null, 2))}</pre>
+      <p>Illustrative successful A2A 1.0 envelope after paid admission. Domain outcome and source dates vary; the unpaid response is a JSON-RPC error, not a completed task:</p>
+      <pre>${escapeHtml(JSON.stringify({jsonrpc: "2.0", id: sampleRequest?.id ?? "example", result: {task: {id: "example-task", contextId: "example-context", ...sampleOutput.result}}}, null, 2))}</pre>
     </div>
   </details>
 
