@@ -370,7 +370,7 @@ TASK_SCOPE_AUTH_REQUIRED = "1"
 BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
-AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
+AGENSTRY_VERIFY_TOKEN = "af-verify-UIQ8_xYUHvoQnPdmRF5F1tHO6Bhj8Cc6Dm4-Sj3tBfg"
 
 [[env.agent-financial-guard.kv_namespaces]]
 binding = "AGENDA_USAGE"
@@ -404,7 +404,7 @@ TASK_SCOPE_AUTH_REQUIRED = "1"
 BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
-AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
+AGENSTRY_VERIFY_TOKEN = "af-verify-a_m8PP8zJsdkT2B3jG_OrojQ7WiNd2yV2yaLhIrTmm4"
 
 [[env.m2m-escrow-arbiter.kv_namespaces]]
 binding = "AGENDA_USAGE"

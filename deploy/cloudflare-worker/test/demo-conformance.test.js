@@ -40,3 +40,14 @@ test('payment-required MCP and A2A responses carry JSON-RPC errors and preserved
  const body={jsonrpc:'2.0',id:'paid',method:'tools/call',params:{name:tool.name,arguments:args}};
  const response=await handleRequest(new Request(origin+'/mcp',{method:'POST',body:JSON.stringify(body)}),env);const j=await response.json();assert.equal(response.status,402);assert.equal(j.jsonrpc,'2.0');assert.equal(j.id,'paid');assert.ok(j.error.data);assert.ok(j.x402);
 });
+
+test('paid profile discovery does not advertise evaluated skills as free',async()=>{
+ const profiles=['agenda','kazakhstan','cis_secondary_sanctions','agentic_interaction_trust','agent_output_verification','gulf_maritime_exposure','market_entry_readiness','critical_minerals_due_diligence','dual_use_technology_export','corridor_sanctions_assistant','agent_financial_guard','m2m_escrow_arbiter'];
+ for(const profile of profiles){
+  const response=await handleRequest(new Request(origin+'/.well-known/agent-card.json'),{...env,AGENT_PROFILE:profile});
+  assert.equal(response.status,200);
+  const card=await response.json();
+  assert.ok(card.skills.length>0);
+  for(const skill of card.skills) assert.ok(!skill.tags.includes('free'),profile+': '+skill.id);
+ }
+});

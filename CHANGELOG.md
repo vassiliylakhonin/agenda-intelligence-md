@@ -4,6 +4,9 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Remove misleading `free` skill tags from paid Worker deployments while preserving free discovery and fixed examples.
+- Bind Financial Guard and M2M Escrow to their issued Agenstry ownership proofs; clarify skill inputs, outputs, examples and human-review limits without adding unsupported capabilities.
+
 - Restore the issued per-domain Agenstry ownership proofs for Output Verification and Kazakhstan Market Entry; test the configured proof routes against the owner verification records.
 
 - Clarify free hosted discovery versus signed paid execution, add a tested MCP/A2A quickstart, and correct the public successful A2A 1.0 envelope.

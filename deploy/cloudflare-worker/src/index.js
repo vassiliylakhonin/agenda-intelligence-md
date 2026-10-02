@@ -1007,7 +1007,7 @@ function agentCard(request, env = {}) {
         id: "agenda-signal-screen",
         name: "Sanctions and policy risk signal triage",
         description:
-          "Returns a free live A2A signal screen for sanctions, policy, corridor, and regulatory-risk questions: risk signal, affected regions, required source categories, evidence gaps, watch-next indicators, and recommended MCP tool.",
+          "Returns a hosted A2A signal screen for sanctions, policy, corridor, and regulatory-risk questions: risk signal, affected regions, required source categories, evidence gaps, watch-next indicators, and recommended MCP tool.",
         tags: [
           "sanctions",
           "policy-risk",
@@ -1237,6 +1237,12 @@ function agentCard(request, env = {}) {
 
   };
   const shaped = applyAgentProfile(card, request, env);
+  // Public discovery and fixtures do not make the evaluated skills free.
+  if (env.BILLING_MODE === "pay_per_call") {
+    shaped.skills = shaped.skills.map((skill) => ({
+      ...skill, tags: skill.tags.filter((tag) => tag !== "free")
+    }));
+  }
   const contracts = toolContractsForProfile(agentProfile(request, env));
   if (contracts) shaped.x_tool_contracts = contracts;
   const profile = agentProfile(request, env);
@@ -3499,8 +3505,16 @@ function applyAgentFinancialGuardProfile(card, request) {
       id: "agent-financial-pre-sign-check",
       name: "Agent financial pre-sign check",
       description:
-        "Pre-sign evidence review with local risk rules; authoritative spending and sanctions checks require human review.",
-      tags: ["finance", "pre-sign", "firewall", "ofac", "web3", "agentkit"]
+        "Bring the proposed transaction, declared intent, policy limits and caller-reported history. " +
+        "Get local risk-rule findings and human-review routing before signing. Spending history is unverified; " +
+        "this does not authorize a transaction or provide current sanctions clearance.",
+      tags: ["finance", "pre-sign", "transaction-risk", "web3", "agentkit", "evidence-review"],
+      examples: [
+        "Review a proposed unlimited token approval against the supplied intent and policy before human signing.",
+        "Identify evidence gaps in a proposed agent transfer with caller-reported daily spending."
+      ],
+      inputModes: ["application/json"],
+      outputModes: ["application/json"]
     }
   ];
   return card;
@@ -3521,8 +3535,16 @@ function applyM2MEscrowArbiterProfile(card, request) {
       id: "m2m-escrow-arbitration-ruling",
       name: "M2M escrow evidence review",
       description:
-        "Deterministic dispute resolution and settlement calculation for Agent-to-Agent deliverables, verifying hashes, schemas, and milestones.",
-      tags: ["escrow", "arbitration", "m2m", "a2a", "dispute", "settlement"]
+        "Bring the delivery terms, expected and delivered hashes, timestamps and supplied SLO evidence. " +
+        "Get evidence findings and a proposed allocation for human review. Only a bounded offline JSON Schema " +
+        "subset is supported; no payout is executed or authorized.",
+      tags: ["escrow", "m2m", "a2a", "dispute", "delivery-evidence", "human-review"],
+      examples: [
+        "Compare a delivered artifact hash with the agreed SHA-256 and flag a mismatch for review.",
+        "Review deadline and supplied SLO evidence before a human decides an escrow allocation."
+      ],
+      inputModes: ["application/json"],
+      outputModes: ["application/json"]
     }
   ];
   return card;
@@ -8871,7 +8893,9 @@ function applyCriticalMineralsProfile(card, request) {
       id: "critical-minerals-due-diligence",
       name: "Critical minerals due diligence gate",
       description:
-        "Turns commodity, origin jurisdiction, processing route, and supplied sources into structured critical-minerals due diligence triage.",
+        "Bring commodity, origin jurisdiction, processing route, counterparties and dated sources. " +
+        "Get origin-traceability and quota evidence gaps, a readiness result and human-review routing. " +
+        "Uses supplied evidence; does not certify origin, compliance or factual truth.",
       tags: ["critical-minerals", "rare-earths", "lithium", "csddd", "export-control", "due-diligence", "free"],
       examples: [
         "Is this rare earth elements offtake dossier complete for committee review?",

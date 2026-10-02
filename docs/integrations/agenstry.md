@@ -1,54 +1,60 @@
-# Agenstry Discovery
+# Agenstry discovery and ownership
 
-Agenda Intelligence MD includes a public A2A-style Agent Card at:
+## Hosted fleet and installable package
 
-```text
-.well-known/agent-card.json
-```
-
-The card is intended for agent registries such as Agenstry and for agent clients that need a machine-readable description of the package.
-
-## Current status
-
-Agenda Intelligence MD is an installable stdio MCP server, not a hosted A2A HTTP service.
+The deployed Workers expose public Agent Cards at `/.well-known/agent-card.json`,
+MCP discovery at `/mcp`, and A2A at `/message/send`. Their cards describe the
+capabilities of the selected Worker profile. The Python package remains a
+separate installable stdio MCP server:
 
 ```bash
 pip install agenda-intelligence-md
 agenda-intelligence-mcp
 ```
 
-The Agent Card therefore describes the product, skills, boundaries, schemas, and MCP transport, while the `url` points to the repository rather than a live `message/send` endpoint.
+Use the Worker URL for a hosted listing. Use the repository/package for the
+installable MCP listing. Follow the [hosted quickstart](../deployment/hosted-quickstart.md)
+for actual request envelopes, structured examples and the signed payment path.
 
-## Registry positioning
+## Free discovery and paid evaluation
 
-Use this description when submitting or reviewing the listing:
+Cards, MCP initialize/tools-list, fixed synthetic worked examples and the no-op
+heartbeat are public. Live evaluations use the configured pay-per-call policy.
+A free example is a precomputed demonstration, not a live or paid evaluation.
+Discovery does not authorize a transaction or establish successful client use.
 
-> Evidence-discipline MCP layer for strategic-risk agents. Validates structured strategic-risk memos, audits claim/evidence linkage, diagnoses source-category coverage, routes geography-specific reasoning modules, and exposes packaged signal references.
+Financial Guard reviews supplied pre-sign evidence against local risk rules.
+M2M Escrow reviews delivery evidence and proposed allocations; it does not
+execute or authorize payouts. Other profiles keep their published evidence and
+human-review boundaries. Do not describe these checks as factual-truth
+verification, identity authentication, current sanctions clearance or guaranteed
+safety.
 
-Use these tags:
+## Verify a workers.dev domain
 
-```text
-strategic-risk, policy-analysis, geopolitics, sanctions, trade, regulation, evidence-audit, source-coverage, mcp
-```
+1. In Agenstry Account, enter the exact Worker hostname and select the
+   `/.well-known/ file` method, since workers.dev DNS is not under our control.
+2. Copy that domain's issued public challenge into its own
+   `AGENSTRY_VERIFY_TOKEN` environment variable in `wrangler.toml`.
+3. Run local checks and deploy through the existing Vizier-protected workflow.
+4. Check the live `/.well-known/agenstry-verify` response against the exact issued
+   token, then select **Check now** in Agenstry and confirm **verified**.
 
-## Boundaries to preserve
+Challenges are public ownership proofs, not API credentials. A shared placeholder
+or a challenge issued for another domain is not a valid proof. Existing issued
+file proofs are covered by the Worker regression tests.
 
-- No autonomous live source retrieval before v1.0.
-- No factual-truth verification.
-- No source reputation scoring.
-- No legal, financial, compliance, investment, or trading advice.
+Indexing, ownership verification, technical conformance and revenue evidence are
+separate states. A public listing need not be bound to the owner's account.
+Account impressions and calls cover Agenstry's own measurements and do not
+replace direct Worker telemetry. Do not publish test traffic as customers or
+revenue.
 
-These boundaries should stay visible in any public registry description. They are part of the trust surface, not a limitation to hide.
+## Improve discovery honestly
 
-## Path to a higher registry score
-
-A higher Agenstry score requires a hosted service wrapper around the current MCP product shell:
-
-- expose a public Agent Card at `https://<domain>/.well-known/agent-card.json`;
-- expose a JSON-RPC A2A endpoint, typically `message/send`;
-- call the existing `analyze` and `validate_memo` product-layer functions behind that endpoint;
-- preserve the current source-retrieval and factual-verification boundaries.
-
-The first no-payment hosted option lives in [`deploy/cloudflare-worker/`](../../deploy/cloudflare-worker/). It is a free Cloudflare Workers wrapper for live A2A/JSON-RPC discovery and uptime probes. It does not replace the installable MCP server; full `analyze`, `validate_memo`, evidence audit, source coverage, and signal lookup remain in the stdio MCP package.
-
-Use the deployed Worker URL as an Agenstry `A2A agent URL` after deployment. Keep the GitHub repo listing as the installable MCP listing.
+Keep stable skill IDs and describe actual inputs, outputs and bounded examples.
+Link the structured contracts and quickstart rather than inventing additional
+skills to increase a score. Legal registry IDs and stronger authentication schemes
+should only be declared when real and implemented. Submit revenue evidence only
+for real independent settlements. Catalog scores may lag a deployment; inspect
+both the public listing and current readiness result.
