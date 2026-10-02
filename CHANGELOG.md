@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Accept Cloudflare empty POST body streams for worked-example telemetry while rejecting the first nonempty chunk without buffering request contents.
+
 - Close free bankability preview telemetry with explicit preview outcomes and measure fixed example opens with page-scoped trace linkage to payment attempts.
 
 - Restore wallet-free worked examples as fixed synthetic request/result pairs; edited live evaluations remain paid.

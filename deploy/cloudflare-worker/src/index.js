@@ -15199,7 +15199,19 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   const path = new URL(request.url).pathname;
   if (path === '/telemetry/worked-example') {
     if (request.headers.get('origin') !== new URL(request.url).origin) return new Response(null, {status:403});
-    if (request.body !== null) return new Response(null, {status:400});
+    if (request.body !== null) {
+      const reader = request.body.getReader();
+      try {
+        for (;;) {
+          const {done, value} = await reader.read();
+          if (done) break;
+          if (value?.byteLength) {
+            await reader.cancel();
+            return new Response(null, {status:400});
+          }
+        }
+      } finally { reader.releaseLock(); }
+    }
     await logFunnelEvent(request, 'worked_example', env);
     return new Response(null, {status:204, headers:{'cache-control':'no-store'}});
   }
