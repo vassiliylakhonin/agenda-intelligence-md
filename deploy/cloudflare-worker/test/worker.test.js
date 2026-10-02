@@ -10077,7 +10077,7 @@ test("landing conversion: each profile has a usable console, v1 curl, honest pri
     assert.ok(html.includes(`<link rel="canonical" href="${origin}/">`));
     assert.ok(html.includes(`<meta property="og:url" content="${origin}/">`));
     assert.ok(html.includes(`href="${origin}/.well-known/agent-card.json"`));
-    assert.match(html, /onclick="(?:loadFinScenario|loadEscrowScenario|loadTriagePreset|document\.getElementById)/);
+    assert.match(html, /onclick="showWorkedExample\(\)"/);
     assert.match(html, /-H &#39;A2A-Version: 1\.0&#39;/);
     assert.match(html, /method&quot;: &quot;SendMessage&quot;/);
     assert.match(html, /agenda-structured-verdict\/v1/);

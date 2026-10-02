@@ -1253,11 +1253,11 @@ function agentCard(request, env = {}) {
     trace: "Optional: send an X-Trace-Id header (8-80 chars of A-Za-z0-9._:-) or a top-level params.trace_id. " +
       "It is echoed in task metadata.trace_id and recorded in telemetry, so your call can be correlated end to end."
   };
-  shaped.description = `External application-level evidence gate for agent workflows. Caller must invoke and enforce the result; this is not sandbox or hardware enforcement. Free A2A triage, supplied-evidence only; mandatory human review before commercial action. No independent factual verification or clearance. ${shaped.description}`;
+  shaped.description = `External application-level evidence gate for agent workflows. Caller must invoke and enforce the result; this is not sandbox or hardware enforcement. ${env.BILLING_MODE === 'pay_per_call' ? 'Paid evidence evaluation; free discovery, fixed worked examples and no-op heartbeat;' : 'Free A2A triage, supplied-evidence only;'} mandatory human review before commercial action. No independent factual verification or clearance. ${shaped.description}`;
   shaped.x_agenda_intelligence.free_a2a_triage = {
-    scope: "Free A2A evidence triage; supplied evidence is not independently verified.",
+    scope: env.BILLING_MODE === "pay_per_call" ? "Free discovery, fixed examples and no-op heartbeat only. Evidence evaluation is paid." : "Free A2A evidence triage; supplied evidence is not independently verified.",
     decision_boundary: "No legal, sanctions, financial or trading clearance. Human review before any commercial action.",
-    price: "Free A2A triage. Optional paid paths (where offered): x402 micro-check 0.05 USDC, bankability dossier 25 USDC, Pro 490 USD/month. Check the live pricing manifest before paying."
+    price: env.BILLING_MODE === "pay_per_call" ? "Paid evaluations require signed payment or Pro entitlement. See /.well-known/x402." : "Free A2A triage. Optional paid paths (where offered): x402 micro-check 0.05 USDC, bankability dossier 25 USDC, Pro 490 USD/month. Check the live pricing manifest before paying."
   };
   return shaped;
 }
@@ -15168,6 +15168,31 @@ function containsInlinePayment(value) {
   return false;
 }
 
+// A no-op is a protocol liveness operation, never a domain evaluation.
+// Accept a closed text-only message shape; UA and supplied capability labels grant nothing.
+function isNoopHeartbeat(body) {
+  if (body?.jsonrpc !== '2.0' || !MESSAGE_SEND_METHODS.has(body.method) || Object.keys(body).some(k => !['jsonrpc','id','method','params'].includes(k))) return false;
+  const params = body.params;
+  if (!params || Object.keys(params).some(k => k !== 'message')) return false;
+  const message = params.message;
+  if (!message || Object.keys(message).some(k => !['messageId', 'message_id', 'role', 'parts', 'kind'].includes(k))) return false;
+  if (!['ROLE_USER', 'user'].includes(message.role) || !Array.isArray(message.parts) || message.parts.length !== 1) return false;
+  const part = message.parts[0];
+  if (!part || Object.keys(part).some(k => !['kind', 'text'].includes(k)) || (part.kind && part.kind !== 'text')) return false;
+  return typeof part.text === 'string' && ['ping', 'heartbeat', 'a2a conformance heartbeat', 'a2a liveness probe'].includes(part.text.trim().toLowerCase());
+}
+async function paidProtocolResponse(request, body, response) {
+  const path = new URL(request.url).pathname;
+  if (response.status < 400 || !(path.startsWith('/mcp') || path === '/message/send' || path === '/')) return response;
+  const data = await response.json();
+  if (data.jsonrpc === '2.0') return Response.json(data, {status:response.status, headers:response.headers});
+  const id = typeof body?.id === 'string' || typeof body?.id === 'number' ? body.id : null;
+  // Retain payment extension members used by existing signed clients, while providing
+  // a valid JSON-RPC error envelope and the original challenge in error.data.
+  return Response.json({...data, jsonrpc:'2.0', id, error:{code:body?.jsonrpc !== '2.0' ? -32600 : data.code === 'invalid_paid_request' ? -32602 : -32000, message:'Request not admitted', data}},
+    {status:response.status, headers:response.headers});
+}
+
 export async function handleRequest(request, env = {}, ctx = {}) {
   const execute = () => handleRequestInner(request, env, ctx);
   if (request.method !== 'POST') return execute();
@@ -15180,12 +15205,26 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   if (!wantsPayment && env.BILLING_MODE !== 'pay_per_call' && !bearerTokenFromRequest(request).startsWith('agy_pro_')) return execute();
   let body;
   try { body = await readBoundedJson(request); request = new Request(request, { body: JSON.stringify(body) }); }
-  catch (error) { return jsonResponse({ error: 'Invalid JSON payload' }, error.status || 400); }
-  if (containsInlinePayment(body)) return jsonResponse({ code: 'payment_headers_required',
-    error: 'Use X-Payment-Tx and X-Payment-Signature; body transaction hashes do not grant access.' }, 400);
+  catch (error) {
+    const protocol = path.startsWith('/mcp') || path === '/message/send' || path === '/';
+    return jsonResponse(protocol ? {jsonrpc:'2.0', id:null, error:{code:error.status === 413 ? -32600 : -32700, message:'Invalid JSON payload'}} : {error:'Invalid JSON payload'}, error.status || 400);
+  }
+  const reply = response => Promise.resolve(response).then(value => paidProtocolResponse(request, body, value));
+  if (containsInlinePayment(body)) return reply(jsonResponse({ code: 'payment_headers_required',
+    error: 'Use X-Payment-Tx and X-Payment-Signature; body transaction hashes do not grant access.' }, 400));
+  const protocolPath = path === '/message/send' || path === '/';
+  const version = requestedA2aVersion(request, body);
+  if (protocolPath && !wantsPayment && isNoopHeartbeat(body) &&
+      ((body.method === 'SendMessage' && version === A2A_PROTOCOL_VERSION && !v1MessageViolations(body.params).length) ||
+       (LEGACY_MESSAGE_SEND_METHODS.has(body.method) && version === A2A_LEGACY_PROTOCOL_VERSION))) {
+    const task = {id:crypto.randomUUID(), contextId:crypto.randomUUID(), status:{state:'TASK_STATE_COMPLETED'},
+      artifacts:[], metadata:{operation:'heartbeat', evaluation_performed:false, note:'Service reachable. No evidence evaluation performed; paid requests require payment.'}};
+    if (version === A2A_LEGACY_PROTOCOL_VERSION) { task.kind = 'task'; task.status.state = 'completed'; }
+    return jsonResponse({jsonrpc:'2.0', id:body.id ?? null, result:body.method === 'SendMessage' ? {task} : task}, 200, {'A2A-Version':version});
+  }
   const operation = paidOperation(request, body, profile);
   if (!operation || operation.free) {
-    if (wantsPayment) return jsonResponse({ code: 'payment_not_applicable' }, 400);
+    if (wantsPayment) return reply(jsonResponse({ code: 'payment_not_applicable' }, 400));
     return operation?.free ? handleRequestInner(request, { ...env, BILLING_MODE: 'freemium' }, ctx) : execute();
   }
   const attempt_id = crypto.randomUUID();
@@ -15193,23 +15232,23 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     { stage, reason, status, attempt_id, profile: operation.profile, minimum_usdc: operation.minimum });
   emit('request_received');
   if (operation.errors?.length) {
-    if (wantsPayment || env.BILLING_MODE === 'pay_per_call' || bearerTokenFromRequest(request).startsWith('agy_pro_')) { emit('payment_rejected', 'invalid_paid_request', 400); return jsonResponse({ code: 'invalid_paid_request', errors: operation.errors }, 400); }
+    if (wantsPayment || env.BILLING_MODE === 'pay_per_call' || bearerTokenFromRequest(request).startsWith('agy_pro_')) { emit('payment_rejected', 'invalid_paid_request', 400); return reply(jsonResponse({ code: 'invalid_paid_request', errors: operation.errors }, 400)); }
     return execute();
   }
-  if (wantsPayment && bearerTokenFromRequest(request).startsWith('agy_pro_')) { emit('payment_rejected', 'choose_one_payment_method', 400); return jsonResponse({ code: 'choose_one_payment_method' }, 400); }
-  if (wantsPayment) return executePaidRequest(request, body, env, operation.minimum, execute, emit);
+  if (wantsPayment && bearerTokenFromRequest(request).startsWith('agy_pro_')) { emit('payment_rejected', 'choose_one_payment_method', 400); return reply(jsonResponse({ code: 'choose_one_payment_method' }, 400)); }
+  if (wantsPayment) return reply(executePaidRequest(request, body, env, operation.minimum, execute, emit));
   if (env.BILLING_MODE === 'pay_per_call' && !bearerTokenFromRequest(request).startsWith('agy_pro_')) {
     if (operation.minimum === 25) {
       const response = await handleRequestInner(request, { ...env, BILLING_MODE: 'freemium' }, ctx);
       if (response.status === 402) emit('payment_required', 'payment_required', 402);
-      return response;
+      return reply(response);
     }
     emit('payment_required', 'payment_required', 402);
-    return generateX402PaymentResponse(operation.profile, request, env, 'payment_required');
+    return reply(generateX402PaymentResponse(operation.profile, request, env, 'payment_required'));
   }
   if (path.startsWith('/v1/evidence-packet/') && bearerTokenFromRequest(request).startsWith('agy_pro_')) {
     const rate = await checkRateLimit(request, env, profile);
-    if (rate.limited) return generateX402PaymentResponse(operation.profile, request, env, 'payment_required');
+    if (rate.limited) return reply(generateX402PaymentResponse(operation.profile, request, env, 'payment_required'));
   }
   return execute();
 }

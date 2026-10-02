@@ -4,6 +4,10 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Restore wallet-free worked examples as fixed synthetic request/result pairs; edited live evaluations remain paid.
+- Keep paid MCP/A2A refusal responses JSON-RPC compatible and provide a closed text-only no-op heartbeat without domain evaluation.
+- Correct paid AgentCard descriptions that still advertised free evidence triage.
+
 - Separate privacy-bounded payment stage events expose 402/401 payment admission, verified execution and response replay with deployment versions. Declared integration-check clients are excluded from candidate usage.
 
 ## 1.14.0 — 2026-10-01
