@@ -955,6 +955,27 @@ test("Agenstry ownership proof routes serve valid configured token on all 8 prob
   }
 });
 
+test("Agenstry file-verified domains keep their issued per-domain ownership proofs", async () => {
+  // Public challenges copied from the owner's Agenstry verification records.
+  // A fleet-wide placeholder can pass syntax tests but expires real ownership.
+  const issuedProofs = {
+    "agent-output-verification": "af-verify-tl6QgNMCzIA1pndb3zHju7arGREcjwt0gzNgWs6PJ6w",
+    "kazakhstan-market-entry-readiness": "af-verify-mwcG4yRjqUHqxk3tQ2NJyydW_b6RwAfRj7G13W-rQ6c"
+  };
+  const toml = readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8");
+  for (const [envName, issued] of Object.entries(issuedProofs)) {
+    const section = toml.split(`[env.${envName}.vars]`)[1]?.split(/^\[/m)[0];
+    assert.ok(section, `Missing vars for ${envName}`);
+    const vars = Object.fromEntries([...section.matchAll(/^([A-Z_]+)\s*=\s*"([^"]*)"/gm)]
+      .map((match) => [match[1], match[2]]));
+    const response = await handleRequest(new Request(
+      `https://${envName}-a2a.vassiliy-lakhonin.workers.dev/.well-known/agenstry-verify`
+    ), vars);
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), issued, `Wrong ownership proof for ${envName}`);
+  }
+});
+
 test("API catalog and OpenAPI routes advertise the public worker HTTP contract", async () => {
   const catalog = apiCatalog(request);
   const openapi = openApiDocument(request);

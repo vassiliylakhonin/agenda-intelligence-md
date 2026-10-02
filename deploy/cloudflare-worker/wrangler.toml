@@ -171,7 +171,7 @@ TASK_SCOPE_AUTH_REQUIRED = "1"
 BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
-AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
+AGENSTRY_VERIFY_TOKEN = "af-verify-tl6QgNMCzIA1pndb3zHju7arGREcjwt0gzNgWs6PJ6w"
 
 [[env.agent-output-verification.services]]
 binding = "VIZIER"
@@ -234,7 +234,7 @@ TASK_SCOPE_AUTH_REQUIRED = "1"
 BILLING_MODE = "pay_per_call"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
-AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
+AGENSTRY_VERIFY_TOKEN = "af-verify-mwcG4yRjqUHqxk3tQ2NJyydW_b6RwAfRj7G13W-rQ6c"
 
 [[env.kazakhstan-market-entry-readiness.services]]
 binding = "VIZIER"
