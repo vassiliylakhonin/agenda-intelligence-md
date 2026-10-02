@@ -15197,6 +15197,12 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   const execute = () => handleRequestInner(request, env, ctx);
   if (request.method !== 'POST') return execute();
   const path = new URL(request.url).pathname;
+  if (path === '/telemetry/worked-example') {
+    if (request.headers.get('origin') !== new URL(request.url).origin) return new Response(null, {status:403});
+    if (request.body !== null) return new Response(null, {status:400});
+    await logFunnelEvent(request, 'worked_example', env);
+    return new Response(null, {status:204, headers:{'cache-control':'no-store'}});
+  }
   const candidate = path.startsWith('/v1/') || path.startsWith('/mcp') || path === '/message/send' || path === '/';
   if (!candidate) return execute();
   const profile = agentProfile(request, env);
@@ -15241,6 +15247,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     if (operation.minimum === 25) {
       const response = await handleRequestInner(request, { ...env, BILLING_MODE: 'freemium' }, ctx);
       if (response.status === 402) emit('payment_required', 'payment_required', 402);
+      else emit(response.ok ? 'preview_completed' : 'preview_failed', response.ok ? 'free_preview' : 'preview_refused', response.status);
       return reply(response);
     }
     emit('payment_required', 'payment_required', 402);

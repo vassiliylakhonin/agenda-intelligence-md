@@ -86,3 +86,9 @@ The landing button **Run a worked example** reveals a precomputed synthetic requ
 A version-valid A2A `SendMessage` (or the corresponding 0.3 message method) carrying only one text part equal to `ping`, `heartbeat`, `A2A conformance heartbeat` or `A2A liveness probe` is a free technical no-op. No request/capability/data/file/continuation fields are admitted; no domain handler, task store, paid ledger or upstream retrieval runs. Its task metadata declares `operation: heartbeat` and `evaluation_performed: false`. User-Agent does not grant evaluation access. A generic payment/error response on MCP/A2A carries a JSON-RPC error with the original ID and the payment challenge in `error.data`; existing payment extension fields are retained for signed clients.
 
 These changes fix our endpoint and examples. A third-party conformance score requires that catalog to re-probe; no score or registry identity is fabricated.
+
+## Example journey telemetry
+
+`POST /telemetry/worked-example` accepts only an empty same-origin browser request and returns 204 with no-store. It records `worked_example` in the existing funnel stream, without evaluation or payment admission. An optional `X-Example-Trace-Id` must be a UUID; all other values are omitted. The page creates one random ID on first example open, attaches it to same-origin paid requests and discards it on reload. No cookie or local storage is used. Both streams expose `demo_trace_id` for same-host, same-UTC-day aggregate joins. These client-declared events can be spoofed and are not verified users.
+
+Free bankability responses close the payment-path attempt with `preview_completed` (2xx) or `preview_failed` (other than 402). They never claim `payment_verified` or paid execution. Payment refusals retain `payment_required`. Historical missing terminal events cannot be repaired into proven outcomes.

@@ -366,11 +366,16 @@ function buildUsageEvent(request, details = {}) {
 
 // Payment attempts are separate from evaluated usage and from revenue.
 // Never retain transaction hashes, signatures, tokens, query strings or input.
+function exampleTraceId(request) {
+  const value = request.headers.get('x-example-trace-id') || '';
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value) ? value : null;
+}
 function logPaymentEvent(request, env, { stage, attempt_id, profile, minimum_usdc, reason = null, status = null }) {
   try {
     const url = new URL(request.url);
     console.log({ event: "agenda_intelligence_payment", event_version: 1,
       timestamp: new Date().toISOString(), attempt_id, stage, reason, status,
+      demo_trace_id: exampleTraceId(request),
       host: url.hostname, transport: url.pathname.startsWith('/mcp') ? 'mcp' :
         (url.pathname === '/message/send' || url.pathname === '/') ? 'a2a' : 'rest',
       agent_profile: profile, minimum_usdc,
@@ -433,6 +438,7 @@ async function logFunnelEvent(request, step, env = {}) {
     event_version: 4,
     timestamp: new Date().toISOString(),
     step,
+    demo_trace_id: step === "worked_example" ? exampleTraceId(request) : null,
     request_kind: funnelRequestKind(step),
     method: request.method,
     path: url.pathname,

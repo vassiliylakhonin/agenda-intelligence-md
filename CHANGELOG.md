@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Close free bankability preview telemetry with explicit preview outcomes and measure fixed example opens with page-scoped trace linkage to payment attempts.
+
 - Restore wallet-free worked examples as fixed synthetic request/result pairs; edited live evaluations remain paid.
 - Keep paid MCP/A2A refusal responses JSON-RPC compatible and provide a closed text-only no-op heartbeat without domain evaluation.
 - Correct paid AgentCard descriptions that still advertised free evidence triage.

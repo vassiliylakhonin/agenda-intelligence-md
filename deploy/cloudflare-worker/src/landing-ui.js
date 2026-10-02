@@ -434,6 +434,11 @@ function showWorkedExample() {
   var example = document.getElementById('worked-example');
   example.hidden = false;
   example.scrollIntoView({behavior:'smooth', block:'start'});
+  if (!window.agendaExampleTraceId && window.crypto && crypto.randomUUID) {
+    window.agendaExampleTraceId = crypto.randomUUID();
+    fetch('/telemetry/worked-example', {method:'POST', keepalive:true,
+      headers:{'x-example-trace-id':window.agendaExampleTraceId}}).catch(function() {});
+  }
 }
 async function runProfileExample(event) {
   event.preventDefault();

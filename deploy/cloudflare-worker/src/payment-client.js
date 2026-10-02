@@ -26,6 +26,10 @@ function agendaShowRecovery(record) {
   };
 }
 async function agendaPaidFetch(url, options, expectedAmount) {
+  if (window.agendaExampleTraceId && new URL(url, window.location.href).origin === window.location.origin) {
+    options = Object.assign({}, options, {headers:Object.assign({}, options.headers,
+      {'x-example-trace-id':window.agendaExampleTraceId})});
+  }
   if (agendaPaymentBusy) throw new Error('A payment request is already running.');
   agendaPaymentBusy = true;
   try {
