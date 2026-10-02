@@ -96,6 +96,17 @@ or authorization. Because the Gate is stateless, an exactly bound receipt may
 be presented more than once during its five-minute lifetime; one-time execution
 remains the caller's responsibility.
 
+For a deployed endpoint, discovery and execution have different access rules.
+`initialize`, `server/discover` and `tools/list` are free. Evaluation of your own
+input uses `pay_per_call` and returns HTTP 402 with a JSON-RPC error when unpaid.
+A client can discover tools without a wallet; running paid tools requires an
+adapter for the [exact-request signed payment flow](docs/deployment/payment-execution.md).
+An ordinary MCP configuration alone does not implement that payment flow.
+The installed local stdio server has no hosted payment requirement.
+
+Use the [hosted quickstart](docs/deployment/hosted-quickstart.md) for tested
+initialization, tool discovery, free A2A heartbeat and handling paid refusals.
+
 `tools/call` inherits the profile's access gate, rate limit, and usage logging.
 `server/discover` and `tools/list` stay open. Hosted `tools/list` entries include
 complete inline input and output JSON Schemas plus read-only and non-destructive

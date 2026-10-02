@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Clarify free hosted discovery versus signed paid execution, add a tested MCP/A2A quickstart, and correct the public successful A2A 1.0 envelope.
+
 - Accept Cloudflare empty POST body streams for worked-example telemetry while rejecting the first nonempty chunk without buffering request contents.
 
 - Close free bankability preview telemetry with explicit preview outcomes and measure fixed example opens with page-scoped trace linkage to payment attempts.

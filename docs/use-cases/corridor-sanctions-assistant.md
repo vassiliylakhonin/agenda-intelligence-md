@@ -46,3 +46,10 @@ wrangler deploy --env corridor-sanctions-assistant
 ```
 
 Going live is a public-positioning step (a new indexed buyer-facing agent). Deploy is an operator decision, not part of CI.
+
+
+## Hosted connection
+
+For remote MCP initialization, free discovery and A2A heartbeat, see the
+[hosted quickstart](../deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
+the signed payment flow; the saved worked example on the site is free.

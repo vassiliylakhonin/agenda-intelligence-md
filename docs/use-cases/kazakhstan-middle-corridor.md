@@ -164,3 +164,10 @@ Then expose these as skills:
 - A2A evidence pack linter.
 
 Separate agents can be created later only if usage shows clear demand.
+
+
+## Hosted connection
+
+For remote MCP initialization, free discovery and A2A heartbeat, see the
+[hosted quickstart](../deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
+the signed payment flow; the saved worked example on the site is free.

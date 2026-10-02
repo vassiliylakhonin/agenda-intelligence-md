@@ -33,3 +33,10 @@ A vertical worker is a productized service function with its own schema, source-
 - **Ecosystem Expansion Phase:** You DO NOT need to pass a strict commercial gate to prototype a new worker. We are actively expanding the fleet to demonstrate framework versatility in adjacent domains (e.g. ESG, OSINT, compliance). 
 - If you build a new worker, it lives inside this repo by default: same service layer, same schemas/v1/ directory, same A2A adapter, one published Cloudflare Worker per product.
 - Any new vertical worker MUST ship with: schema(s) under `schemas/v1/`, an entry in `agent-manifest.json`, an MCP contract, and deployment configuration for Cloudflare Workers (in `deploy/cloudflare-worker/src/profiles.js` and `wrangler.toml`).
+
+
+## Hosted connection
+
+For remote MCP initialization, free discovery and A2A heartbeat, see the
+[hosted quickstart](deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
+the signed payment flow; the saved worked example on the site is free.

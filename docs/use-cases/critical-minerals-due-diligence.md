@@ -45,3 +45,10 @@ It is not legal, export-control, sanctions, customs, ESG certification, or inves
 | `continue` | All required origin, assay, export quota, and CSDDD audit sources are supplied; file is ready for committee review. |
 | `request_evidence` | Critical documents are missing (e.g. certified assay, beneficial ownership report, export quota clearance). |
 | `stop` | Severe export quota restrictions or high-risk refining jurisdiction flags identified without required licenses. |
+
+
+## Hosted connection
+
+For remote MCP initialization, free discovery and A2A heartbeat, see the
+[hosted quickstart](../deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
+the signed payment flow; the saved worked example on the site is free.

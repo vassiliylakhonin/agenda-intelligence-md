@@ -250,3 +250,10 @@ Where the deal targets government or quasi-government procurement, add a local-c
 ## Boundary
 
 This use case is an internal evidence and decision-readiness gate. It is not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice. Human review is required before signature, import, payment, lease, inventory purchase, public announcement, advertising commitment, dealer appointment, or partner appointment.
+
+
+## Hosted connection
+
+For remote MCP initialization, free discovery and A2A heartbeat, see the
+[hosted quickstart](../deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
+the signed payment flow; the saved worked example on the site is free.

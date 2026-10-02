@@ -155,3 +155,10 @@ For end-to-end decentralized settlement on Base Mainnet (Chain ID `8453`) using 
 3. **Dispute**: In case of a dispute, either party invokes `raiseDispute(escrowId, reason)`.
 4. **Resolution**: `m2m-escrow-arbiter` evaluates the dispute, calculates payout allocation (deducting 1% arbiter fee), and signs the ruling.
 5. **On-Chain Settlement**: Any party or relayer calls `settleDisputeWithArbiterRuling(escrowId, ruling, sellerPayout, buyerRefund, arbiterFee, nonce, signature)`. The contract verifies the ECDSA signature, prevents replay, and dispatches the USDC tokens in a single transaction.
+
+
+## Hosted connection
+
+For remote MCP initialization, free discovery and A2A heartbeat, see the
+[hosted quickstart](../deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
+the signed payment flow; the saved worked example on the site is free.
