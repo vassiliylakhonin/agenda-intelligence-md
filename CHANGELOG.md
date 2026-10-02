@@ -4,6 +4,8 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Restore the issued per-domain Agenstry ownership proofs for Output Verification and Kazakhstan Market Entry; test the configured proof routes against the owner verification records.
+
 - Clarify free hosted discovery versus signed paid execution, add a tested MCP/A2A quickstart, and correct the public successful A2A 1.0 envelope.
 
 - Accept Cloudflare empty POST body streams for worked-example telemetry while rejecting the first nonempty chunk without buffering request contents.
