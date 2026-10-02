@@ -78,3 +78,11 @@ A separate `agenda_intelligence_payment` Workers Logs event records valid operat
 Stage events are HTTP-attempt measurements, not unique customers or settled revenue. Reverification/replay must not count as a new purchase. Discovery and free previews are outside this paid-operation funnel; deployment authorization rejects before operation admission and Pro calls outside this signed-payment path remain separate. The telemetry archive preserves source quality and actual deployment IDs.
 
 Declared `Agenda-urllib-client/` and `Agenda-Plugin-Client-Path/` clients are classified as verification probes based on their declared integration-check convention, not authenticated owner identity. Other generic clients retain unverified external status.
+
+## Free worked examples and protocol liveness
+
+The landing button **Run a worked example** reveals a precomputed synthetic request/result pair. It does not read the edited form, call an evaluation endpoint, ask for a wallet, or transfer funds. `deploy/cloudflare-worker/scripts/generate-worked-examples.js` regenerates pairs from published MCP example inputs under the local, upstream-disabled runtime. Live form submission remains paid.
+
+A version-valid A2A `SendMessage` (or the corresponding 0.3 message method) carrying only one text part equal to `ping`, `heartbeat`, `A2A conformance heartbeat` or `A2A liveness probe` is a free technical no-op. No request/capability/data/file/continuation fields are admitted; no domain handler, task store, paid ledger or upstream retrieval runs. Its task metadata declares `operation: heartbeat` and `evaluation_performed: false`. User-Agent does not grant evaluation access. A generic payment/error response on MCP/A2A carries a JSON-RPC error with the original ID and the payment challenge in `error.data`; existing payment extension fields are retained for signed clients.
+
+These changes fix our endpoint and examples. A third-party conformance score requires that catalog to re-probe; no score or registry identity is fabricated.

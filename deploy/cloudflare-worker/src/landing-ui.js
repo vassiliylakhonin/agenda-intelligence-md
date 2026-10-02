@@ -1,3 +1,4 @@
+import { WORKED_EXAMPLES } from "./worked-examples.js";
 import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { pricingHtml } from "./commercial-catalog.js";
 // Browser presentation only. Runtime decisions are supplied by the controller.
@@ -78,7 +79,8 @@ function landingHtml(request, env) {
     dual_use_technology_export: "Electronics shipment → HS/ECCN and end-user evidence gaps"
   }[profile] || "Supplied case → evidence gaps + next human-review step";
   const consoleId = isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : guide?.example && endpoint && profile !== "kazakhstan" ? "profile-console" : "triage-form";
-  const exampleAction = isFinancialGuard ? "loadFinScenario('clean')" : isEscrowArbiter ? "loadEscrowScenario('clean')" : consoleId === "triage-form" ? "loadTriagePreset('rare_metals'); document.getElementById('triage-form').requestSubmit()" : "document.getElementById('profile-console').requestSubmit()";
+  const exampleAction = "showWorkedExample()";
+  const workedExample = WORKED_EXAMPLES[profile];
   const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">Try the synthetic example below</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>`;
 
   return `<!doctype html>
@@ -147,8 +149,13 @@ function landingHtml(request, env) {
   <div class="card" aria-label="Example result"><strong>Example, synthetic input:</strong> ${escapeHtml(heroExample)}<br>
     ${fixtureVerdict
       ? `<strong>Example output:</strong> ${escapeHtml(sampleOutput.result.metadata.verdict_standard.reason_code)} · ${escapeHtml(sampleOutput.result.metadata.verdict_standard.next_permitted_action)} · Gap: ${escapeHtml(sampleOutput.result.metadata.verdict_standard.evidence_gaps[0])}`
-      : `<strong>Example output:</strong> a structured verdict with reason_code, evidence_gaps, next_permitted_action and labeled sources. Run the demo for the actual result.`}<br>
+      : `<strong>Example output:</strong> a structured verdict with reason_code, evidence_gaps, next_permitted_action and labeled sources. Open the free precomputed example for its supplied input and result.`}<br>
     <small>Supplied facts are not independently verified; a source with no verified date is labeled as_of: null. This traceable verdict is not attested telemetry or authorization. Human review before action.</small></div>
+  <section id="worked-example" class="card" hidden>
+    <h2>Free worked example</h2><p><strong>Precomputed synthetic fixture.</strong> No wallet or payment required. This saved example is not a live evaluation of your edited input or current sources.</p>
+    <details open><summary>Example request</summary><pre>${escapeHtml(JSON.stringify(workedExample?.request || {}, null, 2))}</pre></details>
+    <details open><summary>Saved example result</summary><pre>${escapeHtml(JSON.stringify(workedExample?.response || {}, null, 2))}</pre></details>
+  </section>
   <nav><a href="https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/">All profiles</a> · <a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
   ${profile === "agenda" ? `<div class="card"><h2>Agent security and trade evidence</h2><p><a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier</a> checks proposed agent actions. Financial Guard, Interaction Trust and Output Verification review the evidence around those actions.</p><p><a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">Middle Corridor</a> and the regional and supply-chain profiles structure evidence for human trade-risk review.</p><a href="${origin}/.well-known/agents.json">Browse the complete profile registry</a></div>` : ""}
   <h2>What this is</h2>
@@ -309,9 +316,9 @@ function landingHtml(request, env) {
     </form>
     <div id="escrow-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
   </div>` : guide?.example && endpoint && profile !== "kazakhstan" ? `
-  <h2>Evaluate a synthetic example</h2>
+  <h2>Live paid evaluation</h2>
   <div class="card">
-    <p>Edit the profile-specific request below. Use synthetic data only; the result is evidence review, not authorization.</p>
+    <p>Editing and submitting this request uses the paid API and requires an EVM wallet or API integration. For a free demonstration use Run a worked example above. Use synthetic data only; the result is evidence review, not authorization.</p>
     <form id="profile-console" onsubmit="runProfileExample(event)">
       <label for="profile-request">Structured request</label>
       <textarea id="profile-request" rows="15" style="width:100%;font:13px/1.5 var(--mono);padding:12px;box-sizing:border-box">${escapeHtml(JSON.stringify(guide.example, null, 2))}</textarea>
@@ -356,7 +363,7 @@ function landingHtml(request, env) {
   <details style="margin: 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; background: #fafafa;">
     <summary style="font-weight: 700; cursor: pointer; font-size: 15px; color: var(--fg);">🛠️ Try it (curl &amp; AI Agent Integration)</summary>
     <div style="margin-top: 12px;">
-      <p>Copy this A2A 1.0 request. The trace ID in the response must match the header. Synthetic input only; an incomplete input may return TASK_STATE_INPUT_REQUIRED.</p>
+      <p>This is a paid A2A 1.0 evaluation request; without payment it returns HTTP 402. Free worked examples above never submit a live request. The trace ID in the response must match the header. Synthetic input only; an incomplete input may return TASK_STATE_INPUT_REQUIRED.</p>
       <pre style="margin: 0; overflow-x: auto;">${escapeHtml(tryItCurl)}</pre>
       <p>Keep the issued <code>task.metadata.continuation.token</code> private. GetTask and continuation require <code>X-Task-Token</code>; <code>X-Client-Id</code> is a telemetry label, not authorization. Task status expires after 24 hours; recreate older tasks.</p>
       <p>Response shape (Middle Corridor and CIS examples are derived from local synthetic fixtures; other profiles are illustrative; actual fields and source dates vary):</p>
@@ -423,6 +430,11 @@ function evidenceGapsHtml(result) {
     : '';
 }
 
+function showWorkedExample() {
+  var example = document.getElementById('worked-example');
+  example.hidden = false;
+  example.scrollIntoView({behavior:'smooth', block:'start'});
+}
 async function runProfileExample(event) {
   event.preventDefault();
   var button = document.getElementById('profile-run');
