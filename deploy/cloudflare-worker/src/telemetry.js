@@ -134,7 +134,7 @@ function isServiceProbeUserAgent(raw) {
 // synthetic check carries `X-Client-Id: instinct-owner-*`. Without this bucket
 // those runs land in `external` and read as demand — which is exactly the
 // confusion a header is there to prevent.
-const OWNER_SYNTHETIC_CLIENT_ID = /^instinct[-_]?owner/i;
+const OWNER_SYNTHETIC_CLIENT_ID = /^(?:instinct[-_]?owner|agenda-owner-)/i;
 const OWNER_SYNTHETIC_USER_AGENT = /^instinct[-_]?owner(?:verify|feedback|[-_])/i;
 const TECHNICAL_VERIFICATION_USER_AGENT = /^(?:agenda-ecosystem-verification|agenda-urllib-client|agenda-plugin-client-path)\//i;
 
@@ -144,6 +144,7 @@ const TECHNICAL_VERIFICATION_USER_AGENT = /^(?:agenda-ecosystem-verification|age
 const BENCHMARK_USER_AGENT = /zeromockproof|proofbench|mcpqueen/i;
 
 function callerKind(request) {
+  if (new URL(request.url).searchParams.get('owner_test') === '1') return 'owner_synthetic';
   const clientId = (request.headers.get("x-client-id") || "").trim();
   if (clientId && OWNER_SYNTHETIC_CLIENT_ID.test(clientId)) return "owner_synthetic";
   const raw = (request.headers.get("user-agent") || "").trim();
@@ -328,7 +329,7 @@ function buildUsageEvent(request, details = {}) {
     // the latter. Rows at version 3 and below measured a plain-text request to
     // a gate as zero, and their likely_probe follows from that number.
     event_version: 9,
-    classification_version: 3,
+    classification_version: 4,
     origin_verification: "unverified",
     timestamp: new Date().toISOString(),
     source: "cloudflare_worker",
@@ -370,18 +371,22 @@ function exampleTraceId(request) {
   const value = request.headers.get('x-example-trace-id') || '';
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value) ? value : null;
 }
-function logPaymentEvent(request, env, { stage, attempt_id, profile, minimum_usdc, reason = null, status = null }) {
+const VALIDATION_CATEGORIES = new Set(['unsupported_protocol', 'invalid_message', 'invalid_jsonrpc',
+  'invalid_request_object', 'missing_structured_request', 'schema_validation_failed', 'missing_input']);
+function logPaymentEvent(request, env, { stage, attempt_id, profile, minimum_usdc, reason = null, status = null, validation = null }) {
   try {
     const url = new URL(request.url);
-    console.log({ event: "agenda_intelligence_payment", event_version: 1,
+    const safeValidation = validation && VALIDATION_CATEGORIES.has(validation.category) ?
+      { category: validation.category, error_count: Math.min(100, Math.max(0, Number.isInteger(validation.error_count) ? validation.error_count : 0)) } : null;
+    console.log({ event: "agenda_intelligence_payment", event_version: 2,
       timestamp: new Date().toISOString(), attempt_id, stage, reason, status,
       demo_trace_id: exampleTraceId(request),
       host: url.hostname, transport: url.pathname.startsWith('/mcp') ? 'mcp' :
         (url.pathname === '/message/send' || url.pathname === '/') ? 'a2a' : 'rest',
-      agent_profile: profile, minimum_usdc,
+      agent_profile: profile, minimum_usdc: minimum_usdc ?? null, validation: safeValidation,
       code_version: VERSION, engine_version: env?.CF_VERSION_METADATA?.id || env?.DEPLOYMENT_VERSION || VERSION,
       caller_kind: callerKind(request), traffic_class: trafficClass(request),
-      classification_version: 3, origin_verification: "unverified" });
+      classification_version: 4, origin_verification: "unverified" });
   } catch { /* Observability must never change payment admission or execution. */ }
 }
 

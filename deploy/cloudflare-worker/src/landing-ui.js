@@ -136,6 +136,7 @@ function landingHtml(request, env) {
 </head>
 <body>
 <main>
+  ${new URL(request.url).searchParams.get('owner_test') === '1' ? '<p role="status">Owner test mode: this page marks example and evaluation requests as self-declared operator traffic. Normal payment rules apply.</p>' : ''}
   <h1>${escapeHtml(presentation[0])}</h1>
   <p class="tagline">${escapeHtml(tagline)}</p>
 
@@ -441,7 +442,7 @@ function showWorkedExample() {
   if (!window.agendaExampleTraceId && window.crypto && crypto.randomUUID) {
     window.agendaExampleTraceId = crypto.randomUUID();
     fetch('/telemetry/worked-example', {method:'POST', keepalive:true,
-      headers:{'x-example-trace-id':window.agendaExampleTraceId}}).catch(function() {});
+      headers:agendaTelemetryHeaders('/telemetry/worked-example', {'x-example-trace-id':window.agendaExampleTraceId})}).catch(function() {});
   }
 }
 async function runProfileExample(event) {

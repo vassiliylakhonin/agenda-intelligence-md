@@ -5,6 +5,14 @@ import { BASE_USDC_CONTRACT, BASE_USDC_WALLET } from './profiles.js';
 export const PAYMENT_CLIENT_SCRIPT = `
 var agendaPendingPayment = null;
 var agendaPaymentBusy = false;
+function agendaTelemetryHeaders(url, headers) {
+  var result = Object.assign({}, headers);
+  if (window.location && new URL(url, window.location.href).origin === window.location.origin) {
+    if (new URL(window.location.href).searchParams.get('owner_test') === '1') result['x-client-id'] = 'agenda-owner-manual';
+    if (window.agendaExampleTraceId) result['x-example-trace-id'] = window.agendaExampleTraceId;
+  }
+  return result;
+}
 function agendaShowRecovery(record) {
   if (typeof document === 'undefined' || !document.body || !document.body.appendChild) return;
   var button = document.getElementById('agenda-payment-recovery');
@@ -26,10 +34,7 @@ function agendaShowRecovery(record) {
   };
 }
 async function agendaPaidFetch(url, options, expectedAmount) {
-  if (window.agendaExampleTraceId && new URL(url, window.location.href).origin === window.location.origin) {
-    options = Object.assign({}, options, {headers:Object.assign({}, options.headers,
-      {'x-example-trace-id':window.agendaExampleTraceId})});
-  }
+  options = Object.assign({}, options, { headers: agendaTelemetryHeaders(url, options.headers) });
   if (agendaPaymentBusy) throw new Error('A payment request is already running.');
   agendaPaymentBusy = true;
   try {

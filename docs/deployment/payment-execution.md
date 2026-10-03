@@ -92,3 +92,16 @@ These changes fix our endpoint and examples. A third-party conformance score req
 `POST /telemetry/worked-example` accepts only an empty same-origin browser request and returns 204 with no-store. It records `worked_example` in the existing funnel stream, without evaluation or payment admission. An optional `X-Example-Trace-Id` must be a UUID; all other values are omitted. The page creates one random ID on first example open, attaches it to same-origin paid requests and discards it on reload. No cookie or local storage is used. Both streams expose `demo_trace_id` for same-host, same-UTC-day aggregate joins. These client-declared events can be spoofed and are not verified users.
 
 Free bankability responses close the payment-path attempt with `preview_completed` (2xx) or `preview_failed` (other than 402). They never claim `payment_verified` or paid execution. Payment refusals retain `payment_required`. Historical missing terminal events cannot be repaired into proven outcomes.
+## Operator tests and input diagnostics
+
+Open a landing page with `?owner_test=1` when testing your own fleet. The page
+marks its worked-example event and same-origin evaluation calls with
+`X-Client-Id: agenda-owner-manual`. For manual API checks, send that header
+explicitly. Ordinary visitors are never automatically labeled as owner tests.
+These labels are self-declared, unverified telemetry only: authorization, prices,
+payment verification and request validation still apply.
+
+Payment telemetry event v2 records a bounded validation category and error count
+for `invalid_paid_request`, with the deployment profile preserved even on early
+protocol errors. No validator messages or request bodies are logged. Old events
+without categories remain unmeasured. A rejected input is not a failed transfer.
