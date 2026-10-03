@@ -15136,7 +15136,7 @@ function paidOperation(request, body, profile) {
     const spec = mcpToolSpecForProfile(profile, body.params?.name);
     if (!spec || (path === "/mcp/output-verification" && body.params?.name !== "agent_output_verification")) return null;
     const version = mcpRequestedProtocolVersion(body.params || {});
-    if (version && !MCP_SUPPORTED_PROTOCOL_VERSIONS.includes(version)) return { errors: ["Unsupported MCP version"] };
+    if (version && !MCP_SUPPORTED_PROTOCOL_VERSIONS.includes(version)) return { errors: ["Unsupported MCP version"], validationCategory: 'unsupported_protocol' };
     params = mcpArgumentsToParams(profile, body.params?.arguments || {}, body.params.name);
     name = body.params.name;
   } else if (path === "/message/send" || path === "/") {
@@ -15144,21 +15144,21 @@ function paidOperation(request, body, profile) {
     const version = requestedA2aVersion(request, body);
     if ((version === A2A_PROTOCOL_VERSION && body.method !== "SendMessage") ||
         (version === A2A_LEGACY_PROTOCOL_VERSION && body.method === "SendMessage") ||
-        ![A2A_PROTOCOL_VERSION, A2A_LEGACY_PROTOCOL_VERSION].includes(version)) return { errors: ["Unsupported A2A version/method"] };
+        ![A2A_PROTOCOL_VERSION, A2A_LEGACY_PROTOCOL_VERSION].includes(version)) return { errors: ["Unsupported A2A version/method"], validationCategory: 'unsupported_protocol' };
     if (body.method === "SendMessage") {
       const errors = v1MessageViolations(body.params);
-      if (errors.length) return { errors };
+      if (errors.length) return { errors, validationCategory: 'invalid_message' };
     }
     params = body.params || {};
   } else if (!route && !["/v1/corridor-bankability/screen", "/v1/evidence-packet/check", "/v1/evidence-packet/repair-prompt"].includes(path)) return null;
-  if ((path.startsWith('/mcp') || path === '/message/send' || path === '/') && body.jsonrpc !== '2.0') return { errors: ['Invalid JSON-RPC envelope'] };
-  if (!params || typeof params !== 'object' || Array.isArray(params)) return { errors: ['Request must be an object'] };
+  if ((path.startsWith('/mcp') || path === '/message/send' || path === '/') && body.jsonrpc !== '2.0') return { errors: ['Invalid JSON-RPC envelope'], validationCategory: 'invalid_jsonrpc' };
+  if (!params || typeof params !== 'object' || Array.isArray(params)) return { errors: ['Request must be an object'], validationCategory: 'invalid_request_object' };
   const protocolCall = path.startsWith('/mcp') || path === '/message/send' || path === '/';
   if (protocolCall && ((profile === 'agenda' && params.capability === 'fleet_directory') ||
       (profile === 'agent_output_verification' && params.capability === 'decision_policies_list') ||
       (profile === 'corridor_sanctions_assistant' && name === 'corridor_sanctions_assistant' && !extractText(params).trim()))) return { free: true };
   if ((protocolCall && ["agenda", "kazakhstan"].includes(profile) && params.capability === "corridor_bankability_screen") || path === "/v1/corridor-bankability/screen") {
-    return { minimum: 25, profile, errors: validateBankabilityRequest(params.request || params) };
+    return { minimum: 25, profile, errors: validateBankabilityRequest(params.request || params), validationCategory: 'schema_validation_failed' };
   }
   if (!route) {
     const paths = { cis_secondary_sanctions: '/v1/cis-secondary-sanctions/exposure', agentic_interaction_trust: '/v1/agentic-interaction/trust',
@@ -15167,17 +15167,18 @@ function paidOperation(request, body, profile) {
       dual_use_technology_export: '/v1/dual-use/screen', agent_financial_guard: '/v1/agent-financial/pre-sign-check', m2m_escrow_arbiter: '/v1/m2m-escrow/evaluate-dispute' };
     route = DIRECT_V1_ROUTES[paths[profile]];
     if (profile === 'agent_output_verification' && params.capability === 'decision_check') route = DIRECT_V1_ROUTES['/v1/agent-output/pre-action-check'];
-    if (profile === 'agent_output_verification' && params.capability === 'decision_verify') return { minimum: 0.05, profile, errors: decisionVerifyErrors(params.request || params) };
+    if (profile === 'agent_output_verification' && params.capability === 'decision_verify') return { minimum: 0.05, profile, errors: decisionVerifyErrors(params.request || params), validationCategory: 'schema_validation_failed' };
     if (profile === 'cis_secondary_sanctions' && params.capability === 'cis_secondary_sanctions_batch') route = DIRECT_V1_ROUTES['/v1/cis-secondary-sanctions/exposure/batch'];
   }
   if (path.startsWith('/v1/evidence-packet/')) route = DIRECT_V1_ROUTES['/v1/agent-output/verification'];
   if (route) {
     const value = route.extract(params.packet || params);
     return { minimum: route.guideProfile === 'm2m_escrow_arbiter' ? 0.5 : 0.05,
-      profile: route.guideProfile, errors: value ? route.errorsFor(value) : [route.missing] };
+      profile: route.guideProfile, errors: value ? route.errorsFor(value) : [route.missing],
+      validationCategory: value ? 'schema_validation_failed' : 'missing_structured_request' };
   }
   return { minimum: profile === 'm2m_escrow_arbiter' ? 0.5 : 0.05, profile,
-    errors: extractText(params).trim() || structuredDealRiskRequestFromParams(params) ? [] : ['Supply evaluation input'] };
+    errors: extractText(params).trim() || structuredDealRiskRequestFromParams(params) ? [] : ['Supply evaluation input'], validationCategory: 'missing_input' };
 }
 function containsInlinePayment(value) {
   const pending = [value];
@@ -15271,7 +15272,8 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   }
   const attempt_id = crypto.randomUUID();
   const emit = (stage, reason = null, status = null) => logPaymentEvent(request, env,
-    { stage, reason, status, attempt_id, profile: operation.profile, minimum_usdc: operation.minimum });
+    { stage, reason, status, attempt_id, profile: operation.profile || profile, minimum_usdc: operation.minimum,
+      validation: reason === 'invalid_paid_request' ? { category: operation.validationCategory, error_count: operation.errors.length } : null });
   emit('request_received');
   if (operation.errors?.length) {
     if (wantsPayment || env.BILLING_MODE === 'pay_per_call' || bearerTokenFromRequest(request).startsWith('agy_pro_')) { emit('payment_rejected', 'invalid_paid_request', 400); return reply(jsonResponse({ code: 'invalid_paid_request', errors: operation.errors }, 400)); }

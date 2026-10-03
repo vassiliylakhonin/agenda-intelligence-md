@@ -4,6 +4,11 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Preserve deployed profile on early paid protocol refusals and record bounded
+  input-validation categories without retaining payloads or validator text.
+- Add explicit owner browser-test marking (`?owner_test=1`) across example
+  telemetry and same-origin checkout; the marker grants no entitlement.
+
 - Remove misleading `free` skill tags from paid Worker deployments while preserving free discovery and fixed examples.
 - Bind Financial Guard and M2M Escrow to their issued Agenstry ownership proofs; clarify skill inputs, outputs, examples and human-review limits without adding unsupported capabilities.
 
