@@ -68,7 +68,10 @@ test("one payment has one winner and Pro quota cannot overspend", async () => {
   await env.PAYMENT_LEDGER.prepare("UPDATE pro_tokens SET quota = 3 WHERE token_hash = ?1").bind(await tokenHash(token)).run();
   const uses = await Promise.all(Array.from({ length: 20 }, () => consumeProQuota(token, env)));
   assert.equal(uses.filter(Boolean).length, 3);
-  assert.deepEqual(uses.filter(Boolean).map(r => r.used), [1, 2, 3]);
+  // Promise.all preserves caller order; WebCrypto/SQL completion order is not guaranteed.
+  assert.deepEqual(uses.filter(Boolean).map(r => r.used).sort((a, b) => a - b), [1, 2, 3]);
+  const stored = await env.PAYMENT_LEDGER.prepare('SELECT used FROM pro_tokens WHERE token_hash = ?1').bind(await tokenHash(token)).first();
+  assert.equal(stored.used, 3);
 });
 
 test("missing atomic store cannot claim payments or issue credentials", async () => {
