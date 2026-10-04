@@ -73,6 +73,31 @@ payment, while task capabilities and deployment access remain required.
 
 ## Payment stage observability
 
+### Correlating retries
+
+An admitted evaluation response carries `X-Payment-Trace-Id`, a random UUID.
+Echo that header on the original request's signature challenge, signed retry and
+response recovery. The browser checkout retains it in the pending recovery
+record. A valid client-supplied UUID is accepted and lowercased; other values
+are replaced. CORS exposes the response header and permits it on requests.
+Discovery, authentication rejects and malformed JSON before admission remain
+outside this measurement. Free preview and Pro requests are not paid purchases.
+
+Logs retain `payment_trace_id` alongside each HTTP-specific `attempt_id`.
+The trace is optional, client-declared correlation, not an authenticated session,
+customer identity, payment proof or idempotency key. It does not enter the signed
+request digest and cannot change price, request binding, execution leases or
+entitlements. A client can merge or split traces, so aggregate chains are not
+buyers or purchases. Legacy events without this field remain unlinked; do not
+fabricate historical chains. Retained-window boundaries may hide earlier stages.
+
+Run `node --test test/payment-journey.test.js` for a transfer-free
+REST/MCP/A2A 402 → 401 → signed execution → cached replay test using independent
+synthetic EIP-191 vectors and mocked RPC receipts. Run
+`node scripts/check-paid-client-path.js` to probe public discovery, unpaid
+challenge and unsigned synthetic-hash challenge without sending a transfer.
+These are contract checks, not proof of a settled production payment.
+
 A separate `agenda_intelligence_payment` Workers Logs event records valid operation attempts, payment-required 402 and signature-required 401 responses, bounded verification failures, verified request admission, execution start/completion/failure, and encrypted-response replay. Events carry an opaque random attempt ID, transport, profile, minimum price, code version and actual deployment ID. They never contain payment hashes, wallet addresses, signatures, tokens, query strings, or input/output documents. Logging failures cannot change payment authorization.
 
 Stage events are HTTP-attempt measurements, not unique customers or settled revenue. Reverification/replay must not count as a new purchase. Discovery is outside this payment-path stream; free bankability preview attempts close with preview_completed/preview_failed and do not count as paid execution; deployment authorization rejects before operation admission and Pro calls outside this signed-payment path remain separate. The telemetry archive preserves source quality and actual deployment IDs.

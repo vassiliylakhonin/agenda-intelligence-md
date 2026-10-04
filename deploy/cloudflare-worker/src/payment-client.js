@@ -44,6 +44,8 @@ async function agendaPaidFetch(url, options, expectedAmount) {
     if (!pending) {
       response = await fetch(url, options);
       if (response.status !== 402) return response;
+      var trace = response.headers.get('x-payment-trace-id');
+      if (trace && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(trace)) options.headers['x-payment-trace-id'] = trace.toLowerCase();
       var payment = await response.clone().json();
       var amount = Number(payment.x402 && payment.x402.amount_usdc || payment.required_usdc);
       if (amount !== expectedAmount) throw new Error('Unexpected price; inspect the payment response before proceeding.');

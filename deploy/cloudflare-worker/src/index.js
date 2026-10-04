@@ -1,4 +1,5 @@
 import { executePaidRequest, paidContext } from "./paid-execution.js";
+import { paymentTraceId, paymentTraceResponse } from "./payment-trace.js";
 import { snapshotHealth } from "./upstream_snapshot.js";
 import { consumeProQuota } from "./payment-ledger.js";
 import { readBoundedJson } from "./request-body.js";
@@ -593,7 +594,7 @@ function jsonResponse(body, status = 200, extraHeaders = {}) {
       "content-type": "application/json; charset=utf-8",
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET, POST, OPTIONS",
-      "access-control-allow-headers": "content-type, x-client-id, authorization, x-production-key, x-payment-tx, x-payment-signature, x-task-token, mcp-protocol-version, a2a-version, mcp-method, mcp-name",
+      "access-control-allow-headers": "content-type, x-client-id, authorization, x-production-key, x-payment-tx, x-payment-signature, x-payment-trace-id, x-task-token, mcp-protocol-version, a2a-version, mcp-method, mcp-name",
       ...extraHeaders
     }
   });
@@ -15252,7 +15253,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     const protocol = path.startsWith('/mcp') || path === '/message/send' || path === '/';
     return jsonResponse(protocol ? {jsonrpc:'2.0', id:null, error:{code:error.status === 413 ? -32600 : -32700, message:'Invalid JSON payload'}} : {error:'Invalid JSON payload'}, error.status || 400);
   }
-  const reply = response => Promise.resolve(response).then(value => paidProtocolResponse(request, body, value));
+  let reply = response => Promise.resolve(response).then(value => paidProtocolResponse(request, body, value));
   if (containsInlinePayment(body)) return reply(jsonResponse({ code: 'payment_headers_required',
     error: 'Use X-Payment-Tx and X-Payment-Signature; body transaction hashes do not grant access.' }, 400));
   const protocolPath = path === '/message/send' || path === '/';
@@ -15271,8 +15272,11 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     return operation?.free ? handleRequestInner(request, { ...env, BILLING_MODE: 'freemium' }, ctx) : execute();
   }
   const attempt_id = crypto.randomUUID();
+  const payment_trace_id = paymentTraceId(request);
+  const protocolReply = reply;
+  reply = response => protocolReply(response).then(value => paymentTraceResponse(value, payment_trace_id));
   const emit = (stage, reason = null, status = null) => logPaymentEvent(request, env,
-    { stage, reason, status, attempt_id, profile: operation.profile || profile, minimum_usdc: operation.minimum,
+    { stage, reason, status, attempt_id, payment_trace_id, profile: operation.profile || profile, minimum_usdc: operation.minimum,
       validation: reason === 'invalid_paid_request' ? { category: operation.validationCategory, error_count: operation.errors.length } : null });
   emit('request_received');
   if (operation.errors?.length) {
@@ -15350,7 +15354,7 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
       headers: {
         "access-control-allow-origin": "*",
         "access-control-allow-methods": "GET, POST, OPTIONS",
-        "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name, x-payment-tx, x-payment-signature, x-production-key, mcp-protocol-version, a2a-version, x-trace-id, x-task-token"
+        "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name, x-payment-tx, x-payment-signature, x-payment-trace-id, x-production-key, mcp-protocol-version, a2a-version, x-trace-id, x-task-token"
       }
     });
   }
