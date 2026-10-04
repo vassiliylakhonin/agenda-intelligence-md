@@ -4,6 +4,10 @@ All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased
 
+- Correlate signed checkout retries using an optional UUID-only
+  `X-Payment-Trace-Id`; keep per-request attempt IDs, payment authorization and
+  replay protection separate. Add REST/MCP/A2A checkout and recovery tests.
+
 - Preserve deployed profile on early paid protocol refusals and record bounded
   input-validation categories without retaining payloads or validator text.
 - Add explicit owner browser-test marking (`?owner_test=1`) across example

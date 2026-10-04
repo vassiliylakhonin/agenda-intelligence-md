@@ -1,4 +1,5 @@
 import { MCP_ENDPOINT_PATH } from "./mcp.js";
+import { normalizePaymentTrace } from './payment-trace.js';
 // Usage, funnel classification and decision-journal persistence. No domain decisions.
 import { VERSION } from "./profiles.js";
 import { sha256Jcs } from "./decision-receipt.js";
@@ -373,13 +374,14 @@ function exampleTraceId(request) {
 }
 const VALIDATION_CATEGORIES = new Set(['unsupported_protocol', 'invalid_message', 'invalid_jsonrpc',
   'invalid_request_object', 'missing_structured_request', 'schema_validation_failed', 'missing_input']);
-function logPaymentEvent(request, env, { stage, attempt_id, profile, minimum_usdc, reason = null, status = null, validation = null }) {
+function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, profile, minimum_usdc, reason = null, status = null, validation = null }) {
   try {
     const url = new URL(request.url);
     const safeValidation = validation && VALIDATION_CATEGORIES.has(validation.category) ?
       { category: validation.category, error_count: Math.min(100, Math.max(0, Number.isInteger(validation.error_count) ? validation.error_count : 0)) } : null;
     console.log({ event: "agenda_intelligence_payment", event_version: 2,
       timestamp: new Date().toISOString(), attempt_id, stage, reason, status,
+      payment_trace_id: normalizePaymentTrace(payment_trace_id),
       demo_trace_id: exampleTraceId(request),
       host: url.hostname, transport: url.pathname.startsWith('/mcp') ? 'mcp' :
         (url.pathname === '/message/send' || url.pathname === '/') ? 'a2a' : 'rest',
