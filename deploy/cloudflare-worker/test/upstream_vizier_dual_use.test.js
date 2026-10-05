@@ -369,7 +369,7 @@ test("e2e: dual-use-technology-export escalates file when sanctioned counterpart
   const contractResponse = metadata.response;
   assert.equal(contractResponse.export_risk_triage.status, "escalate");
   assert.equal(contractResponse.export_risk_triage.score, 0);
-  assert.ok(contractResponse.export_risk_triage.primary_risk_vectors.some((r) => r.includes("OFAC 50% Rule")));
+  assert.ok(contractResponse.export_risk_triage.primary_risk_vectors.some((r) => r.includes("sanctions name-screen flag")));
 });
 
 test("e2e: dual-use-technology-export escalates file when secret leak is detected by Vizier DLP", async () => {
@@ -510,5 +510,5 @@ test("e2e: MCP tools/call dual_use_technology_export receives Vizier security sc
   assert.ok(data.result.structuredContent);
   assert.equal(data.result.structuredContent.export_risk_triage.status, "escalate");
   assert.equal(data.result.structuredContent.export_risk_triage.score, 0);
-  assert.ok(data.result.structuredContent.export_risk_triage.primary_risk_vectors.some((r) => r.includes("OFAC 50% Rule")));
+  assert.ok(data.result.structuredContent.export_risk_triage.primary_risk_vectors.some((r) => r.includes("sanctions name-screen flag")));
 });

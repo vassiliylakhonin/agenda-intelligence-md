@@ -1,3 +1,5 @@
+import { lookupChplTier } from "./chpl.js";
+import { reviewSourceRecords } from "./source-records.js";
 import { reviewMineralDossier, mineralReadiness } from "./critical_minerals_dossier.js";
 import { executePaidRequest, paidContext } from "./paid-execution.js";
 import { paymentTraceId, paymentTraceResponse } from "./payment-trace.js";
@@ -3046,7 +3048,7 @@ function corridorAssistantMessageText(response = null, vizierAssistant = null) {
   const parts = [
     "# Corridor & Sanctions Risk Assistant",
     "",
-    "Front door to the corridor and sanctions evidence-readiness gates. I orient and route. I do not screen, score, or retrieve.",
+    "Front door to the corridor and sanctions evidence-readiness gates. Orientation prepares dossier requests; configured screening remains subject to identity and evidence review.",
     "",
     "## Selected route",
     selected ? `- **${selected.name}**: ${selected.a2a}` : "- No confident single route; specify the decision and subject.",
@@ -3057,6 +3059,8 @@ function corridorAssistantMessageText(response = null, vizierAssistant = null) {
     "I confirm fit, scope, fee, and timing before work starts."
   ];
 
+  if (vizierAssistant?.status === "degraded") parts.push("", "Configured upstream screening is unavailable or incomplete; re-run before commercial action.");
+
   if (response && response.dual_use_guidance) {
     parts.push("");
     parts.push("## ⚠️ High-Priority Dual-Use Commodity Alert (HS Code / Electronics)");
@@ -3065,18 +3069,18 @@ function corridorAssistantMessageText(response = null, vizierAssistant = null) {
 
   if (vizierAssistant && vizierAssistant.sanctions_screening && vizierAssistant.sanctions_screening.violation) {
     parts.push("");
-    parts.push("## ⚠️ Sanctions Screening Warning (OFAC 50% Rule)");
-    parts.push("One or more counterparties in your inquiry match designated sanctions lists or meet the OFAC 50% Rule aggregate blocked threshold:");
+    parts.push("## ⚠️ Sanctions Name-screen Warning (identity and ownership unverified)");
+    parts.push("One or more supplied counterparty names triggered screening flags. Identity and ownership require compliance review:");
     for (const m of vizierAssistant.sanctions_screening.matches) {
-      parts.push(`- **${m.name}** (${m.role}): ${m.aggregate_blocked_percentage}% blocked. ${m.explanation || ""}`);
+      parts.push(`- **${m.name}** (${m.role}): Screening flag; identity and ownership unverified. ${m.explanation || ""}`);
     }
     parts.push("Immediate escalation to compliance / sanctions legal desk is required before proceeding with any commercial or logistics engagement.");
   }
 
-  if (vizierAssistant && vizierAssistant.dlp_screening && !vizierAssistant.dlp_screening.clean) {
+  if (vizierAssistant?.dlp_screening?.clean === false && (vizierAssistant.dlp_screening.findings || []).length > 0) {
     parts.push("");
     parts.push("## 🛡️ Vizier DLP Security Notice");
-    parts.push("Sensitive credentials (API keys / private tokens) were detected in caller parameters and automatically sanitized by Vizier DLP Firewall.");
+    parts.push("Sensitive credentials (API keys / private tokens) were flagged in caller parameters. Redact the complete payload and review before onward sharing.");
   }
 
   parts.push("");
@@ -3100,7 +3104,7 @@ async function a2aResultForCorridorSanctionsAssistant(params, request, env = {})
 
   let sanitizedText = text;
   let securityNotice = "";
-  if (vizierAssistant && vizierAssistant.dlp_screening && !vizierAssistant.dlp_screening.clean) {
+  if (vizierAssistant?.dlp_screening?.clean === false && (vizierAssistant.dlp_screening.findings || []).length > 0) {
     // Redact sensitive credentials from caller_text
     sanitizedText = sanitizedText
       .replace(/sk-[a-zA-Z0-9_\-]{10,}/g, "sk-******")
@@ -3110,18 +3114,19 @@ async function a2aResultForCorridorSanctionsAssistant(params, request, env = {})
         const p = m.split(/[:=]/);
         return `${p[0]}: ******`;
       });
-    securityNotice = " [SECURITY NOTICE] Sensitive credentials detected and sanitized by Vizier DLP Firewall.";
+    securityNotice = " [SECURITY NOTICE] DLP flagged sensitive credentials; review and redact the complete payload before onward sharing.";
   }
 
+  if (vizierAssistant?.status === "degraded") securityNotice += " Configured upstream screening is unavailable or incomplete; re-run before commercial action.";
   let sanctionsNotice = "";
   let sanctionsAdvisory = null;
   if (vizierAssistant && vizierAssistant.sanctions_screening && vizierAssistant.sanctions_screening.violation) {
-    sanctionsNotice = " [SANCTIONS ADVISORY] Mentioned counterparty triggers OFAC 50% Rule sanctions hit. Immediate compliance escalation required.";
+    sanctionsNotice = " [SANCTIONS ADVISORY] A supplied counterparty name triggered a sanctions screening flag; identity and ownership remain unverified. Immediate compliance escalation required.";
     sanctionsAdvisory = {
       status: "escalate",
       matches: vizierAssistant.sanctions_screening.matches,
       advisory:
-        "One or more counterparties mentioned in your query match designated entities or meet the OFAC 50% Rule aggregate blocked threshold. Route immediately to your sanctions/compliance legal desk before taking any commercial or logistics action."
+        "One or more supplied counterparty names triggered screening flags; this does not establish legal identity or blocked ownership. Route immediately to your sanctions/compliance legal desk before taking any commercial or logistics action."
     };
   }
 
@@ -3131,7 +3136,7 @@ async function a2aResultForCorridorSanctionsAssistant(params, request, env = {})
   );
   if (dualUseMatch) {
     dualUseGuidance =
-      "Your inquiry references dual-use electronics or priority HS commodity codes subject to EU/US Common High Priority Items List (CHPL) restrictions. " +
+      "Your inquiry needs product-classification and diversion review; CHPL membership and applicable restrictions are not established from keywords. " +
       "Use the 'screen_dual_use_hs_code' MCP tool for immediate HS classification triage, or submit an evidence pack to the dedicated gate: " +
       "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev.";
   }
@@ -3143,7 +3148,7 @@ async function a2aResultForCorridorSanctionsAssistant(params, request, env = {})
     next_gate_input: selectedRoute ? corridorAssistantNextInput(selectedRoute) : "Clarify the route, counterparty or vessel and the decision pending.",
     message:
       "Corridor & sanctions orientation: routing to the structured gates and person-led work. " +
-      "No triage or screening performed here." +
+      "This orientation prepares dossier requests; configured upstream screening does not establish clearance." +
       sanctionsNotice +
       securityNotice,
     caller_text: sanitizedText ? sanitizedText.slice(0, 500) : "",
@@ -3194,207 +3199,9 @@ async function a2aResultForCorridorSanctionsAssistant(params, request, env = {})
       response,
       vizier_status: vizierAssistant ? vizierAssistant.status : "disabled",
       ...(vizierAssistant && vizierAssistant.degrade_reason ? { vizier_degrade_reason: vizierAssistant.degrade_reason } : {}),
-      ...(vizierAssistant && vizierAssistant.receipt ? { vizier_clearance_receipt: vizierAssistant.receipt } : {}),
+      vizier_clearance_receipt: null,
       ...(vizierAssistant ? { assistant_verification: vizierAssistant } : {})
     }
-  };
-}
-
-const CHPL_TIER_DATABASE = Object.freeze([
-  {
-    prefix: "8542",
-    tier: "Tier 1 (Battlefield High Priority)",
-    isHighPriority: true,
-    recommendation: "ESCALATE_TO_COMPLIANCE",
-    description: "Electronic integrated circuits, microcontrollers, processors, and memories.",
-    risk: "Critical diversion risk. Dual-use item subject to strict export licensing, end-user verification, and secondary sanctions under OFAC EO 14024/14114 and EU Regulation 833/2014 Annex XL.",
-    documents: ["End-User Certificate (EUC)", "Non-diversion undertaking", "Manufacturer Certificate of Origin", "Verified consignee KYC"]
-  },
-  {
-    prefix: "8517",
-    tier: "Tier 2 (Wireless & Telecommunications)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Telecommunications apparatus, transceivers, and network routing equipment.",
-    risk: "High diversion risk along Middle Corridor. Transit through Caucasus/Central Asia requires confirmation of commercial end-use.",
-    documents: ["Commercial invoice with technical specifications", "End-use statement", "Consignee business registration", "Transit customs declaration"]
-  },
-  {
-    prefix: "8526",
-    tier: "Tier 2 (Radio Navigation & Radar)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Radar apparatus, radio navigational aid apparatus (GPS/GLONASS), and remote control equipment.",
-    risk: "High diversion risk. Critical dual-use applicability in avionics, maritime, and automated navigation.",
-    documents: ["Export license or license exception proof", "End-user certificate", "Consignee verification"]
-  },
-  {
-    prefix: "8541",
-    tier: "Tier 2 (Semiconductors & Diodes)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Diodes, transistors, semiconductor devices, photosensitive devices, and photovoltaic cells.",
-    risk: "High diversion risk. Common high-priority item subject to heightened transit inspection.",
-    documents: ["Manufacturer spec sheet", "End-use statement", "Non-diversion agreement"]
-  },
-  {
-    prefix: "8471",
-    tier: "Tier 3.A (Processing Units & Computing)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Automatic data processing machines, server processing units, and computing subassemblies.",
-    risk: "Medium-high diversion risk. Scrutiny on server/industrial hardware transiting Central Asia.",
-    documents: ["Technical datasheet", "End-user verification", "Contractual re-export prohibition clause"]
-  },
-  {
-    prefix: "8504",
-    tier: "Tier 3.A (Power & Static Converters)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Electrical transformers, static converters (e.g. inverters, rectifiers), and inductors.",
-    risk: "Medium diversion risk. Power supply modules for industrial or dual-use electronics.",
-    documents: ["Commercial invoice", "End-user statement"]
-  },
-  {
-    prefix: "9013",
-    tier: "Tier 3.B (Lasers & Optical Devices)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Lasers, liquid crystal devices, and optical appliances not specified elsewhere.",
-    risk: "Medium-high diversion risk. Dual-use guidance for targeting and optical sensor systems.",
-    documents: ["Export license verification", "End-user statement"]
-  },
-  {
-    prefix: "9014",
-    tier: "Tier 3.B (Direction Finding & Navigational)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Direction finding compasses and other navigational instruments and appliances.",
-    risk: "Medium-high diversion risk. Avionics and maritime navigation components.",
-    documents: ["Export license verification", "End-user statement"]
-  },
-  {
-    prefix: "9031",
-    tier: "Tier 3.B (Measuring & Checking Instruments)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Measuring or checking instruments, appliances and machines not specified elsewhere.",
-    risk: "Medium-high diversion risk. Precision test equipment for electronic manufacturing.",
-    documents: ["Technical specification", "End-user statement"]
-  },
-  {
-    prefix: "8486",
-    tier: "Tier 4.B (Semiconductor Manufacturing Equipment)",
-    isHighPriority: true,
-    recommendation: "ESCALATE_TO_COMPLIANCE",
-    description: "Machines and apparatus used solely or principally for the manufacture of semiconductor devices.",
-    risk: "High regulatory exposure. Subject to strict multilateral export controls and catch-all provisions.",
-    documents: ["Manufacturer export authorization", "On-site installation verification guarantee"]
-  },
-  {
-    prefix: "8457",
-    tier: "Tier 4.A (Advanced CNC Machining Centers)",
-    isHighPriority: true,
-    recommendation: "ESCALATE_TO_COMPLIANCE",
-    description: "Machining centers, unit construction machines (single station) and multi-station transfer machines for working metal.",
-    risk: "Critical diversion risk. High-precision CNC machinery subject to G7/EU/US multilateral export controls and secondary sanctions under OFAC EO 14114.",
-    documents: ["Technical specification datasheet (axes, repeatability)", "End-User Certificate (EUC)", "Installation site verification guarantee", "Non-diversion undertaking"]
-  },
-  {
-    prefix: "8458",
-    tier: "Tier 4.A (CNC Lathes & Turning Machines)",
-    isHighPriority: true,
-    recommendation: "ESCALATE_TO_COMPLIANCE",
-    description: "Horizontal and other lathes for removing metal, numerically controlled (CNC).",
-    risk: "High diversion risk for military production. Subject to enhanced transit controls and end-use verification.",
-    documents: ["Manufacturer spec sheet", "End-User Certificate (EUC)", "Factory consignee KYC"]
-  },
-  {
-    prefix: "8459",
-    tier: "Tier 4.A (CNC Milling Machines)",
-    isHighPriority: true,
-    recommendation: "ESCALATE_TO_COMPLIANCE",
-    description: "Machine tools for drilling, boring, milling, threading or tapping by removing metal, numerically controlled (CNC).",
-    risk: "High diversion risk for defense manufacturing. Catch-all export licensing requirements apply.",
-    documents: ["Manufacturer spec sheet", "End-User Certificate (EUC)", "Non-diversion undertaking"]
-  },
-  {
-    prefix: "8466",
-    tier: "Tier 4.A (Machine Tool Parts & Toolholders)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Parts and accessories for machine tools of headings 8456 to 8465, toolholders and workholders.",
-    risk: "Medium-high diversion risk for sustaining sanctioned industrial CNC machinery.",
-    documents: ["Commercial invoice with part numbers", "End-use statement", "Consignee business registration"]
-  },
-  {
-    prefix: "8482",
-    tier: "Tier 3.B (Precision Bearings)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Ball or roller bearings (cylindrical, needle, spherical) and bearing assemblies.",
-    risk: "Critical diversion risk. Common high-priority component essential for UAVs, aerospace assemblies, and military vehicle drivetrains.",
-    documents: ["Technical datasheet", "End-User Certificate (EUC)", "Consignee verification"]
-  },
-  {
-    prefix: "8532",
-    tier: "Tier 2 (Capacitors)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Electrical capacitors, fixed, variable or adjustable (tantalum, ceramic multilayer).",
-    risk: "High diversion risk. Critical passive components heavily documented in military UAV and missile navigation modules.",
-    documents: ["Manufacturer spec sheet", "End-use statement", "Non-diversion agreement"]
-  },
-  {
-    prefix: "8536",
-    tier: "Tier 3.A (Electrical Switching & Connectors)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Electrical apparatus for switching or protecting electrical circuits, relays, connectors for voltage not exceeding 1,000 V.",
-    risk: "Medium diversion risk. Interconnect and circuit protection hardware for defense electronics.",
-    documents: ["Commercial invoice with part numbers", "End-use statement"]
-  },
-  {
-    prefix: "8548",
-    tier: "Tier 2 (Machinery Electrical Parts)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Electrical parts of machinery or apparatus, not specified elsewhere in Chapter 85.",
-    risk: "High diversion risk under EU Regulation 833/2014 Annex XL.",
-    documents: ["Commercial invoice", "End-use statement"]
-  },
-  {
-    prefix: "9027",
-    tier: "Tier 4.B (Physical / Chemical Analysis Instruments)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Instruments and apparatus for physical or chemical analysis (spectrometers, chromatographs).",
-    risk: "Dual-use application in chemical, materials, and semiconductor R&D.",
-    documents: ["Export license proof", "End-use statement"]
-  },
-  {
-    prefix: "9030",
-    tier: "Tier 4.B (Oscilloscopes & Test Equipment)",
-    isHighPriority: true,
-    recommendation: "ENHANCED_DUE_DILIGENCE",
-    description: "Oscilloscopes, spectrum analyzers, multimeters, and instruments for measuring electrical quantities.",
-    risk: "Dual-use test equipment essential for military electronics repair and radar integration.",
-    documents: ["Technical specification", "End-user statement"]
-  }
-]);
-
-function lookupChplTier(rawHsCode) {
-  const clean = String(rawHsCode || "").replace(/[^0-9]/g, "");
-  const match = CHPL_TIER_DATABASE.find((item) => clean.startsWith(item.prefix));
-  if (match) return match;
-  return {
-    prefix: clean.slice(0, 4) || "0000",
-    tier: "Standard Commercial / Non-CHPL",
-    isHighPriority: false,
-    recommendation: "STANDARD_REVIEW",
-    description: "Commodity code is not listed on the EU/US Common High Priority Items List (CHPL).",
-    risk: "Standard commercial compliance. Verify against general OFAC SDN lists and destination-specific sanctions.",
-    documents: ["Standard commercial invoice", "Bill of lading", "Certificate of origin"]
   };
 }
 
@@ -3461,7 +3268,10 @@ async function a2aResultForScreenDualUseHsCode(params, request, env = {}) {
     chpl_tier: tierInfo.tier,
     is_high_priority_item: tierInfo.isHighPriority,
     clearance_recommendation: tierInfo.recommendation,
-    regulatory_framework: "EU Regulation 833/2014 Annex XL, US BIS EAR Commerce Control List, UK Russia Regulations 2019",
+    regulatory_framework: "BIS CHPL reference snapshot; applicable export controls and sanctions require separate jurisdiction-specific review.",
+    classification_scope: "exact_hs6_reference_membership_only",
+    reference_source: tierInfo.source_url,
+    reference_snapshot_date: tierInfo.snapshot_date,
     diversion_risk: tierInfo.risk,
     canonical_dossier_gate: "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev",
     required_diligence_documents: tierInfo.documents
@@ -3486,7 +3296,7 @@ async function a2aResultForScreenDualUseHsCode(params, request, env = {}) {
       human_review_required: true,
       response,
       vizier_status: vizierAssistant ? vizierAssistant.status : "disabled",
-      ...(vizierAssistant && vizierAssistant.receipt ? { vizier_clearance_receipt: vizierAssistant.receipt } : {})
+      vizier_clearance_receipt: null
     }
   };
 }
@@ -5112,7 +4922,7 @@ function cisTriageRecommendation(supplied, request, missing, exposureSignal) {
   if (supplied.length === 0) {
     return "insufficient_information";
   }
-  if (missing.length === 0 && exposureSignal === "low") return "ready_for_human_review";
+  if (missing.length === 0 && ["low", "unknown"].includes(exposureSignal)) return "ready_for_human_review";
   if (request.decision_stage === "onboarding") return "escalate_before_onboarding";
   if (request.decision_stage === "pre_transaction") return "escalate_before_transaction";
   return "not_decision_ready";
@@ -5128,7 +4938,7 @@ function cisExposureSignal(supplied, missing, sanctionsMatchCount) {
   if (sanctionsMatchCount >= 1) return "high";
   if (missing.length >= 4) return "medium_high";
   if (missing.length > 0) return "medium";
-  return "low";
+  return "unknown";
 }
 
 function cisDecisionReadiness(supplied) {
@@ -5246,12 +5056,7 @@ function cisTopExposureDimensions(facets, missing, matches, undisclosedUbo = fal
 }
 
 function suppliedSourceTypes(request) {
-  const types = [];
-  for (const source of request.dated_sources || []) {
-    if (!source || typeof source !== "object") continue;
-    if (typeof source.source_type === "string") types.push(source.source_type);
-  }
-  return Array.from(new Set(types));
+  return reviewSourceRecords(request.dated_sources || []).usable_source_types;
 }
 
 function isAgenticInteractionTrustRequest(value) {
@@ -5336,18 +5141,16 @@ function agenticDecisionReadiness(request, supplied) {
 
 function agenticTrustSignal(request, supplied, missing) {
   if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0) return "unknown";
-  if (supplied.includes("fraud_or_account_takeover_signal")) return "low";
+  if ((request.dated_sources || []).some(s => s?.source_type === "fraud_or_account_takeover_signal")) return "low";
   if (supplied.includes("rate_limit_or_abuse_signal") && missing.length >= 4) return "unknown";
   if (missing.length >= 5) return "unknown";
-  if (missing.length >= 3) return "medium";
-  if (missing.length > 0) return "medium_high";
-  return "high";
+  return "medium";
 }
 
 function agenticTriageRecommendation(request, supplied, missing) {
   if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0) return "insufficient_information";
-  if (supplied.includes("fraud_or_account_takeover_signal")) return "block_until_verified";
-  if (missing.length === 0) return "allow_low_risk";
+  if ((request.dated_sources || []).some(s => s?.source_type === "fraud_or_account_takeover_signal")) return "block_until_verified";
+  if (missing.length === 0) return "escalate_to_human_review";
   if (["checkout", "auth_flow", "account"].includes(request.target_surface) && missing.length <= 4) {
     return "require_step_up";
   }
@@ -5376,7 +5179,7 @@ function agenticTopRiskDimensions(request, supplied, missing) {
   if (supplied.includes("rate_limit_or_abuse_signal")) {
     dims.push("abuse or burst pattern requires review before continued access");
   }
-  if (supplied.includes("fraud_or_account_takeover_signal")) {
+  if ((request.dated_sources || []).some(s => s?.source_type === "fraud_or_account_takeover_signal")) {
     dims.push("fraud or account-takeover signal requires verification before action");
   }
   return Array.from(new Set(dims));
@@ -5414,7 +5217,7 @@ function profileReadinessContract(response, {
 function agenticInteractionTrustResult(request, vizierTrust = null) {
   const supplied = suppliedSourceTypes(request);
   const missing = AGENTIC_INTERACTION_TRUST_REQUIRED_BEFORE_ACTION.filter((s) => !supplied.includes(s));
-  const [score, label] = agenticDecisionReadiness(request, supplied);
+  let [score, label] = agenticDecisionReadiness(request, supplied);
   let triage = agenticTriageRecommendation(request, supplied, missing);
   let trustSignal = agenticTrustSignal(request, supplied, missing);
   const topDims = agenticTopRiskDimensions(request, supplied, missing);
@@ -5426,14 +5229,13 @@ function agenticInteractionTrustResult(request, vizierTrust = null) {
       triage = "block_until_verified";
       trustSignal = "low";
       const op = vizierTrust.operator_screening.operator;
-      const match = vizierTrust.operator_screening.match;
-      const pct = match ? match.aggregate_blocked_percentage : 100;
+
       topDims.unshift(
-        `Sanctioned operator/principal: '${op}' identified on sanctions list or deemed-blocked under OFAC 50% Rule (${pct}% aggregate blocked ownership)`
+        `Sanctions name-screen flag for operator/principal '${op}'; identity and ownership remain unverified.`
       );
-      evidenceGaps.unshift(`Operator or principal '${op}' is subject to sanctions.`);
+      evidenceGaps.unshift(`Resolve the sanctions name-screen flag for '${op}' with the compliance owner.`);
     }
-    if (vizierTrust.dlp_screening && vizierTrust.dlp_screening.clean === false) {
+    if (vizierTrust.dlp_screening?.clean === false && (vizierTrust.dlp_screening.findings || []).length > 0) {
       triage = "block_until_verified";
       trustSignal = "low";
       for (const finding of vizierTrust.dlp_screening.findings || []) {
@@ -5443,6 +5245,16 @@ function agenticInteractionTrustResult(request, vizierTrust = null) {
         evidenceGaps.unshift(`Payload contains leaked secret/credential: ${finding.detector} (${finding.snippet_masked})`);
       }
     }
+  }
+
+  if (vizierTrust?.status === "degraded") {
+    if (triage !== "block_until_verified") triage = "escalate_to_human_review";
+    evidenceGaps.unshift("Configured upstream screening is unavailable or incomplete; re-run before action.");
+    if (trustSignal !== "low") trustSignal = "unknown";
+  }
+  if (triage === "block_until_verified" || vizierTrust?.status === "degraded") {
+    score = Math.min(score, 49);
+    label = "not_decision_ready";
   }
 
   const limitations = [
@@ -5480,6 +5292,7 @@ function agenticInteractionTrustResult(request, vizierTrust = null) {
     limitations
   };
   if (request.asset_or_resource) response.asset_or_resource = request.asset_or_resource;
+  response.source_record_review = reviewSourceRecords(request.dated_sources || [], {dateRequired:true});
   response.readiness_contract = profileReadinessContract(response, {
     profile: "agentic_interaction_trust",
     statusField: "decision_readiness_label",
@@ -6347,7 +6160,7 @@ function a2aResultForFleetDirectory(params) {
               `Total gates: ${directory.total_gates}`,
               `Version: ${directory.version}`,
               "",
-              "Use these gates for specialized risk triage and verified readiness decisions."
+              "Use these gates for specialized risk triage and structured evidence-readiness reviews."
             ].join("\n"),
             mediaType: "text/markdown"
           },
@@ -7050,12 +6863,12 @@ function gulfExposureSignal(request, missing) {
   if (missing.includes("sanctions_list_extract") && facets.some((f) => highRisk.includes(f))) return "high";
   if (missing.length >= 4) return "medium_high";
   if (missing.length > 0) return "medium";
-  return "low";
+  return "unknown";
 }
 
 function gulfTriageRecommendation(request, missing, exposureSignal) {
   if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0) return "insufficient_information";
-  if (missing.length === 0 && exposureSignal === "low") return "ready_for_human_review";
+  if (missing.length === 0 && ["low", "unknown"].includes(exposureSignal)) return "ready_for_human_review";
   if (request.decision_stage === "pre_fixture") return "escalate_before_fixture";
   if (["pre_voyage", "pre_port_call"].includes(request.decision_stage)) return "escalate_before_voyage";
   return "not_decision_ready";
@@ -7097,7 +6910,7 @@ function gulfChokepointDisruptionWatch(request) {
 async function gulfMaritimeExposureResult(request, env = {}) {
   const supplied = suppliedSourceTypes(request);
   const missing = GULF_MARITIME_REQUIRED_BEFORE_REVIEW.filter((s) => !supplied.includes(s));
-  const [score, label] = gulfDecisionReadiness(request, supplied);
+  let [score, label] = gulfDecisionReadiness(request, supplied);
   let exposureSignal = gulfExposureSignal(request, missing);
   const facets = Array.isArray(request.exposure_facets) ? request.exposure_facets : [];
 
@@ -7136,18 +6949,21 @@ async function gulfMaritimeExposureResult(request, env = {}) {
   const topDims = gulfTopExposureDimensions(facets, missing, supplied);
   if (vizierMaritimeResult && vizierMaritimeResult.violation) {
     for (const match of vizierMaritimeResult.matches || []) {
-      if (match.role === "vessel") {
-        topDims.unshift(`Sanctioned vessel match: '${match.name}' identified on ${match.reason_codes.join(", ") || "sanctions list"}`);
-      } else if (match.aggregate_blocked_percentage >= 50) {
-        topDims.unshift(`OFAC 50% Rule deemed-blocked: counterparty '${match.name}' (${match.role}) has ${match.aggregate_blocked_percentage}% aggregate blocked ownership`);
-      } else {
-        topDims.unshift(`Sanctioned maritime counterparty: '${match.name}' (${match.role}) identified on ${match.reason_codes.join(", ") || "sanctions list"}`);
-      }
+      topDims.unshift(`Maritime sanctions screen flagged '${match.name}' (${match.role}); resolve vessel/entity identity and caller-declared ownership with compliance.`);
     }
   }
 
+  if (vizierMaritimeResult?.status === "degraded") {
+    if (triage === "ready_for_human_review") triage = "not_decision_ready";
+    if (exposureSignal !== "high") exposureSignal = "unknown";
+    topDims.unshift("Configured upstream screening is unavailable or incomplete; re-run before commercial action.");
+  }
+  if (vizierMaritimeResult?.violation || vizierMaritimeResult?.status === "degraded") {
+    score = Math.min(score,49);
+    label = "not_decision_ready";
+  }
   const limitations = [
-    "Triage is based on caller-supplied evidence and live maritime sanctions verification; this service does not resolve physical vessel ownership or verify identity.",
+    "Triage is based on caller-supplied references and configured upstream screening when available; this service does not resolve physical vessel ownership or verify identity.",
     "A name match against a sanctions list is not legal-entity or vessel-identity verification. Human review is required."
   ];
   if (vizierMaritimeResult && vizierMaritimeResult.attribution && (vizierMaritimeResult.matches || []).length) {
@@ -7173,6 +6989,7 @@ async function gulfMaritimeExposureResult(request, env = {}) {
   };
   if (request.vessel) response.vessel = request.vessel;
   if (request.cargo) response.cargo = request.cargo;
+  response.source_record_review = reviewSourceRecords(request.dated_sources || [], {dateRequired:true});
   response.readiness_contract = profileReadinessContract(response, {
     profile: "gulf_maritime_exposure",
     statusField: "decision_readiness_label",
@@ -7182,7 +6999,7 @@ async function gulfMaritimeExposureResult(request, env = {}) {
     response,
     vizier_status: vizierMaritimeResult ? vizierMaritimeResult.status : "disabled",
     vizier_degrade_reason: vizierMaritimeResult ? vizierMaritimeResult.degrade_reason : null,
-    vizier_clearance_receipt: vizierMaritimeResult ? vizierMaritimeResult.receipt : null,
+    vizier_clearance_receipt: null,
     maritime_screening: vizierMaritimeResult
       ? {
           status: request.vessel?.name || request.vessel?.imo ? "vessel_subject_supplied" : "vessel_not_screened",
@@ -7754,13 +7571,7 @@ const MARKET_ENTRY_SUMMARY = {
 };
 
 function marketEntrySuppliedTypes(request) {
-  const types = [];
-  for (const source of Array.isArray(request.supplied_sources) ? request.supplied_sources : []) {
-    if (source && typeof source === "object" && typeof source.source_type === "string") {
-      types.push(source.source_type);
-    }
-  }
-  return Array.from(new Set(types));
+  return reviewSourceRecords(request.supplied_sources || [], {dateRequired:false}).usable_source_types;
 }
 
 function marketEntrySatisfied(request, supplied) {
@@ -7848,6 +7659,8 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
   const sectorMissing = sectorRequired.filter((s) => !satisfied.has(s));
   let readinessLabel = marketEntryReadiness(satisfied, stageTier, sectorMissing);
   let gateDecision = marketEntryGateDecision(readinessLabel, stage);
+  const openBlockers = Array.isArray(request.known_blockers) ? request.known_blockers : [];
+  if (openBlockers.length && gateDecision !== "stop") gateDecision = "pause_for_evidence";
 
   const gapSourceTypes = [];
   for (const tier of [MARKET_ENTRY_REQUIRED_BEFORE_VALIDATION, MARKET_ENTRY_REQUIRED_BEFORE_SIGNATURE, stageTier]) {
@@ -7879,10 +7692,10 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
     ];
   }
 
-  const readyToValidate = ["validation_ready", "committee_review_ready", "launch_commitment_ready"].includes(
+  const readyToValidate = !openBlockers.length && ["validation_ready", "committee_review_ready", "launch_commitment_ready"].includes(
     readinessLabel
   );
-  const readyToCommit = readinessLabel === "launch_commitment_ready";
+  const readyToCommit = !openBlockers.length && readinessLabel === "launch_commitment_ready";
   const claimAudit = [
     {
       claim: "The project can move into controlled validation.",
@@ -7919,7 +7732,7 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
     });
   }
 
-  let customPauseReason = null;
+  let customPauseReason = openBlockers.length ? "Open caller-declared blockers: " + openBlockers.join("; ") : null;
 
   // Live Vizier sanctions screening (OFAC 50% Rule) & dossier DLP firewall
   if (vizierMarketEntry) {
@@ -7928,15 +7741,14 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
       const matches = vizierMarketEntry.sanctions_screening.matches || [];
       const first = matches[0] || {};
       const entityName = first.name || "Counterparty";
-      const pct = first.aggregate_blocked_percentage || 100;
-      customPauseReason = `Sanctions violation: Entity '${entityName}' is designated on sanctions lists or deemed-blocked under the OFAC 50% Rule (${pct}% aggregate blocked ownership).`;
+      customPauseReason = `Sanctions name-screen flag for '${entityName}'; identity and ownership remain unverified.`;
       confirmedFacts.unshift(
-        `CRITICAL: Sanctioned entity or deemed-blocked counterparty identified in file: '${entityName}' (${pct}% aggregate blocked ownership).`
+        `Upstream screening flagged the name '${entityName}'; a compliance owner must resolve the match.`
       );
       evidenceGaps.unshift({
         source_type: "counterparty_integrity_due_diligence",
         evidence_needed: `Sanctions clearance or divestment documentation for ${entityName}.`,
-        why_it_matters: `Entity '${entityName}' is subject to blocking sanctions under OFAC/EU/UK regimes or the OFAC 50% Rule.`,
+        why_it_matters: "Name resemblance alone does not establish legal identity or blocked ownership.",
         owner: "Compliance lead",
         next_action: "Halt transaction onboarding, freeze execution, and escalate to legal/compliance counsel.",
         decision_blocked: "Any contractual signature, entity setup, bank account opening, or capital injection in Kazakhstan."
@@ -7944,10 +7756,10 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
       claimAudit.unshift({
         claim: "The partner, company, and counterparties are cleared of international sanctions.",
         status: "unsupported",
-        how_to_use_now: `Do not proceed. Counterparty '${entityName}' is subject to sanctions (${pct}% aggregate blocked ownership).`
+        how_to_use_now: `Resolve the name-screen flag for '${entityName}' before proceeding.`
       });
     }
-    if (vizierMarketEntry.dlp_screening && !vizierMarketEntry.dlp_screening.clean) {
+    if (vizierMarketEntry.dlp_screening?.clean === false && (vizierMarketEntry.dlp_screening.findings || []).length > 0) {
       gateDecision = "stop";
       const findings = vizierMarketEntry.dlp_screening.findings || [];
       const first = findings[0] || {};
@@ -7968,6 +7780,15 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
         how_to_use_now: `Rotate and sanitize exposed credential (${first.detector}: ${first.snippet_masked}).`
       });
     }
+  }
+
+  if (vizierMarketEntry?.status === "degraded") {
+    if (gateDecision !== "stop") gateDecision = "pause_for_evidence";
+    customPauseReason = (customPauseReason ? customPauseReason + " " : "") + "Configured upstream screening is unavailable or incomplete; re-run before advancement.";
+  }
+  if (gateDecision === "stop" || gateDecision === "pause_for_evidence") {
+    if (!["insufficient_information", "concept_ready"].includes(readinessLabel)) readinessLabel = "concept_ready";
+    for (const claim of claimAudit) if (claim.status === "supported") claim.status = "needs_professional_confirmation";
   }
 
   const ownerActions = [
@@ -7991,6 +7812,7 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
     }
   ];
 
+  ownerActions.unshift(...openBlockers.map(blocker => ({timeframe:"48_hours",owner:"Project lead",action:`Resolve open blocker: ${blocker}`,output:"Documented blocker resolution for human review."})));
   const response = {
     gate_decision: gateDecision,
     readiness_label: readinessLabel,
@@ -8004,7 +7826,7 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
     watch_next: marketEntryWatchNext(sector, stageTierKey, satisfied),
     boundary_notice: MARKET_ENTRY_BOUNDARY_NOTICE
   };
-  if (readinessLabel !== "insufficient_information" && gateDecision !== "stop") {
+  if (readinessLabel !== "insufficient_information" && !["stop", "pause_for_evidence"].includes(gateDecision)) {
     response.strongest_reason_to_proceed =
       "The Kazakhstan use case and commercial objective are specific enough to start advisor requests, " +
       "quote collection, and partner validation.";
@@ -8012,8 +7834,7 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
   if (customPauseReason) {
     response.strongest_reason_to_pause = customPauseReason;
     response.management_note =
-      "The opportunity is stopped by security and compliance guardrails. Do not proceed to signature, " +
-      "entity setup, or bank onboarding until sanctions or secret leakage issues are fully resolved.";
+      "Pause advancement until each caller blocker and upstream screening flag or outage is resolved by its owner.";
   } else if (evidenceGaps.length) {
     response.strongest_reason_to_pause =
       "The current evidence pack is not sufficient for signature, import, lease, first-batch order, " +
@@ -8023,6 +7844,7 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
       "commitment until the flagged legal, customs, certification, landed-cost, service, lease, and " +
       "partner evidence gaps are closed.";
   }
+  response.source_record_review = reviewSourceRecords(request.supplied_sources || [], {dateRequired:false});
   response.readiness_contract = profileReadinessContract(response, {
     profile: "kazakhstan_market_entry_readiness",
     statusField: "readiness_label",
@@ -8034,10 +7856,14 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
     response,
     vizier_status: vizierMarketEntry ? vizierMarketEntry.status : "disabled",
     vizier_degrade_reason: vizierMarketEntry ? vizierMarketEntry.degrade_reason : null,
-    vizier_clearance_receipt: vizierMarketEntry ? vizierMarketEntry.receipt : null,
+    vizier_clearance_receipt: null,
     market_entry_verification: vizierMarketEntry
       ? {
           clean: vizierMarketEntry.clean,
+          ownership_status: "unverified",
+          signature_verified: false,
+          receipt_scope: "unverified_upstream_output",
+          upstream_receipt: vizierMarketEntry.receipt,
           violation: vizierMarketEntry.violation,
           sanctions_screening: vizierMarketEntry.sanctions_screening,
           dlp_screening: vizierMarketEntry.dlp_screening
@@ -8978,8 +8804,10 @@ function structuredDualUseTechnologyExportRequestFromParams(params) {
 
 function dualUseTechnologyExportResult(request, vizierDualUse = null) {
   const shipment = request.shipment || {};
-  const sources = Array.isArray(request.dated_sources) ? request.dated_sources : [];
-  const riskVectors = [];
+  const sourceReview = reviewSourceRecords(request.dated_sources || []);
+  const invalidIndices = new Set(sourceReview.issues.map(i => i.source_index));
+  const sources = (request.dated_sources || []).filter((_,i) => !invalidIndices.has(i));
+  const riskVectors = sourceReview.issues.map(i => `Missing usable source ${i.source_index}: ${i.issue}`);
   let score = 40;
 
   // 1. CHPL classification & G7/BIS/EU priority triage
@@ -8987,12 +8815,12 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
   let isChplHighPriority = false;
   if (chplInfo && chplInfo.isHighPriority) {
     isChplHighPriority = true;
-    riskVectors.push(`CHPL Status: ${chplInfo.tier} matched (HS ${shipment.hs_code || chplInfo.prefix}). Heightened diversion risk under EU Reg 833/2014 Annex XL, US BIS EAR Common High Priority List, and UK Russia Regulations.`);
+    riskVectors.push(`CHPL Status: ${chplInfo.tier} matched (HS ${shipment.hs_code || chplInfo.prefix}). Diversion-review lead from the BIS CHPL reference snapshot; applicable controls require separate product, jurisdiction and end-use review.`);
     if (chplInfo.tier.includes("Tier 1") || chplInfo.tier.includes("Tier 2")) {
-      riskVectors.push("OFAC E.O. 14114 Warning: Secondary sanctions exposure for Foreign Financial Institutions (FFIs) facilitating transactions involving CHPL Tier 1–2 items.");
+      riskVectors.push("OFAC E.O. 14114 applicability question: Does a foreign financial institution facilitate relevant significant transactions or services connected to Russia’s military-industrial base? HS tier alone does not determine sanctions exposure.");
     }
-    if (chplInfo.tier.includes("Tier 4.A")) {
-      riskVectors.push("Tier 4.A CNC Metalworking Alert: Verification of on-site installation, end-user factory inspection, and dual-use catch-all clearance mandatory.");
+    if (chplInfo.tier.includes("Tier 4.B")) {
+      riskVectors.push("Tier 4.B CNC review: Request technical specifications, installation site and end-use evidence; a qualified reviewer must determine applicable licensing or catch-all controls.");
     }
     const hasEuc = sources.some(s => s && (s.source_type === "end_user_statement" || s.source_type === "end_user_certificate" || (s.title && s.title.toLowerCase().includes("end-user"))));
     if (!hasEuc) {
@@ -9024,12 +8852,12 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
       score = 0;
       const matches = vizierDualUse.sanctions_screening.matches || [];
       const matchNames = matches
-        .map((m) => `${m.name} (${m.role || "counterparty"}, ${m.aggregate_blocked_percentage}% blocked)`)
+        .map((m) => `${m.name} (${m.role || "counterparty"})`)
         .join(", ") || "Sanctioned entity";
-      riskVectors.unshift(`Vizier Action Firewall detected counterparty/destination blocked under OFAC 50% Rule: ${matchNames}. Immediate escalation to export-control counsel required.`);
+      riskVectors.unshift(`Vizier sanctions name-screen flag: ${matchNames}. Resolve identity with compliance; blocked ownership has not been established.`);
     }
 
-    if (vizierDualUse.dlp_screening && vizierDualUse.dlp_screening.clean === false) {
+    if (vizierDualUse.dlp_screening?.clean === false && (vizierDualUse.dlp_screening.findings || []).length > 0) {
       vizierEscalation = true;
       score = Math.min(score, 20);
       const findings = vizierDualUse.dlp_screening.findings || [];
@@ -9038,6 +8866,11 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
     }
   }
 
+  if (vizierDualUse?.status === "degraded") {
+    vizierEscalation = true;
+    score = Math.min(score, 49);
+    riskVectors.unshift("Configured upstream screening is unavailable or incomplete; no clearance or leak finding can be inferred from an outage.");
+  }
   const hasMissingEvidence = riskVectors.some(
     (item) => item.startsWith("No ") || item.startsWith("End-user") || item.startsWith("Missing ")
   );
@@ -9053,7 +8886,7 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
       `${String(source?.id || "source")}: ${String(source?.source_type || "unspecified")} — ${String(source?.title || "untitled")} (${String(source?.date || "undated")})`
   );
   if (isChplHighPriority) {
-    evidenceLedger.push(`Regulatory Classification: ${chplInfo.tier} — ${chplInfo.description}`);
+    evidenceLedger.push(`HS6 reference match: ${chplInfo.tier} — ${chplInfo.description}`);
   }
 
   const response = {
@@ -9068,7 +8901,8 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
       not_advice_notice: NOT_ADVICE_NOTICE,
       evidence_gaps: ["Source content, classification, licensing requirements and end-use have not been independently verified."],
       primary_risk_vectors: riskVectors,
-      evidence_ledger: evidenceLedger
+      evidence_ledger: evidenceLedger,
+      source_record_review: sourceReview
     }
   };
 
@@ -9596,7 +9430,7 @@ async function cisSecondarySanctionsResult(request, env) {
   }
 
   const missing = CIS_SECONDARY_SANCTIONS_REQUIRED_BEFORE_REVIEW.filter((s) => !supplied.includes(s));
-  const [score, label] = cisDecisionReadiness(supplied);
+  let [score, label] = cisDecisionReadiness(supplied);
   const totalSanctionsMatches =
     sanctionsMatchesMerged + (vizierResult && vizierResult.violation ? 1 : 0);
   let exposureSignal = cisExposureSignal(supplied, missing, totalSanctionsMatches);
@@ -9604,6 +9438,11 @@ async function cisSecondarySanctionsResult(request, env) {
   const facets = Array.isArray(request.exposure_facets) ? request.exposure_facets : [];
   const undisclosedUbo = cisHasUndisclosedUbo(request);
 
+  if (totalSanctionsMatches || undisclosedUbo || upstreamResult.status === "degraded" || vizierResult?.status === "degraded") {
+    score = Math.min(score,49);
+    label = "not_decision_ready";
+    if (triage === "ready_for_human_review") triage = "not_decision_ready";
+  }
   const limitations = [];
   // Attribution only when upstream data was actually merged (Python parity): on the
   // disabled / degraded / zero-match paths nothing was fetched, so the notice would
@@ -9671,7 +9510,7 @@ async function cisSecondarySanctionsResult(request, env) {
   if (vizierResult && vizierResult.violation) {
     const blockedNames = vizierResult.blocked_shareholders.map((s) => s.name).join(", ");
     topDims.unshift(
-      `OFAC 50% Rule deemed-blocked: ${vizierResult.aggregate_blocked_percentage}% aggregate blocked ownership across ${blockedNames}`
+      `Ownership-screen flag: ${vizierResult.aggregate_blocked_percentage}% calculated from declared ownership across ${blockedNames}; resolve identity and verify the chain before any legal determination.`
     );
   }
 
@@ -9717,6 +9556,7 @@ async function cisSecondarySanctionsResult(request, env) {
   if (Array.isArray(request[NORMALIZATIONS_APPLIED]) && request[NORMALIZATIONS_APPLIED].length) {
     response.normalizations_applied = request[NORMALIZATIONS_APPLIED];
   }
+  response.source_record_review = reviewSourceRecords(request.dated_sources || [], {dateRequired:true});
   response.readiness_contract = profileReadinessContract(response, {
     profile: "cis_secondary_sanctions",
     statusField: "decision_readiness_label",
@@ -10587,13 +10427,7 @@ function dealRiskGateForText(text) {
 }
 
 function suppliedSourcesFromStructuredRequest(request) {
-  return [
-    ...new Set(
-      request.dated_sources
-        .map((source) => source?.source_type)
-        .filter((sourceType) => typeof sourceType === "string" && sourceType.trim())
-    )
-  ];
+  return reviewSourceRecords(request.dated_sources || []).usable_source_types;
 }
 
 function evidenceGapForSource(sourceType) {
@@ -10620,7 +10454,7 @@ function riskSignalForStructuredRequest(request, missingSources) {
   if (request.dated_sources.length === 0) return "unknown";
   if (missingSources.length >= 4) return "medium_high";
   if (missingSources.length > 0) return "medium";
-  return "low";
+  return "unknown";
 }
 
 function flaggedJurisdictionCounterparties(request, table) {
@@ -10827,7 +10661,9 @@ function counterpartyReadinessForStructuredRequest(request, suppliedSources, min
   // Per-document ledger mirroring the EDD "date requested, date received" / chain-of-custody
   // practice. date_received is the earliest supplied dated source of that type, when present.
   const receivedDates = {};
-  for (const source of request.dated_sources || []) {
+  const invalidIndices = new Set(reviewSourceRecords(request.dated_sources || []).issues.map(i => i.source_index));
+  for (const [index,source] of (request.dated_sources || []).entries()) {
+    if (invalidIndices.has(index)) continue;
     const sourceType = source.source_type;
     const date = source.date;
     if (sourceType && date && (!(sourceType in receivedDates) || date < receivedDates[sourceType])) {
@@ -10926,24 +10762,24 @@ function dealRiskContractResponseForRequest(request, vizierCorridor = null) {
           : "escalate_before_shipment";
       const matches = vizierCorridor.sanctions_screening.matches || [];
       const matchNames = matches
-        .map((m) => `${m.name} (${m.role || "counterparty"}, ${m.aggregate_blocked_percentage}% blocked)`)
+        .map((m) => `${m.name} (${m.role || "counterparty"})`)
         .join(", ") || "Sanctioned counterparty";
       operationalDecision = {
         decision: "hold",
         applies_to: "commercial_and_logistics_execution",
-        rationale: `Vizier Action Firewall detected counterparty blocked under OFAC 50% Rule: ${matchNames}. Immediate hold and compliance escalation required before any commercial or logistics execution.`
+        rationale: `Vizier Action Firewall flagged a counterparty name for compliance review: ${matchNames}. Immediate hold and compliance escalation required before any commercial or logistics execution.`
       };
       topRisks.unshift(
-        `Sanctions violation: ${matchNames} identified by Vizier Action Firewall under OFAC 50% Rule. Transaction on hold.`
+        `Sanctions name-screen flag: ${matchNames}. Identity and ownership remain unverified; transaction on hold for human review.`
       );
       evidenceGaps.unshift(
-        `OFAC 50% Rule clearance or sanctions relief documentation for ${matchNames}.`
+        `Identity resolution and applicable-sanctions review for ${matchNames}.`
       );
       limitations.unshift(
-        `Vizier Action Firewall identified active sanctions designation or deemed-blocked ownership under the OFAC 50% Rule for ${matchNames}. Do not proceed with transit, booking, or settlement without human compliance authorization.`
+        `Vizier screening flagged supplied names ${matchNames}; this does not establish identity or blocked ownership. Do not proceed with transit, booking, or settlement without human compliance authorization.`
       );
     }
-    if (vizierCorridor.dlp_screening && !vizierCorridor.dlp_screening.clean) {
+    if (vizierCorridor.dlp_screening?.clean === false && (vizierCorridor.dlp_screening.findings || []).length > 0) {
       riskSignal = "high";
       const findings = vizierCorridor.dlp_screening.findings || [];
       const detectorNames = findings.map((f) => f.detector).join(", ") || "sensitive secret";
@@ -10966,6 +10802,16 @@ function dealRiskContractResponseForRequest(request, vizierCorridor = null) {
     }
   }
 
+  if (vizierCorridor?.status === "degraded") {
+    if (riskSignal !== "high") riskSignal = "unknown";
+    if (triageRecommendation === "ready_for_human_review") triageRecommendation = "not_decision_ready";
+    evidenceGaps.unshift("Configured upstream screening is unavailable or incomplete; re-run before commercial action.");
+    if (!["hold", "escalate"].includes(operationalDecision.decision)) operationalDecision = {decision:"hold",applies_to:operationalDecision.applies_to,rationale:"Configured screening is incomplete; request a successful review before action."};
+  }
+  if (vizierCorridor?.violation || vizierCorridor?.status === "degraded") {
+    decisionReadiness.score = Math.min(decisionReadiness.score,49);
+    decisionReadiness.label = "not_decision_ready";
+  }
   const response = {
     triage_recommendation: triageRecommendation,
     risk_signal: riskSignal,
@@ -11068,6 +10914,7 @@ function dealRiskContractResponseForRequest(request, vizierCorridor = null) {
   if (request.shipment_value) response.shipment_value = request.shipment_value;
   const linkIntegrityBlock = linkIntegrity(request.dated_sources);
   if (linkIntegrityBlock) response.link_integrity = linkIntegrityBlock;
+  response.source_record_review = reviewSourceRecords(request.dated_sources || [], {dateRequired:true});
   response.readiness_contract = profileReadinessContract(response, {
     profile: "middle_corridor_deal_risk",
     statusField: "decision_readiness_label",
@@ -11846,18 +11693,19 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
   // first — what was read, what applies, what to collect — and the packaging
   // sits at the bottom where a caller who already wants more will look for it.
   const securityNotices = [];
+  if (extras.vizierGateway?.status === "degraded") securityNotices.push("Configured upstream screening is unavailable or incomplete; re-run before commercial action.");
   if (extras.vizierGateway && extras.vizierGateway.sanctions_screening && extras.vizierGateway.sanctions_screening.violation) {
-    securityNotices.push("## ⚠️ Gateway Sanctions Warning (OFAC 50% Rule)");
-    securityNotices.push("One or more counterparties in your inquiry match designated sanctions lists or meet the OFAC 50% Rule aggregate blocked threshold:");
+    securityNotices.push("## ⚠️ Gateway Name-screen Warning (identity and ownership unverified)");
+    securityNotices.push("One or more supplied counterparty names triggered screening flags. Identity and ownership require compliance review:");
     for (const m of extras.vizierGateway.sanctions_screening.matches) {
-      securityNotices.push(`- **${m.name}** (${m.role}): ${m.aggregate_blocked_percentage}% blocked. ${m.explanation || ""}`);
+      securityNotices.push(`- **${m.name}** (${m.role}): Screening flag; identity and ownership unverified. ${m.explanation || ""}`);
     }
     securityNotices.push("Immediate escalation to compliance / sanctions legal desk is required before proceeding.");
     securityNotices.push("");
   }
-  if (extras.vizierGateway && extras.vizierGateway.dlp_screening && !extras.vizierGateway.dlp_screening.clean) {
+  if (extras.vizierGateway?.dlp_screening?.clean === false && (extras.vizierGateway.dlp_screening.findings || []).length > 0) {
     securityNotices.push("## 🛡️ Vizier Gateway DLP Notice");
-    securityNotices.push("Sensitive credentials (API keys / private tokens) were detected in query text and automatically sanitized by Vizier DLP Firewall.");
+    securityNotices.push("Sensitive credentials (API keys / private tokens) were flagged in query text. Redact the complete payload and review before onward sharing.");
     securityNotices.push("");
   }
 
@@ -12182,7 +12030,7 @@ async function a2aResult(params, request, env = {}) {
   }
 
   let sanitizedText = text;
-  if (vizierGateway && vizierGateway.dlp_screening && !vizierGateway.dlp_screening.clean) {
+  if (vizierGateway?.dlp_screening?.clean === false && (vizierGateway.dlp_screening.findings || []).length > 0) {
     sanitizedText = sanitizedText
       .replace(/sk-[a-zA-Z0-9_\-]{10,}/g, "sk-******")
       .replace(/AKIA[0-9A-Z]{16}/g, "AKIA******")
@@ -12205,7 +12053,7 @@ async function a2aResult(params, request, env = {}) {
       status: "escalate",
       matches: vizierGateway.sanctions_screening.matches,
       advisory:
-        "One or more counterparties mentioned in your query match designated entities or meet the OFAC 50% Rule aggregate blocked threshold. Route immediately to your sanctions/compliance legal desk before taking any commercial action."
+        "One or more supplied counterparty names triggered screening flags; this does not establish legal identity or blocked ownership. Route immediately to your sanctions/compliance legal desk before taking any commercial action."
     };
     if (triage.signal_screen) {
       triage.signal_screen.risk_signal = "high";
@@ -12275,7 +12123,7 @@ async function a2aResult(params, request, env = {}) {
           ? vizierCorridor.status
           : (isMiddleCorridorVizierEnabled(env) || isGatewayVizierEnabled(env) ? "unknown" : "disabled"),
       vizier_degrade_reason: (vizierGateway && vizierGateway.degrade_reason) || (vizierCorridor && vizierCorridor.degrade_reason) || null,
-      vizier_clearance_receipt: (vizierGateway && vizierGateway.receipt) || (vizierCorridor && vizierCorridor.receipt) || null,
+      vizier_clearance_receipt: null,
       middle_corridor_verification: vizierCorridor,
       ...(vizierGateway ? { gateway_verification: vizierGateway } : {}),
       response: triage.deal_risk_contract || triage.deal_risk_gate || triage

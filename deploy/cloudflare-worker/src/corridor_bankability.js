@@ -30,50 +30,14 @@ export function evaluateCovenants(dscrMin, debtShare, hasSovereignGuarantee) {
   const conditions = [];
 
   if (hasSovereignGuarantee) {
-    checks.push({
-      test: "minimum_dscr_floor",
-      threshold: `${DSCR_FLOOR.toFixed(2)}x without a sovereign guarantee`,
-      observed_dscr: dscrMin,
-      result: "NOT_APPLICABLE",
-      basis: "sovereign guarantee is asserted for this tranche"
-    });
-    checks.push({
-      test: "non_sovereign_dscr_margin",
-      threshold: `${DSCR_NON_SOVEREIGN_FLOOR.toFixed(2)}x without a sovereign guarantee`,
-      observed_dscr: dscrMin,
-      result: "NOT_APPLICABLE",
-      basis: "sovereign guarantee is asserted for this tranche"
-    });
-    conditions.push(
-      "Evidence the asserted sovereign guarantee with an official decree number or primary ministry record; an unverified guarantee will not clear IFI credit committee."
-    );
-  } else {
-    const floorOk = dscrMin >= DSCR_FLOOR;
-    checks.push({
-      test: "minimum_dscr_floor",
-      threshold: `${DSCR_FLOOR.toFixed(2)}x non-guaranteed floor`,
-      observed_dscr: dscrMin,
-      result: floorOk ? "PASSES" : "FAILS"
-    });
-    if (!floorOk) {
-      conditions.push(
-        `Projected minimum DSCR of ${dscrMin.toFixed(2)}x sits below the ${DSCR_FLOOR.toFixed(2)}x IFI floor; credit restructuring, subordinated debt tranche, or sovereign guarantee required.`
-      );
-    }
-
-    const marginOk = dscrMin >= DSCR_NON_SOVEREIGN_FLOOR;
-    checks.push({
-      test: "non_sovereign_dscr_margin",
-      threshold: `${DSCR_NON_SOVEREIGN_FLOOR.toFixed(2)}x non-sovereign margin`,
-      observed_dscr: dscrMin,
-      result: marginOk ? "PASSES" : "FAILS"
-    });
-    if (floorOk && !marginOk) {
-      conditions.push(
-        `Minimum DSCR of ${dscrMin.toFixed(2)}x clears absolute floor but falls short of the ${DSCR_NON_SOVEREIGN_FLOOR.toFixed(2)}x non-sovereign IFI target; credit enhancement or DSRA expansion recommended.`
-      );
-    }
+    conditions.push("Supply the decree number or primary guarantee record and obtain legal review; a caller assertion does not waive debt-coverage screening.");
   }
+  for (const [test,threshold] of [["minimum_dscr_floor",DSCR_FLOOR],["non_sovereign_dscr_margin",DSCR_NON_SOVEREIGN_FLOOR]]) {
+    checks.push({test,threshold:`${threshold.toFixed(2)}x illustrative internal threshold`,observed_dscr:dscrMin,
+      result:debtShare === 0 ? "NOT_APPLICABLE" : dscrMin >= threshold ? "PASSES" : "FAILS",
+      basis:debtShare === 0 ? "No debt is proposed." : "Caller-supplied DSCR compared with a model assumption, not a lender covenant."});
+  }
+  if (dscrMin < DSCR_NON_SOVEREIGN_FLOOR && debtShare !== 0) conditions.push("Review cash flow, debt sizing and the illustrative 1.30x assumption with the lender before commitment.");
 
   if (debtShare === null || debtShare === undefined) {
     checks.push({
@@ -140,7 +104,7 @@ export function generateBankabilityScreen(request = {}, isPaid = false, origin =
 
   if ((floorCheck && floorCheck.result === "FAILS") || (leverageCheck && leverageCheck.result === "FAILS")) {
     bankabilityStatus = "HIGH_DEFAULT_RISK";
-  } else if (dscrMin >= DSCR_NON_SOVEREIGN_FLOOR && debtShare !== null && debtShare <= 0.70) {
+  } else if (dscrMin >= DSCR_NON_SOVEREIGN_FLOOR && debtShare !== null && debtShare > 0 && debtShare <= 0.70) {
     bankabilityStatus = "BANKABLE_CORE";
   }
 
@@ -154,8 +118,8 @@ export function generateBankabilityScreen(request = {}, isPaid = false, origin =
     creditRisks.push({
       category: "FX_AND_CONVERTIBILITY_MISMATCH",
       severity: "HIGH",
-      finding: "Project revenues are largely collected in regional local currencies (KZT, AZN, GEL), while IFI senior debt is denominated in hard currency (USD/EUR).",
-      mitigant: `Mandatory 6-month Debt Service Reserve Account (DSRA) sized at ~${recommendedDsraUsdM}M USD with hard-currency cash sweep.`
+      finding: "The declared or assumed currency mismatch requires verification of revenue and debt currencies; actual currency denominations have not been verified.",
+      mitigant: `Illustrative 6-month principal-only reserve estimate: ~${recommendedDsraUsdM}M USD. Interest and fees excluded; confirm actual DSRA and FX terms with the lender.`
     });
   }
 
@@ -170,7 +134,7 @@ export function generateBankabilityScreen(request = {}, isPaid = false, origin =
     creditRisks.push({
       category: "SOVEREIGN_OBLIGATION_PERFECTION",
       severity: "MEDIUM",
-      finding: "Sovereign guarantee referenced but requires parliamentary ratification or formal ministry decree verification.",
+      finding: "Sovereign guarantee referenced but requires issuer, scope, enforceability and applicable legal-form review.",
       mitigant: "Condition precedent to loan effectiveness."
     });
   }
@@ -179,6 +143,7 @@ export function generateBankabilityScreen(request = {}, isPaid = false, origin =
     project_name: projectName,
     corridor_leg: corridorLeg,
     bankability_status: bankabilityStatus,
+    status_scope: "illustrative_threshold_screen_not_credit_approval",
     financial_metrics: {
       total_capex_usd_m: capexUsdM,
       ifi_debt_usd_m: ifiDebtUsdM,
@@ -239,7 +204,7 @@ export function generateBankabilityScreen(request = {}, isPaid = false, origin =
 The proposed ${projectName} comprises a total capital expenditure of \$${capexUsdM}M USD, seeking \$${ifiDebtUsdM}M USD in senior secured non-sovereign project finance. The project represents a critical strategic node on the Trans-Caspian International Transport Route (TITR / Middle Corridor). 
 
 **Bankability Verdict**: **${bankabilityStatus}**  
-Minimum Debt Service Coverage Ratio (DSCR): **${dscrMin.toFixed(2)}x** against an IFI non-guaranteed baseline floor of ${DSCR_FLOOR.toFixed(2)}x. Senior leverage stands at **${(debtShare * 100).toFixed(1)}%**.
+Minimum Debt Service Coverage Ratio (DSCR): **${dscrMin.toFixed(2)}x** against an illustrative internal screening floor of ${DSCR_FLOOR.toFixed(2)}x. Senior leverage stands at **${(debtShare * 100).toFixed(1)}%**.
 
 ---
 
@@ -248,8 +213,8 @@ Minimum Debt Service Coverage Ratio (DSCR): **${dscrMin.toFixed(2)}x** against a
 - **Senior IFI Debt Tranche**: \$${ifiDebtUsdM}M USD (${(debtShare * 100).toFixed(1)}%)
 - **Sponsor Equity Commitment**: \$${(capexUsdM - ifiDebtUsdM).toFixed(1)}M USD (${(100 - debtShare * 100).toFixed(1)}%)
 - **Minimum DSCR**: ${dscrMin.toFixed(2)}x
-- **Debt Service Reserve Account (DSRA)**: Sized at 6 months forward-looking principal and interest debt service (~${(ifiDebtUsdM / 15 * 0.5).toFixed(2)}M USD cash funded).
-- **Cash Sweep Mechanism**: 50% free cash flow sweep applied if DSCR drops below ${DSCR_NON_SOVEREIGN_FLOOR.toFixed(2)}x.
+- **Debt Service Reserve Account (DSRA)**: Illustrative 6-month principal-only estimate; interest, fees and lender requirements excluded (~${(ifiDebtUsdM / 15 * 0.5).toFixed(2)}M USD cash funded).
+- **Illustrative Cash Sweep Option**: Discuss a 50% free cash flow sweep if DSCR drops below ${DSCR_NON_SOVEREIGN_FLOOR.toFixed(2)}x.
 
 ---
 

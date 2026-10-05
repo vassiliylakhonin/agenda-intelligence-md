@@ -199,7 +199,7 @@ test("e2e: cis_secondary_sanctions elevates exposure signal and attaches Vizier 
   assert.equal(resp.secondary_exposure_signal, "high");
   assert.equal(resp.triage_recommendation, "escalate_before_transaction");
   assert.ok(
-    resp.top_exposure_dimensions.some((d) => d.includes("OFAC 50% Rule deemed-blocked")),
+    resp.top_exposure_dimensions.some((d) => d.includes("Ownership-screen flag")),
     "Top exposure dimensions should include OFAC 50% Rule deemed-blocked note"
   );
   assert.ok(resp.beneficial_ownership_clearance);

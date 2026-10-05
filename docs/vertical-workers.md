@@ -40,3 +40,7 @@ A vertical worker is a productized service function with its own schema, source-
 For remote MCP initialization, free discovery and A2A heartbeat, see the
 [hosted quickstart](deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
 the signed payment flow; the saved worked example on the site is free.
+
+## Evidence and screening scope
+
+See [fleet evidence boundaries](use-cases/fleet-evidence-boundaries.md) for each service’s usable output, reference-integrity review, screening limitations and owner workflow.

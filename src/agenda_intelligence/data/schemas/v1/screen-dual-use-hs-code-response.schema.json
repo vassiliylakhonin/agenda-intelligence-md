@@ -16,22 +16,55 @@
     "canonical_dossier_gate"
   ],
   "properties": {
-    "contract_version": { "type": "string" },
-    "hs_code": { "type": "string" },
-    "normalized_hs_prefix": { "type": "string" },
-    "item_description": { "type": "string" },
-    "chpl_tier": { "type": "string" },
-    "is_high_priority_item": { "type": "boolean" },
+    "contract_version": {
+      "type": "string"
+    },
+    "hs_code": {
+      "type": "string"
+    },
+    "normalized_hs_prefix": {
+      "type": "string"
+    },
+    "item_description": {
+      "type": "string"
+    },
+    "chpl_tier": {
+      "type": "string"
+    },
+    "is_high_priority_item": {
+      "type": "boolean"
+    },
     "clearance_recommendation": {
       "type": "string",
-      "enum": ["STANDARD_REVIEW", "ENHANCED_DUE_DILIGENCE", "ESCALATE_TO_COMPLIANCE"]
+      "enum": [
+        "STANDARD_REVIEW",
+        "ENHANCED_DUE_DILIGENCE",
+        "ESCALATE_TO_COMPLIANCE"
+      ]
     },
-    "regulatory_framework": { "type": "string" },
-    "diversion_risk": { "type": "string" },
-    "canonical_dossier_gate": { "type": "string" },
+    "regulatory_framework": {
+      "type": "string"
+    },
+    "diversion_risk": {
+      "type": "string"
+    },
+    "canonical_dossier_gate": {
+      "type": "string"
+    },
     "required_diligence_documents": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
+    },
+    "classification_scope": {
+      "const": "exact_hs6_reference_membership_only"
+    },
+    "reference_source": {
+      "type": "string"
+    },
+    "reference_snapshot_date": {
+      "type": "string"
     }
   }
 }

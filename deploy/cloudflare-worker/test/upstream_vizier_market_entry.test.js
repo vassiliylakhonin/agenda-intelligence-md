@@ -263,7 +263,7 @@ test("e2e: market_entry_readiness allows clean dossier and attaches Vizier recei
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
+  assert.equal(metadata.vizier_clearance_receipt, null);
   assert.equal(metadata.market_entry_verification.clean, true);
   assert.equal(metadata.market_entry_verification.violation, false);
 
@@ -331,14 +331,14 @@ test("e2e: market_entry_readiness stops dossier when sanctioned partner is ident
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
+  assert.equal(metadata.vizier_clearance_receipt, null);
   assert.equal(metadata.market_entry_verification.violation, true);
   assert.equal(metadata.market_entry_verification.sanctions_screening.violation, true);
 
   const responseBody = metadata.response;
   assert.equal(responseBody.gate_decision, "stop");
-  assert.ok(responseBody.strongest_reason_to_pause.includes("Sanctions violation"));
-  assert.ok(responseBody.confirmed_facts.some((f) => f.includes("Sanctioned entity")));
+  assert.ok(responseBody.strongest_reason_to_pause.includes("Sanctions name-screen flag"));
+  assert.ok(responseBody.confirmed_facts.some((f) => f.includes("Upstream screening flagged the name")));
   assert.ok(responseBody.evidence_gaps.some((g) => g.source_type === "counterparty_integrity_due_diligence"));
 });
 
@@ -399,7 +399,7 @@ test("e2e: market_entry_readiness stops dossier when leaked secret is detected b
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
+  assert.equal(metadata.vizier_clearance_receipt, null);
   assert.equal(metadata.market_entry_verification.violation, true);
   assert.equal(metadata.market_entry_verification.dlp_screening.clean, false);
 
@@ -442,7 +442,7 @@ test("e2e: REST POST /v1/market-entry/readiness attaches Vizier provenance and J
   assert.equal(data.gate_decision, "proceed_to_validation");
   assert.equal(data.readiness_label, "validation_ready");
   assert.equal(data.vizier_status, "success");
-  assert.equal(data.vizier_clearance_receipt, fakeJws);
+  assert.equal(data.vizier_clearance_receipt, null);
   assert.equal(data.market_entry_verification.clean, true);
   assert.equal(data.market_entry_verification.violation, false);
 });

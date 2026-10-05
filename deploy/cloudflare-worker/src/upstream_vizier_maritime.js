@@ -13,7 +13,7 @@
 export const VIZIER_DEFAULT_URL = "https://vizier.vassiliy-lakhonin.workers.dev";
 export const DEFAULT_TIMEOUT_MS = 5000;
 export const MARITIME_NOTICE =
-  "Maritime sanctions screening & JWS cryptographic clearance via Vizier Action Firewall (https://vizier.vassiliy-lakhonin.workers.dev).";
+  "Maritime name and caller-declared ownership screening via Vizier; identity and ownership are unverified and no clearance is issued (https://vizier.vassiliy-lakhonin.workers.dev).";
 
 export function maritimeAttributionBlock() {
   return {
@@ -172,9 +172,9 @@ export async function screenMaritimeExposureWithVizier(env = {}, request = {}) {
       if (!response.ok) {
         return {
           status: "degraded",
-          violation: false,
-          clean: false,
-          matches: [],
+          violation: anyViolation,
+          clean: anyViolation ? false : null,
+          matches,
           attribution: maritimeAttributionBlock(),
           queried_at: nowIso(),
           degrade_reason: `Vizier returned HTTP status ${response.status}`
@@ -217,9 +217,9 @@ export async function screenMaritimeExposureWithVizier(env = {}, request = {}) {
   } catch (error) {
     return {
       status: "degraded",
-      violation: false,
-      clean: false,
-      matches: [],
+      violation: anyViolation,
+      clean: anyViolation ? false : null,
+      matches,
       attribution: maritimeAttributionBlock(),
       queried_at: nowIso(),
       degrade_reason: error instanceof Error ? error.message : "Network error"

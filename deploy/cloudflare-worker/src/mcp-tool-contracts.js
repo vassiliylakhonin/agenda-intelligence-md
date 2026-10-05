@@ -407,6 +407,15 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
             "items": {
               "type": "string"
             }
+          },
+          "classification_scope": {
+            "const": "exact_hs6_reference_membership_only"
+          },
+          "reference_source": {
+            "type": "string"
+          },
+          "reference_snapshot_date": {
+            "type": "string"
           }
         }
       }
@@ -1671,6 +1680,66 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           },
           "readiness_contract": {
             "$ref": "#/$defs/readiness_contract"
+          },
+          "source_record_review": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "policy_version",
+              "scope",
+              "source_content_verified",
+              "freshness_verified",
+              "usable_source_types",
+              "issues",
+              "next_action"
+            ],
+            "properties": {
+              "policy_version": {
+                "const": "source-records.v1"
+              },
+              "scope": {
+                "const": "reference_metadata_only"
+              },
+              "source_content_verified": {
+                "const": false
+              },
+              "freshness_verified": {
+                "const": false
+              },
+              "usable_source_types": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source_index",
+                    "source_type",
+                    "issue"
+                  ],
+                  "properties": {
+                    "source_index": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "source_type": {
+                      "type": "string"
+                    },
+                    "issue": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "next_action": {
+                "type": "string"
+              }
+            }
           }
         },
         "$defs": {
@@ -2459,6 +2528,66 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "null"
             ],
             "description": "Configured freshness limit in milliseconds."
+          },
+          "source_record_review": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "policy_version",
+              "scope",
+              "source_content_verified",
+              "freshness_verified",
+              "usable_source_types",
+              "issues",
+              "next_action"
+            ],
+            "properties": {
+              "policy_version": {
+                "const": "source-records.v1"
+              },
+              "scope": {
+                "const": "reference_metadata_only"
+              },
+              "source_content_verified": {
+                "const": false
+              },
+              "freshness_verified": {
+                "const": false
+              },
+              "usable_source_types": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source_index",
+                    "source_type",
+                    "issue"
+                  ],
+                  "properties": {
+                    "source_index": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "source_type": {
+                      "type": "string"
+                    },
+                    "issue": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "next_action": {
+                "type": "string"
+              }
+            }
           }
         },
         "$defs": {
@@ -3231,6 +3360,66 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           },
           "readiness_contract": {
             "$ref": "#/$defs/readiness_contract"
+          },
+          "source_record_review": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "policy_version",
+              "scope",
+              "source_content_verified",
+              "freshness_verified",
+              "usable_source_types",
+              "issues",
+              "next_action"
+            ],
+            "properties": {
+              "policy_version": {
+                "const": "source-records.v1"
+              },
+              "scope": {
+                "const": "reference_metadata_only"
+              },
+              "source_content_verified": {
+                "const": false
+              },
+              "freshness_verified": {
+                "const": false
+              },
+              "usable_source_types": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source_index",
+                    "source_type",
+                    "issue"
+                  ],
+                  "properties": {
+                    "source_index": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "source_type": {
+                      "type": "string"
+                    },
+                    "issue": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "next_action": {
+                "type": "string"
+              }
+            }
           }
         },
         "$defs": {
@@ -5567,6 +5756,66 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           },
           "readiness_contract": {
             "$ref": "#/$defs/readiness_contract"
+          },
+          "source_record_review": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "policy_version",
+              "scope",
+              "source_content_verified",
+              "freshness_verified",
+              "usable_source_types",
+              "issues",
+              "next_action"
+            ],
+            "properties": {
+              "policy_version": {
+                "const": "source-records.v1"
+              },
+              "scope": {
+                "const": "reference_metadata_only"
+              },
+              "source_content_verified": {
+                "const": false
+              },
+              "freshness_verified": {
+                "const": false
+              },
+              "usable_source_types": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source_index",
+                    "source_type",
+                    "issue"
+                  ],
+                  "properties": {
+                    "source_index": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "source_type": {
+                      "type": "string"
+                    },
+                    "issue": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "next_action": {
+                "type": "string"
+              }
+            }
           }
         },
         "$defs": {
@@ -6059,6 +6308,66 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           },
           "readiness_contract": {
             "$ref": "#/$defs/readiness_contract"
+          },
+          "source_record_review": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "policy_version",
+              "scope",
+              "source_content_verified",
+              "freshness_verified",
+              "usable_source_types",
+              "issues",
+              "next_action"
+            ],
+            "properties": {
+              "policy_version": {
+                "const": "source-records.v1"
+              },
+              "scope": {
+                "const": "reference_metadata_only"
+              },
+              "source_content_verified": {
+                "const": false
+              },
+              "freshness_verified": {
+                "const": false
+              },
+              "usable_source_types": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source_index",
+                    "source_type",
+                    "issue"
+                  ],
+                  "properties": {
+                    "source_index": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "source_type": {
+                      "type": "string"
+                    },
+                    "issue": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "next_action": {
+                "type": "string"
+              }
+            }
           }
         },
         "$defs": {
@@ -7151,6 +7460,66 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "type": "array",
                 "items": {
                   "type": "string"
+                }
+              },
+              "source_record_review": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "policy_version",
+                  "scope",
+                  "source_content_verified",
+                  "freshness_verified",
+                  "usable_source_types",
+                  "issues",
+                  "next_action"
+                ],
+                "properties": {
+                  "policy_version": {
+                    "const": "source-records.v1"
+                  },
+                  "scope": {
+                    "const": "reference_metadata_only"
+                  },
+                  "source_content_verified": {
+                    "const": false
+                  },
+                  "freshness_verified": {
+                    "const": false
+                  },
+                  "usable_source_types": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "source_index",
+                        "source_type",
+                        "issue"
+                      ],
+                      "properties": {
+                        "source_index": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "source_type": {
+                          "type": "string"
+                        },
+                        "issue": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "next_action": {
+                    "type": "string"
+                  }
                 }
               }
             }

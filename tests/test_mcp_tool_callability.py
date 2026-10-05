@@ -102,7 +102,7 @@ def test_market_entry_tool_runs_the_golden_contract_fixture():
     result = TOOLS["kazakhstan_market_entry_readiness"]["handler"]({"readiness_request": request})
 
     assert result["valid"] is True
-    assert result["response"]["gate_decision"] == "proceed_to_validation"
+    assert result["response"]["gate_decision"] == "pause_for_evidence"
 
 
 def test_market_entry_tool_reports_schema_errors_on_a_bad_request():

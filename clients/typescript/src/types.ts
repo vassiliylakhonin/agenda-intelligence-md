@@ -122,6 +122,19 @@ export interface AgenticInteractionTrustResponse {
   not_advice_notice: string;
   limitations?: string[];
   readiness_contract?: AgenticInteractionTrustResponseReadinessContract;
+  source_record_review?: {
+    policy_version: "source-records.v1";
+    scope: "reference_metadata_only";
+    source_content_verified: false;
+    freshness_verified: false;
+    usable_source_types: string[];
+    issues: Array<{
+      source_index: number;
+      source_type: string;
+      issue: string;
+    }>;
+    next_action: string;
+  };
 }
 
 export interface CISSecondarySanctionsExposureRequestCounterparty {
@@ -243,6 +256,19 @@ export interface CISSecondarySanctionsExposureResponse {
   live_retrieval_snapshot_age_ms?: number | null;
   /** Configured freshness limit in milliseconds. */
   live_retrieval_snapshot_max_age_ms?: number | null;
+  source_record_review?: {
+    policy_version: "source-records.v1";
+    scope: "reference_metadata_only";
+    source_content_verified: false;
+    freshness_verified: false;
+    usable_source_types: string[];
+    issues: Array<{
+      source_index: number;
+      source_type: string;
+      issue: string;
+    }>;
+    next_action: string;
+  };
 }
 
 /** Caller-supplied dossier readiness review. Document metadata, scope and excerpts are not independently authenticated. No legal applicability or transaction authorization is established. */
@@ -485,6 +511,19 @@ export interface GulfMaritimeExposureResponse {
   not_advice_notice: string;
   limitations: string[];
   readiness_contract?: GulfMaritimeExposureResponseReadinessContract;
+  source_record_review?: {
+    policy_version: "source-records.v1";
+    scope: "reference_metadata_only";
+    source_content_verified: false;
+    freshness_verified: false;
+    usable_source_types: string[];
+    issues: Array<{
+      source_index: number;
+      source_type: string;
+      issue: string;
+    }>;
+    next_action: string;
+  };
 }
 
 export interface MarketEntryReadinessRequestCounterparty {
@@ -587,6 +626,19 @@ export interface MarketEntryReadinessResponse {
     input_digest: string;
   };
   readiness_contract?: MarketEntryReadinessResponseReadinessContract;
+  source_record_review?: {
+    policy_version: "source-records.v1";
+    scope: "reference_metadata_only";
+    source_content_verified: false;
+    freshness_verified: false;
+    usable_source_types: string[];
+    issues: Array<{
+      source_index: number;
+      source_type: string;
+      issue: string;
+    }>;
+    next_action: string;
+  };
 }
 
 export interface MiddleCorridorDealRiskRequestCounterparty {
@@ -749,6 +801,19 @@ export interface MiddleCorridorDealRiskResponse {
     input_digest: string;
   };
   readiness_contract?: MiddleCorridorDealRiskResponseReadinessContract;
+  source_record_review?: {
+    policy_version: "source-records.v1";
+    scope: "reference_metadata_only";
+    source_content_verified: false;
+    freshness_verified: false;
+    usable_source_types: string[];
+    issues: Array<{
+      source_index: number;
+      source_type: string;
+      issue: string;
+    }>;
+    next_action: string;
+  };
 }
 
 export interface PreActionCheckRequestActor {

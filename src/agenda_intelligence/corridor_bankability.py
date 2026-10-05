@@ -22,7 +22,7 @@ BASE_USDC_WALLET = "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663"
 
 CORRIDOR_BOTTLENECK_MAP: dict[str, str] = {
     "Aktau-Baku": (
-        "Aktau-Baku Caspian feeder crossing: water level drop (-1.20m Baltic datum) "
+        "Aktau-Baku Caspian feeder crossing: water level drop (current levels require dated operator evidence) "
         "restricting vessel draft, wind-induced weather delays, and port turnaround times."
     ),
     "Khorgos-Aktau": (
@@ -58,55 +58,24 @@ def evaluate_covenants(
     conditions: list[str] = []
 
     if has_sovereign_guarantee:
-        checks.append(
-            {
-                "test": "minimum_dscr_floor",
-                "threshold": f"{DSCR_FLOOR:.2f}x without a sovereign guarantee",
-                "observed_dscr": dscr_min,
-                "result": "NOT_APPLICABLE",
-                "basis": "sovereign guarantee is asserted for this tranche",
-            }
-        )
-        checks.append(
-            {
-                "test": "non_sovereign_dscr_margin",
-                "threshold": f"{DSCR_NON_SOVEREIGN_FLOOR:.2f}x without a sovereign guarantee",
-                "observed_dscr": dscr_min,
-                "result": "NOT_APPLICABLE",
-                "basis": "sovereign guarantee is asserted for this tranche",
-            }
-        )
         conditions.append(
-            "Evidence the asserted sovereign guarantee with an official decree number or primary ministry record; "
-            "an unverified guarantee will not clear IFI credit committee."
+            "Supply the decree number or primary guarantee record and obtain legal review; "
+            "a caller assertion does not waive debt-coverage screening."
         )
-    else:
-        passes_floor = dscr_min >= DSCR_FLOOR
+    for test, threshold in (
+        ("minimum_dscr_floor", DSCR_FLOOR),
+        ("non_sovereign_dscr_margin", DSCR_NON_SOVEREIGN_FLOOR),
+    ):
         checks.append(
             {
-                "test": "minimum_dscr_floor",
-                "threshold": f"{DSCR_FLOOR:.2f}x without a sovereign guarantee",
+                "test": test,
+                "threshold": f"{threshold:.2f}x illustrative internal threshold",
                 "observed_dscr": dscr_min,
-                "result": "PASSES" if passes_floor else "FAILS",
+                "result": "NOT_APPLICABLE" if debt_share == 0 else "PASSES" if dscr_min >= threshold else "FAILS",
                 "basis": (
-                    "meets senior debt DSCR floor without a sovereign guarantee"
-                    if passes_floor
-                    else "falls below the 1.20x DSCR floor without a sovereign guarantee"
-                ),
-            }
-        )
-
-        passes_margin = dscr_min >= DSCR_NON_SOVEREIGN_FLOOR
-        checks.append(
-            {
-                "test": "non_sovereign_dscr_margin",
-                "threshold": f"{DSCR_NON_SOVEREIGN_FLOOR:.2f}x without a sovereign guarantee",
-                "observed_dscr": dscr_min,
-                "result": "PASSES" if passes_margin else "FAILS",
-                "basis": (
-                    "satisfies non-sovereign target margin"
-                    if passes_margin
-                    else "falls below 1.30x non-sovereign margin, committee will require cash sweep or debt resizing"
+                    "No debt is proposed."
+                    if debt_share == 0
+                    else "Caller-supplied DSCR compared with a model assumption, not a lender covenant."
                 ),
             }
         )
@@ -128,10 +97,9 @@ def evaluate_covenants(
             }
         )
 
-    if dscr_min < DSCR_NON_SOVEREIGN_FLOOR and not has_sovereign_guarantee:
+    if dscr_min < DSCR_NON_SOVEREIGN_FLOOR and debt_share != 0:
         conditions.append(
-            "Structure a cash sweep or raise sponsor equity to bring minimum DSCR above 1.30x "
-            "before final credit paper submission."
+            "Review cash flow, debt sizing and the illustrative 1.30x assumption with the lender " "before commitment."
         )
 
     if debt_share is not None and debt_share > 0.70:
@@ -181,7 +149,7 @@ def generate_bankability_screen(
 
     if (floor_check and floor_check["result"] == "FAILS") or (leverage_check and leverage_check["result"] == "FAILS"):
         bankability_status = "HIGH_DEFAULT_RISK"
-    elif dscr_min >= DSCR_NON_SOVEREIGN_FLOOR and debt_share is not None and debt_share <= 0.70:
+    elif dscr_min >= DSCR_NON_SOVEREIGN_FLOOR and debt_share is not None and 0 < debt_share <= 0.70:
         bankability_status = "BANKABLE_CORE"
 
     primary_bottleneck = CORRIDOR_BOTTLENECK_MAP.get(corridor_leg, CORRIDOR_BOTTLENECK_MAP["MULTI_LEG"])
@@ -194,12 +162,12 @@ def generate_bankability_screen(
                 "category": "FX_AND_CONVERTIBILITY_MISMATCH",
                 "severity": "HIGH",
                 "finding": (
-                    "Project revenues are largely collected in regional local currencies (KZT, AZN, GEL), "
-                    "while IFI senior debt is denominated in hard currency (USD/EUR)."
+                    "The declared or assumed currency mismatch requires verification of revenue and debt currencies; "
+                    "actual currency denominations have not been verified."
                 ),
                 "mitigant": (
-                    f"Mandatory 6-month Debt Service Reserve Account (DSRA) sized at ~{recommended_dsra}M USD "
-                    "with hard-currency cash sweep."
+                    f"Illustrative principal-only reserve estimate: ~{recommended_dsra}M USD. "
+                    "Interest and fees excluded; confirm actual DSRA and FX terms with the lender."
                 ),
             }
         )
@@ -222,8 +190,8 @@ def generate_bankability_screen(
                 "category": "SOVEREIGN_OBLIGATION_PERFECTION",
                 "severity": "MEDIUM",
                 "finding": (
-                    "Sovereign guarantee referenced but requires parliamentary ratification "
-                    "or formal ministry decree verification."
+                    "Sovereign guarantee is asserted; verify issuer, coverage and enforceability "
+                    "under the applicable legal process."
                 ),
                 "mitigant": "Condition precedent to loan effectiveness.",
             }
@@ -233,6 +201,7 @@ def generate_bankability_screen(
         "project_name": project_name,
         "corridor_leg": corridor_leg,
         "bankability_status": bankability_status,
+        "status_scope": "illustrative_threshold_screen_not_credit_approval",
         "financial_metrics": {
             "total_capex_usd_m": capex_usd_m,
             "ifi_debt_usd_m": ifi_debt_usd_m,
@@ -294,7 +263,8 @@ def generate_bankability_screen(
         f"The project represents a critical strategic node on the Trans-Caspian International Transport "
         f"Route (TITR / Middle Corridor).\n\n"
         f"**Bankability Verdict**: **{bankability_status}**\n"
-        f"Minimum Debt Service Coverage Ratio (DSCR): **{dscr_min:.2f}x** against an IFI non-guaranteed baseline floor "
+        f"Minimum Debt Service Coverage Ratio (DSCR): **{dscr_min:.2f}x** "
+        "against an illustrative internal screening floor "
         f"of {DSCR_FLOOR:.2f}x. Senior leverage stands at **{(debt_share_val * 100):.1f}%**.\n\n"
         f"---\n\n"
         f"## 2. Debt Waterfall & Financial Profile (15-Year Horizon)\n"
@@ -303,9 +273,10 @@ def generate_bankability_screen(
         f"- **Sponsor Equity Commitment**: ${(capex_usd_m - ifi_debt_usd_m):.1f}M USD "
         f"({(100 - debt_share_val * 100):.1f}%)\n"
         f"- **Minimum DSCR**: {dscr_min:.2f}x\n"
-        f"- **Debt Service Reserve Account (DSRA)**: Sized at 6 months forward-looking principal and interest "
+        "- **Debt Service Reserve Account (DSRA)**: Illustrative 6-month principal-only estimate; "
+        "interest, fees and lender terms excluded "
         f"debt service (~{(ifi_debt_usd_m / 15 * 0.5):.2f}M USD cash funded).\n"
-        f"- **Cash Sweep Mechanism**: 50% free cash flow sweep applied if DSCR drops below "
+        f"- **Illustrative Cash Sweep Option**: Discuss a 50% free cash flow sweep if DSCR drops below "
         f"{DSCR_NON_SOVEREIGN_FLOOR:.2f}x.\n\n"
         f"---\n\n"
         f"## 3. Corridor Bottlenecks & Hydrological Sensitivity\n"

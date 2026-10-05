@@ -8,7 +8,7 @@ Before you let a counterparty agent transact or invoke a capability, check wheth
 
 The primary case is agent-to-agent: an unknown A2A caller (or a delegated x402-style payment) wants to invoke a capability or settle a transaction, and you need to know — before it executes — whether there is enough evidence to allow it, step it up, escalate to a human, or block until verified. The same gate covers agent-mediated checkout, account, API, and MCP tool surfaces.
 
-The point is not to decide whether the actor is a bot, and not to verify its identity. The point is to decide whether the evidence is sufficient to route a specific automated or agentic action: allow low-risk, require step-up, escalate to human review, or block until verified.
+The point is not to decide whether the actor is a bot, and not to verify its identity. The point is to decide whether the evidence is sufficient to route a specific automated or agentic action: request step-up, escalate to human review, or hold for verification. Complete reference coverage still requires authority and identity review.
 
 This is not cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice. It is an evidence-readiness gate for teams that already have logs, agent claims, policy data, and risk signals.
 

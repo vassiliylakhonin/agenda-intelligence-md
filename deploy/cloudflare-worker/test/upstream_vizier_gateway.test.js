@@ -276,7 +276,7 @@ test("upstream_vizier_gateway: full A2A handleRequest integration on agenda root
   assert.equal(data.id, "test-gateway-clean");
   assert.equal(data.result.metadata.product_profile, "agenda");
   assert.equal(data.result.metadata.vizier_status, "success");
-  assert.equal(data.result.metadata.vizier_clearance_receipt, fakeJws);
+  assert.equal(data.result.metadata.vizier_clearance_receipt, null);
   assert.equal(data.result.metadata.gateway_verification.clean, true);
 });
 
@@ -341,7 +341,7 @@ test("upstream_vizier_gateway: full A2A handleRequest integration with sanctione
   const data = await resp.json();
   const res = data.result;
   assert.equal(res.metadata.vizier_status, "success");
-  assert.equal(res.metadata.vizier_clearance_receipt, fakeJws);
+  assert.equal(res.metadata.vizier_clearance_receipt, null);
   assert.equal(res.metadata.gateway_verification.violation, true);
   assert.equal(res.metadata.gateway_verification.sanctions_screening.violation, true);
   assert.equal(res.metadata.gateway_verification.dlp_screening.clean, false);
@@ -352,7 +352,7 @@ test("upstream_vizier_gateway: full A2A handleRequest integration with sanctione
 
   // Check markdown artifact has security notices
   const mdText = res.artifacts[0].parts[0].text;
-  assert.ok(mdText.includes("Gateway Sanctions Warning (OFAC 50% Rule)"));
+  assert.ok(mdText.includes("Gateway Name-screen Warning (identity and ownership unverified)"));
   assert.ok(mdText.includes("Vizier Gateway DLP Notice"));
   assert.ok(!mdText.includes("sk-proj-1234567890abcdef1234"));
 });

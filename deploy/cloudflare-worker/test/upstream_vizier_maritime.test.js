@@ -21,7 +21,7 @@ test("upstream_vizier_maritime: maritimeAttributionBlock returns proper notice",
   const attr = maritimeAttributionBlock();
   assert.equal(attr.upstream, "Vizier Maritime Firewall");
   assert.ok(attr.url.includes("vizier.vassiliy-lakhonin.workers.dev"));
-  assert.ok(attr.notice.includes("Vizier Action Firewall"));
+  assert.ok(attr.notice.includes("no clearance is issued"));
 });
 
 test("upstream_vizier_maritime: screens vessel and counterparties and flags violations", async () => {
@@ -95,7 +95,7 @@ test("upstream_vizier_maritime: gracefully degrades on upstream error", async ()
   const res = await screenMaritimeExposureWithVizier(mockEnv, req);
   assert.equal(res.status, "degraded");
   assert.equal(res.violation, false);
-  assert.equal(res.clean, false);
+  assert.equal(res.clean, null);
   assert.ok(res.degrade_reason.includes("500"));
 });
 
@@ -168,7 +168,7 @@ test("e2e: gulf_maritime_exposure elevates exposure signal and attaches Vizier r
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
+  assert.equal(metadata.vizier_clearance_receipt, null);
   assert.equal(metadata.maritime_screening.violation, true);
 
   const responseBody = metadata.response;

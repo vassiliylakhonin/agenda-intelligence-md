@@ -300,6 +300,17 @@ export const WORKED_EXAMPLES = {
         "amount": 2400000,
         "currency": "USD"
       },
+      "source_record_review": {
+        "policy_version": "source-records.v1",
+        "scope": "reference_metadata_only",
+        "source_content_verified": false,
+        "freshness_verified": false,
+        "usable_source_types": [
+          "port_operator_notice"
+        ],
+        "issues": [],
+        "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+      },
       "readiness_contract": {
         "profile": "middle_corridor_deal_risk",
         "status": "not_decision_ready",
@@ -425,6 +436,17 @@ export const WORKED_EXAMPLES = {
         "Live sanctions-list retrieval is not currently enabled; triage is based on user-supplied evidence only.",
         "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
       ],
+      "source_record_review": {
+        "policy_version": "source-records.v1",
+        "scope": "reference_metadata_only",
+        "source_content_verified": false,
+        "freshness_verified": false,
+        "usable_source_types": [
+          "ofac_sdn_extract"
+        ],
+        "issues": [],
+        "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+      },
       "readiness_contract": {
         "profile": "cis_secondary_sanctions",
         "status": "not_decision_ready",
@@ -542,6 +564,17 @@ export const WORKED_EXAMPLES = {
         "This response does not authorize, approve, deny, or block the requested action."
       ],
       "asset_or_resource": "order-123",
+      "source_record_review": {
+        "policy_version": "source-records.v1",
+        "scope": "reference_metadata_only",
+        "source_content_verified": false,
+        "freshness_verified": false,
+        "usable_source_types": [
+          "agent_identity_claim"
+        ],
+        "issues": [],
+        "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+      },
       "readiness_contract": {
         "profile": "agentic_interaction_trust",
         "status": "not_decision_ready",
@@ -742,7 +775,7 @@ export const WORKED_EXAMPLES = {
       "human_review_required": true,
       "not_advice_notice": "Maritime sanctions and chokepoint-disruption evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice. Does not resolve vessel ownership or verify identity.",
       "limitations": [
-        "Triage is based on caller-supplied evidence and live maritime sanctions verification; this service does not resolve physical vessel ownership or verify identity.",
+        "Triage is based on caller-supplied references and configured upstream screening when available; this service does not resolve physical vessel ownership or verify identity.",
         "A name match against a sanctions list is not legal-entity or vessel-identity verification. Human review is required."
       ],
       "vessel": {
@@ -751,6 +784,17 @@ export const WORKED_EXAMPLES = {
         "vessel_type": "crude oil tanker"
       },
       "cargo": "crude oil",
+      "source_record_review": {
+        "policy_version": "source-records.v1",
+        "scope": "reference_metadata_only",
+        "source_content_verified": false,
+        "freshness_verified": false,
+        "usable_source_types": [
+          "ais_track_record"
+        ],
+        "issues": [],
+        "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+      },
       "readiness_contract": {
         "profile": "gulf_maritime_exposure",
         "status": "not_decision_ready",
@@ -978,9 +1022,19 @@ export const WORKED_EXAMPLES = {
         "government or regulator signal"
       ],
       "boundary_notice": "Internal evidence triage only. Not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice.",
-      "strongest_reason_to_proceed": "The Kazakhstan use case and commercial objective are specific enough to start advisor requests, quote collection, and partner validation.",
       "strongest_reason_to_pause": "The current evidence pack is not sufficient for signature, import, lease, first-batch order, advertising spend, or partner appointment.",
       "management_note": "The opportunity can move at the level of its readiness label, but should not move to launch commitment until the flagged legal, customs, certification, landed-cost, service, lease, and partner evidence gaps are closed.",
+      "source_record_review": {
+        "policy_version": "source-records.v1",
+        "scope": "reference_metadata_only",
+        "source_content_verified": false,
+        "freshness_verified": false,
+        "usable_source_types": [
+          "user_provided_note"
+        ],
+        "issues": [],
+        "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+      },
       "readiness_contract": {
         "profile": "kazakhstan_market_entry_readiness",
         "status": "concept_ready",
@@ -1464,15 +1518,27 @@ export const WORKED_EXAMPLES = {
           "Source content, classification, licensing requirements and end-use have not been independently verified."
         ],
         "primary_risk_vectors": [
-          "CHPL Status: Tier 1 (Battlefield High Priority) matched (HS 854231). Heightened diversion risk under EU Reg 833/2014 Annex XL, US BIS EAR Common High Priority List, and UK Russia Regulations.",
-          "OFAC E.O. 14114 Warning: Secondary sanctions exposure for Foreign Financial Institutions (FFIs) facilitating transactions involving CHPL Tier 1–2 items.",
+          "CHPL Status: Tier 1 matched (HS 854231). Diversion-review lead from the BIS CHPL reference snapshot; applicable controls require separate product, jurisdiction and end-use review.",
+          "OFAC E.O. 14114 applicability question: Does a foreign financial institution facilitate relevant significant transactions or services connected to Russia’s military-industrial base? HS tier alone does not determine sanctions exposure.",
           "Transit countries are present; human review must assess diversion and re-export controls for each leg."
         ],
         "evidence_ledger": [
           "du-1: classification_note — Exporter classification note (2026-08-01)",
           "du-2: end_user_statement — Signed end-user statement (2026-08-02)",
-          "Regulatory Classification: Tier 1 (Battlefield High Priority) — Electronic integrated circuits, microcontrollers, processors, and memories."
-        ]
+          "HS6 reference match: Tier 1 — Priority integrated-circuit categories"
+        ],
+        "source_record_review": {
+          "policy_version": "source-records.v1",
+          "scope": "reference_metadata_only",
+          "source_content_verified": false,
+          "freshness_verified": false,
+          "usable_source_types": [
+            "classification_note",
+            "end_user_statement"
+          ],
+          "issues": [],
+          "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+        }
       }
     }
   },
@@ -1491,7 +1557,7 @@ export const WORKED_EXAMPLES = {
         "profile": "gulf_maritime_exposure"
       },
       "next_gate_input": "Send a structured request to https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev/message/send with voyage, vessel, cargo, exposure_facets, dated_sources, risk_question, decision_stage. See the agent-card for a copy-paste envelope.",
-      "message": "Corridor & sanctions orientation: routing to the structured gates and person-led work. No triage or screening performed here.",
+      "message": "Corridor & sanctions orientation: routing to the structured gates and person-led work. This orientation prepares dossier requests; configured upstream screening does not establish clearance.",
       "caller_text": "What evidence is needed before shipping industrial equipment from Aktau to Baku?",
       "gates": [
         {

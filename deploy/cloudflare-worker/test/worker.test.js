@@ -9501,7 +9501,7 @@ test("GET and POST /v1/dual-use/technology-export return valid responses", async
   assert.ok(postJson.export_risk_triage.primary_risk_vectors.some(v => v.includes("Transit countries")));
 });
 
-test("dual_use_technology_export: classifies CHPL Tier 4.A CNC machine tools and attaches E.O. 14114 warning on Tier 1", async () => {
+test("dual_use_technology_export: classifies CHPL Tier 4.B CNC machine tools and asks E.O. 14114 applicability on Tier 1", async () => {
   const env = { AGENT_PROFILE: "dual_use_technology_export" };
   const url = "https://dual-use-technology-export-a2a.example.workers.dev/v1/dual-use/technology-export";
 
@@ -9520,8 +9520,8 @@ test("dual_use_technology_export: classifies CHPL Tier 4.A CNC machine tools and
   const cncJson = await cncResp.json();
   assert.equal(cncJson.profile, "dual_use_technology_export");
   const cncVectors = cncJson.export_risk_triage.primary_risk_vectors;
-  assert.ok(cncVectors.some(v => v.includes("Tier 4.A")));
-  assert.ok(cncVectors.some(v => v.includes("CNC Metalworking Alert")));
+  assert.ok(cncVectors.some(v => v.includes("Tier 4.B")));
+  assert.ok(cncVectors.some(v => v.includes("CNC review")));
 
   // Tier 1 Microcontrollers E.O. 14114 FFI Warning
   const t1Resp = await handleRequest(
@@ -9537,7 +9537,7 @@ test("dual_use_technology_export: classifies CHPL Tier 4.A CNC machine tools and
   assert.equal(t1Resp.status, 200);
   const t1Json = await t1Resp.json();
   const t1Vectors = t1Json.export_risk_triage.primary_risk_vectors;
-  assert.ok(t1Vectors.some(v => v.includes("OFAC E.O. 14114 Warning")));
+  assert.ok(t1Vectors.some(v => v.includes("OFAC E.O. 14114 applicability question")));
 });
 
 test("critical_minerals: asks scoped US incentive, uranium and titanium applicability questions", async () => {

@@ -1,6 +1,6 @@
 {
   "triage_recommendation": "ready_for_human_review",
-  "exposure_signal": "low",
+  "exposure_signal": "unknown",
   "decision_readiness_score": 90,
   "decision_readiness_label": "review_ready",
   "voyage": {
@@ -42,6 +42,24 @@
     "Triage is based on caller-supplied evidence only; this service does not retrieve sources, resolve vessel ownership, or verify vessel identity.",
     "A name match against a sanctions list is not legal-entity or vessel-identity verification. Human review is required."
   ],
+  "source_record_review": {
+    "policy_version": "source-records.v1",
+    "scope": "reference_metadata_only",
+    "source_content_verified": false,
+    "freshness_verified": false,
+    "usable_source_types": [
+      "vessel_registry_extract",
+      "pi_insurance_certificate",
+      "ownership_or_control_evidence",
+      "sanctions_list_extract",
+      "ais_track_record",
+      "flag_registry_record",
+      "sts_transfer_evidence",
+      "cargo_or_bl_evidence"
+    ],
+    "issues": [],
+    "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+  },
   "readiness_contract": {
     "profile": "gulf_maritime_exposure",
     "status": "review_ready",
@@ -52,7 +70,7 @@
     },
     "signal": {
       "field": "exposure_signal",
-      "value": "low"
+      "value": "unknown"
     },
     "blocking_gaps": [],
     "non_blocking_gaps": [],
