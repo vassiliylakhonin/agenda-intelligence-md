@@ -99,8 +99,8 @@ export async function executePaidRequest(request, body, env, minimum, execute, e
     if (!verifyPersonalSignature(challenge, signature, proof.payer)) return fail(403, 'payer_signature_invalid');
     if (proof.amount_usdc < minimum) return fail(402, 'insufficient_payment', { required_usdc: minimum });
     if (details?.settled_via === 'signed_call' && details.request_hash !== hash) return fail(409, 'payment_request_mismatch');
-    emit('payment_verified');
     const bound = { settled_via: 'signed_call', request_hash: hash, payer: proof.payer,
+      telemetry_execution_id: crypto.randomUUID(),
       amount_usdc: proof.amount_usdc, recipient: proof.recipient, contract: proof.contract,
       tier: details?.tier || 'tier_micro_check' };
     if (!details) {
@@ -111,6 +111,10 @@ export async function executePaidRequest(request, body, env, minimum, execute, e
     }
     details = await readPayment(env, tx);
     if (details?.settled_via !== 'signed_call' || details.request_hash !== hash) return fail(409, 'payment_request_mismatch');
+    // Random identity is committed with the payment binding, never caller-controlled.
+    // Legacy claims without it remain unlinked rather than invented historical purchases.
+    const executionId = details.telemetry_execution_id || null;
+    emit('payment_verified', null, null, executionId);
     await db.prepare("INSERT OR IGNORE INTO paid_executions(tx_hash, request_hash, payer, state, created_ms) VALUES (?1, ?2, ?3, 'ready', ?4)")
       .bind(tx, hash, proof.payer, Date.now()).run();
     let row = await db.prepare('SELECT * FROM paid_executions WHERE tx_hash = ?1').bind(tx).first();
@@ -119,7 +123,7 @@ export async function executePaidRequest(request, body, env, minimum, execute, e
         await db.prepare('UPDATE paid_executions SET response_ciphertext = NULL WHERE tx_hash = ?1 AND response_expires_ms <= ?2').bind(tx, Date.now()).run();
         return fail(410, 'paid_result_expired', { instruction: 'Contact support; do not pay again.' });
       }
-      try { const value = await unseal(row.response_ciphertext, signature); emit('execution_replayed', null, value.status); return restored(value, true); }
+      try { const value = await unseal(row.response_ciphertext, signature); emit('execution_replayed', null, value.status, executionId); return restored(value, true); }
       catch { return fail(409, 'original_payment_signature_required'); }
     }
     nonce = crypto.randomUUID();
@@ -127,7 +131,7 @@ export async function executePaidRequest(request, body, env, minimum, execute, e
       .bind(nonce, Date.now() + LEASE, tx, Date.now()).run();
     if (started.meta.changes !== 1) return fail(409, 'payment_execution_pending', { retry_after_seconds: 5 });
     contexts.set(request, { ...proof, valid: true, tx_hash: tx, request_hash: hash });
-    emit('execution_started');
+    emit('execution_started', null, null, executionId);
     const response = await execute();
     const saved = await boundedResponse(response);
     let parsed = null;
@@ -135,13 +139,13 @@ export async function executePaidRequest(request, body, env, minimum, execute, e
     if (saved.status >= 400 || !parsed || parsed.error || parsed.result?.isError) {
       await db.prepare("UPDATE paid_executions SET state = 'ready', lease_nonce = NULL, lease_until_ms = 0 WHERE tx_hash = ?1 AND lease_nonce = ?2")
         .bind(tx, nonce).run();
-      emit('execution_failed', 'evaluation_failed', saved.status);
+      emit('execution_failed', 'evaluation_failed', saved.status, executionId);
       return restored(saved, false);
     }
     const result = await db.prepare("UPDATE paid_executions SET state = 'completed', response_ciphertext = ?1, response_expires_ms = ?2, lease_until_ms = 0 WHERE tx_hash = ?3 AND lease_nonce = ?4 AND state = 'running'")
       .bind(await seal(saved, signature), Date.now() + TTL, tx, nonce).run();
     if (result.meta.changes !== 1) return fail(409, 'payment_execution_pending');
-    emit('execution_completed', null, saved.status);
+    emit('execution_completed', null, saved.status, executionId);
     return restored(saved, false);
   } catch {
     if (db && nonce) {

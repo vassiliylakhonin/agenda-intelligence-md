@@ -9877,6 +9877,19 @@ test("usage stats reports the qualified demand chain per caller hash", async () 
   assert.equal(chain.paid_calls, 1);
 });
 
+test("qualified chain does not count unknown or error outcomes as completions", async () => {
+  const env = { AGENDA_USAGE: new MemoryKv() };
+  for (const decision of ["unknown", "error", "ALLOW"]) {
+    await recordUsageStats(env, { event: "agenda_intelligence_a2a_usage", timestamp: "2026-09-25T11:00:00.000Z",
+      caller_kind: "external", caller_hash: "same-caller", user_agent: "PartnerRuntime/2.0",
+      prompt_chars: 400, likely_probe: false, outcome: { decision } });
+  }
+  const chain = (await usageStats(env, "2026-09-25")).counters.qualified_chain;
+  assert.equal(chain.usable_completions, 1);
+  assert.equal(chain.payment_header_calls, 0);
+  assert.equal(chain.confirmed_paid_executions, null);
+});
+
 test("trace id propagates from the caller header into the task and the usage event", async () => {
   const logged = [];
   const originalLog = console.log;

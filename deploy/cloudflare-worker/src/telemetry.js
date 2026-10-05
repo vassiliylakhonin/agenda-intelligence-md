@@ -5,6 +5,19 @@ import { VERSION } from "./profiles.js";
 import { sha256Jcs } from "./decision-receipt.js";
 import { PROBE_PROMPT_CHAR_THRESHOLD } from "./usage_constants.js";
 
+// Known domain results only; unknown and transport errors are not usable completions.
+// Keep the reporting vocabulary aligned with Telemetry Vault COMPLETIONS.
+const USABLE_OUTCOMES = new Set([
+  "allow", "review", "block", "pass", "fail",
+  "verified", "needs_review", "completed", "ready", "not_ready",
+  "ready_with_conditions", "go", "no_go", "conditional_go", "supported",
+  "unsupported", "partially_supported", "request_evidence", "insufficient_evidence", "safe",
+  "unsafe", "hold", "accept", "reject", "approve",
+  "deny", "settle", "refund", "escalate", "escalate_before_offtake",
+  "escalate_before_signature", "block_until_verified", "stop", "allow_low_risk", "escalate_before_fixture",
+  "escalate_before_onboarding", "proceed_to_validation",
+]);
+
 export function createTelemetry({ agentProfile, jsonResponse, AGENSTRY_VERIFICATION_PATHS, directRoutes }) {
 function headerHost(request, headerName) {
   const value = request.headers.get(headerName);
@@ -374,12 +387,14 @@ function exampleTraceId(request) {
 }
 const VALIDATION_CATEGORIES = new Set(['unsupported_protocol', 'invalid_message', 'invalid_jsonrpc',
   'invalid_request_object', 'missing_structured_request', 'schema_validation_failed', 'missing_input']);
-function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, profile, minimum_usdc, reason = null, status = null, validation = null }) {
+function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, profile, minimum_usdc, reason = null, status = null, validation = null, caller_hash = null, execution_id = null }) {
   try {
     const url = new URL(request.url);
     const safeValidation = validation && VALIDATION_CATEGORIES.has(validation.category) ?
       { category: validation.category, error_count: Math.min(100, Math.max(0, Number.isInteger(validation.error_count) ? validation.error_count : 0)) } : null;
-    console.log({ event: "agenda_intelligence_payment", event_version: 2,
+    console.log({ event: "agenda_intelligence_payment", event_version: 3,
+      caller_hash: /^[0-9a-f]{16}$/.test(caller_hash || "") ? caller_hash : null,
+      execution_id: /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(execution_id || "") ? execution_id : null,
       timestamp: new Date().toISOString(), attempt_id, stage, reason, status,
       payment_trace_id: normalizePaymentTrace(payment_trace_id),
       demo_trace_id: exampleTraceId(request),
@@ -855,6 +870,7 @@ async function usageStats(env, date) {
   // self-test, benchmark or owner-synthetic run.
   const qualifiedCallers = new Map();
 
+
   for (const event of events) {
     const eventIsProbe = usageEventIsProbe(event);
     const eventIsExternalNonProbe =
@@ -917,13 +933,7 @@ async function usageStats(env, date) {
     if (eventIsExternalNonProbe && typeof event.caller_hash === "string" && event.caller_hash) {
       const entry = qualifiedCallers.get(event.caller_hash) || { calls: 0, completions: 0, paid: 0 };
       entry.calls += 1;
-      if (
-        event.outcome !== "insufficient_information" &&
-        event.outcome !== "invalid_request" &&
-        event.outcome !== "input_required"
-      ) {
-        entry.completions += 1;
-      }
+      if (USABLE_OUTCOMES.has(String(event.outcome).toLowerCase())) entry.completions += 1;
       if (event.payment_header_present) entry.paid += 1;
       qualifiedCallers.set(event.caller_hash, entry);
     }
@@ -936,9 +946,12 @@ async function usageStats(env, date) {
     callers_with_completion: qualifiedCallerRows.filter((row) => row.completions > 0).length,
     repeat_callers: qualifiedCallerRows.filter((row) => row.calls > 1).length,
     paid_calls: qualifiedCallerRows.reduce((total, row) => total + row.paid, 0),
+    payment_header_calls: qualifiedCallerRows.reduce((total, row) => total + row.paid, 0),
+    confirmed_paid_executions: null,
     note: "Qualified = external caller, not a probe, self-test, benchmark or owner-synthetic run. " +
       "Repeats are counted within this day; cross-day repeat and paid attribution join caller_hash across daily files. " +
-      "paid_calls counts calls carrying an X-Payment-Tx header, not settled revenue."
+      "paid_calls is a legacy alias for payment_header_calls, not settled revenue. " +
+      "Confirmed paid executions are measured separately from committed payment-stage logs, not this KV usage source."
   };
 
   const total = events.length;

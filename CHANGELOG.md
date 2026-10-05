@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Unreleased — measurable adoption
+
+- Exclude unknown/error outcomes from usable KV completions; label payment-header counts explicitly and leave confirmed executions unmeasured in this source.
+- Add a private caller fingerprint and server-generated execution UUID to payment stage v3; commit the UUID with the payment binding and preserve it on replay. No ledger migration, new payment privileges or raw wallet/transaction data in logs.
+- Add a runnable Output Verification MCP client with synthetic hand-off evidence, real-handler regression checks, and explicit payment refusal handling.
+
 ## Unreleased — Fleet evidence and screening boundaries
 
 - Add source-record integrity review: impossible dates, blank IDs/titles and conflicting document IDs cannot increase reference coverage.

@@ -11579,6 +11579,7 @@ const {
   funnelStepForPath,
   logFunnelEvent,
   logPaymentEvent,
+  callerHash,
   callOutcome,
   dateKeyFromRequest,
   isStatsAuthorized,
@@ -14972,8 +14973,9 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   const payment_trace_id = paymentTraceId(request);
   const protocolReply = reply;
   reply = response => protocolReply(response).then(value => paymentTraceResponse(value, payment_trace_id));
-  const emit = (stage, reason = null, status = null) => logPaymentEvent(request, env,
-    { stage, reason, status, attempt_id, payment_trace_id, profile: operation.profile || profile, minimum_usdc: operation.minimum,
+  const caller_hash = await callerHash(request, env).catch(() => null);
+  const emit = (stage, reason = null, status = null, execution_id = null) => logPaymentEvent(request, env,
+    { stage, reason, status, caller_hash, execution_id, attempt_id, payment_trace_id, profile: operation.profile || profile, minimum_usdc: operation.minimum,
       validation: reason === 'invalid_paid_request' ? { category: operation.validationCategory, error_count: operation.errors.length } : null });
   emit('request_received');
   if (operation.errors?.length) {

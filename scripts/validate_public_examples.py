@@ -130,6 +130,8 @@ def validate_examples() -> None:
             validate_with_schema(path, evidence_schema, "evidence-pack")
         elif path.name == "agenda-brief.json" or path.name.endswith(".brief.json"):
             validate_with_schema(path, brief_schema, "agenda-brief")
+        elif path.is_relative_to(ROOT / "examples" / "output-verification"):
+            validate_with_schema(path, audit_schema, "evidence-audit")
         elif path.name.endswith(".audit.json"):
             validate_with_schema(path, audit_schema, "evidence-audit")
         elif path.is_relative_to(ROOT / "examples" / "grounded-check"):
