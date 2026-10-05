@@ -1,5 +1,5 @@
 {
-  "project_name": "Balkhash Copper-Cobalt Beneficiation",
+  "project_name": "Illustrative Copper Offtake",
   "commodity": "copper",
   "origin_jurisdiction": "Kazakhstan",
   "processing_jurisdiction": "Kazakhstan",
@@ -9,33 +9,111 @@
   "supplied_sources": [
     {
       "source_type": "mining_concession_or_license_extract",
-      "title": "Mining License #1029",
-      "date": "2025-06-01"
+      "document_id": "EX-1",
+      "title": "Illustrative mining concession or license extract",
+      "date": "2026-09-30",
+      "issuing_authority": "Example dossier issuer 1 (fictional)",
+      "excerpt": "ILLUSTRATIVE ONLY. Example Mining holds copper extraction license EX-1029 for the named project in Kazakhstan until 2027-12-31.",
+      "scope": {
+        "project_name": "Illustrative Copper Offtake",
+        "commodity": "copper",
+        "origin_jurisdiction": "Kazakhstan"
+      }
     },
     {
       "source_type": "certified_ore_assay_report",
-      "title": "SGS Verified Assay Summary",
-      "date": "2026-02-10"
+      "document_id": "EX-2",
+      "title": "Illustrative certified ore assay report",
+      "date": "2026-09-30",
+      "issuing_authority": "Example dossier issuer 2 (fictional)",
+      "excerpt": "ILLUSTRATIVE ONLY. Copper sample EX-B17 for the named Kazakhstan project reports 24% Cu; sample identity and laboratory authenticity require review.",
+      "scope": {
+        "project_name": "Illustrative Copper Offtake",
+        "commodity": "copper",
+        "origin_jurisdiction": "Kazakhstan"
+      }
     },
     {
       "source_type": "beneficial_ownership_due_diligence",
-      "title": "Kroll Ultimate Beneficial Ownership Report",
-      "date": "2026-03-01"
+      "document_id": "EX-3",
+      "title": "Illustrative beneficial ownership due diligence",
+      "date": "2026-09-30",
+      "issuing_authority": "Example dossier issuer 3 (fictional)",
+      "excerpt": "ILLUSTRATIVE ONLY. Example Mining is owned by Example Holding (100%); the ownership chart and identities require authentication.",
+      "scope": {
+        "project_name": "Illustrative Copper Offtake",
+        "commodity": "copper",
+        "origin_jurisdiction": "Kazakhstan"
+      }
     },
     {
       "source_type": "export_quota_and_permit_clearance",
-      "title": "Strategic Export Clearance Certificate",
-      "date": "2026-03-15"
+      "document_id": "EX-4",
+      "title": "Illustrative export quota and permit clearance",
+      "date": "2026-09-30",
+      "issuing_authority": "Example dossier issuer 4 (fictional)",
+      "excerpt": "ILLUSTRATIVE ONLY. EX-P17 records the reviewed copper shipment scope from Kazakhstan. Permit applicability and issuing authority require counsel review.",
+      "scope": {
+        "project_name": "Illustrative Copper Offtake",
+        "commodity": "copper",
+        "origin_jurisdiction": "Kazakhstan"
+      }
     },
     {
-      "source_type": "csddd_human_rights_and_esg_audit",
-      "title": "DNV Supply Chain & Human Rights ESG Audit",
-      "date": "2026-04-01"
+      "source_type": "responsible_sourcing_due_diligence",
+      "document_id": "EX-5",
+      "title": "Illustrative responsible sourcing due diligence",
+      "date": "2026-09-30",
+      "issuing_authority": "Example dossier issuer 5 (fictional)",
+      "excerpt": "ILLUSTRATIVE ONLY. Review covered human rights, worker safety, grievance process and environmental risks for the named project; findings require follow-up.",
+      "scope": {
+        "project_name": "Illustrative Copper Offtake",
+        "commodity": "copper",
+        "origin_jurisdiction": "Kazakhstan"
+      }
     },
     {
       "source_type": "processing_and_refining_tolling_agreement",
-      "title": "Kazakhmys Smelter Tolling Agreement",
-      "date": "2026-04-10"
+      "document_id": "EX-6",
+      "title": "Illustrative processing and refining tolling agreement",
+      "date": "2026-09-30",
+      "issuing_authority": "Example dossier issuer 6 (fictional)",
+      "excerpt": "ILLUSTRATIVE ONLY. Example Smelter agrees to process project batch EX-B17; delivery specifications and capacity commitments require contract review.",
+      "scope": {
+        "project_name": "Illustrative Copper Offtake",
+        "commodity": "copper",
+        "origin_jurisdiction": "Kazakhstan"
+      }
+    },
+    {
+      "source_type": "chain_of_custody_records",
+      "document_id": "EX-7",
+      "title": "Illustrative chain of custody records",
+      "date": "2026-09-30",
+      "issuing_authority": "Example dossier issuer 7 (fictional)",
+      "excerpt": "ILLUSTRATIVE ONLY. Batch EX-B17 moves from Example Mining to Example Smelter. Transfer record EX-T17 links mine sample to processor receipt.",
+      "scope": {
+        "project_name": "Illustrative Copper Offtake",
+        "commodity": "copper",
+        "origin_jurisdiction": "Kazakhstan"
+      }
+    },
+    {
+      "source_type": "regulatory_applicability_memo",
+      "document_id": "EX-8",
+      "title": "Illustrative regulatory applicability memo",
+      "date": "2026-09-30",
+      "issuing_authority": "Example dossier issuer 8 (fictional)",
+      "excerpt": "ILLUSTRATIVE ONLY. Counsel records the destination, material form, parties and applicable-rule questions for this copper dossier; no legal clearance is granted by this example.",
+      "scope": {
+        "project_name": "Illustrative Copper Offtake",
+        "commodity": "copper",
+        "origin_jurisdiction": "Kazakhstan"
+      }
     }
+  ],
+  "assessment_date": "2026-10-05",
+  "assumptions": [
+    "Synthetic training example. Documents, issuers and counterparties are fictional; no verification or approval is implied."
   ]
 }

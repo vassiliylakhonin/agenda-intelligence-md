@@ -1,9 +1,9 @@
-// Vizier Critical Minerals & Strategic Raw Materials Counterparty Sanctions (OFAC 50% Rule) & DLP Firewall Adapter.
+// Vizier Critical Minerals & Strategic Raw Materials Counterparty Name Screening & DLP Firewall Adapter.
 //
 // Connects Worker #8 (critical-minerals-due-diligence-a2a, profile: critical_minerals_due_diligence)
 // to the Vizier security kernel, enabling real-time screening of mining operators, concession holders,
-// refineries, smelters, trading intermediaries, offtake buyers, and beneficial owners under the
-// OFAC 50% Rule, as well as supply-chain dossier DLP inspection across concession rights, assay reports,
+// refineries, smelters, trading intermediaries, offtake buyers, and supplied beneficial-owner names.
+// This does not establish identity or OFAC ownership aggregation. DLP scans concession rights, assay reports,
 // and tolling agreements.
 //
 // Dual transport:
@@ -15,12 +15,12 @@
 // Boundary discipline:
 //   - Graceful degrade: network failure, non-200, or timeout returns status !== "success"
 //     without failing benign caller requests.
-//   - Cryptographic verification: captures and forwards Vizier's signed JWS clearance receipt.
+//   - Receipt forwarding only: this adapter does not independently verify signatures or scope.
 
 export const VIZIER_DEFAULT_URL = "https://vizier.vassiliy-lakhonin.workers.dev";
 export const DEFAULT_TIMEOUT_MS = 5000;
 export const CRITICAL_MINERALS_NOTICE =
-  "Critical minerals & strategic raw materials counterparty sanctions screening (OFAC 50% Rule) & supply chain dossier DLP firewall via Vizier Action Firewall (https://vizier.vassiliy-lakhonin.workers.dev).";
+  "Critical minerals & strategic raw materials counterparty name screening (OFAC 50% Rule ownership aggregation is not established) & supply chain dossier DLP firewall via Vizier Action Firewall (https://vizier.vassiliy-lakhonin.workers.dev).";
 
 export function criticalMineralsAttributionBlock() {
   return {
@@ -116,7 +116,7 @@ export async function verifyCriticalMineralsWithVizier(env = {}, request = {}, o
           entitiesToScreen.push({ name, role: cp.role || "counterparty" });
         }
       }
-      // Also screen beneficial owners under the OFAC 50% Rule
+      // Screen supplied owner names; ownership percentages and aggregate blocking are not established here.
       if (cp && Array.isArray(cp.beneficial_owners)) {
         for (const bo of cp.beneficial_owners) {
           if (typeof bo === "string") {
@@ -136,7 +136,7 @@ export async function verifyCriticalMineralsWithVizier(env = {}, request = {}, o
   const sanctionsMatches = [];
 
   try {
-    // 1. Screen all mining counterparties and beneficial owners against Vizier sanctions engine (OFAC 50% Rule)
+    // 1. Screen supplied names; an upstream match is a review signal, not authenticated identity or ownership.
     for (const entity of entitiesToScreen) {
       const sanctionsUrl = `${base}/v1/sanctions/screen-entity`;
       const sanctionsRes = await fetchWithTimeout(
@@ -161,8 +161,8 @@ export async function verifyCriticalMineralsWithVizier(env = {}, request = {}, o
           sanctions_screening: {
             checked: true,
             entities_screened: entitiesToScreen.map((e) => e.name),
-            violation: false,
-            matches: []
+            violation: sanctionsViolation,
+            matches: sanctionsMatches
           },
           dlp_screening: { clean: true, findings: [], total_leaks_prevented: 0 },
           receipt: latestReceipt,
@@ -191,20 +191,7 @@ export async function verifyCriticalMineralsWithVizier(env = {}, request = {}, o
 
     // 2. Screen critical minerals dossier parameters with Vizier DLP Firewall
     const dlpUrl = `${base}/v1/dlp/scan`;
-    const dlpParams = {
-      project_name: request.project_name,
-      commodity: request.commodity,
-      origin_jurisdiction: request.origin_jurisdiction,
-      processing_jurisdiction: request.processing_jurisdiction,
-      target_market: request.target_market,
-      decision_question: request.decision_question,
-      decision_stage: request.decision_stage,
-      counterparties: request.counterparties,
-      supplied_sources: request.supplied_sources,
-      dated_sources: request.dated_sources,
-      assumptions: request.assumptions,
-      blockers: request.blockers
-    };
+    const dlpParams = request;
 
     const dlpRes = await fetchWithTimeout(
       fetcher,
@@ -274,8 +261,8 @@ export async function verifyCriticalMineralsWithVizier(env = {}, request = {}, o
       sanctions_screening: {
         checked: entitiesToScreen.length > 0,
         entities_screened: entitiesToScreen.map((e) => e.name),
-        violation: false,
-        matches: []
+        violation: sanctionsViolation,
+        matches: sanctionsMatches
       },
       dlp_screening: { clean: false, findings: [], total_leaks_prevented: 0 },
       receipt: latestReceipt,

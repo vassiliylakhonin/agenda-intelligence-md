@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-response.schema.json",
   "title": "CriticalMineralsDueDiligenceResponse",
-  "description": "Product-grade structured response contract for Critical Minerals & Strategic Raw Materials evidence triage. Provides deterministic evaluation of origin tracing, export-control flags, beneficiation bottleneck risks, and CSDDD compliance gaps. It does not provide legal advice, sanctions advice, compliance advice, financial advice, ESG certification, live retrieval, or factual-truth verification.",
+  "description": "Deterministic mineral dossier documentary coverage, source-quality issues, stage-specific owner actions and human-review routing. Caller-supplied records are not independently authenticated; no legal or business risk clearance is established.",
   "x-schema-version": "1",
   "type": "object",
   "additionalProperties": false,
@@ -60,19 +60,30 @@
     },
     "operational_decision": {
       "type": "object",
-      "required": ["decision", "reason_code", "blocking_gaps"],
+      "required": [
+        "decision",
+        "reason_code",
+        "blocking_gaps"
+      ],
       "additionalProperties": false,
       "properties": {
         "decision": {
           "type": "string",
-          "enum": ["stop", "request_evidence", "require_approval", "continue"]
+          "enum": [
+            "stop",
+            "request_evidence",
+            "require_approval",
+            "continue"
+          ]
         },
         "reason_code": {
           "type": "string"
         },
         "blocking_gaps": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "next_permitted_action": {
           "type": "string"
@@ -93,43 +104,80 @@
     },
     "traceability_status": {
       "type": "string",
-      "enum": ["verified", "partial", "unverified", "obfuscated"]
+      "enum": [
+        "verified",
+        "partial",
+        "unverified",
+        "obfuscated"
+      ],
+      "description": "Caller-supplied documentary coverage only. This service never independently verifies origin."
     },
     "export_control_exposure": {
       "type": "object",
-      "required": ["quota_restricted", "jurisdiction_risk_flags"],
+      "required": [
+        "quota_restricted",
+        "jurisdiction_risk_flags"
+      ],
       "additionalProperties": false,
       "properties": {
-        "quota_restricted": { "type": "boolean" },
-        "processing_monopoly_risk": { "type": "boolean" },
+        "quota_restricted": {
+          "type": "boolean",
+          "description": "Legacy field: false means no restriction established by this linter, not legal clearance. Consult applicability questions."
+        },
+        "processing_monopoly_risk": {
+          "type": "boolean"
+        },
         "jurisdiction_risk_flags": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
     "supplied_sources": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "minimum_sources_before_go": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "evidence_gaps": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "top_risks": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["category", "severity", "description"],
+        "required": [
+          "category",
+          "severity",
+          "description"
+        ],
         "additionalProperties": false,
         "properties": {
-          "category": { "type": "string" },
-          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
-          "description": { "type": "string" }
+          "category": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "description": {
+            "type": "string"
+          }
         }
       }
     },
@@ -137,18 +185,30 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["layer", "level", "summary"],
+        "required": [
+          "layer",
+          "level",
+          "summary"
+        ],
         "additionalProperties": false,
         "properties": {
-          "layer": { "type": "string" },
-          "level": { "type": "string" },
-          "summary": { "type": "string" }
+          "layer": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          }
         }
       }
     },
     "watch_next": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "human_review_required": {
       "type": "boolean"
@@ -161,12 +221,126 @@
     },
     "run_provenance": {
       "type": "object",
-      "required": ["contract_version", "input_digest", "schema_uri"],
+      "required": [
+        "contract_version",
+        "input_digest",
+        "schema_uri"
+      ],
       "additionalProperties": false,
       "properties": {
-        "contract_version": { "type": "string" },
-        "input_digest": { "type": "string" },
-        "schema_uri": { "type": "string" }
+        "contract_version": {
+          "type": "string"
+        },
+        "input_digest": {
+          "type": "string"
+        },
+        "schema_uri": {
+          "type": "string"
+        }
+      }
+    },
+    "dossier_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_version",
+        "assessment_date",
+        "eligible_source_types",
+        "source_reviews",
+        "owner_actions",
+        "applicability_questions",
+        "limitations"
+      ],
+      "properties": {
+        "policy_version": {
+          "type": "string"
+        },
+        "assessment_date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "eligible_source_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_reviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_ref",
+              "source_type",
+              "status",
+              "issues"
+            ],
+            "properties": {
+              "source_ref": {
+                "type": "string"
+              },
+              "source_type": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "eligible_for_review",
+                  "needs_evidence"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "owner_actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_type",
+              "owner",
+              "priority",
+              "action"
+            ],
+            "properties": {
+              "source_type": {
+                "type": "string"
+              },
+              "owner": {
+                "type": "string"
+              },
+              "priority": {
+                "enum": [
+                  "before_decision"
+                ]
+              },
+              "action": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "applicability_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     }
   },
@@ -174,10 +348,19 @@
     "readiness_named_value": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["field", "value"],
+      "required": [
+        "field",
+        "value"
+      ],
       "properties": {
-        "field": { "type": "string", "minLength": 1 },
-        "value": { "type": "string", "minLength": 1 }
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "readiness_contract": {
@@ -199,22 +382,72 @@
         "boundary_notice"
       ],
       "properties": {
-        "profile": { "type": "string", "minLength": 1 },
-        "status": { "type": "string", "minLength": 1 },
-        "score": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+        "profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "score": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
         "routing": {
-          "anyOf": [{ "$ref": "#/$defs/readiness_named_value" }, { "type": "null" }]
+          "anyOf": [
+            {
+              "$ref": "#/$defs/readiness_named_value"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "signal": {
-          "anyOf": [{ "$ref": "#/$defs/readiness_named_value" }, { "type": "null" }]
+          "anyOf": [
+            {
+              "$ref": "#/$defs/readiness_named_value"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
-        "blocking_gaps": { "type": "array", "items": {} },
-        "non_blocking_gaps": { "type": "array", "items": {} },
-        "claim_audit": { "type": "array", "items": {} },
-        "owner_actions": { "type": "array", "items": {} },
-        "watch_next": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-        "human_review_required": { "type": "boolean" },
-        "boundary_notice": { "type": "string", "minLength": 1 }
+        "blocking_gaps": {
+          "type": "array",
+          "items": {}
+        },
+        "non_blocking_gaps": {
+          "type": "array",
+          "items": {}
+        },
+        "claim_audit": {
+          "type": "array",
+          "items": {}
+        },
+        "owner_actions": {
+          "type": "array",
+          "items": {}
+        },
+        "watch_next": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "human_review_required": {
+          "type": "boolean"
+        },
+        "boundary_notice": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     }
   }

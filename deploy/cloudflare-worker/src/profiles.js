@@ -424,16 +424,16 @@ const criticalMineralsProfile = Object.freeze({
   documentation_url: CRITICAL_MINERALS_DOCS_URL,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
-    "A2A/JSON-RPC discovery, critical minerals origin tracing, strategic export-quota flags, CSDDD compliance triage, evidence gating, and routing response only",
+    "A2A/MCP dossier-readiness review: dated excerpts, declared scope, evidence gaps, owner actions and human-review routing",
   supported_contracts: frozenArray(["critical_minerals_due_diligence_contract"]),
   buyer_use_cases: frozenArray([
     "critical minerals procurement and offtake agreement review",
-    "mining concession and assay traceability verification before investment",
-    "EU CSDDD and Critical Raw Materials Act supply chain compliance audit",
-    "strategic export quota and refinery bottleneck exposure screening"
+    "mining concession, assay and ownership evidence preparation before investment",
+    "responsible-sourcing evidence and regulatory-applicability questions",
+    "stage-specific procurement and shipment dossier gap review"
   ]),
   commercial_positioning:
-    "Commodity + origin jurisdiction + processing route + counterparties + supplied sources -> deterministic due diligence triage with origin traceability, export quota flags, CSDDD compliance gaps, top supply-chain risks, and human-review escalation. Sits beside legal, trade-compliance, and ESG advisors.",
+    "Review a specific mineral dossier before offtake, processing, investment or shipment. Detect missing excerpts, invalid or expired dates, scope mismatches and repeated documents; assign evidence requests to dossier owners and counsel. Caller-supplied records are not authenticated; human approval is required.",
   product_contract: productContract({
     request_schema: CRITICAL_MINERALS_REQUEST_SCHEMA_URL,
     response_schema: CRITICAL_MINERALS_RESPONSE_SCHEMA_URL,

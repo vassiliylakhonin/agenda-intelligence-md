@@ -1,17 +1,17 @@
 {
   "triage_recommendation": "ready_for_human_review",
-  "risk_signal": "low",
+  "risk_signal": "unknown",
   "decision_readiness_score": 100,
   "decision_readiness_label": "review_ready",
   "operational_decision": {
-    "decision": "continue",
-    "reason_code": "evidence_complete",
+    "decision": "require_approval",
+    "reason_code": "dossier_ready_for_human_review",
     "blocking_gaps": [],
-    "next_permitted_action": "Human review and committee sign-off"
+    "next_permitted_action": "Human authentication, applicability review and committee sign-off"
   },
   "commodity": "copper",
   "origin_jurisdiction": "Kazakhstan",
-  "traceability_status": "verified",
+  "traceability_status": "partial",
   "export_control_exposure": {
     "quota_restricted": false,
     "processing_monopoly_risk": false,
@@ -22,51 +22,151 @@
     "certified_ore_assay_report",
     "beneficial_ownership_due_diligence",
     "export_quota_and_permit_clearance",
-    "csddd_human_rights_and_esg_audit",
-    "processing_and_refining_tolling_agreement"
+    "responsible_sourcing_due_diligence",
+    "processing_and_refining_tolling_agreement",
+    "chain_of_custody_records",
+    "regulatory_applicability_memo"
   ],
   "minimum_sources_before_go": [],
   "evidence_gaps": [],
   "top_risks": [
     {
-      "category": "Supply Chain & Origin Traceability",
-      "severity": "low",
-      "description": "Traceability status is verified for copper originating from Kazakhstan."
+      "category": "Dossier Traceability Coverage",
+      "severity": "medium",
+      "description": "Caller-supplied documentary traceability status is partial for copper originating from Kazakhstan."
     }
   ],
   "exposure_layers": [
     {
-      "layer": "Origin Concession & Mining Rights",
-      "level": "verified",
-      "summary": "Mining concession / license extract status in source ledger."
+      "layer": "mining_concession_or_license_extract",
+      "level": "eligible_for_review",
+      "summary": "Caller-supplied scoped excerpt; authenticity and applicability unverified"
     },
     {
-      "layer": "Processing & Beneficiation Route",
-      "level": "verified",
-      "summary": "Refining, smelter, and tolling contract agreements."
+      "layer": "certified_ore_assay_report",
+      "level": "eligible_for_review",
+      "summary": "Caller-supplied scoped excerpt; authenticity and applicability unverified"
     },
     {
-      "layer": "ESG & CSDDD Compliance",
-      "level": "verified",
-      "summary": "Human rights, environmental, and tailings due diligence audit."
+      "layer": "beneficial_ownership_due_diligence",
+      "level": "eligible_for_review",
+      "summary": "Caller-supplied scoped excerpt; authenticity and applicability unverified"
+    },
+    {
+      "layer": "export_quota_and_permit_clearance",
+      "level": "eligible_for_review",
+      "summary": "Caller-supplied scoped excerpt; authenticity and applicability unverified"
+    },
+    {
+      "layer": "responsible_sourcing_due_diligence",
+      "level": "eligible_for_review",
+      "summary": "Caller-supplied scoped excerpt; authenticity and applicability unverified"
+    },
+    {
+      "layer": "processing_and_refining_tolling_agreement",
+      "level": "eligible_for_review",
+      "summary": "Caller-supplied scoped excerpt; authenticity and applicability unverified"
+    },
+    {
+      "layer": "chain_of_custody_records",
+      "level": "eligible_for_review",
+      "summary": "Caller-supplied scoped excerpt; authenticity and applicability unverified"
+    },
+    {
+      "layer": "regulatory_applicability_memo",
+      "level": "eligible_for_review",
+      "summary": "Caller-supplied scoped excerpt; authenticity and applicability unverified"
     }
   ],
   "watch_next": [
-    "EU Critical Raw Materials Act strategic project announcements",
-    "Export quota and licensing rule revisions in producing states",
-    "OFAC / EU / UK sanctions updates on mining conglomerates",
-    "Refinery tolling fee and capacity bottlenecks",
-    "CSDDD supply-chain due diligence compliance audits"
+    "Confirm commodity form/grade, end use, shipment date, customs code and transit jurisdictions before assessing restrictions.",
+    "Ask counsel to establish applicable permits and sanctions rules; a commodity or country label does not establish a prohibition.",
+    "Determine CSDDD scope, dates and company thresholds; a responsible-sourcing audit is not CSDDD certification."
   ],
   "human_review_required": true,
   "not_advice_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice.",
   "run_provenance": {
     "contract_version": "1.14.0",
-    "input_digest": "sha256:0d7596a202504637e2e8b71844d66089ddeb6c48c5527d6ea1213510aa4241f8",
+    "input_digest": "sha256:f751a0a64252ff53191501c83829a240d4364379381d0f032a8e99e72ee0aef8",
     "schema_uri": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-response.schema.json"
   },
   "processing_jurisdiction": "Kazakhstan",
   "target_market": "eu",
+  "dossier_review": {
+    "policy_version": "mineral-dossier.v2",
+    "assessment_date": "2026-10-05",
+    "eligible_source_types": [
+      "mining_concession_or_license_extract",
+      "certified_ore_assay_report",
+      "beneficial_ownership_due_diligence",
+      "export_quota_and_permit_clearance",
+      "responsible_sourcing_due_diligence",
+      "processing_and_refining_tolling_agreement",
+      "chain_of_custody_records",
+      "regulatory_applicability_memo"
+    ],
+    "source_reviews": [
+      {
+        "source_ref": "supplied_sources[0]",
+        "source_type": "mining_concession_or_license_extract",
+        "status": "eligible_for_review",
+        "issues": []
+      },
+      {
+        "source_ref": "supplied_sources[1]",
+        "source_type": "certified_ore_assay_report",
+        "status": "eligible_for_review",
+        "issues": []
+      },
+      {
+        "source_ref": "supplied_sources[2]",
+        "source_type": "beneficial_ownership_due_diligence",
+        "status": "eligible_for_review",
+        "issues": []
+      },
+      {
+        "source_ref": "supplied_sources[3]",
+        "source_type": "export_quota_and_permit_clearance",
+        "status": "eligible_for_review",
+        "issues": []
+      },
+      {
+        "source_ref": "supplied_sources[4]",
+        "source_type": "responsible_sourcing_due_diligence",
+        "status": "eligible_for_review",
+        "issues": []
+      },
+      {
+        "source_ref": "supplied_sources[5]",
+        "source_type": "processing_and_refining_tolling_agreement",
+        "status": "eligible_for_review",
+        "issues": []
+      },
+      {
+        "source_ref": "supplied_sources[6]",
+        "source_type": "chain_of_custody_records",
+        "status": "eligible_for_review",
+        "issues": []
+      },
+      {
+        "source_ref": "supplied_sources[7]",
+        "source_type": "regulatory_applicability_memo",
+        "status": "eligible_for_review",
+        "issues": []
+      }
+    ],
+    "owner_actions": [],
+    "applicability_questions": [
+      "Confirm commodity form/grade, end use, shipment date, customs code and transit jurisdictions before assessing restrictions.",
+      "Ask counsel to establish applicable permits and sanctions rules; a commodity or country label does not establish a prohibition.",
+      "Determine CSDDD scope, dates and company thresholds; a responsible-sourcing audit is not CSDDD certification."
+    ],
+    "limitations": [
+      "Eligible means dated, scoped excerpt supplied by caller; authenticity, factual support and legal sufficiency are not verified.",
+      "Score measures documentary coverage, not investment quality or probability of compliance.",
+      "No automatic transaction approval; a complete dossier still requires human sign-off."
+    ]
+  },
   "readiness_contract": {
     "profile": "critical_minerals_due_diligence",
     "status": "review_ready",
@@ -81,11 +181,9 @@
     "claim_audit": [],
     "owner_actions": [],
     "watch_next": [
-      "EU Critical Raw Materials Act strategic project announcements",
-      "Export quota and licensing rule revisions in producing states",
-      "OFAC / EU / UK sanctions updates on mining conglomerates",
-      "Refinery tolling fee and capacity bottlenecks",
-      "CSDDD supply-chain due diligence compliance audits"
+      "Confirm commodity form/grade, end use, shipment date, customs code and transit jurisdictions before assessing restrictions.",
+      "Ask counsel to establish applicable permits and sanctions rules; a commodity or country label does not establish a prohibition.",
+      "Determine CSDDD scope, dates and company thresholds; a responsible-sourcing audit is not CSDDD certification."
     ],
     "human_review_required": true,
     "boundary_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice."

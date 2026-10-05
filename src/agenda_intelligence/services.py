@@ -25,6 +25,8 @@ from agenda_intelligence.eval import score_before_after
 from agenda_intelligence.evidence_ledger import EvidenceLedger
 from agenda_intelligence.grounding import GroundingIndex, _polarity_cues, _quote_check
 
+from .critical_minerals import STAGE_TIERS, review_mineral_dossier
+
 PACKAGE_NAME = "agenda_intelligence"
 
 SCHEMA_ID_BASE = "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1"
@@ -4663,24 +4665,8 @@ def append_evidence(request_json: Optional[dict] = None) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Critical minerals due diligence (2026 ESG, CSDDD, and export-control triage)
+# Critical minerals documentary readiness (caller-supplied, not legal clearance)
 # ---------------------------------------------------------------------------
-
-CRITICAL_MINERALS_QUOTA_RESTRICTED = {
-    "rare_earth_elements",
-    "gallium_germanium",
-    "graphite",
-    "tungsten",
-    "antimony",
-}
-
-CRITICAL_MINERALS_HIGH_RISK_PROCESSING_JURISDICTIONS = {
-    "Russia",
-    "Iran",
-    "North Korea",
-    "Myanmar",
-    "Syria",
-}
 
 CRITICAL_MINERALS_NOT_ADVICE_NOTICE = (
     "Pre-compliance evidence triage only on caller-supplied documentation. "
@@ -4709,110 +4695,50 @@ def _critical_minerals_supplied_types(request_json: dict) -> list[str]:
 
 
 def _critical_minerals_readiness_and_triage(
-    request_json: dict, supplied_sources: list[str]
+    request_json: dict, dossier: dict
 ) -> tuple[int, str, str, str, str, dict, list[str], list[str], dict]:
-    stage = request_json.get("decision_stage", "pre_offtake_agreement")
-    commodity = request_json.get("commodity", "")
-    processing = request_json.get("processing_jurisdiction", "")
-    taxonomy = _critical_minerals_taxonomy()
-
-    stage_tier_map = {
-        "pre_offtake_agreement": "required_before_offtake",
-        "pre_investment_decision": "required_before_investment",
-        "pre_export_shipment": "required_before_shipment",
-        "pre_exploration": "required_before_offtake",
-        "pre_processing_contract": "required_before_offtake",
-    }
-    tier_key = stage_tier_map.get(stage, "required_before_offtake")
-    required = taxonomy.get(tier_key, [])
-    missing = [s for s in required if s not in supplied_sources]
-
-    has_concession = "mining_concession_or_license_extract" in supplied_sources
-    has_assay = (
-        "certified_ore_assay_report" in supplied_sources or "port_of_loading_assay_verification" in supplied_sources
+    eligible = dossier["eligible_source_types"]
+    required = _critical_minerals_taxonomy()[STAGE_TIERS[request_json["decision_stage"]]]
+    missing = [source for source in required if source not in eligible]
+    blocking = [f"Missing reviewable source: {source.replace('_', ' ')}" for source in missing]
+    blocking += [value.strip() for value in request_json.get("blockers", []) if value.strip()]
+    score = ((len(required) - len(missing)) * 100) // len(required)
+    complete = not blocking
+    label = (
+        "review_ready"
+        if complete
+        else "insufficient_information" if not eligible else "not_decision_ready" if score < 40 else "partial"
     )
-    has_coo = "certificate_of_origin" in supplied_sources
-
-    if has_concession and has_assay and (has_coo or stage != "pre_export_shipment"):
-        traceability = "verified"
-    elif has_concession or has_assay:
-        traceability = "partial"
-    elif not supplied_sources:
-        traceability = "unverified"
-    else:
-        traceability = "unverified"
-
-    quota_restricted = commodity in CRITICAL_MINERALS_QUOTA_RESTRICTED
-    flags = []
-    if quota_restricted and "export_quota_and_permit_clearance" not in supplied_sources:
-        flags.append(f"{commodity} is subject to strategic export quota / licensing restrictions.")
-    if processing in CRITICAL_MINERALS_HIGH_RISK_PROCESSING_JURISDICTIONS:
-        flags.append(f"Processing jurisdiction {processing} carries elevated sanctions / export-control exposure.")
-
-    total_req = len(required) if required else 1
-    satisfied_count = total_req - len(missing)
-    base_score = int(round((satisfied_count / total_req) * 100))
-    if flags:
-        base_score = max(0, base_score - 15 * len(flags))
-
-    if not supplied_sources:
-        score = 0
-        readiness_label = "insufficient_information"
-        triage = "insufficient_information"
-        risk_signal = "unknown"
-        decision = "request_evidence"
-        reason_code = "insufficient_sources"
-    elif missing or flags:
-        score = min(base_score, 65)
-        readiness_label = "not_decision_ready" if score < 40 else "partial"
-        if stage == "pre_offtake_agreement":
-            triage = "escalate_before_offtake"
-        elif stage == "pre_export_shipment":
-            triage = "escalate_before_shipment"
-        elif stage == "pre_investment_decision":
-            triage = "escalate_before_investment"
-        else:
-            triage = "not_decision_ready"
-        risk_signal = "high" if flags or score < 40 else "medium_high"
-        decision = "stop" if flags and score < 40 else "request_evidence"
-        reason_code = "critical_evidence_gaps"
-    else:
-        score = max(80, base_score)
-        readiness_label = "review_ready"
-        triage = "ready_for_human_review"
-        risk_signal = "low" if score >= 90 else "medium"
-        decision = "continue"
-        reason_code = "evidence_complete"
-
-    blocking_gaps = [f"Missing required source: {s.replace('_', ' ')}" for s in missing] + flags
-    op_decision = {
-        "decision": decision,
-        "reason_code": reason_code,
-        "blocking_gaps": blocking_gaps,
+    triage = (
+        "ready_for_human_review"
+        if complete
+        else (
+            "insufficient_information"
+            if not eligible
+            else {
+                "pre_offtake_agreement": "escalate_before_offtake",
+                "pre_export_shipment": "escalate_before_shipment",
+                "pre_investment_decision": "escalate_before_investment",
+            }.get(request_json["decision_stage"], "not_decision_ready")
+        )
+    )
+    traceability = (
+        "partial"
+        if any(s in eligible for s in ("mining_concession_or_license_extract", "certificate_of_origin"))
+        else "unverified"
+    )
+    exposure = {"quota_restricted": False, "processing_monopoly_risk": False, "jurisdiction_risk_flags": []}
+    op = {
+        "decision": "require_approval" if complete else "request_evidence",
+        "reason_code": "dossier_ready_for_human_review" if complete else "critical_evidence_gaps",
+        "blocking_gaps": blocking,
         "next_permitted_action": (
-            "Human review and committee sign-off"
-            if decision == "continue"
-            else "Obtain missing origin, assay, or export-control permits"
+            "Human authentication, applicability review and committee sign-off"
+            if complete
+            else "Resolve dossier_review.owner_actions before decision; document labels do not establish readiness"
         ),
     }
-
-    export_exposure = {
-        "quota_restricted": quota_restricted,
-        "processing_monopoly_risk": bool(processing and processing in ("China", "Russia")),
-        "jurisdiction_risk_flags": flags,
-    }
-
-    return (
-        score,
-        readiness_label,
-        triage,
-        risk_signal,
-        traceability,
-        export_exposure,
-        missing,
-        blocking_gaps,
-        op_decision,
-    )
+    return score, label, triage, "unknown", traceability, exposure, missing, blocking, op
 
 
 def extract_critical_minerals_parameters(request_json: dict | None = None, raw_text: str = "") -> dict[str, Any]:
@@ -5026,6 +4952,7 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
     request_json = clean_request
 
     supplied_sources = _critical_minerals_supplied_types(request_json)
+    dossier = review_mineral_dossier(request_json, _critical_minerals_taxonomy())
     (
         score,
         readiness_label,
@@ -5036,14 +4963,14 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
         missing_sources,
         blocking_gaps,
         op_decision,
-    ) = _critical_minerals_readiness_and_triage(request_json, supplied_sources)
+    ) = _critical_minerals_readiness_and_triage(request_json, dossier)
 
     top_risks = [
         {
-            "category": "Supply Chain & Origin Traceability",
-            "severity": "high" if traceability in ("unverified", "obfuscated") else "low",
+            "category": "Dossier Traceability Coverage",
+            "severity": "high" if traceability in ("unverified", "obfuscated") else "medium",
             "description": (
-                f"Traceability status is {traceability} for {request_json['commodity']} "
+                f"Caller-supplied documentary traceability status is {traceability} for {request_json['commodity']} "
                 f"originating from {request_json['origin_jurisdiction']}."
             ),
         }
@@ -5059,121 +4986,14 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
 
     exposure_layers = [
         {
-            "layer": "Origin Concession & Mining Rights",
-            "level": "verified" if "mining_concession_or_license_extract" in supplied_sources else "gap",
-            "summary": "Mining concession / license extract status in source ledger.",
-        },
-        {
-            "layer": "Processing & Beneficiation Route",
-            "level": ("verified" if "processing_and_refining_tolling_agreement" in supplied_sources else "gap"),
-            "summary": "Refining, smelter, and tolling contract agreements.",
-        },
-        {
-            "layer": "ESG & CSDDD Compliance",
-            "level": ("verified" if "csddd_human_rights_and_esg_audit" in supplied_sources else "gap"),
-            "summary": "Human rights, environmental, and tailings due diligence audit.",
-        },
+            "layer": item["source_type"],
+            "level": item["status"],
+            "summary": "; ".join(item["issues"])
+            or "Caller-supplied scoped excerpt; authenticity and applicability unverified",
+        }
+        for item in dossier["source_reviews"]
     ]
-
-    watch_next = [
-        "EU Critical Raw Materials Act strategic project announcements",
-        "Export quota and licensing rule revisions in producing states",
-        "OFAC / EU / UK sanctions updates on mining conglomerates",
-        "Refinery tolling fee and capacity bottlenecks",
-        "CSDDD supply-chain due diligence compliance audits",
-    ]
-
-    target_market = request_json.get("target_market", "")
-    commodity = request_json.get("commodity", "")
-    processing = request_json.get("processing_jurisdiction", "")
-    origin = request_json.get("origin_jurisdiction", "")
-
-    if target_market == "us":
-        is_feoc = processing in ("China", "Russia") or origin in ("China", "Russia")
-        top_risks.append(
-            {
-                "category": "US IRA Section 30D FEOC Disqualification",
-                "severity": "high" if is_feoc else "low",
-                "description": (
-                    f"Processing or extraction in {processing or origin} triggers Foreign Entity of Concern (FEOC) "
-                    "disqualification under 10 CFR Part 371 & 26 U.S.C. § 30D, barring clean vehicle tax credits "
-                    "($7,500/vehicle)."
-                    if is_feoc
-                    else "Target market is US: 25% FEOC ownership/control verification required under IRA Section 30D."
-                ),
-            }
-        )
-        exposure_layers.append(
-            {
-                "layer": "US IRA FEOC 25% Threshold Audit",
-                "level": "gap" if is_feoc else "verified",
-                "summary": (
-                    f"Covered nation processing ({processing or origin}) disqualifies offtake from US clean energy "
-                    "tax credits."
-                    if is_feoc
-                    else "No covered FEOC processing jurisdiction identified; beneficial ownership audit recommended."
-                ),
-            }
-        )
-        watch_next.append("US Treasury / IRS FEOC 25% beneficial ownership rules under IRA Section 30D")
-
-    if commodity == "uranium":
-        top_risks.append(
-            {
-                "category": "Nuclear Regulatory & Sanctions Transit Corridor",
-                "severity": "high",
-                "description": (
-                    "Uranium shipments must comply with US Public Law 118-67 (Russian Uranium Import Ban). "
-                    "Russian port transit (St. Petersburg) is prohibited for US delivery; Trans-Caspian TITR corridor "
-                    "requires Euratom Supply Agency (ESA) Article 52 co-signature and IAEA Safeguards verification."
-                ),
-            }
-        )
-        exposure_layers.append(
-            {
-                "layer": "IAEA Safeguards & Euratom Compliance",
-                "level": "verified" if "iaea_safeguards_and_euratom_co_signature" in supplied_sources else "gap",
-                "summary": (
-                    "Nuclear non-proliferation tracking, Euratom ESA Article 52 approval, and TITR Caspian routing."
-                ),
-            }
-        )
-        watch_next.extend(
-            [
-                "US Public Law 118-67 Russian uranium import ban enforcement and waiver schedules",
-                "Euratom Supply Agency (ESA) bilateral delivery authorizations",
-                "IAEA Additional Protocol safeguards and transit verification",
-            ]
-        )
-
-    if commodity == "titanium":
-        has_assay = (
-            "certified_ore_assay_report" in supplied_sources or "port_of_loading_assay_verification" in supplied_sources
-        )
-        top_risks.append(
-            {
-                "category": "Aerospace Grade Certification & Provenance",
-                "severity": "medium",
-                "description": (
-                    "Aerospace titanium supply requires certified mill test reports (AMS 4911 / AMS 4928, ASTM B265) "
-                    "and non-Russian raw sponge chain-of-custody verification to satisfy Western OEM (Boeing/Airbus) "
-                    "diversification quotas."
-                ),
-            }
-        )
-        exposure_layers.append(
-            {
-                "layer": "Aerospace Qualification & Sponge Origin",
-                "level": "verified" if has_assay else "gap",
-                "summary": "AMS/ASTM certified lab assay and non-Russian titanium sponge origin verification.",
-            }
-        )
-        watch_next.extend(
-            [
-                "Western aerospace OEM (Boeing/Airbus) titanium qualification and long-term agreements",
-                "Kazakhstan UKTMP vs VSMPO-Avisma market share reallocation",
-            ]
-        )
+    watch_next = dossier["applicability_questions"]
 
     response = {
         "triage_recommendation": triage,
@@ -5204,6 +5024,7 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
     if "target_market" in request_json:
         response["target_market"] = request_json["target_market"]
 
+    response["dossier_review"] = dossier
     response["readiness_contract"] = _profile_readiness_contract(
         "critical_minerals_due_diligence",
         response,
@@ -5212,6 +5033,8 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
         routing_field="triage_recommendation",
         boundary_field="not_advice_notice",
     )
+
+    response["readiness_contract"]["owner_actions"] = dossier["owner_actions"]
 
     validation = _validate_json(response, "critical-minerals-due-diligence-response.schema.json")
     if not validation.get("valid"):

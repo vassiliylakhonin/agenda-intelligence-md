@@ -1164,43 +1164,136 @@ export const WORKED_EXAMPLES = {
     "request": {
       "project_name": "Example spodumene offtake",
       "commodity": "lithium",
-      "origin_jurisdiction": "KZ",
-      "processing_jurisdiction": "CN",
+      "origin_jurisdiction": "Kazakhstan",
+      "processing_jurisdiction": "China",
       "target_market": "eu",
-      "decision_question": "Is this offtake ready for a pre-signature human review?",
+      "assessment_date": "2026-10-05",
+      "decision_question": "Which evidence must the supplier provide before offtake review?",
       "decision_stage": "pre_offtake_agreement",
+      "assumptions": [
+        "Illustrative fictional documents; no verified supplier or legal clearance."
+      ],
       "supplied_sources": [
         {
           "source_type": "mining_concession_or_license_extract",
-          "title": "Concession extract",
-          "date": "2026-08-01"
+          "document_id": "EX-L1",
+          "title": "Illustrative concession extract",
+          "date": "2026-09-01",
+          "issuing_authority": "Example authority (fictional)",
+          "excerpt": "ILLUSTRATIVE ONLY. Example Mine holds license EX-L1 for lithium extraction in Kazakhstan until 2027-12-31.",
+          "valid_until": "2027-12-31",
+          "scope": {
+            "project_name": "Example spodumene offtake",
+            "commodity": "lithium",
+            "origin_jurisdiction": "Kazakhstan"
+          }
         },
         {
           "source_type": "certified_ore_assay_report",
-          "title": "Certified assay",
-          "date": "2026-08-02"
+          "document_id": "EX-A1",
+          "title": "Illustrative assay",
+          "date": "2026-09-02",
+          "issuing_authority": "Example laboratory (fictional)",
+          "excerpt": "ILLUSTRATIVE ONLY. Batch EX-B1 reports 5.5% Li2O; sample identity and laboratory authenticity require review.",
+          "scope": {
+            "project_name": "Example spodumene offtake",
+            "commodity": "lithium",
+            "origin_jurisdiction": "Kazakhstan"
+          }
         }
       ]
     },
     "response": {
+      "dossier_review": {
+        "policy_version": "mineral-dossier.v2",
+        "assessment_date": "2026-10-05",
+        "eligible_source_types": [
+          "mining_concession_or_license_extract",
+          "certified_ore_assay_report"
+        ],
+        "source_reviews": [
+          {
+            "source_ref": "supplied_sources[0]",
+            "source_type": "mining_concession_or_license_extract",
+            "status": "eligible_for_review",
+            "issues": []
+          },
+          {
+            "source_ref": "supplied_sources[1]",
+            "source_type": "certified_ore_assay_report",
+            "status": "eligible_for_review",
+            "issues": []
+          }
+        ],
+        "owner_actions": [
+          {
+            "source_type": "beneficial_ownership_due_diligence",
+            "owner": "supplier / dossier owner",
+            "priority": "before_decision",
+            "action": "Supply beneficial ownership due diligence with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
+          {
+            "source_type": "export_quota_and_permit_clearance",
+            "owner": "compliance counsel",
+            "priority": "before_decision",
+            "action": "Supply export quota and permit clearance with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
+          {
+            "source_type": "responsible_sourcing_due_diligence",
+            "owner": "supplier / dossier owner",
+            "priority": "before_decision",
+            "action": "Supply responsible sourcing due diligence with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
+          {
+            "source_type": "processing_and_refining_tolling_agreement",
+            "owner": "supplier / dossier owner",
+            "priority": "before_decision",
+            "action": "Supply processing and refining tolling agreement with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
+          {
+            "source_type": "chain_of_custody_records",
+            "owner": "supplier / dossier owner",
+            "priority": "before_decision",
+            "action": "Supply chain of custody records with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
+          {
+            "source_type": "regulatory_applicability_memo",
+            "owner": "compliance counsel",
+            "priority": "before_decision",
+            "action": "Supply regulatory applicability memo with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          }
+        ],
+        "applicability_questions": [
+          "Confirm commodity form/grade, end use, shipment date, customs code and transit jurisdictions before assessing restrictions.",
+          "Ask counsel to establish applicable permits and sanctions rules; a commodity or country label does not establish a prohibition.",
+          "Determine CSDDD scope, dates and company thresholds; a responsible-sourcing audit is not CSDDD certification."
+        ],
+        "limitations": [
+          "Eligible means dated, scoped excerpt supplied by caller; authenticity, factual support and legal sufficiency are not verified.",
+          "Score measures documentary coverage, not investment quality or probability of compliance.",
+          "No automatic transaction approval; a complete dossier still requires human sign-off."
+        ]
+      },
       "triage_recommendation": "escalate_before_offtake",
-      "risk_signal": "high",
-      "decision_readiness_score": 33,
+      "risk_signal": "unknown",
+      "decision_readiness_score": 25,
       "decision_readiness_label": "not_decision_ready",
       "operational_decision": {
         "decision": "request_evidence",
         "reason_code": "critical_evidence_gaps",
         "blocking_gaps": [
-          "Missing required source: beneficial ownership due diligence",
-          "Missing required source: export quota and permit clearance",
-          "Missing required source: csddd human rights and esg audit",
-          "Missing required source: processing and refining tolling agreement"
+          "Missing reviewable source: beneficial ownership due diligence",
+          "Missing reviewable source: export quota and permit clearance",
+          "Missing reviewable source: responsible sourcing due diligence",
+          "Missing reviewable source: processing and refining tolling agreement",
+          "Missing reviewable source: chain of custody records",
+          "Missing reviewable source: regulatory applicability memo"
         ],
-        "next_permitted_action": "ACTION CHECKLIST BEFORE OFFTAKE: (1) Require authenticated assay and mining concession extract; (2) Enforce dual-control committee sign-off (4-eyes quorum); (3) Screen direct and indirect shareholders under OFAC 50% Rule."
+        "next_permitted_action": "Resolve dossier_review.owner_actions before decision; document labels do not establish readiness"
       },
       "commodity": "lithium",
-      "origin_jurisdiction": "KZ",
-      "traceability_status": "verified",
+      "origin_jurisdiction": "Kazakhstan",
+      "traceability_status": "partial",
       "export_control_exposure": {
         "quota_restricted": false,
         "processing_monopoly_risk": false,
@@ -1213,45 +1306,42 @@ export const WORKED_EXAMPLES = {
       "minimum_sources_before_go": [
         "beneficial_ownership_due_diligence",
         "export_quota_and_permit_clearance",
-        "csddd_human_rights_and_esg_audit",
-        "processing_and_refining_tolling_agreement"
+        "responsible_sourcing_due_diligence",
+        "processing_and_refining_tolling_agreement",
+        "chain_of_custody_records",
+        "regulatory_applicability_memo"
       ],
       "evidence_gaps": [
-        "Missing required source: beneficial ownership due diligence",
-        "Missing required source: export quota and permit clearance",
-        "Missing required source: csddd human rights and esg audit",
-        "Missing required source: processing and refining tolling agreement"
+        "Missing reviewable source: beneficial ownership due diligence",
+        "Missing reviewable source: export quota and permit clearance",
+        "Missing reviewable source: responsible sourcing due diligence",
+        "Missing reviewable source: processing and refining tolling agreement",
+        "Missing reviewable source: chain of custody records",
+        "Missing reviewable source: regulatory applicability memo"
       ],
       "top_risks": [
         {
-          "category": "Supply Chain & Origin Traceability",
-          "severity": "low",
-          "description": "Traceability status is verified for lithium originating from KZ."
+          "category": "Dossier Traceability Coverage",
+          "severity": "medium",
+          "description": "Caller-supplied documentary traceability status is partial for lithium originating from Kazakhstan."
         }
       ],
       "exposure_layers": [
         {
-          "layer": "Origin Concession & Mining Rights",
-          "level": "verified",
-          "summary": "Mining concession / license extract status in source ledger."
+          "layer": "mining_concession_or_license_extract",
+          "level": "eligible_for_review",
+          "summary": "Caller-supplied scoped excerpt; authenticity and applicability unverified"
         },
         {
-          "layer": "Processing & Beneficiation Route",
-          "level": "gap",
-          "summary": "Refining, smelter, and tolling contract agreements."
-        },
-        {
-          "layer": "ESG & CSDDD Compliance",
-          "level": "gap",
-          "summary": "Human rights, environmental, and tailings due diligence audit."
+          "layer": "certified_ore_assay_report",
+          "level": "eligible_for_review",
+          "summary": "Caller-supplied scoped excerpt; authenticity and applicability unverified"
         }
       ],
       "watch_next": [
-        "EU Critical Raw Materials Act strategic project announcements",
-        "Export quota and licensing rule revisions in producing states",
-        "OFAC / EU / UK sanctions updates on mining conglomerates",
-        "Refinery tolling fee and capacity bottlenecks",
-        "CSDDD supply-chain due diligence compliance audits"
+        "Confirm commodity form/grade, end use, shipment date, customs code and transit jurisdictions before assessing restrictions.",
+        "Ask counsel to establish applicable permits and sanctions rules; a commodity or country label does not establish a prohibition.",
+        "Determine CSDDD scope, dates and company thresholds; a responsible-sourcing audit is not CSDDD certification."
       ],
       "human_review_required": true,
       "not_advice_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice.",
@@ -1260,32 +1350,69 @@ export const WORKED_EXAMPLES = {
         "input_digest": "sha256:canonical",
         "schema_uri": "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/schemas/v1/critical-minerals-due-diligence-response.schema.json"
       },
-      "processing_jurisdiction": "CN",
+      "processing_jurisdiction": "China",
       "target_market": "eu",
       "readiness_contract": {
         "profile": "critical_minerals_due_diligence",
         "status": "not_decision_ready",
-        "score": 33,
+        "score": 25,
         "routing": {
           "field": "triage_recommendation",
           "value": "escalate_before_offtake"
         },
         "signal": null,
         "blocking_gaps": [
-          "Missing required source: beneficial ownership due diligence",
-          "Missing required source: export quota and permit clearance",
-          "Missing required source: csddd human rights and esg audit",
-          "Missing required source: processing and refining tolling agreement"
+          "Missing reviewable source: beneficial ownership due diligence",
+          "Missing reviewable source: export quota and permit clearance",
+          "Missing reviewable source: responsible sourcing due diligence",
+          "Missing reviewable source: processing and refining tolling agreement",
+          "Missing reviewable source: chain of custody records",
+          "Missing reviewable source: regulatory applicability memo"
         ],
         "non_blocking_gaps": [],
         "claim_audit": [],
-        "owner_actions": [],
+        "owner_actions": [
+          {
+            "source_type": "beneficial_ownership_due_diligence",
+            "owner": "supplier / dossier owner",
+            "priority": "before_decision",
+            "action": "Supply beneficial ownership due diligence with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
+          {
+            "source_type": "export_quota_and_permit_clearance",
+            "owner": "compliance counsel",
+            "priority": "before_decision",
+            "action": "Supply export quota and permit clearance with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
+          {
+            "source_type": "responsible_sourcing_due_diligence",
+            "owner": "supplier / dossier owner",
+            "priority": "before_decision",
+            "action": "Supply responsible sourcing due diligence with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
+          {
+            "source_type": "processing_and_refining_tolling_agreement",
+            "owner": "supplier / dossier owner",
+            "priority": "before_decision",
+            "action": "Supply processing and refining tolling agreement with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
+          {
+            "source_type": "chain_of_custody_records",
+            "owner": "supplier / dossier owner",
+            "priority": "before_decision",
+            "action": "Supply chain of custody records with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
+          {
+            "source_type": "regulatory_applicability_memo",
+            "owner": "compliance counsel",
+            "priority": "before_decision",
+            "action": "Supply regulatory applicability memo with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          }
+        ],
         "watch_next": [
-          "EU Critical Raw Materials Act strategic project announcements",
-          "Export quota and licensing rule revisions in producing states",
-          "OFAC / EU / UK sanctions updates on mining conglomerates",
-          "Refinery tolling fee and capacity bottlenecks",
-          "CSDDD supply-chain due diligence compliance audits"
+          "Confirm commodity form/grade, end use, shipment date, customs code and transit jurisdictions before assessing restrictions.",
+          "Ask counsel to establish applicable permits and sanctions rules; a commodity or country label does not establish a prohibition.",
+          "Determine CSDDD scope, dates and company thresholds; a responsible-sourcing audit is not CSDDD certification."
         ],
         "human_review_required": true,
         "boundary_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice."

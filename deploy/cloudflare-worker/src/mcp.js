@@ -276,10 +276,10 @@ const PROFILE_TOOLS = {
     bringsEvidence: true,
     argKey: "request",
     summary:
-      "Triage origin tracing, export quota restrictions, and CSDDD supply-chain due diligence for critical minerals " +
+      "Review dated, scoped documentary evidence for critical minerals " +
       "(lithium, rare earths, nickel, cobalt, copper, graphite, manganese, tungsten, gallium/germanium) before offtake " +
-      "or investment commitment. Returns origin traceability status, export quota flags, top supply-chain risks, " +
-      "and evidence gaps. "
+      "or investment commitment. Returns source-quality issues, stage-specific evidence requests, owner tasks, " +
+      "and human-review routing. "
   },
   dual_use_technology_export: {
     name: "dual_use_technology_export",

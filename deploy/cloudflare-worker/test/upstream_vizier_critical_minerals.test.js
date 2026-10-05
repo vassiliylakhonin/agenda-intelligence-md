@@ -445,7 +445,7 @@ test("e2e: critical-minerals-due-diligence stops transaction when sanctioned ent
   assert.equal(contractResponse.risk_signal, "high");
   assert.equal(contractResponse.operational_decision.decision, "stop");
   assert.equal(contractResponse.operational_decision.reason_code, "sanctions_violation_ofac_50");
-  assert.ok(contractResponse.operational_decision.blocking_gaps.some((g) => g.includes("OFAC 50% Rule")));
+  assert.ok(contractResponse.operational_decision.blocking_gaps.some((g) => g.includes("Upstream screening policy block")));
   assert.ok(contractResponse.top_risks.some((r) => r.category.includes("Sanctions") || r.description.includes("OFAC 50% Rule")));
 });
 
@@ -631,5 +631,16 @@ test("e2e: MCP tools/call critical_minerals_due_diligence receives Vizier securi
   assert.equal(data.result.structuredContent.risk_signal, "high");
   assert.equal(data.result.structuredContent.operational_decision.decision, "stop");
   assert.equal(data.result.structuredContent.operational_decision.reason_code, "sanctions_violation_ofac_50");
-  assert.ok(data.result.structuredContent.operational_decision.blocking_gaps.some((g) => g.includes("OFAC 50% Rule")));
+  assert.ok(data.result.structuredContent.operational_decision.blocking_gaps.some((g) => g.includes("Upstream screening policy block")));
+});
+
+test('upstream minerals preserves an earlier match if a later name screen fails', async () => {
+  let calls=0;
+  const result=await verifyCriticalMineralsWithVizier({VIZIER:{fetch:async()=> {
+    calls+=1;
+    return calls===1 ? new Response(JSON.stringify({violation:true,aggregate_blocked_percentage:100}),{status:200}) : new Response('{}',{status:504});
+  }}},{counterparties:[{name:'Example flagged entity'},{name:'Example second entity'}]});
+  assert.equal(result.status,'degraded');
+  assert.equal(result.sanctions_screening.violation,true);
+  assert.equal(result.sanctions_screening.matches[0].name,'Example flagged entity');
 });
