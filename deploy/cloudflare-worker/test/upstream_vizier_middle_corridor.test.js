@@ -284,7 +284,7 @@ test("e2e: middle-corridor-deal-risk allows clean transit file and attaches Vizi
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
+  assert.equal(metadata.vizier_clearance_receipt, null);
   assert.equal(metadata.middle_corridor_verification.clean, true);
   assert.equal(metadata.middle_corridor_verification.violation, false);
 
@@ -363,17 +363,17 @@ test("e2e: middle-corridor-deal-risk halts transaction when sanctioned counterpa
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
+  assert.equal(metadata.vizier_clearance_receipt, null);
   assert.equal(metadata.middle_corridor_verification.violation, true);
   assert.equal(metadata.middle_corridor_verification.sanctions_screening.violation, true);
 
   const contractResponse = metadata.response;
   assert.equal(contractResponse.risk_signal, "high");
   assert.equal(contractResponse.operational_decision.decision, "hold");
-  assert.ok(contractResponse.operational_decision.rationale.includes("OFAC 50% Rule"));
-  assert.ok(contractResponse.top_risks.some((r) => r.includes("Sanctions violation")));
-  assert.ok(contractResponse.evidence_gaps.some((g) => g.includes("OFAC 50% Rule clearance")));
-  assert.ok(contractResponse.limitations.some((l) => l.includes("Vizier Action Firewall")));
+  assert.ok(contractResponse.operational_decision.rationale.includes("compliance review"));
+  assert.ok(contractResponse.top_risks.some((r) => r.includes("Sanctions name-screen flag")));
+  assert.ok(contractResponse.evidence_gaps.some((g) => g.includes("Identity resolution")));
+  assert.ok(contractResponse.limitations.some((l) => l.includes("does not establish identity or blocked ownership")));
 });
 
 test("e2e: middle-corridor-deal-risk holds file processing when secret leak is detected by Vizier DLP", async () => {
@@ -442,7 +442,7 @@ test("e2e: middle-corridor-deal-risk holds file processing when secret leak is d
 
   const metadata = data.result.metadata;
   assert.equal(metadata.vizier_status, "success");
-  assert.equal(metadata.vizier_clearance_receipt, fakeJws);
+  assert.equal(metadata.vizier_clearance_receipt, null);
   assert.equal(metadata.middle_corridor_verification.violation, true);
   assert.equal(metadata.middle_corridor_verification.dlp_screening.clean, false);
 
@@ -516,5 +516,5 @@ test("e2e: MCP tools/call middle_corridor_deal_risk receives Vizier security scr
   assert.ok(data.result.structuredContent);
   assert.equal(data.result.structuredContent.risk_signal, "high");
   assert.equal(data.result.structuredContent.operational_decision.decision, "hold");
-  assert.ok(data.result.structuredContent.operational_decision.rationale.includes("OFAC 50% Rule"));
+  assert.ok(data.result.structuredContent.operational_decision.rationale.includes("compliance review"));
 });

@@ -1,6 +1,6 @@
 {
   "triage_recommendation": "ready_for_human_review",
-  "risk_signal": "low",
+  "risk_signal": "unknown",
   "decision_readiness_score": 100,
   "decision_readiness_label": "review_ready",
   "operational_decision": {
@@ -158,6 +158,24 @@
     "amount": 2400000,
     "currency": "USD"
   },
+  "source_record_review": {
+    "policy_version": "source-records.v1",
+    "scope": "reference_metadata_only",
+    "source_content_verified": false,
+    "freshness_verified": false,
+    "usable_source_types": [
+      "port_operator_notice",
+      "sanctions_list_extract",
+      "carrier_note",
+      "counterparty_registry_extract",
+      "beneficial_ownership_source",
+      "customs_or_regulatory_source",
+      "insurance_clause_or_underwriter_note",
+      "vessel_or_carrier_history"
+    ],
+    "issues": [],
+    "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+  },
   "readiness_contract": {
     "profile": "middle_corridor_deal_risk",
     "status": "review_ready",
@@ -168,7 +186,7 @@
     },
     "signal": {
       "field": "risk_signal",
-      "value": "low"
+      "value": "unknown"
     },
     "blocking_gaps": [],
     "non_blocking_gaps": [],

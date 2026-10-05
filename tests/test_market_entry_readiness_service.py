@@ -24,13 +24,13 @@ def load_json(path: Path):
 GOLDEN_REQUEST = load_json(EXAMPLE_DIR / "pre_signature_validation.request.json")
 
 
-def test_golden_request_is_schema_valid_and_validation_ready():
+def test_golden_request_is_schema_valid_and_pauses_for_declared_blockers():
     result = services.kazakhstan_market_entry_readiness(GOLDEN_REQUEST)
     assert result["valid"] is True, result["errors"]
     response = result["response"]
     Draft202012Validator(load_json(RESPONSE_SCHEMA_PATH)).validate(response)
-    assert response["gate_decision"] == "proceed_to_validation"
-    assert response["readiness_label"] == "validation_ready"
+    assert response["gate_decision"] == "pause_for_evidence"
+    assert response["readiness_label"] == "concept_ready"
     assert response["human_review_required"] is True
     # signature-tier gaps must surface for a pre-signature file missing legal/tax/banking evidence
     gap_types = {gap["source_type"] for gap in response["evidence_gaps"]}
@@ -65,7 +65,7 @@ def test_invalid_request_is_rejected():
 def test_http_route_returns_response():
     status, body = http_api.handle_post("/v1/market-entry/readiness", GOLDEN_REQUEST)
     assert status == 200
-    assert body["readiness_label"] == "validation_ready"
+    assert body["readiness_label"] == "concept_ready"
     assert body["boundary_notice"]
 
 
@@ -92,7 +92,7 @@ def test_a2a_profile_dispatches():
     result = rpc["result"]
     assert result["status"]["state"] == "TASK_STATE_COMPLETED"
     assert result["metadata"]["product_profile"] == "kazakhstan_market_entry_readiness"
-    assert result["metadata"]["response"]["readiness_label"] == "validation_ready"
+    assert result["metadata"]["response"]["readiness_label"] == "concept_ready"
 
 
 def test_agent_card_advertises_market_entry():

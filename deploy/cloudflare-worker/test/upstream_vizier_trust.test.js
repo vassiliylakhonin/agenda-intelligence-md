@@ -306,8 +306,8 @@ test("e2e: agentic_interaction_trust allows clean agent interaction and attaches
   assert.equal(metadata.trust_verification.violation, false);
 
   const responseBody = metadata.response;
-  assert.equal(responseBody.trust_signal, "high");
-  assert.equal(responseBody.triage_recommendation, "allow_low_risk");
+  assert.equal(responseBody.trust_signal, "medium");
+  assert.equal(responseBody.triage_recommendation, "escalate_to_human_review");
 });
 
 test("e2e: agentic_interaction_trust blocks sanctioned operator under OFAC 50% Rule", async () => {
@@ -383,8 +383,8 @@ test("e2e: agentic_interaction_trust blocks sanctioned operator under OFAC 50% R
   const responseBody = metadata.response;
   assert.equal(responseBody.triage_recommendation, "block_until_verified");
   assert.equal(responseBody.trust_signal, "low");
-  assert.ok(responseBody.top_risk_dimensions.some((d) => d.includes("Sanctioned operator/principal")));
-  assert.ok(responseBody.evidence_gaps.some((g) => g.includes("is subject to sanctions")));
+  assert.ok(responseBody.top_risk_dimensions.some((d) => d.includes("Sanctions name-screen flag")));
+  assert.ok(responseBody.evidence_gaps.some((g) => g.includes("Resolve the sanctions name-screen flag")));
 });
 
 test("e2e: agentic_interaction_trust blocks leaked secrets detected by Vizier DLP", async () => {
@@ -527,6 +527,6 @@ test("e2e: REST POST /v1/agentic-interaction/trust attaches Vizier provenance an
   assert.equal(data.trust_verification.clean, null);
   assert.equal(data.trust_verification.dlp_receipt, fakeJws);
   assert.equal(data.trust_verification.violation, false);
-  assert.equal(data.trust_signal, "high");
-  assert.equal(data.triage_recommendation, "allow_low_risk");
+  assert.equal(data.trust_signal, "medium");
+  assert.equal(data.triage_recommendation, "escalate_to_human_review");
 });

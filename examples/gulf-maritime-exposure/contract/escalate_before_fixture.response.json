@@ -61,6 +61,17 @@
     "vessel_type": "crude oil tanker"
   },
   "cargo": "crude oil",
+  "source_record_review": {
+    "policy_version": "source-records.v1",
+    "scope": "reference_metadata_only",
+    "source_content_verified": false,
+    "freshness_verified": false,
+    "usable_source_types": [
+      "ais_track_record"
+    ],
+    "issues": [],
+    "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+  },
   "readiness_contract": {
     "profile": "gulf_maritime_exposure",
     "status": "not_decision_ready",

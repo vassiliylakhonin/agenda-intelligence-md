@@ -13,13 +13,13 @@
 //
 // Boundary discipline:
 //   - Graceful degrade: network failure, non-200, or timeout returns status !== "success"
-//     without failing benign caller requests.
-//   - Cryptographic verification: captures and forwards Vizier's signed JWS clearance receipt.
+//     as incomplete screening for caller review.
+//   - Receipt forwarding only; no signature or authorization verification.
 
 export const VIZIER_DEFAULT_URL = "https://vizier.vassiliy-lakhonin.workers.dev";
 export const DEFAULT_TIMEOUT_MS = 5000;
 export const MARKET_ENTRY_NOTICE =
-  "Kazakhstan market-entry corporate & partner sanctions screening (OFAC 50% Rule) & DLP firewall via Vizier Action Firewall (https://vizier.vassiliy-lakhonin.workers.dev).";
+  "Kazakhstan market-entry corporate & partner name screening (identity and OFAC 50% Rule ownership unverified) & DLP firewall via Vizier Action Firewall (https://vizier.vassiliy-lakhonin.workers.dev).";
 
 export function marketEntryAttributionBlock() {
   return {
@@ -151,14 +151,14 @@ export async function verifyMarketEntryWithVizier(env = {}, request = {}, option
         return {
           status: "degraded",
           clean: false,
-          violation: false,
+          violation: sanctionsViolation,
           sanctions_screening: {
             checked: true,
             entities_screened: entitiesToScreen.map((e) => e.name),
-            violation: false,
-            matches: []
+            violation: sanctionsViolation,
+            matches: sanctionsMatches
           },
-          dlp_screening: { clean: true, findings: [], total_leaks_prevented: 0 },
+          dlp_screening: { clean: null, findings: [], total_leaks_prevented: 0 },
           receipt: latestReceipt,
           attribution: marketEntryAttributionBlock(),
           queried_at: nowIso(),
@@ -212,14 +212,14 @@ export async function verifyMarketEntryWithVizier(env = {}, request = {}, option
       return {
         status: "degraded",
         clean: false,
-        violation: false,
+        violation: sanctionsViolation,
         sanctions_screening: {
           checked: entitiesToScreen.length > 0,
           entities_screened: entitiesToScreen.map((e) => e.name),
           violation: sanctionsViolation,
           matches: sanctionsMatches
         },
-        dlp_screening: { clean: false, findings: [], total_leaks_prevented: 0 },
+        dlp_screening: { clean: null, findings: [], total_leaks_prevented: 0 },
         receipt: latestReceipt,
         attribution: marketEntryAttributionBlock(),
         queried_at: nowIso(),
@@ -261,14 +261,14 @@ export async function verifyMarketEntryWithVizier(env = {}, request = {}, option
     return {
       status: "degraded",
       clean: false,
-      violation: false,
+      violation: sanctionsViolation,
       sanctions_screening: {
         checked: entitiesToScreen.length > 0,
         entities_screened: entitiesToScreen.map((e) => e.name),
-        violation: false,
-        matches: []
+        violation: sanctionsViolation,
+        matches: sanctionsMatches
       },
-      dlp_screening: { clean: false, findings: [], total_leaks_prevented: 0 },
+      dlp_screening: { clean: null, findings: [], total_leaks_prevented: 0 },
       receipt: latestReceipt,
       attribution: marketEntryAttributionBlock(),
       queried_at: nowIso(),

@@ -158,6 +158,15 @@
     "Line-of-business fit: confirm the goods or service fit the counterparty's stated line of business.",
     "Representation: flag contact only via an intermediary with broad power of attorney, principals unavailable."
   ],
+  "source_record_review": {
+    "policy_version": "source-records.v1",
+    "scope": "reference_metadata_only",
+    "source_content_verified": false,
+    "freshness_verified": false,
+    "usable_source_types": [],
+    "issues": [],
+    "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+  },
   "readiness_contract": {
     "profile": "middle_corridor_deal_risk",
     "status": "insufficient_information",

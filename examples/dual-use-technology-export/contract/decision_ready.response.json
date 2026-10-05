@@ -1,25 +1,37 @@
 {
-  "contract_version": "1.13.0",
+  "contract_version": "1.14.0",
   "profile": "dual_use_technology_export",
   "export_risk_triage": {
     "status": "ready_for_human_review",
     "score": 69,
-    "primary_risk_vectors": [
-      "CHPL Status: Tier 1 (Battlefield High Priority) matched (HS 854231). Heightened diversion risk under EU Reg 833/2014 Annex XL, US BIS EAR Common High Priority List, and UK Russia Regulations.",
-      "OFAC E.O. 14114 Warning: Secondary sanctions exposure for Foreign Financial Institutions (FFIs) facilitating transactions involving CHPL Tier 1\u20132 items.",
-      "Transit countries are present; human review must assess diversion and re-export controls for each leg."
-    ],
-    "evidence_ledger": [
-      "du-1: classification_note \u2014 Exporter ECCN self-classification note (2026-08-01)",
-      "du-2: end_user_statement \u2014 Signed end-use / end-user statement from the Kazakhstan consignee (2026-08-05)",
-      "Regulatory Classification: Tier 1 (Battlefield High Priority) \u2014 Electronic integrated circuits, microcontrollers, processors, and memories."
-    ],
     "score_scope": "declared_evidence_structure_only",
     "factual_verification_performed": false,
     "human_review_required": true,
     "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
     "evidence_gaps": [
       "Source content, classification, licensing requirements and end-use have not been independently verified."
-    ]
+    ],
+    "primary_risk_vectors": [
+      "CHPL Status: Tier 1 matched (HS 854231). Diversion-review lead from the BIS CHPL reference snapshot; applicable controls require separate product, jurisdiction and end-use review.",
+      "OFAC E.O. 14114 applicability question: Does a foreign financial institution facilitate relevant significant transactions or services connected to Russia’s military-industrial base? HS tier alone does not determine sanctions exposure.",
+      "Transit countries are present; human review must assess diversion and re-export controls for each leg."
+    ],
+    "evidence_ledger": [
+      "du-1: classification_note — Exporter ECCN self-classification note (2026-08-01)",
+      "du-2: end_user_statement — Signed end-use / end-user statement from the Kazakhstan consignee (2026-08-05)",
+      "HS6 reference match: Tier 1 — Priority integrated-circuit categories"
+    ],
+    "source_record_review": {
+      "policy_version": "source-records.v1",
+      "scope": "reference_metadata_only",
+      "source_content_verified": false,
+      "freshness_verified": false,
+      "usable_source_types": [
+        "classification_note",
+        "end_user_statement"
+      ],
+      "issues": [],
+      "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+    }
   }
 }

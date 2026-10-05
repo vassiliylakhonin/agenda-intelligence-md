@@ -26,6 +26,7 @@ from agenda_intelligence.evidence_ledger import EvidenceLedger
 from agenda_intelligence.grounding import GroundingIndex, _polarity_cues, _quote_check
 
 from .critical_minerals import STAGE_TIERS, review_mineral_dossier
+from .source_records import review_source_records
 
 PACKAGE_NAME = "agenda_intelligence"
 
@@ -2048,8 +2049,11 @@ def _dated_source_ledger(request_json: dict) -> EvidenceLedger:
     """Accumulate caller-supplied dated sources before response assembly."""
 
     ledger = EvidenceLedger()
-    for source in request_json.get("dated_sources", []):
-        if not isinstance(source, dict):
+    records = request_json.get("dated_sources", [])
+    review = review_source_records(records)
+    invalid_indices = {issue["source_index"] for issue in review["issues"]}
+    for index, source in enumerate(records):
+        if not isinstance(source, dict) or index in invalid_indices:
             continue
         source_type = source.get("source_type")
         if isinstance(source_type, str):
@@ -2126,7 +2130,7 @@ def _middle_corridor_risk_signal(request_json: dict, missing_sources: list[str])
         return "medium_high"
     if missing_sources:
         return "medium"
-    return "low"
+    return "unknown"
 
 
 def _middle_corridor_readiness(request_json: dict, supplied_sources: list[str]) -> tuple[int, str]:
@@ -2847,6 +2851,7 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
     if link_integrity is not None:
         response["link_integrity"] = link_integrity
 
+    response["source_record_review"] = review_source_records(request_json.get("dated_sources", []), date_required=True)
     response["readiness_contract"] = _profile_readiness_contract(
         "middle_corridor_deal_risk",
         response,
@@ -2907,29 +2912,25 @@ def _agentic_trust_readiness(request_json: dict, supplied_sources: list[str]) ->
 def _agentic_trust_signal(request_json: dict, supplied_sources: list[str], missing_sources: list[str]) -> str:
     if not request_json.get("dated_sources"):
         return "unknown"
-    if "fraud_or_account_takeover_signal" in supplied_sources:
+    if any(s.get("source_type") == "fraud_or_account_takeover_signal" for s in request_json.get("dated_sources", [])):
         return "low"
     if "rate_limit_or_abuse_signal" in supplied_sources and len(missing_sources) >= 4:
         return "unknown"
     if len(missing_sources) >= 5:
         return "unknown"
-    if len(missing_sources) >= 3:
-        return "medium"
-    if missing_sources:
-        return "medium_high"
-    return "high"
+    return "medium"
 
 
 def _agentic_triage_recommendation(request_json: dict, supplied_sources: list[str], missing_sources: list[str]) -> str:
     if not request_json.get("dated_sources"):
         return "insufficient_information"
-    if "fraud_or_account_takeover_signal" in supplied_sources:
+    if any(s.get("source_type") == "fraud_or_account_takeover_signal" for s in request_json.get("dated_sources", [])):
         return "block_until_verified"
 
     target_surface = request_json.get("target_surface")
     decision_stage = request_json.get("decision_stage")
     if not missing_sources:
-        return "allow_low_risk"
+        return "escalate_to_human_review"
     if target_surface in {"checkout", "auth_flow", "account"} and len(missing_sources) <= 4:
         return "require_step_up"
     if target_surface in {"a2a_endpoint", "mcp_tool"} or "rate_limit_or_abuse_signal" in supplied_sources:
@@ -2958,7 +2959,7 @@ def _agentic_top_risk_dimensions(
         dims.append("agent endpoint invocation requires capability-scope review")
     if "rate_limit_or_abuse_signal" in supplied_sources:
         dims.append("abuse or burst pattern requires review before continued access")
-    if "fraud_or_account_takeover_signal" in supplied_sources:
+    if any(s.get("source_type") == "fraud_or_account_takeover_signal" for s in request_json.get("dated_sources", [])):
         dims.append("fraud or account-takeover signal requires verification before action")
     return list(dict.fromkeys(dims))
 
@@ -3011,9 +3012,13 @@ def agentic_interaction_trust(request_json: dict) -> dict:
             "This response does not authorize, approve, deny, or block the requested action.",
         ],
     }
+    if response["triage_recommendation"] == "block_until_verified":
+        response["decision_readiness_score"] = min(readiness_score, 49)
+        response["decision_readiness_label"] = "not_decision_ready"
     if "asset_or_resource" in request_json:
         response["asset_or_resource"] = request_json["asset_or_resource"]
 
+    response["source_record_review"] = review_source_records(request_json.get("dated_sources", []), date_required=True)
     response["readiness_contract"] = _profile_readiness_contract(
         "agentic_interaction_trust",
         response,
@@ -3067,7 +3072,7 @@ def _cis_triage_recommendation(
 ) -> str:
     if not supplied_sources:
         return "insufficient_information"
-    if not missing_sources and exposure_signal in {"low"}:
+    if not missing_sources and exposure_signal in {"low", "unknown"}:
         return "ready_for_human_review"
     decision_stage = request_json.get("decision_stage")
     if decision_stage == "onboarding":
@@ -3089,7 +3094,7 @@ def _cis_exposure_signal(supplied_sources: list[str], missing_sources: list[str]
         return "medium_high"
     if missing_sources:
         return "medium"
-    return "low"
+    return "unknown"
 
 
 def _cis_readiness(supplied_sources: list[str]) -> tuple[int, str]:
@@ -3664,6 +3669,11 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
     readiness_score, readiness_label = _cis_readiness(supplied_sources)
     exposure_signal = _cis_exposure_signal(supplied_sources, missing_sources, len(auto_fetched_sources))
     triage = _cis_triage_recommendation(supplied_sources, request_json, missing_sources, exposure_signal)
+    if auto_fetched_sources or undisclosed_ubo or live_retrieval_status == "degraded":
+        readiness_score = min(readiness_score, 49)
+        readiness_label = "not_decision_ready"
+        if triage == "ready_for_human_review":
+            triage = "not_decision_ready"
 
     limitations: list[str] = []
     # CC-BY / source attribution is only required — and only honest — when upstream
@@ -3743,6 +3753,7 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
         "limitations": limitations,
     }
 
+    response["source_record_review"] = review_source_records(request_json.get("dated_sources", []), date_required=True)
     response["readiness_contract"] = _profile_readiness_contract(
         "cis_secondary_sanctions",
         response,
@@ -3789,7 +3800,7 @@ def _gulf_evidence_gap_for_source(source_type: str) -> str:
 def _gulf_triage_recommendation(request_json: dict, missing_sources: list[str], exposure_signal: str) -> str:
     if not request_json.get("dated_sources"):
         return "insufficient_information"
-    if not missing_sources and exposure_signal == "low":
+    if not missing_sources and exposure_signal in {"low", "unknown"}:
         return "ready_for_human_review"
     decision_stage = request_json.get("decision_stage")
     if decision_stage == "pre_fixture":
@@ -3810,7 +3821,7 @@ def _gulf_exposure_signal(request_json: dict, missing_sources: list[str]) -> str
         return "medium_high"
     if missing_sources:
         return "medium"
-    return "low"
+    return "unknown"
 
 
 def _gulf_readiness(request_json: dict, supplied_sources: list[str]) -> tuple[int, str]:
@@ -3970,6 +3981,7 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
     if "cargo" in request_json:
         response["cargo"] = request_json["cargo"]
 
+    response["source_record_review"] = review_source_records(request_json.get("dated_sources", []), date_required=True)
     response["readiness_contract"] = _profile_readiness_contract(
         "gulf_maritime_exposure",
         response,
@@ -4171,7 +4183,7 @@ def _market_entry_taxonomy() -> dict:
 
 def _market_entry_supplied_types(request_json: dict) -> list[str]:
     sources = request_json.get("supplied_sources", []) or []
-    return [s["source_type"] for s in sources if isinstance(s, dict) and s.get("source_type")]
+    return review_source_records(sources, date_required=False)["usable_source_types"]
 
 
 def _market_entry_satisfied(request_json: dict, supplied: list[str]) -> set[str]:
@@ -4334,6 +4346,11 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
     sector_missing = [s for s in sector_required if s not in satisfied]
     readiness_label = _market_entry_readiness(taxonomy, satisfied, stage_tier, sector_missing)
     gate_decision = _market_entry_gate_decision(readiness_label, stage)
+    blockers = list(request_json.get("known_blockers") or [])
+    if blockers and gate_decision != "stop":
+        gate_decision = "pause_for_evidence"
+        if readiness_label not in {"insufficient_information", "concept_ready"}:
+            readiness_label = "concept_ready"
 
     gap_source_types: list[str] = []
     for tier_key in ("required_before_validation", "required_before_signature", stage_tier):
@@ -4362,8 +4379,12 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
             "The final commercial structure depends on local legal, tax, customs, and operational review.",
         ]
 
-    ready_to_validate = readiness_label in {"validation_ready", "committee_review_ready", "launch_commitment_ready"}
-    ready_to_commit = readiness_label == "launch_commitment_ready"
+    ready_to_validate = not blockers and readiness_label in {
+        "validation_ready",
+        "committee_review_ready",
+        "launch_commitment_ready",
+    }
+    ready_to_commit = not blockers and readiness_label == "launch_commitment_ready"
     claim_audit = [
         {
             "claim": "The project can move into controlled validation.",
@@ -4431,6 +4452,16 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
         },
     ]
 
+    owner_actions[:0] = [
+        {
+            "timeframe": "48_hours",
+            "owner": "Project lead",
+            "action": f"Resolve open blocker: {blocker}",
+            "output": "Documented blocker resolution for human review.",
+        }
+        for blocker in blockers
+    ]
+
     response = {
         "gate_decision": gate_decision,
         "readiness_label": readiness_label,
@@ -4445,12 +4476,17 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
         "boundary_notice": MARKET_ENTRY_BOUNDARY_NOTICE,
         "run_provenance": _run_provenance(request_json, "market-entry-readiness-response.schema.json"),
     }
-    if readiness_label != "insufficient_information":
+    if readiness_label != "insufficient_information" and not blockers:
         response["strongest_reason_to_proceed"] = (
             "The Kazakhstan use case and commercial objective are specific enough to start advisor requests, "
             "quote collection, and partner validation."
         )
-    if evidence_gaps:
+    if blockers:
+        response["strongest_reason_to_pause"] = "Open caller-declared blockers: " + "; ".join(blockers)
+        response["management_note"] = (
+            "Pause advancement and document resolution of each blocker before re-running the gate."
+        )
+    elif evidence_gaps:
         response["strongest_reason_to_pause"] = (
             "The current evidence pack is not sufficient for signature, import, lease, first-batch order, "
             "advertising spend, or partner appointment."
@@ -4461,6 +4497,9 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
             "partner evidence gaps are closed."
         )
 
+    response["source_record_review"] = review_source_records(
+        request_json.get("supplied_sources", []), date_required=False
+    )
     response["readiness_contract"] = _profile_readiness_contract(
         "kazakhstan_market_entry_readiness",
         response,

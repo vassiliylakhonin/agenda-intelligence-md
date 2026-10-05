@@ -84,7 +84,7 @@ def test_sovereign_guarantee_covenants():
     )
 
     floor_check = next(c for c in checks if c["test"] == "minimum_dscr_floor")
-    assert floor_check["result"] == "NOT_APPLICABLE"
+    assert floor_check["result"] == "FAILS"
 
     leverage_check = next(c for c in checks if c["test"] == "maximum_leverage")
     assert leverage_check["result"] == "FAILS"

@@ -285,7 +285,7 @@ test("upstream_vizier_assistant: full A2A handleRequest integration with clean q
   assert.equal(data.id, "test-csa-clean");
   assert.equal(data.result.metadata.product_profile, "corridor_sanctions_assistant");
   assert.equal(data.result.metadata.vizier_status, "success");
-  assert.equal(data.result.metadata.vizier_clearance_receipt, fakeJws);
+  assert.equal(data.result.metadata.vizier_clearance_receipt, null);
   assert.equal(data.result.metadata.assistant_verification.clean, true);
 });
 
@@ -352,7 +352,7 @@ test("upstream_vizier_assistant: full A2A handleRequest integration with sanctio
   const data = await resp.json();
   const res = data.result;
   assert.equal(res.metadata.vizier_status, "success");
-  assert.equal(res.metadata.vizier_clearance_receipt, fakeJws);
+  assert.equal(res.metadata.vizier_clearance_receipt, null);
   assert.equal(res.metadata.assistant_verification.violation, true);
   assert.equal(res.metadata.assistant_verification.sanctions_screening.violation, true);
   assert.equal(res.metadata.assistant_verification.dlp_screening.clean, false);
@@ -369,7 +369,7 @@ test("upstream_vizier_assistant: full A2A handleRequest integration with sanctio
 
   // Check markdown artifact
   const mdText = res.artifacts[0].parts[0].text;
-  assert.ok(mdText.includes("Sanctions Screening Warning (OFAC 50% Rule)"));
+  assert.ok(mdText.includes("Sanctions Name-screen Warning (identity and ownership unverified)"));
   assert.ok(mdText.includes("Vizier DLP Security Notice"));
 });
 
@@ -427,8 +427,8 @@ test("corridor_sanctions_assistant: MCP tools/call screen_dual_use_hs_code class
   assert.equal(sc.hs_code, "8542.31");
   assert.equal(sc.is_high_priority_item, true);
   assert.ok(sc.chpl_tier.includes("Tier 1"));
-  assert.equal(sc.clearance_recommendation, "ESCALATE_TO_COMPLIANCE");
-  assert.ok(sc.required_diligence_documents.includes("End-User Certificate (EUC)"));
+  assert.equal(sc.clearance_recommendation, "ENHANCED_DUE_DILIGENCE");
+  assert.ok(sc.required_diligence_documents.includes("Named end-user and end-use evidence"));
   assert.ok(sc.canonical_dossier_gate.includes("dual-use-technology-export"));
 });
 

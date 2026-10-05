@@ -53,6 +53,19 @@
     "This response does not authorize, approve, deny, or block the requested action."
   ],
   "asset_or_resource": "order-123",
+  "source_record_review": {
+    "policy_version": "source-records.v1",
+    "scope": "reference_metadata_only",
+    "source_content_verified": false,
+    "freshness_verified": false,
+    "usable_source_types": [
+      "agent_identity_claim",
+      "session_authentication_evidence",
+      "transaction_or_target_action_evidence"
+    ],
+    "issues": [],
+    "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+  },
   "readiness_contract": {
     "profile": "agentic_interaction_trust",
     "status": "not_decision_ready",

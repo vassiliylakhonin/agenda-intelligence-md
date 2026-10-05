@@ -1,8 +1,8 @@
 {
-  "gate_decision": "proceed_to_validation",
-  "readiness_label": "validation_ready",
+  "gate_decision": "pause_for_evidence",
+  "readiness_label": "concept_ready",
   "human_review_required": true,
-  "summary": "The concept is coherent enough for controlled validation, but it is not signature-, import-, lease-, or launch-ready until the flagged legal, tax, banking, customs, certification, and operational gaps are closed.",
+  "summary": "The concept is taking shape, but the validation-tier evidence is incomplete, so the file is not yet ready for controlled validation.",
   "confirmed_facts": [
     "A partner or company profile was supplied.",
     "A product or project description was supplied.",
@@ -139,8 +139,8 @@
   "claim_audit": [
     {
       "claim": "The project can move into controlled validation.",
-      "status": "supported",
-      "how_to_use_now": "Use for advisor requests, quotes, and structured partner or customer interviews."
+      "status": "needs_professional_confirmation",
+      "how_to_use_now": "Do not rely on this yet; close the validation-tier evidence first."
     },
     {
       "claim": "The project is ready for launch commitment.",
@@ -159,6 +159,78 @@
     }
   ],
   "owner_actions": [
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Resolve open blocker: No law-firm opinion supplied.",
+      "output": "Documented blocker resolution for human review."
+    },
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Resolve open blocker: No counterparty integrity / anti-corruption due diligence supplied.",
+      "output": "Documented blocker resolution for human review."
+    },
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Resolve open blocker: No bank-account / KYC onboarding pack supplied.",
+      "output": "Documented blocker resolution for human review."
+    },
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Resolve open blocker: No permanent-establishment / tax-residency assessment supplied.",
+      "output": "Documented blocker resolution for human review."
+    },
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Resolve open blocker: No currency-control / repatriation note supplied.",
+      "output": "Documented blocker resolution for human review."
+    },
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Resolve open blocker: No work-permit / local-employment-quota note supplied.",
+      "output": "Documented blocker resolution for human review."
+    },
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Resolve open blocker: No customs-broker memo supplied.",
+      "output": "Documented blocker resolution for human review."
+    },
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Resolve open blocker: No certification pathway supplied.",
+      "output": "Documented blocker resolution for human review."
+    },
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Resolve open blocker: No real showroom lease offer supplied.",
+      "output": "Documented blocker resolution for human review."
+    },
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Resolve open blocker: No service-partner confirmation supplied.",
+      "output": "Documented blocker resolution for human review."
+    },
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Resolve open blocker: No trademark / brand-protection filing supplied.",
+      "output": "Documented blocker resolution for human review."
+    },
+    {
+      "timeframe": "48_hours",
+      "owner": "Project lead",
+      "action": "Resolve open blocker: No data-localization / privacy note supplied.",
+      "output": "Documented blocker resolution for human review."
+    },
     {
       "timeframe": "48_hours",
       "owner": "Project lead",
@@ -194,16 +266,28 @@
     "schema_id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/market-entry-readiness-response.schema.json",
     "input_digest": "sha256:441f105b9e734f34bf816c29d2bac07c29b359383b959b99163877c57d5019d9"
   },
-  "strongest_reason_to_proceed": "The Kazakhstan use case and commercial objective are specific enough to start advisor requests, quote collection, and partner validation.",
-  "strongest_reason_to_pause": "The current evidence pack is not sufficient for signature, import, lease, first-batch order, advertising spend, or partner appointment.",
-  "management_note": "The opportunity can move at the level of its readiness label, but should not move to launch commitment until the flagged legal, customs, certification, landed-cost, service, lease, and partner evidence gaps are closed.",
+  "strongest_reason_to_pause": "Open caller-declared blockers: No law-firm opinion supplied.; No counterparty integrity / anti-corruption due diligence supplied.; No bank-account / KYC onboarding pack supplied.; No permanent-establishment / tax-residency assessment supplied.; No currency-control / repatriation note supplied.; No work-permit / local-employment-quota note supplied.; No customs-broker memo supplied.; No certification pathway supplied.; No real showroom lease offer supplied.; No service-partner confirmation supplied.; No trademark / brand-protection filing supplied.; No data-localization / privacy note supplied.",
+  "management_note": "Pause advancement and document resolution of each blocker before re-running the gate.",
+  "source_record_review": {
+    "policy_version": "source-records.v1",
+    "scope": "reference_metadata_only",
+    "source_content_verified": false,
+    "freshness_verified": false,
+    "usable_source_types": [
+      "partner_company_profile",
+      "product_or_project_description",
+      "market_size_source"
+    ],
+    "issues": [],
+    "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+  },
   "readiness_contract": {
     "profile": "kazakhstan_market_entry_readiness",
-    "status": "validation_ready",
+    "status": "concept_ready",
     "score": null,
     "routing": {
       "field": "gate_decision",
-      "value": "proceed_to_validation"
+      "value": "pause_for_evidence"
     },
     "signal": null,
     "blocking_gaps": [
@@ -332,8 +416,8 @@
     "claim_audit": [
       {
         "claim": "The project can move into controlled validation.",
-        "status": "supported",
-        "how_to_use_now": "Use for advisor requests, quotes, and structured partner or customer interviews."
+        "status": "needs_professional_confirmation",
+        "how_to_use_now": "Do not rely on this yet; close the validation-tier evidence first."
       },
       {
         "claim": "The project is ready for launch commitment.",
@@ -352,6 +436,78 @@
       }
     ],
     "owner_actions": [
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Resolve open blocker: No law-firm opinion supplied.",
+        "output": "Documented blocker resolution for human review."
+      },
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Resolve open blocker: No counterparty integrity / anti-corruption due diligence supplied.",
+        "output": "Documented blocker resolution for human review."
+      },
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Resolve open blocker: No bank-account / KYC onboarding pack supplied.",
+        "output": "Documented blocker resolution for human review."
+      },
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Resolve open blocker: No permanent-establishment / tax-residency assessment supplied.",
+        "output": "Documented blocker resolution for human review."
+      },
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Resolve open blocker: No currency-control / repatriation note supplied.",
+        "output": "Documented blocker resolution for human review."
+      },
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Resolve open blocker: No work-permit / local-employment-quota note supplied.",
+        "output": "Documented blocker resolution for human review."
+      },
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Resolve open blocker: No customs-broker memo supplied.",
+        "output": "Documented blocker resolution for human review."
+      },
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Resolve open blocker: No certification pathway supplied.",
+        "output": "Documented blocker resolution for human review."
+      },
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Resolve open blocker: No real showroom lease offer supplied.",
+        "output": "Documented blocker resolution for human review."
+      },
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Resolve open blocker: No service-partner confirmation supplied.",
+        "output": "Documented blocker resolution for human review."
+      },
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Resolve open blocker: No trademark / brand-protection filing supplied.",
+        "output": "Documented blocker resolution for human review."
+      },
+      {
+        "timeframe": "48_hours",
+        "owner": "Project lead",
+        "action": "Resolve open blocker: No data-localization / privacy note supplied.",
+        "output": "Documented blocker resolution for human review."
+      },
       {
         "timeframe": "48_hours",
         "owner": "Project lead",

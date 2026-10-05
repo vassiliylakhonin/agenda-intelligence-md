@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Unreleased — Fleet evidence and screening boundaries
+
+- Add source-record integrity review: impossible dates, blank IDs/titles and conflicting document IDs cannot increase reference coverage.
+- Separate reference completeness from actual risk and trust; complete labels do not authorize agent actions or establish low exposure.
+- Preserve earlier sanctions flags after later upstream errors, distinguish outages from observed leaks, and align readiness with blockers and incomplete screening.
+- Correct CHPL using the 50 exact HS6 codes in the BIS snapshot, including Tier 4A electronics equipment and Tier 4B CNC; make legal applicability a review question.
+- Keep asserted guarantees from waiving DSCR screening; identify model thresholds and principal-only reserve assumptions.
+- Publish additive contracts, corrected examples and service scope guidance; no new paid data dependencies.
+
 ## Unreleased — Critical Minerals dossier review
 
 - Replace document-label verification with dated, scoped excerpt review, duplicate/expiry checks, stage-specific evidence gaps and owner tasks (`mineral-dossier.v2`).
