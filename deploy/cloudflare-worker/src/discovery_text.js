@@ -182,7 +182,7 @@ export const LLMS_TXT = `# Agenda Intelligence MD
 - [Gulf Maritime Exposure Gate](https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev): Maritime sanctions, vessel tracking, and chokepoint transit risk triage.
 - [Kazakhstan Market Entry Readiness](https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev): Regulatory, compliance, and counterparty readiness for market entry.
 - [Dual-Use Technology Export Gate](https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev): Export control classification, ECCN mapping, and dual-use tech screening.
-- [Critical Minerals Due Diligence Gate](https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev): Supply chain provenance, ESG risks, and strategic mineral compliance.
+- [Critical Minerals Due Diligence Gate](https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev): Mineral dossier readiness, source-quality gaps and human-review owner actions.
 - [Agent Output Verification Gate](https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev): Deterministic evidence verification and claim linter for LLM outputs.
 - [Pre-Action Check Gate](https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev): Stateless policy boundary pre-flight checks before agent execution.
 - [Agent Financial Guard Gate](https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev): Pre-sign transaction firewall, OFAC/AML sanctions screening, drainer defense, and prompt injection prevention.

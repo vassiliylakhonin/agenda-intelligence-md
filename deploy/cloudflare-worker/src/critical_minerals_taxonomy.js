@@ -1,4 +1,5 @@
-{
+// Generated from source-requirements/critical-minerals-due-diligence.json; parity tested.
+export const MINERALS_TAXONOMY = {
   "category": "critical-minerals-due-diligence",
   "required_before_offtake": [
     "mining_concession_or_license_extract",
@@ -48,4 +49,4 @@
     "regulatory_applicability_memo",
     "responsible_sourcing_due_diligence"
   ]
-}
+};

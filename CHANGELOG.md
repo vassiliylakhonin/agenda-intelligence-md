@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Unreleased — Critical Minerals dossier review
+
+- Replace document-label verification with dated, scoped excerpt review, duplicate/expiry checks, stage-specific evidence gaps and owner tasks (`mineral-dossier.v2`).
+- Require human approval for complete dossiers; remove automatic quota, FEOC, uranium-transit and aerospace qualification conclusions.
+- Distinguish unavailable upstream screening from observed DLP leaks and keep screening blocks consistent with readiness status.
+- Preserve legacy request fields and source aliases; publish additive schemas, fictional examples and honest product instructions.
+
 All notable changes to **Agenda‑Intelligence.md** are documented here.
 
 ## Unreleased

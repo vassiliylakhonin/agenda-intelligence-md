@@ -6277,7 +6277,7 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-request.schema.json",
         "title": "CriticalMineralsDueDiligenceRequest",
-        "description": "Product-grade structured request contract for Critical Minerals & Strategic Raw Materials evidence triage (EU Critical Raw Materials Act, EU CSDDD, US Inflation Reduction Act, and export-control compliance). This schema describes caller-supplied mineral commodity, extraction jurisdiction, processing route, counterparty, and decision-stage inputs. It does not enable live retrieval, factual-truth verification, legal advice, compliance advice, sanctions advice, or ESG certification.",
+        "description": "Caller-supplied dossier readiness review. Document metadata, scope and excerpts are not independently authenticated. No legal applicability or transaction authorization is established.",
         "x-schema-version": "1",
         "type": "object",
         "additionalProperties": false,
@@ -6423,6 +6423,30 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 },
                 "summary": {
                   "type": "string"
+                },
+                "document_id": {
+                  "type": "string"
+                },
+                "excerpt": {
+                  "type": "string"
+                },
+                "valid_until": {
+                  "type": "string"
+                },
+                "scope": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "project_name": {
+                      "type": "string"
+                    },
+                    "commodity": {
+                      "type": "string"
+                    },
+                    "origin_jurisdiction": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
@@ -6457,6 +6481,30 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 },
                 "summary": {
                   "type": "string"
+                },
+                "document_id": {
+                  "type": "string"
+                },
+                "excerpt": {
+                  "type": "string"
+                },
+                "valid_until": {
+                  "type": "string"
+                },
+                "scope": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "project_name": {
+                      "type": "string"
+                    },
+                    "commodity": {
+                      "type": "string"
+                    },
+                    "origin_jurisdiction": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
@@ -6474,6 +6522,11 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "type": "string"
             },
             "default": []
+          },
+          "assessment_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Explicit review date (YYYY-MM-DD) for deterministic future-date and expiry checks. No implicit wall clock."
           }
         }
       },
@@ -6481,7 +6534,7 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-response.schema.json",
         "title": "CriticalMineralsDueDiligenceResponse",
-        "description": "Product-grade structured response contract for Critical Minerals & Strategic Raw Materials evidence triage. Provides deterministic evaluation of origin tracing, export-control flags, beneficiation bottleneck risks, and CSDDD compliance gaps. It does not provide legal advice, sanctions advice, compliance advice, financial advice, ESG certification, live retrieval, or factual-truth verification.",
+        "description": "Deterministic mineral dossier documentary coverage, source-quality issues, stage-specific owner actions and human-review routing. Caller-supplied records are not independently authenticated; no legal or business risk clearance is established.",
         "x-schema-version": "1",
         "type": "object",
         "additionalProperties": false,
@@ -6588,7 +6641,8 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "partial",
               "unverified",
               "obfuscated"
-            ]
+            ],
+            "description": "Caller-supplied documentary coverage only. This service never independently verifies origin."
           },
           "export_control_exposure": {
             "type": "object",
@@ -6599,7 +6653,8 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
             "additionalProperties": false,
             "properties": {
               "quota_restricted": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Legacy field: false means no restriction established by this linter, not legal clearance. Consult applicability questions."
               },
               "processing_monopoly_risk": {
                 "type": "boolean"
@@ -6713,6 +6768,110 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               },
               "schema_uri": {
                 "type": "string"
+              }
+            }
+          },
+          "dossier_review": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "policy_version",
+              "assessment_date",
+              "eligible_source_types",
+              "source_reviews",
+              "owner_actions",
+              "applicability_questions",
+              "limitations"
+            ],
+            "properties": {
+              "policy_version": {
+                "type": "string"
+              },
+              "assessment_date": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "eligible_source_types": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "source_reviews": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source_ref",
+                    "source_type",
+                    "status",
+                    "issues"
+                  ],
+                  "properties": {
+                    "source_ref": {
+                      "type": "string"
+                    },
+                    "source_type": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "eligible_for_review",
+                        "needs_evidence"
+                      ]
+                    },
+                    "issues": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "owner_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source_type",
+                    "owner",
+                    "priority",
+                    "action"
+                  ],
+                  "properties": {
+                    "source_type": {
+                      "type": "string"
+                    },
+                    "owner": {
+                      "type": "string"
+                    },
+                    "priority": {
+                      "enum": [
+                        "before_decision"
+                      ]
+                    },
+                    "action": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "applicability_questions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }

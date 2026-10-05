@@ -1,3 +1,4 @@
+import { reviewMineralDossier, mineralReadiness } from "./critical_minerals_dossier.js";
 import { executePaidRequest, paidContext } from "./paid-execution.js";
 import { paymentTraceId, paymentTraceResponse } from "./payment-trace.js";
 import { snapshotHealth } from "./upstream_snapshot.js";
@@ -4111,22 +4112,29 @@ const GATE_REQUEST_GUIDES = Object.freeze({
       "origin_jurisdiction — where the material is mined",
       "decision_question — one sentence naming the decision",
       "decision_stage — pre_exploration, pre_offtake_agreement, pre_processing_contract, pre_export_shipment, pre_investment_decision",
-      "supplied_sources — array of { source_type }, optionally title, url, date, issuing_authority, verified_by_counsel, summary; this gate's sources carry no id"
+      "supplied_sources — source_type labels are accepted but do not count as evidence; supply title, issuing_authority, date, excerpt and scope { project_name, commodity, origin_jurisdiction }; optional document_id, url, valid_until"
     ],
-    // Unlike the dated_sources the corridor gates take, supplied_sources here
-    // is additionalProperties: false with no id property. The example carried
-    // one, so the published request failed the schema it named.
+    optional: ["assessment_date — YYYY-MM-DD; required to check issue/expiry dates relative to your decision date"],
     example: {
       project_name: "Example spodumene offtake",
       commodity: "lithium",
-      origin_jurisdiction: "KZ",
-      processing_jurisdiction: "CN",
+      origin_jurisdiction: "Kazakhstan",
+      processing_jurisdiction: "China",
       target_market: "eu",
-      decision_question: "Is this offtake ready for a pre-signature human review?",
+      assessment_date: "2026-10-05",
+      decision_question: "Which evidence must the supplier provide before offtake review?",
       decision_stage: "pre_offtake_agreement",
+      assumptions: ["Illustrative fictional documents; no verified supplier or legal clearance."],
       supplied_sources: [
-        { source_type: "mining_concession_or_license_extract", title: "Concession extract", date: "2026-08-01" },
-        { source_type: "certified_ore_assay_report", title: "Certified assay", date: "2026-08-02" }
+        { source_type: "mining_concession_or_license_extract", document_id: "EX-L1",
+          title: "Illustrative concession extract", date: "2026-09-01", issuing_authority: "Example authority (fictional)",
+          excerpt: "ILLUSTRATIVE ONLY. Example Mine holds license EX-L1 for lithium extraction in Kazakhstan until 2027-12-31.",
+          valid_until: "2027-12-31",
+          scope: { project_name: "Example spodumene offtake", commodity: "lithium", origin_jurisdiction: "Kazakhstan" } },
+        { source_type: "certified_ore_assay_report", document_id: "EX-A1",
+          title: "Illustrative assay", date: "2026-09-02", issuing_authority: "Example laboratory (fictional)",
+          excerpt: "ILLUSTRATIVE ONLY. Batch EX-B1 reports 5.5% Li2O; sample identity and laboratory authenticity require review.",
+          scope: { project_name: "Example spodumene offtake", commodity: "lithium", origin_jurisdiction: "Kazakhstan" } }
       ]
     }
   },
@@ -6271,7 +6279,7 @@ function fleetDirectoryResponse() {
         profile: "critical_minerals_due_diligence",
         tool_name: "critical_minerals_due_diligence",
         canonical_endpoint: "https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev",
-        description: "Triage origin tracing, export quota restrictions, and CSDDD supply-chain due diligence for critical minerals.",
+        description: "Review mineral dossier evidence quality, stage-specific gaps and owner actions before human approval.",
         required_fields: ["project_name", "commodity", "origin_jurisdiction", "decision_question", "decision_stage", "supplied_sources"],
         schema_url: CRITICAL_MINERALS_REQUEST_SCHEMA_URL
       },
@@ -8234,46 +8242,6 @@ function applyMarketEntryReadinessProfile(card, request) {
   return card;
 }
 
-const CRITICAL_MINERALS_QUOTA_RESTRICTED = new Set([
-  "rare_earth_elements",
-  "gallium_germanium",
-  "graphite",
-  "tungsten",
-  "antimony"
-]);
-
-const CRITICAL_MINERALS_HIGH_RISK_PROCESSING_JURISDICTIONS = new Set([
-  "Russia",
-  "Iran",
-  "North Korea",
-  "Myanmar",
-  "Syria"
-]);
-
-const CRITICAL_MINERALS_TAXONOMY = {
-  required_before_offtake: [
-    "mining_concession_or_license_extract",
-    "certified_ore_assay_report",
-    "beneficial_ownership_due_diligence",
-    "export_quota_and_permit_clearance",
-    "csddd_human_rights_and_esg_audit",
-    "processing_and_refining_tolling_agreement"
-  ],
-  required_before_investment: [
-    "bankable_feasibility_study",
-    "sovereign_royalty_and_tax_stability_memo",
-    "tailings_and_environmental_permits",
-    "local_content_and_employment_quota_filing"
-  ],
-  required_before_shipment: [
-    "certificate_of_origin",
-    "export_customs_declaration",
-    "port_of_loading_assay_verification",
-    "sanctions_and_export_control_license",
-    "marine_and_transit_cargo_insurance"
-  ]
-};
-
 const CRITICAL_MINERALS_NOT_ADVICE_NOTICE =
   "Pre-compliance evidence triage only on caller-supplied documentation. " +
   "Does not perform live retrieval, factual-truth verification, mineral assay testing, " +
@@ -8301,6 +8269,11 @@ function criticalMineralsErrors(request) {
   if (!request.decision_question) errors.push("decision_question is required");
   if (!request.decision_stage) errors.push("decision_stage is required");
   if (!Array.isArray(request.supplied_sources)) errors.push("supplied_sources must be an array");
+  if (!["pre_exploration", "pre_offtake_agreement", "pre_processing_contract", "pre_export_shipment", "pre_investment_decision"].includes(request.decision_stage)) errors.push("Unsupported decision_stage");
+  for (const field of ["supplied_sources", "dated_sources"]) {
+    if (request[field] !== undefined && (!Array.isArray(request[field]) || request[field].some(source => !source || typeof source !== "object" || typeof source.source_type !== "string"))) errors.push(`${field} must contain source objects with source_type`);
+  }
+  if (request.blockers !== undefined && (!Array.isArray(request.blockers) || request.blockers.some(value => typeof value !== "string"))) errors.push("blockers must contain strings");
   return errors;
 }
 
@@ -8308,93 +8281,27 @@ function criticalMineralsResult(request, vizierMinerals = null) {
   const stage = request.decision_stage || "pre_offtake_agreement";
   const commodity = request.commodity || "";
   const origin = request.origin_jurisdiction || "";
-  const processing = request.processing_jurisdiction || "";
 
-  const suppliedSources = [];
-  for (const s of request.supplied_sources || []) {
-    if (s && s.source_type && !suppliedSources.includes(s.source_type)) {
-      suppliedSources.push(s.source_type);
-    }
-  }
-
-  const stageTierMap = {
-    pre_offtake_agreement: "required_before_offtake",
-    pre_investment_decision: "required_before_investment",
-    pre_export_shipment: "required_before_shipment",
-    pre_exploration: "required_before_offtake",
-    pre_processing_contract: "required_before_offtake"
-  };
-  const tierKey = stageTierMap[stage] || "required_before_offtake";
-  const required = CRITICAL_MINERALS_TAXONOMY[tierKey] || [];
-  const missingSources = required.filter((s) => !suppliedSources.includes(s));
-
-  const hasConcession = suppliedSources.includes("mining_concession_or_license_extract");
-  const hasAssay =
-    suppliedSources.includes("certified_ore_assay_report") ||
-    suppliedSources.includes("port_of_loading_assay_verification");
-  const hasCoo = suppliedSources.includes("certificate_of_origin");
-
-  let traceability = "unverified";
-  if (hasConcession && hasAssay && (hasCoo || stage !== "pre_export_shipment")) {
-    traceability = "verified";
-  } else if (hasConcession || hasAssay) {
-    traceability = "partial";
-  }
-
-  const quotaRestricted = CRITICAL_MINERALS_QUOTA_RESTRICTED.has(commodity);
-  const flags = [];
-  if (quotaRestricted && !suppliedSources.includes("export_quota_and_permit_clearance")) {
-    flags.push(`${commodity} is subject to strategic export quota / licensing restrictions.`);
-  }
-  if (CRITICAL_MINERALS_HIGH_RISK_PROCESSING_JURISDICTIONS.has(processing)) {
-    flags.push(`Processing jurisdiction ${processing} carries elevated sanctions / export-control exposure.`);
-  }
-
-  const totalReq = required.length || 1;
-  const satisfiedCount = totalReq - missingSources.length;
-  let baseScore = Math.round((satisfiedCount / totalReq) * 100);
-  if (flags.length) baseScore = Math.max(0, baseScore - 15 * flags.length);
-
-  let score = 0;
-  let readinessLabel = "insufficient_information";
-  let triage = "insufficient_information";
+  const dossier = reviewMineralDossier(request);
+  const review = mineralReadiness(request, dossier);
+  const suppliedSources = [...new Set([...(request.supplied_sources || []), ...(request.dated_sources || [])].map(s => s.source_type))];
+  const missingSources = review.missing;
+  let score = review.score;
+  let readinessLabel = review.label;
+  let triage = review.triage;
   let riskSignal = "unknown";
-  let decision = "request_evidence";
-  let reasonCode = "insufficient_sources";
-
-  if (!suppliedSources.length) {
-    score = 0;
-    readinessLabel = "insufficient_information";
-    triage = "insufficient_information";
-    riskSignal = "unknown";
-    decision = "request_evidence";
-    reasonCode = "insufficient_sources";
-  } else if (missingSources.length || flags.length) {
-    score = Math.min(baseScore, 65);
-    readinessLabel = score < 40 ? "not_decision_ready" : "partial";
-    if (stage === "pre_offtake_agreement") triage = "escalate_before_offtake";
-    else if (stage === "pre_export_shipment") triage = "escalate_before_shipment";
-    else if (stage === "pre_investment_decision") triage = "escalate_before_investment";
-    else triage = "not_decision_ready";
-    riskSignal = flags.length || score < 40 ? "high" : "medium_high";
-    decision = flags.length && score < 40 ? "stop" : "request_evidence";
-    reasonCode = "critical_evidence_gaps";
-  } else {
-    score = Math.max(80, baseScore);
-    readinessLabel = "review_ready";
-    triage = "ready_for_human_review";
-    riskSignal = score >= 90 ? "low" : "medium";
-    decision = "continue";
-    reasonCode = "evidence_complete";
-  }
-
-  const blockingGaps = [...missingSources.map((s) => `Missing required source: ${s.replace(/_/gu, " ")}`), ...flags];
+  let decision = review.decision;
+  let reasonCode = review.reason;
+  const traceability = review.traceability;
+  const quotaRestricted = false;
+  const flags = [];
+  const blockingGaps = review.gaps;
 
   const topRisks = [
     {
-      category: "Supply Chain & Origin Traceability",
-      severity: traceability === "unverified" || traceability === "obfuscated" ? "high" : "low",
-      description: `Traceability status is ${traceability} for ${commodity} originating from ${origin}.`
+      category: "Dossier Traceability Coverage",
+      severity: traceability === "unverified" || traceability === "obfuscated" ? "high" : "medium",
+      description: `Caller-supplied documentary traceability status is ${traceability} for ${commodity} originating from ${origin}.`
     }
   ];
   if (flags.length) {
@@ -8405,7 +8312,7 @@ function criticalMineralsResult(request, vizierMinerals = null) {
     });
   }
 
-  // Live Vizier Action Firewall: sanctions screening (OFAC 50% Rule) & supply chain dossier DLP inspection
+  // Upstream name-screen findings remain review signals; ownership aggregation is not established.
   if (vizierMinerals) {
     if (vizierMinerals.sanctions_screening && vizierMinerals.sanctions_screening.violation) {
       riskSignal = "high";
@@ -8418,19 +8325,19 @@ function criticalMineralsResult(request, vizierMinerals = null) {
 
       const matches = vizierMinerals.sanctions_screening.matches || [];
       const matchNames = matches
-        .map((m) => `${m.name} (${m.role || "counterparty"}, ${m.aggregate_blocked_percentage}% blocked)`)
+        .map((m) => `${m.name} (${m.role || "counterparty"}, ${m.aggregate_blocked_percentage}% blocked as reported upstream)`)
         .join(", ") || "Sanctioned entity";
 
-      blockingGaps.unshift(`Sanctions violation under OFAC 50% Rule: ${matchNames}. Transaction stopped.`);
+      blockingGaps.unshift(`Upstream screening policy block (identity and ownership require human verification): ${matchNames}. Pause onboarding pending human review.`);
       topRisks.unshift({
-        category: "Sanctions & OFAC 50% Rule Violation",
+        category: "Upstream Sanctions Screening Policy Block",
         severity: "high",
-        description: `Entity '${matchNames}' is designated or deemed-blocked under the OFAC 50% Rule.`
+        description: `Entity '${matchNames}' was flagged by the upstream screen; identity and ownership aggregation have not been verified by this dossier reviewer.`
       });
-      flags.push(`Sanctioned counterparty or mining entity detected in supply chain (${matchNames}).`);
+      flags.push(`Upstream name-screen policy finding in supply chain (${matchNames}).`);
     }
 
-    if (vizierMinerals.dlp_screening && !vizierMinerals.dlp_screening.clean) {
+    if (vizierMinerals.status === "success" && vizierMinerals.dlp_screening && !vizierMinerals.dlp_screening.clean) {
       riskSignal = "high";
       decision = "stop";
       const findings = vizierMinerals.dlp_screening.findings || [];
@@ -8447,18 +8354,22 @@ function criticalMineralsResult(request, vizierMinerals = null) {
     }
   }
 
-  let nextAction = "Obtain missing origin, assay, or export-control permits";
-  if (decision === "continue") {
-    nextAction = "Human review and committee sign-off";
-  } else if (decision === "stop") {
-    nextAction = "Halt transaction onboarding immediately: blocking sanctions or DLP leak detected. Escalate to sanctions/compliance counsel.";
-  } else if (triage === "escalate_before_offtake") {
-    nextAction = "ACTION CHECKLIST BEFORE OFFTAKE: (1) Require authenticated assay and mining concession extract; (2) Enforce dual-control committee sign-off (4-eyes quorum); (3) Screen direct and indirect shareholders under OFAC 50% Rule.";
-  } else if (triage === "escalate_before_shipment") {
-    nextAction = "ACTION CHECKLIST BEFORE SHIPMENT: (1) Validate export quota permits and customs clearance; (2) Verify transit corridor vessel/carrier history; (3) Obtain underwriter sanctions warranty.";
-  } else if (triage === "escalate_before_investment") {
-    nextAction = "ACTION CHECKLIST BEFORE INVESTMENT: (1) Complete full CSDDD human rights and environmental audit; (2) Verify refinery/tolling agreement enforceability; (3) Route dossier to Investment Committee.";
+  if (vizierMinerals?.status === "degraded") {
+    blockingGaps.push("Upstream screening incomplete; no screening clearance is established");
+    dossier.owner_actions.push({source_type: "upstream_screening", owner: "compliance / security reviewer", priority: "before_decision", action: "Resolve upstream screening failure; independently review outstanding identity, ownership and DLP checks"});
+    if (decision !== "stop") decision = "request_evidence";
+    reasonCode = decision === "stop" ? reasonCode : "upstream_screening_incomplete";
   }
+  if (decision === "stop" || vizierMinerals?.status === "degraded") {
+    score = Math.min(score, 65);
+    readinessLabel = "not_decision_ready";
+    triage = "not_decision_ready";
+  }
+
+  const nextAction = decision === "require_approval"
+    ? "Human authentication, applicability review and committee sign-off"
+    : decision === "stop" ? "Pause onboarding and escalate upstream screening findings for human review"
+    : "Resolve dossier_review.owner_actions before decision; document labels do not establish readiness";
 
   const opDecision = {
     decision,
@@ -8469,88 +8380,18 @@ function criticalMineralsResult(request, vizierMinerals = null) {
 
   const exportExposure = {
     quota_restricted: quotaRestricted,
-    processing_monopoly_risk: Boolean(processing && (processing === "China" || processing === "Russia")),
+    processing_monopoly_risk: false,
     jurisdiction_risk_flags: flags
   };
 
-  const exposureLayers = [
-    {
-      layer: "Origin Concession & Mining Rights",
-      level: suppliedSources.includes("mining_concession_or_license_extract") ? "verified" : "gap",
-      summary: "Mining concession / license extract status in source ledger."
-    },
-    {
-      layer: "Processing & Beneficiation Route",
-      level: suppliedSources.includes("processing_and_refining_tolling_agreement") ? "verified" : "gap",
-      summary: "Refining, smelter, and tolling contract agreements."
-    },
-    {
-      layer: "ESG & CSDDD Compliance",
-      level: suppliedSources.includes("csddd_human_rights_and_esg_audit") ? "verified" : "gap",
-      summary: "Human rights, environmental, and tailings due diligence audit."
-    }
-  ];
-
-  const watchNext = [
-    "EU Critical Raw Materials Act strategic project announcements",
-    "Export quota and licensing rule revisions in producing states",
-    "OFAC / EU / UK sanctions updates on mining conglomerates",
-    "Refinery tolling fee and capacity bottlenecks",
-    "CSDDD supply-chain due diligence compliance audits"
-  ];
-
-  // Specialized Industry Regulatory Gates: US IRA FEOC, Uranium, Titanium
-  if (request.target_market === "us") {
-    const isFeoc = processing === "China" || processing === "Russia" || origin === "China" || origin === "Russia";
-    topRisks.push({
-      category: "US IRA Section 30D FEOC Disqualification",
-      severity: isFeoc ? "high" : "low",
-      description: isFeoc
-        ? `Processing or extraction in ${processing || origin} triggers Foreign Entity of Concern (FEOC) disqualification under 10 CFR Part 371 & 26 U.S.C. § 30D, barring clean vehicle tax credits ($7,500/vehicle).`
-        : "Target market is US: 25% FEOC ownership/control verification required under IRA Section 30D."
-    });
-    exposureLayers.push({
-      layer: "US IRA FEOC 25% Threshold Audit",
-      level: isFeoc ? "gap" : "verified",
-      summary: isFeoc
-        ? `Covered nation processing (${processing || origin}) disqualifies offtake from US clean energy tax credits.`
-        : "No covered FEOC processing jurisdiction identified; beneficial ownership audit recommended."
-    });
-    watchNext.push("US Treasury / IRS FEOC 25% beneficial ownership rules under IRA Section 30D");
-  }
-
-  if (commodity === "uranium") {
-    topRisks.push({
-      category: "Nuclear Regulatory & Sanctions Transit Corridor",
-      severity: "high",
-      description: "Uranium shipments must comply with US Public Law 118-67 (Russian Uranium Import Ban). Russian port transit (St. Petersburg) is prohibited for US delivery; Trans-Caspian TITR corridor requires Euratom Supply Agency (ESA) Article 52 co-signature and IAEA Safeguards verification."
-    });
-    exposureLayers.push({
-      layer: "IAEA Safeguards & Euratom Compliance",
-      level: suppliedSources.includes("iaea_safeguards_and_euratom_co_signature") ? "verified" : "gap",
-      summary: "Nuclear non-proliferation tracking, Euratom ESA Article 52 approval, and TITR Caspian routing."
-    });
-    watchNext.push("US Public Law 118-67 Russian uranium import ban enforcement and waiver schedules");
-    watchNext.push("Euratom Supply Agency (ESA) bilateral delivery authorizations");
-    watchNext.push("IAEA Additional Protocol safeguards and transit verification");
-  }
-
-  if (commodity === "titanium") {
-    topRisks.push({
-      category: "Aerospace Grade Certification & Provenance",
-      severity: "medium",
-      description: "If aerospace use is relevant, ask the buyer which grade standards and chain-of-custody proof apply; no OEM requirement has been verified from this request."
-    });
-    exposureLayers.push({
-      layer: "Aerospace Qualification & Sponge Origin",
-      level: hasAssay ? "verified" : "gap",
-      summary: "Buyer-specific grade and material-origin proof are unverified until dated records are supplied."
-    });
-    watchNext.push("Check applicable buyer grade standards and dated qualification records.");
-    watchNext.push("Verify current supplier and origin claims against dated primary sources before reliance.");
-  }
+  const exposureLayers = dossier.source_reviews.map(item => ({
+    layer: item.source_type, level: item.status,
+    summary: item.issues.join("; ") || "Caller-supplied scoped excerpt; authenticity and applicability unverified"
+  }));
+  const watchNext = dossier.applicability_questions;
 
   const response = {
+    dossier_review: dossier,
     triage_recommendation: triage,
     risk_signal: riskSignal,
     decision_readiness_score: score,
@@ -8585,6 +8426,8 @@ function criticalMineralsResult(request, vizierMinerals = null) {
     boundaryField: "not_advice_notice"
   });
 
+  response.readiness_contract.owner_actions = dossier.owner_actions;
+
   return {
     response,
     vizier_status: vizierMinerals ? vizierMinerals.status : "disabled",
@@ -8614,6 +8457,12 @@ function criticalMineralsArtifactText(response) {
     "",
     "Top risks:",
     risksText,
+    "",
+    "Document review (caller-supplied, not authenticated):",
+    ...(response.dossier_review?.source_reviews || []).map(item => `- ${item.source_ref} ${item.status}: ${item.issues.join("; ") || "scoped excerpt supplied"}`),
+    "",
+    "Owner actions:",
+    ...(response.dossier_review?.owner_actions || []).map(item => `- ${item.owner}: ${item.action}`),
     "",
     "Minimum sources before go:",
     missingText,
@@ -8886,7 +8735,7 @@ function applyCriticalMineralsProfile(card, request) {
   card.name = "Critical Minerals & Strategic Raw Materials Due Diligence Gate";
   card.documentationUrl = discovery.documentation_url;
   card.description =
-    "A2A-compatible evidence-readiness gate for critical raw materials origin tracing and supply-chain due diligence. Bring commodity, extraction jurisdiction, processing route, counterparties, and dated sources; get deterministic due-diligence triage with origin traceability, export quota flags, CSDDD compliance evidence gaps, and human-review routing." +
+    "Review the readiness of a mineral procurement or investment dossier. Bring dated source excerpts and declared project/commodity/origin scope; get document-quality issues, stage-specific gaps, owner actions and applicability questions. Records and legal compliance are not independently verified." +
     PROVIDER_FRONT_DOOR_POINTER;
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
@@ -8895,7 +8744,7 @@ function applyCriticalMineralsProfile(card, request) {
       name: "Critical minerals due diligence gate",
       description:
         "Bring commodity, origin jurisdiction, processing route, counterparties and dated sources. " +
-        "Get origin-traceability and quota evidence gaps, a readiness result and human-review routing. " +
+        "Get scoped evidence gaps, a documentary coverage score and human-review tasks. " +
         "Uses supplied evidence; does not certify origin, compliance or factual truth.",
       tags: ["critical-minerals", "rare-earths", "lithium", "csddd", "export-control", "due-diligence", "free"],
       examples: [

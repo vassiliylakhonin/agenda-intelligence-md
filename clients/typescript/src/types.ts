@@ -245,7 +245,7 @@ export interface CISSecondarySanctionsExposureResponse {
   live_retrieval_snapshot_max_age_ms?: number | null;
 }
 
-/** Product-grade structured request contract for Critical Minerals & Strategic Raw Materials evidence triage (EU Critical Raw Materials Act, EU CSDDD, US Inflation Reduction Act, and export-control compliance). This schema describes caller-supplied mineral commodity, extraction jurisdiction, processing route, counterparty, and decision-stage inputs. It does not enable live retrieval, factual-truth verification, legal advice, compliance advice, sanctions advice, or ESG certification. */
+/** Caller-supplied dossier readiness review. Document metadata, scope and excerpts are not independently authenticated. No legal applicability or transaction authorization is established. */
 export interface CriticalMineralsDueDiligenceRequest {
   project_name: string;
   commodity: "lithium" | "rare_earth_elements" | "nickel" | "cobalt" | "copper" | "graphite" | "manganese" | "tungsten" | "gallium_germanium" | "uranium" | "titanium" | "antimony" | "other_critical_mineral";
@@ -270,6 +270,14 @@ export interface CriticalMineralsDueDiligenceRequest {
     issuing_authority?: string;
     verified_by_counsel?: boolean;
     summary?: string;
+    document_id?: string;
+    excerpt?: string;
+    valid_until?: string;
+    scope?: {
+      project_name?: string;
+      commodity?: string;
+      origin_jurisdiction?: string;
+    };
   }>;
   dated_sources?: Array<{
     source_type: string;
@@ -279,9 +287,19 @@ export interface CriticalMineralsDueDiligenceRequest {
     issuing_authority?: string;
     verified_by_counsel?: boolean;
     summary?: string;
+    document_id?: string;
+    excerpt?: string;
+    valid_until?: string;
+    scope?: {
+      project_name?: string;
+      commodity?: string;
+      origin_jurisdiction?: string;
+    };
   }>;
   assumptions?: string[];
   blockers?: string[];
+  /** Explicit review date (YYYY-MM-DD) for deterministic future-date and expiry checks. No implicit wall clock. */
+  assessment_date?: string;
 }
 
 export interface CriticalMineralsDueDiligenceResponseReadinessNamedValue {
@@ -305,7 +323,7 @@ export interface CriticalMineralsDueDiligenceResponseReadinessContract {
   boundary_notice: string;
 }
 
-/** Product-grade structured response contract for Critical Minerals & Strategic Raw Materials evidence triage. Provides deterministic evaluation of origin tracing, export-control flags, beneficiation bottleneck risks, and CSDDD compliance gaps. It does not provide legal advice, sanctions advice, compliance advice, financial advice, ESG certification, live retrieval, or factual-truth verification. */
+/** Deterministic mineral dossier documentary coverage, source-quality issues, stage-specific owner actions and human-review routing. Caller-supplied records are not independently authenticated; no legal or business risk clearance is established. */
 export interface CriticalMineralsDueDiligenceResponse {
   triage_recommendation: "not_decision_ready" | "escalate_before_offtake" | "escalate_before_shipment" | "escalate_before_investment" | "ready_for_human_review" | "insufficient_information";
   risk_signal: "low" | "medium" | "medium_high" | "high" | "unknown";
@@ -321,8 +339,10 @@ export interface CriticalMineralsDueDiligenceResponse {
   origin_jurisdiction: string;
   processing_jurisdiction?: string;
   target_market?: string;
+  /** Caller-supplied documentary coverage only. This service never independently verifies origin. */
   traceability_status: "verified" | "partial" | "unverified" | "obfuscated";
   export_control_exposure?: {
+    /** Legacy field: false means no restriction established by this linter, not legal clearance. Consult applicability questions. */
     quota_restricted: boolean;
     processing_monopoly_risk?: boolean;
     jurisdiction_risk_flags: string[];
@@ -348,6 +368,25 @@ export interface CriticalMineralsDueDiligenceResponse {
     contract_version: string;
     input_digest: string;
     schema_uri: string;
+  };
+  dossier_review?: {
+    policy_version: string;
+    assessment_date: string | null;
+    eligible_source_types: string[];
+    source_reviews: Array<{
+      source_ref: string;
+      source_type: string;
+      status: "eligible_for_review" | "needs_evidence";
+      issues: string[];
+    }>;
+    owner_actions: Array<{
+      source_type: string;
+      owner: string;
+      priority: "before_decision";
+      action: string;
+    }>;
+    applicability_questions: string[];
+    limitations: string[];
   };
 }
 

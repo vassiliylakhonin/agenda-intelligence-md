@@ -7133,7 +7133,7 @@ test("direct REST POST /v1/critical-minerals/due-diligence evaluates mineral off
   const json = await response.json();
   assert.equal(json.commodity, "copper");
   assert.equal(json.origin_jurisdiction, "Kazakhstan");
-  assert.equal(json.traceability_status, "verified");
+  assert.equal(json.traceability_status, "unverified");
   assert.equal(json.human_review_required, true);
   assert.equal(json.operational_decision.decision, "request_evidence");
 });
@@ -9540,7 +9540,7 @@ test("dual_use_technology_export: classifies CHPL Tier 4.A CNC machine tools and
   assert.ok(t1Vectors.some(v => v.includes("OFAC E.O. 14114 Warning")));
 });
 
-test("critical_minerals: evaluates US IRA FEOC 25%, Uranium P.L. 118-67, and Titanium aerospace gates", async () => {
+test("critical_minerals: asks scoped US incentive, uranium and titanium applicability questions", async () => {
   const env = { AGENT_PROFILE: "critical_minerals_due_diligence" };
   const url = "https://critical-minerals-due-diligence-a2a.example.workers.dev/v1/critical-minerals/due-diligence";
 
@@ -9559,8 +9559,8 @@ test("critical_minerals: evaluates US IRA FEOC 25%, Uranium P.L. 118-67, and Tit
   const feocJson = await feocResp.json();
   assert.equal(feocJson.commodity, "lithium");
   assert.equal(feocJson.target_market, "us");
-  assert.ok(feocJson.top_risks.some(r => r.category.includes("FEOC Disqualification")));
-  assert.ok(feocJson.exposure_layers.some(l => l.layer.includes("FEOC 25% Threshold")));
+  assert.ok(feocJson.dossier_review.applicability_questions.some(q => q.includes("2025-09-30")));
+  assert.ok(!JSON.stringify(feocJson).includes("FEOC Disqualification"));
 
   // 2. Uranium Nuclear Regulatory & Sanctions Transit Corridor (P.L. 118-67, IAEA, Euratom)
   const uraniumResp = await handleRequest(
@@ -9576,8 +9576,8 @@ test("critical_minerals: evaluates US IRA FEOC 25%, Uranium P.L. 118-67, and Tit
   assert.equal(uraniumResp.status, 200);
   const uJson = await uraniumResp.json();
   assert.equal(uJson.commodity, "uranium");
-  assert.ok(uJson.top_risks.some(r => r.category.includes("Nuclear Regulatory")));
-  assert.ok(uJson.exposure_layers.some(l => l.layer.includes("IAEA Safeguards")));
+  assert.ok(uJson.dossier_review.applicability_questions.some(q => q.includes("natural/enriched")));
+  assert.ok(!JSON.stringify(uJson).includes("St. Petersburg"));
 
   // 3. Titanium Aerospace Specification & Sponge Origin (AMS 4911 / ASTM B265)
   const tiResp = await handleRequest(
@@ -9593,7 +9593,7 @@ test("critical_minerals: evaluates US IRA FEOC 25%, Uranium P.L. 118-67, and Tit
   assert.equal(tiResp.status, 200);
   const tiJson = await tiResp.json();
   assert.equal(tiJson.commodity, "titanium");
-  assert.ok(tiJson.top_risks.some(r => r.category.includes("Aerospace Grade Certification")));
+  assert.ok(tiJson.dossier_review.applicability_questions.some(q => q.includes("ore assay is not finished-product qualification")));
 });
 
 
