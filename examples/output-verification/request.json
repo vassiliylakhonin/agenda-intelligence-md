@@ -1,0 +1,26 @@
+{
+  "topic": "Synthetic product launch hand-off; no real customer or product",
+  "claims": [
+    {
+      "claim_id": "release-date",
+      "claim": "The fictional launch is planned for 15 October 2026.",
+      "support_level": "direct",
+      "evidence_ids": ["release-note"],
+      "supporting_quotes": [{"evidence_id": "release-note", "quote": "planned for 15 October 2026"}]
+    },
+    {
+      "claim_id": "customer-count",
+      "claim": "The fictional product has 100 paying customers.",
+      "support_level": "direct",
+      "evidence_ids": ["missing-sales-ledger"]
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "release-note",
+      "source_type": "company_material",
+      "name": "Fictional release note",
+      "content": "Synthetic fixture: the fictional launch is planned for 15 October 2026. No customer figures have been provided."
+    }
+  ]
+}

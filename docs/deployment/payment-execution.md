@@ -130,3 +130,21 @@ Payment telemetry event v2 records a bounded validation category and error count
 for `invalid_paid_request`, with the deployment profile preserved even on early
 protocol errors. No validator messages or request bodies are logged. Old events
 without categories remain unmeasured. A rejected input is not a failed transfer.
+
+## Adoption telemetry (payment event v3)
+
+Payment binding stores an optional random `telemetry_execution_id`. The server
+emits it as `execution_id` on verified/started/completed/replayed stage events,
+alongside a bounded `caller_hash` produced by the existing fingerprint function.
+The ID is not an access capability and does not replace signature, ledger or
+lease checks. It is never taken from request headers or arguments. Existing
+claims without it remain unlinked; no past purchase identities are fabricated.
+
+Only `execution_completed` after the conditional ledger commit witnesses new
+completed paid execution. `payment_verified` alone may precede an execution
+failure; `execution_replayed` returns the existing result and is not a new sale.
+Logs omit transaction hashes, payer addresses, proofs and request contents.
+Fingerprint changes can split repeat callers; a fingerprint is not an identified
+customer. Missing logs remain a measurement gap. KV `paid_calls` remains a
+compatibility alias for `payment_header_calls`; confirmed counts must come from
+these separately archived payment stages.

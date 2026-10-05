@@ -58,3 +58,19 @@ skills to increase a score. Legal registry IDs and stronger authentication schem
 should only be declared when real and implemented. Submit revenue evidence only
 for real independent settlements. Catalog scores may lag a deployment; inspect
 both the public listing and current readiness result.
+
+## Catalog corrections and adoption checks
+
+If an inferred taxonomy capability does not match the signed card and tool
+contract, record the public listing, claimed category, actual tool inputs/outputs
+and audit timestamp. Correct a supported owner mapping if the account offers it;
+otherwise submit a factual catalog correction to Agenstry. Revenue-evidence
+forms are not proof of technical capability. Do not add unsupported skills to
+make an inferred category or conformance score look correct.
+
+The focused [Output Verification integration](../../examples/output-verification/README.md)
+includes a runnable MCP request and tests for an unsupported claim, human-review
+routing and paid admission. Measure external-candidate usable results, repeat
+fingerprints and server-witnessed completed paid executions separately. Catalog
+impressions, conformance probes, payment headers and response replays do not
+establish new customers or purchases.

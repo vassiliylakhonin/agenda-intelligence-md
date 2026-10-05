@@ -83,3 +83,10 @@ For a free demonstration, open the Worker site and click **Run a worked
 example**. It displays a saved synthetic fixture; submitting an edited live
 request remains paid. Responses concern evidence readiness and require human
 review, without certifying factual truth or authorizing an external action.
+
+## Runnable Output Verification client
+
+See [the focused integration](../../examples/output-verification/README.md) for a
+Node client, a fictional launch hand-off and the expected missing-evidence route.
+The hosted demonstration stops at payment admission; offline tests exercise the
+actual handler without transferring funds.
