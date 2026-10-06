@@ -402,6 +402,9 @@ function landingHtml(request, env) {
     <li><span class="label">Health (JSON):</span> <a href="${origin}/health">/health</a></li>
   </ul></details>
 
+  ${profile === "agent_output_verification" ? `<h2>Connect your agent</h2>
+  <p>Use the <a href="${REPOSITORY_URL}/tree/main/examples/output-verification">runnable Node integration</a> to submit claims and evidence, inspect payment requirements and retain the exact request for recovery. The example never sends funds or signs automatically. Review the returned evidence gaps before any publication or action.</p>` : ""}
+
   <h2>Where the code lives</h2>
   <ul>
     <li>Source: <a href="${REPOSITORY_URL}">${REPOSITORY_URL.replace("https://", "")}</a></li>

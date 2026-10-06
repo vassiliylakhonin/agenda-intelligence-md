@@ -49,7 +49,7 @@ async function agendaPaidFetch(url, options, expectedAmount) {
       var payment = await response.clone().json();
       var amount = Number(payment.x402 && payment.x402.amount_usdc || payment.required_usdc);
       if (amount !== expectedAmount) throw new Error('Unexpected price; inspect the payment response before proceeding.');
-      if (!window.ethereum) throw new Error('An EVM wallet is required for paid evaluation.');
+      if (!window.ethereum) throw new Error('An EVM wallet is required for paid evaluation. Use the free worked example above to inspect a saved result without paying.');
       if (!window.confirm('Pay ' + amount + ' USDC on Base for this one evaluation? Save the transaction hash and original signature for recovery.')) return response;
       var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       if (!accounts || !accounts[0]) throw new Error('No account selected.');
