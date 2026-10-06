@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
 import test from 'node:test';
 import { signCard, buildJwks } from '../src/jws.js';
-import { assertSignedCard, initializeCardSigning, signingBootstrapEnvironments } from '../scripts/card-signing-bootstrap.js';
+import { assertSignedCard, initializeCardSigning, runSigningWrangler, signingBootstrapEnvironments } from '../scripts/card-signing-bootstrap.js';
 
 const env = 'agent-financial-guard';
 const origin = 'https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev';
@@ -84,4 +86,38 @@ test('bad secret-list response or failed public fetch stops before secret put', 
     fetchImpl: async () => new Response('', { status: 503 }),
     runWrangler: () => assert.fail('must not mutate')
   }), /HTTP 503/i);
+});
+
+// Wrangler's secret list prints its JSON using logger.log. WRANGLER_LOG=error
+// suppresses that successful output, so exit 0 by itself is insufficient.
+test('Wrangler inventory remains visible to the capturing parent and malformed output fails closed', async () => {
+  const output = await runSigningWrangler(['secret', 'list', '--env', env], undefined, {
+    environment: { WRANGLER_LOG: 'error', WRANGLER_LOG_SANITIZE: 'false' },
+    spawnImpl: (command, args, options) => {
+      assert.equal(command, 'npx');
+      assert.deepEqual(args.slice(2), ['secret', 'list', '--env', env]);
+      assert.deepEqual(options.stdio, ['pipe', 'pipe', 'pipe']);
+      assert.equal(options.env.WRANGLER_LOG_SANITIZE, 'true');
+      const child = new EventEmitter();
+      child.stdin = new PassThrough();
+      child.stdout = new PassThrough();
+      child.stderr = new PassThrough();
+      child.stdin.on('finish', () => {
+        // Match Wrangler logger.log behavior: error-only logging emits no JSON.
+        if (options.env.WRANGLER_LOG === 'log') child.stdout.write('[]');
+        child.emit('close', 0);
+      });
+      return child;
+    }
+  });
+  assert.deepEqual(JSON.parse(output), []);
+  for (const output of ['', 'not-json']) {
+    await assert.rejects(initializeCardSigning(env, {
+      fetchImpl: async (url, init) => {
+        assert.equal(init.headers['X-Client-Id'], 'agenda-owner-card-signing');
+        return Response.json(url.includes('agent-card') ? unsigned : { keys: [] });
+      },
+      runWrangler: async args => { assert.equal(args[1], 'list'); return output; }
+    }), /secret inventory/i);
+  }
 });

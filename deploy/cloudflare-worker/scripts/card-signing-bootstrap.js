@@ -15,7 +15,8 @@ export function assertBootstrapTarget(env) {
 }
 
 async function fetchJson(url, fetchImpl) {
-  const response = await fetchImpl(url, { signal: AbortSignal.timeout(10_000), redirect: 'error', cache: 'no-store' });
+  const response = await fetchImpl(url, { signal: AbortSignal.timeout(10_000), redirect: 'error', cache: 'no-store',
+    headers: { 'X-Client-Id': 'agenda-owner-card-signing' } });
   if (!response.ok) throw new Error(`Public signing check returned HTTP ${response.status}.`);
   return response.json();
 }
@@ -53,11 +54,11 @@ export async function verifyLiveCardSigning(env, { fetchImpl = fetch } = {}) {
 
 // Output is captured rather than inherited, including on failure: Wrangler must
 // never echo the secret into Actions logs. Report only the operation and exit code.
-export function runSigningWrangler(args, input) {
+export function runSigningWrangler(args, input, { spawnImpl = spawn, environment = process.env } = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn('npx', ['--yes', `wrangler@${WRANGLER_VERSION}`, ...args], {
+    const child = spawnImpl('npx', ['--yes', `wrangler@${WRANGLER_VERSION}`, ...args], {
       stdio: ['pipe', 'pipe', 'pipe'], shell: false,
-      env: { ...process.env, WRANGLER_LOG: 'error', WRANGLER_LOG_SANITIZE: 'true', WRANGLER_SEND_METRICS: 'false' }
+      env: { ...environment, WRANGLER_LOG: 'log', WRANGLER_LOG_SANITIZE: 'true', WRANGLER_SEND_METRICS: 'false' }
     });
     let output = '';
     child.stdout.setEncoding('utf8');
@@ -84,7 +85,12 @@ export async function initializeCardSigning(env, { fetchImpl = fetch, runWrangle
     await assertSignedCard(card, jwks, origin);
     return { target: env, status: 'already_signed' };
   }
-  const secrets = JSON.parse(await runWrangler(['secret', 'list', '--env', env]));
+  let secrets;
+  try {
+    secrets = JSON.parse(await runWrangler(['secret', 'list', '--env', env]));
+  } catch {
+    throw new Error('Worker secret inventory could not be read; stop before initialization.');
+  }
   if (!Array.isArray(secrets) || secrets.some(item => typeof item?.name !== 'string')) {
     throw new Error('Invalid Worker secret inventory.');
   }
