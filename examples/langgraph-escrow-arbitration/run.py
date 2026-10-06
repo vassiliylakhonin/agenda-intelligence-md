@@ -1,7 +1,7 @@
 """LangGraph Dispute Arbitration Node with M2MEscrowArbiter.
 
 Demonstrates how to build an autonomous multi-agent escrow settlement graph
-that deterministically resolves delivery disputes between Buyer and Seller agents.
+that routes missing delivery evidence to a human. This example never settles funds.
 """
 
 from typing import Any, Dict
@@ -18,6 +18,7 @@ def arbitrate_deal_node(state: Dict[str, Any]) -> Dict[str, Any]:
         specification=state["specification"],
         delivery_submission=state["delivery_submission"],
         dispute_claim=state.get("dispute_claim"),
+        prefer_remote=False,
     )
 
     # Return updated graph state
@@ -38,14 +39,9 @@ def arbitrate_deal_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
 def route_settlement(state: Dict[str, Any]) -> str:
     """LangGraph conditional edge router."""
-    ruling = state.get("ruling")
-    if ruling == "RELEASE_TO_SELLER":
-        return "payout_seller_action"
-    elif ruling == "PARTIAL_SETTLEMENT":
-        return "pro_rata_settlement_action"
-    elif ruling == "REFUND_TO_BUYER":
-        return "refund_buyer_action"
+    # A reported allocation is not authority to execute a financial operation.
     return "human_escalation_action"
+
 
 
 if __name__ == "__main__":
@@ -82,7 +78,7 @@ if __name__ == "__main__":
     print(f"Payout Breakdown: {final_state['payout_breakdown']}")
     print(f"Next Graph Edge: {next_edge}")
 
-    assert final_state["ruling"] == "RELEASE_TO_SELLER"
-    assert next_edge == "payout_seller_action"
-    assert final_state["payout_breakdown"]["seller_payout_usd"] == 198.0
-    print("\nLangGraph node executed successfully!")
+    assert final_state["ruling"] == "ESCALATE_HUMAN"
+    assert next_edge == "human_escalation_action"
+    assert final_state["payout_breakdown"]["seller_payout_usd"] == 0
+    print("\nOffline node example completed; no settlement executed.")

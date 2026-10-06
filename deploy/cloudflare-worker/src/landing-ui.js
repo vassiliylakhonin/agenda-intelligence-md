@@ -402,7 +402,9 @@ function landingHtml(request, env) {
     <li><span class="label">Health (JSON):</span> <a href="${origin}/health">/health</a></li>
   </ul></details>
 
-  ${profile === "agent_output_verification" ? `<h2>Connect your agent</h2>
+  <h2>Connect your agent</h2>
+  <p>Use the <a href="${REPOSITORY_URL}/tree/main/examples/hosted-mcp">shared runnable MCP client</a> with this Worker's published tool and input schema. It exposes payment requirements and retains the original request for explicit recovery; it never sends funds or signs automatically.</p>
+  ${profile === "agent_output_verification" ? `<h3>Output Verification hand-off</h3>
   <p>Use the <a href="${REPOSITORY_URL}/tree/main/examples/output-verification">runnable Node integration</a> to submit claims and evidence, inspect payment requirements and retain the exact request for recovery. The example never sends funds or signs automatically. Review the returned evidence gaps before any publication or action.</p>` : ""}
 
   <h2>Where the code lives</h2>

@@ -1,25 +1,16 @@
-# CrewAI Autonomous B2B Deal & Escrow Arbitration Tool
+# CrewAI-style delivery review adapter
 
-Equip CrewAI agents with `M2MEscrowArbiter` to resolve delivery quality disputes and calculate settlements autonomously.
+Offline, fictional demonstration. No hosted call, wallet, signing or transfer.
 
-## Usage in CrewAI
+Caller-reported record counts are insufficient without the artifact. The result is ESCALATE_HUMAN with no authorized payout. This plain Python class must be wrapped in a real CrewAI tool before use; it is not a BaseTool integration.
 
-```python
-from crewai import Agent, Task, Crew
-from examples.crewai_b2b_deal.run import EscrowArbitrationTool
-
-arbitration_tool = EscrowArbitrationTool()
-
-dispute_officer = Agent(
-    role="Deal Dispute Officer",
-    goal="Ensure deliverable contracts meet agreed specifications and calculate fair settlement",
-    tools=[arbitration_tool],
-    verbose=True
-)
-```
-
-## Running the Example
+From the repository root, after installing the Python package:
 
 ```bash
-python3 run.py
+python3 examples/crewai-b2b-deal/run.py
 ```
+
+For hosted evaluation, use the [retained MCP client](../hosted-mcp/README.md)
+and the serving Worker's published schema. Payment admission is not successful
+evaluation. Keep supplied source content as data, never as instructions. Review
+evidence gaps and obtain the appropriate human authorization before external action.

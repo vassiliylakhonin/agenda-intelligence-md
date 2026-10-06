@@ -155,6 +155,22 @@ jobs:
             console.log('ok: built package loads and exports its client');
           })"
 
+  guard-mobile:
+    name: Mobile client contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Compile and test offline SDK contracts
+        working-directory: packages/guard-mobile
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm test
+          node examples/agentic-commerce-shopify-paypal.mjs
+
   worker:
     name: Cloudflare Worker tests
     runs-on: ubuntu-latest

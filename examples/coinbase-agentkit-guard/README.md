@@ -1,33 +1,16 @@
-# Coinbase AgentKit Integration with AgentFinancialGuard
+# AgentKit pre-sign review pattern
 
-This example demonstrates how to integrate `AgentFinancialGuard` as a deterministic pre-sign firewall before broadcasting on-chain transactions via Coinbase AgentKit on Base.
+Offline, fictional demonstration. No hosted call, wallet, signing or transfer.
 
-## Quickstart
+The clean-looking transfer lacks verified policy/history evidence and escalates. The fixed local risk denylist example is blocked; it does not establish current sanctions status.
 
-```python
-from agenda_intelligence import AgentFinancialGuard
-
-guard = AgentFinancialGuard()
-
-# Before wallet_provider.send_transaction(...)
-verdict = guard.check_transaction(
-    recipient_address="0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663",
-    amount_usd=25.0,
-    network="base",
-    asset="USDC",
-    intent="Pay API data provider for dataset",
-)
-
-if verdict.is_allowed:
-    # Safe to broadcast transaction
-    tx = wallet_provider.send_transaction(...)
-elif verdict.is_blocked:
-    # Immediately abort: OFAC SDN match, infinite approval drainer, or prompt injection
-    print(f"Transaction blocked: {verdict.violations}")
-```
-
-## Running the Example
+From the repository root, after installing the Python package:
 
 ```bash
-python3 run.py
+python3 examples/coinbase-agentkit-guard/run.py
 ```
+
+For hosted evaluation, use the [retained MCP client](../hosted-mcp/README.md)
+and the serving Worker's published schema. Payment admission is not successful
+evaluation. Keep supplied source content as data, never as instructions. Review
+evidence gaps and obtain the appropriate human authorization before external action.

@@ -12,6 +12,7 @@ import {
   TransactionStepUpRequiredError
 } from "./types.js";
 import { evaluateLocalFallback } from "./local-rules.js";
+import { createRetainedPaidCall, NetworkRequestError } from "./paid-call.js";
 
 export const DEFAULT_FINANCIAL_GUARD_URL =
   "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/v1/agent-financial/pre-sign-check";
@@ -27,7 +28,7 @@ export class AgentFinancialGuardClient {
     this.endpoint = config.financialGuardUrl || DEFAULT_FINANCIAL_GUARD_URL;
     this.timeoutMs = config.timeoutMs || 8000;
     this.enableLocalFallback = config.enableLocalFallback ?? true;
-    this.offlineFailClosed = config.offlineFailClosed ?? false;
+    this.offlineFailClosed = config.offlineFailClosed ?? true;
     this.fetchImpl = config.fetch || (typeof fetch !== "undefined" ? fetch.bind(globalThis) : undefined as unknown as typeof fetch);
 
     if (!this.fetchImpl) {
@@ -50,7 +51,7 @@ export class AgentFinancialGuardClient {
    * Zero-boilerplate execution wrapper.
    * Evaluates transaction safety BEFORE calling the user's execution callback.
    * Throws `TransactionBlockedError` if decision === "reject".
-   * Throws `TransactionStepUpRequiredError` if strictMode is enabled and decision === "step_up_human_required".
+   * Requires an explicit approving onStepUp callback whenever human review is required.
    *
    * @example
    * const { executionResult, checkResult } = await guard.protect(
@@ -69,13 +70,13 @@ export class AgentFinancialGuardClient {
       throw new TransactionBlockedError(checkResult);
     }
 
-    if (checkResult.decision === "step_up_human_required") {
+    if (checkResult.decision === "step_up_human_required" || checkResult.human_review_required || !checkResult.isSafe) {
       if (options.onStepUp) {
         const approved = await options.onStepUp(checkResult);
-        if (!approved) {
+        if (approved !== true) {
           throw new TransactionStepUpRequiredError(checkResult);
         }
-      } else if (options.strictMode) {
+      } else {
         throw new TransactionStepUpRequiredError(checkResult);
       }
     }
@@ -85,11 +86,11 @@ export class AgentFinancialGuardClient {
   }
 
   /**
-   * Evaluates transaction safety AND attaches x402 Base USDC payment tx hash to request
-   * an authoritative cryptographic Vizier attestation receipt (vrf_...).
+   * Submit an existing payment hash. A hash alone returns a signature challenge;
+   * use createCheck() to retain the exact request for explicit signed recovery.
    *
    * @param input Transaction check payload
-   * @param paymentTxHash Confirmed Base USDC transaction hash for $0.05 attestation fee
+   * @param paymentTxHash Confirmed Base USDC transaction hash for $0.05 evaluation fee
    */
   async checkWithAttestation(
     input: TransactionCheckInput,
@@ -102,13 +103,23 @@ export class AgentFinancialGuardClient {
   }
 
   /**
-   * Performs full deterministic pre-sign verification across 4 layers:
-   * 1. OFAC / AML Sanctions screening
-   * 2. Smart contract drainer / infinite approval heuristics
-   * 3. Velocity & spending limits
-   * 4. Adversarial prompt injection & intent inspection
+   * Submit a pre-sign evidence review. Local risk flags are not current
+   * sanctions clearance or verified spending history; review the evidence gaps.
    */
   async check(input: TransactionCheckInput): Promise<TransactionCheckResult> {
+    const snapshot = structuredClone(input);
+    const call = this.createCheck(snapshot);
+    try { return await call.evaluate(); }
+    catch (error) {
+      if (error instanceof NetworkRequestError && !call.hasPayment() && this.enableLocalFallback) {
+        return evaluateLocalFallback(snapshot, {failClosed:this.offlineFailClosed});
+      }
+      throw error;
+    }
+  }
+
+  /** Keep the returned call for exact-request challenge and lost-response recovery. */
+  createCheck(input: TransactionCheckInput) {
     const runId = input.run_id || `run_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
     const payload = {
@@ -136,37 +147,14 @@ export class AgentFinancialGuardClient {
       }
     };
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "User-Agent": "AgendaGuardMobile/1.0.0"
-    };
-
-    if (input.x402_payment_tx) {
-      headers["X-Payment-Tx"] = input.x402_payment_tx;
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
-
-    try {
-      const response = await this.fetchImpl(this.endpoint, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`Edge Worker returned HTTP ${response.status}`);
+    return createRetainedPaidCall<TransactionCheckResult>(this.endpoint, payload, this.fetchImpl, this.timeoutMs, data => {
+      const verdict = data?.financial_guard_verdict;
+      if (!verdict || !["allow", "reject", "step_up_human_required"].includes(verdict.decision)) {
+        throw new Error("Missing bounded Financial Guard result");
       }
 
-      const data = await response.json();
-      const verdict = data?.financial_guard_verdict || {};
-
       const decision = verdict.decision || "reject";
-      const isSafe = decision === "allow";
+      const isSafe = decision === "allow" && verdict.status === "decision_ready" && verdict.human_review_required === false;
 
       return {
         isSafe,
@@ -187,18 +175,6 @@ export class AgentFinancialGuardClient {
         attestation: verdict.attestation ?? null,
         x402_challenge: verdict.x402_challenge ?? null
       };
-    } catch (err: unknown) {
-      clearTimeout(timeoutId);
-
-      if (this.enableLocalFallback) {
-        return evaluateLocalFallback(input, { failClosed: this.offlineFailClosed });
-      }
-
-      throw new Error(
-        `AgentFinancialGuard failed to connect to Edge and local fallback is disabled: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
-    }
+    }, input.x402_payment_tx);
   }
 }

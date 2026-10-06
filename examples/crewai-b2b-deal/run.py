@@ -1,7 +1,7 @@
 """CrewAI Autonomous B2B Deal & Escrow Arbitration Tool.
 
 Demonstrates how to equip CrewAI agents with M2MEscrowArbiter
-to resolve delivery quality disputes and calculate settlements autonomously.
+to identify missing delivery evidence for human review; no settlement execution.
 """
 
 from typing import Any, Dict
@@ -22,7 +22,7 @@ class EscrowArbitrationTool:
 
     def run(self, dispute_payload: Dict[str, Any]) -> Dict[str, Any]:
         """Execute arbitration on a disputed deal."""
-        ruling = self.arbiter.evaluate_dispute(dispute_payload)
+        ruling = self.arbiter.evaluate_dispute(dispute_payload, prefer_remote=False)
         return {
             "ruling": ruling.ruling,
             "score": ruling.score,
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     print("--- Testing CrewAI Escrow Arbitration Tool ---")
     tool = EscrowArbitrationTool()
 
-    # Scenario: Seller delivered data with 75% valid items
+    # Scenario: Seller reports 75% valid items without supplying the artifact
     dispute = {
         "escrow_id": "crewai_deal_9901",
         "deal_terms": {
@@ -65,8 +65,8 @@ if __name__ == "__main__":
     result = tool.run(dispute)
     print(f"Tool Result: {result}")
 
-    assert result["ruling"] == "PARTIAL_SETTLEMENT"
-    assert result["seller_payout_usd"] == 742.5
-    assert result["buyer_refund_usd"] == 247.5
-    assert result["arbiter_fee_usd"] == 10.0
-    print("\nCrewAI tool executed successfully!")
+    assert result["ruling"] == "ESCALATE_HUMAN"
+    assert result["seller_payout_usd"] == 0
+    assert result["buyer_refund_usd"] == 0
+    assert result["arbiter_fee_usd"] == 0
+    print("\nOffline adapter example completed; evidence missing, no payout authorized.")

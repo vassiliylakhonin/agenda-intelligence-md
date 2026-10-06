@@ -1,20 +1,16 @@
-# LangGraph Dispute Arbitration Node with M2MEscrowArbiter
+# LangGraph-style delivery review node
 
-This example demonstrates how to integrate `M2MEscrowArbiter` as a deterministic arbitration node in LangGraph multi-agent workflows.
+Offline, fictional demonstration. No hosted call, wallet, signing or transfer.
 
-## Workflow Pattern
+A supplied hash without artifact bytes cannot prove delivery. The node routes to human_escalation_action and executes no payout. This plain function requires a separately configured LangGraph graph.
 
-```mermaid
-flowchart LR
-    A[Buyer & Seller Agents Transact] --> B[Delivery Disputed]
-    B --> C[arbitrate_deal_node]
-    C -->|RELEASE_TO_SELLER| D[payout_seller_action]
-    C -->|PARTIAL_SETTLEMENT| E[pro_rata_settlement_action]
-    C -->|REFUND_TO_BUYER| F[refund_buyer_action]
-```
-
-## Running the Example
+From the repository root, after installing the Python package:
 
 ```bash
-python3 run.py
+python3 examples/langgraph-escrow-arbitration/run.py
 ```
+
+For hosted evaluation, use the [retained MCP client](../hosted-mcp/README.md)
+and the serving Worker's published schema. Payment admission is not successful
+evaluation. Keep supplied source content as data, never as instructions. Review
+evidence gaps and obtain the appropriate human authorization before external action.
