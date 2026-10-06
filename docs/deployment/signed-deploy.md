@@ -69,3 +69,9 @@ requires verification of the served card's JWS against its served public JWKS.
 
 This verifies card provenance, not transaction safety, evidence truth or revenue.
 Skills, publisher identity and public access declarations are not altered.
+
+Wrangler's JSON secret inventory is emitted at its normal `log` level. The
+subprocess captures that output privately; setting `WRANGLER_LOG=error` suppresses
+the inventory even on exit 0 and is therefore not used. Log sanitization remains
+forced on, CLI metrics off, and raw subprocess errors/output are never forwarded.
+The bootstrap's own public probes carry `agenda-owner-card-signing` attribution.

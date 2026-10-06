@@ -3,6 +3,7 @@
 ## 2026-10-06 — Protected initialization of missing AgentCard signatures
 
 - Add an opt-in, two-target Financial Guard / Escrow signing-key bootstrap to the existing protected fleet workflow. It runs only after a matching owner-signed Vizier ALLOW, never rotates existing signing credentials, and verifies the served JWS against the public JWKS.
+- Preserve captured Wrangler JSON inventory at its normal log level while forcing sanitization; fail closed on unreadable inventory and label bootstrap discovery probes as owner checks.
 - Keep private ES256 keys out of logs, arguments, repository files and artifacts; only the per-Worker Cloudflare secret retains them. Actual skills, provider identity and access policy are unchanged.
 
 ## Unreleased — measurable adoption
