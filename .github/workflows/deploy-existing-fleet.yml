@@ -2,6 +2,11 @@ name: Deploy existing Worker fleet through Vizier
 
 on:
   workflow_dispatch:
+    inputs:
+      initialize_card_signing:
+        description: Initialize missing card keys for Financial Guard and Escrow only (never rotate)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -37,11 +42,19 @@ jobs:
           npm test
       - name: Derive only already configured Worker targets
         id: fleet
+        env:
+          INITIALIZE_AGENT_CARD_SIGNING: ${{ inputs.initialize_card_signing }}
         run: |
           node --input-type=module <<'JS'
           import { readFileSync, appendFileSync } from 'node:fs';
           import { deployedEnvironments } from './scripts/deploy-all.js';
-          const fleet = deployedEnvironments(readFileSync('wrangler.toml', 'utf8'));
+          import { signingBootstrapEnvironments } from './scripts/card-signing-bootstrap.js';
+          const all = deployedEnvironments(readFileSync('wrangler.toml', 'utf8'));
+          const fleet = process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true'
+            ? all.filter(({env}) => signingBootstrapEnvironments.includes(env)) : all;
+          if (process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true' && fleet.length !== 2) {
+            throw new Error('Signing bootstrap requires exactly the two existing targets');
+          }
           if (!fleet.length || fleet.some(({env, workerName}) =>
             !/^[a-z0-9-]*$/.test(env) || !/^[a-z0-9-]+$/.test(workerName))) {
             throw new Error('Invalid configured Worker fleet');
@@ -91,6 +104,7 @@ jobs:
           fi
       - name: Require matching Vizier ALLOW before this deployment
         env:
+          INITIALIZE_AGENT_CARD_SIGNING: ${{ inputs.initialize_card_signing }}
           VIZIER_API_KEY: ${{ secrets.VIZIER_API_KEY }}
           VIZIER_DEPLOY_GRANT_FILE: ${{ runner.temp }}/vizier-deploy-grant.jws
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

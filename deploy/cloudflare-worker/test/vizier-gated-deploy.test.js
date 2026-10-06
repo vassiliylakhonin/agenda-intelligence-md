@@ -313,3 +313,28 @@ for (const scenario of ["unsigned", "expired", "wrong-subject"]) {
       fetchImpl: async () => Response.json(response), execute: () => assert.fail("must not deploy") }), /owner-signed delegation proof/);
   });
 }
+
+test('signing initialization is bound to the validated request and stops on REVIEW', async () => {
+  const metadata = { commit: 'a'.repeat(40), dirty: false };
+  const env = 'agent-financial-guard';
+  const request = unsignedDeployRequest(metadata, env, TEST_GRANT, true);
+  assert.equal(request.action.parameters.initialize_agent_card_signing, true);
+  assert.notEqual(requestHash(request), requestHash(unsignedDeployRequest(metadata, env, TEST_GRANT)));
+  const result = await runGatedDeploy({
+    metadata, env, initializeSigning: true, grant: TEST_GRANT, apiKey: 'test-secret',
+    fetchImpl: async (_url, init) => {
+      assert.deepEqual(JSON.parse(init.body), request);
+      return Response.json(responseFor(request, 'REVIEW', ['SENSITIVE_ACTION_REVIEW']));
+    },
+    execute: () => assert.fail('must not initialize a secret or deploy')
+  });
+  assert.equal(result.status, 'stopped');
+});
+
+test('signing bootstrap refuses unsupported targets before contacting Vizier', async () => {
+  await assert.rejects(runGatedDeploy({
+    metadata: { commit: 'a'.repeat(40), dirty: false }, env: 'agent-output-verification',
+    initializeSigning: true, grant: TEST_GRANT, apiKey: 'test-secret',
+    fetchImpl: () => assert.fail('must not fetch'), execute: () => assert.fail('must not execute')
+  }), /target is not allowed/);
+});

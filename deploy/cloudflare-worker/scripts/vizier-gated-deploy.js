@@ -5,6 +5,7 @@ import { open } from "node:fs/promises";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { DIGEST_PREFIX, bundleDigest, fleetEnvironments } from "./deploy-all.js";
+import { assertBootstrapTarget, initializeCardSigning, verifyLiveCardSigning } from "./card-signing-bootstrap.js";
 
 const VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev";
 const KEYCHAIN_ACCOUNT = "VIZIER_API_KEY";
@@ -60,7 +61,8 @@ export function requestHash(request) {
   return createHash("sha256").update(canonicalize(request)).digest("hex");
 }
 
-export function createDeployRequest(metadata, env = DEFAULT_ENV, grant = undefined) {
+export function createDeployRequest(metadata, env = DEFAULT_ENV, grant = undefined, initializeSigning = false) {
+  if (initializeSigning) assertBootstrapTarget(env);
   const target = workerTargetFor(env);
   return {
     agent: { id: `${env || "top-level"}-deployer`, owner: "vassiliy-lakhonin" },
@@ -68,7 +70,8 @@ export function createDeployRequest(metadata, env = DEFAULT_ENV, grant = undefin
     action: {
       type: "deploy_worker",
       target,
-      parameters: { git_commit: metadata.commit, dirty_worktree: metadata.dirty }
+      parameters: { git_commit: metadata.commit, dirty_worktree: metadata.dirty,
+        ...(initializeSigning ? { initialize_agent_card_signing: true } : {}) }
     },
     // This exact authority must match the owner-signed grant. The signer is a
     // separate operator-controlled step, not part of the protected deploy process.
@@ -220,12 +223,12 @@ async function verifyWithVizier(request, apiKey, fetchImpl) {
   }
 }
 
-export async function runGatedDeploy({ metadata, apiKey, grant, fetchImpl = fetch, execute, env = DEFAULT_ENV }) {
+export async function runGatedDeploy({ metadata, apiKey, grant, fetchImpl = fetch, execute, env = DEFAULT_ENV, initializeSigning = false }) {
   assertCleanWorktree(metadata);
   if (typeof grant !== "string" || grant.length === 0 || grant.length > 32_768) {
     throw new Error("An owner-signed deployment grant is required before verification.");
   }
-  const request = createDeployRequest(metadata, env, grant);
+  const request = createDeployRequest(metadata, env, grant, initializeSigning);
   const response = await verifyWithVizier(request, apiKey, fetchImpl);
   if (response.decision !== "ALLOW") {
     return {
@@ -368,6 +371,8 @@ async function main() {
     throw new Error("vizier-gated-deploy accepts --env <name> or --top-level, and nothing else.");
   }
   const env = envFromArgv(process.argv.slice(2));
+  const initializeSigning = process.env.INITIALIZE_AGENT_CARD_SIGNING === "true";
+  if (initializeSigning) assertBootstrapTarget(env);
   const [metadata, apiKey, grant] = await Promise.all([
     collectDeployMetadata(), readVizierCredential(), readDeploymentGrant()
   ]);
@@ -380,7 +385,25 @@ async function main() {
     apiKey,
     grant,
     env,
-    execute: (receiptId) => executeWranglerDeploy(receiptId, digest, env)
+    initializeSigning,
+    execute: async (receiptId) => {
+      if (initializeSigning) console.log(JSON.stringify(await initializeCardSigning(env)));
+      const exitCode = await executeWranglerDeploy(receiptId, digest, env);
+      if (exitCode === 0 && initializeSigning) {
+        // Wait briefly for deployment propagation; every successful run must
+        // verify the actual served signature against the actual served JWKS.
+        for (let attempt = 0; ; attempt += 1) {
+          try {
+            console.log(JSON.stringify(await verifyLiveCardSigning(env)));
+            break;
+          } catch (error) {
+            if (attempt === 5) throw error;
+            await new Promise(resolve => setTimeout(resolve, 5_000));
+          }
+        }
+      }
+      return exitCode;
+    }
   });
   console.log(
     JSON.stringify({
