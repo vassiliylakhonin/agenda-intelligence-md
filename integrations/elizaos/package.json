@@ -1,17 +1,20 @@
 {
   "name": "@agenda-intelligence/plugin-guard",
-  "version": "1.13.0",
+  "version": "2.0.0",
   "description": "Evidence checks for proposed transactions and escrow deliveries, with explicit human review and no settlement authorization.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "prepack": "npm run build",
-    "test": "npm run build && node --test test/*.test.cjs"
+    "test": "npm run build && tsc --noEmit --target ES2022 --module ES2022 --moduleResolution bundler --skipLibCheck --strict test/runtime-contract.ts && node --test test/*.test.cjs"
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "examples/mock-review.cjs",
+    "characters/guard.character.json"
   ],
   "keywords": [
     "elizaos",
@@ -25,11 +28,23 @@
   ],
   "author": "Vassiliy Lakhonin",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vassiliylakhonin/agenda-intelligence-md.git",
+    "directory": "integrations/elizaos"
+  },
+  "homepage": "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/integrations/elizaos",
+  "bugs": "https://github.com/vassiliylakhonin/agenda-intelligence-md/issues",
+  "engines": { "node": ">=20" },
   "dependencies": {},
   "peerDependencies": {
-    "@elizaos/core": ">=0.1.0"
+    "@elizaos/core": ">=1.7.2 <2"
+  },
+  "peerDependenciesMeta": {
+    "@elizaos/core": { "optional": true }
   },
   "devDependencies": {
+    "@elizaos/core": "1.7.2",
     "typescript": "^5.4.5"
   }
 }

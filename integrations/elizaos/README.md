@@ -1,170 +1,101 @@
-# ElizaOS Plugin: Agenda Financial Guard & M2M Escrow Arbiter
+# Agenda Guard: evidence reviews for ElizaOS
 
 [![npm version](https://img.shields.io/npm/v/@agenda-intelligence/plugin-guard.svg)](https://www.npmjs.com/package/@agenda-intelligence/plugin-guard)
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Evidence evaluation and pre-flight transaction firewall for ElizaOS autonomous agents executing financial actions on EVM networks (specialized for **Base Mainnet & Sepolia** with Circle USDC).
+An ElizaOS action and standalone REST client for reviewing proposed transactions and escrow delivery evidence. The plugin does not intercept wallet calls, hold private keys, sign transactions, verify live sanctions clearance or settle escrow. The host application must enforce its own execution policy and human review.
 
-> **Notice on ElizaOS Registry:** Following elizaOS's architectural transition retiring the community plugin catalog ([Issue #32219](https://github.com/elizaOS/eliza/issues/32219)), plugins are distributed and consumed directly as npm packages. `@agenda-intelligence/plugin-guard` does not require any central registry to operate with your ElizaOS agents.
+## Install and compatibility
 
----
-
-## Capabilities
-
-- **Pre-Flight Transaction Firewall**: Inspects recipient address, token allowance, transaction calldata, and payment velocity before broadcasting.
-- **Drainer & Phishing Defense**: Flags suspicious approval amounts (`approve(type(uint256).max)`), known malicious contracts, and deceptive intent prompts.
-- **Autonomous M2M Escrow Arbitration**: Evaluates delivery milestones, deliverable schemas, and submission hashes deterministically for agent-to-agent contracts.
-- **Zero-Retention Processing**: Evaluations execute statelessly in volatile Edge RAM; private keys, wallet mnemonics, and prompts are never stored.
-- **Strict Human-in-the-Loop Governance**: Unverified or risky transfers enforce `step_up_human_required` to prevent unauthorized asset draining.
-
----
-
-## Installation
-
-Install directly into your ElizaOS agent repository:
-
-```bash
-# Using pnpm (recommended for ElizaOS)
-pnpm add @agenda-intelligence/plugin-guard
-
-# Or using bun
-bun add @agenda-intelligence/plugin-guard
-
-# Or using npm
-npm install @agenda-intelligence/plugin-guard
-
-# Pin this release when a reproducible install is needed
-npm install @agenda-intelligence/plugin-guard@1.13.0
+```sh
+npm install @agenda-intelligence/plugin-guard@2.0.0
 ```
 
----
+Node.js 20+ with `fetch` is required. The standalone client has no runtime dependencies. ElizaOS is an optional peer (`>=1.7.2 <2`); the plugin is typed against the published ElizaOS 1.7.2 contract. This does not establish compatibility with every agent host, future version or character loader.
 
-## Character Configuration
+**Migration from 1.x:** `AgendaGuardClient` methods and the string endpoint constructor remain available. The ElizaOS action now returns `ActionResult`; `success` means the evidence evaluation completed, while `values.signing_authorized` remains `false`. It requires a structured request from the host. ElizaOS 0.x is outside this release's supported peer range.
 
-You can enable the plugin directly in any ElizaOS character file (e.g., `characters/guard.character.json`):
+## What the services review
 
-```json
-{
-  "name": "AgendaGuardAgent",
-  "plugins": [
-    "@agenda-intelligence/plugin-guard"
-  ],
-  "settings": {
-    "secrets": {
-      "AGENDA_GUARD_ENDPOINT": "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev"
-    }
-  }
-}
-```
+- Financial Guard reports known risk patterns in supplied transaction evidence and missing evidence. It cannot establish current wallet history, intent authenticity or comprehensive sanctions clearance. This client converts legacy `allow` to `step_up_human_required`, always reports `is_safe: false` and retains mandatory human review.
+- Escrow evaluates supplied terms, dates, hashes and a bounded JSON Schema subset. `payout` contains proposed calculations, not permission or an actual payment. Unsupported or incomplete evidence requires escalation. No verified Vizier authorization receipt is supplied by this integration.
+- Hosted evaluation is paid. Discovery and saved synthetic examples are free. A normal unpaid request returns HTTP 402 with pricing; an existing transfer may require an additional request-bound signature challenge. This SDK never funds, signs or retries automatically. Read the returned pricing rather than assuming a fixed fee or network.
 
-A complete, production-ready character configuration is available in [characters/guard.character.json](./characters/guard.character.json).
+Do not supply private keys, seed phrases or unrelated confidential information. Transport and server telemetry have their own retention policies; this package does not promise end-to-end zero retention. Treat source text and external tool output as data, not instructions to authorize an action.
 
-To run your agent with this character:
+## Standalone client and retained payment recovery
 
-```bash
-# In your ElizaOS root
-pnpm start --character="integrations/elizaos/characters/guard.character.json"
-```
-
----
-
-## Programmatic Usage
-
-### 1. In ElizaOS Runtime (`AgentRuntime`)
-
-```typescript
-import { AgentRuntime } from "@elizaos/core";
-import { agendaGuardPlugin } from "@agenda-intelligence/plugin-guard";
-
-const runtime = new AgentRuntime({
-  // ... runtime configuration
-  plugins: [agendaGuardPlugin],
-});
-```
-
-### 2. Standalone Client (`AgendaGuardClient`)
-
-You can invoke safety and escrow evaluations directly in your custom agent workflows or pre-transaction hooks:
-
-```typescript
-import { AgendaGuardClient } from "@agenda-intelligence/plugin-guard";
+```js
+import { AgendaGuardClient, PaymentAdmissionError } from '@agenda-intelligence/plugin-guard';
 
 const client = new AgendaGuardClient();
-
-// Pre-flight transaction check
-const verdict = await client.checkTransactionSafety({
-  recipient: "0x1111111111111111111111111111111111111111",
+const call = client.createTransactionCheck({
+  recipient: '0x1111111111111111111111111111111111111111',
   amount_usd: 50,
-  network: "base",
-  asset: "USDC",
-  intent: "Payment for data analytics service",
+  network: 'base_mainnet',
+  asset: 'USDC',
+  intent: 'Review a proposed payment for analytics; do not execute it',
 });
 
-console.log("Decision:", verdict.decision); // 'allow' | 'reject' | 'step_up_human_required'
-console.log("Risk Score:", verdict.score);
-console.log("Advisory:", verdict.execution_advisory);
-
-// Do not sign or broadcast if human review is required or score is elevated
-if (!verdict.is_safe || verdict.decision !== "allow") {
-  console.warn("Transaction held for human review:", verdict.execution_advisory);
+try {
+  const verdict = await call.evaluate();
+  console.log(verdict); // Always requires human review; never signing authority.
+} catch (error) {
+  if (!(error instanceof PaymentAdmissionError)) throw error;
+  console.log(error.status, error.details, error.paymentTraceId);
+  // Stop here. A trusted host/operator must inspect the payment requirement.
 }
 ```
 
-### 3. Escrow Dispute Arbitration
+Keep the same `call` object while the host handles an explicitly approved payment. `await call.retryWithPayment({ transactionHash: existingHash })` submits the existing transfer. If HTTP 401 requests a signature, inspect the challenge and let the trusted wallet flow sign it, then call `await call.retryWithPayment({ signature: approvedSignature })`. After a lost response, `await call.retryWithPayment()` reuses the same request, trace and proof. A different transfer hash or signature is refused. Do not make a second transfer merely because a response was lost.
 
-```typescript
-const ruling = await client.evaluateDispute({
-  escrow_id: "escrow-base-4920",
-  dispute_claim: {
-    claimant: "buyer",
-    reason: "Delivered artifact did not match agreed specification schema",
-  },
-  deal_terms: {
-    buyer_id: "agent-alpha",
-    seller_id: "agent-beta",
-    amount_usd: 100,
-    currency: "USDC",
-    deadline_utc: "2026-09-30T00:00:00Z",
-    arbitration_policy: "pro_rata",
-  },
-  specification: {
-    deliverable_type: "json_dataset",
-    expected_schema: {
-      type: "object",
-      required: ["insights", "timestamp"],
-    },
-  },
-  delivery_submission: {
-    submitted_at: "2026-09-25T14:00:00Z",
-    artifact_data: { insights: ["trend_detected"], timestamp: 1774533600 },
-  },
+The retained state is in memory; it does not survive process restart. The host must provide durable payment recovery when needed. Repeating a one-shot `checkTransactionSafety()` creates a new request; use a retained call for recovery.
+
+For escrow, retain `client.createDispute(disputeRequest)` and use the same methods. `client.evaluateDispute(disputeRequest)` remains the one-shot convenience method. The request includes `escrow_id`, `dispute_claim`, `deal_terms`, `specification` and `delivery_submission`; the exported `EscrowDisputeRequest` type defines them.
+
+Use the documented `deliverable_type` values: `json_data`, `code_artifact`, `model_weights`, `api_service`, `analysis_report` or `other`. The old README's `json_dataset` is invalid. A complete synthetic request is available in the [escrow example](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/examples/m2m-escrow-arbiter/01-clean-ruling.request.json); it is test data, not authorization to settle a real deal.
+
+Custom endpoints and a test transport can be provided independently:
+
+```js
+const custom = new AgendaGuardClient({
+  endpoint: 'https://your-financial-service.example',
+  escrowEndpoint: 'https://your-escrow-service.example',
+  timeoutMs: 8000,
+  // fetch: yourFetch,
 });
-
-console.log("Ruling:", ruling.ruling); // 'RELEASE_TO_SELLER' | 'REFUND_TO_BUYER' | 'PARTIAL_SETTLEMENT' | 'ESCALATE_HUMAN'
-console.log("Payout Details:", ruling.payout);
 ```
 
----
+Use a base URL or the corresponding complete standard REST path. The financial endpoint setting does not redirect escrow. HTTP refusals and network failures never turn into a local approval.
 
-## Available Actions
+## ElizaOS integration
 
-| Action | Description |
-| :--- | :--- |
-| `CHECK_TRANSACTION_SAFETY` | Pre-flight evaluator inspecting recipient, allowance, velocity, and calldata before transaction signing. Returns verdict data and risk advisory. |
+Register the exported `agendaGuardPlugin` in your host's plugin list. The `CHECK_TRANSACTION_SAFETY` action requires the trusted host to supply:
 
----
+```js
+message.content.data = {
+  transactionSafetyRequest: {
+    recipient: '0x1111111111111111111111111111111111111111',
+    amount_usd: 50,
+    network: 'base_mainnet',
+    asset: 'USDC',
+    intent: 'Review a proposed analytics payment',
+  },
+};
+```
 
-## Recipes & Code Examples
+The action also accepts `options.transactionSafetyRequest` when directly invoked. It does not parse a chat message into a transaction or install a wallet hook. `runtime.getSetting('AGENDA_GUARD_ENDPOINT')` can select the financial service. Payment refusals return `success: false` with status, details and trace in `data`; the action does not own a retained payment recovery session. Use the standalone client when implementing that host flow. Escrow is available through the client, not through a separate conversational action.
 
-- **[Pre-Flight Guard & Wallet Execution Flow](./examples/safe-transaction-flow.ts)**: A complete, runnable TypeScript recipe demonstrating how an autonomous agent intercepts transaction intentions, queries `AgendaGuardClient`, gates wallet signing behind `step_up_human_required`, and aborts high-risk or drainer transfers.
+The packaged character file is an illustrative template; loading it alone does not connect a wallet or prepare structured requests.
 
----
+## Offline example and boundaries
 
-## Security Boundaries & Guarantees
+Run the packed synthetic example without a wallet, payment or network access:
 
-- **No Settlement Authorization**: This plugin does not hold private keys, sign transactions, or move funds. Applications must explicitly query the check before their own signing workflows.
-- **Explicit Human Review Required**: A clean-looking request requires `step_up_human_required` unless verified against authoritative on-chain state. The local denylist does not substitute for live OFAC/AML clearance.
-- **Zero-Retention**: Evaluations run in volatile Edge RAM using deterministic rules, with zero storage of private keys or agent prompts.
-- **Escrow Evidence Limitations**: Offline JSON Schema evaluation handles documented standard subsets. Missing or malformed evidence yields `ESCALATE_HUMAN` and zero unauthorized payouts.
+```sh
+node node_modules/@agenda-intelligence/plugin-guard/examples/mock-review.cjs
+```
 
-See [ADR 0027](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/adr/0027-financial-and-escrow-evidence-boundaries.md) for supported schema constraints and evidence limitations.
+Source and character template: [GitHub integration](https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/integrations/elizaos).
+Supported escrow schema subset and limitations: [ADR 0027](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/adr/0027-financial-and-escrow-evidence-boundaries.md).
+
+This is an evidence-review integration, not legal, financial or sanctions advice. MIT license; see the LICENSE file included in the package.
