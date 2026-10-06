@@ -15,15 +15,15 @@ Runs lint, typecheck, and the full test suite — the same gates CI applies. Use
 CI's Lint job runs `black` first and fails the whole pipeline on any formatting drift:
 
 ```
-black --check --line-length=120 src/ tests/ scripts/
+black --check --line-length=120 src/ tests/ scripts/ integrations/
 ```
 
-If it fails, auto-fix with `black --line-length=120 src/ tests/ scripts/`.
+If it fails, auto-fix with `black --line-length=120 src/ tests/ scripts/ integrations/`.
 
 `flake8` runs immediately after and catches what `black` leaves alone — most often long string literals in dict or tuple positions that `black` cannot split:
 
 ```
-flake8 src/ tests/ scripts/ --max-line-length=120 --ignore=E203,W503
+flake8 src/ tests/ scripts/ integrations/ --max-line-length=120 --ignore=E203,W503
 ```
 
 There is no auto-fixer for those. Reformat by hand (parenthesized string concatenation, a dedicated constant). Note that a locally configured `flake8` can suppress `E501`; verify line length with Python if a long line is suspected.

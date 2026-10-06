@@ -8,6 +8,7 @@
 - Preserve Python paid/authentication HTTP refusals instead of hiding them behind network fallback; remove the canonical Ethereum USDC contract from its erroneous local risk denylist.
 - Extend public conformance to all twelve Workers, verify AgentCard signatures and treat paid 402 admission as the expected boundary; keep domain input refusal tests offline.
 - Keep generated HTTP client cancellation active through response-body streaming, remove abort listeners after completion and retain 429 retry metadata for non-JSON refusals.
+- Align local Makefile lint/format coverage with CI by including Python integrations.
 - Repair the offline Virtuals example, remove fabricated contract dates/identities/digests from count-only requests and preserve required review in integration results; replace stale execution/latency/clearance claims and catalog snippets with current connection instructions.
 
 ## 2026-10-06 — ElizaOS plugin 2.0.0 public contract

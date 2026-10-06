@@ -34,7 +34,9 @@ class AgendaVirtualsAdapter:
         return [
             {
                 "name": "check_transaction_safety",
-                "description": "Review supplied transaction risk patterns; human review is required and signing is not authorized.",
+                "description": (
+                    "Review supplied transaction risk patterns; human review is required and signing is not authorized."
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -48,7 +50,10 @@ class AgendaVirtualsAdapter:
             },
             {
                 "name": "arbitrate_escrow_dispute",
-                "description": "Review caller-reported delivery counts; these inputs alone cannot verify delivery or authorize settlement.",
+                "description": (
+                    "Review caller-reported delivery counts; "
+                    "these inputs alone cannot verify delivery or authorize settlement."
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {

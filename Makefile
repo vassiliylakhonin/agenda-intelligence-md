@@ -15,14 +15,14 @@ install:
 
 # Auto-fix what we can.
 format:
-	black --line-length=120 src/ tests/ scripts/
-	isort --profile=black src/ tests/ scripts/
+	black --line-length=120 src/ tests/ scripts/ integrations/
+	isort --profile=black src/ tests/ scripts/ integrations/
 
 # Same lint surface as .github/workflows/lint.yml — read-only.
 lint:
-	flake8 src/ tests/ scripts/ --max-line-length=120 --ignore=E203,W503
-	black --check --line-length=120 src/ tests/ scripts/
-	isort --check-only --profile=black src/ tests/ scripts/
+	flake8 src/ tests/ scripts/ integrations/ --max-line-length=120 --ignore=E203,W503
+	black --check --line-length=120 src/ tests/ scripts/ integrations/
+	isort --check-only --profile=black src/ tests/ scripts/ integrations/
 
 # Same CI lint+type surface as .github/workflows/ci.yml — read-only.
 typecheck:
