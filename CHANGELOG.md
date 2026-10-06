@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Unreleased — ElizaOS plugin 2.0.0 public contract
+
+- Replace outdated npm-facing firewall, zero-retention and autonomous arbitration claims with the evidence-review boundary; include an offline synthetic example, character template and license in the archive.
+- Preserve pricing, signature challenges, trace and the exact Financial Guard/Escrow request for explicit payment recovery. No automatic funding, signing, retry or settlement.
+- Require structured action input, honor the runtime financial endpoint setting, validate returned verdict shape, await callbacks and return the ElizaOS 1.7.2 ActionResult contract with signing_authorized=false. Evaluation success is distinct from wallet permission.
+- Make the ElizaOS peer optional for standalone users and limit its declared range to >=1.7.2 <2. The major release documents migration from the old boolean action handler; compatibility with 0.x is not asserted.
+- Replace the invalid json_dataset deliverable example with the Worker-supported json_data enum and type the supported deliverables.
+
 ## 2026-10-06 — Fleet client and adapter consistency
 
 - Share exact-request MCP admission and explicit recovery across all twelve profiles; link the runnable client from every landing page and retain Output Verification's bounded result check.
