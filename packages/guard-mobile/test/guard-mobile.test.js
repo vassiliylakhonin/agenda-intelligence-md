@@ -22,7 +22,7 @@ test("Local Fallback: Blocks Tornado Cash sanctioned address", () => {
   assert.strictEqual(result.score, 95);
   assert.strictEqual(result.evaluated_by, "local_fallback");
   assert.strictEqual(result.checks.sanctions_aml, false);
-  assert.ok(result.violations[0].includes("OFAC/SDN"));
+  assert.ok(result.violations[0].includes("local risk denylist"));
 });
 
 test("Local Fallback: Blocks Infinite Token Approval drainer pattern", () => {
@@ -137,7 +137,7 @@ test("Solana Multi-Chain: Blocks known exploit/drainer Solana address", () => {
   assert.strictEqual(result.isSafe, false);
   assert.strictEqual(result.decision, "reject");
   assert.strictEqual(result.checks.sanctions_aml, false);
-  assert.ok(result.violations[0].includes("OFAC/SDN or exploit denylist"));
+  assert.ok(result.violations[0].includes("local risk denylist"));
 });
 
 test("Solana Multi-Chain: Blocks dangerous account authority change", () => {

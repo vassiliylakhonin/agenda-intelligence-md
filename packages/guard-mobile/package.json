@@ -1,7 +1,7 @@
 {
   "name": "@agenda-intelligence/guard-mobile",
-  "version": "1.2.3",
-  "description": "Ultra-lightweight, zero-dependency mobile and edge SDK for autonomous AI agents. Pre-sign financial transaction firewall, prompt injection heuristics, and M2M escrow settlement.",
+  "version": "1.2.4",
+  "description": "Financial transaction and escrow evidence-review clients with explicit human review, retained payment recovery and no settlement authorization.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -36,5 +36,12 @@
   "license": "MIT",
   "devDependencies": {
     "typescript": "^5.4.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vassiliylakhonin/agenda-intelligence-md.git",
+    "directory": "packages/guard-mobile"
+  },
+  "homepage": "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/packages/guard-mobile",
+  "bugs": "https://github.com/vassiliylakhonin/agenda-intelligence-md/issues"
 }

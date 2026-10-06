@@ -1,6 +1,6 @@
 {
   "name": "@agenda-intelligence/plugin-guard",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Evidence checks for proposed transactions and escrow deliveries, with explicit human review and no settlement authorization.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,13 +35,17 @@
   },
   "homepage": "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/integrations/elizaos",
   "bugs": "https://github.com/vassiliylakhonin/agenda-intelligence-md/issues",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {},
   "peerDependencies": {
     "@elizaos/core": ">=1.7.2 <2"
   },
   "peerDependenciesMeta": {
-    "@elizaos/core": { "optional": true }
+    "@elizaos/core": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@elizaos/core": "1.7.2",

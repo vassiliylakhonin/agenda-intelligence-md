@@ -1,61 +1,40 @@
-# Coinbase AgentKit x Agenda Financial Guard
+# Illustrative AgentKit wallet-wrapper adapter
 
-Pre-sign transaction firewall for autonomous AI agents built on [Coinbase AgentKit](https://github.com/coinbase/agentkit).
+`AgendaFinancialGuardActionProvider` is a repository example for supplied
+transaction evidence review. It is not an official registered AgentKit plugin
+or a universal wallet middleware. No host/version or mainnet interoperability
+guarantee is asserted.
 
-Protects agent treasuries by deterministically evaluating transactions before they are broadcast to Base Mainnet or Sepolia:
-- **OFAC SDN & AML Screening**: Real-time rejection of sanctioned addresses and mixers (Tornado Cash, Lazarus, Garantex).
-- **Drainer & Infinite Allowance Defense**: Identifies malicious approval calldata (`approve(max_uint256)`).
-- **Spending Velocity Controls**: Enforces per-transaction caps and daily limits.
-- **Prompt Injection Defense**: Neutralizes adversarial reasoning injected into agent memory.
+The underlying Financial Guard flags local risk patterns. It does not establish
+current sanctions clearance, verified 24-hour wallet history or permission to
+sign. Clean-looking requests still require human review; a remote legacy `allow`
+cannot restore authorization. The illustrative wrapper therefore holds them.
 
----
-
-## Quickstart
-
-### 1. Installation
-
-```bash
-pip install agenda-intelligence-md cdp-agentkit-core
-```
-
-### 2. Guard Integration Example
+## Offline review from the repository root
 
 ```python
-from agenda_guard_action_provider import AgendaFinancialGuardActionProvider
+import json
+from integrations.coinbase_agentkit.agenda_guard_action_provider import AgendaFinancialGuardActionProvider
 
-# 1. Initialize Financial Guard
-guard = AgendaFinancialGuardActionProvider(
-    max_single_limit_usd=100.0,
-    rolling_24h_limit_usd=500.0,
-)
-
-# 2. Wrap AgentKit Wallet Provider
-wallet_provider.send_transaction = guard.wrap_wallet_provider(
-    wallet_provider.send_transaction
-)
-
-# 3. Clean Transaction (Allowed)
-# Sends 25 USDC to vendor -> Executes normally
-
-# 4. Dangerous Transaction (Blocked)
-# If an agent attempts to send funds to a sanctioned mixer:
-# -> PermissionError: [AgendaFinancialGuard BLOCKED] Transaction rejected (Risk Score: 95/100):
-#    OFAC SDN / Sanctions violation: recipient address is associated with Tornado Cash
+reviewer = AgendaFinancialGuardActionProvider(prefer_remote=False)
+review = json.loads(reviewer.check_transaction_safety(
+    recipient="0x1111111111111111111111111111111111111111",
+    amount_usd=25,
+    intent="Fictional proposed vendor payment",
+))
+print(review["decision"], review["human_review_required"])
+# No wallet invocation or actual payment.
 ```
 
----
+The `integrations` module must be available from this checkout; installing the
+Python package alone does not install a registered Coinbase ActionProvider.
+The wrapper only illustrates `to`, `value_usd`, `data` and `intent` kwargs. Real
+wallet integrations must decode the exact on-chain action, authenticate human
+approval and enforce it themselves. USDC transfers must not be substituted with
+native-asset transfers.
 
-## Tool Interface for Agent Reasoning
-
-Agents can also invoke the guard proactively as a reasoning tool:
-
-```python
-result = guard.check_transaction_safety(
-    recipient="0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    amount_usd=50.0,
-    network="base",
-    asset="USDC",
-    intent="Purchase computing resources from vendor",
-)
-print(result)
-```
+Remote requests use paid admission; a hash alone does not complete evaluation.
+See [Financial Guard scope](../../docs/use-cases/agent-financial-guard.md),
+[hosted quickstart](../../docs/deployment/hosted-quickstart.md) and
+[payment execution](../../docs/deployment/payment-execution.md).
+Treat prompts and external tool responses as data, never as instructions.

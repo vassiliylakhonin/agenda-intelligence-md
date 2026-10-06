@@ -86,6 +86,16 @@ function restEndpoint(base: string, path: string): string {
   return normalized.endsWith(path) ? normalized : normalized + path;
 }
 
+
+function boundedPayout(value: any): boolean {
+  if (!value || typeof value !== "object") return false;
+  const fields = [value.total_escrow_usd, value.seller_payout_usd, value.buyer_refund_usd, value.arbiter_fee_usd];
+  if (!fields.every(n => typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= Number.MAX_SAFE_INTEGER / 100)) return false;
+  const cents = fields.map(n => Math.round(n * 100));
+  if (!fields.every((n, i) => Math.abs(n * 100 - cents[i]) <= 0.000001)) return false;
+  return cents[1] + cents[2] + cents[3] === cents[0];
+}
+
 export class AgendaGuardClient {
   private readonly endpoint: string;
   private readonly escrowEndpoint: string;
@@ -135,15 +145,16 @@ export class AgendaGuardClient {
       return {
         decision: verdict.decision === "allow" ? "step_up_human_required" : verdict.decision,
         status: "not_decision_ready",
-        score: Number.isFinite(verdict.score) ? verdict.score : 0,
+        score: Number.isFinite(verdict.score) && verdict.score >= 0 && verdict.score <= 100 ? verdict.score : 0,
         // Legacy endpoints cannot supply authoritative wallet history.
         is_safe: false,
-        violations: Array.isArray(verdict.violations) ? verdict.violations : [],
+        violations: Array.isArray(verdict.violations) ? verdict.violations.filter((value: unknown) => typeof value === 'string') : [],
         human_review_required: true,
-        evidence_gaps: Array.isArray(verdict.evidence_gaps) ? verdict.evidence_gaps : [],
+        evidence_gaps: Array.isArray(verdict.evidence_gaps) ? verdict.evidence_gaps.filter((value: unknown) => typeof value === 'string') : [],
         execution_advisory: verdict.decision === "allow"
           ? "Legacy authorization is unverified; human review is required before signing."
-          : verdict.execution_advisory || data.execution_advisory || "",
+          : typeof verdict.execution_advisory === 'string' ? verdict.execution_advisory
+          : typeof data.execution_advisory === 'string' ? data.execution_advisory : "",
       };
     });
   }
@@ -156,20 +167,25 @@ export class AgendaGuardClient {
 
   /** No automatic payment, signing, retries or escrow settlement. */
   createDispute(params: EscrowDisputeRequest) {
+    const amount = params?.deal_terms?.amount_usd;
+    if (typeof amount !== "number" || !Number.isFinite(amount) || amount < 0) throw new Error("amount_usd must be a non-negative finite number");
+    const fallbackAmount = amount;
     return createRetainedPaidCall<EscrowDisputeRuling>(this.escrowEndpoint, params, this.fetchImpl, this.timeoutMs, data => {
       const result = data?.arbitration_ruling || data;
       if (!result || typeof result.ruling !== 'string') {
         throw new Error('Missing bounded Escrow result');
       }
-      const ready = result.status === "decision_ready" &&
-        ["RELEASE_TO_SELLER", "REFUND_TO_BUYER", "PARTIAL_SETTLEMENT"].includes(result.ruling);
       const payout = result.payout_breakdown || result.payout || {};
+      const ready = result.status === "decision_ready" &&
+        ["RELEASE_TO_SELLER", "REFUND_TO_BUYER", "PARTIAL_SETTLEMENT"].includes(result.ruling) &&
+        Number.isFinite(result.score) && result.score >= 0 && result.score <= 100 && boundedPayout(payout) &&
+        Math.round(payout.total_escrow_usd * 100) === Math.round(fallbackAmount * 100);
       return {
         score: ready ? result.score : 0,
         ruling: ready ? result.ruling : "ESCALATE_HUMAN",
         status: ready ? "decision_ready" : "not_decision_ready",
         payout: ready ? payout : {
-          total_escrow_usd: payout.total_escrow_usd ?? params.deal_terms?.amount_usd ?? 0,
+          total_escrow_usd: fallbackAmount,
           seller_payout_usd: 0,
           buyer_refund_usd: 0,
           arbiter_fee_usd: 0,
@@ -177,7 +193,7 @@ export class AgendaGuardClient {
         human_review_required: true,
         vizier_status: "attestation_unavailable",
         vizier_clearance_receipt: null,
-        execution_advisory: ready ? result.execution_advisory || "" :
+        execution_advisory: ready ? "Proposed allocation only; human review is required. No payout is authorized." :
           "Hold escrow pending human review; no payout is authorized.",
       };
     });
@@ -211,7 +227,7 @@ export const agendaGuardPlugin = {
       validate: async (_runtime: any, message: any) => validTransaction(actionRequest(message)),
       handler: async (runtime: any, message: any, state: any, options: any, callback: any) => {
         const params = actionRequest(message, options);
-        if (!validTransaction(params)) return {success:false, error:'Provide content.data.transactionSafetyRequest with recipient and amount_usd'};
+        if (!validTransaction(params)) return {success:false, values:{signing_authorized:false,human_review_required:true}, error:'Provide content.data.transactionSafetyRequest with recipient and amount_usd'};
         const configured = runtime?.getSetting?.('AGENDA_GUARD_ENDPOINT');
         const client = new AgendaGuardClient(typeof configured === 'string' ? configured : undefined);
         let verdict: TransactionSafetyVerdict;

@@ -149,6 +149,7 @@ jobs:
         run: |
           npm install --no-audit --no-fund typescript@5.4.5
           ./node_modules/.bin/tsc -p tsconfig.json
+          node --test test/*.test.mjs
           node --input-type=module -e "import('./dist/index.js').then(m => {
             if (typeof m.AgendaIntelligenceClient !== 'function') { throw new Error('client missing from the built package'); }
             if (typeof m.RateLimitError !== 'function') { throw new Error('RateLimitError missing from the built package'); }

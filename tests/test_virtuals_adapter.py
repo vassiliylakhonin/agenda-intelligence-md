@@ -27,6 +27,8 @@ def test_virtuals_transaction_check(adapter: AgendaVirtualsAdapter) -> None:
         intent="Payment to vendor",
     )
     assert res["decision"] == "step_up_human_required"
+    assert res["human_review_required"] is True
+    assert res["signing_authorized"] is False
     assert res["is_safe"] is False
     assert res["risk_score"] == 55
 
@@ -54,3 +56,21 @@ def test_virtuals_arbitration(adapter: AgendaVirtualsAdapter) -> None:
     assert res["payout"]["seller_usd"] == 0.0
     assert res["payout"]["buyer_usd"] == 0.0
     assert res["payout"]["fee_usd"] == 0.0
+
+
+def test_legacy_counts_do_not_fabricate_contract_evidence(adapter: AgendaVirtualsAdapter, monkeypatch) -> None:
+    original = adapter.arbiter.evaluate_dispute
+    observed = []
+
+    def capture(payload, **options):
+        observed.append(payload)
+        return original(payload, **options)
+
+    monkeypatch.setattr(adapter.arbiter, "evaluate_dispute", capture)
+    result = adapter.execute_arbitration("synthetic", 100, 80, 100)
+    assert result["settlement_authorized"] is False
+    assert result["human_review_required"] is True
+    assert "deadline_utc" not in observed[0]["deal_terms"]
+    assert "buyer_id" not in observed[0]["deal_terms"]
+    assert "artifact_sha256" not in observed[0]["delivery_submission"]
+    assert "submitted_at" not in observed[0]["delivery_submission"]

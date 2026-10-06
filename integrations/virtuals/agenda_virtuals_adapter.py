@@ -34,7 +34,9 @@ class AgendaVirtualsAdapter:
         return [
             {
                 "name": "check_transaction_safety",
-                "description": "Pre-sign transaction firewall check against OFAC SDN, drainers, and treasury limits.",
+                "description": (
+                    "Review supplied transaction risk patterns; human review is required and signing is not authorized."
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -48,13 +50,19 @@ class AgendaVirtualsAdapter:
             },
             {
                 "name": "arbitrate_escrow_dispute",
-                "description": "Deterministic B2B contract dispute resolution with mathematical payout split.",
+                "description": (
+                    "Review caller-reported delivery counts; "
+                    "these inputs alone cannot verify delivery or authorize settlement."
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "escrow_id": {"type": "string", "description": "Bytes32 escrow identifier"},
                         "amount_usd": {"type": "number", "description": "Escrow amount in USD"},
-                        "valid_items": {"type": "integer", "description": "Number of valid verified records"},
+                        "valid_items": {
+                            "type": "integer",
+                            "description": "Caller-reported valid records, not independently verified",
+                        },
                         "total_items": {"type": "integer", "description": "Expected record count"},
                         "policy": {"type": "string", "enum": ["pro_rata", "all_or_nothing"]},
                     },
@@ -80,6 +88,10 @@ class AgendaVirtualsAdapter:
         )
         return {
             "decision": verdict.decision,
+            "status": verdict.status,
+            "human_review_required": True,
+            "signing_authorized": False,
+            "evidence_gaps": verdict.raw.get("evidence_gaps", []),
             "is_safe": verdict.is_allowed,
             "risk_score": verdict.score,
             "violations": verdict.violations,
@@ -94,7 +106,11 @@ class AgendaVirtualsAdapter:
         total_items: int,
         policy: str = "pro_rata",
     ) -> dict[str, Any]:
-        """Execute autonomous escrow dispute evaluation."""
+        """Legacy count-only review; missing contract/artifact evidence is held.
+
+        Counts do not establish counterparties, deadlines, hashes or delivery.
+        The local readiness gate refuses remote arbitration of this incomplete input.
+        """
         payload = {
             "escrow_id": escrow_id,
             "dispute_claim": {
@@ -102,27 +118,22 @@ class AgendaVirtualsAdapter:
                 "reason": f"Fulfillment check: {valid_items}/{total_items} items valid",
             },
             "deal_terms": {
-                "buyer_id": "virtuals:agent:buyer",
-                "seller_id": "virtuals:agent:seller",
                 "amount_usd": amount_usd,
                 "currency": "USDC",
-                "deadline_utc": "2026-10-01T00:00:00Z",
                 "arbitration_policy": policy,
-                "arbitration_fee_pct": 1.0,
             },
-            "specification": {
-                "deliverable_type": "json_data",
-                "expected_artifact_sha256": "0" * 64,
-            },
+            "specification": {},
             "delivery_submission": {
-                "submitted_at": "2026-09-17T12:00:00Z",
-                "artifact_sha256": "0" * 64,
                 "telemetry": {"total_items": total_items, "valid_items": valid_items},
             },
         }
         ruling: ArbitrationRuling = self.arbiter.evaluate_dispute(payload, prefer_remote=self.prefer_remote)
         return {
             "ruling": ruling.ruling,
+            "status": ruling.status,
+            "human_review_required": True,
+            "settlement_authorized": False,
+            "evidence_gaps": ruling.raw.get("evidence_gaps", []),
             "score": ruling.score,
             "payout": {
                 "seller_usd": ruling.payout.seller_payout_usd,
@@ -146,5 +157,6 @@ if __name__ == "__main__":
     )
     print("\nTransaction Check Result:")
     print(json.dumps(check_res, indent=2))
-    assert check_res["is_safe"] is True
-    print("\nVirtuals adapter verified successfully!")
+    assert check_res["is_safe"] is False
+    assert check_res["human_review_required"] is True
+    print("\nOffline adapter review completed; no signing or settlement is authorized.")

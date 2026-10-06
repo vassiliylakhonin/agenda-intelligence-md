@@ -7,7 +7,7 @@ An ElizaOS action and standalone REST client for reviewing proposed transactions
 ## Install and compatibility
 
 ```sh
-npm install @agenda-intelligence/plugin-guard@2.0.0
+npm install @agenda-intelligence/plugin-guard@2.0.1
 ```
 
 Node.js 20+ with `fetch` is required. The standalone client has no runtime dependencies. ElizaOS is an optional peer (`>=1.7.2 <2`); the plugin is typed against the published ElizaOS 1.7.2 contract. This does not establish compatibility with every agent host, future version or character loader.
@@ -64,6 +64,8 @@ const custom = new AgendaGuardClient({
   // fetch: yourFetch,
 });
 ```
+
+Amounts must be finite, non-negative numbers. Malformed escrow allocations are held with zero proposed payouts; allocations must conserve the supplied total at cent precision.
 
 Use a base URL or the corresponding complete standard REST path. The financial endpoint setting does not redirect escrow. HTTP refusals and network failures never turn into a local approval.
 

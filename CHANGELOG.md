@@ -1,6 +1,17 @@
 # CHANGELOG
 
-## Unreleased — ElizaOS plugin 2.0.0 public contract
+## Unreleased — comprehensive quality corrections
+
+- Keep HTTP failure status, payment trace and retained proof when response bodies are non-JSON, null or unreadable. Successful malformed bodies cannot become verdicts.
+- Prepare patch releases plugin-guard 2.0.1 and guard-mobile 1.2.4; publication is tracked separately. Reject invalid SDK amounts and timeouts; normalize legacy remote allow to mandatory review in the mobile client, matching ADR 0027.
+- Validate finite, non-negative escrow allocations and balance conservation before displaying a ready proposal. Held results have zero proposed payouts, human review and no settlement authorization.
+- Preserve Python paid/authentication HTTP refusals instead of hiding them behind network fallback; remove the canonical Ethereum USDC contract from its erroneous local risk denylist.
+- Extend public conformance to all twelve Workers, verify AgentCard signatures and treat paid 402 admission as the expected boundary; keep domain input refusal tests offline.
+- Keep generated HTTP client cancellation active through response-body streaming, remove abort listeners after completion and retain 429 retry metadata for non-JSON refusals.
+- Align local Makefile lint/format coverage with CI by including Python integrations.
+- Repair the offline Virtuals example, remove fabricated contract dates/identities/digests from count-only requests and preserve required review in integration results; replace stale execution/latency/clearance claims and catalog snippets with current connection instructions.
+
+## 2026-10-06 — ElizaOS plugin 2.0.0 public contract
 
 - Replace outdated npm-facing firewall, zero-retention and autonomous arbitration claims with the evidence-review boundary; include an offline synthetic example, character template and license in the archive.
 - Preserve pricing, signature challenges, trace and the exact Financial Guard/Escrow request for explicit payment recovery. No automatic funding, signing, retry or settlement.

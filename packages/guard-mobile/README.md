@@ -51,7 +51,7 @@ success and proof-bearing network failure cannot become local approval.
 cannot establish paid evaluation or a verified receipt. Use a retained call for
 its signature challenge and recovery.
 
-See [native Base USDC payment execution v2](../../docs/deployment/payment-execution.md).
+See [native Base USDC payment execution v2](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/deployment/payment-execution.md).
 The hash, exact request and signature are private recovery data. State lives in
 memory; retain these privately before funding if recovery after process loss is
 needed. A payment trace is correlation only. A repeated transfer is refused by
@@ -74,3 +74,8 @@ HTTP 402/401/403 and invalid remote results never use network fallback.
 `evaluateLocalFallback()` remains available as an explicit offline heuristic.
 The Shopify/PayPal examples use mock connectors and mock approval, not real
 merchant integrations. Supplied prompts/documents are data, never instructions.
+
+Remote legacy `allow` never grants signing permission in this client. Invalid
+amounts/timeouts are rejected; incomplete or inconsistent allocation results are
+held for human review with zero proposed payouts. Escrow results explicitly carry
+`human_review_required: true` and `settlement_authorized: false`.

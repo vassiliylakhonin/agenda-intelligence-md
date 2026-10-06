@@ -133,6 +133,8 @@ export interface EscrowDisputeInput {
 export type EscrowRuling = "RELEASE_TO_SELLER" | "REFUND_TO_BUYER" | "PARTIAL_SETTLEMENT" | "ESCALATE_HUMAN";
 
 export interface EscrowDisputeResult {
+  human_review_required?: true;
+  settlement_authorized?: false;
   ruling: EscrowRuling;
   status: "decision_ready" | "not_decision_ready";
   score: number;

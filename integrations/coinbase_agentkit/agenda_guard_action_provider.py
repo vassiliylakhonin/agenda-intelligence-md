@@ -1,11 +1,7 @@
-"""Coinbase AgentKit Action Provider: Agenda Financial Guard.
+"""Illustrative wallet-wrapper adapter for supplied transaction evidence review.
 
-Provides an enterprise-grade pre-sign transaction firewall for AI agents using
-Coinbase AgentKit (cdp-agentkit-core). Screens transactions in real-time against:
-1. OFAC SDN & AML blacklists (Tornado Cash, Lazarus, Garantex).
-2. Smart contract drainers & infinite token allowances.
-3. Treasury velocity spending limits.
-4. Adversarial prompt injections in transaction reasoning.
+Local risk flags do not provide current sanctions clearance, authenticated wallet
+history or signing permission. Not an official installed AgentKit ActionProvider.
 """
 
 from __future__ import annotations
@@ -62,7 +58,7 @@ class AgendaFinancialGuardActionProvider:
         self.guard = AgentFinancialGuard(endpoint=endpoint) if endpoint else AgentFinancialGuard()
         self.policy_limits = {
             "max_single_limit_usd": max_single_limit_usd,
-            "rolling_24h_limit_usd": rolling_24h_limit_usd,
+            "daily_velocity_limit_usd": rolling_24h_limit_usd,
         }
         self.prefer_remote = prefer_remote
 
@@ -96,6 +92,9 @@ class AgendaFinancialGuardActionProvider:
             "status": verdict.status,
             "risk_score": verdict.score,
             "is_safe": verdict.is_allowed,
+            "human_review_required": True,
+            "signing_authorized": False,
+            "evidence_gaps": verdict.raw.get("evidence_gaps", []),
             "violations": verdict.violations,
             "advisory": verdict.execution_advisory,
         }
@@ -104,8 +103,8 @@ class AgendaFinancialGuardActionProvider:
     def wrap_wallet_provider(self, send_tx_fn: Callable[..., Any]) -> Callable[..., Any]:
         """Middleware wrapper around wallet_provider.send_transaction.
 
-        Intercepts outgoing transactions and enforces zero-tolerance blocking
-        if risk score exceeds threshold or recipient is blacklisted.
+        Illustrative wrapper for the documented to/value_usd/data kwargs only.
+        Unverified results hold execution. It is not a universal wallet adapter.
         """
 
         def guarded_send_transaction(*args: Any, **kwargs: Any) -> Any:
