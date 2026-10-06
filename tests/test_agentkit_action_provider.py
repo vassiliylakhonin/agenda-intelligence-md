@@ -26,6 +26,8 @@ def test_action_provider_clean_transaction(provider: AgendaFinancialGuardActionP
     )
     res = json.loads(res_raw)
     assert res["decision"] == "step_up_human_required"
+    assert res["human_review_required"] is True
+    assert res["signing_authorized"] is False
     assert res["is_safe"] is False
     assert res["risk_score"] == 55
     assert len(res["violations"]) == 0
@@ -40,6 +42,8 @@ def test_action_provider_blocked_tornado_cash(provider: AgendaFinancialGuardActi
     )
     res = json.loads(res_raw)
     assert res["decision"] == "reject"
+    assert res["human_review_required"] is True
+    assert res["signing_authorized"] is False
     assert res["is_safe"] is False
     assert res["risk_score"] == 95
     assert any("local risk denylist" in v for v in res["violations"])

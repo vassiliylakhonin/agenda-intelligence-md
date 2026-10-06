@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import pytest
+
 from agenda_intelligence import AgentFinancialGuard, FinancialGuardVerdict
 
 
@@ -154,3 +156,35 @@ def test_finite_encoded_approve_is_not_an_infinite_allowance():
     )
     assert verdict.checks["contract_security"] is True
     assert verdict.is_allowed is False
+
+
+@pytest.mark.parametrize("amount", [float("nan"), float("inf"), -1, "25", True, None])
+def test_invalid_amount_is_not_sent_or_converted_to_local_verdict(amount):
+    guard = AgentFinancialGuard()
+    with patch("urllib.request.urlopen") as remote:
+        with pytest.raises(ValueError, match="amount_usd"):
+            guard.check_transaction("0x" + "1" * 40, amount, prefer_remote=True)
+        remote.assert_not_called()
+
+
+def test_http_payment_refusal_cannot_be_hidden_by_python_fallback():
+    import io
+    from urllib.error import HTTPError
+
+    refusal = HTTPError("https://example.invalid", 402, "Payment Required", {}, io.BytesIO(b'{"required_usdc":0.05}'))
+    with patch("urllib.request.urlopen", side_effect=refusal):
+        with pytest.raises(HTTPError) as caught:
+            AgentFinancialGuard().check_transaction("0x" + "1" * 40, 1)
+    assert caught.value.code == 402
+    assert caught.value.read() == b'{"required_usdc":0.05}'
+
+
+def test_ethereum_usdc_contract_is_not_a_local_risk_denylist_entry():
+    # Canonical token contract, not a sanctioned recipient designation.
+    # https://developers.circle.com/stablecoins/usdc-contract-addresses
+    verdict = AgentFinancialGuard().check_transaction(
+        "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", 1, network="ethereum", prefer_remote=False
+    )
+    assert verdict.decision == "step_up_human_required"
+    assert not any("denylist" in value for value in verdict.violations)
+    assert verdict.requires_human_approval

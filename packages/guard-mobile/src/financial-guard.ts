@@ -26,7 +26,8 @@ export class AgentFinancialGuardClient {
 
   constructor(config: ClientConfig = {}) {
     this.endpoint = config.financialGuardUrl || DEFAULT_FINANCIAL_GUARD_URL;
-    this.timeoutMs = config.timeoutMs || 8000;
+    this.timeoutMs = config.timeoutMs ?? 8000;
+    if (!Number.isFinite(this.timeoutMs) || this.timeoutMs <= 0) throw new Error("timeoutMs must be positive");
     this.enableLocalFallback = config.enableLocalFallback ?? true;
     this.offlineFailClosed = config.offlineFailClosed ?? true;
     this.fetchImpl = config.fetch || (typeof fetch !== "undefined" ? fetch.bind(globalThis) : undefined as unknown as typeof fetch);
@@ -120,6 +121,13 @@ export class AgentFinancialGuardClient {
 
   /** Keep the returned call for exact-request challenge and lost-response recovery. */
   createCheck(input: TransactionCheckInput) {
+    if (!input || typeof input.amount_usd !== "number" || !Number.isFinite(input.amount_usd) || input.amount_usd < 0) {
+      throw new Error("amount_usd must be a non-negative finite number");
+    }
+    if (typeof input.recipient !== "string" || !input.recipient.trim()) throw new Error("recipient is required");
+    for (const [name, value] of Object.entries(input.policy_limits || {})) {
+      if (typeof value !== "number" || !Number.isFinite(value) || value < 0) throw new Error(`${name} must be a non-negative finite number`);
+    }
     const runId = input.run_id || `run_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
     const payload = {
@@ -132,7 +140,7 @@ export class AgentFinancialGuardClient {
       transaction: {
         network: input.network || "base_mainnet",
         token: input.token || "USDC",
-        amount_usd: Number(input.amount_usd) || 0,
+        amount_usd: input.amount_usd,
         recipient: input.recipient,
         method: input.method || "transfer",
         calldata: input.calldata || "0x"
@@ -153,23 +161,26 @@ export class AgentFinancialGuardClient {
         throw new Error("Missing bounded Financial Guard result");
       }
 
-      const decision = verdict.decision || "reject";
-      const isSafe = decision === "allow" && verdict.status === "decision_ready" && verdict.human_review_required === false;
+      // ADR 0027: legacy claims cannot restore wallet permission. This client
+      // has no authenticated, signed, request-bound authorization verifier.
+      const decision = verdict.decision === "allow" ? "step_up_human_required" : verdict.decision;
+      const isSafe = false;
 
       return {
         isSafe,
         decision,
-        score: verdict.score ?? 50,
-        advisory: verdict.execution_advisory || "Pre-sign check completed.",
+        score: Number.isFinite(verdict.score) && verdict.score >= 0 && verdict.score <= 100 ? verdict.score : 50,
+        advisory: verdict.decision === "allow" ? "Unverified legacy authorization; human review is required before signing." :
+          typeof verdict.execution_advisory === "string" ? verdict.execution_advisory : "Pre-sign evidence review completed; human review is required.",
         checks: {
-          sanctions_aml: verdict.checks?.sanctions_aml ?? false,
-          contract_security: verdict.checks?.contract_security ?? false,
-          velocity_limits: verdict.checks?.velocity_limits ?? false,
-          prompt_injection: verdict.checks?.prompt_injection ?? false
+          sanctions_aml: verdict.checks?.sanctions_aml === true,
+          contract_security: verdict.checks?.contract_security === true,
+          velocity_limits: verdict.checks?.velocity_limits === true,
+          prompt_injection: verdict.checks?.prompt_injection === true
         },
-        violations: verdict.violations || [],
-        evidence_gaps: verdict.evidence_gaps || [],
-        human_review_required: verdict.human_review_required ?? true,
+        violations: Array.isArray(verdict.violations) ? verdict.violations.filter((value: unknown) => typeof value === "string") : [],
+        evidence_gaps: Array.isArray(verdict.evidence_gaps) ? verdict.evidence_gaps.filter((value: unknown) => typeof value === "string") : [],
+        human_review_required: true,
         evaluated_by: "edge_worker",
         vizier_clearance_receipt: verdict.vizier_clearance_receipt ?? null,
         attestation: verdict.attestation ?? null,

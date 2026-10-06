@@ -41,7 +41,7 @@ export function createRetainedPaidCall<T>(endpoint: string, payload: unknown,
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const headers: Record<string, string> = {"content-type":"application/json", "user-agent":"AgendaElizaGuard/2.0.0"};
+      const headers: Record<string, string> = {"content-type":"application/json", "user-agent":"AgendaElizaGuard/2.0.1"};
       if (trace) headers["x-payment-trace-id"] = trace;
       if (tx) headers["x-payment-tx"] = tx;
       if (signature) headers["x-payment-signature"] = signature;
@@ -50,8 +50,23 @@ export function createRetainedPaidCall<T>(endpoint: string, payload: unknown,
       catch (error) { throw new NetworkRequestError(error instanceof Error ? error.message : "Network request failed"); }
       const returned = response.headers.get("x-payment-trace-id");
       if (returned && uuid.test(returned)) trace = returned.toLowerCase();
-      const data = await response.json();
-      if (!response.ok) throw new PaymentAdmissionError(response.status, data.error?.data || data, trace);
+      let text: string;
+      try { text = await response.text(); }
+      catch (error) {
+        if (!response.ok) throw new PaymentAdmissionError(response.status,
+          {error:"unreadable_http_response", http_status:response.status}, trace);
+        throw new NetworkRequestError(error instanceof Error ? error.message : "Response body could not be read");
+      }
+      let data: any;
+      try { data = JSON.parse(text); } catch { /* Preserve HTTP refusal even without JSON. */ }
+      const object = data && typeof data === "object" && !Array.isArray(data);
+      if (!response.ok) {
+        const nested = object && data.error?.data;
+        const details = nested && typeof nested === "object" && !Array.isArray(nested) ? nested :
+          object ? data : {error:"invalid_http_response", http_status:response.status};
+        throw new PaymentAdmissionError(response.status, details, trace);
+      }
+      if (!object) throw new Error("Evaluation returned an invalid JSON object");
       if (data.error || data.isError) throw new Error("Evaluation returned an error");
       return decode(data);
     } finally { clearTimeout(timeout); busy = false; }

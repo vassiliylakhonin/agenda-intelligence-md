@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import urllib.error
 import urllib.request
@@ -19,7 +20,6 @@ DEFAULT_SANCTIONED_ADDRESSES = {
     "0x090e53c44e8a9b6b1bca800e881455b921aec420",  # Lazarus Group
     "0x3cb4ca3c9dc0e02d139308e453974d1032528319",  # Lazarus Group
     "0x2f389ce8bd8ff92de3402ffce4691d17fc4f6535",  # Garantex deposit
-    "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",  # High-risk pool target
 }
 
 INJECTION_PATTERNS = [
@@ -199,6 +199,9 @@ class AgentFinancialGuard:
         prefer_remote: bool = True,
     ) -> FinancialGuardVerdict:
         """Run pre-sign security check on a proposed on-chain transaction."""
+        amount = transaction.get("amount_usd")
+        if isinstance(amount, bool) or not isinstance(amount, (int, float)) or not math.isfinite(amount) or amount < 0:
+            raise ValueError("transaction.amount_usd must be a non-negative finite number")
         intent_dict = intent if isinstance(intent, dict) else {"prompt": str(intent)}
         run_id_val = run_id or f"py-guard-{str(transaction.get('recipient', 'tx'))[:8]}"
         payload: dict[str, Any] = {
@@ -212,7 +215,11 @@ class AgentFinancialGuard:
         if prefer_remote:
             try:
                 return self._check_remote(payload)
-            except Exception:
+            except urllib.error.HTTPError:
+                # A paid/authentication refusal is not an offline verdict.
+                # Preserve its status, headers and unread body for the caller.
+                raise
+            except (urllib.error.URLError, OSError):
                 if not self.local_fallback:
                     raise
                 return self._check_local(payload)

@@ -191,7 +191,7 @@ function landingHtml(request, env) {
       <button type="button" onclick="loadFinScenario('drainer')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚫 Infinite Drainer Approve</button>
       <button type="button" onclick="loadFinScenario('injection')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚫 Prompt Injection Attack</button>
       <button type="button" onclick="loadFinScenario('solana_clean')" style="background: #faf5ff; border: 1px solid #e9d5ff; color: #6b21a8; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🟣 Review Solana ($15 SOL)</button>
-      <button type="button" onclick="loadFinScenario('solana_exploit')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚫 Solana Exploit Drainer</button>
+      <button type="button" onclick="loadFinScenario('solana_exploit')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⚠️ Legacy Solana risk flag</button>
     </div>
     <form id="fin-form" onsubmit="runFinancialGuardSimulation(event)" style="display: flex; flex-direction: column; gap: 10px;">
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">

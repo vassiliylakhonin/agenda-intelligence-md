@@ -5,6 +5,7 @@
 
 import type { TransactionCheckInput, TransactionCheckResult } from "./types.js";
 
+// Legacy local risk flags; not current sanctions data. Export name retained for compatibility.
 export const LOCAL_SANCTIONED_ADDRESSES = new Set([
   // Tornado Cash core routers & proxies
   "0xd90e2f925da726b50c4ed8d0fb90ad053324f31b",
@@ -63,7 +64,7 @@ export function evaluateLocalFallback(
   const recipientLower = rawRecipient.toLowerCase();
   if (LOCAL_SANCTIONED_ADDRESSES.has(recipientLower) || LOCAL_SANCTIONED_ADDRESSES.has(rawRecipient)) {
     sanctionsPassed = false;
-    violations.push(`Recipient address (${rawRecipient}) matches known OFAC/SDN or exploit denylist.`);
+    violations.push(`Recipient address (${rawRecipient}) matches the legacy local risk denylist; current sanctions status is not established.`);
   }
 
   // 2. Contract Drainer Check (EVM approvals & Solana authority transfers)

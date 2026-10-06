@@ -19,3 +19,16 @@ def test_offline_adapter_examples(name):
             runpy.run_path(str(path), run_name="__main__")
         remote.assert_not_called()
     assert "Offline" in output.getvalue()
+
+
+def test_offline_virtuals_module_runs_and_requires_review():
+    with patch(
+        "urllib.request.urlopen", side_effect=AssertionError("Offline adapter must not contact Workers")
+    ) as remote:
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            runpy.run_path(
+                str(Path(__file__).resolve().parents[1] / "integrations/virtuals/agenda_virtuals_adapter.py"),
+                run_name="__main__",
+            )
+        remote.assert_not_called()
+    assert "no signing or settlement is authorized" in output.getvalue()

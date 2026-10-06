@@ -9242,7 +9242,7 @@ async function a2aResultForM2MEscrowArbiter(params, request, env = {}) {
       canonical_http_endpoint: "/v1/m2m-escrow/evaluate-dispute",
       schema: "schemas/v1/m2m-escrow-arbiter-request.schema.json",
       capability: "m2m_escrow_arbitration_ruling",
-      human_review_required: ruling.ruling === "ESCALATE_HUMAN",
+      human_review_required: true,
       response: evaluation,
       vizier_status: ruling.vizier_status,
       ...(ruling.vizier_clearance_receipt ? { vizier_clearance_receipt: ruling.vizier_clearance_receipt } : {})

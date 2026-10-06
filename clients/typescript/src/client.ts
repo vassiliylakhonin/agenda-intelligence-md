@@ -82,6 +82,7 @@ export class AgendaIntelligenceClient {
     this.baseUrl = options.baseUrl.replace(/\/+$/, "");
     this.apiKey = options.apiKey;
     this.timeoutMs = options.timeoutMs ?? 30000;
+    if (!Number.isFinite(this.timeoutMs) || this.timeoutMs <= 0) throw new Error("timeoutMs must be positive");
     const impl = options.fetch ?? globalThis.fetch;
     if (!impl) {
       throw new Error("No fetch available; pass one in ClientOptions.fetch");
@@ -158,42 +159,40 @@ export class AgendaIntelligenceClient {
     if (options?.requestId) headers["x-request-id"] = options.requestId;
     if (body !== undefined) headers["content-type"] = "application/json";
 
+    if (options?.signal?.aborted) throw new DOMException("Call was aborted", "AbortError");
+    const serialized = body === undefined ? undefined : JSON.stringify(body);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-    options?.signal?.addEventListener("abort", () => controller.abort(), { once: true });
-
-    const init: RequestInit = { method, headers, signal: controller.signal };
-    if (body !== undefined) init.body = JSON.stringify(body);
-
-    let response: Response;
+    const abort = () => controller.abort();
+    const timer = setTimeout(abort, this.timeoutMs);
+    options?.signal?.addEventListener("abort", abort, { once: true });
     try {
-      response = await this.fetchImpl(this.baseUrl + path, init);
+      const init: RequestInit = { method, headers, signal: controller.signal };
+      if (serialized !== undefined) init.body = serialized;
+      const response = await this.fetchImpl(this.baseUrl + path, init);
+      const requestId = response.headers.get("x-request-id");
+      const text = await response.text();
+      let parsed: unknown = null;
+      try { parsed = JSON.parse(text); } catch { /* Keep HTTP failure status even without JSON. */ }
+      const payload = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as JsonObject : null;
+      if (response.status === 429) {
+        const header = Number(response.headers.get("retry-after"));
+        const fromBody = typeof payload?.retry_after_seconds === "number" ? payload.retry_after_seconds : null;
+        const limit = typeof payload?.limit_per_minute === "number" ? payload.limit_per_minute : null;
+        const retry = Number.isFinite(header) && header > 0 ? header :
+          fromBody !== null && Number.isFinite(fromBody) && fromBody > 0 ? fromBody : 60;
+        throw new RateLimitError("Rate limit exceeded", requestId, payload, retry, limit);
+      }
+      if (!response.ok) {
+        const message = typeof payload?.error === "string" ? payload.error : `Request failed with ${response.status}`;
+        throw new AgendaIntelligenceError(message, response.status, requestId, payload);
+      }
+      if (!payload) {
+        throw new AgendaIntelligenceError("Response was not a JSON object", response.status, requestId, null);
+      }
+      return payload as T;
     } finally {
       clearTimeout(timer);
+      options?.signal?.removeEventListener("abort", abort);
     }
-
-    const requestId = response.headers.get("x-request-id");
-    const text = await response.text();
-    let parsed: unknown = null;
-    if (text) {
-      try {
-        parsed = JSON.parse(text);
-      } catch {
-        throw new AgendaIntelligenceError("Response was not JSON", response.status, requestId, null);
-      }
-    }
-    const payload = (parsed ?? null) as JsonObject | null;
-
-    if (response.status === 429) {
-      const header = Number(response.headers.get("retry-after"));
-      const fromBody = typeof payload?.retry_after_seconds === "number" ? payload.retry_after_seconds : null;
-      const limit = typeof payload?.limit_per_minute === "number" ? payload.limit_per_minute : null;
-      throw new RateLimitError("Rate limit exceeded", requestId, payload, header || fromBody || 60, limit);
-    }
-    if (!response.ok) {
-      const message = typeof payload?.error === "string" ? payload.error : `Request failed with ${response.status}`;
-      throw new AgendaIntelligenceError(message, response.status, requestId, payload);
-    }
-    return payload as T;
   }
 }
