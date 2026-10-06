@@ -42,3 +42,30 @@ Every created probe key is revoked in a `finally` block, including when a
 verification assertion fails. On success the probe also checks that the
 revoked key is rejected with HTTP 401. Local runs must supply `VIZIER_API_KEY`
 from protected storage; there is no embedded credential fallback.
+
+## Initialize missing AgentCard keys on the two newest Workers
+
+Dispatch `deploy-existing-fleet.yml` on `main` with
+`initialize_card_signing=true`. This opt-in selects only Financial Guard and
+M2M Escrow from the existing fleet. Normal dispatch remains the full fleet.
+The protected Environment and separate owner-grant signer are reused; no new
+credential, paid resource or broader delegation is required.
+
+Each target's Vizier request includes `initialize_agent_card_signing: true`.
+Only after the matching signed ALLOW does the operator process inspect the
+live card, JWKS and Worker secret names. Existing valid signatures are retained.
+An existing signing secret with a broken/missing signature stops initialization;
+this operation does not rotate or overwrite it. A missing key is generated as
+an independent ES256 pair for that Worker and passed through stdin to
+`wrangler secret put AGENT_CARD_SIGNING_KEY`. Private key material is never
+written to disk, command arguments, Actions logs or artifacts. It remains in
+the Cloudflare Worker secret store for future releases.
+
+`secret put` updates the current deployment's binding before the subsequent
+normal gated deployment. Both happen inside the validated ALLOW execution.
+A failure after the binding write may leave a correctly configured key on the
+previous deployment; rerunning retains it rather than replacing it. Success
+requires verification of the served card's JWS against its served public JWKS.
+
+This verifies card provenance, not transaction safety, evidence truth or revenue.
+Skills, publisher identity and public access declarations are not altered.

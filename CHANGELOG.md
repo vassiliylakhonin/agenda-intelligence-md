@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2026-10-06 — Protected initialization of missing AgentCard signatures
+
+- Add an opt-in, two-target Financial Guard / Escrow signing-key bootstrap to the existing protected fleet workflow. It runs only after a matching owner-signed Vizier ALLOW, never rotates existing signing credentials, and verifies the served JWS against the public JWKS.
+- Keep private ES256 keys out of logs, arguments, repository files and artifacts; only the per-Worker Cloudflare secret retains them. Actual skills, provider identity and access policy are unchanged.
+
 ## Unreleased — measurable adoption
 
 - Exclude unknown/error outcomes from usable KV completions; label payment-header counts explicitly and leave confirmed executions unmeasured in this source.
