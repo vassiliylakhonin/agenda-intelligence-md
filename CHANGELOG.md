@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 2026-10-06 — Fleet client and adapter consistency
+
+- Share exact-request MCP admission and explicit recovery across all twelve profiles; link the runnable client from every landing page and retain Output Verification's bounded result check.
+- Preserve mobile SDK HTTP/payment refusals, price, challenge and trace; add retained Financial Guard/Escrow calls and prevent a failed paid request from falling back to a local approval.
+- Require an approving human-review callback before the mobile executor can run; default offline client fallback to human review. Keep the legacy strictMode option source-compatible without bypassing required review.
+- Repair three offline Python adapter examples that expected obsolete approvals/settlements; replace live-dependent mobile tests with actual local-handler and network-failure fixtures. Add these checks to CI.
+
 ## 2026-10-06 — Public integration and exact-call recovery
 
 - Preserve 402 pricing and payment correlation in the focused Output Verification client; keep the original request, protocol headers and proof for explicit signed retries and lost-response recovery. The helper does not open a wallet, transfer funds, sign or retry automatically.

@@ -4,6 +4,13 @@ Worked examples for the Agenda Intelligence MD product shell. The examples here 
 
 Every example declares its evidence mode. None of these are intelligence products. None are legal, compliance, sanctions, AML, or investment advice. Live retrieval and factuality verification are explicit non-goals of this repo — see [`README.md`](../README.md) and [`AGENTS.md`](../AGENTS.md).
 
+## Hosted Worker integration
+
+Use [hosted-mcp](hosted-mcp/README.md) for any published Worker. It preserves
+payment admission, exact-request signatures and lost-response recovery.
+The Python AgentKit, CrewAI and LangGraph folders are offline adapter patterns,
+not a hosted payment SDK or installed framework integration.
+
 ## Learning path
 
 Most contributors want one of the four loops below. Skim them in order to see the full surface of the product shell, then deep-dive into the loop you care about.

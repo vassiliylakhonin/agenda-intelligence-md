@@ -84,6 +84,14 @@ example**. It displays a saved synthetic fixture; submitting an edited live
 request remains paid. Responses concern evidence readiness and require human
 review, without certifying factual truth or authorizing an external action.
 
+## Runnable client for every Worker
+
+Use the [shared retained MCP client](../../examples/hosted-mcp/README.md) with
+this Worker's published tool and example arguments. It exposes 402 pricing,
+401 signature challenges and explicit recovery of the original request; it
+never funds or signs. All twelve profile examples are checked through the
+actual handler, including synthetic paid execution and cached replay.
+
 ## Runnable Output Verification client
 
 See [the focused integration](../../examples/output-verification/README.md) for a

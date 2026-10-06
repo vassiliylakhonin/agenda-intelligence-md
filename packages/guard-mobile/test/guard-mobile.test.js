@@ -6,6 +6,9 @@ import {
   evaluateLocalFallback,
   LOCAL_SANCTIONED_ADDRESSES
 } from "../dist/index.js";
+import {handleRequest} from "../../../deploy/cloudflare-worker/src/index.js";
+const offline = {fetch:async()=>{throw Error("Synthetic network outage");}};
+const localFetch = profile => (url,options) => handleRequest(new Request(url,options),{AGENT_PROFILE:profile,VIZIER_DISABLED:"1",BILLING_MODE:"freemium"});
 
 test("Local Fallback: Blocks Tornado Cash sanctioned address", () => {
   const result = evaluateLocalFallback({
@@ -76,8 +79,8 @@ test("Local Fallback: Allows clean, compliant transaction", () => {
   assert.strictEqual(result.violations.length, 0);
 });
 
-test("AgentFinancialGuardClient: Live Edge Check catches Tornado Cash on Cloudflare Worker", async () => {
-  const guard = new AgentFinancialGuardClient();
+test("AgentFinancialGuardClient: actual Worker handler rejects local risk denylist address", async () => {
+  const guard = new AgentFinancialGuardClient({fetch:localFetch("agent_financial_guard")});
   const result = await guard.check({
     recipient: "0xd90e2f925da726b50c4ed8d0fb90ad053324f31b",
     amount_usd: 50.0,
@@ -91,8 +94,8 @@ test("AgentFinancialGuardClient: Live Edge Check catches Tornado Cash on Cloudfl
   assert.ok(result.advisory.includes("CRITICAL SECURITY BLOCK"));
 });
 
-test("M2MEscrowClient: Live Edge Dispute Evaluation works and calculates 1% fee", async () => {
-  const escrow = new M2MEscrowClient();
+test("M2MEscrowClient: actual Worker does not settle a hash-only claim", async () => {
+  const escrow = new M2MEscrowClient({fetch:localFetch("m2m_escrow_arbiter")});
   const result = await escrow.evaluateDispute({
     escrow_id: "deal-mobile-test-01",
     deal_terms: {
@@ -115,11 +118,11 @@ test("M2MEscrowClient: Live Edge Dispute Evaluation works and calculates 1% fee"
   });
 
   assert.strictEqual(result.evaluated_by, "edge_worker");
-  assert.strictEqual(result.ruling, "RELEASE_TO_SELLER");
-  assert.strictEqual(result.payout_breakdown.seller_payout_usd, 990.0);
-  assert.strictEqual(result.payout_breakdown.arbiter_fee_usd, 10.0);
+  assert.strictEqual(result.ruling, "ESCALATE_HUMAN");
+  assert.strictEqual(result.payout_breakdown.seller_payout_usd, 0);
+  assert.strictEqual(result.payout_breakdown.arbiter_fee_usd, 0);
   assert.strictEqual(result.checks.deadline_honored, true);
-  assert.strictEqual(result.checks.hash_verified, true);
+  assert.strictEqual(result.checks.hash_verified, false);
 });
 
 test("Solana Multi-Chain: Blocks known exploit/drainer Solana address", () => {
@@ -153,7 +156,7 @@ test("Solana Multi-Chain: Blocks dangerous account authority change", () => {
 });
 
 test("Zero-Boilerplate protect(): Successfully executes callback when transaction is safe", async () => {
-  const guard = new AgentFinancialGuardClient();
+  const guard = new AgentFinancialGuardClient(offline);
   let executed = false;
 
   const { executionResult, checkResult } = await guard.protect(
@@ -165,7 +168,8 @@ test("Zero-Boilerplate protect(): Successfully executes callback when transactio
     async () => {
       executed = true;
       return { txHash: "0xabc123" };
-    }
+    },
+    {onStepUp:()=>true} // Explicit test-only approval, never a real wallet.
   );
 
   assert.strictEqual(executed, true);
@@ -174,7 +178,7 @@ test("Zero-Boilerplate protect(): Successfully executes callback when transactio
 });
 
 test("Zero-Boilerplate protect(): Intercepts and blocks malicious transaction without executing", async () => {
-  const guard = new AgentFinancialGuardClient();
+  const guard = new AgentFinancialGuardClient(offline);
   let executed = false;
 
   await assert.rejects(
@@ -222,7 +226,7 @@ test("AgentFinancialGuardClient: offlineFailClosed with strictMode intercepts of
   const guard = new AgentFinancialGuardClient({
     enableLocalFallback: true,
     offlineFailClosed: true,
-    financialGuardUrl: "http://127.0.0.1:59999/v1/pre-sign-check",
+    ...offline,
     timeoutMs: 100
   });
 

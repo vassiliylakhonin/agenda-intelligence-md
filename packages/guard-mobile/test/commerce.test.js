@@ -27,7 +27,7 @@ test("Agentic Commerce: guard.protect() intercepts poisoned PayPal payment befor
   const guard = new AgentFinancialGuardClient({
     enableLocalFallback: true,
     // Use an unroutable endpoint to test deterministic local fallback behavior
-    financialGuardUrl: "http://127.0.0.1:59999/v1/pre-sign-check",
+    fetch:async()=>{throw Error("Synthetic network outage");},
     timeoutMs: 100
   });
 
@@ -65,7 +65,7 @@ test("Agentic Commerce: guard.protect() intercepts poisoned PayPal payment befor
 test("Agentic Commerce: guard.protect() allows benign checkout and triggers step-up 2FA when limit exceeded", async () => {
   const guard = new AgentFinancialGuardClient({
     enableLocalFallback: true,
-    financialGuardUrl: "http://127.0.0.1:59999/v1/pre-sign-check",
+    fetch:async()=>{throw Error("Synthetic network outage");},
     timeoutMs: 100
   });
 

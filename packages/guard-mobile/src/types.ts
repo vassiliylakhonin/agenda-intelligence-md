@@ -76,11 +76,11 @@ export interface TransactionCheckResult {
   human_review_required: boolean;
   /** Whether this verdict was evaluated by live Cloudflare Edge or local offline fallback */
   evaluated_by: "edge_worker" | "local_fallback";
-  /** Optional cryptographic Vizier JWS clearance receipt (vrf_...) when settled via x402 */
+  /** Optional server-reported receipt; verify its signature and scope before use */
   vizier_clearance_receipt?: string | null;
-  /** Optional on-chain x402 settlement attestation */
+  /** Optional server-reported attestation metadata; not independently verified here */
   attestation?: Record<string, unknown> | null;
-  /** Structured x402 payment challenge for unlocking on-chain cryptographic receipts */
+  /** Structured payment challenge; payment does not establish action authorization */
   x402_challenge?: {
     protocol: string;
     network: string;
@@ -163,17 +163,14 @@ export interface ClientConfig {
   timeoutMs?: number;
   /** Enable offline local fallback heuristic if network request fails. Default: true */
   enableLocalFallback?: boolean;
-  /** If true, offline fallback operates in fail-closed mode, escalating all offline checks to step_up_human_required. Default: false */
+  /** If true, offline fallback operates in fail-closed mode, escalating all offline checks to step_up_human_required. Default: true */
   offlineFailClosed?: boolean;
   /** Injected fetch implementation (useful for tests or custom environments). */
   fetch?: typeof fetch;
 }
 
 export interface ProtectOptions {
-  /**
-   * If true, even "step_up_human_required" decisions throw TransactionStepUpRequiredError.
-   * Default: false (only hard "reject" decisions throw TransactionBlockedError).
-   */
+  /** @deprecated Retained for source compatibility. Human review cannot be bypassed. */
   strictMode?: boolean;
   /**
    * Optional custom step-up handler invoked when decision is "step_up_human_required".

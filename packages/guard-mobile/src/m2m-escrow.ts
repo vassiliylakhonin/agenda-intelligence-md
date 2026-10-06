@@ -4,6 +4,7 @@
  */
 
 import type { ClientConfig, EscrowDisputeInput, EscrowDisputeResult } from "./types.js";
+import { createRetainedPaidCall } from "./paid-call.js";
 
 export const DEFAULT_M2M_ESCROW_URL =
   "https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev/v1/m2m-escrow/evaluate-dispute";
@@ -26,9 +27,15 @@ export class M2MEscrowClient {
   }
 
   /**
-   * Deterministically evaluates an M2M escrow dispute and delivers binding payout allocations.
+   * Review supplied delivery evidence; reported allocations never authorize settlement.
    */
   async evaluateDispute(input: EscrowDisputeInput): Promise<EscrowDisputeResult> {
+    return this.createDispute(input).evaluate();
+  }
+
+  /** Retain this object for explicit payment challenge and recovery. No payout. */
+  createDispute(input: EscrowDisputeInput) {
+    const amount = input.deal_terms.amount_usd;
     const payload = {
       escrow_id: input.escrow_id,
       deal_terms: input.deal_terms,
@@ -36,41 +43,18 @@ export class M2MEscrowClient {
       delivery_submission: input.delivery_submission
     };
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "User-Agent": "AgendaGuardMobile/1.0.0"
-    };
-
-    if (input.x402_payment_tx) {
-      headers["X-Payment-Tx"] = input.x402_payment_tx;
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
-
-    try {
-      const response = await this.fetchImpl(this.endpoint, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`M2M Escrow Arbiter returned HTTP ${response.status}`);
+    return createRetainedPaidCall<EscrowDisputeResult>(this.endpoint, payload, this.fetchImpl, this.timeoutMs, data => {
+      const rulingObj = data?.arbitration_ruling;
+      if (!rulingObj || !["RELEASE_TO_SELLER", "REFUND_TO_BUYER", "PARTIAL_SETTLEMENT", "ESCALATE_HUMAN"].includes(rulingObj.ruling)) {
+        throw new Error("Missing bounded Escrow result");
       }
-
-      const data = await response.json();
-      const rulingObj = data?.arbitration_ruling || {};
 
       return {
         ruling: rulingObj.ruling || "ESCALATE_HUMAN",
         status: rulingObj.status || "not_decision_ready",
         score: rulingObj.score ?? 0,
         payout_breakdown: rulingObj.payout_breakdown || {
-          total_escrow_usd: input.deal_terms.amount_usd,
+          total_escrow_usd: amount,
           seller_payout_usd: 0,
           buyer_refund_usd: 0,
           arbiter_fee_usd: 0
@@ -86,13 +70,6 @@ export class M2MEscrowClient {
         execution_advisory: rulingObj.execution_advisory || "Evaluation completed.",
         evaluated_by: "edge_worker"
       };
-    } catch (err: unknown) {
-      clearTimeout(timeoutId);
-      throw new Error(
-        `M2MEscrowClient failed to evaluate dispute: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
-    }
+    }, input.x402_payment_tx);
   }
 }
