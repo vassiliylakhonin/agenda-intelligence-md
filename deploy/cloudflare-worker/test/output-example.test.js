@@ -23,6 +23,7 @@ test('runnable example detects fabricated support through the real MCP handler',
 });
 test('hosted payment refusal and malformed inputs never masquerade as evaluation', async () => {
   const answer = await callOutputVerification(input, localClient('pay_per_call'));
-  assert.deepEqual(answer, { status: 'payment_required', evaluated: false });
+  assert.equal(answer.status, 'payment_required');
+  assert.equal(answer.evaluated, false);
   await assert.rejects(callOutputVerification({}, localClient('pay_per_call')), /Evaluation refused/);
 });

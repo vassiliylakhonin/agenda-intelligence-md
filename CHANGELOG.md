@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2026-10-06 — Public integration and exact-call recovery
+
+- Preserve 402 pricing and payment correlation in the focused Output Verification client; keep the original request, protocol headers and proof for explicit signed retries and lost-response recovery. The helper does not open a wallet, transfer funds, sign or retry automatically.
+- Link the runnable integration from the Output Verification landing page and clarify the free worked-example path for visitors without a wallet.
+- Document a bounded pilot handoff and metrics without claiming external usage, customer identity or revenue.
+
 ## 2026-10-06 — Protected initialization of missing AgentCard signatures
 
 - Add an opt-in, two-target Financial Guard / Escrow signing-key bootstrap to the existing protected fleet workflow. It runs only after a matching owner-signed Vizier ALLOW, never rotates existing signing credentials, and verifies the served JWS against the public JWKS.
