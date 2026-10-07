@@ -50,5 +50,10 @@
   "devDependencies": {
     "@elizaos/core": "1.7.2",
     "typescript": "^5.4.5"
+  },
+  "overrides": {
+    "@elizaos/core": {
+      "pdfjs-dist": "6.2.108"
+    }
   }
 }

@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased — development dependency security
+
+- Update the ElizaOS integration's installed PBKDF2 dependency to 3.1.7 and scope a PDF.js 6.2.108 override to its type-checking development host. Source development requires Node 22.13+ or 24+; the standalone client retains Node 20 support.
+- Document remaining upstream ElizaOS/elliptic advisories and bundled crypto limitations. Repository overrides do not repair consumer hosts or establish runtime PDF compatibility.
+
 ## Unreleased — comprehensive quality corrections
 
 - Keep HTTP failure status, payment trace and retained proof when response bodies are non-JSON, null or unreadable. Successful malformed bodies cannot become verdicts.

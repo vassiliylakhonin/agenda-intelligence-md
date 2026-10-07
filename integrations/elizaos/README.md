@@ -14,6 +14,12 @@ Node.js 20+ with `fetch` is required. The standalone client has no runtime depen
 
 **Migration from 1.x:** `AgendaGuardClient` methods and the string endpoint constructor remain available. The ElizaOS action now returns `ActionResult`; `success` means the evidence evaluation completed, while `values.signing_authorized` remains `false`. It requires a structured request from the host. ElizaOS 0.x is outside this release's supported peer range.
 
+## Development dependencies and host security
+
+Source development uses Node.js 22.13+ or 24+ (CI uses 24). The local type-checking host pins ElizaOS 1.7.2, updates installed PBKDF2 to 3.1.7 and overrides its unused PDF.js dependency to 6.2.108. These are development-tree changes; the standalone client still supports Node.js 20+.
+
+ElizaOS 1.7.2 also bundles crypto code, including elliptic 6.6.1, which has an unresolved [upstream advisory](https://github.com/advisories/GHSA-848j-6mx2-7j84). Updating the installed PBKDF2 package does not rewrite ElizaOS's published bundle. This plugin neither parses PDFs nor calls that crypto implementation, but plugin tests do not establish the safety of other host services. Repository overrides are not inherited by consuming applications; host owners must audit their own dependencies and PDF/crypto usage. The PDF.js development override does not assert compatibility with arbitrary host PDF integrations.
+
 ## What the services review
 
 - Financial Guard reports known risk patterns in supplied transaction evidence and missing evidence. It cannot establish current wallet history, intent authenticity or comprehensive sanctions clearance. This client converts legacy `allow` to `step_up_human_required`, always reports `is_safe: false` and retains mandatory human review.
