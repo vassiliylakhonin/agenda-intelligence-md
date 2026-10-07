@@ -10,6 +10,7 @@ import { PUBLIC_SCHEMAS } from "./public-schemas.js";
 import { trustPage } from "./trust-pages.js";
 import { createLandingRenderer } from "./landing-ui.js";
 import { createTelemetry } from "./telemetry.js";
+import { TELEMETRY_CLIENT_SCRIPT } from "./payment-client.js";
 import {
   OPENSANCTIONS_ATTRIBUTION,
   OPENSANCTIONS_HOMEPAGE,
@@ -11594,7 +11595,9 @@ const {
   agentProfile,
   jsonResponse,
   AGENSTRY_VERIFICATION_PATHS,
-  directRoutes: () => DIRECT_V1_ROUTES
+  directRoutes: () => DIRECT_V1_ROUTES,
+  authenticationStatus: (request, env) => productionAuthKey(agentProfile(request, env), env)
+      && isProductionAuthorized(request, env, agentProfile(request, env)) ? 'deployment_key_validated' : 'unverified'
 });
 
 function routingMarkdown(text, modules, profile = "agenda", triageOverride = null, extras = {}) {
@@ -14735,6 +14738,8 @@ function directRouteHtml(endpoint, route, request, env) {
 </div>
 
 <script>
+${TELEMETRY_CLIENT_SCRIPT}
+var agendaConsolePaymentTraceId = null;
 async function sendTest(e) {
   e.preventDefault();
   var btn = document.getElementById("btnSend");
@@ -14756,9 +14761,13 @@ async function sendTest(e) {
   try {
     var resp = await fetch("${endpoint}", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: agendaTelemetryHeaders("${endpoint}", Object.assign({ "content-type": "application/json" },
+        agendaConsolePaymentTraceId ? { "x-payment-trace-id": agendaConsolePaymentTraceId } : {})),
       body: raw
     });
+    var trace = resp.headers.get("x-payment-trace-id");
+    if (trace && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(trace)) agendaConsolePaymentTraceId = trace;
+    if (resp.ok) agendaConsolePaymentTraceId = null;
     var data = await resp.json();
     status.innerText = "Status: " + resp.status + " " + (resp.ok ? "OK" : "Error");
     box.innerText = JSON.stringify(data, null, 2);
@@ -14917,6 +14926,34 @@ async function paidProtocolResponse(request, body, response) {
     {status:response.status, headers:response.headers});
 }
 
+function paidRequestHint(request, body, profile, env) {
+  const path = new URL(request.url).pathname;
+  const route = DIRECT_V1_ROUTES[path] || (path.startsWith('/v1/evidence-packet/')
+    ? DIRECT_V1_ROUTES['/v1/agent-output/verification']
+    : Object.values(DIRECT_V1_ROUTES).find(r => r.guideProfile === profile));
+  const guide = path === '/v1/corridor-bankability/screen' ? GATE_REQUEST_GUIDES.corridor_bankability
+    : route?.guide || GATE_REQUEST_GUIDES[route?.guideProfile];
+  if (path.startsWith('/mcp')) {
+    const tool = hostedMcpTools(profile, request, env).find(t => t.name === body?.params?.name);
+    if (!tool) return { documentation: '/api/openapi.json' };
+    const example = tool._meta['com.agenda/readiness'].example_arguments;
+    return { transport: 'mcp', schema: tool.inputSchema,
+      required_fields: tool.inputSchema?.required || [],
+      headers: { 'MCP-Protocol-Version': MCP_PROTOCOL_VERSION },
+      ...(example !== null ? { example_request: { jsonrpc: '2.0', id: 'example', method: 'tools/call',
+        params: { name: tool.name, arguments: example } } } : {}),
+      instruction: 'Use the published tools/list inputSchema; do not put payment credentials in the body.' };
+  }
+  if (path === '/message/send' || path === '/') {
+    const example = agentCard(request, { AGENT_PROFILE: profile }).x_agenda_intelligence.a2a_send_message_example;
+    return { transport: 'a2a', example_request: example.request, headers: example.headers,
+      instruction: 'Use the matching A2A version and structured example; examples are illustrative.' };
+  }
+  return guide ? { transport: 'rest', schema: route?.schema || guide.schema, required_fields: guide.required,
+    example_request: guide.example, instruction: 'Use the canonical schema and replace illustrative values with supplied evidence.' }
+    : { documentation: '/api/openapi.json' };
+}
+
 export async function handleRequest(request, env = {}, ctx = {}) {
   const execute = () => handleRequestInner(request, env, ctx);
   if (request.method !== 'POST') return execute();
@@ -14949,7 +14986,18 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   try { body = await readBoundedJson(request); request = new Request(request, { body: JSON.stringify(body) }); }
   catch (error) {
     const protocol = path.startsWith('/mcp') || path === '/message/send' || path === '/';
-    return jsonResponse(protocol ? {jsonrpc:'2.0', id:null, error:{code:error.status === 413 ? -32600 : -32700, message:'Invalid JSON payload'}} : {error:'Invalid JSON payload'}, error.status || 400);
+    const status = error.status || 400;
+    const trace = paymentTraceId(request);
+    const attempt_id = crypto.randomUUID();
+    const caller_hash = await callerHash(request, env).catch(() => null);
+    const validation = { category: status === 413 ? 'body_too_large' : 'invalid_json', error_count: 1 };
+    for (const stage of ['request_received', 'payment_rejected']) logPaymentEvent(request, env,
+      {stage, attempt_id, payment_trace_id: trace, caller_hash, profile,
+        reason: stage === 'payment_rejected' ? 'invalid_paid_request' : null, status, validation});
+    const data = {code:'invalid_paid_request', validation};
+    return paymentTraceResponse(jsonResponse(protocol
+      ? {...data, jsonrpc:'2.0', id:null, error:{code:status === 413 ? -32600 : -32700, message:'Invalid JSON payload', data}}
+      : {...data, error:'Invalid JSON payload'}, status), trace, attempt_id);
   }
   let reply = response => Promise.resolve(response).then(value => paidProtocolResponse(request, body, value));
   if (containsInlinePayment(body)) return reply(jsonResponse({ code: 'payment_headers_required',
@@ -14972,16 +15020,22 @@ export async function handleRequest(request, env = {}, ctx = {}) {
   const attempt_id = crypto.randomUUID();
   const payment_trace_id = paymentTraceId(request);
   const protocolReply = reply;
-  reply = response => protocolReply(response).then(value => paymentTraceResponse(value, payment_trace_id));
+  reply = response => protocolReply(response).then(value => paymentTraceResponse(value, payment_trace_id, attempt_id));
   const caller_hash = await callerHash(request, env).catch(() => null);
   const emit = (stage, reason = null, status = null, execution_id = null) => logPaymentEvent(request, env,
     { stage, reason, status, caller_hash, execution_id, attempt_id, payment_trace_id, profile: operation.profile || profile, minimum_usdc: operation.minimum,
       validation: reason === 'invalid_paid_request' ? { category: operation.validationCategory, error_count: operation.errors.length } : null });
   emit('request_received');
   if (operation.errors?.length) {
-    if (wantsPayment || env.BILLING_MODE === 'pay_per_call' || bearerTokenFromRequest(request).startsWith('agy_pro_')) { emit('payment_rejected', 'invalid_paid_request', 400); return reply(jsonResponse({ code: 'invalid_paid_request', errors: operation.errors }, 400)); }
+    if (wantsPayment || env.BILLING_MODE === 'pay_per_call' || bearerTokenFromRequest(request).startsWith('agy_pro_')) {
+      emit('payment_rejected', 'invalid_paid_request', 400);
+      return reply(jsonResponse({ code: 'invalid_paid_request', errors: operation.errors,
+        validation: { category: operation.validationCategory, error_count: operation.errors.length },
+        request_hint: paidRequestHint(request, body, profile, env) }, 400));
+    }
     return execute();
   }
+  emit('request_validated');
   if (wantsPayment && bearerTokenFromRequest(request).startsWith('agy_pro_')) { emit('payment_rejected', 'choose_one_payment_method', 400); return reply(jsonResponse({ code: 'choose_one_payment_method' }, 400)); }
   if (wantsPayment) return reply(executePaidRequest(request, body, env, operation.minimum, execute, emit));
   if (env.BILLING_MODE === 'pay_per_call' && !bearerTokenFromRequest(request).startsWith('agy_pro_')) {
@@ -14998,7 +15052,7 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     const rate = await checkRateLimit(request, env, profile);
     if (rate.limited) return reply(generateX402PaymentResponse(operation.profile, request, env, 'payment_required'));
   }
-  return execute();
+  return reply(execute());
 }
 
 async function handleRequestInner(request, env = {}, ctx = {}) {

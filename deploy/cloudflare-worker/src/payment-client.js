@@ -2,9 +2,7 @@ import { BASE_USDC_CONTRACT, BASE_USDC_WALLET } from './profiles.js';
 
 // Browser checkout, entered only after an explicit payment confirmation.
 // The original body and signature survive a failed HTTP response in this page.
-export const PAYMENT_CLIENT_SCRIPT = `
-var agendaPendingPayment = null;
-var agendaPaymentBusy = false;
+export const TELEMETRY_CLIENT_SCRIPT = `
 function agendaTelemetryHeaders(url, headers) {
   var result = Object.assign({}, headers);
   if (window.location && new URL(url, window.location.href).origin === window.location.origin) {
@@ -13,6 +11,11 @@ function agendaTelemetryHeaders(url, headers) {
   }
   return result;
 }
+`;
+
+export const PAYMENT_CLIENT_SCRIPT = `${TELEMETRY_CLIENT_SCRIPT}
+var agendaPendingPayment = null;
+var agendaPaymentBusy = false;
 function agendaShowRecovery(record) {
   if (typeof document === 'undefined' || !document.body || !document.body.appendChild) return;
   var button = document.getElementById('agenda-payment-recovery');

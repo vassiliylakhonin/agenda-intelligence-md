@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Unreleased — telemetry demand quality and input recovery
+
+- Separate catalog/domain usage and record deployment-key authentication without asserting customer identity; align owner test labels across telemetry sources.
+- Add paid-input validation events, bounded failure families and malformed/oversized input measurements while retaining existing admission, payment and replay behavior.
+- Return transport-specific schema/example hints and expose server HTTP attempt IDs; preserve page-local traces during manual input correction.
+- Document compatible vault aggregates and a five-session human-assessed pilot protocol; deployment and real-user sessions are not claimed by this patch.
+
 ## Unreleased — development dependency security
 
 - Update the ElizaOS integration's installed PBKDF2 dependency to 3.1.7 and scope a PDF.js 6.2.108 override to its type-checking development host. Source development requires Node 22.13+ or 24+; the standalone client retains Node 20 support.

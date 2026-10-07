@@ -9,7 +9,7 @@ test('free preview closes its attempt without claiming payment or paid execution
  const body={project_name:'Synthetic',corridor_leg:'Aktau-Baku',capex_usd_m:10,ifi_debt_usd_m:0,dscr_min:1.5};
  const {response,events}=await capture(()=>handleRequest(new Request(origin+'/v1/corridor-bankability/screen',{method:'POST',body:JSON.stringify(body)}),env));
  assert.equal(response.status,200);const payment=events.filter(e=>e?.event==='agenda_intelligence_payment');
- assert.deepEqual(payment.map(e=>e.stage),['request_received','preview_completed']);assert.equal(payment[0].attempt_id,payment[1].attempt_id);
+ assert.deepEqual(payment.map(e=>e.stage),['request_received','request_validated','preview_completed']);assert.ok(payment.every(e=>e.attempt_id===payment[0].attempt_id));
 });
 test('worked example telemetry is fixed empty same-origin POST, never evaluated usage',async()=>{
  const {response,events}=await capture(()=>handleRequest(new Request(origin+'/telemetry/worked-example',{method:'POST',headers:{origin,'x-example-trace-id':trace},body:''}),env));

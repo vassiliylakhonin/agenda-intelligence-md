@@ -8,11 +8,15 @@ export function paymentTraceId(request) {
   return normalizePaymentTrace(request.headers.get('x-payment-trace-id')) || crypto.randomUUID();
 }
 
-export function paymentTraceResponse(response, trace) {
+export function paymentTraceResponse(response, trace, attempt = null) {
   const headers = new Headers(response.headers);
   headers.set('X-Payment-Trace-Id', trace);
   const exposed = new Set((headers.get('access-control-expose-headers') || '').split(',').map(x => x.trim()).filter(Boolean));
   exposed.add('X-Payment-Trace-Id');
+  if (normalizePaymentTrace(attempt)) {
+    headers.set('X-Payment-Attempt-Id', attempt);
+    exposed.add('X-Payment-Attempt-Id');
+  }
   headers.set('access-control-expose-headers', [...exposed].join(', '));
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
