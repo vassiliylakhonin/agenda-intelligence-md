@@ -2297,7 +2297,7 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   });
 
   assert.equal(event.event, "agenda_intelligence_a2a_usage");
-  assert.equal(event.event_version, 9);
+  assert.equal(event.event_version, 10);
   assert.equal(event.path, "/message/send");
   assert.equal(event.jsonrpc_method, "message/send");
   assert.equal(event.request_kind, "a2a_action");
@@ -2396,7 +2396,7 @@ test("a prose question to a gate is measured by what arrived, not by what parsed
   assert.equal(event.prompt_chars, question.length, "prompt_chars is the size of what the caller sent");
   assert.equal(event.structured_chars, 0, "structured_chars still reports what the gate could parse");
   assert.equal(event.likely_probe, false, "a request this size is not a probe because a schema rejected it");
-  assert.equal(event.event_version, 9);
+  assert.equal(event.event_version, 10);
   assert.equal(event.outcome.reason_code, "missing_structured_request");
   assert.ok(event.outcome.required_fields.includes("counterparty"));
   assert.ok(event.outcome.required_fields.includes("risk_question"));

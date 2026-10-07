@@ -18,7 +18,7 @@ const USABLE_OUTCOMES = new Set([
   "escalate_before_onboarding", "proceed_to_validation",
 ]);
 
-export function createTelemetry({ agentProfile, jsonResponse, AGENSTRY_VERIFICATION_PATHS, directRoutes }) {
+export function createTelemetry({ agentProfile, jsonResponse, AGENSTRY_VERIFICATION_PATHS, directRoutes, authenticationStatus = () => 'unverified' }) {
 function headerHost(request, headerName) {
   const value = request.headers.get(headerName);
   if (!value) return null;
@@ -149,7 +149,7 @@ function isServiceProbeUserAgent(raw) {
 // those runs land in `external` and read as demand — which is exactly the
 // confusion a header is there to prevent.
 const OWNER_SYNTHETIC_CLIENT_ID = /^(?:instinct[-_]?owner|agenda-owner-)/i;
-const OWNER_SYNTHETIC_USER_AGENT = /^instinct[-_]?owner(?:verify|feedback|[-_])/i;
+const OWNER_SYNTHETIC_USER_AGENT = /^(?:instinct[-_]?owner(?:verify|feedback|[-_])|owner-feedback-synthetic\/|agenda-fleet-site-verification\/)/i;
 const TECHNICAL_VERIFICATION_USER_AGENT = /^(?:agenda-ecosystem-verification|agenda-urllib-client|agenda-plugin-client-path)\//i;
 
 // Named benchmark harnesses observed replaying conformance packets against the
@@ -342,9 +342,11 @@ function buildUsageEvent(request, details = {}) {
     // the size of what this profile could parse, with structured_chars carrying
     // the latter. Rows at version 3 and below measured a plain-text request to
     // a gate as zero, and their likely_probe follows from that number.
-    event_version: 9,
-    classification_version: 4,
+    // 10: bounded usage category and server-validated deployment access.
+    event_version: 10,
+    classification_version: 5,
     origin_verification: "unverified",
+    authentication_status: details.authentication_status || 'unverified',
     timestamp: new Date().toISOString(),
     source: "cloudflare_worker",
     method: request.method,
@@ -357,6 +359,9 @@ function buildUsageEvent(request, details = {}) {
     prompt_chars: promptChars,
     structured_chars: structuredChars,
     modules_used: normalizeModules(details.modules_used),
+    usage_category: normalizeModules(details.modules_used).length
+      ? normalizeModules(details.modules_used).every(m => ['fleet_directory', 'decision_policies_list'].includes(m)) ? 'catalog' : 'domain'
+      : 'unclassified',
     live_retrieval:
       details.live_retrieval || { status: null, upstream: null, reason_code: null, billable: false, cost_eur: 0 },
     client: classifyClient(request),
@@ -386,16 +391,18 @@ function exampleTraceId(request) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value) ? value : null;
 }
 const VALIDATION_CATEGORIES = new Set(['unsupported_protocol', 'invalid_message', 'invalid_jsonrpc',
-  'invalid_request_object', 'missing_structured_request', 'schema_validation_failed', 'missing_input']);
+  'invalid_request_object', 'missing_structured_request', 'schema_validation_failed', 'missing_input', 'invalid_json', 'body_too_large']);
 function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, profile, minimum_usdc, reason = null, status = null, validation = null, caller_hash = null, execution_id = null }) {
   try {
     const url = new URL(request.url);
     const safeValidation = validation && VALIDATION_CATEGORIES.has(validation.category) ?
       { category: validation.category, error_count: Math.min(100, Math.max(0, Number.isInteger(validation.error_count) ? validation.error_count : 0)) } : null;
-    console.log({ event: "agenda_intelligence_payment", event_version: 3,
+    console.log({ event: "agenda_intelligence_payment", event_version: 4,
       caller_hash: /^[0-9a-f]{16}$/.test(caller_hash || "") ? caller_hash : null,
       execution_id: /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(execution_id || "") ? execution_id : null,
       timestamp: new Date().toISOString(), attempt_id, stage, reason, status,
+      failure_family: stage === 'payment_rejected' ? reason === 'invalid_paid_request' ? 'input_validation' : 'payment_admission'
+        : ['execution_failed', 'preview_failed'].includes(stage) ? 'execution' : null,
       payment_trace_id: normalizePaymentTrace(payment_trace_id),
       demo_trace_id: exampleTraceId(request),
       host: url.hostname, transport: url.pathname.startsWith('/mcp') ? 'mcp' :
@@ -403,13 +410,15 @@ function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, pr
       agent_profile: profile, minimum_usdc: minimum_usdc ?? null, validation: safeValidation,
       code_version: VERSION, engine_version: env?.CF_VERSION_METADATA?.id || env?.DEPLOYMENT_VERSION || VERSION,
       caller_kind: callerKind(request), traffic_class: trafficClass(request),
-      classification_version: 4, origin_verification: "unverified" });
+      classification_version: 5, origin_verification: "unverified",
+      authentication_status: authenticationStatus(request, env) });
   } catch { /* Observability must never change payment admission or execution. */ }
 }
 
 async function logUsageEvent(request, details = {}, env = {}) {
   const event = buildUsageEvent(request, {
     ...details,
+    authentication_status: authenticationStatus(request, env),
     trace_id: details.trace_id ?? traceIdFromRequest(request, details),
     caller_hash: details.caller_hash ?? (await callerHash(request, env)),
     payment: details.payment ?? { header_present: Boolean(request.headers.get("x-payment-tx")) }
@@ -458,6 +467,7 @@ async function logFunnelEvent(request, step, env = {}) {
     // 4: adds trace_id and caller_hash, aligning funnel rows with usage rows
     // so a card-to-invoke journey can be followed per caller.
     event_version: 4,
+    classification_version: 5,
     timestamp: new Date().toISOString(),
     step,
     demo_trace_id: step === "worked_example" ? exampleTraceId(request) : null,
