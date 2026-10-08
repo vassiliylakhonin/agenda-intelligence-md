@@ -5,13 +5,29 @@ import { pathToFileURL } from 'node:url';
 
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
+/** Admission diagnostics only; a refusal is never an evaluated result. */
+export class HostedMcpError extends Error {
+  constructor(message, {status, paymentTraceId, paymentAttemptId, details = null} = {}) {
+    super(message);
+    this.name = 'HostedMcpError';
+    this.status = status;
+    this.paymentTraceId = paymentTraceId;
+    this.paymentAttemptId = paymentAttemptId;
+    this.details = details;
+    this.requestHint = details?.request_hint || null;
+  }
+}
+
 /** Keep this call in memory for challenge, signed execution and recovery. */
 export function createHostedMcpCall(tool, input, {
   endpoint, headers = {}, fetchImpl = fetch, requestId = randomUUID(), mapResult = value => value
 } = {}) {
-  if (!endpoint || !tool) throw new Error('Supply the serving MCP endpoint and published tool name');
+  if (!endpoint || typeof tool !== 'string' || !tool.trim()) throw new Error('Supply the serving MCP endpoint and published tool name');
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Tool input must be a JSON object matching the published inputSchema');
   const body = JSON.stringify({ jsonrpc: '2.0', id: requestId, method: 'tools/call',
     params: { name: tool, arguments: input } });
+  const serializedInput = JSON.parse(body).params.arguments;
+  if (!serializedInput || typeof serializedInput !== 'object' || Array.isArray(serializedInput)) throw new Error('Tool input must serialize to a JSON object');
   const fixedHeaders = Object.fromEntries(new Headers(headers));
   fixedHeaders['content-type'] = 'application/json';
   fixedHeaders['mcp-protocol-version'] = '2025-11-25';
@@ -31,8 +47,14 @@ export function createHostedMcpCall(tool, input, {
       const response = await fetchImpl(endpoint, { method: 'POST', headers: requestHeaders, body });
       const returnedTrace = response.headers.get('x-payment-trace-id');
       if (UUID.test(returnedTrace || '')) trace = returnedTrace.toLowerCase();
-      const payload = await response.json();
-      if (payload.jsonrpc !== '2.0' || payload.id !== requestId) throw new Error('Unexpected MCP response envelope');
+      const fail = (message, details = null) => new HostedMcpError(message, {
+        status: response.status, paymentTraceId: trace,
+        paymentAttemptId: response.headers.get('x-payment-attempt-id'), details
+      });
+      let payload;
+      try { payload = await response.json(); }
+      catch { throw fail(`Unreadable MCP response (HTTP ${response.status}); retain this call for recovery`); }
+      if (!payload || typeof payload !== 'object' || payload.jsonrpc !== '2.0' || payload.id !== requestId) throw fail('Unexpected MCP response envelope');
       const details = payload.error?.data || payload;
       if (response.status === 402) {
         const amount = details.x402?.amount_usdc ?? details.required_usdc;
@@ -44,9 +66,9 @@ export function createHostedMcpCall(tool, input, {
         return { status: 'signature_required', evaluated: false, paymentTraceId: trace,
           challengeMessage: details.challenge_message, nextAction: 'funding_wallet_signs_exact_challenge' };
       }
-      if (!response.ok || payload.error || payload.result?.isError) throw new Error(`Evaluation refused (HTTP ${response.status})`);
+      if (!response.ok || payload.error || payload.result?.isError) throw fail(`Evaluation refused (HTTP ${response.status})`, details);
       const result = payload.result?.structuredContent;
-      if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('Missing structured MCP result');
+      if (!result || typeof result !== 'object' || Array.isArray(result)) throw fail('Missing structured MCP result');
       return { status: 'evaluated', evaluated: true, result: mapResult(result) };
     } finally { busy = false; }
   }

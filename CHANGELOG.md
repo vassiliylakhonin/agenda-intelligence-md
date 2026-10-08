@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Unreleased — first useful result across the fleet
+
+- Group existing products by user task and show intake, useful output and next human step on every landing page. Project existing routes, evidence gaps and owner actions into readable summaries while retaining complete responses.
+- Replace generic trade text consoles with valid published MCP requests for Agenda, Corridor Assistant and Middle Corridor; retain paid admission and explicit recovery.
+- Fix Corridor Assistant matching `shipping` as a Gulf vessel, prioritize explicit Gulf geography over corridor hints, and make the selected dual-use gate reachable. Refresh saved synthetic examples from the local handlers.
+- Extend malformed/oversized JSON recovery hints across REST/MCP/A2A; preserve schema diagnostics, trace and attempt IDs in the shared Node client and reject non-object tool input before HTTP.
+- Add private session templates and a local aggregate readout for the prepared human usefulness pilot. Unknown values remain null, owner practice is separate, and no actual human sessions or customer benefit are claimed.
+
 ## Unreleased — telemetry demand quality and input recovery
 
 - Separate catalog/domain usage and record deployment-key authentication without asserting customer identity; align owner test labels across telemetry sources.

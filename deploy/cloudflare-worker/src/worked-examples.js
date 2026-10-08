@@ -617,47 +617,65 @@ export const WORKED_EXAMPLES = {
     "kind": "precomputed_synthetic_fixture",
     "tool": "agent_output_verification",
     "request": {
+      "topic": "Synthetic product launch hand-off; no real customer or product",
       "claims": [
         {
-          "claim_id": "c1",
-          "claim": "The example record says registration is active.",
+          "claim_id": "release-date",
+          "claim": "The fictional launch is planned for 15 October 2026.",
           "support_level": "direct",
           "evidence_ids": [
-            "e1"
+            "release-note"
           ],
           "supporting_quotes": [
             {
-              "evidence_id": "e1",
-              "quote": "Registration active"
+              "evidence_id": "release-note",
+              "quote": "planned for 15 October 2026"
             }
+          ]
+        },
+        {
+          "claim_id": "customer-count",
+          "claim": "The fictional product has 100 paying customers.",
+          "support_level": "direct",
+          "evidence_ids": [
+            "missing-sales-ledger"
           ]
         }
       ],
       "evidence": [
         {
-          "evidence_id": "e1",
-          "name": "Synthetic registry excerpt",
-          "source_type": "official_document",
-          "content": "Registration active"
+          "evidence_id": "release-note",
+          "source_type": "company_material",
+          "name": "Fictional release note",
+          "content": "Synthetic fixture: the fictional launch is planned for 15 October 2026. No customer figures have been provided."
         }
       ]
     },
     "response": {
-      "verdict": "verify_before_relay",
-      "trust_signal": "medium",
+      "verdict": "block_unsafe_claims",
+      "trust_signal": "low",
       "readiness_score": 0,
       "score_scope": "declared_evidence_structure_only",
       "factual_verification_performed": false,
       "readiness_label": "not_decision_ready",
-      "claim_count": 1,
+      "claim_count": 2,
       "grounded_claim_count": 1,
-      "unsafe_claims": [],
+      "unsafe_claims": [
+        {
+          "claim_id": "customer-count",
+          "claim": "The fictional product has 100 paying customers.",
+          "reason": "cites evidence_id(s) not present: missing-sales-ledger"
+        }
+      ],
       "weak_claims": [],
       "unsupported_statements": [],
       "evidence_gaps": [
-        "Illustrative or placeholder evidence cannot establish decision readiness; provide original dated sources."
+        "Claim customer-count cites evidence not supplied: missing-sales-ledger."
       ],
-      "owner_actions": [],
+      "owner_actions": [
+        "Supply cited source content and a matching supporting quote for claim customer-count, or mark it unsupported.",
+        "Ground or remove claim customer-count: cites evidence_id(s) not present: missing-sales-ledger."
+      ],
       "watch_next": [
         "producing agent revises claims after this verdict",
         "new evidence supplied for previously unsupported or orphaned claims",
@@ -670,6 +688,65 @@ export const WORKED_EXAMPLES = {
         "Does not fetch or validate cited sources; it checks declared support structure only.",
         "Caller-declared evidence is never externally verified here, so allow_relay and trust high are never issued from this gate: the best possible routing is verify_before_relay with mandatory human review. A quote counts as grounded only when its text appears in the cited evidence content."
       ]
+    },
+    "follow_up": {
+      "kind": "precomputed_synthetic_correction",
+      "request": {
+        "topic": "Synthetic product launch hand-off; no real customer or product",
+        "claims": [
+          {
+            "claim_id": "release-date",
+            "claim": "The fictional launch is planned for 15 October 2026.",
+            "support_level": "direct",
+            "evidence_ids": [
+              "release-note"
+            ],
+            "supporting_quotes": [
+              {
+                "evidence_id": "release-note",
+                "quote": "planned for 15 October 2026"
+              }
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "release-note",
+            "source_type": "company_material",
+            "name": "Fictional release note",
+            "content": "Synthetic fixture: the fictional launch is planned for 15 October 2026. No customer figures have been provided."
+          }
+        ]
+      },
+      "response": {
+        "verdict": "verify_before_relay",
+        "trust_signal": "medium",
+        "readiness_score": 0,
+        "score_scope": "declared_evidence_structure_only",
+        "factual_verification_performed": false,
+        "readiness_label": "not_decision_ready",
+        "claim_count": 1,
+        "grounded_claim_count": 1,
+        "unsafe_claims": [],
+        "weak_claims": [],
+        "unsupported_statements": [],
+        "evidence_gaps": [
+          "Illustrative or placeholder evidence cannot establish decision readiness; provide original dated sources."
+        ],
+        "owner_actions": [],
+        "watch_next": [
+          "producing agent revises claims after this verdict",
+          "new evidence supplied for previously unsupported or orphaned claims",
+          "cited source freshness or provenance change"
+        ],
+        "human_review_required": true,
+        "not_advice_notice": "Agent-output relay-readiness triage only. Schema-level and structural: it does not verify that any claim or quote is factually true, does not fetch or validate cited sources, and does not authorize an action or provide legal, compliance, sanctions, financial, or investment advice. This gate never issues allow_relay from caller-declared packs: human review is required before a consuming agent acts on any verdict it returns.",
+        "limitations": [
+          "Schema-level and structural only. Does not verify that any claim or quote is factually true.",
+          "Does not fetch or validate cited sources; it checks declared support structure only.",
+          "Caller-declared evidence is never externally verified here, so allow_relay and trust high are never issued from this gate: the best possible routing is verify_before_relay with mandatory human review. A quote counts as grounded only when its text appears in the cited evidence content."
+        ]
+      }
     }
   },
   "gulf_maritime_exposure": {
@@ -1551,20 +1628,20 @@ export const WORKED_EXAMPLES = {
     "response": {
       "kind": "orientation_and_routing",
       "selected_route": {
-        "name": "Gulf Maritime Exposure Gate",
-        "use_when": "a vessel/voyage through the Gulf, Strait of Hormuz, Bab-el-Mandeb, or Red Sea needs sanctions/chokepoint exposure triage",
-        "a2a": "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev",
-        "profile": "gulf_maritime_exposure"
+        "name": "Kazakhstan / Middle Corridor Deal Risk Gate",
+        "use_when": "a route/cargo/counterparties deal along the Middle Corridor needs a pre-signature evidence-completeness read",
+        "a2a": "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev",
+        "profile": "middle_corridor_deal_risk"
       },
-      "next_gate_input": "Send a structured request to https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev/message/send with voyage, vessel, cargo, exposure_facets, dated_sources, risk_question, decision_stage. See the agent-card for a copy-paste envelope.",
+      "next_gate_input": "Send a structured request to https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send with route, cargo, counterparties, dated_sources, risk_question, decision_stage. See the agent-card for a copy-paste envelope.",
       "message": "Corridor & sanctions orientation: routing to the structured gates and person-led work. This orientation prepares dossier requests; configured upstream screening does not establish clearance.",
       "caller_text": "What evidence is needed before shipping industrial equipment from Aktau to Baku?",
       "gates": [
         {
-          "name": "Gulf Maritime Exposure Gate",
-          "use_when": "a vessel/voyage through the Gulf, Strait of Hormuz, Bab-el-Mandeb, or Red Sea needs sanctions/chokepoint exposure triage",
-          "a2a": "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev",
-          "profile": "gulf_maritime_exposure"
+          "name": "Kazakhstan / Middle Corridor Deal Risk Gate",
+          "use_when": "a route/cargo/counterparties deal along the Middle Corridor needs a pre-signature evidence-completeness read",
+          "a2a": "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev",
+          "profile": "middle_corridor_deal_risk"
         }
       ],
       "engagement": {

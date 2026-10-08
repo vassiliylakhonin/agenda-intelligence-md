@@ -5,7 +5,7 @@ import { executePaidRequest, paidContext } from "./paid-execution.js";
 import { paymentTraceId, paymentTraceResponse } from "./payment-trace.js";
 import { snapshotHealth } from "./upstream_snapshot.js";
 import { consumeProQuota } from "./payment-ledger.js";
-import { readBoundedJson } from "./request-body.js";
+import { readBoundedJson, MAX_JSON_BODY_BYTES } from "./request-body.js";
 import { PUBLIC_SCHEMAS } from "./public-schemas.js";
 import { trustPage } from "./trust-pages.js";
 import { createLandingRenderer } from "./landing-ui.js";
@@ -3020,6 +3020,12 @@ const CORRIDOR_ASSISTANT_GATES = Object.freeze([
       "a Kazakhstan market-entry file (distribution, import, EPC, energy, infrastructure, partner) needs a readiness gate",
     a2a: "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev",
     profile: "kazakhstan_market_entry_readiness"
+  },
+  {
+    name: "Dual-Use Technology & Export Controls Gate",
+    use_when: "a supplied product classification, end-user or export dossier needs human export-control review",
+    a2a: "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev",
+    profile: "dual_use_technology_export"
   }
 ]);
 
@@ -3027,10 +3033,11 @@ function corridorAssistantSelectRoute(text) {
   const normalized = String(text).toLowerCase();
   const choices = [
     [/(?:hs\s*\d{4,10}|dual[- ]use|microelectronics|semiconductor|export control|экспортн|двойн)/iu, "dual_use_technology_export"],
-    [/(?:vessel|tanker|ship|imo\s*\d|hormuz|red sea|судно|танкер|красное море)/iu, "gulf_maritime_exposure"],
+    [/(?:hormuz|red sea|bab[- ]el[- ]mandeb|persian gulf|gulf of|ормуз|красное море|персидск)/iu, "gulf_maritime_exposure"],
     [/(?:market.entry|entry into kazakhstan|distribution in kazakhstan|выход на рынок|дистрибуц)/iu, "kazakhstan_market_entry_readiness"],
     [/(?:sanction|ofac|ownership|counterparty|контрагент|санкц|бенефициар)/iu, "cis_secondary_sanctions"],
-    [/(?:corridor|route|shipment|cargo|port\b|freight|alumini?um|aktau|poti\b|baku\b|batumi|kuryk|turkmenbashi|caspian|trans[- ]?caspian|ferry|letter of credit|bank review|коридор|маршрут|груз|порт|логист|алюминий|актау|поти|баку|каспи)/iu, "middle_corridor_deal_risk"]
+    [/(?:corridor|route|shipment|cargo|port\b|freight|alumini?um|aktau|poti\b|baku\b|batumi|kuryk|turkmenbashi|caspian|trans[- ]?caspian|ferry|letter of credit|bank review|коридор|маршрут|груз|порт|логист|алюминий|актау|поти|баку|каспи)/iu, "middle_corridor_deal_risk"],
+    [/(?:\b(?:vessel|tanker|ship)\b|\bimo\s*\d|судно|танкер)/iu, "gulf_maritime_exposure"]
   ];
   for (const [pattern, profile] of choices) {
     if (pattern.test(normalized)) return CORRIDOR_ASSISTANT_GATES.find((gate) => gate.profile === profile) || null;
@@ -14146,7 +14153,8 @@ const DISCOVERY_REDIRECTS = Object.freeze({
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#173f5f"/><path d="M14 45 28 14h9l13 31h-9l-3-8H26l-3 8zm15-16h7l-3-9z" fill="#fff"/></svg>`;
 
 const landingHtml = createLandingRenderer({
-  originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES
+  originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES,
+  fleetDirectoryResponse
 });
 
 function buildRepairPromptJs(packet, response) {
@@ -14935,7 +14943,10 @@ function paidRequestHint(request, body, profile, env) {
     : route?.guide || GATE_REQUEST_GUIDES[route?.guideProfile];
   if (path.startsWith('/mcp')) {
     const tool = hostedMcpTools(profile, request, env).find(t => t.name === body?.params?.name);
-    if (!tool) return { documentation: '/api/openapi.json' };
+    if (!tool) return { transport: 'mcp', documentation: '/api/openapi.json',
+      headers: { 'Content-Type': 'application/json', 'MCP-Protocol-Version': MCP_PROTOCOL_VERSION },
+      example_request: { jsonrpc: '2.0', id: 'discover-tools', method: 'tools/list' },
+      instruction: 'Serialize a JSON object, list the published tools, then use the selected inputSchema. This discovery example performs no evaluation.' };
     const example = tool._meta['com.agenda/readiness'].example_arguments;
     return { transport: 'mcp', schema: tool.inputSchema,
       required_fields: tool.inputSchema?.required || [],
@@ -14994,7 +15005,12 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     for (const stage of ['request_received', 'payment_rejected']) logPaymentEvent(request, env,
       {stage, attempt_id, payment_trace_id: trace, caller_hash, profile,
         reason: stage === 'payment_rejected' ? 'invalid_paid_request' : null, status, validation});
-    const data = {code:'invalid_paid_request', validation};
+    const data = {code:'invalid_paid_request', validation,
+      request_hint: { ...paidRequestHint(request, null, profile, env),
+        content_type: 'application/json',
+        max_body_bytes: MAX_JSON_BODY_BYTES,
+        body_instruction: status === 413 ? `Reduce the body to at most ${MAX_JSON_BODY_BYTES} UTF-8 bytes; remove unnecessary content without inventing evidence.`
+          : 'Send a complete UTF-8 JSON object using your JSON serializer. Do not send shell quoting, comments or trailing commas.' } };
     return paymentTraceResponse(jsonResponse(protocol
       ? {...data, jsonrpc:'2.0', id:null, error:{code:status === 413 ? -32600 : -32700, message:'Invalid JSON payload', data}}
       : {...data, error:'Invalid JSON payload'}, status), trace, attempt_id);
