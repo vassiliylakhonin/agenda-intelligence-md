@@ -169,6 +169,7 @@ workers_dev = true
 AGENT_PROFILE = "agent_output_verification"
 TASK_SCOPE_AUTH_REQUIRED = "1"
 BILLING_MODE = "pay_per_call"
+OUTPUT_VERIFICATION_TRIAL = "1"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 RATE_LIMIT_PER_HOUR = "50"
 AGENSTRY_VERIFY_TOKEN = "af-verify-tl6QgNMCzIA1pndb3zHju7arGREcjwt0gzNgWs6PJ6w"

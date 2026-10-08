@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Unreleased — Output Verification free first evaluation
+
+- Add an opt-in REST trial endpoint using the same evidence validator and evaluator: two reserved attempts per hashed network address and an atomic 1,000/day service limit in D1. Validation errors do not consume attempts; missing storage fails closed.
+- Put the live free trial first on Output Verification, preserve inspectable results and offer a separate explicitly paid evaluation. Trial completion is recorded as free preview, never confirmed paid execution; page-local correlation carries into the optional paid request.
+- Publish trial scope and the additive migration; shared networks share allowances, fingerprints do not establish users, and no usefulness or conversion improvement is claimed.
+
 ## Unreleased — first useful result across the fleet
 
 - Align Agenda and Kazakhstan Market Entry directory links with their configured production Worker names; check all twelve canonical task links.

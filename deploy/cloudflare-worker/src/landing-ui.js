@@ -1,6 +1,7 @@
 import { WORKED_EXAMPLES } from "./worked-examples.js";
 import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { pricingHtml } from "./commercial-catalog.js";
+import { outputTrialEnabled, OUTPUT_TRIAL_PATH } from './output-trial.js';
 import { PRODUCT_WORKFLOWS, reviewSummary, reviewSummaryHtml, taskChooserHtml } from "./product-workflows.js";
 // Browser presentation only. Runtime decisions are supplied by the controller.
 import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL } from "./profiles.js";
@@ -14,6 +15,7 @@ function landingHtml(request, env) {
   const isAgentic = profile === "agentic_interaction_trust";
   const isFinancialGuard = profile === "agent_financial_guard";
   const isEscrowArbiter = profile === "m2m_escrow_arbiter";
+  const freeTrial = outputTrialEnabled(profile, env);
 
   const title = escapeHtml(card.name);
   const presentation = {
@@ -88,7 +90,7 @@ function landingHtml(request, env) {
   const consoleExample = useMcp
     ? {jsonrpc:'2.0', id:'review-example', method:'tools/call', params:{name:workedExample.tool, arguments:workedExample.request}}
     : profile === 'agent_output_verification' ? workedExample.request : guide.example;
-  const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">Open live paid evaluation</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>`;
+  const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">${freeTrial ? 'Check my evidence free' : 'Open live paid evaluation'}</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -156,7 +158,7 @@ function landingHtml(request, env) {
     <p><strong>Next step:</strong> ${escapeHtml(workflow.next)}</p>
   </section>
   <div class="primary-actions">
-    <a class="primary-action primary-action-main" href="#${consoleId}">${env.BILLING_MODE === "pay_per_call" ? "Evaluate with a signed payment" : "Try free (50 requests/hour)"}</a>
+    <a class="primary-action primary-action-main" href="#${consoleId}">${freeTrial ? 'Check my evidence free' : env.BILLING_MODE === "pay_per_call" ? "Evaluate with a signed payment" : "Try free (50 requests/hour)"}</a>
     <button type="button" class="primary-action" onclick="${exampleAction}" style="cursor:pointer">Run a worked example</button>
     <a class="primary-action" href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent(`Enterprise integration — ${card.name}`)}">Discuss enterprise integration</a>
     <a class="primary-action" href="${origin}/profiles/confidential-project-room">Open confidential project room</a>
@@ -337,20 +339,21 @@ function landingHtml(request, env) {
     </form>
     <div id="escrow-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
   </div>` : consoleExample ? `
-  <h2>Live paid evaluation</h2>
+  <h2>${freeTrial ? 'Check your own evidence free' : 'Live paid evaluation'}</h2>
   <div class="card">
-    <p>Editing and submitting this request uses the paid API and requires an EVM wallet or API integration. For a free demonstration use Run a worked example above. Use synthetic data only; the result is evidence review, not authorization.</p>
+    ${freeTrial ? '<p>Try two live checks without a wallet: check your claims, correct the gaps, then check again. Replace the illustrative request below with your own redacted claims and source excerpts. Shared networks share the two-attempt allowance; daily capacity is limited. Do not submit secrets or confidential documents. Human review is required.</p>' : '<p>Editing and submitting this request uses the paid API and requires an EVM wallet or API integration. For a free demonstration use Run a worked example above. Use synthetic data only; the result is evidence review, not authorization.</p>'}
     <form id="profile-console" onsubmit="runProfileExample(event)">
       <label for="profile-request">Structured request</label>
       <textarea id="profile-request" rows="15" style="width:100%;font:13px/1.5 var(--mono);padding:12px;box-sizing:border-box">${escapeHtml(JSON.stringify(consoleExample, null, 2))}</textarea>
-      <button id="profile-run" type="submit">Evaluate evidence</button>
+      <button id="profile-run" type="submit">${freeTrial ? 'Run free evidence check' : 'Evaluate evidence'}</button>
+      ${freeTrial ? '<button id="profile-paid" type="button" hidden onclick="runProfileExample(event, true)">Choose paid evaluation — 0.05 USDC</button>' : ''}
       <p id="profile-status" role="status"></p>
     </form>
     <div id="profile-summary" aria-live="polite"></div>
     <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
   </div>` : ""}
   <h2>Evaluation and paid services</h2>
-  <div class="card">${pricingHtml(escapeHtml, profile, env.BILLING_MODE)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
+  <div class="card">${pricingHtml(escapeHtml, profile, env.BILLING_MODE, freeTrial)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
 
   <details style="margin: 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; background: #fafafa;">
     <summary style="font-weight: 700; cursor: pointer; font-size: 15px; color: var(--fg);">🛠️ Try it (curl &amp; AI Agent Integration)</summary>
@@ -443,29 +446,43 @@ function showWorkedExample() {
       headers:agendaTelemetryHeaders('/telemetry/worked-example', {'x-example-trace-id':window.agendaExampleTraceId})}).catch(function() {});
   }
 }
-async function runProfileExample(event) {
+var agendaTrialTraceId = null;
+async function runProfileExample(event, paid) {
   event.preventDefault();
   var button = document.getElementById('profile-run');
   var status = document.getElementById('profile-status');
   var result = document.getElementById('profile-result');
   button.disabled = true;
+  ${freeTrial ? "document.getElementById('profile-paid').disabled = true;" : ''}
   status.textContent = 'Evaluating supplied evidence…';
   try {
     var payload = JSON.parse(document.getElementById('profile-request').value);
     var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
     document.getElementById('profile-summary').innerHTML = '';
     document.getElementById('profile-response').hidden = true;
-    var response = await agendaPaidFetch('${origin}${consoleEndpoint}', {
+    ${freeTrial ? `if (!agendaTrialTraceId && window.crypto && crypto.randomUUID) agendaTrialTraceId = crypto.randomUUID();
+    var trialHeaders = agendaTelemetryHeaders('${origin}${OUTPUT_TRIAL_PATH}', {'content-type':'application/json', 'x-trace-id':traceId});
+    if (agendaTrialTraceId) trialHeaders['x-payment-trace-id'] = agendaTrialTraceId;
+    var response = paid ? await agendaPaidFetch('${origin}${consoleEndpoint}', {
+      method:'POST', headers:trialHeaders, body:JSON.stringify(payload)
+    }, 0.05) : await fetch('${origin}${OUTPUT_TRIAL_PATH}', {
+      method:'POST', headers:trialHeaders, body:JSON.stringify(payload)
+    });` : `var response = await agendaPaidFetch('${origin}${consoleEndpoint}', {
       method: 'POST', headers: {'content-type':'application/json', 'MCP-Protocol-Version':'2025-11-25', 'x-trace-id': traceId}, body: JSON.stringify(payload)
-    }, ${isEscrowArbiter ? '0.5' : '0.05'});
+    }, ${isEscrowArbiter ? '0.5' : '0.05'});`}
     var body = await response.json();
     document.getElementById('profile-response').hidden = false;
     result.textContent = JSON.stringify(body, null, 2);
     if (response.ok) document.getElementById('profile-summary').innerHTML = reviewSummaryHtml(body.result?.structuredContent || body, safeHtml);
+    ${freeTrial ? `if (response.ok || response.status === 429) document.getElementById('profile-paid').hidden = false;
+    if (!paid && response.status === 429) {
+      status.textContent = body.error + ' Your input is preserved. No payment was made.';
+      return;
+    }` : ''}
     status.textContent = (response.ok ? 'Evaluation returned. Inspect evidence gaps and limitations before acting.' : 'Request failed (HTTP ' + response.status + '). See the response below.') + ' Trace: ' + traceId;
   } catch (error) {
     status.textContent = 'Evaluation failed: ' + error.message;
-  } finally { button.disabled = false; }
+  } finally { button.disabled = false; ${freeTrial ? "document.getElementById('profile-paid').disabled = false;" : ''} }
 }
 var FIN_SCENARIOS = {
   clean: {
