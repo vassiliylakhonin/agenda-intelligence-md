@@ -5,6 +5,7 @@ import { executePaidRequest, paidContext } from "./paid-execution.js";
 import { paymentTraceId, paymentTraceResponse } from "./payment-trace.js";
 import { snapshotHealth } from "./upstream_snapshot.js";
 import { consumeProQuota } from "./payment-ledger.js";
+import { OUTPUT_TRIAL_PATH, handleOutputTrial, outputTrialEnabled, outputTrialTerms } from './output-trial.js';
 import { readBoundedJson, MAX_JSON_BODY_BYTES } from "./request-body.js";
 import { PUBLIC_SCHEMAS } from "./public-schemas.js";
 import { trustPage } from "./trust-pages.js";
@@ -1915,7 +1916,7 @@ function directV1OpenApiPaths() {
   return paths;
 }
 
-function openApiDocument(request) {
+function openApiDocument(request, env = {}) {
   const origin = originFromRequest(request);
   return {
     openapi: "3.1.0",
@@ -2293,6 +2294,20 @@ function openApiDocument(request) {
         }
       },
       ...directV1OpenApiPaths(),
+      ...(outputTrialEnabled(agentProfile(request, env), env) ? {
+        [OUTPUT_TRIAL_PATH]: { post: {
+          tags: ['gates'], summary: 'Free first Output Verification evaluation',
+          description: 'Two reserved attempts per hashed network address for this trial campaign; shared networks share the allowance. Service capacity is 1,000 attempts per UTC day. Uses the same validator and evaluator as the paid verification endpoint. No payment or authorization headers. Human review is required.',
+          requestBody: { required: true, content: { 'application/json': { schema: { $ref: '/schemas/v1/evidence-audit.schema.json' } } } },
+          responses: {
+            200: { description: 'Evidence review with an additive trial object; not a paid execution.', content: { 'application/json': { schema: transportResponseSchema('schemas/v1/evidence-audit.schema.json') } } },
+            400: { description: 'Invalid JSON, input or inapplicable credentials; no trial reservation.' },
+            413: { description: 'Request exceeds the shared 1 MiB JSON body limit.' },
+            429: { description: 'Network or daily trial allowance exhausted; no payment requested.' },
+            503: { description: 'Trial storage unavailable or evaluation failed; no payment requested.' }
+          }
+        } }
+      } : {}),
       "/v1/evidence-packet/check": {
         post: {
           tags: ["gates"],
@@ -13303,7 +13318,7 @@ function x402Document(request, env) {
     title: entry?.canonical_product_name || X402_JSON.title,
     description: entry?.wrapper_scope || X402_JSON.description,
     x_agenda_access: hostedAccess(profile, env, originFromRequest(request)),
-    pricing_scope: env.BILLING_MODE === "pay_per_call" ? "Signed payment per evaluation; discovery and bankability preview are free." : "Shared optional commercial offerings; availability varies by tool. Base evidence triage is free, subject to deployment access and quota settings."
+    pricing_scope: env.BILLING_MODE === "pay_per_call" ? `${outputTrialEnabled(profile, env) ? 'Two free Output Verification trial attempts at /v1/agent-output/trial, subject to network and daily limits. ' : ''}Signed payment per evaluation on paid endpoints; discovery and bankability preview are free.` : "Shared optional commercial offerings; availability varies by tool. Base evidence triage is free, subject to deployment access and quota settings."
   };
 }
 
@@ -14967,6 +14982,42 @@ function paidRequestHint(request, body, profile, env) {
 
 export async function handleRequest(request, env = {}, ctx = {}) {
   const execute = () => handleRequestInner(request, env, ctx);
+  if (new URL(request.url).pathname === OUTPUT_TRIAL_PATH) {
+    const profile = agentProfile(request, env);
+    if (!outputTrialEnabled(profile, env)) return jsonResponse({ error: 'Not found' }, 404);
+    if (request.method === 'OPTIONS') return execute();
+    if (request.method === 'GET') return jsonResponse({ ...outputTrialTerms(),
+      request_schema: '/schemas/v1/evidence-audit.schema.json',
+      example_request: GATE_REQUEST_GUIDES.agent_output_verification.example }, 200, { 'cache-control': 'no-store' });
+    if (request.method !== 'POST') return jsonResponse({ error: 'Use GET or POST.' }, 405, { allow: 'GET, POST, OPTIONS' });
+    if (!isProductionAuthorized(request, env, profile)) return jsonResponse({ error: 'Unauthorized' }, 401);
+    const route = DIRECT_V1_ROUTES['/v1/agent-output/verification'];
+    const fingerprint = await callerHash(request, env).catch(() => null);
+    return handleOutputTrial(request, env, {
+      respond: jsonResponse,
+      emit: details => logPaymentEvent(request, env, { ...details, profile, caller_hash: fingerprint }),
+      validate: body => {
+        if (containsInlinePayment(body)) return { errors: ['Do not put payment credentials in trial inputs.'] };
+        const value = route.extract(body);
+        return { value, errors: value ? route.errorsFor(value) : [route.missing] };
+      },
+      evaluate: async structured => {
+        const result = await route.run(structured, request, env);
+        const provenance = route.provenance(result);
+        const data = { ...result.response, ...provenance };
+        const chars = JSON.stringify(structured).length;
+        const probe = actionProbeReason(request, chars);
+        const event = await logUsageEvent(request, { agent_profile: profile, prompt_chars: chars,
+          structured_chars: chars, modules_used: [profile], likely_probe: Boolean(probe), probe_reason: probe,
+          outcome: { decision: data.verdict, status: 'completed', score: data.readiness_score },
+          payment: { header_present: false } }, env);
+        const saved = recordUsageStats(env, event).catch(() => {});
+        if (typeof ctx.waitUntil === 'function') ctx.waitUntil(saved);
+        else await saved;
+        return data;
+      }
+    });
+  }
   if (request.method !== 'POST') return execute();
   const path = new URL(request.url).pathname;
   if (path === '/telemetry/worked-example') {
@@ -15197,7 +15248,7 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
     request.method === "GET" &&
     ["/api/openapi.json", "/openapi.json", "/.well-known/openapi.json"].includes(url.pathname)
   ) {
-    return jsonResponse(openApiDocument(request), 200, {
+    return jsonResponse(openApiDocument(request, env), 200, {
       "content-type": "application/vnd.oai.openapi+json; charset=utf-8",
       "cache-control": "public, max-age=3600",
       ...aiCatalogHeaders(request)

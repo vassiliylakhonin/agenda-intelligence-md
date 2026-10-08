@@ -10,6 +10,47 @@ import pytest
 from jsonschema import Draft202012Validator
 
 
+def test_output_verification_trial_keeps_the_response_contract_and_invalid_input_free():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Worker protocol tests need Node.js")
+    root = Path(__file__).resolve().parents[1]
+    program = """
+      import { handleRequest } from './deploy/cloudflare-worker/src/index.js';
+      import { memoryD1 } from './deploy/cloudflare-worker/test/helpers/d1.js';
+      const log = console.log; console.log = () => {};
+      const env = { AGENT_PROFILE:'agent_output_verification', OUTPUT_VERIFICATION_TRIAL:'1',
+        BILLING_MODE:'pay_per_call', VIZIER_DISABLED:'1', PAYMENT_LEDGER:memoryD1() };
+      const call = body => handleRequest(new Request('https://example.test/v1/agent-output/trial',
+        {method:'POST',headers:{'cf-connecting-ip':'192.0.2.4'},body:JSON.stringify(body)}),env);
+      const valid = await call({claims:[{claim_id:'c1',claim:'Supplied excerpt describes a warehouse.',
+        support_level:'unsupported',evidence_ids:[]}],evidence:[]});
+      const invalid = await call({});
+      log(JSON.stringify({valid_status:valid.status,valid:await valid.json(),
+        invalid_status:invalid.status,invalid:await invalid.json(),
+        reservations:await env.PAYMENT_LEDGER.prepare(
+          'SELECT COUNT(*) AS count FROM output_verification_trials').first()}));
+    """
+    run = subprocess.run(
+        [node, "--input-type=module", "-e", program],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    result = json.loads(run.stdout)
+    schema = json.loads((root / "schemas/v1/agent-output-verification-response.schema.json").read_text())
+    schema["additionalProperties"] = True  # REST includes provenance and the additive trial object.
+    assert result["valid_status"] == 200
+    Draft202012Validator(schema).validate(result["valid"])
+    assert result["valid"]["human_review_required"] is True
+    assert result["valid"]["trial"]["payment_required"] is False
+    assert result["invalid_status"] == 400
+    assert result["invalid"]["code"] == "invalid_trial_request"
+    assert result["reservations"]["count"] == 1
+
+
 def test_worker_tools_conform_to_published_output_schemas():
     node = shutil.which("node")
     if not node:
