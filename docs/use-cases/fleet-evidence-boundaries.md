@@ -1,5 +1,9 @@
 # Using the fleet's evidence reviews
 
+Start with the [first useful result workflow](../product/first-useful-result.md)
+for task selection, inspectable examples, input correction and private session
+measurement across the existing fleet.
+
 ## Pick a review for the decision
 
 | Service | Useful output | Evidence boundary |

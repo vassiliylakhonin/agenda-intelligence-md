@@ -64,3 +64,20 @@ limitations before any external action.
 
 The [Output Verification example](../output-verification/README.md) provides a
 complete fictional hand-off and additional result checks over this same helper.
+
+## Correct a refused request
+
+`HostedMcpError` retains `status`, `paymentTraceId`, `paymentAttemptId`, `details`
+and `requestHint`. For an invalid unpaid input, inspect the hint and published
+schema, correct the input and construct a new call. Null, array and non-object
+tool inputs are rejected locally before HTTP. These checks do not replace the
+published schema or server validation.
+
+Keep diagnostics private: server details may concern the supplied input. If a
+request was already funded, retain the original call and payment proof; do not
+change its body or transfer again. Unreadable responses preserve HTTP status
+for this recovery decision. No failure is represented as an evaluated result.
+
+See the [first-result workflow](../../docs/product/first-useful-result.md) and
+[private pilot readout](../product-pilot/README.md) to assess human usefulness
+separately from successful transport and payment admission.

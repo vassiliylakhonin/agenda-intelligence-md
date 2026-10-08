@@ -114,6 +114,37 @@ def validate_examples() -> None:
         if path.name == "package.json":
             if not isinstance(data, dict) or data.get("private") is not True:
                 raise SystemExit(f"Example package manifest must be private: {path.relative_to(ROOT)}")
+        elif path == ROOT / "examples" / "product-pilot" / "session-template.json":
+            # Only a blank template belongs in public examples. Actual pilot
+            # measurements, consent and participant mappings remain private.
+            fields = {
+                "session_label",
+                "product",
+                "consent_recorded",
+                "utc_date",
+                "owner_practice",
+                "comparison_method",
+                "input_admitted",
+                "domain_outcome_observed",
+                "paid_completion_observed",
+                "human_confirmed_useful_findings",
+                "human_confirmed_false_holds",
+                "human_unresolved_findings",
+                "review_minutes_before",
+                "review_minutes_assisted",
+                "finding_changed_output",
+                "voluntary_repeat_session",
+            }
+            validate_with_schema(
+                path,
+                {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": sorted(fields),
+                    "properties": {field: {"type": "null"} for field in fields},
+                },
+                "blank-pilot-template",
+            )
         elif path in trace_request_files:
             validate_with_schema(path, request_schema, "agenda-request")
         elif path in trace_doc_files:

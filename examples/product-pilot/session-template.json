@@ -1,0 +1,18 @@
+{
+  "session_label": null,
+  "product": null,
+  "consent_recorded": null,
+  "utc_date": null,
+  "owner_practice": null,
+  "comparison_method": null,
+  "input_admitted": null,
+  "domain_outcome_observed": null,
+  "paid_completion_observed": null,
+  "human_confirmed_useful_findings": null,
+  "human_confirmed_false_holds": null,
+  "human_unresolved_findings": null,
+  "review_minutes_before": null,
+  "review_minutes_assisted": null,
+  "finding_changed_output": null,
+  "voluntary_repeat_session": null
+}

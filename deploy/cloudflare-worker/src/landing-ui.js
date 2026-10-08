@@ -1,10 +1,11 @@
 import { WORKED_EXAMPLES } from "./worked-examples.js";
 import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { pricingHtml } from "./commercial-catalog.js";
+import { PRODUCT_WORKFLOWS, reviewSummary, reviewSummaryHtml, taskChooserHtml } from "./product-workflows.js";
 // Browser presentation only. Runtime decisions are supplied by the controller.
 import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL } from "./profiles.js";
 
-export function createLandingRenderer({ originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES }) {
+export function createLandingRenderer({ originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES, fleetDirectoryResponse }) {
 function landingHtml(request, env) {
   const origin = originFromRequest(request);
   const profile = agentProfile(request, env);
@@ -19,7 +20,7 @@ function landingHtml(request, env) {
     agenda: ["Agenda Intelligence — evidence review", "Route agent requests through an external evidence-review boundary. See the missing inputs and hand the decision to a person.", null],
     kazakhstan: ["Middle Corridor deal evidence review", "External evidence gate for a corridor deal: review route, cargo, counterparties and dated sources before a human decision.", "kazakhstan"],
     agentic_interaction_trust: ["Agent interaction evidence review", "Zero-trust review of a counterparty agent request: inspect claimed identity, action and dated evidence before human review. No identity verification.", "agentic_interaction_trust"],
-    agent_output_verification: ["Agent Output Evidence Linter", "Check another agent's claims at a relay boundary: find missing support and require human review before relay. Not factual verification.", "agent_output_verification"],
+    agent_output_verification: ["Agent Output Evidence Linter", "Check an AI report before sending it: find unsupported claims, broken references and quote issues in the supplied evidence.", "agent_output_verification"],
     agent_financial_guard: ["Agent Financial Guard", "External pre-sign evidence check for agent wallets. Local risk flags are not current sanctions clearance, verified spending history or enforced limits.", "agent_financial_guard"],
     m2m_escrow_arbiter: ["M2M Escrow Evidence Review", "Review supplied agent-to-agent delivery evidence against hashes and supported schemas. No automatic payout; missing evidence goes to a person.", "m2m_escrow_arbiter"],
     cis_secondary_sanctions: ["CIS counterparty evidence review", "External evidence gate for CIS counterparties: inspect ownership and sanctions gaps, with source freshness shown where available.", "cis_secondary_sanctions"],
@@ -78,9 +79,15 @@ function landingHtml(request, env) {
     critical_minerals_due_diligence: "Mineral supply chain → origin and ownership evidence gaps",
     dual_use_technology_export: "Electronics shipment → HS/ECCN and end-user evidence gaps"
   }[profile] || "Supplied case → evidence gaps + next human-review step";
-  const consoleId = isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : guide?.example && endpoint && profile !== "kazakhstan" ? "profile-console" : "triage-form";
+  const consoleId = isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
   const exampleAction = "showWorkedExample()";
   const workedExample = WORKED_EXAMPLES[profile];
+  const workflow = PRODUCT_WORKFLOWS[profile];
+  const useMcp = !endpoint || profile === 'kazakhstan';
+  const consoleEndpoint = useMcp ? '/mcp' : endpoint;
+  const consoleExample = useMcp
+    ? {jsonrpc:'2.0', id:'review-example', method:'tools/call', params:{name:workedExample.tool, arguments:workedExample.request}}
+    : profile === 'agent_output_verification' ? workedExample.request : guide.example;
   const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">Open live paid evaluation</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>`;
 
   return `<!doctype html>
@@ -141,6 +148,13 @@ function landingHtml(request, env) {
   <p class="tagline">${escapeHtml(tagline)}</p>
 
   <div class="status-row"><span class="badge">Live evaluation · v${escapeHtml(VERSION)}</span><span class="badge">Human review required</span><span class="badge">Profile: ${escapeHtml(profile)}</span></div>
+  ${profile === 'agenda' ? taskChooserHtml(fleetDirectoryResponse(), escapeHtml) : ''}
+  <section aria-label="Your review workflow">
+    <h2>${escapeHtml(workflow.task)}</h2>
+    <p><strong>Bring:</strong> ${escapeHtml(workflow.bring)}</p>
+    <p><strong>You receive:</strong> ${escapeHtml(workflow.get)}</p>
+    <p><strong>Next step:</strong> ${escapeHtml(workflow.next)}</p>
+  </section>
   <div class="primary-actions">
     <a class="primary-action primary-action-main" href="#${consoleId}">${env.BILLING_MODE === "pay_per_call" ? "Evaluate with a signed payment" : "Try free (50 requests/hour)"}</a>
     <button type="button" class="primary-action" onclick="${exampleAction}" style="cursor:pointer">Run a worked example</button>
@@ -154,8 +168,14 @@ function landingHtml(request, env) {
     <small>Supplied facts are not independently verified; a source with no verified date is labeled as_of: null. This traceable verdict is not attested telemetry or authorization. Human review before action.</small></div>
   <section id="worked-example" class="card" hidden>
     <h2>Free worked example</h2><p><strong>Precomputed synthetic fixture.</strong> No wallet or payment required. This saved example is not a live evaluation of your edited input or current sources.</p>
+    ${reviewSummaryHtml(workedExample?.response, escapeHtml)}
     <details open><summary>Example request</summary><pre>${escapeHtml(JSON.stringify(workedExample?.request || {}, null, 2))}</pre></details>
     <details open><summary>Saved example result</summary><pre>${escapeHtml(JSON.stringify(workedExample?.response || {}, null, 2))}</pre></details>
+    ${workedExample?.follow_up ? `<details><summary>After removing the unsupported illustrative claim</summary>
+      <p>The fictional customer-count claim was removed. The remaining claim still requires human review; no factual verification or publication permission is granted.</p>
+      ${reviewSummaryHtml(workedExample.follow_up.response, escapeHtml)}
+      <details><summary>Corrected request and full result</summary><pre>${escapeHtml(JSON.stringify(workedExample.follow_up, null, 2))}</pre></details>
+    </details>` : ''}
   </section>
   <nav><a href="https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/">All profiles</a> · <a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
   ${profile === "agenda" ? `<div class="card"><h2>Agent security and trade evidence</h2><p><a href="https://vizier.vassiliy-lakhonin.workers.dev/">Vizier</a> checks proposed agent actions. Financial Guard, Interaction Trust and Output Verification review the evidence around those actions.</p><p><a href="https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/">Middle Corridor</a> and the regional and supply-chain profiles structure evidence for human trade-risk review.</p><a href="${origin}/.well-known/agents.json">Browse the complete profile registry</a></div>` : ""}
@@ -316,48 +336,19 @@ function landingHtml(request, env) {
       </div>
     </form>
     <div id="escrow-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
-  </div>` : guide?.example && endpoint && profile !== "kazakhstan" ? `
+  </div>` : consoleExample ? `
   <h2>Live paid evaluation</h2>
   <div class="card">
     <p>Editing and submitting this request uses the paid API and requires an EVM wallet or API integration. For a free demonstration use Run a worked example above. Use synthetic data only; the result is evidence review, not authorization.</p>
     <form id="profile-console" onsubmit="runProfileExample(event)">
       <label for="profile-request">Structured request</label>
-      <textarea id="profile-request" rows="15" style="width:100%;font:13px/1.5 var(--mono);padding:12px;box-sizing:border-box">${escapeHtml(JSON.stringify(guide.example, null, 2))}</textarea>
+      <textarea id="profile-request" rows="15" style="width:100%;font:13px/1.5 var(--mono);padding:12px;box-sizing:border-box">${escapeHtml(JSON.stringify(consoleExample, null, 2))}</textarea>
       <button id="profile-run" type="submit">Evaluate evidence</button>
       <p id="profile-status" role="status"></p>
     </form>
-    <pre id="profile-result" style="display:none;max-height:600px;overflow:auto"></pre>
-  </div>` : `
-  <h2>Deal Risk & Sanctions Evidence Pre-Screen</h2>
-  <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
-    <p style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
-      Enter your counterparty, commodity or HS code, and transit route to run an instant, evidence-readiness triage for human review.
-      <br><span style="font-size: 13px; color: #0369a1;"><em>🇷🇺 Проверка сделки на вторичные санкции, правило 50% OFAC и экспортный контроль ТН ВЭД.</em></span>
-    </p>
-    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
-      <button type="button" onclick="loadTriagePreset('rare_metals')" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⛏️ KZ Rare Metals (Aktau → Poti)</button>
-      <button type="button" onclick="loadTriagePreset('block_train')" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🚆 Middle Corridor Block Train</button>
-      <button type="button" onclick="loadTriagePreset('dual_use')" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">⚙️ Dual-Use CNC & Electronics</button>
-    </div>
-    <form id="triage-form" onsubmit="runBrowserTriage(event)" style="display: flex; flex-direction: column; gap: 10px;">
-      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 240px;">
-          <label style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Counterparty or Cargo / HS Code</label>
-          <input id="triage-cargo" type="text" placeholder="e.g. 8481.80 Industrial Valves, Fertilizer, or Entity Name" style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; font-family: var(--sans); box-sizing: border-box;" required />
-        </div>
-        <div style="flex: 1; min-width: 240px;">
-          <label style="display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Corridor / Transit Route</label>
-          <input id="triage-route" type="text" placeholder="e.g. Antwerp -> Poti -> Baku -> Aktau -> Almaty" style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; font-family: var(--sans); box-sizing: border-box;" required />
-        </div>
-      </div>
-      <div style="display: flex; gap: 12px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
-        <button id="triage-btn" type="submit" style="background: var(--accent); color: #fff; border: none; padding: 9px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">⚡ Run Instant Pre-Screen</button>
-        <span id="triage-status" style="font-size: 13px; color: var(--muted);">Evidence evaluation; see Privacy for data boundaries.</span>
-      </div>
-    </form>
-    <div id="triage-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
-  </div>`}
-
+    <div id="profile-summary" aria-live="polite"></div>
+    <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
+  </div>` : ""}
   <h2>Evaluation and paid services</h2>
   <div class="card">${pricingHtml(escapeHtml, profile, env.BILLING_MODE)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
 
@@ -429,6 +420,8 @@ function landingHtml(request, env) {
 </main>
 <script>
 ${PAYMENT_CLIENT_SCRIPT}
+${reviewSummary.toString()}
+${reviewSummaryHtml.toString()}
 function safeHtml(value) {
   var element = document.createElement('span');
   element.textContent = String(value == null ? '' : value);
@@ -460,94 +453,20 @@ async function runProfileExample(event) {
   try {
     var payload = JSON.parse(document.getElementById('profile-request').value);
     var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
-    var response = await agendaPaidFetch('${origin}${endpoint || '/message/send'}', {
-      method: 'POST', headers: {'content-type':'application/json', 'A2A-Version':'1.0', 'x-trace-id': traceId}, body: JSON.stringify(payload)
+    document.getElementById('profile-summary').innerHTML = '';
+    document.getElementById('profile-response').hidden = true;
+    var response = await agendaPaidFetch('${origin}${consoleEndpoint}', {
+      method: 'POST', headers: {'content-type':'application/json', 'MCP-Protocol-Version':'2025-11-25', 'x-trace-id': traceId}, body: JSON.stringify(payload)
     }, ${isEscrowArbiter ? '0.5' : '0.05'});
     var body = await response.json();
-    result.style.display = 'block';
+    document.getElementById('profile-response').hidden = false;
     result.textContent = JSON.stringify(body, null, 2);
+    if (response.ok) document.getElementById('profile-summary').innerHTML = reviewSummaryHtml(body.result?.structuredContent || body, safeHtml);
     status.textContent = (response.ok ? 'Evaluation returned. Inspect evidence gaps and limitations before acting.' : 'Request failed (HTTP ' + response.status + '). See the response below.') + ' Trace: ' + traceId;
   } catch (error) {
     status.textContent = 'Evaluation failed: ' + error.message;
   } finally { button.disabled = false; }
 }
-function loadTriagePreset(preset) {
-  var cargo = document.getElementById('triage-cargo');
-  var route = document.getElementById('triage-route');
-  if (!cargo || !route) return;
-  if (preset === 'rare_metals') {
-    cargo.value = 'Ulba Metallurgical / Beryllium, Tantalum, Lithium concentrates';
-    route.value = 'Ust-Kamenogorsk -> Almaty -> Aktau Port -> Baku -> Poti -> Rotterdam';
-  } else if (preset === 'block_train') {
-    cargo.value = 'Trans-Caspian Container Freight (General Cargo & Machinery)';
-    route.value = 'Dostyk -> Khorgos -> Zhezkazgan -> Aktau -> Baku -> Constanta';
-  } else if (preset === 'dual_use') {
-    cargo.value = '8458.11 Computer-controlled horizontal lathes & microcontrollers';
-    route.value = 'Shenzhen -> Alashankou -> Dostyk -> Almaty -> Tashkent';
-  }
-}
-async function runBrowserTriage(e) {
-  e.preventDefault();
-  var cargo = document.getElementById('triage-cargo').value.trim();
-  var route = document.getElementById('triage-route').value.trim();
-  var btn = document.getElementById('triage-btn');
-  var status = document.getElementById('triage-status');
-  var resDiv = document.getElementById('triage-result');
-  if (!cargo || !route) return;
-
-  btn.disabled = true;
-  btn.innerText = 'Analyzing Exposure...';
-  status.innerText = 'Reviewing the supplied trade scenario; no clearance is issued...';
-
-  try {
-    var prompt = 'Screen sanctions exposure, OFAC EO 14114 risk, and trade compliance for cargo/commodity: ' + cargo + ', transit route: ' + route;
-    var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
-    var resp = await agendaPaidFetch('${origin}/message/send', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'A2A-Version': '1.0', 'x-trace-id': traceId },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 'web-triage-' + Date.now(),
-        method: 'SendMessage',
-        params: {
-          message: {
-            messageId: 'msg-' + Date.now(),
-            role: 'ROLE_USER',
-            parts: [{ text: prompt }]
-          }
-        }
-      })
-    }, ${isEscrowArbiter ? '0.5' : '0.05'});
-    var data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));
-    var text = '';
-    if (data && data.result && data.result.artifacts && data.result.artifacts[0] && data.result.artifacts[0].parts) {
-      var part = data.result.artifacts[0].parts.find(function(p) { return p.mediaType === 'text/markdown' || p.text; });
-      if (part) text = part.text;
-    }
-    if (!text && data && data.result && data.result.task && data.result.task.artifacts && data.result.task.artifacts[0]) {
-      var p0 = data.result.task.artifacts[0].parts[0];
-      if (p0) text = p0.text;
-    }
-
-    resDiv.style.display = 'block';
-    if (text) {
-      var escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      resDiv.innerHTML = '<pre style="white-space:pre-wrap;overflow-wrap:anywhere">' + escaped + '</pre><p>Evidence review only. No commercial action is authorized. <a href="/trust">Read the limitations</a>.</p>';
-    } else {
-      resDiv.innerHTML = '<div style="color:var(--warn); font-size:13px;">Triage response completed. Check developer console for details.</div>';
-    }
-    status.innerText = 'Triage completed in <500ms.';
-  } catch (err) {
-    resDiv.style.display = 'block';
-    resDiv.innerHTML = '<div style="color:var(--danger); font-size:13px;">Network error: ' + safeHtml(err.message) + '</div>';
-    status.innerText = 'Evaluation failed.';
-  } finally {
-    btn.disabled = false;
-    btn.innerText = '⚡ Run Instant Pre-Screen';
-  }
-}
-
 var FIN_SCENARIOS = {
   clean: {
     network: 'base_mainnet',
@@ -688,7 +607,7 @@ async function runFinancialGuardSimulation(e) {
       '<span style="font-size:12px; font-family:var(--mono); background:#fff; padding:2px 8px; border-radius:4px; border:1px solid ' + border + ';">Risk Score: ' + (v.score || 0) + '/100 • ' + elapsed + 'ms request round trip</span>' +
       '</div>' +
       checksHtml +
-      violationsHtml + evidenceGapsHtml(v) +
+      violationsHtml + reviewSummaryHtml(data, safeHtml) +
       '<div style="font-size:13px; color:var(--muted); margin-top:8px;"><strong>Execution Advisory:</strong> ' + safeHtml(v.execution_advisory) + '</div>' +
       '<div style="margin-top:12px; background:#0f172a; padding:10px 14px; border-radius:6px; color:#e2e8f0; font-family:var(--mono); font-size:11px; line-height:1.6;">' +
       '<div style="color:#94a3b8; font-weight:600; margin-bottom:4px; display:flex; justify-content:space-between; flex-wrap:wrap;"><span>🛡️ Zero-Boilerplate Mobile SDK Protect:</span><a href="https://www.npmjs.com/package/@agenda-intelligence/guard-mobile" target="_blank" style="color:#38bdf8; text-decoration:none;">npm i @agenda-intelligence/guard-mobile &rarr;</a></div>' +
@@ -701,7 +620,8 @@ async function runFinancialGuardSimulation(e) {
       '<a href="https://paypal.me/vaskenzy/490USD" target="_blank" style="background:#166534; color:#fff; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:600; text-decoration:none;">PayPal $490 Pro</a>' +
       '</div>' +
       '</div>';
-    status.innerText = 'Evaluation finished in ' + elapsed + 'ms on Edge.';
+    resDiv.innerHTML += '<details><summary>Full structured response</summary><pre>' + safeHtml(JSON.stringify(data, null, 2)) + '</pre></details>';
+    status.innerText = 'Evaluation finished in ' + elapsed + 'ms request round trip.';
   } catch (err) {
     resDiv.style.display = 'block';
     resDiv.innerHTML = '<div style="color:var(--danger); font-size:13px;">Evaluation failed: ' + safeHtml(err.message) + '</div>';
@@ -874,11 +794,12 @@ async function runEscrowArbitrationSimulation(e) {
       '</div>' +
       payoutHtml +
       checksHtml +
-      violationsHtml + evidenceGapsHtml(r) +
+      violationsHtml + reviewSummaryHtml(data, safeHtml) +
       '<div style="font-size:13px; color:var(--muted); margin-top:8px;"><strong>Execution Advisory:</strong> ' + safeHtml(r.execution_advisory) + '</div>' +
       (r.vizier_clearance_receipt ? '<div style="margin-top:8px; font-size:11px; font-family:var(--mono); color:#475569;">Vizier Attestation Receipt: ' + safeHtml(r.vizier_clearance_receipt) + '</div>' : '') +
       '</div>';
-    status.innerText = 'Review response received in ' + elapsed + 'ms.';
+    resDiv.innerHTML += '<details><summary>Full structured response</summary><pre>' + safeHtml(JSON.stringify(data, null, 2)) + '</pre></details>';
+    status.innerText = 'Review response received in ' + elapsed + 'ms request round trip.';
   } catch (err) {
     resDiv.style.display = 'block';
     resDiv.innerHTML = '<div style="color:var(--danger); font-size:13px;">Arbitration failed: ' + safeHtml(err.message) + '</div>';

@@ -16,6 +16,7 @@ function agendaTelemetryHeaders(url, headers) {
 export const PAYMENT_CLIENT_SCRIPT = `${TELEMETRY_CLIENT_SCRIPT}
 var agendaPendingPayment = null;
 var agendaPaymentBusy = false;
+var agendaInputRecovery = null;
 function agendaShowRecovery(record) {
   if (typeof document === 'undefined' || !document.body || !document.body.appendChild) return;
   var button = document.getElementById('agenda-payment-recovery');
@@ -38,6 +39,7 @@ function agendaShowRecovery(record) {
 }
 async function agendaPaidFetch(url, options, expectedAmount) {
   options = Object.assign({}, options, { headers: agendaTelemetryHeaders(url, options.headers) });
+  if (agendaInputRecovery && agendaInputRecovery.url === url) options.headers['x-payment-trace-id'] = agendaInputRecovery.trace;
   if (agendaPaymentBusy) throw new Error('A payment request is already running.');
   agendaPaymentBusy = true;
   try {
@@ -46,8 +48,13 @@ async function agendaPaidFetch(url, options, expectedAmount) {
     var response;
     if (!pending) {
       response = await fetch(url, options);
-      if (response.status !== 402) return response;
       var trace = response.headers.get('x-payment-trace-id');
+      if ((response.status === 400 || response.status === 413) && trace && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(trace)) {
+        agendaInputRecovery = {url:url, trace:trace.toLowerCase()};
+        return response;
+      }
+      if (agendaInputRecovery && agendaInputRecovery.url === url) agendaInputRecovery = null;
+      if (response.status !== 402) return response;
       if (trace && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(trace)) options.headers['x-payment-trace-id'] = trace.toLowerCase();
       var payment = await response.clone().json();
       var amount = Number(payment.x402 && payment.x402.amount_usdc || payment.required_usdc);
