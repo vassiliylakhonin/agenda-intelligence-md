@@ -19,7 +19,7 @@ export function outputTrialTerms() {
 
 // One INSERT serializes both limits. Client-controlled labels, cookies and UA
 // never create another allowance. Only Cloudflare's connecting address is used.
-export async function reserveOutputTrial(request, env) {
+export async function reserveOutputTrial(request, env, attempt = crypto.randomUUID()) {
   const ip = request.headers.get('cf-connecting-ip');
   if (!ip || !env.PAYMENT_LEDGER?.prepare) throw new Error('trial_store_unavailable');
   const client = await tokenHash('output-trial-v1:' + (env.CALLER_HASH_SALT || '') + ':' + ip.trim().toLowerCase());
@@ -30,7 +30,7 @@ export async function reserveOutputTrial(request, env) {
     WHERE (SELECT COUNT(*) FROM output_verification_trials WHERE client_hash = ?2) < ?5
       AND (SELECT COUNT(*) FROM output_verification_trials WHERE reserved_day = ?3) < ?6
     RETURNING reservation_id
-  `).bind(crypto.randomUUID(), client, now.slice(0, 10), now,
+  `).bind(attempt, client, now.slice(0, 10), now,
     OUTPUT_TRIAL_LIMIT, OUTPUT_TRIAL_DAILY_LIMIT).first();
   return Boolean(reservation);
 }
@@ -61,7 +61,7 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
   }
   log('request_validated', 'free_trial', null);
   let reserved;
-  try { reserved = await reserveOutputTrial(request, env); }
+  try { reserved = await reserveOutputTrial(request, env, attempt); }
   catch {
     log('preview_failed', 'trial_unavailable', 503);
     return reply({ code: 'trial_unavailable', error: 'Free trial is temporarily unavailable. No payment was requested.', trial: outputTrialTerms() }, 503);

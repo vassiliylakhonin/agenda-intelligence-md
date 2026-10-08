@@ -24,6 +24,8 @@ test('trial evaluates edited evidence with exact paid-route parity and mandatory
   assert.equal(response.status,200);
   assert.equal(response.headers.get('cache-control'),'no-store');
   assert.match(response.headers.get('x-payment-attempt-id'),/^[0-9a-f-]{36}$/);
+  const reservation=await env.PAYMENT_LEDGER.prepare('SELECT reservation_id FROM output_verification_trials').first();
+  assert.equal(reservation.reservation_id,response.headers.get('x-payment-attempt-id'));
   const {trial,...actual}=await response.json();
   const expected=await (await post({...env,BILLING_MODE:'freemium'},evidence,{},'/v1/agent-output/verification')).json();
   assert.deepEqual(actual,expected);

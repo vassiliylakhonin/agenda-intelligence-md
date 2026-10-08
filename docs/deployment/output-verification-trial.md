@@ -37,7 +37,7 @@ There is also a 1,000-attempt global UTC-day limit. One conditional D1 INSERT
 checks both counts and reserves the attempt atomically. Missing or failed
 storage never grants a free execution. Input validation precedes reservation.
 
-The additive D1 table contains random reservation IDs, a SHA-256 network key
+The additive D1 table contains server-generated attempt UUIDs as reservation IDs, a SHA-256 network key
 (using CALLER_HASH_SALT when configured), day and timestamp. It contains no
 request text, source excerpts, wallet or raw IP. Unsalted or guessable address
 hashes are not anonymization; this is private operational metadata. Reservations
@@ -79,6 +79,10 @@ npx --yes wrangler@4.122.0 d1 execute agenda-fleet-payments \
 Deploy the tested main commit through the existing protected Vizier gate.
 Verify the live terms, two marked owner trial calls, exhausted third call,
 unchanged paid 402, and free-versus-paid telemetry. Remove
+only the two known owner reservation IDs from the trial table after this release
+check, using the server-issued `x-payment-attempt-id` response headers, to restore
+the owner's network allowance. Do not reset other trial reservations or payment
+records. This operator cleanup is not a public quota-reset endpoint. Remove
 `OUTPUT_VERIFICATION_TRIAL` or set it to `0` through the same deployment path
 to disable the trial; preserve the table and existing paid records.
 
