@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Unreleased — free first attempts across the fleet
+
+- Extend opt-in free live trials to all twelve configured products using their existing evaluators and matching input contracts. Keep the Output Verification trial URL; add `/v1/trial` and publish product-specific examples, optional paid tools and prices.
+- Reserve two attempts per hashed network address per product under one atomic 1,000/day fleet ceiling, preserving existing Output campaign usage. Reuse the existing trial table without changing payment records; missing storage fails closed.
+- Put a free-first editor on every product, preserve submitted inputs and structured results, and require an explicit paid action. Escrow retains its 0.50 USDC price; other evaluation prices remain 0.05 USDC. Free Financial Guard results omit payment challenges; free CIS screening disables the paid hosted fallback.
+- Keep free completions and owner/probe exclusions separate from confirmed paid executions. Routing products retain routing scope; no conversion or customer usefulness improvement is claimed.
+
 ## Unreleased — Output Verification free first evaluation
 
 - Add an opt-in REST trial endpoint using the same evidence validator and evaluator: two reserved attempts per hashed network address and an atomic 1,000/day service limit in D1. Validation errors do not consume attempts; missing storage fails closed.

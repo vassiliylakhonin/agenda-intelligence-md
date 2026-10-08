@@ -10,6 +10,62 @@ import pytest
 from jsonschema import Draft202012Validator
 
 
+def test_fleet_trials_validate_examples_and_responses_and_refuse_empty_input():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Worker protocol tests need Node.js")
+    root = Path(__file__).resolve().parents[1]
+    program = """
+      import { handleRequest } from './deploy/cloudflare-worker/src/index.js';
+      import { mcpToolsForProfile } from './deploy/cloudflare-worker/src/mcp.js';
+      import { TRIAL_PROFILES } from './deploy/cloudflare-worker/src/trial-profiles.js';
+      import { memoryD1 } from './deploy/cloudflare-worker/test/helpers/d1.js';
+      const log = console.log; console.log = () => {};
+      const results = [];
+      for (const [profile, config] of Object.entries(TRIAL_PROFILES)) {
+        const env = { AGENT_PROFILE:profile, WORKER_FREE_TRIAL:'1',
+          BILLING_MODE:'pay_per_call', VIZIER_DISABLED:'1', PAYMENT_LEDGER:memoryD1() };
+        const terms = await (await handleRequest(new Request('https://example.test/v1/trial'),env)).json();
+        const call = body => handleRequest(new Request('https://example.test/v1/trial',
+          {method:'POST',headers:{'cf-connecting-ip':'192.0.2.4'},body:JSON.stringify(body)}),env);
+        const valid = await call(terms.example_request);
+        const invalid = await call({});
+        results.push({profile,terms,valid_status:valid.status,payload:await valid.json(),
+          schema:mcpToolsForProfile(profile).find(t=>t.name===config.tool).outputSchema,
+          invalid_status:invalid.status,invalid:await invalid.json(),
+          reservations:await env.PAYMENT_LEDGER.prepare(
+            'SELECT COUNT(*) AS count FROM output_verification_trials').first()});
+      }
+      log(JSON.stringify(results));
+    """
+    run = subprocess.run(
+        [node, "--input-type=module", "-e", program],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    results = json.loads(run.stdout)
+    assert len(results) == 12
+    for result in results:
+        assert result["valid_status"] == 200, result["profile"]
+        terms = result["terms"]
+        Draft202012Validator(terms["input_schema"]).validate(terms["example_request"])
+        schema = copy.deepcopy(result["schema"])
+        if terms.get("request_schema"):
+            response_path = terms["request_schema"].lstrip("/").replace("-request.schema", "-response.schema")
+            response_path = response_path.replace("evidence-audit.schema", "agent-output-verification-response.schema")
+            schema = json.loads((root / response_path).read_text())
+        schema["additionalProperties"] = True  # REST provenance and additive trial terms.
+        Draft202012Validator(schema).validate(result["payload"])
+        assert result["payload"]["trial"]["payment_required"] is False
+        assert result["payload"]["trial"]["agent_profile"] == result["profile"]
+        assert result["invalid_status"] == 400
+        assert result["invalid"]["code"] == "invalid_trial_request"
+        assert result["reservations"]["count"] == 1
+
+
 def test_output_verification_trial_keeps_the_response_contract_and_invalid_input_free():
     node = shutil.which("node")
     if not node:

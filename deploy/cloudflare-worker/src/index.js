@@ -6,6 +6,8 @@ import { paymentTraceId, paymentTraceResponse } from "./payment-trace.js";
 import { snapshotHealth } from "./upstream_snapshot.js";
 import { consumeProQuota } from "./payment-ledger.js";
 import { OUTPUT_TRIAL_PATH, handleOutputTrial, outputTrialEnabled, outputTrialTerms } from './output-trial.js';
+import { WORKER_TRIAL_PATH, trialProfile, trialPath } from './trial-profiles.js';
+import { WORKED_EXAMPLES } from './worked-examples.js';
 import { readBoundedJson, MAX_JSON_BODY_BYTES } from "./request-body.js";
 import { PUBLIC_SCHEMAS } from "./public-schemas.js";
 import { trustPage } from "./trust-pages.js";
@@ -2294,20 +2296,7 @@ function openApiDocument(request, env = {}) {
         }
       },
       ...directV1OpenApiPaths(),
-      ...(outputTrialEnabled(agentProfile(request, env), env) ? {
-        [OUTPUT_TRIAL_PATH]: { post: {
-          tags: ['gates'], summary: 'Free first Output Verification evaluation',
-          description: 'Two reserved attempts per hashed network address for this trial campaign; shared networks share the allowance. Service capacity is 1,000 attempts per UTC day. Uses the same validator and evaluator as the paid verification endpoint. No payment or authorization headers. Human review is required.',
-          requestBody: { required: true, content: { 'application/json': { schema: { $ref: '/schemas/v1/evidence-audit.schema.json' } } } },
-          responses: {
-            200: { description: 'Evidence review with an additive trial object; not a paid execution.', content: { 'application/json': { schema: transportResponseSchema('schemas/v1/evidence-audit.schema.json') } } },
-            400: { description: 'Invalid JSON, input or inapplicable credentials; no trial reservation.' },
-            413: { description: 'Request exceeds the shared 1 MiB JSON body limit.' },
-            429: { description: 'Network or daily trial allowance exhausted; no payment requested.' },
-            503: { description: 'Trial storage unavailable or evaluation failed; no payment requested.' }
-          }
-        } }
-      } : {}),
+      ...trialOpenApiPaths(request, env),
       "/v1/evidence-packet/check": {
         post: {
           tags: ["gates"],
@@ -13318,7 +13307,7 @@ function x402Document(request, env) {
     title: entry?.canonical_product_name || X402_JSON.title,
     description: entry?.wrapper_scope || X402_JSON.description,
     x_agenda_access: hostedAccess(profile, env, originFromRequest(request)),
-    pricing_scope: env.BILLING_MODE === "pay_per_call" ? `${outputTrialEnabled(profile, env) ? 'Two free Output Verification trial attempts at /v1/agent-output/trial, subject to network and daily limits. ' : ''}Signed payment per evaluation on paid endpoints; discovery and bankability preview are free.` : "Shared optional commercial offerings; availability varies by tool. Base evidence triage is free, subject to deployment access and quota settings."
+    pricing_scope: env.BILLING_MODE === "pay_per_call" ? `${outputTrialEnabled(profile, env) ? `Two free trial attempts for this product at ${trialPath(profile)}, subject to network and fleet-wide daily limits. ` : ''}Signed payment per evaluation on paid endpoints; discovery and bankability preview are free.` : "Shared optional commercial offerings; availability varies by tool. Base evidence triage is free, subject to deployment access and quota settings."
   };
 }
 
@@ -14980,36 +14969,112 @@ function paidRequestHint(request, body, profile, env) {
     : { documentation: '/api/openapi.json' };
 }
 
+// The trial selects one server-owned operation and reuses its validator and evaluator.
+function workerTrialAdapter(profile) {
+  const config = trialProfile(profile);
+  const route = DIRECT_V1_ROUTES[config.route];
+  const example = WORKED_EXAMPLES[profile].request;
+  const inputSchema = PUBLIC_SCHEMAS[route?.schema || config.schema] ||
+    mcpToolsForProfile(profile).find(tool => tool.name === config.tool).inputSchema;
+  return {
+    schema: route?.schema || config.schema,
+    inputSchema,
+    example: route ? route.extract(example) : example,
+    validate(body) {
+      if (route) {
+        const value = route.extract(body);
+        return { value, errors: value ? route.errorsFor(value) : [route.missing] };
+      }
+      if (profile === 'kazakhstan') {
+        const value = structuredDealRiskRequestFromParams(body);
+        return { value, errors: value ? middleCorridorEnumErrors(value) : ['Supply the structured route, cargo, counterparties, dated sources and decision stage.'] };
+      }
+      return { value: { text: body.text }, errors: typeof body.text === 'string' && body.text.trim() ? [] : ['Supply a nonempty text question.'] };
+    },
+    async evaluate(value, request, env) {
+      if (route) {
+        const result = await route.run(value, request, env);
+        if (!result.response || typeof result.response !== 'object' || result.response.error || result.error) {
+          throw new Error('trial_evaluation_refused');
+        }
+        const data = { ...result.response, ...(route.provenance?.(result) || {}) };
+        if (profile === 'agent_financial_guard') {
+          // A free result has no embedded payment challenge or payment receipt.
+          delete data.x402_challenge;
+          data.financial_guard_verdict = { ...data.financial_guard_verdict };
+          delete data.financial_guard_verdict.x402_challenge;
+        }
+        return data;
+      }
+      const params = mcpArgumentsToParams(profile, value, config.tool);
+      const { result } = await runProfileRequest(profile, params, request, env);
+      if (result.error || mcpTaskFailed(result) || mcpTaskNeedsInput(result)) throw new Error('trial_evaluation_refused');
+      return mcpPayloadForResult(result);
+    }
+  };
+}
+
+function trialOpenApiPaths(request, env) {
+  const profile = agentProfile(request, env);
+  if (!outputTrialEnabled(profile, env)) return {};
+  const adapter = workerTrialAdapter(profile);
+  const contract = {
+    get: { tags: ['gates'], summary: 'Free trial terms, matching input schema and illustrative request',
+      responses: { 200: { description: 'Two attempts per network address for this product; no payment required.' } } },
+    post: {
+      tags: ['gates'], summary: 'Free first evaluation for this product',
+      description: 'Two reserved attempts per network address per product for this campaign. Shared networks share the allowance. One fleet-wide ceiling of 1,000 attempts per UTC day. No payment credentials. Uses the existing evaluator; paid hosted OpenSanctions fallback is disabled. Human review is required.',
+      requestBody: { required: true, content: { 'application/json': { schema: adapter.schema ? { $ref: '/' + adapter.schema } : adapter.inputSchema } } },
+      responses: {
+        200: { description: 'Existing product result with an additive trial object; not a paid execution. Financial Guard omits payment challenges.',
+          content: { 'application/json': { schema: adapter.schema ? transportResponseSchema(adapter.schema) : { type: 'object', additionalProperties: true } } } },
+        400: { description: 'Invalid JSON, product input or credentials; no reservation.' },
+        413: { description: 'Request exceeds the 1 MiB JSON body limit.' },
+        429: { description: 'Product network allowance or shared fleet capacity exhausted; no payment requested.' },
+        503: { description: 'Trial storage unavailable or evaluation failed; no payment requested.' }
+      }
+    }
+  };
+  return { [trialPath(profile)]: contract,
+    ...(profile === 'agent_output_verification' ? { [WORKER_TRIAL_PATH]: contract } : {}) };
+}
+
 export async function handleRequest(request, env = {}, ctx = {}) {
   const execute = () => handleRequestInner(request, env, ctx);
-  if (new URL(request.url).pathname === OUTPUT_TRIAL_PATH) {
+  const trialRequestPath = new URL(request.url).pathname;
+  if (trialRequestPath === WORKER_TRIAL_PATH || trialRequestPath === OUTPUT_TRIAL_PATH) {
     const profile = agentProfile(request, env);
-    if (!outputTrialEnabled(profile, env)) return jsonResponse({ error: 'Not found' }, 404);
+    if (!outputTrialEnabled(profile, env) ||
+        (trialRequestPath === OUTPUT_TRIAL_PATH && profile !== 'agent_output_verification')) return jsonResponse({ error: 'Not found' }, 404);
     if (request.method === 'OPTIONS') return execute();
-    if (request.method === 'GET') return jsonResponse({ ...outputTrialTerms(),
-      request_schema: '/schemas/v1/evidence-audit.schema.json',
-      example_request: GATE_REQUEST_GUIDES.agent_output_verification.example }, 200, { 'cache-control': 'no-store' });
+    const adapter = workerTrialAdapter(profile);
+    if (request.method === 'GET') return jsonResponse({ ...outputTrialTerms(profile),
+      ...(adapter.schema ? { request_schema: '/' + adapter.schema } : {}),
+      input_schema: adapter.inputSchema, example_request: adapter.example }, 200, { 'cache-control': 'no-store' });
     if (request.method !== 'POST') return jsonResponse({ error: 'Use GET or POST.' }, 405, { allow: 'GET, POST, OPTIONS' });
     if (!isProductionAuthorized(request, env, profile)) return jsonResponse({ error: 'Unauthorized' }, 401);
-    const route = DIRECT_V1_ROUTES['/v1/agent-output/verification'];
     const fingerprint = await callerHash(request, env).catch(() => null);
     return handleOutputTrial(request, env, {
-      respond: jsonResponse,
+      profile, respond: jsonResponse,
       emit: details => logPaymentEvent(request, env, { ...details, profile, caller_hash: fingerprint }),
       validate: body => {
         if (containsInlinePayment(body)) return { errors: ['Do not put payment credentials in trial inputs.'] };
-        const value = route.extract(body);
-        return { value, errors: value ? route.errorsFor(value) : [route.missing] };
+        if (!body || typeof body !== 'object' || Array.isArray(body)) return { errors: ['Send a request object.'] };
+        if (['jsonrpc', 'method', 'params', 'capability', 'tool', 'agent_profile'].some(key => Object.hasOwn(body, key))) {
+          return { errors: ['Send only this product’s request fields; tool and profile selection are not accepted.'] };
+        }
+        return adapter.validate(body);
       },
       evaluate: async structured => {
-        const result = await route.run(structured, request, env);
-        const provenance = route.provenance(result);
-        const data = { ...result.response, ...provenance };
+        // Free trials never invoke the paid hosted screening fallback.
+        const data = await adapter.evaluate(structured, request, { ...env, OPENSANCTIONS_DISABLED: '1' });
         const chars = JSON.stringify(structured).length;
         const probe = actionProbeReason(request, chars);
+        const verdict = data.financial_guard_verdict || data.arbitration_ruling || data;
         const event = await logUsageEvent(request, { agent_profile: profile, prompt_chars: chars,
           structured_chars: chars, modules_used: [profile], likely_probe: Boolean(probe), probe_reason: probe,
-          outcome: { decision: data.verdict, status: 'completed', score: data.readiness_score },
+          outcome: { decision: verdict.verdict || verdict.triage_recommendation || verdict.decision || verdict.ruling || 'completed',
+            status: 'completed', score: verdict.readiness_score ?? verdict.decision_readiness_score },
           payment: { header_present: false } }, env);
         const saved = recordUsageStats(env, event).catch(() => {});
         if (typeof ctx.waitUntil === 'function') ctx.waitUntil(saved);

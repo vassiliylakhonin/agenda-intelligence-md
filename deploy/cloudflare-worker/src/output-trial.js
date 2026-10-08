@@ -1,28 +1,36 @@
 import { readBoundedJson } from './request-body.js';
 import { paymentTraceId, paymentTraceResponse } from './payment-trace.js';
 import { tokenHash } from './payment-ledger.js';
+import { trialProfile, trialPath, OUTPUT_TRIAL_PATH } from './trial-profiles.js';
 
-export const OUTPUT_TRIAL_PATH = '/v1/agent-output/trial';
+export { OUTPUT_TRIAL_PATH };
 export const OUTPUT_TRIAL_LIMIT = 2;
 export const OUTPUT_TRIAL_DAILY_LIMIT = 1000;
 
 export function outputTrialEnabled(profile, env = {}) {
-  return profile === 'agent_output_verification' && env.OUTPUT_VERIFICATION_TRIAL === '1';
+  return Boolean(trialProfile(profile)) && (env.WORKER_FREE_TRIAL === '1' ||
+    (profile === 'agent_output_verification' && env.OUTPUT_VERIFICATION_TRIAL === '1'));
 }
 
-export function outputTrialTerms() {
-  return { endpoint: OUTPUT_TRIAL_PATH, attempts_per_network: OUTPUT_TRIAL_LIMIT,
+export function outputTrialTerms(profile = 'agent_output_verification') {
+  const config = trialProfile(profile);
+  return { endpoint: trialPath(profile), agent_profile: profile, tool: config.tool,
+    evaluation_kind: config.kind || 'evidence_review', attempts_per_network: OUTPUT_TRIAL_LIMIT,
     daily_service_limit: OUTPUT_TRIAL_DAILY_LIMIT, payment_required: false,
-    scope: 'Two evaluation attempts per network address for this trial campaign; shared networks share the allowance.',
-    paid_endpoint: '/v1/agent-output/verification', paid_price_usdc: 0.05 };
+    scope: 'Two attempts per network address per product for this trial campaign; shared networks share the allowance. Daily capacity is shared across all products.',
+    paid_endpoint: config.route || '/mcp', paid_transport: config.route ? 'rest' : 'mcp',
+    paid_price_usdc: profile === 'm2m_escrow_arbiter' ? 0.5 : 0.05 };
 }
 
 // One INSERT serializes both limits. Client-controlled labels, cookies and UA
 // never create another allowance. Only Cloudflare's connecting address is used.
-export async function reserveOutputTrial(request, env, attempt = crypto.randomUUID()) {
+export async function reserveOutputTrial(request, env, attempt = crypto.randomUUID(), profile = 'agent_output_verification') {
   const ip = request.headers.get('cf-connecting-ip');
   if (!ip || !env.PAYMENT_LEDGER?.prepare) throw new Error('trial_store_unavailable');
-  const client = await tokenHash('output-trial-v1:' + (env.CALLER_HASH_SALT || '') + ':' + ip.trim().toLowerCase());
+  // Preserve the already shipped Output campaign keys; all other profiles have
+  // independent allowances in the same table and the same fleet-wide daily cap.
+  const namespace = profile === 'agent_output_verification' ? 'output-trial-v1:' : 'worker-trial-v1:' + profile + ':';
+  const client = await tokenHash(namespace + (env.CALLER_HASH_SALT || '') + ':' + ip.trim().toLowerCase());
   const now = new Date().toISOString();
   const reservation = await env.PAYMENT_LEDGER.prepare(`
     INSERT INTO output_verification_trials(reservation_id, client_hash, reserved_day, reserved_at)
@@ -35,7 +43,8 @@ export async function reserveOutputTrial(request, env, attempt = crypto.randomUU
   return Boolean(reservation);
 }
 
-export async function handleOutputTrial(request, env, { validate, evaluate, emit, respond }) {
+export async function handleOutputTrial(request, env, { validate, evaluate, emit, respond, profile = 'agent_output_verification' }) {
+  const terms = outputTrialTerms(profile);
   const attempt = crypto.randomUUID();
   const trace = paymentTraceId(request);
   const log = (stage, reason, status, validation = null) => emit({ stage, reason, status, validation,
@@ -45,7 +54,7 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
   log('request_received', 'free_trial', null);
   if (request.headers.has('x-payment-tx') || request.headers.has('x-payment-signature') || request.headers.has('authorization')) {
     log('preview_failed', 'trial_credentials_not_applicable', 400);
-    return reply({ code: 'trial_credentials_not_applicable', error: 'Do not send payment or access credentials to the free trial.', trial: outputTrialTerms() }, 400);
+    return reply({ code: 'trial_credentials_not_applicable', error: 'Do not send payment or access credentials to the free trial.', trial: terms }, 400);
   }
   let checked;
   try { checked = validate(await readBoundedJson(request)); }
@@ -57,26 +66,26 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
   }
   if (checked.errors.length) {
     log('payment_rejected', 'invalid_paid_request', 400, { category: 'schema_validation_failed', error_count: checked.errors.length });
-    return reply({ code: 'invalid_trial_request', errors: checked.errors, trial: outputTrialTerms() }, 400);
+    return reply({ code: 'invalid_trial_request', errors: checked.errors, trial: terms }, 400);
   }
   log('request_validated', 'free_trial', null);
   let reserved;
-  try { reserved = await reserveOutputTrial(request, env, attempt); }
+  try { reserved = await reserveOutputTrial(request, env, attempt, profile); }
   catch {
     log('preview_failed', 'trial_unavailable', 503);
-    return reply({ code: 'trial_unavailable', error: 'Free trial is temporarily unavailable. No payment was requested.', trial: outputTrialTerms() }, 503);
+    return reply({ code: 'trial_unavailable', error: 'Free trial is temporarily unavailable. No payment was requested.', trial: terms }, 503);
   }
   if (!reserved) {
     log('preview_failed', 'trial_exhausted', 429);
-    return reply({ code: 'trial_exhausted', error: 'The network allowance or daily service trial limit has been reached. You can choose a separate paid evaluation.', trial: outputTrialTerms() }, 429);
+    return reply({ code: 'trial_exhausted', error: 'The network allowance or daily service trial limit has been reached. You can choose a separate paid evaluation.', trial: terms }, 429);
   }
   try {
     const result = await evaluate(checked.value);
     log('preview_completed', 'free_trial', 200);
-    return reply({ ...result, trial: { ...outputTrialTerms(), attempt_consumed: true,
+    return reply({ ...result, trial: { ...terms, attempt_consumed: true,
       note: 'Free evaluation; not a paid execution. Human review is required.' } });
   } catch {
     log('preview_failed', 'trial_evaluation_failed', 503);
-    return reply({ code: 'trial_evaluation_failed', error: 'Evaluation could not complete. This reserved trial attempt was consumed; no payment was requested.', trial: outputTrialTerms() }, 503);
+    return reply({ code: 'trial_evaluation_failed', error: 'Evaluation could not complete. This reserved trial attempt was consumed; no payment was requested.', trial: terms }, 503);
   }
 }
