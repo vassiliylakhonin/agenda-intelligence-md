@@ -1,5 +1,9 @@
 # Free first Output Verification evaluation
 
+The subsequent [fleet trial extension](fleet-free-trials.md) adds `/v1/trial`
+for all twelve products. Output retains this URL and its existing campaign
+allowance; the 1,000/day ceiling is shared across the fleet.
+
 The opt-in `OUTPUT_VERIFICATION_TRIAL=1` setting enables a separate REST trial
 on the Output Verification deployment only. Paid REST/MCP/A2A paths retain
 their admission rules and prices. Other profiles do not serve the trial.

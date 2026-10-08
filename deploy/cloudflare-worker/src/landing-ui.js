@@ -1,7 +1,7 @@
 import { WORKED_EXAMPLES } from "./worked-examples.js";
 import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { pricingHtml } from "./commercial-catalog.js";
-import { outputTrialEnabled, OUTPUT_TRIAL_PATH } from './output-trial.js';
+import { outputTrialEnabled, outputTrialTerms } from './output-trial.js';
 import { PRODUCT_WORKFLOWS, reviewSummary, reviewSummaryHtml, taskChooserHtml } from "./product-workflows.js";
 // Browser presentation only. Runtime decisions are supplied by the controller.
 import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL } from "./profiles.js";
@@ -16,6 +16,7 @@ function landingHtml(request, env) {
   const isFinancialGuard = profile === "agent_financial_guard";
   const isEscrowArbiter = profile === "m2m_escrow_arbiter";
   const freeTrial = outputTrialEnabled(profile, env);
+  const trialTerms = freeTrial ? outputTrialTerms(profile) : null;
 
   const title = escapeHtml(card.name);
   const presentation = {
@@ -81,13 +82,13 @@ function landingHtml(request, env) {
     critical_minerals_due_diligence: "Mineral supply chain → origin and ownership evidence gaps",
     dual_use_technology_export: "Electronics shipment → HS/ECCN and end-user evidence gaps"
   }[profile] || "Supplied case → evidence gaps + next human-review step";
-  const consoleId = isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
+  const consoleId = freeTrial ? "profile-console" : isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
   const exampleAction = "showWorkedExample()";
   const workedExample = WORKED_EXAMPLES[profile];
   const workflow = PRODUCT_WORKFLOWS[profile];
   const useMcp = !endpoint || profile === 'kazakhstan';
   const consoleEndpoint = useMcp ? '/mcp' : endpoint;
-  const consoleExample = useMcp
+  const consoleExample = freeTrial ? (workedExample.request.request || workedExample.request) : useMcp
     ? {jsonrpc:'2.0', id:'review-example', method:'tools/call', params:{name:workedExample.tool, arguments:workedExample.request}}
     : profile === 'agent_output_verification' ? workedExample.request : guide.example;
   const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">${freeTrial ? 'Check my evidence free' : 'Open live paid evaluation'}</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>`;
@@ -186,7 +187,7 @@ function landingHtml(request, env) {
   ${flagshipBlock}
   <p><strong>Not</strong> legal, compliance, sanctions, financial, investment, or insurance advice. <strong>Not</strong> a factuality verifier — schemas enforce structure, not truth. <strong>Source availability varies by profile and configuration; inspect the response provenance.</strong></p>
 
-  ${isFinancialGuard ? `
+  ${isFinancialGuard && !freeTrial ? `
   <div style="background: linear-gradient(135deg, #1e1e2f 0%, #0d1117 100%); border: 1px solid #30363d; border-radius: 8px; padding: 18px 20px; margin: 16px 0 24px; color: #f0f6fc;">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
       <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: #6366f1; color: #fff; padding: 3px 8px; border-radius: 4px;">Developer &amp; Agent Ecosystem</span>
@@ -264,7 +265,7 @@ function landingHtml(request, env) {
       </div>
     </form>
     <div id="fin-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
-  </div>` : isEscrowArbiter ? `
+  </div>` : isEscrowArbiter && !freeTrial ? `
   <h2>Escrow evidence simulator</h2>
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
     <p style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
@@ -341,12 +342,12 @@ function landingHtml(request, env) {
   </div>` : consoleExample ? `
   <h2>${freeTrial ? 'Check your own evidence free' : 'Live paid evaluation'}</h2>
   <div class="card">
-    ${freeTrial ? '<p>Try two live checks without a wallet: check your claims, correct the gaps, then check again. Replace the illustrative request below with your own redacted claims and source excerpts. Shared networks share the two-attempt allowance; daily capacity is limited. Do not submit secrets or confidential documents. Human review is required.</p>' : '<p>Editing and submitting this request uses the paid API and requires an EVM wallet or API integration. For a free demonstration use Run a worked example above. Use synthetic data only; the result is evidence review, not authorization.</p>'}
+    ${freeTrial ? `<p>Try two live ${trialTerms.evaluation_kind === 'routing' ? 'routing requests' : 'checks'} without a wallet: review the result, correct the gaps, then try again. Replace the illustrative request with your own redacted inputs. Bring: ${escapeHtml(workflow.bring)} You receive: ${escapeHtml(workflow.get)} Shared networks share two attempts per product; daily capacity is shared across all products. Do not submit secrets or confidential documents. Human review is required.</p>` : '<p>Editing and submitting this request uses the paid API and requires an EVM wallet or API integration. For a free demonstration use Run a worked example above. Use synthetic data only; the result is evidence review, not authorization.</p>'}
     <form id="profile-console" onsubmit="runProfileExample(event)">
       <label for="profile-request">Structured request</label>
       <textarea id="profile-request" rows="15" style="width:100%;font:13px/1.5 var(--mono);padding:12px;box-sizing:border-box">${escapeHtml(JSON.stringify(consoleExample, null, 2))}</textarea>
       <button id="profile-run" type="submit">${freeTrial ? 'Run free evidence check' : 'Evaluate evidence'}</button>
-      ${freeTrial ? '<button id="profile-paid" type="button" hidden onclick="runProfileExample(event, true)">Choose paid evaluation — 0.05 USDC</button>' : ''}
+      ${freeTrial ? `<button id="profile-paid" type="button" hidden onclick="runProfileExample(event, true)">Choose paid evaluation — ${trialTerms.paid_price_usdc} USDC</button>` : ''}
       <p id="profile-status" role="status"></p>
     </form>
     <div id="profile-summary" aria-live="polite"></div>
@@ -359,6 +360,7 @@ function landingHtml(request, env) {
     <summary style="font-weight: 700; cursor: pointer; font-size: 15px; color: var(--fg);">🛠️ Try it (curl &amp; AI Agent Integration)</summary>
     <div style="margin-top: 12px;">
       <p>Remote MCP endpoint: <code>${origin}/mcp</code>. Discovery is free; evaluating your own input requires the signed payment flow. A client that only discovers tools can connect without a wallet, but cannot automatically run paid tools without a payment adapter.</p>
+      ${freeTrial ? `<p>Free live check: POST this product’s request fields to <code>${trialTerms.endpoint}</code>. <a href="${trialTerms.endpoint}">Get its example, input schema and trial terms</a>. Two attempts per network address per product; shared fleet capacity applies.</p>` : ''}
       <p>Free connectivity check — lists tools without evaluating evidence or requesting payment:</p>
       <pre>${escapeHtml(`curl -sS '${origin}/mcp' -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' --data-binary '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`)}</pre>
       <p>Read <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/deployment/hosted-quickstart.md">the hosted MCP / A2A quickstart</a> for initialization, heartbeat and paid-call handling.</p>
@@ -461,11 +463,11 @@ async function runProfileExample(event, paid) {
     document.getElementById('profile-summary').innerHTML = '';
     document.getElementById('profile-response').hidden = true;
     ${freeTrial ? `if (!agendaTrialTraceId && window.crypto && crypto.randomUUID) agendaTrialTraceId = crypto.randomUUID();
-    var trialHeaders = agendaTelemetryHeaders('${origin}${OUTPUT_TRIAL_PATH}', {'content-type':'application/json', 'x-trace-id':traceId});
+    var trialHeaders = agendaTelemetryHeaders('${origin}${trialTerms?.endpoint}', {'content-type':'application/json', 'x-trace-id':traceId});
     if (agendaTrialTraceId) trialHeaders['x-payment-trace-id'] = agendaTrialTraceId;
     var response = paid ? await agendaPaidFetch('${origin}${consoleEndpoint}', {
-      method:'POST', headers:trialHeaders, body:JSON.stringify(payload)
-    }, 0.05) : await fetch('${origin}${OUTPUT_TRIAL_PATH}', {
+      method:'POST', headers:trialHeaders, body:JSON.stringify(${useMcp ? `{jsonrpc:'2.0', id:traceId, method:'tools/call', params:{name:'${workedExample.tool}', arguments:payload}}` : 'payload'})
+    }, ${trialTerms?.paid_price_usdc}) : await fetch('${origin}${trialTerms?.endpoint}', {
       method:'POST', headers:trialHeaders, body:JSON.stringify(payload)
     });` : `var response = await agendaPaidFetch('${origin}${consoleEndpoint}', {
       method: 'POST', headers: {'content-type':'application/json', 'MCP-Protocol-Version':'2025-11-25', 'x-trace-id': traceId}, body: JSON.stringify(payload)

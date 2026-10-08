@@ -26,7 +26,7 @@ export function hostedAccess(profile, env, origin) {
     quota_per_hour: env?.BILLING_MODE === "pay_per_call" ? null : quota && env?.AGENDA_USAGE ? quota : null,
     quota_enforcement: quota && env?.AGENDA_USAGE ? "best_effort" : "not_configured",
     pricing_url: `${origin}/.well-known/x402`,
-    ...(outputTrialEnabled(profile, env) ? { free_trial: outputTrialTerms() } : {}),
+    ...(outputTrialEnabled(profile, env) ? { free_trial: outputTrialTerms(profile) } : {}),
     on_quota_exceeded: "Wait for the next UTC hour or review optional paid access; do not pay automatically.",
     payment_integration: "Legacy transaction-hash integration; standard x402 interoperability is not certified."
   };
@@ -34,7 +34,7 @@ export function hostedAccess(profile, env, origin) {
 
 export function hostedAccessNote(access) {
   if (!access) return "Hosted base calls are free; authentication and hourly quotas depend on deployment configuration. Check the serving endpoint's /.well-known/x402 before calling or paying.";
-  if (access.billing_mode === "pay_per_call") return `${access.free_trial ? `Output Verification offers two free trial attempts at ${access.free_trial.endpoint}; shared networks share the allowance and daily capacity is limited. ` : ''}Evaluation on paid endpoints requires a signed Base USDC payment for the exact request, or Pro access. Discovery is free. Keep the original request and X-Payment-Signature for result recovery within 24 hours. Current prices: ${access.pricing_url}. Do not pay automatically.`;
+  if (access.billing_mode === "pay_per_call") return `${access.free_trial ? `This product offers two free trial attempts at ${access.free_trial.endpoint}; shared networks share the allowance and daily capacity is limited. ` : ''}Evaluation on paid endpoints requires a signed Base USDC payment for the exact request, or Pro access. Discovery is free. Keep the original request and X-Payment-Signature for result recovery within 24 hours. Current prices: ${access.pricing_url}. Do not pay automatically.`;
   const auth = access.authentication === "bearer_required"
     ? "A Bearer access key is required; a missing or incorrect key returns HTTP 401."
     : "No account or authentication is required for this deployment.";
