@@ -6,6 +6,7 @@ import { PRODUCT_WORKFLOWS, reviewSummary, reviewSummaryHtml } from '../src/prod
 import { WORKED_EXAMPLES } from '../src/worked-examples.js';
 import { PAYMENT_CLIENT_SCRIPT } from '../src/payment-client.js';
 import { createHostedMcpCall, HostedMcpError } from '../../../examples/hosted-mcp/client.mjs';
+import { publicTargets } from '../scripts/public-conformance.js';
 
 const origin = 'https://example.test';
 const configured = profile => ({AGENT_PROFILE:profile, BILLING_MODE:'pay_per_call', VIZIER_DISABLED:'1'});
@@ -22,7 +23,10 @@ test('all twelve product pages publish task intake, a valid console and inspecta
     assert.ok(html.includes(work.get.replaceAll('&', '&amp;')), profile);
     assert.ok(html.includes('Review summary'), profile);
     for (const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new vm.Script(match[1]);
-    if (profile === 'agenda') assert.ok(html.includes('What do you need to do?'));
+    if (profile === 'agenda') {
+      assert.ok(html.includes('What do you need to do?'));
+      for (const target of publicTargets()) assert.ok(html.includes('href="'+target.origin+'/"'), target.workerName);
+    }
     if (['agent_financial_guard','m2m_escrow_arbiter'].includes(profile)) continue;
     const encoded = html.match(/id="profile-request"[^>]*>([\s\S]*?)<\/textarea>/)[1];
     const body = encoded.replaceAll('&quot;', '"').replaceAll('&#39;', "'").replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
