@@ -6091,7 +6091,7 @@ function fleetDirectoryResponse() {
       {
         profile: "market_entry_readiness",
         tool_name: "kazakhstan_market_entry_readiness",
-        canonical_endpoint: "https://market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev",
         description: "Grade a Kazakhstan market-entry file against staged source requirements before commitment.",
         required_fields: ["market", "sector", "entry_mode", "decision_question", "decision_stage", "dated_sources"],
         schema_url: MARKET_ENTRY_REQUEST_SCHEMA_URL
@@ -6139,7 +6139,7 @@ function fleetDirectoryResponse() {
       {
         profile: "agenda",
         tool_name: "strategic_risk_triage",
-        canonical_endpoint: "https://agenda.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev",
         description: "Master strategic-risk triage: route free-text strategic questions to the relevant regional and sector gates.",
         required_fields: ["text"],
         schema_url: null

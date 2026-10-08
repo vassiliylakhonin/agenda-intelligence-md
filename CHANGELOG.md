@@ -2,6 +2,7 @@
 
 ## Unreleased — first useful result across the fleet
 
+- Align Agenda and Kazakhstan Market Entry directory links with their configured production Worker names; check all twelve canonical task links.
 - Group existing products by user task and show intake, useful output and next human step on every landing page. Project existing routes, evidence gaps and owner actions into readable summaries while retaining complete responses.
 - Replace generic trade text consoles with valid published MCP requests for Agenda, Corridor Assistant and Middle Corridor; retain paid admission and explicit recovery.
 - Fix Corridor Assistant matching `shipping` as a Gulf vessel, prioritize explicit Gulf geography over corridor hints, and make the selected dual-use gate reachable. Refresh saved synthetic examples from the local handlers.
