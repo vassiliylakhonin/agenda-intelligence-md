@@ -49,6 +49,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain)"
 
+      - name: Install pinned Worker test dependencies
+        run: npm ci --no-audit --no-fund
+
       - name: Test the Worker and deployment gate
         run: npm test
 

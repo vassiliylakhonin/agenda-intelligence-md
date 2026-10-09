@@ -74,8 +74,10 @@ export const PRODUCT_WORKFLOWS = Object.freeze({
   }
 });
 
-// This self-contained projection also runs in the browser. Unknown/error bodies
-// cannot become positive results, and raw structured responses remain available.
+// These projections are serialized into the browser with Function.toString().
+// Keep callbacks anonymous: Wrangler's keepNames adds out-of-scope __name calls
+// to locally named helpers. The bundled-browser regression exercises this seam.
+// Unknown/error bodies cannot become positive results; raw responses stay available.
 export function reviewSummary(response) {
   if (!response || typeof response !== 'object' || Array.isArray(response) || response.error || response.code) return null;
   const value = response.financial_guard_verdict || response.arbitration_ruling || response.export_risk_triage || response;
@@ -86,12 +88,14 @@ export function reviewSummary(response) {
     value.selected_route?.name || (value.kind === 'orientation_and_routing' ? value.next_gate_input : null) ||
     value.signal_screen?.recommended_mcp_tool;
   if (typeof route !== 'string') return null;
-  const text = item => typeof item === 'string' ? item :
-    item && typeof item === 'object' ? [item.owner, item.action || item.next_action || item.evidence_needed || item.description].filter(v => typeof v === 'string').join(': ') : '';
-  const gaps = (Array.isArray(readiness.blocking_gaps) ? readiness.blocking_gaps : Array.isArray(value.evidence_gaps) ? value.evidence_gaps :
-    Array.isArray(value.signal_screen?.evidence_gaps) ? value.signal_screen.evidence_gaps : []).map(text).filter(Boolean);
-  const actions = (Array.isArray(readiness.owner_actions) ? readiness.owner_actions : Array.isArray(value.owner_actions) ? value.owner_actions :
-    Array.isArray(value.next_actions) ? value.next_actions : typeof value.next_gate_input === 'string' ? [value.next_gate_input] : []).map(text).filter(Boolean);
+  const [gaps, actions] = [
+    Array.isArray(readiness.blocking_gaps) ? readiness.blocking_gaps : Array.isArray(value.evidence_gaps) ? value.evidence_gaps :
+      Array.isArray(value.signal_screen?.evidence_gaps) ? value.signal_screen.evidence_gaps : [],
+    Array.isArray(readiness.owner_actions) ? readiness.owner_actions : Array.isArray(value.owner_actions) ? value.owner_actions :
+      Array.isArray(value.next_actions) ? value.next_actions : typeof value.next_gate_input === 'string' ? [value.next_gate_input] : [],
+  ].map(items => items.map(item => typeof item === 'string' ? item :
+    item && typeof item === 'object' ? [item.owner, item.action || item.next_action || item.evidence_needed || item.description]
+      .filter(v => typeof v === 'string').join(': ') : '').filter(Boolean));
   const notice = readiness.boundary_notice || value.boundary_notice || value.not_advice_notice;
   return { route, gaps, actions,
     notice: typeof notice === 'string' ? notice : 'Review the full response and its evidence boundaries before acting.' };
@@ -100,12 +104,13 @@ export function reviewSummary(response) {
 export function reviewSummaryHtml(response, escape) {
   const summary = reviewSummary(response);
   if (!summary) return '';
-  const list = items => '<ul>' + items.map(item => '<li>' + escape(item) + '</li>').join('') + '</ul>';
+  const [gaps, remainingGaps, actions] = [summary.gaps.slice(0, 3), summary.gaps.slice(3), summary.actions]
+    .map(items => '<ul>' + items.map(item => '<li>' + escape(item) + '</li>').join('') + '</ul>');
   return '<section aria-label="Review summary"><h3>Review summary</h3><p><strong>Returned route:</strong> ' + escape(summary.route) + '</p>' +
-    (summary.gaps.length ? '<strong>Evidence to resolve (' + summary.gaps.length + ')</strong>' + list(summary.gaps.slice(0, 3)) +
-      (summary.gaps.length > 3 ? '<details><summary>Remaining evidence gaps</summary>' + list(summary.gaps.slice(3)) + '</details>' : '')
+    (summary.gaps.length ? '<strong>Evidence to resolve (' + summary.gaps.length + ')</strong>' + gaps +
+      (summary.gaps.length > 3 ? '<details><summary>Remaining evidence gaps</summary>' + remainingGaps + '</details>' : '')
       : '<p>No blocking gaps listed. This does not establish factual truth or permission to act.</p>') +
-    (summary.actions.length ? '<strong>Assigned next steps</strong>' + list(summary.actions) : '') +
+    (summary.actions.length ? '<strong>Assigned next steps</strong>' + actions : '') +
     '<p>' + escape(summary.notice) + '</p></section>';
 }
 

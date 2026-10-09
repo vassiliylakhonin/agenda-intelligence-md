@@ -20,5 +20,8 @@
     "verify:agent-discovery": "node scripts/check-agent-discovery-fetchability.js",
     "verify:public-agents": "node scripts/verify-public-agents.js",
     "verify:refusals": "node scripts/verify-refusals.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1"
   }
 }
