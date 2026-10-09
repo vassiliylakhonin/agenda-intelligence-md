@@ -2,6 +2,7 @@
 
 ## Unreleased — fleet walkthrough repairs
 
+- Preserve the Escrow product identifier in optional feedback drafts; bounded identifiers may contain digits after the first letter.
 - Recognize Russian Kazakhstan names and inflections in Python and hosted routing; keep subject matching Unicode-aware. Link Kazakhstan market-entry questions to the existing review gate without changing other geographies.
 - Offer editable fields, published enum choices and empty document rows across all twelve free-trial pages; retain the complete JSON editor, unknown caller fields and explicit paid action. Add optional caller classification and escrow artifact/hash/schema inputs without inventing evidence.
 - Show specific dual-use review leads, suggested document-owner requests where the service has no assigned actions, and changes since the previous successful on-page check. Preserve routes, scores, service evidence and factual-verification boundaries. Clear stale summaries when parsing or a request fails.
