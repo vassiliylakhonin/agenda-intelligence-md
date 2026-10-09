@@ -25,9 +25,9 @@ test('bundled landing scripts display successful review results across the fleet
       assert.ok(example, profile);
       const elements = Object.fromEntries([
         'profile-run', 'profile-paid', 'profile-status', 'profile-result',
-        'profile-summary', 'profile-response', 'profile-request', 'profile-feedback',
+        'profile-summary', 'profile-progress', 'profile-response', 'profile-request', 'profile-feedback',
       ].map(id => [id, { value: JSON.stringify(example.request), innerHTML: '', textContent: '', hidden: true }]));
-      const returned = structuredClone(example.response);
+      let returned = structuredClone(example.response);
       const requests = [];
       const context = {
         URL, location: { search: '?owner_test=1', href: 'https://example.test/?owner_test=1' },
@@ -51,6 +51,16 @@ test('bundled landing scripts display successful review results across the fleet
       assert.deepEqual(JSON.parse(elements['profile-result'].textContent), returned, profile + ' unchanged response');
       assert.equal(elements['profile-run'].disabled, false, profile);
       assert.equal(requests.length, 1, profile);
+      returned = structuredClone(example.follow_up?.response || example.response);
+      await context.runProfileExample({ preventDefault() {} });
+      assert.match(elements['profile-progress'].innerHTML, /Changes since previous check/, profile);
+      assert.equal(requests.length, 2, profile);
+      elements['profile-request'].value = '{broken';
+      await context.runProfileExample({ preventDefault() {} });
+      assert.equal(requests.length, 2, profile + ' invalid local JSON sends nothing');
+      assert.equal(elements['profile-summary'].innerHTML, '', profile + ' stale success cleared');
+      assert.equal(elements['profile-progress'].innerHTML, '', profile);
+      assert.equal(elements['profile-response'].hidden, true, profile);
     }
   } finally {
     console.log = originalLog;

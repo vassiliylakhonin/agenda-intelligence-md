@@ -41,3 +41,5 @@ secondary sanctions
 ```
 
 When extending the term sets, keep them lowercased and update this block plus the matching block in `llms.txt`. The guard in [tests/test_product_shell.py](../tests/test_product_shell.py) (`test_routing_terms_documented_in_canon`) fails if a term exists in code but not in both canon docs.
+
+Russian Central Asia/Caspian routing aliases (lowercased): казахстан, казахстана, казахстане, казахстану, казахстаном, алматы, астана, астане, актау, курык, средний коридор, центральная азия, каспий.

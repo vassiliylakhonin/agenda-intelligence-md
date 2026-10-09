@@ -126,3 +126,5 @@ Boundary:
 - Source-plan coverage is diagnostic before v1.0.
 - Missing `must_check` coverage should be disclosed as an evidence gap, not treated as factual truth.
 - These tools do not discover sources, score source reputation, or decide whether claims are true in the world.
+
+Russian Central Asia/Caspian routing aliases (lowercased): казахстан, казахстана, казахстане, казахстану, казахстаном, алматы, астана, астане, актау, курык, средний коридор, центральная азия, каспий.

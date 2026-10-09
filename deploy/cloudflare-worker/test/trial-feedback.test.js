@@ -10,7 +10,9 @@ test('feedback drafts include only product, bounded status and unanswered questi
   assert.match(body, /Product: cis_secondary_sanctions/);
   assert.match(body, /Check: Completed/);
   assert.match(body, /What was missing or confusing/);
-  assert.match(body, /Would you use this again/);
+  assert.match(body, /Useful next step: Not answered/);
+  assert.match(decodeURIComponent(trialFeedbackMailto('agenda', 200, 'support@example.test', 'useful_next_step')), /Useful next step: Useful next step/);
+  assert.match(decodeURIComponent(trialFeedbackMailto('agenda', 200, 'support@example.test', 'still_blocked')), /Useful next step: Still blocked/);
   assert.match(trialFeedbackMailto('agenda', 429, 'support@example.test'), /Allowance%20reached/);
   const unsafe = decodeURIComponent(trialFeedbackMailto('bad\nprivate-input', 'secret-error', 'support@example.test'));
   assert.ok(!unsafe.includes('private-input'));

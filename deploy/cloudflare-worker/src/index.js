@@ -212,6 +212,20 @@ const CIS_REVIEW_INTAKE_RETENTION_SECONDS = 30 * 24 * 60 * 60;
 const CIS_REVIEW_INTAKE_MAX_BYTES = 16 * 1024;
 
 const CA_CASPIAN_TERMS = [
+  "казахстан",
+  "казахстана",
+  "казахстане",
+  "казахстану",
+  "казахстаном",
+  "алматы",
+  "астана",
+  "астане",
+  "актау",
+  "курык",
+  "средний коридор",
+  "центральная азия",
+  "каспий",
+
   "central asia",
   "caspian",
   "kazakhstan",
@@ -3039,7 +3053,7 @@ function corridorAssistantSelectRoute(text) {
   const choices = [
     [/(?:hs\s*\d{4,10}|dual[- ]use|microelectronics|semiconductor|export control|экспортн|двойн)/iu, "dual_use_technology_export"],
     [/(?:hormuz|red sea|bab[- ]el[- ]mandeb|persian gulf|gulf of|ормуз|красное море|персидск)/iu, "gulf_maritime_exposure"],
-    [/(?:market.entry|entry into kazakhstan|distribution in kazakhstan|выход на рынок|дистрибуц)/iu, "kazakhstan_market_entry_readiness"],
+    [/(?:market.entry|entry into kazakhstan|enter(?:ing)? kazakhstan|kazakhstan market|distribution in kazakhstan|выход на рынок|дистрибуц)/iu, "kazakhstan_market_entry_readiness"],
     [/(?:sanction|ofac|ownership|counterparty|контрагент|санкц|бенефициар)/iu, "cis_secondary_sanctions"],
     [/(?:corridor|route|shipment|cargo|port\b|freight|alumini?um|aktau|poti\b|baku\b|batumi|kuryk|turkmenbashi|caspian|trans[- ]?caspian|ferry|letter of credit|bank review|коридор|маршрут|груз|порт|логист|алюминий|актау|поти|баку|каспи)/iu, "middle_corridor_deal_risk"],
     [/(?:\b(?:vessel|tanker|ship)\b|\bimo\s*\d|судно|танкер)/iu, "gulf_maritime_exposure"]
@@ -10179,7 +10193,7 @@ function classifyIntent(text) {
   if (hasAny(lower, ["validate", "schema", "json schema", "memo validation"])) {
     return "memo_validation";
   }
-  if (hasAny(lower, ["source", "coverage", "required source", "source plan"])) {
+  if (hasAny(lower, ["source", "coverage", "required source", "source plan", "план источников", "покрытие источников"])) {
     return "source_coverage";
   }
   if (
@@ -10188,7 +10202,7 @@ function classifyIntent(text) {
   ) {
     return "sanctions_policy_signal_screen";
   }
-  if (hasAny(lower, ["audit", "evidence", "claim", "provenance", "unsupported"])) {
+  if (hasAny(lower, ["audit", "evidence", "claim", "provenance", "unsupported", "аудит", "документ", "доказательств", "утвержден"])) {
     return "evidence_audit";
   }
   if (hasAny(lower, ["signal", "watch", "monitor", "early warning", "indicator"])) {
@@ -11124,7 +11138,7 @@ function watchNextForModules(modules) {
 // receipt of what was read, not a finding.
 const SUBJECT_JURISDICTIONS = [
   ["United Arab Emirates", ["uae", "united arab emirates", "dubai", "abu dhabi", "fujairah", "sharjah", "jebel ali"]],
-  ["Kazakhstan", ["kazakhstan", "almaty", "astana", "aktau", "kuryk", "khorgos"]],
+  ["Kazakhstan", ["kazakhstan", "almaty", "astana", "aktau", "kuryk", "khorgos", "казахстан", "казахстана", "казахстане", "казахстану", "казахстаном", "алматы", "астана", "астане", "актау", "курык"]],
   ["Iran", ["iran", "bandar abbas", "chabahar", "rasht-astara"]],
   ["Russia", ["russia", "russian federation", "novorossiysk"]],
   ["Kyrgyzstan", ["kyrgyzstan", "bishkek"]],
@@ -11234,7 +11248,7 @@ const SUBJECT_ACTIONS = [
 function compileVocabulary(table) {
   return table.map(([label, terms]) => [
     label,
-    terms.map((term) => new RegExp(`(?:^|[^a-z0-9])${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:[^a-z0-9]|$)`, "i"))
+    terms.map((term) => new RegExp(`(?:^|[^\\p{L}\\p{N}])${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:[^\\p{L}\\p{N}]|$)`, "iu"))
   ]);
 }
 
@@ -11573,7 +11587,9 @@ function triageForText(text, modules, profile = "agenda", structuredRequest = nu
         : null,
     source_plan: sourcePlanForModules(modules),
     quality_gates: qualityGatesForIntent(intent),
-    next_actions: nextActionsForIntent(intent),
+    next_actions: profile === "agenda" && subjectForText(text).jurisdictions.includes("Kazakhstan") && /(?:market.entry|enter(?:ing)? kazakhstan|kazakhstan market|entry into kazakhstan|distribution in kazakhstan|выход на рынок|дистрибуц)/iu.test(text)
+      ? ["Prepare the project, partner, decision question and dated documents at https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/ before a human market-entry decision.", ...nextActionsForIntent(intent)]
+      : nextActionsForIntent(intent),
     install: {
       package: PACKAGE_URL,
       command: "pip install agenda-intelligence-md",
@@ -14160,7 +14176,7 @@ const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"
 
 const landingHtml = createLandingRenderer({
   originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES,
-  fleetDirectoryResponse
+  fleetDirectoryResponse, inputSchemaForProfile: profile => workerTrialAdapter(profile).inputSchema
 });
 
 function buildRepairPromptJs(packet, response) {

@@ -97,6 +97,7 @@ export const WORKED_EXAMPLES = {
         "State what would change the judgment."
       ],
       "next_actions": [
+        "Prepare the project, partner, decision question and dated documents at https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/ before a human market-entry decision.",
         "Run audit_claims with the memo and evidence pack.",
         "Review unsupported_claims and orphan evidence references before publishing the analysis."
       ],

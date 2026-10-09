@@ -52,6 +52,19 @@ PACKAGE_NAME = "agenda_intelligence"
 # Lowercased keyword → reference module identifier. The order matters only for
 # deterministic ``modules_used`` output; matches are unioned.
 CA_CASPIAN_TERMS = {
+    "казахстан",
+    "казахстана",
+    "казахстане",
+    "казахстану",
+    "казахстаном",
+    "алматы",
+    "астана",
+    "астане",
+    "актау",
+    "курык",
+    "средний коридор",
+    "центральная азия",
+    "каспий",
     "central asia",
     "caspian",
     "kazakhstan",
