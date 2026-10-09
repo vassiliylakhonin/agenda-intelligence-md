@@ -1478,7 +1478,7 @@ export const WORKED_EXAMPLES = {
       "human_review_required": true,
       "not_advice_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice.",
       "run_provenance": {
-        "contract_version": "1.14.0",
+        "contract_version": "1.14.1",
         "input_digest": "sha256:canonical",
         "schema_uri": "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/schemas/v1/critical-minerals-due-diligence-response.schema.json"
       },
@@ -1583,7 +1583,7 @@ export const WORKED_EXAMPLES = {
       "risk_question": "Is this file complete enough for export-control human review?"
     },
     "response": {
-      "contract_version": "1.14.0",
+      "contract_version": "1.14.1",
       "profile": "dual_use_technology_export",
       "export_risk_triage": {
         "status": "ready_for_human_review",

@@ -45,3 +45,15 @@ for(const [profile,example] of Object.entries(WORKED_EXAMPLES)) {
   assert.equal(requests[0].url,'/telemetry/worked-example');assert.equal(requests[0].options.body,undefined);
  });
 }
+
+
+test('retained client understands a standard MCP payment admission without treating it as evaluation',async()=>{
+ const oldLog=console.log;console.log=()=>{};
+ try {
+  const call=createHostedMcpCall('strategic_risk_triage',{text:'Synthetic Aktau review'},{endpoint:origin+'/mcp/agent',
+   fetchImpl:(url,options)=>handleRequest(new Request(url,options),{AGENT_PROFILE:'agenda',BILLING_MODE:'pay_per_call'})});
+  const admission=await call.evaluate();
+  assert.equal(admission.status,'payment_required');assert.equal(admission.evaluated,false);
+  assert.equal(admission.payment.required_usdc,.05);
+ }finally{console.log=oldLog;}
+});

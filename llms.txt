@@ -18,8 +18,8 @@ Product MCP tools:
 - kazakhstan_market_entry_readiness — Kazakhstan market-entry readiness gate (market-entry-readiness-request.schema.json) for distribution / import / service / showroom / EPC / renewable-energy / infrastructure / technology-transfer / partner-entry files; gate decision + readiness label + evidence gaps + claim audit + owner actions + watch-next out. Evidence triage only; not legal, tax, IP, data-compliance, customs, or sanctions advice; human review required.
 - agent_output_verification — relay-readiness triage of another agent's claim-backed output (evidence-audit.schema.json in); returns a relay verdict, per-claim findings, orphan evidence references, and owner actions. Evidence-readiness only: no factual-truth verification, no source retrieval, no authorization of an action.
 - pre_action_check — stateless action-boundary routing (pre-action-check-request.schema.json in); returns continue, request_evidence, require_approval, or stop from caller-supplied claim evidence, risk, policy checks, and external approval status. The caller authenticates, authorizes, enforces, stores approvals, and performs the action.
-- agent_financial_pre_sign_check — deterministic pre-sign financial transaction firewall for autonomous agents with wallet capabilities (agent-financial-guard-request.schema.json in); screens OFAC SDN, drainer approvals, spending velocity, and prompt injection before transaction broadcast.
-- m2m_escrow_arbitration_ruling — deterministic dispute resolution and deliverable verification for autonomous B2B Agent-to-Agent transactions (m2m-escrow-arbiter-request.schema.json in); verifies artifact hashes, schemas, deadlines, and SLOs with binding payout allocation.
+- agent_financial_pre_sign_check — reviews supplied financial intent and local risk rules (agent-financial-guard-request.schema.json in); spending history and current sanctions status remain unverified. Requires human review; does not authorize transactions.
+- m2m_escrow_arbitration_ruling — deterministic dispute resolution and deliverable verification for autonomous B2B Agent-to-Agent transactions (m2m-escrow-arbiter-request.schema.json in); verifies artifact hashes, schemas, deadlines, and SLOs with proposed payout allocation for human review; no settlement or clearance.
 - corridor_bankability_screen — Illustrative corridor finance scenario screen (schemas/v1/corridor-bankability-request.schema.json in); requires supplied capex/debt/DSCR, internal thresholds, human signoff; paid output is Markdown and a JSON schedule, with no Excel/PDF artifact or current hydrological verification.
 
 Commercial discovery discipline:
@@ -128,3 +128,9 @@ Boundary:
 - These tools do not discover sources, score source reputation, or decide whether claims are true in the world.
 
 Russian Central Asia/Caspian routing aliases (lowercased): казахстан, казахстана, казахстане, казахстану, казахстаном, алматы, астана, астане, актау, курык, средний коридор, центральная азия, каспий.
+
+Hosted MCP connection:
+- Free canonical directory: https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/fleet.json lists all 12 profiles and their standard MCP endpoints at /mcp/agent.
+- Initialize and list tools on the selected endpoint; use its actual inputSchema, outputSchema and readiness metadata. Local stdio tools are a separate catalog, not hosted strategic-risk tools.
+- Standard MCP payment admission is result.isError=true with evaluated:false and admission_status 402 or funding-signature 401. This is not an evaluated result. Legacy /mcp retains HTTP payment statuses. Bearer authentication and quotas still apply. Never pay or sign automatically.
+- Generic clients can encounter workers.dev edge filtering (HTML/403) before the Worker; official MCP SDK clients were tested. Report this as connectivity failure.

@@ -42,6 +42,7 @@ export const MCP_TOOL_LIST_TTL_MS = 3_600_000;
 export const MCP_TOOL_LIST_CACHE_SCOPE = "public";
 
 export const MCP_ENDPOINT_PATH = "/mcp";
+export const MCP_AGENT_ENDPOINT_PATH = "/mcp/agent";
 
 const NOT_ADVICE =
   "Evidence triage only: no factual-truth verification, no legal, compliance, sanctions, or financial advice. " +
@@ -412,6 +413,8 @@ export function mcpToolsForProfile(profile, options = {}) {
     const example = onboardingExample(spec, inputSchema, options.example);
     const nextStep = evidenceNextStep(profile, spec);
     const summary = spec.summary.trim();
+    const free = ["fleet_directory", "decision_policies_list"].includes(spec.name);
+    const access = free ? options.freeAccess : options.access;
     const required = inputSchema.required || [];
     const tool = {
       name: spec.name,
@@ -419,7 +422,7 @@ export function mcpToolsForProfile(profile, options = {}) {
         required.length ? `Required tool arguments: ${required.join(", ")}.` : "No arguments are required.",
         nextStep,
         example === null ? null : `Illustrative example arguments (synthetic; replace with your own data): ${JSON.stringify(example)}.`,
-        hostedAccessNote(options.access), NOT_ADVICE]
+        hostedAccessNote(access), NOT_ADVICE]
         .filter(Boolean)
         .join(" "),
       inputSchema,
@@ -432,7 +435,7 @@ export function mcpToolsForProfile(profile, options = {}) {
           ...(spec.name === "decision_verify" ? { example_from_tool: "decision_check" } : {}),
           next_step: nextStep,
           expected_output_fields: (contract?.outputSchema || spec.outputSchema)?.required || [],
-          ...(options.access ? { access: options.access } : {})
+          ...(access ? { access } : {})
         }
       },
       annotations: {

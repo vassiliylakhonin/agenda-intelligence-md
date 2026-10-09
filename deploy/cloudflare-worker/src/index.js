@@ -1,3 +1,4 @@
+import { mcpAgentAdmissionResponse } from './mcp-admission.js';
 import { lookupChplTier } from "./chpl.js";
 import { reviewSourceRecords } from "./source-records.js";
 import { reviewMineralDossier, mineralReadiness } from "./critical_minerals_dossier.js";
@@ -172,6 +173,7 @@ import { handleExplorerRequest } from "./explorer.js";
 import { handleBankabilityUiRequest } from "./corridor_bankability_ui.js";
 import {
   MCP_ENDPOINT_PATH,
+  MCP_AGENT_ENDPOINT_PATH,
   MCP_META_PROTOCOL_VERSION,
   MCP_META_SERVER_INFO,
   MCP_PROTOCOL_VERSION,
@@ -1181,6 +1183,7 @@ function agentCard(request, env = {}) {
         purpose:
           "Use a stable non-personal integration label so aggregate stats can group repeat calls; do not send a person's name, email, token, or secret."
       },
+      fleet_directory: `${origin}/.well-known/fleet.json`,
       ai_catalog: `${origin}/.well-known/ai-catalog.json`,
       oauth_protected_resource: `${origin}/.well-known/oauth-protected-resource`,
       repository: REPOSITORY_URL,
@@ -1233,28 +1236,7 @@ function agentCard(request, env = {}) {
         authentication: false,
         purpose: "Pseudonymous repeat-call attribution in aggregate operational analytics."
       },
-      zero_retention_guarantee: true,
-      prompt_retention: "none",
-      payload_persistence: "ephemeral_ram_only",
-      dlp_sanitization: "real_time",
-      context_isolation_verified: true,
-      eval_framework_safe: true,
-      pricing_model: "tiered_enterprise_and_x402_micropayments",
-      engagement_tiers: {
-        tier_1_community_sandbox: "free",
-        tier_micro_check_usdc: 0.05,
-        tier_corridor_bankability_dossier_usdc: 25.0,
-        tier_2_dedicated_pro_tenant_usd_monthly: 490,
-        tier_3_confidential_deal_dossier_usd: 99,
-        tier_3_pilot_promo_usd: 49
-      },
-      data_handling: [
-        "Zero-retention architecture: queries and parameters are processed purely in ephemeral RAM and discarded.",
-        "No caller prompt text stored in aggregate stats or telemetry logs.",
-        "Usage analytics are aggregate operational counters.",
-        "No financial credentials processed via agent interface; corporate billing and invoicing handled out-of-band.",
-        "Integrated Vizier Action Firewall for DLP credentials redaction and OFAC 50% Rule screening."
-      ],
+      ...hostedDataHandling(origin),
       abuse_contact: `mailto:${SUPPORT_CONTACT_EMAIL}`
     }
 
@@ -1604,14 +1586,16 @@ function aiCatalog(request, env = {}) {
   };
 }
 
-function mcpTool(name, description) {
+function hostedDataHandling(origin) {
   return {
-    name,
-    description,
-    inputSchema: {
-      type: "object",
-      additionalProperties: true
-    }
+    zero_retention_guarantee: false,
+    pricing_url: `${origin}/.well-known/x402`,
+    privacy_url: `${origin}/privacy`,
+    data_handling: [
+      "Aggregate operational telemetry excludes caller prompt text.",
+      "Signed paid execution stores a response for recovery within 24 hours; do not submit secrets.",
+      "Voluntary intake and feedback have separate storage and retention rules described in /privacy."
+    ]
   };
 }
 
@@ -1624,7 +1608,7 @@ function mcpServerCard(request, env = {}) {
       version: VERSION
     },
     description:
-      "Installable stdio MCP server for evidence-readiness workflows: schema validation, claim audit, source coverage, quote-presence checks, and analysis prompt assembly. It routes evidence to human review; it does not provide legal, compliance, sanctions, financial, procurement, or factual-truth determinations.",
+      "Hosted MCP tools for this profile, with a separate installable stdio catalog. Evidence-readiness triage requires human review; it does not verify factual truth or provide legal, compliance, sanctions or financial advice.",
     // `transport` stays the stdio singular for clients that read the old shape.
     // `transports` is the current list: since 2026-07-28 dropped sessions, this
     // worker can serve MCP over plain Streamable HTTP alongside the local server.
@@ -1644,7 +1628,7 @@ function mcpServerCard(request, env = {}) {
       },
       {
         type: "streamable-http",
-        url: `${origin}${MCP_ENDPOINT_PATH}`,
+        url: `${origin}${MCP_AGENT_ENDPOINT_PATH}`,
         stateless: true,
         tools: mcpToolsForProfile(agentProfile(request, env)).map((tool) => tool.name),
         tools_note: "Hosted endpoint exposes this deployment's triage contract only, not the local catalog."
@@ -1654,6 +1638,7 @@ function mcpServerCard(request, env = {}) {
     package: PACKAGE_URL,
     repository: REPOSITORY_URL,
     related: {
+      fleet_directory: `${origin}/.well-known/fleet.json`,
       ai_catalog: `${origin}/.well-known/ai-catalog.json`,
       api_catalog: `${origin}/.well-known/api-catalog`,
       openapi: `${origin}/api/openapi.json`,
@@ -1674,40 +1659,12 @@ function mcpServerCard(request, env = {}) {
       resources: false,
       prompts: false
     },
-    tools: [
-      mcpTool("validate_memo", "Validate a strategic-risk memo against the agenda memo schema."),
-      mcpTool("audit_claims", "Audit claim-level evidence links, support levels, and unsupported claims."),
-      mcpTool("source_coverage", "Check whether an evidence pack covers required source categories."),
-      mcpTool("verify_quotes", "Check whether quoted fragments appear in caller-supplied source text."),
-      mcpTool("analyze", "Assemble an evidence-disciplined analysis prompt for human review."),
-      mcpTool("validate_evidence", "Validate an evidence pack contract before handoff."),
-      mcpTool("score_output", "Score output readiness against evidence and policy quality gates."),
-      mcpTool("list_source_categories", "List source categories used for coverage planning.")
-    ],
+    tools: hostedMcpTools(agentProfile(request, env), request, env),
     boundaries: card.x_agenda_intelligence?.boundaries || [
       "No factual-truth verification.",
       "Human review required before commercial action."
     ],
-    security_posture: {
-      zero_retention_guarantee: true,
-      prompt_retention: "none",
-      payload_persistence: "ephemeral_ram_only",
-      dlp_sanitization: "real_time",
-      context_isolation_verified: true,
-      eval_framework_safe: true,
-      pricing_model: "tiered_enterprise",
-      engagement_tiers: {
-        tier_1_community_sandbox: "free",
-        tier_2_dedicated_pro_tenant_usd_monthly: 490,
-        tier_3_confidential_deal_dossier_usd: 99,
-        tier_3_pilot_promo_usd: 49
-      },
-      data_handling: [
-        "No caller prompt text stored in logs or telemetry.",
-        "Zero data retention: processed in-memory and discarded immediately upon verdict generation.",
-        "Integrated Vizier Action Firewall for DLP credentials redaction and OFAC 50% Rule screening."
-      ]
-    }
+    security_posture: hostedDataHandling(origin)
   };
 }
 
@@ -1814,6 +1771,7 @@ function agentsRegistryDocument(request, env = {}) {
   const profile = agentProfile(request, env);
   return {
     version: "1.0",
+    fleet_directory: `${origin}/.well-known/fleet.json`,
     agents: [
       {
         id: profile,
@@ -6165,7 +6123,12 @@ function fleetDirectoryResponse() {
       }
     ].map(gate => {
       const tool = mcpToolsForProfile(gate.profile).find(item => item.name === gate.tool_name);
-      return { ...gate, required_fields: tool ? (tool.inputSchema.required || []) : gate.required_fields };
+      return { ...gate, description: mcpToolSpecForProfile(gate.profile, gate.tool_name)?.summary.trim() || gate.description,
+        tool_names: mcpToolsForProfile(gate.profile).map(item => item.name),
+        mcp_endpoint: `${gate.canonical_endpoint}${MCP_AGENT_ENDPOINT_PATH}`,
+        a2a_endpoint: `${gate.canonical_endpoint}/message/send`,
+        server_card: `${gate.canonical_endpoint}/.well-known/mcp/server-card.json`,
+        required_fields: tool ? (tool.inputSchema.required || []) : gate.required_fields };
     })
   };
 }
@@ -12924,9 +12887,8 @@ function mcpLegacyToolResult(payload, isError = false) {
   };
 }
 
-// Streamable HTTP MCP, stateless. No session id, no initialize handshake, no
-// resumable stream — every request stands alone, which is the only reason this
-// fits on a Worker at all.
+// Streamable HTTP MCP without retained sessions or resumable streams.
+// Shipping SDKs may initialize; subsequent requests stand alone.
 async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return jsonRpcError(null, -32600, "Invalid Request");
@@ -13301,6 +13263,7 @@ function hostedMcpTools(profile, request, env) {
   const guideProfile = profile === "market_entry_readiness" ? "kazakhstan_market_entry_readiness" : profile;
   return mcpToolsForProfile(profile, {
     access: hostedAccess(profile, env, origin),
+    freeAccess: hostedAccess(profile, {...env, BILLING_MODE:'freemium'}, origin),
     example: GATE_REQUEST_GUIDES[guideProfile]?.example
   });
 }
@@ -14149,7 +14112,9 @@ function mcpCapabilityDocument(request, env = {}) {
     ok: true,
     protocol: "Model Context Protocol",
     transport: "streamable-http",
-    endpoint: `${origin}${MCP_ENDPOINT_PATH}`,
+    endpoint: `${origin}${MCP_AGENT_ENDPOINT_PATH}`,
+    legacy_payment_endpoint: `${origin}${MCP_ENDPOINT_PATH}`,
+    fleet_directory: `${origin}/.well-known/fleet.json`,
     invocation: {
       method: "POST",
       content_type: "application/json",
@@ -14869,7 +14834,7 @@ function paidOperation(request, body, profile) {
   let route = DIRECT_V1_ROUTES[path];
   let params = body;
   let name = path;
-  if (path === "/mcp" || path === "/mcp/output-verification") {
+  if (path === MCP_ENDPOINT_PATH || path === MCP_AGENT_ENDPOINT_PATH || path === "/mcp/output-verification") {
     if (body?.method !== "tools/call") return null;
     const spec = mcpToolSpecForProfile(profile, body.params?.name);
     if (!spec || (path === "/mcp/output-verification" && body.params?.name !== "agent_output_verification")) return null;
@@ -15058,6 +15023,10 @@ function trialOpenApiPaths(request, env) {
 }
 
 export async function handleRequest(request, env = {}, ctx = {}) {
+  return mcpAgentAdmissionResponse(request, await handleRequestWithBilling(request, env, ctx));
+}
+
+async function handleRequestWithBilling(request, env = {}, ctx = {}) {
   const execute = () => handleRequestInner(request, env, ctx);
   const trialRequestPath = new URL(request.url).pathname;
   if (trialRequestPath === WORKER_TRIAL_PATH || trialRequestPath === OUTPUT_TRIAL_PATH) {
@@ -15454,6 +15423,10 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
     });
   }
 
+  if (request.method === "GET" && url.pathname === "/.well-known/fleet.json") {
+    return jsonResponse(fleetDirectoryResponse(), 200, {"cache-control":"public, max-age=3600", ...aiCatalogHeaders(request)});
+  }
+
   if (
     request.method === "GET" &&
     (url.pathname === "/.well-known/agents.json" || url.pathname === "/agents.json")
@@ -15829,14 +15802,14 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
   if (outputVerificationMcpPath && agentProfile(request, env) !== "agent_output_verification") {
     return textResponse("Not found", 404);
   }
-  if (request.method === "POST" && (url.pathname === MCP_ENDPOINT_PATH || outputVerificationMcpPath)) {
+  if (request.method === "POST" && (url.pathname === MCP_ENDPOINT_PATH || url.pathname === MCP_AGENT_ENDPOINT_PATH || outputVerificationMcpPath)) {
     return handleMcpPost(request, env, ctx);
   }
 
   // Registries routinely probe a published MCP URL with GET before attempting
   // initialize. Return a cheap capability document without opening an SSE
   // stream or executing a tool. POST remains the only invocation method.
-  if ((request.method === "GET" || request.method === "HEAD") && (url.pathname === MCP_ENDPOINT_PATH || outputVerificationMcpPath)) {
+  if ((request.method === "GET" || request.method === "HEAD") && (url.pathname === MCP_ENDPOINT_PATH || url.pathname === MCP_AGENT_ENDPOINT_PATH || outputVerificationMcpPath)) {
     const headers = {
       allow: "GET, HEAD, POST, OPTIONS",
       "accept-post": "application/json",
@@ -15852,7 +15825,7 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
     return jsonResponse(document, 200, headers);
   }
 
-  if (url.pathname === MCP_ENDPOINT_PATH || outputVerificationMcpPath) {
+  if (url.pathname === MCP_ENDPOINT_PATH || url.pathname === MCP_AGENT_ENDPOINT_PATH || outputVerificationMcpPath) {
     return jsonResponse(
       {
         error: "method_not_allowed",

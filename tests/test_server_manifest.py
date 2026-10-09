@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "server.json"
@@ -42,10 +43,7 @@ def remotes() -> list[dict]:
 
 
 def test_every_hosted_endpoint_is_declared() -> None:
-    declared = {
-        remote["url"].removeprefix("https://").removesuffix("/mcp").removesuffix(f".{WORKERS_SUBDOMAIN}")
-        for remote in remotes()
-    }
+    declared = {(urlsplit(remote["url"]).hostname or "").removesuffix(f".{WORKERS_SUBDOMAIN}") for remote in remotes()}
     missing = sorted(declared_worker_names() - declared)
     assert not missing, (
         "wrangler.toml deploys Workers the registry manifest does not mention, "
@@ -59,8 +57,8 @@ def test_no_declared_endpoint_is_invented() -> None:
     for remote in remotes():
         url = remote["url"]
         assert url.startswith("https://"), f"{url} is not https"
-        assert url.endswith("/mcp"), f"{url} does not point at the MCP endpoint"
-        host = url.removeprefix("https://").removesuffix("/mcp")
+        assert urlsplit(url).path == "/mcp/agent", f"{url} does not point at the MCP endpoint"
+        host = urlsplit(url).hostname or ""
         assert host.endswith(f".{WORKERS_SUBDOMAIN}"), f"{url} is not a Worker of this fleet"
         if host.removesuffix(f".{WORKERS_SUBDOMAIN}") not in names:
             unknown.append(url)
@@ -84,4 +82,4 @@ def test_remotes_are_streamable_http_and_unique() -> None:
     # The general profile comes first: it is the deployment whose scope matches
     # this entry's description, and a client that takes the first remote without
     # reading further should land there rather than on a vertical gate.
-    assert urls[0] == f"https://agenda-intelligence-a2a.{WORKERS_SUBDOMAIN}/mcp"
+    assert urls[0] == f"https://agenda-intelligence-a2a.{WORKERS_SUBDOMAIN}/mcp/agent"

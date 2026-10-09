@@ -7,13 +7,13 @@
     "url": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
     "source": "github"
   },
-  "version": "1.14.0",
+  "version": "1.14.1",
   "packages": [
     {
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "agenda-intelligence-md",
-      "version": "1.14.0",
+      "version": "1.14.1",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -24,51 +24,51 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp"
+      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp"
+      "url": "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/mcp"
+      "url": "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev/mcp"
+      "url": "https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev/mcp"
+      "url": "https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev/mcp"
+      "url": "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/mcp"
+      "url": "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/mcp"
+      "url": "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev/mcp"
+      "url": "https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev/mcp"
+      "url": "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/mcp"
+      "url": "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev/mcp"
+      "url": "https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
     }
   ]
 }
