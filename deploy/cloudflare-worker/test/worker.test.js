@@ -7903,7 +7903,7 @@ test("every gate says whether its output was verified, and nine say it was not",
     // The pointer must name a deployment that exists, or it sends the caller
     // nowhere. Both URLs are the verifier's, never the responding gate's.
     assert.match(verification.verifier.agent_card, /^https:\/\/agent-output-verification-a2a\./);
-    assert.match(verification.verifier.mcp_endpoint, /\/mcp$/);
+    assert.match(verification.verifier.mcp_endpoint, /\/mcp\/agent$/);
     assert.equal(verification.self_reported, true, "a self-reported status must say so");
     assert.match(verification.before_state_change, /performs no action/);
   }

@@ -1801,7 +1801,7 @@ function brickBlueDocument(request, env = {}) {
     ai_plugin: `${origin}/.well-known/ai-plugin.json`,
     endpoints: {
       a2a: `${origin}/message/send`,
-      mcp: `${origin}/mcp`,
+      mcp: `${origin}${MCP_AGENT_ENDPOINT_PATH}`,
       openapi: `${origin}/api/openapi.json`
     }
   };
@@ -1969,6 +1969,32 @@ function openApiDocument(request, env = {}) {
               description: "JSON-RPC result or JSON-RPC error envelope.",
               content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
             }
+          }
+        }
+      },
+      "/.well-known/fleet.json": {
+        get: {
+          tags: ["discovery"], summary: "Discover all hosted fleet profiles without a tool call",
+          responses: {200: {description: "Shared fleet_directory document, including canonical MCP endpoints.",
+            content: {"application/json": {schema: {type: "object", additionalProperties: true}}}}}
+        }
+      },
+      "/mcp/agent": {
+        get: {
+          tags: ["discovery"], summary: "Inspect the standard-client MCP endpoint",
+          responses: {200: {description: "MCP transport capability document."}}
+        },
+        post: {
+          tags: ["jsonrpc"], summary: "Standard-client MCP endpoint",
+          description: "Initialize, list and call the serving profile's tools. Payment admission is an unevaluated tool error; /mcp preserves legacy HTTP payment statuses.",
+          requestBody: {$ref: "#/components/requestBodies/JsonRpcRequest"},
+          responses: {
+            200: {description: "MCP result, protocol error, or unevaluated admission (result.isError=true, no structuredContent).",
+              content: {"application/json": {schema: {type: "object", additionalProperties: true}}}},
+            401: {description: "Missing or invalid configured Bearer authentication."},
+            400: {description: "Malformed request or invalid payment credentials."},
+            413: {description: "Request too large."},
+            429: {description: "Configured usage quota exceeded."}
           }
         }
       },
@@ -12373,7 +12399,7 @@ export function verificationStatus(profile) {
     applies_to: "the structured payload of this task",
     verifier: {
       agent_card: `${VERIFIER_ORIGIN}/.well-known/agent-card.json`,
-      mcp_endpoint: `${VERIFIER_ORIGIN}${MCP_ENDPOINT_PATH}`,
+      mcp_endpoint: `${VERIFIER_ORIGIN}${MCP_AGENT_ENDPOINT_PATH}`,
       tool: "agent_output_verification"
     },
     // Said plainly because the receipt is the part callers misread: it records
@@ -15628,13 +15654,13 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
             name: "Trans-Caspian IFI Bankability Dossier",
             amount_usd: TIER_BANKABILITY_DOSSIER_USDC_AMOUNT,
             amount_raw: String(Math.round(TIER_BANKABILITY_DOSSIER_USDC_AMOUNT * 1e6)),
-            applicable_endpoints: ["/v1/corridor-bankability/screen", "/mcp"]
+            applicable_endpoints: ["/v1/corridor-bankability/screen", "/mcp", "/mcp/agent"]
           },
           tier_deal_dossier: {
             name: "Confidential Deal Dossier",
             amount_usd: TIER_DOSSIER_USDC_AMOUNT,
             amount_raw: String(Math.round(TIER_DOSSIER_USDC_AMOUNT * 1e6)),
-            applicable_endpoints: ["/message/send", "/mcp"]
+            applicable_endpoints: ["/message/send", "/mcp", "/mcp/agent"]
           },
           tier_monthly_pro: {
             name: "Dedicated Pro Tenant (30-day)",

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handleRequest } from '../src/index.js';
+import { handleRequest, verificationStatus } from '../src/index.js';
 import { PROFILE_REGISTRY } from '../src/profiles.js';
 const origin = 'https://example.test';
 const get = async (path, env) => (await handleRequest(new Request(origin + path), env)).json();
@@ -35,4 +35,16 @@ test('free directory has accurate billing metadata and is reachable without call
   assert.ok(fleet.gates.every(g=>g.mcp_endpoint===g.canonical_endpoint+'/mcp/agent'));
   const agents = await get('/.well-known/agents.json', env);
   assert.equal(agents.fleet_directory, origin+'/.well-known/fleet.json');
+});
+
+test('secondary discovery and verifier handoff lead to the compatible MCP endpoint', async () => {
+  const env={AGENT_PROFILE:'agenda',BILLING_MODE:'pay_per_call'};
+  const brick=await get('/.well-known/brick-blue.json',env);
+  assert.equal(brick.endpoints.mcp,origin+'/mcp/agent');
+  const api=await get('/api/openapi.json',env);
+  assert.match(api.paths['/mcp/agent'].post.responses[200].description,/unevaluated/);
+  assert.ok(api.paths['/.well-known/fleet.json'].get);
+  const pricing=await get('/.well-known/x402',env);
+  assert.ok(pricing);
+  assert.equal(verificationStatus('agenda').verifier.mcp_endpoint, 'https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp/agent');
 });
