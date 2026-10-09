@@ -1,6 +1,6 @@
 // A user-reviewed email draft, never an automatic send or an analytics event.
 export function trialFeedbackMailto(profile, status, email, helpfulness = null) {
-  const product = /^[a-z_]{1,64}$/.test(profile || '') ? profile : 'unknown';
+  const product = /^[a-z][a-z0-9_]{0,63}$/.test(profile || '') ? profile : 'unknown';
   const state = status === 200 ? 'Completed' : status === 429 ? 'Allowance reached' :
     status === 400 || status === 413 ? 'Input needs correction' : status === 503 ? 'Temporarily unavailable' :
     status === null ? 'Not submitted' : 'Request failed';
