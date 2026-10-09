@@ -605,3 +605,10 @@ def test_analyze_server_completed_mode_when_llm_runs(monkeypatch):
 
     assert result["llm_invoked"] is True
     assert result["mode"] == "server_completed"
+
+
+@pytest.mark.parametrize(
+    "question", ["Выход на рынок Казахстана", "Проверка в Казахстане", "Казахстан", "Поставка через Актау"]
+)
+def test_russian_kazakhstan_routes_central_asia(question):
+    assert "central-asia-caspian" in _modules([], question)

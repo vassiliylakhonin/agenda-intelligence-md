@@ -3,11 +3,12 @@ import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { pricingHtml } from "./commercial-catalog.js";
 import { outputTrialEnabled, outputTrialTerms } from './output-trial.js';
 import { trialFeedbackMailto } from './trial-feedback.js';
-import { PRODUCT_WORKFLOWS, reviewSummary, reviewSummaryHtml, taskChooserHtml } from "./product-workflows.js";
+import { PRODUCT_WORKFLOWS, reviewSummary, reviewSummaryHtml, reviewDeltaHtml, taskChooserHtml } from "./product-workflows.js";
+import { INTAKE_CLIENT_SCRIPT } from './intake-editor.js';
 // Browser presentation only. Runtime decisions are supplied by the controller.
 import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL } from "./profiles.js";
 
-export function createLandingRenderer({ originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES, fleetDirectoryResponse }) {
+export function createLandingRenderer({ originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES, fleetDirectoryResponse, inputSchemaForProfile }) {
 function landingHtml(request, env) {
   const origin = originFromRequest(request);
   const profile = agentProfile(request, env);
@@ -143,6 +144,13 @@ function landingHtml(request, env) {
   .endpoints .label { color: var(--muted); display: inline-block; min-width: 140px; }
   footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
   footer p { margin: 0 0 6px; }
+#profile-intake fieldset { border:1px solid var(--line);border-radius:8px;padding:14px;margin:16px 0;min-width:0; }
+#profile-intake legend { font-weight:600;padding:0 6px; }
+#profile-intake input:not([type=checkbox]), #profile-intake textarea, #profile-intake select { padding:9px;border:1px solid var(--line);border-radius:6px;font:inherit;line-height:1.4; }
+#profile-intake label { font-size:14px;font-weight:600;margin:4px 0; }
+#profile-intake small { display:block;color:var(--muted); }
+#profile-console button { padding:8px 12px;border:1px solid var(--line);border-radius:6px;cursor:pointer;margin:8px 4px 8px 0; }
+#profile-run { background:var(--accent);color:white; }
 </style>
 </head>
 <body>
@@ -345,15 +353,22 @@ function landingHtml(request, env) {
   <div class="card">
     ${freeTrial ? `<p>Try two live ${trialTerms.evaluation_kind === 'routing' ? 'routing requests' : 'checks'} without a wallet: review the result, correct the gaps, then try again. Replace the illustrative request with your own redacted inputs. Bring: ${escapeHtml(workflow.bring)} You receive: ${escapeHtml(workflow.get)} Shared networks share two attempts per product; daily capacity is shared across all products. Do not submit secrets or confidential documents. Human review is required.</p>` : '<p>Editing and submitting this request uses the paid API and requires an EVM wallet or API integration. For a free demonstration use Run a worked example above. Use synthetic data only; the result is evidence review, not authorization.</p>'}
     <form id="profile-console" onsubmit="runProfileExample(event)">
+      ${freeTrial ? `<h3>Prepare your request</h3><p>The fields start with a synthetic example. Replace it with your redacted file, or start blank. Adding a document record does not verify its content.</p>
+      <button type="button" onclick="document.getElementById('profile-intake').startBlank()">Start a blank request</button>
+      <div id="profile-intake"></div>
+      <details><summary>Structured request JSON — advanced</summary>` : ''}
       <label for="profile-request">Structured request</label>
       <textarea id="profile-request" rows="15" style="width:100%;font:13px/1.5 var(--mono);padding:12px;box-sizing:border-box">${escapeHtml(JSON.stringify(consoleExample, null, 2))}</textarea>
+      ${freeTrial ? '<button type="button" onclick="document.getElementById(\'profile-intake\').updateFromJson()">Update fields from JSON</button></details><p>Two attempts per network address for this product’s trial campaign. A shared network may already have used them; the remaining allowance is checked when submitted. An invalid request does not reserve an attempt.</p>' : ''}
       <button id="profile-run" type="submit">${freeTrial ? 'Run free evidence check' : 'Evaluate evidence'}</button>
       ${freeTrial ? `<button id="profile-paid" type="button" hidden onclick="runProfileExample(event, true)">Choose paid evaluation — ${trialTerms.paid_price_usdc} USDC</button>` : ''}
       <p id="profile-status" role="status"></p>
     </form>
     <div id="profile-summary" aria-live="polite"></div>
+    <div id="profile-progress" aria-live="polite"></div>
     <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
-    ${freeTrial ? `<p><a id="profile-feedback" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL))}">Share what helped or blocked your task</a><br><small>Optional email draft with the product and check status. Your request and result are not attached. Review and send it yourself.</small></p>` : ''}
+    ${freeTrial ? `<p>Did this give you a useful next step? <a id="profile-helpful" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL, 'useful_next_step'))}">Useful next step</a> · <a id="profile-blocked" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL, 'still_blocked'))}">Still blocked</a><br>
+    <a id="profile-feedback" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL))}">Share what helped or blocked your task</a><br><small>Opens an optional email draft. Your request and result are not attached. Review and send it yourself.</small></p>` : ''}
   </div>` : ""}
   <h2>Evaluation and paid services</h2>
   <div class="card">${pricingHtml(escapeHtml, profile, env.BILLING_MODE, freeTrial)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
@@ -429,7 +444,16 @@ function landingHtml(request, env) {
 ${PAYMENT_CLIENT_SCRIPT}
 ${reviewSummary.toString()}
 ${reviewSummaryHtml.toString()}
+${reviewDeltaHtml.toString()}
 ${freeTrial ? trialFeedbackMailto.toString() : ''}
+${freeTrial ? INTAKE_CLIENT_SCRIPT : ''}
+${freeTrial ? `mountIntakeEditor(document.getElementById('profile-intake'), document.getElementById('profile-request'), ${JSON.stringify(consoleExample).replaceAll('<', '\\u003c')}, ${JSON.stringify({schema:inputSchemaForProfile(profile),optional: profile === 'dual_use_technology_export'
+  ? [{path:'shipment.eccn', label:'Caller-supplied ECCN — leave unknown if unclassified'}]
+  : profile === 'm2m_escrow_arbiter' ? [
+    {path:'specification.expected_artifact_sha256', label:'Expected artifact SHA-256 from agreed specification'},
+    {path:'specification.expected_schema', label:'Expected schema (JSON object)',json:true},
+    {path:'delivery_submission.artifact_data', label:'Delivered artifact (JSON value)',json:true}
+  ] : []})});` : ''}
 function safeHtml(value) {
   var element = document.createElement('span');
   element.textContent = String(value == null ? '' : value);
@@ -452,8 +476,13 @@ function showWorkedExample() {
   }
 }
 var agendaTrialTraceId = null;
+var agendaLastReview = null;
 ${freeTrial ? `function updateTrialFeedback(status) {
   document.getElementById('profile-feedback').href = trialFeedbackMailto(${JSON.stringify(profile)}, status, ${JSON.stringify(SUPPORT_CONTACT_EMAIL)});
+  ['helpful','blocked'].forEach(function(kind) {
+    var element = document.getElementById('profile-' + kind);
+    if (element) element.href = trialFeedbackMailto(${JSON.stringify(profile)}, status, ${JSON.stringify(SUPPORT_CONTACT_EMAIL)}, kind === 'helpful' ? 'useful_next_step' : 'still_blocked');
+  });
 }` : ''}
 async function runProfileExample(event, paid) {
   event.preventDefault();
@@ -464,6 +493,9 @@ async function runProfileExample(event, paid) {
   ${freeTrial ? "document.getElementById('profile-paid').disabled = true;" : ''}
   status.textContent = 'Evaluating supplied evidence…';
   ${freeTrial ? 'updateTrialFeedback(null);' : ''}
+  document.getElementById('profile-summary').innerHTML = '';
+  if (document.getElementById('profile-progress')) document.getElementById('profile-progress').innerHTML = '';
+  document.getElementById('profile-response').hidden = true;
   try {
     var payload = JSON.parse(document.getElementById('profile-request').value);
     var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
@@ -479,11 +511,17 @@ async function runProfileExample(event, paid) {
     });` : `var response = await agendaPaidFetch('${origin}${consoleEndpoint}', {
       method: 'POST', headers: {'content-type':'application/json', 'MCP-Protocol-Version':'2025-11-25', 'x-trace-id': traceId}, body: JSON.stringify(payload)
     }, ${isEscrowArbiter ? '0.5' : '0.05'});`}
-    ${freeTrial ? 'updateTrialFeedback(response.status);' : ''}
     var body = await response.json();
     document.getElementById('profile-response').hidden = false;
     result.textContent = JSON.stringify(body, null, 2);
-    if (response.ok) document.getElementById('profile-summary').innerHTML = reviewSummaryHtml(body.result?.structuredContent || body, safeHtml);
+    if (response.ok) {
+      var review = body.result?.structuredContent || body;
+      document.getElementById('profile-summary').innerHTML = reviewSummaryHtml(review, safeHtml, ${JSON.stringify(workflow)});
+      var progress = document.getElementById('profile-progress');
+      if (progress && agendaLastReview) progress.innerHTML = reviewDeltaHtml(agendaLastReview, review, safeHtml);
+      if (reviewSummary(review)) agendaLastReview = review;
+    }
+    ${freeTrial ? 'updateTrialFeedback(response.status);' : ''}
     ${freeTrial ? `if (response.ok || response.status === 429) document.getElementById('profile-paid').hidden = false;
     if (!paid && response.status === 429) {
       status.textContent = body.error + ' Your input is preserved. No payment was made.';
