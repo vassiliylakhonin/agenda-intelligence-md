@@ -2,6 +2,7 @@ import { WORKED_EXAMPLES } from "./worked-examples.js";
 import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { pricingHtml } from "./commercial-catalog.js";
 import { outputTrialEnabled, outputTrialTerms } from './output-trial.js';
+import { trialFeedbackMailto } from './trial-feedback.js';
 import { PRODUCT_WORKFLOWS, reviewSummary, reviewSummaryHtml, taskChooserHtml } from "./product-workflows.js";
 // Browser presentation only. Runtime decisions are supplied by the controller.
 import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL } from "./profiles.js";
@@ -352,6 +353,7 @@ function landingHtml(request, env) {
     </form>
     <div id="profile-summary" aria-live="polite"></div>
     <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
+    ${freeTrial ? `<p><a id="profile-feedback" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL))}">Share what helped or blocked your task</a><br><small>Optional email draft with the product and check status. Your request and result are not attached. Review and send it yourself.</small></p>` : ''}
   </div>` : ""}
   <h2>Evaluation and paid services</h2>
   <div class="card">${pricingHtml(escapeHtml, profile, env.BILLING_MODE, freeTrial)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
@@ -427,6 +429,7 @@ function landingHtml(request, env) {
 ${PAYMENT_CLIENT_SCRIPT}
 ${reviewSummary.toString()}
 ${reviewSummaryHtml.toString()}
+${freeTrial ? trialFeedbackMailto.toString() : ''}
 function safeHtml(value) {
   var element = document.createElement('span');
   element.textContent = String(value == null ? '' : value);
@@ -449,6 +452,9 @@ function showWorkedExample() {
   }
 }
 var agendaTrialTraceId = null;
+${freeTrial ? `function updateTrialFeedback(status) {
+  document.getElementById('profile-feedback').href = trialFeedbackMailto(${JSON.stringify(profile)}, status, ${JSON.stringify(SUPPORT_CONTACT_EMAIL)});
+}` : ''}
 async function runProfileExample(event, paid) {
   event.preventDefault();
   var button = document.getElementById('profile-run');
@@ -457,6 +463,7 @@ async function runProfileExample(event, paid) {
   button.disabled = true;
   ${freeTrial ? "document.getElementById('profile-paid').disabled = true;" : ''}
   status.textContent = 'Evaluating supplied evidence…';
+  ${freeTrial ? 'updateTrialFeedback(null);' : ''}
   try {
     var payload = JSON.parse(document.getElementById('profile-request').value);
     var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
@@ -472,6 +479,7 @@ async function runProfileExample(event, paid) {
     });` : `var response = await agendaPaidFetch('${origin}${consoleEndpoint}', {
       method: 'POST', headers: {'content-type':'application/json', 'MCP-Protocol-Version':'2025-11-25', 'x-trace-id': traceId}, body: JSON.stringify(payload)
     }, ${isEscrowArbiter ? '0.5' : '0.05'});`}
+    ${freeTrial ? 'updateTrialFeedback(response.status);' : ''}
     var body = await response.json();
     document.getElementById('profile-response').hidden = false;
     result.textContent = JSON.stringify(body, null, 2);

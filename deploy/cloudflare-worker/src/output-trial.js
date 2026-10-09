@@ -2,6 +2,7 @@ import { readBoundedJson } from './request-body.js';
 import { paymentTraceId, paymentTraceResponse } from './payment-trace.js';
 import { tokenHash } from './payment-ledger.js';
 import { trialProfile, trialPath, OUTPUT_TRIAL_PATH } from './trial-profiles.js';
+import { recordTrialCompletion } from './trial-receipts.js';
 
 export { OUTPUT_TRIAL_PATH };
 export const OUTPUT_TRIAL_LIMIT = 2;
@@ -43,7 +44,7 @@ export async function reserveOutputTrial(request, env, attempt = crypto.randomUU
   return Boolean(reservation);
 }
 
-export async function handleOutputTrial(request, env, { validate, evaluate, emit, respond, profile = 'agent_output_verification' }) {
+export async function handleOutputTrial(request, env, { validate, evaluate, emit, respond, originGroup = () => 'unknown_origin', profile = 'agent_output_verification' }) {
   const terms = outputTrialTerms(profile);
   const attempt = crypto.randomUUID();
   const trace = paymentTraceId(request);
@@ -79,13 +80,20 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
     log('preview_failed', 'trial_exhausted', 429);
     return reply({ code: 'trial_exhausted', error: 'The network allowance or daily service trial limit has been reached. You can choose a separate paid evaluation.', trial: terms }, 429);
   }
+  let result;
   try {
-    const result = await evaluate(checked.value);
-    log('preview_completed', 'free_trial', 200);
-    return reply({ ...result, trial: { ...terms, attempt_consumed: true,
-      note: 'Free evaluation; not a paid execution. Human review is required.' } });
+    result = await evaluate(checked.value);
   } catch {
     log('preview_failed', 'trial_evaluation_failed', 503);
     return reply({ code: 'trial_evaluation_failed', error: 'Evaluation could not complete. This reserved trial attempt was consumed; no payment was requested.', trial: terms }, 503);
   }
+  try { await recordTrialCompletion(env, attempt, profile, originGroup(checked.value)); }
+  catch {
+    log('preview_failed', 'trial_recording_unavailable', 503);
+    return reply({ code: 'trial_recording_unavailable', error: 'The result could not be recorded reliably. This reserved attempt was consumed; no payment was requested.',
+      trial: { ...terms, attempt_consumed: true } }, 503);
+  }
+  log('preview_completed', 'free_trial', 200);
+  return reply({ ...result, trial: { ...terms, attempt_consumed: true, completion_recorded: true,
+    note: 'Free evaluation; not a paid execution. Human review is required.' } });
 }

@@ -6,6 +6,7 @@ import { paymentTraceId, paymentTraceResponse } from "./payment-trace.js";
 import { snapshotHealth } from "./upstream_snapshot.js";
 import { consumeProQuota } from "./payment-ledger.js";
 import { OUTPUT_TRIAL_PATH, handleOutputTrial, outputTrialEnabled, outputTrialTerms } from './output-trial.js';
+import { trialCompletionStats, trialOriginGroup } from './trial-receipts.js';
 import { WORKER_TRIAL_PATH, trialProfile, trialPath } from './trial-profiles.js';
 import { WORKED_EXAMPLES } from './worked-examples.js';
 import { readBoundedJson, MAX_JSON_BODY_BYTES } from "./request-body.js";
@@ -13754,6 +13755,7 @@ async function handleStats(request, env) {
   }
 
   const stats = await usageStats(env, date);
+  stats.trial_completions = await trialCompletionStats(env, date);
   return jsonResponse(stats, stats.configured ? 200 : 503);
 }
 
@@ -15056,6 +15058,11 @@ export async function handleRequest(request, env = {}, ctx = {}) {
     const fingerprint = await callerHash(request, env).catch(() => null);
     return handleOutputTrial(request, env, {
       profile, respond: jsonResponse,
+      originGroup: structured => {
+        const chars = JSON.stringify(structured).length;
+        const probe = actionProbeReason(request, chars);
+        return trialOriginGroup(buildUsageEvent(request, { agent_profile: profile, likely_probe: Boolean(probe) }));
+      },
       emit: details => logPaymentEvent(request, env, { ...details, profile, caller_hash: fingerprint }),
       validate: body => {
         if (containsInlinePayment(body)) return { errors: ['Do not put payment credentials in trial inputs.'] };

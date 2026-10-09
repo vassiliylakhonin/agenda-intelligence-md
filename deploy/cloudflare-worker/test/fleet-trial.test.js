@@ -145,7 +145,7 @@ test('every free-first form uses the correct payload, explicit paid tool and pri
     const input=html.match(/<textarea id="profile-request"[^>]*>([\s\S]*?)<\/textarea>/)[1]
       .replaceAll('&quot;','"').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>').replaceAll('&amp;','&');
     assert.deepEqual(JSON.parse(input),terms.example_request);
-    const elements=Object.fromEntries(['profile-run','profile-paid','profile-status','profile-result','profile-summary','profile-response','profile-request']
+    const elements=Object.fromEntries(['profile-run','profile-paid','profile-status','profile-result','profile-summary','profile-response','profile-request','profile-feedback']
       .map(id=>[id,{value:input,innerHTML:'',textContent:'',hidden:id==='profile-paid'}]));
     let paid=0;const traces=[];
     const context={URL,window:{location:{href:origin+'/?owner_test=1',origin},crypto:globalThis.crypto},crypto:globalThis.crypto,
@@ -170,6 +170,10 @@ test('every free-first form uses the correct payload, explicit paid tool and pri
     assert.equal(elements['profile-paid'].hidden,false);
     assert.ok(elements['profile-status'].textContent.includes('No payment was made'),profile);
     assert.equal(elements['profile-request'].value,input);
+    const feedback = new URL(elements['profile-feedback'].href);
+    assert.equal(feedback.protocol, 'mailto:');
+    assert.match(feedback.searchParams.get('body'), /Allowance reached/);
+    assert.ok(!feedback.searchParams.get('body').includes(input));
     await context.runProfileExample({preventDefault(){}},true);
     assert.equal(paid,1);
     assert.equal(new Set(traces).size,1);

@@ -34,7 +34,9 @@ def test_fleet_trials_validate_examples_and_responses_and_refuse_empty_input():
           schema:mcpToolsForProfile(profile).find(t=>t.name===config.tool).outputSchema,
           invalid_status:invalid.status,invalid:await invalid.json(),
           reservations:await env.PAYMENT_LEDGER.prepare(
-            'SELECT COUNT(*) AS count FROM output_verification_trials').first()});
+            'SELECT COUNT(*) AS count FROM output_verification_trials').first(),
+          completion_receipts:await env.PAYMENT_LEDGER.prepare(
+            'SELECT COUNT(*) AS count FROM trial_completion_receipts').first()});
       }
       log(JSON.stringify(results));
     """
@@ -60,10 +62,12 @@ def test_fleet_trials_validate_examples_and_responses_and_refuse_empty_input():
         schema["additionalProperties"] = True  # REST provenance and additive trial terms.
         Draft202012Validator(schema).validate(result["payload"])
         assert result["payload"]["trial"]["payment_required"] is False
+        assert result["payload"]["trial"]["completion_recorded"] is True
         assert result["payload"]["trial"]["agent_profile"] == result["profile"]
         assert result["invalid_status"] == 400
         assert result["invalid"]["code"] == "invalid_trial_request"
         assert result["reservations"]["count"] == 1
+        assert result["completion_receipts"]["count"] == 1
 
 
 def test_output_verification_trial_keeps_the_response_contract_and_invalid_input_free():
