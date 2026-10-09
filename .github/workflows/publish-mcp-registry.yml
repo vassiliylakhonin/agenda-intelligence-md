@@ -98,13 +98,20 @@ jobs:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
           python - <<'PYTHON'
-          import json, os, time, urllib.request
+          import json, os, time, urllib.request, urllib.error
           from pathlib import Path
           manifest = json.loads(Path('server.json').read_text())
           url = 'https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.vassiliylakhonin%2Fagenda-intelligence-md&limit=100'
           for attempt in range(12):
-              with urllib.request.urlopen(url, timeout=30) as response:
-                  entries = json.load(response)['servers']
+              try:
+                  with urllib.request.urlopen(url, timeout=30) as response:
+                      entries = json.load(response)['servers']
+              except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
+                  print('Registry verification temporarily unavailable:', type(error).__name__)
+                  if attempt == 11:
+                      raise SystemExit('Cannot confirm published registry manifest') from error
+                  time.sleep(5)
+                  continue
               latest = [entry['server'] for entry in entries
                         if entry['server']['name'] == manifest['name']
                         and entry.get('_meta', {}).get('io.modelcontextprotocol.registry/official', {}).get('isLatest')]
