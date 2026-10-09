@@ -10,6 +10,11 @@ make ci
 
 Runs lint, typecheck, and the full test suite — the same gates CI applies. Use `make verify-local` instead (it adds the Cloudflare Worker tests) when the change touches Worker, discovery, runtime, or validation-guard code.
 
+Before the first Worker test run, install its pinned development dependencies with
+`npm ci --prefix deploy/cloudflare-worker`. The browser regression bundles the
+actual Worker with Wrangler's default `keepNames` behavior, then executes the
+generated landing scripts in an isolated browser context.
+
 ## Lint order matters
 
 CI's Lint job runs `black` first and fails the whole pipeline on any formatting drift:

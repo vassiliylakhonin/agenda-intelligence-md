@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased — bundled browser review summaries
+
+- Fix successful evaluations appearing as `Evaluation failed: __name is not defined` after deployment. Keep serialized summary functions self-contained under Wrangler's name-preserving build; retain the original verdict, evidence gaps, actions and complete response.
+- Exercise generated landing scripts from a bundled Worker across all twelve products before deployment. Pin esbuild as a test-only dependency; service contracts, pricing and trial allowances are unchanged.
+
 ## Unreleased — durable free-trial completion measurement
 
 - Record a bounded free-trial completion receipt in the existing shared D1 ledger before returning HTTP 200. No inputs, outputs, caller identifiers, payment proof or client traces are retained. A receipt write failure returns an explicit 503 with consumed-attempt status; paid execution remains separate.

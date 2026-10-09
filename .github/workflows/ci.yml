@@ -207,6 +207,9 @@ jobs:
         with:
           node-version: 24
 
+      - name: Install pinned Worker test dependencies
+        run: npm ci --no-audit --no-fund
+
       - name: Test the Worker
         run: npm test
 
