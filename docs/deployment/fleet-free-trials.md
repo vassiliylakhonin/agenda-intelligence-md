@@ -23,7 +23,7 @@ with its existing opt-in flag and shares the allowance with `/v1/trial`. It is
 not served on other profiles. Existing Output campaign identities remain valid.
 
 - **200:** the product's existing result plus `trial` terms and
-  `attempt_consumed: true`. Financial Guard omits its optional payment challenge;
+  `attempt_consumed: true` and `completion_recorded: true`. Financial Guard omits its optional payment challenge;
   the verdict and evidence limits are unchanged. Human review remains required.
 - **400/413:** invalid or oversized JSON, missing product inputs, credentials or
   caller-selected operations; no quota reservation. Maximum JSON size is 1 MiB.
@@ -31,6 +31,9 @@ not served on other profiles. Existing Output campaign identities remain valid.
   The input remains in the editor. This is not an automatic payment request.
 - **503:** storage unavailable or evaluator failure/refusal; no payment is made.
   An evaluator failure consumes its already reserved attempt.
+  `trial_recording_unavailable` means the completed computation could not be
+  recorded reliably; the reserved attempt is consumed and no successful result
+  is returned. The evaluator may have run, so this is not a payment failure.
 
 POST responses carry server-issued `X-Payment-Attempt-Id`, optional caller
 correlation `X-Payment-Trace-Id`, and `Cache-Control: no-store`. Neither ID grants
@@ -80,6 +83,56 @@ For every profile verify the live terms, example validation, two marked owner
 the known owner reservation UUIDs returned in the successful response headers;
 preserve all other trial and payment records. Collect the signed telemetry
 archive and check free/paid separation and owner exclusions.
+
+## Durable completion and feedback
+
+Apply additive migration `0004_trial_completion_receipts.sql` to the existing
+`agenda-fleet-payments` database before deployment. It adds a completion table
+and a singleton rollout boundary; it does not modify reservations or payments.
+Each completion has only its server attempt UUID, fixed profile, UTC day/time
+and origin group. The insert must reference an existing reserved attempt and
+must succeed before HTTP 200. Receipts remain distinct from best-effort usage,
+provider payment-stage logs, purchases and customer usefulness. Owner/probe
+classification is a purpose label, not an authenticated identity.
+
+After every existing Worker deployment finishes, set
+`trial_receipt_coverage.complete_from` for `id='fleet'` to the actual latest
+completion timestamp. Do not set it during rollout. Until then the source is
+`rollout_in_progress`. Historical dates before that boundary are
+`not_instrumented` with null totals, not measured zeros. Reset the boundary to
+null before a rollback to code without the receipt writer; preserve receipts.
+
+Authenticated `GET /stats?date=YYYY-MM-DD` adds `trial_completions`:
+
+```json
+{
+  "contract_version": 1,
+  "status": "partial_window",
+  "date": "2026-10-09",
+  "total_completed": 0,
+  "groups": {"excluded": 0, "external_candidate": 0, "unknown_origin": 0},
+  "rows": [],
+  "coverage": "instrumented_completions_only",
+  "window_start": "2026-10-09T10:00:00.000Z",
+  "window_end": "2026-10-09T11:00:00.000Z",
+  "fleet_complete_from": "2026-10-09T10:00:00.000Z"
+}
+```
+
+The timestamps above illustrate the shape, not an actual deployment. Rows are
+`{agent_profile, origin_group, completed}` aggregates across the shared fleet.
+Closed whole days after rollout use `complete`; current or rollout-day windows
+use `partial_window`. Unavailable or unconfigured storage has null totals and
+groups. The existing stats token is required before querying D1; no receipt
+UUID, caller hash, request input or result appears in this surface.
+
+Every free page includes an optional feedback email draft with the product,
+bounded check status and unanswered questions about the user's task, useful
+parts, confusing/missing parts, changed next step and voluntary repeat intent.
+The user reviews and sends the draft. Nothing is sent automatically and inputs,
+results, traces, payment details and credentials are not attached. Actual
+sessions and replies still require human participation; prepared prompts do
+not establish usefulness or customer adoption.
 
 Rollback through the same protected deployment path: set `WORKER_FREE_TRIAL=0`.
 For Output also set `OUTPUT_VERIFICATION_TRIAL=0` to disable its older opt-in.

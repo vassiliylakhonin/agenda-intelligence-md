@@ -132,7 +132,7 @@ test('browser free form never invokes checkout, preserves exhausted input, and o
   const env=envFor();
   const html=await (await handleRequest(new Request(origin,{headers:{accept:'text/html'}}),env)).text();
   assert.ok(html.includes('Check your own evidence free'));
-  const elements=Object.fromEntries(['profile-run','profile-paid','profile-status','profile-result','profile-summary','profile-response','profile-request']
+  const elements=Object.fromEntries(['profile-run','profile-paid','profile-status','profile-result','profile-summary','profile-response','profile-request','profile-feedback']
     .map(id=>[id,{value:JSON.stringify(evidence),innerHTML:'',textContent:'',hidden:id==='profile-paid'}]));
   let paid=0;const traces=[];
   const context={URL,window:{location:{href:origin+'/?owner_test=1',origin},crypto:globalThis.crypto},crypto:globalThis.crypto,

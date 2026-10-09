@@ -13,6 +13,7 @@ export function memoryD1() {
     return {
       bind(...args) { values = args; return this; },
       async first() { return statement.get(...values) || null; },
+      async all() { return { success: true, results: statement.all(...values) }; },
       async run() {
         const result = statement.run(...values);
         return { success: true, meta: { changes: Number(result.changes) } };

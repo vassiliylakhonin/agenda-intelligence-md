@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Unreleased — durable free-trial completion measurement
+
+- Record a bounded free-trial completion receipt in the existing shared D1 ledger before returning HTTP 200. No inputs, outputs, caller identifiers, payment proof or client traces are retained. A receipt write failure returns an explicit 503 with consumed-attempt status; paid execution remains separate.
+- Add authenticated fleet completion aggregates to `/stats`, with a rollout coverage boundary and null counts for uninstrumented history or unavailable storage. Keep the provider logs for diagnosis and do not reconstruct missing historical events.
+- Offer a user-reviewed feedback email draft on each free-trial page, asking about task usefulness, missing pieces and repeat intent. Attach only the product and bounded check status; no automatic send or raw request/result attachment.
+
 ## Unreleased — free first attempts across the fleet
 
 - Extend opt-in free live trials to all twelve configured products using their existing evaluators and matching input contracts. Keep the Output Verification trial URL; add `/v1/trial` and publish product-specific examples, optional paid tools and prices.
