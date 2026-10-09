@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 1.14.1 — 2026-10-09
+
+- Add `/mcp/agent` for standard MCP clients: payment admission and funding signature challenges are explicit unevaluated tool errors. Preserve legacy HTTP payment statuses, exact-request signatures, auth, trials and recovery.
+- Publish the serving hosted catalog, actual per-tool access, factual data retention and current pricing links in discovery; expose the shared fleet directory at `/.well-known/fleet.json`.
+- Separate local stdio tools from hosted profiles in agent-readable documentation. Release the previously merged Russian geography routing fix to PyPI and align MCP Registry publication to immutable release artifacts.
+
 ## Unreleased — fleet walkthrough repairs
 
 - Preserve the Escrow product identifier in optional feedback drafts; bounded identifiers may contain digits after the first letter.

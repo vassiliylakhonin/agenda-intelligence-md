@@ -20,33 +20,41 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref }}
 
       - name: Determine version
         id: version
+        env:
+          RELEASE_INPUT: ${{ inputs.version }}
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
-          elif [ -n "${{ github.event.inputs.version }}" ]; then
-            VERSION="${{ github.event.inputs.version }}"
+          elif [ -n "$RELEASE_INPUT" ]; then
+            VERSION="$RELEASE_INPUT"
           else
             echo "::error::workflow_dispatch requires the 'version' input"
             exit 1
           fi
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid release version"; exit 1; }
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Publishing MCP registry entry for version $VERSION"
 
-      - name: Sync server.json version to release version
+      - name: Verify immutable release manifest
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          jq --arg v "$VERSION" '.version = $v | (.packages[].version) = $v' server.json > server.tmp
-          mv server.tmp server.json
-          echo "--- server.json after sync ---"
-          jq '.name, .version, (.packages[].version)' server.json
+          jq -e --arg v "$RELEASE_VERSION" '.version == $v and all(.packages[]; .version == $v)' server.json
 
-      - name: Install mcp-publisher
+      - name: Install pinned mcp-publisher
+        env:
+          PUBLISHER_VERSION: v1.8.1
+          PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
         run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
-          ./mcp-publisher --version || true
+          set -euo pipefail
+          curl -sSLf "https://github.com/modelcontextprotocol/registry/releases/download/${PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz" -o "$RUNNER_TEMP/mcp-publisher.tar.gz"
+          echo "${PUBLISHER_SHA256}  $RUNNER_TEMP/mcp-publisher.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/mcp-publisher.tar.gz" mcp-publisher
 
       - name: Authenticate to MCP Registry (GitHub OIDC)
         run: ./mcp-publisher login github-oidc
@@ -84,3 +92,28 @@ jobs:
           else
             exit $exit_code
           fi
+
+      - name: Verify published manifest and latest version
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python - <<'PYTHON'
+          import json, os, time, urllib.request
+          from pathlib import Path
+          manifest = json.loads(Path('server.json').read_text())
+          url = 'https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.vassiliylakhonin%2Fagenda-intelligence-md&limit=100'
+          for attempt in range(12):
+              with urllib.request.urlopen(url, timeout=30) as response:
+                  entries = json.load(response)['servers']
+              latest = [entry['server'] for entry in entries
+                        if entry['server']['name'] == manifest['name']
+                        and entry.get('_meta', {}).get('io.modelcontextprotocol.registry/official', {}).get('isLatest')]
+              if len(latest) == 1 and latest[0]['version'] == os.environ['RELEASE_VERSION']:
+                  for field in ('packages', 'remotes'):
+                      assert latest[0].get(field) == manifest.get(field), field + ' drift'
+                  print('Verified latest registry version, package and remote endpoints')
+                  break
+              if attempt == 11:
+                  raise SystemExit('Registry latest version did not converge')
+              time.sleep(5)
+          PYTHON

@@ -1,6 +1,6 @@
 {
   "name": "output-verification",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "description": "Review structural gaps in caller-supplied claim evidence. No independent source verification; every verdict requires human review.",
   "author": {
     "name": "Vassiliy Lakhonin",

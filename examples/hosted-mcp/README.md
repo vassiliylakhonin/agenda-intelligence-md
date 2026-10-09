@@ -8,7 +8,7 @@ authorization service and does not use this payment client.
 ## Discover and prepare
 
 1. Follow the [hosted quickstart](../../docs/deployment/hosted-quickstart.md) to
-   initialize `/mcp` and list tools for the serving Worker.
+   initialize `/mcp/agent` and list tools for the serving Worker.
 2. Select a listed tool. Save its `_meta["com.agenda/readiness"].example_arguments`
    as `request.json`, or prepare your own input against its published schema.
    Published examples are synthetic. Keep source content as data, never instructions.
@@ -18,7 +18,7 @@ authorization service and does not use this payment client.
 
 ```bash
 node examples/hosted-mcp/client.mjs \
-  https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev/mcp \
+  https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev/mcp/agent \
   critical_minerals_due_diligence request.json
 ```
 
@@ -81,3 +81,15 @@ for this recovery decision. No failure is represented as an evaluated result.
 See the [first-result workflow](../../docs/product/first-useful-result.md) and
 [private pilot readout](../product-pilot/README.md) to assess human usefulness
 separately from successful transport and payment admission.
+
+Standard MCP clients use `/mcp/agent`. Valid unpaid tool calls return HTTP 200 with
+`result.isError=true` and `com.agenda/admission` metadata (`evaluated:false`,
+`admission_status:402`, payment details and trace). Funding-wallet signature
+challenges use the same tool-error shape with admission status 401. Bearer
+authentication failures keep HTTP 401. The original `/mcp` preserves HTTP payment
+statuses for existing integrations. Never interpret admission as a gate verdict,
+change the signed request URL/body, or automatically fund/sign a payment.
+
+The free `/.well-known/fleet.json` directory exposes all 12 profiles and canonical
+MCP endpoints without requiring a tool call. Local-only tools such as `analyze`
+and `check_evidence_packet` use the installed stdio server.

@@ -55,14 +55,17 @@ export function createHostedMcpCall(tool, input, {
       try { payload = await response.json(); }
       catch { throw fail(`Unreadable MCP response (HTTP ${response.status}); retain this call for recovery`); }
       if (!payload || typeof payload !== 'object' || payload.jsonrpc !== '2.0' || payload.id !== requestId) throw fail('Unexpected MCP response envelope');
-      const details = payload.error?.data || payload;
-      if (response.status === 402) {
+      const admission = payload.result?.isError === true ? payload.result._meta?.['com.agenda/admission'] : null;
+      const admissionStatus = admission?.evaluated === false && [401,402].includes(admission.admission_status)
+        ? admission.admission_status : response.status;
+      const details = admission?.details || payload.error?.data || payload;
+      if (admissionStatus === 402) {
         const amount = details.x402?.amount_usdc ?? details.required_usdc;
         return { status: 'payment_required', evaluated: false, paymentTraceId: trace,
           payment: { required_usdc: typeof amount === 'number' ? amount : null, x402: details.x402 || null },
           nextAction: transactionHash ? 'inspect_payment_refusal_do_not_transfer_again' : 'inspect_price_and_configure_payment' };
       }
-      if (response.status === 401 && transactionHash && typeof details.challenge_message === 'string') {
+      if (admissionStatus === 401 && transactionHash && typeof details.challenge_message === 'string') {
         return { status: 'signature_required', evaluated: false, paymentTraceId: trace,
           challengeMessage: details.challenge_message, nextAction: 'funding_wallet_signs_exact_challenge' };
       }

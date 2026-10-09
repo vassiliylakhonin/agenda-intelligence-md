@@ -18,22 +18,37 @@ test('REST MCP A2A correlate 402, signature challenge, execution and replay acro
   try {
     for (const [path, body] of [
       ['/v1/agent-output/verification', fixture],
+      ['/mcp/agent', { jsonrpc: '2.0', id: 'm-agent', method: 'tools/call', params: { name: 'agent_output_verification', arguments: fixture } }],
       ['/mcp', { jsonrpc: '2.0', id: 'm1', method: 'tools/call', params: { name: 'agent_output_verification', arguments: fixture } }],
       ['/message/send', { jsonrpc: '2.0', id: 'a1', method: 'message/send', params: { request: fixture } }]
     ]) {
       const env = { AGENT_PROFILE: 'agent_output_verification', PAYMENT_LEDGER: memoryD1(), BILLING_MODE: 'pay_per_call', VIZIER_DISABLED: '1' };
       const url = origin + path;
       const plain = await handleRequest(new Request(url, { method: 'POST', body: JSON.stringify(body) }), env);
-      assert.equal(plain.status, 402);
+      assert.equal(plain.status, path === '/mcp/agent' ? 200 : 402);
       const trace = plain.headers.get('x-payment-trace-id');
       assert.match(trace || '', UUID);
       assert.match(plain.headers.get('access-control-expose-headers'), /X-Payment-Trace-Id/i);
-      if (body.id) assert.equal((await plain.json()).id, body.id);
+      if (body.id) {
+        const payload = await plain.json();
+        assert.equal(payload.id, body.id);
+        if (path === '/mcp/agent') {
+          assert.equal(payload.result.isError, true);
+          assert.equal(payload.result.structuredContent, undefined);
+          const admission = JSON.parse(payload.result.content[0].text);
+          assert.equal(admission.evaluated, false);
+          assert.equal(admission.admission_status, 402);
+          assert.equal(admission.payment_trace_id, trace);
+          assert.ok(admission.details.x402);
+        }
+      }
       const headers = { 'x-payment-trace-id': trace };
       const challenge = await handleRequest(new Request(url, { method: 'POST', headers: { ...headers, 'x-payment-tx': tx }, body: JSON.stringify(body) }), env);
-      assert.equal(challenge.status, 401);
+      assert.equal(challenge.status, path === '/mcp/agent' ? 200 : 401);
       assert.equal(challenge.headers.get('x-payment-trace-id'), trace);
-      assert.ok((await challenge.json()).challenge_message);
+      const challengeBody = await challenge.json();
+      const challengeDetails = path === '/mcp/agent' ? JSON.parse(challengeBody.result.content[0].text).details : challengeBody;
+      assert.ok(challengeDetails.challenge_message);
       const signed = await signedRequest(url, body, tx, headers);
       const completed = await handleRequest(signed.clone(), env);
       assert.equal(completed.status, 200);
@@ -90,4 +105,16 @@ test('browser retains the server trace throughout checkout and lost-response rec
   assert.equal((await paidFetch(origin + '/v1/agent-output/verification', { ...options, body: '{}' }, .05)).status, 200);
   assert.ok(seen.slice(1).every(r => r.headers['x-payment-trace-id'] === trace));
   assert.deepEqual(seen[2], seen[3]);
+});
+
+
+test('agent facade preserves bearer authentication and malformed protocol refusals', async () => {
+  const env = { AGENT_PROFILE: 'kazakhstan', BILLING_MODE: 'pay_per_call', MIDDLE_CORRIDOR_API_KEY: 'private' };
+  const response = await handleRequest(new Request(origin + '/mcp/agent', { method: 'POST',
+    body: JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'middle_corridor_deal_risk',arguments:{}}}) }), env);
+  assert.equal(response.status, 401);
+  assert.ok((await response.json()).error);
+  const malformed = await handleRequest(new Request(origin + '/mcp/agent', {method:'POST',body:'{' }),
+    { AGENT_PROFILE:'agenda', BILLING_MODE:'pay_per_call' });
+  assert.equal(malformed.status, 400);
 });

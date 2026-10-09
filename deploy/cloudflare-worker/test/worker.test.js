@@ -1041,7 +1041,8 @@ test("MCP server card and DID routes advertise installable MCP identity", async 
   assert.equal(card.serverInfo.name, "Agenda Intelligence MD MCP Server");
   assert.equal(card.transport.type, "stdio");
   assert.equal(card.transport.command, "agenda-intelligence-mcp");
-  assert.ok(card.tools.some((tool) => tool.name === "audit_claims"));
+  assert.ok(card.tools.some((tool) => tool.name === "strategic_risk_triage"));
+  assert.ok(!card.tools.some((tool) => tool.name === "audit_claims"));
   assert.equal(did.id, "did:web:agenda-intelligence-a2a.example.workers.dev");
   assert.ok(did.service.some((service) => service.type === "MCPServer"));
   assert.ok(did.service.some((service) => service.type === "OpenAPI"));
@@ -6547,7 +6548,7 @@ test("mcp server card advertises the hosted streamable-http transport", () => {
   );
   assert.equal(card.protocolVersion, "2026-07-28");
   const hosted = card.transports.find((entry) => entry.type === "streamable-http");
-  assert.equal(hosted.url, "https://agent-output-verification-a2a.example.workers.dev/mcp");
+  assert.equal(hosted.url, "https://agent-output-verification-a2a.example.workers.dev/mcp/agent");
   assert.equal(hosted.stateless, true);
   assert.deepEqual(hosted.tools, [
     "agent_output_verification",
