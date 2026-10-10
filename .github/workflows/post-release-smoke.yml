@@ -51,12 +51,17 @@ jobs:
         run: |
           python -m venv .smoke-venv
           .smoke-venv/bin/python -m pip install --upgrade pip
-          for attempt in 1 2 3 4 5; do
-            if .smoke-venv/bin/python -m pip install "agenda-intelligence-md==${{ steps.version.outputs.version }}"; then
+          # A first negative Simple API response can stay in pip's HTTP cache
+          # even after the version JSON and release artifacts are visible.
+          # Each retry must actually revalidate the official public index.
+          for attempt in {1..12}; do
+            if .smoke-venv/bin/python -m pip install --no-cache-dir --index-url https://pypi.org/simple "agenda-intelligence-md==${{ steps.version.outputs.version }}"; then
               exit 0
             fi
-            echo "Package not visible on PyPI yet; retrying in 20 seconds..."
-            sleep 20
+            if [ "$attempt" -lt 12 ]; then
+              echo "Package not visible on PyPI yet; retrying in 15 seconds..."
+              sleep 15
+            fi
           done
           exit 1
 
@@ -84,7 +89,7 @@ jobs:
 
       - name: Verify published preflight tools with optional real MCP client
         run: |
-          .smoke-venv/bin/python -m pip install "agenda-intelligence-md[reviews,mcp-check]==${{ steps.version.outputs.version }}"
+          .smoke-venv/bin/python -m pip install --no-cache-dir --index-url https://pypi.org/simple "agenda-intelligence-md[reviews,mcp-check]==${{ steps.version.outputs.version }}"
           .smoke-venv/bin/python -I scripts/smoke_preflight.py
 
       - name: Verify CLI validation and scoring
