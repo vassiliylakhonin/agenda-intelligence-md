@@ -6,7 +6,40 @@ model call, remote retrieval or account is required. This adapter is separate
 from the hosted paid `agent_output_verification` compatibility profile and its
 quota-limited free trial. Their schemas and verdicts are unchanged.
 
-From a checkout (Python 3.9+):
+## Install without a checkout
+
+Python 3.9 or later:
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install "agenda-intelligence-md==1.15.0"
+```
+
+Create `answer.json` with your answer and original retrieved chunk texts. This
+small input is fictional; replace it with your own task and evidence:
+
+```json
+{
+  "answer": "The pilot processed 120 invoices. [pilot-1]",
+  "sources": [
+    {"source_id": "pilot-1", "text": "The pilot processed 120 invoices."}
+  ]
+}
+```
+
+```sh
+.venv/bin/agenda-intelligence review-answer answer.json --strict --format json
+```
+
+Expected: exit 0, `route=human_review`, `packet_status=packet_complete` and
+`factuality_status=not_assessed`. Change the answer's `120` to `900`, keeping
+the source unchanged: strict mode exits 1 and reports the unmatched number.
+Correct the answer and run again. A clean lint outcome still requires human
+review. Neither installation nor evaluation requires a wallet or model API key.
+
+## Run the repository examples
+
+With a checkout, use the packaged CLI or an editable developer install:
 
 ```sh
 python -m pip install -e .

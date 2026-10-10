@@ -1,6 +1,6 @@
 """Agenda Intelligence: structured evidence-packet gate for AI output."""
 
-__version__ = "1.14.1"
+__version__ = "1.15.0"
 
 from agenda_intelligence.agent_financial_guard import (
     AgentFinancialGuard,

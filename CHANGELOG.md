@@ -1,17 +1,20 @@
 # CHANGELOG
 
-## Unreleased — local RAG Output Verification
+## 1.15.0 — 2026-10-10
+
+### Local RAG Output Verification
 
 - Assemble evidence packets from inline-cited answers and original retrieved chunks with `review_rag_answer` and `review-answer`. Preserve every nonblank line, unknown citations, quote attribution and source identities; surface line offsets and specific repair actions without a model, wallet or network.
 - Reuse the deterministic packet checker and evidence ledger. Reject malformed/empty/oversized input and duplicate chunk IDs; bounded citation parsing routes findings to revision and clean lint only to human review. Factuality remains unassessed.
-- Add an optional LangGraph repair/recheck/human-handoff example, fictional original/revised fixtures and failure/reward-hacking contract tests. No new core dependency, hosted route, pricing or quota changes; the published 1.14.1 release predates this adapter.
+- Add an optional LangGraph repair/recheck/human-handoff example, fictional original/revised fixtures and failure/reward-hacking contract tests. No new core dependency, hosted route, pricing or quota changes.
+- Publish standalone installation guidance and exercise both the Python adapter and strict CLI from an installed wheel and the published package. Synchronize maintained release metadata and regenerate versioned fixtures; preserve service outcomes and evidence.
 
-## Unreleased — structured A2A onboarding
+### Structured A2A onboarding
 
 - Publish canonical A2A 1.0 message parts in all twelve Worker examples and input-repair hints, without the legacy `kind` discriminator. Retain inbound legacy data parts and structured JSON serialized as text.
 - Give Interaction Trust an executable structured skill example and a runnable admission check. Clarify required evidence and that valid unpaid evaluations return HTTP 402; completion describes the admitted success shape. Prices, quotas, validators and payment requirements remain unchanged.
 
-## Unreleased — free-trial admission diagnostics
+### Free-trial admission diagnostics
 
 - Distinguish product campaign network exhaustion from shared UTC daily capacity in free-trial 429 responses and bounded telemetry. Keep `trial_exhausted`, quotas and prices; refusals consume no attempt. Only daily capacity returns a `Retry-After` hint.
 - Separate free-trial admission refusals from evaluation/receipt failures in telemetry. Determine the quota reason and reserve atomically in one D1 transaction; fail closed on unavailable or inconsistent storage.

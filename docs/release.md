@@ -98,5 +98,7 @@ After setup, remove the `password: ${{ secrets.PYPI_API_TOKEN }}` input from the
 - `score --evidence`
 - `doctor --strict`
 - MCP config and stdio server smoke checks
+- installed RAG Output Verification API repair/recheck, empty-answer refusal
+  and strict CLI success/failure in Python isolated mode (`-I`)
 
 It runs after a successful `Release` workflow and can also be run manually with a package version.

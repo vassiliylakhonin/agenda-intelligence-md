@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.event.workflow_run.head_sha }}
 
       - uses: actions/setup-python@v6
         with:
@@ -76,6 +78,9 @@ jobs:
           PY
         env:
           EXPECTED_VERSION: ${{ steps.version.outputs.version }}
+
+      - name: Verify published RAG adapter and CLI in isolation
+        run: .smoke-venv/bin/python -I scripts/smoke_rag_output.py
 
       - name: Verify CLI validation and scoring
         run: |

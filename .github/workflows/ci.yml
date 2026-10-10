@@ -118,6 +118,7 @@ jobs:
           .wheel-smoke-venv/bin/python -m pip install dist/*.whl
           .wheel-smoke-venv/bin/agenda-intelligence --version
           .wheel-smoke-venv/bin/agenda-intelligence validate-manifest
+          .wheel-smoke-venv/bin/python -I scripts/smoke_rag_output.py
 
   typescript-client:
     name: TypeScript client
