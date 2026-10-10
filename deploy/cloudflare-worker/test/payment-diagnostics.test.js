@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { handleRequest, agentCard, GATE_REQUEST_GUIDES, DIRECT_V1_ROUTES } from '../src/index.js';
 import { PAYMENT_CLIENT_SCRIPT } from '../src/payment-client.js';
 
@@ -67,6 +68,11 @@ test('all fleet public A2A examples and landing REST inputs pass paid admission 
     for (const profile of profiles) {
       const configured = { ...env, AGENT_PROFILE: profile };
       const example = agentCard(new Request(origin + '/'), configured).x_agenda_intelligence.a2a_send_message_example;
+      for (const part of example.request.params.message.parts) {
+        assert.ok(!('kind' in part), `${profile}: advertised A2A 1.0 part uses legacy kind`);
+        if ('data' in part) assert.equal(part.mediaType, 'application/json');
+      }
+      assert.equal(example.expected.http_status_without_payment, 402);
       const response = await handleRequest(new Request(example.endpoint, { method: 'POST', headers: example.headers, body: JSON.stringify(example.request) }), configured);
       assert.ok([200, 402].includes(response.status), `${profile} A2A: ${response.status} ${await response.text()}`);
     }
@@ -76,6 +82,65 @@ test('all fleet public A2A examples and landing REST inputs pass paid admission 
       const profile = route.guideProfile === 'kazakhstan_market_entry_readiness' ? 'market_entry_readiness' : route.guideProfile;
       const response = await handleRequest(new Request(origin + path, { method: 'POST', body: JSON.stringify(guide.example) }), { ...env, AGENT_PROFILE: profile });
       assert.equal(response.status, 402, `${path}: ${response.status} ${await response.text()}`);
+    }
+  } finally { console.log = old; }
+});
+
+test('Interaction Trust skill examples are executable structured input, including JSON-as-text compatibility', async () => {
+  const configured = { ...env, AGENT_PROFILE: 'agentic_interaction_trust' };
+  const card = agentCard(new Request(origin + '/'), configured);
+  assert.match(card.x_agenda_intelligence.preferred_input, /ordinary prose.*not sufficient/i);
+  const old = console.log; console.log = () => {};
+  try {
+    for (const text of card.skills.flatMap(skill => skill.examples)) {
+      const data = JSON.parse(text);
+      for (const part of [{ data, mediaType: 'application/json' }, { text }]) {
+        const response = await handleRequest(new Request(origin + '/message/send', {
+          method: 'POST', headers: { 'content-type': 'application/json', 'a2a-version': '1.0' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 'skill-example', method: 'SendMessage',
+            params: { message: { messageId: 'skill-example', role: 'ROLE_USER', parts: [part] } } })
+        }), configured);
+        assert.equal(response.status, 402, await response.text());
+      }
+    }
+  } finally { console.log = old; }
+});
+
+test('ordinary prose gets a canonical A2A repair hint that reaches payment without evaluating', async () => {
+  const configured = { ...env, AGENT_PROFILE: 'agentic_interaction_trust' };
+  const old = console.log; console.log = () => {};
+  try {
+    const response = await handleRequest(new Request(origin + '/message/send', {
+      method: 'POST', headers: { 'content-type': 'application/json', 'a2a-version': '1.0' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 'prose', method: 'SendMessage',
+        params: { message: { messageId: 'prose', role: 'ROLE_USER', parts: [{ text: 'Can I trust this unknown agent?' }] } } })
+    }), configured);
+    assert.equal(response.status, 400);
+    const failure = await response.json();
+    assert.equal(failure.code, 'invalid_paid_request');
+    const hint = failure.request_hint;
+    assert.equal(hint.example_request.params.message.parts[0].kind, undefined);
+    assert.equal(hint.example_request.params.message.parts[0].mediaType, 'application/json');
+    assert.equal(hint.expected.http_status_without_payment, 402);
+    const repaired = await handleRequest(new Request(origin + '/message/send', {
+      method: 'POST', headers: hint.headers, body: JSON.stringify(hint.example_request)
+    }), configured);
+    assert.equal(repaired.status, 402);
+  } finally { console.log = old; }
+});
+
+test('documented external-agent request and legacy data part both pass admission', async () => {
+  const configured = { ...env, AGENT_PROFILE: 'agentic_interaction_trust' };
+  const fixture = JSON.parse(readFileSync(new URL('../../../examples/agentic-interaction-trust/a2a-send-message.json', import.meta.url), 'utf8'));
+  const old = console.log; console.log = () => {};
+  try {
+    for (const part of [fixture.params.message.parts[0], { kind: 'data', data: fixture.params.message.parts[0].data }]) {
+      const request = structuredClone(fixture);
+      request.params.message.parts = [part];
+      const response = await handleRequest(new Request(origin + '/message/send', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'a2a-version': '1.0' }, body: JSON.stringify(request)
+      }), configured);
+      assert.equal(response.status, 402, await response.text());
     }
   } finally { console.log = old; }
 });
