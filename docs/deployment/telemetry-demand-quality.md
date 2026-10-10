@@ -30,12 +30,26 @@ and before payment admission. Free catalog calls and heartbeats do not become
 paid attempts. Free bankability previews may validate but are still previews,
 not paid executions. Payment/header refusals and quota behavior are unchanged.
 
-`failure_family` is bounded to input validation, payment admission or execution
+`failure_family` is bounded to input validation, payment admission, trial admission or execution
 failure; non-failure stages carry null. Input categories also include
 `invalid_json` and `body_too_large`. Malformed/over-limit paid-candidate bodies
 now emit `request_received` and `payment_rejected` with one server attempt UUID.
 Request bodies, outputs, wallet data, signatures and validator error text are
 not added to telemetry. No customer/revenue assertion is inferred from stages.
+
+Free-trial refusals before evaluation (`trial_exhausted`, `trial_unavailable`,
+`trial_credentials_not_applicable`) use `trial_admission`; evaluator and receipt
+write failures remain `execution`. Additive v4 `trial_limit_reason` is non-null
+only for exhausted admission and is bounded to `network_allowance_exhausted`
+or `daily_capacity_exhausted`. Reports classify old refusals from stage/reason
+without changing raw events; missing historical quota detail stays unmeasured.
+
+HTTP 429 preserves `code: trial_exhausted` and adds `trial.limit_reason` and
+`trial.attempt_consumed: false`. Network allowance is two attempts per product
+for the campaign, shared by a network, with no daily reset or Retry-After.
+Daily capacity adds `trial.retry_after_seconds` and the matching `Retry-After`
+header until the next UTC midnight. Quotas, prices and explicit paid actions
+are unchanged; one transactional D1 batch identifies the reason and reserves.
 
 ## Error and correlation contract
 

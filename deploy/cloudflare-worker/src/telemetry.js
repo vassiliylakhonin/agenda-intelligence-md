@@ -392,7 +392,7 @@ function exampleTraceId(request) {
 }
 const VALIDATION_CATEGORIES = new Set(['unsupported_protocol', 'invalid_message', 'invalid_jsonrpc',
   'invalid_request_object', 'missing_structured_request', 'schema_validation_failed', 'missing_input', 'invalid_json', 'body_too_large']);
-function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, profile, minimum_usdc, reason = null, status = null, validation = null, caller_hash = null, execution_id = null }) {
+function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, profile, minimum_usdc, reason = null, status = null, validation = null, caller_hash = null, execution_id = null, trial_limit_reason = null }) {
   try {
     const url = new URL(request.url);
     const safeValidation = validation && VALIDATION_CATEGORIES.has(validation.category) ?
@@ -401,8 +401,11 @@ function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, pr
       caller_hash: /^[0-9a-f]{16}$/.test(caller_hash || "") ? caller_hash : null,
       execution_id: /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(execution_id || "") ? execution_id : null,
       timestamp: new Date().toISOString(), attempt_id, stage, reason, status,
-      failure_family: stage === 'payment_rejected' ? reason === 'invalid_paid_request' ? 'input_validation' : 'payment_admission'
+      failure_family: stage === 'preview_failed' && ['trial_exhausted', 'trial_unavailable', 'trial_credentials_not_applicable'].includes(reason) ? 'trial_admission'
+        : stage === 'payment_rejected' ? reason === 'invalid_paid_request' ? 'input_validation' : 'payment_admission'
         : ['execution_failed', 'preview_failed'].includes(stage) ? 'execution' : null,
+      trial_limit_reason: stage === 'preview_failed' && reason === 'trial_exhausted' &&
+        ['network_allowance_exhausted', 'daily_capacity_exhausted'].includes(trial_limit_reason) ? trial_limit_reason : null,
       payment_trace_id: normalizePaymentTrace(payment_trace_id),
       demo_trace_id: exampleTraceId(request),
       host: url.hostname, transport: url.pathname.startsWith('/mcp') ? 'mcp' :

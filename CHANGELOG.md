@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased — free-trial admission diagnostics
+
+- Distinguish product campaign network exhaustion from shared UTC daily capacity in free-trial 429 responses and bounded telemetry. Keep `trial_exhausted`, quotas and prices; refusals consume no attempt. Only daily capacity returns a `Retry-After` hint.
+- Separate free-trial admission refusals from evaluation/receipt failures in telemetry. Determine the quota reason and reserve atomically in one D1 transaction; fail closed on unavailable or inconsistent storage.
+
 ## 1.14.1 — 2026-10-09
 
 - Add `/mcp/agent` for standard MCP clients: payment admission and funding signature challenges are explicit unevaluated tool errors. Preserve legacy HTTP payment statuses, exact-request signatures, auth, trials and recovery.
