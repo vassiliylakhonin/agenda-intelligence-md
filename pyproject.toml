@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agenda-intelligence-md"
-version = "1.15.0"
+version = "1.16.0"
 description = "Deterministic evidence-packet linter for claim-backed AI output"
 readme = "README.md"
 requires-python = ">=3.9"
-license = "MIT"
+license = "MIT AND Apache-2.0"
 authors = [
     {name = "Vassiliy Lakhonin"}
 ]
@@ -17,7 +17,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "src/agenda_intelligence/data/protocols/acp/2026-04-17/LICENSE", "src/agenda_intelligence/data/protocols/acp/2026-04-17/NOTICE"]
 
 dependencies = [
     "jsonschema>=4.20",
@@ -31,6 +31,7 @@ Documentation = "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree
 
 [project.optional-dependencies]
 reviews = ["cryptography>=43", "rfc8785>=0.1.4"]
+mcp-check = ["mcp==1.30.0; python_version >= '3.10'"]
 dev = [
     "cryptography>=43",
     "rfc8785>=0.1.4",
@@ -55,6 +56,9 @@ agenda-intelligence-mcp = "agenda_intelligence.mcp_stdio:main"
 agenda-intelligence-md = "agenda_intelligence.mcp_stdio:main"
 agenda-intelligence-http = "agenda_intelligence.http_api:main"
 agenda-intelligence-a2a = "agenda_intelligence.a2a_adapter:main"
+agenda-mcp-check = "agenda_intelligence.mcp_check:main"
+agenda-action-check = "agenda_intelligence.action_gate:main"
+agenda-checkout-check = "agenda_intelligence.checkout_check:main"
 
 [tool.setuptools]
 include-package-data = true

@@ -1,0 +1,7 @@
+{
+  "transport": "stdio",
+  "command": ["python", "-m", "agenda_intelligence.mcp_stdio"],
+  "auth": "none",
+  "execute_examples": true,
+  "examples": [{"tool": "list_signals", "arguments": {}, "expected_is_error": false}]
+}

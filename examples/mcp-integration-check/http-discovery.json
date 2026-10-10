@@ -1,0 +1,7 @@
+{
+  "transport": "streamable_http",
+  "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp/agent",
+  "auth": "none",
+  "execute_examples": false,
+  "examples": []
+}

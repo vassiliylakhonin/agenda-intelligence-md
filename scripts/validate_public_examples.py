@@ -14,6 +14,9 @@ from pathlib import Path
 from jsonschema import ValidationError, validate
 
 ROOT = Path(__file__).resolve().parents[1]
+# The legacy scripts/agenda_intelligence.py wrapper shadows the package when
+# running this file by path. Validate from the actual source package instead.
+sys.path.insert(0, str(ROOT / "src"))
 LOCAL_ENV = {
     **os.environ,
     "PYTHONPATH": os.pathsep.join(part for part in [str(ROOT / "src"), os.environ.get("PYTHONPATH", "")] if part),
@@ -113,7 +116,11 @@ def validate_examples() -> None:
     for path in json_files:
         data = load_json(path)
 
-        if path.name == "package.json":
+        if path.is_relative_to(ROOT / "examples" / "mcp-integration-check"):
+            from agenda_intelligence.mcp_check import validate_config
+
+            validate_config(data)
+        elif path.name == "package.json":
             if not isinstance(data, dict) or data.get("private") is not True:
                 raise SystemExit(f"Example package manifest must be private: {path.relative_to(ROOT)}")
         elif path == ROOT / "examples" / "product-pilot" / "session-template.json":

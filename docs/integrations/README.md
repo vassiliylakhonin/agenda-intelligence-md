@@ -2,6 +2,10 @@
 
 This directory holds short integration adapters for popular AI tooling platforms.
 
+- **Interaction Trust + Vizier** – [action-bound-execution.md](action-bound-execution.md): request-bound scope, signed delegation, expiry, human approval and durable replay checks on the integration's dispatch path.
+- **MCP Integration Check** – [mcp-integration-check.md](mcp-integration-check.md): CLI and GitHub Action using an official client to check discovery, schemas, auth, errors and opted-in examples.
+- **Agent Checkout Readiness** – [checkout-readiness.md](checkout-readiness.md): bounded ACP sandbox trace profile, including idempotent repeats, cancellation and a merchant refund handoff.
+
 - **RAG Output Verification** – [rag-output.md](rag-output.md): automatically
   assemble a packet from inline citations and actual source chunks, check locally
   without a wallet, and recheck corrections before human review. Includes a
