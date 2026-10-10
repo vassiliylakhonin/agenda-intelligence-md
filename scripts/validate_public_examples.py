@@ -38,6 +38,8 @@ MANUAL_DOC_COMMANDS = [
     "agenda-intelligence score examples/before-after/red-sea-shipping.md",
     "agenda-intelligence memo-quality-bench tests/fixtures/memo_quality --format json",
     "agenda-intelligence weekly-delta-bench tests/fixtures/weekly_delta --format json",
+    "agenda-intelligence review-answer examples/output-verification/rag-answer.json --format json",
+    "agenda-intelligence review-answer examples/output-verification/rag-answer-revised.json --strict",
 ]
 
 
@@ -161,6 +163,23 @@ def validate_examples() -> None:
             validate_with_schema(path, evidence_schema, "evidence-pack")
         elif path.name == "agenda-brief.json" or path.name.endswith(".brief.json"):
             validate_with_schema(path, brief_schema, "agenda-brief")
+        elif path in {
+            ROOT / "examples" / "output-verification" / "rag-answer.json",
+            ROOT / "examples" / "output-verification" / "rag-answer-revised.json",
+        }:
+            if not isinstance(data, dict) or set(data) != {"answer", "sources"}:
+                raise SystemExit(f"{path.relative_to(ROOT)} must contain exactly answer and sources")
+            # Execute from the root, not this script's directory: the legacy
+            # scripts/agenda_intelligence.py filename shadows the package.
+            checked = subprocess.run(
+                [sys.executable, "-m", "agenda_intelligence.cli", "review-answer", str(path), "--format", "json"],
+                cwd=ROOT,
+                env=LOCAL_ENV,
+                capture_output=True,
+                text=True,
+            )
+            if checked.returncode:
+                raise SystemExit(f"{path.relative_to(ROOT)} failed RAG adapter contract: {checked.stderr}")
         elif path.is_relative_to(ROOT / "examples" / "output-verification"):
             validate_with_schema(path, audit_schema, "evidence-audit")
         elif path.name.endswith(".audit.json"):

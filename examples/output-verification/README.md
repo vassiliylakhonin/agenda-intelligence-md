@@ -4,6 +4,25 @@ Use this check when an upstream agent supplies claims and evidence for a report.
 It detects missing evidence links and quote mismatches. It does not fetch sources,
 establish truth, authenticate an agent, or authorize publication/action.
 
+## First local RAG check — no wallet
+
+From a checkout after `python -m pip install -e .`:
+
+```sh
+agenda-intelligence review-answer examples/output-verification/rag-answer.json
+agenda-intelligence review-answer examples/output-verification/rag-answer-revised.json --strict
+python examples/langgraph-output-verification/run.py
+```
+
+Pass the generated answer with inline `[chunk-id]` citations and the actual
+retrieved texts. The adapter assembles the packet, preserves uncited lines and
+unknown citations, and reports missing references, quotes and numeric gaps.
+The fictional original routes to revision; the corrected version still requires
+human review. See the [contract](../../docs/integrations/rag-output.md) and
+[optional LangGraph integration](../langgraph-output-verification/README.md).
+The local adapter uses `check_evidence_packet`, separate from the hosted
+compatibility gate below; it does not consume hosted trial quota.
+
 ## Run safely (Node 20+)
 
 From the repository root:

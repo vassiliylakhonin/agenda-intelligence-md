@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Unreleased — local RAG Output Verification
+
+- Assemble evidence packets from inline-cited answers and original retrieved chunks with `review_rag_answer` and `review-answer`. Preserve every nonblank line, unknown citations, quote attribution and source identities; surface line offsets and specific repair actions without a model, wallet or network.
+- Reuse the deterministic packet checker and evidence ledger. Reject malformed/empty/oversized input and duplicate chunk IDs; bounded citation parsing routes findings to revision and clean lint only to human review. Factuality remains unassessed.
+- Add an optional LangGraph repair/recheck/human-handoff example, fictional original/revised fixtures and failure/reward-hacking contract tests. No new core dependency, hosted route, pricing or quota changes; the published 1.14.1 release predates this adapter.
+
 ## Unreleased — structured A2A onboarding
 
 - Publish canonical A2A 1.0 message parts in all twelve Worker examples and input-repair hints, without the legacy `kind` discriminator. Retain inbound legacy data parts and structured JSON serialized as text.
