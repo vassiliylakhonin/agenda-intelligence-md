@@ -1252,15 +1252,26 @@ function agentCard(request, env = {}) {
   if (contracts) shaped.x_tool_contracts = contracts;
   const profile = agentProfile(request, env);
   const guide = GATE_REQUEST_GUIDES[profile] || (profile === "market_entry_readiness" ? GATE_REQUEST_GUIDES.kazakhstan_market_entry_readiness : null);
-  if (guide) shaped.x_agenda_intelligence.preferred_input = "structured_json; free-text candidates are unconfirmed and may be empty";
+  if (guide) {
+    shaped.x_agenda_intelligence.preferred_input = "Structured JSON in message.parts[0].data (mediaType: application/json). " +
+      "JSON serialized in message.parts[0].text is also accepted for compatibility; ordinary prose alone is not sufficient for paid evaluation. " +
+      "Use the request schema and replace illustrative values with supplied evidence.";
+    shaped.skills = shaped.skills.map((skill) => ({
+      ...skill,
+      description: `${skill.description} Evaluation requires structured JSON; see the request schema and A2A example in the card extension.`,
+      examples: profile === "agentic_interaction_trust" ? [JSON.stringify(guide.example)] : skill.examples
+    }));
+  }
   const sample = guide?.example || (profile === "agenda" || profile === "corridor_sanctions_assistant"
     ? "What evidence is needed before shipping from Aktau to Baku?" : null);
-  const part = typeof sample === "string" ? { kind: "text", text: sample } : { kind: "data", data: sample };
+  const part = typeof sample === "string" ? { text: sample } : { data: sample, mediaType: "application/json" };
   if (sample) shaped.x_agenda_intelligence.a2a_send_message_example = {
     endpoint: `${origin}/message/send`,
     headers: { "Content-Type": "application/json", "A2A-Version": "1.0", "X-Trace-Id": "example-trace-001" },
     request: { jsonrpc: "2.0", id: "example-1", method: "SendMessage", params: { message: { messageId: "example-msg-1", role: "ROLE_USER", parts: [part] } } },
-    expected: { task_state: "TASK_STATE_COMPLETED", note: "Triage output only, not authorization or clearance." },
+    expected: { task_state: "TASK_STATE_COMPLETED",
+      ...(env.BILLING_MODE === "pay_per_call" ? { http_status_without_payment: 402 } : {}),
+      note: "Task completion is the success shape after admission. On paid deployments, a valid unpaid request returns HTTP 402 without evaluation. Triage output only, not authorization or clearance." },
     trace: "Optional: send an X-Trace-Id header (8-80 chars of A-Za-z0-9._:-) or a top-level params.trace_id. " +
       "It is echoed in task metadata.trace_id and recorded in telemetry, so your call can be correlated end to end."
   };
@@ -1292,7 +1303,7 @@ function toolContractsForProfile(profile) {
   if (!tools.length) return null;
   return {
     contract_version: VERSION,
-    note: "These are MCP tool schemas, not A2A envelope schemas. For A2A SendMessage use x_agenda_intelligence.a2a_send_message_example; structured gate fields go directly in message.parts[0].data, and free text goes in message.parts[0].text.",
+    note: "These are MCP tool schemas, not A2A envelope schemas. For A2A SendMessage use x_agenda_intelligence.a2a_send_message_example; structured gate fields go directly in message.parts[0].data with mediaType application/json. Text-only routing profiles use message.parts[0].text; ordinary prose does not replace a gate's required structured evidence.",
     tools: tools.map((tool) => ({
       name: tool.name,
       input_schema: tool.inputSchema,
@@ -14969,9 +14980,9 @@ function paidRequestHint(request, body, profile, env) {
       instruction: 'Use the published tools/list inputSchema; do not put payment credentials in the body.' };
   }
   if (path === '/message/send' || path === '/') {
-    const example = agentCard(request, { AGENT_PROFILE: profile }).x_agenda_intelligence.a2a_send_message_example;
-    return { transport: 'a2a', example_request: example.request, headers: example.headers,
-      instruction: 'Use the matching A2A version and structured example; examples are illustrative.' };
+    const example = agentCard(request, { ...env, AGENT_PROFILE: profile }).x_agenda_intelligence.a2a_send_message_example;
+    return { transport: 'a2a', example_request: example.request, headers: example.headers, expected: example.expected,
+      instruction: 'Use the matching A2A version and structured example; replace illustrative values with supplied evidence. A valid unpaid request on a paid deployment returns HTTP 402 without evaluation.' };
   }
   return guide ? { transport: 'rest', schema: route?.schema || guide.schema, required_fields: guide.required,
     example_request: guide.example, instruction: 'Use the canonical schema and replace illustrative values with supplied evidence.' }

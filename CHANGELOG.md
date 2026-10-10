@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased — structured A2A onboarding
+
+- Publish canonical A2A 1.0 message parts in all twelve Worker examples and input-repair hints, without the legacy `kind` discriminator. Retain inbound legacy data parts and structured JSON serialized as text.
+- Give Interaction Trust an executable structured skill example and a runnable admission check. Clarify required evidence and that valid unpaid evaluations return HTTP 402; completion describes the admitted success shape. Prices, quotas, validators and payment requirements remain unchanged.
+
 ## Unreleased — free-trial admission diagnostics
 
 - Distinguish product campaign network exhaustion from shared UTC daily capacity in free-trial 429 responses and bounded telemetry. Keep `trial_exhausted`, quotas and prices; refusals consume no attempt. Only daily capacity returns a `Retry-After` hint.

@@ -1,0 +1,42 @@
+{
+  "jsonrpc": "2.0",
+  "id": "example-1",
+  "method": "SendMessage",
+  "params": {
+    "message": {
+      "messageId": "example-msg-1",
+      "role": "ROLE_USER",
+      "parts": [
+        {
+          "data": {
+            "actor": {
+              "declared_type": "ai_agent",
+              "declared_name": "Example Shopping Agent",
+              "operator": "Example Consumer",
+              "authentication_context": "session_cookie"
+            },
+            "target_surface": "checkout",
+            "requested_action": "complete purchase of two restricted-delivery items",
+            "dated_sources": [
+              {
+                "id": "ait-1",
+                "source_type": "agent_identity_claim",
+                "title": "Declared agent identity header",
+                "date": "2026-08-01"
+              },
+              {
+                "id": "ait-2",
+                "source_type": "session_authentication_evidence",
+                "title": "Authenticated checkout session",
+                "date": "2026-08-01"
+              }
+            ],
+            "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?",
+            "decision_stage": "pre_execution"
+          },
+          "mediaType": "application/json"
+        }
+      ]
+    }
+  }
+}
