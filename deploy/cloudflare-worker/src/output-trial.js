@@ -27,31 +27,49 @@ export function outputTrialTerms(profile = 'agent_output_verification') {
 // never create another allowance. Only Cloudflare's connecting address is used.
 export async function reserveOutputTrial(request, env, attempt = crypto.randomUUID(), profile = 'agent_output_verification') {
   const ip = request.headers.get('cf-connecting-ip');
-  if (!ip || !env.PAYMENT_LEDGER?.prepare) throw new Error('trial_store_unavailable');
+  if (!ip || !env.PAYMENT_LEDGER?.prepare || !env.PAYMENT_LEDGER?.batch) throw new Error('trial_store_unavailable');
   // Preserve the already shipped Output campaign keys; all other profiles have
   // independent allowances in the same table and the same fleet-wide daily cap.
   const namespace = profile === 'agent_output_verification' ? 'output-trial-v1:' : 'worker-trial-v1:' + profile + ':';
   const client = await tokenHash(namespace + (env.CALLER_HASH_SALT || '') + ':' + ip.trim().toLowerCase());
   const now = new Date().toISOString();
-  const reservation = await env.PAYMENT_LEDGER.prepare(`
+  // D1 batch is one transaction: observe the exact pre-reservation limits and
+  // perform the unchanged atomic INSERT without another caller interleaving.
+  // Network exhaustion takes precedence when both limits are reached: waiting
+  // until tomorrow does not restore this product's campaign allowance.
+  const [state, inserted] = await env.PAYMENT_LEDGER.batch([
+    env.PAYMENT_LEDGER.prepare(`SELECT CASE
+      WHEN (SELECT COUNT(*) FROM output_verification_trials WHERE client_hash = ?1) >= ?3
+        THEN 'network_allowance_exhausted'
+      WHEN (SELECT COUNT(*) FROM output_verification_trials WHERE reserved_day = ?2) >= ?4
+        THEN 'daily_capacity_exhausted'
+      ELSE NULL END AS limit_reason`).bind(client, now.slice(0, 10), OUTPUT_TRIAL_LIMIT, OUTPUT_TRIAL_DAILY_LIMIT),
+    env.PAYMENT_LEDGER.prepare(`
     INSERT INTO output_verification_trials(reservation_id, client_hash, reserved_day, reserved_at)
     SELECT ?1, ?2, ?3, ?4
     WHERE (SELECT COUNT(*) FROM output_verification_trials WHERE client_hash = ?2) < ?5
       AND (SELECT COUNT(*) FROM output_verification_trials WHERE reserved_day = ?3) < ?6
     RETURNING reservation_id
   `).bind(attempt, client, now.slice(0, 10), now,
-    OUTPUT_TRIAL_LIMIT, OUTPUT_TRIAL_DAILY_LIMIT).first();
-  return Boolean(reservation);
+    OUTPUT_TRIAL_LIMIT, OUTPUT_TRIAL_DAILY_LIMIT)
+  ]);
+  const limit = state?.results?.[0]?.limit_reason;
+  const reserved = inserted?.results?.[0]?.reservation_id === attempt;
+  if (state?.success !== true || inserted?.success !== true ||
+      ![null, 'network_allowance_exhausted', 'daily_capacity_exhausted'].includes(limit) ||
+      reserved !== (limit === null)) throw new Error('trial_store_unavailable');
+  return { reserved, limit_reason: limit,
+    reset_at: limit === 'daily_capacity_exhausted' ? Date.parse(now.slice(0, 10) + 'T00:00:00Z') + 86400000 : null };
 }
 
 export async function handleOutputTrial(request, env, { validate, evaluate, emit, respond, originGroup = () => 'unknown_origin', profile = 'agent_output_verification' }) {
   const terms = outputTrialTerms(profile);
   const attempt = crypto.randomUUID();
   const trace = paymentTraceId(request);
-  const log = (stage, reason, status, validation = null) => emit({ stage, reason, status, validation,
+  const log = (stage, reason, status, validation = null, trial_limit_reason = null) => emit({ stage, reason, status, validation, trial_limit_reason,
     attempt_id: attempt, payment_trace_id: trace, minimum_usdc: 0 });
-  const reply = (body, status = 200) => paymentTraceResponse(respond(body, status,
-    { 'cache-control': 'no-store' }), trace, attempt);
+  const reply = (body, status = 200, headers = {}) => paymentTraceResponse(respond(body, status,
+    { 'cache-control': 'no-store', ...headers }), trace, attempt);
   log('request_received', 'free_trial', null);
   if (request.headers.has('x-payment-tx') || request.headers.has('x-payment-signature') || request.headers.has('authorization')) {
     log('preview_failed', 'trial_credentials_not_applicable', 400);
@@ -70,15 +88,21 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
     return reply({ code: 'invalid_trial_request', errors: checked.errors, trial: terms }, 400);
   }
   log('request_validated', 'free_trial', null);
-  let reserved;
-  try { reserved = await reserveOutputTrial(request, env, attempt, profile); }
+  let admission;
+  try { admission = await reserveOutputTrial(request, env, attempt, profile); }
   catch {
     log('preview_failed', 'trial_unavailable', 503);
     return reply({ code: 'trial_unavailable', error: 'Free trial is temporarily unavailable. No payment was requested.', trial: terms }, 503);
   }
-  if (!reserved) {
-    log('preview_failed', 'trial_exhausted', 429);
-    return reply({ code: 'trial_exhausted', error: 'The network allowance or daily service trial limit has been reached. You can choose a separate paid evaluation.', trial: terms }, 429);
+  if (!admission.reserved) {
+    const daily = admission.limit_reason === 'daily_capacity_exhausted';
+    const retry = Math.max(1, Math.ceil((admission.reset_at - Date.now()) / 1000));
+    log('preview_failed', 'trial_exhausted', 429, null, admission.limit_reason);
+    return reply({ code: 'trial_exhausted', error: daily
+      ? 'Today\'s free-trial capacity is full. Retry after the next UTC midnight. No trial attempt was consumed.'
+      : 'This network address has used this product\'s two campaign attempts. Shared networks share the allowance; it does not reset daily. You can choose a separate paid evaluation.',
+      trial: { ...terms, limit_reason: admission.limit_reason, attempt_consumed: false,
+        ...(daily ? { retry_after_seconds: retry } : {}) } }, 429, daily ? { 'retry-after': String(retry) } : {});
   }
   let result;
   try {

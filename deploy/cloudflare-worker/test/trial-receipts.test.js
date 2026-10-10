@@ -52,7 +52,8 @@ test('receipt storage failure cannot produce an unrecorded successful trial resp
   const db=memoryD1(), log=console.log, events=[];
   await db.prepare("UPDATE trial_receipt_coverage SET complete_from='2000-01-01T00:00:00.000Z' WHERE id='fleet'").run();
   const env={AGENT_PROFILE:'agent_output_verification',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call',VIZIER_DISABLED:'1',
-    PAYMENT_LEDGER:{prepare(sql){if(sql.includes('INSERT INTO trial_completion_receipts'))throw new Error('private storage detail');return db.prepare(sql);}}};
+    PAYMENT_LEDGER:{batch:statements=>db.batch(statements),
+      prepare(sql){if(sql.includes('INSERT INTO trial_completion_receipts'))throw new Error('private storage detail');return db.prepare(sql);}}};
   console.log=e=>events.push(e);
   try {
     const terms=await (await handleRequest(new Request(origin+'/v1/trial'),env)).json();
@@ -62,6 +63,7 @@ test('receipt storage failure cannot produce an unrecorded successful trial resp
     const body=await response.json();
     assert.equal(body.code,'trial_recording_unavailable');
     assert.equal(body.trial.attempt_consumed,true);
+    assert.equal(events.find(e=>e?.stage==='preview_failed').failure_family,'execution');
     assert.ok(!JSON.stringify(body).includes('private storage detail'));
     assert.ok(!events.some(e=>e?.stage==='preview_completed' || e?.stage==='payment_verified'));
     const stats=await (await getStats({PAYMENT_LEDGER:db,STATS_TOKEN:'owner-stats'})).json();

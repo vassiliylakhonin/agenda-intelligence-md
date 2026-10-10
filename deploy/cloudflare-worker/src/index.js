@@ -15039,7 +15039,16 @@ function trialOpenApiPaths(request, env) {
           content: { 'application/json': { schema: adapter.schema ? transportResponseSchema(adapter.schema) : { type: 'object', additionalProperties: true } } } },
         400: { description: 'Invalid JSON, product input or credentials; no reservation.' },
         413: { description: 'Request exceeds the 1 MiB JSON body limit.' },
-        429: { description: 'Product network allowance or shared fleet capacity exhausted; no payment requested.' },
+        429: { description: 'Free admission refused; code remains trial_exhausted. trial.limit_reason distinguishes the product campaign network allowance (no daily reset) from fleet daily capacity; attempt_consumed is false. No payment requested.',
+          headers: { 'Retry-After': { description: 'Seconds until the next UTC midnight, only for daily_capacity_exhausted.', schema: { type: 'integer', minimum: 1 } } },
+          content: { 'application/json': { schema: { type: 'object', required: ['code', 'error', 'trial'], properties: {
+            code: { type: 'string', enum: ['trial_exhausted'] }, error: { type: 'string' },
+            trial: { type: 'object', additionalProperties: true, required: ['limit_reason', 'attempt_consumed'], properties: {
+              limit_reason: { type: 'string', enum: ['network_allowance_exhausted', 'daily_capacity_exhausted'] },
+              attempt_consumed: { type: 'boolean', enum: [false] },
+              retry_after_seconds: { type: 'integer', minimum: 1, description: 'Only for daily capacity exhaustion.' }
+            } }
+          } } } } },
         503: { description: 'Trial storage unavailable or evaluation failed; no payment requested.' }
       }
     }
