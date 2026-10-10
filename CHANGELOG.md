@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+
+- Revalidate the official PyPI index without pip's HTTP cache during post-release smoke retries, and allow a longer bounded propagation window. Keep exact version pins and fail if the package remains unavailable.
+
 ## 1.16.0 — 2026-10-10
 
 - Add request-bound Interaction Trust + Vizier integration gate and offline diagnostic CLI. Check authenticated scope, signed delegation provenance, exact request receipts, expiry, real human approval consumption and durable one-use reservation before the integration dispatch callback.
