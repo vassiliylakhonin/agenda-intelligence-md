@@ -100,24 +100,26 @@ jobs:
           python - <<'PYTHON'
           import json, os, time, urllib.request, urllib.error
           from pathlib import Path
+          from urllib.parse import quote
           manifest = json.loads(Path('server.json').read_text())
-          url = 'https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.vassiliylakhonin%2Fagenda-intelligence-md&limit=100'
+          url = 'https://registry.modelcontextprotocol.io/v0.1/servers/' + quote(manifest['name'], safe='') + '/versions/latest'
           for attempt in range(12):
               try:
                   with urllib.request.urlopen(url, timeout=30) as response:
-                      entries = json.load(response)['servers']
+                      entry = json.load(response)
               except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
                   print('Registry verification temporarily unavailable:', type(error).__name__)
                   if attempt == 11:
                       raise SystemExit('Cannot confirm published registry manifest') from error
                   time.sleep(5)
                   continue
-              latest = [entry['server'] for entry in entries
-                        if entry['server']['name'] == manifest['name']
-                        and entry.get('_meta', {}).get('io.modelcontextprotocol.registry/official', {}).get('isLatest')]
-              if len(latest) == 1 and latest[0]['version'] == os.environ['RELEASE_VERSION']:
+              latest = entry.get('server', {})
+              official = entry.get('_meta', {}).get('io.modelcontextprotocol.registry/official', {})
+              if (latest.get('name') == manifest['name']
+                      and official.get('isLatest') is True
+                      and latest.get('version') == os.environ['RELEASE_VERSION']):
                   for field in ('packages', 'remotes'):
-                      assert latest[0].get(field) == manifest.get(field), field + ' drift'
+                      assert latest.get(field) == manifest.get(field), field + ' drift'
                   print('Verified latest registry version, package and remote endpoints')
                   break
               if attempt == 11:
