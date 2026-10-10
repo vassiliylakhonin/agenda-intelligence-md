@@ -1,7 +1,10 @@
 # CHANGELOG
 
-## Unreleased
+## 1.16.0 — 2026-10-10
 
+- Add request-bound Interaction Trust + Vizier integration gate and offline diagnostic CLI. Check authenticated scope, signed delegation provenance, exact request receipts, expiry, real human approval consumption and durable one-use reservation before the integration dispatch callback.
+- Add MCP Integration Check CLI and composite GitHub Action with an optional pinned official client: discovery, JSON Schemas, required/public auth, protocol errors and explicitly opted-in examples; test both stdio and HTTP.
+- Add an offline Agent Checkout Readiness ACP sandbox profile with pinned licensed protocol schema, catalog/variant/price/stock checks, idempotent repeats, cancellation and merchant-owned refund handoff. No live commerce or settlement claim.
 - Preserve wrapped Markdown sentence context and table column labels for local grounding diagnostics. Bind table numeric support to the named row and compare explicit claim clauses for polarity without changing raw evidence, quote matching or lexical thresholds.
 
 ## 1.15.0 — 2026-10-10

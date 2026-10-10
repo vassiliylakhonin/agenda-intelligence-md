@@ -206,6 +206,6 @@ test('payment stages expose refusals, verification and replay without retaining 
     assert.equal(events.find(e => e.stage === 'payment_required').execution_id, null);
     const serialized = JSON.stringify(events);
     for (const secret of [tx, signed.headers.get('x-payment-signature'), payer, 'Example supplied text', 'secret-query']) assert.ok(!serialized.includes(secret), secret);
-    assert.ok(events.every(e => e.attempt_id && e.code_version === '1.15.0' && e.engine_version));
+    assert.ok(events.every(e => e.attempt_id && e.code_version === '1.16.0' && e.engine_version));
   } finally { console.log = originalLog; }
 }));

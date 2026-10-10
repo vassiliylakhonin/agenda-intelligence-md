@@ -20,13 +20,13 @@ column labels to simple pipe-table rows. Numeric table support also requires
 the named row, so another plan's value cannot satisfy a claim. Original source
 text, hashes and quote matching remain unchanged. This is a bounded structural
 parser; arbitrary Markdown/RST, semantic paraphrases and mixed prose still need
-inspection. These improvements are in the checkout pending the next release.
+inspection. These improvements are included in version 1.16.0.
 
 Python 3.9 or later:
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install "agenda-intelligence-md==1.15.0"
+.venv/bin/python -m pip install "agenda-intelligence-md==1.16.0"
 ```
 
 Create `answer.json` with your answer and original retrieved chunk texts. This

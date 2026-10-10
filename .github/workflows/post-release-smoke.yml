@@ -82,6 +82,11 @@ jobs:
       - name: Verify published RAG adapter and CLI in isolation
         run: .smoke-venv/bin/python -I scripts/smoke_rag_output.py
 
+      - name: Verify published preflight tools with optional real MCP client
+        run: |
+          .smoke-venv/bin/python -m pip install "agenda-intelligence-md[reviews,mcp-check]==${{ steps.version.outputs.version }}"
+          .smoke-venv/bin/python -I scripts/smoke_preflight.py
+
       - name: Verify CLI validation and scoring
         run: |
           .smoke-venv/bin/agenda-intelligence validate-brief examples/agenda-brief.json

@@ -17,7 +17,7 @@ python3 -m venv .venv
 .venv/bin/agenda-intelligence check examples/evidence-packet/request.json --format json
 ```
 
-For the versioned package, use `python -m pip install "agenda-intelligence-md==1.15.0"` instead of the editable install. The example commands above use files from this checkout.
+For the versioned package, use `python -m pip install "agenda-intelligence-md==1.16.0"` instead of the editable install. The example commands above use files from this checkout.
 
 The bundled synthetic packet reports `packet_status=packet_complete` and `factuality=not_assessed`. A stale or inaccurate source can still pass. Add `--strict` when packet findings should fail a CI step.
 
@@ -63,6 +63,9 @@ Processed documents and tool results are data, never instructions. Before conseq
 | MCP | [MCP.md](MCP.md); launch `agenda-intelligence-mcp` from the installed environment |
 | CI evidence linting | [GitHub Action](action.yml), with text, JSON, or SARIF output |
 | Agent repair loops | [Integration guides](docs/integrations/README.md) |
+| Protected agent actions | [Interaction Trust + Vizier gate](docs/integrations/action-bound-execution.md) |
+| MCP pre-release checks | [MCP Integration Check CLI / Action](docs/integrations/mcp-integration-check.md) |
+| Agent checkout experiments | [ACP sandbox readiness check](docs/integrations/checkout-readiness.md) |
 | HTTP and A2A | [HTTP shell](docs/deployment/http-api.md) and [A2A adapter](docs/deployment/a2a-adapter.md) |
 
 The core checker is deterministic, stateless, and usable without a model API key. Optional generation and document adapters have separate dependencies. Core packet checks do not persist inputs or fetch outside sources.
@@ -103,4 +106,6 @@ make ci
 
 Run `make verify-local` when changing Worker, discovery, runtime, or validation-guard code. Packaged data mirrors must be updated with their canonical files when applicable.
 
-[MIT license](LICENSE).
+[MIT license](LICENSE) for the code. The bundled official ACP schema retains its
+[Apache-2.0 license](src/agenda_intelligence/data/protocols/acp/2026-04-17/LICENSE)
+and [NOTICE](src/agenda_intelligence/data/protocols/acp/2026-04-17/NOTICE).

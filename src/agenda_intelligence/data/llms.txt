@@ -114,7 +114,10 @@ Packaged CLI: agenda-intelligence
 Legacy script wrapper: scripts/agenda_intelligence.py
 MCP server: agenda-intelligence-mcp
 MCP docs: MCP.md and docs/integrations/mcp.md
-Local RAG Output Verification: install agenda-intelligence-md==1.15.0 from PyPI, then use review_rag_answer(answer, sources) or agenda-intelligence review-answer answer.json. Standalone quickstart and rag-output-review.v1 contract: docs/integrations/rag-output.md. Inline [chunk-id] citations map every nonblank line to caller-supplied source texts; no source retrieval, wallet or model API key. Findings route to revise; clean lint routes only to human_review, with factuality not assessed. Optional bounded LangGraph example: examples/langgraph-output-verification/README.md.
+Local RAG Output Verification: install agenda-intelligence-md==1.16.0 from PyPI, then use review_rag_answer(answer, sources) or agenda-intelligence review-answer answer.json. Standalone quickstart and rag-output-review.v1 contract: docs/integrations/rag-output.md. Inline [chunk-id] citations map every nonblank line to caller-supplied source texts; no source retrieval, wallet or model API key. Findings route to revise; clean lint routes only to human_review, with factuality not assessed. Optional bounded LangGraph example: examples/langgraph-output-verification/README.md.
+Request-bound Interaction Trust + Vizier integration: agenda_intelligence.action_gate.GuardedActionExecutor with trusted Vizier/HumanReviewClient transports, authenticated principal/agent/tenant and protected shared ReplayStore. Offline agenda-action-check is diagnostic only, never permission. Contract and enforcement boundary: docs/integrations/action-bound-execution.md.
+MCP Integration Check: Python 3.10+ optional [mcp-check] extra; agenda-mcp-check config.json --strict, or actions/mcp-integration-check. Uses pinned official client; only explicitly opted-in examples execute. Discovery without examples is incomplete. Contract: docs/integrations/mcp-integration-check.md.
+Agent Checkout Readiness hypothesis: agenda-checkout-check trace.json --strict. ACP 2026-04-17 owner trace, quantity one/USD, catalog/variant/price/stock/retry/cancel and merchant refund handoff; no live execution or settlement verification. Contract: docs/integrations/checkout-readiness.md.
 
 Source Planning Layer:
 - SOURCE_POLICY.md
