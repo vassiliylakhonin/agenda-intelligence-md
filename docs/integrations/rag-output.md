@@ -8,6 +8,13 @@ quota-limited free trial. Their schemas and verdicts are unchanged.
 
 ## Install without a checkout
 
+Prefer one fact per answer line and focused source chunks. A `revise` result may
+be a false hold on a correct paraphrase, wrapped Markdown prose or table data;
+inspect its specific findings before changing the answer. `human_review` and
+strict CLI exit zero mean no configured finding was raised, not that the answer
+is true. The [five-task owner-agent evaluation](../product/output-verification-agent-evaluation-2026-10-10.md)
+records both false holds and semantic contradictions that produced no finding.
+
 Python 3.9 or later:
 
 ```sh
