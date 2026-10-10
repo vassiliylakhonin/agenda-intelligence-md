@@ -12,6 +12,7 @@ from agenda_intelligence.m2m_escrow_arbiter import (
     M2MEscrowArbiter,
     PayoutBreakdown,
 )
+from agenda_intelligence.rag_review import RagReviewError, review_rag_answer
 
 __all__ = [
     "__version__",
@@ -22,4 +23,6 @@ __all__ = [
     "M2MEscrowArbiter",
     "ArbitrationRuling",
     "PayoutBreakdown",
+    "RagReviewError",
+    "review_rag_answer",
 ]

@@ -1,0 +1,2 @@
+# Optional example environment only; Python >=3.10. Not a core dependency.
+langgraph==1.2.14

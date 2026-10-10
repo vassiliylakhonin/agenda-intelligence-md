@@ -8,8 +8,11 @@ Every example declares its evidence mode. None of these are intelligence product
 
 Use [hosted-mcp](hosted-mcp/README.md) for any published Worker. It preserves
 payment admission, exact-request signatures and lost-response recovery.
-The Python AgentKit, CrewAI and LangGraph folders are offline adapter patterns,
-not a hosted payment SDK or installed framework integration.
+The Python AgentKit, CrewAI and older LangGraph folders are offline adapter
+patterns, not a hosted payment SDK. The new
+[Output Verification example](langgraph-output-verification/README.md) also
+supports an optional installed LangGraph environment for a bounded local
+repair/recheck/human-review graph. It uses no hosted payment path.
 
 ## Learning path
 

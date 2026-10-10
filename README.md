@@ -27,6 +27,20 @@ For document-based review, start with the [local-file review guide](docs/evidenc
 .venv/bin/agenda-intelligence review examples/evidence-review/manifest.json --format html
 ```
 
+For a RAG answer with inline citations and retrieved chunk texts, use the
+[Output Verification adapter](docs/integrations/rag-output.md). It assembles
+the packet locally and returns line-level findings and repair guidance:
+
+```bash
+.venv/bin/agenda-intelligence review-answer examples/output-verification/rag-answer.json
+.venv/bin/agenda-intelligence review-answer examples/output-verification/rag-answer-revised.json --strict
+```
+
+The original fictional answer routes to revision; the corrected answer routes
+to human review. Both run without a wallet, model API key or network. A runnable
+[LangGraph handoff](examples/langgraph-output-verification/README.md) shows a bounded repair loop.
+Install from this checkout for this new adapter; the 1.14.1 package release predates it.
+
 ## The evidence-packet contract
 
 | Input | Check |

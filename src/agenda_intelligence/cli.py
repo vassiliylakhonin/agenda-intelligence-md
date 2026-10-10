@@ -193,6 +193,38 @@ def cmd_review(args):
         raise SystemExit(1)
 
 
+def cmd_review_answer(args):
+    """Assemble and review a cited RAG answer without remote calls."""
+    from agenda_intelligence.rag_review import (
+        RagReviewError,
+        render_rag_review_markdown,
+        review_rag_answer,
+    )
+
+    try:
+        path = Path(args.path)
+        if path.stat().st_size > 16 * 1024 * 1024:
+            raise RagReviewError("Input JSON exceeds 16 MiB")
+        request = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(request, dict) or set(request) != {"answer", "sources"}:
+            raise RagReviewError("Input must contain exactly answer and sources")
+        result = review_rag_answer(request["answer"], request["sources"])
+        rendered = (
+            json.dumps(result, indent=2, ensure_ascii=False) + "\n"
+            if args.format == "json"
+            else render_rag_review_markdown(result)
+        )
+        if args.out:
+            Path(args.out).write_text(rendered, encoding="utf-8")
+            print(f"Wrote {args.out}")
+        else:
+            print(rendered, end="")
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise SystemExit(f"RAG review failed: {exc}") from exc
+    if args.strict and result["route"] != "human_review":
+        raise SystemExit(1)
+
+
 def cmd_repair_prompt(args):
     """Generate self-correction instructions for an LLM agent from an evidence packet."""
     from agenda_intelligence import services
@@ -1470,6 +1502,14 @@ def main():
     p.add_argument("--out", help="Write output to this file instead of stdout")
     p.add_argument("--strict", action="store_true", help="Exit 1 unless every packet claim is complete")
     p.set_defaults(func=cmd_review)
+    p = sub.add_parser("review-answer", help="Review an inline-cited RAG answer and supplied source texts locally")
+    p.add_argument("path", help="JSON with answer and sources; see docs/integrations/rag-output.md")
+    p.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    p.add_argument("--out", help="Write output to this file instead of stdout")
+    p.add_argument(
+        "--strict", action="store_true", help="Exit 1 if revision is required; human review remains necessary"
+    )
+    p.set_defaults(func=cmd_review_answer)
     # repair-prompt: generate agent self-correction instructions from an evidence packet
     p = sub.add_parser(
         "repair-prompt",

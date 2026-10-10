@@ -2,6 +2,11 @@
 
 This directory holds short integration adapters for popular AI tooling platforms.
 
+- **RAG Output Verification** – [rag-output.md](rag-output.md): automatically
+  assemble a packet from inline citations and actual source chunks, check locally
+  without a wallet, and recheck corrections before human review. Includes a
+  bounded optional LangGraph example.
+
 - **Claude Code** – `docs/integrations/claude-code.md`
 - **OpenAI Codex** – `docs/integrations/codex.md`
 - **Cursor** – `docs/integrations/cursor.md`

@@ -1,0 +1,10 @@
+{
+  "answer": "The pilot processed 120 invoices in September. [pilot]\nThe pilot report states “Invoice processing required human review.” [pilot]",
+  "sources": [
+    {
+      "source_id": "pilot",
+      "title": "Fictional pilot report — illustrative only",
+      "text": "The pilot processed 120 invoices in September. Invoice processing required human review."
+    }
+  ]
+}

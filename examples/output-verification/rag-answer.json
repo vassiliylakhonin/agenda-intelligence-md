@@ -1,0 +1,10 @@
+{
+  "answer": "The pilot processed 120 invoices in September. [pilot]\nThe pilot processed 900 invoices in September. [pilot]\nThe pilot report states “All invoices were paid instantly.” [pilot]\nThe pilot serves 40 customers. [sales-ledger]\nThe pilot is ready for autonomous payments.",
+  "sources": [
+    {
+      "source_id": "pilot",
+      "title": "Fictional pilot report — illustrative only",
+      "text": "The pilot processed 120 invoices in September. Invoice processing required human review."
+    }
+  ]
+}
