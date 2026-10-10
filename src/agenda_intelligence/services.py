@@ -23,7 +23,7 @@ from agenda_intelligence import grounding as _grounding
 from agenda_intelligence import upstream_opensanctions
 from agenda_intelligence.eval import score_before_after
 from agenda_intelligence.evidence_ledger import EvidenceLedger
-from agenda_intelligence.grounding import GroundingIndex, _polarity_cues, _quote_check
+from agenda_intelligence.grounding import GroundingIndex, _quote_check
 
 from .critical_minerals import STAGE_TIERS, review_mineral_dossier
 from .source_records import review_source_records
@@ -832,11 +832,9 @@ def grounded_check(request_json: dict) -> dict:
         # sentence it matches and still score as grounded.
         polarity_conflict: list[str] = []
         if status == "grounded" and best_corpus_id is not None:
-            claim_cues = _polarity_cues(claim["claim_text"])
-            corpus_cues = _polarity_cues(match.best_sentence or corpus_raw[best_corpus_id])
-            if bool(claim_cues) != bool(corpus_cues):
+            polarity_conflict = corpus_index.polarity_conflicts(claim["claim_text"], best_corpus_id)
+            if polarity_conflict:
                 status = "weakly_grounded"
-                polarity_conflict = sorted(claim_cues | corpus_cues)
 
         status_counts[status] += 1
 
@@ -1045,11 +1043,9 @@ def check_evidence_packet(request_json: dict) -> dict:
         # packet is not complete, whatever the overlap says.
         polarity_conflict: list[str] = []
         if lexical_status == "supported" and best_source_id:
-            claim_cues = _polarity_cues(claim["text"])
-            passage_cues = _polarity_cues(match.best_sentence or sources[best_source_id]["text"])
-            if bool(claim_cues) != bool(passage_cues):
+            polarity_conflict = source_index.polarity_conflicts(claim["text"], best_source_id)
+            if polarity_conflict:
                 lexical_status = "weak"
-                polarity_conflict = sorted(claim_cues | passage_cues)
 
         if polarity_conflict:
             review_issues.append("lexical_support_polarity_mismatch")

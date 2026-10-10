@@ -479,6 +479,9 @@ class _IndexedDocument:
     sentence_numeric_facts: tuple[frozenset[str], ...]
     sentences: tuple[str, ...]
     sentence_terms: tuple[frozenset[str], ...]
+    sentence_anchors: tuple[frozenset[str], ...]
+    table_anchors: frozenset[str]
+    sentence_polarity_terms: tuple[frozenset[str], ...]
 
 
 class GroundingIndex:
@@ -496,7 +499,8 @@ class GroundingIndex:
         for document_id, text in documents.items():
             terms, _ = _matching_terms(text)
             term_set = frozenset(terms)
-            sentences = tuple(_grounded_sentences(text))
+            contexts = _grounded_contexts(text)
+            sentences = tuple(sentence for sentence, _ in contexts)
             sentence_terms = tuple(frozenset(_matching_terms(sentence)[0]) for sentence in sentences)
             indexed[document_id] = _IndexedDocument(
                 text=text,
@@ -504,6 +508,9 @@ class GroundingIndex:
                 sentence_numeric_facts=tuple(frozenset(_numeric_fact_keys(sentence)) for sentence in sentences),
                 sentences=sentences,
                 sentence_terms=sentence_terms,
+                sentence_anchors=tuple(frozenset(anchor) for _, anchor in contexts),
+                table_anchors=frozenset(term for _, anchor in contexts for term in anchor),
+                sentence_polarity_terms=tuple(frozenset(_polarity_terms(sentence)) for sentence in sentences),
             )
             for term in term_set:
                 frequencies[term] = frequencies.get(term, 0) + 1
@@ -552,6 +559,32 @@ class GroundingIndex:
             best_excerpt = best_excerpt[:297].rstrip() + "..."
         return best_excerpt
 
+    def polarity_conflicts(self, claim_text: str, document_id: str) -> list[str]:
+        """Compare each explicit sentence/semicolon clause to its closest sentence.
+
+        A negative clause must not borrow a positive clause's match, nor may an
+        unrelated negative sentence satisfy the whole claim's polarity check.
+        This remains a lexical diagnostic, not semantic entailment.
+        """
+        document = self._documents[document_id]
+        conflicts: set[str] = set()
+        clauses = re.split(r"(?<=[.!?])\s+|;", claim_text) if _polarity_cues(claim_text) else [claim_text]
+        for clause in clauses:
+            if not clause.strip():
+                continue
+            terms = _polarity_terms(clause)
+            position = max(
+                range(len(document.sentences)),
+                key=lambda index: len(terms & document.sentence_polarity_terms[index]),
+                default=None,
+            )
+            sentence = document.sentences[position] if position is not None else document.text
+            claim_cues = _polarity_cues(clause)
+            source_cues = _polarity_cues(sentence)
+            if bool(claim_cues) != bool(source_cues):
+                conflicts.update(claim_cues | source_cues)
+        return sorted(conflicts)
+
     def match(self, claim_text: str, document_ids: Optional[Iterable[str]] = None) -> GroundingMatch:
         """Match a claim against all documents or a caller-selected subset."""
         candidate_ids = list(self._documents) if document_ids is None else list(document_ids)
@@ -581,8 +614,13 @@ class GroundingIndex:
         candidate_numeric_facts: set[str] = set()
         for document_id in candidate_ids:
             document = self._documents[document_id]
-            for terms, numeric_facts in zip(document.sentence_terms, document.sentence_numeric_facts):
-                if not context_terms or self._weighted_overlap(context_terms, terms) >= 0.4:
+            for terms, numeric_facts, anchors in zip(
+                document.sentence_terms, document.sentence_numeric_facts, document.sentence_anchors
+            ):
+                if anchors and not anchors.issubset(context_terms):
+                    continue
+                row_context = context_terms - (document.table_anchors - anchors) if anchors else context_terms
+                if not row_context or self._weighted_overlap(row_context, terms) >= 0.4:
                     candidate_numeric_facts.update(numeric_facts)
         unmatched_numbers = tuple(
             sorted(
@@ -620,6 +658,11 @@ _POLARITY_CUE_PATTERN = re.compile(
     r"|отказал|отказала|отказали|приостановил|приостановила|приостановили|прекратил|прекратили"
     r"|لا|لم|لن|ليس|ليست|بدون|رفض|رفضت|رفضوا)\b"
 )
+
+
+def _polarity_terms(text: str) -> set[str]:
+    # Match typographical compounds without changing numeric signs or quotes.
+    return set(_matching_terms(re.sub(r"(?<=[^\W\d_])-(?=[^\W\d_])", " ", text))[0])
 
 
 def _grounded_best_sentence(sentences: list[str], claim_terms: set[str]) -> str:
@@ -731,9 +774,85 @@ def _quote_check(quote_text: str, source_text: str) -> dict:
     return {"status": "absent"}
 
 
+def _grounded_contexts(text: str) -> list[tuple[str, tuple[str, ...]]]:
+    """Keep wrapped prose and table headers with their local evidence context.
+
+    Raw source text remains untouched for quote checks, hashing and ledgers.
+    Blank paragraphs, bullets, headings and fenced code separate contexts.
+    Table rows receive only their own column labels, never another row's facts.
+    """
+    lines = text.splitlines()
+    blocks: list[tuple[str, tuple[str, ...]]] = []
+    paragraph: list[str] = []
+
+    def flush() -> None:
+        if paragraph:
+            # Join identifiable Markdown prose, not arbitrary line-oriented
+            # records or RST/code listings which have no soft-wrap contract.
+            markdown = any("**" in line or re.search(r"\]\([^)]*\)", line) for line in paragraph)
+            blocks.extend([(" ".join(paragraph), ())] if markdown else [(line, ()) for line in paragraph])
+            paragraph.clear()
+
+    def cells(line: str) -> list[str]:
+        return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+    index = 0
+    fenced = False
+    while index < len(lines):
+        line = lines[index].strip()
+        if line.startswith(("```", "~~~")):
+            flush()
+            fenced = not fenced
+            index += 1
+            continue
+        if fenced:
+            flush()
+            if line:
+                blocks.append((line, ()))
+            index += 1
+            continue
+        if index + 1 < len(lines) and "|" in line:
+            headers = cells(line)
+            divider = cells(lines[index + 1])
+            if (
+                len(headers) > 1
+                and len(headers) == len(divider)
+                and all(re.fullmatch(r":?-{3,}:?", value) for value in divider)
+            ):
+                flush()
+                index += 2
+                while index < len(lines) and "|" in lines[index] and lines[index].strip():
+                    row = cells(lines[index])
+                    if len(row) != len(headers):
+                        break
+                    row_text = "; ".join(f"{header}: {value}" for header, value in zip(headers, row))
+                    blocks.append((row_text, tuple(_matching_terms(row[0])[0])))
+                    index += 1
+                continue
+        if not line:
+            flush()
+        elif re.match(r"(?:#{1,6}\s|[-*+]\s|\d+[.)]\s)", line):
+            flush()
+            paragraph.append(line)
+        elif "|" in line:
+            flush()
+            blocks.append((line, ()))
+        else:
+            if paragraph and re.match(r"[A-ZА-ЯЁ0-9]", line):
+                flush()
+            paragraph.append(line)
+        index += 1
+    flush()
+    return [
+        (part.strip(), anchors)
+        for block, anchors in blocks
+        for part in re.split(r"(?<=[.!?؟])\s+", block)
+        if part.strip()
+    ]
+
+
 def _grounded_sentences(text: str) -> list[str]:
-    parts = re.split(r"(?<=[.!?؟])\s+|\n+", text)
-    return [p.strip() for p in parts if p.strip()]
+    return [sentence for sentence, _ in _grounded_contexts(text)]
 
 
 def _grounded_best_passage(sentences: list[str], claim_terms: set[str], window: int = 3) -> str:

@@ -15,6 +15,13 @@ strict CLI exit zero mean no configured finding was raised, not that the answer
 is true. The [five-task owner-agent evaluation](../product/output-verification-agent-evaluation-2026-10-10.md)
 records both false holds and semantic contradictions that produced no finding.
 
+Source diagnostics preserve soft wraps in identifiable Markdown prose and add
+column labels to simple pipe-table rows. Numeric table support also requires
+the named row, so another plan's value cannot satisfy a claim. Original source
+text, hashes and quote matching remain unchanged. This is a bounded structural
+parser; arbitrary Markdown/RST, semantic paraphrases and mixed prose still need
+inspection. These improvements are in the checkout pending the next release.
+
 Python 3.9 or later:
 
 ```sh

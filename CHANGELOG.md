@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+
+- Preserve wrapped Markdown sentence context and table column labels for local grounding diagnostics. Bind table numeric support to the named row and compare explicit claim clauses for polarity without changing raw evidence, quote matching or lexical thresholds.
+
 ## 1.15.0 — 2026-10-10
 
 ### Local RAG Output Verification
