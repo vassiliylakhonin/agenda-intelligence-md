@@ -114,6 +114,7 @@ Packaged CLI: agenda-intelligence
 Legacy script wrapper: scripts/agenda_intelligence.py
 MCP server: agenda-intelligence-mcp
 MCP docs: MCP.md and docs/integrations/mcp.md
+Local RAG Output Verification: install agenda-intelligence-md==1.15.0 from PyPI, then use review_rag_answer(answer, sources) or agenda-intelligence review-answer answer.json. Standalone quickstart and rag-output-review.v1 contract: docs/integrations/rag-output.md. Inline [chunk-id] citations map every nonblank line to caller-supplied source texts; no source retrieval, wallet or model API key. Findings route to revise; clean lint routes only to human_review, with factuality not assessed. Optional bounded LangGraph example: examples/langgraph-output-verification/README.md.
 
 Source Planning Layer:
 - SOURCE_POLICY.md

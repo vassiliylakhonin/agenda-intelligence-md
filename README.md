@@ -17,7 +17,7 @@ python3 -m venv .venv
 .venv/bin/agenda-intelligence check examples/evidence-packet/request.json --format json
 ```
 
-For the versioned package, use `python -m pip install "agenda-intelligence-md==1.14.1"` instead of the editable install. The example commands above use files from this checkout.
+For the versioned package, use `python -m pip install "agenda-intelligence-md==1.15.0"` instead of the editable install. The example commands above use files from this checkout.
 
 The bundled synthetic packet reports `packet_status=packet_complete` and `factuality=not_assessed`. A stale or inaccurate source can still pass. Add `--strict` when packet findings should fail a CI step.
 
@@ -39,7 +39,8 @@ the packet locally and returns line-level findings and repair guidance:
 The original fictional answer routes to revision; the corrected answer routes
 to human review. Both run without a wallet, model API key or network. A runnable
 [LangGraph handoff](examples/langgraph-output-verification/README.md) shows a bounded repair loop.
-Install from this checkout for this new adapter; the 1.14.1 package release predates it.
+The adapter is included in version 1.15.0. To use your own answer without cloning
+this repository, follow the [standalone quickstart](docs/integrations/rag-output.md#install-without-a-checkout).
 
 ## The evidence-packet contract
 
