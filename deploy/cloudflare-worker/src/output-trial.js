@@ -16,6 +16,8 @@ export function outputTrialEnabled(profile, env = {}) {
 export function outputTrialTerms(profile = 'agent_output_verification') {
   const config = trialProfile(profile);
   return { endpoint: trialPath(profile), agent_profile: profile, tool: config.tool,
+    availability_endpoint: trialPath(profile) + '?availability=1',
+    worked_example_url: '/?example=1#worked-example',
     evaluation_kind: config.kind || 'evidence_review', attempts_per_network: OUTPUT_TRIAL_LIMIT,
     daily_service_limit: OUTPUT_TRIAL_DAILY_LIMIT, payment_required: false,
     scope: 'Two attempts per network address per product for this trial campaign; shared networks share the allowance. Daily capacity is shared across all products.',
@@ -23,15 +25,40 @@ export function outputTrialTerms(profile = 'agent_output_verification') {
     paid_price_usdc: profile === 'm2m_escrow_arbiter' ? 0.5 : 0.05 };
 }
 
-// One INSERT serializes both limits. Client-controlled labels, cookies and UA
-// never create another allowance. Only Cloudflare's connecting address is used.
-export async function reserveOutputTrial(request, env, attempt = crypto.randomUUID(), profile = 'agent_output_verification') {
+async function trialClientKey(request, env, profile) {
   const ip = request.headers.get('cf-connecting-ip');
-  if (!ip || !env.PAYMENT_LEDGER?.prepare || !env.PAYMENT_LEDGER?.batch) throw new Error('trial_store_unavailable');
+  if (!ip || !env.PAYMENT_LEDGER?.prepare) throw new Error('trial_store_unavailable');
   // Preserve the already shipped Output campaign keys; all other profiles have
   // independent allowances in the same table and the same fleet-wide daily cap.
   const namespace = profile === 'agent_output_verification' ? 'output-trial-v1:' : 'worker-trial-v1:' + profile + ':';
-  const client = await tokenHash(namespace + (env.CALLER_HASH_SALT || '') + ':' + ip.trim().toLowerCase());
+  return tokenHash(namespace + (env.CALLER_HASH_SALT || '') + ':' + ip.trim().toLowerCase());
+}
+
+// Advisory, read-only snapshot for this request's network. It reserves nothing;
+// only the atomic POST admission below can grant an evaluation.
+export async function outputTrialAvailability(request, env, profile) {
+  const client = await trialClientKey(request, env, profile);
+  const now = new Date().toISOString();
+  const state = await env.PAYMENT_LEDGER.prepare(`SELECT
+    (SELECT COUNT(*) FROM output_verification_trials WHERE client_hash = ?1) AS network_used,
+    (SELECT COUNT(*) FROM output_verification_trials WHERE reserved_day = ?2) AS daily_used`)
+    .bind(client, now.slice(0, 10)).first();
+  if (!state || ![state.network_used, state.daily_used].every(n => Number.isSafeInteger(n) && n >= 0)) {
+    throw new Error('trial_store_unavailable');
+  }
+  const status = state.network_used >= OUTPUT_TRIAL_LIMIT ? 'network_allowance_exhausted'
+    : state.daily_used >= OUTPUT_TRIAL_DAILY_LIMIT ? 'daily_capacity_exhausted' : 'available';
+  return { status, remaining_attempts: Math.max(0, OUTPUT_TRIAL_LIMIT - state.network_used),
+    checked_at: now, reset_at: status === 'daily_capacity_exhausted'
+      ? new Date(Date.parse(now.slice(0, 10) + 'T00:00:00Z') + 86400000).toISOString() : null,
+    advisory: true, attempt_consumed: false };
+}
+
+// One INSERT serializes both limits. Client-controlled labels, cookies and UA
+// never create another allowance. Only Cloudflare's connecting address is used.
+export async function reserveOutputTrial(request, env, attempt = crypto.randomUUID(), profile = 'agent_output_verification') {
+  if (!env.PAYMENT_LEDGER?.batch) throw new Error('trial_store_unavailable');
+  const client = await trialClientKey(request, env, profile);
   const now = new Date().toISOString();
   // D1 batch is one transaction: observe the exact pre-reservation limits and
   // perform the unchanged atomic INSERT without another caller interleaving.

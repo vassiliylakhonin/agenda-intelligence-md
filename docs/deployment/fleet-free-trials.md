@@ -12,6 +12,9 @@ a transaction, executes an escrow payout or establishes factual truth.
 `GET /v1/trial` returns terms, `agent_profile`, the fixed `tool`,
 `evaluation_kind`, `input_schema`, an illustrative `example_request`, an optional
 `request_schema` link, `paid_endpoint`, `paid_transport` and `paid_price_usdc`.
+It also publishes `a2a_example` (endpoint, canonical headers and complete JSON-RPC
+request), `availability_endpoint` and `worked_example_url`. A2A is a separate
+paid transport; its example is not the body for trial POST.
 `POST /v1/trial` takes the product's bare request fields as JSON, rather than a
 JSON-RPC envelope. Follow the serving example and input schema. Financial Guard
 and Escrow trials take bare records; their existing paid MCP contracts may use
@@ -40,6 +43,46 @@ correlation `X-Payment-Trace-Id`, and `Cache-Control: no-store`. Neither ID gran
 entitlement. Existing configured production authorization gates still apply;
 the trial refuses payment and access credentials rather than bypassing a gate.
 Public unauthenticated trials are intended for deployments without such keys.
+
+## Check allowance and recover without spending an attempt
+
+Before preparing input, click **Check free allowance before preparing input**
+on the product page, or request `GET /v1/trial?availability=1`. Output Verification
+also supports the query on `/v1/agent-output/trial`. This reads the existing
+reservation store for the current Cloudflare connecting address and fixed
+product. It does not evaluate input, reserve quota, invoke payment or emit a
+trial/usage event. Responses use `Cache-Control: no-store`; the same deployment
+authorization as trial POST applies to the availability query, while ordinary
+GET terms stay public.
+
+The normal terms gain an `availability` object:
+
+```json
+{
+  "status": "available",
+  "remaining_attempts": 2,
+  "checked_at": "2026-10-11T00:00:00.000Z",
+  "reset_at": null,
+  "advisory": true,
+  "attempt_consumed": false
+}
+```
+
+This timestamp is illustrative. `status` is `available`,
+`network_allowance_exhausted` or `daily_capacity_exhausted`. `remaining_attempts`
+is the product's remaining network allowance (0–2), even if today's shared
+capacity is full. Only daily capacity provides an ISO UTC `reset_at`; the
+network campaign allowance does not reset daily and takes precedence when both
+limits are reached. The check is advisory: another caller on the same network
+can reserve an attempt afterward, so POST always checks and reserves atomically.
+Missing address/storage returns HTTP 503 with `code: trial_unavailable`; missing
+deployment authorization returns 401. Neither means zero allowance.
+
+After a trial 429, the editor preserves the input and offers **View saved example
+— no trial attempt**, alongside the separate explicit paid option. The saved
+example is a precomputed synthetic fixture; it is not an evaluation of edited
+input. `/?example=1#worked-example` opens it directly. It remains available when
+live quota is exhausted and never reserves a trial attempt.
 
 ## Quotas, privacy and cost
 
