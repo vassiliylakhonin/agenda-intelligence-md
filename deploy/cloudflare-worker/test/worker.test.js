@@ -6747,7 +6747,7 @@ test("a gate that refuses a request says what it needs, and its own example work
       assert.equal(markdown.mediaType, "text/markdown");
       assert.match(markdown.text, /## What it needs/);
       assert.match(markdown.text, /## A request that works/);
-      assert.match(markdown.text, /corridor-sanctions-assistant-a2a/);
+      assert.match(markdown.text, /corridor-sanctions-assistant\.agendamcp\.dpdns\.org/);
       assert.match(markdown.text, /vassiliy\.lakhonin@gmail\.com/);
       assert.ok(json.data.required_fields.length > 0);
       assert.deepEqual(json.data.example_request, GATE_REQUEST_GUIDES[productProfile].example);
@@ -7902,7 +7902,7 @@ test("every gate says whether its output was verified, and nine say it was not",
 
     // The pointer must name a deployment that exists, or it sends the caller
     // nowhere. Both URLs are the verifier's, never the responding gate's.
-    assert.match(verification.verifier.agent_card, /^https:\/\/agent-output-verification-a2a\./);
+    assert.equal(verification.verifier.agent_card, "https://output-verification.agendamcp.dpdns.org/.well-known/agent-card.json");
     assert.match(verification.verifier.mcp_endpoint, /\/mcp\/agent$/);
     assert.equal(verification.self_reported, true, "a self-reported status must say so");
     assert.match(verification.before_state_change, /performs no action/);

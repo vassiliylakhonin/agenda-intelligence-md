@@ -74,6 +74,8 @@ The core checker is deterministic, stateless, and usable without a model API key
 
 The repository also retains its strategic-intelligence shell, regional references, domain profiles, and Cloudflare deployments. The [worker guide](docs/vertical-workers.md) explains profile-specific behaviour; [deployment documentation](deploy/cloudflare-worker/README.md) describes the hosted implementation.
 
+The hosted fleet is discoverable at [agendamcp.dpdns.org/.well-known/fleet.json](https://agendamcp.dpdns.org/.well-known/fleet.json). Use the per-product MCP addresses in that directory; [custom-domain connection details](docs/deployment/custom-domains.md) cover all twelve profiles and Vizier.
+
 Hosted demos expose their maintained inputs through live agent cards. Their verdicts are review prompts, not clearance. Trace IDs are not attestations. Signed readiness receipts, where configured, bind a gate result to a request/action; they do not establish source truth or grant permission.
 
 The Output Verification gate does not permit relay based on caller-declared evidence. Workflow operators must authenticate actors, record approvals, and enforce boundaries. [Vizier](https://github.com/vassiliylakhonin/vizier) provides a separate delegation-policy layer; loading this checker alone does not enforce it.

@@ -6,10 +6,18 @@ import {validateAgentCard} from './verify-agent-card.js';
 import {assertSignedCard} from './card-signing-bootstrap.js';
 import {cardExtensionParams} from '../src/card-extension.js';
 
+const customHosts = {
+  'agenda-intelligence-a2a': 'agendamcp.dpdns.org',
+  'agent-output-verification-a2a': 'output-verification.agendamcp.dpdns.org',
+  'agentic-interaction-trust-a2a': 'interaction-trust.agendamcp.dpdns.org'
+};
+
 export function publicTargets() {
   return deployedEnvironments(readFileSync(new URL('../wrangler.toml',import.meta.url),'utf8')).map(target=>({
     ...target,key:target.workerName.replace(/-a2a$/,''),
-    origin:`https://${target.workerName}.${process.env.WORKERS_SUBDOMAIN || 'vassiliy-lakhonin'}.workers.dev`
+    origin: process.env.WORKERS_SUBDOMAIN
+      ? `https://${target.workerName}.${process.env.WORKERS_SUBDOMAIN}.workers.dev`
+      : `https://${customHosts[target.workerName] || target.workerName.replace(/-a2a$/,'')+'.agendamcp.dpdns.org'}`
   }));
 }
 const ownerHeaders={'accept':'application/json','user-agent':'agenda-owner-public-conformance/2.0','x-client-id':'agenda-owner-manual'};
