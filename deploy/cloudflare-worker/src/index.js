@@ -6,7 +6,7 @@ import { executePaidRequest, paidContext } from "./paid-execution.js";
 import { paymentTraceId, paymentTraceResponse } from "./payment-trace.js";
 import { snapshotHealth } from "./upstream_snapshot.js";
 import { consumeProQuota } from "./payment-ledger.js";
-import { OUTPUT_TRIAL_PATH, handleOutputTrial, outputTrialEnabled, outputTrialTerms } from './output-trial.js';
+import { OUTPUT_TRIAL_PATH, handleOutputTrial, outputTrialEnabled, outputTrialTerms, outputTrialAvailability } from './output-trial.js';
 import { trialCompletionStats, trialOriginGroup } from './trial-receipts.js';
 import { WORKER_TRIAL_PATH, trialProfile, trialPath } from './trial-profiles.js';
 import { WORKED_EXAMPLES } from './worked-examples.js';
@@ -15040,7 +15040,12 @@ function trialOpenApiPaths(request, env) {
   const adapter = workerTrialAdapter(profile);
   const contract = {
     get: { tags: ['gates'], summary: 'Free trial terms, matching input schema and illustrative request',
-      responses: { 200: { description: 'Two attempts per network address for this product; no payment required.' } } },
+      parameters: [{ name: 'availability', in: 'query', required: false,
+        schema: { type: 'string', enum: ['1'] },
+        description: 'Read-only advisory allowance for the requesting network. Reserves nothing; production authorization applies. POST still checks both limits atomically.' }],
+      responses: { 200: { description: 'Two campaign attempts per network per product. With availability=1, availability contains status (available, network_allowance_exhausted or daily_capacity_exhausted), remaining_attempts (0–2), checked_at (ISO time), reset_at (ISO time only for daily capacity, otherwise null), advisory=true and attempt_consumed=false.' },
+        401: { description: 'Availability requires the same deployment authorization as trial POST; public terms remain readable.' },
+        503: { description: 'Availability cannot be determined; code=trial_unavailable. No attempt consumed.' } } },
     post: {
       tags: ['gates'], summary: 'Free first evaluation for this product',
       description: 'Two reserved attempts per network address per product for this campaign. Shared networks share the allowance. One fleet-wide ceiling of 1,000 attempts per UTC day. No payment credentials. Uses the existing evaluator; paid hosted OpenSanctions fallback is disabled. Human review is required.',
@@ -15081,9 +15086,19 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
         (trialRequestPath === OUTPUT_TRIAL_PATH && profile !== 'agent_output_verification')) return jsonResponse({ error: 'Not found' }, 404);
     if (request.method === 'OPTIONS') return execute();
     const adapter = workerTrialAdapter(profile);
-    if (request.method === 'GET') return jsonResponse({ ...outputTrialTerms(profile),
-      ...(adapter.schema ? { request_schema: '/' + adapter.schema } : {}),
-      input_schema: adapter.inputSchema, example_request: adapter.example }, 200, { 'cache-control': 'no-store' });
+    if (request.method === 'GET') {
+      let availability;
+      if (new URL(request.url).searchParams.get('availability') === '1') {
+        if (!isProductionAuthorized(request, env, profile)) return jsonResponse({ error: 'Unauthorized' }, 401, { 'cache-control': 'no-store' });
+        try { availability = await outputTrialAvailability(request, env, profile); }
+        catch { return jsonResponse({ code: 'trial_unavailable', error: 'Free allowance could not be checked. No attempt was consumed.' }, 503, { 'cache-control': 'no-store' }); }
+      }
+      return jsonResponse({ ...outputTrialTerms(profile),
+        ...(adapter.schema ? { request_schema: '/' + adapter.schema } : {}),
+        input_schema: adapter.inputSchema, example_request: adapter.example,
+        a2a_example: agentCard(request, env).x_agenda_intelligence.a2a_send_message_example,
+        ...(availability ? { availability } : {}) }, 200, { 'cache-control': 'no-store' });
+    }
     if (request.method !== 'POST') return jsonResponse({ error: 'Use GET or POST.' }, 405, { allow: 'GET, POST, OPTIONS' });
     if (!isProductionAuthorized(request, env, profile)) return jsonResponse({ error: 'Unauthorized' }, 401);
     const fingerprint = await callerHash(request, env).catch(() => null);

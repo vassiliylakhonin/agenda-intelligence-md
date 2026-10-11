@@ -179,7 +179,7 @@ function landingHtml(request, env) {
       : `<strong>Example output:</strong> a structured verdict with reason_code, evidence_gaps, next_permitted_action and labeled sources. Open the free precomputed example for its supplied input and result.`}<br>
     <small>Supplied facts are not independently verified; a source with no verified date is labeled as_of: null. This traceable verdict is not attested telemetry or authorization. Human review before action.</small></div>
   <section id="worked-example" class="card" hidden>
-    <h2>Free worked example</h2><p><strong>Precomputed synthetic fixture.</strong> No wallet or payment required. This saved example is not a live evaluation of your edited input or current sources.</p>
+    <h2>Free worked example</h2><p><strong>Precomputed synthetic fixture.</strong> No wallet, payment or trial attempt required. You can reopen it after your live allowance is exhausted. This saved example is not a live evaluation of your edited input or current sources.</p>
     ${reviewSummaryHtml(workedExample?.response, escapeHtml)}
     <details open><summary>Example request</summary><pre>${escapeHtml(JSON.stringify(workedExample?.request || {}, null, 2))}</pre></details>
     <details open><summary>Saved example result</summary><pre>${escapeHtml(JSON.stringify(workedExample?.response || {}, null, 2))}</pre></details>
@@ -352,6 +352,8 @@ function landingHtml(request, env) {
   <h2>${freeTrial ? 'Check your own evidence free' : 'Live paid evaluation'}</h2>
   <div class="card">
     ${freeTrial ? `<p>Try two live ${trialTerms.evaluation_kind === 'routing' ? 'routing requests' : 'checks'} without a wallet: review the result, correct the gaps, then try again. Replace the illustrative request with your own redacted inputs. Bring: ${escapeHtml(workflow.bring)} You receive: ${escapeHtml(workflow.get)} Shared networks share two attempts per product; daily capacity is shared across all products. Do not submit secrets or confidential documents. Human review is required.</p>` : '<p>Editing and submitting this request uses the paid API and requires an EVM wallet or API integration. For a free demonstration use Run a worked example above. Use synthetic data only; the result is evidence review, not authorization.</p>'}
+    ${freeTrial ? `<button id="profile-allowance-check" type="button" onclick="refreshTrialAvailability()">Check free allowance before preparing input</button>
+    <p id="profile-allowance" role="status">Two attempts per network address per product for this campaign. Checking the allowance consumes no attempt.</p>` : ''}
     <form id="profile-console" onsubmit="runProfileExample(event)">
       ${freeTrial ? `<h3>Prepare your request</h3><p>The fields start with a synthetic example. Replace it with your redacted file, or start blank. Adding a document record does not verify its content.</p>
       <button type="button" onclick="document.getElementById('profile-intake').startBlank()">Start a blank request</button>
@@ -359,10 +361,11 @@ function landingHtml(request, env) {
       <details><summary>Structured request JSON — advanced</summary>` : ''}
       <label for="profile-request">Structured request</label>
       <textarea id="profile-request" rows="15" style="width:100%;font:13px/1.5 var(--mono);padding:12px;box-sizing:border-box">${escapeHtml(JSON.stringify(consoleExample, null, 2))}</textarea>
-      ${freeTrial ? '<button type="button" onclick="document.getElementById(\'profile-intake\').updateFromJson()">Update fields from JSON</button></details><p>Two attempts per network address for this product’s trial campaign. A shared network may already have used them; the remaining allowance is checked when submitted. An invalid request does not reserve an attempt.</p>' : ''}
+      ${freeTrial ? '<button type="button" onclick="document.getElementById(\'profile-intake\').updateFromJson()">Update fields from JSON</button></details><p>Shared networks share the allowance; it does not reset daily. A check of availability is advisory; submission checks the current limits again. An invalid request does not reserve an attempt.</p>' : ''}
       <button id="profile-run" type="submit">${freeTrial ? 'Run free evidence check' : 'Evaluate evidence'}</button>
       ${freeTrial ? `<button id="profile-paid" type="button" hidden onclick="runProfileExample(event, true)">Choose paid evaluation — ${trialTerms.paid_price_usdc} USDC</button>` : ''}
       <p id="profile-status" role="status"></p>
+      ${freeTrial ? '<div id="profile-recovery" hidden><p>You can inspect the saved synthetic input and result without a wallet or another trial attempt. Your edited input stays here.</p><button type="button" onclick="showWorkedExample()">View saved example — no trial attempt</button></div>' : ''}
     </form>
     <div id="profile-summary" aria-live="polite"></div>
     <div id="profile-progress" aria-live="polite"></div>
@@ -382,6 +385,7 @@ function landingHtml(request, env) {
       <pre>${escapeHtml(`curl -sS '${origin}/mcp' -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' --data-binary '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`)}</pre>
       <p>Read <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/deployment/hosted-quickstart.md">the hosted MCP / A2A quickstart</a> for initialization, heartbeat and paid-call handling.</p>
       <p>This is a paid A2A 1.0 evaluation request. A valid unpaid request returns HTTP 402; invalid input may return HTTP 400. Free worked examples above never submit a live evaluation. Task trace IDs and continuation tokens apply only after successful admission.</p>
+      <p><a href="${origin}/.well-known/agent-card.json">Get the structured A2A request and headers from the agent card</a>${freeTrial ? ` or <a href="${trialTerms.endpoint}">get the matching free-trial input and A2A example</a>` : ''}. Use the JSON data part as shown; ordinary prose does not supply a gate’s required evidence.</p>
       <pre style="margin: 0; overflow-x: auto;">${escapeHtml(tryItCurl)}</pre>
       <p>Keep the issued <code>task.metadata.continuation.token</code> private. GetTask and continuation require <code>X-Task-Token</code>; <code>X-Client-Id</code> is a telemetry label, not authorization. Task status expires after 24 hours; recreate older tasks.</p>
       <p>Illustrative successful A2A 1.0 envelope after paid admission. Domain outcome and source dates vary; the unpaid response is a JSON-RPC error, not a completed task:</p>
@@ -477,6 +481,37 @@ function showWorkedExample() {
 }
 var agendaTrialTraceId = null;
 var agendaLastReview = null;
+${freeTrial ? `function setTrialRecovery(visible) {
+  var element = document.getElementById('profile-recovery');
+  if (element) element.hidden = !visible;
+}
+async function refreshTrialAvailability() {
+  var button = document.getElementById('profile-allowance-check');
+  var status = document.getElementById('profile-allowance');
+  button.disabled = true;
+  status.textContent = 'Checking free allowance without reserving an attempt…';
+  try {
+    var response = await fetch('${origin}${trialTerms.availability_endpoint}', {
+      headers: agendaTelemetryHeaders('${origin}${trialTerms.availability_endpoint}', {}), cache: 'no-store'
+    });
+    var body = await response.json();
+    var availability = body.availability;
+    if (!response.ok || !availability) throw new Error('unavailable');
+    if (availability.status === 'available') {
+      status.textContent = availability.remaining_attempts + ' free attempt(s) remain for this network and product. This is an advisory snapshot; submission checks the current limits again.';
+      setTrialRecovery(false);
+    } else if (availability.status === 'network_allowance_exhausted' || availability.status === 'daily_capacity_exhausted') {
+      status.textContent = availability.status === 'network_allowance_exhausted'
+        ? 'This network has used this product’s two campaign attempts. Shared networks share the allowance; it does not reset daily. The saved example is still free.'
+        : 'Today’s shared free capacity is full. Retry after the next UTC midnight. The saved example is still free.';
+      setTrialRecovery(true);
+      document.getElementById('profile-paid').hidden = false;
+    } else throw new Error('unavailable');
+  } catch {
+    status.textContent = 'Free allowance could not be checked. No attempt was consumed. You can still view the saved example or submit for the authoritative admission check.';
+    setTrialRecovery(true);
+  } finally { button.disabled = false; }
+}` : ''}
 ${freeTrial ? `function updateTrialFeedback(status) {
   document.getElementById('profile-feedback').href = trialFeedbackMailto(${JSON.stringify(profile)}, status, ${JSON.stringify(SUPPORT_CONTACT_EMAIL)});
   ['helpful','blocked'].forEach(function(kind) {
@@ -493,6 +528,7 @@ async function runProfileExample(event, paid) {
   ${freeTrial ? "document.getElementById('profile-paid').disabled = true;" : ''}
   status.textContent = 'Evaluating supplied evidence…';
   ${freeTrial ? 'updateTrialFeedback(null);' : ''}
+  ${freeTrial ? 'setTrialRecovery(false);' : ''}
   document.getElementById('profile-summary').innerHTML = '';
   if (document.getElementById('profile-progress')) document.getElementById('profile-progress').innerHTML = '';
   document.getElementById('profile-response').hidden = true;
@@ -525,6 +561,7 @@ async function runProfileExample(event, paid) {
     ${freeTrial ? `if (response.ok || response.status === 429) document.getElementById('profile-paid').hidden = false;
     if (!paid && response.status === 429) {
       status.textContent = body.error + ' Your input is preserved. No payment was made.';
+      setTrialRecovery(true);
       return;
     }` : ''}
     status.textContent = (response.ok ? 'Evaluation returned. Inspect evidence gaps and limitations before acting.' : 'Request failed (HTTP ' + response.status + '). See the response below.') + ' Trace: ' + traceId;
@@ -532,6 +569,7 @@ async function runProfileExample(event, paid) {
     status.textContent = 'Evaluation failed: ' + error.message;
   } finally { button.disabled = false; ${freeTrial ? "document.getElementById('profile-paid').disabled = false;" : ''} }
 }
+if (typeof window !== 'undefined' && window.location?.href && new URL(window.location.href).searchParams.get('example') === '1') showWorkedExample();
 var FIN_SCENARIOS = {
   clean: {
     network: 'base_mainnet',
