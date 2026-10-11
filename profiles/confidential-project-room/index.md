@@ -83,8 +83,8 @@ The bundled `redacted-example.json` is synthetic. Public examples must not inclu
 
 This profile structures a redacted evidence pack for human review. It does not verify live sanctions, trace ownership or AIS history automatically, provide a legal opinion, or issue bank clearance.
 
-Current prices are published at https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/x402 and generated from the service catalog. Confirm the scope and delivery date of human-reviewed work before payment. No certification, signature or bank acceptance is guaranteed.
+Current prices are published at https://agendamcp.dpdns.org/.well-known/x402 and generated from the service catalog. Confirm the scope and delivery date of human-reviewed work before payment. No certification, signature or bank acceptance is guaranteed.
 
-Use synthetic or redacted inputs. Processing runs in memory but telemetry, hashes, payment and entitlement records have separate retention boundaries. Read https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/privacy and agree any DPA, retention and service terms before sharing confidential data.
+Use synthetic or redacted inputs. Processing runs in memory but telemetry, hashes, payment and entitlement records have separate retention boundaries. Read https://agendamcp.dpdns.org/privacy and agree any DPA, retention and service terms before sharing confidential data.
 
 Contact: vassiliy.lakhonin@gmail.com. No customer adoption or institutional approval is implied by this demonstration.

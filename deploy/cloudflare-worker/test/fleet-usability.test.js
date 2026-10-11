@@ -27,6 +27,7 @@ test('Russian Kazakhstan inflections retain geography and the market-entry next 
     assert.ok(result.modules.some(m => m.module === 'central-asia-caspian'), text);
     assert.ok(result.signal_screen.subject.jurisdictions.includes('Kazakhstan'), text);
     assert.ok(JSON.stringify(result.next_actions).includes('kazakhstan-market-entry-readiness.agendamcp.dpdns.org'), text);
+    assert.equal(reviewSummary(result).selectedGate, 'https://kazakhstan-market-entry-readiness.agendamcp.dpdns.org/');
   }
 });
 
@@ -65,4 +66,20 @@ test('document request suggestions and changed gaps never mutate the service out
   assert.match(delta, /does not establish factual verification/);
   assert.equal(JSON.stringify([before,after]), original);
   assert.equal(reviewDeltaHtml(before, {error:'failed'}, String), '');
+});
+
+
+test('summary permits only known review gate hosts on current and compatibility domains', () => {
+  for (const name of ['middle-corridor-deal-risk-gate', 'cis-secondary-sanctions', 'gulf-maritime-exposure',
+    'kazakhstan-market-entry-readiness', 'dual-use-technology-export']) {
+    for (const host of [name+'.agendamcp.dpdns.org', name+'-a2a.vassiliy-lakhonin.workers.dev']) {
+      const url = 'https://'+host;
+      assert.equal(reviewSummary({selected_route:{name:'Evidence review',a2a:url}}).selectedGate, url);
+    }
+  }
+  for (const url of ['https://cis-secondary-sanctions.agendamcp.dpdns.org.attacker.test',
+    'https://cis-secondary-sanctions.agendamcp.dpdns.org@attacker.test',
+    'http://cis-secondary-sanctions.agendamcp.dpdns.org', 'https://unknown.agendamcp.dpdns.org']) {
+    assert.equal(reviewSummary({selected_route:{name:'Evidence review',a2a:url}}).selectedGate, null);
+  }
 });

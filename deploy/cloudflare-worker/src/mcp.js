@@ -91,7 +91,7 @@ function evidenceNextStep(profile, spec) {
   if (profile === "agent_output_verification") return "Extract claims from the answer and attach the actual source text, evidence_ids, and matching quotes. If evidence is unavailable, report that gap; do not invent sources or treat the result as permission to relay.";
   const base = "Grades supplied evidence; it does not independently verify source truth. Obtain the source records requested by inputSchema before asking for a decision-ready result. Do not fabricate missing evidence.";
   return ["kazakhstan", "cis_secondary_sanctions", "gulf_maritime_exposure", "dual_use_technology_export", "critical_minerals_due_diligence"].includes(profile)
-    ? `${base} For a Middle Corridor sanctions question without evidence, use corridor_sanctions_assistant at https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/mcp for orientation only.`
+    ? `${base} For a Middle Corridor sanctions question without evidence, use corridor_sanctions_assistant at https://corridor-sanctions-assistant.agendamcp.dpdns.org/mcp/agent for orientation only.`
     : base;
 }
 

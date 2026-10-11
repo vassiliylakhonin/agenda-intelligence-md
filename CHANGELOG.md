@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Complete custom-domain navigation in landing pages, hosted llms.txt and MCP orientation. Preserve summary links for both new canonical hosts and saved workers.dev results while rejecting unrelated destinations.
+
 - Publish the registered agendamcp.dpdns.org custom-domain origins in fleet discovery, verifier handoffs, routing recommendations and agent-readable documentation. Preserve workers.dev aliases, OAuth issuer identifiers, tool contracts, authentication and payment admission.
 
 - Show free-trial allowance before preparing input through an optional read-only availability check. After a quota refusal, preserve input and offer the saved synthetic example without another attempt. Publish the matching A2A example in trial discovery and clarify structured-request recovery. Keep atomic admission, campaign identities, quotas and prices.

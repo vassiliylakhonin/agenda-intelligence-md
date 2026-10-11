@@ -106,10 +106,11 @@ export function reviewSummary(response, workflow = {}) {
     ': Request the evidence needed to resolve: ' + item + ' Check issuer, date, content and applicability before relying on it.') : suppliedActions;
   const notice = readiness.boundary_notice || value.boundary_notice || value.not_advice_notice;
   const selectedGate = typeof value.selected_route?.a2a === 'string' &&
-    /^https:\/\/(?:middle-corridor-deal-risk-gate|cis-secondary-sanctions|gulf-maritime-exposure|kazakhstan-market-entry-readiness|dual-use-technology-export)-a2a\.vassiliy-lakhonin\.workers\.dev\/?$/.test(value.selected_route.a2a)
+    /^https:\/\/(?:middle-corridor-deal-risk-gate|cis-secondary-sanctions|gulf-maritime-exposure|kazakhstan-market-entry-readiness|dual-use-technology-export)(?:-a2a\.vassiliy-lakhonin\.workers\.dev|\.agendamcp\.dpdns\.org)\/?$/.test(value.selected_route.a2a)
     ? value.selected_route.a2a :
-    Array.isArray(value.next_actions) && value.next_actions.some(item => typeof item === 'string' && item.includes('https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/'))
-      ? 'https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/' : null;
+    ['https://kazakhstan-market-entry-readiness.agendamcp.dpdns.org/',
+      'https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/'].find(url =>
+        Array.isArray(value.next_actions) && value.next_actions.some(item => typeof item === 'string' && item.includes(url))) || null;
   return { route, gaps, actions, actionsSuggested, leads,
     selectedGate,
     referencesOnly: value.source_record_review?.source_content_verified === false || value.factual_verification_performed === false,

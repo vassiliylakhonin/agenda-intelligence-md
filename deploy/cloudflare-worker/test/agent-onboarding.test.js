@@ -54,3 +54,16 @@ test('secondary discovery and verifier handoff lead to the compatible MCP endpoi
   assert.ok(pricing);
   assert.equal(verificationStatus('agenda').verifier.mcp_endpoint, 'https://output-verification.agendamcp.dpdns.org/mcp/agent');
 });
+
+
+test('public navigation and llms guide point to the reachable custom-domain fleet', async () => {
+  const env = {AGENT_PROFILE:'agenda'};
+  const html = await (await handleRequest(new Request(origin,{headers:{accept:'text/html'}}),env)).text();
+  assert.ok(html.includes('href="https://agendamcp.dpdns.org/">All profiles'));
+  assert.ok(html.includes('href="https://vizier.agendamcp.dpdns.org/">Vizier authorization'));
+  assert.ok(html.includes('href="https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/">Middle Corridor'));
+  const guide = await (await handleRequest(new Request(origin+'/llms.txt'),env)).text();
+  assert.ok(guide.includes('https://agendamcp.dpdns.org/.well-known/fleet.json'));
+  assert.ok(guide.includes('https://output-verification.agendamcp.dpdns.org'));
+  assert.doesNotMatch(guide, /https:\/\/[a-z-]+-a2a\.vassiliy-lakhonin\.workers\.dev/);
+});
