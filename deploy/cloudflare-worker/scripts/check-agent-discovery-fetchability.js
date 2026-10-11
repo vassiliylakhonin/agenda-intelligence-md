@@ -1,4 +1,4 @@
-const DEFAULT_BASE_URL = "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev";
+const DEFAULT_BASE_URL = "https://agendamcp.dpdns.org";
 
 const args = process.argv.slice(2);
 const strictPython = args.includes("--strict-python");

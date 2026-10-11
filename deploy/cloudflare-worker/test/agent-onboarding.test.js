@@ -32,6 +32,12 @@ test('free directory has accurate billing metadata and is reachable without call
   const fleet = await get('/.well-known/fleet.json', env);
   assert.equal(fleet.total_gates, 12);
   assert.equal(new Set(fleet.gates.map(g=>g.mcp_endpoint)).size, 12);
+  assert.ok(fleet.gates.every(g => {
+    const host = new URL(g.canonical_endpoint).hostname;
+    return host === 'agendamcp.dpdns.org' || host.endsWith('.agendamcp.dpdns.org');
+  }), 'all canonical directory origins use the registered custom domain');
+  assert.equal(fleet.gates.find(g=>g.profile==='agenda').canonical_endpoint, 'https://agendamcp.dpdns.org');
+  assert.equal(fleet.gates.find(g=>g.profile==='agentic_interaction_trust').canonical_endpoint, 'https://interaction-trust.agendamcp.dpdns.org');
   assert.ok(fleet.gates.every(g=>g.mcp_endpoint===g.canonical_endpoint+'/mcp/agent'));
   const agents = await get('/.well-known/agents.json', env);
   assert.equal(agents.fleet_directory, origin+'/.well-known/fleet.json');
@@ -46,5 +52,5 @@ test('secondary discovery and verifier handoff lead to the compatible MCP endpoi
   assert.ok(api.paths['/.well-known/fleet.json'].get);
   const pricing=await get('/.well-known/x402',env);
   assert.ok(pricing);
-  assert.equal(verificationStatus('agenda').verifier.mcp_endpoint, 'https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp/agent');
+  assert.equal(verificationStatus('agenda').verifier.mcp_endpoint, 'https://output-verification.agendamcp.dpdns.org/mcp/agent');
 });

@@ -2992,7 +2992,7 @@ function applyAgentOutputVerificationProfile(card, request) {
 // navigating nine cards blind. One factual navigation line, no traction claim.
 const PROVIDER_FRONT_DOOR_POINTER =
   " New to these gates? Start with the Corridor & Sanctions Risk Assistant " +
-  "(https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev) for plain-language orientation. " +
+  "(https://corridor-sanctions-assistant.agendamcp.dpdns.org) for plain-language orientation. " +
   "Describe the route or counterparty and the next decision or review; fit, scope, fee, and timing are confirmed " +
   "before work starts.";
 
@@ -3011,34 +3011,34 @@ const CORRIDOR_ASSISTANT_GATES = Object.freeze([
     name: "Kazakhstan / Middle Corridor Deal Risk Gate",
     use_when:
       "a route/cargo/counterparties deal along the Middle Corridor needs a pre-signature evidence-completeness read",
-    a2a: "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev",
+    a2a: "https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org",
     profile: "middle_corridor_deal_risk"
   },
   {
     name: "CIS Secondary-Sanctions Exposure",
     use_when:
       "a CIS / Caucasus / Central Asia counterparty needs secondary-sanctions exposure triage for EU / UK / UAE / Singapore due diligence",
-    a2a: "https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev",
+    a2a: "https://cis-secondary-sanctions.agendamcp.dpdns.org",
     profile: "cis_secondary_sanctions"
   },
   {
     name: "Gulf Maritime Exposure Gate",
     use_when:
       "a vessel/voyage through the Gulf, Strait of Hormuz, Bab-el-Mandeb, or Red Sea needs sanctions/chokepoint exposure triage",
-    a2a: "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev",
+    a2a: "https://gulf-maritime-exposure.agendamcp.dpdns.org",
     profile: "gulf_maritime_exposure"
   },
   {
     name: "Kazakhstan Market-Entry Readiness Gate",
     use_when:
       "a Kazakhstan market-entry file (distribution, import, EPC, energy, infrastructure, partner) needs a readiness gate",
-    a2a: "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev",
+    a2a: "https://kazakhstan-market-entry-readiness.agendamcp.dpdns.org",
     profile: "kazakhstan_market_entry_readiness"
   },
   {
     name: "Dual-Use Technology & Export Controls Gate",
     use_when: "a supplied product classification, end-user or export dossier needs human export-control review",
-    a2a: "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev",
+    a2a: "https://dual-use-technology-export.agendamcp.dpdns.org",
     profile: "dual_use_technology_export"
   }
 ]);
@@ -3160,7 +3160,7 @@ async function a2aResultForCorridorSanctionsAssistant(params, request, env = {})
     dualUseGuidance =
       "Your inquiry needs product-classification and diversion review; CHPL membership and applicable restrictions are not established from keywords. " +
       "Use the 'screen_dual_use_hs_code' MCP tool for immediate HS classification triage, or submit an evidence pack to the dedicated gate: " +
-      "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev.";
+      "https://dual-use-technology-export.agendamcp.dpdns.org.";
   }
 
   const selectedRoute = corridorAssistantSelectRoute(text);
@@ -3295,7 +3295,7 @@ async function a2aResultForScreenDualUseHsCode(params, request, env = {}) {
     reference_source: tierInfo.source_url,
     reference_snapshot_date: tierInfo.snapshot_date,
     diversion_risk: tierInfo.risk,
-    canonical_dossier_gate: "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev",
+    canonical_dossier_gate: "https://dual-use-technology-export.agendamcp.dpdns.org",
     required_diligence_documents: tierInfo.documents
   };
 
@@ -4201,7 +4201,7 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
     "",
     "## If you would rather talk to a person",
     "Start with the Corridor & Sanctions Risk Assistant",
-    "(https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev) for plain-language orientation,",
+    "(https://corridor-sanctions-assistant.agendamcp.dpdns.org) for plain-language orientation,",
     `or email ${SUPPORT_CONTACT_EMAIL} with a one-line route or counterparty and the next decision or review.`,
     "Fit, scope, fee, and timing are confirmed before work starts.",
     "",
@@ -4230,7 +4230,7 @@ function invalidRequestArtifact(profile, endpoint, schema, errors, guideOverride
           ...(guide.exampleNote ? { example_note: guide.exampleNote } : {}),
           canonical_http_endpoint: endpoint,
           schema,
-          front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+          front_door: "https://corridor-sanctions-assistant.agendamcp.dpdns.org",
           support_contact: SUPPORT_CONTACT_EMAIL
         },
         mediaType: "application/json"
@@ -4273,7 +4273,7 @@ function invalidRequestResult(profile, endpoint, schema, errors, guideOverride =
             optional_fields: guide.optional || [],
             example_request: guide.example,
             ...(guide.exampleNote ? { example_note: guide.exampleNote } : {}),
-            front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+            front_door: "https://corridor-sanctions-assistant.agendamcp.dpdns.org",
             support_contact: SUPPORT_CONTACT_EMAIL
           }
         : {})
@@ -4553,7 +4553,7 @@ function textIntakeResult(profile, endpoint, schema, candidate, guideOverride = 
               JSON.stringify(guide?.example || {}, null, 2),
               "```",
               "",
-              "For plain-language orientation, use https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev.",
+              "For plain-language orientation, use https://corridor-sanctions-assistant.agendamcp.dpdns.org.",
               `For a human review, email ${SUPPORT_CONTACT_EMAIL}.`
             ].join("\n"),
             mediaType: "text/markdown"
@@ -6065,7 +6065,7 @@ function fleetDirectoryResponse() {
       {
         profile: "kazakhstan",
         tool_name: "middle_corridor_deal_risk",
-        canonical_endpoint: "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org",
         description: "Screen a Kazakhstan / Middle Corridor trade deal for sanctions-adjacent and corridor risk before signature, shipment, or committee review.",
         required_fields: ["route", "cargo", "counterparties", "dated_sources", "risk_question", "decision_stage"],
         schema_url: MIDDLE_CORRIDOR_REQUEST_SCHEMA_URL
@@ -6073,7 +6073,7 @@ function fleetDirectoryResponse() {
       {
         profile: "cis_secondary_sanctions",
         tool_name: "cis_secondary_sanctions_exposure",
-        canonical_endpoint: "https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://cis-secondary-sanctions.agendamcp.dpdns.org",
         description: "Triage secondary-sanctions exposure for a CIS-domiciled counterparty against OFAC EO 14114, EU packages, UK OFSI, and FATF typologies.",
         required_fields: ["counterparty", "risk_question", "decision_stage", "dated_sources"],
         schema_url: CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL
@@ -6081,7 +6081,7 @@ function fleetDirectoryResponse() {
       {
         profile: "agentic_interaction_trust",
         tool_name: "agentic_interaction_trust",
-        canonical_endpoint: "https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://interaction-trust.agendamcp.dpdns.org",
         description: "Triage trust evidence for an agent-mediated interaction (identity, authorization, scope, session, intent) before execution.",
         required_fields: ["interaction_id", "initiating_agent", "target_surface", "decision_question", "decision_stage", "dated_sources"],
         schema_url: AGENTIC_INTERACTION_TRUST_REQUEST_SCHEMA_URL
@@ -6089,7 +6089,7 @@ function fleetDirectoryResponse() {
       {
         profile: "agent_output_verification",
         tool_name: "agent_output_verification",
-        canonical_endpoint: "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://output-verification.agendamcp.dpdns.org",
         description: "Decide whether another agent's claim-backed output is safe to relay onward.",
         required_fields: ["output_under_review", "claims"],
         schema_url: AGENT_OUTPUT_VERIFICATION_REQUEST_SCHEMA_URL
@@ -6097,7 +6097,7 @@ function fleetDirectoryResponse() {
       {
         profile: "gulf_maritime_exposure",
         tool_name: "gulf_maritime_exposure",
-        canonical_endpoint: "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://gulf-maritime-exposure.agendamcp.dpdns.org",
         description: "Triage maritime sanctions and chokepoint-disruption exposure for a vessel/voyage in the Gulf or Red Sea.",
         required_fields: ["vessel_name", "imo_number", "flag", "voyage_path", "cargo", "risk_question", "decision_stage", "dated_sources"],
         schema_url: GULF_MARITIME_REQUEST_SCHEMA_URL
@@ -6105,7 +6105,7 @@ function fleetDirectoryResponse() {
       {
         profile: "market_entry_readiness",
         tool_name: "kazakhstan_market_entry_readiness",
-        canonical_endpoint: "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://kazakhstan-market-entry-readiness.agendamcp.dpdns.org",
         description: "Grade a Kazakhstan market-entry file against staged source requirements before commitment.",
         required_fields: ["market", "sector", "entry_mode", "decision_question", "decision_stage", "dated_sources"],
         schema_url: MARKET_ENTRY_REQUEST_SCHEMA_URL
@@ -6113,7 +6113,7 @@ function fleetDirectoryResponse() {
       {
         profile: "critical_minerals_due_diligence",
         tool_name: "critical_minerals_due_diligence",
-        canonical_endpoint: "https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://critical-minerals-due-diligence.agendamcp.dpdns.org",
         description: "Review mineral dossier evidence quality, stage-specific gaps and owner actions before human approval.",
         required_fields: ["project_name", "commodity", "origin_jurisdiction", "decision_question", "decision_stage", "supplied_sources"],
         schema_url: CRITICAL_MINERALS_REQUEST_SCHEMA_URL
@@ -6121,7 +6121,7 @@ function fleetDirectoryResponse() {
       {
         profile: "dual_use_technology_export",
         tool_name: "dual_use_technology_export",
-        canonical_endpoint: "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://dual-use-technology-export.agendamcp.dpdns.org",
         description: "Triage dual-use technology export controls, ECCN/HS Codes, and transit route risks for unauthorized diversion.",
         required_fields: ["item_description", "destination_country", "parties", "transit_countries", "risk_question", "decision_stage", "dated_sources"],
         schema_url: `${REPOSITORY_URL}/blob/main/schemas/v1/dual-use-technology-export-request.schema.json`
@@ -6129,7 +6129,7 @@ function fleetDirectoryResponse() {
       {
         profile: "agent_financial_guard",
         tool_name: "agent_financial_pre_sign_check",
-        canonical_endpoint: "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://agent-financial-guard.agendamcp.dpdns.org",
         description: "Deterministic pre-sign financial transaction firewall for autonomous agents: OFAC/AML screening, drainer prevention, and velocity enforcement.",
         required_fields: ["run_id", "transaction", "intent"],
         schema_url: `${REPOSITORY_URL}/blob/main/schemas/v1/agent-financial-guard-request.schema.json`
@@ -6137,7 +6137,7 @@ function fleetDirectoryResponse() {
       {
         profile: "m2m_escrow_arbiter",
         tool_name: "m2m_escrow_arbitration_ruling",
-        canonical_endpoint: "https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://m2m-escrow-arbiter.agendamcp.dpdns.org",
         description: "Escrow evidence evaluator: checks supported schemas and hashes, proposes allocations, and escalates unverifiable evidence.",
         required_fields: ["escrow_id", "deal_terms", "specification", "delivery_submission"],
         schema_url: `${REPOSITORY_URL}/blob/main/schemas/v1/m2m-escrow-arbiter-request.schema.json`
@@ -6145,7 +6145,7 @@ function fleetDirectoryResponse() {
       {
         profile: "corridor_sanctions_assistant",
         tool_name: "corridor_sanctions_assistant",
-        canonical_endpoint: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://corridor-sanctions-assistant.agendamcp.dpdns.org",
         description: "Orientation front-door: route a free-text Middle Corridor sanctions question to the matching structured contract.",
         required_fields: ["text"],
         schema_url: null
@@ -6153,7 +6153,7 @@ function fleetDirectoryResponse() {
       {
         profile: "agenda",
         tool_name: "strategic_risk_triage",
-        canonical_endpoint: "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev",
+        canonical_endpoint: "https://agendamcp.dpdns.org",
         description: "Master strategic-risk triage: route free-text strategic questions to the relevant regional and sector gates.",
         required_fields: ["text"],
         schema_url: null
@@ -11588,7 +11588,7 @@ function triageForText(text, modules, profile = "agenda", structuredRequest = nu
     source_plan: sourcePlanForModules(modules),
     quality_gates: qualityGatesForIntent(intent),
     next_actions: profile === "agenda" && subjectForText(text).jurisdictions.includes("Kazakhstan") && /(?:market.entry|enter(?:ing)? kazakhstan|kazakhstan market|entry into kazakhstan|distribution in kazakhstan|выход на рынок|дистрибуц)/iu.test(text)
-      ? ["Prepare the project, partner, decision question and dated documents at https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/ before a human market-entry decision.", ...nextActionsForIntent(intent)]
+      ? ["Prepare the project, partner, decision question and dated documents at https://kazakhstan-market-entry-readiness.agendamcp.dpdns.org/ before a human market-entry decision.", ...nextActionsForIntent(intent)]
       : nextActionsForIntent(intent),
     install: {
       package: PACKAGE_URL,
@@ -11996,7 +11996,7 @@ function emptyRequestResult(profile, request) {
               ],
               example_request: example,
               related_agents: gates,
-              front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+              front_door: "https://corridor-sanctions-assistant.agendamcp.dpdns.org",
               support_contact: SUPPORT_CONTACT_EMAIL
             },
             mediaType: "application/json"
@@ -12018,7 +12018,7 @@ function emptyRequestResult(profile, request) {
         "text — the question: a route, counterparty, or document, and the decision it feeds"
       ],
       related_agents: gates,
-      front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+      front_door: "https://corridor-sanctions-assistant.agendamcp.dpdns.org",
       support_contact: SUPPORT_CONTACT_EMAIL,
       engagement: engagementBlock(request)
     }
@@ -12400,7 +12400,7 @@ function versionNotSupportedError(id, requestedVersion) {
 // schema is additionalProperties:false, and a field inside the frozen payload
 // would mean editing fourteen schemas and their packaged twins to say something
 // about the transport rather than about the verdict.
-const VERIFIER_ORIGIN = "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev";
+const VERIFIER_ORIGIN = "https://output-verification.agendamcp.dpdns.org";
 
 export function verificationStatus(profile) {
   const selfVerifying = profile === "agent_output_verification";
@@ -14579,7 +14579,7 @@ function directV1Rejection(endpoint, route, errors) {
       ? {
           required_fields: guide.required,
           example_request: guide.example,
-          front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+          front_door: "https://corridor-sanctions-assistant.agendamcp.dpdns.org",
           support_contact: SUPPORT_CONTACT_EMAIL
         }
       : {})
@@ -14604,7 +14604,7 @@ function directRouteJson(endpoint, route, request) {
     example_curl: `curl -X POST ${origin}${endpoint} \\\n  -H 'content-type: application/json' \\\n  -d '${JSON.stringify(example)}'`,
     agent_card: `${origin}/.well-known/agent.json`,
     documentation: `${origin}/`,
-    front_door: "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev",
+    front_door: "https://corridor-sanctions-assistant.agendamcp.dpdns.org",
     support_contact: SUPPORT_CONTACT_EMAIL
   };
 }

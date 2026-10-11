@@ -26,7 +26,7 @@ test('Russian Kazakhstan inflections retain geography and the market-entry next 
     const result = await call(text);
     assert.ok(result.modules.some(m => m.module === 'central-asia-caspian'), text);
     assert.ok(result.signal_screen.subject.jurisdictions.includes('Kazakhstan'), text);
-    assert.ok(JSON.stringify(result.next_actions).includes('kazakhstan-market-entry-readiness-a2a'), text);
+    assert.ok(JSON.stringify(result.next_actions).includes('kazakhstan-market-entry-readiness.agendamcp.dpdns.org'), text);
   }
 });
 
