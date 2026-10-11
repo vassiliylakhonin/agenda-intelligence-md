@@ -82,7 +82,7 @@ export function validateBankabilityRequest(request) {
   return errors;
 }
 
-export function generateBankabilityScreen(request = {}, isPaid = false, origin = "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev") {
+export function generateBankabilityScreen(request = {}, isPaid = false, origin = "https://agendamcp.dpdns.org") {
   const errors = validateBankabilityRequest(request);
   if (errors.length) throw new TypeError(errors.join("; "));
   const projectName = request.project_name.trim();
