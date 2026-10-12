@@ -181,3 +181,46 @@ Rollback through the same protected deployment path: set `WORKER_FREE_TRIAL=0`.
 For Output also set `OUTPUT_VERIFICATION_TRIAL=0` to disable its older opt-in.
 Preserve the reservation table and campaign history. Shipping the entry path
 establishes no customer usefulness, willingness to pay or conversion improvement.
+
+
+## Trial recovery and optional usefulness measurement (12 October 2026)
+
+After an authoritative HTTP 429, the landing disables the free submit button
+and its handler refuses further free POSTs in that page. Input and the previous
+result remain available. An explicit read-only availability check enables it
+again only on a fresh `available` response; a failed check leaves the known
+block in place. Daily capacity can recover; campaign network allowance does
+not reset daily. Paid evaluation and saved examples remain explicit choices.
+
+`POST /telemetry/trial-feedback` is enabled only on free-trial profiles. It
+requires matching Origin and application/json, at most 512 bytes, exactly:
+
+```json
+{"attempt_id":"aaaaaaaa-1234-4567-89ab-123456789abc","response":"useful_next_step"}
+```
+
+The UUID above is illustrative. Use X-Payment-Attempt-Id from a completed free
+trial. `response` is either `useful_next_step` or `still_blocked`. The server
+joins its existing D1 completion/reservation records and verifies product,
+network and a completion within seven days. No attempt is consumed. A valid
+choice returns 204; wrong origin 403, invalid fields/JSON/content type 400,
+oversize 413, no matching recent completion 404, missing storage 503; normal
+profile authorization still applies. GET returns 405. No migration is needed.
+
+A single funnel event contains the bounded choice, server receipt origin group
+and attempt ID alongside existing operational metadata. It never contains the
+trial request/result. Owner/excluded completions remain excluded even if client
+labels change. The browser sends only on an explicit click, once per completed
+check in that page, and retries only on an explicit click after failure. The
+optional email draft remains available and is never sent automatically.
+
+Vault reporting keeps the latest choice per server attempt within each UTC day.
+No response is `awaiting_first_event`, not evidence of dissatisfaction. A later
+day can contain another rating of the same recent check; daily counts must not
+be summed as unique checks across days. Choices are self-reports, not verified
+people or downstream task success. Existing telemetry/archive retention applies.
+
+Output verdicts `block_unsafe_claims`, `verify_before_relay`, and
+`not_decision_ready` are known results. Runtime failure overrides a verdict;
+unknown decisions stay unknown. Execution status and domain verdict are kept
+separate, and `insufficient_information` stays an evidence/input diagnostic.

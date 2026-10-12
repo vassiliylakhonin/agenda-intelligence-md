@@ -16,6 +16,7 @@ const USABLE_OUTCOMES = new Set([
   "deny", "settle", "refund", "escalate", "escalate_before_offtake",
   "escalate_before_signature", "block_until_verified", "stop", "allow_low_risk", "escalate_before_fixture",
   "escalate_before_onboarding", "proceed_to_validation",
+  "verify_before_relay", "block_unsafe_claims", "not_decision_ready",
 ]);
 
 export function createTelemetry({ agentProfile, jsonResponse, AGENSTRY_VERIFICATION_PATHS, directRoutes, authenticationStatus = () => 'unverified' }) {
@@ -461,7 +462,7 @@ function funnelStepForPath(pathname) {
   return null;
 }
 
-async function logFunnelEvent(request, step, env = {}) {
+async function logFunnelEvent(request, step, env = {}, feedback = null) {
   if (!step) return null;
   const url = new URL(request.url);
   const cf = request.cf || {};
@@ -490,6 +491,15 @@ async function logFunnelEvent(request, step, env = {}) {
     trace_id: traceIdFromRequest(request),
     caller_hash: await callerHash(request, env)
   };
+  if (step === 'trial_feedback' && normalizePaymentTrace(feedback?.attempt_id) &&
+      ['useful_next_step','still_blocked'].includes(feedback?.response) &&
+      ['excluded','external_candidate','unknown_origin'].includes(feedback?.origin_group)) {
+    event.feedback_attempt_id = normalizePaymentTrace(feedback.attempt_id);
+    event.feedback_response = feedback.response;
+    event.feedback_origin_group = feedback.origin_group;
+    if (feedback.origin_group === 'excluded') event.caller_kind = 'owner_synthetic';
+    else if (feedback.origin_group === 'unknown_origin') event.caller_kind = 'unknown';
+  }
   console.log(event);
   return event;
 }
@@ -755,6 +765,7 @@ async function recordUsageStats(env, event) {
       colo: event.cf?.colo || "unknown",
       as_org: event.cf?.as_org || "unknown",
       outcome: event.outcome?.decision || "unknown",
+      execution_status: event.outcome?.status || null,
       outcome_score: Number.isInteger(event.outcome?.score) ? event.outcome.score : null,
       trace_id: event.trace_id || null,
       caller_hash: event.caller_hash || null,
@@ -946,7 +957,8 @@ async function usageStats(env, date) {
     if (eventIsExternalNonProbe && typeof event.caller_hash === "string" && event.caller_hash) {
       const entry = qualifiedCallers.get(event.caller_hash) || { calls: 0, completions: 0, paid: 0 };
       entry.calls += 1;
-      if (USABLE_OUTCOMES.has(String(event.outcome).toLowerCase())) entry.completions += 1;
+      if ((!event.execution_status || event.execution_status === "completed") &&
+          USABLE_OUTCOMES.has(String(event.outcome).toLowerCase())) entry.completions += 1;
       if (event.payment_header_present) entry.paid += 1;
       qualifiedCallers.set(event.caller_hash, entry);
     }

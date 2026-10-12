@@ -1,3 +1,4 @@
+import { handleTrialFeedback } from './trial-feedback.js';
 import { mcpAgentAdmissionResponse } from './mcp-admission.js';
 import { lookupChplTier } from "./chpl.js";
 import { reviewSourceRecords } from "./source-records.js";
@@ -15080,6 +15081,16 @@ export async function handleRequest(request, env = {}, ctx = {}) {
 async function handleRequestWithBilling(request, env = {}, ctx = {}) {
   const execute = () => handleRequestInner(request, env, ctx);
   const trialRequestPath = new URL(request.url).pathname;
+  if (trialRequestPath === '/telemetry/trial-feedback') {
+    const profile = agentProfile(request, env);
+    if (!outputTrialEnabled(profile, env)) return jsonResponse({error:'Not found'},404);
+    if (request.method === 'OPTIONS') return execute();
+    if (!isProductionAuthorized(request,env,profile)) return jsonResponse({error:'Unauthorized'},401);
+    return handleTrialFeedback(request,env,profile,{
+      respond:(body,status,headers={})=>jsonResponse(body,status,{'cache-control':'no-store',...headers}),
+      log:feedback=>logFunnelEvent(request,'trial_feedback',env,feedback)
+    });
+  }
   if (trialRequestPath === WORKER_TRIAL_PATH || trialRequestPath === OUTPUT_TRIAL_PATH) {
     const profile = agentProfile(request, env);
     if (!outputTrialEnabled(profile, env) ||

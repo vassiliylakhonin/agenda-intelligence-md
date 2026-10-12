@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reconcile completed Output Verification verdicts in usage counters without treating unknown decisions or execution failures as usable results. Disable repeated free submissions after quota refusal until an explicit successful availability check. Add optional bounded usefulness feedback tied to an existing completed same-network/product trial, with input/result-free telemetry and privacy disclosure. Keep prices and atomic campaign limits.
+
 - Complete custom-domain navigation in landing pages, hosted llms.txt and MCP orientation. Preserve summary links for both new canonical hosts and saved workers.dev results while rejecting unrelated destinations.
 
 - Publish the registered agendamcp.dpdns.org custom-domain origins in fleet discovery, verifier handoffs, routing recommendations and agent-readable documentation. Preserve workers.dev aliases, OAuth issuer identifiers, tool contracts, authentication and payment admission.
