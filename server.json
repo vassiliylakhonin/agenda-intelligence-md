@@ -20,55 +20,55 @@
       }
     }
   ],
-  "websiteUrl": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/",
+  "websiteUrl": "https://agendamcp.dpdns.org/",
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
+      "url": "https://agendamcp.dpdns.org/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
+      "url": "https://output-verification.agendamcp.dpdns.org/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
+      "url": "https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://cis-secondary-sanctions-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
+      "url": "https://cis-secondary-sanctions.agendamcp.dpdns.org/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://agentic-interaction-trust-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
+      "url": "https://interaction-trust.agendamcp.dpdns.org/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://gulf-maritime-exposure-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
+      "url": "https://gulf-maritime-exposure.agendamcp.dpdns.org/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
+      "url": "https://kazakhstan-market-entry-readiness.agendamcp.dpdns.org/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://corridor-sanctions-assistant-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
+      "url": "https://corridor-sanctions-assistant.agendamcp.dpdns.org/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
+      "url": "https://critical-minerals-due-diligence.agendamcp.dpdns.org/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://dual-use-technology-export-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
+      "url": "https://dual-use-technology-export.agendamcp.dpdns.org/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
+      "url": "https://agent-financial-guard.agendamcp.dpdns.org/mcp/agent"
     },
     {
       "type": "streamable-http",
-      "url": "https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev/mcp/agent"
+      "url": "https://m2m-escrow-arbiter.agendamcp.dpdns.org/mcp/agent"
     }
   ]
 }

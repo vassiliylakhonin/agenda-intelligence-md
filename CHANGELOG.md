@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Move all twelve official MCP Registry remotes and the website to the registered custom domains. Support immutable registry-only metadata revisions without republishing Python packages; preserve workers.dev aliases and signing keys.
+
 - Repair the hosted quickstart's A2A example extraction from the signed card extension and document A2A 1.0 endpoint discovery. Distinguish empty, malformed, invalid-UTF-8 and oversized JSON admission failures with finite privacy-preserving diagnostics and specific repair instructions. Preserve input rejection, quotas, prices and authorization; historical failures remain unattributed.
 
 - Publish existing evidence-review facets for nine one-skill Worker profiles with executable A2A examples and response JSON pointers. Preserve original skill ids, paid admission, configured authentication and human-review boundaries; no unimplemented security, protocol or business-identity declarations.

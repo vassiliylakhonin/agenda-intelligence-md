@@ -25,7 +25,14 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "server.json"
 WRANGLER = ROOT / "deploy" / "cloudflare-worker" / "wrangler.toml"
-WORKERS_SUBDOMAIN = "vassiliy-lakhonin.workers.dev"
+DOMAINS = ROOT / "docs" / "deployment" / "custom-domains.md"
+
+
+def deployed_endpoints() -> dict[str, str]:
+    pairs = dict(re.findall(r"^\| ([a-z0-9-]+) \| (https://[^ ]+) \|$", DOMAINS.read_text(), re.MULTILINE))
+    names = declared_worker_names()
+    assert names <= pairs.keys(), "a deployed Worker has no documented custom-domain mapping"
+    return {name: pairs[name] for name in names}
 
 
 def declared_worker_names() -> set[str]:
@@ -43,8 +50,8 @@ def remotes() -> list[dict]:
 
 
 def test_every_hosted_endpoint_is_declared() -> None:
-    declared = {(urlsplit(remote["url"]).hostname or "").removesuffix(f".{WORKERS_SUBDOMAIN}") for remote in remotes()}
-    missing = sorted(declared_worker_names() - declared)
+    declared = {remote["url"] for remote in remotes()}
+    missing = sorted(set(deployed_endpoints().values()) - declared)
     assert not missing, (
         "wrangler.toml deploys Workers the registry manifest does not mention, "
         "so they are invisible to anyone browsing the registry: " + ", ".join(missing)
@@ -52,15 +59,13 @@ def test_every_hosted_endpoint_is_declared() -> None:
 
 
 def test_no_declared_endpoint_is_invented() -> None:
-    names = declared_worker_names()
+    deployed = set(deployed_endpoints().values())
     unknown = []
     for remote in remotes():
         url = remote["url"]
         assert url.startswith("https://"), f"{url} is not https"
         assert urlsplit(url).path == "/mcp/agent", f"{url} does not point at the MCP endpoint"
-        host = urlsplit(url).hostname or ""
-        assert host.endswith(f".{WORKERS_SUBDOMAIN}"), f"{url} is not a Worker of this fleet"
-        if host.removesuffix(f".{WORKERS_SUBDOMAIN}") not in names:
+        if url not in deployed:
             unknown.append(url)
 
     assert not unknown, "the manifest points the registry at endpoints no deployment serves: " + ", ".join(unknown)
@@ -82,4 +87,4 @@ def test_remotes_are_streamable_http_and_unique() -> None:
     # The general profile comes first: it is the deployment whose scope matches
     # this entry's description, and a client that takes the first remote without
     # reading further should land there rather than on a vertical gate.
-    assert urls[0] == f"https://agenda-intelligence-a2a.{WORKERS_SUBDOMAIN}/mcp/agent"
+    assert urls[0] == "https://agendamcp.dpdns.org/mcp/agent"

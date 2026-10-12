@@ -87,6 +87,18 @@ If manual publishing should also use Trusted Publishing, add a second PyPI trust
 
 After setup, remove the `password: ${{ secrets.PYPI_API_TOKEN }}` input from the publish steps and set `attestations: true`. Then the `PYPI_API_TOKEN` secret is no longer required for these workflows.
 
+## MCP Registry metadata-only updates
+
+Published Registry versions are immutable. To change discovery metadata without
+releasing a new package, update `server.json` on main and run `Publish to MCP
+Registry` on main with `version` equal to the current package version and
+`registry_version` equal to the next patch plus `-registry.N` (for example,
+`1.16.1-registry.1` while the package remains `1.16.0`). The workflow checks out
+the immutable dispatch SHA, validates the package pins, changes only the
+publication's top-level version, waits for the existing PyPI package and verifies
+the exact latest Registry endpoints and website. The next normal patch release
+sorts after its metadata prerelease. Do not republish or retag an existing release.
+
 ## Release Smoke
 
 `post-release-smoke.yml` installs the published PyPI package and verifies:

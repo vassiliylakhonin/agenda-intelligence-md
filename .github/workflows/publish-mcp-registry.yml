@@ -9,6 +9,10 @@ on:
         description: 'Version to publish (e.g. 1.0.1). Required for manual catch-up runs; ignored when triggered by a tag push.'
         required: false
         default: ''
+      registry_version:
+        description: 'Optional metadata-only revision: next patch version with -registry.N suffix. Uses the dispatch commit; leaves package versions unchanged.'
+        required: false
+        default: ''
 
 jobs:
   publish:
@@ -21,7 +25,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref }}
+          ref: ${{ inputs.registry_version != '' && github.sha || (github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref) }}
 
       - name: Determine version
         id: version
@@ -45,6 +49,26 @@ jobs:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
           jq -e --arg v "$RELEASE_VERSION" '.version == $v and all(.packages[]; .version == $v)' server.json
+
+      - name: Prepare registry-only metadata revision
+        if: inputs.registry_version != ''
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          REGISTRY_VERSION: ${{ inputs.registry_version }}
+        run: |
+          python - <<'PYTHON'
+          import json, os, re
+          from pathlib import Path
+          major, minor, patch = map(int, os.environ['RELEASE_VERSION'].split('.'))
+          prefix = f'{major}.{minor}.{patch + 1}-registry.'
+          revision = os.environ['REGISTRY_VERSION']
+          if not re.fullmatch(re.escape(prefix) + r'[1-9][0-9]*', revision):
+              raise SystemExit('Registry-only version must be next patch with -registry.N suffix')
+          path = Path('server.json')
+          manifest = json.loads(path.read_text())
+          manifest['version'] = revision
+          path.write_text(json.dumps(manifest, indent=2) + '\n')
+          PYTHON
 
       - name: Install pinned mcp-publisher
         env:
@@ -117,8 +141,8 @@ jobs:
               official = entry.get('_meta', {}).get('io.modelcontextprotocol.registry/official', {})
               if (latest.get('name') == manifest['name']
                       and official.get('isLatest') is True
-                      and latest.get('version') == os.environ['RELEASE_VERSION']):
-                  for field in ('packages', 'remotes'):
+                      and latest.get('version') == manifest['version']):
+                  for field in ('packages', 'remotes', 'websiteUrl'):
                       assert latest.get(field) == manifest.get(field), field + ' drift'
                   print('Verified latest registry version, package and remote endpoints')
                   break
