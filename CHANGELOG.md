@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Publish existing evidence-review facets for nine one-skill Worker profiles with executable A2A examples and response JSON pointers. Preserve original skill ids, paid admission, configured authentication and human-review boundaries; no unimplemented security, protocol or business-identity declarations.
+
 - Reconcile completed Output Verification verdicts in usage counters without treating unknown decisions or execution failures as usable results. Disable repeated free submissions after quota refusal until an explicit successful availability check. Add optional bounded usefulness feedback tied to an existing completed same-network/product trial, with input/result-free telemetry and privacy disclosure. Keep prices and atomic campaign limits.
 
 - Complete custom-domain navigation in landing pages, hosted llms.txt and MCP orientation. Preserve summary links for both new canonical hosts and saved workers.dev results while rejecting unrelated destinations.

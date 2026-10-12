@@ -1,3 +1,4 @@
+import { addSkillDiscovery } from './skill-discovery.js';
 import { handleTrialFeedback } from './trial-feedback.js';
 import { mcpAgentAdmissionResponse } from './mcp-admission.js';
 import { lookupChplTier } from "./chpl.js";
@@ -1282,7 +1283,7 @@ function agentCard(request, env = {}) {
     decision_boundary: "No legal, sanctions, financial or trading clearance. Human review before any commercial action.",
     price: env.BILLING_MODE === "pay_per_call" ? "Paid evaluations require signed payment or Pro entitlement. See /.well-known/x402." : "Free A2A triage. Optional paid paths (where offered): x402 micro-check 0.05 USDC, bankability dossier 25 USDC, Pro 490 USD/month. Check the live pricing manifest before paying."
   };
-  return shaped;
+  return addSkillDiscovery(shaped, profile);
 }
 
 // The card carries the same contract tools/list carries.
