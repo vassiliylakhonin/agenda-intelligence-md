@@ -370,7 +370,7 @@ function landingHtml(request, env) {
     <div id="profile-summary" aria-live="polite"></div>
     <div id="profile-progress" aria-live="polite"></div>
     <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
-    ${freeTrial ? `<p>Did this give you a useful next step? <a id="profile-helpful" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL, 'useful_next_step'))}">Useful next step</a> · <a id="profile-blocked" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL, 'still_blocked'))}">Still blocked</a><br>
+    ${freeTrial ? `<p>Did this give you a useful next step? <button id="profile-helpful" type="button" disabled onclick="submitTrialFeedback('useful_next_step')">Useful next step</button> · <button id="profile-blocked" type="button" disabled onclick="submitTrialFeedback('still_blocked')">Still blocked</button><br><small>Optional: sends only your choice linked to the completed free check, without its input or result. <a href="/privacy">Privacy</a>.</small><span id="profile-feedback-status" role="status"></span><br>
     <a id="profile-feedback" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL))}">Share what helped or blocked your task</a><br><small>Opens an optional email draft. Your request and result are not attached. Review and send it yourself.</small></p>` : ''}
   </div>` : ""}
   <h2>Evaluation and paid services</h2>
@@ -481,6 +481,9 @@ function showWorkedExample() {
 }
 var agendaTrialTraceId = null;
 var agendaLastReview = null;
+var agendaTrialBlocked = false;
+var agendaFeedbackAttempt = null;
+var agendaFeedbackSent = false;
 ${freeTrial ? `function setTrialRecovery(visible) {
   var element = document.getElementById('profile-recovery');
   if (element) element.hidden = !visible;
@@ -498,9 +501,13 @@ async function refreshTrialAvailability() {
     var availability = body.availability;
     if (!response.ok || !availability) throw new Error('unavailable');
     if (availability.status === 'available') {
+      agendaTrialBlocked = false;
+      document.getElementById('profile-run').disabled = false;
       status.textContent = availability.remaining_attempts + ' free attempt(s) remain for this network and product. This is an advisory snapshot; submission checks the current limits again.';
       setTrialRecovery(false);
     } else if (availability.status === 'network_allowance_exhausted' || availability.status === 'daily_capacity_exhausted') {
+      agendaTrialBlocked = true;
+      document.getElementById('profile-run').disabled = true;
       status.textContent = availability.status === 'network_allowance_exhausted'
         ? 'This network has used this product’s two campaign attempts. Shared networks share the allowance; it does not reset daily. The saved example is still free.'
         : 'Today’s shared free capacity is full. Retry after the next UTC midnight. The saved example is still free.';
@@ -514,20 +521,43 @@ async function refreshTrialAvailability() {
 }` : ''}
 ${freeTrial ? `function updateTrialFeedback(status) {
   document.getElementById('profile-feedback').href = trialFeedbackMailto(${JSON.stringify(profile)}, status, ${JSON.stringify(SUPPORT_CONTACT_EMAIL)});
-  ['helpful','blocked'].forEach(function(kind) {
-    var element = document.getElementById('profile-' + kind);
-    if (element) element.href = trialFeedbackMailto(${JSON.stringify(profile)}, status, ${JSON.stringify(SUPPORT_CONTACT_EMAIL)}, kind === 'helpful' ? 'useful_next_step' : 'still_blocked');
-  });
+}` : ''}
+${freeTrial ? `async function submitTrialFeedback(choice) {
+  var status = document.getElementById('profile-feedback-status');
+  if (!agendaFeedbackAttempt) { status.textContent = 'Complete a free check before rating it.'; return; }
+  if (agendaFeedbackSent) { status.textContent = 'Feedback already recorded for this check.'; return; }
+  agendaFeedbackSent = true;
+  try {
+    var response = await fetch('/telemetry/trial-feedback', {method:'POST',
+      headers:agendaTelemetryHeaders('/telemetry/trial-feedback', {'content-type':'application/json'}),
+      body:JSON.stringify({attempt_id:agendaFeedbackAttempt, response:choice})});
+    if (!response.ok) throw new Error('unavailable');
+    status.textContent = 'Thanks — your choice was recorded. No input or result was sent.';
+  } catch {
+    agendaFeedbackSent = false;
+    status.textContent = 'Feedback could not be recorded. You can retry or use the optional email draft.';
+  }
 }` : ''}
 async function runProfileExample(event, paid) {
   event.preventDefault();
   var button = document.getElementById('profile-run');
   var status = document.getElementById('profile-status');
   var result = document.getElementById('profile-result');
+  ${freeTrial ? `if (!paid && agendaTrialBlocked) {
+    status.textContent = 'Free allowance is exhausted. Check availability again, view the saved example, or explicitly choose a paid evaluation. Your input is preserved.';
+    setTrialRecovery(true);
+    return;
+  }` : ''}
   button.disabled = true;
   ${freeTrial ? "document.getElementById('profile-paid').disabled = true;" : ''}
   status.textContent = 'Evaluating supplied evidence…';
-  ${freeTrial ? 'updateTrialFeedback(null);' : ''}
+  ${freeTrial ? `updateTrialFeedback(null);
+  agendaFeedbackAttempt = null;
+  agendaFeedbackSent = false;
+  ['helpful','blocked'].forEach(function(kind) {
+    var element = document.getElementById('profile-' + kind);
+    if (element) element.disabled = true;
+  });` : ''}
   ${freeTrial ? 'setTrialRecovery(false);' : ''}
   document.getElementById('profile-summary').innerHTML = '';
   if (document.getElementById('profile-progress')) document.getElementById('profile-progress').innerHTML = '';
@@ -550,6 +580,16 @@ async function runProfileExample(event, paid) {
     var body = await response.json();
     document.getElementById('profile-response').hidden = false;
     result.textContent = JSON.stringify(body, null, 2);
+    ${freeTrial ? `if (!paid && response.ok && body.trial?.completion_recorded) {
+      agendaFeedbackAttempt = response.headers.get('x-payment-attempt-id');
+      agendaFeedbackSent = false;
+      ['helpful','blocked'].forEach(function(kind) {
+        var element = document.getElementById('profile-' + kind);
+        if (element) element.disabled = !agendaFeedbackAttempt;
+      });
+      var feedbackStatus = document.getElementById('profile-feedback-status');
+      if (feedbackStatus) feedbackStatus.textContent = '';
+    }` : ''}
     if (response.ok) {
       var review = body.result?.structuredContent || body;
       document.getElementById('profile-summary').innerHTML = reviewSummaryHtml(review, safeHtml, ${JSON.stringify(workflow)});
@@ -560,6 +600,7 @@ async function runProfileExample(event, paid) {
     ${freeTrial ? 'updateTrialFeedback(response.status);' : ''}
     ${freeTrial ? `if (response.ok || response.status === 429) document.getElementById('profile-paid').hidden = false;
     if (!paid && response.status === 429) {
+      agendaTrialBlocked = true;
       status.textContent = body.error + ' Your input is preserved. No payment was made.';
       setTrialRecovery(true);
       return;
@@ -567,7 +608,7 @@ async function runProfileExample(event, paid) {
     status.textContent = (response.ok ? 'Evaluation returned. Inspect evidence gaps and limitations before acting.' : 'Request failed (HTTP ' + response.status + '). See the response below.') + ' Trace: ' + traceId;
   } catch (error) {
     status.textContent = 'Evaluation failed: ' + error.message;
-  } finally { button.disabled = false; ${freeTrial ? "document.getElementById('profile-paid').disabled = false;" : ''} }
+  } finally { button.disabled = ${freeTrial ? 'agendaTrialBlocked' : 'false'}; ${freeTrial ? "document.getElementById('profile-paid').disabled = false;" : ''} }
 }
 if (typeof window !== 'undefined' && window.location?.href && new URL(window.location.href).searchParams.get('example') === '1') showWorkedExample();
 var FIN_SCENARIOS = {

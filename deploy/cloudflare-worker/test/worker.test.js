@@ -9891,6 +9891,23 @@ test("qualified chain does not count unknown or error outcomes as completions", 
   assert.equal(chain.confirmed_paid_executions, null);
 });
 
+test("Output domain outcomes reconcile KV while explicit execution failures and unknowns stay separate", async () => {
+  const env = { AGENDA_USAGE: new MemoryKv() };
+  const rows = [
+    ['block_unsafe_claims','completed'], ['verify_before_relay','completed'],
+    ['not_decision_ready','completed'], ['insufficient_information','completed'],
+    ['brand_new_unknown','completed'], ['block_unsafe_claims','error']
+  ];
+  for (const [decision,status] of rows) await recordUsageStats(env, {
+    event:'agenda_intelligence_a2a_usage', timestamp:'2026-10-12T01:34:00.000Z',
+    caller_kind:'external',caller_hash:'same-network',prompt_chars:710,likely_probe:false,
+    outcome:{decision,status}
+  });
+  const chain = (await usageStats(env,'2026-10-12')).counters.qualified_chain;
+  assert.equal(chain.usable_completions,3);
+  assert.equal(chain.unique_callers,1);
+});
+
 test("trace id propagates from the caller header into the task and the usage event", async () => {
   const logged = [];
   const originalLog = console.log;

@@ -25,7 +25,7 @@ export function outputTrialTerms(profile = 'agent_output_verification') {
     paid_price_usdc: profile === 'm2m_escrow_arbiter' ? 0.5 : 0.05 };
 }
 
-async function trialClientKey(request, env, profile) {
+export async function trialClientKey(request, env, profile) {
   const ip = request.headers.get('cf-connecting-ip');
   if (!ip || !env.PAYMENT_LEDGER?.prepare) throw new Error('trial_store_unavailable');
   // Preserve the already shipped Output campaign keys; all other profiles have

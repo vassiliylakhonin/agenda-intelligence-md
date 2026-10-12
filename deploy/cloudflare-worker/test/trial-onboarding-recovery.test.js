@@ -83,14 +83,14 @@ test('browser checks allowance without submitting input and offers saved example
   const env=envFor(),terms=await (await get(env,'/v1/trial')).json();
   const html=await (await handleRequest(new Request(origin+'/?owner_test=1',{headers:{accept:'text/html'}}),env)).text();
   const ids=['profile-run','profile-paid','profile-status','profile-result','profile-summary','profile-response',
-    'profile-request','profile-feedback','profile-recovery','profile-allowance','profile-allowance-check','worked-example'];
+    'profile-request','profile-feedback','profile-helpful','profile-blocked','profile-feedback-status','profile-recovery','profile-allowance','profile-allowance-check','worked-example'];
   const elements=Object.fromEntries(ids.map(id=>[id,{value:JSON.stringify(terms.example_request),
     innerHTML:'',textContent:'',hidden:true,scrollIntoView(){}}]));
   const methods=[];
   const context={URL,window:{location:{href:origin+'/?owner_test=1',origin},crypto:globalThis.crypto},crypto:globalThis.crypto,
     document:{getElementById:id=>elements[id],createElement:()=>({set textContent(value){this.innerHTML=String(value);}})},
     fetch:async(url,init)=>{methods.push(init.method || 'GET');return handleRequest(new Request(new URL(url,origin),
-      {...init,headers:{...init.headers,...headers}}),env);}};
+      {...init,headers:{...init.headers,...headers,origin}}),env);}};
   vm.runInNewContext([...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1],context);
   context.agendaPaidFetch=()=>{throw new Error('Payment must require explicit opt-in');};
   await context.refreshTrialAvailability();
@@ -98,12 +98,27 @@ test('browser checks allowance without submitting input and offers saved example
   assert.equal(await count(env),0);
   assert.match(elements['profile-allowance'].textContent,/2 free attempt/);
   const input=elements['profile-request'].value;
-  for(let i=0;i<3;i++) await context.runProfileExample({preventDefault(){}});
+  await context.runProfileExample({preventDefault(){}});
+  const trialPosts=methods.filter(method=>method==='POST').length;
+  await context.submitTrialFeedback('useful_next_step');
+  assert.match(elements['profile-feedback-status'].textContent,/choice was recorded/);
+  await context.submitTrialFeedback('still_blocked');
+  assert.equal(methods.filter(method=>method==='POST').length,trialPosts+1);
+  for(let i=0;i<2;i++) await context.runProfileExample({preventDefault(){}});
   assert.equal(elements['profile-request'].value,input);
   assert.equal(elements['profile-recovery'].hidden,false);
   assert.equal(elements['profile-paid'].hidden,false);
+  assert.equal(elements['profile-run'].disabled,true);
+  assert.equal(elements['profile-helpful'].disabled,true);
+  const posted=methods.filter(method=>method==='POST').length;
+  await context.runProfileExample({preventDefault(){}});
+  assert.equal(methods.filter(method=>method==='POST').length,posted);
   await context.refreshTrialAvailability();
   assert.match(elements['profile-allowance'].textContent,/does not reset daily/);
+  assert.equal(elements['profile-run'].disabled,true);
+  context.fetch=async()=>({ok:true,json:async()=>({availability:{status:'available',remaining_attempts:1}})});
+  await context.refreshTrialAvailability();
+  assert.equal(elements['profile-run'].disabled,false);
   context.showWorkedExample();
   assert.equal(elements['worked-example'].hidden,false);
   assert.equal(elements['profile-request'].value,input);
