@@ -517,6 +517,13 @@ Do not name that variable `CF_API_TOKEN`. Wrangler 4 auto-loads `.env` from the 
 
 One trap the script works around: Cloudflare samples this dataset on wider timeframes. Measured 2026-08-07 — a 6-hour query ran at `abr_level` 1 (every row), a 24-hour query at `abr_level` 10, which reported five real events as one. `npm run funnel` therefore walks the window in 6-hour slices and merges them, and prints a warning if a slice comes back sampled anyway. A raw wide-window query against this dataset will quietly undercount.
 
+Payment events v5 add `input_diagnostics` only for JSON body admission failures:
+finite failure/media-type labels and origin/referrer relations (same origin,
+other, absent, invalid, or the known Agenstry referrer). They do not retain raw
+headers, input, parser errors or body lengths. Relations remain unverified hints;
+they cannot establish a caller or explain historical events lacking these fields.
+See [hosted quickstart](../../docs/deployment/hosted-quickstart.md) for the contract.
+
 The custom usage event is privacy-safe by design. It does not log IP addresses, cookies, authorization headers, or full prompt text. It keeps only:
 
 - request method and path;

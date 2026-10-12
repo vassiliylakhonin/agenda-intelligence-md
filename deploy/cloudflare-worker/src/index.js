@@ -12,7 +12,7 @@ import { OUTPUT_TRIAL_PATH, handleOutputTrial, outputTrialEnabled, outputTrialTe
 import { trialCompletionStats, trialOriginGroup } from './trial-receipts.js';
 import { WORKER_TRIAL_PATH, trialProfile, trialPath } from './trial-profiles.js';
 import { WORKED_EXAMPLES } from './worked-examples.js';
-import { readBoundedJson, MAX_JSON_BODY_BYTES } from "./request-body.js";
+import { readBoundedJson, MAX_JSON_BODY_BYTES, jsonInputDiagnostics } from "./request-body.js";
 import { PUBLIC_SCHEMAS } from "./public-schemas.js";
 import { trustPage } from "./trust-pages.js";
 import { createLandingRenderer } from "./landing-ui.js";
@@ -15183,14 +15183,18 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
     const attempt_id = crypto.randomUUID();
     const caller_hash = await callerHash(request, env).catch(() => null);
     const validation = { category: status === 413 ? 'body_too_large' : 'invalid_json', error_count: 1 };
+    const input_diagnostics = jsonInputDiagnostics(request, error);
     for (const stage of ['request_received', 'payment_rejected']) logPaymentEvent(request, env,
       {stage, attempt_id, payment_trace_id: trace, caller_hash, profile,
-        reason: stage === 'payment_rejected' ? 'invalid_paid_request' : null, status, validation});
-    const data = {code:'invalid_paid_request', validation,
+        reason: stage === 'payment_rejected' ? 'invalid_paid_request' : null, status, validation, input_diagnostics});
+    const data = {code:'invalid_paid_request', validation, input_diagnostics,
       request_hint: { ...paidRequestHint(request, null, profile, env),
         content_type: 'application/json',
         max_body_bytes: MAX_JSON_BODY_BYTES,
         body_instruction: status === 413 ? `Reduce the body to at most ${MAX_JSON_BODY_BYTES} UTF-8 bytes; remove unnecessary content without inventing evidence.`
+          : input_diagnostics.failure === 'empty_body' ? 'The request body is empty. Send the example_request serialized as a UTF-8 JSON object with Content-Type: application/json.'
+          : input_diagnostics.failure === 'invalid_utf8' ? 'Encode the complete JSON request as UTF-8 before sending it with Content-Type: application/json.'
+          : ['form_urlencoded', 'multipart'].includes(input_diagnostics.media_type) ? 'Send a serialized JSON object with Content-Type: application/json, rather than HTML form fields or multipart data.'
           : 'Send a complete UTF-8 JSON object using your JSON serializer. Do not send shell quoting, comments or trailing commas.' } };
     return paymentTraceResponse(jsonResponse(protocol
       ? {...data, jsonrpc:'2.0', id:null, error:{code:status === 413 ? -32600 : -32700, message:'Invalid JSON payload', data}}

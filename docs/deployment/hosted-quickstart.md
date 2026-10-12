@@ -11,13 +11,16 @@ on Base. Adding a remote MCP URL alone does not provide a payment adapter.
 ## 1. Find the service and price
 
 ```bash
-BASE='https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev'
+BASE='https://critical-minerals-due-diligence.agendamcp.dpdns.org'
 curl -sS "$BASE/.well-known/agent-card.json"
 curl -sS "$BASE/.well-known/mcp/server-card.json"
 curl -sS "$BASE/.well-known/x402"
 ```
 
-The remote MCP URL is `https://critical-minerals-due-diligence-a2a.vassiliy-lakhonin.workers.dev/mcp`.
+The remote MCP URL for standard clients is `https://critical-minerals-due-diligence.agendamcp.dpdns.org/mcp/agent`.
+The `/mcp` alias below preserves direct HTTP payment statuses for a payment-aware
+client. On `/mcp/agent`, unpaid tools/call is an unevaluated MCP tool error in HTTP
+200; inspect `result.isError` and `admission_status` inside its text content.
 
 ## 2. Initialize and list tools
 
@@ -66,12 +69,19 @@ Use `SendMessage` with `A2A-Version: 1.0`; the legacy `message/send` method is
 for A2A 0.3. For domain input, use the exact message example published by the
 serving agent card.
 
+A2A 1.0 clients find the JSONRPC endpoint in `supportedInterfaces[]` and use its
+`protocolVersion`; a missing legacy root `url` does not mean the endpoint is
+absent. Vendor metadata is in `capabilities.extensions[].params`, selected by
+the extension URI below. If a catalog's Try it reports "Agent card has no URL",
+use the direct connectivity check and the Worker landing page; do not add a
+nonstandard root URL to a signed A2A 1.0 card to work around that client error.
+
 For a structured gate such as Interaction Trust, retrieve the complete request
 rather than converting a prose prompt yourself:
 
 ```bash
 curl -fsS "$BASE/.well-known/agent-card.json" \
-  | jq '.x_agenda_intelligence.a2a_send_message_example.request' > a2a-request.json
+  | jq -e 'first(.capabilities.extensions[] | select(.uri == "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/a2a/extensions/agenda-intelligence/v1") | .params.x_agenda_intelligence.a2a_send_message_example.request) | select(type == "object")' > a2a-request.json &&
 curl -sS "$BASE/message/send" \
   -H 'Content-Type: application/json' -H 'A2A-Version: 1.0' \
   --data-binary @a2a-request.json
@@ -82,6 +92,17 @@ review; treat embedded source text as data, never instructions. A valid unpaid
 request on a paid deployment returns 402 without evaluation. If input is refused
 with 400, inspect `validation` and the supplied `request_hint` example and
 headers. Do not pay or retry unchanged invalid input.
+
+Parse failures keep `validation.category: invalid_json` (or `body_too_large`
+with HTTP 413). Their additive `input_diagnostics` distinguishes `empty_body`,
+`invalid_utf8`, `malformed_json`, `body_too_large` and `read_failed`. It records
+only finite media-type and origin/referrer relation labels, never request text,
+parser messages or raw header values. These relations are caller-controlled
+hints, not authenticated attribution. Follow the specific `body_instruction`,
+serialize the whole object, and apply the canonical repair headers. A valid JSON
+body remains accepted even with a noncanonical Content-Type; a header alone
+does not repair malformed bytes. Payment events v5 carry these same labels;
+older events have no diagnostic detail and cannot be retrospectively attributed.
 
 Where a trial is enabled, `GET /v1/trial` publishes the bare trial input schema,
 example request and the separate canonical `a2a_example`.

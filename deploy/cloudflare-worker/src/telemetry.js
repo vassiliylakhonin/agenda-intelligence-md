@@ -1,5 +1,6 @@
 import { MCP_ENDPOINT_PATH } from "./mcp.js";
 import { normalizePaymentTrace } from './payment-trace.js';
+import { safeJsonInputDiagnostics } from './request-body.js';
 // Usage, funnel classification and decision-journal persistence. No domain decisions.
 import { VERSION } from "./profiles.js";
 import { sha256Jcs } from "./decision-receipt.js";
@@ -393,12 +394,14 @@ function exampleTraceId(request) {
 }
 const VALIDATION_CATEGORIES = new Set(['unsupported_protocol', 'invalid_message', 'invalid_jsonrpc',
   'invalid_request_object', 'missing_structured_request', 'schema_validation_failed', 'missing_input', 'invalid_json', 'body_too_large']);
-function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, profile, minimum_usdc, reason = null, status = null, validation = null, caller_hash = null, execution_id = null, trial_limit_reason = null }) {
+function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, profile, minimum_usdc, reason = null, status = null, validation = null, caller_hash = null, execution_id = null, trial_limit_reason = null, input_diagnostics = null }) {
   try {
     const url = new URL(request.url);
     const safeValidation = validation && VALIDATION_CATEGORIES.has(validation.category) ?
       { category: validation.category, error_count: Math.min(100, Math.max(0, Number.isInteger(validation.error_count) ? validation.error_count : 0)) } : null;
-    console.log({ event: "agenda_intelligence_payment", event_version: 4,
+    const safeInput = ['invalid_json', 'body_too_large'].includes(safeValidation?.category) ? safeJsonInputDiagnostics(input_diagnostics) : null;
+    console.log({ event: "agenda_intelligence_payment", event_version: 5,
+      ...(safeInput ? { input_diagnostics: safeInput } : {}),
       caller_hash: /^[0-9a-f]{16}$/.test(caller_hash || "") ? caller_hash : null,
       execution_id: /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(execution_id || "") ? execution_id : null,
       timestamp: new Date().toISOString(), attempt_id, stage, reason, status,

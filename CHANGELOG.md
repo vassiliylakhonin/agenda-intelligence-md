@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Repair the hosted quickstart's A2A example extraction from the signed card extension and document A2A 1.0 endpoint discovery. Distinguish empty, malformed, invalid-UTF-8 and oversized JSON admission failures with finite privacy-preserving diagnostics and specific repair instructions. Preserve input rejection, quotas, prices and authorization; historical failures remain unattributed.
+
 - Publish existing evidence-review facets for nine one-skill Worker profiles with executable A2A examples and response JSON pointers. Preserve original skill ids, paid admission, configured authentication and human-review boundaries; no unimplemented security, protocol or business-identity declarations.
 
 - Reconcile completed Output Verification verdicts in usage counters without treating unknown decisions or execution failures as usable results. Disable repeated free submissions after quota refusal until an explicit successful availability check. Add optional bounded usefulness feedback tied to an existing completed same-network/product trial, with input/result-free telemetry and privacy disclosure. Keep prices and atomic campaign limits.

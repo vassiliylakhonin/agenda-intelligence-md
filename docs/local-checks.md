@@ -14,6 +14,8 @@ Before the first Worker test run, install its pinned development dependencies wi
 `npm ci --prefix deploy/cloudflare-worker`. The browser regression bundles the
 actual Worker with Wrangler's default `keepNames` behavior, then executes the
 generated landing scripts in an isolated browser context.
+The hosted quickstart regression also requires `jq` (included on the GitHub
+Ubuntu runner) to execute the documented filter against actual wire cards.
 
 ## Lint order matters
 
