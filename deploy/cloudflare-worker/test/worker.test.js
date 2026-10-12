@@ -4189,7 +4189,7 @@ test("cis_secondary_sanctions profile is detected from host and env", () => {
   const card = agentCard(cisRequest, {});
   assert.equal(card.x_agenda_intelligence.product_profile, "cis_secondary_sanctions");
   assert.equal(card.name, "CIS Secondary-Sanctions Exposure");
-  assert.ok(Array.isArray(card.skills) && card.skills.length === 1);
+  assert.ok(Array.isArray(card.skills) && card.skills.length === 3);
   assert.equal(card.skills[0].id, "cis-secondary-sanctions-exposure");
   assert.match(card.description, /exporter, importer, trader, freight forwarder, or finance lead/);
   assert.match(card.description, /request the redacted intake by email at \S+@\S+/);
@@ -4324,7 +4324,7 @@ test("agentic_interaction_trust profile is detected from host and env", () => {
   const card = agentCard(agenticRequest, {});
   assert.equal(card.x_agenda_intelligence.product_profile, "agentic_interaction_trust");
   assert.equal(card.name, "Agentic Interaction Trust Gate");
-  assert.equal(card.skills.length, 1);
+  assert.equal(card.skills.length, 3);
   assert.equal(card.skills[0].id, "agentic-interaction-trust-gate");
   assert.equal(card.x_agenda_intelligence.product_contract.canonical_input_mode, "structured_json");
   assert.equal(
@@ -4421,7 +4421,7 @@ test("corridor_sanctions_assistant profile is detected and is a routing front, n
   const card = agentCard(corridorAssistantRequest, {});
   assert.equal(card.x_agenda_intelligence.product_profile, "corridor_sanctions_assistant");
   assert.equal(card.name, "Corridor & Sanctions Risk Assistant");
-  assert.equal(card.skills.length, 1);
+  assert.equal(card.skills.length, 3);
   assert.equal(card.skills[0].id, "corridor-sanctions-orientation");
   // Front, not a gate: no structured product contract or schema.
   assert.equal(card.x_agenda_intelligence.product_contract, undefined);
@@ -7204,7 +7204,9 @@ test("dual-use technology deployment serves its own signed-card payload", async 
     card.capabilities.extensions[0].params.x_agenda_intelligence.product_profile,
     "dual_use_technology_export"
   );
-  assert.deepEqual(card.skills.map((skill) => skill.id), ["dual-use-technology-export-controls"]);
+  assert.deepEqual(card.skills.map((skill) => skill.id), [
+    "dual-use-technology-export-controls", "export-file-reference-review", "export-diversion-review-handoff"
+  ]);
 });
 
 test("dual-use technology profile routes structured MCP requests to its declared contract", async () => {
