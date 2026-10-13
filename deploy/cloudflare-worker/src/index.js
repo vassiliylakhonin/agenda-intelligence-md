@@ -15040,17 +15040,18 @@ function trialOpenApiPaths(request, env) {
   const profile = agentProfile(request, env);
   if (!outputTrialEnabled(profile, env)) return {};
   const adapter = workerTrialAdapter(profile);
+  const limit = outputTrialTerms(profile).attempts_per_network;
   const contract = {
     get: { tags: ['gates'], summary: 'Free trial terms, matching input schema and illustrative request',
       parameters: [{ name: 'availability', in: 'query', required: false,
         schema: { type: 'string', enum: ['1'] },
         description: 'Read-only advisory allowance for the requesting network. Reserves nothing; production authorization applies. POST still checks both limits atomically.' }],
-      responses: { 200: { description: 'Two campaign attempts per network per product. With availability=1, availability contains status (available, network_allowance_exhausted or daily_capacity_exhausted), remaining_attempts (0–2), checked_at (ISO time), reset_at (ISO time only for daily capacity, otherwise null), advisory=true and attempt_consumed=false.' },
+      responses: { 200: { description: `${limit} campaign attempts per network per product. With availability=1, availability contains status (available, network_allowance_exhausted or daily_capacity_exhausted), remaining_attempts (0–${limit}), checked_at (ISO time), reset_at (ISO time only for daily capacity, otherwise null), advisory=true and attempt_consumed=false.` },
         401: { description: 'Availability requires the same deployment authorization as trial POST; public terms remain readable.' },
         503: { description: 'Availability cannot be determined; code=trial_unavailable. No attempt consumed.' } } },
     post: {
       tags: ['gates'], summary: 'Free first evaluation for this product',
-      description: 'Two reserved attempts per network address per product for this campaign. Shared networks share the allowance. One fleet-wide ceiling of 1,000 attempts per UTC day. No payment credentials. Uses the existing evaluator; paid hosted OpenSanctions fallback is disabled. Human review is required.',
+      description: `${limit} reserved attempts per network address per product for this campaign. Shared networks share the allowance. One fleet-wide ceiling of 1,000 attempts per UTC day. No payment credentials. Uses the existing evaluator; paid hosted OpenSanctions fallback is disabled. Human review is required.`,
       requestBody: { required: true, content: { 'application/json': { schema: adapter.schema ? { $ref: '/' + adapter.schema } : adapter.inputSchema } } },
       responses: {
         200: { description: 'Existing product result with an additive trial object; not a paid execution. Financial Guard omits payment challenges.',

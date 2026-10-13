@@ -5,7 +5,11 @@ import { trialProfile, trialPath, OUTPUT_TRIAL_PATH } from './trial-profiles.js'
 import { recordTrialCompletion } from './trial-receipts.js';
 
 export { OUTPUT_TRIAL_PATH };
-export const OUTPUT_TRIAL_LIMIT = 2;
+export const OUTPUT_TRIAL_LIMIT = 5;
+export const WORKER_TRIAL_LIMIT = 2;
+export function trialAttemptLimit(profile) {
+  return profile === 'agent_output_verification' ? OUTPUT_TRIAL_LIMIT : WORKER_TRIAL_LIMIT;
+}
 export const OUTPUT_TRIAL_DAILY_LIMIT = 1000;
 
 export function outputTrialEnabled(profile, env = {}) {
@@ -18,9 +22,9 @@ export function outputTrialTerms(profile = 'agent_output_verification') {
   return { endpoint: trialPath(profile), agent_profile: profile, tool: config.tool,
     availability_endpoint: trialPath(profile) + '?availability=1',
     worked_example_url: '/?example=1#worked-example',
-    evaluation_kind: config.kind || 'evidence_review', attempts_per_network: OUTPUT_TRIAL_LIMIT,
+    evaluation_kind: config.kind || 'evidence_review', attempts_per_network: trialAttemptLimit(profile),
     daily_service_limit: OUTPUT_TRIAL_DAILY_LIMIT, payment_required: false,
-    scope: 'Two attempts per network address per product for this trial campaign; shared networks share the allowance. Daily capacity is shared across all products.',
+    scope: `${trialAttemptLimit(profile)} attempts per network address per product for this trial campaign; shared networks share the allowance. Daily capacity is shared across all products.`,
     paid_endpoint: config.route || '/mcp', paid_transport: config.route ? 'rest' : 'mcp',
     paid_price_usdc: profile === 'm2m_escrow_arbiter' ? 0.5 : 0.05 };
 }
@@ -46,9 +50,9 @@ export async function outputTrialAvailability(request, env, profile) {
   if (!state || ![state.network_used, state.daily_used].every(n => Number.isSafeInteger(n) && n >= 0)) {
     throw new Error('trial_store_unavailable');
   }
-  const status = state.network_used >= OUTPUT_TRIAL_LIMIT ? 'network_allowance_exhausted'
+  const status = state.network_used >= trialAttemptLimit(profile) ? 'network_allowance_exhausted'
     : state.daily_used >= OUTPUT_TRIAL_DAILY_LIMIT ? 'daily_capacity_exhausted' : 'available';
-  return { status, remaining_attempts: Math.max(0, OUTPUT_TRIAL_LIMIT - state.network_used),
+  return { status, remaining_attempts: Math.max(0, trialAttemptLimit(profile) - state.network_used),
     checked_at: now, reset_at: status === 'daily_capacity_exhausted'
       ? new Date(Date.parse(now.slice(0, 10) + 'T00:00:00Z') + 86400000).toISOString() : null,
     advisory: true, attempt_consumed: false };
@@ -70,7 +74,7 @@ export async function reserveOutputTrial(request, env, attempt = crypto.randomUU
         THEN 'network_allowance_exhausted'
       WHEN (SELECT COUNT(*) FROM output_verification_trials WHERE reserved_day = ?2) >= ?4
         THEN 'daily_capacity_exhausted'
-      ELSE NULL END AS limit_reason`).bind(client, now.slice(0, 10), OUTPUT_TRIAL_LIMIT, OUTPUT_TRIAL_DAILY_LIMIT),
+      ELSE NULL END AS limit_reason`).bind(client, now.slice(0, 10), trialAttemptLimit(profile), OUTPUT_TRIAL_DAILY_LIMIT),
     env.PAYMENT_LEDGER.prepare(`
     INSERT INTO output_verification_trials(reservation_id, client_hash, reserved_day, reserved_at)
     SELECT ?1, ?2, ?3, ?4
@@ -78,7 +82,7 @@ export async function reserveOutputTrial(request, env, attempt = crypto.randomUU
       AND (SELECT COUNT(*) FROM output_verification_trials WHERE reserved_day = ?3) < ?6
     RETURNING reservation_id
   `).bind(attempt, client, now.slice(0, 10), now,
-    OUTPUT_TRIAL_LIMIT, OUTPUT_TRIAL_DAILY_LIMIT)
+    trialAttemptLimit(profile), OUTPUT_TRIAL_DAILY_LIMIT)
   ]);
   const limit = state?.results?.[0]?.limit_reason;
   const reserved = inserted?.results?.[0]?.reservation_id === attempt;
@@ -127,7 +131,7 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
     log('preview_failed', 'trial_exhausted', 429, null, admission.limit_reason);
     return reply({ code: 'trial_exhausted', error: daily
       ? 'Today\'s free-trial capacity is full. Retry after the next UTC midnight. No trial attempt was consumed.'
-      : 'This network address has used this product\'s two campaign attempts. Shared networks share the allowance; it does not reset daily. You can choose a separate paid evaluation.',
+      : `This network address has used this product's ${terms.attempts_per_network} campaign attempts. Shared networks share the allowance; it does not reset daily. You can choose a separate paid evaluation.`,
       trial: { ...terms, limit_reason: admission.limit_reason, attempt_consumed: false,
         ...(daily ? { retry_after_seconds: retry } : {}) } }, 429, daily ? { 'retry-after': String(retry) } : {});
   }

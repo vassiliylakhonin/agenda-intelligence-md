@@ -19,7 +19,7 @@ const count = async db => (await db.prepare('SELECT COUNT(*) AS n FROM output_ve
 const termsFor = async env => (await call(env)).json();
 
 for (const [profile,config] of Object.entries(TRIAL_PROFILES)) {
-  test(`${profile}: free/paid parity, two reserved attempts, invalid input and discovery`, async () => quiet(async () => {
+  test(`${profile}: free/paid parity, profile campaign allowance, invalid input and discovery`, async () => quiet(async () => {
     const env=envFor(profile),terms=await termsFor(env);
     assert.equal(terms.agent_profile,profile);
     assert.equal(terms.paid_price_usdc,profile==='m2m_escrow_arbiter'?0.5:0.05);
@@ -50,8 +50,10 @@ for (const [profile,config] of Object.entries(TRIAL_PROFILES)) {
       params:{name:config.tool,arguments:terms.example_request}};
     assert.equal((await call(env,terms.paid_endpoint,paidBody)).status,402);
     assert.equal((await call(env,trialPath(profile),terms.example_request)).status,200);
+    const limit=profile==='agent_output_verification'?5:2;
+    for(let i=2;i<limit;i++) assert.equal((await call(env,'/v1/trial',terms.example_request)).status,200);
     assert.equal((await call(env,'/v1/trial',terms.example_request,{'x-client-id':'another-label'})).status,429);
-    assert.equal(await count(env.PAYMENT_LEDGER),2);
+    assert.equal(await count(env.PAYMENT_LEDGER),limit);
     const api=await (await call(env,'/api/openapi.json')).json();
     assert.ok(api.paths[trialPath(profile)].post.responses['429']);
     const access=await (await call(env,'/.well-known/x402')).json();
@@ -68,8 +70,8 @@ test('all products have isolated network quotas in one database under concurrent
     const calls=await Promise.all(Array.from({length:5},()=>call(env,'/v1/trial',terms.example_request)));
     return calls.map(r=>r.status).sort();
   }));
-  for(const result of results) assert.deepEqual(result,[200,200,429,429,429]);
-  assert.equal(await count(db),24);
+  for(const [i,result] of results.entries()) assert.deepEqual(result,profiles[i]==='agent_output_verification'?[200,200,200,200,200]:[200,200,429,429,429]);
+  assert.equal(await count(db),27);
 }));
 
 test('fleet-wide cap includes legacy Output reservations and serializes different products', async () => quiet(async () => {
@@ -91,8 +93,11 @@ test('Output aliases preserve the previously shipped campaign identity', async (
   for(const id of ['old-1','old-2']) await env.PAYMENT_LEDGER.prepare(
     'INSERT INTO output_verification_trials VALUES (?1,?2,?3,?4)').bind(id,key,'2026-10-01','2026-10-01T00:00:00Z').run();
   const terms=await termsFor(env);
+  const availability=await (await call(env,'/v1/trial?availability=1')).json();
+  assert.equal(availability.availability.remaining_attempts,3);
+  for(const path of ['/v1/trial',OUTPUT_TRIAL_PATH,'/v1/trial']) assert.equal((await call(env,path,terms.example_request)).status,200);
   for(const path of ['/v1/trial',OUTPUT_TRIAL_PATH]) assert.equal((await call(env,path,terms.example_request)).status,429);
-  assert.equal(await count(env.PAYMENT_LEDGER),2);
+  assert.equal(await count(env.PAYMENT_LEDGER),5);
 }));
 
 test('trial refuses tool selection, inline payment and credentials without consuming quota', async () => quiet(async () => {
@@ -165,7 +170,7 @@ test('every free-first form uses the correct payload, explicit paid tool and pri
       } else assert.deepEqual(payload,terms.example_request);
       return Response.json({code:'payment_required'},{status:402});
     };
-    for(let i=0;i<3;i++) await context.runProfileExample({preventDefault(){}});
+    for(let i=0;i<(profile==='agent_output_verification'?6:3);i++) await context.runProfileExample({preventDefault(){}});
     assert.equal(paid,0);
     assert.equal(elements['profile-paid'].hidden,false);
     assert.ok(elements['profile-status'].textContent.includes('No payment was made'),profile);

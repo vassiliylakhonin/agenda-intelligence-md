@@ -33,16 +33,16 @@ test('trial evaluates edited evidence with exact paid-route parity and mandatory
   assert.equal(actual.factual_verification_performed,false);
   assert.equal(trial.attempt_consumed,true);
   assert.equal(trial.payment_required,false);
-  assert.equal(trial.attempts_per_network,2);
+  assert.equal(trial.attempts_per_network,5);
 }));
 
 test('concurrent callers cannot overspend or reset the network allowance with client labels', async () => quiet(async () => {
   const env=envFor();
   const responses=await Promise.all(Array.from({length:20},(_,i)=>post(env,evidence,
     {'user-agent':'Runtime/'+i,'x-client-id':'client-'+i,'x-forwarded-for':'198.51.100.'+i})));
-  assert.equal(responses.filter(r=>r.status===200).length,2);
-  assert.equal(responses.filter(r=>r.status===429).length,18);
-  assert.equal((await stored(env)).count,2);
+  assert.equal(responses.filter(r=>r.status===200).length,5);
+  assert.equal(responses.filter(r=>r.status===429).length,15);
+  assert.equal((await stored(env)).count,5);
   const row=await env.PAYMENT_LEDGER.prepare('SELECT * FROM output_verification_trials LIMIT 1').first();
   assert.match(row.client_hash,/^[0-9a-f]{64}$/);
   assert.ok(!JSON.stringify(row).includes('192.0.2.10'));
@@ -119,7 +119,7 @@ test('free telemetry records preview and usage, never paid completion or input c
 test('discovery advertises a separate trial and the same live schema', async () => quiet(async () => {
   const env=envFor();
   const terms=await (await handleRequest(new Request(origin+OUTPUT_TRIAL_PATH),env)).json();
-  assert.equal(terms.attempts_per_network,2);
+  assert.equal(terms.attempts_per_network,5);
   assert.equal((await post(env,terms.example_request)).status,200);
   const access=await (await handleRequest(new Request(origin+'/.well-known/x402'),env)).json();
   assert.equal(access.x_agenda_access.base_call_price,'paid');
@@ -142,7 +142,7 @@ test('browser free form never invokes checkout, preserves exhausted input, and o
   const script=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1];
   vm.runInNewContext(script,context);
   context.agendaPaidFetch=async(url,init)=>{paid++;traces.push(init.headers['x-payment-trace-id']);return Response.json({code:'payment_required'},{status:402});};
-  for (let i=0;i<3;i++) await context.runProfileExample({preventDefault(){}});
+  for (let i=0;i<6;i++) await context.runProfileExample({preventDefault(){}});
   assert.equal(paid,0);
   assert.equal(elements['profile-paid'].hidden,false);
   assert.ok(elements['profile-status'].textContent.includes('No payment was made'));
