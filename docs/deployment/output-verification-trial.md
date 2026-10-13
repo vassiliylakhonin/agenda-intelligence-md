@@ -33,7 +33,7 @@ headers. Responses are not cached. The existing 1 MiB JSON body limit applies.
 
 ## Limits and data
 
-Two attempts are reserved per hashed Cloudflare connecting address for this
+Five attempts are reserved per hashed Cloudflare connecting address for this
 trial campaign. Changing User-Agent, client labels, cookies or trace IDs does
 not reset the allowance. Shared networks share the allowance; changing network
 can change the quota identity. This is abuse control, not identity verification.
@@ -94,3 +94,24 @@ to disable the trial; preserve the table and existing paid records.
 node --test test/output-trial.test.js
 make verify-local
 ```
+
+
+## Five-attempt campaign experiment (13 October 2026)
+
+Output Verification now offers five reserved attempts per network. The existing
+campaign key and reservations are preserved: a network with two used attempts
+has three remaining. The other eleven products retain two attempts each.
+Terms, availability, landing copy, prices and OpenAPI use the serving profile's
+limit. This is a campaign allowance, not a daily reset; the shared 1,000/day
+ceiling and paid admission are unchanged.
+
+A refused, invalid or failed retry preserves the last completed result and its
+optional usefulness buttons. Feedback remains bound to that completed attempt,
+not the refused retry. A new completed check replaces it. The result panel is
+labeled “Last completed check”; failures before any completed check are labeled
+“Request response”. Feedback is optional and contains no input or result.
+
+Measure from the successful deployment time and version: D1 completions, new
+versus repeated network fingerprints, network refusals, useful-next-step replies
+and confirmed paid executions. Keep source discrepancies visible; more free
+attempts alone do not establish usefulness or conversion.

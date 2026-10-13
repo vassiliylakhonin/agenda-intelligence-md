@@ -351,9 +351,9 @@ function landingHtml(request, env) {
   </div>` : consoleExample ? `
   <h2>${freeTrial ? 'Check your own evidence free' : 'Live paid evaluation'}</h2>
   <div class="card">
-    ${freeTrial ? `<p>Try two live ${trialTerms.evaluation_kind === 'routing' ? 'routing requests' : 'checks'} without a wallet: review the result, correct the gaps, then try again. Replace the illustrative request with your own redacted inputs. Bring: ${escapeHtml(workflow.bring)} You receive: ${escapeHtml(workflow.get)} Shared networks share two attempts per product; daily capacity is shared across all products. Do not submit secrets or confidential documents. Human review is required.</p>` : '<p>Editing and submitting this request uses the paid API and requires an EVM wallet or API integration. For a free demonstration use Run a worked example above. Use synthetic data only; the result is evidence review, not authorization.</p>'}
+    ${freeTrial ? `<p>Try ${trialTerms.attempts_per_network} live ${trialTerms.evaluation_kind === 'routing' ? 'routing requests' : 'checks'} without a wallet: review the result, correct the gaps, then try again. Replace the illustrative request with your own redacted inputs. Bring: ${escapeHtml(workflow.bring)} You receive: ${escapeHtml(workflow.get)} Shared networks share ${trialTerms.attempts_per_network} attempts per product; daily capacity is shared across all products. Do not submit secrets or confidential documents. Human review is required.</p>` : '<p>Editing and submitting this request uses the paid API and requires an EVM wallet or API integration. For a free demonstration use Run a worked example above. Use synthetic data only; the result is evidence review, not authorization.</p>'}
     ${freeTrial ? `<button id="profile-allowance-check" type="button" onclick="refreshTrialAvailability()">Check free allowance before preparing input</button>
-    <p id="profile-allowance" role="status">Two attempts per network address per product for this campaign. Checking the allowance consumes no attempt.</p>` : ''}
+    <p id="profile-allowance" role="status">${trialTerms.attempts_per_network} attempts per network address per product for this campaign. Checking the allowance consumes no attempt.</p>` : ''}
     <form id="profile-console" onsubmit="runProfileExample(event)">
       ${freeTrial ? `<h3>Prepare your request</h3><p>The fields start with a synthetic example. Replace it with your redacted file, or start blank. Adding a document record does not verify its content.</p>
       <button type="button" onclick="document.getElementById('profile-intake').startBlank()">Start a blank request</button>
@@ -367,11 +367,13 @@ function landingHtml(request, env) {
       <p id="profile-status" role="status"></p>
       ${freeTrial ? '<div id="profile-recovery" hidden><p>You can inspect the saved synthetic input and result without a wallet or another trial attempt. Your edited input stays here.</p><button type="button" onclick="showWorkedExample()">View saved example — no trial attempt</button></div>' : ''}
     </form>
+    <div id="profile-review" hidden><h3 id="profile-review-title">Last completed check</h3>
     <div id="profile-summary" aria-live="polite"></div>
     <div id="profile-progress" aria-live="polite"></div>
     <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
-    ${freeTrial ? `<p>Did this give you a useful next step? <button id="profile-helpful" type="button" disabled onclick="submitTrialFeedback('useful_next_step')">Useful next step</button> · <button id="profile-blocked" type="button" disabled onclick="submitTrialFeedback('still_blocked')">Still blocked</button><br><small>Optional: sends only your choice linked to the completed free check, without its input or result. <a href="/privacy">Privacy</a>.</small><span id="profile-feedback-status" role="status"></span><br>
-    <a id="profile-feedback" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL))}">Share what helped or blocked your task</a><br><small>Opens an optional email draft. Your request and result are not attached. Review and send it yourself.</small></p>` : ''}
+    ${freeTrial ? `<div id="profile-feedback-panel" hidden><p>Did the last completed check give you a useful next step? <button id="profile-helpful" type="button" disabled onclick="submitTrialFeedback('useful_next_step')">Useful next step</button> · <button id="profile-blocked" type="button" disabled onclick="submitTrialFeedback('still_blocked')">Still blocked</button><br><small>Optional: sends only your choice linked to the completed free check, without its input or result. <a href="/privacy">Privacy</a>.</small><span id="profile-feedback-status" role="status"></span><br>
+    <a id="profile-feedback" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL))}">Share what helped or blocked your task</a><br><small>Opens an optional email draft. Your request and result are not attached. Review and send it yourself.</small></p></div>` : ''}
+    </div>
   </div>` : ""}
   <h2>Evaluation and paid services</h2>
   <div class="card">${pricingHtml(escapeHtml, profile, env.BILLING_MODE, freeTrial)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
@@ -380,7 +382,7 @@ function landingHtml(request, env) {
     <summary style="font-weight: 700; cursor: pointer; font-size: 15px; color: var(--fg);">🛠️ Try it (curl &amp; AI Agent Integration)</summary>
     <div style="margin-top: 12px;">
       <p>Remote MCP endpoint: <code>${origin}/mcp</code>. Discovery is free; evaluating your own input requires the signed payment flow. A client that only discovers tools can connect without a wallet, but cannot automatically run paid tools without a payment adapter.</p>
-      ${freeTrial ? `<p>Free live check: POST this product’s request fields to <code>${trialTerms.endpoint}</code>. <a href="${trialTerms.endpoint}">Get its example, input schema and trial terms</a>. Two attempts per network address per product; shared fleet capacity applies.</p>` : ''}
+      ${freeTrial ? `<p>Free live check: POST this product’s request fields to <code>${trialTerms.endpoint}</code>. <a href="${trialTerms.endpoint}">Get its example, input schema and trial terms</a>. ${trialTerms.attempts_per_network} attempts per network address per product; shared fleet capacity applies.</p>` : ''}
       <p>Free connectivity check — lists tools without evaluating evidence or requesting payment:</p>
       <pre>${escapeHtml(`curl -sS '${origin}/mcp' -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' --data-binary '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`)}</pre>
       <p>Read <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/deployment/hosted-quickstart.md">the hosted MCP / A2A quickstart</a> for initialization, heartbeat and paid-call handling.</p>
@@ -481,6 +483,7 @@ function showWorkedExample() {
 }
 var agendaTrialTraceId = null;
 var agendaLastReview = null;
+var agendaHasCompletedResult = false;
 var agendaTrialBlocked = false;
 var agendaFeedbackAttempt = null;
 var agendaFeedbackSent = false;
@@ -509,7 +512,7 @@ async function refreshTrialAvailability() {
       agendaTrialBlocked = true;
       document.getElementById('profile-run').disabled = true;
       status.textContent = availability.status === 'network_allowance_exhausted'
-        ? 'This network has used this product’s two campaign attempts. Shared networks share the allowance; it does not reset daily. The saved example is still free.'
+        ? 'This network has used this product’s ${trialTerms.attempts_per_network} campaign attempts. Shared networks share the allowance; it does not reset daily. The saved example is still free.'
         : 'Today’s shared free capacity is full. Retry after the next UTC midnight. The saved example is still free.';
       setTrialRecovery(true);
       document.getElementById('profile-paid').hidden = false;
@@ -526,16 +529,19 @@ ${freeTrial ? `async function submitTrialFeedback(choice) {
   var status = document.getElementById('profile-feedback-status');
   if (!agendaFeedbackAttempt) { status.textContent = 'Complete a free check before rating it.'; return; }
   if (agendaFeedbackSent) { status.textContent = 'Feedback already recorded for this check.'; return; }
+  var attempt = agendaFeedbackAttempt;
   agendaFeedbackSent = true;
   try {
     var response = await fetch('/telemetry/trial-feedback', {method:'POST',
       headers:agendaTelemetryHeaders('/telemetry/trial-feedback', {'content-type':'application/json'}),
-      body:JSON.stringify({attempt_id:agendaFeedbackAttempt, response:choice})});
+      body:JSON.stringify({attempt_id:attempt, response:choice})});
     if (!response.ok) throw new Error('unavailable');
-    status.textContent = 'Thanks — your choice was recorded. No input or result was sent.';
+    if (agendaFeedbackAttempt === attempt) status.textContent = 'Thanks — your choice was recorded. No input or result was sent.';
   } catch {
-    agendaFeedbackSent = false;
-    status.textContent = 'Feedback could not be recorded. You can retry or use the optional email draft.';
+    if (agendaFeedbackAttempt === attempt) {
+      agendaFeedbackSent = false;
+      status.textContent = 'Feedback could not be recorded. You can retry or use the optional email draft.';
+    }
   }
 }` : ''}
 async function runProfileExample(event, paid) {
@@ -551,22 +557,9 @@ async function runProfileExample(event, paid) {
   button.disabled = true;
   ${freeTrial ? "document.getElementById('profile-paid').disabled = true;" : ''}
   status.textContent = 'Evaluating supplied evidence…';
-  ${freeTrial ? `updateTrialFeedback(null);
-  agendaFeedbackAttempt = null;
-  agendaFeedbackSent = false;
-  ['helpful','blocked'].forEach(function(kind) {
-    var element = document.getElementById('profile-' + kind);
-    if (element) element.disabled = true;
-  });` : ''}
-  ${freeTrial ? 'setTrialRecovery(false);' : ''}
-  document.getElementById('profile-summary').innerHTML = '';
-  if (document.getElementById('profile-progress')) document.getElementById('profile-progress').innerHTML = '';
-  document.getElementById('profile-response').hidden = true;
   try {
     var payload = JSON.parse(document.getElementById('profile-request').value);
     var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
-    document.getElementById('profile-summary').innerHTML = '';
-    document.getElementById('profile-response').hidden = true;
     ${freeTrial ? `if (!agendaTrialTraceId && window.crypto && crypto.randomUUID) agendaTrialTraceId = crypto.randomUUID();
     var trialHeaders = agendaTelemetryHeaders('${origin}${trialTerms?.endpoint}', {'content-type':'application/json', 'x-trace-id':traceId});
     if (agendaTrialTraceId) trialHeaders['x-payment-trace-id'] = agendaTrialTraceId;
@@ -578,11 +571,19 @@ async function runProfileExample(event, paid) {
       method: 'POST', headers: {'content-type':'application/json', 'MCP-Protocol-Version':'2025-11-25', 'x-trace-id': traceId}, body: JSON.stringify(payload)
     }, ${isEscrowArbiter ? '0.5' : '0.05'});`}
     var body = await response.json();
-    document.getElementById('profile-response').hidden = false;
-    result.textContent = JSON.stringify(body, null, 2);
+    if (response.ok || !agendaHasCompletedResult) {
+      document.getElementById('profile-response').hidden = false;
+      result.textContent = JSON.stringify(body, null, 2);
+      var reviewPanel = document.getElementById('profile-review');
+      if (reviewPanel) reviewPanel.hidden = false;
+      var reviewTitle = document.getElementById('profile-review-title');
+      if (reviewTitle) reviewTitle.textContent = response.ok ? 'Last completed check' : 'Request response';
+    }
     ${freeTrial ? `if (!paid && response.ok && body.trial?.completion_recorded) {
       agendaFeedbackAttempt = response.headers.get('x-payment-attempt-id');
       agendaFeedbackSent = false;
+      var feedbackPanel = document.getElementById('profile-feedback-panel');
+      if (feedbackPanel) feedbackPanel.hidden = !agendaFeedbackAttempt;
       ['helpful','blocked'].forEach(function(kind) {
         var element = document.getElementById('profile-' + kind);
         if (element) element.disabled = !agendaFeedbackAttempt;
@@ -591,10 +592,16 @@ async function runProfileExample(event, paid) {
       if (feedbackStatus) feedbackStatus.textContent = '';
     }` : ''}
     if (response.ok) {
+      agendaHasCompletedResult = true;
       var review = body.result?.structuredContent || body;
       document.getElementById('profile-summary').innerHTML = reviewSummaryHtml(review, safeHtml, ${JSON.stringify(workflow)});
       var progress = document.getElementById('profile-progress');
-      if (progress && agendaLastReview) progress.innerHTML = reviewDeltaHtml(agendaLastReview, review, safeHtml);
+      if (progress) progress.innerHTML = agendaLastReview ? reviewDeltaHtml(agendaLastReview, review, safeHtml) : '';
+      ${freeTrial ? `if (paid) {
+        agendaFeedbackAttempt = null;
+        var feedbackPanel = document.getElementById('profile-feedback-panel');
+        if (feedbackPanel) feedbackPanel.hidden = true;
+      }` : ''}
       if (reviewSummary(review)) agendaLastReview = review;
     }
     ${freeTrial ? 'updateTrialFeedback(response.status);' : ''}

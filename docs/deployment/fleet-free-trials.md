@@ -70,7 +70,7 @@ The normal terms gain an `availability` object:
 
 This timestamp is illustrative. `status` is `available`,
 `network_allowance_exhausted` or `daily_capacity_exhausted`. `remaining_attempts`
-is the product's remaining network allowance (0–2), even if today's shared
+is the product's remaining network allowance (0–5 for Output, 0–2 otherwise), even if today's shared
 capacity is full. Only daily capacity provides an ISO UTC `reset_at`; the
 network campaign allowance does not reset daily and takes precedence when both
 limits are reached. The check is advisory: another caller on the same network
@@ -86,8 +86,8 @@ live quota is exhausted and never reserves a trial attempt.
 
 ## Quotas, privacy and cost
 
-Each Cloudflare connecting address receives two attempts **per product** for
-this campaign. Shared networks share allowances; caller labels, cookies, trace
+Each Cloudflare connecting address receives five attempts for Output Verification
+and two attempts for each other product for this campaign. Shared networks share allowances; caller labels, cookies, trace
 IDs and browser identities do not reset them. Network changes can change quota
 identity; this is abuse control, not verified user identity.
 
@@ -224,3 +224,8 @@ Output verdicts `block_unsafe_claims`, `verify_before_relay`, and
 `not_decision_ready` are known results. Runtime failure overrides a verdict;
 unknown decisions stay unknown. Execution status and domain verdict are kept
 separate, and `insufficient_information` stays an evidence/input diagnostic.
+
+
+The 13 October Output experiment expands only that product's campaign allowance
+to five; existing reservations remain counted. Failed retries preserve the last
+completed result and its usefulness feedback. See [Output trial](output-verification-trial.md).

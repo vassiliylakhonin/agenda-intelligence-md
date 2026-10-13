@@ -55,12 +55,15 @@ test('bundled landing scripts display successful review results across the fleet
       await context.runProfileExample({ preventDefault() {} });
       assert.match(elements['profile-progress'].innerHTML, /Changes since previous check/, profile);
       assert.equal(requests.length, 2, profile);
+      const lastSummary=elements['profile-summary'].innerHTML;
+      const lastResult=elements['profile-result'].textContent;
       elements['profile-request'].value = '{broken';
       await context.runProfileExample({ preventDefault() {} });
       assert.equal(requests.length, 2, profile + ' invalid local JSON sends nothing');
-      assert.equal(elements['profile-summary'].innerHTML, '', profile + ' stale success cleared');
-      assert.equal(elements['profile-progress'].innerHTML, '', profile);
-      assert.equal(elements['profile-response'].hidden, true, profile);
+      assert.equal(elements['profile-summary'].innerHTML, lastSummary, profile + ' completed review preserved');
+      assert.match(elements['profile-progress'].innerHTML, /Changes since previous check/, profile);
+      assert.equal(elements['profile-result'].textContent,lastResult,profile);
+      assert.equal(elements['profile-response'].hidden, false, profile);
     }
   } finally {
     console.log = originalLog;

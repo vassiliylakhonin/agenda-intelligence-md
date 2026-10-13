@@ -109,7 +109,7 @@ test('browser checks allowance without submitting input and offers saved example
   assert.equal(elements['profile-recovery'].hidden,false);
   assert.equal(elements['profile-paid'].hidden,false);
   assert.equal(elements['profile-run'].disabled,true);
-  assert.equal(elements['profile-helpful'].disabled,true);
+  assert.equal(elements['profile-helpful'].disabled,false);
   const posted=methods.filter(method=>method==='POST').length;
   await context.runProfileExample({preventDefault(){}});
   assert.equal(methods.filter(method=>method==='POST').length,posted);

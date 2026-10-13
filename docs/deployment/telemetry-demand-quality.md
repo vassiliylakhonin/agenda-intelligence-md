@@ -45,7 +45,7 @@ or `daily_capacity_exhausted`. Reports classify old refusals from stage/reason
 without changing raw events; missing historical quota detail stays unmeasured.
 
 HTTP 429 preserves `code: trial_exhausted` and adds `trial.limit_reason` and
-`trial.attempt_consumed: false`. Network allowance is two attempts per product
+`trial.attempt_consumed: false`. Network allowance is five attempts for Output Verification and two for other products
 for the campaign, shared by a network, with no daily reset or Retry-After.
 Daily capacity adds `trial.retry_after_seconds` and the matching `Retry-After`
 header until the next UTC midnight. Quotas, prices and explicit paid actions
