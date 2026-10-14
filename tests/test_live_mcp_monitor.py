@@ -1,8 +1,12 @@
 """Offline failure-path tests for the read-only discovery monitor."""
 
+import asyncio
 import importlib.util
+import io
+import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
@@ -11,6 +15,53 @@ SPEC = importlib.util.spec_from_file_location(
 )
 monitor = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(monitor)
+
+
+def test_default_urllib_probe_is_marked_without_changing_user_agent(monkeypatch):
+    requests = []
+
+    class Response(io.BytesIO):
+        status = 200
+        headers = {}
+
+    def urlopen(request, timeout):
+        requests.append(request)
+        return Response(b'{"result":{}}')
+
+    monkeypatch.setattr(monitor.urllib.request, "urlopen", urlopen)
+    assert monitor.probe("https://example.test/mcp", monitor.default_initialize(), identify=False)["status"] == 200
+    assert requests[0].get_header("X-client-id") == monitor.OWNER_CLIENT_ID
+    assert requests[0].get_header("User-agent") is None
+
+
+def test_sdk_monitor_is_marked_without_overriding_default_user_agent(monkeypatch):
+    options = []
+
+    @asynccontextmanager
+    async def transport(url, **kwargs):
+        options.append(kwargs)
+        yield None, None, None
+
+    class Session:
+        async def initialize(self):
+            return SimpleNamespace(protocolVersion="2025-11-25")
+
+        async def list_tools(self):
+            return SimpleNamespace(tools=[SimpleNamespace(name="example", inputSchema={"type": "object"})])
+
+    @asynccontextmanager
+    async def session(read, write):
+        yield Session()
+
+    mcp = ModuleType("mcp")
+    mcp.ClientSession = session
+    client = ModuleType("mcp.client")
+    stream = ModuleType("mcp.client.streamable_http")
+    stream.streamablehttp_client = transport
+    for name, module in [("mcp", mcp), ("mcp.client", client), ("mcp.client.streamable_http", stream)]:
+        monkeypatch.setitem(sys.modules, name, module)
+    assert asyncio.run(monitor.sdk_discovery("https://example.test/mcp", ["example"]))["tools"] == ["example"]
+    assert options[0]["headers"] == {"X-Client-Id": monitor.OWNER_CLIENT_ID}
 
 
 def test_edge_attribution_requires_cloudflare_evidence():

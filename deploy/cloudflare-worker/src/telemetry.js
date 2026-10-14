@@ -211,6 +211,7 @@ function usageRequestKind(path, jsonrpcMethod) {
 }
 
 function funnelRequestKind(step) {
+  if (Object.values(MCP_DISCOVERY_STEPS).includes(step)) return "mcp_discovery";
   if (step === "card" || step === "discovery") return "discovery";
   return step || "unknown";
 }
@@ -465,7 +466,27 @@ function funnelStepForPath(pathname) {
   return null;
 }
 
-async function logFunnelEvent(request, step, env = {}, feedback = null) {
+const MCP_DISCOVERY_STEPS = Object.freeze({
+  initialize: 'mcp_initialize',
+  'server/discover': 'mcp_server_discover',
+  'tools/list': 'mcp_tools_list'
+});
+
+async function logMcpDiscoveryEvent(request, method, result, env = {}) {
+  if (typeof method !== 'string' || !Object.hasOwn(MCP_DISCOVERY_STEPS, method)) return null;
+  const success = Boolean(result && Object.hasOwn(result, 'result') && !result.error);
+  const codes = new Set([-32700, -32600, -32601, -32602, -32603, -32022]);
+  return logFunnelEvent(request, MCP_DISCOVERY_STEPS[method], env, null, {
+    mcp_method: method,
+    rpc_outcome: success ? 'success' : 'protocol_error',
+    rpc_error_code: !success && codes.has(result?.error?.code) ? result.error.code : null,
+    tool_count: success && method === 'tools/list' && Array.isArray(result.result?.tools)
+      ? Math.min(result.result.tools.length, 1000) : null,
+    agent_profile: agentProfile(request, env)
+  });
+}
+
+async function logFunnelEvent(request, step, env = {}, feedback = null, mcp = null) {
   if (!step) return null;
   const url = new URL(request.url);
   const cf = request.cf || {};
@@ -473,7 +494,7 @@ async function logFunnelEvent(request, step, env = {}, feedback = null) {
     event: "agenda_intelligence_a2a_funnel",
     // 4: adds trace_id and caller_hash, aligning funnel rows with usage rows
     // so a card-to-invoke journey can be followed per caller.
-    event_version: 4,
+    event_version: mcp ? 5 : 4,
     classification_version: 5,
     timestamp: new Date().toISOString(),
     step,
@@ -494,6 +515,7 @@ async function logFunnelEvent(request, step, env = {}, feedback = null) {
     trace_id: traceIdFromRequest(request),
     caller_hash: await callerHash(request, env)
   };
+  if (mcp) Object.assign(event, mcp);
   if (step === 'trial_feedback' && normalizePaymentTrace(feedback?.attempt_id) &&
       ['useful_next_step','still_blocked'].includes(feedback?.response) &&
       ['excluded','external_candidate','unknown_origin'].includes(feedback?.origin_group)) {
@@ -1080,6 +1102,7 @@ return {
   logPaymentEvent,
   funnelStepForPath,
   logFunnelEvent,
+  logMcpDiscoveryEvent,
   callOutcome,
   dateKeyFromRequest,
   isStatsAuthorized,
