@@ -16,6 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 USER_AGENT = "Agenda-MCP-Monitor/1.0"
+OWNER_CLIENT_ID = "agenda-owner-mcp-monitor"
 MAX_BYTES = 1_000_000
 
 
@@ -68,7 +69,7 @@ def fleet_names():
 
 
 def probe(url, body=None, identify=True):
-    headers = {"Accept": "application/json, text/event-stream"}
+    headers = {"Accept": "application/json, text/event-stream", "X-Client-Id": OWNER_CLIENT_ID}
     if identify:
         headers["User-Agent"] = USER_AGENT
     if body is not None:
@@ -132,12 +133,17 @@ def validate_catalog(tools, expected=None):
 
 
 async def sdk_discovery(url, expected):
-    # Deliberately no custom headers: exercise the normal MCP SDK client identity.
+    # Preserve the SDK's normal User-Agent while marking this owner-run monitor.
+    # The marker affects telemetry classification only, never access or billing.
     from mcp import ClientSession
     from mcp.client.streamable_http import streamablehttp_client
 
     async with streamablehttp_client(
-        url, timeout=timedelta(seconds=20), sse_read_timeout=timedelta(seconds=20), terminate_on_close=False
+        url,
+        headers={"X-Client-Id": OWNER_CLIENT_ID},
+        timeout=timedelta(seconds=20),
+        sse_read_timeout=timedelta(seconds=20),
+        terminate_on_close=False,
     ) as (read, write, _):
         async with ClientSession(read, write) as session:
             initialized = await session.initialize()

@@ -14,6 +14,22 @@ in `docs/demand-quality.md`.
 | Payment (`agenda_intelligence_payment`) | 4 | `request_validated`, `failure_family`, `authentication_status`, classification v5. |
 | Funnel (`agenda_intelligence_a2a_funnel`) | 4 | Additive classification v5; event shape otherwise retained. |
 
+Hosted MCP discovery adds funnel v5 events for the actual parsed `initialize`,
+`server/discover` and `tools/list` responses. Steps are `mcp_initialize`,
+`mcp_server_discover` and `mcp_tools_list`, with `request_kind: mcp_discovery`,
+bounded `mcp_method`, `rpc_outcome` (`success` or `protocol_error`), known
+`rpc_error_code` or null, serving `agent_profile` and `tool_count` for successful
+listing only. Existing operational caller classification/hash fields are reused.
+ClientInfo, JSON-RPC IDs, request bodies and caller-provided protocol strings
+are not added. Telemetry failure does not change the discovery response.
+Discovery stays open and grants no evaluation or payment access. Tool usage and
+payment admission retain their existing sources; HTTP 402 is not a completion.
+The vault reports these observations separately from GET discovery, preserving
+owner exclusions, event order, host scope and unavailable historical coverage.
+The scheduled owner MCP monitor adds `X-Client-Id: agenda-owner-mcp-monitor`
+to SDK and raw urllib discovery while preserving their normal User-Agent.
+That spoofable purpose marker changes classification only, never access.
+
 `usage_category` is `catalog` for a nonempty normalized module list containing
 only `fleet_directory` / `decision_policies_list`, `domain` for other nonempty
 lists, or `unclassified` for no modules. Categories do not assert outcome or

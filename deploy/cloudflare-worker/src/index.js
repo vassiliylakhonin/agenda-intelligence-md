@@ -11609,6 +11609,7 @@ const {
   logUsageEvent,
   funnelStepForPath,
   logFunnelEvent,
+  logMcpDiscoveryEvent,
   logPaymentEvent,
   callerHash,
   callOutcome,
@@ -13326,7 +13327,7 @@ function x402Document(request, env) {
     title: entry?.canonical_product_name || X402_JSON.title,
     description: entry?.wrapper_scope || X402_JSON.description,
     x_agenda_access: hostedAccess(profile, env, originFromRequest(request)),
-    pricing_scope: env.BILLING_MODE === "pay_per_call" ? `${outputTrialEnabled(profile, env) ? `Two free trial attempts for this product at ${trialPath(profile)}, subject to network and fleet-wide daily limits. ` : ''}Signed payment per evaluation on paid endpoints; discovery and bankability preview are free.` : "Shared optional commercial offerings; availability varies by tool. Base evidence triage is free, subject to deployment access and quota settings."
+    pricing_scope: env.BILLING_MODE === "pay_per_call" ? `${outputTrialEnabled(profile, env) ? `${outputTrialTerms(profile).attempts_per_network} free trial attempts for this product at ${trialPath(profile)}, subject to network and fleet-wide daily limits. ` : ''}Signed payment per evaluation on paid endpoints; discovery and bankability preview are free.` : "Shared optional commercial offerings; availability varies by tool. Base evidence triage is free, subject to deployment access and quota settings."
   };
 }
 
@@ -13392,6 +13393,10 @@ async function handleMcpPost(request, env, ctx) {
     }
   }
   const response = await handleMcpJsonRpc(payload, request, env, ctx);
+  // Observe only bounded connection metadata, after the actual protocol result.
+  // A telemetry failure must not change a successful discovery response.
+  try { await logMcpDiscoveryEvent(request, payload?.method, response, env); }
+  catch { console.warn('MCP discovery telemetry unavailable'); }
   if (response === null) return new Response(null, { status: 202 });
   return jsonResponse(response, 200, { "cache-control": "no-store" });
 }
