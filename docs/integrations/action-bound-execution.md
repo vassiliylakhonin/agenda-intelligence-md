@@ -1,9 +1,25 @@
 # Interaction Trust + Vizier: request-bound execution
 
 For platform/security teams integrating one protected action. Install
-`pip install 'agenda-intelligence-md[reviews]'`. The hosted Interaction Trust
+`pip install 'agenda-intelligence-md[reviews]==1.16.1'`. The hosted Interaction Trust
 diagnostic remains advisory. Enforcement comes from putting
 `GuardedActionExecutor` on the integration's **only** dispatch path.
+
+Choose a concrete action before integrating:
+
+- **Promote an existing Cloudflare Worker version:** use the maintained
+  [Vizier deployment adapter](https://github.com/vassiliylakhonin/vizier/blob/main/docs/WORKER_DEPLOY_PILOT.md).
+  Its published CLI can prepare a review packet locally without keys. The
+  operator still supplies isolated credentials, a real owner grant and exact
+  human approval before execution.
+- **Send a report through your own API:** use the Python recipe below and
+  implement its authenticated dispatch boundary. The package does not provide
+  a hosted report sender or an automatic human approver.
+
+`agenda-action-check --help` is available after installation. It checks supplied
+offline snapshots only; exit zero never grants permission to call a tool.
+Use the hosted evidence-review page to inspect missing inputs, not as a proxy
+for an enforced executor. Keep self-tests separate from customer adoption.
 
 ## Integration
 

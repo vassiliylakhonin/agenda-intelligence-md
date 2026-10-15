@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.16.1 — 2026-10-15
+
+- Make ordinary MCP checks and public Python SDK clients use neutral client labels instead of claiming maintainer probes. Add explicit MCP `--owner-test` / `owner_test` for own checks and report caller purpose. Historical labels do not establish user identity and are not reclassified.
+- Add `agenda-mcp-check --self-test` using the installed interpreter and read-only local tool, so the pip quickstart works outside a source checkout. Keep operator opt-in for remote examples and strict incomplete results for untested tool execution.
+- Clarify the Interaction Trust evidence-review boundary and link the request-bound Python integration and maintained Vizier Worker executor. Verify installation and local enforcement cases without claiming actual human approvals, live protected actions or external adoption.
+
 - Add a blank one-claim citation-review entry on Output Verification: paste an assertion, original excerpt, optional quote and explicit caller support assessment. Reuse trial limits, recovery, owner markers and optional feedback; preserve literal input and mandatory human review. Record only a bounded, unverified flow label and publish a self-serve pilot guide without claiming participants or demand.
 
 - Label same-origin web-console requests with a bounded, explicitly unverified surface claim in payment diagnostics. Preserve caller identities, auth, quotas and payment; discard arbitrary labels. Exercise actual bundled JSON submissions across the fleet and form-encoded A2A rejection/correction. Historical malformed inputs remain unattributed.
@@ -20,6 +26,9 @@
 
 - Show free-trial allowance before preparing input through an optional read-only availability check. After a quota refusal, preserve input and offer the saved synthetic example without another attempt. Publish the matching A2A example in trial discovery and clarify structured-request recovery. Keep atomic admission, campaign identities, quotas and prices.
 - Revalidate the official PyPI index without pip's HTTP cache during post-release smoke retries, and allow a longer bounded propagation window. Keep exact version pins and fail if the package remains unavailable.
+
+- Fix successful evaluations appearing as `Evaluation failed: __name is not defined` after deployment. Keep serialized summary functions self-contained under Wrangler's name-preserving build; retain the original verdict, evidence gaps, actions and complete response.
+- Exercise generated landing scripts from a bundled Worker across all twelve products before deployment. Pin esbuild as a test-only dependency; service contracts, pricing and trial allowances are unchanged.
 
 ## 1.16.0 — 2026-10-10
 
@@ -62,11 +71,6 @@
 - Offer editable fields, published enum choices and empty document rows across all twelve free-trial pages; retain the complete JSON editor, unknown caller fields and explicit paid action. Add optional caller classification and escrow artifact/hash/schema inputs without inventing evidence.
 - Show specific dual-use review leads, suggested document-owner requests where the service has no assigned actions, and changes since the previous successful on-page check. Preserve routes, scores, service evidence and factual-verification boundaries. Clear stale summaries when parsing or a request fails.
 - Shorten optional user-reviewed feedback to usefulness and a blocker; neither the request nor result is attached or automatically sent. Keep trial quotas and prices unchanged.
-
-## Unreleased — bundled browser review summaries
-
-- Fix successful evaluations appearing as `Evaluation failed: __name is not defined` after deployment. Keep serialized summary functions self-contained under Wrangler's name-preserving build; retain the original verdict, evidence gaps, actions and complete response.
-- Exercise generated landing scripts from a bundled Worker across all twelve products before deployment. Pin esbuild as a test-only dependency; service contracts, pricing and trial allowances are unchanged.
 
 ## Unreleased — durable free-trial completion measurement
 

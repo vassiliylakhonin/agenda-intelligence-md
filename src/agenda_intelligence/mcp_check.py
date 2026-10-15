@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 import os
+import sys
 import urllib.parse
 import warnings
 from contextlib import AsyncExitStack
@@ -29,6 +30,7 @@ def validate_config(config: dict) -> None:
         "execute_examples",
         "examples",
         "allow_loopback_http",
+        "owner_test",
     }
     if not isinstance(config, dict) or set(config) - allowed:
         raise ValueError("Unknown configuration fields")
@@ -41,6 +43,7 @@ def validate_config(config: dict) -> None:
     if (
         type(config.get("execute_examples", False)) is not bool
         or type(config.get("allow_loopback_http", False)) is not bool
+        or type(config.get("owner_test", False)) is not bool
     ):
         raise ValueError("Opt-in flags must be booleans")
     examples = config.get("examples", [])
@@ -112,10 +115,11 @@ async def _check(config: dict) -> dict:
     if config["auth"] == "required" and not token:
         raise ValueError("Configured credential environment variable is empty")
     headers = {
-        "User-Agent": "agenda-owner-mcp-integration-check/1",
-        "X-Client-Id": "agenda-owner-mcp-check",
+        "User-Agent": "mcp-integration-check/1",
         "Accept-Encoding": "identity",
     }
+    if config.get("owner_test", False):
+        headers.update({"User-Agent": "agenda-owner-mcp-integration-check/1", "X-Client-Id": "agenda-owner-mcp-check"})
     if token:
         if "\r" in token or "\n" in token:
             raise ValueError("Invalid bearer credential")
@@ -168,7 +172,12 @@ async def _check(config: dict) -> dict:
                     "params": {
                         "protocolVersion": "2025-11-25",
                         "capabilities": {},
-                        "clientInfo": {"name": "agenda-owner-mcp-check", "version": "1"},
+                        "clientInfo": {
+                            "name": (
+                                "agenda-owner-mcp-check" if config.get("owner_test", False) else "mcp-integration-check"
+                            ),
+                            "version": "1",
+                        },
                     },
                 }
                 unauth = await client.post(config["url"], json=body, headers={"Authorization": ""})
@@ -284,6 +293,7 @@ async def _check(config: dict) -> dict:
         "client": "official-python-sdk",
         "client_version": version("mcp"),
         "transport": config["transport"],
+        "caller_purpose": "owner_test" if config.get("owner_test", False) else "integration_check",
         "checks": checks,
         "limitations": [
             "Only configured endpoints, catalog, error and opted-in examples were tested.",
@@ -300,17 +310,35 @@ def check_mcp(config: dict) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("config")
+    parser.add_argument("config", nargs="?", help="Trusted operator-authored JSON configuration")
+    parser.add_argument("--self-test", action="store_true", help="Check this installed package's local stdio server")
+    parser.add_argument(
+        "--owner-test", action="store_true", help="Explicitly mark your own verification; grants no access"
+    )
     parser.add_argument("--out")
     parser.add_argument("--strict", action="store_true")
     args = parser.parse_args()
+    if bool(args.config) == bool(args.self_test):
+        parser.error("provide either CONFIG or --self-test")
     config: dict = {}
     try:
-        raw = Path(args.config).read_bytes()
-        if len(raw) > 1048576:
-            raise ValueError("Configuration exceeds 1 MiB")
-        config = json.loads(raw)
+        if args.self_test:
+            config = {
+                "transport": "stdio",
+                "command": [sys.executable, "-m", "agenda_intelligence.mcp_stdio"],
+                "auth": "none",
+                "execute_examples": True,
+                "examples": [{"tool": "list_signals", "arguments": {}, "expected_is_error": False}],
+            }
+        else:
+            raw = Path(args.config).read_bytes()
+            if len(raw) > 1048576:
+                raise ValueError("Configuration exceeds 1 MiB")
+            config = json.loads(raw)
+        if args.owner_test:
+            config["owner_test"] = True
         result = check_mcp(config)
+        result["scope"] = "installed-package-self-test" if args.self_test else "configured-integration"
     except Exception as exc:
         leaves = getattr(exc, "exceptions", None)
         detail = str(leaves[0] if leaves else exc)[:500]
