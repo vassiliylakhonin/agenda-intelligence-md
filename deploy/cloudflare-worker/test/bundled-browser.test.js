@@ -51,6 +51,11 @@ test('bundled landing scripts display successful review results across the fleet
       assert.deepEqual(JSON.parse(elements['profile-result'].textContent), returned, profile + ' unchanged response');
       assert.equal(elements['profile-run'].disabled, false, profile);
       assert.equal(requests.length, 1, profile);
+      assert.equal(requests[0].init.headers['content-type'], 'application/json', profile);
+      assert.equal(requests[0].init.headers['x-agenda-client-surface'], 'web-console-v1', profile);
+      assert.equal(requests[0].init.headers['x-client-id'], 'agenda-owner-manual', profile);
+      assert.equal(new URL(requests[0].url).pathname.includes('/trial'), true, profile);
+      assert.deepEqual(JSON.parse(requests[0].init.body), example.request, profile + ' serialized JSON');
       returned = structuredClone(example.follow_up?.response || example.response);
       await context.runProfileExample({ preventDefault() {} });
       assert.match(elements['profile-progress'].innerHTML, /Changes since previous check/, profile);

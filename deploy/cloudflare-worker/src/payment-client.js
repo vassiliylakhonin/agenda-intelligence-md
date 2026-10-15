@@ -6,6 +6,7 @@ export const TELEMETRY_CLIENT_SCRIPT = `
 function agendaTelemetryHeaders(url, headers) {
   var result = Object.assign({}, headers);
   if (window.location && new URL(url, window.location.href).origin === window.location.origin) {
+    result['x-agenda-client-surface'] = 'web-console-v1';
     if (new URL(window.location.href).searchParams.get('owner_test') === '1') result['x-client-id'] = 'agenda-owner-manual';
     if (window.agendaExampleTraceId) result['x-example-trace-id'] = window.agendaExampleTraceId;
   }

@@ -160,3 +160,54 @@ test('direct REST console propagates owner purpose and retains trace on correcti
   assert.equal(calls[1].headers['x-payment-trace-id'], trace);
   assert.equal(calls[1].body, elements.jsonPayload.value);
 });
+
+test('web console surface is same-origin and does not create or replace caller identity', () => {
+  const context = {URL, window:{location:{href:origin+'/', origin}}};
+  vm.runInNewContext(TELEMETRY_CLIENT_SCRIPT, context);
+  const headers = context.agendaTelemetryHeaders('/message/send', {'content-type':'application/json'});
+  assert.equal(headers['x-agenda-client-surface'], 'web-console-v1');
+  assert.equal(headers['x-client-id'], undefined);
+  assert.equal(context.agendaTelemetryHeaders('/mcp', {'x-client-id':'existing-client'})['x-client-id'], 'existing-client');
+  assert.equal(context.agendaTelemetryHeaders('https://elsewhere.test/mcp', {})['x-agenda-client-surface'], undefined);
+});
+
+test('form-encoded A2A refusals record only a bounded surface claim and retain JSON repair', async () => {
+  for (const [value, expected] of [[null,'unclaimed'], ['web-console-v1','web_console_claim'], ['private-arbitrary-label','unclaimed']]) {
+    const headers = {'content-type':'application/x-www-form-urlencoded'};
+    if (value) headers['x-agenda-client-surface'] = value;
+    const {response, events} = await captured('/message/send', 'message=do-not-log', headers);
+    assert.equal(response.status,400);
+    const rejected = events.find(e => e.stage === 'payment_rejected');
+    assert.equal(rejected.client_surface,expected);
+    assert.equal(rejected.input_diagnostics.failure,'malformed_json');
+    assert.equal(rejected.input_diagnostics.media_type,'form_urlencoded');
+    assert.equal(rejected.origin_verification,'unverified');
+    assert.equal(rejected.authentication_status,'unverified');
+    assert.ok(!JSON.stringify(events).includes('private-arbitrary-label'));
+    assert.ok(!JSON.stringify(events).includes('do-not-log'));
+    assert.ok(!events.some(e => e.stage === 'execution_started'));
+    const hint = (await response.json()).request_hint;
+    const repaired = await captured('/message/send', JSON.stringify(hint.example_request), {...hint.headers, ...{'x-agenda-client-surface':'web-console-v1'}});
+    assert.equal(repaired.response.status,402);
+    assert.ok(!repaired.events.some(e => e.stage === 'execution_started'));
+  }
+});
+
+test('claimed web console surface cannot establish access to a protected profile', async () => {
+  const configured = {...env, AGENT_PROFILE:'agentic_interaction_trust', AGENTIC_INTERACTION_TRUST_API_KEY:'private-test-key'};
+  const denied = await captured('/v1/agentic-interaction/trust', JSON.stringify(GATE_REQUEST_GUIDES.agentic_interaction_trust.example),
+    {'content-type':'application/json','x-agenda-client-surface':'web-console-v1'}, configured);
+  assert.equal(denied.response.status,401);
+  assert.ok(!denied.events.some(e => e.authentication_status === 'deployment_key_validated'));
+  assert.ok(!denied.events.some(e => e.stage === 'execution_started'));
+});
+
+test('surface claim does not change caller hashes or purpose classification', async () => {
+  const telemetry = createTelemetry({agentProfile:()=> 'agent_output_verification', jsonResponse:Response.json,
+    AGENSTRY_VERIFICATION_PATHS:[], directRoutes:()=>({})});
+  const headers = {'x-client-id':'existing-client','cf-connecting-ip':'192.0.2.10','user-agent':'Browser/1.0'};
+  const plain = new Request(origin+'/message/send', {headers});
+  const claimed = new Request(plain, {headers:{...headers,'x-agenda-client-surface':'web-console-v1'}});
+  assert.equal(await telemetry.callerHash(plain, {CALLER_HASH_SALT:'test'}), await telemetry.callerHash(claimed, {CALLER_HASH_SALT:'test'}));
+  assert.equal(telemetry.buildUsageEvent(plain, {}).caller_kind, telemetry.buildUsageEvent(claimed, {}).caller_kind);
+});
