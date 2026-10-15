@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Lead all twelve A2A cards with distinct task descriptions and publish a first-evaluation recipe for each enabled free trial. Correct paid-only copy that hid the existing five/two-attempt trials, explain the raw-arguments HTTP trial format to MCP clients, and preserve authentication, admission, quotas and human review. Group fleet entries by workflow and link standalone Dual-Use guidance and current Agenstry aliases.
+
 ## 1.16.1 — 2026-10-15
 
 - Make ordinary MCP checks and public Python SDK clients use neutral client labels instead of claiming maintainer probes. Add explicit MCP `--owner-test` / `owner_test` for own checks and report caller purpose. Historical labels do not establish user identity and are not reclassified.

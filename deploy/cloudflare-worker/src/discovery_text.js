@@ -31,7 +31,7 @@ Brick-Blue: /.well-known/brick-blue.json
 export const GLAMA_JSON = {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
   "name": "agenda-intelligence",
-  "description": "Institutional geopolitical risk, sanctions screening, OFAC 50% rule, and dual-use export control gates for AI agents.",
+  "description": "Review supplied claim evidence, identify missing trade and project documents, and route strategic-risk questions for human review.",
   "maintainers": ["vassiliylakhonin"],
   "homepage": "https://agendamcp.dpdns.org/",
   "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md"
@@ -65,8 +65,8 @@ export const OWNERS_JSON = {
     "telemetry_vault": "https://github.com/vassiliylakhonin/agenda-telemetry-vault"
   },
   "service": {
-    "name": "Agenda Intelligence Compliance & Sanctions Gateway",
-    "description": "Deterministic 5-factor compliance, sanctions screening, and Middle Corridor risk gating on Cloudflare Edge.",
+    "name": "Agenda Intelligence Evidence Review",
+    "description": "Deterministic supplied-evidence review, document-gap checks and task routing. No compliance certification or sanctions clearance.",
     "security_contact": "vassiliy.lakhonin@gmail.com",
     "security_posture": {
       "zero_retention_guarantee": false,

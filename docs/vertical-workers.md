@@ -28,6 +28,12 @@ A vertical worker is a productized service function with its own schema, source-
 - **Critical minerals due diligence** — sixth vertical worker. Stage-specific mineral dossier review: dated excerpts, declared scope, duplicate/expiry checks and owner tasks before human approval. Does not certify origin or determine legal applicability. Schemas: [schemas/v1/critical-minerals-due-diligence-request.schema.json](../schemas/v1/critical-minerals-due-diligence-request.schema.json) + [response](../schemas/v1/critical-minerals-due-diligence-response.schema.json). Source taxonomy: [source-requirements/critical-minerals-due-diligence.json](../source-requirements/critical-minerals-due-diligence.json). Service function: `critical_minerals_due_diligence` in [src/agenda_intelligence/services.py](../src/agenda_intelligence/services.py). HTTP: `POST /v1/critical-minerals/due-diligence`. A2A profile: `critical_minerals_due_diligence`. Examples: [examples/critical-minerals-due-diligence/](../examples/critical-minerals-due-diligence/). Contract docs: [docs/use-cases/critical-minerals-due-diligence.md](../docs/use-cases/critical-minerals-due-diligence.md).
 - **Dual-use technology & export controls gate** — 10th vertical worker. Triage dual-use technology export controls, ECCN/HS Codes, and transit route risks for unauthorized diversion. Schemas: [schemas/v1/dual-use-technology-export-request.schema.json](../schemas/v1/dual-use-technology-export-request.schema.json) + [response](../schemas/v1/dual-use-technology-export-response.schema.json). A2A profile: `dual_use_technology_export`. Deployed on Cloudflare Workers.
 
+Dual-Use agent access, trial onboarding and scope are documented in
+[Dual-Use Technology Export](use-cases/dual-use-technology-export.md).
+For the current twelve-profile fleet and task selection, use the
+[live fleet directory](https://agendamcp.dpdns.org/.well-known/fleet.json).
+Its workflow groups are navigation hints; all existing endpoints remain separate.
+
 **Rule for adding the next vertical worker:**
 
 - **Ecosystem Expansion Phase:** You DO NOT need to pass a strict commercial gate to prototype a new worker. We are actively expanding the fleet to demonstrate framework versatility in adjacent domains (e.g. ESG, OSINT, compliance). 

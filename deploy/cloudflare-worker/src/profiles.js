@@ -31,7 +31,7 @@ export const A2A_EXAMPLES_URL = `${REPOSITORY_URL}/tree/main/examples/a2a`;
 export const OKF_BUNDLE_REPO_URL = `${REPOSITORY_URL}/blob/main/okf/index.md`;
 export const SCHEMAS_URL = `${REPOSITORY_URL}/tree/main/schemas/v1`;
 export const SOURCE_POLICY_URL = `${REPOSITORY_URL}/blob/main/SOURCE_POLICY.md`;
-export const DISCOVERY_UPDATED_AT = "2026-08-09";
+export const DISCOVERY_UPDATED_AT = "2026-10-15";
 
 export const CONFIDENTIAL_PROJECT_ROOM_DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/trust/confidential-project-workflow.md`;
 export const CONFIDENTIAL_PROJECT_ROOM_SCHEMA_URL = `${REPOSITORY_URL}/blob/main/schemas/v1/confidential-project-room-profile.schema.json`;
@@ -170,7 +170,7 @@ const middleCorridorProfile = Object.freeze({
   documentation_url: MIDDLE_CORRIDOR_DOCS_URL,
   provider_same_as: frozenArray([
     ...SHARED_PROVIDER_SAME_AS,
-    "https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev"
+    "https://agenstry.com/agents/middle-corridor-deal-risk-gate.agendamcp.dpdns.org"
   ]),
   wrapper_scope:
     "A2A/JSON-RPC discovery, Kazakhstan and Middle Corridor deal-risk triage, evidence gating, source coverage, and routing response only",
@@ -449,7 +449,7 @@ const dualUseExportProfile = Object.freeze({
   profile_key: "dual_use_technology_export",
   product_profile: "dual_use_technology_export",
   canonical_product_name: "Dual-Use Technology & Export Controls Gate",
-  documentation_url: "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/vertical-workers.md#shipped-vertical-workers",
+  documentation_url: `${REPOSITORY_URL}/blob/main/docs/use-cases/dual-use-technology-export.md`,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
     "A2A/JSON-RPC discovery and structural evidence-readiness triage for caller-supplied HS codes, optional ECCNs, transit routes, end-user sectors, and dated sources",
