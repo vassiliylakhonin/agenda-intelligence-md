@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { handleRequest, DIRECT_V1_ROUTES, handleMcpJsonRpc } from '../src/index.js';
+import { handleRequest, DIRECT_V1_ROUTES, handleMcpJsonRpc, agentCard } from '../src/index.js';
 import { memoryD1 } from './helpers/d1.js';
 import { TRIAL_PROFILES, trialPath, OUTPUT_TRIAL_PATH } from '../src/trial-profiles.js';
 import { tokenHash } from '../src/payment-ledger.js';
@@ -20,11 +20,16 @@ const termsFor = async env => (await call(env)).json();
 
 for (const [profile,config] of Object.entries(TRIAL_PROFILES)) {
   test(`${profile}: free/paid parity, profile campaign allowance, invalid input and discovery`, async () => quiet(async () => {
-    const env=envFor(profile),terms=await termsFor(env);
+    const env=envFor(profile);
+    const onboarding=agentCard(new Request(origin),env).x_agenda_intelligence.onboarding;
+    const firstCall=onboarding.first_evaluation;
+    const terms=await (await call(env,new URL(firstCall.terms_url).pathname)).json();
+    assert.equal(firstCall.tool,config.tool);
+    assert.equal(firstCall.payment_required,false);
     assert.equal(terms.agent_profile,profile);
     assert.equal(terms.paid_price_usdc,profile==='m2m_escrow_arbiter'?0.5:0.05);
     assert.equal((await call(env,'/v1/trial',{})).status,400);
-    const first=await call(env,'/v1/trial',terms.example_request);
+    const first=await call(env,new URL(firstCall.url).pathname,terms.example_request);
     assert.equal(first.status,200);
     const {trial,...actual}=await first.json();
     assert.equal(trial.payment_required,false);

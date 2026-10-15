@@ -1,4 +1,5 @@
 import { addSkillDiscovery } from './skill-discovery.js';
+import { agentOnboarding, PROFILE_TASKS, profileWorkflow } from './agent-onboarding.js';
 import { handleTrialFeedback } from './trial-feedback.js';
 import { mcpAgentAdmissionResponse } from './mcp-admission.js';
 import { lookupChplTier } from "./chpl.js";
@@ -988,7 +989,7 @@ function agentCard(request, env = {}) {
           "https://github.com/vassiliylakhonin",
           "https://pypi.org/project/agenda-intelligence-md/",
           "https://glama.ai/mcp/servers/vassiliylakhonin/agenda-intelligence-md",
-          "https://agenstry.com/agents/agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev"
+          "https://agenstry.com/agents/agendamcp.dpdns.org"
         ]
       }
     },
@@ -1277,11 +1278,17 @@ function agentCard(request, env = {}) {
     trace: "Optional: send an X-Trace-Id header (8-80 chars of A-Za-z0-9._:-) or a top-level params.trace_id. " +
       "It is echoed in task metadata.trace_id and recorded in telemetry, so your call can be correlated end to end."
   };
-  shaped.description = `External application-level evidence gate for agent workflows. Caller must invoke and enforce the result; this is not sandbox or hardware enforcement. ${env.BILLING_MODE === 'pay_per_call' ? 'Paid evidence evaluation; free discovery, fixed worked examples and no-op heartbeat;' : 'Free A2A triage, supplied-evidence only;'} mandatory human review before commercial action. No independent factual verification or clearance. ${shaped.description}`;
+  const access = hostedAccess(profile, env, origin);
+  const trial = access.free_trial;
+  const accessSummary = env.BILLING_MODE === 'pay_per_call'
+    ? `${trial ? `${trial.attempts_per_network} free live attempts on your own input at ${trial.endpoint}, subject to shared-network and fleet daily limits. ` : ''}Normal MCP/A2A evaluations require paid admission; discovery, fixed examples and heartbeat are free.`
+    : 'Free base triage, subject to configured authentication and quotas.';
+  shaped.description = `${PROFILE_TASKS[profile] || 'Review supplied evidence using the published contract.'} ${accessSummary} Supplied-evidence review, not independent factual verification or clearance; mandatory human review before consequential action. Caller must invoke and enforce the result in its integration. ${shaped.description}`;
+  shaped.x_agenda_intelligence.onboarding = agentOnboarding(profile, env, origin);
   shaped.x_agenda_intelligence.free_a2a_triage = {
-    scope: env.BILLING_MODE === "pay_per_call" ? "Free discovery, fixed examples and no-op heartbeat only. Evidence evaluation is paid." : "Free A2A evidence triage; supplied evidence is not independently verified.",
+    scope: accessSummary,
     decision_boundary: "No legal, sanctions, financial or trading clearance. Human review before any commercial action.",
-    price: env.BILLING_MODE === "pay_per_call" ? "Paid evaluations require signed payment or Pro entitlement. See /.well-known/x402." : "Free A2A triage. Optional paid paths (where offered): x402 micro-check 0.05 USDC, bankability dossier 25 USDC, Pro 490 USD/month. Check the live pricing manifest before paying."
+    price: env.BILLING_MODE === "pay_per_call" ? "Normal paid endpoints require signed payment or Pro entitlement. The separately advertised trial does not require payment. See /.well-known/x402." : "Free base triage. Optional paid paths vary by tool; check /.well-known/x402 before paying."
   };
   return addSkillDiscovery(shaped, profile);
 }
@@ -1620,8 +1627,8 @@ function mcpServerCard(request, env = {}) {
       name: `${profileDiscovery(agentProfile(request, env)).canonical_product_name} MCP Server`,
       version: VERSION
     },
-    description:
-      "Hosted MCP tools for this profile, with a separate installable stdio catalog. Evidence-readiness triage requires human review; it does not verify factual truth or provide legal, compliance, sanctions or financial advice.",
+    description: card.description,
+    onboarding: card.x_agenda_intelligence.onboarding,
     // `transport` stays the stdio singular for clients that read the old shape.
     // `transports` is the current list: since 2026-07-28 dropped sessions, this
     // worker can serve MCP over plain Streamable HTTP alongside the local server.
@@ -6163,6 +6170,9 @@ function fleetDirectoryResponse() {
     ].map(gate => {
       const tool = mcpToolsForProfile(gate.profile).find(item => item.name === gate.tool_name);
       return { ...gate, description: mcpToolSpecForProfile(gate.profile, gate.tool_name)?.summary.trim() || gate.description,
+        workflow: profileWorkflow(gate.profile),
+        onboarding_card: `${gate.canonical_endpoint}/.well-known/agent-card.json`,
+        documentation_url: PROFILE_REGISTRY[gate.profile]?.documentation_url || DOCS_URL,
         tool_names: mcpToolsForProfile(gate.profile).map(item => item.name),
         mcp_endpoint: `${gate.canonical_endpoint}${MCP_AGENT_ENDPOINT_PATH}`,
         a2a_endpoint: `${gate.canonical_endpoint}/message/send`,
