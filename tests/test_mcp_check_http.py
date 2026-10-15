@@ -13,7 +13,7 @@ pytest.importorskip("mcp")
 
 
 @contextmanager
-def merchant_server(*, public_by_mistake=False):
+def merchant_server(*, public_by_mistake=False, observed=None):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
             pass
@@ -38,6 +38,10 @@ def merchant_server(*, public_by_mistake=False):
             self.reply(200)
 
         def do_POST(self):
+            if observed is not None:
+                observed.append(
+                    {"client_id": self.headers.get("X-Client-Id"), "user_agent": self.headers.get("User-Agent")}
+                )
             request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             if not public_by_mistake and self.headers.get("Authorization") != "Bearer sandbox-credential":
                 self.reply(
@@ -124,3 +128,29 @@ def test_required_auth_catches_accidentally_public_endpoint(monkeypatch):
     with merchant_server(public_by_mistake=True) as config:
         with pytest.raises(Exception, match="401"):
             check_mcp(config)
+
+
+def test_public_checker_does_not_claim_to_be_the_service_owner():
+    observed = []
+    with merchant_server(public_by_mistake=True, observed=observed) as config:
+        config["auth"] = "none"
+        config.pop("token_env")
+        check_mcp(config)
+    assert observed
+    assert all(row["client_id"] is None for row in observed)
+    assert all(row["user_agent"] == "mcp-integration-check/1" for row in observed)
+
+
+def test_owner_purpose_is_explicit_and_does_not_replace_required_auth(monkeypatch):
+    monkeypatch.setenv("MCP_SANDBOX_TOKEN", "sandbox-credential")
+    observed = []
+    with merchant_server(observed=observed) as config:
+        report = check_mcp({**config, "owner_test": True})
+    assert report["status"] == "passed"
+    assert report["caller_purpose"] == "owner_test"
+    assert observed
+    assert all(row["client_id"] == "agenda-owner-mcp-check" for row in observed)
+    assert all(row["user_agent"] == "agenda-owner-mcp-integration-check/1" for row in observed)
+    with merchant_server(public_by_mistake=True) as config:
+        with pytest.raises(Exception, match="401"):
+            check_mcp({**config, "owner_test": True})

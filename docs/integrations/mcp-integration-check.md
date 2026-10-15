@@ -4,14 +4,19 @@ A bounded pre-release check for MCP service developers, using the official
 Python MCP SDK 1.30.0. Python 3.10+ is required for this optional extra:
 
 ```sh
-python -m pip install 'agenda-intelligence-md[mcp-check]'
-agenda-mcp-check examples/mcp-integration-check/stdio.json --strict --out mcp-report.json
+python -m venv .venv
+.venv/bin/python -m pip install 'agenda-intelligence-md[mcp-check]==1.16.1'
+.venv/bin/agenda-mcp-check --self-test --strict --out mcp-self-test.json
 ```
 
-The repository's stdio example launches the installed server, initializes a real
+This first run works outside a repository checkout. It uses the checker's own
+Python interpreter and this installed package's local stdio server, initializes a real
 client, lists all tool pages, validates input/output JSON Schemas, requires
 JSON-RPC `-32601` for an unknown method, and calls the explicitly configured
-`list_signals` example. It performs no purchases or hosted paid tool calls.
+read-only `list_signals` example. It performs no purchases or hosted paid tool
+calls. `scope: installed-package-self-test` means installation was exercised,
+not that your own MCP endpoint was checked. The repository-only
+`examples/mcp-integration-check/stdio.json` remains a checkout example.
 
 For a remote endpoint, create an operator-authored config:
 
@@ -25,6 +30,12 @@ For a remote endpoint, create an operator-authored config:
   "examples": []
 }
 ```
+
+Save the config as `checks/mcp.json`, then run
+`.venv/bin/agenda-mcp-check checks/mcp.json --strict --out mcp-report.json`.
+Successful discovery without opted-in examples is **incomplete** and strict
+mode exits 2; inspect the passed discovery rows and the untested execution row.
+This does not establish tool correctness or automatically authorize examples.
 
 Use `auth: "none"` explicitly for a public endpoint, without `token_env`.
 For required auth the checker sends an unauthenticated initialize, requires a
@@ -43,6 +54,20 @@ goal, trusted evidence, suspected unreliable evidence, assumptions, intended
 action and stop/escalation conditions. Configuration opt-in is not a substitute
 for the caller's authority to perform that tool's action.
 
+## Own checks versus ordinary integrations
+
+Ordinary HTTP checks use `User-Agent: mcp-integration-check/1` without an owner
+client marker. For your own maintainer probes, explicitly add `--owner-test`
+or set `owner_test: true` in the trusted config. Only that mode sends the
+`agenda-owner-mcp-check` purpose label; it grants no access and cannot replace
+required bearer authentication. The CLI report distinguishes `caller_purpose`
+and `scope` from protocol results.
+
+Version 1.16.0 unconditionally emitted owner headers. Historical labelled
+events cannot establish who ran that checker and must not be retroactively
+claimed as external users. Maintainer production checks must opt into owner
+mode to remain excluded from demand measurements.
+
 ## GitHub Action
 
 ```yaml
@@ -51,7 +76,7 @@ steps:
   - uses: actions/setup-python@v5
     with:
       python-version: '3.12'
-  - uses: vassiliylakhonin/agenda-intelligence-md/actions/mcp-integration-check@v1.16.0
+  - uses: vassiliylakhonin/agenda-intelligence-md/actions/mcp-integration-check@v1.16.1
     with:
       config: checks/mcp.json
       report: mcp-report.json

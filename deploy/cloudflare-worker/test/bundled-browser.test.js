@@ -13,6 +13,14 @@ const bundle = await build({
 });
 const { handleRequest } = await import('data:text/javascript;base64,' + Buffer.from(bundle.outputFiles[0].text).toString('base64'));
 
+test('Interaction Trust routes enforcement requests to the real integration without claiming API execution control', async () => {
+  const html = await (await handleRequest(new Request('https://example.test/',{headers:{accept:'text/html'}}),
+    {AGENT_PROFILE:'agentic_interaction_trust',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
+  assert.match(html,/does not enforce execution restrictions/);
+  assert.match(html,/Install a request-bound executor/);
+  assert.match(html,/WORKER_DEPLOY_PILOT\.md/);
+});
+
 test('bundled landing scripts display successful review results across the fleet', async () => {
   const originalLog = console.log;
   console.log = () => {};

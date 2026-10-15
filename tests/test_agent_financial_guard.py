@@ -188,3 +188,17 @@ def test_ethereum_usdc_contract_is_not_a_local_risk_denylist_entry():
     assert verdict.decision == "step_up_human_required"
     assert not any("denylist" in value for value in verdict.violations)
     assert verdict.requires_human_approval
+
+
+@pytest.mark.parametrize("client_kind", ["financial", "escrow"])
+def test_public_sdk_remote_request_does_not_claim_owner_probe(client_kind):
+    from agenda_intelligence import M2MEscrowArbiter
+
+    client = AgentFinancialGuard() if client_kind == "financial" else M2MEscrowArbiter()
+    invoke = client._check_remote if client_kind == "financial" else client._evaluate_remote
+    with patch("urllib.request.urlopen", side_effect=OSError("stop before response")) as remote:
+        with pytest.raises(OSError):
+            invoke({})
+    request = remote.call_args.args[0]
+    assert request.get_header("User-agent").startswith("agenda-client-python-sdk/")
+    assert request.get_header("X-client-id") is None

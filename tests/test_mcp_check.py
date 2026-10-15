@@ -26,6 +26,7 @@ CONFIG = {
         {"execute_examples": "true"},
         {"token": "secret"},
         {"token_env": "TOKEN"},
+        {"owner_test": "true"},
     ],
 )
 def test_invalid_or_ambiguous_config_is_refused(change):
@@ -61,3 +62,27 @@ def test_official_sdk_discovers_real_stdio_server_and_executes_opted_in_example(
     assert report["client_version"] == "1.30.0"
     assert any(row["check"] == "unknown_method_error" and row["code"] == -32601 for row in report["checks"])
     assert any(row["check"] == "example" and row["tool"] == "list_signals" for row in report["checks"])
+
+
+def test_self_test_uses_the_running_interpreter_without_a_checkout_config(monkeypatch, capsys):
+    import json
+
+    from agenda_intelligence import mcp_check
+
+    seen = []
+    monkeypatch.setattr(sys, "argv", ["agenda-mcp-check", "--self-test", "--strict"])
+    monkeypatch.setattr(mcp_check, "check_mcp", lambda config: seen.append(config) or {"status": "passed"})
+    mcp_check.main()
+    assert seen[0]["command"] == [sys.executable, "-m", "agenda_intelligence.mcp_stdio"]
+    assert seen[0]["examples"] == [{"tool": "list_signals", "arguments": {}, "expected_is_error": False}]
+    assert "owner_test" not in seen[0]
+    assert json.loads(capsys.readouterr().out)["scope"] == "installed-package-self-test"
+
+
+def test_config_and_self_test_are_mutually_exclusive(monkeypatch):
+    from agenda_intelligence.mcp_check import main
+
+    monkeypatch.setattr(sys, "argv", ["agenda-mcp-check", "some-config.json", "--self-test"])
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2

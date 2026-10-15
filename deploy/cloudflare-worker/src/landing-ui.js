@@ -103,7 +103,8 @@ function landingHtml(request, env) {
     </div>`;
   const allowancePanel = freeTrial ? `<button id="profile-allowance-check" type="button" onclick="refreshTrialAvailability()">Check free allowance before preparing input</button>
     <p id="profile-allowance" role="status">${trialTerms.attempts_per_network} attempts per network address per product for this campaign. Checking the allowance consumes no attempt.</p>` : '';
-  const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">${freeTrial ? 'Check my evidence free' : 'Open live paid evaluation'}</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>`;
+  const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">${freeTrial ? 'Check my evidence free' : 'Open live paid evaluation'}</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>` +
+    (isAgentic ? `<p><strong>Need to block an agent action?</strong> This page reviews supplied evidence; it does not enforce execution restrictions. <a href="${REPOSITORY_URL}/blob/main/docs/integrations/action-bound-execution.md">Install a request-bound executor</a>, or use the <a href="https://github.com/vassiliylakhonin/vizier/blob/main/docs/WORKER_DEPLOY_PILOT.md">Vizier adapter for one Worker deployment</a>. Your integration must enforce scope and obtain the required human approval.</p>` : '');
 
   return `<!doctype html>
 <html lang="en">

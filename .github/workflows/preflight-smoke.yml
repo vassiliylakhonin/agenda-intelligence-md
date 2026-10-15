@@ -17,6 +17,9 @@ jobs:
       - uses: ./actions/mcp-integration-check
         with:
           config: examples/mcp-integration-check/stdio.json
+      - name: Check installed package outside the checkout
+        working-directory: ${{ runner.temp }}
+        run: agenda-mcp-check --self-test --strict --out installed-mcp-self-test.json
       - run: python -m pip install '.[dev,reviews,mcp-check]'
       - run: python -m pytest tests/test_action_gate.py tests/test_checkout_check.py tests/test_mcp_check.py tests/test_mcp_check_http.py -q
       - run: python examples/agent-checkout-readiness/run.py --out checkout-sandbox-trace.json

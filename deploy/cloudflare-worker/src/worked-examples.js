@@ -97,7 +97,7 @@ export const WORKED_EXAMPLES = {
         "State what would change the judgment."
       ],
       "next_actions": [
-        "Prepare the project, partner, decision question and dated documents at https://kazakhstan-market-entry-readiness-a2a.vassiliy-lakhonin.workers.dev/ before a human market-entry decision.",
+        "Prepare the project, partner, decision question and dated documents at https://kazakhstan-market-entry-readiness.agendamcp.dpdns.org/ before a human market-entry decision.",
         "Run audit_claims with the memo and evidence pack.",
         "Review unsupported_claims and orphan evidence references before publishing the analysis."
       ],
@@ -1478,7 +1478,7 @@ export const WORKED_EXAMPLES = {
       "human_review_required": true,
       "not_advice_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice.",
       "run_provenance": {
-        "contract_version": "1.16.0",
+        "contract_version": "1.16.1",
         "input_digest": "sha256:canonical",
         "schema_uri": "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/schemas/v1/critical-minerals-due-diligence-response.schema.json"
       },
@@ -1583,7 +1583,7 @@ export const WORKED_EXAMPLES = {
       "risk_question": "Is this file complete enough for export-control human review?"
     },
     "response": {
-      "contract_version": "1.16.0",
+      "contract_version": "1.16.1",
       "profile": "dual_use_technology_export",
       "export_risk_triage": {
         "status": "ready_for_human_review",
@@ -1631,17 +1631,17 @@ export const WORKED_EXAMPLES = {
       "selected_route": {
         "name": "Kazakhstan / Middle Corridor Deal Risk Gate",
         "use_when": "a route/cargo/counterparties deal along the Middle Corridor needs a pre-signature evidence-completeness read",
-        "a2a": "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev",
+        "a2a": "https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org",
         "profile": "middle_corridor_deal_risk"
       },
-      "next_gate_input": "Send a structured request to https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send with route, cargo, counterparties, dated_sources, risk_question, decision_stage. See the agent-card for a copy-paste envelope.",
+      "next_gate_input": "Send a structured request to https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/message/send with route, cargo, counterparties, dated_sources, risk_question, decision_stage. See the agent-card for a copy-paste envelope.",
       "message": "Corridor & sanctions orientation: routing to the structured gates and person-led work. This orientation prepares dossier requests; configured upstream screening does not establish clearance.",
       "caller_text": "What evidence is needed before shipping industrial equipment from Aktau to Baku?",
       "gates": [
         {
           "name": "Kazakhstan / Middle Corridor Deal Risk Gate",
           "use_when": "a route/cargo/counterparties deal along the Middle Corridor needs a pre-signature evidence-completeness read",
-          "a2a": "https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev",
+          "a2a": "https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org",
           "profile": "middle_corridor_deal_risk"
         }
       ],
