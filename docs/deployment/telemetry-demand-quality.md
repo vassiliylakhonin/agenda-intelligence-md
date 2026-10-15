@@ -11,7 +11,7 @@ in `docs/demand-quality.md`.
 | Source | Version | Additions |
 | --- | --- | --- |
 | Usage (`agenda_intelligence_a2a_usage`) | 10 | `usage_category`, `authentication_status`, classification v5. |
-| Payment (`agenda_intelligence_payment`) | 4 | `request_validated`, `failure_family`, `authentication_status`, classification v5. |
+| Payment (`agenda_intelligence_payment`) | 5 | `request_validated`, `failure_family`, `authentication_status`, bounded `input_diagnostics` and `client_surface`, classification v5. |
 | Funnel (`agenda_intelligence_a2a_funnel`) | 4 | Additive classification v5; event shape otherwise retained. |
 
 Hosted MCP discovery adds funnel v5 events for the actual parsed `initialize`,
@@ -96,6 +96,17 @@ Shared telemetry headers are sent only to the same origin. Named
 `owner-feedback-synthetic/` and `Agenda-Fleet-Site-Verification/` clients are
 consistently excluded as owner synthetic tests. Labels are spoofable purpose
 signals and never waive payment.
+
+First-party browser helpers also send `X-Agenda-Client-Surface: web-console-v1`
+only to their own origin. Payment v5 events add `client_surface` with exactly
+`web_console_claim` for that value, or `unclaimed` for absent/other values.
+Arbitrary header values are discarded. This spoofable claim distinguishes
+future declared UI requests for diagnosis; it does not identify or verify a
+sender, change caller hashes/classification, authenticate a request, reserve a
+trial, or waive payment. Older events lacking the field remain unmeasured;
+neither absence nor `unclaimed` proves that a request came from an external user.
+No body, raw header or persistent browser identifier is added. Historical
+malformed A2A inputs cannot be attributed retroactively from this addition.
 
 ## Five-session pilot protocol (prepared, not run)
 

@@ -524,6 +524,13 @@ headers, input, parser errors or body lengths. Relations remain unverified hints
 they cannot establish a caller or explain historical events lacking these fields.
 See [hosted quickstart](../../docs/deployment/hosted-quickstart.md) for the contract.
 
+First-party same-origin browser requests claim `X-Agenda-Client-Surface:
+web-console-v1`. Payment v5 events retain only `client_surface:
+web_console_claim` or `unclaimed`; the raw header is not logged. This optional
+spoofable diagnostic does not change caller hashes, access, quotas or payment.
+Missing historical fields stay unmeasured. See
+[demand measurement](../../docs/deployment/telemetry-demand-quality.md).
+
 The custom usage event is privacy-safe by design. It does not log IP addresses, cookies, authorization headers, or full prompt text. It keeps only:
 
 - request method and path;

@@ -402,6 +402,8 @@ function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, pr
       { category: validation.category, error_count: Math.min(100, Math.max(0, Number.isInteger(validation.error_count) ? validation.error_count : 0)) } : null;
     const safeInput = ['invalid_json', 'body_too_large'].includes(safeValidation?.category) ? safeJsonInputDiagnostics(input_diagnostics) : null;
     console.log({ event: "agenda_intelligence_payment", event_version: 5,
+      // A spoofable UI claim, never an identity or authorization signal.
+      client_surface: request.headers.get('x-agenda-client-surface') === 'web-console-v1' ? 'web_console_claim' : 'unclaimed',
       ...(safeInput ? { input_diagnostics: safeInput } : {}),
       caller_hash: /^[0-9a-f]{16}$/.test(caller_hash || "") ? caller_hash : null,
       execution_id: /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(execution_id || "") ? execution_id : null,
