@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a blank one-claim citation-review entry on Output Verification: paste an assertion, original excerpt, optional quote and explicit caller support assessment. Reuse trial limits, recovery, owner markers and optional feedback; preserve literal input and mandatory human review. Record only a bounded, unverified flow label and publish a self-serve pilot guide without claiming participants or demand.
+
 - Label same-origin web-console requests with a bounded, explicitly unverified surface claim in payment diagnostics. Preserve caller identities, auth, quotas and payment; discard arbitrary labels. Exercise actual bundled JSON submissions across the fleet and form-encoded A2A rejection/correction. Historical malformed inputs remain unattributed.
 
 - Move all twelve official MCP Registry remotes and the website to the registered custom domains. Support immutable registry-only metadata revisions without republishing Python packages; preserve workers.dev aliases and signing keys.

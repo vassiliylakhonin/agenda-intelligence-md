@@ -404,6 +404,7 @@ function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, pr
     console.log({ event: "agenda_intelligence_payment", event_version: 5,
       // A spoofable UI claim, never an identity or authorization signal.
       client_surface: request.headers.get('x-agenda-client-surface') === 'web-console-v1' ? 'web_console_claim' : 'unclaimed',
+      review_flow: profile === 'agent_output_verification' && request.headers.get('x-agenda-review-flow') === 'one-claim-v1' ? 'one_claim_claim' : 'unclaimed',
       ...(safeInput ? { input_diagnostics: safeInput } : {}),
       caller_hash: /^[0-9a-f]{16}$/.test(caller_hash || "") ? caller_hash : null,
       execution_id: /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(execution_id || "") ? execution_id : null,

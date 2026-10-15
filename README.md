@@ -6,6 +6,8 @@ A deterministic evidence-packet linter for claim-backed AI output. Supply claims
 
 Use it to make an AI answer's evidence trail inspectable in a local workflow, agent pipeline, or CI job. **Packet completeness is not factual truth, source authenticity, or permission to act.**
 
+To try one assertion in a browser, [check a claim and its source excerpt](https://output-verification.agendamcp.dpdns.org/#one-claim-review). Paste public or redacted text and an optional exact quote; the hosted trial shares five campaign attempts per network. [Pilot instructions](docs/product/citation-review-pilot.md) explain revision, optional feedback and the limits of this check. No external pilot results are claimed.
+
 ## First run
 
 Python 3.9 or later, from a checkout:

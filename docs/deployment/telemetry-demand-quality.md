@@ -108,6 +108,14 @@ neither absence nor `unclaimed` proves that a request came from an external user
 No body, raw header or persistent browser identifier is added. Historical
 malformed A2A inputs cannot be attributed retroactively from this addition.
 
+The Output one-claim form additionally claims `X-Agenda-Review-Flow:
+one-claim-v1` only on that submission. Additive payment v5 `review_flow` is
+`one_claim_claim` for that value on the Output profile, or `unclaimed` otherwise.
+The advanced editor does not inherit this label; arbitrary values are discarded.
+Historical absence remains unmeasured. This spoofable flow label is not user
+identity, verified body provenance, human participation or evidence of benefit;
+owner exclusions and admission remain unchanged.
+
 ## Five-session pilot protocol (prepared, not run)
 
 Use one real workflow: review an agent's proposed reporting answer against its
