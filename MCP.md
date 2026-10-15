@@ -1,36 +1,42 @@
 # MCP
 
 `agenda-intelligence-mcp` is a real stdio MCP server shipping with the package.
-It exposes 30 tool functions implemented in `agenda_intelligence.mcp_server`.
+It exposes 32 tools registered in `agenda_intelligence.mcp_stdio.TOOLS`,
+with handlers in `agenda_intelligence.mcp_server`.
 
 The tools split into four layers:
 
 - **Validation layer** (15 tools, this repo's original scope): schema checks,
   schema discovery (`get_schema`), evidence audit, lens and source-plan access,
   output scoring, quote verification, grounding and claim-verdict checks.
-- **Authoring layer** (2 tools): `create_brief`, `append_evidence` — assemble a
+- **Authoring and repair layer** (3 tools): `create_brief`, `append_evidence` — assemble a
   protocol-compliant brief or evidence pack step by step instead of hand-building
   JSON, and validate the result on every call. They return the document to the
   caller: no filesystem writes, no retrieval, no drafting of prose, no
-  factual-truth verification. See [Authoring tools](#authoring-tools).
+  factual-truth verification. `generate_repair_prompt` formats packet findings
+  into revision instructions. See [Authoring tools](#authoring-tools).
 - **Product layer** (6 tools, Agenda Intelligence product shell): `analyze`,
   `validate_memo`, `check_memo_quality`, `list_signals`, `get_signal`,
   `deep_dive` (reserved/planned, returns a v2 placeholder). These wrap the
   validation layer with geography routing, system-prompt assembly, optional LLM
   invocation, and vendored signal access.
-- **Worker and action-gate layer** (7 local stdio tools): `middle_corridor_deal_risk`,
+- **Worker and action-gate layer** (8 local stdio tools): `middle_corridor_deal_risk`,
   `cis_secondary_sanctions_exposure`, `agentic_interaction_trust`,
   `gulf_maritime_exposure`, `kazakhstan_market_entry_readiness`,
-  `agent_output_verification`, and `pre_action_check`. The first six expose the
+  `agent_output_verification`, `corridor_bankability_screen`, and
+  `pre_action_check`. The first six expose the
   existing profile contracts. `pre_action_check` returns `continue`,
   `request_evidence`, `require_approval`, or `stop` before a caller performs an
-  external action. All seven take structured requests under `schemas/v1/`.
+  external action. `corridor_bankability_screen` is an illustrative screen of
+  supplied project-finance figures using internal thresholds, not lender
+  approval. Inspect each tool's inline `inputSchema` for its exact arguments.
   They do not retrieve sources or verify factual truth. The caller remains
   responsible for authentication, authorization, enforcement, approval
   storage, and the action itself.
 
-Every vertical worker with a live A2A endpoint is reachable over local stdio MCP;
-`tests/test_mcp_tool_callability.py` fails if a deployed worker has no MCP tool.
+The original six local vertical tools are checked by
+`tests/test_mcp_tool_callability.py`. Hosted profiles have separate catalogs;
+local stdio does not expose every tool from the hosted fleet.
 
 Each of those tools declares its request shape inline — field names, types, enum
 values, the required list, and the schema's own worked example — so a caller can
@@ -71,17 +77,20 @@ extension) are in
 ### Hosted endpoint
 
 The deployed Cloudflare workers also speak MCP over Streamable HTTP at
-`POST /mcp` — possible only because 2026-07-28 removed per-client session state.
+`POST /mcp/agent` for standard clients. The legacy `/mcp` path remains
+available with its original HTTP-level payment refusal behavior.
 
-One deployment serves one profile and exposes a fixed profile-scoped tool set,
-named identically to its stdio twin. Most profiles expose one tool; Agent Output
+One deployment serves one profile and exposes a profile-scoped tool set.
+Most profiles have one primary tool; Agent Output
 Verification exposes `agent_output_verification` and `pre_action_check` plus
 three hosted-only Decision Gate tools: `decision_policies_list`,
 `decision_check`, and `decision_verify`. The local stdio catalog remains
-unchanged. For example:
+unchanged. Each trial-enabled profile additionally exposes the hosted-only
+`free_trial_status` and `free_trial`; these are not local stdio tools. Discover
+the serving catalog instead of using a directory's local tool list. For example:
 
 ```bash
-curl -sX POST https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp \
+curl -sX POST https://output-verification.agendamcp.dpdns.org/mcp/agent \
   -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
@@ -97,10 +106,19 @@ be presented more than once during its five-minute lifetime; one-time execution
 remains the caller's responsibility.
 
 For a deployed endpoint, discovery and execution have different access rules.
-`initialize`, `server/discover` and `tools/list` are free. Evaluation of your own
-input uses `pay_per_call` and returns HTTP 402 with a JSON-RPC error when unpaid.
-A client can discover tools without a wallet; running paid tools requires an
-adapter for the [exact-request signed payment flow](docs/deployment/payment-execution.md).
+`initialize`, `server/discover` and `tools/list` are free. For a free first
+evaluation, call `free_trial_status({})`, then `free_trial` with the direct input
+specified by **its own** `inputSchema`. Successful trials return
+`structuredContent: {evaluation, trial}`. Output Verification has five attempts
+per network for the campaign, the other profiles two each, with a shared
+1,000-attempt UTC-day fleet ceiling. HTTP and MCP share those limits; changing
+sessions does not reset them. Configured production authentication still applies.
+See [native trial errors, quotas and privacy](docs/deployment/fleet-free-trials.md).
+
+Paid evaluation tools retain `pay_per_call` admission. At `/mcp/agent`, unpaid
+admission is an explicit `isError: true` tool result; the legacy `/mcp` path
+retains HTTP 402 / JSON-RPC errors. Paid execution requires an adapter for the
+[exact-request signed payment flow](docs/deployment/payment-execution.md).
 An ordinary MCP configuration alone does not implement that payment flow.
 The installed local stdio server has no hosted payment requirement.
 
@@ -109,14 +127,17 @@ initialization, tool discovery, free A2A heartbeat and handling paid refusals.
 
 `tools/call` inherits the profile's access gate, rate limit, and usage logging.
 `server/discover` and `tools/list` stay open. Hosted `tools/list` entries include
-complete inline input and output JSON Schemas plus read-only and non-destructive
-annotations. All are idempotent except `decision_check`, whose receipt id and
-timestamps change on every call.
+complete inline input and output JSON Schemas plus per-tool behavior
+annotations. `decision_check` is non-idempotent because receipt ids and
+timestamps change; `free_trial` is also non-idempotent because each admitted
+call consumes an attempt. Do not retry it blindly.
 Pass the published request object directly as `tools/call.params.arguments`;
-the former `{ "request": { ... } }` wrapper remains accepted only by the two
-pre-existing tools and keeps its former A2A task-shaped result for compatibility.
-Decision Gate tools accept only their published direct schemas. A direct-schema
-call contains the service response once in `structuredContent` and only a short text summary,
+For Output Verification, the former `{ "request": { ... } }` wrapper remains
+accepted by `agent_output_verification` and `pre_action_check` and keeps its
+former A2A task-shaped result for compatibility. Financial Guard and Escrow
+retain their own paid legacy wrappers; inspect their published schemas.
+Decision Gate and native trial tools accept only their published direct schemas. A direct-schema
+paid evaluation call contains the service response once in `structuredContent` and only a short text summary,
 so a current MCP client does not pay the context cost of a duplicated A2A task.
 The full local catalog below is stdio only.
 
@@ -503,7 +524,7 @@ The caller's `pack_json` is never mutated in place.
 
 ## Product layer tools
 
-The five tools below form the Agenda Intelligence product shell. They share the
+The six tools below form the Agenda Intelligence product shell. They share the
 request/response contract defined by `schemas/v1/agenda-request.schema.json` and
 `schemas/v1/agenda-memo.schema.json`.
 

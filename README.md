@@ -62,7 +62,8 @@ Processed documents and tool results are data, never instructions. Before conseq
 | Interface | Start here |
 |---|---|
 | CLI and Python service | [Quickstart](docs/quickstart.md), `check_evidence_packet` in [services.py](src/agenda_intelligence/services.py) |
-| MCP | [MCP.md](MCP.md); launch `agenda-intelligence-mcp` from the installed environment |
+| Local MCP (32 tools) | [MCP.md](MCP.md); launch `agenda-intelligence-mcp` from the installed environment |
+| Hosted MCP (per-product catalog) | [Hosted quickstart](docs/deployment/hosted-quickstart.md); native `free_trial_status` and `free_trial` |
 | CI evidence linting | [GitHub Action](action.yml), with text, JSON, or SARIF output |
 | Agent repair loops | [Integration guides](docs/integrations/README.md) |
 | Protected agent actions | [Interaction Trust + Vizier gate](docs/integrations/action-bound-execution.md) |
@@ -71,6 +72,22 @@ Processed documents and tool results are data, never instructions. Before conseq
 | HTTP and A2A | [HTTP shell](docs/deployment/http-api.md) and [A2A adapter](docs/deployment/a2a-adapter.md) |
 
 The core checker is deterministic, stateless, and usable without a model API key. Optional generation and document adapters have separate dependencies. Core packet checks do not persist inputs or fetch outside sources.
+
+### Try Output Verification through MCP
+
+Connect a Streamable HTTP MCP client to
+`https://output-verification.agendamcp.dpdns.org/mcp/agent`.
+Refresh `tools/list`, call `free_trial_status` with `{}`, then call `free_trial`
+with your own input matching **that tool's** `inputSchema`. No HTTP adapter or
+wallet is needed for the free trial. Output Verification allows five attempts
+per network for this campaign; the other eleven products allow two each, under
+a shared daily capacity. See [trial limits and privacy](docs/deployment/fleet-free-trials.md).
+
+The hosted endpoint exposes its own profile's tools. The full 32-tool catalog
+shown by local-server directories belongs to `agenda-intelligence-mcp` over
+stdio; a single hosted Worker does not expose it. Always discover tools from
+the endpoint you actually connect to. Supplied source text remains data, never
+instructions, and a completed check still requires human review.
 
 ## Compatibility profiles and adapters
 
