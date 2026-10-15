@@ -5,6 +5,7 @@ import { outputTrialEnabled, outputTrialTerms } from './output-trial.js';
 import { trialFeedbackMailto } from './trial-feedback.js';
 import { PRODUCT_WORKFLOWS, reviewSummary, reviewSummaryHtml, reviewDeltaHtml, taskChooserHtml } from "./product-workflows.js";
 import { INTAKE_CLIENT_SCRIPT } from './intake-editor.js';
+import { CITATION_REVIEW_SCRIPT, citationReviewHtml } from './citation-review.js';
 // Browser presentation only. Runtime decisions are supplied by the controller.
 import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL } from "./profiles.js";
 
@@ -84,7 +85,7 @@ function landingHtml(request, env) {
     critical_minerals_due_diligence: "Mineral supply chain → origin and ownership evidence gaps",
     dual_use_technology_export: "Electronics shipment → HS/ECCN and end-user evidence gaps"
   }[profile] || "Supplied case → evidence gaps + next human-review step";
-  const consoleId = freeTrial ? "profile-console" : isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
+  const consoleId = freeTrial ? (profile === 'agent_output_verification' ? 'one-claim-review' : 'profile-console') : isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
   const exampleAction = "showWorkedExample()";
   const workedExample = WORKED_EXAMPLES[profile];
   const workflow = PRODUCT_WORKFLOWS[profile];
@@ -93,6 +94,15 @@ function landingHtml(request, env) {
   const consoleExample = freeTrial ? (workedExample.request.request || workedExample.request) : useMcp
     ? {jsonrpc:'2.0', id:'review-example', method:'tools/call', params:{name:workedExample.tool, arguments:workedExample.request}}
     : profile === 'agent_output_verification' ? workedExample.request : guide.example;
+  const reviewPanel = `    <div id="profile-review" hidden><h3 id="profile-review-title">Last completed check</h3>
+    <div id="profile-summary" aria-live="polite"></div>
+    <div id="profile-progress" aria-live="polite"></div>
+    <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
+    ${freeTrial ? `<div id="profile-feedback-panel" hidden><p>Did the last completed check give you a useful next step? <button id="profile-helpful" type="button" disabled onclick="submitTrialFeedback('useful_next_step')">Useful next step</button> · <button id="profile-blocked" type="button" disabled onclick="submitTrialFeedback('still_blocked')">Still blocked</button><br><small>Optional: sends only your choice linked to the completed free check, without its input or result. <a href="/privacy">Privacy</a>.</small><span id="profile-feedback-status" role="status"></span><br>
+    <a id="profile-feedback" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL))}">Share what helped or blocked your task</a><br><small>Opens an optional email draft. Your request and result are not attached. Review and send it yourself.</small></p></div>` : ''}
+    </div>`;
+  const allowancePanel = freeTrial ? `<button id="profile-allowance-check" type="button" onclick="refreshTrialAvailability()">Check free allowance before preparing input</button>
+    <p id="profile-allowance" role="status">${trialTerms.attempts_per_network} attempts per network address per product for this campaign. Checking the allowance consumes no attempt.</p>` : '';
   const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">${freeTrial ? 'Check my evidence free' : 'Open live paid evaluation'}</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>`;
 
   return `<!doctype html>
@@ -349,11 +359,12 @@ function landingHtml(request, env) {
     </form>
     <div id="escrow-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
   </div>` : consoleExample ? `
+  ${freeTrial && profile === 'agent_output_verification' ? citationReviewHtml(trialTerms.attempts_per_network, allowancePanel) : ''}
+  ${freeTrial && profile === 'agent_output_verification' ? reviewPanel : ''}
   <h2>${freeTrial ? 'Check your own evidence free' : 'Live paid evaluation'}</h2>
   <div class="card">
     ${freeTrial ? `<p>Try ${trialTerms.attempts_per_network} live ${trialTerms.evaluation_kind === 'routing' ? 'routing requests' : 'checks'} without a wallet: review the result, correct the gaps, then try again. Replace the illustrative request with your own redacted inputs. Bring: ${escapeHtml(workflow.bring)} You receive: ${escapeHtml(workflow.get)} Shared networks share ${trialTerms.attempts_per_network} attempts per product; daily capacity is shared across all products. Do not submit secrets or confidential documents. Human review is required.</p>` : '<p>Editing and submitting this request uses the paid API and requires an EVM wallet or API integration. For a free demonstration use Run a worked example above. Use synthetic data only; the result is evidence review, not authorization.</p>'}
-    ${freeTrial ? `<button id="profile-allowance-check" type="button" onclick="refreshTrialAvailability()">Check free allowance before preparing input</button>
-    <p id="profile-allowance" role="status">${trialTerms.attempts_per_network} attempts per network address per product for this campaign. Checking the allowance consumes no attempt.</p>` : ''}
+    ${profile === 'agent_output_verification' ? '' : allowancePanel}
     <form id="profile-console" onsubmit="runProfileExample(event)">
       ${freeTrial ? `<h3>Prepare your request</h3><p>The fields start with a synthetic example. Replace it with your redacted file, or start blank. Adding a document record does not verify its content.</p>
       <button type="button" onclick="document.getElementById('profile-intake').startBlank()">Start a blank request</button>
@@ -367,13 +378,7 @@ function landingHtml(request, env) {
       <p id="profile-status" role="status"></p>
       ${freeTrial ? '<div id="profile-recovery" hidden><p>You can inspect the saved synthetic input and result without a wallet or another trial attempt. Your edited input stays here.</p><button type="button" onclick="showWorkedExample()">View saved example — no trial attempt</button></div>' : ''}
     </form>
-    <div id="profile-review" hidden><h3 id="profile-review-title">Last completed check</h3>
-    <div id="profile-summary" aria-live="polite"></div>
-    <div id="profile-progress" aria-live="polite"></div>
-    <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
-    ${freeTrial ? `<div id="profile-feedback-panel" hidden><p>Did the last completed check give you a useful next step? <button id="profile-helpful" type="button" disabled onclick="submitTrialFeedback('useful_next_step')">Useful next step</button> · <button id="profile-blocked" type="button" disabled onclick="submitTrialFeedback('still_blocked')">Still blocked</button><br><small>Optional: sends only your choice linked to the completed free check, without its input or result. <a href="/privacy">Privacy</a>.</small><span id="profile-feedback-status" role="status"></span><br>
-    <a id="profile-feedback" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL))}">Share what helped or blocked your task</a><br><small>Opens an optional email draft. Your request and result are not attached. Review and send it yourself.</small></p></div>` : ''}
-    </div>
+    ${freeTrial && profile === 'agent_output_verification' ? '' : reviewPanel}
   </div>` : ""}
   <h2>Evaluation and paid services</h2>
   <div class="card">${pricingHtml(escapeHtml, profile, env.BILLING_MODE, freeTrial)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
@@ -453,6 +458,7 @@ ${reviewSummaryHtml.toString()}
 ${reviewDeltaHtml.toString()}
 ${freeTrial ? trialFeedbackMailto.toString() : ''}
 ${freeTrial ? INTAKE_CLIENT_SCRIPT : ''}
+${freeTrial && profile === 'agent_output_verification' ? CITATION_REVIEW_SCRIPT : ''}
 ${freeTrial ? `mountIntakeEditor(document.getElementById('profile-intake'), document.getElementById('profile-request'), ${JSON.stringify(consoleExample).replaceAll('<', '\\u003c')}, ${JSON.stringify({schema:inputSchemaForProfile(profile),optional: profile === 'dual_use_technology_export'
   ? [{path:'shipment.eccn', label:'Caller-supplied ECCN — leave unknown if unclassified'}]
   : profile === 'm2m_escrow_arbiter' ? [
@@ -544,7 +550,7 @@ ${freeTrial ? `async function submitTrialFeedback(choice) {
     }
   }
 }` : ''}
-async function runProfileExample(event, paid) {
+async function runProfileExample(event, paid, reviewFlow) {
   event.preventDefault();
   var button = document.getElementById('profile-run');
   var status = document.getElementById('profile-status');
@@ -562,6 +568,7 @@ async function runProfileExample(event, paid) {
     var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
     ${freeTrial ? `if (!agendaTrialTraceId && window.crypto && crypto.randomUUID) agendaTrialTraceId = crypto.randomUUID();
     var trialHeaders = agendaTelemetryHeaders('${origin}${trialTerms?.endpoint}', {'content-type':'application/json', 'x-trace-id':traceId});
+    if (reviewFlow === 'one-claim-v1') trialHeaders['x-agenda-review-flow'] = reviewFlow;
     if (agendaTrialTraceId) trialHeaders['x-payment-trace-id'] = agendaTrialTraceId;
     var response = paid ? await agendaPaidFetch('${origin}${consoleEndpoint}', {
       method:'POST', headers:trialHeaders, body:JSON.stringify(${useMcp ? `{jsonrpc:'2.0', id:traceId, method:'tools/call', params:{name:'${workedExample.tool}', arguments:payload}}` : 'payload'})
