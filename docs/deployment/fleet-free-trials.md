@@ -9,6 +9,43 @@ a transaction, executes an escrow payout or establishes factual truth.
 
 ## Public contract
 
+### Native MCP — no HTTP adapter
+
+When the trial is enabled, `tools/list` at `/mcp/agent` and `/mcp` includes:
+
+- `free_trial_status` with empty arguments: returns `terms` and advisory
+  `availability`, without evaluating or reserving an attempt.
+- `free_trial`: accepts the canonical product input directly, as described by
+  **this tool's** `inputSchema`. Its `com.agenda/readiness` metadata includes a
+  synthetic `example_arguments`; replace it with supplied evidence. Financial
+  Guard and Escrow use bare records here, rather than their paid legacy wrapper.
+
+The Output Verification `/mcp/output-verification` endpoint also exposes these
+two tools. Existing paid tools retain their separate admission requirements.
+The native trial selects only the serving profile's fixed operation; it cannot
+run bankability dossiers, batch screening, decision signing or arbitrary tools.
+
+Call `free_trial_status`, then `free_trial` through the same MCP session.
+Success has `isError: false` and `structuredContent: {evaluation, trial}`.
+`evaluation` preserves the existing product result; `trial` includes the fixed
+profile/tool, `payment_required: false`, `attempt_consumed: true`,
+`completion_recorded: true`, and server-issued `attempt_id` / `trace_id` for
+diagnostics. A completed review is not permission to act.
+
+Validation, quota and storage failures return `isError: true` with JSON details
+in text content and no successful `structuredContent`. Details retain the trial
+code, HTTP-equivalent status and applicable limit/reset guidance. Protocol errors
+and missing configured production authentication can remain protocol/HTTP errors.
+If completion recording fails, the evaluator may have run and the reservation
+is consumed; do not retry blindly. `free_trial` is explicitly non-idempotent.
+
+MCP and HTTP share the **same campaign allowance and daily capacity**. A new
+session, another endpoint path or another client label does not reset them.
+Both native tools disappear from discovery when the trial is disabled. If a
+client cached an older tool catalog, reconnect or refresh `tools/list`.
+
+### HTTP alternative
+
 `GET /v1/trial` returns terms, `agent_profile`, the fixed `tool`,
 `evaluation_kind`, `input_schema`, an illustrative `example_request`, an optional
 `request_schema` link, `paid_endpoint`, `paid_transport` and `paid_price_usdc`.
@@ -40,9 +77,10 @@ not served on other profiles. Existing Output campaign identities remain valid.
 
 POST responses carry server-issued `X-Payment-Attempt-Id`, optional caller
 correlation `X-Payment-Trace-Id`, and `Cache-Control: no-store`. Neither ID grants
-entitlement. Existing configured production authorization gates still apply;
-the trial refuses payment and access credentials rather than bypassing a gate.
-Public unauthenticated trials are intended for deployments without such keys.
+entitlement. Existing configured production authorization gates still apply.
+A matching configured production Bearer is accepted after that gate; payment
+headers and Pro entitlement tokens do not grant free-trial access. Public
+unauthenticated trials are intended for deployments without production keys.
 
 ## Check allowance and recover without spending an attempt
 

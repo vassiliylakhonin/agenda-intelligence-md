@@ -1,7 +1,7 @@
 import { readBoundedJson } from './request-body.js';
 import { paymentTraceId, paymentTraceResponse } from './payment-trace.js';
 import { tokenHash } from './payment-ledger.js';
-import { trialProfile, trialPath, OUTPUT_TRIAL_PATH } from './trial-profiles.js';
+import { trialProfile, trialPath, OUTPUT_TRIAL_PATH, MCP_TRIAL_TOOL, MCP_TRIAL_STATUS_TOOL } from './trial-profiles.js';
 import { recordTrialCompletion } from './trial-receipts.js';
 
 export { OUTPUT_TRIAL_PATH };
@@ -20,6 +20,7 @@ export function outputTrialEnabled(profile, env = {}) {
 export function outputTrialTerms(profile = 'agent_output_verification') {
   const config = trialProfile(profile);
   return { endpoint: trialPath(profile), agent_profile: profile, tool: config.tool,
+    mcp_tool: MCP_TRIAL_TOOL, mcp_status_tool: MCP_TRIAL_STATUS_TOOL,
     availability_endpoint: trialPath(profile) + '?availability=1',
     worked_example_url: '/?example=1#worked-example',
     evaluation_kind: config.kind || 'evidence_review', attempts_per_network: trialAttemptLimit(profile),
@@ -93,7 +94,7 @@ export async function reserveOutputTrial(request, env, attempt = crypto.randomUU
     reset_at: limit === 'daily_capacity_exhausted' ? Date.parse(now.slice(0, 10) + 'T00:00:00Z') + 86400000 : null };
 }
 
-export async function handleOutputTrial(request, env, { validate, evaluate, emit, respond, originGroup = () => 'unknown_origin', profile = 'agent_output_verification' }) {
+export async function handleOutputTrial(request, env, { validate, evaluate, emit, respond, originGroup = () => 'unknown_origin', profile = 'agent_output_verification', readInput = readBoundedJson, allowProductionAuthorization = false }) {
   const terms = outputTrialTerms(profile);
   const attempt = crypto.randomUUID();
   const trace = paymentTraceId(request);
@@ -102,12 +103,13 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
   const reply = (body, status = 200, headers = {}) => paymentTraceResponse(respond(body, status,
     { 'cache-control': 'no-store', ...headers }), trace, attempt);
   log('request_received', 'free_trial', null);
-  if (request.headers.has('x-payment-tx') || request.headers.has('x-payment-signature') || request.headers.has('authorization')) {
+  if (request.headers.has('x-payment-tx') || request.headers.has('x-payment-signature') ||
+      (request.headers.has('authorization') && !allowProductionAuthorization)) {
     log('preview_failed', 'trial_credentials_not_applicable', 400);
-    return reply({ code: 'trial_credentials_not_applicable', error: 'Do not send payment or access credentials to the free trial.', trial: terms }, 400);
+    return reply({ code: 'trial_credentials_not_applicable', error: 'Do not send payment credentials to the free trial. Only configured production authentication is accepted.', trial: terms }, 400);
   }
   let checked;
-  try { checked = validate(await readBoundedJson(request)); }
+  try { checked = validate(await readInput(request)); }
   catch (error) {
     const status = error.status === 413 ? 413 : 400;
     log('payment_rejected', 'invalid_paid_request', status,

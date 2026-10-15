@@ -104,7 +104,14 @@ body remains accepted even with a noncanonical Content-Type; a header alone
 does not repair malformed bytes. Payment events v5 carry these same labels;
 older events have no diagnostic detail and cannot be retrospectively attributed.
 
-Where a trial is enabled, `GET /v1/trial` publishes the bare trial input schema,
+Where a trial is enabled, MCP clients can call `free_trial_status` and then
+`free_trial` using the latter's `inputSchema` and their own evidence. No HTTP
+adapter or wallet is required. Success returns `{evaluation, trial}` inside
+`structuredContent`; quota and evaluation failures are tool errors. The trial
+shares the HTTP campaign allowance and selects one fixed operation per profile.
+Refresh `tools/list` if the new tools are absent from a cached catalog.
+
+For HTTP clients, `GET /v1/trial` publishes the bare trial input schema,
 example request and the separate canonical `a2a_example`.
 `GET /v1/trial?availability=1` checks current network allowance without reserving
 an attempt. It is advisory; POST remains authoritative. See the

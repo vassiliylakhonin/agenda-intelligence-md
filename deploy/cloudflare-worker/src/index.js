@@ -1,5 +1,6 @@
 import { addSkillDiscovery } from './skill-discovery.js';
 import { agentOnboarding, PROFILE_TASKS, profileWorkflow } from './agent-onboarding.js';
+import { mcpTrialTools, mcpTrialResult } from './mcp-trial.js';
 import { handleTrialFeedback } from './trial-feedback.js';
 import { mcpAgentAdmissionResponse } from './mcp-admission.js';
 import { lookupChplTier } from "./chpl.js";
@@ -11,7 +12,7 @@ import { snapshotHealth } from "./upstream_snapshot.js";
 import { consumeProQuota } from "./payment-ledger.js";
 import { OUTPUT_TRIAL_PATH, handleOutputTrial, outputTrialEnabled, outputTrialTerms, outputTrialAvailability } from './output-trial.js';
 import { trialCompletionStats, trialOriginGroup } from './trial-receipts.js';
-import { WORKER_TRIAL_PATH, trialProfile, trialPath } from './trial-profiles.js';
+import { WORKER_TRIAL_PATH, trialProfile, trialPath, isMcpTrialTool, MCP_TRIAL_STATUS_TOOL } from './trial-profiles.js';
 import { WORKED_EXAMPLES } from './worked-examples.js';
 import { readBoundedJson, MAX_JSON_BODY_BYTES, jsonInputDiagnostics } from "./request-body.js";
 import { PUBLIC_SCHEMAS } from "./public-schemas.js";
@@ -1251,7 +1252,7 @@ function agentCard(request, env = {}) {
       ...skill, tags: skill.tags.filter((tag) => tag !== "free")
     }));
   }
-  const contracts = toolContractsForProfile(agentProfile(request, env));
+  const contracts = toolContractsForProfile(agentProfile(request, env), request, env);
   if (contracts) shaped.x_tool_contracts = contracts;
   const profile = agentProfile(request, env);
   const guide = GATE_REQUEST_GUIDES[profile] || (profile === "market_entry_readiness" ? GATE_REQUEST_GUIDES.kazakhstan_market_entry_readiness : null);
@@ -1307,12 +1308,12 @@ function agentCard(request, env = {}) {
 // It rides in the vendor extension because the A2A v1 AgentSkill field set is
 // closed; a schema hung on the skill itself would make the served card invalid.
 // toSpecWireCard moves anything outside that field set there on the way out.
-function toolContractsForProfile(profile) {
-  const tools = mcpToolsForProfile(profile);
+function toolContractsForProfile(profile, request, env) {
+  const tools = hostedMcpTools(profile, request, env);
   if (!tools.length) return null;
   return {
     contract_version: VERSION,
-    note: "These are MCP tool schemas, not A2A envelope schemas. For A2A SendMessage use x_agenda_intelligence.a2a_send_message_example; structured gate fields go directly in message.parts[0].data with mediaType application/json. Text-only routing profiles use message.parts[0].text; ordinary prose does not replace a gate's required structured evidence.",
+    note: "These are MCP tool schemas, not A2A envelope schemas. free_trial and free_trial_status are MCP-only tools. For A2A SendMessage use x_agenda_intelligence.a2a_send_message_example; structured gate fields go directly in message.parts[0].data with mediaType application/json. Text-only routing profiles use message.parts[0].text; ordinary prose does not replace a gate's required structured evidence.",
     tools: tools.map((tool) => ({
       name: tool.name,
       input_schema: tool.inputSchema,
@@ -1650,7 +1651,7 @@ function mcpServerCard(request, env = {}) {
         type: "streamable-http",
         url: `${origin}${MCP_AGENT_ENDPOINT_PATH}`,
         stateless: true,
-        tools: mcpToolsForProfile(agentProfile(request, env)).map((tool) => tool.name),
+        tools: hostedMcpTools(agentProfile(request, env), request, env).map((tool) => tool.name),
         tools_note: "Hosted endpoint exposes this deployment's triage contract only, not the local catalog."
       }
     ],
@@ -6174,6 +6175,7 @@ function fleetDirectoryResponse() {
         onboarding_card: `${gate.canonical_endpoint}/.well-known/agent-card.json`,
         documentation_url: PROFILE_REGISTRY[gate.profile]?.documentation_url || DOCS_URL,
         tool_names: mcpToolsForProfile(gate.profile).map(item => item.name),
+        optional_trial_tools: ['free_trial_status', 'free_trial'],
         mcp_endpoint: `${gate.canonical_endpoint}${MCP_AGENT_ENDPOINT_PATH}`,
         a2a_endpoint: `${gate.canonical_endpoint}/message/send`,
         server_card: `${gate.canonical_endpoint}/.well-known/mcp/server-card.json`,
@@ -13040,7 +13042,7 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
   if (payload.method === "tools/list") {
     return respond(id, {
       tools: hostedMcpTools(profile, request, env).filter((tool) =>
-        !outputVerificationPlugin || tool.name === "agent_output_verification"),
+        !outputVerificationPlugin || tool.name === "agent_output_verification" || isMcpTrialTool(tool.name)),
       ttlMs: MCP_TOOL_LIST_TTL_MS,
       cacheScope: MCP_TOOL_LIST_CACHE_SCOPE
     });
@@ -13051,11 +13053,35 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
     if (typeof name !== "string") {
       return jsonRpcError(id, -32602, "tools/call requires a string tool name");
     }
+    if (isMcpTrialTool(name) && outputTrialEnabled(profile, env)) {
+      // Stateful calls require a correlatable request id; notifications and
+      // malformed envelopes must not consume a campaign attempt.
+      if (!['string','number'].includes(typeof payload.id) ||
+          (typeof payload.id === 'number' && !Number.isFinite(payload.id))) {
+        return jsonRpcError(null, -32600, 'Trial calls require a string or number request id');
+      }
+      if (!isProductionAuthorized(request, env, profile)) return respond(id, {isError:true,
+        content:[{type:'text',text:JSON.stringify({code:'unauthorized',evaluated:false,admission_status:401})}]});
+      const args = params.arguments ?? {};
+      if (name === MCP_TRIAL_STATUS_TOOL) {
+        if (!args || typeof args !== 'object' || Array.isArray(args) || Object.keys(args).length) {
+          return jsonRpcError(id, -32602, 'free_trial_status accepts an empty arguments object');
+        }
+        try {
+          return respond(id, mcpToolResult({terms:outputTrialTerms(profile),
+            availability:await outputTrialAvailability(request,env,profile)}));
+        } catch {
+          return respond(id, {isError:true,content:[{type:'text',text:JSON.stringify({
+            code:'trial_unavailable',evaluated:false,attempt_consumed:false,admission_status:503})}]});
+        }
+      }
+      return respond(id, await mcpTrialResult(await executeWorkerTrial(request,env,ctx,profile,()=>args)));
+    }
     const spec = mcpToolSpecForProfile(profile, name);
     if (!spec || (outputVerificationPlugin && name !== "agent_output_verification")) {
-      const available = mcpToolsForProfile(profile)
+      const available = hostedMcpTools(profile, request, env)
         .map((tool) => tool.name)
-        .filter((toolName) => !outputVerificationPlugin || toolName === "agent_output_verification");
+        .filter((toolName) => !outputVerificationPlugin || toolName === "agent_output_verification" || isMcpTrialTool(toolName));
       return respond(id, mcpToolResult({ error: `Unknown tool: ${name}`, available }, true));
     }
     const toolArguments = params.arguments ?? {};
@@ -13311,16 +13337,18 @@ function mcpPromptGet(name, args = {}) {
 function hostedMcpTools(profile, request, env) {
   const origin = originFromRequest(request);
   const guideProfile = profile === "market_entry_readiness" ? "kazakhstan_market_entry_readiness" : profile;
-  return mcpToolsForProfile(profile, {
+  const tools = mcpToolsForProfile(profile, {
     access: hostedAccess(profile, env, origin),
     freeAccess: hostedAccess(profile, {...env, BILLING_MODE:'freemium'}, origin),
     example: GATE_REQUEST_GUIDES[guideProfile]?.example
   });
+  return outputTrialEnabled(profile,env)
+    ? [...tools,...mcpTrialTools(workerTrialAdapter(profile),outputTrialTerms(profile))] : tools;
 }
 
 function profileInstructions(profile, request, env, singleTool = false) {
   const tools = hostedMcpTools(profile, request, env)
-    .filter((tool) => !singleTool || tool.name === "agent_output_verification");
+    .filter((tool) => !singleTool || tool.name === "agent_output_verification" || isMcpTrialTool(tool.name));
   const origin = originFromRequest(request);
   return `Choose ${tools.map((tool) => tool.name).join(" or ")} according to its inputSchema. ` +
     "Use the illustrative example_arguments in each tool's com.agenda/readiness metadata as a shape guide; replace synthetic data with your own evidence. " +
@@ -13361,6 +13389,11 @@ async function handleMcpPost(request, env, ctx) {
         401,
         { "www-authenticate": "Bearer", "cache-control": "no-store" }
       );
+    }
+    if (isMcpTrialTool(payload.params?.name)) {
+      // Native trials use their own atomic campaign quota, not paid admission
+      // or the hourly sandbox upgrade path. Never cache network-specific state.
+      return jsonResponse(await handleMcpJsonRpc(payload, request, env, ctx), 200, { 'cache-control':'no-store' });
     }
     if (!mcpToolSpecForProfile(profile, payload.params?.name) || payload.jsonrpc !== '2.0') {
       return jsonResponse(await handleMcpJsonRpc(payload, request, env, ctx), 200);
@@ -15051,6 +15084,49 @@ function workerTrialAdapter(profile) {
   };
 }
 
+// One shared admission/evaluation path for REST and native MCP trials. The
+// original request keeps Cloudflare network identity and telemetry attribution.
+async function executeWorkerTrial(request, env, ctx, profile, readInput) {
+  if (!isProductionAuthorized(request, env, profile)) return jsonResponse({error:'Unauthorized'},401);
+  const adapter = workerTrialAdapter(profile);
+  const fingerprint = await callerHash(request, env).catch(() => null);
+  return handleOutputTrial(request, env, {
+    profile, respond: jsonResponse, readInput,
+    allowProductionAuthorization: Boolean(productionAuthKey(profile, env)) &&
+      bearerTokenFromRequest(request) === productionAuthKey(profile, env),
+    originGroup: structured => {
+      const chars = JSON.stringify(structured).length;
+      const probe = actionProbeReason(request, chars);
+      return trialOriginGroup(buildUsageEvent(request, { agent_profile: profile, likely_probe: Boolean(probe) }));
+    },
+    emit: details => logPaymentEvent(request, env, { ...details, profile, caller_hash: fingerprint }),
+    validate: body => {
+      if (containsInlinePayment(body)) return { errors: ['Do not put payment credentials in trial inputs.'] };
+      if (!body || typeof body !== 'object' || Array.isArray(body)) return { errors: ['Send a request object.'] };
+      if (['jsonrpc', 'method', 'params', 'capability', 'tool', 'agent_profile'].some(key => Object.hasOwn(body, key))) {
+        return { errors: ['Send only this product’s request fields; tool and profile selection are not accepted.'] };
+      }
+      return adapter.validate(body);
+    },
+    evaluate: async structured => {
+      // Free trials never invoke the paid hosted screening fallback.
+      const data = await adapter.evaluate(structured, request, { ...env, OPENSANCTIONS_DISABLED: '1' });
+      const chars = JSON.stringify(structured).length;
+      const probe = actionProbeReason(request, chars);
+      const verdict = data.financial_guard_verdict || data.arbitration_ruling || data;
+      const event = await logUsageEvent(request, { agent_profile: profile, jsonrpc_method: new URL(request.url).pathname.startsWith('/mcp') ? 'tools/call' : undefined, prompt_chars: chars,
+        structured_chars: chars, modules_used: [profile], likely_probe: Boolean(probe), probe_reason: probe,
+        outcome: { decision: verdict.verdict || verdict.triage_recommendation || verdict.decision || verdict.ruling || 'completed',
+          status: 'completed', score: verdict.readiness_score ?? verdict.decision_readiness_score },
+        payment: { header_present: false } }, env);
+      const saved = recordUsageStats(env, event).catch(() => {});
+      if (typeof ctx.waitUntil === 'function') ctx.waitUntil(saved);
+      else await saved;
+      return data;
+    }
+  });
+}
+
 function trialOpenApiPaths(request, env) {
   const profile = agentProfile(request, env);
   if (!outputTrialEnabled(profile, env)) return {};
@@ -15129,40 +15205,7 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
     }
     if (request.method !== 'POST') return jsonResponse({ error: 'Use GET or POST.' }, 405, { allow: 'GET, POST, OPTIONS' });
     if (!isProductionAuthorized(request, env, profile)) return jsonResponse({ error: 'Unauthorized' }, 401);
-    const fingerprint = await callerHash(request, env).catch(() => null);
-    return handleOutputTrial(request, env, {
-      profile, respond: jsonResponse,
-      originGroup: structured => {
-        const chars = JSON.stringify(structured).length;
-        const probe = actionProbeReason(request, chars);
-        return trialOriginGroup(buildUsageEvent(request, { agent_profile: profile, likely_probe: Boolean(probe) }));
-      },
-      emit: details => logPaymentEvent(request, env, { ...details, profile, caller_hash: fingerprint }),
-      validate: body => {
-        if (containsInlinePayment(body)) return { errors: ['Do not put payment credentials in trial inputs.'] };
-        if (!body || typeof body !== 'object' || Array.isArray(body)) return { errors: ['Send a request object.'] };
-        if (['jsonrpc', 'method', 'params', 'capability', 'tool', 'agent_profile'].some(key => Object.hasOwn(body, key))) {
-          return { errors: ['Send only this product’s request fields; tool and profile selection are not accepted.'] };
-        }
-        return adapter.validate(body);
-      },
-      evaluate: async structured => {
-        // Free trials never invoke the paid hosted screening fallback.
-        const data = await adapter.evaluate(structured, request, { ...env, OPENSANCTIONS_DISABLED: '1' });
-        const chars = JSON.stringify(structured).length;
-        const probe = actionProbeReason(request, chars);
-        const verdict = data.financial_guard_verdict || data.arbitration_ruling || data;
-        const event = await logUsageEvent(request, { agent_profile: profile, prompt_chars: chars,
-          structured_chars: chars, modules_used: [profile], likely_probe: Boolean(probe), probe_reason: probe,
-          outcome: { decision: verdict.verdict || verdict.triage_recommendation || verdict.decision || verdict.ruling || 'completed',
-            status: 'completed', score: verdict.readiness_score ?? verdict.decision_readiness_score },
-          payment: { header_present: false } }, env);
-        const saved = recordUsageStats(env, event).catch(() => {});
-        if (typeof ctx.waitUntil === 'function') ctx.waitUntil(saved);
-        else await saved;
-        return data;
-      }
-    });
+    return executeWorkerTrial(request, env, ctx, profile);
   }
   if (request.method !== 'POST') return execute();
   const path = new URL(request.url).pathname;
@@ -15913,7 +15956,8 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
     const document = mcpCapabilityDocument(request, env);
     if (outputVerificationMcpPath) {
       document.endpoint = `${url.origin}/mcp/output-verification`;
-      document.tools = ["agent_output_verification"];
+      document.tools = hostedMcpTools('agent_output_verification',request,env)
+        .filter(tool=>tool.name==='agent_output_verification'||isMcpTrialTool(tool.name)).map(tool=>tool.name);
     }
     return jsonResponse(document, 200, headers);
   }
