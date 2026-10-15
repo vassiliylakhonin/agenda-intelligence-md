@@ -2,46 +2,70 @@
   "agenda-intelligence-a2a": [
     "strategic_risk_triage",
     "fleet_directory",
-    "corridor_bankability_screen"
+    "corridor_bankability_screen",
+    "free_trial_status",
+    "free_trial"
   ],
   "middle-corridor-deal-risk-gate-a2a": [
-    "middle_corridor_deal_risk"
+    "middle_corridor_deal_risk",
+    "free_trial_status",
+    "free_trial"
   ],
   "cis-secondary-sanctions-a2a": [
     "cis_secondary_sanctions_exposure",
-    "cis_secondary_sanctions_batch"
+    "cis_secondary_sanctions_batch",
+    "free_trial_status",
+    "free_trial"
   ],
   "agentic-interaction-trust-a2a": [
-    "agentic_interaction_trust"
+    "agentic_interaction_trust",
+    "free_trial_status",
+    "free_trial"
   ],
   "agent-output-verification-a2a": [
     "agent_output_verification",
     "pre_action_check",
     "decision_policies_list",
     "decision_check",
-    "decision_verify"
+    "decision_verify",
+    "free_trial_status",
+    "free_trial"
   ],
   "gulf-maritime-exposure-a2a": [
-    "gulf_maritime_exposure"
+    "gulf_maritime_exposure",
+    "free_trial_status",
+    "free_trial"
   ],
   "kazakhstan-market-entry-readiness-a2a": [
-    "kazakhstan_market_entry_readiness"
+    "kazakhstan_market_entry_readiness",
+    "free_trial_status",
+    "free_trial"
   ],
   "corridor-sanctions-assistant-a2a": [
     "corridor_sanctions_assistant",
-    "screen_dual_use_hs_code"
+    "screen_dual_use_hs_code",
+    "free_trial_status",
+    "free_trial"
   ],
   "critical-minerals-due-diligence-a2a": [
-    "critical_minerals_due_diligence"
+    "critical_minerals_due_diligence",
+    "free_trial_status",
+    "free_trial"
   ],
   "dual-use-technology-export-a2a": [
-    "dual_use_technology_export"
+    "dual_use_technology_export",
+    "free_trial_status",
+    "free_trial"
   ],
   "agent-financial-guard-a2a": [
-    "agent_financial_pre_sign_check"
+    "agent_financial_pre_sign_check",
+    "free_trial_status",
+    "free_trial"
   ],
   "m2m-escrow-arbiter-a2a": [
-    "m2m_escrow_arbitration_ruling"
+    "m2m_escrow_arbitration_ruling",
+    "free_trial_status",
+    "free_trial"
   ],
   "vizier": [
     "vizier_verify_action"

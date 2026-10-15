@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Expose enabled fleet trials as native MCP `free_trial_status` and `free_trial` tools, including the Output Verification plugin endpoint. Reuse the HTTP trial's evaluator, atomic network/daily quotas and durable receipts; preserve paid-tool admission and configured production authentication. Publish schema/example-driven MCP onboarding and return quota/storage failures as tool errors without a successful evaluation payload.
+
 - Lead all twelve A2A cards with distinct task descriptions and publish a first-evaluation recipe for each enabled free trial. Correct paid-only copy that hid the existing five/two-attempt trials, explain the raw-arguments HTTP trial format to MCP clients, and preserve authentication, admission, quotas and human review. Group fleet entries by workflow and link standalone Dual-Use guidance and current Agenstry aliases.
 
 ## 1.16.1 — 2026-10-15
