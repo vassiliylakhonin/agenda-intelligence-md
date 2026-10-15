@@ -13390,6 +13390,11 @@ async function handleMcpPost(request, env, ctx) {
         { "www-authenticate": "Bearer", "cache-control": "no-store" }
       );
     }
+    if (isMcpTrialTool(payload.params?.name)) {
+      // Native trials use their own atomic campaign quota, not paid admission
+      // or the hourly sandbox upgrade path. Never cache network-specific state.
+      return jsonResponse(await handleMcpJsonRpc(payload, request, env, ctx), 200, { 'cache-control':'no-store' });
+    }
     if (!mcpToolSpecForProfile(profile, payload.params?.name) || payload.jsonrpc !== '2.0') {
       return jsonResponse(await handleMcpJsonRpc(payload, request, env, ctx), 200);
     }

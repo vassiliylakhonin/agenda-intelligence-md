@@ -26,7 +26,9 @@ for(const [profile,config] of Object.entries(TRIAL_PROFILES)) {
     assert.ok(trial && tools.some(t=>t.name==='free_trial_status'));
     assert.equal(trial.annotations.idempotentHint,false);
     assert.equal(trial.annotations.readOnlyHint,false);
-    const status=await rpcData(env,'free_trial_status');
+    const statusResponse=await rpc(env,'free_trial_status');
+    assert.equal(statusResponse.headers.get('cache-control'),'no-store');
+    const status=await statusResponse.json();
     assert.equal(status.result.isError,false);
     assert.equal(status.result.structuredContent.terms.tool,config.tool);
     const limit=profile==='agent_output_verification'?5:2;
@@ -38,7 +40,9 @@ for(const [profile,config] of Object.entries(TRIAL_PROFILES)) {
     assert.equal(details(invalid).code,'invalid_trial_request');
     assert.equal(await count(env),0);
     const example=trial._meta['com.agenda/readiness'].example_arguments;
-    const golden=await rpcData(env,'free_trial',example);
+    const goldenResponse=await rpc(env,'free_trial',example);
+    assert.equal(goldenResponse.headers.get('cache-control'),'no-store');
+    const golden=await goldenResponse.json();
     assert.equal(golden.result.isError,false,JSON.stringify(golden));
     const result=golden.result.structuredContent;
     assert.equal(result.trial.tool,config.tool);
