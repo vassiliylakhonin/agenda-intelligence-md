@@ -105,6 +105,21 @@ or authorization. Because the Gate is stateless, an exactly bound receipt may
 be presented more than once during its five-minute lifetime; one-time execution
 remains the caller's responsibility.
 
+Choose one operation for the task rather than calling every similar tool:
+
+| Need | Hosted tool | Result and boundary |
+| --- | --- | --- |
+| Review an existing answer's claims and supplied source excerpts | `agent_output_verification` | Per-claim findings and a review-only relay verdict; no action check or permission to relay. |
+| Try that same answer review without payment | `free_trial_status`, then `free_trial` | Allowance check, then `{evaluation, trial}`; no action route or signed readiness receipt. Use the trial's direct input schema. |
+| Check a specific actor, action and target without a signed receipt | `pre_action_check` | Readiness route and gaps; caller enforces it. |
+| Obtain an action check with a signed receipt | `decision_check` | Includes the pre-action check; no prior `pre_action_check` call is needed. A missing signer yields `receipt_status: unavailable`. |
+| Discover receipt policy and bindings | `decision_policies_list` | Policy metadata; no evaluation. |
+| Check a receipt against the intended request and action | `decision_verify` | Signature, expiry and exact binding verification; no action execution or authorization. |
+
+For local stdio, use `audit_json` for `agent_output_verification` and
+`action_request` for `pre_action_check`. Hosted calls use the serving tool's
+direct `inputSchema`; hosted-only tools are absent from the local catalog.
+
 For a deployed endpoint, discovery and execution have different access rules.
 `initialize`, `server/discover` and `tools/list` are free. For a free first
 evaluation, call `free_trial_status({})`, then `free_trial` with the direct input

@@ -642,13 +642,12 @@ TOOLS: dict[str, dict[str, Any]] = {
     },
     "agent_output_verification": {
         "description": (
-            "Decide whether another agent's claim-backed output is safe to relay onward. Use before "
-            "forwarding, publishing, or acting on a downstream agent's answer that cites evidence: it "
-            "reports which claims are grounded, which are unsafe to relay, and which evidence references "
-            "are orphaned. Pass audit_json matching evidence-audit.schema.json (claims, evidence records, "
-            "optional unsupported_claims). Returns a relay verdict with per-claim findings and owner "
-            "actions. Evidence-readiness only: it does not verify factual truth, fetch or validate cited "
-            "sources, or authorize an action."
+            "Choose this to review an existing AI answer's claims and supplied source excerpts, without "
+            "checking a specific intended action. For action routing choose pre_action_check. Pass audit_json "
+            "matching evidence-audit.schema.json (claims, evidence records, optional unsupported_claims). "
+            "Returns a review-only relay verdict, per-claim findings, orphaned references and owner actions. "
+            "Human review is required; no verdict is permission to relay. It does not verify factual truth, "
+            "fetch or validate cited sources, or authorize an action."
         ),
         "inputSchema": _schema(
             {
@@ -663,10 +662,12 @@ TOOLS: dict[str, dict[str, Any]] = {
     },
     "pre_action_check": {
         "description": (
-            "Route a caller-controlled action to continue, request_evidence, require_approval, or stop using "
-            "caller-supplied claim evidence, risk tier, policy checks, and an optional external approval "
-            "reference. Resubmit the same run_id after adding evidence or approval. Readiness only: the tool "
-            "does not authenticate, authorize, enforce, persist state, or perform the action."
+            "Choose this for an unsigned readiness check of a specific actor, intended action and target. "
+            "Pass action_request with claim evidence, risk tier, policy checks and any external approval "
+            "reference. Returns continue, request_evidence, require_approval or stop, with gaps and reasons. "
+            "Use agent_output_verification for an answer-only claim review. Resubmit the same run_id after "
+            "adding evidence or approval. Does not authenticate, authorize, enforce, persist state, issue "
+            "a signed receipt or perform the action."
         ),
         "inputSchema": _schema(
             {

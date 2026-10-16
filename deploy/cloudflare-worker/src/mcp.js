@@ -207,7 +207,9 @@ const PROFILE_TOOLS = {
       bringsEvidence: true,
       argKey: "request",
       summary:
-        "Lint caller-provided claim evidence for relay-readiness review. Returns a review-only verdict with " +
+        "Choose this to review an existing AI answer's claims and supplied source excerpts, without checking " +
+        "a specific intended action. For action routing choose pre_action_check; for a signed readiness " +
+        "receipt choose decision_check instead. Returns a review-only verdict with " +
         "per-claim findings, orphaned evidence references, and owner actions. It does not fetch or validate the " +
         "cited sources; verify_before_relay is the ceiling, never permission to relay, and human review is required " +
         "for every verdict. "
@@ -219,9 +221,11 @@ const PROFILE_TOOLS = {
       requestSchema:
         "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/pre-action-check-request.schema.json",
       summary:
-        "Route a caller-controlled action to continue, request_evidence, require_approval, or stop using supplied " +
-        "claim evidence, risk tier, policy checks, and an optional external approval reference. Resubmit the same " +
-        "run_id after adding evidence or approval. The caller remains responsible for enforcement. "
+        "Choose this for an unsigned readiness check of a specific actor, intended action and target. " +
+        "Supply claim evidence, risk tier, policy checks and any external approval reference. Returns " +
+        "continue, request_evidence, require_approval or stop, with gaps and reasons. Resubmit the same " +
+        "run_id after adding evidence or approval. If a signed receipt is needed, call decision_check " +
+        "instead; it includes this check. Does not authenticate, authorize, enforce or perform the action. "
     },
     {
       name: "decision_policies_list",
@@ -240,9 +244,11 @@ const PROFILE_TOOLS = {
       requestSchema:
         "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/schemas/v1/pre-action-check-request.schema.json",
       summary:
-        "Run pre_action_check and attach a short-lived ES256 readiness receipt bound to the exact request and " +
-        "action hashes. The receipt is evidence of this Gate result, not authorization. Require decision_verify " +
-        "to return gate_passed before using it in an enforcement path."
+        "Choose this instead of pre_action_check when the caller integration needs a signed readiness " +
+        "receipt. Performs the same action check once and attaches a short-lived ES256 receipt bound to " +
+        "the exact request and action hashes. No prior pre_action_check call is needed. Without a configured " +
+        "signer, receipt_status is unavailable. The receipt is evidence of this Gate result, not authorization. " +
+        "Require decision_verify to return gate_passed before using it in an enforcement path."
     },
     {
       name: "decision_verify",
