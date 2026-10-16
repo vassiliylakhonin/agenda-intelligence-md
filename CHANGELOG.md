@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Clarify MCP tool selection for answer-only evidence review, unsigned action checks, signed readiness receipts and the native free trial. Keep existing names, argument schemas, access rules and evaluation behavior.
+
 - Clarify local stdio versus profile-scoped hosted MCP catalogs in README and MCP documentation. Document native trials, current custom-domain connection URLs, actual 32-tool local count and non-idempotent trial calls.
 
 - Expose enabled fleet trials as native MCP `free_trial_status` and `free_trial` tools, including the Output Verification plugin endpoint. Reuse the HTTP trial's evaluator, atomic network/daily quotas and durable receipts; preserve paid-tool admission and configured production authentication. Publish schema/example-driven MCP onboarding and return quota/storage failures as tool errors without a successful evaluation payload.
