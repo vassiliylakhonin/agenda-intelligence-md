@@ -15255,6 +15255,14 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
           : input_diagnostics.failure === 'invalid_utf8' ? 'Encode the complete JSON request as UTF-8 before sending it with Content-Type: application/json.'
           : ['form_urlencoded', 'multipart'].includes(input_diagnostics.media_type) ? 'Send a serialized JSON object with Content-Type: application/json, rather than HTML form fields or multipart data.'
           : 'Send a complete UTF-8 JSON object using your JSON serializer. Do not send shell quoting, comments or trailing commas.' } };
+    if (data.request_hint.example_request) {
+      data.request_hint.wire_request = {
+        url: new URL(request.url).origin + path, method: 'POST',
+        headers: { ...data.request_hint.headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.request_hint.example_request)
+      };
+      data.request_hint.retry_instruction = 'wire_request.body is already serialized UTF-8 JSON; send it verbatim, not as form fields or JSON.stringify(body) again. The example is illustrative: correct your own supplied evidence before evaluating; do not automatically replace the user request with it.';
+    }
     return paymentTraceResponse(jsonResponse(protocol
       ? {...data, jsonrpc:'2.0', id:null, error:{code:status === 413 ? -32600 : -32700, message:'Invalid JSON payload', data}}
       : {...data, error:'Invalid JSON payload'}, status), trace, attempt_id);

@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+
+- Return a serialized, query-free JSON wire example after malformed hosted requests. Explain verbatim sending versus form encoding or double serialization, without echoing submitted content or bypassing payment.
+
 ## 1.16.2 — 2026-10-16
 
 - Publish current MCP onboarding on PyPI and use absolute release-pinned GitHub documentation links in the distribution README. Keep runtime contracts and review boundaries unchanged.
