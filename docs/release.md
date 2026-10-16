@@ -23,6 +23,9 @@ editable development install:
   checks;
 - build source distribution and wheel with `python3 -m build`;
 - check package metadata with `python3 -m twine check dist/*`;
+- verify that repository documentation links in the built README metadata use
+  absolute GitHub URLs pinned to the new release tag, so PyPI readers do not
+  resolve relative paths under `pypi.org/project/`;
 - install the built wheel into a fresh smoke-test virtual environment;
 - verify `agenda-intelligence --version` and `agenda-intelligence
   validate-manifest`.

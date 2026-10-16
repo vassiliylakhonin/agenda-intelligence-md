@@ -5,7 +5,7 @@ Python MCP SDK 1.30.0. Python 3.10+ is required for this optional extra:
 
 ```sh
 python -m venv .venv
-.venv/bin/python -m pip install 'agenda-intelligence-md[mcp-check]==1.16.1'
+.venv/bin/python -m pip install 'agenda-intelligence-md[mcp-check]==1.16.2'
 .venv/bin/agenda-mcp-check --self-test --strict --out mcp-self-test.json
 ```
 
@@ -76,7 +76,7 @@ steps:
   - uses: actions/setup-python@v5
     with:
       python-version: '3.12'
-  - uses: vassiliylakhonin/agenda-intelligence-md/actions/mcp-integration-check@v1.16.1
+  - uses: vassiliylakhonin/agenda-intelligence-md/actions/mcp-integration-check@v1.16.2
     with:
       config: checks/mcp.json
       report: mcp-report.json

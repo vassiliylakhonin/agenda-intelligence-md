@@ -1,6 +1,8 @@
 # CHANGELOG
 
-## Unreleased
+## 1.16.2 — 2026-10-16
+
+- Publish current MCP onboarding on PyPI and use absolute release-pinned GitHub documentation links in the distribution README. Keep runtime contracts and review boundaries unchanged.
 
 - Clarify MCP tool selection for answer-only evidence review, unsigned action checks, signed readiness receipts and the native free trial. Keep existing names, argument schemas, access rules and evaluation behavior.
 
