@@ -14,6 +14,22 @@ async function silent(action) {
   try { return await action(events); } finally { console.log=old; }
 }
 
+test('malformed A2A response provides serialized wire bytes without echoing submitted content', async () => silent(async () => {
+  const response=await handleRequest(new Request(origin+'/message/send?private-query',{
+    method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'prompt=private-marker'
+  }),env);
+  const data=await response.json();
+  const wire=data.request_hint.wire_request;
+  assert.equal(typeof wire.body,'string');
+  assert.equal(wire.method,'POST');
+  assert.equal(wire.url,origin+'/message/send');
+  assert.equal(wire.headers['Content-Type'],'application/json');
+  assert.deepEqual(JSON.parse(wire.body),data.request_hint.example_request);
+  assert.doesNotMatch(JSON.stringify(data),/private-marker|private-query/);
+  const repaired=await handleRequest(new Request(wire.url,wire),env);
+  assert.equal(repaired.status,402);
+}));
+
 test('documented jq extraction produces an executable request from actual wire cards', async () => silent(async () => {
   const guide=readFileSync(new URL('../../../docs/deployment/hosted-quickstart.md',import.meta.url),'utf8');
   const filter=guide.match(/\| jq(?: -e)? '([^']+)' > a2a-request.json/)[1];

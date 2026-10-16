@@ -149,3 +149,13 @@ See [the focused integration](../../examples/output-verification/README.md) for 
 Node client, a fictional launch hand-off and the expected missing-evidence route.
 The hosted demonstration stops at payment admission; offline tests exercise the
 actual handler without transferring funds.
+
+## Recover from a malformed JSON request
+
+A hosted JSON parse refusal includes `request_hint.wire_request` with `url`,
+`method`, `headers` and an already serialized `body`. Send that body verbatim
+(for example, `fetch(wire.url, wire)`), without form encoding or another
+`JSON.stringify`. The example is illustrative; replace its values with your
+actual supplied evidence before evaluation. It is not an automatic retry of
+your task. A valid unpaid paid-operation example returns HTTP 402, not an
+evaluation or a charge. Query parameters and rejected content are not echoed.
