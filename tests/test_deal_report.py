@@ -54,8 +54,10 @@ def test_escalate_response_drives_red_verdict():
     assert "#b91c1c" in html  # escalate = red, brand verdict system
 
 
-def test_ready_response_drives_green_verdict():
+def test_explicit_operational_decision_drives_green_verdict():
     response = _load("ready_for_human_review.response.json")
+    # Synthetic rendering control; illustrative public sources no longer establish readiness.
+    response["operational_decision"] = {"decision": "proceed", "rationale": "Rendering control only"}
     html = reporting.render_html(response)
     assert "PROCEED" in reporting.render_markdown(response)
     assert "#15803d" in html  # proceed = green

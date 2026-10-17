@@ -19,6 +19,7 @@ export function reviewMineralDossier(request) {
     const sourceType = source.source_type || '';
     const normalized = sourceType === 'csddd_human_rights_and_esg_audit' ? 'responsible_sourcing_due_diligence' : sourceType;
     const issues = [];
+    if (/\b(?:illustrative\s+only|synthetic\s+(?:test|example|fixture|only)|placeholder)\b/iu.test([source.title,source.excerpt].join(' '))) issues.push('Illustrative or placeholder material is not documentary evidence.');
     for (const field of ['title', 'issuing_authority']) if (!text(source[field])) issues.push(`Missing ${field}`);
     const issued = date(source.date), expiry = date(source.valid_until);
     if (!issued) issues.push('Missing or invalid issue date (YYYY-MM-DD)');

@@ -128,6 +128,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "command",
               "mcp_server_command"
             ]
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
           }
         },
         "required": [
@@ -307,6 +329,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           },
           "not_advice_notice": {
             "type": "string"
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
           }
         },
         "required": [
@@ -416,6 +460,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           },
           "reference_snapshot_date": {
             "type": "string"
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
           }
         }
       }
@@ -524,8 +590,63 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                   },
                   "execution_advisory": {
                     "type": "string"
+                  },
+                  "next_action": {
+                    "type": "string",
+                    "enum": [
+                      "block",
+                      "review",
+                      "insufficient"
+                    ]
+                  },
+                  "decision_kind": {
+                    "const": "evidence_review"
+                  },
+                  "authorization_granted": {
+                    "const": false
+                  },
+                  "score_kind": {
+                    "type": "string",
+                    "enum": [
+                      "risk",
+                      "evidence_readiness",
+                      "not_scored"
+                    ]
+                  },
+                  "check_status": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string",
+                      "enum": [
+                        "pass",
+                        "fail",
+                        "not_assessed"
+                      ]
+                    }
                   }
                 }
+              },
+              "next_action": {
+                "type": "string",
+                "enum": [
+                  "block",
+                  "review",
+                  "insufficient"
+                ]
+              },
+              "decision_kind": {
+                "const": "evidence_review"
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "score_kind": {
+                "type": "string",
+                "enum": [
+                  "risk",
+                  "evidence_readiness",
+                  "not_scored"
+                ]
               }
             }
           },
@@ -661,8 +782,63 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                           },
                           "execution_advisory": {
                             "type": "string"
+                          },
+                          "next_action": {
+                            "type": "string",
+                            "enum": [
+                              "block",
+                              "review",
+                              "insufficient"
+                            ]
+                          },
+                          "decision_kind": {
+                            "const": "evidence_review"
+                          },
+                          "authorization_granted": {
+                            "const": false
+                          },
+                          "score_kind": {
+                            "type": "string",
+                            "enum": [
+                              "risk",
+                              "evidence_readiness",
+                              "not_scored"
+                            ]
+                          },
+                          "check_status": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string",
+                              "enum": [
+                                "pass",
+                                "fail",
+                                "not_assessed"
+                              ]
+                            }
                           }
                         }
+                      },
+                      "next_action": {
+                        "type": "string",
+                        "enum": [
+                          "block",
+                          "review",
+                          "insufficient"
+                        ]
+                      },
+                      "decision_kind": {
+                        "const": "evidence_review"
+                      },
+                      "authorization_granted": {
+                        "const": false
+                      },
+                      "score_kind": {
+                        "type": "string",
+                        "enum": [
+                          "risk",
+                          "evidence_readiness",
+                          "not_scored"
+                        ]
                       }
                     }
                   },
@@ -827,8 +1003,52 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                         "not_applicable"
                       ]
                     }
+                  },
+                  "next_action": {
+                    "type": "string",
+                    "enum": [
+                      "block",
+                      "review",
+                      "insufficient"
+                    ]
+                  },
+                  "decision_kind": {
+                    "const": "evidence_review"
+                  },
+                  "authorization_granted": {
+                    "const": false
+                  },
+                  "score_kind": {
+                    "type": "string",
+                    "enum": [
+                      "risk",
+                      "evidence_readiness",
+                      "not_scored"
+                    ]
                   }
                 }
+              },
+              "next_action": {
+                "type": "string",
+                "enum": [
+                  "block",
+                  "review",
+                  "insufficient"
+                ]
+              },
+              "decision_kind": {
+                "const": "evidence_review"
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "score_kind": {
+                "type": "string",
+                "enum": [
+                  "risk",
+                  "evidence_readiness",
+                  "not_scored"
+                ]
               }
             }
           },
@@ -1011,8 +1231,52 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                                 "not_applicable"
                               ]
                             }
+                          },
+                          "next_action": {
+                            "type": "string",
+                            "enum": [
+                              "block",
+                              "review",
+                              "insufficient"
+                            ]
+                          },
+                          "decision_kind": {
+                            "const": "evidence_review"
+                          },
+                          "authorization_granted": {
+                            "const": false
+                          },
+                          "score_kind": {
+                            "type": "string",
+                            "enum": [
+                              "risk",
+                              "evidence_readiness",
+                              "not_scored"
+                            ]
                           }
                         }
+                      },
+                      "next_action": {
+                        "type": "string",
+                        "enum": [
+                          "block",
+                          "review",
+                          "insufficient"
+                        ]
+                      },
+                      "decision_kind": {
+                        "const": "evidence_review"
+                      },
+                      "authorization_granted": {
+                        "const": false
+                      },
+                      "score_kind": {
+                        "type": "string",
+                        "enum": [
+                          "risk",
+                          "evidence_readiness",
+                          "not_scored"
+                        ]
                       }
                     }
                   },
@@ -1740,6 +2004,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "type": "string"
               }
             }
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
           }
         },
         "$defs": {
@@ -2588,6 +2874,62 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "type": "string"
               }
             }
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
+          },
+          "screening_assessment": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "enum": [
+                  "name_screen_only",
+                  "not_assessed"
+                ]
+              },
+              "freshness": {
+                "enum": [
+                  "fresh",
+                  "stale",
+                  "not_assessed"
+                ]
+              },
+              "name_matches": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "identity_verified": {
+                "const": false
+              },
+              "ownership_verified": {
+                "const": false
+              },
+              "authorization_granted": {
+                "const": false
+              }
+            }
           }
         },
         "$defs": {
@@ -2964,6 +3306,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           },
           "decision_workspace": {
             "$ref": "#/$defs/decision_workspace"
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
           }
         },
         "$defs": {
@@ -3420,6 +3784,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "type": "string"
               }
             }
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
           }
         },
         "$defs": {
@@ -3963,6 +4349,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           },
           "factual_verification_performed": {
             "const": false
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
           }
         }
       }
@@ -4479,6 +4887,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
             "items": {
               "type": "string"
             }
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
           }
         }
       }
@@ -5165,6 +5595,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
             "items": {
               "type": "string"
             }
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
           }
         }
       }
@@ -5816,6 +6268,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "type": "string"
               }
             }
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
           }
         },
         "$defs": {
@@ -6368,6 +6842,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "type": "string"
               }
             }
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
           }
         },
         "$defs": {
@@ -7183,6 +7679,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 }
               }
             }
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
+            ]
           }
         },
         "$defs": {
@@ -7543,6 +8061,28 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
             "type": [
               "object",
               "null"
+            ]
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "review",
+              "insufficient"
+            ]
+          },
+          "decision_kind": {
+            "const": "evidence_review"
+          },
+          "authorization_granted": {
+            "const": false
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": [
+              "risk",
+              "evidence_readiness",
+              "not_scored"
             ]
           }
         }

@@ -65,6 +65,28 @@
     },
     "reference_snapshot_date": {
       "type": "string"
+    },
+    "next_action": {
+      "type": "string",
+      "enum": [
+        "block",
+        "review",
+        "insufficient"
+      ]
+    },
+    "decision_kind": {
+      "const": "evidence_review"
+    },
+    "authorization_granted": {
+      "const": false
+    },
+    "score_kind": {
+      "type": "string",
+      "enum": [
+        "risk",
+        "evidence_readiness",
+        "not_scored"
+      ]
     }
   }
 }

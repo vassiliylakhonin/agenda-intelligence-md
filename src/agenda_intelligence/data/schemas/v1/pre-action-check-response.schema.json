@@ -35,7 +35,12 @@
     },
     "decision": {
       "type": "string",
-      "enum": ["continue", "request_evidence", "require_approval", "stop"]
+      "enum": [
+        "continue",
+        "request_evidence",
+        "require_approval",
+        "stop"
+      ]
     },
     "reason_code": {
       "type": "string",
@@ -69,14 +74,21 @@
     "verification": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["verdict", "evidence_gaps", "owner_actions"]
+      "required": [
+        "verdict",
+        "evidence_gaps",
+        "owner_actions"
+      ]
     },
     "policy_checks": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["check_id", "status"],
+        "required": [
+          "check_id",
+          "status"
+        ],
         "properties": {
           "check_id": {
             "type": "string",
@@ -84,7 +96,11 @@
           },
           "status": {
             "type": "string",
-            "enum": ["passed", "needs_evidence", "failed"]
+            "enum": [
+              "passed",
+              "needs_evidence",
+              "failed"
+            ]
           },
           "evidence_gap": {
             "type": "string",
@@ -95,13 +111,18 @@
     },
     "receipt_status": {
       "type": "string",
-      "enum": ["signed", "unavailable"],
+      "enum": [
+        "signed",
+        "unavailable"
+      ],
       "description": "Present on decision_check. unavailable fails the signed Gate path closed."
     },
     "receipt": {
       "description": "Short-lived readiness receipt attached by decision_check. The legacy pre_action_check response omits it.",
       "oneOf": [
-        { "type": "null" },
+        {
+          "type": "null"
+        },
         {
           "type": "object",
           "additionalProperties": false,
@@ -124,11 +145,26 @@
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
             },
-            "receipt_id": { "type": "string", "minLength": 1 },
-            "issued_at": { "type": "string", "format": "date-time" },
-            "expires_at": { "type": "string", "format": "date-time" },
-            "request_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
-            "action_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "receipt_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "issued_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "request_hash": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "action_hash": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
             "verification_tool": {
               "type": "string",
               "const": "decision_verify"
@@ -146,6 +182,28 @@
       "items": {
         "type": "string"
       }
+    },
+    "next_action": {
+      "type": "string",
+      "enum": [
+        "block",
+        "review",
+        "insufficient"
+      ]
+    },
+    "decision_kind": {
+      "const": "evidence_review"
+    },
+    "authorization_granted": {
+      "const": false
+    },
+    "score_kind": {
+      "type": "string",
+      "enum": [
+        "risk",
+        "evidence_readiness",
+        "not_scored"
+      ]
     }
   }
 }

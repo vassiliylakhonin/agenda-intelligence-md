@@ -1,3 +1,4 @@
+import { evaluationContract, withEvaluationContract } from "./evaluation-contract.js";
 import { validateEscrowArtifact } from "./escrow-schema.js";
 // M2M Escrow Arbiter & Autonomous B2B Deal Settlement Engine
 // Deterministic dispute resolution and delivery verification for Agent-to-Agent transactions.
@@ -206,10 +207,11 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
   const vizierStatus = "attestation_unavailable";
   const vizierReceipt = null;
 
-  return {
+  return withEvaluationContract({
     contract_version: M2M_ESCROW_ARBITER_CONTRACT_VERSION,
     profile: M2M_ESCROW_ARBITER_PROFILE_KEY,
     arbitration_ruling: {
+      ...evaluationContract({ruling,violations,evidence_gaps:evidenceGaps}),
       status,
       ruling,
       score,
@@ -240,5 +242,5 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
       not_advice_notice: "Evaluation of supplied evidence only; this response does not execute or authorize settlement.",
       execution_advisory: advisory
     }
-  };
+  });
 }

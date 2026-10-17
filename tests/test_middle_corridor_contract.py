@@ -950,24 +950,16 @@ def test_middle_corridor_flags_sanctions_exposed_route_segment():
 
 
 def test_middle_corridor_link_integrity_is_observe_only_and_non_breaking():
-    """v1 source-URL link-integrity lint is observe-only.
-
-    - Canonical example URLs (example.com) classify as illustrative, never
-      flagged, so the diagnostic block is absent and existing output is
-      byte-identical to before this feature.
-    - A malformed URL surfaces a link_integrity block but does NOT change the
-      triage recommendation, risk signal, readiness, evidence gaps, or any
-      other field (run_provenance excepted: its sha256 input digest legitimately
-      tracks the changed input).
-    - The response carrying the new optional field still validates against the
-      frozen response contract.
-    """
+    """Link lint remains observe-only independently of placeholder coverage checks."""
     import copy
 
     from agenda_intelligence import services
 
     request = load_json(CONTRACT_DIR / "ready_for_human_review.request.json")
 
+    # Synthetic reference controls, no network/content verification.
+    for source in request["dated_sources"]:
+        source["url"] = source.get("url", "").replace("example.com", "records.test")
     base = services.middle_corridor_deal_risk(copy.deepcopy(request))
     assert base["valid"] is True
     assert "link_integrity" not in base["response"]

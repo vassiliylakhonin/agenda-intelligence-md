@@ -209,5 +209,9 @@
     ],
     "human_review_required": true,
     "boundary_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice."
-  }
+  },
+  "next_action": "insufficient",
+  "decision_kind": "evidence_review",
+  "authorization_granted": false,
+  "score_kind": "evidence_readiness"
 }

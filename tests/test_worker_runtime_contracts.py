@@ -61,6 +61,8 @@ def test_fleet_trials_validate_examples_and_responses_and_refuse_empty_input():
             schema = json.loads((root / response_path).read_text())
         schema["additionalProperties"] = True  # REST provenance and additive trial terms.
         Draft202012Validator(schema).validate(result["payload"])
+        assert result["payload"]["next_action"] in {"block", "review", "insufficient"}
+        assert result["payload"]["authorization_granted"] is False
         assert result["payload"]["trial"]["payment_required"] is False
         assert result["payload"]["trial"]["completion_recorded"] is True
         assert result["payload"]["trial"]["agent_profile"] == result["profile"]

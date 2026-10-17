@@ -137,3 +137,6 @@ Run `make verify-local` when changing Worker, discovery, runtime, or validation-
 [MIT license](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.16.2/LICENSE) for the code. The bundled official ACP schema retains its
 [Apache-2.0 license](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.16.2/src/agenda_intelligence/data/protocols/acp/2026-04-17/LICENSE)
 and [NOTICE](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.16.2/src/agenda_intelligence/data/protocols/acp/2026-04-17/NOTICE).
+
+
+Machine-readable evaluation routing and its limits: [Evaluation action contract](docs/evaluation-actions.md).

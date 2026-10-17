@@ -12,8 +12,13 @@
     "financial_guard_verdict"
   ],
   "properties": {
-    "contract_version": { "type": "string" },
-    "profile": { "type": "string", "const": "agent_financial_guard" },
+    "contract_version": {
+      "type": "string"
+    },
+    "profile": {
+      "type": "string",
+      "const": "agent_financial_guard"
+    },
     "financial_guard_verdict": {
       "type": "object",
       "required": [
@@ -27,11 +32,19 @@
       "properties": {
         "status": {
           "type": "string",
-          "enum": ["decision_ready", "not_decision_ready", "escalate"]
+          "enum": [
+            "decision_ready",
+            "not_decision_ready",
+            "escalate"
+          ]
         },
         "decision": {
           "type": "string",
-          "enum": ["allow", "reject", "step_up_human_required"]
+          "enum": [
+            "allow",
+            "reject",
+            "step_up_human_required"
+          ]
         },
         "score": {
           "type": "integer"
@@ -45,30 +58,100 @@
             "prompt_injection"
           ],
           "properties": {
-            "sanctions_aml": { "type": "boolean" },
-            "contract_security": { "type": "boolean" },
-            "velocity_limits": { "type": "boolean" },
-            "prompt_injection": { "type": "boolean" }
+            "sanctions_aml": {
+              "type": "boolean"
+            },
+            "contract_security": {
+              "type": "boolean"
+            },
+            "velocity_limits": {
+              "type": "boolean"
+            },
+            "prompt_injection": {
+              "type": "boolean"
+            }
           }
         },
         "violations": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "evidence_gaps": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "vizier_status": {
           "type": "string"
         },
         "vizier_clearance_receipt": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "execution_advisory": {
           "type": "string"
+        },
+        "next_action": {
+          "type": "string",
+          "enum": [
+            "block",
+            "review",
+            "insufficient"
+          ]
+        },
+        "decision_kind": {
+          "const": "evidence_review"
+        },
+        "authorization_granted": {
+          "const": false
+        },
+        "score_kind": {
+          "type": "string",
+          "enum": [
+            "risk",
+            "evidence_readiness",
+            "not_scored"
+          ]
+        },
+        "check_status": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "not_assessed"
+            ]
+          }
         }
       }
+    },
+    "next_action": {
+      "type": "string",
+      "enum": [
+        "block",
+        "review",
+        "insufficient"
+      ]
+    },
+    "decision_kind": {
+      "const": "evidence_review"
+    },
+    "authorization_granted": {
+      "const": false
+    },
+    "score_kind": {
+      "type": "string",
+      "enum": [
+        "risk",
+        "evidence_readiness",
+        "not_scored"
+      ]
     }
   }
 }

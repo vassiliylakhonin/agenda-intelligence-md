@@ -29,7 +29,8 @@
   "evidence_gaps": [
     "No EU consolidated sanctions list extract supplied.",
     "No bank correspondent evidence supplied.",
-    "No transit or invoice evidence supplied."
+    "No transit or invoice evidence supplied.",
+    "Current sanctions name screening is not assessed; obtain a fresh source before relying on a negative result."
   ],
   "top_exposure_dimensions": [
     "indirect ownership or control exposure",
@@ -49,6 +50,14 @@
   "limitations": [
     "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
   ],
+  "screening_assessment": {
+    "status": "not_assessed",
+    "freshness": "not_assessed",
+    "name_matches": null,
+    "identity_verified": false,
+    "ownership_verified": false,
+    "authorization_granted": false
+  },
   "source_record_review": {
     "policy_version": "source-records.v1",
     "scope": "reference_metadata_only",
@@ -76,7 +85,8 @@
     "blocking_gaps": [
       "No EU consolidated sanctions list extract supplied.",
       "No bank correspondent evidence supplied.",
-      "No transit or invoice evidence supplied."
+      "No transit or invoice evidence supplied.",
+      "Current sanctions name screening is not assessed; obtain a fresh source before relying on a negative result."
     ],
     "non_blocking_gaps": [],
     "claim_audit": [],
@@ -91,5 +101,9 @@
     ],
     "human_review_required": true,
     "boundary_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
-  }
+  },
+  "next_action": "insufficient",
+  "decision_kind": "evidence_review",
+  "authorization_granted": false,
+  "score_kind": "evidence_readiness"
 }

@@ -1,8 +1,8 @@
 {
   "triage_recommendation": "escalate_before_signature",
   "risk_signal": "medium_high",
-  "decision_readiness_score": 42,
-  "decision_readiness_label": "not_decision_ready",
+  "decision_readiness_score": 0,
+  "decision_readiness_label": "insufficient_information",
   "operational_decision": {
     "decision": "escalate",
     "applies_to": "quote / sign the booking",
@@ -27,14 +27,11 @@
       "jurisdiction": "Georgia"
     }
   ],
-  "supplied_sources": [
-    "port_operator_notice",
-    "sanctions_list_extract",
-    "carrier_note"
-  ],
+  "supplied_sources": [],
   "minimum_sources_before_go": [
     "counterparty_registry_extract",
     "beneficial_ownership_source",
+    "sanctions_list_extract",
     "customs_or_regulatory_source",
     "insurance_clause_or_underwriter_note",
     "vessel_or_carrier_history"
@@ -42,6 +39,7 @@
   "evidence_gaps": [
     "No counterparty registry extract supplied.",
     "No beneficial ownership source supplied.",
+    "No sanctions screening result supplied.",
     "No customs or regulatory source supplied.",
     "No insurance clause or underwriter note supplied.",
     "No carrier, vessel, or rail-operator history supplied."
@@ -63,6 +61,7 @@
     "foreign_sanctions_exposure_layer": [
       "Secondary / extraterritorial sanctions adjacency present; exposure not adjudicated.",
       "Counterparty in a re-export / circumvention-watch jurisdiction — verify end-use and onward destination.",
+      "No sanctions screening result supplied to review listed-party exposure.",
       "No beneficial ownership source — indirect / ownership-based exposure cannot be reviewed; the OFAC/EU 50 Percent Rule (aggregate blocked-person ownership) is a human-review step the file is not yet ready for."
     ]
   },
@@ -77,13 +76,14 @@
   "human_review_required": true,
   "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
   "counterparty_readiness": {
-    "status": "partial",
+    "status": "insufficient_information",
     "required_total": 6,
-    "supplied_count": 1,
-    "missing_count": 5,
+    "supplied_count": 0,
+    "missing_count": 6,
     "outstanding_documents": [
       "counterparty_registry_extract",
       "beneficial_ownership_source",
+      "sanctions_list_extract",
       "customs_or_regulatory_source",
       "insurance_clause_or_underwriter_note",
       "vessel_or_carrier_history"
@@ -99,8 +99,7 @@
       },
       {
         "source_type": "sanctions_list_extract",
-        "status": "received",
-        "date_received": "2026-05-21"
+        "status": "missing"
       },
       {
         "source_type": "customs_or_regulatory_source",
@@ -184,18 +183,30 @@
     "scope": "reference_metadata_only",
     "source_content_verified": false,
     "freshness_verified": false,
-    "usable_source_types": [
-      "port_operator_notice",
-      "sanctions_list_extract",
-      "carrier_note"
+    "usable_source_types": [],
+    "issues": [
+      {
+        "source_index": 0,
+        "source_type": "port_operator_notice",
+        "issue": "Illustrative or placeholder material cannot establish source coverage."
+      },
+      {
+        "source_index": 1,
+        "source_type": "sanctions_list_extract",
+        "issue": "Illustrative or placeholder material cannot establish source coverage."
+      },
+      {
+        "source_index": 2,
+        "source_type": "carrier_note",
+        "issue": "Illustrative or placeholder material cannot establish source coverage."
+      }
     ],
-    "issues": [],
     "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
   },
   "readiness_contract": {
     "profile": "middle_corridor_deal_risk",
-    "status": "not_decision_ready",
-    "score": 42,
+    "status": "insufficient_information",
+    "score": 0,
     "routing": {
       "field": "triage_recommendation",
       "value": "escalate_before_signature"
@@ -207,6 +218,7 @@
     "blocking_gaps": [
       "No counterparty registry extract supplied.",
       "No beneficial ownership source supplied.",
+      "No sanctions screening result supplied.",
       "No customs or regulatory source supplied.",
       "No insurance clause or underwriter note supplied.",
       "No carrier, vessel, or rail-operator history supplied."
@@ -224,5 +236,9 @@
     ],
     "human_review_required": true,
     "boundary_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
-  }
+  },
+  "next_action": "insufficient",
+  "decision_kind": "evidence_review",
+  "authorization_granted": false,
+  "score_kind": "evidence_readiness"
 }

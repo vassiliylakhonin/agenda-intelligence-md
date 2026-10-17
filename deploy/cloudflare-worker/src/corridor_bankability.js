@@ -1,3 +1,4 @@
+import {evaluationContract} from "./evaluation-contract.js";
 /**
  * Deterministic Corridor Bankability Engine for Trans-Caspian & Middle Corridor Infrastructure.
  * Evaluates IFI financing covenants, corridor bottleneck constraints, currency mismatch risk,
@@ -140,6 +141,7 @@ export function generateBankabilityScreen(request = {}, isPaid = false, origin =
   }
 
   const baseResponse = {
+    ...evaluationContract({}),
     project_name: projectName,
     corridor_leg: corridorLeg,
     bankability_status: bankabilityStatus,

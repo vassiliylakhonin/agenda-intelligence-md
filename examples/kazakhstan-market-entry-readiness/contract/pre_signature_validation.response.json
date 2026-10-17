@@ -6,7 +6,7 @@
   "confirmed_facts": [
     "A partner or company profile was supplied.",
     "A product or project description was supplied.",
-    "The decision is at pre signature stage.",
+    "The caller describes the decision as pre signature stage; not independently verified.",
     "The caller has already named open blockers on the file."
   ],
   "assumptions": [
@@ -539,5 +539,9 @@
     ],
     "human_review_required": true,
     "boundary_notice": "Internal evidence triage only. Not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice."
-  }
+  },
+  "next_action": "insufficient",
+  "decision_kind": "evidence_review",
+  "authorization_granted": false,
+  "score_kind": "not_scored"
 }

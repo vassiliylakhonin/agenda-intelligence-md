@@ -6,6 +6,15 @@ import {reviewMineralDossier} from '../src/critical_minerals_dossier.js';
 import {MINERALS_TAXONOMY} from '../src/critical_minerals_taxonomy.js';
 const base = new URL('../../../examples/critical-minerals-due-diligence/contract/', import.meta.url);
 const load = name => JSON.parse(readFileSync(new URL(name, base), 'utf8'));
+// Synthetic structural control; eligible metadata never authenticates a document.
+function unmarkedDossier() {
+  const request=load('ready_for_human_review.request.json');
+  for (const source of request.supplied_sources) {
+    source.title=source.title.replace(/Illustrative/gi,'Provided');
+    source.excerpt=source.excerpt.replace('ILLUSTRATIVE ONLY. ','');
+  }
+  return request;
+}
 const env = {AGENT_PROFILE:'critical_minerals_due_diligence', VIZIER_DISABLED:'1'};
 const url = 'https://critical-minerals.example.workers.dev/v1/critical-minerals/due-diligence';
 async function evaluate(request, bindings = env) {
@@ -31,7 +40,7 @@ test('Critical Minerals labels and counsel boolean cannot acquire verification s
   assert.equal(result.operational_decision.decision,'request_evidence');
 });
 test('Critical Minerals rejects expired, future, mismatched and recycled evidence', async () => {
-  const request = load('ready_for_human_review.request.json');
+  const request = unmarkedDossier();
   request.supplied_sources[0].valid_until='2026-10-04';
   request.supplied_sources[1].date='2026-10-06';
   request.supplied_sources[2].scope.origin_jurisdiction='China';
@@ -42,7 +51,7 @@ test('Critical Minerals rejects expired, future, mismatched and recycled evidenc
   for(const [i,issue] of [[0,'expired'],[1,'after assessment_date'],[2,'Scope mismatch'],[4,'Duplicate document']]) assert.ok(result.dossier_review.source_reviews[i].issues.join(' ').includes(issue));
 });
 test('Critical Minerals dated_sources alias, date validity and caller blocker are respected', async () => {
-  const request=load('ready_for_human_review.request.json');
+  const request=unmarkedDossier();
   request.dated_sources=request.supplied_sources; request.supplied_sources=[];
   assert.equal((await evaluate(request)).decision_readiness_score,100);
   request.dated_sources[0].date='2026-02-30'; request.blockers=['Ownership chart disputed'];
