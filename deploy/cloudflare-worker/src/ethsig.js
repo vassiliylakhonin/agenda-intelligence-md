@@ -95,6 +95,17 @@ function bigIntTo32Bytes(value) {
 // signature. Returns the 0x-prefixed lowercase address, or null when the
 // signature is malformed.
 export function recoverPersonalSignAddress(message, signatureHex) {
+  const msgBytes = new TextEncoder().encode(message);
+  const prefix = new TextEncoder().encode(`Ethereum Signed Message:\n${msgBytes.length}`);
+  const digestInput = new Uint8Array(prefix.length + msgBytes.length);
+  digestInput.set(prefix);
+  digestInput.set(msgBytes, prefix.length);
+  return recoverDigestAddress(keccak256(digestInput), signatureHex);
+}
+
+// Reuse the same recovery primitive for an already-hashed EIP-712 message.
+export function recoverDigestAddress(digest, signatureHex) {
+  if (!(digest instanceof Uint8Array) || digest.length !== 32) return null;
   const sig = hexToBytes(String(signatureHex || ""));
   if (!sig || sig.length !== 65) return null;
   const r = bytesToBigInt(sig.subarray(0, 32));
@@ -104,12 +115,7 @@ export function recoverPersonalSignAddress(message, signatureHex) {
   if (v !== 0 && v !== 1) return null;
   if (r <= 0n || r >= ORDER_N || s <= 0n || s >= ORDER_N) return null;
 
-  const msgBytes = new TextEncoder().encode(message);
-  const prefix = new TextEncoder().encode(`Ethereum Signed Message:\n${msgBytes.length}`);
-  const digestInput = new Uint8Array(prefix.length + msgBytes.length);
-  digestInput.set(prefix);
-  digestInput.set(msgBytes, prefix.length);
-  const e = bytesToBigInt(keccak256(digestInput));
+  const e = bytesToBigInt(digest);
 
   // R = (x, y) with x = r (recovery ids 0/1 never need x = r + n on this curve
   // for realistic signatures) and y parity from v.

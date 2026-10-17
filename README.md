@@ -140,3 +140,7 @@ and [NOTICE](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.
 
 
 Machine-readable evaluation routing and its limits: [Evaluation action contract](docs/evaluation-actions.md).
+
+
+Native agent access: [A2A free trials and standard x402 v2](docs/deployment/agent-native-access.md).
+HTTP, MCP and A2A trials share one allowance. Hosted x402 supports exact Base native USDC with HTTP headers and native MCP payment metadata; official-client tests simulate settlement, and no maintainer live payment is claimed.
