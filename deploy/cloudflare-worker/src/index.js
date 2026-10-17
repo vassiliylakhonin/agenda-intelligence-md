@@ -1,3 +1,4 @@
+import { withEvaluationContract } from "./evaluation-contract.js";
 import { addSkillDiscovery } from './skill-discovery.js';
 import { agentOnboarding, PROFILE_TASKS, profileWorkflow } from './agent-onboarding.js';
 import { mcpTrialTools, mcpTrialResult } from './mcp-trial.js';
@@ -5331,7 +5332,7 @@ function agenticInteractionTrustResult(request, vizierTrust = null) {
     signalField: "trust_signal"
   });
   return {
-    response,
+    response: withEvaluationContract(response),
     vizier_status: vizierTrust ? vizierTrust.status : "disabled",
     vizier_degrade_reason: vizierTrust ? vizierTrust.degrade_reason : null,
     vizier_clearance_receipt: null,
@@ -5677,6 +5678,19 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     seenUnsafe.add(entry.claim_id);
   }
 
+  for (const claim of claims) {
+    if (seenUnsafe.has(claim.claim_id)) continue;
+    const mismatch=(claim.supporting_quotes || []).some(quote => {
+      const item=evidenceById.get(quote?.evidence_id);
+      const text=quote?.quote || quote?.text || "";
+      return evidenceItemContentText(item) && normalizeQuoteText(text).length >= AGENT_OUTPUT_MIN_QUOTE_CHARS && !quoteMatchesEvidenceContent(text,item);
+    });
+    if (mismatch) {
+      unsafeClaims.push({claim_id:claim.claim_id,claim:claim.claim,reason:"declared supporting quote does not appear in supplied source content"});
+      seenUnsafe.add(claim.claim_id);
+    }
+  }
+
   const evidenceIds = summary.evidenceIds;
   const corroboratedClaimCount = claims.filter((claim) => claimIsCorroborated(claim, evidenceIds)).length;
   // A claim already listed as unsafe is reported once, under the sharper reason.
@@ -5684,7 +5698,8 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     (claim) => !seenUnsafe.has(claim.claim_id) && !claimIsCorroborated(claim, evidenceIds)
   );
 
-  const evidenceGaps = [];
+  const evidenceGaps = unsafeClaims.filter(item => item.reason === "declared supporting quote does not appear in supplied source content")
+    .map(item => `Claim ${item.claim_id} supplies a quote absent from the supplied source content.`);
   for (const finding of dlpFindings) {
     evidenceGaps.push(`DLP violation detected in ${finding.path || "claim"}: ${finding.detector} (${finding.snippet_masked}).`);
   }
@@ -5834,7 +5849,7 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     limitations
   };
   return {
-    response,
+    response: withEvaluationContract(response),
     vizier_status: vizierDlp ? vizierDlp.status : "disabled",
     vizier_degrade_reason: vizierDlp ? vizierDlp.degrade_reason : null,
     vizier_clearance_receipt: vizierDlp ? vizierDlp.receipt : null,
@@ -5988,7 +6003,7 @@ function preActionCheckResult(request, vizierDlp = null) {
   }
 
   return {
-    response: {
+    response: withEvaluationContract({
       decision_id: crypto.randomUUID(),
       run_id: request.run_id,
       policy_version: PRE_ACTION_POLICY_VERSION,
@@ -6006,7 +6021,7 @@ function preActionCheckResult(request, vizierDlp = null) {
         "Does not authenticate the actor, inspect the target system, store state, or perform the action.",
         "Does not sign the decision receipt; decision_id is a correlation identifier only."
       ]
-    }
+    })
   };
 }
 
@@ -7037,7 +7052,7 @@ async function gulfMaritimeExposureResult(request, env = {}) {
     signalField: "exposure_signal"
   });
   return {
-    response,
+    response: withEvaluationContract(response),
     vizier_status: vizierMaritimeResult ? vizierMaritimeResult.status : "disabled",
     vizier_degrade_reason: vizierMaritimeResult ? vizierMaritimeResult.degrade_reason : null,
     vizier_clearance_receipt: null,
@@ -7719,7 +7734,7 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
   if (satisfied.has("product_or_project_description")) {
     confirmedFacts.push("A product or project description was supplied.");
   }
-  confirmedFacts.push(`The decision is at ${stage.replace(/_/g, " ")} stage.`);
+  confirmedFacts.push(`The caller describes the decision as ${stage.replace(/_/g, " ")} stage; not independently verified.`);
   if (Array.isArray(request.known_blockers) && request.known_blockers.length) {
     confirmedFacts.push("The caller has already named open blockers on the file.");
   }
@@ -7894,7 +7909,7 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
     boundaryField: "boundary_notice"
   });
   return {
-    response,
+    response: withEvaluationContract(response),
     vizier_status: vizierMarketEntry ? vizierMarketEntry.status : "disabled",
     vizier_degrade_reason: vizierMarketEntry ? vizierMarketEntry.degrade_reason : null,
     vizier_clearance_receipt: null,
@@ -8296,7 +8311,7 @@ function criticalMineralsResult(request, vizierMinerals = null) {
   response.readiness_contract.owner_actions = dossier.owner_actions;
 
   return {
-    response,
+    response: withEvaluationContract(response),
     vizier_status: vizierMinerals ? vizierMinerals.status : "disabled",
     vizier_degrade_reason: vizierMinerals ? vizierMinerals.degrade_reason || null : null,
     vizier_clearance_receipt: vizierMinerals ? vizierMinerals.receipt || null : null,
@@ -8948,7 +8963,7 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
   };
 
   return {
-    response,
+    response: withEvaluationContract(response),
     vizier_status: vizierDualUse ? vizierDualUse.status : "not_configured",
     vizier_degrade_reason: vizierDualUse ? vizierDualUse.degrade_reason : null,
     vizier_clearance_receipt: null,
@@ -9597,6 +9612,17 @@ async function cisSecondarySanctionsResult(request, env) {
   if (Array.isArray(request[NORMALIZATIONS_APPLIED]) && request[NORMALIZATIONS_APPLIED].length) {
     response.normalizations_applied = request[NORMALIZATIONS_APPLIED];
   }
+  response.screening_assessment = {
+    status: upstreamResult.status === "success" ? "name_screen_only" : "not_assessed",
+    freshness: upstreamResult.status === "stale" ? "stale" : upstreamResult.status === "success" ? "fresh" : "not_assessed",
+    name_matches: upstreamResult.status === "success" ? (upstreamResult.matches || []).length : null,
+    identity_verified: false, ownership_verified: false, authorization_granted: false
+  };
+  if (response.beneficial_ownership_clearance) {
+    response.beneficial_ownership_clearance.assessment_status = "not_assessed";
+    response.beneficial_ownership_clearance.verified_blocked_percentage = null;
+  }
+  if (upstreamResult.status !== "success") response.evidence_gaps.push("Current sanctions name screening is not assessed; obtain a fresh source before relying on a negative result.");
   response.source_record_review = reviewSourceRecords(request.dated_sources || [], {dateRequired:true});
   response.readiness_contract = profileReadinessContract(response, {
     profile: "cis_secondary_sanctions",
@@ -9605,7 +9631,7 @@ async function cisSecondarySanctionsResult(request, env) {
   });
 
   return {
-    response,
+    response: withEvaluationContract(response),
     live_retrieval_status: upstream_name === "Snapshot" && upstreamResult.status === "success" ? "static_snapshot" : upstreamResult.status,
     live_retrieval_upstream: upstream_name,
     vizier_status: vizierResult ? vizierResult.status : "disabled",
@@ -10035,7 +10061,7 @@ async function cisSecondarySanctionsBatchResult(batch, env) {
     .map((item) => item.response.secondary_exposure_signal)
     .sort((a, b) => (signalRank[b] || 0) - (signalRank[a] || 0))[0] || "unknown";
   return {
-    response: {
+    response: withEvaluationContract({
       batch_id: nonEmptyString(batch.batch_id) ? batch.batch_id : crypto.randomUUID(),
       total: results.length,
       completed,
@@ -10045,7 +10071,7 @@ async function cisSecondarySanctionsBatchResult(batch, env) {
       human_review_required: true,
       not_advice_notice: NOT_ADVICE_NOTICE,
       decision_workspace: cisBatchDecisionWorkspace()
-    }
+    })
   };
 }
 
@@ -10961,7 +10987,7 @@ function dealRiskContractResponseForRequest(request, vizierCorridor = null) {
     statusField: "decision_readiness_label",
     signalField: "risk_signal"
   });
-  return response;
+  return withEvaluationContract(response);
 }
 
 // Observe-only structural lint of cited source URLs. Mirrors the Python
@@ -13604,6 +13630,12 @@ async function runProfileRequest(profile, params, request, env = {}) {
     // promptChars above is what this profile could parse. receivedChars is what
     // arrived. Both are reported, because the difference between them is the
     // signal that a caller sent something the gate could not read.
+    if (result?.status?.state === "TASK_STATE_COMPLETED" && !["decision_policies_list","decision_check","decision_verify","fleet_directory"].includes(params.capability)) {
+      if (result.metadata?.response) result.metadata.response = withEvaluationContract(result.metadata.response);
+      for (const artifact of result.artifacts || []) for (const part of artifact.parts || []) {
+        if (part.data && typeof part.data === "object" && !Array.isArray(part.data)) part.data = withEvaluationContract(part.data);
+      }
+    }
     return {
       result: withEngagementOffer(result, profile, request),
       promptChars: receivedChars(params),

@@ -2187,8 +2187,9 @@ test("kazakhstan deal risk gate returns structured contract response from data p
     assert.equal(response.result.metadata.triage.intent, "middle_corridor_deal_risk_contract");
     assert.equal(contract.triage_recommendation, "escalate_before_signature");
     assert.equal(contract.risk_signal, "medium_high");
-    assert.equal(contract.decision_readiness_score, 42);
-    assert.equal(contract.decision_readiness_label, "not_decision_ready");
+    assert.equal(contract.decision_readiness_score, 0);
+    assert.ok(contract.source_record_review.issues.length);
+    assert.equal(contract.decision_readiness_label, "insufficient_information");
     assert.equal(contract.readiness_contract.profile, "middle_corridor_deal_risk");
     assert.equal(contract.readiness_contract.status, contract.decision_readiness_label);
     assert.equal(contract.readiness_contract.score, contract.decision_readiness_score);
@@ -2196,22 +2197,19 @@ test("kazakhstan deal risk gate returns structured contract response from data p
     assert.equal(contract.route, "Altynkol -> Aktau/Kuryk -> Baku -> Poti");
     assert.equal(contract.cargo, "industrial equipment");
     assert.equal(contract.shipment_value.amount, 2400000);
-    assert.deepEqual(contract.supplied_sources, [
-      "port_operator_notice",
-      "sanctions_list_extract",
-      "carrier_note"
-    ]);
+    assert.deepEqual(contract.supplied_sources, []);
     assert.deepEqual(contract.minimum_sources_before_go, [
       "counterparty_registry_extract",
       "beneficial_ownership_source",
+      "sanctions_list_extract",
       "customs_or_regulatory_source",
       "insurance_clause_or_underwriter_note",
       "vessel_or_carrier_history"
     ]);
-    assert.equal(contract.minimum_sources_before_go.includes("sanctions_list_extract"), false);
+    assert.equal(contract.minimum_sources_before_go.includes("sanctions_list_extract"), true);
     assert.equal(contract.minimum_sources_before_go.includes("port_operator_notice"), false);
     assert.match(contract.not_advice_notice, /Not legal/);
-    assert.match(response.result.artifacts[0].parts[0].text, /Decision readiness: 42\/100/);
+    assert.match(response.result.artifacts[0].parts[0].text, /Decision readiness: 0\/100/);
     assert.match(response.result.artifacts[0].parts[0].text, /Middle Corridor deal-risk contract response/);
 
     // The DataPart surfaces the deal-risk contract itself, not the full routing triage.
@@ -2219,7 +2217,7 @@ test("kazakhstan deal risk gate returns structured contract response from data p
     assert.ok(dataPart, "expected a data part in the artifact");
     assert.equal(dataPart.mediaType, "application/json");
     assert.equal(dataPart.data.triage_recommendation, "escalate_before_signature");
-    assert.equal(dataPart.data.decision_readiness_score, 42);
+    assert.equal(dataPart.data.decision_readiness_score, 0);
     assert.deepEqual(dataPart.data.readiness_contract, contract.readiness_contract);
     assert.equal(dataPart.data.signal_screen, undefined);
   } finally {

@@ -102,5 +102,9 @@
     ],
     "human_review_required": true,
     "boundary_notice": "Maritime sanctions and chokepoint-disruption evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice. Does not resolve vessel ownership or verify identity."
-  }
+  },
+  "next_action": "insufficient",
+  "decision_kind": "evidence_review",
+  "authorization_granted": false,
+  "score_kind": "evidence_readiness"
 }

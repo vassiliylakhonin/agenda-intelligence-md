@@ -334,6 +334,62 @@
           "type": "string"
         }
       }
+    },
+    "next_action": {
+      "type": "string",
+      "enum": [
+        "block",
+        "review",
+        "insufficient"
+      ]
+    },
+    "decision_kind": {
+      "const": "evidence_review"
+    },
+    "authorization_granted": {
+      "const": false
+    },
+    "score_kind": {
+      "type": "string",
+      "enum": [
+        "risk",
+        "evidence_readiness",
+        "not_scored"
+      ]
+    },
+    "screening_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "name_screen_only",
+            "not_assessed"
+          ]
+        },
+        "freshness": {
+          "enum": [
+            "fresh",
+            "stale",
+            "not_assessed"
+          ]
+        },
+        "name_matches": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "identity_verified": {
+          "const": false
+        },
+        "ownership_verified": {
+          "const": false
+        },
+        "authorization_granted": {
+          "const": false
+        }
+      }
     }
   },
   "$defs": {

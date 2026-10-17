@@ -10,6 +10,8 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from .evaluation_contract import evaluation_contract
+
 DEFAULT_ENDPOINT = "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/v1/agent-financial/pre-sign-check"
 
 # Legacy local risk denylist; not an authoritative or current sanctions dataset.
@@ -382,6 +384,21 @@ class AgentFinancialGuard:
                 "decision": decision,
                 "status": status,
                 "score": score,
+                **evaluation_contract(
+                    {
+                        "financial_guard_verdict": {
+                            "decision": decision,
+                            "violations": violations,
+                            "evidence_gaps": evidence_gaps,
+                        }
+                    }
+                ),
+                "check_status": {
+                    "sanctions_aml": "not_assessed",
+                    "velocity_limits": "fail" if amount_usd > max_single else "not_assessed",
+                    "contract_security": "pass" if checks.get("contract_security") else "fail",
+                    "prompt_injection": "pass" if checks.get("prompt_injection") else "fail",
+                },
                 "checks": checks,
                 "violations": violations,
                 "execution_advisory": advisory,

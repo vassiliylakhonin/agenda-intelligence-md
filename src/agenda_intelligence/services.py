@@ -26,6 +26,7 @@ from agenda_intelligence.evidence_ledger import EvidenceLedger
 from agenda_intelligence.grounding import GroundingIndex, _quote_check
 
 from .critical_minerals import STAGE_TIERS, review_mineral_dossier
+from .evaluation_contract import evaluation_contract
 from .source_records import review_source_records
 
 PACKAGE_NAME = "agenda_intelligence"
@@ -464,6 +465,31 @@ def agent_output_verification(request_json: dict) -> dict:
         )
         seen_unsafe.add(claim_id)
 
+    # A declared quote contradicted by supplied content is unsafe even when
+    # another quote matches. Missing content remains an evidence gap.
+    for claim in claims:
+        if claim["claim_id"] in seen_unsafe:
+            continue
+        mismatch = any(
+            isinstance(quote, dict)
+            and _evidence_item_content_text(evidence_by_id.get(quote.get("evidence_id")))
+            and len(_normalize_quote_text(quote.get("quote") or quote.get("text") or ""))
+            >= AGENT_OUTPUT_MIN_QUOTE_CHARS
+            and not _quote_matches_evidence_content(
+                quote.get("quote") or quote.get("text") or "", evidence_by_id.get(quote.get("evidence_id"))
+            )
+            for quote in (claim.get("supporting_quotes") or [])
+        )
+        if mismatch:
+            unsafe_claims.append(
+                {
+                    "claim_id": claim["claim_id"],
+                    "claim": claim["claim"],
+                    "reason": "declared supporting quote does not appear in supplied source content",
+                }
+            )
+            seen_unsafe.add(claim["claim_id"])
+
     evidence_ids = {item.get("evidence_id") for item in (request_json.get("evidence") or [])}
     corroborated_claim_count = sum(1 for claim in claims if _claim_is_corroborated(claim, evidence_ids))
     # A claim already listed as unsafe is reported once, under the sharper reason.
@@ -473,7 +499,11 @@ def agent_output_verification(request_json: dict) -> dict:
         if claim["claim_id"] not in seen_unsafe and not _claim_is_corroborated(claim, evidence_ids)
     ]
 
-    evidence_gaps: list[str] = []
+    evidence_gaps: list[str] = [
+        f"Claim {item['claim_id']} supplies a quote absent from the supplied source content."
+        for item in unsafe_claims
+        if item["reason"] == ("declared supporting quote does not appear in supplied source content")
+    ]
     for entry in orphan_refs:
         missing = ", ".join(entry.get("missing_evidence_ids", []) or [])
         evidence_gaps.append(f"Claim {entry.get('claim_id')} cites evidence not supplied: {missing}.")
@@ -606,6 +636,7 @@ def agent_output_verification(request_json: dict) -> dict:
         ],
     }
 
+    response.update(evaluation_contract(response))
     response_validation = _validate_json(response, "agent-output-verification-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -739,6 +770,7 @@ def pre_action_check(request_json: dict) -> dict:
             "Does not sign the decision receipt; decision_id is a correlation identifier only.",
         ],
     }
+    response.update(evaluation_contract(response))
     response_validation = _validate_json(response, "pre-action-check-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -2856,6 +2888,7 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         signal_field="risk_signal",
     )
 
+    response.update(evaluation_contract(response))
     response_validation = _validate_json(response, "middle-corridor-deal-risk-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -3023,6 +3056,7 @@ def agentic_interaction_trust(request_json: dict) -> dict:
         signal_field="trust_signal",
     )
 
+    response.update(evaluation_contract(response))
     response_validation = _validate_json(response, "agentic-interaction-trust-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -3749,6 +3783,19 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
         "limitations": limitations,
     }
 
+    response["screening_assessment"] = {
+        "status": "name_screen_only" if live_retrieval_status == "success" else "not_assessed",
+        "freshness": "fresh" if live_retrieval_status == "success" else "not_assessed",
+        "name_matches": len(auto_fetched_sources) if live_retrieval_status == "success" else None,
+        "identity_verified": False,
+        "ownership_verified": False,
+        "authorization_granted": False,
+    }
+    if live_retrieval_status != "success":
+        response["evidence_gaps"].append(
+            "Current sanctions name screening is not assessed; obtain a fresh source "
+            "before relying on a negative result."
+        )
     response["source_record_review"] = review_source_records(request_json.get("dated_sources", []), date_required=True)
     response["readiness_contract"] = _profile_readiness_contract(
         "cis_secondary_sanctions",
@@ -3758,6 +3805,7 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
         signal_field="secondary_exposure_signal",
     )
 
+    response.update(evaluation_contract(response))
     response_validation = _validate_json(response, "cis-secondary-sanctions-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -3986,6 +4034,7 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
         signal_field="exposure_signal",
     )
 
+    response.update(evaluation_contract(response))
     response_validation = _validate_json(response, "gulf-maritime-exposure-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -4363,7 +4412,9 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
         confirmed_facts.append("A partner or company profile was supplied.")
     if "product_or_project_description" in satisfied:
         confirmed_facts.append("A product or project description was supplied.")
-    confirmed_facts.append(f"The decision is at {stage.replace('_', ' ')} stage.")
+    confirmed_facts.append(
+        f"The caller describes the decision as {stage.replace('_', ' ')} stage; not independently verified."
+    )
     if request_json.get("known_blockers"):
         confirmed_facts.append("The caller has already named open blockers on the file.")
 
@@ -4505,6 +4556,7 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
         boundary_field="boundary_notice",
     )
 
+    response.update(evaluation_contract(response))
     response_validation = _validate_json(response, "market-entry-readiness-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -5071,6 +5123,7 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
 
     response["readiness_contract"]["owner_actions"] = dossier["owner_actions"]
 
+    response.update(evaluation_contract(response))
     validation = _validate_json(response, "critical-minerals-due-diligence-response.schema.json")
     if not validation.get("valid"):
         return {

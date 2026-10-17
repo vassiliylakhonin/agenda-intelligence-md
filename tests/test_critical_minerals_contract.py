@@ -25,6 +25,16 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def unmarked_dossier():
+    # Synthetic structural positive control, without an explicit fixture marker.
+    # Eligibility still never authenticates documents or grants authorization.
+    request = load_json(EXAMPLE_DIR / "ready_for_human_review.request.json")
+    for source in request["supplied_sources"]:
+        source["title"] = source["title"].replace("Illustrative", "Provided")
+        source["excerpt"] = source["excerpt"].replace("ILLUSTRATIVE ONLY. ", "")
+    return request
+
+
 def test_example_requests_validate():
     validator = Draft202012Validator(load_json(REQUEST_SCHEMA_PATH))
     for req_file in EXAMPLE_DIR.glob("*.request.json"):
@@ -161,7 +171,7 @@ def test_country_and_commodity_do_not_establish_export_prohibition():
 
 
 def test_complete_scoped_dossier_requires_human_approval():
-    request = load_json(EXAMPLE_DIR / "ready_for_human_review.request.json")
+    request = unmarked_dossier()
     response = critical_minerals_due_diligence(request)["response"]
     assert response["decision_readiness_score"] == 100
     assert response["operational_decision"]["decision"] == "require_approval"
@@ -171,7 +181,7 @@ def test_complete_scoped_dossier_requires_human_approval():
 
 
 def test_expired_future_wrong_scope_and_duplicate_records_reduce_readiness():
-    request = load_json(EXAMPLE_DIR / "ready_for_human_review.request.json")
+    request = unmarked_dossier()
     request["supplied_sources"][0]["valid_until"] = "2026-10-04"
     request["supplied_sources"][1]["date"] = "2026-10-06"
     request["supplied_sources"][2]["scope"]["origin_jurisdiction"] = "China"
@@ -188,7 +198,7 @@ def test_expired_future_wrong_scope_and_duplicate_records_reduce_readiness():
 
 
 def test_dated_sources_are_reviewed_and_summary_cannot_replace_excerpt():
-    request = load_json(EXAMPLE_DIR / "ready_for_human_review.request.json")
+    request = unmarked_dossier()
     request["dated_sources"] = request["supplied_sources"]
     request["supplied_sources"] = []
     assert critical_minerals_due_diligence(request)["response"]["decision_readiness_score"] == 100
@@ -211,7 +221,7 @@ def test_invalid_calendar_date_and_caller_blocker_prevent_ready_result():
 
 
 def test_stage_specific_requirements_and_legacy_responsible_sourcing_alias():
-    request = load_json(EXAMPLE_DIR / "ready_for_human_review.request.json")
+    request = unmarked_dossier()
     request["supplied_sources"][4]["source_type"] = "csddd_human_rights_and_esg_audit"
     assert critical_minerals_due_diligence(request)["response"]["decision_readiness_score"] == 100
     request["decision_stage"] = "pre_exploration"

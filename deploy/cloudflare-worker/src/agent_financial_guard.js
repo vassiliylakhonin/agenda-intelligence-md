@@ -1,3 +1,4 @@
+import { evaluationContract, withEvaluationContract } from "./evaluation-contract.js";
 // Agent Financial Guard & Autonomous Transaction Firewall Engine
 // Deterministic pre-sign validation for autonomous agents with wallet capabilities.
 // Evaluation is stateless; transport telemetry has its own retention policy.
@@ -173,7 +174,7 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}, o
     decision = "reject";
     status = "escalate";
     score = 95;
-    advisory = "CRITICAL SECURITY BLOCK: Transaction violates compliance, AML, contract security, or intent boundaries. Execution forbidden.";
+    advisory = `Execution blocked by detected local checks: ${violations.join(" ")} Execution forbidden.`;
   } else if (requiresStepUp) {
     decision = "step_up_human_required";
     status = "not_decision_ready";
@@ -213,13 +214,17 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}, o
     };
   }
 
-  return {
+  return withEvaluationContract({
     contract_version: AGENT_FINANCIAL_GUARD_CONTRACT_VERSION,
     profile: AGENT_FINANCIAL_GUARD_PROFILE_KEY,
     financial_guard_verdict: {
       status,
       decision,
       score,
+      ...evaluationContract({financial_guard_verdict:{decision,evidence_gaps:evidenceGaps,violations}}),
+      check_status: { sanctions_aml: "not_assessed", local_denylist: SANCTIONED_CRYPTO_ADDRESSES.has(rawRecipient) ? "fail" : "pass",
+        contract_security: contractSecurityPassed ? "pass" : "fail", prompt_injection: promptInjectionPassed ? "pass" : "fail",
+        velocity_limits: tx.amount_usd > maxSingle || currentVelocity + tx.amount_usd > dailyVelocity ? "fail" : "not_assessed" },
       checks: {
         sanctions_aml: sanctionsPassed,
         contract_security: contractSecurityPassed,
@@ -247,5 +252,5 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}, o
       check_scope: { sanctions_aml: "local_denylist_only", velocity_limits: "caller_reported_unverified" },
       execution_advisory: advisory
     }
-  };
+  });
 }

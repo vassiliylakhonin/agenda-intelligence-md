@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Classify every quote absent from supplied nonempty source text as unsafe, including a fabricated quote beside a matching one. Missing source text remains insufficient evidence rather than a proven mismatch.
+- Add advisory action metadata across hosted evaluation results and the maintained Python profile responses; separate risk scores from evidence readiness and never grant authority. Preserve legacy verdicts and access/payment/quota rules.
+- Report the actual Financial Guard rule violations and unassessed AML screening. Expose sanctions screening freshness/identity limitations, label caller assertions, and exclude explicitly illustrative/placeholder sources from documentary coverage. Refresh examples and generated schema clients; historical fixture names remain for compatibility even when illustrative evidence now yields insufficient readiness.
+
 - Legacy Bankability preview now separates delivered free output from the optional $25 scenario memo/schedule and exposes HTTP/MCP continuation on the caller's hostname. Correct payment instructions to require the funding-wallet challenge signature and exact-request retry; no pricing or entitlement changes.
 
 

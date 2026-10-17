@@ -179,11 +179,12 @@ def test_services_middle_corridor_deal_risk_builds_contract_response():
     response = result["response"]
     assert response["triage_recommendation"] == "escalate_before_signature"
     assert response["risk_signal"] == "medium_high"
-    assert response["decision_readiness_score"] == 42
-    assert response["decision_readiness_label"] == "not_decision_ready"
+    assert response["decision_readiness_score"] == 0
+    assert response["decision_readiness_label"] == "insufficient_information"
     assert response["minimum_sources_before_go"] == [
         "counterparty_registry_extract",
         "beneficial_ownership_source",
+        "sanctions_list_extract",
         "customs_or_regulatory_source",
         "insurance_clause_or_underwriter_note",
         "vessel_or_carrier_history",

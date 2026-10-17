@@ -25,7 +25,9 @@
     "customs_data_evidence"
   ],
   "minimum_sources_before_review": [],
-  "evidence_gaps": [],
+  "evidence_gaps": [
+    "Current sanctions name screening is not assessed; obtain a fresh source before relying on a negative result."
+  ],
   "top_exposure_dimensions": [
     "transit or re-export exposure under EU sanctions package / OFAC EO 14114",
     "correspondent banking exposure"
@@ -43,6 +45,14 @@
   "limitations": [
     "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
   ],
+  "screening_assessment": {
+    "status": "not_assessed",
+    "freshness": "not_assessed",
+    "name_matches": null,
+    "identity_verified": false,
+    "ownership_verified": false,
+    "authorization_granted": false
+  },
   "source_record_review": {
     "policy_version": "source-records.v1",
     "scope": "reference_metadata_only",
@@ -72,7 +82,9 @@
       "field": "secondary_exposure_signal",
       "value": "unknown"
     },
-    "blocking_gaps": [],
+    "blocking_gaps": [
+      "Current sanctions name screening is not assessed; obtain a fresh source before relying on a negative result."
+    ],
     "non_blocking_gaps": [],
     "claim_audit": [],
     "owner_actions": [],
@@ -86,5 +98,9 @@
     ],
     "human_review_required": true,
     "boundary_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
-  }
+  },
+  "next_action": "insufficient",
+  "decision_kind": "evidence_review",
+  "authorization_granted": false,
+  "score_kind": "evidence_readiness"
 }

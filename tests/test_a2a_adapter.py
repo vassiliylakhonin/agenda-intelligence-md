@@ -190,9 +190,9 @@ def test_jsonrpc_message_send_routes_structured_request_from_params_request():
     assert result["status"]["state"] == "TASK_STATE_COMPLETED"
     assert contract["triage_recommendation"] == "escalate_before_signature"
     assert contract["risk_signal"] == "medium_high"
-    assert contract["decision_readiness_score"] == 42
+    assert contract["decision_readiness_score"] == 0
     assert result["metadata"]["human_review_required"] is True
-    assert "Decision readiness: 42/100" in result["artifacts"][0]["parts"][0]["text"]
+    assert "Decision readiness: 0/100" in result["artifacts"][0]["parts"][0]["text"]
 
 
 def test_jsonrpc_message_send_routes_structured_request_from_data_part():
@@ -214,7 +214,7 @@ def test_jsonrpc_message_send_routes_structured_request_from_data_part():
         }
     )
 
-    assert response["result"]["metadata"]["response"]["decision_readiness_label"] == "not_decision_ready"
+    assert response["result"]["metadata"]["response"]["decision_readiness_label"] == "insufficient_information"
 
 
 def test_jsonrpc_message_send_routes_agentic_interaction_trust_capability():
@@ -453,7 +453,7 @@ def test_stdin_jsonrpc_shell_handles_message_send():
         """)
 
     assert response["id"] == "stdin-1"
-    assert response["result"]["metadata"]["response"]["decision_readiness_score"] == 42
+    assert response["result"]["metadata"]["response"]["decision_readiness_score"] == 0
 
 
 def test_stdin_jsonrpc_shell_handles_invalid_json():

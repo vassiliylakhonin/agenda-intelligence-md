@@ -132,8 +132,8 @@ def test_http_api_middle_corridor_deal_risk_contract():
     assert status == 200
     assert body["triage_recommendation"] == "escalate_before_signature"
     assert body["risk_signal"] == "medium_high"
-    assert body["decision_readiness_score"] == 42
-    assert body["decision_readiness_label"] == "not_decision_ready"
+    assert body["decision_readiness_score"] == 0
+    assert body["decision_readiness_label"] == "insufficient_information"
 
 
 def test_http_api_agentic_interaction_trust_contract():

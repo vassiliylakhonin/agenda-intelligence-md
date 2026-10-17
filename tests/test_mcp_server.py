@@ -387,7 +387,9 @@ def test_mcp_tool_middle_corridor_deal_risk_golden():
     assert result["isError"] is False
     assert payload["valid"] is True
     assert payload["response"]["human_review_required"] is True
-    assert payload["response"]["triage_recommendation"] == "ready_for_human_review"
+    assert payload["response"]["triage_recommendation"] == "escalate_before_shipment"
+
+    assert payload["response"]["next_action"] == "insufficient"
 
 
 def test_mcp_tool_cis_secondary_sanctions_exposure_golden_local_no_live_retrieval():

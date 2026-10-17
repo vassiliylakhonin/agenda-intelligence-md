@@ -35,6 +35,10 @@ export interface AgentOutputVerificationResponse {
   limitations: string[];
   score_scope?: "declared_evidence_structure_only";
   factual_verification_performed?: false;
+  next_action?: "block" | "review" | "insufficient";
+  decision_kind?: "evidence_review";
+  authorization_granted?: false;
+  score_kind?: "risk" | "evidence_readiness" | "not_scored";
 }
 
 export interface AgenticInteractionTrustRequestActor {
@@ -135,6 +139,10 @@ export interface AgenticInteractionTrustResponse {
     }>;
     next_action: string;
   };
+  next_action?: "block" | "review" | "insufficient";
+  decision_kind?: "evidence_review";
+  authorization_granted?: false;
+  score_kind?: "risk" | "evidence_readiness" | "not_scored";
 }
 
 export interface CISSecondarySanctionsExposureRequestCounterparty {
@@ -268,6 +276,18 @@ export interface CISSecondarySanctionsExposureResponse {
       issue: string;
     }>;
     next_action: string;
+  };
+  next_action?: "block" | "review" | "insufficient";
+  decision_kind?: "evidence_review";
+  authorization_granted?: false;
+  score_kind?: "risk" | "evidence_readiness" | "not_scored";
+  screening_assessment?: {
+    status?: "name_screen_only" | "not_assessed";
+    freshness?: "fresh" | "stale" | "not_assessed";
+    name_matches?: number | null;
+    identity_verified?: false;
+    ownership_verified?: false;
+    authorization_granted?: false;
   };
 }
 
@@ -414,6 +434,10 @@ export interface CriticalMineralsDueDiligenceResponse {
     applicability_questions: string[];
     limitations: string[];
   };
+  next_action?: "block" | "review" | "insufficient";
+  decision_kind?: "evidence_review";
+  authorization_granted?: false;
+  score_kind?: "risk" | "evidence_readiness" | "not_scored";
 }
 
 export interface GulfMaritimeExposureRequestVessel {
@@ -524,6 +548,10 @@ export interface GulfMaritimeExposureResponse {
     }>;
     next_action: string;
   };
+  next_action?: "block" | "review" | "insufficient";
+  decision_kind?: "evidence_review";
+  authorization_granted?: false;
+  score_kind?: "risk" | "evidence_readiness" | "not_scored";
 }
 
 export interface MarketEntryReadinessRequestCounterparty {
@@ -639,6 +667,10 @@ export interface MarketEntryReadinessResponse {
     }>;
     next_action: string;
   };
+  next_action?: "block" | "review" | "insufficient";
+  decision_kind?: "evidence_review";
+  authorization_granted?: false;
+  score_kind?: "risk" | "evidence_readiness" | "not_scored";
 }
 
 export interface MiddleCorridorDealRiskRequestCounterparty {
@@ -814,6 +846,10 @@ export interface MiddleCorridorDealRiskResponse {
     }>;
     next_action: string;
   };
+  next_action?: "block" | "review" | "insufficient";
+  decision_kind?: "evidence_review";
+  authorization_granted?: false;
+  score_kind?: "risk" | "evidence_readiness" | "not_scored";
 }
 
 export interface PreActionCheckRequestActor {
@@ -931,4 +967,8 @@ export interface PreActionCheckResponse {
   };
   not_authorization_notice: string;
   limitations: string[];
+  next_action?: "block" | "review" | "insufficient";
+  decision_kind?: "evidence_review";
+  authorization_granted?: false;
+  score_kind?: "risk" | "evidence_readiness" | "not_scored";
 }

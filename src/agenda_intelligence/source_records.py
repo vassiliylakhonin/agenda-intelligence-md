@@ -17,6 +17,18 @@ def review_source_records(sources: list, *, date_required: bool = True) -> dict:
             continue
         source_type = source.get("source_type", "")
         reasons = []
+        content = " ".join(
+            str(source.get(key) or "") for key in ("title", "excerpt", "content", "text", "summary", "url")
+        )
+        if re.search(
+            (
+                r"\b(?:illustrative\s+only|synthetic\s+(?:test|example|fixture|only)|placeholder)\b"
+                r"|https?://(?:www\.)?example\.(?:com|invalid)\b"
+            ),
+            content,
+            re.I,
+        ):
+            reasons.append("Illustrative or placeholder material cannot establish source coverage.")
         if not str(source.get("id", "")).strip() or not str(source.get("title", "")).strip():
             reasons.append("Supply a nonblank source ID and title.")
         if len(ids[str(source.get("id", "")).strip()]) > 1:

@@ -1,12 +1,12 @@
 {
-  "triage_recommendation": "ready_for_human_review",
-  "risk_signal": "unknown",
-  "decision_readiness_score": 100,
-  "decision_readiness_label": "review_ready",
+  "triage_recommendation": "escalate_before_shipment",
+  "risk_signal": "medium_high",
+  "decision_readiness_score": 0,
+  "decision_readiness_label": "insufficient_information",
   "operational_decision": {
-    "decision": "proceed",
+    "decision": "escalate",
     "applies_to": "accept the booking and release for loading",
-    "rationale": "Evidence set looks complete; you may accept the booking and release for loading, subject to human sign-off."
+    "rationale": "Route to compliance or legal before you accept the booking and release for loading."
   },
   "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
   "cargo": "industrial equipment",
@@ -27,30 +27,42 @@
       "jurisdiction": "Georgia"
     }
   ],
-  "supplied_sources": [
-    "port_operator_notice",
-    "sanctions_list_extract",
-    "carrier_note",
+  "supplied_sources": [],
+  "minimum_sources_before_go": [
     "counterparty_registry_extract",
     "beneficial_ownership_source",
+    "sanctions_list_extract",
     "customs_or_regulatory_source",
     "insurance_clause_or_underwriter_note",
     "vessel_or_carrier_history"
   ],
-  "minimum_sources_before_go": [],
-  "evidence_gaps": [],
+  "evidence_gaps": [
+    "No counterparty registry extract supplied.",
+    "No beneficial ownership source supplied.",
+    "No sanctions screening result supplied.",
+    "No customs or regulatory source supplied.",
+    "No insurance clause or underwriter note supplied.",
+    "No carrier, vessel, or rail-operator history supplied."
+  ],
   "top_risks": [
     "sanctions adjacency",
     "Caspian crossing capacity and draft exposure",
-    "counterparty in a re-export / circumvention-watch jurisdiction"
+    "counterparty in a re-export / circumvention-watch jurisdiction",
+    "customs and documentation uncertainty",
+    "insurance exclusions or coverage limitations",
+    "counterparty and ownership uncertainty",
+    "carrier / vessel / rail-operator history gap"
   ],
   "exposure_layers": {
     "domestic_legal_layer": [
-      "Home-jurisdiction legal and licensing posture not assessed here (this product does not verify export-control licensing or documentation); confirm with qualified review."
+      "Home-jurisdiction legal and licensing posture not assessed here (this product does not verify export-control licensing or documentation); confirm with qualified review.",
+      "No customs or regulatory source supplied to review documentation posture."
     ],
     "foreign_sanctions_exposure_layer": [
       "Secondary / extraterritorial sanctions adjacency present; exposure not adjudicated.",
-      "Counterparty in a re-export / circumvention-watch jurisdiction — verify end-use and onward destination."
+      "Counterparty in a re-export / circumvention-watch jurisdiction — verify end-use and onward destination.",
+      "No sanctions screening result supplied to review listed-party exposure.",
+      "No beneficial ownership source — indirect / ownership-based exposure cannot be reviewed; the OFAC/EU 50 Percent Rule (aggregate blocked-person ownership) is a human-review step the file is not yet ready for."
     ]
   },
   "watch_next": [
@@ -64,41 +76,42 @@
   "human_review_required": true,
   "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
   "counterparty_readiness": {
-    "status": "complete_for_review",
+    "status": "insufficient_information",
     "required_total": 6,
-    "supplied_count": 6,
-    "missing_count": 0,
-    "outstanding_documents": [],
+    "supplied_count": 0,
+    "missing_count": 6,
+    "outstanding_documents": [
+      "counterparty_registry_extract",
+      "beneficial_ownership_source",
+      "sanctions_list_extract",
+      "customs_or_regulatory_source",
+      "insurance_clause_or_underwriter_note",
+      "vessel_or_carrier_history"
+    ],
     "document_ledger": [
       {
         "source_type": "counterparty_registry_extract",
-        "status": "received",
-        "date_received": "2026-05-22"
+        "status": "missing"
       },
       {
         "source_type": "beneficial_ownership_source",
-        "status": "received",
-        "date_received": "2026-05-22"
+        "status": "missing"
       },
       {
         "source_type": "sanctions_list_extract",
-        "status": "received",
-        "date_received": "2026-05-21"
+        "status": "missing"
       },
       {
         "source_type": "customs_or_regulatory_source",
-        "status": "received",
-        "date_received": "2026-05-22"
+        "status": "missing"
       },
       {
         "source_type": "insurance_clause_or_underwriter_note",
-        "status": "received",
-        "date_received": "2026-05-22"
+        "status": "missing"
       },
       {
         "source_type": "vessel_or_carrier_history",
-        "status": "received",
-        "date_received": "2026-05-22"
+        "status": "missing"
       }
     ],
     "presentable_note": "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; it is not clearance, approval, a sanctions determination, or compliance advice. Human review is required before any commercial action."
@@ -125,6 +138,13 @@
   },
   "limitations": [
     "One or more counterparties are domiciled in a re-export / circumvention-watch jurisdiction (Georgian consignee (consignee, Georgia)); this is a diversion watch item for human review, not a sanctions determination. Verify end-use and onward destination before any commercial action."
+  ],
+  "vessel_due_diligence_indicators": [
+    "AIS continuity: check for extended transmission gaps or disablement over the voyage.",
+    "Vessel identity consistency: check for MMSI / name / IMO manipulation or misclassification.",
+    "Certificate-of-origin integrity: confirm shipping documents match declared cargo origin and destination.",
+    "Ship-to-ship transfer history: check for undisclosed STS transfers along the route.",
+    "Flag history: check for recent flag changes or registration with a high-risk registry."
   ],
   "reexport_control_indicators": [
     "End-user statement: obtain a signed end-user / end-use statement naming the ultimate consignee.",
@@ -163,32 +183,71 @@
     "scope": "reference_metadata_only",
     "source_content_verified": false,
     "freshness_verified": false,
-    "usable_source_types": [
-      "port_operator_notice",
-      "sanctions_list_extract",
-      "carrier_note",
-      "counterparty_registry_extract",
-      "beneficial_ownership_source",
-      "customs_or_regulatory_source",
-      "insurance_clause_or_underwriter_note",
-      "vessel_or_carrier_history"
+    "usable_source_types": [],
+    "issues": [
+      {
+        "source_index": 0,
+        "source_type": "port_operator_notice",
+        "issue": "Illustrative or placeholder material cannot establish source coverage."
+      },
+      {
+        "source_index": 1,
+        "source_type": "sanctions_list_extract",
+        "issue": "Illustrative or placeholder material cannot establish source coverage."
+      },
+      {
+        "source_index": 2,
+        "source_type": "carrier_note",
+        "issue": "Illustrative or placeholder material cannot establish source coverage."
+      },
+      {
+        "source_index": 3,
+        "source_type": "counterparty_registry_extract",
+        "issue": "Illustrative or placeholder material cannot establish source coverage."
+      },
+      {
+        "source_index": 4,
+        "source_type": "beneficial_ownership_source",
+        "issue": "Illustrative or placeholder material cannot establish source coverage."
+      },
+      {
+        "source_index": 5,
+        "source_type": "customs_or_regulatory_source",
+        "issue": "Illustrative or placeholder material cannot establish source coverage."
+      },
+      {
+        "source_index": 6,
+        "source_type": "insurance_clause_or_underwriter_note",
+        "issue": "Illustrative or placeholder material cannot establish source coverage."
+      },
+      {
+        "source_index": 7,
+        "source_type": "vessel_or_carrier_history",
+        "issue": "Illustrative or placeholder material cannot establish source coverage."
+      }
     ],
-    "issues": [],
     "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
   },
   "readiness_contract": {
     "profile": "middle_corridor_deal_risk",
-    "status": "review_ready",
-    "score": 100,
+    "status": "insufficient_information",
+    "score": 0,
     "routing": {
       "field": "triage_recommendation",
-      "value": "ready_for_human_review"
+      "value": "escalate_before_shipment"
     },
     "signal": {
       "field": "risk_signal",
-      "value": "unknown"
+      "value": "medium_high"
     },
-    "blocking_gaps": [],
+    "blocking_gaps": [
+      "No counterparty registry extract supplied.",
+      "No beneficial ownership source supplied.",
+      "No sanctions screening result supplied.",
+      "No customs or regulatory source supplied.",
+      "No insurance clause or underwriter note supplied.",
+      "No carrier, vessel, or rail-operator history supplied."
+    ],
     "non_blocking_gaps": [],
     "claim_audit": [],
     "owner_actions": [],
@@ -202,5 +261,9 @@
     ],
     "human_review_required": true,
     "boundary_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
-  }
+  },
+  "next_action": "insufficient",
+  "decision_kind": "evidence_review",
+  "authorization_granted": false,
+  "score_kind": "evidence_readiness"
 }

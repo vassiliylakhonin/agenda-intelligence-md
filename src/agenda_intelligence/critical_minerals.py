@@ -39,6 +39,12 @@ def review_mineral_dossier(request: dict, taxonomy: dict) -> dict:
             "responsible_sourcing_due_diligence" if source_type == "csddd_human_rights_and_esg_audit" else source_type
         )
         issues = []
+        if re.search(
+            r"\b(?:illustrative\s+only|synthetic\s+(?:test|example|fixture|only)|placeholder)\b",
+            " ".join(str(source.get(k) or "") for k in ("title", "excerpt")),
+            re.I,
+        ):
+            issues.append("Illustrative or placeholder material is not documentary evidence.")
         for field in ("title", "issuing_authority"):
             if not str(source.get(field) or "").strip():
                 issues.append(f"Missing {field}")

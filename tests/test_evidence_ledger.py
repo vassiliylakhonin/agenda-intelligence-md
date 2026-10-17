@@ -148,14 +148,14 @@ def test_service_supplied_source_types_use_ledger_normalization():
                 "source_type": "sanctions_list_extract",
                 "title": "Sanctions list",
                 "date": "2026-07-01",
-                "url": "https://example.com/sanctions/",
+                "url": "https://records.test/sanctions/",
             },
             {
                 "id": "policy-1",
                 "source_type": "sanctions_list_extract",
                 "title": "Sanctions list duplicate",
                 "date": "2026-07-01",
-                "url": "https://example.com/sanctions",
+                "url": "https://records.test/sanctions",
             },
             {
                 "id": "registry-1",
