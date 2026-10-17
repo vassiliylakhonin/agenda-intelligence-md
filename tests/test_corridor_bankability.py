@@ -31,6 +31,8 @@ def test_corridor_bankability_free_teaser():
     assert unlock["amount_usdc"] == 25.0
     assert unlock["network"] == "base"
     assert unlock["chain_id"] == 8453
+    assert "X-Payment-Signature" in unlock["how_to_unlock"]
+    assert "challenge" in unlock["how_to_unlock"]
     assert len(unlock["includes_in_full_tier"]) >= 4
 
     # Check covenant evaluation

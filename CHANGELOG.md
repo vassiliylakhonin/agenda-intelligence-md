@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Legacy Bankability preview now separates delivered free output from the optional $25 scenario memo/schedule and exposes HTTP/MCP continuation on the caller's hostname. Correct payment instructions to require the funding-wallet challenge signature and exact-request retry; no pricing or entitlement changes.
+
+
+## Unreleased
+
 - Return a serialized, query-free JSON wire example after malformed hosted requests. Explain verbatim sending versus form encoding or double serialization, without echoing submitted content or bypassing payment.
 
 ## 1.16.2 — 2026-10-16

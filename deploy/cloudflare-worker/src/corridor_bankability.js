@@ -82,7 +82,7 @@ export function validateBankabilityRequest(request) {
   return errors;
 }
 
-export function generateBankabilityScreen(request = {}, isPaid = false, origin = "https://agendamcp.dpdns.org") {
+export function generateBankabilityScreen(request = {}, isPaid = false, origin = "https://agendamcp.dpdns.org", mcpOrigin = origin) {
   const errors = validateBankabilityRequest(request);
   if (errors.length) throw new TypeError(errors.join("; "));
   const projectName = request.project_name.trim();
@@ -182,11 +182,34 @@ export function generateBankabilityScreen(request = {}, isPaid = false, origin =
       includes_in_full_tier: [
         "15-Year Deterministic Debt Service Waterfall Model",
         "Illustrative scenario memo (Markdown only; no lender endorsement)",
-        "List of caller-supplied evidence references for human review",
+        "Explicit input-verification limits and mandatory human sign-off notice",
         "15-year JSON schedule with explicit scenario assumptions; no Excel/PDF file"
       ],
       how_to_unlock:
-        `Send transfer(${BASE_USDC_WALLET}, ${String(Math.round(TIER_BANKABILITY_DOSSIER_USDC * 1e6))}) on Base (Chain ID 8453), then retry this request with header 'X-Payment-Tx: <tx_hash>'.`
+        "Only after explicit wallet-owner approval, settle the stated USDC amount on Base. Retry the exact request with X-Payment-Tx to receive a funding-wallet signing challenge; sign that challenge and retry with both X-Payment-Tx and X-Payment-Signature. Preserve the exact URL, serialized body and proof for identical retries within 24 hours; do not transfer again for a retry."
+    };
+    baseResponse.continuation = {
+      status: "free_preview_completed",
+      payment_required_for_preview: false,
+      delivered: ["Caller-input threshold checks", "Corridor bottleneck notes", "Risk matrix and outstanding conditions"],
+      optional_paid_continuation: {
+        amount_usdc: TIER_BANKABILITY_DOSSIER_USDC,
+        includes: baseResponse.x402_unlock.includes_in_full_tier,
+        limitations: "Illustrative scenario, caller-supplied inputs remain unverified. No Excel/PDF, lender approval or live due diligence."
+      },
+      http: { method: "POST", url: `${origin}/v1/corridor-bankability/screen`, body_source: "original_validated_request" },
+      mcp: { url: `${mcpOrigin}/mcp/agent`, method: "tools/call", tool: "corridor_bankability_screen", arguments_source: "original_validated_tool_arguments",
+        paid_client_requirements: ["Wallet-owner approval", "Ability to attach payment headers to the actual MCP HTTP request"] },
+      payment: {
+        required_headers: ["X-Payment-Tx", "X-Payment-Signature"],
+        challenge_status: 401,
+        mcp_agent_challenge: "HTTP 200 with result.isError=true; challenge_message is in the admission details.",
+        steps: ["Stop for explicit wallet-owner approval before settlement or signing.",
+          "After settlement, send the original request with X-Payment-Tx to obtain challenge_message.",
+          "Sign the server challenge with the funding wallet; resend the exact request with both required headers.",
+          "Keep the same URL, serialized body (including MCP request id) and proof for identical retries within 24 hours. Never transfer twice for recovery."]
+      },
+      human_review_required: true
     };
     return baseResponse;
   }

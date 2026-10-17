@@ -238,12 +238,15 @@ def generate_bankability_screen(
             "includes_in_full_tier": [
                 "15-Year Deterministic Debt Service Waterfall Model",
                 "Illustrative scenario memo (Markdown only; no lender endorsement)",
-                "List of caller-supplied evidence references for human review",
+                "Explicit input-verification limits and mandatory human sign-off notice",
                 "15-year JSON schedule with explicit scenario assumptions; no Excel/PDF file",
             ],
             "how_to_unlock": (
-                f"Send transfer({BASE_USDC_WALLET}, {round(TIER_BANKABILITY_DOSSIER_USDC * 1e6)}) on Base "
-                "(Chain ID 8453), then retry this request with header 'X-Payment-Tx: <tx_hash>'."
+                "Only after explicit wallet-owner approval, settle the stated USDC amount on Base. "
+                "Retry the exact hosted request with X-Payment-Tx to receive a funding-wallet signing challenge; "
+                "sign that challenge and retry with both X-Payment-Tx and X-Payment-Signature. "
+                "Preserve the exact URL, serialized body and proof for identical retries within 24 hours; "
+                "do not transfer again for a retry. Local stdio does not settle or attach HTTP payment headers."
             ),
         }
         return base_response
