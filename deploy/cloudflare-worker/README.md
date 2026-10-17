@@ -22,6 +22,9 @@ This Worker is intentionally small:
 - does not call paid APIs, payment rails, wallets, or live retrieval by default;
 - does not replace the installable MCP server.
 
+The legacy Bankability free/paid response and signed HTTP/MCP continuation are
+documented in [Bankability continuation](../../docs/deployment/bankability-continuation.md).
+
 ## Public endpoints
 
 | Method | Path | Content negotiation | Purpose |
