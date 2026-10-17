@@ -21,6 +21,7 @@ export function outputTrialTerms(profile = 'agent_output_verification') {
   const config = trialProfile(profile);
   return { endpoint: trialPath(profile), agent_profile: profile, tool: config.tool,
     mcp_tool: MCP_TRIAL_TOOL, mcp_status_tool: MCP_TRIAL_STATUS_TOOL,
+    a2a: {endpoint:'/message/send',method:'SendMessage',metadata_key:'com.agenda/free-trial',operations:['status','evaluate'],shared_allowance:true},
     availability_endpoint: trialPath(profile) + '?availability=1',
     worked_example_url: '/?example=1#worked-example',
     evaluation_kind: config.kind || 'evidence_review', attempts_per_network: trialAttemptLimit(profile),
@@ -103,7 +104,7 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
   const reply = (body, status = 200, headers = {}) => paymentTraceResponse(respond(body, status,
     { 'cache-control': 'no-store', ...headers }), trace, attempt);
   log('request_received', 'free_trial', null);
-  if (request.headers.has('x-payment-tx') || request.headers.has('x-payment-signature') ||
+  if (request.headers.has('x-payment-tx') || request.headers.has('x-payment-signature') || request.headers.has('payment-signature') || request.headers.has('x-payment') ||
       (request.headers.has('authorization') && !allowProductionAuthorization)) {
     log('preview_failed', 'trial_credentials_not_applicable', 400);
     return reply({ code: 'trial_credentials_not_applicable', error: 'Do not send payment credentials to the free trial. Only configured production authentication is accepted.', trial: terms }, 400);

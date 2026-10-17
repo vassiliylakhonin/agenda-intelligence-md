@@ -7,6 +7,10 @@ import { MAX_JSON_BODY_BYTES } from './request-body.js';
 // Weak keys only: no request, proof or response survives its Request object.
 const contexts = new WeakMap();
 export const paidContext = request => contexts.get(request);
+export async function withPaidContext(request, context, execute) {
+  contexts.set(request, context);
+  try {return await execute();} finally {contexts.delete(request);}
+}
 const TTL = 24 * 3600000;
 const LEASE = 120000;
 const errorResponse = (status, code, extra = {}) => Response.json({ error: code, code, ...extra }, {
@@ -30,25 +34,25 @@ async function responseKey(signature) {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(signature.toLowerCase()));
   return crypto.subtle.importKey('raw', bytes, 'AES-GCM', false, ['encrypt', 'decrypt']);
 }
-async function seal(value, signature) {
+export async function seal(value, signature) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const bytes = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv },
     await responseKey(signature), new TextEncoder().encode(JSON.stringify(value))));
   const encode = buffer => btoa(Array.from(buffer, x => String.fromCharCode(x)).join(''));
   return JSON.stringify({ iv: encode(iv), data: encode(bytes) });
 }
-async function unseal(value, signature) {
+export async function unseal(value, signature) {
   const object = JSON.parse(value);
   const decode = s => Uint8Array.from(atob(s), x => x.charCodeAt(0));
   const bytes = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: decode(object.iv) },
     await responseKey(signature), decode(object.data));
   return JSON.parse(new TextDecoder().decode(bytes));
 }
-function restored(value, replay) {
+export function restored(value, replay) {
   return new Response(value.body, { status: value.status,
     headers: { ...value.headers, 'cache-control': 'no-store', 'x-payment-replayed': replay ? '1' : '0', 'access-control-allow-origin': '*', 'access-control-expose-headers': 'X-Payment-Replayed' } });
 }
-async function boundedResponse(response) {
+export async function boundedResponse(response) {
   const reader = response.body?.getReader();
   const chunks = [];
   let size = 0;

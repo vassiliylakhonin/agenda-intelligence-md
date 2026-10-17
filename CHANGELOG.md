@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add native A2A free-trial status/evaluation through the advertised optional message-metadata extension; reuse the HTTP/MCP validator, atomic product/network quota and fleet daily limit. Preserve production authentication, task capabilities, and paid evaluation admission.
+- Add standard x402 v2 exact EIP-3009 Base native USDC payments over HTTP headers and native MCP metadata, with official-client offline regressions. Use PayAI's public free path, local signature validation, durable first-request binding, encrypted response recovery, and independent onchain authorization/transfer confirmation. Never release an evaluated result before confirmed payment or automatically re-submit uncertain settlement. Preserve legacy funding-wallet signatures and prices. Real settlement is not claimed by maintainer tests.
+
 - Classify every quote absent from supplied nonempty source text as unsafe, including a fabricated quote beside a matching one. Missing source text remains insufficient evidence rather than a proven mismatch.
 - Add advisory action metadata across hosted evaluation results and the maintained Python profile responses; separate risk scores from evidence readiness and never grant authority. Preserve legacy verdicts and access/payment/quota rules.
 - Report the actual Financial Guard rule violations and unassessed AML screening. Expose sanctions screening freshness/identity limitations, label caller assertions, and exclude explicitly illustrative/placeholder sources from documentary coverage. Refresh examples and generated schema clients; historical fixture names remain for compatibility even when illustrative evidence now yields insufficient readiness.
