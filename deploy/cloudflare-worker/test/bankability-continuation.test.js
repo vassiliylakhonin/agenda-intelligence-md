@@ -17,6 +17,9 @@ test('legacy REST preview distinguishes delivered output and optional signed HTT
   assert.equal(data.continuation.http.url,origin+'/v1/corridor-bankability/screen');
   assert.equal(data.continuation.mcp.url,origin+'/mcp/agent');
   assert.equal(data.continuation.mcp.tool,'corridor_bankability_screen');
+  assert.equal(data.continuation.mcp.method,'tools/call');
+  assert.equal(data.continuation.http.body_source,'original_validated_request');
+  assert.equal(data.continuation.mcp.arguments_source,'original_validated_tool_arguments');
   assert.deepEqual(data.continuation.payment.required_headers,['X-Payment-Tx','X-Payment-Signature']);
   assert.match(data.x402_unlock.how_to_unlock,/challenge/i);
   assert.match(data.x402_unlock.how_to_unlock,/X-Payment-Signature/);

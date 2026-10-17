@@ -12,8 +12,10 @@ An unpaid successful hosted result adds `continuation`:
 - `optional_paid_continuation` gives the unchanged $25 USDC price, actual
   Markdown scenario memo / 15-year JSON schedule and limits. No Excel/PDF,
   lender approval, live retrieval or factual verification is provided.
-- `http` gives the actual HTTP origin and POST route; reuse the original input.
-- `mcp` gives the host publishing the tool, tool name and client requirements.
+- `http` gives the actual HTTP origin and POST route; `body_source` identifies
+  the original validated request to reuse.
+- `mcp` gives the host publishing the tool, `tools/call` method, tool name,
+  `arguments_source` and client requirements.
   Session clients initialize first, then call with their original arguments.
 - `payment` gives the required headers and challenge sequence. Settlement and
   signing require explicit wallet-owner approval. A transaction hash alone

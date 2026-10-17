@@ -197,8 +197,8 @@ export function generateBankabilityScreen(request = {}, isPaid = false, origin =
         includes: baseResponse.x402_unlock.includes_in_full_tier,
         limitations: "Illustrative scenario, caller-supplied inputs remain unverified. No Excel/PDF, lender approval or live due diligence."
       },
-      http: { method: "POST", url: `${origin}/v1/corridor-bankability/screen`, body: "Reuse your original validated request." },
-      mcp: { url: `${mcpOrigin}/mcp/agent`, tool: "corridor_bankability_screen", arguments: "Reuse your original validated tool arguments.",
+      http: { method: "POST", url: `${origin}/v1/corridor-bankability/screen`, body_source: "original_validated_request" },
+      mcp: { url: `${mcpOrigin}/mcp/agent`, method: "tools/call", tool: "corridor_bankability_screen", arguments_source: "original_validated_tool_arguments",
         paid_client_requirements: ["Wallet-owner approval", "Ability to attach payment headers to the actual MCP HTTP request"] },
       payment: {
         required_headers: ["X-Payment-Tx", "X-Payment-Signature"],
