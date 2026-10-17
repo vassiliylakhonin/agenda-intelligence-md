@@ -174,7 +174,7 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}, o
     decision = "reject";
     status = "escalate";
     score = 95;
-    advisory = `Execution blocked by detected local checks: ${violations.join(" ")} Execution forbidden.`;
+    advisory = `CRITICAL SECURITY BLOCK: Execution blocked by detected local checks: ${violations.join(" ")} Execution forbidden.`;
   } else if (requiresStepUp) {
     decision = "step_up_human_required";
     status = "not_decision_ready";
