@@ -6,6 +6,21 @@ improves measurement and recovery from malformed inputs; it grants no new
 payment or execution privileges. The vault companion documents aggregate rules
 in `docs/demand-quality.md`.
 
+## Maintainer checks
+
+Maintainers and their assistants must label every live fleet request with
+`X-Client-Id: agenda-owner-<purpose>`, including tests that otherwise reproduce
+an external user's HTTP, MCP or A2A path. Preserve the official client's normal
+User-Agent and existing authentication, quota and payment behavior. Browser
+practice uses `?owner_test=1`. An unlabelled generic HTTP client cannot be
+identified automatically as ours.
+
+This is a maintainer-only convention: do not put an owner marker in public SDK
+defaults, ordinary quickstarts or real customers' requests. Self-declared
+purpose is neither authentication nor independent adoption. Historical owner
+feedback belongs in an exact-event analytical overlay in the private archive;
+do not rewrite source logs or classify neighbouring calls by time alone.
+
 ## Worker event contract
 
 | Source | Version | Additions |
