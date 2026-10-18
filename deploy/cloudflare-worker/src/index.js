@@ -114,6 +114,7 @@ import {
 
 import { CARD_EXTENSION_URI } from "./card-extension.js";
 import { buildJwks, maybeSignCard } from "./jws.js";
+import { signOutputReceipt } from "./output-receipt.js";
 import {
   DECISION_NOT_AUTHORIZATION_NOTICE,
   decisionPolicyCatalog,
@@ -5855,6 +5856,25 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     not_advice_notice: AGENT_OUTPUT_VERIFICATION_NOT_ADVICE_NOTICE,
     limitations
   };
+  const reasonFor = item => item.reason.startsWith("DLP") ? "DLP_FINDING"
+    : item.reason.startsWith("cites evidence_id") ? "EVIDENCE_REFERENCE_MISSING"
+    : item.reason.startsWith("declared supporting quote") ? "QUOTE_MISMATCH" : "CLAIM_UNSUPPORTED";
+  response.checks = unsafeClaims.map(item => ({id:"claim.unsafe",claim_id:item.claim_id,
+    result:"fail",reason_code:reasonFor(item)}));
+  for (const claim of claims) {
+    response.checks.push({id:"quote.matched_excerpt",claim_id:claim.claim_id,
+      result:claimHasMatchedQuote(claim,evidenceById) ? "pass" : "not_assessed",
+      reason_code:claimHasMatchedQuote(claim,evidenceById) ? "MATCHED_EXCERPT" : "QUOTE_NOT_ASSESSED"});
+  }
+  response.checks.push({id:"source.authenticity",result:"not_assessed",reason_code:"SOURCE_NOT_AUTHENTICATED"},
+    {id:"claim.factual_truth",result:"not_assessed",reason_code:"FACTUAL_TRUTH_NOT_ASSESSED"},
+    {id:"output.dlp",result:vizierDlp?.status === "success" ? dlpFindings.length ? "fail" : "pass" : "not_assessed",
+      reason_code:vizierDlp?.status === "success" ? dlpFindings.length ? "DLP_FINDING" : "DLP_SCAN_COMPLETED" : "DLP_NOT_ASSESSED"});
+  response.reason_codes = [...new Set([
+    ...response.checks.filter(check=>check.result!=="pass").map(check=>check.reason_code),
+    ...(unsupportedStatements.length ? ["UNSUPPORTED_STATEMENT"] : []),
+    ...(evidenceGaps.length ? ["EVIDENCE_GAP"] : []),"HUMAN_REVIEW_REQUIRED"
+  ])];
   return {
     response: withEvaluationContract(response),
     vizier_status: vizierDlp ? vizierDlp.status : "disabled",
@@ -5869,6 +5889,21 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
         }
       : null
   };
+}
+
+async function hostedOutputEvaluation(structured, request, env, vizierDlp) {
+  const result = agentOutputVerificationResult(structured,vizierDlp);
+  if (env.OUTPUT_EVALUATION_RECEIPTS !== "1") return result;
+  try {
+    const receipt = await signOutputReceipt({request:structured,response:result.response,
+      privateJwk:env.AGENT_CARD_SIGNING_KEY || env.AGENT_CARD_PRIVATE_JWK,
+      kid:env.AGENT_CARD_SIGNING_KID || null,issuer:originFromRequest(request)});
+    result.response.evaluation_receipt = receipt;
+    return result;
+  } catch {
+    return {error:true,response:{code:"evaluation_receipt_unavailable",
+      error:"Signed output evaluation is temporarily unavailable. No evaluated result is released."}};
+  }
 }
 
 const PRE_ACTION_POLICY_VERSION = "pre-action-check.v1";
@@ -6570,7 +6605,10 @@ async function a2aResultForAgentOutputVerification(params, request, env = {}) {
   if (isVerificationVizierEnabled(env)) {
     vizierDlp = await scanOutputWithVizierDlp(env, structured);
   }
-  const result = agentOutputVerificationResult(structured, vizierDlp);
+  const result = await hostedOutputEvaluation(structured, request, env, vizierDlp);
+  if (result.error) return {id:crypto.randomUUID(),error:true,
+    status:{state:"TASK_STATE_FAILED",timestamp:new Date().toISOString()},artifacts:[],
+    metadata:{product_profile:"agent_output_verification",...result.response}};
   return {
     id: crypto.randomUUID(),
     status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
@@ -12964,7 +13002,9 @@ function mcpResultSummary(payload, isError) {
 
 function mcpToolResult(payload, isError = false) {
   return {
-    content: [{ type: "text", text: mcpResultSummary(payload, isError) }],
+    // Official x402 MCP clients may retain content but omit structuredContent.
+    // Signed output evaluations must remain independently verifiable there.
+    content: [{ type: "text", text: payload?.evaluation_receipt ? JSON.stringify(payload) : mcpResultSummary(payload, isError) }],
     structuredContent: payload,
     isError
   };
@@ -13381,6 +13421,14 @@ function hostedMcpTools(profile, request, env) {
     freeAccess: hostedAccess(profile, {...env, BILLING_MODE:'freemium'}, origin),
     example: GATE_REQUEST_GUIDES[guideProfile]?.example
   });
+  if (profile === "agent_output_verification" && env.OUTPUT_EVALUATION_RECEIPTS === "1") {
+    const tool = tools.find(item=>item.name === "agent_output_verification");
+    tool._meta = {...tool._meta,"com.agenda/output-receipt":{
+      format:"agenda-output-evaluation+jws",ttl_seconds:300,jwks_uri:origin+"/.well-known/jwks.json",
+      documentation:REPOSITORY_URL+"/blob/main/docs/deployment/output-evaluation-receipts.md",not_authorization:true,
+      shared_by_free_trial:true
+    }};
+  }
   return outputTrialEnabled(profile,env)
     ? [...tools,...mcpTrialTools(workerTrialAdapter(profile),outputTrialTerms(profile))] : tools;
 }
@@ -14547,7 +14595,7 @@ const DIRECT_V1_ROUTES = {
       if (isVerificationVizierEnabled(env)) {
         vizierDlp = await scanOutputWithVizierDlp(env, structured);
       }
-      return agentOutputVerificationResult(structured, vizierDlp);
+      return hostedOutputEvaluation(structured, request, env, vizierDlp);
     },
     provenance: (result) => ({
       vizier_status: result.vizier_status,
@@ -15010,6 +15058,9 @@ async function handleDirectV1(endpoint, route, request, env) {
   }
 
   const result = await route.run(structured, request, env);
+  if (result.error && result.response?.code === "evaluation_receipt_unavailable") {
+    return jsonResponse(result.response,503);
+  }
   const provenance = route.provenance ? route.provenance(result) : null;
   return jsonResponse(provenance ? { ...result.response, ...provenance } : result.response, 200);
 }

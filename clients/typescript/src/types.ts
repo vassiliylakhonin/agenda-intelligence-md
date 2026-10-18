@@ -39,6 +39,24 @@ export interface AgentOutputVerificationResponse {
   decision_kind?: "evidence_review";
   authorization_granted?: false;
   score_kind?: "risk" | "evidence_readiness" | "not_scored";
+  /** Stable diagnostic labels. Codes describe supplied evidence checks, never factual truth or permission. */
+  reason_codes?: string[];
+  /** quote.matched_excerpt pass means at least one excerpt matches supplied text; another quote may still fail. source.authenticity and claim.factual_truth remain not_assessed. */
+  checks?: Array<{
+    id: string;
+    claim_id?: string;
+    result: "pass" | "fail" | "not_assessed";
+    reason_code: string;
+  }>;
+  /** Optional hosted ES256 evaluation attestation. Not a decision_check readiness receipt, payment receipt or authorization. Five-minute validity; verify issuer/key and both hashes independently. */
+  evaluation_receipt?: {
+    format: "agenda-output-evaluation+jws";
+    token: string;
+    request_hash: string;
+    response_hash: string;
+    issued_at: string;
+    expires_at: string;
+  };
 }
 
 export interface AgenticInteractionTrustRequestActor {

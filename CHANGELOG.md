@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add stable Output Verification reason codes/checks and optional five-minute ES256 evaluation attestations bound to the request and result. Enable the existing Output deployment, refuse signing failure, and preserve advisory verdicts, human review, prices and quotas. Include complete signed JSON for official x402 MCP clients that retain only text content; add trusted-origin client verification, explicit-budget paid example and synthetic replay/latency examples. No real payment or source-authenticity claim.
+
 - Add native A2A free-trial status/evaluation through the advertised optional message-metadata extension; reuse the HTTP/MCP validator, atomic product/network quota and fleet daily limit. Preserve production authentication, task capabilities, and paid evaluation admission.
 - Add standard x402 v2 exact EIP-3009 Base native USDC payments over HTTP headers and native MCP metadata, with official-client offline regressions. Use PayAI's public free path, local signature validation, durable first-request binding, encrypted response recovery, and independent onchain authorization/transfer confirmation. Never release an evaluated result before confirmed payment or automatically re-submit uncertain settlement. Preserve legacy funding-wallet signatures and prices. Real settlement is not claimed by maintainer tests.
 

@@ -1,0 +1,96 @@
+[
+  {
+    "id": "fabricated-sibling-quote",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "sales",
+          "claim": "Revenue grew by 90 percent.",
+          "support_level": "direct",
+          "evidence_ids": [
+            "report"
+          ],
+          "supporting_quotes": [
+            {
+              "evidence_id": "report",
+              "quote": "Revenue is preliminary"
+            },
+            {
+              "evidence_id": "report",
+              "quote": "Revenue grew by 90 percent"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "evidence_id": "report",
+          "content": "Revenue is preliminary. Growth has not yet been calculated.",
+          "source_type": "company_material"
+        }
+      ]
+    },
+    "expected_next_action": "block",
+    "expected_reason": "QUOTE_MISMATCH"
+  },
+  {
+    "id": "source-content-absent",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "launch",
+          "claim": "Launch approved for October.",
+          "support_level": "direct",
+          "evidence_ids": [
+            "minutes"
+          ],
+          "supporting_quotes": [
+            {
+              "evidence_id": "minutes",
+              "quote": "Launch approved for October"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "evidence_id": "minutes",
+          "name": "Meeting minutes; contents not supplied",
+          "source_type": "company_material"
+        }
+      ]
+    },
+    "expected_next_action": "insufficient",
+    "expected_reason": "QUOTE_NOT_ASSESSED"
+  },
+  {
+    "id": "matched-text-still-needs-review",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "date",
+          "claim": "The committee review is planned for October.",
+          "support_level": "direct",
+          "evidence_ids": [
+            "schedule"
+          ],
+          "supporting_quotes": [
+            {
+              "evidence_id": "schedule",
+              "quote": "Committee review planned for October"
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "evidence_id": "schedule",
+          "content": "Committee review planned for October. Approval remains pending.",
+          "source_type": "company_material"
+        }
+      ]
+    },
+    "expected_next_action": "review",
+    "expected_reason": "HUMAN_REVIEW_REQUIRED"
+  }
+]

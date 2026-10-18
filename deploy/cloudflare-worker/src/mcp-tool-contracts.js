@@ -4371,6 +4371,88 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "evidence_readiness",
               "not_scored"
             ]
+          },
+          "reason_codes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Stable diagnostic labels. Codes describe supplied evidence checks, never factual truth or permission."
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "result",
+                "reason_code"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "claim_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "result": {
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "not_assessed"
+                  ]
+                },
+                "reason_code": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "description": "quote.matched_excerpt pass means at least one excerpt matches supplied text; another quote may still fail. source.authenticity and claim.factual_truth remain not_assessed."
+          },
+          "evaluation_receipt": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "format",
+              "token",
+              "request_hash",
+              "response_hash",
+              "issued_at",
+              "expires_at"
+            ],
+            "description": "Optional hosted ES256 evaluation attestation. Not a decision_check readiness receipt, payment receipt or authorization. Five-minute validity; verify issuer/key and both hashes independently.",
+            "properties": {
+              "format": {
+                "const": "agenda-output-evaluation+jws"
+              },
+              "token": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8192
+              },
+              "request_hash": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "response_hash": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "issued_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
           }
         }
       }

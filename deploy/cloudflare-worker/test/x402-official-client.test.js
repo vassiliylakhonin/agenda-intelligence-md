@@ -13,6 +13,18 @@ import {
   ERC20_TRANSFER_TOPIC,
 } from "../src/profiles.js";
 import { keccak256 } from "../src/ethsig.js";
+import {
+  reviewSignedOutput,
+  outputPaymentPolicy,
+} from "../../../examples/output-verification/agent-loop.mjs";
+const receiptKeys = await crypto.subtle.generateKey(
+  { name: "ECDSA", namedCurve: "P-256" },
+  true,
+  ["sign", "verify"],
+);
+const receiptKey = JSON.stringify(
+  await crypto.subtle.exportKey("jwk", receiptKeys.privateKey),
+);
 const tx = "0x" + "cd".repeat(32),
   topic = (a) => "0x" + a.slice(2).toLowerCase().padStart(64, "0");
 const used =
@@ -38,6 +50,8 @@ const environment = () => ({
   BILLING_MODE: "pay_per_call",
   VIZIER_DISABLED: "1",
   PAYMENT_LEDGER: memoryD1(),
+  OUTPUT_EVALUATION_RECEIPTS: "1",
+  AGENT_CARD_SIGNING_KEY: receiptKey,
 });
 // Public synthetic key. Everything below is offline; unknown egress fails.
 const paymentClient = () =>
@@ -168,15 +182,15 @@ test("official @x402/mcp recognizes PaymentRequired and retries using native pay
         return body.result;
       },
     };
+    const budget = outputPaymentPolicy({
+      payTo: BASE_USDC_WALLET,
+      expectedIssuer: "https://example.test",
+    });
     const client = new x402MCPClient(wireClient, paymentClient(), {
       autoPayment: true,
       onPaymentRequested: ({ paymentRequired }) => {
         approved++;
-        return (
-          paymentRequired.accepts.length === 1 &&
-          paymentRequired.accepts[0].amount === "50000" &&
-          paymentRequired.accepts[0].payTo === BASE_USDC_WALLET
-        );
+        return budget({ paymentRequired });
       },
     });
     const result = await client.callTool("agent_output_verification", input);
@@ -186,10 +200,32 @@ test("official @x402/mcp recognizes PaymentRequired and retries using native pay
     assert.equal(calls, 2);
     assert.equal(approved, 1);
     assert.equal(network.settles(), 1);
+    const verification = await reviewSignedOutput(input, {
+      mode: "paid",
+      expectedIssuer: "https://example.test",
+      paidClient: { callTool: async () => result },
+      fetchImpl: async (url, init) =>
+        handleRequest(new Request(url, init), env),
+    });
+    assert.equal(verification.valid, true);
+    assert.equal(verification.evaluation.human_review_required, true);
+    assert.equal(verification.authorization_granted, false);
   } finally {
     globalThis.fetch = previous;
   }
 });
+test("signing failure never settles an otherwise valid x402 authorization", async () => {
+  const env=environment();delete env.AGENT_CARD_SIGNING_KEY;
+  const network=mockNetwork(),previous=globalThis.fetch;globalThis.fetch=network.fetch;
+  try {
+    const wrapped=wrapFetchWithPayment((url,init)=>handleRequest(new Request(url,init),env),paymentClient());
+    const response=await wrapped('https://example.test/v1/agent-output/verification',{
+      method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(input)});
+    assert.equal(response.status,503);assert.equal(network.settles(),0);
+    assert.equal((await response.json()).verdict,undefined);
+  } finally {globalThis.fetch=previous;}
+});
+
 test("a denied MCP wallet policy makes no payment attempt", async () => {
   const env = environment();
   let calls = 0;
