@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { createHostedMcpCall } from '../hosted-mcp/client.mjs';
 
-export const ENDPOINT = 'https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp';
+export const ENDPOINT = 'https://output-verification.agendamcp.dpdns.org/mcp';
 /** Output-specific result guard over the fleet's retained MCP request helper. */
 export function createOutputVerificationCall(input, options = {}) {
   return createHostedMcpCall('agent_output_verification', input, {

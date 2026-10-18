@@ -6,6 +6,8 @@ A deterministic evidence-packet linter for claim-backed AI output. Supply claims
 
 Use it to make an AI answer's evidence trail inspectable in a local workflow, agent pipeline, or CI job. **Packet completeness is not factual truth, source authenticity, or permission to act.**
 
+For hosted agents, the [signed Output Verification loop](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/deployment/output-evaluation-receipts.md) combines native MCP trials or explicitly budgeted x402 v2 calls with stable diagnostic codes and independent request/result receipt verification. Run `node examples/output-verification/replay.mjs` for local synthetic replays without a wallet. A valid signature attests the evaluation; human review remains required.
+
 To try one assertion in a browser, [check a claim and its source excerpt](https://output-verification.agendamcp.dpdns.org/#one-claim-review). Paste public or redacted text and an optional exact quote; the hosted trial shares five campaign attempts per network. [Pilot instructions](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.16.2/docs/product/citation-review-pilot.md) explain revision, optional feedback and the limits of this check. No external pilot results are claimed.
 
 ## First run

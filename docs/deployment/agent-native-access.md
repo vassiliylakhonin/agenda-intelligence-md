@@ -30,6 +30,8 @@ Success is `result.task` with `TASK_STATE_COMPLETED`, an evaluation JSON artifac
 
 ## Standard x402 v2
 
+For the concrete Output Verification loop, see [signed output evaluations](output-evaluation-receipts.md): stable diagnostic codes, a five-minute request/result attestation, independently pinned JWKS verification, explicit-budget official-client example and local synthetic replays. Evaluation, readiness and settlement receipts have different scopes and cannot substitute for one another.
+
 When `/.well-known/x402` advertises `x_agenda_access.standard_x402`, paid profile evaluation supports:
 
 | Transport | Requirements | Payment | Settlement result |

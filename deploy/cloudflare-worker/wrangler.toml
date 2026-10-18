@@ -175,6 +175,7 @@ workers_dev = true
 
 [env.agent-output-verification.vars]
 AGENT_PROFILE = "agent_output_verification"
+OUTPUT_EVALUATION_RECEIPTS = "1"
 TASK_SCOPE_AUTH_REQUIRED = "1"
 BILLING_MODE = "pay_per_call"
 X402_STANDARD = "1"

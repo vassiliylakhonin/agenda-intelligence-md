@@ -187,6 +187,27 @@ def validate_examples() -> None:
             )
             if checked.returncode:
                 raise SystemExit(f"{path.relative_to(ROOT)} failed RAG adapter contract: {checked.stderr}")
+        elif path == ROOT / "examples" / "output-verification" / "replay-cases.json":
+            if not isinstance(data, list) or not data:
+                raise SystemExit(f"{path.relative_to(ROOT)} must contain replay cases")
+            for case in data:
+                if not isinstance(case, dict) or set(case) != {
+                    "id",
+                    "input",
+                    "expected_next_action",
+                    "expected_reason",
+                }:
+                    raise SystemExit(f"{path.relative_to(ROOT)} contains an invalid replay case")
+                if case["expected_next_action"] not in {"block", "review", "insufficient"}:
+                    raise SystemExit(f"{path.relative_to(ROOT)} contains an unsupported expected action")
+                if not all(isinstance(case[key], str) and case[key] for key in ["id", "expected_reason"]):
+                    raise SystemExit(f"{path.relative_to(ROOT)} requires nonempty case IDs and reason codes")
+                try:
+                    validate(case["input"], audit_schema)
+                except ValidationError as exc:
+                    raise SystemExit(
+                        f"{path.relative_to(ROOT)} {case['id']} failed evidence-audit: {exc.message}"
+                    ) from exc
         elif path.is_relative_to(ROOT / "examples" / "output-verification"):
             validate_with_schema(path, audit_schema, "evidence-audit")
         elif path.name.endswith(".audit.json"):

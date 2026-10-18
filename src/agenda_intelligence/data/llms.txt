@@ -22,6 +22,8 @@ Product MCP tools:
 - m2m_escrow_arbitration_ruling — deterministic dispute resolution and deliverable verification for autonomous B2B Agent-to-Agent transactions (m2m-escrow-arbiter-request.schema.json in); verifies artifact hashes, schemas, deadlines, and SLOs with proposed payout allocation for human review; no settlement or clearance.
 - corridor_bankability_screen — Illustrative corridor finance scenario screen (schemas/v1/corridor-bankability-request.schema.json in); requires supplied capex/debt/DSCR, internal thresholds, human signoff; paid output is Markdown and a JSON schedule, with no Excel/PDF artifact or current hydrological verification.
 
+Hosted Output evaluation attestations: docs/deployment/output-evaluation-receipts.md. Native trials and explicitly budgeted x402 v2 evaluations can return an ES256 agenda-output-evaluation+jws receipt binding the exact audit and diagnostic result for five minutes. Verify with a pinned origin/JWKS and your own request. Not a readiness/authorization/payment receipt; human review remains required. Replay: node examples/output-verification/replay.mjs.
+
 Commercial discovery discipline:
 - There is no active default commercial wedge in this repository. Do not point users to removed discovery teardowns, profile packs, or public-signal corpus artifacts.
 - Public profiles should be crawlable, claim-addressable evidence packets: source IDs, buyer questions, project/system claims, missing evidence, owner actions, readiness decision, boundary notes, and follow-up signal.
