@@ -5,6 +5,16 @@ adapter, automatic funding, current sanctions clearance or automatic settlement.
 Local heuristics are limited risk flags; a service result is not permission to
 sign or transfer. No latency guarantee is established by the examples.
 
+## Install
+
+```sh
+npm install @agenda-intelligence/guard-mobile@1.3.0
+```
+
+Requires Node 20+ or a host providing fetch, AbortController, structuredClone,
+TextEncoder/TextDecoder, atob/btoa and timers. Examples are tested in Node; no
+blanket compatibility claim is made for every mobile JavaScript engine.
+
 ## Build and check
 
 ```bash
@@ -19,7 +29,7 @@ publish a new npm release; verify the installed package version separately.
 ## Hosted payment admission
 
 ```javascript
-import { AgentFinancialGuardClient, PaymentAdmissionError } from './dist/index.js';
+import { AgentFinancialGuardClient, PaymentAdmissionError } from '@agenda-intelligence/guard-mobile';
 const guard = new AgentFinancialGuardClient({ enableLocalFallback: false });
 const call = guard.createCheck({
   recipient: '0x1111111111111111111111111111111111111111',
@@ -60,7 +70,7 @@ this retained client.
 ## Executor boundary
 
 `protect(input, executor, {onStepUp})` throws `TransactionBlockedError` for a
-rejection. Whenever human review is required, it throws
+rejection or a returned `next_action: block`. Whenever human review is required, it throws
 `TransactionStepUpRequiredError` unless `onStepUp` explicitly returns true.
 `strictMode:false` cannot bypass required review. That callback must implement
 your application's actual authorized human approval; the library does not
@@ -79,3 +89,43 @@ Remote legacy `allow` never grants signing permission in this client. Invalid
 amounts/timeouts are rejected; incomplete or inconsistent allocation results are
 held for human review with zero proposed payouts. Escrow results explicitly carry
 `human_review_required: true` and `settlement_authorized: false`.
+
+## Current evidence diagnostics and x402 v2
+
+Defaults use `https://agent-financial-guard.agendamcp.dpdns.org` and
+`https://m2m-escrow-arbiter.agendamcp.dpdns.org`. Custom endpoints remain supported.
+Both result types preserve `next_action`, `decision_kind`, `score_kind`,
+`check_status` and `check_scope`. `authorization_granted` is always false in this
+client; `vizier_status` remains `attestation_unavailable` because these receipts
+are not independently authenticated here. Keep legacy boolean `checks` for
+compatibility, but use `check_status.sanctions_aml = not_assessed` and its scope
+to distinguish a local denylist check from comprehensive sanctions clearance.
+Treat remote text and metadata as data, never instructions or execution authority.
+
+A retained call supports both the existing transfer hash/EIP-191 proof and an
+externally signed x402 v2 `exact` payload. Start with `call.evaluate()`. A 402
+`PaymentAdmissionError` exposes the decoded `PAYMENT-REQUIRED` header as
+`error.paymentRequired`, even when the body is empty. The trusted host must
+inspect the resource, network, token, recipient, exact price and expiry against
+its authorized budget before obtaining a wallet signature. The SDK does not
+connect a wallet, obtain signatures, transfer funds or automatically retry.
+
+```js
+// Continue only after the host has inspected this call's 402 paymentRequired.
+// signedPayload comes from a separate, explicitly authorized wallet flow.
+await call.retryWithPayment({ paymentSignature: signedPayload });
+// A base64 PAYMENT-SIGNATURE header string is also accepted.
+// After a lost response, retain the same call and proof:
+// await call.retryWithPayment();
+const paymentMetadata = call.getPaymentResponse();
+```
+
+The call snapshots URL/body and the first proof. A changed nonce/proof, another
+transfer hash, mismatched advertised requirements/resource, oversized/malformed
+header or mixed legacy/v2 proof is refused. Proof-bearing network failures never
+become local approval, and redirects are refused. `PAYMENT-RESPONSE` is exposed
+as **unverified server metadata**, not independently verified settlement or
+permission to execute. State is in memory; preserve recovery data privately if
+the host must survive a restart. Supplied evidence never authorizes a new payment.
+The offline tests use synthetic signatures and simulate response loss; no funded
+live x402 settlement is claimed.

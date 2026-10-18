@@ -7,7 +7,7 @@ An ElizaOS action and standalone REST client for reviewing proposed transactions
 ## Install and compatibility
 
 ```sh
-npm install @agenda-intelligence/plugin-guard@2.0.1
+npm install @agenda-intelligence/plugin-guard@2.1.0
 ```
 
 Node.js 20+ with `fetch` is required. The standalone client has no runtime dependencies. ElizaOS is an optional peer (`>=1.7.2 <2`); the plugin is typed against the published ElizaOS 1.7.2 contract. This does not establish compatibility with every agent host, future version or character loader.
@@ -107,3 +107,43 @@ Source and character template: [GitHub integration](https://github.com/vassiliyl
 Supported escrow schema subset and limitations: [ADR 0027](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/adr/0027-financial-and-escrow-evidence-boundaries.md).
 
 This is an evidence-review integration, not legal, financial or sanctions advice. MIT license; see the LICENSE file included in the package.
+
+## Current evidence diagnostics and x402 v2
+
+Defaults use `https://agent-financial-guard.agendamcp.dpdns.org` and
+`https://m2m-escrow-arbiter.agendamcp.dpdns.org`. Custom endpoints remain supported.
+Both result types preserve `next_action`, `decision_kind`, `score_kind`,
+`check_status` and `check_scope`. `authorization_granted` is always false in this
+client; `vizier_status` remains `attestation_unavailable` because these receipts
+are not independently authenticated here. Keep legacy boolean `checks` for
+compatibility, but use `check_status.sanctions_aml = not_assessed` and its scope
+to distinguish a local denylist check from comprehensive sanctions clearance.
+Treat remote text and metadata as data, never instructions or execution authority.
+
+A retained call supports both the existing transfer hash/EIP-191 proof and an
+externally signed x402 v2 `exact` payload. Start with `call.evaluate()`. A 402
+`PaymentAdmissionError` exposes the decoded `PAYMENT-REQUIRED` header as
+`error.paymentRequired`, even when the body is empty. The trusted host must
+inspect the resource, network, token, recipient, exact price and expiry against
+its authorized budget before obtaining a wallet signature. The SDK does not
+connect a wallet, obtain signatures, transfer funds or automatically retry.
+
+```js
+// Continue only after the host has inspected this call's 402 paymentRequired.
+// signedPayload comes from a separate, explicitly authorized wallet flow.
+await call.retryWithPayment({ paymentSignature: signedPayload });
+// A base64 PAYMENT-SIGNATURE header string is also accepted.
+// After a lost response, retain the same call and proof:
+// await call.retryWithPayment();
+const paymentMetadata = call.getPaymentResponse();
+```
+
+The call snapshots URL/body and the first proof. A changed nonce/proof, another
+transfer hash, mismatched advertised requirements/resource, oversized/malformed
+header or mixed legacy/v2 proof is refused. Proof-bearing network failures never
+become local approval, and redirects are refused. `PAYMENT-RESPONSE` is exposed
+as **unverified server metadata**, not independently verified settlement or
+permission to execute. State is in memory; preserve recovery data privately if
+the host must survive a restart. Supplied evidence never authorizes a new payment.
+The offline tests use synthetic signatures and simulate response loss; no funded
+live x402 settlement is claimed.

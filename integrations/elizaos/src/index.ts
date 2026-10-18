@@ -1,3 +1,5 @@
+import type { EvidenceDiagnostics } from "./evaluation.js";
+import { evidenceDiagnostics } from "./evaluation.js";
 /**
  * Evidence checks for proposed transactions and escrow deliveries.
  * These checks do not sign transactions, perform live sanctions clearance,
@@ -5,7 +7,7 @@
  */
 import { createRetainedPaidCall, PaymentAdmissionError } from './paid-call.js';
 export { PaymentAdmissionError, NetworkRequestError } from './paid-call.js';
-export type { PaymentProof, RetainedPaidCall } from './paid-call.js';
+export type { PaymentProof, RetainedPaidCall, X402PaymentRequired, X402PaymentPayload } from './paid-call.js';
 
 export interface TransactionSafetyRequest {
   recipient: string;
@@ -16,7 +18,7 @@ export interface TransactionSafetyRequest {
   intent?: string;
 }
 
-export interface TransactionSafetyVerdict {
+export interface TransactionSafetyVerdict extends EvidenceDiagnostics {
   decision: "allow" | "reject" | "step_up_human_required";
   status: "clear" | "decision_ready" | "not_decision_ready" | "escalate";
   score: number;
@@ -56,7 +58,8 @@ export interface EscrowDisputeRequest {
   };
 }
 
-export interface EscrowDisputeRuling {
+export interface EscrowDisputeRuling extends EvidenceDiagnostics {
+  settlement_authorized: false;
   ruling: "RELEASE_TO_SELLER" | "REFUND_TO_BUYER" | "PARTIAL_SETTLEMENT" | "ESCALATE_HUMAN";
   status: "decision_ready" | "not_decision_ready";
   human_review_required: true;
@@ -105,9 +108,9 @@ export class AgendaGuardClient {
   constructor(config: string | AgendaGuardClientConfig = {}) {
     const options = typeof config === 'string' ? {endpoint:config} : config;
     this.endpoint = restEndpoint(options.endpoint ||
-      'https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev', '/v1/agent-financial/pre-sign-check');
+      'https://agent-financial-guard.agendamcp.dpdns.org', '/v1/agent-financial/pre-sign-check');
     this.escrowEndpoint = restEndpoint(options.escrowEndpoint ||
-      'https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev', '/v1/m2m-escrow/evaluate-dispute');
+      'https://m2m-escrow-arbiter.agendamcp.dpdns.org', '/v1/m2m-escrow/evaluate-dispute');
     this.timeoutMs = options.timeoutMs ?? 8000;
     if (!Number.isFinite(this.timeoutMs) || this.timeoutMs <= 0) throw new Error('timeoutMs must be positive');
     this.fetchImpl = options.fetch || globalThis.fetch?.bind(globalThis);
@@ -143,6 +146,7 @@ export class AgendaGuardClient {
         throw new Error('Missing bounded Financial Guard result');
       }
       return {
+        ...evidenceDiagnostics(verdict, verdict.decision === "reject"),
         decision: verdict.decision === "allow" ? "step_up_human_required" : verdict.decision,
         status: "not_decision_ready",
         score: Number.isFinite(verdict.score) && verdict.score >= 0 && verdict.score <= 100 ? verdict.score : 0,
@@ -181,6 +185,9 @@ export class AgendaGuardClient {
         Number.isFinite(result.score) && result.score >= 0 && result.score <= 100 && boundedPayout(payout) &&
         Math.round(payout.total_escrow_usd * 100) === Math.round(fallbackAmount * 100);
       return {
+        ...evidenceDiagnostics(result, false, !ready),
+        settlement_authorized: false,
+        authorization_granted: false,
         score: ready ? result.score : 0,
         ruling: ready ? result.ruling : "ESCALATE_HUMAN",
         status: ready ? "decision_ready" : "not_decision_ready",
@@ -236,7 +243,8 @@ export const agendaGuardPlugin = {
           // The action never funds or retries on behalf of a conversational agent.
           return {success:false, error:error instanceof Error ? error.message : 'Evaluation failed',
             data: error instanceof PaymentAdmissionError ? {
-              status:error.status, payment_details:error.details, payment_trace_id:error.paymentTraceId
+              status:error.status, payment_details:error.details, payment_trace_id:error.paymentTraceId,
+              payment_required:error.paymentRequired
             } : undefined,
             values:{signing_authorized:false,human_review_required:true}};
         }
@@ -246,7 +254,7 @@ export const agendaGuardPlugin = {
             data: verdict,
           });
         }
-        return {success:true, data:{...verdict}, values:{signing_authorized:false,human_review_required:true}};
+        return {success:true, data:{...verdict}, values:{signing_authorized:false,human_review_required:true, next_action:verdict.next_action}};
       },
     },
   ],
@@ -255,3 +263,5 @@ export const agendaGuardPlugin = {
 };
 
 export default agendaGuardPlugin;
+
+export type { EvidenceDiagnostics, NextAction, CheckStatus } from "./evaluation.js";
