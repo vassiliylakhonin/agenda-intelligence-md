@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Guard npm clients — 2026-10-18
+
+- Release independently versioned ElizaOS plugin 2.1.0 and mobile client 1.3.0 with canonical custom domains, current evidence diagnostics and transport of externally signed x402 v2 proofs. Preserve exact-request/proof recovery and legacy payments; no automatic funding, signing, retries, action authorization or settlement. SDK tests include current Worker fixtures and synthetic loss/recovery. Hosted/core version remains 1.17.0.
+
 ## 1.17.0 — 2026-10-18
 
 - Regenerate saved synthetic responses used by all twelve landing pages and verify them against actual handlers in every Worker test/deploy. Publish current advisory routing and conservative evidence boundaries under a new synchronized package, card and registry version.

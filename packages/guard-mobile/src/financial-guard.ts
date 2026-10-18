@@ -1,3 +1,4 @@
+import { evidenceDiagnostics } from "./evaluation.js";
 /**
  * AgentFinancialGuardClient
  * High-performance, zero-dependency client for pre-sign transaction safety checks on Cloudflare Edge.
@@ -15,7 +16,7 @@ import { evaluateLocalFallback } from "./local-rules.js";
 import { createRetainedPaidCall, NetworkRequestError } from "./paid-call.js";
 
 export const DEFAULT_FINANCIAL_GUARD_URL =
-  "https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/v1/agent-financial/pre-sign-check";
+  "https://agent-financial-guard.agendamcp.dpdns.org/v1/agent-financial/pre-sign-check";
 
 export class AgentFinancialGuardClient {
   private readonly endpoint: string;
@@ -67,7 +68,7 @@ export class AgentFinancialGuardClient {
   ): Promise<{ executionResult: T; checkResult: TransactionCheckResult }> {
     const checkResult = await this.check(input);
 
-    if (checkResult.decision === "reject") {
+    if (checkResult.decision === "reject" || checkResult.next_action === "block") {
       throw new TransactionBlockedError(checkResult);
     }
 
@@ -167,6 +168,7 @@ export class AgentFinancialGuardClient {
       const isSafe = false;
 
       return {
+        ...evidenceDiagnostics(verdict, decision === "reject"),
         isSafe,
         decision,
         score: Number.isFinite(verdict.score) && verdict.score >= 0 && verdict.score <= 100 ? verdict.score : 50,

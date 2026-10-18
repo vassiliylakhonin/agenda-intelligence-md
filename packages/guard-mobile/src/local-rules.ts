@@ -1,3 +1,4 @@
+import { evidenceDiagnostics } from "./evaluation.js";
 /**
  * Local offline security heuristics for on-device fallback.
  * Allows mobile agents to block known malicious addresses and drainers even without connectivity.
@@ -47,7 +48,7 @@ export interface LocalFallbackOptions {
   failClosed?: boolean;
 }
 
-export function evaluateLocalFallback(
+function evaluateLocalRules(
   input: TransactionCheckInput,
   options?: LocalFallbackOptions
 ): TransactionCheckResult {
@@ -183,4 +184,15 @@ export function evaluateLocalFallback(
     human_review_required: false,
     evaluated_by: "local_fallback"
   };
+}
+
+/** Local heuristics never establish sanctions clearance or spending-history authority. */
+export function evaluateLocalFallback(input: TransactionCheckInput, options?: LocalFallbackOptions): TransactionCheckResult {
+  const result = evaluateLocalRules(input, options);
+  return {...result, ...evidenceDiagnostics({
+    ...result,
+    next_action: result.decision === "reject" ? "block" : "insufficient",
+    check_status: { sanctions_aml: "not_assessed", velocity_limits: "not_assessed" },
+    check_scope: { sanctions_aml: "local_denylist_only", velocity_limits: "caller_reported_unverified" }
+  }, result.decision === "reject")};
 }

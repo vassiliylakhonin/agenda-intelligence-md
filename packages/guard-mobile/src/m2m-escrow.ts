@@ -1,3 +1,4 @@
+import { evidenceDiagnostics } from "./evaluation.js";
 /**
  * M2MEscrowClient
  * Supplied delivery-evidence review; no automatic settlement or verified receipt.
@@ -7,7 +8,7 @@ import type { ClientConfig, EscrowDisputeInput, EscrowDisputeResult } from "./ty
 import { createRetainedPaidCall } from "./paid-call.js";
 
 export const DEFAULT_M2M_ESCROW_URL =
-  "https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev/v1/m2m-escrow/evaluate-dispute";
+  "https://m2m-escrow-arbiter.agendamcp.dpdns.org/v1/m2m-escrow/evaluate-dispute";
 
 
 function boundedPayout(value: any): boolean {
@@ -50,6 +51,7 @@ export class M2MEscrowClient {
     if (typeof amount !== "number" || !Number.isFinite(amount) || amount < 0) throw new Error("amount_usd must be a non-negative finite number");
     const payload = {
       escrow_id: input.escrow_id,
+      ...(input.dispute_claim ? {dispute_claim: input.dispute_claim} : {}),
       deal_terms: input.deal_terms,
       specification: input.specification,
       delivery_submission: input.delivery_submission
@@ -66,6 +68,7 @@ export class M2MEscrowClient {
         Number.isFinite(rulingObj.score) && rulingObj.score >= 0 && rulingObj.score <= 100 &&
         boundedPayout(payout) && Math.round(payout.total_escrow_usd * 100) === Math.round(amount * 100);
       return {
+        ...evidenceDiagnostics(rulingObj, false, !ready),
         ruling: ready ? rulingObj.ruling : "ESCALATE_HUMAN",
         status: ready ? "decision_ready" : "not_decision_ready",
         score: ready ? rulingObj.score : 0,

@@ -1,3 +1,4 @@
+import type { EvidenceDiagnostics } from "./evaluation.js";
 /**
  * Types for @agenda-intelligence/guard-mobile
  * Ultra-lightweight types for mobile & on-device AI agent safety.
@@ -52,7 +53,7 @@ export interface TransactionCheckInput {
 
 export type GuardDecision = "allow" | "reject" | "step_up_human_required";
 
-export interface TransactionCheckResult {
+export interface TransactionCheckResult extends EvidenceDiagnostics {
   /** High-level boolean flag: true if the transaction passed all safety checks */
   isSafe: boolean;
   /** Deterministic decision from the firewall */
@@ -122,6 +123,7 @@ export interface DeliverySubmission {
 }
 
 export interface EscrowDisputeInput {
+  dispute_claim?: { claimant: "buyer" | "seller"; reason: string };
   escrow_id: string;
   deal_terms: DealTerms;
   specification: Specification;
@@ -132,7 +134,7 @@ export interface EscrowDisputeInput {
 
 export type EscrowRuling = "RELEASE_TO_SELLER" | "REFUND_TO_BUYER" | "PARTIAL_SETTLEMENT" | "ESCALATE_HUMAN";
 
-export interface EscrowDisputeResult {
+export interface EscrowDisputeResult extends EvidenceDiagnostics {
   human_review_required?: true;
   settlement_authorized?: false;
   ruling: EscrowRuling;
