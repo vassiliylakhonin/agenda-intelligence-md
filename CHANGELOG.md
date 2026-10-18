@@ -1,6 +1,8 @@
 # CHANGELOG
 
-## Unreleased
+## 1.17.0 — 2026-10-18
+
+- Regenerate saved synthetic responses used by all twelve landing pages and verify them against actual handlers in every Worker test/deploy. Publish current advisory routing and conservative evidence boundaries under a new synchronized package, card and registry version.
 
 - Add stable Output Verification reason codes/checks and optional five-minute ES256 evaluation attestations bound to the request and result. Enable the existing Output deployment, refuse signing failure, and preserve advisory verdicts, human review, prices and quotas. Include complete signed JSON for official x402 MCP clients that retain only text content; add trusted-origin client verification, explicit-budget paid example and synthetic replay/latency examples. No real payment or source-authenticity claim.
 
@@ -13,8 +15,6 @@
 
 - Legacy Bankability preview now separates delivered free output from the optional $25 scenario memo/schedule and exposes HTTP/MCP continuation on the caller's hostname. Correct payment instructions to require the funding-wallet challenge signature and exact-request retry; no pricing or entitlement changes.
 
-
-## Unreleased
 
 - Return a serialized, query-free JSON wire example after malformed hosted requests. Explain verbatim sending versus form encoding or double serialization, without echoing submitted content or bypassing payment.
 

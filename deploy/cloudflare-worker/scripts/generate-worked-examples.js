@@ -22,4 +22,11 @@ for(const profile of profiles){
  }
 }
 console.log=log;
-fs.writeFileSync(fileURLToPath(new URL('../src/worked-examples.js',import.meta.url)),'// Generated locally from published synthetic MCP examples. No live upstream or payment.\nexport const WORKED_EXAMPLES = '+JSON.stringify(examples,null,2)+';\n');console.log(Object.keys(examples).length+' fixtures generated');
+const target=fileURLToPath(new URL('../src/worked-examples.js',import.meta.url));
+const content='// Generated locally from published synthetic MCP examples. No live upstream or payment.\nexport const WORKED_EXAMPLES = '+JSON.stringify(examples,null,2)+';\n';
+if(process.argv.includes('--check')) {
+ if(fs.readFileSync(target,'utf8')!==content) {
+  console.error('Saved worked examples differ from actual handlers. Run node scripts/generate-worked-examples.js.');
+  process.exitCode=1;
+ } else console.log(Object.keys(examples).length+' worked examples match actual handlers');
+} else {fs.writeFileSync(target,content);console.log(Object.keys(examples).length+' fixtures generated');}
