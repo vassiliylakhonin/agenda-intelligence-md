@@ -151,6 +151,8 @@ Two of those files are load-bearing for tests, not just for readers: adding a ro
 
 ## Validation and CI checks
 
+Every maintainer-generated live fleet check, including an assistant simulating an external user, must send `X-Client-Id: agenda-owner-<purpose>` while preserving the SDK's normal User-Agent. This labels test purpose only; it grants no access or quota exemption. Never add this owner label to public client defaults or real users' requests. See [maintainer telemetry markers](docs/deployment/telemetry-demand-quality.md#maintainer-checks).
+
 Validation is first-class in this repo. What to run locally, in what order, and the dual-copy invariant are in [`docs/local-checks.md`](docs/local-checks.md). `make ci` is sufficient before most pushes.
 
 **Change discipline (replaces the old "no additions without approval" rule):**
