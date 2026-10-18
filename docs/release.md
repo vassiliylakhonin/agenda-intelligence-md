@@ -55,6 +55,12 @@ packaged skills, confirm:
 - contract fixtures either remain byte-for-byte stable or are regenerated with
   an explicit migration note.
 
+Worker verification also runs `node scripts/generate-worked-examples.js --check`
+inside `deploy/cloudflare-worker`. Regenerate with the same command without
+`--check` after intentional response changes. These saved synthetic responses
+are displayed on the public landings and must match the actual offline handler;
+successful live admission or a saved example is not a paid settlement test.
+
 ## PyPI Publishing
 
 The release workflows currently publish with the GitHub secret `PYPI_API_TOKEN`.

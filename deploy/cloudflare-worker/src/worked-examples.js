@@ -105,7 +105,11 @@ export const WORKED_EXAMPLES = {
         "package": "https://pypi.org/project/agenda-intelligence-md/",
         "command": "pip install agenda-intelligence-md",
         "mcp_server_command": "agenda-intelligence-mcp"
-      }
+      },
+      "next_action": "review",
+      "decision_kind": "evidence_review",
+      "authorization_granted": false,
+      "score_kind": "not_scored"
     }
   },
   "kazakhstan": {
@@ -141,8 +145,8 @@ export const WORKED_EXAMPLES = {
     "response": {
       "triage_recommendation": "escalate_before_signature",
       "risk_signal": "medium_high",
-      "decision_readiness_score": 20,
-      "decision_readiness_label": "not_decision_ready",
+      "decision_readiness_score": 0,
+      "decision_readiness_label": "insufficient_information",
       "operational_decision": {
         "decision": "escalate",
         "applies_to": "quote / sign the booking",
@@ -157,9 +161,7 @@ export const WORKED_EXAMPLES = {
           "jurisdiction": "Kazakhstan"
         }
       ],
-      "supplied_sources": [
-        "port_operator_notice"
-      ],
+      "supplied_sources": [],
       "minimum_sources_before_go": [
         "counterparty_registry_extract",
         "beneficial_ownership_source",
@@ -207,7 +209,7 @@ export const WORKED_EXAMPLES = {
       "human_review_required": true,
       "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
       "counterparty_readiness": {
-        "status": "incomplete",
+        "status": "insufficient_information",
         "required_total": 6,
         "supplied_count": 0,
         "missing_count": 6,
@@ -306,16 +308,20 @@ export const WORKED_EXAMPLES = {
         "scope": "reference_metadata_only",
         "source_content_verified": false,
         "freshness_verified": false,
-        "usable_source_types": [
-          "port_operator_notice"
+        "usable_source_types": [],
+        "issues": [
+          {
+            "source_index": 0,
+            "source_type": "port_operator_notice",
+            "issue": "Illustrative or placeholder material cannot establish source coverage."
+          }
         ],
-        "issues": [],
         "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
       },
       "readiness_contract": {
         "profile": "middle_corridor_deal_risk",
-        "status": "not_decision_ready",
-        "score": 20,
+        "status": "insufficient_information",
+        "score": 0,
         "routing": {
           "field": "triage_recommendation",
           "value": "escalate_before_signature"
@@ -346,7 +352,11 @@ export const WORKED_EXAMPLES = {
         ],
         "human_review_required": true,
         "boundary_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
-      }
+      },
+      "next_action": "insufficient",
+      "decision_kind": "evidence_review",
+      "authorization_granted": false,
+      "score_kind": "evidence_readiness"
     }
   },
   "cis_secondary_sanctions": {
@@ -415,7 +425,8 @@ export const WORKED_EXAMPLES = {
         "No EU consolidated sanctions list extract supplied.",
         "No ownership chain evidence supplied.",
         "No bank correspondent evidence supplied.",
-        "No transit or invoice evidence supplied."
+        "No transit or invoice evidence supplied.",
+        "Current sanctions name screening is not assessed; obtain a fresh source before relying on a negative result."
       ],
       "top_exposure_dimensions": [
         "indirect ownership or control exposure",
@@ -437,6 +448,14 @@ export const WORKED_EXAMPLES = {
         "Live sanctions-list retrieval is not currently enabled; triage is based on user-supplied evidence only.",
         "Name match against a sanctions list is not legal-entity identity verification. Human review is required."
       ],
+      "screening_assessment": {
+        "status": "not_assessed",
+        "freshness": "not_assessed",
+        "name_matches": null,
+        "identity_verified": false,
+        "ownership_verified": false,
+        "authorization_granted": false
+      },
       "source_record_review": {
         "policy_version": "source-records.v1",
         "scope": "reference_metadata_only",
@@ -464,7 +483,8 @@ export const WORKED_EXAMPLES = {
           "No EU consolidated sanctions list extract supplied.",
           "No ownership chain evidence supplied.",
           "No bank correspondent evidence supplied.",
-          "No transit or invoice evidence supplied."
+          "No transit or invoice evidence supplied.",
+          "Current sanctions name screening is not assessed; obtain a fresh source before relying on a negative result."
         ],
         "non_blocking_gaps": [],
         "claim_audit": [],
@@ -479,7 +499,11 @@ export const WORKED_EXAMPLES = {
         ],
         "human_review_required": true,
         "boundary_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
-      }
+      },
+      "next_action": "insufficient",
+      "decision_kind": "evidence_review",
+      "authorization_granted": false,
+      "score_kind": "evidence_readiness"
     }
   },
   "agentic_interaction_trust": {
@@ -611,7 +635,11 @@ export const WORKED_EXAMPLES = {
         ],
         "human_review_required": true,
         "boundary_notice": "Agentic interaction evidence triage only. Not cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice."
-      }
+      },
+      "next_action": "insufficient",
+      "decision_kind": "evidence_review",
+      "authorization_granted": false,
+      "score_kind": "evidence_readiness"
     }
   },
   "agent_output_verification": {
@@ -688,7 +716,55 @@ export const WORKED_EXAMPLES = {
         "Schema-level and structural only. Does not verify that any claim or quote is factually true.",
         "Does not fetch or validate cited sources; it checks declared support structure only.",
         "Caller-declared evidence is never externally verified here, so allow_relay and trust high are never issued from this gate: the best possible routing is verify_before_relay with mandatory human review. A quote counts as grounded only when its text appears in the cited evidence content."
-      ]
+      ],
+      "checks": [
+        {
+          "id": "claim.unsafe",
+          "claim_id": "customer-count",
+          "result": "fail",
+          "reason_code": "EVIDENCE_REFERENCE_MISSING"
+        },
+        {
+          "id": "quote.matched_excerpt",
+          "claim_id": "release-date",
+          "result": "pass",
+          "reason_code": "MATCHED_EXCERPT"
+        },
+        {
+          "id": "quote.matched_excerpt",
+          "claim_id": "customer-count",
+          "result": "not_assessed",
+          "reason_code": "QUOTE_NOT_ASSESSED"
+        },
+        {
+          "id": "source.authenticity",
+          "result": "not_assessed",
+          "reason_code": "SOURCE_NOT_AUTHENTICATED"
+        },
+        {
+          "id": "claim.factual_truth",
+          "result": "not_assessed",
+          "reason_code": "FACTUAL_TRUTH_NOT_ASSESSED"
+        },
+        {
+          "id": "output.dlp",
+          "result": "not_assessed",
+          "reason_code": "DLP_NOT_ASSESSED"
+        }
+      ],
+      "reason_codes": [
+        "EVIDENCE_REFERENCE_MISSING",
+        "QUOTE_NOT_ASSESSED",
+        "SOURCE_NOT_AUTHENTICATED",
+        "FACTUAL_TRUTH_NOT_ASSESSED",
+        "DLP_NOT_ASSESSED",
+        "EVIDENCE_GAP",
+        "HUMAN_REVIEW_REQUIRED"
+      ],
+      "next_action": "block",
+      "decision_kind": "evidence_review",
+      "authorization_granted": false,
+      "score_kind": "evidence_readiness"
     },
     "follow_up": {
       "kind": "precomputed_synthetic_correction",
@@ -746,7 +822,41 @@ export const WORKED_EXAMPLES = {
           "Schema-level and structural only. Does not verify that any claim or quote is factually true.",
           "Does not fetch or validate cited sources; it checks declared support structure only.",
           "Caller-declared evidence is never externally verified here, so allow_relay and trust high are never issued from this gate: the best possible routing is verify_before_relay with mandatory human review. A quote counts as grounded only when its text appears in the cited evidence content."
-        ]
+        ],
+        "checks": [
+          {
+            "id": "quote.matched_excerpt",
+            "claim_id": "release-date",
+            "result": "pass",
+            "reason_code": "MATCHED_EXCERPT"
+          },
+          {
+            "id": "source.authenticity",
+            "result": "not_assessed",
+            "reason_code": "SOURCE_NOT_AUTHENTICATED"
+          },
+          {
+            "id": "claim.factual_truth",
+            "result": "not_assessed",
+            "reason_code": "FACTUAL_TRUTH_NOT_ASSESSED"
+          },
+          {
+            "id": "output.dlp",
+            "result": "not_assessed",
+            "reason_code": "DLP_NOT_ASSESSED"
+          }
+        ],
+        "reason_codes": [
+          "SOURCE_NOT_AUTHENTICATED",
+          "FACTUAL_TRUTH_NOT_ASSESSED",
+          "DLP_NOT_ASSESSED",
+          "EVIDENCE_GAP",
+          "HUMAN_REVIEW_REQUIRED"
+        ],
+        "next_action": "insufficient",
+        "decision_kind": "evidence_review",
+        "authorization_granted": false,
+        "score_kind": "evidence_readiness"
       }
     }
   },
@@ -903,7 +1013,11 @@ export const WORKED_EXAMPLES = {
         ],
         "human_review_required": true,
         "boundary_notice": "Maritime sanctions and chokepoint-disruption evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice. Does not resolve vessel ownership or verify identity."
-      }
+      },
+      "next_action": "insufficient",
+      "decision_kind": "evidence_review",
+      "authorization_granted": false,
+      "score_kind": "evidence_readiness"
     }
   },
   "market_entry_readiness": {
@@ -930,7 +1044,7 @@ export const WORKED_EXAMPLES = {
       "human_review_required": true,
       "summary": "The concept is taking shape, but the validation-tier evidence is incomplete, so the file is not yet ready for controlled validation.",
       "confirmed_facts": [
-        "The decision is at pre signature stage."
+        "The caller describes the decision as pre signature stage; not independently verified."
       ],
       "assumptions": [
         "Public cost benchmarks are not signed quotes.",
@@ -1287,7 +1401,11 @@ export const WORKED_EXAMPLES = {
         ],
         "human_review_required": true,
         "boundary_notice": "Internal evidence triage only. Not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice."
-      }
+      },
+      "next_action": "insufficient",
+      "decision_kind": "evidence_review",
+      "authorization_granted": false,
+      "score_kind": "not_scored"
     }
   },
   "critical_minerals_due_diligence": {
@@ -1339,25 +1457,38 @@ export const WORKED_EXAMPLES = {
       "dossier_review": {
         "policy_version": "mineral-dossier.v2",
         "assessment_date": "2026-10-05",
-        "eligible_source_types": [
-          "mining_concession_or_license_extract",
-          "certified_ore_assay_report"
-        ],
+        "eligible_source_types": [],
         "source_reviews": [
           {
             "source_ref": "supplied_sources[0]",
             "source_type": "mining_concession_or_license_extract",
-            "status": "eligible_for_review",
-            "issues": []
+            "status": "needs_evidence",
+            "issues": [
+              "Illustrative or placeholder material is not documentary evidence."
+            ]
           },
           {
             "source_ref": "supplied_sources[1]",
             "source_type": "certified_ore_assay_report",
-            "status": "eligible_for_review",
-            "issues": []
+            "status": "needs_evidence",
+            "issues": [
+              "Illustrative or placeholder material is not documentary evidence."
+            ]
           }
         ],
         "owner_actions": [
+          {
+            "source_type": "mining_concession_or_license_extract",
+            "owner": "supplier / dossier owner",
+            "priority": "before_decision",
+            "action": "Supply mining concession or license extract with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
+          {
+            "source_type": "certified_ore_assay_report",
+            "owner": "supplier / dossier owner",
+            "priority": "before_decision",
+            "action": "Supply certified ore assay report with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
           {
             "source_type": "beneficial_ownership_due_diligence",
             "owner": "supplier / dossier owner",
@@ -1406,14 +1537,16 @@ export const WORKED_EXAMPLES = {
           "No automatic transaction approval; a complete dossier still requires human sign-off."
         ]
       },
-      "triage_recommendation": "escalate_before_offtake",
+      "triage_recommendation": "insufficient_information",
       "risk_signal": "unknown",
-      "decision_readiness_score": 25,
-      "decision_readiness_label": "not_decision_ready",
+      "decision_readiness_score": 0,
+      "decision_readiness_label": "insufficient_information",
       "operational_decision": {
         "decision": "request_evidence",
         "reason_code": "critical_evidence_gaps",
         "blocking_gaps": [
+          "Missing reviewable source: mining concession or license extract",
+          "Missing reviewable source: certified ore assay report",
           "Missing reviewable source: beneficial ownership due diligence",
           "Missing reviewable source: export quota and permit clearance",
           "Missing reviewable source: responsible sourcing due diligence",
@@ -1425,7 +1558,7 @@ export const WORKED_EXAMPLES = {
       },
       "commodity": "lithium",
       "origin_jurisdiction": "Kazakhstan",
-      "traceability_status": "partial",
+      "traceability_status": "unverified",
       "export_control_exposure": {
         "quota_restricted": false,
         "processing_monopoly_risk": false,
@@ -1436,6 +1569,8 @@ export const WORKED_EXAMPLES = {
         "certified_ore_assay_report"
       ],
       "minimum_sources_before_go": [
+        "mining_concession_or_license_extract",
+        "certified_ore_assay_report",
         "beneficial_ownership_due_diligence",
         "export_quota_and_permit_clearance",
         "responsible_sourcing_due_diligence",
@@ -1444,6 +1579,8 @@ export const WORKED_EXAMPLES = {
         "regulatory_applicability_memo"
       ],
       "evidence_gaps": [
+        "Missing reviewable source: mining concession or license extract",
+        "Missing reviewable source: certified ore assay report",
         "Missing reviewable source: beneficial ownership due diligence",
         "Missing reviewable source: export quota and permit clearance",
         "Missing reviewable source: responsible sourcing due diligence",
@@ -1454,20 +1591,20 @@ export const WORKED_EXAMPLES = {
       "top_risks": [
         {
           "category": "Dossier Traceability Coverage",
-          "severity": "medium",
-          "description": "Caller-supplied documentary traceability status is partial for lithium originating from Kazakhstan."
+          "severity": "high",
+          "description": "Caller-supplied documentary traceability status is unverified for lithium originating from Kazakhstan."
         }
       ],
       "exposure_layers": [
         {
           "layer": "mining_concession_or_license_extract",
-          "level": "eligible_for_review",
-          "summary": "Caller-supplied scoped excerpt; authenticity and applicability unverified"
+          "level": "needs_evidence",
+          "summary": "Illustrative or placeholder material is not documentary evidence."
         },
         {
           "layer": "certified_ore_assay_report",
-          "level": "eligible_for_review",
-          "summary": "Caller-supplied scoped excerpt; authenticity and applicability unverified"
+          "level": "needs_evidence",
+          "summary": "Illustrative or placeholder material is not documentary evidence."
         }
       ],
       "watch_next": [
@@ -1478,7 +1615,7 @@ export const WORKED_EXAMPLES = {
       "human_review_required": true,
       "not_advice_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice.",
       "run_provenance": {
-        "contract_version": "1.16.2",
+        "contract_version": "1.17.0",
         "input_digest": "sha256:canonical",
         "schema_uri": "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/schemas/v1/critical-minerals-due-diligence-response.schema.json"
       },
@@ -1486,14 +1623,16 @@ export const WORKED_EXAMPLES = {
       "target_market": "eu",
       "readiness_contract": {
         "profile": "critical_minerals_due_diligence",
-        "status": "not_decision_ready",
-        "score": 25,
+        "status": "insufficient_information",
+        "score": 0,
         "routing": {
           "field": "triage_recommendation",
-          "value": "escalate_before_offtake"
+          "value": "insufficient_information"
         },
         "signal": null,
         "blocking_gaps": [
+          "Missing reviewable source: mining concession or license extract",
+          "Missing reviewable source: certified ore assay report",
           "Missing reviewable source: beneficial ownership due diligence",
           "Missing reviewable source: export quota and permit clearance",
           "Missing reviewable source: responsible sourcing due diligence",
@@ -1504,6 +1643,18 @@ export const WORKED_EXAMPLES = {
         "non_blocking_gaps": [],
         "claim_audit": [],
         "owner_actions": [
+          {
+            "source_type": "mining_concession_or_license_extract",
+            "owner": "supplier / dossier owner",
+            "priority": "before_decision",
+            "action": "Supply mining concession or license extract with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
+          {
+            "source_type": "certified_ore_assay_report",
+            "owner": "supplier / dossier owner",
+            "priority": "before_decision",
+            "action": "Supply certified ore assay report with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+          },
           {
             "source_type": "beneficial_ownership_due_diligence",
             "owner": "supplier / dossier owner",
@@ -1548,7 +1699,11 @@ export const WORKED_EXAMPLES = {
         ],
         "human_review_required": true,
         "boundary_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice."
-      }
+      },
+      "next_action": "insufficient",
+      "decision_kind": "evidence_review",
+      "authorization_granted": false,
+      "score_kind": "evidence_readiness"
     }
   },
   "dual_use_technology_export": {
@@ -1583,7 +1738,7 @@ export const WORKED_EXAMPLES = {
       "risk_question": "Is this file complete enough for export-control human review?"
     },
     "response": {
-      "contract_version": "1.16.2",
+      "contract_version": "1.17.0",
       "profile": "dual_use_technology_export",
       "export_risk_triage": {
         "status": "ready_for_human_review",
@@ -1617,7 +1772,11 @@ export const WORKED_EXAMPLES = {
           "issues": [],
           "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
         }
-      }
+      },
+      "next_action": "review",
+      "decision_kind": "evidence_review",
+      "authorization_granted": false,
+      "score_kind": "not_scored"
     }
   },
   "corridor_sanctions_assistant": {
@@ -1652,7 +1811,11 @@ export const WORKED_EXAMPLES = {
         "next_step": "Email a one-line description (route or counterparty + the next decision or review). Fit, scope, fee, and timing are confirmed before work starts."
       },
       "human_review_required": true,
-      "not_advice_notice": "Orientation and routing only. Not legal, compliance, sanctions, financial, investment, or insurance advice, and not an autonomous decision system. The structured gates perform the triage; human review is required before any commercial action."
+      "not_advice_notice": "Orientation and routing only. Not legal, compliance, sanctions, financial, investment, or insurance advice, and not an autonomous decision system. The structured gates perform the triage; human review is required before any commercial action.",
+      "next_action": "review",
+      "decision_kind": "evidence_review",
+      "authorization_granted": false,
+      "score_kind": "not_scored"
     }
   },
   "agent_financial_guard": {
@@ -1691,6 +1854,17 @@ export const WORKED_EXAMPLES = {
         "status": "not_decision_ready",
         "decision": "step_up_human_required",
         "score": 55,
+        "next_action": "insufficient",
+        "decision_kind": "evidence_review",
+        "authorization_granted": false,
+        "score_kind": "risk",
+        "check_status": {
+          "sanctions_aml": "not_assessed",
+          "local_denylist": "pass",
+          "contract_security": "pass",
+          "prompt_injection": "pass",
+          "velocity_limits": "not_assessed"
+        },
         "checks": {
           "sanctions_aml": false,
           "contract_security": true,
@@ -1722,7 +1896,11 @@ export const WORKED_EXAMPLES = {
           "velocity_limits": "caller_reported_unverified"
         },
         "execution_advisory": "Human review required before signing: spending history, policy authority, and current sanctions status are unverified."
-      }
+      },
+      "next_action": "insufficient",
+      "decision_kind": "evidence_review",
+      "authorization_granted": false,
+      "score_kind": "risk"
     }
   },
   "m2m_escrow_arbiter": {
@@ -1762,6 +1940,10 @@ export const WORKED_EXAMPLES = {
       "contract_version": "1.1.0",
       "profile": "m2m_escrow_arbiter",
       "arbitration_ruling": {
+        "next_action": "insufficient",
+        "decision_kind": "evidence_review",
+        "authorization_granted": false,
+        "score_kind": "not_scored",
         "status": "not_decision_ready",
         "ruling": "ESCALATE_HUMAN",
         "score": 0,
@@ -1797,7 +1979,11 @@ export const WORKED_EXAMPLES = {
         "human_review_required": true,
         "not_advice_notice": "Evaluation of supplied evidence only; this response does not execute or authorize settlement.",
         "execution_advisory": "Required evidence could not be verified. Hold escrow pending human review; no payout is authorized."
-      }
+      },
+      "next_action": "insufficient",
+      "decision_kind": "evidence_review",
+      "authorization_granted": false,
+      "score_kind": "not_scored"
     }
   }
 };
