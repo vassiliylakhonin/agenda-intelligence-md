@@ -9,7 +9,9 @@ import os
 import re
 import socket
 import ssl
+import subprocess
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -18,6 +20,49 @@ ROOT = Path(__file__).resolve().parents[1]
 USER_AGENT = "Agenda-MCP-Monitor/1.0"
 OWNER_CLIENT_ID = "agenda-owner-mcp-monitor"
 MAX_BYTES = 1_000_000
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+READ_OPENER = urllib.request.build_opener(NoRedirect)
+
+
+def unique_json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate field in signed discovery JSON")
+        result[key] = value
+    return result
+
+
+def reject_json_constant(_value):
+    raise ValueError("Non-finite value in signed discovery JSON")
+
+
+def verify_card_signature(origin, card, jwks):
+    """Offline public-key check; the subprocess never fetches a key URL."""
+    run = subprocess.run(
+        ["node", str(ROOT / "scripts/verify_agent_card.mjs")],
+        input=json.dumps(
+            {"origin": origin, "card": card, "jwks": jwks}, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+        ),
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    try:
+        result = json.loads(run.stdout)
+    except ValueError as error:
+        raise ValueError("Signature verifier did not return a JSON result") from error
+    if not isinstance(result, dict) or type(result.get("passed")) is not bool:
+        raise ValueError("Invalid signature verifier result")
+    if run.returncode != 0 and result["passed"]:
+        raise ValueError("Signature verifier failed")
+    return result
 
 
 def transient_transport_error(error):
@@ -86,16 +131,19 @@ def probe(url, body=None, identify=True):
         headers["Content-Type"] = "application/json"
     request = urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(), headers=headers)
     try:
-        response = urllib.request.urlopen(request, timeout=20)
+        response = READ_OPENER.open(request, timeout=20)
     except urllib.error.HTTPError as error:
         response = error
     with response:
         raw = response.read(MAX_BYTES + 1)
         if len(raw) > MAX_BYTES:
             raise ValueError("Response exceeded monitor size limit")
+        signed_document = urllib.parse.urlsplit(url).path in {"/.well-known/agent-card.json", "/.well-known/jwks.json"}
         try:
-            data = json.loads(raw)
+            data = json.loads(raw, object_pairs_hook=unique_json_object, parse_constant=reject_json_constant)
         except ValueError:
+            if signed_document and response.status == 200:
+                raise ValueError("Invalid signed discovery JSON") from None
             data = {}
         return {"status": response.status, "data": data, "ray_id": response.headers.get("CF-Ray")}
 
@@ -170,16 +218,29 @@ async def check_host(name):
     async def read_probe(label, *args):
         return await transport_retry(lambda: asyncio.to_thread(probe, *args), label, transport_events)
 
+    card = None
     for label, path in [("health", "/health"), ("a2a_card", "/.well-known/agent-card.json")]:
         try:
             response = await read_probe(label, origin + path)
             data = response["data"]
             valid = response["status"] == 200 and bool(data)
             if label == "a2a_card":
-                valid = valid and bool(data.get("skills")) and bool(data.get("name"))
+                valid = valid and isinstance(data, dict) and bool(data.get("skills")) and bool(data.get("name"))
+                if valid:
+                    card = data
             checks.append({"check": label, "passed": valid, "status": response["status"]})
         except Exception as error:
             checks.append({"check": label, "passed": False, "error": str(error)[:500]})
+    try:
+        if card is None:
+            raise ValueError("Signed card unavailable")
+        jwks = await read_probe("a2a_card_jwks", origin + "/.well-known/jwks.json")
+        if jwks["status"] != 200:
+            raise ValueError("Public JWKS unavailable")
+        signature = await asyncio.to_thread(verify_card_signature, origin, card, jwks["data"])
+        checks.append({"check": "a2a_card_signature", **signature})
+    except Exception as error:
+        checks.append({"check": "a2a_card_signature", "passed": False, "error": str(error)[:500]})
     try:
         discovery = await transport_retry(
             lambda: asyncio.wait_for(sdk_discovery(origin + "/mcp", baseline[name]), timeout=50),
@@ -251,11 +312,18 @@ async def main():
     report = {"checked_at": datetime.now(timezone.utc).isoformat(), "read_only": True, "hosts": hosts}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
-    lines = ["# Live MCP discovery", "", "| Host | SDK / urllib app / health / A2A | Default urllib |", "|---|---|---|"]
+    lines = [
+        "# Live MCP discovery",
+        "",
+        "| Host | SDK / urllib app / health / signed A2A | Card signature | Default urllib |",
+        "|---|---|---|---|",
+    ]
     for host in hosts:
         passed = all(check["passed"] for check in host["checks"])
+        signature = next(check for check in host["checks"] if check["check"] == "a2a_card_signature")
         lines.append(
-            f"| {host['host']} | {'PASS' if passed else 'FAIL'} | {host['default_urllib']['classification']} |"
+            f"| {host['host']} | {'PASS' if passed else 'FAIL'} | "
+            f"{'PASS' if signature['passed'] else 'FAIL'} | {host['default_urllib']['classification']} |"
         )
     summary = "\n".join(lines) + "\n"
     print(summary)

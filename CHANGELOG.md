@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Operational signature monitoring — 2026-10-19
+
+- Require deployed A2A card ES256 signatures in the existing thirteen-host MCP compatibility monitor. Read public JWKS only from configured canonical HTTPS origins, refuse redirects and ambiguous JSON/keys, verify every published signature and confirm altered cards fail. Report a failing signature as a required monitor failure on the existing schedule and post-deploy runs. Add negative/rotation regressions without changing service versions, signing keys, evaluation, authentication, payment or deployment behavior.
+
 ## 1.19.0 — 2026-10-19
 
 - Add free schema-only input preflight over hosted MCP and HTTP across twelve profiles, with bounded static validators, JSON Pointer diagnostics and no evaluation or trial consumption. Publish same-origin tool schemas, synthetic examples and per-host machine contracts; expand fleet routing metadata and complete nested Financial Guard/Escrow input schemas. Synchronize x402/card/payment discovery with configured v2 and separate optional shared offerings. Preserve domain verdicts, authorization, prices, settlement and quotas; shape validation is not evidence verification or action approval. Include a dependency-free discovery/preflight client and all-profile contract regressions.
