@@ -31,7 +31,7 @@ def test_default_urllib_probe_is_marked_without_changing_user_agent(monkeypatch)
         requests.append(request)
         return Response(b'{"result":{}}')
 
-    monkeypatch.setattr(monitor.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(monitor.READ_OPENER, "open", urlopen)
     assert monitor.probe("https://example.test/mcp", monitor.default_initialize(), identify=False)["status"] == 200
     assert requests[0].get_header("X-client-id") == monitor.OWNER_CLIENT_ID
     assert requests[0].get_header("User-agent") is None
@@ -241,6 +241,8 @@ def test_check_host_recovers_health_transport_but_reports_default_403(monkeypatc
             data = {"status": "ok"}
         elif url.endswith("/agent-card.json"):
             data = {"name": name, "skills": ["verify"]}
+        elif url.endswith("/jwks.json"):
+            data = {"keys": []}
         elif not identify:
             return {"status": 403, "data": {"cloudflare_error": True, "error_code": 1010}, "ray_id": "test"}
         elif body["method"] == "initialize":
@@ -255,6 +257,7 @@ def test_check_host_recovers_health_transport_but_reports_default_403(monkeypatc
 
     monkeypatch.setattr(monitor, "probe", probe)
     monkeypatch.setattr(monitor, "sdk_discovery", sdk)
+    monkeypatch.setattr(monitor, "verify_card_signature", lambda *args: {"passed": True})
     host = asyncio.run(monitor.check_host(name))
     assert all(check["passed"] for check in host["checks"])
     assert len(health_calls) == 2
@@ -289,3 +292,89 @@ def test_transport_classification_works_without_optional_sdk(monkeypatch):
 
     monkeypatch.setattr(builtins, "__import__", without_httpx)
     assert not monitor.transient_transport_error(ValueError("catalog drift"))
+
+
+def test_signature_verifier_contracts():
+    subprocess.run(
+        ["node", "--test", "tests/test_agent_card_monitor.mjs"],
+        cwd=monitor.ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+
+@pytest.mark.parametrize("raw", [b'{"name":"first","name":"second"}', b'{"name":NaN}', b'{"name":'])
+def test_signed_discovery_json_refuses_ambiguous_or_invalid_documents(monkeypatch, raw):
+    class Response(io.BytesIO):
+        status = 200
+        headers = {}
+
+    monkeypatch.setattr(monitor.READ_OPENER, "open", lambda *args, **kwargs: Response(raw))
+    for path in ["/.well-known/agent-card.json", "/.well-known/jwks.json"]:
+        with pytest.raises(ValueError, match="Invalid signed discovery JSON"):
+            monitor.probe("https://example.test" + path)
+
+
+def test_monitor_rejects_redirect_without_following_it():
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    paths = []
+
+    class Redirect(BaseHTTPRequestHandler):
+        def do_GET(self):
+            paths.append(self.path)
+            self.send_response(302 if self.path == "/start" else 200)
+            self.send_header("Location", "/unexpected")
+            self.end_headers()
+
+        def log_message(self, *_args):
+            pass
+
+    with ThreadingHTTPServer(("127.0.0.1", 0), Redirect) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            result = monitor.probe(f"http://127.0.0.1:{server.server_port}/start")
+            assert result["status"] == 302
+            assert paths == ["/start"]
+        finally:
+            server.shutdown()
+            thread.join()
+
+
+def test_invalid_signature_makes_the_complete_host_check_fail(monkeypatch):
+    name = "vizier"
+    baseline = json.loads((monitor.ROOT / "scripts/mcp-catalog-baseline.json").read_text())[name]
+    requests = []
+
+    def probe(url, body=None, identify=True):
+        requests.append(url)
+        if url.endswith("/health"):
+            data = {"status": "ok"}
+        elif url.endswith("/agent-card.json"):
+            data = {"name": "Fixture", "skills": ["verify"]}
+        elif url.endswith("/jwks.json"):
+            data = {"keys": []}
+        elif body["method"] == "initialize":
+            data = {"result": {"protocolVersion": "2025-03-26", "serverInfo": {"name": name}}}
+        else:
+            data = {"result": {"tools": [{"name": value} for value in baseline]}}
+        return {"status": 200, "data": data, "ray_id": "fixture"}
+
+    async def sdk(url, expected):
+        return {"tools": expected, "protocol": "2025-03-26"}
+
+    monkeypatch.setattr(monitor, "probe", probe)
+    monkeypatch.setattr(monitor, "sdk_discovery", sdk)
+    monkeypatch.setattr(
+        monitor, "verify_card_signature", lambda *args: {"passed": False, "reason": "invalid_signature"}
+    )
+    host = asyncio.run(monitor.check_host(name))
+    signature = next(check for check in host["checks"] if check["check"] == "a2a_card_signature")
+    assert not signature["passed"]
+    assert monitor.failed({"hosts": [host]})
+    assert requests.count("https://vizier.agendamcp.dpdns.org/.well-known/jwks.json") == 1
+    assert all(url.startswith("https://vizier.agendamcp.dpdns.org/") for url in requests)
