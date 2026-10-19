@@ -18,11 +18,11 @@ export function a2aTrialInput(payload) {
     typeof selector !== "object" ||
     Array.isArray(selector) ||
     Object.keys(selector).some((key) => key !== "operation") ||
-    !["status", "evaluate"].includes(selector.operation)
+    !["status", "evaluate", "feedback"].includes(selector.operation)
   ) {
     return {
       error:
-        "Set message.metadata[com.agenda/free-trial] to {operation: status} or {operation: evaluate}.",
+        "Set message.metadata[com.agenda/free-trial] to {operation: status}, {operation: evaluate} or {operation: feedback}.",
     };
   }
   if (message.taskId)
@@ -53,9 +53,9 @@ export function a2aTrialInput(payload) {
   )
     return {
       error:
-        "Evaluation requires one application/json data part containing the fixed product input.",
+        "Evaluation or feedback requires one application/json data part containing the operation input.",
     };
-  return { operation: "evaluate", input: parts[0].data };
+  return { operation: selector.operation, input: parts[0].data };
 }
 export function a2aTrialDiscovery(example) {
   const message = (operation) => ({
@@ -75,6 +75,8 @@ export function a2aTrialDiscovery(example) {
     legacy_method: "message/send",
     status_message: message("status"),
     evaluation_message: message("evaluate"),
+    feedback_message:{...message('feedback'),parts:[{data:{attempt_id:'replace-with-trial.attempt_id',response:'still_blocked'},mediaType:'application/json'}]},
+    feedback_note:'Optional self-reported usefulness only; same network/product and a recent completed trial required. No extra evaluation or allowance.',
     example_is_synthetic: true,
     allowance:
       "Shares the same product/network campaign and fleet daily capacity with HTTP and MCP; no extra allowance.",

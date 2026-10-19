@@ -88,6 +88,20 @@ evidence, unreliable material, assumptions, next action, and escalation conditio
 ## Hosted connection
 
 See the [hosted quickstart](../deployment/hosted-quickstart.md) for MCP/A2A.
-Discovery and the site's saved fictional worked example are free. Hosted evaluation
-of your own input uses the configured signed payment flow. No purchase is needed
-to inspect schemas, examples and the integration contract.
+Discovery and the site's saved fictional worked example are free. An enabled trial
+also permits two evaluations of your own dossier per network/product campaign,
+subject to shared daily capacity and any configured production authentication.
+HTTP, MCP and A2A share that allowance. The ordinary paid evaluation tool retains
+its configured signed payment flow.
+
+For the two-step pre-offtake trial, see [the agent pilot](../pilots/critical-minerals-offtake.md).
+Use MCP `free_trial_status`, then `free_trial`; keep `trial.attempt_id`. Review
+`evaluation.dossier_review.owner_actions`, obtain missing authorized source
+excerpts, and rerun with the updated dossier. Each admitted evaluation consumes
+one attempt; there is no automatic retry or additional allowance for a follow-up.
+
+Optionally call `free_trial_feedback` with only `attempt_id` and your actual
+`response` (`useful_next_step` or `still_blocked`). A2A clients use the advertised
+`feedback` operation of `com.agenda/free-trial`. Feedback is bound to a recent
+completion on the same network and product; it consumes no evaluation attempt.
+Do not automatically mark an HTTP success as useful or submit private input text.

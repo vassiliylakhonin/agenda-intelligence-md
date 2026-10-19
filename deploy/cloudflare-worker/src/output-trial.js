@@ -1,7 +1,7 @@
 import { readBoundedJson } from './request-body.js';
 import { paymentTraceId, paymentTraceResponse } from './payment-trace.js';
 import { tokenHash } from './payment-ledger.js';
-import { trialProfile, trialPath, OUTPUT_TRIAL_PATH, MCP_TRIAL_TOOL, MCP_TRIAL_STATUS_TOOL } from './trial-profiles.js';
+import { trialProfile, trialPath, OUTPUT_TRIAL_PATH, MCP_TRIAL_TOOL, MCP_TRIAL_STATUS_TOOL, MCP_TRIAL_FEEDBACK_TOOL } from './trial-profiles.js';
 import { recordTrialCompletion } from './trial-receipts.js';
 
 export { OUTPUT_TRIAL_PATH };
@@ -21,7 +21,14 @@ export function outputTrialTerms(profile = 'agent_output_verification') {
   const config = trialProfile(profile);
   return { endpoint: trialPath(profile), agent_profile: profile, tool: config.tool,
     mcp_tool: MCP_TRIAL_TOOL, mcp_status_tool: MCP_TRIAL_STATUS_TOOL,
-    a2a: {endpoint:'/message/send',method:'SendMessage',metadata_key:'com.agenda/free-trial',operations:['status','evaluate'],shared_allowance:true},
+    feedback:{mcp_tool:MCP_TRIAL_FEEDBACK_TOOL,endpoint:'/telemetry/trial-feedback',
+      responses:['useful_next_step','still_blocked'],optional:true,requires_recent_completion:true,
+      scope:'Same network and product as trial.attempt_id; no evaluation or allowance consumption. Do not send input or result text.'},
+    follow_up:{mcp_tool:MCP_TRIAL_TOOL,consumes_another_attempt:true,
+      guidance:profile==='critical_minerals_due_diligence'
+        ? 'Review dossier_review.owner_actions, obtain the missing authorized source excerpts and rerun with the updated dossier. Keep project, commodity and scope consistent. Do not retry unchanged input just to raise the score; illustrative evidence remains insufficient.'
+        : 'Review the evidence gaps and rerun only after updating your supplied input. Each admitted rerun consumes another attempt; no automatic retry.'},
+    a2a: {endpoint:'/message/send',method:'SendMessage',metadata_key:'com.agenda/free-trial',operations:['status','evaluate','feedback'],shared_allowance:true},
     availability_endpoint: trialPath(profile) + '?availability=1',
     worked_example_url: '/?example=1#worked-example',
     evaluation_kind: config.kind || 'evidence_review', attempts_per_network: trialAttemptLimit(profile),
@@ -152,6 +159,6 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
       trial: { ...terms, attempt_consumed: true } }, 503);
   }
   log('preview_completed', 'free_trial', 200);
-  return reply({ ...result, trial: { ...terms, attempt_consumed: true, completion_recorded: true,
+  return reply({ ...result, trial: { ...terms, attempt_id:attempt, attempt_consumed: true, completion_recorded: true,
     note: 'Free evaluation; not a paid execution. Human review is required.' } });
 }

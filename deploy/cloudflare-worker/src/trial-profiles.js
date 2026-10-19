@@ -3,8 +3,9 @@ export const WORKER_TRIAL_PATH = '/v1/trial';
 export const OUTPUT_TRIAL_PATH = '/v1/agent-output/trial';
 export const MCP_TRIAL_TOOL = 'free_trial';
 export const MCP_TRIAL_STATUS_TOOL = 'free_trial_status';
+export const MCP_TRIAL_FEEDBACK_TOOL = 'free_trial_feedback';
 export function isMcpTrialTool(name) {
-  return name === MCP_TRIAL_TOOL || name === MCP_TRIAL_STATUS_TOOL;
+  return name === MCP_TRIAL_TOOL || name === MCP_TRIAL_STATUS_TOOL || name === MCP_TRIAL_FEEDBACK_TOOL;
 }
 export const TRIAL_PROFILES = Object.freeze({
   agenda: { tool: 'strategic_risk_triage', kind: 'routing' },

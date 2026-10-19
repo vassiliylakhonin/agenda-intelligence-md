@@ -1,4 +1,5 @@
-import { MCP_TRIAL_TOOL, MCP_TRIAL_STATUS_TOOL } from './trial-profiles.js';
+import { MCP_TRIAL_TOOL, MCP_TRIAL_STATUS_TOOL, MCP_TRIAL_FEEDBACK_TOOL } from './trial-profiles.js';
+import { TRIAL_FEEDBACK_SCHEMA } from './trial-feedback.js';
 
 // One fixed profile operation, with its canonical schema. Neither tool accepts
 // profile/tool selection or payment material. Admission remains in the shared
@@ -21,14 +22,21 @@ export function mcpTrialTools(adapter, terms) {
     inputSchema: adapter.inputSchema,
     outputSchema: { type:'object', required:['evaluation','trial'], additionalProperties:false,
       properties: { evaluation:{type:'object',additionalProperties:true}, trial:{type:'object',
-        required:['agent_profile','tool','payment_required','attempt_consumed','completion_recorded'],
-        properties:{agent_profile:{const:terms.agent_profile},tool:{const:terms.tool},
+        required:['agent_profile','tool','payment_required','attempt_id','attempt_consumed','completion_recorded'],
+        properties:{agent_profile:{const:terms.agent_profile},tool:{const:terms.tool},attempt_id:{type:'string',format:'uuid'},
           payment_required:{const:false},attempt_consumed:{const:true},completion_recorded:{const:true}} } } },
     annotations: { readOnlyHint:false, destructiveHint:false, idempotentHint:false, openWorldHint:true },
     _meta:{'com.agenda/readiness':{schema_version:1, example_arguments:adapter.example,
       example_is_synthetic:true, required_arguments:adapter.inputSchema.required || [],
       next_step:'Call free_trial with your own arguments matching inputSchema. No wallet or HTTP adapter is required.',
       trial:terms}}
+  }, {
+    name:MCP_TRIAL_FEEDBACK_TOOL,
+    description:'Optionally report whether a recent completed free check gave a useful next step or left you blocked. Use trial.attempt_id from that check. Same network/product required; no evaluation, payment or allowance consumption. Send no input text or private details. This is self-reported feedback, not verification or approval.',
+    inputSchema:TRIAL_FEEDBACK_SCHEMA,
+    outputSchema:{type:'object',additionalProperties:false,required:['recorded','response','evaluation_performed'],
+      properties:{recorded:{const:true},response:{type:'string',enum:['useful_next_step','still_blocked']},evaluation_performed:{const:false}}},
+    annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false}
   }];
 }
 
