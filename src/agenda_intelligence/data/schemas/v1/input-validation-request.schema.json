@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/input-validation-request.schema.json",
+  "title": "InputValidationRequest",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tool",
+    "input"
+  ],
+  "properties": {
+    "tool": {
+      "type": "string",
+      "minLength": 1
+    },
+    "input": {
+      "type": "object"
+    }
+  },
+  "description": "Preflight only the serving profile published tool input. No caller schemas, remote references, payment proof, evaluation or trial reservation."
+}

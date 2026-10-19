@@ -5,26 +5,30 @@
     "corridor_bankability_screen",
     "free_trial_status",
     "free_trial",
-    "free_trial_feedback"
+    "free_trial_feedback",
+    "validate_input"
   ],
   "middle-corridor-deal-risk-gate-a2a": [
     "middle_corridor_deal_risk",
     "free_trial_status",
     "free_trial",
-    "free_trial_feedback"
+    "free_trial_feedback",
+    "validate_input"
   ],
   "cis-secondary-sanctions-a2a": [
     "cis_secondary_sanctions_exposure",
     "cis_secondary_sanctions_batch",
     "free_trial_status",
     "free_trial",
-    "free_trial_feedback"
+    "free_trial_feedback",
+    "validate_input"
   ],
   "agentic-interaction-trust-a2a": [
     "agentic_interaction_trust",
     "free_trial_status",
     "free_trial",
-    "free_trial_feedback"
+    "free_trial_feedback",
+    "validate_input"
   ],
   "agent-output-verification-a2a": [
     "agent_output_verification",
@@ -34,50 +38,58 @@
     "decision_verify",
     "free_trial_status",
     "free_trial",
-    "free_trial_feedback"
+    "free_trial_feedback",
+    "validate_input"
   ],
   "gulf-maritime-exposure-a2a": [
     "gulf_maritime_exposure",
     "free_trial_status",
     "free_trial",
-    "free_trial_feedback"
+    "free_trial_feedback",
+    "validate_input"
   ],
   "kazakhstan-market-entry-readiness-a2a": [
     "kazakhstan_market_entry_readiness",
     "free_trial_status",
     "free_trial",
-    "free_trial_feedback"
+    "free_trial_feedback",
+    "validate_input"
   ],
   "corridor-sanctions-assistant-a2a": [
     "corridor_sanctions_assistant",
     "screen_dual_use_hs_code",
     "free_trial_status",
     "free_trial",
-    "free_trial_feedback"
+    "free_trial_feedback",
+    "validate_input"
   ],
   "critical-minerals-due-diligence-a2a": [
     "critical_minerals_due_diligence",
     "free_trial_status",
     "free_trial",
-    "free_trial_feedback"
+    "free_trial_feedback",
+    "validate_input"
   ],
   "dual-use-technology-export-a2a": [
     "dual_use_technology_export",
     "free_trial_status",
     "free_trial",
-    "free_trial_feedback"
+    "free_trial_feedback",
+    "validate_input"
   ],
   "agent-financial-guard-a2a": [
     "agent_financial_pre_sign_check",
     "free_trial_status",
     "free_trial",
-    "free_trial_feedback"
+    "free_trial_feedback",
+    "validate_input"
   ],
   "m2m-escrow-arbiter-a2a": [
     "m2m_escrow_arbitration_ruling",
     "free_trial_status",
     "free_trial",
-    "free_trial_feedback"
+    "free_trial_feedback",
+    "validate_input"
   ],
   "vizier": [
     "vizier_verify_action"

@@ -4671,7 +4671,8 @@ test("CIS MCP discovery and dispatch expose the separate batch contract", async 
   );
   assert.deepEqual(listed.result.tools.map((tool) => tool.name), [
     "cis_secondary_sanctions_exposure",
-    "cis_secondary_sanctions_batch"
+    "cis_secondary_sanctions_batch",
+    "validate_input"
   ]);
   assert.equal(listed.result.tools[1].inputSchema.properties.requests.maxItems, 10);
 
@@ -5903,12 +5904,12 @@ test("OpenAI domain challenge serves only the exact configured token on Output V
   assert.equal(wrongProfile.status, 404);
 });
 
-test("Output Verification plugin MCP URL exposes only its review tool", async () => {
+test("Output Verification plugin MCP URL exposes only review and input validation", async () => {
   const request = new Request("https://agent-output-verification-a2a.example.workers.dev/mcp/output-verification", {
     method: "POST", headers: { "user-agent": "node:test" }
   });
   const listed = await mcpCall({ jsonrpc: "2.0", id: 1, method: "tools/list" }, request);
-  assert.deepEqual(listed.result.tools.map((tool) => tool.name), ["agent_output_verification"]);
+  assert.deepEqual(listed.result.tools.map((tool) => tool.name), ["agent_output_verification", "validate_input"]);
   assert.equal(listed.result.tools[0].annotations.readOnlyHint, false);
   assert.deepEqual(listed.result.tools[0].inputSchema.required, ["claims", "evidence"]);
   const reviewed = await mcpCall({
@@ -5927,16 +5928,16 @@ test("Output Verification plugin MCP URL exposes only its review tool", async ()
     params: { name: "decision_check", arguments: {} }
   }, request);
   assert.equal(blocked.result.isError, true);
-  assert.deepEqual(blocked.result.structuredContent.available, ["agent_output_verification"]);
+  assert.deepEqual(blocked.result.structuredContent.available, ["agent_output_verification", "validate_input"]);
   const probe = await handleRequest(new Request(request.url), MCP_ENV);
   assert.equal(probe.status, 200);
-  assert.deepEqual((await probe.json()).tools, ["agent_output_verification"]);
+  assert.deepEqual((await probe.json()).tools, ["agent_output_verification", "validate_input"]);
   const post = await handleRequest(new Request(request.url, {
     method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 3, method: "tools/list", params: {} })
   }), MCP_ENV);
   assert.equal(post.status, 200);
-  assert.deepEqual((await post.json()).result.tools.map((tool) => tool.name), ["agent_output_verification"]);
+  assert.deepEqual((await post.json()).result.tools.map((tool) => tool.name), ["agent_output_verification", "validate_input"]);
   const wrongProfile = await handleRequest(
     new Request("https://kazakhstan-a2a.example.workers.dev/mcp/output-verification"),
     { AGENT_PROFILE: "kazakhstan" }
@@ -5956,7 +5957,8 @@ test("mcp tools/list is cacheable and profile-scoped", async () => {
       "pre_action_check",
       "decision_policies_list",
       "decision_check",
-      "decision_verify"
+      "decision_verify",
+      "validate_input"
     ]
   );
   assert.ok(result.tools[0].description.includes("Human review is required"));
@@ -5965,7 +5967,7 @@ test("mcp tools/list is cacheable and profile-scoped", async () => {
   assert.ok(result.tools[0].outputSchema.required.includes("verdict"));
   assert.ok(result.tools[1].inputSchema.required.includes("run_id"));
   assert.ok(result.tools[1].outputSchema.required.includes("decision"));
-  for (const tool of result.tools.filter((tool) => tool.name !== "decision_check")) {
+  for (const tool of result.tools.filter((tool) => !["decision_check","validate_input"].includes(tool.name))) {
     assert.deepEqual(tool.annotations, {
       readOnlyHint: false,
       destructiveHint: false,
@@ -6553,7 +6555,8 @@ test("mcp server card advertises the hosted streamable-http transport", () => {
     "pre_action_check",
     "decision_policies_list",
     "decision_check",
-    "decision_verify"
+    "decision_verify",
+    "validate_input"
   ]);
   assert.equal(card.transport.type, "stdio");
 });
@@ -6854,7 +6857,8 @@ test("the served card carries the same tool contracts tools/list carries", async
 
     // Read from the same source the MCP endpoint answers from, so a schema
     // change lands on both surfaces or on neither.
-    const expected = mcpToolsForProfile(profile).map((tool) => ({
+    const listed = await handleMcpJsonRpc({jsonrpc:'2.0',id:1,method:'tools/list'},new Request(`https://${host}/mcp`),{});
+    const expected = listed.result.tools.map((tool) => ({
       name: tool.name,
       input_schema: tool.inputSchema,
       ...(tool.outputSchema ? { output_schema: tool.outputSchema } : {}),
