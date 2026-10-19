@@ -11,7 +11,7 @@ function date(value) {
   return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value ? value : null;
 }
 const text = value => String(value || '').trim();
-export function reviewMineralDossier(request) {
+function reviewMineralSources(request) {
   const assessment = date(request.assessment_date);
   const reviews = [], eligible = [], seen = new Set();
   const rows = ["supplied_sources", "dated_sources"].flatMap(field => (request[field] || []).map((source,i) => [ `${field}[${i}]`, source ]));
@@ -78,4 +78,95 @@ export function mineralReadiness(request, dossier) {
     decision: complete ? 'require_approval' : 'request_evidence',
     reason: complete ? 'dossier_ready_for_human_review' : 'critical_evidence_gaps',
     traceability: supplied.includes('mining_concession_or_license_extract') || supplied.includes('certificate_of_origin') ? 'partial' : 'unverified'};
+}
+
+function normalized(value) {
+  if (typeof value === 'string') return value.trim().toLowerCase().replace(/\s+/gu, ' ');
+  if (Array.isArray(value)) return value.map(normalized).sort((a,b) => JSON.stringify(a).localeCompare(JSON.stringify(b), 'en'));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map(key => [key, normalized(value[key])]));
+  return value;
+}
+function mineralEvidenceWorkflow(request, dossier, previous) {
+  const scopeFields = ['project_name','commodity','origin_jurisdiction'];
+  const required = MINERALS_TAXONOMY[TIERS[request.decision_stage]];
+  const missing = required.filter(item => !dossier.eligible_source_types.includes(item));
+  const blockers = (request.blockers || []).map(item => item.trim()).filter(Boolean);
+  const requests = dossier.owner_actions.filter(action => action.source_type !== 'caller_blocker').map(action => {
+    const sourceType = action.source_type;
+    const reviews = dossier.source_reviews.filter(row => (row.source_type === 'csddd_human_rights_and_esg_audit'
+      ? 'responsible_sourcing_due_diligence' : row.source_type) === sourceType);
+    const issues = reviews.length ? [...new Set(reviews.flatMap(row => row.issues))] : ['No supplied document for this requirement.'];
+    return {
+      source_type: sourceType, owner: action.owner, source_refs: reviews.map(row => row.source_ref), issues,
+      request_text: `For ${request.project_name} before ${request.decision_stage}, please provide ${sourceType.replace(/_/gu,' ')}. Current gaps: ${issues.join('; ')} ` +
+        'Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. ' +
+        'Do not invent or backdate evidence. A human must verify authenticity and applicability.',
+      source_template: {source_type:sourceType,title:'',issuing_authority:'',date:'',excerpt:'',
+        scope:Object.fromEntries(scopeFields.map(field => [field, request[field]]))}
+    };
+  });
+  const revision = {
+    status:'not_provided', basis:'caller_supplied_previous_submission_rechecked', changed_scope_fields:[], comparison_blockers:[],
+    newly_reviewable_source_types:[], no_longer_reviewable_source_types:[], still_missing_source_types:[], removed_caller_blockers:[],
+    limitations:[
+      'Previous submission is caller-supplied and rechecked, not verified stored history.',
+      'Coverage changes are not proof of authenticity, factual support, legal clearance or resolved risk.',
+      'Removing a caller blocker is not proof of resolution; a human must review any removal.'
+    ]
+  };
+  if (previous) {
+    const [oldRequest, oldReview] = previous;
+    for (const field of [...scopeFields,'processing_jurisdiction','target_market','decision_stage','decision_question','counterparties']) {
+      const fallback = field === 'target_market' ? 'global' : field === 'counterparties' ? [] : '';
+      if (JSON.stringify(normalized(request[field] ?? fallback)) !== JSON.stringify(normalized(oldRequest[field] ?? fallback))) revision.changed_scope_fields.push(field);
+    }
+    const oldDate = date(oldRequest.assessment_date), newDate = date(request.assessment_date);
+    if (revision.changed_scope_fields.length) revision.comparison_blockers.push('decision_scope_changed');
+    if (!oldDate || !newDate) revision.comparison_blockers.push('explicit_valid_assessment_dates_required');
+    else if (newDate < oldDate) revision.comparison_blockers.push('assessment_date_moved_backwards');
+    revision.removed_caller_blockers = (oldRequest.blockers || []).map(item => item.trim()).filter(item => item && !blockers.includes(item));
+    revision.status = revision.comparison_blockers.length ? 'not_comparable' : 'compared';
+    if (revision.status === 'compared') {
+      const before = oldReview.eligible_source_types, now = dossier.eligible_source_types;
+      revision.newly_reviewable_source_types = required.filter(item => now.includes(item) && !before.includes(item));
+      revision.no_longer_reviewable_source_types = required.filter(item => before.includes(item) && !now.includes(item));
+      revision.still_missing_source_types = missing.filter(item => !before.includes(item));
+    }
+  }
+  return {
+    workflow_version:'mineral-evidence-loop.v1',
+    decision:{stage:request.decision_stage,question:request.decision_question,...Object.fromEntries(scopeFields.map(field => [field, request[field]]))},
+    documentary_next_step:missing.length || blockers.length ? 'collect_evidence' : 'prepare_human_review',
+    missing_source_types:missing, caller_blockers:blockers, evidence_requests:requests, revision,
+    human_review_required:true, authorization_granted:false
+  };
+}
+export function reviewMineralDossier(request) {
+  const dossier = reviewMineralSources(request);
+  const baseline = request.previous_submission;
+  dossier.evidence_workflow = mineralEvidenceWorkflow(request, dossier, baseline ? [baseline, reviewMineralSources(baseline)] : null);
+  return dossier;
+}
+
+// The optional baseline is a finite request schema, not a prior score or recursive history.
+// Validate it before all admission/evaluation paths so malformed baselines consume no trial.
+export function mineralBaselineErrors(value, schema, path = 'previous_submission') {
+  const errors = [];
+  const validType = schema.type === 'object' ? value && typeof value === 'object' && !Array.isArray(value)
+    : schema.type === 'array' ? Array.isArray(value) : typeof value === schema.type;
+  if (!validType) return [`${path} must be ${schema.type}`];
+  if (schema.enum && !schema.enum.includes(value)) errors.push(`${path} has an unsupported value`);
+  if (schema.type === 'string') {
+    if (schema.minLength && [...value].length < schema.minLength) errors.push(`${path} is required`);
+    if (schema.pattern && !new RegExp(schema.pattern, 'u').test(value)) errors.push(`${path} has an invalid format`);
+  }
+  if (schema.type === 'array') value.forEach((item,i) => errors.push(...mineralBaselineErrors(item, schema.items, `${path}[${i}]`)));
+  if (schema.type === 'object') {
+    for (const key of schema.required || []) if (!Object.hasOwn(value,key)) errors.push(`${path}.${key} is required`);
+    for (const key of Object.keys(value)) {
+      if (schema.properties?.[key]) errors.push(...mineralBaselineErrors(value[key],schema.properties[key],`${path}.${key}`));
+      else if (schema.additionalProperties === false) errors.push(`${path}.${key} is not allowed`);
+    }
+  }
+  return errors;
 }

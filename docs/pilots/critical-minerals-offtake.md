@@ -56,3 +56,35 @@ repeat usage or usefulness. Maintainer live requests must carry
 Pilot evidence to look for: a non-maintainer initial completion, a later updated
 dossier in the same declared scope, and an optional actual usefulness response.
 Technical fingerprints are not people. No response means unknown usefulness.
+
+## Evidence requests and an inspectable revision
+
+The result's `dossier_review.evidence_workflow` is the preparation loop:
+
+1. `decision` identifies the question, stage and project being prepared.
+2. `evidence_requests[]` identifies the missing source type, owner, rejected
+   `source_refs` and exact `issues`. Give the `request_text` to your supplier or
+   counsel yourself. `source_template` contains blank evidence fields and the
+   declared project scope. Fill it only from actual authorized records; a blank
+   template, summary or invented excerpt does not close a gap.
+3. Repair the referenced records or add actual new documents. Retain relevant
+   unfavorable evidence and unresolved blocker statements.
+4. Submit the updated dossier through the same tool, with optional
+   `previous_submission` set to your previous request (remove its own
+   `previous_submission`, if any). Supply explicit assessment dates in both
+   requests. For MCP `free_trial`, these fields are direct tool arguments.
+5. Inspect `revision.status`, `newly_reviewable_source_types`,
+   `no_longer_reviewable_source_types` and `still_missing_source_types`. Both
+   inputs are rechecked under the current policy. A changed project, question,
+   stage, market or other decision scope prevents progress comparison, as do
+   absent dates or a backwards review date. Removed blocker statements are
+   listed for human review, not treated as verified resolution.
+
+The hosted page shows requests and templates and offers **Prepare updated dossier
+— no check yet**. It attaches the previous submitted request in page memory;
+preparing performs no network call or evaluation. Edit the actual evidence before
+explicitly running another check. Each admitted rerun consumes another attempt.
+The comparison is caller-supplied, not a stored historical receipt. Follow the
+enclosing `operational_decision` if an upstream screen blocks the case; the
+`documentary_next_step` field describes document preparation only. Full coverage
+still requires human review and grants no transaction permission.

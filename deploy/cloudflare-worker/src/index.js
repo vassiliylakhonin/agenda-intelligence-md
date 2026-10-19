@@ -8,7 +8,7 @@ import { handleTrialFeedback, recordTrialFeedback } from './trial-feedback.js';
 import { mcpAgentAdmissionResponse } from './mcp-admission.js';
 import { lookupChplTier } from "./chpl.js";
 import { reviewSourceRecords } from "./source-records.js";
-import { reviewMineralDossier, mineralReadiness } from "./critical_minerals_dossier.js";
+import { reviewMineralDossier, mineralReadiness, mineralBaselineErrors } from "./critical_minerals_dossier.js";
 import { executePaidRequest, paidContext } from "./paid-execution.js";
 import { paymentTraceId, paymentTraceResponse } from "./payment-trace.js";
 import { snapshotHealth } from "./upstream_snapshot.js";
@@ -8201,6 +8201,10 @@ function criticalMineralsErrors(request) {
     if (request[field] !== undefined && (!Array.isArray(request[field]) || request[field].some(source => !source || typeof source !== "object" || typeof source.source_type !== "string"))) errors.push(`${field} must contain source objects with source_type`);
   }
   if (request.blockers !== undefined && (!Array.isArray(request.blockers) || request.blockers.some(value => typeof value !== "string"))) errors.push("blockers must contain strings");
+  if (Object.hasOwn(request, "previous_submission")) {
+    errors.push(...mineralBaselineErrors(request.previous_submission,
+      PUBLIC_SCHEMAS["schemas/v1/critical-minerals-due-diligence-request.schema.json"].properties.previous_submission));
+  }
   return errors;
 }
 

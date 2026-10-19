@@ -51,6 +51,10 @@ function mountIntakeEditor(root, requestBox, template, options) {
     return resolveSchema(schema);
   }
   function draw(value, target, path, parent, key, depth) {
+    if (options && (options.readOnlyPaths || []).includes(path)) {
+      target.appendChild(node('p', 'Previous submission is preserved in Structured request JSON for comparison. Edit the current evidence fields above; the baseline is caller-supplied, not verified history.'));
+      return;
+    }
     if (++count > 180 || depth > 8) { target.appendChild(node('p', 'Additional fields remain in Structured request JSON.')); return; }
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       var group = path && typeof key !== 'number' ? node('fieldset') : target;

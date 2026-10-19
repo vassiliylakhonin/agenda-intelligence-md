@@ -24,7 +24,7 @@ def _date(value):
         return None
 
 
-def review_mineral_dossier(request: dict, taxonomy: dict) -> dict:
+def _review_mineral_dossier(request: dict, taxonomy: dict) -> dict:
     """Review metadata/excerpt availability and declared scope, not the truth of a document."""
     assessment = _date(request.get("assessment_date"))
     rows = [
@@ -166,3 +166,134 @@ def review_mineral_dossier(request: dict, taxonomy: dict) -> dict:
         "applicability_questions": questions,
         "limitations": limitations,
     }
+
+
+def _normalized(value):
+    if isinstance(value, str):
+        return " ".join(value.strip().lower().split())
+    if isinstance(value, list):
+        return sorted((_normalized(item) for item in value), key=lambda item: repr(item))
+    if isinstance(value, dict):
+        return {key: _normalized(value[key]) for key in sorted(value)}
+    return value
+
+
+def _mineral_evidence_workflow(request, dossier, previous, taxonomy):
+    required = taxonomy[STAGE_TIERS[request["decision_stage"]]]
+    missing = [item for item in required if item not in dossier["eligible_source_types"]]
+    blockers = [item.strip() for item in request.get("blockers", []) if item.strip()]
+    requests = []
+    for action in dossier["owner_actions"]:
+        source_type = action["source_type"]
+        if source_type == "caller_blocker":
+            continue
+        reviews = [
+            row
+            for row in dossier["source_reviews"]
+            if (
+                "responsible_sourcing_due_diligence"
+                if row["source_type"] == "csddd_human_rights_and_esg_audit"
+                else row["source_type"]
+            )
+            == source_type
+        ]
+        issues = list(dict.fromkeys(issue for row in reviews for issue in row["issues"]))
+        if not reviews:
+            issues = ["No supplied document for this requirement."]
+        requests.append(
+            {
+                "source_type": source_type,
+                "owner": action["owner"],
+                "source_refs": [row["source_ref"] for row in reviews],
+                "issues": issues,
+                "request_text": (
+                    f"For {request['project_name']} before {request['decision_stage']}, please provide "
+                    f"{source_type.replace('_', ' ')}. Current gaps: {'; '.join(issues)} "
+                    "Supply the actual title, issuer, issue date and exact authorized excerpt with matching "
+                    "project/commodity/origin scope; include document ID and expiry where available. "
+                    "Do not invent or backdate evidence. A human must verify authenticity and applicability."
+                ),
+                "source_template": {
+                    "source_type": source_type,
+                    "title": "",
+                    "issuing_authority": "",
+                    "date": "",
+                    "excerpt": "",
+                    "scope": {field: request[field] for field in SCOPE_FIELDS},
+                },
+            }
+        )
+    revision = {
+        "status": "not_provided",
+        "basis": "caller_supplied_previous_submission_rechecked",
+        "changed_scope_fields": [],
+        "comparison_blockers": [],
+        "newly_reviewable_source_types": [],
+        "no_longer_reviewable_source_types": [],
+        "still_missing_source_types": [],
+        "removed_caller_blockers": [],
+        "limitations": [
+            "Previous submission is caller-supplied and rechecked, not verified stored history.",
+            "Coverage changes are not proof of authenticity, factual support, legal clearance or resolved risk.",
+            "Removing a caller blocker is not proof of resolution; a human must review any removal.",
+        ],
+    }
+    if previous is not None:
+        old_request, old_review = previous
+        fields = (
+            *SCOPE_FIELDS,
+            "processing_jurisdiction",
+            "target_market",
+            "decision_stage",
+            "decision_question",
+            "counterparties",
+        )
+        for field in fields:
+            default = "global" if field == "target_market" else [] if field == "counterparties" else ""
+            if _normalized(request.get(field, default)) != _normalized(old_request.get(field, default)):
+                revision["changed_scope_fields"].append(field)
+        old_date, new_date = _date(old_request.get("assessment_date")), _date(request.get("assessment_date"))
+        if revision["changed_scope_fields"]:
+            revision["comparison_blockers"].append("decision_scope_changed")
+        if not old_date or not new_date:
+            revision["comparison_blockers"].append("explicit_valid_assessment_dates_required")
+        elif new_date < old_date:
+            revision["comparison_blockers"].append("assessment_date_moved_backwards")
+        revision["removed_caller_blockers"] = [
+            item.strip() for item in old_request.get("blockers", []) if item.strip() and item.strip() not in blockers
+        ]
+        revision["status"] = "not_comparable" if revision["comparison_blockers"] else "compared"
+        if revision["status"] == "compared":
+            before = old_review["eligible_source_types"]
+            now = dossier["eligible_source_types"]
+            revision["newly_reviewable_source_types"] = [
+                item for item in required if item in now and item not in before
+            ]
+            revision["no_longer_reviewable_source_types"] = [
+                item for item in required if item in before and item not in now
+            ]
+            revision["still_missing_source_types"] = [item for item in missing if item not in before]
+    return {
+        "workflow_version": "mineral-evidence-loop.v1",
+        "decision": {
+            "stage": request["decision_stage"],
+            "question": request["decision_question"],
+            **{field: request[field] for field in SCOPE_FIELDS},
+        },
+        "documentary_next_step": "collect_evidence" if missing or blockers else "prepare_human_review",
+        "missing_source_types": missing,
+        "caller_blockers": blockers,
+        "evidence_requests": requests,
+        "revision": revision,
+        "human_review_required": True,
+        "authorization_granted": False,
+    }
+
+
+def review_mineral_dossier(request: dict, taxonomy: dict) -> dict:
+    """Prepare evidence requests and recheck a caller-supplied baseline without changing current scoring."""
+    dossier = _review_mineral_dossier(request, taxonomy)
+    baseline = request.get("previous_submission")
+    previous = (baseline, _review_mineral_dossier(baseline, taxonomy)) if baseline is not None else None
+    dossier["evidence_workflow"] = _mineral_evidence_workflow(request, dossier, previous, taxonomy)
+    return dossier

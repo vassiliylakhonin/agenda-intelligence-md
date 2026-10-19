@@ -96,3 +96,14 @@ test('edited form requests still reach existing validators for all twelve produc
     }
   } finally { console.log = original; }
 });
+
+test('revision baseline stays separate from editable current evidence and is preserved literally',()=>{
+  const template={project_name:'Current project',supplied_sources:[],previous_submission:{project_name:'Original project',supplied_sources:[{excerpt:'Adverse original fact'}]}};
+  const box=new Element('textarea');box.value=JSON.stringify(template);
+  const root=new Element('div'),context={document:{createElement:tag=>new Element(tag)}};
+  vm.runInNewContext(INTAKE_CLIENT_SCRIPT,context);
+  context.mountIntakeEditor(root,box,template,{readOnlyPaths:['previous_submission']});
+  assert.equal(root.find('intake-previous_submission.project_name'),undefined);
+  const field=root.find('intake-project_name');field.value='Updated current project';field.oninput();
+  assert.deepEqual(JSON.parse(box.value).previous_submission,template.previous_submission);
+});
