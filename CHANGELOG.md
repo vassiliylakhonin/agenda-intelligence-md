@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Operational checks — 2026-10-19
+
+- Probe the canonical custom domains in the live MCP monitor, retain the independent default-urllib strict check, and update the exact catalog baseline for native feedback. Cross-check monitored origins and tool inventories against actual Worker discovery in an offline regression so a catalog change cannot silently leave the production monitor stale.
+
 ## 1.17.1 — 2026-10-19
 
 - Expose optional completed-trial feedback through native MCP and A2A, including the Critical Minerals pre-offtake pilot. Return the attempt ID inside trial metadata, preserve completion/network/product/expiry checks and production authorization, and consume no evaluation allowance for feedback. Publish a two-step dossier workflow and correct paid-only onboarding copy. Feedback is self-reported; synthetic regressions and maintainer checks are not external adoption or usefulness evidence.

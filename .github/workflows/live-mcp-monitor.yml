@@ -10,6 +10,7 @@ on:
       - "scripts/urllib_mcp_client.py"
       - "tests/test_urllib_mcp_client.py"
       - "scripts/mcp-catalog-baseline.json"
+      - "scripts/mcp-monitor-origins.json"
       - "tests/test_live_mcp_monitor.py"
       - ".github/workflows/live-mcp-monitor.yml"
   workflow_run:
@@ -35,14 +36,20 @@ jobs:
           python-version: '3.12'
       - name: Install MCP SDK
         run: python -m pip install 'mcp==1.30.0'
-      - name: Compare live services with the deployed PR base catalog
+      - name: Select the catalog for the deployed runtime
         if: github.event_name == 'pull_request'
         env:
           DEPLOYED_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           git fetch --no-tags --depth=1 origin "$DEPLOYED_BASE_SHA"
-          git show "$DEPLOYED_BASE_SHA:scripts/mcp-catalog-baseline.json" > "$RUNNER_TEMP/live-mcp-baseline.json"
-          cp "$RUNNER_TEMP/live-mcp-baseline.json" scripts/mcp-catalog-baseline.json
+          # A runtime-changing PR must compare production with its base.
+          # A monitor-only repair must exercise its corrected catalog; the
+          # unchanged runtime is already the deployed base. The offline runtime
+          # inventory regression independently checks that corrected catalog.
+          if ! git diff --quiet "$DEPLOYED_BASE_SHA" HEAD -- deploy/cloudflare-worker/src deploy/cloudflare-worker/wrangler.toml; then
+            git show "$DEPLOYED_BASE_SHA:scripts/mcp-catalog-baseline.json" > "$RUNNER_TEMP/live-mcp-baseline.json"
+            cp "$RUNNER_TEMP/live-mcp-baseline.json" scripts/mcp-catalog-baseline.json
+          fi
       - name: Check normal SDK, urllib application client, health and A2A
         env:
           DEPLOYED_WORKFLOW: ${{ github.event.workflow_run.name }}

@@ -3,7 +3,10 @@
 import asyncio
 import importlib.util
 import io
+import json
+import subprocess
 import sys
+import tomllib
 from contextlib import asynccontextmanager
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
@@ -113,6 +116,44 @@ def test_baseline_covers_fleet():
     assert set(baseline) == set(monitor.fleet_names())
 
 
+def test_monitor_origins_and_catalog_match_the_actual_hosted_runtime():
+    config = tomllib.loads((monitor.ROOT / "deploy/cloudflare-worker/wrangler.toml").read_text())
+    targets = [config, *config["env"].values()]
+    inputs = [{"name": target["name"], "profile": target["vars"]["AGENT_PROFILE"]} for target in targets]
+    script = """
+    import {handleRequest} from './deploy/cloudflare-worker/src/index.js';
+    let text='';for await (const chunk of process.stdin) text+=chunk;
+    console.log=()=>{};
+    const fleet=await (await handleRequest(new Request('https://example.test/.well-known/fleet.json'))).json();
+    const result={};
+    for(const item of JSON.parse(text)) {
+      const response=await handleRequest(new Request('https://example.test/mcp',{
+        method:'POST',headers:{'content-type':'application/json','x-client-id':'agenda-owner-monitor-contract'},
+        body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})
+      }),{AGENT_PROFILE:item.profile,WORKER_FREE_TRIAL:'1'});
+      result[item.name]={origin:fleet.gates.find(g=>g.profile===item.profile).canonical_endpoint,
+        tools:(await response.json()).result.tools.map(t=>t.name)};
+    }
+    process.stdout.write(JSON.stringify(result));
+    """
+    actual = json.loads(
+        subprocess.run(
+            ["node", "--input-type=module", "-e", script],
+            input=json.dumps(inputs),
+            cwd=monitor.ROOT,
+            text=True,
+            capture_output=True,
+            check=True,
+        ).stdout
+    )
+    baseline = json.loads((monitor.ROOT / "scripts/mcp-catalog-baseline.json").read_text())
+    origins = monitor.fleet_origins()
+    for name, value in actual.items():
+        assert origins[name] == value["origin"]
+        assert set(baseline[name]) == set(value["tools"])
+    assert origins["vizier"] == "https://vizier.agendamcp.dpdns.org"
+
+
 def test_transport_retry_recovers_and_records_disconnect():
     import asyncio
     from http.client import RemoteDisconnected
@@ -189,8 +230,10 @@ def test_check_host_recovers_health_transport_but_reports_default_403(monkeypatc
     baseline = __import__("json").loads((monitor.ROOT / "scripts/mcp-catalog-baseline.json").read_text())
     name = "vizier"
     health_calls = []
+    requested_urls = []
 
     def probe(url, body=None, identify=True):
+        requested_urls.append(url)
         if url.endswith("/health"):
             health_calls.append(1)
             if len(health_calls) == 1:
@@ -207,6 +250,7 @@ def test_check_host_recovers_health_transport_but_reports_default_403(monkeypatc
         return {"status": 200, "data": data, "ray_id": "test"}
 
     async def sdk(url, expected):
+        requested_urls.append(url)
         return {"tools": expected, "protocol": "2025-03-26"}
 
     monkeypatch.setattr(monitor, "probe", probe)
@@ -216,6 +260,7 @@ def test_check_host_recovers_health_transport_but_reports_default_403(monkeypatc
     assert len(health_calls) == 2
     assert host["transport_events"][0]["check"] == "health"
     assert host["default_urllib"]["classification"] == "cloudflare_browser_signature_banned"
+    assert all(url.startswith("https://vizier.agendamcp.dpdns.org/") for url in requested_urls)
 
 
 def test_sdk_wrapped_certificate_failure_is_not_transient():
