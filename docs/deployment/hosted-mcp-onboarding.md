@@ -74,3 +74,22 @@ checks auth with missing/wrong/correct keys, exercises quota exhaustion and a
 missing quota store, and verifies signed receipts without turning illustrative
 evidence into permission. These tests demonstrate contract behavior, not an
 improvement in customer adoption; assess adoption separately from probes.
+
+## Free input preflight (hosted fleet)
+
+Before spending an evaluation allowance or authorizing payment, call MCP
+`validate_input` with `{ "tool": "<published tool name>", "input": { ... } }`.
+The HTTP equivalent is `POST /v1/validate-input`. It checks the published input
+schema only, returns `valid`, schema `findings` and JSON Pointer `missing_fields`,
+and sets `evaluation_performed`, `attempt_consumed`, `payment_required` and
+`authorization_granted` to false. Configured production authentication still
+applies. Payment proofs and caller-supplied schemas are refused. Limits are
+256 KiB, depth 64, 10,000 nodes and 64 returned findings.
+
+The same-origin `/.well-known/agent-contract.json` links each operation's raw
+schemas, synthetic example, access and per-operation price. Fleet entries now
+link to these contracts. Optional shared subscriptions and dossiers are
+separate from a tool call; get the exact endpoint's current 402 before signing.
+See the [dependency-free discovery client](../../examples/machine-contract/README.md).
+Schema conformance does not prove source truth or permit action. Existing trial
+quotas, paid admission, exact-request payment recovery and human review remain.

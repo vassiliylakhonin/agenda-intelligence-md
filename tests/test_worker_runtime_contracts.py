@@ -162,3 +162,63 @@ def test_worker_tools_conform_to_published_output_schemas():
             else:
                 broken["human_review_required"] = False
             assert list(Draft202012Validator(response["schema"]).iter_errors(broken))
+
+
+def test_hosted_schema_preflight_contract_and_invalid_input_do_not_evaluate():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Worker protocol tests need Node.js")
+    root = Path(__file__).resolve().parents[1]
+    program = """
+      import {handleRequest} from './deploy/cloudflare-worker/src/index.js';
+      import {TRIAL_PROFILES} from './deploy/cloudflare-worker/src/trial-profiles.js';
+      import {memoryD1} from './deploy/cloudflare-worker/test/helpers/d1.js';
+      const log=console.log;console.log=()=>{};
+      const results=[];
+      for(const profile of Object.keys(TRIAL_PROFILES)) {
+        const env={AGENT_PROFILE:profile,BILLING_MODE:'pay_per_call',WORKER_FREE_TRIAL:'1',
+          OUTPUT_VERIFICATION_TRIAL:'1',PAYMENT_LEDGER:memoryD1()};
+        const discover=new Request('https://example.test/.well-known/agent-contract.json');
+        const contract=await(await handleRequest(discover,env)).json();
+        const rows=[];
+        for(const offer of contract.offers) {
+          const example=await(await handleRequest(new Request(offer.example_url),env)).json();
+          const schema=await(await handleRequest(new Request(offer.input_schema_url),env)).json();
+          if(!example.example_available) continue;
+          const payload={tool:offer.tool,input:example.arguments};
+          const response=await handleRequest(new Request(contract.validation.http_endpoint,
+            {method:'POST',body:JSON.stringify(payload)}),env);
+          rows.push({schema,payload,status:response.status,result:await response.json()});
+        }
+        const bad=await handleRequest(new Request(contract.validation.http_endpoint,
+          {method:'POST',body:JSON.stringify({tool:TRIAL_PROFILES[profile].tool,
+            input:['agenda','corridor_sanctions_assistant'].includes(profile)?{text:42}:{}})}),env);
+        results.push({profile,rows,bad:await bad.json(),
+          reservations:await env.PAYMENT_LEDGER.prepare(
+            'SELECT COUNT(*) AS n FROM output_verification_trials').first()});
+      }
+      const fleet=await(await handleRequest(new Request('https://example.test/.well-known/fleet.json'),{})).json();
+      log(JSON.stringify({results,fleet}));
+    """
+    run = subprocess.run(
+        [node, "--input-type=module", "-e", program], cwd=root, check=True, capture_output=True, text=True, timeout=30
+    )
+    result = json.loads(run.stdout)
+    response_schema = json.loads((root / "schemas/v1/input-validation-response.schema.json").read_text())
+    request_schema = json.loads((root / "schemas/v1/input-validation-request.schema.json").read_text())
+    fleet_schema = json.loads((root / "schemas/v1/fleet-directory-response.schema.json").read_text())
+    Draft202012Validator(fleet_schema).validate(result["fleet"])
+    assert len(result["results"]) == 12
+    for profile in result["results"]:
+        assert profile["rows"], profile["profile"]
+        for row in profile["rows"]:
+            assert row["status"] == 200, (profile["profile"], row)
+            Draft202012Validator(request_schema).validate(row["payload"])
+            Draft202012Validator(row["schema"]).validate(row["payload"]["input"])
+            Draft202012Validator(response_schema).validate(row["result"])
+            assert row["result"]["valid"] is True, (profile["profile"], row)
+            assert row["result"]["attempt_consumed"] is False
+        Draft202012Validator(response_schema).validate(profile["bad"])
+        assert profile["bad"]["valid"] is False
+        assert profile["bad"]["findings"]
+        assert profile["reservations"]["n"] == 0

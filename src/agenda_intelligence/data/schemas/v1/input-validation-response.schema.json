@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/input-validation-response.schema.json",
+  "title": "InputValidationResponse",
+  "x-schema-version": "1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "valid",
+    "tool",
+    "validation_scope",
+    "evaluation_performed",
+    "payment_required",
+    "attempt_consumed",
+    "authorization_granted",
+    "findings",
+    "missing_fields",
+    "findings_truncated"
+  ],
+  "properties": {
+    "valid": {
+      "type": "boolean"
+    },
+    "tool": {
+      "type": "string"
+    },
+    "validation_scope": {
+      "const": "published_input_schema_only"
+    },
+    "evaluation_performed": {
+      "const": false
+    },
+    "payment_required": {
+      "const": false
+    },
+    "attempt_consumed": {
+      "const": false
+    },
+    "authorization_granted": {
+      "const": false
+    },
+    "findings": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "instance_path",
+          "schema_path",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "instance_path": {
+            "type": "string"
+          },
+          "schema_path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "missing_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "findings_truncated": {
+      "type": "boolean"
+    }
+  },
+  "description": "Schema conformance only; no source verification, document review, policy judgment, receipt or permission. Paths and finite schema errors, never submitted values."
+}

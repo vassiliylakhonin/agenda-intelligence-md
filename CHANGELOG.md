@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.19.0 — 2026-10-19
+
+- Add free schema-only input preflight over hosted MCP and HTTP across twelve profiles, with bounded static validators, JSON Pointer diagnostics and no evaluation or trial consumption. Publish same-origin tool schemas, synthetic examples and per-host machine contracts; expand fleet routing metadata and complete nested Financial Guard/Escrow input schemas. Synchronize x402/card/payment discovery with configured v2 and separate optional shared offerings. Preserve domain verdicts, authorization, prices, settlement and quotas; shape validation is not evidence verification or action approval. Include a dependency-free discovery/preflight client and all-profile contract regressions.
+
 ## 1.18.0 — 2026-10-19
 
 - Add an action-bound Critical Minerals evidence loop: source-level supplier/counsel request drafts, blank document templates and optional rechecked previous submissions. Compare newly reviewable, regressed and still-missing documentary coverage only within unchanged decision scope and explicit nondecreasing assessment dates; flag removed blocker statements for human review. Expose the loop through existing local/HTTP/MCP/A2A tools and browser revision preparation without automatic submission or new dossier storage. Preserve scoring, upstream blocks, authentication, prices, quotas and mandatory human approval. Synthetic tests are not external usefulness evidence.

@@ -10,8 +10,8 @@ const contractSources = [
   {"profile": "agenda", "tool": "strategic_risk_triage", "output": "schemas/v1/strategic-risk-triage-response.schema.json"},
   {"profile": "agenda", "tool": "fleet_directory", "output": "schemas/v1/fleet-directory-response.schema.json"},
   {"profile": "corridor_sanctions_assistant", "tool": "corridor_sanctions_assistant", "output": "schemas/v1/corridor-orientation-response.schema.json"},
-  {"profile": "agent_financial_guard", "tool": "agent_financial_pre_sign_check", "output": "schemas/v1/agent-financial-guard-response.schema.json", "legacyEnvelope": true},
-  {"profile": "m2m_escrow_arbiter", "tool": "m2m_escrow_arbitration_ruling", "output": "schemas/v1/m2m-escrow-arbiter-response.schema.json", "legacyEnvelope": true},
+  {"profile": "agent_financial_guard", "tool": "agent_financial_pre_sign_check", "input": "schemas/v1/agent-financial-guard-request.schema.json", "wrappedInput": true, "output": "schemas/v1/agent-financial-guard-response.schema.json", "legacyEnvelope": true},
+  {"profile": "m2m_escrow_arbiter", "tool": "m2m_escrow_arbitration_ruling", "input": "schemas/v1/m2m-escrow-arbiter-request.schema.json", "wrappedInput": true, "output": "schemas/v1/m2m-escrow-arbiter-response.schema.json", "legacyEnvelope": true},
   {
     profile: "kazakhstan",
     tool: "middle_corridor_deal_risk",
@@ -127,12 +127,19 @@ function legacyOutputSchema(response) {
   };
 }
 
+function wrappedInputSchema(input) {
+  const body=structuredClone(input),defs=body.$defs;
+  delete body.$id;delete body.$schema;delete body.$defs;
+  return {$schema:input.$schema,type:'object',additionalProperties:false,required:['request'],
+    properties:{request:body},...(defs?{$defs:defs}:{})};
+}
+
 function generatedContracts() {
   const contracts = {};
   for (const source of contractSources) {
     contracts[source.profile] ||= {};
     contracts[source.profile][source.tool] = {
-      ...(source.input ? { inputSchema: schema(source.input) } : {}),
+      ...(source.input ? { inputSchema: source.wrappedInput ? wrappedInputSchema(schema(source.input)) : schema(source.input) } : {}),
       outputSchema: source.legacyEnvelope ? legacyOutputSchema(schema(source.output)) : schema(source.output)
     };
   }

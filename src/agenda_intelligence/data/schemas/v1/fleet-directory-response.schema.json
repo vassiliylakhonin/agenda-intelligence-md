@@ -49,6 +49,125 @@
               "string",
               "null"
             ]
+          },
+          "when_to_call": {
+            "type": "string"
+          },
+          "machine_contract_url": {
+            "type": "string"
+          },
+          "input_schema_url": {
+            "type": "string"
+          },
+          "example_url": {
+            "type": "string"
+          },
+          "mcp_endpoint": {
+            "type": "string"
+          },
+          "a2a_endpoint": {
+            "type": "string"
+          },
+          "onboarding_card": {
+            "type": "string"
+          },
+          "documentation_url": {
+            "type": "string"
+          },
+          "server_card": {
+            "type": "string"
+          },
+          "output_schema_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tool_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "optional_trial_tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "validation": {
+            "type": "object",
+            "properties": {
+              "http_endpoint": {
+                "type": "string"
+              },
+              "mcp_tool": {
+                "const": "validate_input"
+              },
+              "payment_required": {
+                "const": false
+              },
+              "attempt_consumed": {
+                "const": false
+              }
+            },
+            "required": [
+              "http_endpoint",
+              "mcp_tool",
+              "payment_required",
+              "attempt_consumed"
+            ]
+          },
+          "pricing": {
+            "type": "object",
+            "properties": {
+              "evaluation_price_usdc": {
+                "type": "number",
+                "minimum": 0
+              },
+              "currency": {
+                "const": "USDC"
+              },
+              "network": {
+                "const": "eip155:8453"
+              },
+              "scope": {
+                "type": "string"
+              },
+              "confirmation_url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "evaluation_price_usdc",
+              "currency",
+              "network",
+              "scope",
+              "confirmation_url"
+            ]
+          },
+          "decision_contract": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "const": "next_action"
+              },
+              "enum": {
+                "const": [
+                  "block",
+                  "review",
+                  "insufficient"
+                ]
+              },
+              "authorization_granted": {
+                "const": false
+              }
+            },
+            "required": [
+              "field",
+              "enum",
+              "authorization_granted"
+            ]
           }
         },
         "required": [

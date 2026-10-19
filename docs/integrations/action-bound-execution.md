@@ -1,7 +1,7 @@
 # Interaction Trust + Vizier: request-bound execution
 
 For platform/security teams integrating one protected action. Install
-`pip install 'agenda-intelligence-md[reviews]==1.18.0'`. The hosted Interaction Trust
+`pip install 'agenda-intelligence-md[reviews]==1.19.0'`. The hosted Interaction Trust
 diagnostic remains advisory. Enforcement comes from putting
 `GuardedActionExecutor` on the integration's **only** dispatch path.
 

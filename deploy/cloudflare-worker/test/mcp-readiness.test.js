@@ -85,7 +85,7 @@ test("advertised quota matches enforcement and is absent without a quota store",
   assert.equal(readiness(noStore.body.result.tools[0]).access.quota_enforcement, "not_configured");
 });
 
-test("Output Verification directs missing evidence to source collection and keeps its plugin single-tool", async () => {
+test("Output Verification directs missing evidence to source collection and keeps its plugin evaluation-scoped", async () => {
   for (const path of ["/mcp", "/mcp/output-verification"]) {
     const listed = await rpc("agent_output_verification", "tools/list", {}, {}, path);
     const tool = listed.body.result.tools.find((t) => t.name === "agent_output_verification");
@@ -95,7 +95,7 @@ test("Output Verification directs missing evidence to source collection and keep
     assert.match(init.body.result.instructions, /human review/);
     assert.match(init.body.result.instructions, /Base call: free/);
     if (path.endsWith("output-verification")) {
-      assert.equal(listed.body.result.tools.length, 1);
+      assert.deepEqual(listed.body.result.tools.map(t=>t.name), ["agent_output_verification","validate_input"]);
       assert.ok(!init.body.result.instructions.includes("decision_verify"));
     }
     const refused = await rpc("agent_output_verification", "tools/call", {
