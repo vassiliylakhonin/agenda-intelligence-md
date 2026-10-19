@@ -1,3 +1,4 @@
+import { MINERAL_WORKFLOW_CLIENT_SCRIPT } from './mineral-workflow-client.js';
 import { WORKED_EXAMPLES } from "./worked-examples.js";
 import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { pricingHtml } from "./commercial-catalog.js";
@@ -97,6 +98,7 @@ function landingHtml(request, env) {
   const reviewPanel = `    <div id="profile-review" hidden><h3 id="profile-review-title">Last completed check</h3>
     <div id="profile-summary" aria-live="polite"></div>
     <div id="profile-progress" aria-live="polite"></div>
+    ${profile === 'critical_minerals_due_diligence' ? '<div id="mineral-workflow" hidden></div>' : ''}
     <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
     ${freeTrial ? `<div id="profile-feedback-panel" hidden><p>Did the last completed check give you a useful next step? <button id="profile-helpful" type="button" disabled onclick="submitTrialFeedback('useful_next_step')">Useful next step</button> · <button id="profile-blocked" type="button" disabled onclick="submitTrialFeedback('still_blocked')">Still blocked</button><br><small>Optional: sends only your choice linked to the completed free check, without its input or result. <a href="/privacy">Privacy</a>.</small><span id="profile-feedback-status" role="status"></span><br>
     <a id="profile-feedback" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL))}">Share what helped or blocked your task</a><br><small>Opens an optional email draft. Your request and result are not attached. Review and send it yourself.</small></p></div>` : ''}
@@ -459,8 +461,9 @@ ${reviewSummaryHtml.toString()}
 ${reviewDeltaHtml.toString()}
 ${freeTrial ? trialFeedbackMailto.toString() : ''}
 ${freeTrial ? INTAKE_CLIENT_SCRIPT : ''}
+${profile === 'critical_minerals_due_diligence' ? MINERAL_WORKFLOW_CLIENT_SCRIPT : ''}
 ${freeTrial && profile === 'agent_output_verification' ? CITATION_REVIEW_SCRIPT : ''}
-${freeTrial ? `mountIntakeEditor(document.getElementById('profile-intake'), document.getElementById('profile-request'), ${JSON.stringify(consoleExample).replaceAll('<', '\\u003c')}, ${JSON.stringify({schema:inputSchemaForProfile(profile),optional: profile === 'dual_use_technology_export'
+${freeTrial ? `mountIntakeEditor(document.getElementById('profile-intake'), document.getElementById('profile-request'), ${JSON.stringify(consoleExample).replaceAll('<', '\\u003c')}, ${JSON.stringify({schema:inputSchemaForProfile(profile),readOnlyPaths:profile === 'critical_minerals_due_diligence' ? ['previous_submission'] : [],optional: profile === 'dual_use_technology_export'
   ? [{path:'shipment.eccn', label:'Caller-supplied ECCN — leave unknown if unclassified'}]
   : profile === 'm2m_escrow_arbiter' ? [
     {path:'specification.expected_artifact_sha256', label:'Expected artifact SHA-256 from agreed specification'},
@@ -602,9 +605,10 @@ async function runProfileExample(event, paid, reviewFlow) {
     if (response.ok) {
       agendaHasCompletedResult = true;
       var review = body.result?.structuredContent || body;
+      ${profile === 'critical_minerals_due_diligence' ? 'renderMineralWorkflow(review, payload);' : ''}
       document.getElementById('profile-summary').innerHTML = reviewSummaryHtml(review, safeHtml, ${JSON.stringify(workflow)});
       var progress = document.getElementById('profile-progress');
-      if (progress) progress.innerHTML = agendaLastReview ? reviewDeltaHtml(agendaLastReview, review, safeHtml) : '';
+      if (progress) progress.innerHTML = ${profile === 'critical_minerals_due_diligence' ? "''" : "agendaLastReview ? reviewDeltaHtml(agendaLastReview, review, safeHtml) : ''"};
       ${freeTrial ? `if (paid) {
         agendaFeedbackAttempt = null;
         var feedbackPanel = document.getElementById('profile-feedback-panel');

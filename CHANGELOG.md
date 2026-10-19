@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.18.0 — 2026-10-19
+
+- Add an action-bound Critical Minerals evidence loop: source-level supplier/counsel request drafts, blank document templates and optional rechecked previous submissions. Compare newly reviewable, regressed and still-missing documentary coverage only within unchanged decision scope and explicit nondecreasing assessment dates; flag removed blocker statements for human review. Expose the loop through existing local/HTTP/MCP/A2A tools and browser revision preparation without automatic submission or new dossier storage. Preserve scoring, upstream blocks, authentication, prices, quotas and mandatory human approval. Synthetic tests are not external usefulness evidence.
+
 ## Operational checks — 2026-10-19
 
 - Probe the canonical custom domains in the live MCP monitor, retain the independent default-urllib strict check, and update the exact catalog baseline for native feedback. Cross-check monitored origins and tool inventories against actual Worker discovery in an offline regression so a catalog change cannot silently leave the production monitor stale.

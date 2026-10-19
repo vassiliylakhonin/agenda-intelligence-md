@@ -309,7 +309,7 @@ export interface CISSecondarySanctionsExposureResponse {
   };
 }
 
-/** Caller-supplied dossier readiness review. Document metadata, scope and excerpts are not independently authenticated. No legal applicability or transaction authorization is established. */
+/** Caller-supplied dossier readiness review. Document metadata, scope and excerpts are not independently authenticated. No legal applicability or transaction authorization is established. Optional previous_submission compares documentary coverage only within the same decision scope and nondecreasing explicit assessment dates. */
 export interface CriticalMineralsDueDiligenceRequest {
   project_name: string;
   commodity: "lithium" | "rare_earth_elements" | "nickel" | "cobalt" | "copper" | "graphite" | "manganese" | "tungsten" | "gallium_germanium" | "uranium" | "titanium" | "antimony" | "other_critical_mineral";
@@ -364,6 +364,62 @@ export interface CriticalMineralsDueDiligenceRequest {
   blockers?: string[];
   /** Explicit review date (YYYY-MM-DD) for deterministic future-date and expiry checks. No implicit wall clock. */
   assessment_date?: string;
+  /** Caller-supplied previous request, re-evaluated locally for documentary comparison. Not a stored receipt or verified history. Do not nest previous_submission. */
+  previous_submission?: {
+    project_name: string;
+    commodity: "lithium" | "rare_earth_elements" | "nickel" | "cobalt" | "copper" | "graphite" | "manganese" | "tungsten" | "gallium_germanium" | "uranium" | "titanium" | "antimony" | "other_critical_mineral";
+    origin_jurisdiction: string;
+    processing_jurisdiction?: string;
+    target_market?: "eu" | "us" | "uk" | "japan_korea" | "global" | "domestic";
+    decision_question: string;
+    decision_stage: "pre_exploration" | "pre_offtake_agreement" | "pre_processing_contract" | "pre_export_shipment" | "pre_investment_decision";
+    counterparties?: Array<{
+      name: string;
+      role: "mine_operator" | "concession_holder" | "refinery_processor" | "trading_intermediary" | "offtake_buyer" | "transport_logistics_carrier" | "government_entity";
+      jurisdiction: string;
+      state_owned_or_affiliated?: boolean;
+      beneficial_owners?: string[];
+      sanctions_screening_ref?: string;
+    }>;
+    supplied_sources: Array<{
+      source_type: string;
+      title?: string;
+      url?: string;
+      date?: string;
+      issuing_authority?: string;
+      verified_by_counsel?: boolean;
+      summary?: string;
+      document_id?: string;
+      excerpt?: string;
+      valid_until?: string;
+      scope?: {
+        project_name?: string;
+        commodity?: string;
+        origin_jurisdiction?: string;
+      };
+    }>;
+    dated_sources?: Array<{
+      source_type: string;
+      title?: string;
+      url?: string;
+      date?: string;
+      issuing_authority?: string;
+      verified_by_counsel?: boolean;
+      summary?: string;
+      document_id?: string;
+      excerpt?: string;
+      valid_until?: string;
+      scope?: {
+        project_name?: string;
+        commodity?: string;
+        origin_jurisdiction?: string;
+      };
+    }>;
+    assumptions?: string[];
+    blockers?: string[];
+    /** Explicit review date (YYYY-MM-DD) for deterministic future-date and expiry checks. No implicit wall clock. */
+    assessment_date?: string;
+  };
 }
 
 export interface CriticalMineralsDueDiligenceResponseReadinessNamedValue {
@@ -451,6 +507,57 @@ export interface CriticalMineralsDueDiligenceResponse {
     }>;
     applicability_questions: string[];
     limitations: string[];
+    /** Documentary preparation only. The enclosing operational_decision controls upstream blocks and screening failures. Templates have blank evidence fields: fill them from authorized documents, never invent content. */
+    evidence_workflow?: {
+      workflow_version: "mineral-evidence-loop.v1";
+      decision: {
+        stage: string;
+        question: string;
+        project_name: string;
+        commodity: string;
+        origin_jurisdiction: string;
+      };
+      documentary_next_step: "collect_evidence" | "prepare_human_review";
+      missing_source_types: string[];
+      caller_blockers: string[];
+      evidence_requests: Array<{
+        source_type: string;
+        owner: string;
+        source_refs: string[];
+        issues: string[];
+        request_text: string;
+        source_template: {
+          source_type: string;
+          title: string;
+          url?: string;
+          date: string;
+          issuing_authority: string;
+          verified_by_counsel?: boolean;
+          summary?: string;
+          document_id?: string;
+          excerpt: string;
+          valid_until?: string;
+          scope: {
+            project_name?: string;
+            commodity?: string;
+            origin_jurisdiction?: string;
+          };
+        };
+      }>;
+      revision: {
+        status: "not_provided" | "compared" | "not_comparable";
+        basis: "caller_supplied_previous_submission_rechecked";
+        changed_scope_fields: string[];
+        comparison_blockers: string[];
+        newly_reviewable_source_types: string[];
+        no_longer_reviewable_source_types: string[];
+        still_missing_source_types: string[];
+        removed_caller_blockers: string[];
+        limitations: string[];
+      };
+      human_review_required: true;
+      authorization_granted: false;
+    };
   };
   next_action?: "block" | "review" | "insufficient";
   decision_kind?: "evidence_review";

@@ -340,6 +340,246 @@
           "items": {
             "type": "string"
           }
+        },
+        "evidence_workflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "workflow_version",
+            "decision",
+            "documentary_next_step",
+            "missing_source_types",
+            "caller_blockers",
+            "evidence_requests",
+            "revision",
+            "human_review_required",
+            "authorization_granted"
+          ],
+          "properties": {
+            "workflow_version": {
+              "const": "mineral-evidence-loop.v1"
+            },
+            "decision": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "stage",
+                "question",
+                "project_name",
+                "commodity",
+                "origin_jurisdiction"
+              ],
+              "properties": {
+                "stage": {
+                  "type": "string"
+                },
+                "question": {
+                  "type": "string"
+                },
+                "project_name": {
+                  "type": "string"
+                },
+                "commodity": {
+                  "type": "string"
+                },
+                "origin_jurisdiction": {
+                  "type": "string"
+                }
+              }
+            },
+            "documentary_next_step": {
+              "enum": [
+                "collect_evidence",
+                "prepare_human_review"
+              ]
+            },
+            "missing_source_types": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "caller_blockers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "evidence_requests": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "source_type",
+                  "owner",
+                  "source_refs",
+                  "issues",
+                  "request_text",
+                  "source_template"
+                ],
+                "properties": {
+                  "source_type": {
+                    "type": "string"
+                  },
+                  "owner": {
+                    "type": "string"
+                  },
+                  "source_refs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "request_text": {
+                    "type": "string"
+                  },
+                  "source_template": {
+                    "type": "object",
+                    "required": [
+                      "source_type",
+                      "title",
+                      "issuing_authority",
+                      "date",
+                      "excerpt",
+                      "scope"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "source_type": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string"
+                      },
+                      "date": {
+                        "type": "string"
+                      },
+                      "issuing_authority": {
+                        "type": "string"
+                      },
+                      "verified_by_counsel": {
+                        "type": "boolean"
+                      },
+                      "summary": {
+                        "type": "string"
+                      },
+                      "document_id": {
+                        "type": "string"
+                      },
+                      "excerpt": {
+                        "type": "string"
+                      },
+                      "valid_until": {
+                        "type": "string"
+                      },
+                      "scope": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "project_name": {
+                            "type": "string"
+                          },
+                          "commodity": {
+                            "type": "string"
+                          },
+                          "origin_jurisdiction": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "revision": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "basis",
+                "changed_scope_fields",
+                "comparison_blockers",
+                "newly_reviewable_source_types",
+                "no_longer_reviewable_source_types",
+                "still_missing_source_types",
+                "removed_caller_blockers",
+                "limitations"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "not_provided",
+                    "compared",
+                    "not_comparable"
+                  ]
+                },
+                "basis": {
+                  "const": "caller_supplied_previous_submission_rechecked"
+                },
+                "changed_scope_fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "comparison_blockers": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "newly_reviewable_source_types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "no_longer_reviewable_source_types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "still_missing_source_types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "removed_caller_blockers": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "limitations": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "human_review_required": {
+              "const": true
+            },
+            "authorization_granted": {
+              "const": false
+            }
+          },
+          "description": "Documentary preparation only. The enclosing operational_decision controls upstream blocks and screening failures. Templates have blank evidence fields: fill them from authorized documents, never invent content."
         }
       }
     },

@@ -66,7 +66,7 @@ test('bundled landing scripts display successful review results across the fleet
       assert.deepEqual(JSON.parse(requests[0].init.body), example.request, profile + ' serialized JSON');
       returned = structuredClone(example.follow_up?.response || example.response);
       await context.runProfileExample({ preventDefault() {} });
-      assert.match(elements['profile-progress'].innerHTML, /Changes since previous check/, profile);
+      assert.equal(profile === 'critical_minerals_due_diligence' ? elements['profile-progress'].innerHTML === '' : /Changes since previous check/.test(elements['profile-progress'].innerHTML), true, profile);
       assert.equal(requests.length, 2, profile);
       const lastSummary=elements['profile-summary'].innerHTML;
       const lastResult=elements['profile-result'].textContent;
@@ -74,11 +74,46 @@ test('bundled landing scripts display successful review results across the fleet
       await context.runProfileExample({ preventDefault() {} });
       assert.equal(requests.length, 2, profile + ' invalid local JSON sends nothing');
       assert.equal(elements['profile-summary'].innerHTML, lastSummary, profile + ' completed review preserved');
-      assert.match(elements['profile-progress'].innerHTML, /Changes since previous check/, profile);
+      assert.equal(profile === 'critical_minerals_due_diligence' ? elements['profile-progress'].innerHTML === '' : /Changes since previous check/.test(elements['profile-progress'].innerHTML), true, profile);
       assert.equal(elements['profile-result'].textContent,lastResult,profile);
       assert.equal(elements['profile-response'].hidden, false, profile);
     }
   } finally {
     console.log = originalLog;
   }
+});
+
+test('bundled mineral page prepares a bounded local revision without a request and safely displays evidence drafts', async()=>{
+  const html=await(await handleRequest(new Request('https://example.test/',{headers:{accept:'text/html'}}),
+    {AGENT_PROFILE:'critical_minerals_due_diligence',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
+  const elements=Object.fromEntries(['profile-request','profile-intake','mineral-workflow','mineral-revision-status'].map(id=>[id,{value:'',innerHTML:'',textContent:'',hidden:true}]));
+  let calls=0,refreshes=0;
+  elements['profile-intake'].updateFromJson=()=>refreshes++;
+  const context={URL,window:{location:{href:'https://example.test/',origin:'https://example.test'},crypto:globalThis.crypto},
+    fetch:()=>{calls++;throw Error('Preparing evidence must not make a request');},
+    document:{getElementById:id=>elements[id],createElement:()=>({set textContent(value){this.innerHTML=String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}})}};
+  for(const[,script]of html.matchAll(/<script>([\s\S]*?)<\/script>/g))vm.runInNewContext(script,context);
+  const example=structuredClone(WORKED_EXAMPLES.critical_minerals_due_diligence);
+  const previous={...example.request,previous_submission:{old:'baseline must not be nested'}};
+  example.response.dossier_review.evidence_workflow.decision.question='<img src=x onerror=alert(1)>';
+  context.renderMineralWorkflow(example.response,previous);
+  assert.equal(elements['mineral-workflow'].hidden,false);
+  assert.match(elements['mineral-workflow'].innerHTML,/&lt;img/);
+  assert.doesNotMatch(elements['mineral-workflow'].innerHTML,/<img/);
+  assert.match(elements['mineral-workflow'].innerHTML,/Prepare updated dossier/);
+  const edited={...example.request,assessment_date:'2026-10-19',blockers:['Keep adverse facts']};
+  elements['profile-request'].value=JSON.stringify(edited);
+  context.prepareMineralRevision();
+  const updated=JSON.parse(elements['profile-request'].value);
+  assert.equal(updated.assessment_date,'2026-10-19');
+  assert.deepEqual(updated.blockers,['Keep adverse facts']);
+  assert.equal(updated.previous_submission.assessment_date,previous.assessment_date);
+  assert.equal(Object.hasOwn(updated.previous_submission,'previous_submission'),false);
+  assert.equal(calls,0);
+  assert.equal(refreshes,1);
+  assert.match(elements['mineral-revision-status'].textContent,/explicitly run/);
+  elements['profile-request'].value='{invalid';
+  context.prepareMineralRevision();
+  assert.match(elements['mineral-revision-status'].textContent,/Nothing was submitted/);
+  assert.equal(calls,0);
 });

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-request.schema.json",
   "title": "CriticalMineralsDueDiligenceRequest",
-  "description": "Caller-supplied dossier readiness review. Document metadata, scope and excerpts are not independently authenticated. No legal applicability or transaction authorization is established.",
+  "description": "Caller-supplied dossier readiness review. Document metadata, scope and excerpts are not independently authenticated. No legal applicability or transaction authorization is established. Optional previous_submission compares documentary coverage only within the same decision scope and nondecreasing explicit assessment dates.",
   "x-schema-version": "1",
   "type": "object",
   "additionalProperties": false,
@@ -252,6 +252,259 @@
       "type": "string",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
       "description": "Explicit review date (YYYY-MM-DD) for deterministic future-date and expiry checks. No implicit wall clock."
+    },
+    "previous_submission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "project_name",
+        "commodity",
+        "origin_jurisdiction",
+        "decision_question",
+        "decision_stage",
+        "supplied_sources"
+      ],
+      "properties": {
+        "project_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commodity": {
+          "type": "string",
+          "enum": [
+            "lithium",
+            "rare_earth_elements",
+            "nickel",
+            "cobalt",
+            "copper",
+            "graphite",
+            "manganese",
+            "tungsten",
+            "gallium_germanium",
+            "uranium",
+            "titanium",
+            "antimony",
+            "other_critical_mineral"
+          ]
+        },
+        "origin_jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "processing_jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_market": {
+          "type": "string",
+          "enum": [
+            "eu",
+            "us",
+            "uk",
+            "japan_korea",
+            "global",
+            "domestic"
+          ],
+          "default": "global"
+        },
+        "decision_question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision_stage": {
+          "type": "string",
+          "enum": [
+            "pre_exploration",
+            "pre_offtake_agreement",
+            "pre_processing_contract",
+            "pre_export_shipment",
+            "pre_investment_decision"
+          ]
+        },
+        "counterparties": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "role",
+              "jurisdiction"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "mine_operator",
+                  "concession_holder",
+                  "refinery_processor",
+                  "trading_intermediary",
+                  "offtake_buyer",
+                  "transport_logistics_carrier",
+                  "government_entity"
+                ]
+              },
+              "jurisdiction": {
+                "type": "string",
+                "minLength": 1
+              },
+              "state_owned_or_affiliated": {
+                "type": "boolean"
+              },
+              "beneficial_owners": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "sanctions_screening_ref": {
+                "type": "string"
+              }
+            }
+          },
+          "default": []
+        },
+        "supplied_sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source_type"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "source_type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "issuing_authority": {
+                "type": "string"
+              },
+              "verified_by_counsel": {
+                "type": "boolean"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "document_id": {
+                "type": "string"
+              },
+              "excerpt": {
+                "type": "string"
+              },
+              "valid_until": {
+                "type": "string"
+              },
+              "scope": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "project_name": {
+                    "type": "string"
+                  },
+                  "commodity": {
+                    "type": "string"
+                  },
+                  "origin_jurisdiction": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "dated_sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source_type"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "source_type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "issuing_authority": {
+                "type": "string"
+              },
+              "verified_by_counsel": {
+                "type": "boolean"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "document_id": {
+                "type": "string"
+              },
+              "excerpt": {
+                "type": "string"
+              },
+              "valid_until": {
+                "type": "string"
+              },
+              "scope": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "project_name": {
+                    "type": "string"
+                  },
+                  "commodity": {
+                    "type": "string"
+                  },
+                  "origin_jurisdiction": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "blockers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "assessment_date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Explicit review date (YYYY-MM-DD) for deterministic future-date and expiry checks. No implicit wall clock."
+        }
+      },
+      "description": "Caller-supplied previous request, re-evaluated locally for documentary comparison. Not a stored receipt or verified history. Do not nest previous_submission."
     }
   }
 }

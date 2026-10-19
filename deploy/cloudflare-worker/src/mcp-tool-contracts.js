@@ -7164,7 +7164,7 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-request.schema.json",
         "title": "CriticalMineralsDueDiligenceRequest",
-        "description": "Caller-supplied dossier readiness review. Document metadata, scope and excerpts are not independently authenticated. No legal applicability or transaction authorization is established.",
+        "description": "Caller-supplied dossier readiness review. Document metadata, scope and excerpts are not independently authenticated. No legal applicability or transaction authorization is established. Optional previous_submission compares documentary coverage only within the same decision scope and nondecreasing explicit assessment dates.",
         "x-schema-version": "1",
         "type": "object",
         "additionalProperties": false,
@@ -7414,6 +7414,259 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
             "type": "string",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "description": "Explicit review date (YYYY-MM-DD) for deterministic future-date and expiry checks. No implicit wall clock."
+          },
+          "previous_submission": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_name",
+              "commodity",
+              "origin_jurisdiction",
+              "decision_question",
+              "decision_stage",
+              "supplied_sources"
+            ],
+            "properties": {
+              "project_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "commodity": {
+                "type": "string",
+                "enum": [
+                  "lithium",
+                  "rare_earth_elements",
+                  "nickel",
+                  "cobalt",
+                  "copper",
+                  "graphite",
+                  "manganese",
+                  "tungsten",
+                  "gallium_germanium",
+                  "uranium",
+                  "titanium",
+                  "antimony",
+                  "other_critical_mineral"
+                ]
+              },
+              "origin_jurisdiction": {
+                "type": "string",
+                "minLength": 1
+              },
+              "processing_jurisdiction": {
+                "type": "string",
+                "minLength": 1
+              },
+              "target_market": {
+                "type": "string",
+                "enum": [
+                  "eu",
+                  "us",
+                  "uk",
+                  "japan_korea",
+                  "global",
+                  "domestic"
+                ],
+                "default": "global"
+              },
+              "decision_question": {
+                "type": "string",
+                "minLength": 1
+              },
+              "decision_stage": {
+                "type": "string",
+                "enum": [
+                  "pre_exploration",
+                  "pre_offtake_agreement",
+                  "pre_processing_contract",
+                  "pre_export_shipment",
+                  "pre_investment_decision"
+                ]
+              },
+              "counterparties": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "role",
+                    "jurisdiction"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "mine_operator",
+                        "concession_holder",
+                        "refinery_processor",
+                        "trading_intermediary",
+                        "offtake_buyer",
+                        "transport_logistics_carrier",
+                        "government_entity"
+                      ]
+                    },
+                    "jurisdiction": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "state_owned_or_affiliated": {
+                      "type": "boolean"
+                    },
+                    "beneficial_owners": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "sanctions_screening_ref": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "default": []
+              },
+              "supplied_sources": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "source_type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "source_type": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "date": {
+                      "type": "string"
+                    },
+                    "issuing_authority": {
+                      "type": "string"
+                    },
+                    "verified_by_counsel": {
+                      "type": "boolean"
+                    },
+                    "summary": {
+                      "type": "string"
+                    },
+                    "document_id": {
+                      "type": "string"
+                    },
+                    "excerpt": {
+                      "type": "string"
+                    },
+                    "valid_until": {
+                      "type": "string"
+                    },
+                    "scope": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "project_name": {
+                          "type": "string"
+                        },
+                        "commodity": {
+                          "type": "string"
+                        },
+                        "origin_jurisdiction": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "dated_sources": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "source_type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "source_type": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "date": {
+                      "type": "string"
+                    },
+                    "issuing_authority": {
+                      "type": "string"
+                    },
+                    "verified_by_counsel": {
+                      "type": "boolean"
+                    },
+                    "summary": {
+                      "type": "string"
+                    },
+                    "document_id": {
+                      "type": "string"
+                    },
+                    "excerpt": {
+                      "type": "string"
+                    },
+                    "valid_until": {
+                      "type": "string"
+                    },
+                    "scope": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "project_name": {
+                          "type": "string"
+                        },
+                        "commodity": {
+                          "type": "string"
+                        },
+                        "origin_jurisdiction": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "assumptions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "blockers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "assessment_date": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "Explicit review date (YYYY-MM-DD) for deterministic future-date and expiry checks. No implicit wall clock."
+              }
+            },
+            "description": "Caller-supplied previous request, re-evaluated locally for documentary comparison. Not a stored receipt or verified history. Do not nest previous_submission."
           }
         }
       },
@@ -7759,6 +8012,246 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "items": {
                   "type": "string"
                 }
+              },
+              "evidence_workflow": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "workflow_version",
+                  "decision",
+                  "documentary_next_step",
+                  "missing_source_types",
+                  "caller_blockers",
+                  "evidence_requests",
+                  "revision",
+                  "human_review_required",
+                  "authorization_granted"
+                ],
+                "properties": {
+                  "workflow_version": {
+                    "const": "mineral-evidence-loop.v1"
+                  },
+                  "decision": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "stage",
+                      "question",
+                      "project_name",
+                      "commodity",
+                      "origin_jurisdiction"
+                    ],
+                    "properties": {
+                      "stage": {
+                        "type": "string"
+                      },
+                      "question": {
+                        "type": "string"
+                      },
+                      "project_name": {
+                        "type": "string"
+                      },
+                      "commodity": {
+                        "type": "string"
+                      },
+                      "origin_jurisdiction": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "documentary_next_step": {
+                    "enum": [
+                      "collect_evidence",
+                      "prepare_human_review"
+                    ]
+                  },
+                  "missing_source_types": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "caller_blockers": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "evidence_requests": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "source_type",
+                        "owner",
+                        "source_refs",
+                        "issues",
+                        "request_text",
+                        "source_template"
+                      ],
+                      "properties": {
+                        "source_type": {
+                          "type": "string"
+                        },
+                        "owner": {
+                          "type": "string"
+                        },
+                        "source_refs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "request_text": {
+                          "type": "string"
+                        },
+                        "source_template": {
+                          "type": "object",
+                          "required": [
+                            "source_type",
+                            "title",
+                            "issuing_authority",
+                            "date",
+                            "excerpt",
+                            "scope"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "source_type": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "url": {
+                              "type": "string"
+                            },
+                            "date": {
+                              "type": "string"
+                            },
+                            "issuing_authority": {
+                              "type": "string"
+                            },
+                            "verified_by_counsel": {
+                              "type": "boolean"
+                            },
+                            "summary": {
+                              "type": "string"
+                            },
+                            "document_id": {
+                              "type": "string"
+                            },
+                            "excerpt": {
+                              "type": "string"
+                            },
+                            "valid_until": {
+                              "type": "string"
+                            },
+                            "scope": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "project_name": {
+                                  "type": "string"
+                                },
+                                "commodity": {
+                                  "type": "string"
+                                },
+                                "origin_jurisdiction": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "revision": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "status",
+                      "basis",
+                      "changed_scope_fields",
+                      "comparison_blockers",
+                      "newly_reviewable_source_types",
+                      "no_longer_reviewable_source_types",
+                      "still_missing_source_types",
+                      "removed_caller_blockers",
+                      "limitations"
+                    ],
+                    "properties": {
+                      "status": {
+                        "enum": [
+                          "not_provided",
+                          "compared",
+                          "not_comparable"
+                        ]
+                      },
+                      "basis": {
+                        "const": "caller_supplied_previous_submission_rechecked"
+                      },
+                      "changed_scope_fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "comparison_blockers": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "newly_reviewable_source_types": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "no_longer_reviewable_source_types": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "still_missing_source_types": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "removed_caller_blockers": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "limitations": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "human_review_required": {
+                    "const": true
+                  },
+                  "authorization_granted": {
+                    "const": false
+                  }
+                },
+                "description": "Documentary preparation only. The enclosing operational_decision controls upstream blocks and screening failures. Templates have blank evidence fields: fill them from authorized documents, never invent content."
               }
             }
           },

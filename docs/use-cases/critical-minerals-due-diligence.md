@@ -105,3 +105,23 @@ Optionally call `free_trial_feedback` with only `attempt_id` and your actual
 `feedback` operation of `com.agenda/free-trial`. Feedback is bound to a recent
 completion on the same network and product; it consumes no evaluation attempt.
 Do not automatically mark an HTTP success as useful or submit private input text.
+
+## From missing evidence to an updated dossier
+
+`dossier_review.evidence_workflow` adds action-bound preparation: the named
+question/stage, source-level reasons, responsible owner, a document-request draft
+and an empty source template. Nothing is sent to suppliers. Populate templates
+only with authorized excerpts and metadata from actual documents.
+
+For an updated check, supply the previous request as optional
+`previous_submission`, with no nested baseline. The service rechecks both inputs
+and compares newly reviewable, no longer reviewable and still-missing source types
+within the same declared decision scope and valid nondecreasing assessment dates.
+Changing the stage or target market cannot be presented as closing gaps. Removing
+a blocker statement is flagged for human review, not verified resolution.
+
+The hosted page can attach the last submitted baseline without making a request;
+you then edit evidence and explicitly submit. The same MCP, A2A, HTTP and local
+service entry points accept the additive contract. Preparation uses no allowance;
+a trial rerun consumes another attempt. Full documentary coverage remains a human
+approval task. The enclosing operational decision retains any upstream block.

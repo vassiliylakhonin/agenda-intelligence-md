@@ -1535,7 +1535,220 @@ export const WORKED_EXAMPLES = {
           "Eligible means dated, scoped excerpt supplied by caller; authenticity, factual support and legal sufficiency are not verified.",
           "Score measures documentary coverage, not investment quality or probability of compliance.",
           "No automatic transaction approval; a complete dossier still requires human sign-off."
-        ]
+        ],
+        "evidence_workflow": {
+          "workflow_version": "mineral-evidence-loop.v1",
+          "decision": {
+            "stage": "pre_offtake_agreement",
+            "question": "Which evidence must the supplier provide before offtake review?",
+            "project_name": "Example spodumene offtake",
+            "commodity": "lithium",
+            "origin_jurisdiction": "Kazakhstan"
+          },
+          "documentary_next_step": "collect_evidence",
+          "missing_source_types": [
+            "mining_concession_or_license_extract",
+            "certified_ore_assay_report",
+            "beneficial_ownership_due_diligence",
+            "export_quota_and_permit_clearance",
+            "responsible_sourcing_due_diligence",
+            "processing_and_refining_tolling_agreement",
+            "chain_of_custody_records",
+            "regulatory_applicability_memo"
+          ],
+          "caller_blockers": [],
+          "evidence_requests": [
+            {
+              "source_type": "mining_concession_or_license_extract",
+              "owner": "supplier / dossier owner",
+              "source_refs": [
+                "supplied_sources[0]"
+              ],
+              "issues": [
+                "Illustrative or placeholder material is not documentary evidence."
+              ],
+              "request_text": "For Example spodumene offtake before pre_offtake_agreement, please provide mining concession or license extract. Current gaps: Illustrative or placeholder material is not documentary evidence. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+              "source_template": {
+                "source_type": "mining_concession_or_license_extract",
+                "title": "",
+                "issuing_authority": "",
+                "date": "",
+                "excerpt": "",
+                "scope": {
+                  "project_name": "Example spodumene offtake",
+                  "commodity": "lithium",
+                  "origin_jurisdiction": "Kazakhstan"
+                }
+              }
+            },
+            {
+              "source_type": "certified_ore_assay_report",
+              "owner": "supplier / dossier owner",
+              "source_refs": [
+                "supplied_sources[1]"
+              ],
+              "issues": [
+                "Illustrative or placeholder material is not documentary evidence."
+              ],
+              "request_text": "For Example spodumene offtake before pre_offtake_agreement, please provide certified ore assay report. Current gaps: Illustrative or placeholder material is not documentary evidence. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+              "source_template": {
+                "source_type": "certified_ore_assay_report",
+                "title": "",
+                "issuing_authority": "",
+                "date": "",
+                "excerpt": "",
+                "scope": {
+                  "project_name": "Example spodumene offtake",
+                  "commodity": "lithium",
+                  "origin_jurisdiction": "Kazakhstan"
+                }
+              }
+            },
+            {
+              "source_type": "beneficial_ownership_due_diligence",
+              "owner": "supplier / dossier owner",
+              "source_refs": [],
+              "issues": [
+                "No supplied document for this requirement."
+              ],
+              "request_text": "For Example spodumene offtake before pre_offtake_agreement, please provide beneficial ownership due diligence. Current gaps: No supplied document for this requirement. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+              "source_template": {
+                "source_type": "beneficial_ownership_due_diligence",
+                "title": "",
+                "issuing_authority": "",
+                "date": "",
+                "excerpt": "",
+                "scope": {
+                  "project_name": "Example spodumene offtake",
+                  "commodity": "lithium",
+                  "origin_jurisdiction": "Kazakhstan"
+                }
+              }
+            },
+            {
+              "source_type": "export_quota_and_permit_clearance",
+              "owner": "compliance counsel",
+              "source_refs": [],
+              "issues": [
+                "No supplied document for this requirement."
+              ],
+              "request_text": "For Example spodumene offtake before pre_offtake_agreement, please provide export quota and permit clearance. Current gaps: No supplied document for this requirement. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+              "source_template": {
+                "source_type": "export_quota_and_permit_clearance",
+                "title": "",
+                "issuing_authority": "",
+                "date": "",
+                "excerpt": "",
+                "scope": {
+                  "project_name": "Example spodumene offtake",
+                  "commodity": "lithium",
+                  "origin_jurisdiction": "Kazakhstan"
+                }
+              }
+            },
+            {
+              "source_type": "responsible_sourcing_due_diligence",
+              "owner": "supplier / dossier owner",
+              "source_refs": [],
+              "issues": [
+                "No supplied document for this requirement."
+              ],
+              "request_text": "For Example spodumene offtake before pre_offtake_agreement, please provide responsible sourcing due diligence. Current gaps: No supplied document for this requirement. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+              "source_template": {
+                "source_type": "responsible_sourcing_due_diligence",
+                "title": "",
+                "issuing_authority": "",
+                "date": "",
+                "excerpt": "",
+                "scope": {
+                  "project_name": "Example spodumene offtake",
+                  "commodity": "lithium",
+                  "origin_jurisdiction": "Kazakhstan"
+                }
+              }
+            },
+            {
+              "source_type": "processing_and_refining_tolling_agreement",
+              "owner": "supplier / dossier owner",
+              "source_refs": [],
+              "issues": [
+                "No supplied document for this requirement."
+              ],
+              "request_text": "For Example spodumene offtake before pre_offtake_agreement, please provide processing and refining tolling agreement. Current gaps: No supplied document for this requirement. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+              "source_template": {
+                "source_type": "processing_and_refining_tolling_agreement",
+                "title": "",
+                "issuing_authority": "",
+                "date": "",
+                "excerpt": "",
+                "scope": {
+                  "project_name": "Example spodumene offtake",
+                  "commodity": "lithium",
+                  "origin_jurisdiction": "Kazakhstan"
+                }
+              }
+            },
+            {
+              "source_type": "chain_of_custody_records",
+              "owner": "supplier / dossier owner",
+              "source_refs": [],
+              "issues": [
+                "No supplied document for this requirement."
+              ],
+              "request_text": "For Example spodumene offtake before pre_offtake_agreement, please provide chain of custody records. Current gaps: No supplied document for this requirement. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+              "source_template": {
+                "source_type": "chain_of_custody_records",
+                "title": "",
+                "issuing_authority": "",
+                "date": "",
+                "excerpt": "",
+                "scope": {
+                  "project_name": "Example spodumene offtake",
+                  "commodity": "lithium",
+                  "origin_jurisdiction": "Kazakhstan"
+                }
+              }
+            },
+            {
+              "source_type": "regulatory_applicability_memo",
+              "owner": "compliance counsel",
+              "source_refs": [],
+              "issues": [
+                "No supplied document for this requirement."
+              ],
+              "request_text": "For Example spodumene offtake before pre_offtake_agreement, please provide regulatory applicability memo. Current gaps: No supplied document for this requirement. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+              "source_template": {
+                "source_type": "regulatory_applicability_memo",
+                "title": "",
+                "issuing_authority": "",
+                "date": "",
+                "excerpt": "",
+                "scope": {
+                  "project_name": "Example spodumene offtake",
+                  "commodity": "lithium",
+                  "origin_jurisdiction": "Kazakhstan"
+                }
+              }
+            }
+          ],
+          "revision": {
+            "status": "not_provided",
+            "basis": "caller_supplied_previous_submission_rechecked",
+            "changed_scope_fields": [],
+            "comparison_blockers": [],
+            "newly_reviewable_source_types": [],
+            "no_longer_reviewable_source_types": [],
+            "still_missing_source_types": [],
+            "removed_caller_blockers": [],
+            "limitations": [
+              "Previous submission is caller-supplied and rechecked, not verified stored history.",
+              "Coverage changes are not proof of authenticity, factual support, legal clearance or resolved risk.",
+              "Removing a caller blocker is not proof of resolution; a human must review any removal."
+            ]
+          },
+          "human_review_required": true,
+          "authorization_granted": false
+        }
       },
       "triage_recommendation": "insufficient_information",
       "risk_signal": "unknown",
@@ -1615,7 +1828,7 @@ export const WORKED_EXAMPLES = {
       "human_review_required": true,
       "not_advice_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice.",
       "run_provenance": {
-        "contract_version": "1.17.1",
+        "contract_version": "1.18.0",
         "input_digest": "sha256:canonical",
         "schema_uri": "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/main/schemas/v1/critical-minerals-due-diligence-response.schema.json"
       },
@@ -1738,7 +1951,7 @@ export const WORKED_EXAMPLES = {
       "risk_question": "Is this file complete enough for export-control human review?"
     },
     "response": {
-      "contract_version": "1.17.1",
+      "contract_version": "1.18.0",
       "profile": "dual_use_technology_export",
       "export_risk_triage": {
         "status": "ready_for_human_review",

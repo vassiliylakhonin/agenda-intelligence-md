@@ -23,7 +23,7 @@ async function evaluate(request, bindings = env) {
   return res.json();
 }
 test('Critical Minerals Worker matches Python dossier results at the public REST seam', async () => {
-  for (const name of ['ready_for_human_review','pre_signature_escalate','insufficient_information']) {
+  for (const name of ['ready_for_human_review','pre_signature_escalate','insufficient_information','evidence_revision']) {
     const expected = load(`${name}.response.json`), result = await evaluate(load(`${name}.request.json`));
     for (const field of ['dossier_review','traceability_status','decision_readiness_score','decision_readiness_label','operational_decision','risk_signal','minimum_sources_before_go','watch_next']) {
       assert.deepEqual(result[field],expected[field],`${name}: ${field}`);

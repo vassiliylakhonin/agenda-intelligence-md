@@ -1,0 +1,502 @@
+{
+  "triage_recommendation": "insufficient_information",
+  "risk_signal": "unknown",
+  "decision_readiness_score": 0,
+  "decision_readiness_label": "insufficient_information",
+  "operational_decision": {
+    "decision": "request_evidence",
+    "reason_code": "critical_evidence_gaps",
+    "blocking_gaps": [
+      "Missing reviewable source: mining concession or license extract",
+      "Missing reviewable source: certified ore assay report",
+      "Missing reviewable source: beneficial ownership due diligence",
+      "Missing reviewable source: export quota and permit clearance",
+      "Missing reviewable source: responsible sourcing due diligence",
+      "Missing reviewable source: processing and refining tolling agreement",
+      "Missing reviewable source: chain of custody records",
+      "Missing reviewable source: regulatory applicability memo"
+    ],
+    "next_permitted_action": "Resolve dossier_review.owner_actions before decision; document labels do not establish readiness"
+  },
+  "commodity": "lithium",
+  "origin_jurisdiction": "Kazakhstan",
+  "traceability_status": "unverified",
+  "export_control_exposure": {
+    "quota_restricted": false,
+    "processing_monopoly_risk": false,
+    "jurisdiction_risk_flags": []
+  },
+  "supplied_sources": [
+    "mining_concession_or_license_extract",
+    "certified_ore_assay_report",
+    "chain_of_custody_records"
+  ],
+  "minimum_sources_before_go": [
+    "mining_concession_or_license_extract",
+    "certified_ore_assay_report",
+    "beneficial_ownership_due_diligence",
+    "export_quota_and_permit_clearance",
+    "responsible_sourcing_due_diligence",
+    "processing_and_refining_tolling_agreement",
+    "chain_of_custody_records",
+    "regulatory_applicability_memo"
+  ],
+  "evidence_gaps": [
+    "Missing reviewable source: mining concession or license extract",
+    "Missing reviewable source: certified ore assay report",
+    "Missing reviewable source: beneficial ownership due diligence",
+    "Missing reviewable source: export quota and permit clearance",
+    "Missing reviewable source: responsible sourcing due diligence",
+    "Missing reviewable source: processing and refining tolling agreement",
+    "Missing reviewable source: chain of custody records",
+    "Missing reviewable source: regulatory applicability memo"
+  ],
+  "top_risks": [
+    {
+      "category": "Dossier Traceability Coverage",
+      "severity": "high",
+      "description": "Caller-supplied documentary traceability status is unverified for lithium originating from Kazakhstan."
+    }
+  ],
+  "exposure_layers": [
+    {
+      "layer": "mining_concession_or_license_extract",
+      "level": "needs_evidence",
+      "summary": "No source excerpt; summary or URL alone is not documentary evidence; Missing scope.project_name; Missing scope.commodity; Missing scope.origin_jurisdiction"
+    },
+    {
+      "layer": "certified_ore_assay_report",
+      "level": "needs_evidence",
+      "summary": "No source excerpt; summary or URL alone is not documentary evidence; Missing scope.project_name; Missing scope.commodity; Missing scope.origin_jurisdiction"
+    },
+    {
+      "layer": "chain_of_custody_records",
+      "level": "needs_evidence",
+      "summary": "Illustrative or placeholder material is not documentary evidence."
+    }
+  ],
+  "watch_next": [
+    "Confirm commodity form/grade, end use, shipment date, customs code and transit jurisdictions before assessing restrictions.",
+    "Ask counsel to establish applicable permits and sanctions rules; a commodity or country label does not establish a prohibition.",
+    "Determine CSDDD scope, dates and company thresholds; a responsible-sourcing audit is not CSDDD certification."
+  ],
+  "human_review_required": true,
+  "not_advice_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice.",
+  "run_provenance": {
+    "contract_version": "1.18.0",
+    "input_digest": "sha256:bf477f4e6f5e31531c354f57a40e9181f1a2d7c97ea91a630f0d8f44e0e64857",
+    "schema_uri": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-response.schema.json"
+  },
+  "processing_jurisdiction": "China",
+  "target_market": "eu",
+  "dossier_review": {
+    "policy_version": "mineral-dossier.v2",
+    "assessment_date": "2026-10-19",
+    "eligible_source_types": [],
+    "source_reviews": [
+      {
+        "source_ref": "supplied_sources[0]",
+        "source_type": "mining_concession_or_license_extract",
+        "status": "needs_evidence",
+        "issues": [
+          "No source excerpt; summary or URL alone is not documentary evidence",
+          "Missing scope.project_name",
+          "Missing scope.commodity",
+          "Missing scope.origin_jurisdiction"
+        ]
+      },
+      {
+        "source_ref": "supplied_sources[1]",
+        "source_type": "certified_ore_assay_report",
+        "status": "needs_evidence",
+        "issues": [
+          "No source excerpt; summary or URL alone is not documentary evidence",
+          "Missing scope.project_name",
+          "Missing scope.commodity",
+          "Missing scope.origin_jurisdiction"
+        ]
+      },
+      {
+        "source_ref": "supplied_sources[2]",
+        "source_type": "chain_of_custody_records",
+        "status": "needs_evidence",
+        "issues": [
+          "Illustrative or placeholder material is not documentary evidence."
+        ]
+      }
+    ],
+    "owner_actions": [
+      {
+        "source_type": "mining_concession_or_license_extract",
+        "owner": "supplier / dossier owner",
+        "priority": "before_decision",
+        "action": "Supply mining concession or license extract with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "certified_ore_assay_report",
+        "owner": "supplier / dossier owner",
+        "priority": "before_decision",
+        "action": "Supply certified ore assay report with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "beneficial_ownership_due_diligence",
+        "owner": "supplier / dossier owner",
+        "priority": "before_decision",
+        "action": "Supply beneficial ownership due diligence with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "export_quota_and_permit_clearance",
+        "owner": "compliance counsel",
+        "priority": "before_decision",
+        "action": "Supply export quota and permit clearance with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "responsible_sourcing_due_diligence",
+        "owner": "supplier / dossier owner",
+        "priority": "before_decision",
+        "action": "Supply responsible sourcing due diligence with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "processing_and_refining_tolling_agreement",
+        "owner": "supplier / dossier owner",
+        "priority": "before_decision",
+        "action": "Supply processing and refining tolling agreement with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "chain_of_custody_records",
+        "owner": "supplier / dossier owner",
+        "priority": "before_decision",
+        "action": "Supply chain of custody records with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "regulatory_applicability_memo",
+        "owner": "compliance counsel",
+        "priority": "before_decision",
+        "action": "Supply regulatory applicability memo with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      }
+    ],
+    "applicability_questions": [
+      "Confirm commodity form/grade, end use, shipment date, customs code and transit jurisdictions before assessing restrictions.",
+      "Ask counsel to establish applicable permits and sanctions rules; a commodity or country label does not establish a prohibition.",
+      "Determine CSDDD scope, dates and company thresholds; a responsible-sourcing audit is not CSDDD certification."
+    ],
+    "limitations": [
+      "Eligible means dated, scoped excerpt supplied by caller; authenticity, factual support and legal sufficiency are not verified.",
+      "Score measures documentary coverage, not investment quality or probability of compliance.",
+      "No automatic transaction approval; a complete dossier still requires human sign-off."
+    ],
+    "evidence_workflow": {
+      "workflow_version": "mineral-evidence-loop.v1",
+      "decision": {
+        "stage": "pre_offtake_agreement",
+        "question": "Can we execute the 5-year spodumene concentrate offtake agreement?",
+        "project_name": "Central Asia Lithium Brine Offtake",
+        "commodity": "lithium",
+        "origin_jurisdiction": "Kazakhstan"
+      },
+      "documentary_next_step": "collect_evidence",
+      "missing_source_types": [
+        "mining_concession_or_license_extract",
+        "certified_ore_assay_report",
+        "beneficial_ownership_due_diligence",
+        "export_quota_and_permit_clearance",
+        "responsible_sourcing_due_diligence",
+        "processing_and_refining_tolling_agreement",
+        "chain_of_custody_records",
+        "regulatory_applicability_memo"
+      ],
+      "caller_blockers": [],
+      "evidence_requests": [
+        {
+          "source_type": "mining_concession_or_license_extract",
+          "owner": "supplier / dossier owner",
+          "source_refs": [
+            "supplied_sources[0]"
+          ],
+          "issues": [
+            "No source excerpt; summary or URL alone is not documentary evidence",
+            "Missing scope.project_name",
+            "Missing scope.commodity",
+            "Missing scope.origin_jurisdiction"
+          ],
+          "request_text": "For Central Asia Lithium Brine Offtake before pre_offtake_agreement, please provide mining concession or license extract. Current gaps: No source excerpt; summary or URL alone is not documentary evidence; Missing scope.project_name; Missing scope.commodity; Missing scope.origin_jurisdiction Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+          "source_template": {
+            "source_type": "mining_concession_or_license_extract",
+            "title": "",
+            "issuing_authority": "",
+            "date": "",
+            "excerpt": "",
+            "scope": {
+              "project_name": "Central Asia Lithium Brine Offtake",
+              "commodity": "lithium",
+              "origin_jurisdiction": "Kazakhstan"
+            }
+          }
+        },
+        {
+          "source_type": "certified_ore_assay_report",
+          "owner": "supplier / dossier owner",
+          "source_refs": [
+            "supplied_sources[1]"
+          ],
+          "issues": [
+            "No source excerpt; summary or URL alone is not documentary evidence",
+            "Missing scope.project_name",
+            "Missing scope.commodity",
+            "Missing scope.origin_jurisdiction"
+          ],
+          "request_text": "For Central Asia Lithium Brine Offtake before pre_offtake_agreement, please provide certified ore assay report. Current gaps: No source excerpt; summary or URL alone is not documentary evidence; Missing scope.project_name; Missing scope.commodity; Missing scope.origin_jurisdiction Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+          "source_template": {
+            "source_type": "certified_ore_assay_report",
+            "title": "",
+            "issuing_authority": "",
+            "date": "",
+            "excerpt": "",
+            "scope": {
+              "project_name": "Central Asia Lithium Brine Offtake",
+              "commodity": "lithium",
+              "origin_jurisdiction": "Kazakhstan"
+            }
+          }
+        },
+        {
+          "source_type": "beneficial_ownership_due_diligence",
+          "owner": "supplier / dossier owner",
+          "source_refs": [],
+          "issues": [
+            "No supplied document for this requirement."
+          ],
+          "request_text": "For Central Asia Lithium Brine Offtake before pre_offtake_agreement, please provide beneficial ownership due diligence. Current gaps: No supplied document for this requirement. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+          "source_template": {
+            "source_type": "beneficial_ownership_due_diligence",
+            "title": "",
+            "issuing_authority": "",
+            "date": "",
+            "excerpt": "",
+            "scope": {
+              "project_name": "Central Asia Lithium Brine Offtake",
+              "commodity": "lithium",
+              "origin_jurisdiction": "Kazakhstan"
+            }
+          }
+        },
+        {
+          "source_type": "export_quota_and_permit_clearance",
+          "owner": "compliance counsel",
+          "source_refs": [],
+          "issues": [
+            "No supplied document for this requirement."
+          ],
+          "request_text": "For Central Asia Lithium Brine Offtake before pre_offtake_agreement, please provide export quota and permit clearance. Current gaps: No supplied document for this requirement. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+          "source_template": {
+            "source_type": "export_quota_and_permit_clearance",
+            "title": "",
+            "issuing_authority": "",
+            "date": "",
+            "excerpt": "",
+            "scope": {
+              "project_name": "Central Asia Lithium Brine Offtake",
+              "commodity": "lithium",
+              "origin_jurisdiction": "Kazakhstan"
+            }
+          }
+        },
+        {
+          "source_type": "responsible_sourcing_due_diligence",
+          "owner": "supplier / dossier owner",
+          "source_refs": [],
+          "issues": [
+            "No supplied document for this requirement."
+          ],
+          "request_text": "For Central Asia Lithium Brine Offtake before pre_offtake_agreement, please provide responsible sourcing due diligence. Current gaps: No supplied document for this requirement. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+          "source_template": {
+            "source_type": "responsible_sourcing_due_diligence",
+            "title": "",
+            "issuing_authority": "",
+            "date": "",
+            "excerpt": "",
+            "scope": {
+              "project_name": "Central Asia Lithium Brine Offtake",
+              "commodity": "lithium",
+              "origin_jurisdiction": "Kazakhstan"
+            }
+          }
+        },
+        {
+          "source_type": "processing_and_refining_tolling_agreement",
+          "owner": "supplier / dossier owner",
+          "source_refs": [],
+          "issues": [
+            "No supplied document for this requirement."
+          ],
+          "request_text": "For Central Asia Lithium Brine Offtake before pre_offtake_agreement, please provide processing and refining tolling agreement. Current gaps: No supplied document for this requirement. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+          "source_template": {
+            "source_type": "processing_and_refining_tolling_agreement",
+            "title": "",
+            "issuing_authority": "",
+            "date": "",
+            "excerpt": "",
+            "scope": {
+              "project_name": "Central Asia Lithium Brine Offtake",
+              "commodity": "lithium",
+              "origin_jurisdiction": "Kazakhstan"
+            }
+          }
+        },
+        {
+          "source_type": "chain_of_custody_records",
+          "owner": "supplier / dossier owner",
+          "source_refs": [
+            "supplied_sources[2]"
+          ],
+          "issues": [
+            "Illustrative or placeholder material is not documentary evidence."
+          ],
+          "request_text": "For Central Asia Lithium Brine Offtake before pre_offtake_agreement, please provide chain of custody records. Current gaps: Illustrative or placeholder material is not documentary evidence. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+          "source_template": {
+            "source_type": "chain_of_custody_records",
+            "title": "",
+            "issuing_authority": "",
+            "date": "",
+            "excerpt": "",
+            "scope": {
+              "project_name": "Central Asia Lithium Brine Offtake",
+              "commodity": "lithium",
+              "origin_jurisdiction": "Kazakhstan"
+            }
+          }
+        },
+        {
+          "source_type": "regulatory_applicability_memo",
+          "owner": "compliance counsel",
+          "source_refs": [],
+          "issues": [
+            "No supplied document for this requirement."
+          ],
+          "request_text": "For Central Asia Lithium Brine Offtake before pre_offtake_agreement, please provide regulatory applicability memo. Current gaps: No supplied document for this requirement. Supply the actual title, issuer, issue date and exact authorized excerpt with matching project/commodity/origin scope; include document ID and expiry where available. Do not invent or backdate evidence. A human must verify authenticity and applicability.",
+          "source_template": {
+            "source_type": "regulatory_applicability_memo",
+            "title": "",
+            "issuing_authority": "",
+            "date": "",
+            "excerpt": "",
+            "scope": {
+              "project_name": "Central Asia Lithium Brine Offtake",
+              "commodity": "lithium",
+              "origin_jurisdiction": "Kazakhstan"
+            }
+          }
+        }
+      ],
+      "revision": {
+        "status": "compared",
+        "basis": "caller_supplied_previous_submission_rechecked",
+        "changed_scope_fields": [],
+        "comparison_blockers": [],
+        "newly_reviewable_source_types": [],
+        "no_longer_reviewable_source_types": [],
+        "still_missing_source_types": [
+          "mining_concession_or_license_extract",
+          "certified_ore_assay_report",
+          "beneficial_ownership_due_diligence",
+          "export_quota_and_permit_clearance",
+          "responsible_sourcing_due_diligence",
+          "processing_and_refining_tolling_agreement",
+          "chain_of_custody_records",
+          "regulatory_applicability_memo"
+        ],
+        "removed_caller_blockers": [],
+        "limitations": [
+          "Previous submission is caller-supplied and rechecked, not verified stored history.",
+          "Coverage changes are not proof of authenticity, factual support, legal clearance or resolved risk.",
+          "Removing a caller blocker is not proof of resolution; a human must review any removal."
+        ]
+      },
+      "human_review_required": true,
+      "authorization_granted": false
+    }
+  },
+  "readiness_contract": {
+    "profile": "critical_minerals_due_diligence",
+    "status": "insufficient_information",
+    "score": 0,
+    "routing": {
+      "field": "triage_recommendation",
+      "value": "insufficient_information"
+    },
+    "signal": null,
+    "blocking_gaps": [
+      "Missing reviewable source: mining concession or license extract",
+      "Missing reviewable source: certified ore assay report",
+      "Missing reviewable source: beneficial ownership due diligence",
+      "Missing reviewable source: export quota and permit clearance",
+      "Missing reviewable source: responsible sourcing due diligence",
+      "Missing reviewable source: processing and refining tolling agreement",
+      "Missing reviewable source: chain of custody records",
+      "Missing reviewable source: regulatory applicability memo"
+    ],
+    "non_blocking_gaps": [],
+    "claim_audit": [],
+    "owner_actions": [
+      {
+        "source_type": "mining_concession_or_license_extract",
+        "owner": "supplier / dossier owner",
+        "priority": "before_decision",
+        "action": "Supply mining concession or license extract with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "certified_ore_assay_report",
+        "owner": "supplier / dossier owner",
+        "priority": "before_decision",
+        "action": "Supply certified ore assay report with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "beneficial_ownership_due_diligence",
+        "owner": "supplier / dossier owner",
+        "priority": "before_decision",
+        "action": "Supply beneficial ownership due diligence with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "export_quota_and_permit_clearance",
+        "owner": "compliance counsel",
+        "priority": "before_decision",
+        "action": "Supply export quota and permit clearance with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "responsible_sourcing_due_diligence",
+        "owner": "supplier / dossier owner",
+        "priority": "before_decision",
+        "action": "Supply responsible sourcing due diligence with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "processing_and_refining_tolling_agreement",
+        "owner": "supplier / dossier owner",
+        "priority": "before_decision",
+        "action": "Supply processing and refining tolling agreement with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "chain_of_custody_records",
+        "owner": "supplier / dossier owner",
+        "priority": "before_decision",
+        "action": "Supply chain of custody records with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      },
+      {
+        "source_type": "regulatory_applicability_memo",
+        "owner": "compliance counsel",
+        "priority": "before_decision",
+        "action": "Supply regulatory applicability memo with issuer, issue date, excerpt and matching project/commodity/origin scope; confirm authenticity and applicability with a human reviewer."
+      }
+    ],
+    "watch_next": [
+      "Confirm commodity form/grade, end use, shipment date, customs code and transit jurisdictions before assessing restrictions.",
+      "Ask counsel to establish applicable permits and sanctions rules; a commodity or country label does not establish a prohibition.",
+      "Determine CSDDD scope, dates and company thresholds; a responsible-sourcing audit is not CSDDD certification."
+    ],
+    "human_review_required": true,
+    "boundary_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice."
+  },
+  "next_action": "insufficient",
+  "decision_kind": "evidence_review",
+  "authorization_granted": false,
+  "score_kind": "evidence_readiness"
+}
