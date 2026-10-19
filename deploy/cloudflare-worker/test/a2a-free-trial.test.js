@@ -182,5 +182,5 @@ test("legacy A2A dialect gets a task, and ordinary unpaid evaluation remains gat
 
 test('the advertised extension URI resolves to its read-only contract',async()=>{
  const response=await handleRequest(new Request('https://example.test/extensions/free-trial/v1'),envFor('agenda'));
- assert.equal(response.status,200);const contract=await response.json();assert.equal(contract.metadata_key,key);assert.deepEqual(contract.selector_schema.properties.operation.enum,['status','evaluate']);
+ assert.equal(response.status,200);const contract=await response.json();assert.equal(contract.metadata_key,key);assert.deepEqual(contract.selector_schema.properties.operation.enum,['status','evaluate','feedback']);
 });

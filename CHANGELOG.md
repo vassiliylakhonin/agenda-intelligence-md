@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.17.1 — 2026-10-19
+
+- Expose optional completed-trial feedback through native MCP and A2A, including the Critical Minerals pre-offtake pilot. Return the attempt ID inside trial metadata, preserve completion/network/product/expiry checks and production authorization, and consume no evaluation allowance for feedback. Publish a two-step dossier workflow and correct paid-only onboarding copy. Feedback is self-reported; synthetic regressions and maintainer checks are not external adoption or usefulness evidence.
+
 ## Guard npm clients — 2026-10-18
 
 - Release independently versioned ElizaOS plugin 2.1.0 and mobile client 1.3.0 with canonical custom domains, current evidence diagnostics and transport of externally signed x402 v2 proofs. Preserve exact-request/proof recovery and legacy payments; no automatic funding, signing, retries, action authorization or settlement. SDK tests include current Worker fixtures and synthetic loss/recovery. Hosted/core version remains 1.17.0.

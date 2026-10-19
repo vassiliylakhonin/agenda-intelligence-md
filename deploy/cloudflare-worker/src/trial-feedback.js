@@ -2,6 +2,12 @@ import { readBoundedJson } from './request-body.js';
 import { normalizePaymentTrace } from './payment-trace.js';
 import { trialClientKey } from './output-trial.js';
 
+export const TRIAL_FEEDBACK_SCHEMA = {
+  type:'object',additionalProperties:false,required:['attempt_id','response'],
+  properties:{attempt_id:{type:'string',format:'uuid'},
+    response:{type:'string',enum:['useful_next_step','still_blocked']}}
+};
+
 // The email draft remains optional and is never sent automatically.
 export function trialFeedbackMailto(profile, status, email, helpfulness = null) {
   const product = /^[a-z][a-z0-9_]{0,63}$/.test(profile || '') ? profile : 'unknown';
@@ -27,6 +33,12 @@ export async function handleTrialFeedback(request, env, profile, {log, respond})
   let body;
   try {body=await readBoundedJson(request,512);}
   catch(error) {return respond({error:'Send a bounded feedback object.'},error.status===413?413:400);}
+  return recordTrialFeedback(request,env,profile,body,{log,respond});
+}
+
+// Native MCP/A2A callers share this completion/network check, not the browser
+// route's Origin requirement. The protocol adapters retain production auth.
+export async function recordTrialFeedback(request, env, profile, body, {log,respond}) {
   if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length !== 2 ||
       !normalizePaymentTrace(body.attempt_id) || !['useful_next_step','still_blocked'].includes(body.response)) {
     return respond({error:'Send only attempt_id and response: useful_next_step or still_blocked.'},400);
