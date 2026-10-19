@@ -68,6 +68,16 @@ def fleet_names():
     return list(dict.fromkeys([*names, "vizier"]))
 
 
+def fleet_origins():
+    origins = json.loads((ROOT / "scripts/mcp-monitor-origins.json").read_text())
+    if set(origins) != set(fleet_names()) or any(
+        not isinstance(origin, str) or re.fullmatch(r"https://(?:[a-z0-9-]+\.)?agendamcp\.dpdns\.org", origin) is None
+        for origin in origins.values()
+    ):
+        raise ValueError("Monitor requires an explicit canonical origin for every configured Worker")
+    return origins
+
+
 def probe(url, body=None, identify=True):
     headers = {"Accept": "application/json, text/event-stream", "X-Client-Id": OWNER_CLIENT_ID}
     if identify:
@@ -152,7 +162,7 @@ async def sdk_discovery(url, expected):
 
 
 async def check_host(name):
-    origin = f"https://{name}.vassiliy-lakhonin.workers.dev"
+    origin = fleet_origins()[name]
     baseline = json.loads((ROOT / "scripts/mcp-catalog-baseline.json").read_text())
     checks = []
     transport_events = []
@@ -208,7 +218,13 @@ async def check_host(name):
         }
     except Exception as error:
         compatibility = {"passed": False, "classification": "transport_error", "error": str(error)[:500]}
-    return {"host": name, "checks": checks, "default_urllib": compatibility, "transport_events": transport_events}
+    return {
+        "host": name,
+        "origin": origin,
+        "checks": checks,
+        "default_urllib": compatibility,
+        "transport_events": transport_events,
+    }
 
 
 def failed(report, require_default_urllib=False):
