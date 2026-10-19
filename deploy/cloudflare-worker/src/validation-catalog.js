@@ -19,4 +19,3 @@ export function validationCatalog(profile) {
     {name:'validate_input',schema:PUBLIC_SCHEMAS['schemas/v1/input-validation-request.schema.json']}];
 }
 export const validatorKey=(profile,name)=>profile+'__'+name;
-
