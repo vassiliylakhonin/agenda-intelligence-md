@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Preflight observation — 2026-10-20
+
+- Record content-free HTTP/MCP schema-preflight outcomes in funnel v6, separately from evaluation, payment and trial consumption. Bound tool/reason labels, retain owner-purpose classification and preserve responses if telemetry fails. Add all-profile privacy and refusal regressions. No public tool schema, service version, evaluation, pricing, authentication or quota changes.
+
 ## Operational signature monitoring — 2026-10-19
 
 - Require deployed A2A card ES256 signatures in the existing thirteen-host MCP compatibility monitor. Read public JWKS only from configured canonical HTTPS origins, refuse redirects and ambiguous JSON/keys, verify every published signature and confirm altered cards fail. Report a failing signature as a required monitor failure on the existing schedule and post-deploy runs. Add negative/rotation regressions without changing service versions, signing keys, evaluation, authentication, payment or deployment behavior.
