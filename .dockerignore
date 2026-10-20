@@ -1,0 +1,26 @@
+# Keep operator secrets, local state and build products out of the audit image.
+.git
+**/node_modules
+**/.venv
+**/.venv-*
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.wrangler
+**/*.egg-info
+**/dist
+**/build
+**/.env
+**/.env.*
+**/.dev.vars
+**/.dev.vars.*
+!**/.env.example
+**/.DS_Store
+outputs
+.verification
+release-archives
+.wheel-smoke-venv
+out
+cache
+broadcast

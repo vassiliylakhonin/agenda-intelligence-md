@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## OSS Scanner preparation — 2026-10-20
+
+- Add a source-built Docker audit environment, offline verification commands and a source-backed security threat model. Keep production releases, credentials and deployment behavior unchanged. Enrollment remains subject to maintainer approval and Anthropic review; preparation is not a completed audit or security certification.
+- Keep the intentional unknown-method MCP diagnostic typed when the optional official SDK is installed; include that SDK in CI typechecking and the existing real stdio exchange regression. No wire behavior changes.
+
 ## Preflight observation — 2026-10-20
 
 - Record content-free HTTP/MCP schema-preflight outcomes in funnel v6, separately from evaluation, payment and trial consumption. Bound tool/reason labels, retain owner-purpose classification and preserve responses if telemetry fails. Add all-profile privacy and refusal regressions. No public tool schema, service version, evaluation, pricing, authentication or quota changes.
