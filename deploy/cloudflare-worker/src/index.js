@@ -11721,6 +11721,7 @@ const {
   funnelStepForPath,
   logFunnelEvent,
   logMcpDiscoveryEvent,
+  logInputValidationEvent,
   logPaymentEvent,
   callerHash,
   callOutcome,
@@ -13522,6 +13523,8 @@ async function handleMcpPost(request, env, ctx) {
   if (payload && typeof payload === "object" && payload.method === "tools/call") {
     const profile = agentProfile(request, env);
     if (!isProductionAuthorized(request, env, profile)) {
+      if (payload.params?.name===INPUT_VALIDATION_TOOL) await logInputValidationEvent(
+        request,env,'mcp',payload.params?.arguments?.tool,401,{code:'unauthorized'});
       return jsonResponse(
         jsonRpcError(payload.id ?? null, -32001, "Unauthorized: the production route requires a valid Bearer access key", {
           security_scheme: "productionBearer",
@@ -13534,7 +13537,10 @@ async function handleMcpPost(request, env, ctx) {
     if (isMcpTrialTool(payload.params?.name) || payload.params?.name === INPUT_VALIDATION_TOOL) {
       // Native trials use their own atomic campaign quota, not paid admission
       // or the hourly sandbox upgrade path. Never cache network-specific state.
-      return jsonResponse(await handleMcpJsonRpc(payload, request, env, ctx), 200, { 'cache-control':'no-store' });
+      const result=await handleMcpJsonRpc(payload, request, env, ctx);
+      if (payload.params?.name===INPUT_VALIDATION_TOOL) await logInputValidationEvent(
+        request,env,'mcp',payload.params?.arguments?.tool,200,result?.result?.structuredContent);
+      return jsonResponse(result, 200, { 'cache-control':'no-store' });
     }
     if (!mcpToolSpecForProfile(profile, payload.params?.name) || payload.jsonrpc !== '2.0') {
       return jsonResponse(await handleMcpJsonRpc(payload, request, env, ctx), 200);
@@ -15426,13 +15432,17 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
     if (request.method === 'OPTIONS') return execute();
     if (request.method !== 'POST') return jsonResponse({code:'method_not_allowed'},405,{allow:'POST, OPTIONS'});
     const profile=agentProfile(request,env);
-    if (!isProductionAuthorized(request,env,profile)) return jsonResponse({code:'unauthorized',evaluation_performed:false},401);
-    if (['x-payment-tx','x-payment-signature','payment-signature','x-payment'].some(name=>request.headers.has(name))) return jsonResponse({code:'payment_not_applicable',evaluation_performed:false},400);
+    const reply=async(body,status,target=null)=>{
+      await logInputValidationEvent(request,env,'http',target,status,body);
+      return jsonResponse(body,status,{'cache-control':'no-store'});
+    };
+    if (!isProductionAuthorized(request,env,profile)) return reply({code:'unauthorized',evaluation_performed:false},401);
+    if (['x-payment-tx','x-payment-signature','payment-signature','x-payment'].some(name=>request.headers.has(name))) return reply({code:'payment_not_applicable',evaluation_performed:false},400);
     let input;
     try {input=await readBoundedJson(request,INPUT_VALIDATION_MAX_BYTES);}
-    catch(error) {return jsonResponse({code:error.status===413?'validation_body_too_large':'invalid_validation_json',evaluation_performed:false,attempt_consumed:false},error.status===413?413:400);}
+    catch(error) {return reply({code:error.status===413?'validation_body_too_large':'invalid_validation_json',evaluation_performed:false,attempt_consumed:false},error.status===413?413:400);}
     const checked=validatePublishedInput(profile,input,outputTrialEnabled(profile,env));
-    return jsonResponse(checked.body,checked.status,{'cache-control':'no-store'});
+    return reply(checked.body,checked.status,input?.tool);
   }
   if (request.method !== 'POST') return execute();
   const path = new URL(request.url).pathname;
@@ -15496,7 +15506,11 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
       : {...data, error:'Invalid JSON payload'}, status), trace, attempt_id);
   }
   if (path.startsWith('/mcp') && body?.method==='tools/call' && body.params?.name===INPUT_VALIDATION_TOOL) {
-    if (wantsPayment || wantsStandard || request.headers.has('x-payment-signature') || body.params?._meta?.['x402/payment'] !== undefined) return paidProtocolResponse(request,body,jsonResponse({code:'payment_not_applicable',evaluation_performed:false},400));
+    if (wantsPayment || wantsStandard || request.headers.has('x-payment-signature') || body.params?._meta?.['x402/payment'] !== undefined) {
+      const refused={code:'payment_not_applicable',evaluation_performed:false};
+      await logInputValidationEvent(request,env,'mcp',body.params?.arguments?.tool,400,refused);
+      return paidProtocolResponse(request,body,jsonResponse(refused,400));
+    }
     return execute();
   }
   if ((path === '/message/send' || path === '/') && isA2ATrial(body)) return handleA2ATrial(body,request,env,ctx);

@@ -45,6 +45,39 @@ The scheduled owner MCP monitor adds `X-Client-Id: agenda-owner-mcp-monitor`
 to SDK and raw urllib discovery while preserving their normal User-Agent.
 That spoofable purpose marker changes classification only, never access.
 
+## Schema preflight observations
+
+Actual POST `/v1/validate-input` and parsed hosted MCP `tools/call` for
+`validate_input` record funnel v6 with `step: input_validation`. Operational
+metadata is finite: `validation_transport` (`http`/`mcp`), `validation_outcome`
+(`valid`/`invalid`/`rejected`), `validation_reason`, the serving `agent_profile`
+and an allowlisted `validation_tool` or null, with `validation_target_kind`
+(`evaluation`/`utility`/`unknown`). All carry
+`evaluation_performed: false` and `attempt_consumed: false`.
+
+Valid and invalid shapes use `schema_valid` and `schema_mismatch`. Refusals use
+`invalid_validation_request`, `unknown_validation_tool`,
+`validation_body_too_large`, `validation_complexity_limit`,
+`invalid_validation_json`, `unauthorized`, `payment_not_applicable` or
+`protocol_rejected`. Unknown tool names become null. Validator findings, input
+field names, arguments, documents, protocol request IDs and evidence digests
+are not added. Existing operational caller metadata remains unchanged.
+Malformed MCP envelopes that cannot be identified as `validate_input` are not
+invented as preflight attempts. GET/OPTIONS are not validation attempts.
+
+Telemetry failures never change the real response. Preflight still performs no
+evaluation, payment verification, usage/KV write or trial reservation. No
+public schema or client changes are required. The telemetry event version
+changes independently of the service/package version.
+
+The private vault reports outcomes separately for owner/probe, candidate and
+unknown callers. It counts same-host/profile/caller pairs with a valid evaluation-tool preflight and a later completed
+domain evaluation within 30 minutes inside the same UTC day. This bounded
+sequence is not the same input, unique people, usefulness or causal conversion;
+shared or spoofed fingerprints can join unrelated requests. Missing usage
+sources leave linkage null; absent historical preflight instrumentation stays
+unmeasured. 402, catalog lookups and runtime failures are not evaluations.
+
 `usage_category` is `catalog` for a nonempty normalized module list containing
 only `fleet_directory` / `decision_policies_list`, `domain` for other nonempty
 lists, or `unclassified` for no modules. Categories do not assert outcome or
