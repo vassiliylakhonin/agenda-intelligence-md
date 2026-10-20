@@ -12,7 +12,7 @@ import warnings
 from contextlib import AsyncExitStack
 from importlib.metadata import version
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from jsonschema import Draft202012Validator
 from referencing import Registry
@@ -242,7 +242,10 @@ async def _check(config: dict) -> dict:
             raise ValueError("Tool pagination exceeds ten pages")
         validate_catalog(tools)
         checks.append({"check": "discovery_and_schemas", "status": "passed", "tools": [tool.name for tool in tools]})
-        unknown = types.ClientRequest.model_construct(root=types.Request(method="agenda/unsupported-check", params={}))
+        # This deliberately invalid diagnostic is outside ClientRequest's union.
+        # Confine the typing escape to its payload, not the SDK/session itself.
+        unsupported = cast(Any, types.Request(method="agenda/unsupported-check", params={}))
+        unknown = types.ClientRequest.model_construct(root=unsupported)
         try:
             # This one constant probe intentionally falls outside the SDK's
             # supported request union. Do not hide warnings from other calls.
