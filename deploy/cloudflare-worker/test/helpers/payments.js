@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
-// Independent secp256k1 EIP-191 vectors generated with @noble/curves 2.4.0.
+// Independent secp256k1 EIP-191 vectors generated with @noble/curves 2.4.0;
+// the revised Escrow example vector uses 1.9.1 and @noble/hashes keccak_256.
 // Pure fixture lookup keeps tests offline and prevents production key access.
 const signatures = JSON.parse(readFileSync(new URL('../fixtures/payment-signatures.json', import.meta.url)));
 import { BASE_USDC_CONTRACT, BASE_USDC_WALLET, ERC20_TRANSFER_TOPIC } from '../../src/profiles.js';

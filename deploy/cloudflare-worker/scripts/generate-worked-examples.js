@@ -14,6 +14,12 @@ for(const profile of profiles){
  const response=await(await call({jsonrpc:'2.0',id:2,method:'tools/call',params:{name:tool.name,arguments:args}})).json();
  if(response.error||response.result?.isError)throw Error('invalid fixture '+profile);
  examples[profile]={kind:'precomputed_synthetic_fixture',tool:tool.name,request:args,response:response.result.structuredContent?.metadata?.response || response.result.structuredContent};
+ if(profile==='m2m_escrow_arbiter') {
+  const tampered=structuredClone(args);(tampered.request || tampered).delivery_submission.artifact_data.records=2;
+  const changed=await(await call({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:tool.name,arguments:tampered}})).json();
+  if(changed.error||changed.result?.isError)throw Error('invalid tampered fixture '+profile);
+  examples[profile].follow_up={kind:'precomputed_synthetic_tamper',label:'Changed artifact: hash mismatch, still human review',request:tampered,response:changed.result.structuredContent?.metadata?.response || changed.result.structuredContent};
+ }
  if(profile==='agent_output_verification') {
   const corrected=structuredClone(args);corrected.claims=corrected.claims.filter(claim=>claim.claim_id!=='customer-count');
   const repair=await(await call({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:tool.name,arguments:corrected}})).json();

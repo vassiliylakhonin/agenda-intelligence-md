@@ -11,10 +11,11 @@ Connect to Output Verification `/mcp/output-verification`. Discover tools, call
 ```
 
 This example is synthetic. Replace it with authorized text. Each nonempty line
-is a review unit. References are plain `[source-id]`; straight double quotes
-immediately precede their citation. Quote comparison is case-sensitive after NFC
-and whitespace normalization. Links, footnotes, nested/incomplete brackets, curly
-quotes and unattributed quotes produce findings. No URLs are fetched. Limits:
+is a review unit. References use `[source-id]` or simple `[source-id](https://URL)` Markdown
+links. Straight or paired typographic double quotes immediately precede their citation. Quote comparison is case-sensitive after NFC
+and whitespace normalization. Footnotes, nested/incomplete brackets, mixed/unclosed quotes, non-HTTP(S) or
+complex links (titles, spaces, nested parentheses) and unattributed quotes produce findings.
+The link label must match a supplied source ID; a URL never supplies evidence. No URLs are fetched. Limits:
 20,000 answer characters, 200 nonempty lines, 500 citations, 20 sources, 20,000
 characters per source and 200,000 source characters total. IDs are unique ASCII
 letters/digits/underscore/hyphen, start with a letter/digit and have at most 64

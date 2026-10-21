@@ -27,8 +27,14 @@ baseline, timestamp rollback, or name-count drift above 10%. `--publish` also
 requires a clean `main`, records the deployment decision workspace, invokes the
 pinned Wrangler 4.122.0 client, and waits until the canonical URL serves the
 candidate's exact SHA-256. Omit `--publish` to rehearse every non-mutating gate.
-No Cloudflare credential is stored in GitHub; publication uses the operator's
-local Wrangler login.
+Local publication uses the operator's normal Wrangler login.
+`.github/workflows/publish-sanctions-index.yml` invokes the same gated publisher
+daily at 04:05 UTC and on manual dispatch from immutable clean main, using the
+existing protected production environment and its Cloudflare credential. It
+creates no token or additional permissions. If that token lacks Pages access,
+the job fails and the existing deployment remains; repair the credential boundary
+explicitly rather than bypassing the gates. The scheduled publisher is separate
+from the independent read-only watchdog.
 
 `.github/workflows/check-sanctions-index.yml` is the independent daily watchdog.
 It verifies the URL users actually read, rebuilds from

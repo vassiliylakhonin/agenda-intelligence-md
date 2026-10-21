@@ -7,6 +7,8 @@ import { trialFeedbackMailto } from './trial-feedback.js';
 import { PRODUCT_WORKFLOWS, reviewSummary, reviewSummaryHtml, reviewDeltaHtml, taskChooserHtml } from "./product-workflows.js";
 import { INTAKE_CLIENT_SCRIPT } from './intake-editor.js';
 import { CITATION_REVIEW_SCRIPT, citationReviewHtml } from './citation-review.js';
+import { serviceOffersHtml } from './service-offers.js';
+import { projectHandoffValue, prepareHandoff, handoffHtml, HANDOFF_CLIENT_SCRIPT } from './handoff.js';
 // Browser presentation only. Runtime decisions are supplied by the controller.
 import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL } from "./profiles.js";
 
@@ -14,6 +16,10 @@ export function createLandingRenderer({ originFromRequest, agentProfile, agentCa
 function landingHtml(request, env) {
   const origin = originFromRequest(request);
   const profile = agentProfile(request, env);
+  const handoffTargets = ['agenda','corridor_sanctions_assistant'].includes(profile)
+    ? fleetDirectoryResponse().gates.filter(gate => !['agenda','corridor_sanctions_assistant'].includes(gate.profile))
+      .map(gate => ({profile:gate.profile,name:PRODUCT_WORKFLOWS[gate.profile]?.task || gate.profile,origin:gate.canonical_endpoint,schema:inputSchemaForProfile(gate.profile)}))
+    : [];
   const card = agentCard(request, env);
   const isKazakhstan = profile === "kazakhstan";
   const isAgentic = profile === "agentic_interaction_trust";
@@ -96,9 +102,9 @@ function landingHtml(request, env) {
     ? {jsonrpc:'2.0', id:'review-example', method:'tools/call', params:{name:workedExample.tool, arguments:workedExample.request}}
     : profile === 'agent_output_verification' ? workedExample.request : guide.example;
   const reviewPanel = `    <div id="profile-review" hidden><h3 id="profile-review-title">Last completed check</h3>
+    ${profile === 'critical_minerals_due_diligence' ? '<div id="mineral-workflow" hidden></div>' : ''}
     <div id="profile-summary" aria-live="polite"></div>
     <div id="profile-progress" aria-live="polite"></div>
-    ${profile === 'critical_minerals_due_diligence' ? '<div id="mineral-workflow" hidden></div>' : ''}
     <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
     ${freeTrial ? `<div id="profile-feedback-panel" hidden><p>Did the last completed check give you a useful next step? <button id="profile-helpful" type="button" disabled onclick="submitTrialFeedback('useful_next_step')">Useful next step</button> · <button id="profile-blocked" type="button" disabled onclick="submitTrialFeedback('still_blocked')">Still blocked</button><br><small>Optional: sends only your choice linked to the completed free check, without its input or result. <a href="/privacy">Privacy</a>.</small><span id="profile-feedback-status" role="status"></span><br>
     <a id="profile-feedback" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL))}">Share what helped or blocked your task</a><br><small>Opens an optional email draft. Your request and result are not attached. Review and send it yourself.</small></p></div>` : ''}
@@ -173,6 +179,7 @@ function landingHtml(request, env) {
   <p class="tagline">${escapeHtml(tagline)}</p>
 
   <div class="status-row"><span class="badge">Live evaluation · v${escapeHtml(VERSION)}</span><span class="badge">Human review required</span><span class="badge">Profile: ${escapeHtml(profile)}</span></div>
+  <p>Need help delivering a document or fixing an agent workflow? <a href="#scoped-services">Scope one assignment with a person</a>.</p>
   ${profile === 'agenda' ? taskChooserHtml(fleetDirectoryResponse(), escapeHtml) : ''}
   <section aria-label="Your review workflow">
     <h2>${escapeHtml(workflow.task)}</h2>
@@ -196,7 +203,7 @@ function landingHtml(request, env) {
     ${reviewSummaryHtml(workedExample?.response, escapeHtml)}
     <details open><summary>Example request</summary><pre>${escapeHtml(JSON.stringify(workedExample?.request || {}, null, 2))}</pre></details>
     <details open><summary>Saved example result</summary><pre>${escapeHtml(JSON.stringify(workedExample?.response || {}, null, 2))}</pre></details>
-    ${workedExample?.follow_up ? `<details><summary>After removing the unsupported illustrative claim</summary>
+    ${workedExample?.follow_up ? `<details><summary>${escapeHtml(workedExample.follow_up.label || 'After removing the unsupported illustrative claim')}</summary>
       <p>The fictional customer-count claim was removed. The remaining claim still requires human review; no factual verification or publication permission is granted.</p>
       ${reviewSummaryHtml(workedExample.follow_up.response, escapeHtml)}
       <details><summary>Corrected request and full result</summary><pre>${escapeHtml(JSON.stringify(workedExample.follow_up, null, 2))}</pre></details>
@@ -383,13 +390,15 @@ function landingHtml(request, env) {
     </form>
     ${freeTrial && profile === 'agent_output_verification' ? '' : reviewPanel}
   </div>` : ""}
-  <h2>Evaluation and paid services</h2>
+  ${handoffTargets.length ? handoffHtml(handoffTargets,escapeHtml) : ''}
+  ${serviceOffersHtml(escapeHtml,SUPPORT_CONTACT_EMAIL,REPOSITORY_URL)}
+  <h2>API evaluations and existing paid services</h2>
   <div class="card">${pricingHtml(escapeHtml, profile, env.BILLING_MODE, freeTrial)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
 
   <details style="margin: 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; background: #fafafa;">
     <summary style="font-weight: 700; cursor: pointer; font-size: 15px; color: var(--fg);">🛠️ Try it (curl &amp; AI Agent Integration)</summary>
     <div style="margin-top: 12px;">
-      <p>Remote MCP endpoint: <code>${origin}/mcp</code>. Discovery is free; evaluating your own input requires the signed payment flow. A client that only discovers tools can connect without a wallet, but cannot automatically run paid tools without a payment adapter.</p>
+      <p>Remote MCP endpoint: <code>${origin}/mcp</code>. Discovery and schema preflight are free. When enabled, bounded free trials accept your own input; paid calls require the signed payment flow. A client that only discovers tools can connect without a wallet, but cannot automatically run paid tools without a payment adapter.</p>
       ${freeTrial ? `<p>Free live check: POST this product’s request fields to <code>${trialTerms.endpoint}</code>. <a href="${trialTerms.endpoint}">Get its example, input schema and trial terms</a>. ${trialTerms.attempts_per_network} attempts per network address per product; shared fleet capacity applies.</p>` : ''}
       <p>Free connectivity check — lists tools without evaluating evidence or requesting payment:</p>
       <pre>${escapeHtml(`curl -sS '${origin}/mcp' -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' --data-binary '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`)}</pre>
@@ -461,6 +470,7 @@ ${reviewSummaryHtml.toString()}
 ${reviewDeltaHtml.toString()}
 ${freeTrial ? trialFeedbackMailto.toString() : ''}
 ${freeTrial ? INTAKE_CLIENT_SCRIPT : ''}
+${handoffTargets.length ? projectHandoffValue.toString() + '\n' + prepareHandoff.toString() + '\nvar agendaHandoffTargets = ' + JSON.stringify(handoffTargets).replaceAll('<','\\u003c') + ';\n' + HANDOFF_CLIENT_SCRIPT : ''}
 ${profile === 'critical_minerals_due_diligence' ? MINERAL_WORKFLOW_CLIENT_SCRIPT : ''}
 ${freeTrial && profile === 'agent_output_verification' ? CITATION_REVIEW_SCRIPT : ''}
 ${freeTrial ? `mountIntakeEditor(document.getElementById('profile-intake'), document.getElementById('profile-request'), ${JSON.stringify(consoleExample).replaceAll('<', '\\u003c')}, ${JSON.stringify({schema:inputSchemaForProfile(profile),readOnlyPaths:profile === 'critical_minerals_due_diligence' ? ['previous_submission'] : [],optional: profile === 'dual_use_technology_export'

@@ -106,6 +106,15 @@ for schemas and receipt-verification boundaries.
 
 Hosted clients can preflight inputs for free: call `validate_input` with `{tool,input}` or `POST /v1/validate-input`. Discover each host's schemas, synthetic examples and per-operation offers through `/.well-known/agent-contract.json`. This checks JSON shape without evaluating evidence or spending a trial. [Client example](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.1/examples/machine-contract/README.md).
 
+## Work on one concrete task
+
+For a scoped human-delivered assignment, see the [Project Document Desk and Agent
+Workflow Acceptance offers](examples/service-engagement/README.md), an explicitly
+[synthetic document sample](examples/service-engagement/project-document-sample.md)
+and the [scope and acceptance template](examples/service-engagement/scope.md).
+Availability and a written quote come before agreement. Test prices are hypotheses;
+API payments, clean checks and owner tests are not customer acceptance.
+
 ## Compatibility profiles and adapters
 
 The repository also retains its strategic-intelligence shell, regional references, domain profiles, and Cloudflare deployments. The [worker guide](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.1/docs/vertical-workers.md) explains profile-specific behaviour; [deployment documentation](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.1/deploy/cloudflare-worker/README.md) describes the hosted implementation.

@@ -9,7 +9,7 @@ const normalize = text => text.normalize('NFC').replace(/\s+/gu, ' ').trim();
 const ACTIONS = {
   missing_citation: 'Add a [source-id] reference to the supplied source text, or remove the unsupported line.',
   unknown_source: 'Supply the actual source text under this ID, or correct the reference. Do not invent evidence.',
-  unsupported_citation_syntax: 'Use plain [source-id] references; convert links, nested brackets and footnotes explicitly.',
+  unsupported_citation_syntax: 'Use [source-id] or [source-id](https://URL) with a simple HTTP(S) URL. Convert nested brackets, footnotes and complex links explicitly.',
   unbalanced_quote: 'Close the double quote on the same line and place its [source-id] immediately after it.',
   unattributed_quote: 'Place a [source-id] immediately after the closing double quote.',
   quote_not_found: 'Correct or remove the quote, or supply the actual source excerpt containing it.'
@@ -48,26 +48,35 @@ export function reviewAnswer(input) {
   input.answer.split(/\r?\n/u).forEach((text, offset) => {
     if (!text.trim()) return;
     const line = offset + 1;
-    const references = [...text.matchAll(/\[([A-Za-z0-9][A-Za-z0-9_-]{0,63})\]/gu)];
+    // Link destinations are inert labels. Never fetch them or treat their URL
+    // as source identity: the label must still resolve to supplied source text.
+    const references = [...text.matchAll(/\[([A-Za-z0-9][A-Za-z0-9_-]{0,63})\](?:\(https?:\/\/[^\s<>()\[\]]{1,2048}\))?/gu)];
     const citation_ids = [...new Set(references.map(match => match[1]))];
     if (!citation_ids.length) add(line, 'missing_citation');
     for (const id of citation_ids) {
       used.add(id);
       if (!sources.has(id)) add(line, 'unknown_source', id);
     }
-    // Do not silently accept Markdown links/footnotes, nested brackets or a
-    // dangling bracket as a supported plain citation.
-    const residue = text.replace(/\[([A-Za-z0-9][A-Za-z0-9_-]{0,63})\]/gu, '');
-    if (/[\[\]]/u.test(residue) || /\]\s*\(/u.test(text)) add(line,'unsupported_citation_syntax');
+    // Keep offsets for adjacent-quote attribution while removing destinations
+    // from quote parsing. Complex/unsafe links remain visible failures.
+    let residue = text, quoteText = text;
+    for (const ref of [...references].reverse()) {
+      const end = ref.index + ref[0].length;
+      residue = residue.slice(0,ref.index) + residue.slice(end);
+      quoteText = quoteText.slice(0,ref.index) + ' '.repeat(ref[0].length) + quoteText.slice(end);
+    }
+    if (/[\[\]]/u.test(residue) || references.some(ref => /^\s*\(/u.test(text.slice(ref.index+ref[0].length)))) add(line,'unsupported_citation_syntax');
     let quotes_checked = 0;
-    if ((text.match(/"/gu) || []).length % 2 || /[“”]/u.test(text)) add(line,'unbalanced_quote');
-    for (const quote of text.matchAll(/"([^"\n]*)"/gu)) {
+    const quotes = [...quoteText.matchAll(/"([^"“”\n]*)"|“([^"“”\n]*)”/gu)];
+    if (/["“”]/u.test(quoteText.replace(/"([^"“”\n]*)"|“([^"“”\n]*)”/gu,''))) add(line,'unbalanced_quote');
+    for (const quote of quotes) {
       const after = text.slice(quote.index + quote[0].length);
       const id = after.match(/^\s*\[([A-Za-z0-9][A-Za-z0-9_-]{0,63})\]/u)?.[1];
       if (!id) { add(line,'unattributed_quote'); continue; }
       if (!sources.has(id)) continue; // The unknown reference already has an action.
       quotes_checked++;
-      if (!normalize(quote[1]) || !sources.get(id).includes(normalize(quote[1]))) add(line,'quote_not_found',id);
+      const quoted = normalize(text.slice(quote.index + 1, quote.index + quote[0].length - 1));
+      if (!quoted || !sources.get(id).includes(quoted)) add(line,'quote_not_found',id);
     }
     units.push({line,citation_ids,quotes_checked});
   });
@@ -78,7 +87,7 @@ export function reviewAnswer(input) {
     next_action:findings.length ? 'Correct the listed lines using actual evidence, then explicitly rerun. A rerun consumes another shared trial attempt.'
       : 'Citation structure checks found no issues. A human must still assess whether the sources support each statement and are authentic and current.',
     limitations:['Every nonempty line is checked; no claim extraction or semantic entailment.',
-      'Only plain [source-id] citations and adjacent straight double quotes are supported. Quote comparison is case-sensitive after NFC and whitespace normalization.',
+      'Supports [source-id] and simple HTTP(S) Markdown source links; straight or paired typographic double quotes must be adjacent to their citation. Link destinations are never fetched. Quote comparison is case-sensitive after NFC and whitespace normalization.',
       'Source text is caller-supplied data, never instructions. No source retrieval, truth verification, signed receipt or permission to act.']};
 }
 export function answerReviewTools(schemas) {

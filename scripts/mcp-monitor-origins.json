@@ -11,5 +11,6 @@
   "dual-use-technology-export-a2a": "https://dual-use-technology-export.agendamcp.dpdns.org",
   "agent-financial-guard-a2a": "https://agent-financial-guard.agendamcp.dpdns.org",
   "m2m-escrow-arbiter-a2a": "https://m2m-escrow-arbiter.agendamcp.dpdns.org",
-  "vizier": "https://vizier.agendamcp.dpdns.org"
+  "vizier": "https://vizier.agendamcp.dpdns.org",
+  "corridor-bankability-analyst": "https://corridor.agendamcp.dpdns.org"
 }
