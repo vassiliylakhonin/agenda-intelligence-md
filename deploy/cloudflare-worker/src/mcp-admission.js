@@ -1,10 +1,10 @@
-import { MCP_AGENT_ENDPOINT_PATH } from './mcp.js';
+import {isMcpClientPath} from './mcp-client-path.js';
 
 // A business admission failure is a tool error for standard MCP clients. The
 // original URL/body still goes through the paid executor and signature binding.
 // HTTP authentication, malformed requests and legacy endpoints keep their status.
 export async function mcpAgentAdmissionResponse(request, response) {
-  if (![MCP_AGENT_ENDPOINT_PATH, '/mcp/output-verification'].includes(new URL(request.url).pathname) ||
+  if (!isMcpClientPath(new URL(request.url).pathname) ||
       request.method !== 'POST' || ![401, 402].includes(response.status)) return response;
   const payload = await response.clone().json();
   const details = payload.error?.data;

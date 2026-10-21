@@ -1,4 +1,5 @@
 import { readBoundedJson } from "./request-body.js";
+import {isMcpClientPath} from './mcp-client-path.js';
 // x402 v2 exact / EIP-3009, Base native USDC, HTTP and MCP transports.
 // Payment authorizes only a transfer, not an action or evidence clearance.
 import {
@@ -101,7 +102,7 @@ export function x402RequiredResponse(request, body, minimum, legacyResponse) {
   );
   headers.set("cache-control", "no-store");
   if (
-    new URL(request.url).pathname === "/mcp/agent" &&
+    isMcpClientPath(new URL(request.url).pathname) &&
     body?.method === "tools/call"
   ) {
     return Response.json(
@@ -117,7 +118,7 @@ export function x402RequiredResponse(request, body, minimum, legacyResponse) {
               evaluated: false,
               admission_status: 402,
               next_step:
-                "Inspect the exact price with the wallet owner; payment must not be automatic without an authorized budget.",
+                "For a free first check, discover free_trial_status and free_trial. Inspect any separate paid price with the wallet owner; payment must not be automatic without an authorized budget.",
             },
           },
         },
@@ -559,7 +560,7 @@ export async function x402ExecutionResponse(request, body, response, payload) {
   headers.set("PAYMENT-RESPONSE", encodeX402(settlement));
   headers.set("access-control-expose-headers", "PAYMENT-RESPONSE");
   if (
-    new URL(request.url).pathname === "/mcp/agent" &&
+    isMcpClientPath(new URL(request.url).pathname) &&
     body?.method === "tools/call"
   ) {
     return Response.json(

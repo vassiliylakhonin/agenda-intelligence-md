@@ -18,3 +18,12 @@ The optional App renders and edits this same input. Opening it, inspecting
 allowance or validating JSON cannot reserve an attempt. Evaluation happens only
 on an explicit submitted call; all entry points share the existing product's
 campaign allowance. A refused rerun must preserve the previous successful result.
+
+## Production admission follow-up
+
+The live plugin URL reproduced a raw REST HTTP 402 under `X402_STANDARD=1` after
+the initial rollout. Free review/preflight and the App resource worked. Add a
+production-mode regression before changing the x402 adapter; share its standard
+MCP path selection with legacy admission. Preserve exact payment request binding,
+direct statuses on legacy MCP/REST and explicit no-evaluation metadata. Publish a
+new patch version rather than altering the existing 1.21.0 release.

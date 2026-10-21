@@ -44,13 +44,13 @@ Environment defaults:
 Build:
 
 ```bash
-docker build -f Dockerfile.api -t agenda-intelligence-md-api:1.21.0 .
+docker build -f Dockerfile.api -t agenda-intelligence-md-api:1.21.1 .
 ```
 
 Run:
 
 ```bash
-docker run --rm -p 8080:8080 agenda-intelligence-md-api:1.21.0
+docker run --rm -p 8080:8080 agenda-intelligence-md-api:1.21.1
 ```
 
 The API image starts:
