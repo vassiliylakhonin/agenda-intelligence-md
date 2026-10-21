@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Answer review first use — 2026-10-21
+
+- Remove manual source-ID entry from the MCP Apps first-use path: suggest stable citation labels, show how to cite them, preserve supplied IDs and never silently reuse a removed label for another document.
+- Explain network versus daily trial exhaustion, prevent another review after known exhaustion, and permit a deliberate allowance refresh without losing the previous result. Keep backend admission, quotas, payment, public schemas and factuality boundaries unchanged. Add first-use and exhaustion regressions; verify local owner practice separately from external demand.
+
 ## Machine-client edge access — 2026-10-21
 
 - Confirm the owned domain and attribute default Python urllib's 403/1010 to Cloudflare Browser Integrity Check using the matching Security Event. Activate an owner-confirmed BIC-only exception on the thirteen canonical hosts' machine routes, retaining the global BIC setting and all other security settings. Verify unchanged urllib and official SDK discovery across all thirteen hosts; document scope and rollback.

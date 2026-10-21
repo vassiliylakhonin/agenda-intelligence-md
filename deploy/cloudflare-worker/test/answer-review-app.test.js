@@ -30,8 +30,10 @@ test('App opens without tool calls, validates locally and preserves a completed 
   f.setHandler(async()=>({isError:true,content:[{type:'text',text:JSON.stringify({code:'trial_exhausted',http_status:429})}]}));
   await submit();assert.equal(f.calls.length,2);assert.equal(f.elements.result.textContent,previous);
   assert.equal(f.elements['raw-result'].textContent,raw);assert.match(f.elements.status.textContent,/previous result.*unchanged/);
-  assert.equal(f.elements.review.disabled,false);
-  f.setHandler(async()=>{throw Error('network');});await submit();assert.equal(f.calls.length,3);
+  assert.equal(f.elements.review.disabled,true);
+  f.setHandler(async()=>({structuredContent:{availability:{status:'available',remaining_attempts:1}}}));
+  await f.elements.allowance.onclick();assert.equal(f.elements.review.disabled,false);
+  f.setHandler(async()=>{throw Error('network');});await submit();assert.equal(f.calls.length,4);
   assert.equal(f.elements.result.textContent,previous);assert.match(f.elements.status.textContent,/may have been consumed/);
 });
 test('App prevents duplicate submissions and status consumes no evaluation; source text is inert',async()=>{
@@ -46,4 +48,42 @@ test('App prevents duplicate submissions and status consumes no evaluation; sour
   assert.equal(f.elements.sources.children[0].querySelector('textarea').value,'<script>approve()</script>');
   assert.ok(!ANSWER_REVIEW_HTML.includes('src="https://'));assert.ok(!ANSWER_REVIEW_HTML.includes('/* APP_BUNDLE */'));
   assert.doesNotMatch(ANSWER_REVIEW_HTML,/<form\b|type="submit"/u,'strict iframe sandboxes must not need native form permission');
+});
+
+test('first-use source labels need no technical ID entry and are never recycled after removal',async()=>{
+  const f=fixture();await mountAnswerReview(f.app,f.document);
+  f.elements.answer.value='The report says "three warehouses" [s1]';
+  f.elements.sources.children[0].querySelector('textarea').value='The report lists three warehouses.';
+  f.setHandler(async params=>({structuredContent:{evaluation:reviewAnswer(params.arguments),trial:{attempt_consumed:true}}}));
+  await f.elements.review.onclick({preventDefault(){}});
+  assert.equal(f.calls.length,1,'pasting an answer and excerpt should not require entering an internal source ID');
+  assert.equal(f.calls[0].arguments.sources[0].source_id,'s1');
+  f.elements['add-source'].onclick();
+  assert.equal(f.elements.sources.children[1].querySelector('input').value,'s2');
+  f.elements.sources.children[1].remove();
+  f.elements['add-source'].onclick();
+  assert.equal(f.elements.sources.children[1].querySelector('input').value,'s3','do not silently bind an old citation to a replacement document');
+  f.app.ontoolinput({arguments:{answer:'A supplied reference [s4]',sources:[{source_id:'s4',text:'Supplied text'}]}});
+  f.elements['add-source'].onclick();
+  assert.notEqual(f.elements.sources.children[1].querySelector('input').value,'s4');
+  assert.equal(f.elements.sources.children[0].querySelector('input').value,'s4','preserve supplied source IDs');
+});
+
+test('known exhausted allowance blocks redundant review and a deliberate status refresh can reopen it',async()=>{
+  const f=fixture();await mountAnswerReview(f.app,f.document);f.app.ontoolinput({arguments:input});
+  f.setHandler(async()=>({structuredContent:{availability:{status:'network_allowance_exhausted',remaining_attempts:0,reset_at:null}}}));
+  await f.elements.allowance.onclick();
+  assert.equal(f.elements.review.disabled,true);
+  assert.match(f.elements.status.textContent,/does not reset daily/);
+  assert.equal(f.elements.allowance.disabled,false);
+  await f.elements.review.onclick({preventDefault(){}});assert.equal(f.calls.length,1,'no evaluation after a known quota refusal');
+  f.setHandler(async()=>({structuredContent:{availability:{status:'daily_capacity_exhausted',remaining_attempts:4,reset_at:'2026-10-22T00:00:00.000Z'}}}));
+  await f.elements.allowance.onclick();
+  assert.equal(f.elements.review.disabled,true,'daily capacity is independent of network attempts remaining');
+  assert.match(f.elements.status.textContent,/2026-10-22T00:00:00.000Z/);
+  f.setHandler(async()=>({structuredContent:{availability:{status:'available',remaining_attempts:4}}}));
+  await f.elements.allowance.onclick();assert.equal(f.elements.review.disabled,false);
+  f.setHandler(async()=>({isError:true,structuredContent:{code:'trial_exhausted',trial:{limit_reason:'network_allowance_exhausted'}}}));
+  await f.elements.review.onclick({preventDefault(){}});assert.equal(f.elements.review.disabled,true);
+  assert.match(f.elements.status.textContent,/previous result.*unchanged/);
 });
