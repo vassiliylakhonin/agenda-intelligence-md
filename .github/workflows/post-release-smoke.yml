@@ -87,6 +87,9 @@ jobs:
       - name: Verify published RAG adapter and CLI in isolation
         run: .smoke-venv/bin/python -I scripts/smoke_rag_output.py
 
+      - name: Verify published memo generation schema and replay module in isolation
+        run: .smoke-venv/bin/python -I scripts/smoke_memo_replay.py
+
       - name: Verify published preflight tools with optional real MCP client
         run: |
           .smoke-venv/bin/python -m pip install --no-cache-dir --index-url https://pypi.org/simple "agenda-intelligence-md[reviews,mcp-check]==${{ steps.version.outputs.version }}"

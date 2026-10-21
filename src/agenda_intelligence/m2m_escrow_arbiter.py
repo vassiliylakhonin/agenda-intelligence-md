@@ -125,7 +125,7 @@ class M2MEscrowArbiter:
         data = json.dumps(payload).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
-            "User-Agent": "agenda-client-python-sdk/1.19.0",
+            "User-Agent": "agenda-client-python-sdk/1.20.0",
         }
         if self.bearer_token:
             headers["Authorization"] = f"Bearer {self.bearer_token}"

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
+import sys
 from collections import Counter
 from importlib import resources
 from pathlib import Path
@@ -214,3 +216,47 @@ def rescore(run_dir: Path, *, revision: str) -> dict[str, Any]:
         "cases": scored,
         "scope": meta.get("scope"),
     }
+
+
+def _revision() -> str:
+    """Fingerprint the installed scorer rather than an unrelated working tree."""
+    digest = hashlib.sha256()
+    package = resources.files("agenda_intelligence")
+    for name in ["memo_replay.py", "product.py", "memo_quality.py", "evidence_mode.py"]:
+        digest.update(name.encode("utf-8"))
+        digest.update((package / name).read_bytes())
+    return f"package:{__version__};scorer_sha256:{digest.hexdigest()}"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    record = subparsers.add_parser("capture")
+    record.add_argument("--manifest", type=Path, required=True)
+    record.add_argument("--run-dir", type=Path, required=True)
+    score = subparsers.add_parser("score")
+    score.add_argument("--run-dir", type=Path, required=True)
+    score.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    try:
+        if args.command == "capture":
+            meta = capture(args.manifest, args.run_dir, revision=_revision())
+            print(json.dumps({"captured_records": len(meta["cases"]), "model_invoked": False}))
+            return 0
+        if args.output.resolve() in {(args.run_dir / name).resolve() for name in ["raw.jsonl", "meta.json"]}:
+            raise ValueError("Summary output must not overwrite captured artifacts.")
+        result = rescore(args.run_dir, revision=_revision())
+        args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(
+            json.dumps(
+                {key: result[key] for key in ["coverage_complete", "all_expectations_met", "expectation_match_pct"]}
+            )
+        )
+        return 0 if result["coverage_complete"] and result["all_expectations_met"] else 1
+    except (ValueError, OSError) as error:
+        print(f"memo replay failed: {type(error).__name__}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -34,13 +34,13 @@ switch. Token limits are not a dollar-denominated billing guarantee.
 
 ## Replay the existing synthetic corpus
 
-From a checkout:
+Use the installed module (the manifest below is supplied by a checkout):
 
 ```sh
-python scripts/memo_replay.py capture \
+python -m agenda_intelligence.memo_replay capture \
   --manifest tests/fixtures/memo_quality/manifest.json \
   --run-dir .verification/memo-replay
-python scripts/memo_replay.py score \
+python -m agenda_intelligence.memo_replay score \
   --run-dir .verification/memo-replay \
   --output .verification/memo-replay/summary.json
 ```
@@ -89,8 +89,8 @@ received. Record failures explicitly rather than dropping them. Capture only
 reads existing files; it does not execute prompts or scripts.
 
 `meta.json` contract version 1 records expected keys and schema/manifest/raw
-SHA-256 digests, producer-supplied provenance, package version and observed
-capture code revision. Summaries record the current scorer revision and schema
+SHA-256 digests, producer-supplied provenance, package version and capture scorer
+source fingerprint. Summaries record the current scorer fingerprint and schema
 digest separately. Digests detect accidental changes, not authenticity; the
 local manifest remains the operator's declared expectations.
 
