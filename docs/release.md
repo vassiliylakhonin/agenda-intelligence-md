@@ -121,5 +121,7 @@ sorts after its metadata prerelease. Do not republish or retag an existing relea
 - MCP config and stdio server smoke checks
 - installed RAG Output Verification API repair/recheck, empty-answer refusal
   and strict CLI success/failure in Python isolated mode (`-I`)
+- installed memo replay module over the 13 synthetic cases, source fingerprints
+  and incomplete-coverage refusal, without model API calls
 
 It runs after a successful `Release` workflow and can also be run manually with a package version.

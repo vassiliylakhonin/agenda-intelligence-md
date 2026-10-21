@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 1.20.0 — 2026-10-21
+
+- Release bounded optional schema-output memo generation and private offline replay with exact coverage checks. Expose replay through the installed Python module as well as the checkout wrapper, fingerprint installed scorer sources, and verify wheel/PyPI replay plus incomplete-coverage refusal in CI smoke.
+- Synchronize package, manifest, discovery, SDK, Docker and current documentation versions; regenerate synthetic contract responses and Worker examples. Retain original local schema/quality checks, v1 contracts, prices, quotas and authorization. Live model API validation was omitted at the maintainer's request; offline synthetic results are not factuality, model-quality or adoption evidence.
+
 ## Memo generation and replay — 2026-10-20
 
 - Send an explicit schema for optional Anthropic memo generation, retain original local schema/quality validation, and reject refusal, truncation, ambiguous JSON and budget overflow without automatic generation retries. Preflight provider token estimates and a local serialized-input byte ceiling; keep server audit metadata separate from model output.
