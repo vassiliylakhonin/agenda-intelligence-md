@@ -17,8 +17,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Reuse the owner-controlled credential boundary. Never create or widen a
-    # token if this existing credential cannot publish the existing Pages site.
+    # A dedicated Pages-only credential lives in the existing protected
+    # boundary; Worker deploy credentials are never widened or used as fallback.
     environment:
       name: agent-output-verification-production
     steps:
@@ -39,6 +39,8 @@ jobs:
           git switch -C main "$GITHUB_SHA"
       - name: Rebuild, verify all gates, publish and verify exact canonical bytes
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: python -u scripts/publish_sanctions_index.py --publish
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Dedicated Pages publisher credential is missing.' >&2; exit 1; }
+          python -u scripts/publish_sanctions_index.py --publish

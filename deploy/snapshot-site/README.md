@@ -30,8 +30,9 @@ candidate's exact SHA-256. Omit `--publish` to rehearse every non-mutating gate.
 Local publication uses the operator's normal Wrangler login.
 `.github/workflows/publish-sanctions-index.yml` invokes the same gated publisher
 daily at 04:05 UTC and on manual dispatch from immutable clean main, using the
-existing protected production environment and its Cloudflare credential. It
-creates no token or additional permissions. If that token lacks Pages access,
+existing protected production environment and a dedicated `CLOUDFLARE_PAGES_API_TOKEN` credential. The original Worker-only token was refused by Pages in run `39625335214`.
+A separate Pages-only credential must be provisioned with owner confirmation;
+Worker credentials are not widened or used as fallback. If the Pages token lacks access,
 the job fails and the existing deployment remains; repair the credential boundary
 explicitly rather than bypassing the gates. The scheduled publisher is separate
 from the independent read-only watchdog.
@@ -62,3 +63,12 @@ current you are willing to claim the screening is.
 
 Generated JSON is not committed — it is a 2.8 MB build artifact rebuilt from
 official sources on demand.
+
+The owner-confirmed `agenda-cis-snapshot-pages` credential has only
+`Account / Cloudflare Pages / Edit` for the owned account and expires on
+2027-01-19 (23:59 Asia/Almaty). Cloudflare scopes this permission to Pages in the
+account, not to a single project. Rotate this dedicated environment secret before
+expiry; never reuse or widen Worker deployment credentials. The workflow uses
+only `CLOUDFLARE_PAGES_API_TOKEN` with the existing account ID and fails explicitly
+when the Pages secret is absent. Store no credential value in source, artifacts
+or logs.
