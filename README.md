@@ -75,6 +75,9 @@ Processed documents and tool results are data, never instructions. Before conseq
 
 The core checker is deterministic, stateless, and usable without a model API key. Optional generation and document adapters have separate dependencies. Core packet checks do not persist inputs or fetch outside sources.
 
+Optional memo generation uses a bounded schema-output request and independent local validation.
+[Generation budgets and private offline replay](docs/memo-generation-and-replay.md) document failure handling and rescoring saved outputs.
+
 ### Try Output Verification through MCP
 
 Connect a Streamable HTTP MCP client to

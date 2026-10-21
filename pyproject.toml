@@ -41,7 +41,7 @@ dev = [
     "ruff>=0.1",
 ]
 llm = [
-    "anthropic>=0.40",
+    "anthropic>=0.84",
 ]
 pdf = [
     "fpdf2>=2.7",
