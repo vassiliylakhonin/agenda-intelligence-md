@@ -2137,10 +2137,27 @@ export const WORKED_EXAMPLES = {
         },
         "specification": {
           "deliverable_type": "json_data",
+          "expected_artifact_sha256": "3745b88c1cb20f643625bd02355547cada4b6d2a40926d1e99ae44481bd7245b",
+          "expected_schema": {
+            "type": "object",
+            "required": [
+              "records"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "records": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
           "min_valid_records_pct": 95
         },
         "delivery_submission": {
           "submitted_at": "2026-09-17T12:00:00Z",
+          "artifact_data": {
+            "records": 1
+          },
           "telemetry": {
             "total_items": 1000,
             "valid_items": 1000,
@@ -2169,22 +2186,20 @@ export const WORKED_EXAMPLES = {
         },
         "checks": {
           "deadline_honored": true,
-          "hash_verified": false,
-          "schema_verified": false,
+          "hash_verified": true,
+          "schema_verified": true,
           "slo_verified": false
         },
         "check_status": {
           "deadline": "passed",
-          "hash": "not_evaluated",
-          "schema": "not_evaluated",
+          "hash": "passed",
+          "schema": "passed",
           "slo": "not_evaluated"
         },
         "evaluation_scope": "supplied_artifact_only",
         "settlement_authorized": false,
         "violations": [],
         "evidence_gaps": [
-          "A valid expected artifact SHA-256 is required.",
-          "No expected schema was supplied; schema validation was not performed.",
           "SLO telemetry and submission time are caller-reported; independent delivery evidence requires human review."
         ],
         "vizier_status": "attestation_unavailable",
@@ -2197,6 +2212,106 @@ export const WORKED_EXAMPLES = {
       "decision_kind": "evidence_review",
       "authorization_granted": false,
       "score_kind": "not_scored"
+    },
+    "follow_up": {
+      "kind": "precomputed_synthetic_tamper",
+      "label": "Changed artifact: hash mismatch, still human review",
+      "request": {
+        "request": {
+          "escrow_id": "escrow-m2m-sample-001",
+          "dispute_claim": {
+            "claimant": "buyer",
+            "reason": "Contract deliverable dispute"
+          },
+          "deal_terms": {
+            "buyer_id": "did:agent:0x1111111111111111111111111111111111111111",
+            "seller_id": "did:agent:0x2222222222222222222222222222222222222222",
+            "amount_usd": 500,
+            "currency": "USDC",
+            "deadline_utc": "2026-09-17T18:00:00Z",
+            "arbitration_policy": "pro_rata",
+            "arbitration_fee_pct": 1
+          },
+          "specification": {
+            "deliverable_type": "json_data",
+            "expected_artifact_sha256": "3745b88c1cb20f643625bd02355547cada4b6d2a40926d1e99ae44481bd7245b",
+            "expected_schema": {
+              "type": "object",
+              "required": [
+                "records"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "records": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "min_valid_records_pct": 95
+          },
+          "delivery_submission": {
+            "submitted_at": "2026-09-17T12:00:00Z",
+            "artifact_data": {
+              "records": 2
+            },
+            "telemetry": {
+              "total_items": 1000,
+              "valid_items": 1000,
+              "response_time_ms": 320
+            }
+          }
+        }
+      },
+      "response": {
+        "contract_version": "1.1.0",
+        "profile": "m2m_escrow_arbiter",
+        "arbitration_ruling": {
+          "next_action": "block",
+          "decision_kind": "evidence_review",
+          "authorization_granted": false,
+          "score_kind": "not_scored",
+          "status": "not_decision_ready",
+          "ruling": "ESCALATE_HUMAN",
+          "score": 0,
+          "escrow_id": "escrow-m2m-sample-001",
+          "payout_breakdown": {
+            "total_escrow_usd": 500,
+            "seller_payout_usd": 0,
+            "buyer_refund_usd": 0,
+            "arbiter_fee_usd": 0
+          },
+          "checks": {
+            "deadline_honored": true,
+            "hash_verified": false,
+            "schema_verified": true,
+            "slo_verified": false
+          },
+          "check_status": {
+            "deadline": "passed",
+            "hash": "failed",
+            "schema": "passed",
+            "slo": "not_evaluated"
+          },
+          "evaluation_scope": "supplied_artifact_only",
+          "settlement_authorized": false,
+          "violations": [
+            "Cryptographic hash mismatch for supplied artifact content."
+          ],
+          "evidence_gaps": [
+            "SLO telemetry and submission time are caller-reported; independent delivery evidence requires human review."
+          ],
+          "vizier_status": "attestation_unavailable",
+          "vizier_clearance_receipt": null,
+          "human_review_required": true,
+          "not_advice_notice": "Evaluation of supplied evidence only; this response does not execute or authorize settlement.",
+          "execution_advisory": "Required evidence could not be verified. Hold escrow pending human review; no payout is authorized."
+        },
+        "next_action": "block",
+        "decision_kind": "evidence_review",
+        "authorization_granted": false,
+        "score_kind": "not_scored"
+      }
     }
   }
 };

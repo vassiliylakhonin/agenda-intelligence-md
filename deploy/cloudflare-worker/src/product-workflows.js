@@ -34,7 +34,7 @@ export const PRODUCT_WORKFLOWS = Object.freeze({
   m2m_escrow_arbiter: {
     group: 'Review agent work', task: 'Review evidence of a delivered artifact',
     bring: 'Deal terms, specification, expected hash/schema, actual artifact and delivery evidence.',
-    get: 'Delivery checks, missing evidence and a proposed allocation when supported.',
+    get: 'Delivery checks, missing evidence and a hash/schema findings and evidence gaps for human review.',
     next: 'Have the authorized parties review the delivery and settlement separately; no payout is executed.'
   },
   kazakhstan: {

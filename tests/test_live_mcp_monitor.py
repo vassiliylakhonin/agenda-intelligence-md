@@ -96,7 +96,7 @@ def test_duplicate_or_empty_tools_fail():
 
 def test_all_configured_workers_plus_vizier():
     names = monitor.fleet_names()
-    assert len(names) == 13
+    assert len(names) == 14
     assert names.count("vizier") == 1
     assert "m2m-escrow-arbiter-a2a" in names
 
@@ -378,3 +378,50 @@ def test_invalid_signature_makes_the_complete_host_check_fail(monkeypatch):
     assert monitor.failed({"hosts": [host]})
     assert requests.count("https://vizier.agendamcp.dpdns.org/.well-known/jwks.json") == 1
     assert all(url.startswith("https://vizier.agendamcp.dpdns.org/") for url in requests)
+
+
+def test_cis_dependency_gate_catches_stale_even_when_discovery_is_healthy():
+    healthy = {"snapshot": {"status": "success", "age_ms": 1000, "max_age_ms": 259200000}}
+    assert monitor.dependency_ready(healthy, require_snapshot=True)
+    for snapshot in [
+        {"status": "stale"},
+        {"status": "disabled"},
+        {"status": "success", "age_ms": 259200001, "max_age_ms": 259200000},
+        {"status": "success", "age_ms": 1000, "max_age_ms": 999999999},
+    ]:
+        assert not monitor.dependency_ready({"snapshot": snapshot}, require_snapshot=True)
+    assert monitor.dependency_ready({"snapshot": {"status": "disabled"}})
+    assert not monitor.dependency_ready({})
+
+
+def test_corridor_is_monitored_with_its_own_contract():
+    assert "corridor-bankability-analyst" in monitor.fleet_names()
+    assert monitor.fleet_origins()["corridor-bankability-analyst"] == "https://corridor.agendamcp.dpdns.org"
+
+
+def test_corridor_discovery_uses_mcp_metadata_without_claiming_a_signed_a2a_card(monkeypatch):
+    name = monitor.CORRIDOR
+    baseline = json.loads((monitor.ROOT / "scripts/mcp-catalog-baseline.json").read_text())[name]
+    paths = []
+
+    def probe(url, body=None, identify=True):
+        paths.append(url)
+        if url.endswith("/healthz"):
+            data = {"status": "ok"}
+        elif url.endswith("/mcp.json"):
+            data = {"mcp_url": monitor.fleet_origins()[name] + "/mcp", "authentication": "Bearer for tool calls"}
+        elif body["method"] == "initialize":
+            data = {"result": {"protocolVersion": "2025-11-25", "serverInfo": {"name": name}}}
+        else:
+            data = {"result": {"tools": [{"name": value} for value in baseline]}}
+        return {"status": 200, "data": data, "ray_id": "fixture"}
+
+    async def sdk(url, expected):
+        return {"protocol": "2025-11-25", "tools": expected}
+
+    monkeypatch.setattr(monitor, "probe", probe)
+    monkeypatch.setattr(monitor, "sdk_discovery", sdk)
+    host = asyncio.run(monitor.check_host(name))
+    assert not monitor.failed({"hosts": [host]}, True)
+    assert not any("/agent-card.json" in path or "/jwks.json" in path for path in paths)
+    assert not any(check["check"] == "a2a_card_signature" for check in host["checks"])

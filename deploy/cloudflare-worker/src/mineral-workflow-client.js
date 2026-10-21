@@ -12,6 +12,9 @@ function renderMineralWorkflow(review, submitted) {
     ' — ' + safeHtml(flow.decision.project_name) + ' (' + safeHtml(flow.decision.stage) + ')</p>';
   html += '<p>Documentary next step: ' + safeHtml(flow.documentary_next_step) +
     '. Human review remains required. Check the returned operational decision for screening blocks.</p>';
+  html += '<p><strong>Next: request ' + flow.evidence_requests.length + ' missing or incomplete document types from their owners.</strong> Copy the draft below, check its scope, and send it through your approved channel.</p>';
+  var requestDraft = flow.evidence_requests.map(function(item) { return item.owner + ' — ' + item.source_type + '\n' + item.request_text; }).join('\n\n');
+  html += '<label for="mineral-request-draft">Document request draft — review before sending</label><textarea id="mineral-request-draft" readonly rows="8">' + safeHtml(requestDraft) + '</textarea>';
   flow.evidence_requests.forEach(function(item) {
     html += '<details><summary>' + safeHtml(item.source_type) + ' — ' + safeHtml(item.owner) + '</summary><p>' +
       safeHtml(item.request_text) + '</p><p>Records: ' + safeHtml(item.source_refs.join(', ') || 'not supplied') +

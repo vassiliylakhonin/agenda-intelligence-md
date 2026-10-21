@@ -54,9 +54,17 @@ jobs:
           # inventory regression independently checks that corrected catalog.
           if ! git diff --quiet "$DEPLOYED_BASE_SHA" HEAD -- deploy/cloudflare-worker/src deploy/cloudflare-worker/wrangler.toml; then
             git show "$DEPLOYED_BASE_SHA:scripts/mcp-catalog-baseline.json" > "$RUNNER_TEMP/live-mcp-baseline.json"
-            cp "$RUNNER_TEMP/live-mcp-baseline.json" scripts/mcp-catalog-baseline.json
+            python - "$RUNNER_TEMP/live-mcp-baseline.json" <<'PYTHON'
+          import json, pathlib, sys
+          target = pathlib.Path('scripts/mcp-catalog-baseline.json')
+          current = json.loads(target.read_text())
+          baseline = json.loads(pathlib.Path(sys.argv[1]).read_text())
+          # The standalone service has a separate repository/deploy lifecycle.
+          baseline['corridor-bankability-analyst'] = current['corridor-bankability-analyst']
+          target.write_text(json.dumps(baseline, indent=2) + '\n')
+          PYTHON
           fi
-      - name: Require SDK, default urllib, application client, health and A2A signatures
+      - name: Require SDK, default urllib, application client, health, dependencies and discovery contracts
         env:
           DEPLOYED_WORKFLOW: ${{ github.event.workflow_run.name }}
         run: |

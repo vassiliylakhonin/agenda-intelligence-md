@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build, gate, and optionally publish the sanctions name index manually.
+"""Build, gate, and optionally publish the sanctions name index.
 
 Running without ``--publish`` is a safe rehearsal: it downloads every declared
 official source, validates the rebuilt compact index, compares it with the
@@ -128,7 +128,7 @@ def publish_candidate(digest: str) -> None:
     for attempt in range(1, POST_DEPLOY_ATTEMPTS + 1):
         result = run_command(check_command, check=False)
         if result.returncode == 0:
-            print("manual sanctions-index publish completed and verified")
+            print("gated sanctions-index publish completed and verified")
             return
         print(f"attempt {attempt}: canonical Pages URL has not converged yet")
         if attempt < POST_DEPLOY_ATTEMPTS:

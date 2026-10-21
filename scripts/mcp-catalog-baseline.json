@@ -95,5 +95,17 @@
   ],
   "vizier": [
     "vizier_verify_action"
+  ],
+  "corridor-bankability-analyst": [
+    "create_corridor_document",
+    "read_corridor_document",
+    "submit_corridor_draft",
+    "delete_corridor_document",
+    "read_corridor_method",
+    "calculate_corridor_model",
+    "screen_project_bankability",
+    "evaluate_debt_service",
+    "evaluate_maritime_capacity",
+    "screen_corridor_portfolio"
   ]
 }

@@ -4095,10 +4095,13 @@ const GATE_REQUEST_GUIDES = Object.freeze({
       },
       specification: {
         deliverable_type: "json_data",
+        expected_artifact_sha256: "3745b88c1cb20f643625bd02355547cada4b6d2a40926d1e99ae44481bd7245b",
+        expected_schema: { type: "object", required: ["records"], additionalProperties: false, properties: { records: { type: "integer", minimum: 1 } } },
         min_valid_records_pct: 95
       },
       delivery_submission: {
         submitted_at: "2026-09-17T12:00:00Z",
+        artifact_data: { records: 1 },
         telemetry: {
           total_items: 1000,
           valid_items: 1000,

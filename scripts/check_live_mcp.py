@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 USER_AGENT = "Agenda-MCP-Monitor/1.0"
 OWNER_CLIENT_ID = "agenda-owner-mcp-monitor"
 MAX_BYTES = 1_000_000
+CORRIDOR = "corridor-bankability-analyst"
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -110,7 +111,7 @@ async def transport_retry(operation, label, events, delay=0.5):
 
 def fleet_names():
     names = re.findall(r'^name\s*=\s*"([^"\n]+)"', (ROOT / "deploy/cloudflare-worker/wrangler.toml").read_text(), re.M)
-    return list(dict.fromkeys([*names, "vizier"]))
+    return list(dict.fromkeys([*names, "vizier", CORRIDOR]))
 
 
 def fleet_origins():
@@ -209,6 +210,20 @@ async def sdk_discovery(url, expected):
             return {"protocol": initialized.protocolVersion, "tools": validate_catalog(catalog.tools, expected)}
 
 
+def dependency_ready(data, require_snapshot=False):
+    """Liveness and a catalog do not establish usable upstream data."""
+    snapshot = data.get("snapshot", {})
+    if not require_snapshot:
+        return snapshot.get("status") in {"disabled", "success"}
+    age, limit = snapshot.get("age_ms"), snapshot.get("max_age_ms")
+    return (
+        snapshot.get("status") == "success"
+        and type(age) in (int, float)
+        and type(limit) in (int, float)
+        and 0 <= age <= limit <= 259200000
+    )
+
+
 async def check_host(name):
     origin = fleet_origins()[name]
     baseline = json.loads((ROOT / "scripts/mcp-catalog-baseline.json").read_text())
@@ -219,11 +234,18 @@ async def check_host(name):
         return await transport_retry(lambda: asyncio.to_thread(probe, *args), label, transport_events)
 
     card = None
-    for label, path in [("health", "/health"), ("a2a_card", "/.well-known/agent-card.json")]:
+    discovery_paths = (
+        [("health", "/healthz"), ("mcp_manifest", "/.well-known/mcp.json")]
+        if name == CORRIDOR
+        else [("health", "/health"), ("a2a_card", "/.well-known/agent-card.json")]
+    )
+    for label, path in discovery_paths:
         try:
             response = await read_probe(label, origin + path)
             data = response["data"]
             valid = response["status"] == 200 and bool(data)
+            if label == "mcp_manifest":
+                valid = valid and data.get("mcp_url") == origin + "/mcp" and bool(data.get("authentication"))
             if label == "a2a_card":
                 valid = valid and isinstance(data, dict) and bool(data.get("skills")) and bool(data.get("name"))
                 if valid:
@@ -231,16 +253,27 @@ async def check_host(name):
             checks.append({"check": label, "passed": valid, "status": response["status"]})
         except Exception as error:
             checks.append({"check": label, "passed": False, "error": str(error)[:500]})
-    try:
-        if card is None:
-            raise ValueError("Signed card unavailable")
-        jwks = await read_probe("a2a_card_jwks", origin + "/.well-known/jwks.json")
-        if jwks["status"] != 200:
-            raise ValueError("Public JWKS unavailable")
-        signature = await asyncio.to_thread(verify_card_signature, origin, card, jwks["data"])
-        checks.append({"check": "a2a_card_signature", **signature})
-    except Exception as error:
-        checks.append({"check": "a2a_card_signature", "passed": False, "error": str(error)[:500]})
+    # Corridor publishes MCP metadata only; do not invent signature coverage.
+    if name != CORRIDOR:
+        try:
+            if card is None:
+                raise ValueError("Signed card unavailable")
+            jwks = await read_probe("a2a_card_jwks", origin + "/.well-known/jwks.json")
+            if jwks["status"] != 200:
+                raise ValueError("Public JWKS unavailable")
+            signature = await asyncio.to_thread(verify_card_signature, origin, card, jwks["data"])
+            checks.append({"check": "a2a_card_signature", **signature})
+        except Exception as error:
+            checks.append({"check": "a2a_card_signature", "passed": False, "error": str(error)[:500]})
+    if name not in {"vizier", CORRIDOR}:
+        try:
+            response = await read_probe("dependency_readiness", origin + "/health/dependencies")
+            valid = response["status"] == 200 and dependency_ready(
+                response["data"], require_snapshot=name == "cis-secondary-sanctions-a2a"
+            )
+            checks.append({"check": "dependency_readiness", "passed": valid, **response})
+        except Exception as error:
+            checks.append({"check": "dependency_readiness", "passed": False, "error": str(error)[:500]})
     try:
         discovery = await transport_retry(
             lambda: asyncio.wait_for(sdk_discovery(origin + "/mcp", baseline[name]), timeout=50),
@@ -315,15 +348,16 @@ async def main():
     lines = [
         "# Live MCP discovery",
         "",
-        "| Host | SDK / urllib app / health / signed A2A | Card signature | Default urllib |",
+        "| Host | SDK / urllib app / health / discovery / dependencies | Card signature | Default urllib |",
         "|---|---|---|---|",
     ]
     for host in hosts:
         passed = all(check["passed"] for check in host["checks"])
-        signature = next(check for check in host["checks"] if check["check"] == "a2a_card_signature")
+        signature = next((check for check in host["checks"] if check["check"] == "a2a_card_signature"), None)
+        signature_label = "N/A (MCP only)" if signature is None else "PASS" if signature["passed"] else "FAIL"
         lines.append(
             f"| {host['host']} | {'PASS' if passed else 'FAIL'} | "
-            f"{'PASS' if signature['passed'] else 'FAIL'} | {host['default_urllib']['classification']} |"
+            f"{signature_label} | {host['default_urllib']['classification']} |"
         )
     summary = "\n".join(lines) + "\n"
     print(summary)
