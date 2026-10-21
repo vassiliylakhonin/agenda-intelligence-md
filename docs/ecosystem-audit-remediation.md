@@ -16,22 +16,22 @@ Scope: the twelve Agenda-profile Workers, plus connectivity checks for the indep
 
 ## Machine clients and edge HTTP 403
 
-The audit reproduced Cloudflare HTTP 403 / error 1010 for Python urllib's default User-Agent on all thirteen public hosts. Requests with an explicit identifying application User-Agent and MCP SDK requests succeeded. This is a client compatibility mitigation, not a claim that the edge policy has been changed. A Worker cannot repair an HTTP request rejected before reaching it.
+The audit reproduced Cloudflare HTTP 403 / error 1010 for Python urllib's default User-Agent on all thirteen public hosts. On 2026-10-21, Cloudflare Security Events identified the exact request as a Browser Integrity Check block. The owned `agendamcp.dpdns.org` zone now has a narrowly scoped BIC exception for the thirteen canonical hosts' machine routes. The unchanged default-urllib reproduction and the strict thirteen-host discovery monitor pass. See the [configuration and rollback runbook](deployment/machine-client-edge-access.md).
 
-Use a truthful application identifier, not browser impersonation:
+A truthful application identifier remains useful client practice; the owned machine routes also accept urllib's default identity:
 
 ```python
 from urllib.request import Request, urlopen
 
 request = Request(
-    "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/health",
+    "https://agendamcp.dpdns.org/health",
     headers={"User-Agent": "MyAgent/1.0 (+https://example.org/agent)"},
 )
 with urlopen(request, timeout=15) as response:
     print(response.status)
 ```
 
-For an MCP SDK client, pass the same explicit header through its HTTP transport. Existing Python financial/escrow clients already identify themselves. Do not retry with rotating/spoofed identities or disable protection globally. Removing the requirement for default urllib clients needs an administrator to identify the specific Cloudflare rule and apply a narrowly scoped machine-route exception, where supported for the deployed hostname. The follow-up response identifies Cloudflare error 1010 (`browser_signature_banned`). Cloudflare documents Browser Integrity Check as a relevant setting. The authenticated account currently has no owned domain zones, and the inspected Worker settings expose no Browser Integrity Check exception for `workers.dev`. The specific internal managed rule ID remains unavailable. No protection was disabled.
+The official MCP SDK works with its normal User-Agent. Existing Python financial/escrow clients already identify themselves. Do not rotate/spoof identities after a refusal or disable protection globally. A Worker cannot repair a request blocked before it reaches the runtime. The BIC exception changes only the owned zone's matching requests; it does not establish compatibility on legacy `workers.dev` hostnames.
 
 ## Payment contract
 
@@ -47,23 +47,26 @@ Cloudflare OAuth alone is insufficient. An unset VIZIER_DEPLOY_GRANT_FILE / unav
 
 ## Continuous read-only discovery monitoring
 
-`python scripts/check_live_mcp.py --output live-mcp-report.json` requires the official `mcp==1.30.0` SDK. It derives the fleet from Wrangler TOML and includes independent Vizier. Each host gets health, A2A-card and ordinary SDK initialize/tools-list checks with no SDK header override. The reviewed catalog baseline includes 21 tools across 13 hosts; missing, renamed or unexpected tools fail discovery. Update `scripts/mcp-catalog-baseline.json` alongside intentional catalog changes. No tool execution, payments, grants or keys are performed. Default Python urllib initialize is reported separately; it never gets disguised as a successful compatibility check. `--require-default-urllib` additionally makes that limitation fail the process.
+`python scripts/check_live_mcp.py --require-default-urllib --output live-mcp-report.json` requires the official `mcp==1.30.0` SDK. It derives the fleet from Wrangler TOML and includes independent Vizier, using the canonical owned domains in `scripts/mcp-monitor-origins.json`. Each host gets health, A2A-card and ordinary SDK initialize/tools-list checks with no SDK header override. Missing, renamed or unexpected tools fail discovery. Update `scripts/mcp-catalog-baseline.json` alongside intentional catalog changes. No tool execution, payments, grants or keys are performed. The separate default Python urllib initialize probe keeps its unchanged User-Agent, and the strict flag makes any refusal fail the process.
 
-The `Live MCP client compatibility` workflow runs every four hours and after successful protected deployments. It uploads the JSON report, emits visible warnings for default-urllib incompatibility, and fails on SDK/health/A2A regressions. Pull requests changing the monitor also run it. Existing daily stateful fleet proofs remain separate. Scheduled GitHub Actions are best-effort, not an uptime SLA; GitHub notification delivery follows the repository owner's Actions settings.
+The `Live MCP client compatibility` workflow runs every four hours and after successful protected deployments. Both fleet and Output-only runs require default-urllib compatibility, SDK, health and signed A2A checks. It uploads the JSON report and fails on regressions. Pull requests changing the monitor also run it. Existing daily stateful fleet proofs remain separate. Scheduled GitHub Actions are best-effort, not an uptime SLA; GitHub notification delivery follows the repository owner's Actions settings.
 
-Removing the default-urllib block is an infrastructure follow-up: a supported exception on the managed hostname, or an owner-controlled custom domain with a machine-route-scoped Browser Integrity Check rule. This account currently has no such domain; no domain purchase or support message was performed.
+The existing domain and Free plan supported the scoped fix. No domain purchase, plan upgrade or Worker redeployment was needed.
 
-## urllib without a domain or paid service
+## Standard-library discovery example
 
 Run `python3 scripts/urllib_mcp_client.py` for root discovery, or pass an existing Worker MCP URL as its argument. This standard-library-only example returns `{server, tools}` JSON using an explicit `Agenda-urllib-client/1.0` identity. It is a minimal JSON discovery example for the deployed stateless Workers, not a general session/SSE MCP transport. Use the official MCP SDK for general protocol support. No global urllib monkey patch, browser impersonation or infrastructure change is needed.
 
-Financial, escrow, human-review and fleet-proof Python clients already send explicit application headers. Telemetry now identifies itself truthfully. The live monitor requires application-identified urllib initialize/tools-list to succeed and match the reviewed catalog, independently of ordinary SDK checks. The untouched default-urllib probe remains separately reported; its 403 is not described as fixed on the server.
+Financial, escrow, human-review and fleet-proof Python clients already send explicit application headers. Telemetry identifies itself truthfully. The live monitor independently checks application-identified urllib initialize/tools-list, ordinary SDK discovery and untouched default-urllib initialize. Maintainer checks retain `X-Client-Id: agenda-owner-<purpose>` without overriding the SDK/default urllib User-Agent.
 
-## 2026-10-21 administrative follow-up
+## 2026-10-21 administrative diagnosis
 
-The current read-only Cloudflare zones request was refused with HTTP 403. The
-previous account inspection is historical; this follow-up cannot establish
-current zone ownership or edit the managed edge rule. Default-urllib 1010 remains
-an infrastructure limitation. Do not change client identity after a denial or
-disable global protection to make the probe pass. Protected Worker deployment
-and the independent official-SDK monitor remain the supported verification path.
+The earlier zones API refusal used expired Wrangler OAuth credentials and did
+not establish absence of an owned zone. A normal refresh of the existing grant
+allowed inventory reads and confirmed the active custom domain. WAF/settings
+APIs still refused that credential's insufficient permissions; no grant was
+expanded. The authenticated owner dashboard supplied the matching Security Event
+and the supported Configuration Rule. The owner confirmed activation of the
+prepared rule. The global BIC setting remains enabled; only the documented
+machine-route exception is active. The successful live checks are infrastructure
+compatibility evidence, not external demand, tool-quality or paid-usage evidence.

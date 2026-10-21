@@ -53,8 +53,9 @@ Cryptographic/policy failures return `passed:false` and a finite `reason` such
 as `missing_signature`, `invalid_signature`, `unknown_key_id` or
 `untrusted_key_url`; transport/process failures carry a bounded `error` instead.
 A signature failure makes the monitor exit nonzero, appears in the GitHub step
-summary and stays in the existing fourteen-day report artifact. The separate
-known default-urllib edge warning and its optional strict gate remain.
+summary and stays in the existing fourteen-day report artifact. The workflow
+also requires the separate default-urllib probe to pass on the canonical owned
+domains; see [machine-client edge access](machine-client-edge-access.md).
 
 ## Rotation and incident handling
 
