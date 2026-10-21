@@ -37,3 +37,15 @@ test('legacy initialization selects a supported version instead of echoing an un
   const {body}=await call('initialize',{protocolVersion:'2099-01-01'});
   assert.ok(['2026-07-28','2025-11-25','2025-06-18','2025-03-26'].includes(body.result.protocolVersion));
 });
+
+test('production x402 v2 plugin admission remains an MCP tool error with no evaluation',async()=>{
+  const {response,body}=await call('tools/call',{name:'agent_output_verification',arguments:await example()},
+    '/mcp/output-verification',{X402_STANDARD:'1'});
+  assert.equal(response.status,200);
+  assert.equal(body.result.isError,true);
+  assert.equal(body.result._meta['com.agenda/admission'].admission_status,402);
+  assert.equal(body.result._meta['com.agenda/admission'].evaluated,false);
+  assert.deepEqual(JSON.parse(body.result.content[0].text),body.result.structuredContent);
+  assert.equal(body.result.structuredContent.x402Version,2);
+  assert.ok(response.headers.get('payment-required'));
+});

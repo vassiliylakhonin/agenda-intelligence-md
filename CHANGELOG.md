@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.21.1 — 2026-10-21
+
+- Fix production x402 v2 admission at the dedicated Output plugin endpoint: return an unevaluated MCP tool error in HTTP 200, matching `/mcp/agent`, while retaining payment headers and exact URL binding. Share standard client-path selection across legacy and x402 adapters; cover challenge and failed/unavailable payment responses under the production configuration. Preserve direct legacy MCP/REST statuses, prices, quotas and authorization.
+
 ## 1.21.0 — 2026-10-21
 
 - Make hosted onboarding free-first across the fleet and align the Output plugin with its actual trial catalog. Add a bounded answer/source citation preflight (`review_answer`) and optional MCP Apps form using the same Output campaign admission, completion and feedback path. Opening, status and schema preflight consume no attempt; explicit reruns do. Preserve existing full audits and paid admission. Citation structure does not establish semantic support, factual truth or permission to act.
