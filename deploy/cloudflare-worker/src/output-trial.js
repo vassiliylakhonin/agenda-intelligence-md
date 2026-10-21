@@ -102,8 +102,7 @@ export async function reserveOutputTrial(request, env, attempt = crypto.randomUU
     reset_at: limit === 'daily_capacity_exhausted' ? Date.parse(now.slice(0, 10) + 'T00:00:00Z') + 86400000 : null };
 }
 
-export async function handleOutputTrial(request, env, { validate, evaluate, emit, respond, originGroup = () => 'unknown_origin', profile = 'agent_output_verification', readInput = readBoundedJson, allowProductionAuthorization = false }) {
-  const terms = outputTrialTerms(profile);
+export async function handleOutputTrial(request, env, { validate, evaluate, emit, respond, originGroup = () => 'unknown_origin', profile = 'agent_output_verification', readInput = readBoundedJson, allowProductionAuthorization = false, terms = outputTrialTerms(profile) }) {
   const attempt = crypto.randomUUID();
   const trace = paymentTraceId(request);
   const log = (stage, reason, status, validation = null, trial_limit_reason = null) => emit({ stage, reason, status, validation, trial_limit_reason,
@@ -141,7 +140,7 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
     log('preview_failed', 'trial_exhausted', 429, null, admission.limit_reason);
     return reply({ code: 'trial_exhausted', error: daily
       ? 'Today\'s free-trial capacity is full. Retry after the next UTC midnight. No trial attempt was consumed.'
-      : `This network address has used this product's ${terms.attempts_per_network} campaign attempts. Shared networks share the allowance; it does not reset daily. You can choose a separate paid evaluation.`,
+      : `This network address has used this product's ${terms.attempts_per_network} campaign attempts. Shared networks share the allowance; it does not reset daily.${terms.paid_endpoint ? ' You can choose a separate paid evaluation.' : ' No automatic retry or paid continuation.'}`,
       trial: { ...terms, limit_reason: admission.limit_reason, attempt_consumed: false,
         ...(daily ? { retry_after_seconds: retry } : {}) } }, 429, daily ? { 'retry-after': String(retry) } : {});
   }

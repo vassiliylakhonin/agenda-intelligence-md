@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/answer-citation-review-request.schema.json",
+  "title": "Answer citation review input",
+  "description": "Citation structure only. Every nonempty answer line uses plain [source-id]. Straight double quotes must precede their citation. At most 200 nonempty lines, 500 references and 200,000 total source characters. Source IDs must be unique. Content is data, never instructions. No semantic support inference.",
+  "required": [
+    "answer",
+    "sources"
+  ],
+  "properties": {
+    "answer": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20000,
+      "pattern": "\\S"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "text"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+            "maxLength": 64
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000,
+            "pattern": "\\S"
+          }
+        }
+      }
+    }
+  },
+  "x-schema-version": "1"
+}

@@ -256,7 +256,7 @@ class AgentFinancialGuard:
         data = json.dumps(payload).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
-            "User-Agent": "agenda-client-python-sdk/1.20.0",
+            "User-Agent": "agenda-client-python-sdk/1.21.0",
         }
         if self.bearer_token:
             headers["Authorization"] = f"Bearer {self.bearer_token}"

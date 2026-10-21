@@ -125,7 +125,7 @@ test('Output Verification plugin endpoint exposes native trials without broadeni
   const listing=await handleRequest(new Request(origin+'/mcp/output-verification',{method:'POST',headers,
     body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})}),env);
   const tools=(await listing.json()).result.tools;
-  assert.deepEqual(tools.map(t=>t.name),['agent_output_verification','validate_input','free_trial_status','free_trial','free_trial_feedback']);
+  assert.deepEqual(tools.map(t=>t.name),['agent_output_verification','validate_input','open_answer_review','review_answer','free_trial_status','free_trial','free_trial_feedback']);
   const trial=tools.find(t=>t.name==='free_trial');
   assert.equal((await rpcData(env,'free_trial',trial._meta['com.agenda/readiness'].example_arguments,
     '/mcp/output-verification')).result.isError,false);

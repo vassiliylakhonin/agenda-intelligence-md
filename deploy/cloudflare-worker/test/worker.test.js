@@ -6025,10 +6025,9 @@ test("mcp tools/call returns the same verdict as the A2A route", async () => {
   assert.equal(mcp.result.isError, false);
   assert.equal(viaMcp.verdict, "verify_before_relay");
   assert.deepEqual(viaMcp, a2a.result.metadata.response);
-  assert.match(mcp.result.content[0].text, /verdict=verify_before_relay/);
-  assert.ok(mcp.result.content[0].text.length < 500);
+  assert.deepEqual(JSON.parse(mcp.result.content[0].text), viaMcp);
   assert.ok(!("artifacts" in viaMcp));
-  assert.ok(Buffer.byteLength(JSON.stringify(mcp)) < 12_000);
+  assert.ok(Buffer.byteLength(JSON.stringify(mcp)) < 24_000);
 });
 
 test("mcp tools/call keeps the legacy request wrapper as an input compatibility shim", async () => {
@@ -6471,8 +6470,8 @@ test("mcp tools/call keeps the largest worker result below a bounded context cos
 
   assert.equal(response.result.structuredContent.triage_recommendation, "escalate_before_signature");
   assert.ok(!("artifacts" in response.result.structuredContent));
-  assert.ok(response.result.content[0].text.length < 500);
-  assert.ok(Buffer.byteLength(JSON.stringify(response)) < 15_000);
+  assert.deepEqual(JSON.parse(response.result.content[0].text), response.result.structuredContent);
+  assert.ok(Buffer.byteLength(JSON.stringify(response)) < 30_000);
 });
 
 test("mcp tools/call rejects an unknown tool as a tool error, not a protocol error", async () => {
@@ -8099,9 +8098,9 @@ test("mcp tools/call refusal includes schema_hint and detailed error summary in 
 
   // Content[0].text is what LLMs receive directly:
   const errorText = refusal.result.content[0].text;
-  assert.match(errorText, /INPUT_REQUIRED:/);
-  assert.match(errorText, /Required fields:/);
-  assert.match(errorText, /Example arguments:/);
+  assert.deepEqual(JSON.parse(errorText), payload);
+  assert.ok(JSON.parse(errorText).required_fields.length);
+  assert.ok(JSON.parse(errorText).example_request);
 });
 
 test("a2a free text on a vertical gate returns typed intake with a candidate and schema_hint", async () => {
@@ -8198,7 +8197,7 @@ test("mcp tools/call fleet_directory returns all 11 specialized gates with canon
 
   const result = json.result;
   assert.ok(result.content && result.content[0]);
-  assert.match(result.content[0].text, /Agenda Intelligence Fleet Directory: 12 gates available/);
+  assert.deepEqual(JSON.parse(result.content[0].text), result.structuredContent);
 
   const payload = result.structuredContent;
   assert.equal(payload.total_gates, 12);

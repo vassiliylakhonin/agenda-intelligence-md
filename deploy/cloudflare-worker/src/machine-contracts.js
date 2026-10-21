@@ -5,7 +5,7 @@ import {hostedAccess} from './hosted-access.js';
 import {x402Enabled,x402Requirements} from './x402-v2.js';
 import {INPUT_VALIDATION_TOOL,INPUT_VALIDATION_PATH,INPUT_VALIDATION_MAX_BYTES} from './input-validation.js';
 import {TIER_MICRO_CHECK_USDC_AMOUNT,TIER_MICRO_DISPUTE_USDC_AMOUNT,TIER_BANKABILITY_DOSSIER_USDC_AMOUNT} from './profiles.js';
-export const FREE_MACHINE_TOOLS=new Set(['fleet_directory','decision_policies_list','free_trial_status','free_trial','free_trial_feedback',INPUT_VALIDATION_TOOL]);
+export const FREE_MACHINE_TOOLS=new Set(['fleet_directory','decision_policies_list','free_trial_status','free_trial','free_trial_feedback','review_answer','open_answer_review',INPUT_VALIDATION_TOOL]);
 export const evaluationAmount=(profile,name)=>name==='corridor_bankability_screen'?TIER_BANKABILITY_DOSSIER_USDC_AMOUNT
   :profile==='m2m_escrow_arbiter'?TIER_MICRO_DISPUTE_USDC_AMOUNT:TIER_MICRO_CHECK_USDC_AMOUNT;
 export const toolSchemaUrl=(origin,name,kind='input')=>`${origin}/schemas/tools/${name}/${kind}.schema.json`;

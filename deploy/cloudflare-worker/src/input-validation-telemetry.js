@@ -5,7 +5,7 @@ import {validationCatalog} from './validation-catalog.js';
 const REASONS = new Set(['invalid_validation_request','unknown_validation_tool',
   'validation_body_too_large','validation_complexity_limit','invalid_validation_json',
   'unauthorized','payment_not_applicable','method_not_allowed','protocol_rejected']);
-const UTILITIES = new Set(['fleet_directory','decision_policies_list','free_trial_status','free_trial_feedback','validate_input']);
+const UTILITIES = new Set(['fleet_directory','decision_policies_list','free_trial_status','free_trial_feedback','validate_input','open_answer_review']);
 export function inputValidationObservation(profile, transport, target, status, body) {
   const checked=status===200 && typeof body?.valid==='boolean';
   const published=validationCatalog(profile).some(item=>item.name===target);

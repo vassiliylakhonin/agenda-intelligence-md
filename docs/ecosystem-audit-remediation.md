@@ -58,3 +58,12 @@ Removing the default-urllib block is an infrastructure follow-up: a supported ex
 Run `python3 scripts/urllib_mcp_client.py` for root discovery, or pass an existing Worker MCP URL as its argument. This standard-library-only example returns `{server, tools}` JSON using an explicit `Agenda-urllib-client/1.0` identity. It is a minimal JSON discovery example for the deployed stateless Workers, not a general session/SSE MCP transport. Use the official MCP SDK for general protocol support. No global urllib monkey patch, browser impersonation or infrastructure change is needed.
 
 Financial, escrow, human-review and fleet-proof Python clients already send explicit application headers. Telemetry now identifies itself truthfully. The live monitor requires application-identified urllib initialize/tools-list to succeed and match the reviewed catalog, independently of ordinary SDK checks. The untouched default-urllib probe remains separately reported; its 403 is not described as fixed on the server.
+
+## 2026-10-21 administrative follow-up
+
+The current read-only Cloudflare zones request was refused with HTTP 403. The
+previous account inspection is historical; this follow-up cannot establish
+current zone ownership or edit the managed edge rule. Default-urllib 1010 remains
+an infrastructure limitation. Do not change client identity after a denial or
+disable global protection to make the probe pass. Protected Worker deployment
+and the independent official-SDK monitor remain the supported verification path.

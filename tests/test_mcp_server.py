@@ -19,6 +19,13 @@ from agenda_intelligence.mcp_stdio import handle_message
 FIXTURES = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "memo_quality"
 
 
+def test_initialize_does_not_echo_an_unsupported_revision():
+    response = handle_message(
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2099-01-01"}}
+    )
+    assert response["result"]["protocolVersion"] == mcp_stdio.PROTOCOL_VERSION
+
+
 def test_get_protocol_entrypoint_returns_markdown():
     result = get_protocol("entrypoint")
 

@@ -26,7 +26,7 @@ Python 3.9 or later:
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install "agenda-intelligence-md==1.20.0"
+.venv/bin/python -m pip install "agenda-intelligence-md==1.21.0"
 ```
 
 Create `answer.json` with your answer and original retrieved chunk texts. This

@@ -39,7 +39,9 @@
     "free_trial_status",
     "free_trial",
     "free_trial_feedback",
-    "validate_input"
+    "validate_input",
+    "open_answer_review",
+    "review_answer"
   ],
   "gulf-maritime-exposure-a2a": [
     "gulf_maritime_exposure",
