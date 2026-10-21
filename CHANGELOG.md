@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Memo generation and replay — 2026-10-20
+
+- Send an explicit schema for optional Anthropic memo generation, retain original local schema/quality validation, and reject refusal, truncation, ambiguous JSON and budget overflow without automatic generation retries. Preflight provider token estimates and a local serialized-input byte ceiling; keep server audit metadata separate from model output.
+- Capture private raw memo outputs with provenance and rescore offline against exact unique case/sample coverage. Suppress aggregate scores on incomplete/altered artifacts and count technical failures as mismatches. Reuse the existing synthetic memo-quality corpus; no factuality, model-quality or adoption claim.
+
 ## OSS Scanner preparation — 2026-10-20
 
 - Add a source-built Docker audit environment, offline verification commands and a source-backed security threat model. Keep production releases, credentials and deployment behavior unchanged. Enrollment remains subject to maintainer approval and Anthropic review; preparation is not a completed audit or security certification.

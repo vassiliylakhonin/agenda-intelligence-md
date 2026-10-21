@@ -32,8 +32,7 @@ LLM invocation:
 from __future__ import annotations
 
 import json
-import os
-import re
+import math
 from datetime import datetime, timezone
 from importlib import resources
 from pathlib import Path
@@ -41,6 +40,8 @@ from typing import Any, Iterable, Optional
 
 from agenda_intelligence import __version__
 from agenda_intelligence.analysis_bank import select_applicable_memory
+from agenda_intelligence.memo_generation import MemoGenerationError
+from agenda_intelligence.memo_generation import generate_memo as _call_anthropic
 from agenda_intelligence.memo_quality import check_memo_quality as _check_memo_quality
 
 PACKAGE_NAME = "agenda_intelligence"
@@ -630,34 +631,6 @@ def _run_machine_audit(
 # ---------------------------------------------------------------------------
 
 
-_DEFAULT_MODEL = os.environ.get("AGENDA_INTELLIGENCE_MODEL", "claude-opus-4-7")
-_MAX_TOKENS = int(os.environ.get("AGENDA_INTELLIGENCE_MAX_TOKENS", "4096"))
-
-
-def _call_anthropic(system_prompt: str, user_message: str) -> Optional[str]:
-    """Return the assistant text or ``None`` if the SDK/key are not available."""
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        return None
-    try:
-        import anthropic  # type: ignore
-    except ImportError:
-        return None
-    client = anthropic.Anthropic(api_key=api_key)
-    resp = client.messages.create(
-        model=_DEFAULT_MODEL,
-        max_tokens=_MAX_TOKENS,
-        system=system_prompt,
-        messages=[{"role": "user", "content": user_message}],
-    )
-    parts: list[str] = []
-    for block in resp.content:
-        text = getattr(block, "text", None)
-        if isinstance(text, str):
-            parts.append(text)
-    return "".join(parts).strip() or None
-
-
 def _build_user_message(request: dict) -> str:
     schema_hint = (
         "Return ONLY a single JSON object matching agenda-memo.schema.json. " "No surrounding prose or markdown fences."
@@ -665,21 +638,32 @@ def _build_user_message(request: dict) -> str:
     return f"Request:\n```json\n{json.dumps(request, indent=2, ensure_ascii=False)}\n```\n\n" f"{schema_hint}"
 
 
-_JSON_OBJECT_RE = re.compile(r"\{.*\}", re.DOTALL)
-
-
 def _extract_json_object(text: str) -> Optional[dict]:
-    """Best-effort: parse the first top-level JSON object in *text*."""
+    """Accept one whole JSON object, without ambiguous keys or non-JSON numbers."""
+
+    def unique_object(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate object key")
+            result[key] = value
+        return result
+
+    def invalid_constant(value):
+        raise ValueError("non-JSON numeric constant")
+
+    def finite_float(value):
+        parsed = float(value)
+        if not math.isfinite(parsed):
+            raise ValueError("non-finite number")
+        return parsed
+
     try:
-        return json.loads(text)
-    except Exception:
-        pass
-    match = _JSON_OBJECT_RE.search(text)
-    if not match:
-        return None
-    try:
-        return json.loads(match.group(0))
-    except Exception:
+        parsed = json.loads(
+            text, object_pairs_hook=unique_object, parse_constant=invalid_constant, parse_float=finite_float
+        )
+        return parsed if isinstance(parsed, dict) else None
+    except (ValueError, RecursionError):
         return None
 
 
@@ -789,7 +773,24 @@ def analyze(request: dict) -> dict:
     system_prompt = assemble_system_prompt(modules, request, reasoning_memory=reasoning_memory)
     user_message = _build_user_message(request)
 
-    llm_text = _call_anthropic(system_prompt, user_message)
+    try:
+        llm_text = _call_anthropic(system_prompt, user_message)
+    except MemoGenerationError as error:
+        return {
+            "implemented": True,
+            "valid_request": True,
+            "errors": [error.code],
+            "modules_used": modules,
+            "reasoning_memory_used": reasoning_memory,
+            "llm_invoked": error.invoked,
+            "mode": "generation_failed",
+            "memo": None,
+            "memo_valid": False,
+            "memo_errors": [str(error)],
+            "memo_quality_ok": False,
+            "memo_quality_errors": ["memo_missing"],
+            "memo_quality_passed": [],
+        }
     if llm_text is None:
         memo = _skeleton_memo(request, modules, reasoning_memory=reasoning_memory)
         quality = _memo_quality_result(memo, False)
