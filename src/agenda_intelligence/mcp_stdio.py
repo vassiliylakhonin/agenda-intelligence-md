@@ -1018,11 +1018,11 @@ def _handle_initialize(message_id: Any, params: JsonDict) -> JsonDict:
     """Legacy handshake, kept for clients that predate the stateless core.
 
     Removed from the protocol in 2026-07-28. It is still answered because the
-    server holds no session state either way — echoing the client's revision costs
-    nothing and keeps older desktop hosts working.
+    server holds no session state either way. Negotiate a supported revision
+    rather than confirming an unknown client revision.
     """
     requested_version = params.get("protocolVersion")
-    protocol_version = requested_version if isinstance(requested_version, str) else PROTOCOL_VERSION
+    protocol_version = requested_version if requested_version in SUPPORTED_PROTOCOL_VERSIONS else PROTOCOL_VERSION
     return _response(
         message_id,
         {

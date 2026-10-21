@@ -10,6 +10,46 @@ import pytest
 from jsonschema import Draft202012Validator
 
 
+def test_compact_answer_review_has_valid_contract_and_invalid_input_consumes_no_attempt():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Worker protocol tests need Node.js")
+    root = Path(__file__).resolve().parents[1]
+    program = """
+      import {handleRequest} from './deploy/cloudflare-worker/src/index.js';
+      import {memoryD1} from './deploy/cloudflare-worker/test/helpers/d1.js';
+      const log=console.log;console.log=()=>{};
+      const env={AGENT_PROFILE:'agent_output_verification',WORKER_FREE_TRIAL:'1',
+        BILLING_MODE:'pay_per_call',PAYMENT_LEDGER:memoryD1()};
+      const call=async(method,params)=>{
+        const response=await handleRequest(new Request('https://example.test/mcp/output-verification',{
+          method:'POST',headers:{'content-type':'application/json','cf-connecting-ip':'192.0.2.1'},
+          body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})}),env);
+        return response.json();
+      };
+      const input={answer:'The report mentions "three warehouses" [s1]',
+        sources:[{source_id:'s1',text:'The report lists three warehouses.'}]};
+      const listed=await call('tools/list',{});
+      const spec=listed.result.tools.find(t=>t.name==='review_answer');
+      const valid=await call('tools/call',{name:'review_answer',arguments:input});
+      const invalid=await call('tools/call',{name:'review_answer',arguments:{answer:'Missing sources'}});
+      const count=await env.PAYMENT_LEDGER.prepare('SELECT COUNT(*) AS count FROM output_verification_trials').first();
+      log(JSON.stringify({spec,input,valid,invalid,count}));
+    """
+    run = subprocess.run(
+        [node, "--input-type=module", "-e", program], cwd=root, check=True, capture_output=True, text=True, timeout=30
+    )
+    result = json.loads(run.stdout)
+    Draft202012Validator(result["spec"]["inputSchema"]).validate(result["input"])
+    payload = result["valid"]["result"]["structuredContent"]
+    Draft202012Validator(result["spec"]["outputSchema"]).validate(payload)
+    assert payload["evaluation"]["route"] == "human_review"
+    assert payload["evaluation"]["semantic_support"] == "not_assessed"
+    assert json.loads(result["valid"]["result"]["content"][0]["text"]) == payload
+    assert result["invalid"]["result"]["isError"] is True
+    assert result["count"]["count"] == 1
+
+
 def test_fleet_trials_validate_examples_and_responses_and_refuse_empty_input():
     node = shutil.which("node")
     if not node:

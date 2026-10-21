@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/answer-citation-review-response.schema.json",
+  "title": "Answer citation review result",
+  "required": [
+    "schema_version",
+    "route",
+    "validation_scope",
+    "factuality",
+    "semantic_support",
+    "human_review_required",
+    "authorization_granted",
+    "findings",
+    "units",
+    "unused_source_ids",
+    "next_action",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "answer-citation-review.v1"
+    },
+    "route": {
+      "enum": [
+        "revise",
+        "human_review"
+      ]
+    },
+    "validation_scope": {
+      "const": "citation_and_quote_structure_only"
+    },
+    "factuality": {
+      "const": "not_assessed"
+    },
+    "semantic_support": {
+      "const": "not_assessed"
+    },
+    "human_review_required": {
+      "const": true
+    },
+    "authorization_granted": {
+      "const": false
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "line",
+          "code",
+          "next_action"
+        ],
+        "properties": {
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "code": {
+            "enum": [
+              "missing_citation",
+              "unknown_source",
+              "unsupported_citation_syntax",
+              "unbalanced_quote",
+              "unattributed_quote",
+              "quote_not_found"
+            ]
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "next_action": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "line",
+          "citation_ids",
+          "quotes_checked"
+        ],
+        "properties": {
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "citation_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "quotes_checked": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "unused_source_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "x-schema-version": "1"
+}

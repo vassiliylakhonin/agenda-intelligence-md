@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 1.21.0 — 2026-10-21
+
+- Make hosted onboarding free-first across the fleet and align the Output plugin with its actual trial catalog. Add a bounded answer/source citation preflight (`review_answer`) and optional MCP Apps form using the same Output campaign admission, completion and feedback path. Opening, status and schema preflight consume no attempt; explicit reruns do. Preserve existing full audits and paid admission. Citation structure does not establish semantic support, factual truth or permission to act.
+- Return complete MCP JSON in text content for clients that omit structuredContent. Negotiate supported legacy initialization versions; validate modern HTTP mirrored version/method/name headers before quota/payment admission and preserve supported 2025 clients. Add corrected-rerun, contract, quota, privacy, UI and dual-era regressions; update package mirrors, catalogs and documentation. No live model API check or external adoption claim.
+
 ## 1.20.0 — 2026-10-21
 
 - Release bounded optional schema-output memo generation and private offline replay with exact coverage checks. Expose replay through the installed Python module as well as the checkout wrapper, fingerprint installed scorer sources, and verify wheel/PyPI replay plus incomplete-coverage refusal in CI smoke.

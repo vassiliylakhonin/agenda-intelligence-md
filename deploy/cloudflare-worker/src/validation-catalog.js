@@ -4,6 +4,7 @@ import {mcpToolsForProfile} from './mcp.js';
 import {TRIAL_PROFILES} from './trial-profiles.js';
 import {mcpTrialTools} from './mcp-trial.js';
 import {PUBLIC_SCHEMAS} from './public-schemas.js';
+import {answerReviewTools} from './answer-review.js';
 const RAW_TRIAL_SCHEMAS={
   agent_financial_guard:'agent-financial-guard-request.schema.json',
   m2m_escrow_arbiter:'m2m-escrow-arbiter-request.schema.json'
@@ -15,6 +16,7 @@ export function validationCatalog(profile) {
     ? PUBLIC_SCHEMAS['schemas/v1/'+RAW_TRIAL_SCHEMAS[profile]]
     : tools.find(tool=>tool.name===primary)?.inputSchema;
   return [...tools.map(tool=>({name:tool.name,schema:tool.inputSchema})),
+    ...(profile==='agent_output_verification' ? answerReviewTools(PUBLIC_SCHEMAS).map(tool=>({name:tool.name,schema:tool.inputSchema})) : []),
     ...mcpTrialTools({inputSchema:trialSchema},{tool:primary,agent_profile:profile,attempts_per_network:5}).map(tool=>({name:tool.name,schema:tool.inputSchema})),
     {name:'validate_input',schema:PUBLIC_SCHEMAS['schemas/v1/input-validation-request.schema.json']}];
 }

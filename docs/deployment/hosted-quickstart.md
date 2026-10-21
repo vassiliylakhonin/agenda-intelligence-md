@@ -5,10 +5,13 @@ host with another published Worker to discover that profile's tools. These
 connectivity checks are free and do not evaluate a case or transfer funds.
 
 The installed local stdio MCP server is a separate transport and has no hosted
-payment requirement. Hosted evaluation of your own input uses signed payment
-on Base. Adding a remote MCP URL alone does not provide a payment adapter.
+payment requirement. Start with `free_trial_status` and `free_trial` for the published free campaign.
+Normal paid tools require separate signed payment on Base. Adding a remote MCP
+URL alone does not provide a payment adapter. Output Verification also offers
+[`review_answer` and an optional form](answer-review.md) for answer/source text;
+it shares the same allowance and checks citation structure only.
 
-## 1. Find the service and price
+## 1. Find the service and free entry point
 
 ```bash
 BASE='https://critical-minerals-due-diligence.agendamcp.dpdns.org'

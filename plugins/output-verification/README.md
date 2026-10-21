@@ -1,8 +1,12 @@
 # Output Verification plugin
 
-This package connects Claude, ChatGPT, and Codex to the existing Output Verification Worker. The plugin endpoint is `https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp/output-verification`. It exposes only `agent_output_verification`; the existing `/mcp` endpoint keeps the broader profile for current clients. No proxy, wallet client, or second verification engine is bundled.
+This package connects Claude, ChatGPT, and Codex to the existing Output Verification Worker at `https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp/output-verification`.
 
-The tool checks whether caller-supplied claim IDs, evidence IDs, support levels, and quotes fit together. It does not fetch or authenticate sources, establish factual truth, approve relay, or authorize actions. `verify_before_relay` is the strongest verdict, and every verdict requires human review. The service receives the packet you send; do not include secrets or unrelated private material. The public endpoint has a free quota and may return a rate-limit or payment response. The plugin never initiates payment.
+Start with `free_trial_status`, then choose `review_answer` for an answer plus actual source excerpts (citation/quote structure only), or `free_trial` for the claim/evidence audit. `validate_input` checks shape without evaluation. `free_trial_feedback` accepts optional feedback. `open_answer_review` opens an optional MCP Apps form without evaluation; clients without Apps use the ordinary tools and complete JSON text results.
+
+Both free reviews share 5 campaign attempts per network and product, plus shared daily capacity. An admitted corrected rerun consumes another attempt. Opening the form, checking status and validating shape consume none. The separate `agent_output_verification` tool keeps normal paid admission. The plugin never pays or retries automatically.
+
+The full audit checks whether supplied claim IDs, evidence IDs, support levels and quotes fit together. The compact review never assigns support levels or assesses semantic support. Neither fetches/authenticates sources, establishes truth, approves relay or authorizes action. Every result requires human review. Send only authorized material, without secrets or unrelated private data. See the [answer review contract](../../docs/deployment/answer-review.md).
 
 ## Contents
 

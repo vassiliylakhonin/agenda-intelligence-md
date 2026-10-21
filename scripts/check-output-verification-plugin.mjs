@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { mcpToolsForProfile } from "../deploy/cloudflare-worker/src/mcp.js";
 import { VERSION } from "../deploy/cloudflare-worker/src/profiles.js";
+import { handleRequest } from "../deploy/cloudflare-worker/src/index.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../plugins/output-verification");
 const endpoint = "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/mcp/output-verification";
@@ -37,11 +38,18 @@ assert.deepEqual(tool.inputSchema.required, ["claims", "evidence"]);
 assert.equal(tool.annotations.readOnlyHint, false);
 assert.match(tool.description, /verify_before_relay/);
 
+const expectedTools=['agent_output_verification','validate_input','open_answer_review','review_answer','free_trial_status','free_trial','free_trial_feedback'];
+const listedLocal=await (await handleRequest(new Request(endpoint,{method:'POST',body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})}),
+  {AGENT_PROFILE:'agent_output_verification',BILLING_MODE:'pay_per_call',WORKER_FREE_TRIAL:'1'})).json();
+assert.deepEqual(listedLocal.result.tools.map(item=>item.name),expectedTools);
+assert.match(skill,/free_trial_status/);
+assert.match(skill,/review_answer/);
+
 if (process.argv.includes("--live")) {
   const call = async (method, params = {}) => {
     const response = await fetch(endpoint, {
       method: "POST",
-      headers: { "content-type": "application/json", accept: "application/json", "x-client-id": "plugin-package-check" },
+      headers: { "content-type": "application/json", accept: "application/json", "x-client-id": "agenda-owner-plugin-package-check" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params })
     });
     assert.equal(response.status, 200, `${method}: HTTP ${response.status}`);
@@ -52,7 +60,7 @@ if (process.argv.includes("--live")) {
   });
   assert.equal(initialized.result.serverInfo.version, VERSION);
   const listed = await call("tools/list");
-  assert.deepEqual(listed.result.tools.map((item) => item.name), ["agent_output_verification"]);
+  assert.deepEqual(listed.result.tools.map((item) => item.name), expectedTools);
   assert.equal(listed.result.tools[0].annotations.readOnlyHint, false);
 }
 

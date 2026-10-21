@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "output-verification",
-  "version": "1.20.0",
+  "version": "1.21.0",
   "description": "Review structural gaps in caller-supplied claim evidence. No independent source verification; every verdict requires human review.",
   "author": {
     "name": "Vassiliy Lakhonin",
@@ -10,7 +10,12 @@
   "homepage": "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/",
   "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
   "license": "MIT",
-  "keywords": ["evidence", "claim-review", "mcp", "human-review"],
+  "keywords": [
+    "evidence",
+    "claim-review",
+    "mcp",
+    "human-review"
+  ],
   "extensions": {
     "com.openai": {
       "interface": {
@@ -22,7 +27,9 @@
         "websiteURL": "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/",
         "privacyPolicyURL": "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/privacy",
         "termsOfServiceURL": "https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/terms",
-        "defaultPrompt": ["Check these agent claims against the evidence excerpts I provide and show what a human still needs to review."]
+        "defaultPrompt": [
+          "Check these agent claims against the evidence excerpts I provide and show what a human still needs to review."
+        ]
       }
     }
   }
