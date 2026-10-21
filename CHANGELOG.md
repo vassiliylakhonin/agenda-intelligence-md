@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Machine-client edge access — 2026-10-21
+
+- Confirm the owned domain and attribute default Python urllib's 403/1010 to Cloudflare Browser Integrity Check using the matching Security Event. Activate an owner-confirmed BIC-only exception on the thirteen canonical hosts' machine routes, retaining the global BIC setting and all other security settings. Verify unchanged urllib and official SDK discovery across all thirteen hosts; document scope and rollback.
+- Require default-urllib compatibility in the existing scheduled and post-deploy monitor, including Output-only runs. Correct stale domain-ownership and infrastructure-limitation notes. No Worker runtime, authentication, quota, price, payment or package-version changes.
+
 ## 1.21.1 — 2026-10-21
 
 - Fix production x402 v2 admission at the dedicated Output plugin endpoint: return an unevaluated MCP tool error in HTTP 200, matching `/mcp/agent`, while retaining payment headers and exact URL binding. Share standard client-path selection across legacy and x402 adapters; cover challenge and failed/unavailable payment responses under the production configuration. Preserve direct legacy MCP/REST statuses, prices, quotas and authorization.
