@@ -45,6 +45,21 @@ permissions; supplied content is rendered with DOM text/value properties. A
 failed rerun preserves the last completed result. Hosts without Apps receive
 ordinary instructions and complete JSON text. Support in every host is not implied.
 
+The form starts with a ready-to-use `s1` source label and shows its `[s1]`
+citation. Additional excerpts get distinct labels automatically; removed labels
+are not silently recycled for replacement documents. Supplied labels remain
+editable and are preserved when the host pre-fills an existing request.
+
+When an explicit allowance check or an authoritative refusal reports exhaustion,
+the form explains whether the network campaign or shared daily capacity is full
+and disables another review. The allowance button remains available for a
+deliberate refresh; a successful available response can re-enable review.
+Opening a different client does not reset a network campaign. Existing completed
+results remain visible. The backend remains authoritative because availability
+is advisory. An exhausted hosted allowance does not prevent use of the separately
+documented [local Python RAG adapter](../integrations/rag-output.md), which runs
+offline under its own contract; it is not a way to reset hosted admission.
+
 Before relay or a high-stakes action, record a short decision workspace: goal,
 trusted evidence, unreliable material, assumptions, intended action and escalation
 conditions. Structural findings never authorize the action.
