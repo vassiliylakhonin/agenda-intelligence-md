@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Pages-scoped publisher authentication — 2026-10-22
+
+- Authenticate Pages-only tokens against the fixed snapshot project instead of `wrangler whoami`, which can require unrelated identity permissions. Require the explicit account and expected project/subdomain; refuse redirects, oversized/malformed metadata and access failures before deployment. Retain local OAuth account checks and all source, drift and exact canonical-byte gates.
+
 ## Pages publisher credential boundary — 2026-10-21
 
 - Bind snapshot publication to a dedicated protected `CLOUDFLARE_PAGES_API_TOKEN` secret after the first run confirmed that the Worker-only token cannot access Pages. Fail explicitly if missing; retain all publication gates and avoid a fallback that widens Worker credentials.
