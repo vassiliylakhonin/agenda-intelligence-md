@@ -16,5 +16,9 @@ export function serviceOffersHtml(escape, email, repository) {
   <p>You receive agreed acceptance cases, reproducible failures, one bounded adapter or repair, regression checks and an operator handover. Semantic review and action authorization are explicit parts of scope where needed.</p>
   <p>Indicative test range: $1,500–3,000 per bounded sprint. Ongoing support is quoted only after the first accepted job; no unlimited integrations or 24-hour SLA.</p>
   <a href="${escape(contact('Agent Workflow Acceptance'))}">Describe one workflow</a> · <a href="${escape(samples)}">Inspect the acceptance sample and scope</a></div>
+  <div class="card"><h3>Supplier Evidence Desk</h3>
+  <p>For procurement and onboarding teams: prepare one supplier's document pack, assign evidence requests and compare updates.</p>
+  <p>The browser workspace includes source attachments, an editable checklist, owner request tracking, saved versions and review exports. Dossier contents stay on your device; complete JSON backups carry the files and history. A person reviews authenticity and decides whether to onboard.</p>
+  <a href="https://agendamcp.dpdns.org/supplier-desk">Open the free supplier workspace</a> · <a href="${escape(contact('Supplier Evidence Desk'))}">Scope a dossier preparation assignment</a></div>
   <p>Source authenticity, factual judgment, legal decisions and final submission remain with the responsible person. Describe the task first; agree a permitted transfer channel before sharing confidential materials.</p></section>`;
 }

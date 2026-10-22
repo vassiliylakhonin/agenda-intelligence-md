@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Supplier Evidence Desk — 2026-10-22
+
+- Add a free browser-local supplier workspace on existing Workers: editable checklist and owners, source attachments/excerpts, manual request tracking and copyable drafts, explicitly saved versions, scoped revision comparison and portable JSON/Markdown/CSV handover. Validate imported history and attachment bytes; preserve unsaved work on storage failure. Keep document text out of network calls and telemetry. Human review remains required; no automatic supplier approval or message sending.
+
 ## Pages-scoped publisher authentication — 2026-10-22
 
 - Authenticate Pages-only tokens against the fixed snapshot project instead of `wrangler whoami`, which can require unrelated identity permissions. Require the explicit account and expected project/subdomain; refuse redirects, oversized/malformed metadata and access failures before deployment. Retain local OAuth account checks and all source, drift and exact canonical-byte gates.

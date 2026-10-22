@@ -20,8 +20,10 @@ understand, prepare, correct and accept. The market evidence remains a hypothesi
 
 ## Explicitly conditional research items
 
-Supplier Evidence Desk stays a later bounded service test after a buyer purchases
-and repeats a dossier task. A new hosted job/order platform, MPP/payment adapter,
+Supplier Evidence Desk now has a browser-local preparation workspace, implemented
+at the owner's request: source files, owner request tracking, saved snapshots,
+comparison and exports. See [the workflow and contract](../use-cases/supplier-evidence-desk.md).
+Demand and repeat purchases remain unvalidated. A new hosted job/order platform, MPP/payment adapter,
 custom identity infrastructure, universal registry, wallet, GPU inference, multi-
 agent swarm and broader domain data providers need a measured bottleneck or a
 paid requirement. They are not unconditional findings to implement immediately.
