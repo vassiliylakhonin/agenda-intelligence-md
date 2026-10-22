@@ -26,7 +26,7 @@ from typing import Sequence
 ROOT = Path(__file__).resolve().parents[1]
 COMPACT_INDEX = ROOT / "deploy" / "snapshot-site" / "sanctions-name-index-compact.json"
 SNAPSHOT_DIRECTORY = ROOT / "deploy" / "snapshot-site"
-PUBLISHED_URL = "https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json"
+PUBLISHED_URL = "https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json"
 WRANGLER_VERSION = "4.122.0"
 POST_DEPLOY_ATTEMPTS = 12
 POST_DEPLOY_PAUSE_SECONDS = 10
@@ -179,6 +179,7 @@ def publish_candidate(digest: str) -> None:
         PUBLISHED_URL,
         "--max-age-days",
         "1",
+        "--default-urllib",
         "--expected-sha256",
         digest,
     ]
@@ -187,6 +188,8 @@ def publish_candidate(digest: str) -> None:
         if result.returncode == 0:
             print("gated sanctions-index publish completed and verified")
             return
+        if result.returncode == 2:
+            raise RuntimeError("canonical index access refused; publication verification stopped without retry")
         print(f"attempt {attempt}: canonical Pages URL has not converged yet")
         if attempt < POST_DEPLOY_ATTEMPTS:
             time.sleep(POST_DEPLOY_PAUSE_SECONDS)

@@ -5,6 +5,11 @@
 - Restrict illustrative-document markers to explicit example/fixture wording so ordinary synthetic-material descriptions do not create false documentary gaps. Preserve human review and the explicit demo markers.
 - Add a free browser-local supplier workspace on existing Workers: editable checklist and owners, source attachments/excerpts, manual request tracking and copyable drafts, explicitly saved versions, scoped revision comparison and portable JSON/Markdown/CSV handover. Validate imported history and attachment bytes; preserve unsaved work on storage failure. Keep document text out of network calls and telemetry. Human review remains required; no automatic supplier approval or message sending.
 
+## Snapshot machine domain — 2026-10-22
+
+- Serve the existing Pages snapshot through the owned `sanctions-index.agendamcp.dpdns.org` custom domain, where the compact JSON download has a narrow BIC-only rule. Align CIS, the publisher and the daily watchdog with this canonical URL; retain Pages project identity, token scope and publication/freshness gates.
+- Verify exact published bytes using default urllib identity and no redirects. Treat HTTP 401/403 as terminal without retry or User-Agent fallback, and avoid inferring a Worker outage from a single direct-download failure.
+
 ## Pages-scoped publisher authentication — 2026-10-22
 
 - Authenticate Pages-only tokens against the fixed snapshot project instead of `wrangler whoami`, which can require unrelated identity permissions. Require the explicit account and expected project/subdomain; refuse redirects, oversized/malformed metadata and access failures before deployment. Retain local OAuth account checks and all source, drift and exact canonical-byte gates.

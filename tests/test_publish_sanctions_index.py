@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import subprocess
+import tomllib
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -87,6 +88,7 @@ def test_publish_uses_pinned_wrangler_then_checks_exact_production_bytes(monkeyp
     assert commands[2][0:5] == ["npx", "--yes", "wrangler@4.122.0", "pages", "deploy"]
     assert "--project-name=sanctions-name-index" in commands[2]
     assert "--expected-sha256" in commands[3]
+    assert "--default-urllib" in commands[3]
     assert commands[3][-1] == "a" * 64
 
 
@@ -263,3 +265,30 @@ def test_pages_auth_opener_refuses_redirects():
     handlers = [handler for handler in opener.handlers if isinstance(handler, urllib.request.HTTPRedirectHandler)]
     assert len(handlers) == 1
     assert handlers[0].redirect_request(None, None, 302, "redirect", {}, "https://other.example") is None
+
+
+def test_publisher_stops_on_canonical_access_refusal_without_retry(monkeypatch):
+    commands = []
+
+    def fake_run(command, **kwargs):
+        command = list(command)
+        commands.append(command)
+        if any(item.endswith("check_published_index.py") for item in command):
+            return completed(command, returncode=2)
+        return completed(command)
+
+    monkeypatch.setattr(PUBLISH, "verify_wrangler_auth", lambda: None)
+    monkeypatch.setattr(PUBLISH, "run_command", fake_run)
+    monkeypatch.setattr(PUBLISH.time, "sleep", lambda _: pytest.fail("Access refusal must not be retried"))
+    with pytest.raises(RuntimeError, match="access refused"):
+        PUBLISH.publish_candidate("a" * 64)
+    assert len(commands) == 2
+
+
+def test_runtime_publisher_and_watchdog_use_one_canonical_snapshot_url():
+    config = tomllib.loads((ROOT / "deploy/cloudflare-worker/wrangler.toml").read_text())
+    runtime = config["env"]["cis-secondary-sanctions"]["vars"]["SNAPSHOT_INDEX_URL"]
+    workflow = (ROOT / ".github/workflows/check-sanctions-index.yml").read_text()
+    assert runtime == PUBLISH.PUBLISHED_URL
+    assert workflow.count("--published " + PUBLISH.PUBLISHED_URL) == 2
+    assert workflow.count("--default-urllib") == 2

@@ -1,8 +1,10 @@
 # snapshot-site
 
 The static name index the `cis_secondary_sanctions` worker screens against,
-published to Cloudflare Pages as `sanctions-name-index.pages.dev` and read via
-`SNAPSHOT_INDEX_URL` (see ADR 0020).
+published to the existing `sanctions-name-index` Cloudflare Pages project and
+served at the canonical public machine URL
+`https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json`.
+The CIS worker reads this URL through `SNAPSHOT_INDEX_URL` (see ADR 0020).
 
 Build and run every publication gate without changing production:
 
@@ -83,3 +85,30 @@ membership access for `wrangler whoami`. An auth refusal stops before deployment
 without retries or OAuth fallback. Local OAuth publication still requires
 `whoami` to expose exactly one account. All source and exact-byte publication
 gates apply to both paths.
+
+## Ordinary Python access
+
+The original `sanctions-name-index.pages.dev` hostname returned HTTP 403 /
+Cloudflare error 1010 to Python's default urllib identity. The Pages project
+does not expose a BIC setting for that Cloudflare-owned zone. Its supported
+custom domain above uses our existing `agendamcp.dpdns.org` zone, with a CNAME
+attached through Pages and a BIC-only exception limited to GET/HEAD of
+`/sanctions-name-index-compact.json`. Other paths and security settings retain
+their existing rules. The underlying Pages project and its authentication
+metadata (`sanctions-name-index.pages.dev`) remain unchanged; do not represent
+the old hostname itself as repaired.
+
+Both the daily watchdog and post-publication exact-byte check require
+`--default-urllib`: no User-Agent replacement or fallback, no redirects, and a
+maintainer telemetry marker. HTTP 401/403 returns exit code 2 and stops publisher
+verification without another attempt; ordinary old-byte propagation can still
+use the bounded convergence loop. All source, shape, canary, drift and 72-hour
+runtime freshness gates remain in place.
+
+Verify direct availability and freshness without downloading any official list:
+
+```
+python3 scripts/check_published_index.py \
+  --published https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json \
+  --max-age-days 3 --default-urllib
+```

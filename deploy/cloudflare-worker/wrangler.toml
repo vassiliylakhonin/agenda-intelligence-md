@@ -104,7 +104,7 @@ WORKER_FREE_TRIAL = "1"
 # Set SNAPSHOT_DISABLED=1 to deactivate without removing the URL — the adapter
 # then reports live_retrieval_status "disabled" and falls back to caller-supplied
 # evidence. It never reports an unscreened name as clean.
-SNAPSHOT_INDEX_URL = "https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json"
+SNAPSHOT_INDEX_URL = "https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 
 # Optional access controls for the message/send route — both OFF by default so

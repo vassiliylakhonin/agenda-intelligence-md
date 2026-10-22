@@ -2,7 +2,16 @@
 
 Status: accepted — reactivated 2026-09-04 against a self-owned published index; scoring posture settled 2026-09-04
 Date: 2026-06-26
-Updated: 2026-09-04
+Updated: 2026-10-22
+
+> **2026-10-22 machine URL update:** use
+> `https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json`,
+> a custom domain on the same owned Pages project. Default urllib received
+> HTTP403/error1010 on the `pages.dev` hostname; its BIC setting is not exposed
+> in the Pages project. Our own zone permits a BIC-only exception for GET/HEAD
+> of this one public JSON path. Publisher, watchdog and runtime use the same
+> canonical URL; exact-byte publication checks preserve the default urllib
+> identity. Historical `pages.dev` URLs below describe the earlier deployment.
 
 > Operational history. **2026-08-31:** the `SNAPSHOT_INDEX_URL` added by this decision was removed after the
 > target returned 404 and no published index could be found. The root cause, established 2026-09-04, was that
