@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Pages publisher credential boundary — 2026-10-21
+
+- Bind snapshot publication to a dedicated protected `CLOUDFLARE_PAGES_API_TOKEN` secret after the first run confirmed that the Worker-only token cannot access Pages. Fail explicitly if missing; retain all publication gates and avoid a fallback that widens Worker credentials.
+
 ## Fleet service adoption — 2026-10-21
 
 - Add the standalone Corridor service to strict SDK/default-urllib monitoring using its own health and MCP metadata contract. Check all twelve fleet dependency endpoints and require CIS's snapshot to be current within 72 hours; liveness cannot hide stale screening data. Schedule the existing gated Pages publisher in the existing protected production environment, without adding credentials or widening permissions. Preserve signed A2A verification on the thirteen services that publish it.
