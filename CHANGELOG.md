@@ -7,7 +7,7 @@
 
 ## Snapshot machine domain — 2026-10-22
 
-- Serve the existing Pages snapshot through the owned `sanctions-index.agendamcp.dpdns.org` custom domain, where the compact JSON download has a narrow BIC-only rule. Align CIS, the publisher and the daily watchdog with this canonical URL; retain Pages project identity, token scope and publication/freshness gates.
+- Serve the compact JSON from Static Assets on the existing CIS Worker at the owned `sanctions-index.agendamcp.dpdns.org` exact path. Cloudflare traced a matching BIC Skip followed by Pages-side403; a Pages custom domain alone was insufficient. Preserve the Pages compatibility publication, existing BIC-only rules, source/canary/drift/freshness gates and separate credentials. Bind the asset SHA-256 to the signed Vizier deployment request and receipt; serialize daily refreshes with fleet deployments. Restore verified canonical bytes for ordinary releases, with an explicit short-lived pinned-watchdog-artifact bootstrap for the migration.
 - Verify exact published bytes using default urllib identity and no redirects. Treat HTTP 401/403 as terminal without retry or User-Agent fallback, and avoid inferring a Worker outage from a single direct-download failure.
 
 ## Pages-scoped publisher authentication — 2026-10-22

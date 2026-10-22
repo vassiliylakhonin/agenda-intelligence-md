@@ -1,114 +1,77 @@
-# snapshot-site
+# Sanctions snapshot publication
 
-The static name index the `cis_secondary_sanctions` worker screens against,
-published to the existing `sanctions-name-index` Cloudflare Pages project and
-served at the canonical public machine URL
+The CIS worker reads the canonical public machine URL:
 `https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json`.
-The CIS worker reads this URL through `SNAPSHOT_INDEX_URL` (see ADR 0020).
+The existing CIS Worker serves this exact GET/HEAD path from its own Static
+Assets binding. No request-time fetch or proxy to Pages is involved. The
+separate `sanctions-name-index` Pages project retains the full and compact
+compatibility publications; its `pages.dev` default-urllib access is not claimed
+fixed.
 
-Build and run every publication gate without changing production:
+Cloudflare case02390282 traced the customer's BIC-only Skip as applied despite
+HTTP403/error1010. Support attributes the remaining signature-dependent block
+to Pages-side processing, outside our zone rules. The machine host's existing
+BIC exceptions remain scoped to GET/HEAD of this one public file. Other zone
+protections, authentication, quotas and API behavior are preserved.
+
+Rehearse all four official-source, canary, shape, timestamp and 10% drift gates:
 
 ```
 python3 scripts/publish_sanctions_index.py
 ```
 
-Publish from a clean `main` checkout authenticated with Wrangler:
+The protected `Publish gated sanctions snapshot` workflow on immutable clean
+main runs daily at04:05 UTC and supports manual dispatch. It first rebuilds and
+gates the candidate, then mints a ten-minute owner grant in a separate signer
+step. `--publish-prepared` rechecks the candidate gates, publishes Pages with the
+existing Pages-only credential, and deploys only the compact asset with the
+existing Worker credential through `vizier-gated-deploy.js`. It requires both
+credentials and the signed grant before either upload; neither credential is a
+fallback for the other. The asset SHA-256 is included in the Vizier request and
+deployment message and rechecked before Wrangler runs. Publication succeeds only
+when unchanged default urllib receives the exact canonical bytes. HTTP401/403
+stops verification without retry, redirect or changed identity. A partial failure
+is reported as a failed release; Pages and Worker are separate deployments.
 
-```
-python3 scripts/publish_sanctions_index.py --publish
-```
+Normal fleet deployments restore the canonical compact bytes using default
+urllib, then verify freshness (72h), shape, name count and canaries. The generated
+`deploy/snapshot-worker-assets/` directory may contain only the single compact
+file; metadata, full indexes, symlinks and other files are refused. Only the CIS
+environment has the assets binding; Worker-first routing prevents static assets
+from bypassing the hostname/method/path contract. The dashboard-managed exact
+route to `cis-secondary-sanctions-a2a` is:
+`https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json`.
+Existing dashboard-managed CIS custom domains must remain attached.
 
-The build downloads OFAC SDN, OFAC consolidated (non-SDN), the EU consolidated
-list, and the UK FCDO list, then writes both the full index and the compact
-derivative the worker fetches. The compact file is the only one the worker
-reads; the full one stays for browser-side use.
+For the one-time origin migration, the existing fleet workflow's explicit
+`bootstrap_snapshot=true` restores only the compact recovery artifact from
+successful main watchdog run39755543609, generated2026-10-22T09:28:05Z,
+88633 names/four sources, raw SHA-256
+`82464686b3209b877202b31a22f3223bc4f75718d6fec3b69d5c310e6f4cee86`.
+It still passes the canary, count and72-hour gates. A different artifact, stale
+file or absent provenance fails; there is no automatic bootstrap fallback after
+a canonical refusal. Ordinary releases use the default false value. Snapshot
+publication and fleet deployment share a concurrency group so an older restored
+asset cannot race a new daily snapshot.
 
-`scripts/publish_sanctions_index.py` requires every source, verifies the compact
-file's shape and canaries, and rejects an unavailable or malformed production
-baseline, timestamp rollback, or name-count drift above 10%. `--publish` also
-requires a clean `main`, records the deployment decision workspace, invokes the
-pinned Wrangler 4.122.0 client, and waits until the canonical URL serves the
-candidate's exact SHA-256. Omit `--publish` to rehearse every non-mutating gate.
-Local publication uses the operator's normal Wrangler login.
-`.github/workflows/publish-sanctions-index.yml` invokes the same gated publisher
-daily at 04:05 UTC and on manual dispatch from immutable clean main, using the
-existing protected production environment and a dedicated `CLOUDFLARE_PAGES_API_TOKEN` credential. The original Worker-only token was refused by Pages in run `39625335214`.
-A separate Pages-only credential must be provisioned with owner confirmation;
-Worker credentials are not widened or used as fallback. If the Pages token lacks access,
-the job fails and the existing deployment remains; repair the credential boundary
-explicitly rather than bypassing the gates. The scheduled publisher is separate
-from the independent read-only watchdog.
+The independent daily watchdog checks the canonical default-urllib URL and72h
+freshness, rebuilds all four sources and compares name-count drift when possible.
+A temporary source outage warns while production remains fresh; stale production
+fails and a successful rebuild is preserved for seven days. `generated_at_utc`
+is the screening freshness bound; a name match remains a possible string match,
+not entity identity or a sanctions determination. Human review remains required.
 
-`.github/workflows/check-sanctions-index.yml` is the independent daily watchdog.
-It verifies the URL users actually read, rebuilds from
-the sources, compares drift when possible, and fails when the served index is
-missing, malformed, or older than 72 hours. A temporary source outage is only
-a warning while the served index is fresh. When production is stale and a
-rebuild succeeds, the watchdog preserves another seven-day recovery artifact
-before failing.
+The dedicated `agenda-cis-snapshot-pages` token retains only Account / Cloudflare
+Pages / Edit for the owned account, expiring2027-01-19 at23:59 Asia/Almaty.
+Cloudflare scopes it to Pages in the account. `CLOUDFLARE_PAGES_API_TOKEN` remains
+separate from the existing Worker token; neither is widened. The Pages project
+GET authentication checks the expected project/subdomain, a bounded response,
+explicit account and no redirects. Local OAuth authentication still requires
+exactly one account. Store no credential or grant value in source or artifacts.
 
-Break-glass recovery from an already verified Actions artifact remains a direct
-Wrangler command:
-
-```
-npx --yes wrangler@4.122.0 pages deploy deploy/snapshot-site \
-  --project-name=sanctions-name-index --branch=main --commit-dirty=true
-```
-
-Use that bypass only when a normal rebuild is impossible and the artifact has
-passed `scripts/verify_sanctions_index.py`; it skips the baseline drift gate.
-
-The index is a snapshot, not a live query: its freshness is whatever
-`generated_at_utc` says, and the worker reports that date back to the caller in
-`live_retrieval_snapshot_generated_at`. Rebuild on a schedule that matches how
-current you are willing to claim the screening is.
-
-Generated JSON is not committed — it is a 2.8 MB build artifact rebuilt from
-official sources on demand.
-
-The owner-confirmed `agenda-cis-snapshot-pages` credential has only
-`Account / Cloudflare Pages / Edit` for the owned account and expires on
-2027-01-19 (23:59 Asia/Almaty). Cloudflare scopes this permission to Pages in the
-account, not to a single project. Rotate this dedicated environment secret before
-expiry; never reuse or widen Worker deployment credentials. The workflow uses
-only `CLOUDFLARE_PAGES_API_TOKEN` with the existing account ID and fails explicitly
-when the Pages secret is absent. Store no credential value in source, artifacts
-or logs.
-
-With `CLOUDFLARE_API_TOKEN` present, the publisher requires a 32-character
-hexadecimal `CLOUDFLARE_ACCOUNT_ID` and authenticates through a single
-[Pages project GET](https://developers.cloudflare.com/api/resources/pages/subresources/projects/methods/get/)
-for `sanctions-name-index`. It checks the successful response, project name and
-canonical Pages subdomain, with a bounded response, timeout and no redirects.
-This uses the approved Pages permission without requiring user-details or
-membership access for `wrangler whoami`. An auth refusal stops before deployment,
-without retries or OAuth fallback. Local OAuth publication still requires
-`whoami` to expose exactly one account. All source and exact-byte publication
-gates apply to both paths.
-
-## Ordinary Python access
-
-The original `sanctions-name-index.pages.dev` hostname returned HTTP 403 /
-Cloudflare error 1010 to Python's default urllib identity. The Pages project
-does not expose a BIC setting for that Cloudflare-owned zone. Its supported
-custom domain above uses our existing `agendamcp.dpdns.org` zone, with a CNAME
-attached through Pages and a BIC-only exception limited to GET/HEAD of
-`/sanctions-name-index-compact.json`. Other paths and security settings retain
-their existing rules. The underlying Pages project and its authentication
-metadata (`sanctions-name-index.pages.dev`) remain unchanged; do not represent
-the old hostname itself as repaired.
-
-Both the daily watchdog and post-publication exact-byte check require
-`--default-urllib`: no User-Agent replacement or fallback, no redirects, and a
-maintainer telemetry marker. HTTP 401/403 returns exit code 2 and stops publisher
-verification without another attempt; ordinary old-byte propagation can still
-use the bounded convergence loop. All source, shape, canary, drift and 72-hour
-runtime freshness gates remain in place.
-
-Verify direct availability and freshness without downloading any official list:
-
-```
-python3 scripts/check_published_index.py \
-  --published https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json \
-  --max-age-days 3 --default-urllib
-```
+Rollback: redeploy a reviewed earlier Worker and its verified asset through the
+same Vizier gate; preserve its snapshot age limit. Removing the exact dashboard
+route returns that machine URL to Pages (which may return403), so it is not a
+successful compatibility fix. The original Pages URL remains available to its
+existing consumers. Never replace a failed deployment with ungated Wrangler or
+weaken additional security products to make a probe pass.

@@ -17,3 +17,4 @@ uv.lock
 out/
 cache/
 broadcast/
+deploy/snapshot-worker-assets/

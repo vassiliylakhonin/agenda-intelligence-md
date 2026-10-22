@@ -4,14 +4,19 @@ Status: accepted — reactivated 2026-09-04 against a self-owned published index
 Date: 2026-06-26
 Updated: 2026-10-22
 
-> **2026-10-22 machine URL update:** use
-> `https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json`,
-> a custom domain on the same owned Pages project. Default urllib received
-> HTTP403/error1010 on the `pages.dev` hostname; its BIC setting is not exposed
-> in the Pages project. Our own zone permits a BIC-only exception for GET/HEAD
-> of this one public JSON path. Publisher, watchdog and runtime use the same
-> canonical URL; exact-byte publication checks preserve the default urllib
-> identity. Historical `pages.dev` URLs below describe the earlier deployment.
+> **2026-10-22 own-origin machine delivery:** the canonical URL is
+> `https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json`.
+> A Pages custom domain plus exact BIC-only configuration/Skip still returned
+> error1010. Cloudflare case02390282 confirmed that the Skip matched and applied;
+> support attributes the remaining block to Pages-side processing. Serve the
+> single compact asset through the existing CIS Worker and an exact owned-zone
+> route, with no request-time Pages fetch. Preserve the Pages compatibility
+> publication and separate token. Refresh through the existing protected daily
+> publisher and signed Vizier gate, binding the artifact's exact SHA-256 to the
+> request and deployment receipt. Fleet releases restore current verified bytes;
+> the explicit pinned watchdog-artifact bootstrap is limited to72h. Publisher,
+> watchdog and runtime share the machine URL and retain their freshness/shape/
+> canary/drift guards. The original pages.dev hostname itself is not repaired.
 
 > Operational history. **2026-08-31:** the `SNAPSHOT_INDEX_URL` added by this decision was removed after the
 > target returned 404 and no published index could be found. The root cause, established 2026-09-04, was that

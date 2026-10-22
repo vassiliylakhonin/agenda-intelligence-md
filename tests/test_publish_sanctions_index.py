@@ -32,6 +32,13 @@ def completed(command: list[str], returncode: int = 0, stdout: str = "") -> subp
     return subprocess.CompletedProcess(command, returncode, stdout=stdout, stderr="")
 
 
+@pytest.fixture
+def staged_worker(monkeypatch):
+    monkeypatch.setattr(PUBLISH, "prepare_worker_publish", lambda _digest: None)
+    monkeypatch.setenv("CLOUDFLARE_WORKER_API_TOKEN", "synthetic-worker-token")
+    monkeypatch.setenv("VIZIER_DEPLOY_GRANT_FILE", "/synthetic/grant")
+
+
 def test_prepare_candidate_runs_build_shape_and_drift_gates_in_order(monkeypatch, tmp_path):
     compact = tmp_path / "compact.json"
     compact.write_bytes(b"candidate\n")
@@ -69,7 +76,7 @@ def test_publish_requires_a_clean_main_checkout(monkeypatch, branch, dirty, mess
         PUBLISH.require_clean_main()
 
 
-def test_publish_uses_pinned_wrangler_then_checks_exact_production_bytes(monkeypatch):
+def test_publish_uses_pages_and_gated_worker_before_exact_byte_check(monkeypatch, staged_worker):
     commands: list[list[str]] = []
 
     def fake_run(command, **kwargs):
@@ -87,12 +94,13 @@ def test_publish_uses_pinned_wrangler_then_checks_exact_production_bytes(monkeyp
     assert commands[1] == ["npx", "--yes", "wrangler@4.122.0", "whoami", "--json"]
     assert commands[2][0:5] == ["npx", "--yes", "wrangler@4.122.0", "pages", "deploy"]
     assert "--project-name=sanctions-name-index" in commands[2]
-    assert "--expected-sha256" in commands[3]
-    assert "--default-urllib" in commands[3]
-    assert commands[3][-1] == "a" * 64
+    assert commands[3] == ["node", "scripts/vizier-gated-deploy.js", "--env", "cis-secondary-sanctions"]
+    assert "--expected-sha256" in commands[4]
+    assert "--default-urllib" in commands[4]
+    assert commands[4][-1] == "a" * 64
 
 
-def test_publish_fails_when_canonical_url_never_serves_candidate(monkeypatch):
+def test_publish_fails_when_canonical_url_never_serves_candidate(monkeypatch, staged_worker):
     calls = 0
 
     def fake_run(command, **kwargs):
@@ -112,7 +120,7 @@ def test_publish_fails_when_canonical_url_never_serves_candidate(monkeypatch):
     with pytest.raises(RuntimeError, match="never served the exact gated artifact"):
         PUBLISH.publish_candidate("b" * 64)
 
-    assert calls == 5
+    assert calls == 6
 
 
 def test_publish_rejects_ambiguous_wrangler_account(monkeypatch):
@@ -267,7 +275,7 @@ def test_pages_auth_opener_refuses_redirects():
     assert handlers[0].redirect_request(None, None, 302, "redirect", {}, "https://other.example") is None
 
 
-def test_publisher_stops_on_canonical_access_refusal_without_retry(monkeypatch):
+def test_publisher_stops_on_canonical_access_refusal_without_retry(monkeypatch, staged_worker):
     commands = []
 
     def fake_run(command, **kwargs):
@@ -282,7 +290,7 @@ def test_publisher_stops_on_canonical_access_refusal_without_retry(monkeypatch):
     monkeypatch.setattr(PUBLISH.time, "sleep", lambda _: pytest.fail("Access refusal must not be retried"))
     with pytest.raises(RuntimeError, match="access refused"):
         PUBLISH.publish_candidate("a" * 64)
-    assert len(commands) == 2
+    assert len(commands) == 3
 
 
 def test_runtime_publisher_and_watchdog_use_one_canonical_snapshot_url():
@@ -292,3 +300,26 @@ def test_runtime_publisher_and_watchdog_use_one_canonical_snapshot_url():
     assert runtime == PUBLISH.PUBLISHED_URL
     assert workflow.count("--published " + PUBLISH.PUBLISHED_URL) == 2
     assert workflow.count("--default-urllib") == 2
+
+
+def test_missing_worker_authority_stops_before_either_publication(monkeypatch):
+    monkeypatch.delenv("CLOUDFLARE_WORKER_API_TOKEN", raising=False)
+    monkeypatch.setattr(PUBLISH, "verify_wrangler_auth", lambda: None)
+    monkeypatch.setattr(
+        PUBLISH, "run_command", lambda *a, **k: pytest.fail("no upload before all authority is present")
+    )
+    with pytest.raises(RuntimeError, match="separate existing Worker credential"):
+        PUBLISH.publish_candidate("a" * 64)
+
+
+def test_worker_deploy_uses_only_its_separate_credential_and_existing_gate(monkeypatch):
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "synthetic-pages-token")
+    monkeypatch.setenv("CLOUDFLARE_WORKER_API_TOKEN", "synthetic-worker-token")
+    calls = []
+    monkeypatch.setattr(PUBLISH, "run_command", lambda command, **kwargs: calls.append((command, kwargs)))
+    PUBLISH.deploy_worker_candidate()
+    command, options = calls[0]
+    assert command == ["node", "scripts/vizier-gated-deploy.js", "--env", "cis-secondary-sanctions"]
+    assert options["env"]["CLOUDFLARE_API_TOKEN"] == "synthetic-worker-token"
+    assert "CLOUDFLARE_WORKER_API_TOKEN" not in options["env"]
+    assert options["cwd"] == ROOT / "deploy/cloudflare-worker"

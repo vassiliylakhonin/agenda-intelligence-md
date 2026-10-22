@@ -10,9 +10,36 @@ import {
   runGatedDeploy,
   workerTargetFor
 } from "../scripts/vizier-gated-deploy.js";
+import { snapshotAssetDigest } from "../scripts/vizier-gated-deploy.js";
+import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { deployedEnvironments, fleetEnvironments } from "../scripts/deploy-all.js";
 
 const TEST_GRANT = "test-owner-grant";
+
+test('CIS asset bytes change the Vizier request hash and other targets need no asset', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'agenda-snapshot-'));
+  try {
+    const file = join(directory, 'sanctions-name-index-compact.json');
+    await writeFile(file, '{"fixture":1}\n');
+    const first = await snapshotAssetDigest('cis-secondary-sanctions', directory);
+    assert.equal(first, createHash('sha256').update('{"fixture":1}\n').digest('hex'));
+    const metadata = { commit: 'a'.repeat(40), dirty: false, snapshotSha256: first };
+    const request = unsignedDeployRequest(metadata, 'cis-secondary-sanctions', TEST_GRANT);
+    assert.equal(request.action.parameters.snapshot_asset_sha256, first);
+    await writeFile(file, '{"fixture":2}\n');
+    const second = await snapshotAssetDigest('cis-secondary-sanctions', directory);
+    const changed = unsignedDeployRequest({ ...metadata, snapshotSha256: second }, 'cis-secondary-sanctions', TEST_GRANT);
+    assert.notEqual(requestHash(request), requestHash(changed));
+    await writeFile(join(directory, '.env'), 'private fixture');
+    await assert.rejects(snapshotAssetDigest('cis-secondary-sanctions', directory), /only the verified compact/);
+    assert.equal(await snapshotAssetDigest('agent-output-verification', '/missing'), null);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 function createDeployRequest(metadata, env) {
   return unsignedDeployRequest(metadata, env, TEST_GRANT);
 }

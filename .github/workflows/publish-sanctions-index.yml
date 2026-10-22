@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: sanctions-index-production
+  group: existing-worker-fleet-production
   cancel-in-progress: false
 
 jobs:
@@ -17,8 +17,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # A dedicated Pages-only credential lives in the existing protected
-    # boundary; Worker deploy credentials are never widened or used as fallback.
+    # The Pages and Worker credentials remain separate. The existing CIS Worker
+    # receives only the compact asset, through its normal signed Vizier gate.
     environment:
       name: agent-output-verification-production
     steps:
@@ -37,10 +37,23 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain)"
           git switch -C main "$GITHUB_SHA"
+      - name: Rebuild and gate every official source before minting a grant
+        run: python -u scripts/publish_sanctions_index.py
+      - name: Mint a short-lived grant for the existing CIS Worker
+        working-directory: deploy/cloudflare-worker
+        env:
+          VIZIER_DELEGATION_SIGNING_KEY: ${{ secrets.VIZIER_DELEGATION_SIGNING_KEY }}
+        run: node scripts/mint-deploy-grant.js --out "$RUNNER_TEMP/vizier-deploy-grant.jws" --env cis-secondary-sanctions
       - name: Rebuild, verify all gates, publish and verify exact canonical bytes
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          CLOUDFLARE_WORKER_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VIZIER_API_KEY: ${{ secrets.VIZIER_API_KEY }}
+          VIZIER_DEPLOY_GRANT_FILE: ${{ runner.temp }}/vizier-deploy-grant.jws
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Dedicated Pages publisher credential is missing.' >&2; exit 1; }
-          python -u scripts/publish_sanctions_index.py --publish
+          python -u scripts/publish_sanctions_index.py --publish-prepared
+      - name: Remove deployment grant
+        if: always()
+        run: rm -f "$RUNNER_TEMP/vizier-deploy-grant.jws"

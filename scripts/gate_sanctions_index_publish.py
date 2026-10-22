@@ -19,21 +19,25 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
-USER_AGENT = "agenda-intelligence-md index publish gate/1.0"
 EXPECTED_SCHEMA = "sanctions-name-index-compact.v1"
 EXPECTED_SOURCES = 4
 DEFAULT_MAX_NAME_DRIFT_RATIO = 0.10
 
 
 def fetch(url: str, timeout: int) -> dict[str, object]:
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    request = urllib.request.Request(url, headers={"X-Client-Id": "agenda-owner-sanctions-publish-gate"})
+    with urllib.request.build_opener(NoRedirect()).open(request, timeout=timeout) as response:
         if response.status != 200:
             raise RuntimeError(f"HTTP {response.status}")
         payload = json.loads(response.read().decode("utf-8"))
         if not isinstance(payload, dict):
             raise ValueError("published index root must be an object")
         return payload
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
 
 
 def parse_timestamp(value: object, label: str) -> datetime:
