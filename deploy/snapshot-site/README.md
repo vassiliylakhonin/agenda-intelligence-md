@@ -4,6 +4,11 @@ The CIS worker reads the canonical public machine URL:
 `https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json`.
 The existing CIS Worker serves this exact GET/HEAD path from its own Static
 Assets binding. No request-time fetch or proxy to Pages is involved. The
+screening adapter and dependency health read the same binding directly when
+the canonical URL is configured, avoiding same-zone Worker Route fetch limits.
+A missing/refused binding degrades without a network fallback; the existing
+isolate cache, provenance digest and72-hour runtime freshness gate remain.
+The
 separate `sanctions-name-index` Pages project retains the full and compact
 compatibility publications; its `pages.dev` default-urllib access is not claimed
 fixed.

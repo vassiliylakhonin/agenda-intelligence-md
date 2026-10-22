@@ -1,4 +1,5 @@
 import { sha256Jcs } from "./decision-receipt.js";
+import { SNAPSHOT_HOST, SNAPSHOT_PATH } from "./snapshot-assets.js";
 // Snapshot live-retrieval adapter for the Cloudflare Worker.
 //
 // Server-side name screening against a fresh, compact public-list name index
@@ -151,14 +152,14 @@ function disabledResult(reason) {
   return { status: "disabled", matches: [], attribution: attributionBlock(), queried_at: nowIso(), degrade_reason: reason };
 }
 
-async function fetchWithTimeout(url, init, timeoutMs) {
+async function fetchWithTimeout(url, init, timeoutMs, fetchImpl = fetch) {
   if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
-    return fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+    return fetchImpl(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    return await fetchImpl(url, { ...init, signal: controller.signal });
   } finally {
     clearTimeout(timer);
   }
@@ -317,7 +318,18 @@ export async function matchCounterparty(env, options = {}) {
     );
   }
 
-  const fresh = INDEX_CACHE && INDEX_CACHE.url === url && Date.now() - INDEX_CACHE.builtAt < cacheTtlMs;
+  // Same-zone Worker Routes cannot reliably be invoked by a Worker fetch.
+  // Read the exact deployed asset locally rather than reaching the Pages CNAME
+  // origin or relying on a public request back to this Worker.
+  const boundSnapshot = env.AGENT_PROFILE === 'cis_secondary_sanctions' &&
+    url === `https://${SNAPSHOT_HOST}${SNAPSHOT_PATH}`;
+  if (boundSnapshot && !env.SNAPSHOT_ASSETS?.fetch) return degradedResult('snapshot asset binding unavailable');
+  const source = boundSnapshot ? 'worker_assets' : 'network';
+  const fetchImpl = boundSnapshot
+    ? (target, init) => env.SNAPSHOT_ASSETS.fetch(new Request(target, init))
+    : fetch;
+  const fresh = INDEX_CACHE && INDEX_CACHE.url === url && INDEX_CACHE.source === source &&
+    Date.now() - INDEX_CACHE.builtAt < cacheTtlMs;
   if (!fresh) {
     let response;
     try {
@@ -336,7 +348,8 @@ export async function matchCounterparty(env, options = {}) {
           // so a republished index could not be forced through at all. The
           // origin's own cache headers still absorb the request load.
         },
-        timeoutMs
+        timeoutMs,
+        fetchImpl
       );
     } catch (error) {
       return degradedResult(`network error: ${error && error.name ? error.name : "unknown"}`);
@@ -349,7 +362,7 @@ export async function matchCounterparty(env, options = {}) {
       return degradedResult("snapshot index is malformed JSON");
     }
     try {
-      INDEX_CACHE = { url, builtAt: Date.now(), index: buildIndex(raw), digest: await sha256Jcs(raw) };
+      INDEX_CACHE = { url, source, builtAt: Date.now(), index: buildIndex(raw), digest: await sha256Jcs(raw) };
     } catch (error) {
       return degradedResult(`snapshot index build failed: ${error && error.name ? error.name : "unknown"}`);
     }

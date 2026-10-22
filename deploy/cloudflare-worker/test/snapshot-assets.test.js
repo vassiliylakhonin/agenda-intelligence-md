@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from '../src/index.js';
+import { matchCounterparty, snapshotHealth, __resetCache } from '../src/upstream_snapshot.js';
 
 const origin = 'https://sanctions-index.agendamcp.dpdns.org';
 const path = '/sanctions-name-index-compact.json';
@@ -61,4 +62,41 @@ test('other fleet hosts do not expose the binding, and a missing binding fails c
   assert.equal(requests.length, 0);
   const missing = await worker.fetch(new Request(origin + path), { AGENT_PROFILE: 'cis_secondary_sanctions' });
   assert.equal(missing.status, 503);
+});
+
+test('CIS screening and dependency health consume the bound asset with no same-zone network fetch or fallback', async () => {
+  __resetCache();
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async () => assert.fail('own snapshot must not use a same-zone network fetch');
+  let reads = 0;
+  const generated = new Date().toISOString();
+  const env = {
+    AGENT_PROFILE: 'cis_secondary_sanctions', SNAPSHOT_INDEX_URL: origin + path,
+    SNAPSHOT_ASSETS: { fetch: async request => {
+      reads++;
+      assert.equal(new URL(request.url).pathname, path);
+      return Response.json({ generated_at_utc: generated, src: [['US OFAC', 'SDN']], entries: [['EXAMPLE LISTED NAME', 0]] });
+    }}
+  };
+  try {
+    const result = await matchCounterparty(env, { name: 'EXAMPLE LISTED NAME' });
+    assert.equal(result.status, 'success');
+    assert.equal(result.matches[0].score, 1);
+    assert.equal(result.snapshot_generated_at, generated);
+    const health = await snapshotHealth(env);
+    assert.equal(health.status, 'success');
+    assert.equal(health.digest, result.snapshot_digest);
+    assert.equal(reads, 1);
+    __resetCache();
+    const unavailable = await snapshotHealth({ ...env, SNAPSHOT_ASSETS: undefined });
+    assert.equal(unavailable.status, 'degraded');
+    assert.match(unavailable.reason, /binding/);
+    __resetCache();
+    const refused = await snapshotHealth({ ...env, SNAPSHOT_ASSETS: { fetch: async () => new Response('', { status: 503 }) } });
+    assert.equal(refused.status, 'degraded');
+    assert.match(refused.reason, /503/);
+  } finally {
+    globalThis.fetch = previousFetch;
+    __resetCache();
+  }
 });
