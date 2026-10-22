@@ -1,7 +1,7 @@
 import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
-import { open } from "node:fs/promises";
+import { open, readFile, readdir, lstat } from "node:fs/promises";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { DIGEST_PREFIX, bundleDigest, fleetEnvironments } from "./deploy-all.js";
@@ -71,6 +71,7 @@ export function createDeployRequest(metadata, env = DEFAULT_ENV, grant = undefin
       type: "deploy_worker",
       target,
       parameters: { git_commit: metadata.commit, dirty_worktree: metadata.dirty,
+        ...(metadata.snapshotSha256 ? { snapshot_asset_sha256: metadata.snapshotSha256 } : {}),
         ...(initializeSigning ? { initialize_agent_card_signing: true } : {}) }
     },
     // This exact authority must match the owner-signed grant. The signer is a
@@ -269,6 +270,21 @@ async function collectDeployMetadata() {
   return { commit, dirty: worktree.length > 0 };
 }
 
+export async function snapshotAssetDigest(env, directory = new URL('../../snapshot-worker-assets/', import.meta.url)) {
+  if (env !== 'cis-secondary-sanctions') return null;
+  const filename = 'sanctions-name-index-compact.json';
+  const directoryStat = await lstat(directory);
+  if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) throw new Error('Asset directory must be regular.');
+  const files = await readdir(directory);
+  if (files.length !== 1 || files[0] !== filename) throw new Error('Stage only the verified compact snapshot asset.');
+  const path = new URL(filename, directory instanceof URL ? directory : pathToFileURL(resolve(directory) + '/'));
+  const stat = await lstat(path);
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size === 0 || stat.size > 10_000_000) {
+    throw new Error('Snapshot asset must be a bounded regular file.');
+  }
+  return createHash('sha256').update(await readFile(path)).digest('hex');
+}
+
 export async function readVizierCredential({ environment = process.env, readKeychain = null } = {}) {
   const environmentSecret = environment.VIZIER_API_KEY;
   if (environmentSecret !== undefined) {
@@ -317,14 +333,15 @@ export async function readDeploymentGrant(environment = process.env) {
   }
 }
 
-function executeWranglerDeploy(receiptId, digest, env = DEFAULT_ENV) {
+function executeWranglerDeploy(receiptId, digest, env = DEFAULT_ENV, snapshotSha256 = null) {
   // The receipt says the gate allowed this deploy; the digest says what was
   // deployed. deploy-all.js --check reads both from the same message, and
   // without the second a gated environment reports as unstamped forever
   // because the gate is now the only path that may ship any of them.
-  const message = digest
+  const sourceMessage = digest
     ? `Vizier ALLOW receipt ${receiptId} ${DIGEST_PREFIX} ${digest}`
     : `Vizier ALLOW receipt ${receiptId}`;
+  const message = sourceMessage + (snapshotSha256 ? ` snapshot ${snapshotSha256}` : '');
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(
       "npx",
@@ -376,6 +393,7 @@ async function main() {
   const [metadata, apiKey, grant] = await Promise.all([
     collectDeployMetadata(), readVizierCredential(), readDeploymentGrant()
   ]);
+  metadata.snapshotSha256 = await snapshotAssetDigest(env);
   // The gate already refused a dirty worktree above, so a digest is always
   // available here; the fallback exists so a change to that rule cannot turn a
   // missing digest into a crash mid-deploy.
@@ -387,8 +405,11 @@ async function main() {
     env,
     initializeSigning,
     execute: async (receiptId) => {
+      if (await snapshotAssetDigest(env) !== metadata.snapshotSha256) {
+        throw new Error('Snapshot asset changed after the Vizier decision.');
+      }
       if (initializeSigning) console.log(JSON.stringify(await initializeCardSigning(env)));
-      const exitCode = await executeWranglerDeploy(receiptId, digest, env);
+      const exitCode = await executeWranglerDeploy(receiptId, digest, env, metadata.snapshotSha256);
       if (exitCode === 0 && initializeSigning) {
         // Wait briefly for deployment propagation; every successful run must
         // verify the actual served signature against the actual served JWKS.
@@ -412,6 +433,7 @@ async function main() {
       status: result.status,
       decision: result.decision,
       receipt_id: result.receiptId,
+      ...(metadata.snapshotSha256 ? { snapshot_asset_sha256: metadata.snapshotSha256 } : {}),
       reason_codes: result.reasonCodes,
       ...(result.status === "stopped" ? {} : { exit_code: result.exitCode, authority_provenance: "principal_signed" })
     })

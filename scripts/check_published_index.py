@@ -40,9 +40,17 @@ MIN_NAMES = 60_000
 EXPECTED_SOURCES = 4
 
 
-def fetch(url: str, timeout: int) -> tuple[dict, bytes]:
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def fetch(url: str, timeout: int, *, default_urllib: bool = False) -> tuple[dict, bytes]:
+    headers = {"X-Client-Id": "agenda-owner-sanctions-index-watchdog"}
+    if not default_urllib:
+        headers["User-Agent"] = USER_AGENT
+    request = urllib.request.Request(url, headers=headers)
+    with urllib.request.build_opener(NoRedirect()).open(request, timeout=timeout) as response:
         if response.status != 200:
             raise RuntimeError(f"HTTP {response.status}")
         payload = response.read()
@@ -60,6 +68,9 @@ def main() -> int:
     parser.add_argument("--max-age-days", type=int, default=7)
     parser.add_argument("--timeout", type=int, default=60)
     parser.add_argument(
+        "--default-urllib", action="store_true", help="verify direct access with Python's unchanged default User-Agent"
+    )
+    parser.add_argument(
         "--expected-sha256",
         help="optional lowercase SHA-256 required for the exact bytes served by --published",
     )
@@ -71,12 +82,15 @@ def main() -> int:
         parser.error("--expected-sha256 must be 64 lowercase hexadecimal characters")
 
     try:
-        published, published_bytes = fetch(args.published, args.timeout)
+        published, published_bytes = fetch(args.published, args.timeout, default_urllib=args.default_urllib)
     except (urllib.error.URLError, urllib.error.HTTPError, RuntimeError, ValueError) as exc:
         print(f"the index the worker reads is not being served: {args.published}", file=sys.stderr)
         print(f"  {type(exc).__name__}: {exc}", file=sys.stderr)
-        print("  the worker is screening on caller-supplied evidence only until this is republished", file=sys.stderr)
-        return 1
+        print(
+            "  check runtime dependency status separately; this probe does not establish a worker outage",
+            file=sys.stderr,
+        )
+        return 2 if isinstance(exc, urllib.error.HTTPError) and exc.code in {401, 403} else 1
 
     problems: list[str] = []
 

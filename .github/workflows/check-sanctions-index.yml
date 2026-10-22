@@ -45,8 +45,8 @@ jobs:
         continue-on-error: true
         run: |
           python3 scripts/check_published_index.py \
-            --published https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json \
-            --max-age-days 3
+            --published https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json \
+            --max-age-days 3 --default-urllib
 
       # Rebuilding provides the sharper drift signal when every source is
       # available. The public-index gate above remains authoritative during a
@@ -82,9 +82,9 @@ jobs:
         if: steps.published.outcome == 'success' && steps.rebuild.outcome == 'success'
         run: |
           python3 scripts/check_published_index.py \
-            --published https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json \
+            --published https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json \
             --built deploy/snapshot-site/sanctions-name-index-compact.json \
-            --max-age-days 3
+            --max-age-days 3 --default-urllib
 
       - name: Enforce published-index health after recovery build
         if: always() && steps.published.outcome == 'failure'

@@ -5,6 +5,11 @@
 - Restrict illustrative-document markers to explicit example/fixture wording so ordinary synthetic-material descriptions do not create false documentary gaps. Preserve human review and the explicit demo markers.
 - Add a free browser-local supplier workspace on existing Workers: editable checklist and owners, source attachments/excerpts, manual request tracking and copyable drafts, explicitly saved versions, scoped revision comparison and portable JSON/Markdown/CSV handover. Validate imported history and attachment bytes; preserve unsaved work on storage failure. Keep document text out of network calls and telemetry. Human review remains required; no automatic supplier approval or message sending.
 
+## Snapshot machine domain — 2026-10-22
+
+- Serve the compact JSON from Static Assets on the existing CIS Worker at the owned `sanctions-index.agendamcp.dpdns.org` exact path. Cloudflare traced a matching BIC Skip followed by Pages-side403; a Pages custom domain alone was insufficient. Preserve the Pages compatibility publication, existing BIC-only rules, source/canary/drift/freshness gates and separate credentials. Bind the asset SHA-256 to the signed Vizier deployment request and receipt; serialize daily refreshes with fleet deployments. Restore verified canonical bytes for ordinary releases, with an explicit short-lived pinned-watchdog-artifact bootstrap for the migration.
+- Verify exact published bytes using default urllib identity and no redirects. Treat HTTP 401/403 as terminal without retry or User-Agent fallback, and avoid inferring a Worker outage from a single direct-download failure.
+
 ## Pages-scoped publisher authentication — 2026-10-22
 
 - Authenticate Pages-only tokens against the fixed snapshot project instead of `wrangler whoami`, which can require unrelated identity permissions. Require the explicit account and expected project/subdomain; refuse redirects, oversized/malformed metadata and access failures before deployment. Retain local OAuth account checks and all source, drift and exact canonical-byte gates.

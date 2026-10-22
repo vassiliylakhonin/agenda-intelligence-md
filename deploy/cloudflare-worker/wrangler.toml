@@ -98,13 +98,14 @@ WORKER_FREE_TRIAL = "1"
 # (public URL), so it belongs in [vars] rather than a secret.
 #
 # The index is built by scripts/sanctions_name_index.py and published to
-# Cloudflare Pages from deploy/snapshot-site — see that directory's README for
+# the existing CIS Worker Static Assets, alongside a Pages compatibility copy.
+# See deploy/snapshot-site/README.md for
 # the rebuild-and-republish command. It is a snapshot, so its freshness is
 # whatever generated_at_utc says; the worker reports that date back to callers.
 # Set SNAPSHOT_DISABLED=1 to deactivate without removing the URL — the adapter
 # then reports live_retrieval_status "disabled" and falls back to caller-supplied
 # evidence. It never reports an unscreened name as clean.
-SNAPSHOT_INDEX_URL = "https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json"
+SNAPSHOT_INDEX_URL = "https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json"
 VIZIER_BASE_URL = "https://vizier.vassiliy-lakhonin.workers.dev"
 
 # Optional access controls for the message/send route — both OFF by default so
@@ -119,6 +120,13 @@ AGENSTRY_VERIFY_TOKEN = "af-verify-agenda-intelligence-vassiliy-lakhonin-2026"
 [[env.cis-secondary-sanctions.services]]
 binding = "VIZIER"
 service = "vizier"
+
+[env.cis-secondary-sanctions.assets]
+directory = "../snapshot-worker-assets"
+binding = "SNAPSHOT_ASSETS"
+run_worker_first = true
+html_handling = "none"
+not_found_handling = "none"
 
 [[env.cis-secondary-sanctions.kv_namespaces]]
 binding = "AGENDA_USAGE"

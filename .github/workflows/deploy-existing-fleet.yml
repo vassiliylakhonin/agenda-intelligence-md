@@ -7,9 +7,14 @@ on:
         description: Initialize missing card keys for Financial Guard and Escrow only (never rotate)
         type: boolean
         default: false
+      bootstrap_snapshot:
+        description: One-time CIS asset migration from pinned verified main watchdog artifact (expires after 72h)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: existing-worker-fleet-production
@@ -96,6 +101,23 @@ jobs:
           test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain)"
+      - uses: actions/setup-python@v6
+        if: matrix.env == 'cis-secondary-sanctions'
+        with:
+          python-version: '3.12'
+      - name: Restore only the verified compact CIS snapshot asset
+        if: matrix.env == 'cis-secondary-sanctions'
+        working-directory: .
+        env:
+          BOOTSTRAP_SNAPSHOT: ${{ inputs.bootstrap_snapshot }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$BOOTSTRAP_SNAPSHOT" = 'true' ]; then
+            gh run download 39755543609 --name sanctions-name-index-39755543609 --dir "$RUNNER_TEMP/snapshot-bootstrap"
+            python scripts/snapshot_worker_assets.py --bootstrap-artifact "$RUNNER_TEMP/snapshot-bootstrap"
+          else
+            python scripts/snapshot_worker_assets.py
+          fi
       - name: Mint a separate short-lived grant for this Worker
         env:
           VIZIER_DELEGATION_SIGNING_KEY: ${{ secrets.VIZIER_DELEGATION_SIGNING_KEY }}

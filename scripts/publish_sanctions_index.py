@@ -26,7 +26,7 @@ from typing import Sequence
 ROOT = Path(__file__).resolve().parents[1]
 COMPACT_INDEX = ROOT / "deploy" / "snapshot-site" / "sanctions-name-index-compact.json"
 SNAPSHOT_DIRECTORY = ROOT / "deploy" / "snapshot-site"
-PUBLISHED_URL = "https://sanctions-name-index.pages.dev/sanctions-name-index-compact.json"
+PUBLISHED_URL = "https://sanctions-index.agendamcp.dpdns.org/sanctions-name-index-compact.json"
 WRANGLER_VERSION = "4.122.0"
 POST_DEPLOY_ATTEMPTS = 12
 POST_DEPLOY_PAUSE_SECONDS = 10
@@ -34,11 +34,12 @@ PAGES_AUTH_MAX_BYTES = 65536
 
 
 def run_command(
-    command: Sequence[str], *, check: bool = True, capture_output: bool = False
+    command: Sequence[str], *, check: bool = True, capture_output: bool = False, cwd: Path = ROOT, env=None
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         list(command),
-        cwd=ROOT,
+        cwd=cwd,
+        env=env,
         check=check,
         capture_output=capture_output,
         text=True,
@@ -57,8 +58,9 @@ def require_clean_main() -> None:
         raise RuntimeError("production publish refused: " + "; ".join(problems))
 
 
-def prepare_candidate() -> str:
-    run_command([sys.executable, "scripts/sanctions_name_index.py"])
+def prepare_candidate(*, rebuild: bool = True) -> str:
+    if rebuild:
+        run_command([sys.executable, "scripts/sanctions_name_index.py"])
     run_command([sys.executable, "scripts/verify_sanctions_index.py", str(COMPACT_INDEX.relative_to(ROOT))])
     run_command(
         [
@@ -82,8 +84,8 @@ def print_decision_workspace(digest: str) -> None:
     print("  goal: refresh the public name-screening snapshot from four declared official sources")
     print(f"  trusted evidence: clean main checkout; gated candidate SHA-256 {digest}")
     print("  suspected unreliable evidence: anything rejected by the source, shape, canary, or drift gates")
-    print("  hidden assumptions: Cloudflare serves uploaded static bytes unchanged at the canonical Pages URL")
-    print("  intended next action: publish only deploy/snapshot-site to the sanctions-name-index Pages project")
+    print("  hidden assumptions: the exact owned-host route terminates on the existing CIS Worker")
+    print("  intended next action: retain the Pages publication, then deploy the compact asset through the Vizier gate")
     print("  stop or escalate if: auth failure, gate failure, hash mismatch, or post-deploy mismatch")
 
 
@@ -155,8 +157,34 @@ def verify_wrangler_auth() -> None:
         raise RuntimeError(f"Wrangler must expose exactly one Cloudflare account; found {count}")
 
 
+def prepare_worker_publish(digest: str) -> None:
+    if not os.environ.get("CLOUDFLARE_WORKER_API_TOKEN") or not os.environ.get("VIZIER_DEPLOY_GRANT_FILE"):
+        raise RuntimeError("separate existing Worker credential and signed deployment grant are required")
+    run_command(
+        [
+            sys.executable,
+            "scripts/snapshot_worker_assets.py",
+            "--candidate",
+            str(COMPACT_INDEX),
+            "--expected-sha256",
+            digest,
+        ]
+    )
+
+
+def deploy_worker_candidate() -> None:
+    environment = dict(os.environ)
+    environment["CLOUDFLARE_API_TOKEN"] = environment.pop("CLOUDFLARE_WORKER_API_TOKEN")
+    run_command(
+        ["node", "scripts/vizier-gated-deploy.js", "--env", "cis-secondary-sanctions"],
+        cwd=ROOT / "deploy" / "cloudflare-worker",
+        env=environment,
+    )
+
+
 def publish_candidate(digest: str) -> None:
     verify_wrangler_auth()
+    prepare_worker_publish(digest)
     print_decision_workspace(digest)
     run_command(
         [
@@ -171,6 +199,7 @@ def publish_candidate(digest: str) -> None:
             "--commit-dirty=true",
         ]
     )
+    deploy_worker_candidate()
 
     check_command = [
         sys.executable,
@@ -179,6 +208,7 @@ def publish_candidate(digest: str) -> None:
         PUBLISHED_URL,
         "--max-age-days",
         "1",
+        "--default-urllib",
         "--expected-sha256",
         digest,
     ]
@@ -187,7 +217,9 @@ def publish_candidate(digest: str) -> None:
         if result.returncode == 0:
             print("gated sanctions-index publish completed and verified")
             return
-        print(f"attempt {attempt}: canonical Pages URL has not converged yet")
+        if result.returncode == 2:
+            raise RuntimeError("canonical index access refused; publication verification stopped without retry")
+        print(f"attempt {attempt}: canonical Worker URL has not converged yet")
         if attempt < POST_DEPLOY_ATTEMPTS:
             time.sleep(POST_DEPLOY_PAUSE_SECONDS)
     raise RuntimeError("deployment completed but production never served the exact gated artifact")
@@ -200,13 +232,18 @@ def main() -> int:
         action="store_true",
         help="publish the gated candidate to production; omission is a build-and-gate rehearsal",
     )
+    parser.add_argument(
+        "--publish-prepared", action="store_true", help="recheck all gates on an existing candidate, then publish"
+    )
     args = parser.parse_args()
+    if args.publish and args.publish_prepared:
+        parser.error("choose --publish or --publish-prepared")
 
     try:
-        if args.publish:
+        if args.publish or args.publish_prepared:
             require_clean_main()
-        digest = prepare_candidate()
-        if not args.publish:
+        digest = prepare_candidate(rebuild=not args.publish_prepared)
+        if not (args.publish or args.publish_prepared):
             print("dry run complete; production was not changed")
             print("re-run with --publish from a clean main checkout to deploy this workflow")
             return 0

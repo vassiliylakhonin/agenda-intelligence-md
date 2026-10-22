@@ -20,6 +20,7 @@ import { reviewMineralDossier, mineralReadiness, mineralBaselineErrors } from ".
 import { executePaidRequest, paidContext } from "./paid-execution.js";
 import { paymentTraceId, paymentTraceResponse } from "./payment-trace.js";
 import { snapshotHealth } from "./upstream_snapshot.js";
+import { snapshotAssetResponse } from "./snapshot-assets.js";
 import { consumeProQuota } from "./payment-ledger.js";
 import { OUTPUT_TRIAL_PATH, handleOutputTrial, outputTrialEnabled, outputTrialTerms, outputTrialAvailability } from './output-trial.js';
 import { trialCompletionStats, trialOriginGroup } from './trial-receipts.js';
@@ -15384,6 +15385,8 @@ function trialOpenApiPaths(request, env) {
 }
 
 export async function handleRequest(request, env = {}, ctx = {}) {
+  const snapshot = await snapshotAssetResponse(request, env);
+  if (snapshot) return snapshot;
   return mcpAgentAdmissionResponse(request, await handleRequestWithBilling(request, env, ctx));
 }
 
