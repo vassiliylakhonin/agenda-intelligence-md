@@ -10,6 +10,8 @@ import {mcpHttpRejection,mcpHttpStatus,isModernMcpHttp} from './mcp-http.js';
 import {ANSWER_REVIEW_TOOL,ANSWER_REVIEW_OPEN_TOOL,ANSWER_REVIEW_URI,ANSWER_REVIEW_MIME,
   answerReviewTools,isAnswerReviewTool,answerReviewErrors,reviewAnswer,answerReviewTerms} from './answer-review.js';
 import {ANSWER_REVIEW_HTML} from './answer-review-html.js';
+import {SUPPLIER_DESK_HTML} from './supplier-desk-page.js';
+import {SUPPLIER_DESK_CLIENT} from './supplier-desk-bundle.js';
 import { handleTrialFeedback, recordTrialFeedback } from './trial-feedback.js';
 import { mcpAgentAdmissionResponse } from './mcp-admission.js';
 import { lookupChplTier } from "./chpl.js";
@@ -14388,7 +14390,7 @@ function robotsTxt(request) {
 function sitemapXml(request) {
   const origin = originFromRequest(request);
   const paths = [
-    "/", "/trust", "/privacy", "/terms", "/sample-dossier",
+    "/", "/trust", "/privacy", "/terms", "/sample-dossier", "/supplier-desk",
     "/profiles/confidential-project-room", "/.well-known/agent-card.json",
     "/.well-known/ai-catalog.json", "/.well-known/mcp/server-card.json",
     "/api/openapi.json", "/llms.txt"
@@ -15637,6 +15639,16 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
   }
   if (request.method === "GET" && PUBLIC_SCHEMAS[url.pathname.slice(1)]) {
     return jsonResponse(PUBLIC_SCHEMAS[url.pathname.slice(1)], 200, {"cache-control": "public, max-age=300"});
+  }
+  if (['/supplier-desk','/supplier-desk.js'].includes(url.pathname)) {
+    const headers = {
+      'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer',
+      'content-security-policy':"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      'permissions-policy':'camera=(), microphone=(), geolocation=()'
+    };
+    if (request.method !== 'GET') return textResponse('Method not allowed',405,{...headers,allow:'GET'});
+    return url.pathname === '/supplier-desk' ? htmlResponse(SUPPLIER_DESK_HTML,200,headers)
+      : textResponse(SUPPLIER_DESK_CLIENT,200,{...headers,'content-type':'text/javascript; charset=utf-8'});
   }
   if (request.method === "GET" && ["/trust", "/privacy", "/terms"].includes(url.pathname)) {
     return htmlResponse(trustPage(url.pathname), 200);
