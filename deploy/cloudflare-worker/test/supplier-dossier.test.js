@@ -26,6 +26,14 @@ test('no checklist, optional-only checklist and illustrative files do not become
   s.requirements.forEach(row=>row.required=false);assert.equal(reviewSnapshot(s).status,'define_requirements');
   s.requirements=[];s.documents=[];assert.equal(reviewSnapshot(s).status,'define_requirements');
 });
+test('ordinary synthetic-material descriptions are not mistaken for illustrative fixtures',()=>{
+  const s=snapshot();s.documents[0].title='Synthetic rubber supplier registration';
+  s.documents[0].excerpt='The registered activity includes manufacturing synthetic rubber and polymer components.';
+  assert.equal(reviewSnapshot(s).rows[0].status,'supplied_for_review');
+  for(const marker of ['Synthetic test fixture only.','Illustrative only.','Placeholder document.']){
+    s.documents[0].excerpt=marker;assert.equal(reviewSnapshot(s).rows[0].status,'needs_evidence');
+  }
+});
 test('history snapshots preserve adverse evidence and reject duplicate IDs, excessive history and invalid ordering',()=>{
   let packet=createPacket('dossier-1',snapshot());packet=saveVersion(packet,{id:'v1',at:'2026-10-22T01:00:00Z',note:'Initial gap'});
   packet.current.documents[0].excerpt='Changed source';assert.notEqual(packet.versions[0].snapshot.documents[0].excerpt,packet.current.documents[0].excerpt);

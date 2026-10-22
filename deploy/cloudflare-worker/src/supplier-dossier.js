@@ -102,7 +102,7 @@ export function reviewSnapshot(snapshot) {
       if (document.supplier_name.trim() !== snapshot.supplier.name.trim()) issues.push('Supplier scope differs');
       if (document.scope.trim() !== snapshot.purpose.trim()) issues.push('Purpose scope differs');
       if (!document.excerpt.trim() && !document.attachment) issues.push('No excerpt or attached file');
-      if (/\b(?:synthetic|illustrative|placeholder)\b/iu.test(document.title+' '+document.excerpt)) issues.push('Illustrative material is not actual documentary evidence');
+      if (/\b(?:illustrative\s+only|synthetic\s+(?:test|example|fixture|only)|placeholder)\b/iu.test(document.title+' '+document.excerpt)) issues.push('Illustrative material is not actual documentary evidence');
       return {document_id:document.id,issues,status:issues.length ? 'needs_evidence' : 'supplied_for_review'};
     });
     return {requirement_id:requirement.id,title:requirement.title,owner:requirement.owner,required:requirement.required,

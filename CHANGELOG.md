@@ -2,6 +2,7 @@
 
 ## Supplier Evidence Desk — 2026-10-22
 
+- Restrict illustrative-document markers to explicit example/fixture wording so ordinary synthetic-material descriptions do not create false documentary gaps. Preserve human review and the explicit demo markers.
 - Add a free browser-local supplier workspace on existing Workers: editable checklist and owners, source attachments/excerpts, manual request tracking and copyable drafts, explicitly saved versions, scoped revision comparison and portable JSON/Markdown/CSV handover. Validate imported history and attachment bytes; preserve unsaved work on storage failure. Keep document text out of network calls and telemetry. Human review remains required; no automatic supplier approval or message sending.
 
 ## Pages-scoped publisher authentication — 2026-10-22
