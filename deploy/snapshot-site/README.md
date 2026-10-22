@@ -72,3 +72,14 @@ expiry; never reuse or widen Worker deployment credentials. The workflow uses
 only `CLOUDFLARE_PAGES_API_TOKEN` with the existing account ID and fails explicitly
 when the Pages secret is absent. Store no credential value in source, artifacts
 or logs.
+
+With `CLOUDFLARE_API_TOKEN` present, the publisher requires a 32-character
+hexadecimal `CLOUDFLARE_ACCOUNT_ID` and authenticates through a single
+[Pages project GET](https://developers.cloudflare.com/api/resources/pages/subresources/projects/methods/get/)
+for `sanctions-name-index`. It checks the successful response, project name and
+canonical Pages subdomain, with a bounded response, timeout and no redirects.
+This uses the approved Pages permission without requiring user-details or
+membership access for `wrangler whoami`. An auth refusal stops before deployment,
+without retries or OAuth fallback. Local OAuth publication still requires
+`whoami` to expose exactly one account. All source and exact-byte publication
+gates apply to both paths.

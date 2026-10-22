@@ -13,9 +13,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import re
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Sequence
 
@@ -26,6 +30,7 @@ PUBLISHED_URL = "https://sanctions-name-index.pages.dev/sanctions-name-index-com
 WRANGLER_VERSION = "4.122.0"
 POST_DEPLOY_ATTEMPTS = 12
 POST_DEPLOY_PAUSE_SECONDS = 10
+PAGES_AUTH_MAX_BYTES = 65536
 
 
 def run_command(
@@ -82,8 +87,60 @@ def print_decision_workspace(digest: str) -> None:
     print("  stop or escalate if: auth failure, gate failure, hash mismatch, or post-deploy mismatch")
 
 
+class RejectPagesAuthRedirects(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def pages_auth_opener() -> urllib.request.OpenerDirector:
+    return urllib.request.build_opener(RejectPagesAuthRedirects())
+
+
+def verify_pages_token(token: str) -> None:
+    account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
+    if not re.fullmatch(r"[0-9a-fA-F]{32}", account):
+        raise RuntimeError("Pages token requires an explicit Cloudflare account ID (32 hexadecimal characters)")
+    if not token or any(character.isspace() for character in token):
+        raise RuntimeError("Pages token is empty or malformed")
+    request = urllib.request.Request(
+        f"https://api.cloudflare.com/client/v4/accounts/{account}/pages/projects/sanctions-name-index",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+    )
+    try:
+        with pages_auth_opener().open(request, timeout=30) as response:
+            if response.status != 200:
+                raise RuntimeError(f"Pages project authentication refused (HTTP {response.status})")
+            raw = response.read(PAGES_AUTH_MAX_BYTES + 1)
+    except urllib.error.HTTPError as exc:
+        # Never log an API response, redirect target, or credential-bearing request.
+        raise RuntimeError(f"Pages project authentication refused (HTTP {exc.code})") from None
+    except (urllib.error.URLError, OSError):
+        raise RuntimeError("Pages project authentication request failed") from None
+    if len(raw) > PAGES_AUTH_MAX_BYTES:
+        raise RuntimeError("Pages project authentication metadata exceeds the size limit")
+    try:
+        payload = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise RuntimeError("Pages returned malformed authentication metadata") from None
+    project = payload.get("result") if isinstance(payload, dict) else None
+    if (
+        not isinstance(payload, dict)
+        or payload.get("success") is not True
+        or not isinstance(project, dict)
+        or project.get("name") != "sanctions-name-index"
+        or project.get("subdomain") != "sanctions-name-index.pages.dev"
+    ):
+        raise RuntimeError("Pages authentication did not confirm the expected sanctions-name-index project")
+    print("Pages token authenticated for the expected sanctions-name-index project")
+
+
 def verify_wrangler_auth() -> None:
     run_command(["npx", "--yes", f"wrangler@{WRANGLER_VERSION}", "--version"])
+    token = os.environ.get("CLOUDFLARE_API_TOKEN")
+    if token is not None:
+        verify_pages_token(token)
+        return
+    # Local OAuth publication retains the unambiguous-account requirement.
     result = run_command(
         ["npx", "--yes", f"wrangler@{WRANGLER_VERSION}", "whoami", "--json"],
         capture_output=True,

@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import io
 import json
 import subprocess
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -16,6 +19,12 @@ SPEC = importlib.util.spec_from_file_location("publish_sanctions_index", SCRIPT)
 assert SPEC and SPEC.loader
 PUBLISH = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(PUBLISH)
+
+
+@pytest.fixture(autouse=True)
+def isolate_publisher_credentials(monkeypatch):
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+    monkeypatch.delenv("CLOUDFLARE_ACCOUNT_ID", raising=False)
 
 
 def completed(command: list[str], returncode: int = 0, stdout: str = "") -> subprocess.CompletedProcess[str]:
@@ -120,3 +129,137 @@ def test_manual_publisher_uses_the_worker_fleets_pinned_wrangler_version():
     deploy_script = (ROOT / "deploy/cloudflare-worker/scripts/vizier-gated-deploy.js").read_text()
 
     assert f'const WRANGLER_VERSION = "{PUBLISH.WRANGLER_VERSION}"' in deploy_script
+
+
+def test_pages_token_auth_checks_the_fixed_project_without_user_or_membership_permissions(monkeypatch):
+    calls = []
+    commands = []
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "synthetic-pages-token")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "a" * 32)
+
+    def fake_run(command, **kwargs):
+        commands.append(list(command))
+        return completed(list(command))
+
+    monkeypatch.setattr(PUBLISH, "run_command", fake_run)
+
+    class Response(io.BytesIO):
+        status = 200
+
+    class Opener:
+        def open(self, request, timeout):
+            assert timeout == 30
+            calls.append(request)
+            return Response(
+                json.dumps(
+                    {
+                        "success": True,
+                        "result": {"name": "sanctions-name-index", "subdomain": "sanctions-name-index.pages.dev"},
+                    }
+                ).encode()
+            )
+
+    monkeypatch.setattr(PUBLISH, "pages_auth_opener", lambda: Opener())
+    PUBLISH.verify_wrangler_auth()
+    assert commands == [["npx", "--yes", "wrangler@4.122.0", "--version"]]
+    assert len(calls) == 1
+    assert (
+        calls[0].full_url
+        == "https://api.cloudflare.com/client/v4/accounts/" + "a" * 32 + "/pages/projects/sanctions-name-index"
+    )
+    assert calls[0].get_header("Authorization") == "Bearer synthetic-pages-token"
+
+
+@pytest.mark.parametrize("account", [None, "", "a/b", "a" * 31, "g" * 32])
+def test_pages_auth_requires_an_explicit_account_and_never_falls_back(monkeypatch, account):
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "synthetic-pages-token")
+    monkeypatch.delenv("CLOUDFLARE_ACCOUNT_ID", raising=False)
+    if account is not None:
+        monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", account)
+    monkeypatch.setattr(PUBLISH, "run_command", lambda command, **kwargs: completed(list(command)))
+    with pytest.raises(RuntimeError, match="explicit Cloudflare account"):
+        PUBLISH.verify_wrangler_auth()
+
+
+@pytest.mark.parametrize("token", ["", "contains whitespace\n"])
+def test_pages_auth_rejects_empty_or_malformed_token(monkeypatch, token):
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", token)
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "a" * 32)
+    monkeypatch.setattr(PUBLISH, "run_command", lambda command, **kwargs: completed(list(command)))
+    with pytest.raises(RuntimeError, match="empty or malformed"):
+        PUBLISH.verify_wrangler_auth()
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"not-json",
+        b"\xff",
+        b"x" * 65537,
+        b"[]",
+        b'{"success":false,"result":{"name":"sanctions-name-index"}}',
+        b'{"success":true,"result":{"name":"other","subdomain":"sanctions-name-index.pages.dev"}}',
+        b'{"success":true,"result":{"name":"sanctions-name-index","subdomain":"other.pages.dev"}}',
+    ],
+)
+def test_pages_auth_rejects_invalid_or_wrong_project_metadata_before_deploy(monkeypatch, body):
+    commands = []
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "synthetic-pages-token")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "a" * 32)
+
+    def fake_run(command, **kwargs):
+        commands.append(list(command))
+        return completed(list(command))
+
+    class Response(io.BytesIO):
+        status = 200
+
+        def read(self, limit):
+            assert limit == 65537
+            return super().read(limit)
+
+    class Opener:
+        def open(self, request, timeout):
+            return Response(body)
+
+    monkeypatch.setattr(PUBLISH, "run_command", fake_run)
+    monkeypatch.setattr(PUBLISH, "pages_auth_opener", lambda: Opener())
+    with pytest.raises(RuntimeError):
+        PUBLISH.publish_candidate("a" * 64)
+    assert commands == [["npx", "--yes", "wrangler@4.122.0", "--version"]]
+
+
+@pytest.mark.parametrize("status", [301, 401, 403])
+def test_pages_auth_refusal_stops_without_retry_fallback_or_secret_logging(monkeypatch, capsys, status):
+    commands = []
+    requests = []
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "synthetic-pages-token")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "a" * 32)
+
+    def fake_run(command, **kwargs):
+        commands.append(list(command))
+        return completed(list(command))
+
+    class Opener:
+        def open(self, request, timeout):
+            requests.append(request)
+            raise urllib.error.HTTPError(
+                request.full_url, status, "synthetic-pages-token", {}, io.BytesIO(b"private-response")
+            )
+
+    monkeypatch.setattr(PUBLISH, "run_command", fake_run)
+    monkeypatch.setattr(PUBLISH, "pages_auth_opener", lambda: Opener())
+    with pytest.raises(RuntimeError, match=f"HTTP {status}") as error:
+        PUBLISH.publish_candidate("a" * 64)
+    output = str(error.value) + str(capsys.readouterr())
+    assert "synthetic-pages-token" not in output
+    assert "private-response" not in output
+    assert len(requests) == 1
+    assert commands == [["npx", "--yes", "wrangler@4.122.0", "--version"]]
+
+
+def test_pages_auth_opener_refuses_redirects():
+    opener = PUBLISH.pages_auth_opener()
+    handlers = [handler for handler in opener.handlers if isinstance(handler, urllib.request.HTTPRedirectHandler)]
+    assert len(handlers) == 1
+    assert handlers[0].redirect_request(None, None, 302, "redirect", {}, "https://other.example") is None
