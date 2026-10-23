@@ -28,6 +28,7 @@ export function addCatalogDemo(card, profile, origin) {
     ...card.skills[0],
     description: card.skills[0].description +
       ` Send "${CATALOG_DEMO_PROMPT}" alone to inspect a saved synthetic example without payment or a trial attempt; this does not evaluate your input.`,
+    inputModes: [...new Set([...(card.skills[0].inputModes || card.defaultInputModes || []), 'text/plain'])],
     examples: [CATALOG_DEMO_PROMPT, ...(card.skills[0].examples || []).filter(value => value !== CATALOG_DEMO_PROMPT)]
   };
   card.x_agenda_intelligence.catalog_demo = {

@@ -26,6 +26,7 @@ test('all twelve catalog previews return actual saved fixtures without evaluatio
       const card = agentCard(new Request(origin), env);
       assert.deepEqual(validateAgentCard(toSpecWireCard(card)), [], profile);
       assert.equal(card.skills[0].examples[0], CATALOG_DEMO_PROMPT);
+      assert.ok(card.skills[0].inputModes.includes('text/plain'));
       const response = await send(requestBody(), env);
       assert.equal(response.status, 200, profile);
       assert.equal(response.headers.get('payment-required'), null);
