@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 1.21.2 — 2026-10-23
+
+- Refresh the PyPI description with a self-contained installed-package example, current hosted first-call recovery and browser-local Supplier Evidence Desk handover. Use release-pinned absolute documentation links, distinguishing hosted workflows from installed Python APIs.
+- Synchronize package, manifest, discovery, SDK, plugin, Docker and current documentation versions; regenerate synthetic fixtures. Preserve core schemas, tools, domain behavior, prices, quotas and authorization. Carry the already tested hosted improvements in the source release without claiming real users, payments or reviewer acceptance.
+
 ## First-call recovery — 2026-10-23
 
 - Expose the serving host's free input preflight and configured trial inspection in REST/A2A/MCP input/payment refusals. Preserve x402 challenges, exact paid-request recovery, authentication and quotas; never replay, pay or consume an attempt by showing guidance. Disabled trials no longer get an unconditional MCP invitation.
