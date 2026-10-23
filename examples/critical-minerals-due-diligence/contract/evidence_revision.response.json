@@ -83,7 +83,7 @@
   "human_review_required": true,
   "not_advice_notice": "Pre-compliance evidence triage only on caller-supplied documentation. Does not perform live retrieval, factual-truth verification, mineral assay testing, or provide legal, sanctions, trade-compliance, ESG certification, or investment advice.",
   "run_provenance": {
-    "contract_version": "1.21.1",
+    "contract_version": "1.21.2",
     "input_digest": "sha256:bf477f4e6f5e31531c354f57a40e9181f1a2d7c97ea91a630f0d8f44e0e64857",
     "schema_uri": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/critical-minerals-due-diligence-response.schema.json"
   },
