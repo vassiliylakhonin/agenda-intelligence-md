@@ -2,9 +2,19 @@
 
 # Agenda Intelligence MD
 
-A deterministic evidence-packet linter for claim-backed AI output. Supply claims, source references, quotations, and source text; receive broken-reference, quote, number, lexical-support, and evidence-gap findings before human review.
+A deterministic evidence-packet linter for claim-backed AI output. Find broken references, mismatched quotations, unmatched numbers, and missing evidence in AI-generated claims; receive findings and reviewer actions before human review.
 
 Use it to make an AI answer's evidence trail inspectable in a local workflow, agent pipeline, or CI job. **Packet completeness is not factual truth, source authenticity, or permission to act.**
+
+## Choose a starting point
+
+| Your task | Start here | What you get |
+| --- | --- | --- |
+| Check a claim in the browser | [One-claim review](https://output-verification.agendamcp.dpdns.org/#one-claim-review) | Findings on supplied text through a limited hosted trial |
+| Add evidence checks to Python or CI | [First run](#first-run) | A local, deterministic check with no model API key |
+| Review a RAG answer or connect an agent | [Interfaces](#interfaces) | Citation repair guidance, MCP tools and integration examples |
+| Prepare a supplier document handover | [Supplier workflow](#prepare-a-supplier-document-handover) | Missing-document and owner follow-up lists for human review |
+
 
 For hosted agents, the [signed Output Verification loop](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/output-evaluation-receipts.md) combines native MCP trials or explicitly budgeted x402 v2 calls with stable diagnostic codes and independent request/result receipt verification. Run `node examples/output-verification/replay.mjs` for local synthetic replays without a wallet. A valid signature attests the evaluation; human review remains required.
 
