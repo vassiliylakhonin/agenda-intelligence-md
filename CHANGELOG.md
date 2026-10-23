@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## First-call recovery — 2026-10-23
+
+- Expose the serving host's free input preflight and configured trial inspection in REST/A2A/MCP input/payment refusals. Preserve x402 challenges, exact paid-request recovery, authentication and quotas; never replay, pay or consume an attempt by showing guidance. Disabled trials no longer get an unconditional MCP invitation.
+- Verify read-only recovery for all twelve products, production authentication, private-input exclusion and unchanged standard x402 payloads. Keep the existing real-task pilot kits; owner checks do not establish user acceptance or demand.
+
 ## Supplier document handover — 2026-10-23
 
 - Add bounded browser-local PDF/DOCX extraction with page/paragraph locators, explicit partial/OCR warnings and manual excerpt adoption. Isolate parsing/export in a terminable dedicated worker, retain no-network CSP and preserve the portable dossier v1 contract.

@@ -29,6 +29,13 @@ owner demonstration and sends an owner telemetry label; adapt that label for
 an actual integration. No wallet is necessary for admission or the site's
 **Run a worked example** saved fixture.
 
+`firstCall` preserves the server's optional free entry: read-only contract
+discovery, schema-only input preflight and configured trial terms/availability.
+Inspect these before a separately authorized evaluation. A null `free_trial`
+means the deployment advertises no trial. Inspection reserves nothing; trial
+evaluation is explicit and uses the shared allowance. No link is followed by
+this client automatically. Standard x402 payloads remain intact.
+
 ## Explicit payment and recovery
 
 ```javascript
@@ -68,7 +75,7 @@ complete fictional hand-off and additional result checks over this same helper.
 ## Correct a refused request
 
 `HostedMcpError` retains `status`, `paymentTraceId`, `paymentAttemptId`, `details`
-and `requestHint`. For an invalid unpaid input, inspect the hint and published
+and `requestHint`/`firstCall`. For an invalid unpaid input, inspect the hint and published
 schema, correct the input and construct a new call. Null, array and non-object
 tool inputs are rejected locally before HTTP. These checks do not replace the
 published schema or server validation.

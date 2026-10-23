@@ -15,6 +15,7 @@ import {SUPPLIER_DESK_CLIENT} from './supplier-desk-bundle.js';
 import {SUPPLIER_DOCUMENT_WORKER} from './supplier-document-worker-bundle.js';
 import { handleTrialFeedback, recordTrialFeedback } from './trial-feedback.js';
 import { mcpAgentAdmissionResponse } from './mcp-admission.js';
+import { firstCallResponse } from './first-call.js';
 import { lookupChplTier } from "./chpl.js";
 import { reviewSourceRecords } from "./source-records.js";
 import { reviewMineralDossier, mineralReadiness, mineralBaselineErrors } from "./critical_minerals_dossier.js";
@@ -15388,7 +15389,8 @@ function trialOpenApiPaths(request, env) {
 export async function handleRequest(request, env = {}, ctx = {}) {
   const snapshot = await snapshotAssetResponse(request, env);
   if (snapshot) return snapshot;
-  return mcpAgentAdmissionResponse(request, await handleRequestWithBilling(request, env, ctx));
+  const response = await handleRequestWithBilling(request, env, ctx);
+  return mcpAgentAdmissionResponse(request, await firstCallResponse(request, response, agentProfile(request, env), env));
 }
 
 async function handleRequestWithBilling(request, env = {}, ctx = {}) {
