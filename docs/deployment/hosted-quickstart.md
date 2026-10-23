@@ -162,3 +162,27 @@ A hosted JSON parse refusal includes `request_hint.wire_request` with `url`,
 actual supplied evidence before evaluation. It is not an automatic retry of
 your task. A valid unpaid paid-operation example returns HTTP 402, not an
 evaluation or a charge. Query parameters and rejected content are not echoed.
+
+## Choose the free first step after a refusal
+
+Input refusals (`invalid_paid_request`, HTTP 400/413) and unpaid evaluations
+(HTTP 402) include an additive `first_call` object. The same object is present
+in JSON-RPC `error.data`; standard MCP tool errors expose it through
+`result._meta["com.agenda/admission"]` directly or in its `details`. Existing
+payment requirements, signatures, trace IDs and the original request stay intact.
+
+- Send `first_call.contract_request` to read this host's published tools and
+  schemas. It contains no rejected input or credentials.
+- For `first_call.input_preflight`, explicitly POST `{tool,input}`. Select the
+  advertised tool and use its original arguments as `input`, without the
+  MCP/A2A envelope. The 256 KiB schema check performs no evaluation and consumes
+  no trial. Production Bearer authentication still applies.
+- If `first_call.free_trial` is non-null, its `terms_request` returns the named
+  trial's input schema and illustrative example; `status_request` checks advisory
+  availability. Both are read-only. Only a separate explicit trial POST or MCP
+  `free_trial` evaluates and spends the existing shared allowance. A trial covers
+  its named tool, not every paid operation. Null means no trial is advertised.
+
+These links are optional next steps. Never automatically retry, pay, substitute
+a synthetic example for the original task, or move an uncertain funded request
+to the trial endpoint. A corrected or different evaluation is a new admission.

@@ -15,6 +15,7 @@ export class HostedMcpError extends Error {
     this.paymentAttemptId = paymentAttemptId;
     this.details = details;
     this.requestHint = details?.request_hint || null;
+    this.firstCall = details?.first_call || null;
   }
 }
 
@@ -62,6 +63,7 @@ export function createHostedMcpCall(tool, input, {
       if (admissionStatus === 402) {
         const amount = details.x402?.amount_usdc ?? details.required_usdc;
         return { status: 'payment_required', evaluated: false, paymentTraceId: trace,
+          firstCall: admission?.first_call || details.first_call || null,
           payment: { required_usdc: typeof amount === 'number' ? amount : null, x402: details.x402 || null },
           nextAction: transactionHash ? 'inspect_payment_refusal_do_not_transfer_again' : 'inspect_price_and_configure_payment' };
       }

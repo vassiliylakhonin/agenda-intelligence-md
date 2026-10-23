@@ -44,6 +44,13 @@ intended paid tool cannot be safely inferred. A2A/REST offer the serving profile
 example. Examples are illustrative; no malformed input is silently repaired or
 evaluated. Unknown facts must remain unknown.
 
+Input and unpaid evaluation refusals also carry `first_call`: executable
+read-only contract/terms/status requests, the free schema-preflight contract,
+and only the configured product trial. Inspection consumes nothing; a separate
+explicit evaluation uses the existing allowance and authentication. A disabled
+trial is explicit. See the
+[wire contract](../deployment/hosted-quickstart.md#choose-the-free-first-step-after-a-refusal).
+
 ## Connect one real workflow
 
 Use the existing [retained MCP client](../../examples/hosted-mcp/README.md).

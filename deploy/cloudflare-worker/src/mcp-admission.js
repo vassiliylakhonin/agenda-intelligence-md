@@ -18,7 +18,9 @@ export async function mcpAgentAdmissionResponse(request, response) {
     payment_attempt_id: response.headers.get('x-payment-attempt-id'),
     next_step: response.status === 401
       ? 'The funding wallet must sign the exact challenge for this original request. Do not transfer again.'
-      : 'For a free first check, discover free_trial_status and free_trial on this host. Inspect separate paid admission with the owner. Do not pay automatically. This is not an evaluation.',
+      : details.first_call?.free_trial
+        ? 'Inspect first_call for free input preflight and this product’s free_trial_status/free_trial. Inspect separate paid admission with the owner. Do not pay automatically. This is not an evaluation.'
+        : 'Inspect first_call for free input preflight. This deployment does not advertise a free trial. Review separate paid admission with the owner; do not pay automatically. This is not an evaluation.',
     details
   };
   return Response.json({jsonrpc:'2.0', id:payload.id, result:{
