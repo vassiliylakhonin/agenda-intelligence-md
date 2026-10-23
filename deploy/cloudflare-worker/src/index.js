@@ -4,6 +4,7 @@ import {x402Enabled, decodeX402, executeX402, x402RequiredResponse, x402Executio
 import {isA2ATrial, a2aTrialInput, a2aTrialDiscovery, A2A_TRIAL_URI} from "./a2a-trial.js";
 import { withEvaluationContract } from "./evaluation-contract.js";
 import { addSkillDiscovery } from './skill-discovery.js';
+import { addCatalogDemo, isCatalogDemo, catalogDemoContent } from './catalog-demo.js';
 import { agentOnboarding, PROFILE_TASKS, profileWorkflow } from './agent-onboarding.js';
 import { mcpTrialTools, mcpTrialResult } from './mcp-trial.js';
 import {mcpHttpRejection,mcpHttpStatus,isModernMcpHttp} from './mcp-http.js';
@@ -1318,7 +1319,7 @@ function agentCard(request, env = {}) {
     decision_boundary: "No legal, sanctions, financial or trading clearance. Human review before any commercial action.",
     price: env.BILLING_MODE === "pay_per_call" ? "Normal paid endpoints require signed payment or Pro entitlement. The separately advertised trial does not require payment. See /.well-known/x402." : "Free base triage. Optional paid paths vary by tool; check /.well-known/x402 before paying."
   };
-  return addSkillDiscovery(shaped, profile);
+  return addCatalogDemo(addSkillDiscovery(shaped, profile), profile, origin);
 }
 
 // The card carries the same contract tools/list carries.
@@ -2945,15 +2946,19 @@ function applyAgentOutputVerificationProfile(card, request) {
   card.skills = [
     {
       id: "agent-output-verification",
-      name: "Agent output relay-readiness gate",
+      name: "AI report evidence quality review",
       description:
-        "Turns another agent's claim set and evidence into a machine-actionable relay verdict — verify_before_relay, block_unsafe_claims, not_decision_ready, or insufficient_information — with the ungrounded and weak claims, evidence gaps, and the owner actions needed before the output is safe to relay. allow_relay is never issued from caller-declared evidence; human review is mandatory before any relay. Structural claim-support triage, not factual-truth verification.",
+        "Review AI-generated report and memo claims against supplied source text. Check evidence-reference consistency, missing source IDs and quoted excerpts; return structural evidence gaps, repair steps and a relay-readiness verdict. Human review is required; this does not establish factual truth, semantic entailment, source authenticity or permission to publish.",
       tags: [
         "agentic-ai",
         "a2a",
         "agent-to-agent",
         "claims",
         "evidence-readiness",
+        "quality-evaluation",
+        "evidence-validation",
+        "report-review",
+        "quote-checking",
         "trust-and-safety",
         "human-review",
         "free"
@@ -2984,12 +2989,13 @@ function applyAgentOutputVerificationProfile(card, request) {
     },
     {
       id: "evidence-gap-analysis",
-      name: "Evidence gap and orphan-reference analysis",
+      name: "Citation and source-reference validation",
       description:
         "Finds missing evidence ids, quote-to-reference mismatches, unsupported statements, and weak claims in " +
         "a caller-supplied claim set. Returns the evidence gaps and owner actions already produced by the relay-readiness " +
         "contract. Structural only: it does not retrieve sources or verify factual truth.",
-      tags: ["agentic-ai", "a2a", "evidence-gaps", "orphan-references", "claim-support", "human-review"],
+      tags: ["agentic-ai", "a2a", "evidence-gaps", "orphan-references", "claim-support", "human-review",
+        "citation-checking", "reference-validation", "quote-checking", "data-quality"],
       examples: [
         "Which claims cite evidence ids that were not supplied?",
         "Find quote references that do not match the claim's declared evidence.",
@@ -13843,6 +13849,46 @@ function a2aJsonResponse(body, status = 200, headers = {}) {
   return jsonResponse(body, status, { "A2A-Version": A2A_PROTOCOL_VERSION, ...headers });
 }
 
+async function handleCatalogDemo(payload, request, env) {
+  const profile = agentProfile(request, env), version = requestedA2aVersion(request, payload);
+  const reply = (body, status = 200) => a2aJsonResponse(body, status,
+    {'A2A-Version': version || A2A_PROTOCOL_VERSION, 'cache-control': 'no-store'});
+  const fail = (code, message, status) => reply(jsonRpcError(payload.id, code, message), status);
+  if (!(request.headers.get('content-type') || '').toLowerCase().includes('application/json')) {
+    return fail(-32005, 'Use application/json', 415);
+  }
+  if (!isProductionAuthorized(request, env, profile)) return fail(-32001, 'Unauthorized', 401);
+  if (!((version === A2A_PROTOCOL_VERSION && payload.method === 'SendMessage') ||
+      (version === A2A_LEGACY_PROTOCOL_VERSION && LEGACY_MESSAGE_SEND_METHODS.has(payload.method)))) {
+    return fail(-32009, 'Unsupported A2A version or method', 400);
+  }
+  if (version === A2A_PROTOCOL_VERSION && v1MessageViolations(payload.params).length) {
+    return reply(invalidParamsError(payload.id, v1MessageViolations(payload.params)), 400);
+  }
+  if (['x-payment-tx', 'x-payment-signature', 'payment-signature', 'x-payment'].some(key => request.headers.has(key))) {
+    return fail(-32602, 'Do not send payment credentials to a saved example', 400);
+  }
+  const content = catalogDemoContent(profile, new URL(request.url).origin, hostedAccess(profile, env).free_trial);
+  if (!content) return fail(-32601, 'Saved example is not available for this product', 404);
+  const task = {
+    id: crypto.randomUUID(), contextId: crypto.randomUUID(),
+    status: {state: 'TASK_STATE_COMPLETED'},
+    artifacts: [{artifactId: crypto.randomUUID(), name: 'Saved synthetic worked example', parts: [
+      {text: content.markdown, mediaType: 'text/markdown'},
+      {data: content.data, mediaType: 'application/json'}
+    ]}],
+    metadata: {operation: 'worked_example', product_profile: profile,
+      evaluation_performed: false, attempt_consumed: false, authorization_granted: false,
+      human_review_required: true, task_persisted: false}
+  };
+  await logFunnelEvent(request, 'worked_example', env);
+  if (version === A2A_LEGACY_PROTOCOL_VERSION) {
+    task.kind = 'task'; task.status.state = 'completed';
+    return reply({jsonrpc: '2.0', id: payload.id, result: task});
+  }
+  return reply({jsonrpc: '2.0', id: payload.id, result: {task}});
+}
+
 async function handleA2ATrial(payload, request, env, ctx = {}) {
   const profile = agentProfile(request, env), version = requestedA2aVersion(request, payload);
   const trialHeaders = {};
@@ -13927,6 +13973,7 @@ async function handlePost(request, env, ctx) {
     return a2aJsonResponse(error, _error.status === 413 ? 413 : 200);
   }
   const method = payload && typeof payload === "object" ? payload.method : null;
+  if (isCatalogDemo(payload)) return handleCatalogDemo(payload, request, env);
   if (isA2ATrial(payload)) return handleA2ATrial(payload,request,env,ctx);
   if (MESSAGE_SEND_METHODS.has(method) || method === "GetTask" || method === "CancelTask") {
     const profile = agentProfile(request, env);
@@ -15518,6 +15565,7 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
     }
     return execute();
   }
+  if ((path === '/message/send' || path === '/') && isCatalogDemo(body)) return handleCatalogDemo(body, request, env);
   if ((path === '/message/send' || path === '/') && isA2ATrial(body)) return handleA2ATrial(body,request,env,ctx);
   const metaProof = path.startsWith('/mcp') && body?.method === 'tools/call' ? body.params?._meta?.['x402/payment'] : undefined;
   let standardProof;

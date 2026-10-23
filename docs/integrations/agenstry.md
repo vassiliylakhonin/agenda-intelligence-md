@@ -52,6 +52,41 @@ revenue.
 
 ## Improve discovery honestly
 
+### First result from a text-only catalog console
+
+Choose **Show a free worked example** in Agenstry's Try it console, or send that
+exact sentence alone as one A2A text part. This returns the serving product's
+saved synthetic input, findings, a saved correction where available, and a link
+to review your own material. It performs no live evaluation, consumes no trial
+attempt and grants no authorization. Configured deployment authorization still
+applies. Do not attach case data, task/context IDs or message metadata to this
+read-only command. Such requests follow normal evaluation or refusal handling.
+
+The additive response contract is a completed A2A task with
+`metadata.operation: "worked_example"`, `evaluation_performed: false`,
+`attempt_consumed: false`, `authorization_granted: false` and
+`task_persisted: false`. The artifact contains Markdown and JSON. The JSON data
+has `schema_version: 1`, `kind: "precomputed_synthetic_fixture"`, `example`
+(the saved request/response and optional follow-up), and `next.review_url`.
+`next.trial_terms_url` appears only when that deployment has a trial enabled.
+The completed display task is not stored for GetTask continuation.
+
+Ordinary paid evaluations still return HTTP 402 without payment. Agenstry's
+Try it console cannot settle that payment, so a 402 is not a service outage.
+Use the returned product-page link for a deliberate existing free trial with
+your own authorized evidence; HTTP, MCP and native A2A share its allowance.
+Record these previews as `worked_example` funnel events, not evaluations,
+customers, useful outcomes or paid executions. Maintainer checks must use
+`X-Client-Id: agenda-owner-<purpose>`; do not publish owner console tests as demand.
+
+For Output Verification, lead with report evidence quality, citation/reference
+consistency and quoted-excerpt checks. A useful entry task is reviewing an
+AI-drafted report before handover, correcting unsupported claims, and letting a
+human review the revised evidence. The stable skill IDs and schemas remain the
+same. Catalog taxonomy is controlled by Agenstry: clearer names and tags are
+mapping inputs, not a guarantee of categorization or ranking. Do not claim
+semantic entailment, factual truth or source authenticity to obtain a category.
+
 Keep stable skill IDs and describe actual inputs, outputs and bounded examples.
 Link the structured contracts and quickstart rather than inventing additional
 skills to increase a score. Legal registry IDs and stronger authentication schemes
