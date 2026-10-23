@@ -12,6 +12,7 @@ import {ANSWER_REVIEW_TOOL,ANSWER_REVIEW_OPEN_TOOL,ANSWER_REVIEW_URI,ANSWER_REVI
 import {ANSWER_REVIEW_HTML} from './answer-review-html.js';
 import {SUPPLIER_DESK_HTML} from './supplier-desk-page.js';
 import {SUPPLIER_DESK_CLIENT} from './supplier-desk-bundle.js';
+import {SUPPLIER_DOCUMENT_WORKER} from './supplier-document-worker-bundle.js';
 import { handleTrialFeedback, recordTrialFeedback } from './trial-feedback.js';
 import { mcpAgentAdmissionResponse } from './mcp-admission.js';
 import { lookupChplTier } from "./chpl.js";
@@ -15643,15 +15644,15 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
   if (request.method === "GET" && PUBLIC_SCHEMAS[url.pathname.slice(1)]) {
     return jsonResponse(PUBLIC_SCHEMAS[url.pathname.slice(1)], 200, {"cache-control": "public, max-age=300"});
   }
-  if (['/supplier-desk','/supplier-desk.js'].includes(url.pathname)) {
+  if (['/supplier-desk','/supplier-desk.js','/supplier-document-worker.js'].includes(url.pathname)) {
     const headers = {
       'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer',
-      'content-security-policy':"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      'content-security-policy':"default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
       'permissions-policy':'camera=(), microphone=(), geolocation=()'
     };
     if (request.method !== 'GET') return textResponse('Method not allowed',405,{...headers,allow:'GET'});
     return url.pathname === '/supplier-desk' ? htmlResponse(SUPPLIER_DESK_HTML,200,headers)
-      : textResponse(SUPPLIER_DESK_CLIENT,200,{...headers,'content-type':'text/javascript; charset=utf-8'});
+      : textResponse(url.pathname==='/supplier-desk.js'?SUPPLIER_DESK_CLIENT:SUPPLIER_DOCUMENT_WORKER,200,{...headers,'content-type':'text/javascript; charset=utf-8'});
   }
   if (request.method === "GET" && ["/trust", "/privacy", "/terms"].includes(url.pathname)) {
     return htmlResponse(trustPage(url.pathname), 200);

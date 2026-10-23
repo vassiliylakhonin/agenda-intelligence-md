@@ -3,7 +3,7 @@
 The free workspace at `/supplier-desk` prepares a supplier's document pack for a
 procurement/onboarding reviewer. It supports an editable checklist, source files
 or excerpts, owner request drafts and manual statuses, device-local saved
-snapshots, comparisons, and JSON/Markdown/CSV exports. The existing Workers serve
+snapshots, comparisons, and PDF/ZIP/JSON/Markdown/CSV handover. The saved-dossier overview surfaces expired and soon-to-expire documents and outstanding owner requests. The existing Workers serve
 the static application; there is no new deployment target, database service,
 model call, API payment or automatic supplier message.
 
@@ -12,14 +12,18 @@ model call, API payment or automatic supplier message.
 1. Open the workspace, enter the supplier, purpose and assessment date. Add your
    requirements or adapt the editable starter checklist. Assign owners.
 2. Add document records, including issuer, issue/expiry dates, supplier and purpose
-   scope. Attach actual files or authorized excerpts. PDF and other file contents
-   are not extracted or authenticated. A file hash identifies bytes only.
+   scope. Attach actual files or authorized excerpts. Choose Read PDF / DOCX text,
+   inspect its warnings and page/paragraph locators, then explicitly copy it into
+   the editable excerpt. Metadata is never inferred; nothing is authenticated.
+   A file hash identifies bytes only.
 3. Refresh the checklist. Open an owner request, prepare and copy its draft.
    Send it through your own approved channel. Record requested/received dates,
    status and response notes yourself; no delivery is inferred.
 4. Save a version on this device. Obtain the missing documents, update the working
    dossier and compare it with the saved version. Save another version when ready.
-5. Download a complete JSON backup and a Markdown review packet or checklist CSV.
+5. Download reviewer PDF, original-source ZIP, complete JSON backup and optional
+   Markdown/checklist CSV. PDF includes the selected comparison baseline; the ZIP
+   includes current original files and a SHA-256 manifest.
    The JSON includes all source-file bytes and saved snapshots. Import checks
    structure and hashes and opens a separate unsaved dossier; it never replaces
    an existing dossier by the imported ID.
@@ -33,14 +37,18 @@ assignment. No customer usage, paid demand or reviewer-time savings is claimed.
 Opening the page downloads the application. Dossier contents stay in browser
 memory until an explicit save writes the complete packet to IndexedDB on that
 origin/device. No contents are put in URLs, cookies, analytics, API requests or
-localStorage. CSP disallows network connections, forms and remote resources from
-the application. Normal hosting access logs still apply to the page/script GET.
+localStorage. CSP disallows connections, forms and remote resources. A same-origin dedicated
+browser worker is loaded only for an explicit extraction/PDF/ZIP action. It uses
+byte-only PDF.js, bounded DOCX ZIP/XML parsing and local embedded fonts. It never
+follows document links, loads external entities, renders attachment HTML or runs
+PDF scripts. Normal hosting access logs apply to page/script GETs.
 Device storage has no application encryption, user roles, cross-device sync or
 multi-user collaboration. Browser data clearing removes it; keep backups.
 
 Source text, attachments, imported packets and notes are DATA, not instructions.
 The UI inserts supplied text with textContent/value, never HTML. It never opens
-an attachment in an iframe or executes its contents. Downloaded files are served
+an attachment in an iframe or executes its contents. Extraction is an untrusted,
+editable derivative, not a decision or an authenticity check. Downloaded files are served
 as opaque bytes. Markdown quotes/escapes user material; CSV escapes formulas.
 
 Before changing an onboarding decision, the inspectable decision workspace is:
@@ -108,3 +116,66 @@ then `make verify-local PYTHON=.venv/bin/python`. `npm test` also checks that th
 browser bundle matches its source. Browser acceptance: create → attach → request →
 save → reload/open → edit → compare → export → import, including a failed hash
 import and a blocked storage save. Confirm no dossier network requests.
+
+
+## Local document and handover contracts
+
+`apps/supplier-desk/document-extract.js` returns
+`{kind,status,text,units,empty_pages,warnings}`. `kind` is `pdf` or `docx`; status
+is `extracted`, `partial`, `needs_ocr` or `no_text`. PDF units are pages and
+locators are `[PDF page N]`; DOCX units are main-document XML paragraphs and
+locators are `[DOCX paragraph N]`, not rendered page numbers. A partial result
+never claims complete coverage. Image-only/empty PDF pages need authorized OCR
+or manual excerpts; OCR is not included. Images, signatures, headers/footnotes,
+complex text order and authenticity remain outside extraction. Tracked DOCX
+revisions are flagged; they are not resolved automatically.
+
+Limits: 5 MiB input, 100 PDF pages, 27,000 extracted characters, 1,000 ZIP entries,
+20 MiB total declared expansion and 2 MiB main document XML. Unsupported,
+malformed, encrypted or oversized inputs fail explicitly. A 45-second dedicated
+worker timeout preserves the working dossier. Parser previews are temporary;
+only explicit “Use extracted text” writes source name, SHA-256, warnings and
+locators into the existing v1 `excerpt`. Replacing an excerpt asks before
+removing working text; originals and saved versions remain intact. Packet v1
+keys, import rules and saved history are unchanged.
+
+The dedicated-worker message envelope is
+`{protocol:"agenda.document.v1",operation,payload}` with operations `extract`,
+`pdf`, `archive`. Replies have the same protocol and `{ok:true,result}` or
+`{ok:false,error}`. Other library startup messages are ignored. There is no HTTP
+processing/upload API: the script route accepts GET only and keeps `connect-src
+'none'` even inside the worker. The host does not receive document contents.
+
+`sourceManifest(packet)` produces `agenda.supplier-sources.v1` with dossier ID,
+assessment date, `scope:"current_snapshot_only"`, a document-to-file mapping
+(`document_id,title,requirement_id,file,original_name,sha256`) and mandatory human
+review/no authorization. Missing originals have null file/name/hash. ZIP paths
+are sanitized and index-prefixed so equal filenames cannot overwrite each other.
+PDF and ZIP verify actual attachment hashes before export. The ZIP contains
+`manifest.json`, `README.txt`, and current original bytes only. Historical files
+and complete snapshots travel in the JSON backup.
+
+The PDF is a text review packet, not concatenated originals. It contains supplier
+and assignment, bounded checklist gaps, owners, dated document records, original
+paths/hashes, supplied excerpts, request tracker and the selected saved baseline
+comparison. Removed records, non-comparable scope/date changes and human-review
+limits stay visible. Noto Sans is embedded locally for Latin/Cyrillic/Greek;
+unsupported glyphs fail explicitly and retain Unicode in Markdown/JSON. PDF is
+limited to 200 pages rather than silently dropping text. It contains no active
+source links, document scripts or embedded original attachments.
+
+`dossierOverview(packet,today)` derives a view of saved records using an explicit
+UTC YYYY-MM-DD. Expired means expiry < today; expiring means today through today
++ 30 days inclusive. Blank expiry is not interpreted as perpetual validity.
+Pending requests are `draft` or `requested`; `received` still needs document
+review. Evidence gaps retain the original assessment date. This view never
+rewrites a snapshot or closes a gap; “Compare latest update” opens the dossier
+and compares the latest working snapshot with the preceding saved version (or
+the only saved version if there is one). Refresh also picks up other tabs' saves.
+
+## Real assignment pilot
+
+Use [the pilot protocol](../../examples/service-engagement/supplier-pilot.md)
+and its empty private measurement register for 3–5 authorized real assignments.
+Keep synthetic owner tests separate. Real reviewer acceptance, repeat use and
+payment require actual evidence; preparing the kit establishes none of them.

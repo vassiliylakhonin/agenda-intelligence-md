@@ -1,4 +1,7 @@
 import {FORMAT,LIMITS,REQUEST_STATUSES,emptySnapshot,createPacket,validatePacket,saveVersion,reviewSnapshot,requestDraft,compareSnapshots,exportMarkdown,exportChecklistCsv,verifyAttachments} from '../../src/supplier-dossier.js';
+import {dossierOverview} from '../../src/supplier-overview.js';
+import {documentJob} from './document-client.js';
+const extracted=new Map();
 
 const $ = id=>document.getElementById(id);
 const copy = value=>JSON.parse(JSON.stringify(value));
@@ -37,6 +40,30 @@ async function listSaved(selected=packet.dossier_id) {
   rows.sort((a,b)=>(b.versions.at(-1)?.saved_at||'').localeCompare(a.versions.at(-1)?.saved_at||''));
   for(const row of rows)$('saved-dossiers').append(element('option',row.current.supplier.name+' · '+row.current.purpose+' · '+new Date(row.versions.at(-1)?.saved_at).toLocaleString(),{value:row.dossier_id}));
   $('saved-dossiers').value=selected;
+  renderOverview(rows);
+}
+async function openSaved(id,comparePrevious=false){
+  if(!id)throw Error('Choose a saved dossier.');if(!discardAllowed())return;
+  const loaded=await transaction('readonly',store=>store.get(id));await verifyAttachments(loaded);packet=loaded;dirty=false;extracted.clear();render();
+  if(comparePrevious&&packet.versions.length){$('baseline').value=String(Math.max(0,packet.versions.length-2));compare();}
+  status('Opened saved dossier from this browser.');
+}
+function renderOverview(rows){
+  const root=$('dossier-overview');root.replaceChildren();const today=$('overview-date').value;
+  if(!rows.length){root.textContent='No saved dossiers yet. Save a version to include it in this overview.';return;}
+  for(const saved of rows){
+    const card=element('div',undefined,{className:'record'});
+    try{
+      const view=dossierOverview(saved,today);
+      card.append(element('h3',view.supplier),element('p',view.purpose),element('p',`As of ${today} (UTC) · original assessment ${view.assessment_date} · ${view.versions} versions`),
+        element('p',`${view.evidence_gaps} required evidence gaps at assessment · ${view.expired.length} expired now · ${view.expiring.length} expire within 30 days · ${view.open_requests.length} pending owner requests`));
+      for(const row of view.expired)card.append(element('p',`Expired: ${row.title||row.id} · ${row.date}`,{className:'gap'}));
+      for(const row of view.expiring)card.append(element('p',`Expiring: ${row.title||row.id} · ${row.date}`,{className:'gap'}));
+      for(const row of view.open_requests){const req=saved.current.requirements.find(item=>item.id===row.requirement_id);card.append(element('p',`${row.status}: ${req?.title||row.requirement_id} · owner ${row.owner||'Unassigned'}`));}
+      card.append(button('Open '+view.supplier,()=>openSaved(saved.dossier_id)),button('Compare latest update',()=>openSaved(saved.dossier_id,true)));
+    }catch{card.append(element('p','Saved dossier could not be summarized. Open a checked JSON backup; no record was changed.'));}
+    root.append(card);
+  }
 }
 function discardAllowed() {const s=packet.current;return !dirty||(!s.supplier.name&&!s.purpose&&!s.requirements.length&&!s.documents.length&&!s.requests.length)||window.confirm('Discard the unsaved working changes? Saved versions are kept on this device.');}
 function persistVersion(next){
@@ -79,12 +106,29 @@ function render() {
       const file=input.files?.[0];if(!file)return;if(file.size>LIMITS.file)throw Error('File exceeds 5 MiB.');
       const bytes=new Uint8Array(await file.arrayBuffer());let binary='';for(let offset=0;offset<bytes.length;offset+=16384)binary+=String.fromCharCode(...bytes.subarray(offset,offset+16384));
       const sha256=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(value=>value.toString(16).padStart(2,'0')).join('');
-      row.attachment={name:file.name.slice(0,200),type:file.type.slice(0,100),base64:btoa(binary),sha256};changed();render();status('File attached locally. Save a version to keep it on this device.');
+      row.attachment={name:file.name.slice(0,200),type:file.type.slice(0,100),base64:btoa(binary),sha256};extracted.delete(row.id);changed();render();status('File attached locally. Choose Read PDF / DOCX text to prepare a source-linked excerpt, then save a version.');
     });
     if(row.attachment){
       card.append(element('p',row.attachment.name+' · SHA-256 '+row.attachment.sha256,{className:'muted quiet'}));
       card.append(button('Download attached file',()=>download(Uint8Array.from(atob(row.attachment.base64),char=>char.charCodeAt(0)),row.attachment.name,'application/octet-stream')),
-        button('Remove attachment',()=>{row.attachment=null;changed();render();}));
+        button('Remove attachment',()=>{row.attachment=null;extracted.delete(row.id);changed();render();}));
+      if(/\.(pdf|docx)$/iu.test(row.attachment.name))card.append(button('Read PDF / DOCX text',async()=>{
+        status('Reading locally. The original stays attached; text is not yet part of the dossier.');
+        const result=await documentJob('extract',{name:row.attachment.name,bytes:Uint8Array.from(atob(row.attachment.base64),c=>c.charCodeAt(0))});
+        extracted.set(row.id,{hash:row.attachment.sha256,...result});render();status(result.status==='needs_ocr'||result.status==='no_text'?'No extractable text. Use authorized OCR or a manual excerpt; the original is retained.':'Extraction ready for review. Check it against the original before using it as an excerpt.');
+      }));
+      const result=extracted.get(row.id);
+      if(result?.hash===row.attachment.sha256){
+        const preview=element('div',undefined,{className:'record'});preview.append(element('h3','Local extraction: '+result.status.replaceAll('_',' ')));
+        for(const warning of result.warnings)preview.append(element('p',warning,{className:'muted quiet'}));
+        preview.append(element('textarea',undefined,{value:result.text,readOnly:true,ariaLabel:'Extracted text with source locators'}));
+        if(result.text)preview.append(button('Use extracted text as editable excerpt',()=>{
+          if(row.excerpt&&!window.confirm('Replace the existing excerpt? The attached original and saved versions are retained.'))return;
+          const value=`Agenda local extraction v1\nSource: ${row.attachment.name.replaceAll(/[\r\n]/gu,' ')}\nSHA-256: ${row.attachment.sha256}\nExtraction: ${result.status}. ${result.warnings.join(' ')}\n\n${result.text}`;
+          if(value.length>30000)throw Error('Extract is too large. Supply a shorter authorized excerpt manually.');
+          row.excerpt=value;changed();render();status('Source-linked text copied to the editable excerpt. Metadata was not inferred. Save a version after reviewing it.');
+        }));card.append(preview);
+      }
     }
     card.append(button('Remove document',()=>removeRecord(s.documents,row)));$('documents').append(card);
   }
@@ -156,7 +200,9 @@ function compare(){
   root.append(element('p','Removed requirements and closed requests do not establish resolution or approval.',{className:'muted quiet'}));
 }
 $('new-dossier').onclick=()=>run(()=>{if(!discardAllowed())return;packet={format:FORMAT,dossier_id:crypto.randomUUID(),current:emptySnapshot(),versions:[]};dirty=true;render();status('New unsaved dossier. Define the supplier, purpose and checklist.');});
-$('open-dossier').onclick=()=>run(async()=>{const id=$('saved-dossiers').value;if(!id)throw Error('Choose a saved dossier.');if(!discardAllowed())return;const loaded=await transaction('readonly',store=>store.get(id));await verifyAttachments(loaded);packet=loaded;dirty=false;render();status('Opened saved dossier from this browser.');});
+$('open-dossier').onclick=()=>run(()=>openSaved($('saved-dossiers').value));
+$('overview-date').value=new Date().toISOString().slice(0,10);
+$('refresh-overview').onclick=()=>run(()=>listSaved());
 $('import-dossier').onchange=()=>run(async()=>{try{await importPacket($('import-dossier').files?.[0]);}finally{$('import-dossier').value='';}});
 $('starter-checklist').onclick=()=>run(()=>{
   for(const title of ['Company registration','Ownership information','Service / product specification','Required certificates and validity'])if(!packet.current.requirements.some(row=>row.title===title))packet.current.requirements.push({id:crypto.randomUUID(),title,owner:'',required:true});changed();render();status('Editable starter checklist added. Adapt it to this assignment.');
@@ -171,6 +217,15 @@ $('save-version').onclick=()=>run(async()=>{
 $('export-json').onclick=()=>run(async()=>{await verifyAttachments(packet);download(JSON.stringify(packet,null,2),'supplier-dossier.json','application/json');status('Complete backup downloaded with attachments and saved history. Working changes are included.');});
 $('export-markdown').onclick=()=>run(()=>{download(exportMarkdown(packet),'supplier-review-packet.md','text/markdown;charset=utf-8');status('Review packet downloaded. Use JSON backup for source files and complete history.');});
 $('export-csv').onclick=()=>run(()=>{download('\ufeff'+exportChecklistCsv(packet.current),'supplier-checklist.csv','text/csv;charset=utf-8');status('Checklist CSV downloaded.');});
+$('export-pdf').onclick=()=>run(async()=>{
+  status('Preparing reviewer PDF locally…');
+  const baselineIndex=$('baseline').value===''?null:Number($('baseline').value);
+  const bytes=await documentJob('pdf',{packet,baselineIndex});download(bytes,'supplier-review-packet.pdf','application/pdf');status('Reviewer PDF downloaded. Download source ZIP and complete JSON backup for handover.');
+});
+$('export-sources').onclick=()=>run(async()=>{
+  status('Checking source hashes and preparing archive locally…');
+  const bytes=await documentJob('archive',{packet});download(bytes,'supplier-original-sources.zip','application/zip');status('Current original files and SHA-256 manifest downloaded. Saved history travels in the separate JSON backup.');
+});
 $('compare-versions').onclick=()=>run(compare);
 $('restore-version').onclick=()=>run(()=>{const value=$('baseline').value,version=packet.versions[Number(value)];if(value===''||!version)throw Error('Choose a saved version.');if(!discardAllowed())return;packet.current=copy(version.snapshot);changed();render();status('Copied to the working dossier. Saved versions remain intact; save a new version to record this change.');});
 $('sample-dossier').onclick=()=>run(()=>{

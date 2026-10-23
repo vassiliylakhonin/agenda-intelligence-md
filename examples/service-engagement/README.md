@@ -19,6 +19,10 @@ These are experiments, not observed willingness to pay or changes to API prices.
 Supplier Evidence Desk ($500–1,500/dossier hypothesis) stays conditional on a
 buyer purchasing and repeating a task; it is not a third platform launch.
 
+For the supplier workflow, use the [3–5 assignment pilot kit](supplier-pilot.md)
+and its empty measurement register. It includes preparation/reviewer effort,
+corrections, extraction omissions, repeat tasks and actual payment references.
+
 ## Acceptance example
 
 Run from this repository with Node 24; no network, API key, model or payment:
