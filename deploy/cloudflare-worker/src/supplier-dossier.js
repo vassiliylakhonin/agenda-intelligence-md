@@ -102,6 +102,10 @@ export function reviewSnapshot(snapshot) {
       if (document.supplier_name.trim() !== snapshot.supplier.name.trim()) issues.push('Supplier scope differs');
       if (document.scope.trim() !== snapshot.purpose.trim()) issues.push('Purpose scope differs');
       if (!document.excerpt.trim() && !document.attachment) issues.push('No excerpt or attached file');
+      const extracted=document.excerpt.match(/^(?:Agenda local extraction v1\n)?Source: [^\n]+\nSHA-256: ([a-f0-9]{64})\nExtraction: (extracted|partial|needs_ocr|no_text)\./u);
+      if (extracted && document.attachment && extracted[1]!==document.attachment.sha256) issues.push('Extracted excerpt belongs to a different attached file; re-extract or review the excerpt');
+      if (['needs_ocr','no_text'].includes(extracted?.[2])) issues.push('No extractable source text: authorized OCR or a manual excerpt is needed');
+      if (extracted?.[2]==='partial') issues.push('Partial extraction: review omitted text/pages against the original');
       if (/\b(?:illustrative\s+only|synthetic\s+(?:test|example|fixture|only)|placeholder)\b/iu.test(document.title+' '+document.excerpt)) issues.push('Illustrative material is not actual documentary evidence');
       return {document_id:document.id,issues,status:issues.length ? 'needs_evidence' : 'supplied_for_review'};
     });

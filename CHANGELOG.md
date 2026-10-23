@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Supplier document handover — 2026-10-23
+
+- Add bounded browser-local PDF/DOCX extraction with page/paragraph locators, explicit partial/OCR warnings and manual excerpt adoption. Isolate parsing/export in a terminable dedicated worker, retain no-network CSP and preserve the portable dossier v1 contract.
+- Export a readable Unicode reviewer PDF with checklist gaps, requests, source hashes and the selected version comparison, plus a separate ZIP of verified current original files and a path/hash manifest. Keep full history in JSON backups.
+- Show saved dossiers with expiry alerts, outstanding owner requests and direct revision comparison. Prepare a 3–5 real-assignment pilot protocol and an empty measurement register; no customer usage or savings is claimed.
+
 ## Supplier Evidence Desk — 2026-10-22
 
 - Restrict illustrative-document markers to explicit example/fixture wording so ordinary synthetic-material descriptions do not create false documentary gaps. Preserve human review and the explicit demo markers.

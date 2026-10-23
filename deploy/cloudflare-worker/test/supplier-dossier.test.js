@@ -78,6 +78,10 @@ test('hosted local desk serves a no-network client and rejects uploads instead o
   assert.match(await html.text(),/Supplier Evidence Desk/);
   const js=await handleRequest(new Request('https://example.test/supplier-desk.js'),{});assert.match(js.headers.get('content-type'),/javascript/);assert.doesNotMatch(await js.text(),/\bfetch\s*\(|XMLHttpRequest|sendBeacon|WebSocket/);
   const upload=await handleRequest(new Request('https://example.test/supplier-desk',{method:'POST',body:'private document'}),{});assert.equal(upload.status,405);
+  const processor=await handleRequest(new Request('https://example.test/supplier-document-worker.js'),{});
+  assert.equal(processor.status,200);assert.match(processor.headers.get('content-security-policy'),/worker-src 'self'/);assert.match(processor.headers.get('content-security-policy'),/connect-src 'none'/);
+  assert.match(processor.headers.get('content-type'),/javascript/);
+  assert.equal((await handleRequest(new Request('https://example.test/supplier-document-worker.js',{method:'POST',body:'private document'}),{})).status,405);
 });
 test('supplier route survives actual Worker bundling with Wrangler name retention',async()=>{
   const bundle=await build({entryPoints:[new URL('../src/index.js',import.meta.url).pathname],bundle:true,keepNames:true,platform:'neutral',format:'esm',write:false});
