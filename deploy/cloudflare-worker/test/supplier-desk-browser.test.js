@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {SUPPLIER_DESK_CLIENT} from '../src/supplier-desk-bundle.js';
+import {reviewSnapshot} from '../src/supplier-dossier.js';
 
 class Element {
   constructor(tag='div'){this.tagName=tag.toUpperCase();this.children=[];this.value='';this.textContent='';this.className='';this.checked=false;this.files=[];}
@@ -29,11 +30,11 @@ function memoryDatabase(){
   const indexedDB={open(){const request={result:db};setTimeout(()=>{request.onupgradeneeded?.();request.onsuccess?.();},0);return request;}};
   return {indexedDB,rows,control};
 }
-async function browser(storage=memoryDatabase()){
+async function browser(storage=memoryDatabase(),Worker){
   const elements=new Map(),body=new Element('body'),main=new Element('main');
   const get=id=>{if(!elements.has(id))elements.set(id,new Element());return elements.get(id);};
   const downloads=[];
-  const context={crypto,TextEncoder,Uint8Array,Blob,atob,btoa,setTimeout,clearTimeout,URL:{createObjectURL:blob=>{downloads.push(blob);return 'blob:local';},revokeObjectURL(){}},
+  const context={Worker,crypto,TextEncoder,Uint8Array,Blob,atob,btoa,setTimeout,clearTimeout,URL:{createObjectURL:blob=>{downloads.push(blob);return 'blob:local';},revokeObjectURL(){}},
     indexedDB:storage.indexedDB,navigator:{clipboard:{writeText:async()=>{}}},window:{confirm:()=>true,addEventListener(){}},
     document:{body,getElementById:get,createElement:tag=>new Element(tag),querySelector:()=>main,
       querySelectorAll:selector=>[...elements.values()].flatMap(node=>node.all()).filter(node=>selector==='button'?node.tagName==='BUTTON':node.tagName==='TEXTAREA'&&node.readOnly)}};
@@ -62,4 +63,16 @@ test('browser imports create a new local identity and retain prior snapshots wit
   assert.match(b.get('status').textContent,/separate unsaved dossier/);await b.click('save-version');
   assert.equal(b.storage.rows.size,2);assert.equal(b.storage.rows.get(original.dossier_id).versions.length,1);
   assert.equal([...b.storage.rows.values()].find(row=>row.dossier_id!==original.dossier_id).versions.length,2);
+});
+test('actual UI bundle keeps an explicit OCR warning in portable excerpts without changing metadata',async()=>{
+  class Processor{
+    postMessage(){queueMicrotask(()=>this.onmessage({data:{protocol:'agenda.document.v1',ok:true,result:{status:'needs_ocr',kind:'pdf',text:'',units:1,empty_pages:[1],warnings:['No extractable text on page 1. OCR or manual review is needed.']}}}));}
+    terminate(){}
+  }
+  const b=await browser(memoryDatabase(),Processor);await b.sample();
+  const input=b.get('documents').all().find(node=>node.type==='file');input.files=[{name:'scan.pdf',type:'application/pdf',size:1,arrayBuffer:async()=>new Uint8Array([1]).buffer}];await input.onchange();
+  await b.get('documents').find('Read PDF / DOCX text').click();
+  await b.get('documents').find('Record OCR / manual excerpt needed').click();await b.click('export-json');
+  const p=JSON.parse(await b.downloads.at(-1).text());assert.match(p.current.documents[0].excerpt,/Extraction: needs_ocr/);assert.equal(p.current.documents[0].issuer,'Fictional registry');
+  assert.match(reviewSnapshot(p.current).rows[0].documents[0].issues.join(' '),/OCR or a manual excerpt/);
 });
