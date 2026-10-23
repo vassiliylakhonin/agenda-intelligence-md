@@ -86,13 +86,26 @@ test('all fleet public A2A examples and landing REST inputs pass paid admission 
   } finally { console.log = old; }
 });
 
-test('Interaction Trust skill examples are executable structured input, including JSON-as-text compatibility', async () => {
+test('Interaction Trust separates its saved preview from paid structured examples, including JSON-as-text compatibility', async () => {
   const configured = { ...env, AGENT_PROFILE: 'agentic_interaction_trust' };
   const card = agentCard(new Request(origin + '/'), configured);
   assert.match(card.x_agenda_intelligence.preferred_input, /ordinary prose.*not sufficient/i);
   const old = console.log; console.log = () => {};
   try {
     for (const text of card.skills.flatMap(skill => skill.examples)) {
+      if (text === card.x_agenda_intelligence.catalog_demo.prompt) {
+        const response = await handleRequest(new Request(origin + '/message/send', {
+          method: 'POST', headers: { 'content-type': 'application/json', 'a2a-version': '1.0' },
+          body: JSON.stringify({jsonrpc:'2.0',id:'saved-preview',method:'SendMessage',params:{
+            message:{messageId:'saved-preview',role:'ROLE_USER',parts:[{text}]}
+          }})
+        }), configured);
+        assert.equal(response.status, 200);
+        const task = (await response.json()).result.task;
+        assert.equal(task.metadata.operation, 'worked_example');
+        assert.equal(task.metadata.evaluation_performed, false);
+        continue;
+      }
       const data = JSON.parse(text);
       for (const part of [{ data, mediaType: 'application/json' }, { text }]) {
         const response = await handleRequest(new Request(origin + '/message/send', {

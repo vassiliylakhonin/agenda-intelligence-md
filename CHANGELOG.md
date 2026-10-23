@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Catalog first use — 2026-10-23
+
+- Publish an explicit text-only A2A saved-example command as the first catalog example on all twelve profiles. Return actual precomputed synthetic inputs, findings and saved follow-ups, with a deliberate link to the existing trial; never evaluate supplied cases, spend an attempt, charge payment or issue authorization. Preserve production authentication, protocol checks and paid admission; record only a worked-example funnel event.
+- Clarify Output Verification skill names and tags around AI-report evidence quality and citation/reference consistency, preserving stable IDs and actual structural-check boundaries. Catalog taxonomy and stale enrichment require independent Agenstry reindexing; no ranking, adoption or customer claim is made.
+
 ## 1.21.2 — 2026-10-23
 
 - Refresh the PyPI description with a self-contained installed-package example, current hosted first-call recovery and browser-local Supplier Evidence Desk handover. Use release-pinned absolute documentation links, distinguishing hosted workflows from installed Python APIs.
