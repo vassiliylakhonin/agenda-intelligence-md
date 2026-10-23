@@ -97,4 +97,6 @@ test('replacing an original cannot silently reuse its extracted excerpt or hide 
   d.attachment={name:'new.pdf',type:'application/pdf',base64:'',sha256:'b'.repeat(64)};
   const review=reviewSnapshot(p.current);assert.equal(review.status,'collect_evidence');
   assert.match(review.rows[0].documents[0].issues.join(' '),/different attached file/);assert.match(review.rows[0].documents[0].issues.join(' '),/Partial extraction/);
+  d.excerpt=d.excerpt.replace('Extraction: partial.','Extraction: needs_ocr.');
+  assert.match(reviewSnapshot(p.current).rows[0].documents[0].issues.join(' '),/OCR or a manual excerpt/);
 });

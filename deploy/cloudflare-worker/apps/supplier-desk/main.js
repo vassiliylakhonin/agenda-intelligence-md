@@ -122,11 +122,11 @@ function render() {
         const preview=element('div',undefined,{className:'record'});preview.append(element('h3','Local extraction: '+result.status.replaceAll('_',' ')));
         for(const warning of result.warnings)preview.append(element('p',warning,{className:'muted quiet'}));
         preview.append(element('textarea',undefined,{value:result.text,readOnly:true,ariaLabel:'Extracted text with source locators'}));
-        if(result.text)preview.append(button('Use extracted text as editable excerpt',()=>{
+        preview.append(button(result.text?'Use extracted text as editable excerpt':'Record OCR / manual excerpt needed',()=>{
           if(row.excerpt&&!window.confirm('Replace the existing excerpt? The attached original and saved versions are retained.'))return;
           const value=`Agenda local extraction v1\nSource: ${row.attachment.name.replaceAll(/[\r\n]/gu,' ')}\nSHA-256: ${row.attachment.sha256}\nExtraction: ${result.status}. ${result.warnings.join(' ')}\n\n${result.text}`;
           if(value.length>30000)throw Error('Extract is too large. Supply a shorter authorized excerpt manually.');
-          row.excerpt=value;changed();render();status('Source-linked text copied to the editable excerpt. Metadata was not inferred. Save a version after reviewing it.');
+          row.excerpt=value;changed();render();status(result.text?'Source-linked text copied to the editable excerpt. Metadata was not inferred. Save a version after reviewing it.':'Missing-text warning recorded with the source hash. Obtain authorized OCR or a manual excerpt, then review and save a version.');
         }));card.append(preview);
       }
     }

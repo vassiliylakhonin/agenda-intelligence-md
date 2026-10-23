@@ -134,10 +134,13 @@ Limits: 5 MiB input, 100 PDF pages, 27,000 extracted characters, 1,000 ZIP entri
 20 MiB total declared expansion and 2 MiB main document XML. Unsupported,
 malformed, encrypted or oversized inputs fail explicitly. A 45-second dedicated
 worker timeout preserves the working dossier. Parser previews are temporary;
-only explicit “Use extracted text” writes source name, SHA-256, warnings and
+explicit “Use extracted text” or “Record OCR / manual excerpt needed” writes
+source name, SHA-256, warnings and
 locators into the existing v1 `excerpt`. Replacing an excerpt asks before
 removing working text; originals and saved versions remain intact. Packet v1
-keys, import rules and saved history are unchanged.
+keys, import rules and saved history are unchanged. Recorded partial/no-text
+extraction and an excerpt hash that differs from a replaced original stay
+visible as evidence gaps until the record is reviewed and updated.
 
 The dedicated-worker message envelope is
 `{protocol:"agenda.document.v1",operation,payload}` with operations `extract`,
