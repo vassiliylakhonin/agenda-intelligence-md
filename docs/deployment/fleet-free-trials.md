@@ -143,7 +143,11 @@ Trial CIS evaluations disable the paid hosted OpenSanctions fallback. Existing
 configured snapshot, Watchman and Vizier adapters keep their availability,
 freshness and provenance boundaries. Missing/stale screening is never clearance.
 Paid REST/MCP/A2A routes retain their prices and payment admission, including
-0.50 USDC for Escrow and 0.05 USDC for other evaluations. The free editor never
+0.05 USDC for Escrow and 0.01 USDC for other automatic evaluations. Normal
+Agenda and Corridor Assistant text routing is free without consuming a trial or
+Pro allowance; their legacy trial endpoints retain the existing campaign limits.
+HS-code screening remains a separate 0.01 USDC operation and the Bankability full
+export remains 25 USDC with a free preview. The free editor never
 calls checkout; the optional paid action remains explicit.
 
 ## Measurement and release

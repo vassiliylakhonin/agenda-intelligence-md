@@ -1,0 +1,12 @@
+{
+  "note": "Public synthetic key; expired January 2024 authorization. Generated independently with viem 2.57.7. Never funded or sent to a live facilitator.",
+  "authorization": {
+    "from": "0x19E7E376E7C213B7E7e7e46cc70A5dD086DAff2A",
+    "to": "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663",
+    "value": "10000",
+    "validAfter": "0",
+    "validBefore": "1704067320",
+    "nonce": "0x1212121212121212121212121212121212121212121212121212121212121212"
+  },
+  "signature": "0xc59ef6e40640e08dd20238973fe48e6b87c310adf42f1ccfd9dc8e1cea9972472472e9e2c5bb3ba17138b7bc09951e4e27149e97c23ca29fcfe19d7b4ffaa94f1b"
+}

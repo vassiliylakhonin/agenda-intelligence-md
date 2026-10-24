@@ -1,3 +1,4 @@
+import {routingToolForProfile} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -62,8 +63,10 @@ test('bundled landing scripts display successful review results across the fleet
       assert.equal(requests[0].init.headers['content-type'], 'application/json', profile);
       assert.equal(requests[0].init.headers['x-agenda-client-surface'], 'web-console-v1', profile);
       assert.equal(requests[0].init.headers['x-client-id'], 'agenda-owner-manual', profile);
-      assert.equal(new URL(requests[0].url).pathname.includes('/trial'), true, profile);
-      assert.deepEqual(JSON.parse(requests[0].init.body), example.request, profile + ' serialized JSON');
+      assert.equal(new URL(requests[0].url).pathname, routingToolForProfile(profile)?'/mcp/agent':new URL('https://example.test'+(profile==='agent_output_verification'?'/v1/agent-output/trial':'/v1/trial')).pathname, profile);
+      const sent=JSON.parse(requests[0].init.body);
+      if(routingToolForProfile(profile)){assert.equal(sent.params.name,routingToolForProfile(profile));assert.deepEqual(sent.params.arguments,example.request);}
+      else assert.deepEqual(sent, example.request, profile + ' serialized JSON');
       returned = structuredClone(example.follow_up?.response || example.response);
       await context.runProfileExample({ preventDefault() {} });
       assert.equal(profile === 'critical_minerals_due_diligence' ? elements['profile-progress'].innerHTML === '' : /Changes since previous check/.test(elements['profile-progress'].innerHTML), true, profile);

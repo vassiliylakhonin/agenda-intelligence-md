@@ -1,6 +1,7 @@
 import {agentOnboarding} from './agent-onboarding.js';
 import {hostedAccess} from './hosted-access.js';
 import {machineContract, FREE_MACHINE_TOOLS, toolSchemaUrl} from './machine-contracts.js';
+import {isFreeRoutingTool} from './pricing-policy.js';
 
 const SETUP_NOTICE = 'Setup information only. Not legal, compliance, sanctions, financial or insurance advice, factual verification or authorization to act.';
 
@@ -23,6 +24,7 @@ export function catalogSetupContent(operation, profile, origin, env, tools, vers
   if (operation === 'catalog_trial_options') {
     return {title: 'Free-trial options', markdown: [
       '# Free-trial options',
+      ...(access.free_routing ? [`Routing through **${access.free_routing.tool}** is free without using a trial attempt. Prefer the normal routing tool for orientation. The optional legacy trial below retains its separate campaign limits.`] : []),
       trial ? `This deployment offers **${trial.attempts_per_network} free attempts per network and product** for **${trial.tool}**, subject to the shared daily service limit. This is the configured offer, not a live allowance check.`
         : 'No free live trial is enabled on this deployment. You can still inspect the saved worked example and published input requirements.',
       ...(trial ? [`[Read the trial input and limits](${common.next.trial_terms_url}). [Check current allowance without evaluating](${common.next.availability_url}). Shared networks share the allowance; it does not reset every day.`,
@@ -33,7 +35,7 @@ export function catalogSetupContent(operation, profile, origin, env, tools, vers
     ].join('\n\n'), data: {...common, trial: trial || null, onboarding,
       pricing_url: access.pricing_url, automatic_payment: false, automatic_evaluation_retry: false}};
   }
-  const entry = (trial ? tools.find(tool => tool.name === trial.mcp_tool) : null)
+  const entry = tools.find(tool => isFreeRoutingTool(profile,tool.name)) || (trial ? tools.find(tool => tool.name === trial.mcp_tool) : null)
     || tools.find(tool => !FREE_MACHINE_TOOLS.has(tool.name));
   const input = entry ? {tool: entry.name, input_schema: structuredClone(entry.inputSchema),
     input_schema_url: toolSchemaUrl(origin,entry.name),

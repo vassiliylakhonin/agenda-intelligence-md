@@ -4,10 +4,9 @@ import {PROFILE_TASKS} from './agent-onboarding.js';
 import {hostedAccess} from './hosted-access.js';
 import {x402Enabled,x402Requirements} from './x402-v2.js';
 import {INPUT_VALIDATION_TOOL,INPUT_VALIDATION_PATH,INPUT_VALIDATION_MAX_BYTES} from './input-validation.js';
-import {TIER_MICRO_CHECK_USDC_AMOUNT,TIER_MICRO_DISPUTE_USDC_AMOUNT,TIER_BANKABILITY_DOSSIER_USDC_AMOUNT} from './profiles.js';
+import {evaluationAmount,isFreeRoutingTool} from './pricing-policy.js';
+export {evaluationAmount} from './pricing-policy.js';
 export const FREE_MACHINE_TOOLS=new Set(['fleet_directory','decision_policies_list','free_trial_status','free_trial','free_trial_feedback','review_answer','open_answer_review',INPUT_VALIDATION_TOOL]);
-export const evaluationAmount=(profile,name)=>name==='corridor_bankability_screen'?TIER_BANKABILITY_DOSSIER_USDC_AMOUNT
-  :profile==='m2m_escrow_arbiter'?TIER_MICRO_DISPUTE_USDC_AMOUNT:TIER_MICRO_CHECK_USDC_AMOUNT;
 export const toolSchemaUrl=(origin,name,kind='input')=>`${origin}/schemas/tools/${name}/${kind}.schema.json`;
 export function publicToolSchema(origin,tool,kind) {
   const schema=kind==='input'?tool.inputSchema:tool.outputSchema;
@@ -15,7 +14,7 @@ export function publicToolSchema(origin,tool,kind) {
 }
 export function machineOffers(profile,origin,env,tools) {
   return tools.map(tool=>{
-    const free=FREE_MACHINE_TOOLS.has(tool.name),amount=free?0:evaluationAmount(profile,tool.name);
+    const free=FREE_MACHINE_TOOLS.has(tool.name)||isFreeRoutingTool(profile,tool.name),amount=free?0:evaluationAmount(profile,tool.name);
     const required=!free&&(env.BILLING_MODE==='pay_per_call'||tool.name==='corridor_bankability_screen');
     return {tool:tool.name,payment_required:required,price_usdc:required?amount:0,
       price_scope:tool.name==='corridor_bankability_screen'?'Explicit full model export; the preview remains free.':'One admitted evaluation; payment is separate from authorization.',

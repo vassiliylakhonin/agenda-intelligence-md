@@ -113,7 +113,7 @@ test('paid MCP and A2A retries preserve their JSON-RPC IDs and original result',
   }
 }));
 
-test('caller capability fields cannot exempt REST or discount another deployed profile', async () => mocked(0.05, async () => {
+test('caller capability fields cannot exempt REST or discount another deployed profile', async () => mocked(0.01, async () => {
   for (const capability of ['fleet_directory', 'decision_policies_list']) {
     const response = await handleRequest(new Request(endpoint, { method: 'POST', body: JSON.stringify({ ...fixture, capability }) }), environment());
     assert.equal(response.status, 402);

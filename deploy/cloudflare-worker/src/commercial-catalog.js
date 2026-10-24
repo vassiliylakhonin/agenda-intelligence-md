@@ -1,4 +1,5 @@
 import { trialAttemptLimit } from './output-trial.js';
+import {routingToolForProfile} from './pricing-policy.js';
 // Public commercial terms. No SLA or certification is implied by an evaluation.
 import { TIER_PRO_USDC_AMOUNT, TIER_DOSSIER_USDC_AMOUNT, TIER_MICRO_CHECK_USDC_AMOUNT, TIER_MICRO_DISPUTE_USDC_AMOUNT, TIER_BANKABILITY_DOSSIER_USDC_AMOUNT } from "./profiles.js";
 export const PRICING_MODELS = {
@@ -10,6 +11,7 @@ export const PRICING_MODELS = {
   tier_bankability_dossier: { id: "tier-bankability-dossier", name: "Corridor financial-model export", price: TIER_BANKABILITY_DOSSIER_USDC_AMOUNT, billing_scheme: "per_deal", terms: "Illustrative model export based on supplied assumptions; no lender approval or investment advice." }
 };
 export function pricingHtml(escapeHtml, profile = "agenda", billingMode = "freemium", freeTrial = false) {
+  if (billingMode === "pay_per_call" && routingToolForProfile(profile)) return `<p><strong>Specialist routing is free.</strong> Ask a text question without a wallet or trial attempt. Configured authentication and hourly limits apply. Other named checks have separate admission; the full Bankability model export remains ${TIER_BANKABILITY_DOSSIER_USDC_AMOUNT} USDC. <a href="/.well-known/x402">Current operation prices</a>.</p>`;
   if (billingMode === "pay_per_call") {
     const amount = profile === "m2m_escrow_arbiter" ? TIER_MICRO_DISPUTE_USDC_AMOUNT : TIER_MICRO_CHECK_USDC_AMOUNT;
     return `${freeTrial ? `<p><strong>Start with ${trialAttemptLimit(profile)} free live attempts for this product.</strong> No wallet required. Shared networks share ${trialAttemptLimit(profile)} attempts per product and daily capacity is shared across all products.</p>` : ''}<p><strong>Paid evaluation — ${amount} USDC per exact request on Base.</strong> Funding-wallet signature required. Identical signed retries recover the result for 24 hours. Discovery and the bankability preview are free; the full dossier is 25 USDC. Pro remains 490 USDC for 30 days and 10,000 attempts. <a href="/.well-known/x402">Current prices</a>.</p>`;

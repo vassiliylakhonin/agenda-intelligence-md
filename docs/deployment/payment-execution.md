@@ -3,8 +3,9 @@
 ## One payment, one exact request
 
 Check `/.well-known/x402` and its `x_agenda_access` on the serving host. Deployed
-evaluation uses `pay_per_call`; discovery is free. Normal evaluation is 0.05 USDC,
-escrow evidence evaluation is 0.50 USDC, and the bankability full dossier is 25
+evaluation uses `pay_per_call`; discovery and text-only specialist routing are free.
+Normal evaluation is 0.01 USDC, escrow evidence evaluation is 0.05 USDC, and the
+bankability full dossier is 25
 USDC. Pro is a separate signed 490 USDC activation. Fees purchase evaluation, not
 a favourable verdict, factual guarantee, transaction authorization or payout.
 
@@ -39,6 +40,17 @@ Success returns `{status: "activated", execution_credit: 1, tier, receipt,
 instructions}`. Activation is idempotent for that payer and tier and does not
 replace the later exact-request signature. Direct signed execution needs no
 separate activation call.
+
+Routing through `strategic_risk_triage` (Agenda) and `corridor_sanctions_assistant`
+uses no trial or Pro allowance. Configured authentication and hourly limits still
+apply. Other named operations, including HS-code screening, retain their own
+prices. Bankability retains its free preview and optional 25 USDC full export.
+
+After a price change, an identical proof for an already completed request can
+recover its original result within the existing 24-hour window. A new, unclaimed
+x402 authorization must match the current challenge; a stale quote returns
+`payment_terms_changed` without settlement. Now-free routing accepts old proof
+only for cached recovery, never a new payment or paid execution.
 
 ## Errors and recovery
 

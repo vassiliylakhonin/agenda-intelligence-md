@@ -14,7 +14,7 @@ test('one-shot admission exposes payment setup and trace instead of discarding t
     }) });
   assert.equal(answer.evaluated, false);
   assert.match(answer.paymentTraceId || '', /^[0-9a-f-]{36}$/);
-  assert.equal(answer.payment.required_usdc, 0.05);
+  assert.equal(answer.payment.required_usdc, 0.01);
   assert.equal(answer.nextAction, 'inspect_price_and_configure_payment');
 });
 

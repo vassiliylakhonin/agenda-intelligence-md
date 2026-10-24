@@ -1,3 +1,4 @@
+import {routingToolForProfile} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {handleRequest} from '../src/index.js';
@@ -65,7 +66,8 @@ for(const [profile,config] of Object.entries(TRIAL_PROFILES)) {
     assert.equal(await count(env),limit);
     assert.equal((await rpcData(env,'free_trial_status')).result.structuredContent.availability.remaining_attempts,0);
     assert.equal((await rpc(env,config.tool,example)).status,200); // /mcp/agent maps paid admission to an error.
-    assert.equal((await rpcData(env,config.tool,example)).result.isError,true);
+    assert.equal((await rpcData(env,config.tool,example)).result.isError,!routingToolForProfile(profile));
+    assert.equal(await count(env),limit); // Normal routing neither resets nor consumes the legacy trial allowance.
   }));
 }
 

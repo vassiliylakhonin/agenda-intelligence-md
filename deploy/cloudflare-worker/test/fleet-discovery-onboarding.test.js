@@ -1,3 +1,4 @@
+import {routingToolForProfile} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { agentCard, handleRequest, toSpecWireCard } from '../src/index.js';
@@ -17,7 +18,11 @@ test('task-first cards expose only enabled trials and stay valid A2A cards', () 
     assert.deepEqual(validateAgentCard(toSpecWireCard(card)), [], profile);
     assert.equal(plan.first_evaluation.tool, TRIAL_PROFILES[profile].tool);
     assert.equal(plan.first_evaluation.attempts_per_network, profile === 'agent_output_verification' ? 5 : 2);
-    assert.match(card.description, /free live attempts on your own input/);
+    if (routingToolForProfile(profile)) {
+      assert.match(card.description,/free/);
+      assert.equal(plan.first_call.tool,routingToolForProfile(profile));
+      assert.equal(plan.first_call.trial_attempt_consumed,false);
+    } else assert.match(card.description, /free live attempts on your own input/);
     assert.doesNotMatch(card.x_agenda_intelligence.free_a2a_triage.scope, /heartbeat only/);
     const disabled = agentCard(new Request(origin), {...env, WORKER_FREE_TRIAL: '0'});
     assert.equal(disabled.x_agenda_intelligence.onboarding.first_evaluation, undefined);

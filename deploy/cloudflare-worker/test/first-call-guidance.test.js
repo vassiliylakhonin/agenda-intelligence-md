@@ -1,3 +1,4 @@
+import {routingToolForProfile} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {handleRequest} from '../src/index.js';
@@ -44,6 +45,7 @@ test('invalid A2A, REST and MCP inputs expose executable free discovery without 
 
 test('all product payment admissions advertise only their configured trial and preserve the x402 challenge',async()=>silent(async()=>{
   for (const [profile,example] of Object.entries(WORKED_EXAMPLES)) {
+    if (routingToolForProfile(profile)) continue; // Free routing has no payment admission (entry-pricing tests).
     for (const standard of ['0','1']) {
       const env={AGENT_PROFILE:profile,WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call',VIZIER_DISABLED:'1',
         X402_STANDARD:standard,PAYMENT_LEDGER:memoryD1()};
@@ -72,9 +74,9 @@ test('all product payment admissions advertise only their configured trial and p
 
 test('retained integration preserves free-entry guidance in both payment shapes and input errors',async()=>silent(async()=>{
   for (const standard of ['0','1']) {
-    const env={AGENT_PROFILE:'agenda',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call',X402_STANDARD:standard};
+    const env={AGENT_PROFILE:'agent_output_verification',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call',X402_STANDARD:standard};
     const options={endpoint:origin+'/mcp/agent',headers,fetchImpl:(url,init)=>handleRequest(new Request(url,init),env)};
-    const example=WORKED_EXAMPLES.agenda;
+    const example=WORKED_EXAMPLES.agent_output_verification;
     const result=await createHostedMcpCall(example.tool,example.request,options).evaluate();
     assert.equal(result.evaluated,false);
     assert.equal(result.firstCall.free_trial.tool,example.tool);
@@ -95,10 +97,10 @@ test('disabled trials and production authentication are represented without gran
   assert.equal(hint.authentication,'bearer_required');
   assert.doesNotMatch(JSON.stringify(hint),/private-key/);
   for (const standard of ['0','1']) {
-    const example=WORKED_EXAMPLES.agenda;
+    const example=WORKED_EXAMPLES.agent_output_verification;
     const response=await handleRequest(new Request(origin+'/mcp/agent',{method:'POST',headers,
       body:JSON.stringify({jsonrpc:'2.0',id:'no-trial',method:'tools/call',params:{name:example.tool,arguments:example.request}})}),
-      {AGENT_PROFILE:'agenda',BILLING_MODE:'pay_per_call',X402_STANDARD:standard});
+      {AGENT_PROFILE:'agent_output_verification',BILLING_MODE:'pay_per_call',X402_STANDARD:standard});
     const payload=await response.json();
     assert.equal(hintOf(payload).free_trial,null);
     assert.match(payload.result._meta['com.agenda/admission'].next_step,/does not advertise a free trial/);

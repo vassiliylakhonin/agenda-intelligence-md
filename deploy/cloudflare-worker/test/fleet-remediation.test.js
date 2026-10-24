@@ -152,5 +152,5 @@ test("REST escrow pricing follows the operation while auth follows the host", as
   assert.equal(response.status, 402);
   const body = await response.json();
   assert.equal(body.x402.profile, "m2m_escrow_arbiter");
-  assert.equal(body.x402.amount_usdc, 0.5);
+  assert.equal(body.x402.amount_usdc, 0.05);
 });

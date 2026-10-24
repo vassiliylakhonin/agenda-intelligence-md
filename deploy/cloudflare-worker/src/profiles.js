@@ -20,8 +20,8 @@ export const USDC_DECIMALS = 6;
 export const TIER_PRO_USDC_AMOUNT = 490;
 export const TIER_DOSSIER_USDC_AMOUNT = 49;
 export const TIER_BANKABILITY_DOSSIER_USDC_AMOUNT = 25;
-export const TIER_MICRO_CHECK_USDC_AMOUNT = 0.05;
-export const TIER_MICRO_DISPUTE_USDC_AMOUNT = 0.50;
+export const TIER_MICRO_CHECK_USDC_AMOUNT = 0.01;
+export const TIER_MICRO_DISPUTE_USDC_AMOUNT = 0.05;
 
 export const VERSION = "1.21.2";
 export const REPOSITORY_URL = "https://github.com/vassiliylakhonin/agenda-intelligence-md";

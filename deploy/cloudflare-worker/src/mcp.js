@@ -14,6 +14,7 @@
 import { PROFILE_REGISTRY } from "./profiles.js";
 import { MCP_TOOL_CONTRACTS } from "./mcp-tool-contracts.js";
 import { hostedAccessNote } from "./hosted-access.js";
+import {isFreeRoutingTool} from './pricing-policy.js';
 
 export const MCP_PROTOCOL_VERSION = "2026-07-28";
 
@@ -419,8 +420,9 @@ export function mcpToolsForProfile(profile, options = {}) {
     const example = onboardingExample(spec, inputSchema, options.example);
     const nextStep = evidenceNextStep(profile, spec);
     const summary = spec.summary.trim();
-    const free = ["fleet_directory", "decision_policies_list"].includes(spec.name);
-    const access = free ? options.freeAccess : options.access;
+    const free = ["fleet_directory", "decision_policies_list"].includes(spec.name) || isFreeRoutingTool(profile,spec.name);
+    const access = free ? options.freeAccess : options.access ? {...options.access,free_routing:undefined,
+      base_call_price: spec.name === 'corridor_bankability_screen' || options.access.billing_mode === 'pay_per_call' ? 'paid' : options.access.base_call_price} : undefined;
     const required = inputSchema.required || [];
     const tool = {
       name: spec.name,

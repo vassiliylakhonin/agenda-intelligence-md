@@ -3,6 +3,7 @@ import { paymentTraceId, paymentTraceResponse } from './payment-trace.js';
 import { tokenHash } from './payment-ledger.js';
 import { trialProfile, trialPath, OUTPUT_TRIAL_PATH, MCP_TRIAL_TOOL, MCP_TRIAL_STATUS_TOOL, MCP_TRIAL_FEEDBACK_TOOL } from './trial-profiles.js';
 import { recordTrialCompletion } from './trial-receipts.js';
+import {evaluationAmount} from './pricing-policy.js';
 
 export { OUTPUT_TRIAL_PATH };
 export const OUTPUT_TRIAL_LIMIT = 5;
@@ -35,7 +36,7 @@ export function outputTrialTerms(profile = 'agent_output_verification') {
     daily_service_limit: OUTPUT_TRIAL_DAILY_LIMIT, payment_required: false,
     scope: `${trialAttemptLimit(profile)} attempts per network address per product for this trial campaign; shared networks share the allowance. Daily capacity is shared across all products.`,
     paid_endpoint: config.route || '/mcp', paid_transport: config.route ? 'rest' : 'mcp',
-    paid_price_usdc: profile === 'm2m_escrow_arbiter' ? 0.5 : 0.05 };
+    paid_price_usdc: evaluationAmount(profile,config.tool) };
 }
 
 export async function trialClientKey(request, env, profile) {

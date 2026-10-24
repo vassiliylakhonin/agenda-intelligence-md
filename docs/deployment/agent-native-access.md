@@ -39,7 +39,7 @@ When `/.well-known/x402` advertises `x_agenda_access.standard_x402`, paid profil
 | HTTP / A2A | HTTP 402, base64 `PAYMENT-REQUIRED` | base64 `PAYMENT-SIGNATURE` | base64 `PAYMENT-RESPONSE` |
 | Native MCP | tool `isError: true`; identical PaymentRequired in structuredContent and content[0].text | `params._meta["x402/payment"]` | `result._meta["x402/payment-response"]` |
 
-The current rail is `exact`, Base `eip155:8453`, native USDC, EIP-3009 EOA signatures. Prices are unchanged: normal review $0.05 USDC, Escrow $0.50, optional Bankability full scenario $25. Read actual requirements per operation; the transfer's recipient, amount and token must match. Discovery, trials and a free Bankability preview are not payment requests.
+The current rail is `exact`, Base `eip155:8453`, native USDC, EIP-3009 EOA signatures. Entry prices: normal review $0.01 USDC, Escrow $0.05, optional Bankability full scenario $25. Text-only Agenda and Corridor Assistant routing is free without trial or Pro consumption; HS-code screening is a separate paid operation. Read actual requirements per operation; the transfer's recipient, amount and token must match. Discovery, trials and a free Bankability preview are not payment requests.
 
 A standard client can use `@x402/fetch` or `@x402/mcp` with `@x402/evm`. Official 2.28.0 clients run against the actual Worker handler in offline CI. For MCP, connect the normal MCP client to the chosen profile's `/mcp/agent`, wrap it with `x402MCPClient`, and implement `onPaymentRequested` to approve only the wallet owner's explicit budget, expected network and recipient. That removes the custom HTTP-payment adapter. The generic library defaults may auto-pay: configure your approval/budget policy before giving a client a funded signer.
 
