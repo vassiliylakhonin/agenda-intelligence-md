@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Payment recipient discovery — 2026-10-24
+
+- Publish optional x402 discovery in its own A2A capability extension and expose the existing Base USDC `payTo`, asset, network, canonical manifest and explorer link directly in payment manifests. Retain the closed A2A root, signed card contents, exact-request payment requirements, prices and free operations. Do not advertise standard x402 when disabled or infer paid usage from discovery. Correct free-routing examples to advertise HTTP200 without payment.
+- Verify all twelve profiles, recipient consistency with operation quotes, disabled standard configuration and caller-supplied recipient refusal. A third-party directory still controls its own extraction and refresh; on-chain inflow is not verified service revenue.
+
 ## Entry pricing — 2026-10-24
 
 - Make Agenda and Corridor Assistant text routing free without trial or Pro consumption, retaining configured authentication and hourly limits. Set automatic checks to 0.01 USDC and Escrow evidence review to 0.05 USDC. Keep Bankability’s free preview and optional 25 USDC full export; HS-code screening remains separately paid. Align operation offers, cards, MCP guidance, web forms and current pricing documentation.

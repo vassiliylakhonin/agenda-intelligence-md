@@ -5,6 +5,7 @@ import {hostedAccess} from './hosted-access.js';
 import {x402Enabled,x402Requirements} from './x402-v2.js';
 import {INPUT_VALIDATION_TOOL,INPUT_VALIDATION_PATH,INPUT_VALIDATION_MAX_BYTES} from './input-validation.js';
 import {evaluationAmount,isFreeRoutingTool} from './pricing-policy.js';
+import {settlementDiscovery} from './payment-discovery.js';
 export {evaluationAmount} from './pricing-policy.js';
 export const FREE_MACHINE_TOOLS=new Set(['fleet_directory','decision_policies_list','free_trial_status','free_trial','free_trial_feedback','review_answer','open_answer_review',INPUT_VALIDATION_TOOL]);
 export const toolSchemaUrl=(origin,name,kind='input')=>`${origin}/schemas/tools/${name}/${kind}.schema.json`;
@@ -47,7 +48,7 @@ export function profilePaymentManifest(base,profile,origin,env,tools) {
   const primary={...base.pricing_models[tier],...(standard?{auth_type:'x402_v2_payment_authorization',signature_header:'PAYMENT-SIGNATURE',settlement_header:'PAYMENT-RESPONSE'}:{})};
   const activeModels=env.BILLING_MODE==='pay_per_call'?{[tier]:primary,
     ...(offers.some(item=>item.tool==='corridor_bankability_screen')?{tier_bankability_dossier:base.pricing_models.tier_bankability_dossier}:{})}:base.pricing_models;
-  return {...base,x402_version:standard?'2.0':base.x402_version,x402Version:standard?2:1,
+  return {...base,...settlementDiscovery(origin),x402_version:standard?'2.0':base.x402_version,x402Version:standard?2:1,
     integration_status:standard?'x402 v2 exact Base native USDC implemented; official-client offline tests passed. Maintainer live settlement not exercised. Legacy request-signed payments remain supported.':base.integration_status,
     pricing_models:activeModels,pricing_models_scope:'Paid operations of this host; free trials are separate and allowance-limited. In freemium mode consult offers and the actual admission response.',
     additional_offerings:{scope:'Shared optional catalog, not automatically purchased or included in a call. Confirm availability and scope before paying.',pricing_models:base.pricing_models},

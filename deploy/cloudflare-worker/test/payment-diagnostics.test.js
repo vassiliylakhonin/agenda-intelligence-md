@@ -1,3 +1,4 @@
+import {routingToolForProfile} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -72,9 +73,9 @@ test('all fleet public A2A examples and landing REST inputs pass paid admission 
         assert.ok(!('kind' in part), `${profile}: advertised A2A 1.0 part uses legacy kind`);
         if ('data' in part) assert.equal(part.mediaType, 'application/json');
       }
-      assert.equal(example.expected.http_status_without_payment, 402);
+      assert.equal(example.expected.http_status_without_payment, routingToolForProfile(profile)?200:402);
       const response = await handleRequest(new Request(example.endpoint, { method: 'POST', headers: example.headers, body: JSON.stringify(example.request) }), configured);
-      assert.ok([200, 402].includes(response.status), `${profile} A2A: ${response.status} ${await response.text()}`);
+      assert.equal(response.status, example.expected.http_status_without_payment, `${profile} A2A: ${response.status} ${await response.text()}`);
     }
     for (const [path, route] of Object.entries(DIRECT_V1_ROUTES)) {
       if (path.endsWith('/batch') || path.endsWith('/pre-action-check')) continue;
