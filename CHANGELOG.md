@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Free-routing health expectations — 2026-10-24
+
+- Make the configured fleet proof select a published paid operation for unpaid admission checks, including Assistant HS screening; validate explicitly free routing results when no suitable paid operation exists. Preserve production authentication and reject tool errors, absent results or action authorization even with HTTP200.
+- Use the existing canonical-origin inventory and an owner client marker with urllib’s default identity. Keep tests and operator probes distinct from customer activity; no payment or trial reservation is performed.
+
 ## Payment recipient discovery — 2026-10-24
 
 - Publish optional x402 discovery in its own A2A capability extension and expose the existing Base USDC `payTo`, asset, network, canonical manifest and explorer link directly in payment manifests. Retain the closed A2A root, signed card contents, exact-request payment requirements, prices and free operations. Do not advertise standard x402 when disabled or infer paid usage from discovery. Correct free-routing examples to advertise HTTP200 without payment.
