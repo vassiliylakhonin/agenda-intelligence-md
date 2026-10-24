@@ -7,13 +7,14 @@ import json
 import sys
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 
 def request_json(origin: str, path: str, payload: dict | None = None, expected_status: int = 200) -> dict:
     request = urllib.request.Request(
         origin + path,
         data=json.dumps(payload).encode() if payload is not None else None,
-        headers={"Content-Type": "application/json", "User-Agent": "agenda-intelligence-fleet-health/1.0"},
+        headers={"Content-Type": "application/json", "X-Client-Id": "agenda-owner-configured-fleet-health"},
     )
     try:
         response = urllib.request.urlopen(request, timeout=10)
@@ -27,29 +28,44 @@ def request_json(origin: str, path: str, payload: dict | None = None, expected_s
 
 
 def check_worker(name: str) -> None:
-    origin = f"https://{name}.vassiliy-lakhonin.workers.dev"
+    origins = json.loads((Path(__file__).resolve().parents[1] / "mcp-monitor-origins.json").read_text())
+    origin = origins[name]
     health = request_json(origin, "/health")
     assert health.get("profile"), "Worker must expose its profile"
-    access = request_json(origin, "/.well-known/x402").get("x_agenda_access", {})
+    manifest = request_json(origin, "/.well-known/x402")
+    access = manifest.get("x_agenda_access", {})
     if access.get("billing_mode") == "pay_per_call":
         discovery = request_json(origin, "/mcp", {"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
         tools = discovery["result"]["tools"]
+        paid_names = {offer["tool"] for offer in manifest.get("offers", []) if offer.get("payment_required") is True}
+        # Prefer an unpaid admission proof, including HS screening on the mixed
+        # Assistant host. A model export is excluded because it has a free preview.
         tool = next(
-            t
-            for t in tools
-            if t["name"]
-            not in {"fleet_directory", "decision_policies_list", "decision_verify", "corridor_bankability_screen"}
+            (t for t in tools if t["name"] in paid_names - {"decision_verify", "corridor_bankability_screen"}), None
         )
+        free_routing = tool is None
+        if free_routing:
+            router = access.get("free_routing", {}).get("tool")
+            tool = next((t for t in tools if t["name"] == router), None)
+            assert tool and any(
+                offer.get("tool") == router and offer.get("payment_required") is False
+                for offer in manifest.get("offers", [])
+            ), "No paid admission or explicitly free routing operation to probe"
         example = tool["_meta"]["com.agenda/readiness"]["example_arguments"]
-        assert example, "Paid health probe requires the published nonempty synthetic example"
-        expected = 401 if access.get("authentication") == "bearer_required" else 402
-        request_json(
+        assert example, "Health probe requires the published nonempty synthetic example"
+        expected = 401 if access.get("authentication") == "bearer_required" else 200 if free_routing else 402
+        response = request_json(
             origin,
             "/mcp",
             {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": tool["name"], "arguments": example}},
             expected_status=expected,
         )
-        print(f"PASS {name}: liveness, free discovery and payment/access enforcement; no paid evaluation run")
+        if expected == 200:
+            result = response.get("result", {})
+            assert result.get("isError") is False, "Free routing returned a tool error"
+            assert result.get("structuredContent", {}).get("authorization_granted") is False, "No action authorization"
+        operation = "free routing" if expected == 200 else "payment/access enforcement"
+        print(f"PASS {name}: liveness, discovery and {operation}; no payment or trial reservation")
         return
     if name == "agent-financial-guard-a2a":
         verdict = request_json(
