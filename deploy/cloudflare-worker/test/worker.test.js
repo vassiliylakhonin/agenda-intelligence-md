@@ -4969,7 +4969,7 @@ test("checkRateLimit throttles a client past the per-hour cap", async () => {
   assert.equal((await checkRateLimit(ipRequest("8.8.8.8"), env, "cis_secondary_sanctions")).limited, false);
 });
 
-test("rate-limited requests return 429 with Dedicated Pro and Base USDC wallet details", async () => {
+test("free routing hourly limit returns 429 without a payment upsell", async () => {
   const env = { RATE_LIMIT_PER_HOUR: "1", AGENDA_USAGE: fakeRateKv() };
   const sendReq = () =>
     new Request("https://agenda-intelligence-a2a.example.workers.dev/message/send", {
@@ -4988,16 +4988,12 @@ test("rate-limited requests return 429 with Dedicated Pro and Base USDC wallet d
 
   const res2 = await handleRequest(sendReq(), env);
   assert.equal(res2.status, 429);
-  assert.ok(res2.headers.get("www-authenticate")?.includes("X402 token=\"USDC\""));
-  assert.equal(res2.headers.get("x-payment-protocol"), "x402");
+  assert.equal(res2.headers.get("www-authenticate"),null);
+  assert.equal(res2.headers.get("payment-required"),null);
   const data = await res2.json();
-  assert.equal(data.error.code, -32002);
-  assert.equal(data.error.data.upgrade_tier, "tier_2_pro");
-  assert.equal(data.error.data.monthly_price_usd, 490);
-  assert.equal(data.error.data.x402.protocol, "x402");
-  assert.equal(data.error.data.x402.network, "base");
-  assert.equal(data.error.data.checkout_url, "https://paypal.me/vaskenzy/490USD");
-  assert.equal(data.error.data.usdc_base_wallet, "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663");
+  assert.equal(data.error.code,-32002);
+  assert.equal(data.error.data.code,'free_routing_quota_exceeded');
+  assert.equal(data.error.data.limit_per_hour,1);
 });
 
 test("rate-limited direct v1 calls return HTTP 402 with canonical x402 challenge", async () => {
@@ -5028,7 +5024,7 @@ test("rate-limited direct v1 calls return HTTP 402 with canonical x402 challenge
   const data = await res2.json();
   assert.equal(data.status, 402);
   assert.equal(data.x402.protocol, "x402");
-  assert.equal(data.x402.amount_usdc, 0.05);
+  assert.equal(data.x402.amount_usdc, 0.01);
 });
 
 test("checkRateLimit fails open when KV errors", async () => {
@@ -9008,8 +9004,8 @@ test("GET /v1/x402/pricing returns x402 micropayment pricing breakdown", async (
   const data = await res.json();
   assert.equal(data.protocol, "x402");
   assert.equal(data.network, "Base (Chain ID 8453)");
-  assert.equal(data.pricing.tier_micro_check.amount_usd, 0.05);
-  assert.equal(data.pricing.tier_micro_dispute.amount_usd, 0.50);
+  assert.equal(data.pricing.tier_micro_check.amount_usd, 0.01);
+  assert.equal(data.pricing.tier_micro_dispute.amount_usd, 0.05);
 });
 
 test("GET /explorer returns M2M Escrow Web3 Explorer HTML", async () => {
@@ -9447,7 +9443,7 @@ test("A2A completed task metadata includes commercial_offer and sample_dossier_u
   assert.ok(offer);
   assert.equal(offer.payment_network, "base");
   assert.equal(offer.chain_id, 8453);
-  assert.equal(offer.instant_pre_screen_usdc, "0.05");
+  assert.equal(offer.instant_pre_screen_usdc, "0.01");
   assert.equal(offer.financial_model_export_usdc, "25");
   assert.equal(offer.pro_tenant_monthly_usdc, "490");
   assert.ok(offer.recipient_address);

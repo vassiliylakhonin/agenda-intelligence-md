@@ -19,8 +19,8 @@ def test_profiles_micropayment_constants() -> None:
     profiles_file = Path("deploy/cloudflare-worker/src/profiles.js")
     content = profiles_file.read_text(encoding="utf-8")
 
-    assert "TIER_MICRO_CHECK_USDC_AMOUNT = 0.05" in content
-    assert "TIER_MICRO_DISPUTE_USDC_AMOUNT = 0.50" in content
+    assert "TIER_MICRO_CHECK_USDC_AMOUNT = 0.01" in content
+    assert "TIER_MICRO_DISPUTE_USDC_AMOUNT = 0.05" in content
 
 
 def test_settlement_x402_helper_present() -> None:

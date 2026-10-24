@@ -1,3 +1,4 @@
+import {routingToolForProfile} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -36,12 +37,14 @@ test('all twelve product pages publish task intake, a valid console and inspecta
       market_entry_readiness:'/v1/market-entry/readiness', critical_minerals_due_diligence:'/v1/critical-minerals/due-diligence',
       dual_use_technology_export:'/v1/dual-use/technology-export'
     }[profile];
-    const response = await handleRequest(new Request(origin+endpoint, {method:'POST', body,
+    const submitted=routingToolForProfile(profile)?JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:routingToolForProfile(profile),arguments:JSON.parse(body)}}):body;
+    const response = await handleRequest(new Request(origin+endpoint, {method:'POST', body:submitted,
       headers:{'content-type':'application/json','MCP-Protocol-Version':'2025-11-25'}}), configured(profile));
-    assert.equal(response.status, 402, profile+' console admission');
+    assert.equal(response.status, routingToolForProfile(profile)?200:402, profile+' console admission');
     const elements = Object.fromEntries(['profile-run','profile-status','profile-result','profile-summary','profile-response','profile-request']
       .map(id => [id, {style:{},value:body,innerHTML:'',textContent:''}]));
-    const context = {URL,window:{crypto:globalThis.crypto},crypto:globalThis.crypto,
+    const context = {URL,window:{location:{href:origin+'/',origin},crypto:globalThis.crypto},crypto:globalThis.crypto,
+      fetch:(url,init)=>handleRequest(new Request(url,init),configured(profile)),
       document:{getElementById:id => elements[id],createElement:() => ({set textContent(value) {
         this.innerHTML = String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
       }})}};
@@ -84,7 +87,7 @@ test('malformed JSON hints recover REST/A2A or discover MCP without guessing a p
       assert.deepEqual(data.error.data.request_hint, data.request_hint);
       const hint = data.request_hint;
       const corrected = await handleRequest(new Request(origin+path, {method:'POST',headers:hint.headers,body:JSON.stringify(hint.example_request)}), configured(profile));
-      assert.equal(corrected.status, path === '/mcp' ? 200 : 402, profile+path);
+      assert.equal(corrected.status, path === '/mcp' || routingToolForProfile(profile) ? 200 : 402, profile+path);
     }
   }
   const bad = await handleRequest(new Request(origin+'/v1/agent-output/verification', {method:'POST',body:'{'}), configured('agent_output_verification'));

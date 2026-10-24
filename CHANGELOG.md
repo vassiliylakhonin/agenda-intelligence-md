@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Entry pricing — 2026-10-24
+
+- Make Agenda and Corridor Assistant text routing free without trial or Pro consumption, retaining configured authentication and hourly limits. Set automatic checks to 0.01 USDC and Escrow evidence review to 0.05 USDC. Keep Bankability’s free preview and optional 25 USDC full export; HS-code screening remains separately paid. Align operation offers, cards, MCP guidance, web forms and current pricing documentation.
+- Preserve original cached-result recovery after price changes in both payment rails. Reject new stale x402 quotes before settlement; now-free routing accepts old payment proof only for cached recovery. Keep published schemas, existing trial quotas and human-review boundaries. Offline synthetic tests do not establish real payments or demand.
+
 ## Catalog setup commands — 2026-10-24
 
 - Make the first three catalog prompts executable text-only setup commands: a saved worked example, serving-profile input requirements and configured free-trial options. Preserve structured JSON evaluation examples and retain ordinary task descriptions separately as evaluation intents. Keep skill IDs, evaluation contracts and normal admission intact.

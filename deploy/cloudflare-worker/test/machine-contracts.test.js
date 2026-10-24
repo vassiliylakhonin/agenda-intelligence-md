@@ -86,7 +86,7 @@ test('canonical payment offers match the actual standard 402 and separate option
     const manifest=await(await handleRequest(new Request(origin+'/.well-known/x402'),environment)).json();
     assert.equal(manifest.pricing_models.tier_2_pro,undefined);
     assert.equal(manifest.additional_offerings.pricing_models.tier_2_pro.price,490);
-    assert.equal(manifest.offers.find(row=>row.tool==='agent_output_verification').price_usdc,0.05);
+    assert.equal(manifest.offers.find(row=>row.tool==='agent_output_verification').price_usdc,0.01);
     assert.equal(await reserved(environment),0);
   }finally{console.log=log;}
 });

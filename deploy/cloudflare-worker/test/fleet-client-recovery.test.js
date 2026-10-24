@@ -1,3 +1,4 @@
+import {evaluationAmount} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHostedMcpCall} from '../../../examples/hosted-mcp/client.mjs';
@@ -10,7 +11,7 @@ const tx='0x'+'a'.repeat(64);
 for(const [profile,example] of Object.entries(WORKED_EXAMPLES)) {
  test(`fleet client ${profile}: exact MCP paid request recovers cached execution`,async()=>{
   const oldFetch=globalThis.fetch,oldLog=console.log;
-  const price=profile==='m2m_escrow_arbiter'?.5:.05;
+  const price=evaluationAmount(profile,example.tool);
   globalThis.fetch=mockRpc(price); console.log=()=>{};
   try {
    const env={AGENT_PROFILE:profile,BILLING_MODE:'pay_per_call',VIZIER_DISABLED:'1',PAYMENT_LEDGER:memoryD1()};
@@ -22,7 +23,9 @@ for(const [profile,example] of Object.entries(WORKED_EXAMPLES)) {
     if(response.headers.get('x-payment-replayed')==='1')replayed=true;
     return response;
    }});
-   const admission=await call.evaluate();assert.equal(admission.status,'payment_required');assert.equal(admission.payment.required_usdc,price);
+   const admission=await call.evaluate();
+   if (!price) {assert.equal(admission.evaluated,true);assert.equal(seen.length,1);return;}
+   assert.equal(admission.status,'payment_required');assert.equal(admission.payment.required_usdc,price);
    const challenge=await call.retryWithPayment({transactionHash:tx});assert.equal(challenge.status,'signature_required');assert.equal(challenge.paymentTraceId,admission.paymentTraceId);
    const original=seen[1];const signed=await signedRequest(original.url,JSON.parse(original.body),tx,original.headers);
    await assert.rejects(call.retryWithPayment({signature:signed.headers.get('x-payment-signature')}),/lost response/);
@@ -50,10 +53,10 @@ for(const [profile,example] of Object.entries(WORKED_EXAMPLES)) {
 test('retained client understands a standard MCP payment admission without treating it as evaluation',async()=>{
  const oldLog=console.log;console.log=()=>{};
  try {
-  const call=createHostedMcpCall('strategic_risk_triage',{text:'Synthetic Aktau review'},{endpoint:origin+'/mcp/agent',
-   fetchImpl:(url,options)=>handleRequest(new Request(url,options),{AGENT_PROFILE:'agenda',BILLING_MODE:'pay_per_call'})});
+  const call=createHostedMcpCall(WORKED_EXAMPLES.agent_output_verification.tool,WORKED_EXAMPLES.agent_output_verification.request,{endpoint:origin+'/mcp/agent',
+   fetchImpl:(url,options)=>handleRequest(new Request(url,options),{AGENT_PROFILE:'agent_output_verification',BILLING_MODE:'pay_per_call'})});
   const admission=await call.evaluate();
   assert.equal(admission.status,'payment_required');assert.equal(admission.evaluated,false);
-  assert.equal(admission.payment.required_usdc,.05);
+  assert.equal(admission.payment.required_usdc,.01);
  }finally{console.log=oldLog;}
 });

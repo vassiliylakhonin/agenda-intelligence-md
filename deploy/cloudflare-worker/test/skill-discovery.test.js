@@ -1,3 +1,4 @@
+import {routingToolForProfile} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { agentCard, handleRequest, toSpecWireCard } from '../src/index.js';
@@ -76,10 +77,11 @@ test('new skill examples preserve paid admission and malformed-input refusal', a
           method: 'POST', headers: example.headers, body: JSON.stringify(request)
         }), env);
         const paid = await send(example.request);
-        assert.equal(paid.status, 402, profile + ': ' + await paid.clone().text());
+        const free=Boolean(routingToolForProfile(profile));
+        assert.equal(paid.status, free?200:402, profile + ': ' + await paid.clone().text());
         const refusal = await paid.json();
-        assert.ok(refusal.error);
-        assert.ok(!refusal.result);
+        if(free) assert.ok(refusal.result);
+        else {assert.ok(refusal.error);assert.ok(!refusal.result);}
         assert.ok(!card.skills.find(skill => skill.id === contract.skill_id).tags.includes('free'));
         const invalid = structuredClone(example.request);
         invalid.params.message.parts = [{ data: {}, mediaType: 'application/json' }];

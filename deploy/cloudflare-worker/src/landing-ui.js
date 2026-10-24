@@ -4,13 +4,14 @@ import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { pricingHtml } from "./commercial-catalog.js";
 import { outputTrialEnabled, outputTrialTerms } from './output-trial.js';
 import { trialFeedbackMailto } from './trial-feedback.js';
+import {routingToolForProfile} from './pricing-policy.js';
 import { PRODUCT_WORKFLOWS, reviewSummary, reviewSummaryHtml, reviewDeltaHtml, taskChooserHtml } from "./product-workflows.js";
 import { INTAKE_CLIENT_SCRIPT } from './intake-editor.js';
 import { CITATION_REVIEW_SCRIPT, citationReviewHtml } from './citation-review.js';
 import { serviceOffersHtml } from './service-offers.js';
 import { projectHandoffValue, prepareHandoff, handoffHtml, HANDOFF_CLIENT_SCRIPT } from './handoff.js';
 // Browser presentation only. Runtime decisions are supplied by the controller.
-import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL } from "./profiles.js";
+import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL, TIER_MICRO_CHECK_USDC_AMOUNT, TIER_MICRO_DISPUTE_USDC_AMOUNT } from "./profiles.js";
 
 export function createLandingRenderer({ originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES, fleetDirectoryResponse, inputSchemaForProfile }) {
 function landingHtml(request, env) {
@@ -25,7 +26,8 @@ function landingHtml(request, env) {
   const isAgentic = profile === "agentic_interaction_trust";
   const isFinancialGuard = profile === "agent_financial_guard";
   const isEscrowArbiter = profile === "m2m_escrow_arbiter";
-  const freeTrial = outputTrialEnabled(profile, env);
+  const routingTool = routingToolForProfile(profile);
+  const freeTrial = !routingTool && outputTrialEnabled(profile, env);
   const trialTerms = freeTrial ? outputTrialTerms(profile) : null;
 
   const title = escapeHtml(card.name);
@@ -98,7 +100,7 @@ function landingHtml(request, env) {
   const workflow = PRODUCT_WORKFLOWS[profile];
   const useMcp = !endpoint || profile === 'kazakhstan';
   const consoleEndpoint = useMcp ? '/mcp' : endpoint;
-  const consoleExample = freeTrial ? (workedExample.request.request || workedExample.request) : useMcp
+  const consoleExample = routingTool ? {text: workedExample.request.text || 'What evidence is needed before shipping from Aktau to Baku?'} : freeTrial ? (workedExample.request.request || workedExample.request) : useMcp
     ? {jsonrpc:'2.0', id:'review-example', method:'tools/call', params:{name:workedExample.tool, arguments:workedExample.request}}
     : profile === 'agent_output_verification' ? workedExample.request : guide.example;
   const reviewPanel = `    <div id="profile-review" hidden><h3 id="profile-review-title">Last completed check</h3>
@@ -111,7 +113,7 @@ function landingHtml(request, env) {
     </div>`;
   const allowancePanel = freeTrial ? `<button id="profile-allowance-check" type="button" onclick="refreshTrialAvailability()">Check free allowance before preparing input</button>
     <p id="profile-allowance" role="status">${trialTerms.attempts_per_network} attempts per network address per product for this campaign. Checking the allowance consumes no attempt.</p>` : '';
-  const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">${freeTrial ? 'Check my evidence free' : 'Open live paid evaluation'}</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>` +
+  const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">${routingTool ? 'Route my question free' : freeTrial ? 'Check my evidence free' : 'Open live paid evaluation'}</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>` +
     (isAgentic ? `<p><strong>Need to block an agent action?</strong> This page reviews supplied evidence; it does not enforce execution restrictions. <a href="${REPOSITORY_URL}/blob/main/docs/integrations/action-bound-execution.md">Install a request-bound executor</a>, or use the <a href="https://github.com/vassiliylakhonin/vizier/blob/main/docs/WORKER_DEPLOY_PILOT.md">Vizier adapter for one Worker deployment</a>. Your integration must enforce scope and obtain the required human approval.</p>` : '');
 
   return `<!doctype html>
@@ -383,7 +385,7 @@ function landingHtml(request, env) {
       <label for="profile-request">Structured request</label>
       <textarea id="profile-request" rows="15" style="width:100%;font:13px/1.5 var(--mono);padding:12px;box-sizing:border-box">${escapeHtml(JSON.stringify(consoleExample, null, 2))}</textarea>
       ${freeTrial ? '<button type="button" onclick="document.getElementById(\'profile-intake\').updateFromJson()">Update fields from JSON</button></details><p>Shared networks share the allowance; it does not reset daily. A check of availability is advisory; submission checks the current limits again. An invalid request does not reserve an attempt.</p>' : ''}
-      <button id="profile-run" type="submit">${freeTrial ? 'Run free evidence check' : 'Evaluate evidence'}</button>
+      <button id="profile-run" type="submit">${routingTool ? 'Route question free' : freeTrial ? 'Run free evidence check' : 'Evaluate evidence'}</button>
       ${freeTrial ? `<button id="profile-paid" type="button" hidden onclick="runProfileExample(event, true)">Choose paid evaluation — ${trialTerms.paid_price_usdc} USDC</button>` : ''}
       <p id="profile-status" role="status"></p>
       ${freeTrial ? '<div id="profile-recovery" hidden><p>You can inspect the saved synthetic input and result without a wallet or another trial attempt. Your edited input stays here.</p><button type="button" onclick="showWorkedExample()">View saved example — no trial attempt</button></div>' : ''}
@@ -580,7 +582,10 @@ async function runProfileExample(event, paid, reviewFlow) {
   try {
     var payload = JSON.parse(document.getElementById('profile-request').value);
     var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
-    ${freeTrial ? `if (!agendaTrialTraceId && window.crypto && crypto.randomUUID) agendaTrialTraceId = crypto.randomUUID();
+    ${routingTool ? `var response = await fetch('${origin}/mcp/agent', {
+      method:'POST',headers:agendaTelemetryHeaders('${origin}/mcp/agent',{'content-type':'application/json','MCP-Protocol-Version':'2025-11-25','x-trace-id':traceId}),
+      body:JSON.stringify({jsonrpc:'2.0',id:traceId,method:'tools/call',params:{name:'${routingTool}',arguments:payload}})
+    });` : freeTrial ? `if (!agendaTrialTraceId && window.crypto && crypto.randomUUID) agendaTrialTraceId = crypto.randomUUID();
     var trialHeaders = agendaTelemetryHeaders('${origin}${trialTerms?.endpoint}', {'content-type':'application/json', 'x-trace-id':traceId});
     if (reviewFlow === 'one-claim-v1') trialHeaders['x-agenda-review-flow'] = reviewFlow;
     if (agendaTrialTraceId) trialHeaders['x-payment-trace-id'] = agendaTrialTraceId;
@@ -590,17 +595,18 @@ async function runProfileExample(event, paid, reviewFlow) {
       method:'POST', headers:trialHeaders, body:JSON.stringify(payload)
     });` : `var response = await agendaPaidFetch('${origin}${consoleEndpoint}', {
       method: 'POST', headers: {'content-type':'application/json', 'MCP-Protocol-Version':'2025-11-25', 'x-trace-id': traceId}, body: JSON.stringify(payload)
-    }, ${isEscrowArbiter ? '0.5' : '0.05'});`}
+    }, ${isEscrowArbiter ? TIER_MICRO_DISPUTE_USDC_AMOUNT : TIER_MICRO_CHECK_USDC_AMOUNT});`}
     var body = await response.json();
-    if (response.ok || !agendaHasCompletedResult) {
+    var completed = response.ok && !body.error && body.result?.isError !== true;
+    if (completed || !agendaHasCompletedResult) {
       document.getElementById('profile-response').hidden = false;
       result.textContent = JSON.stringify(body, null, 2);
       var reviewPanel = document.getElementById('profile-review');
       if (reviewPanel) reviewPanel.hidden = false;
       var reviewTitle = document.getElementById('profile-review-title');
-      if (reviewTitle) reviewTitle.textContent = response.ok ? 'Last completed check' : 'Request response';
+      if (reviewTitle) reviewTitle.textContent = completed ? 'Last completed check' : 'Request response';
     }
-    ${freeTrial ? `if (!paid && response.ok && body.trial?.completion_recorded) {
+    ${freeTrial ? `if (!paid && completed && body.trial?.completion_recorded) {
       agendaFeedbackAttempt = response.headers.get('x-payment-attempt-id');
       agendaFeedbackSent = false;
       var feedbackPanel = document.getElementById('profile-feedback-panel');
@@ -612,7 +618,7 @@ async function runProfileExample(event, paid, reviewFlow) {
       var feedbackStatus = document.getElementById('profile-feedback-status');
       if (feedbackStatus) feedbackStatus.textContent = '';
     }` : ''}
-    if (response.ok) {
+    if (completed) {
       agendaHasCompletedResult = true;
       var review = body.result?.structuredContent || body;
       ${profile === 'critical_minerals_due_diligence' ? 'renderMineralWorkflow(review, payload);' : ''}
@@ -627,14 +633,14 @@ async function runProfileExample(event, paid, reviewFlow) {
       if (reviewSummary(review)) agendaLastReview = review;
     }
     ${freeTrial ? 'updateTrialFeedback(response.status);' : ''}
-    ${freeTrial ? `if (response.ok || response.status === 429) document.getElementById('profile-paid').hidden = false;
+    ${freeTrial ? `if (completed || response.status === 429) document.getElementById('profile-paid').hidden = false;
     if (!paid && response.status === 429) {
       agendaTrialBlocked = true;
       status.textContent = body.error + ' Your input is preserved. No payment was made.';
       setTrialRecovery(true);
       return;
     }` : ''}
-    status.textContent = (response.ok ? 'Evaluation returned. Inspect evidence gaps and limitations before acting.' : 'Request failed (HTTP ' + response.status + '). See the response below.') + ' Trace: ' + traceId;
+    status.textContent = (completed ? 'Evaluation returned. Inspect evidence gaps and limitations before acting.' : (body.error || body.result?.isError ? 'Tool refused the request. See the response below.' : 'Request failed (HTTP ' + response.status + '). See the response below.')) + ' Trace: ' + traceId;
   } catch (error) {
     status.textContent = 'Evaluation failed: ' + error.message;
   } finally { button.disabled = ${freeTrial ? 'agendaTrialBlocked' : 'false'}; ${freeTrial ? "document.getElementById('profile-paid').disabled = false;" : ''} }
@@ -742,7 +748,7 @@ async function runFinancialGuardSimulation(e) {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload)
-    }, 0.05);
+    }, ${TIER_MICRO_CHECK_USDC_AMOUNT});
     var elapsed = Math.round(performance.now() - t0);
     var data = await resp.json();
     if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));
@@ -920,7 +926,7 @@ async function runEscrowArbitrationSimulation(e) {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload)
-    }, 0.5);
+    }, ${TIER_MICRO_DISPUTE_USDC_AMOUNT});
     var elapsed = Math.round(performance.now() - t0);
     var data = await resp.json();
     if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));

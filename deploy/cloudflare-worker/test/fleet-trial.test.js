@@ -1,3 +1,4 @@
+import {routingToolForProfile, evaluationAmount} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -27,7 +28,7 @@ for (const [profile,config] of Object.entries(TRIAL_PROFILES)) {
     assert.equal(firstCall.tool,config.tool);
     assert.equal(firstCall.payment_required,false);
     assert.equal(terms.agent_profile,profile);
-    assert.equal(terms.paid_price_usdc,profile==='m2m_escrow_arbiter'?0.5:0.05);
+    assert.equal(terms.paid_price_usdc,evaluationAmount(profile,config.tool));
     assert.equal((await call(env,'/v1/trial',{})).status,400);
     const first=await call(env,new URL(firstCall.url).pathname,terms.example_request);
     assert.equal(first.status,200);
@@ -53,7 +54,7 @@ for (const [profile,config] of Object.entries(TRIAL_PROFILES)) {
     assert.deepEqual(actual,JSON.parse(JSON.stringify(expected)));
     const paidBody=config.route ? terms.example_request : {jsonrpc:'2.0',id:1,method:'tools/call',
       params:{name:config.tool,arguments:terms.example_request}};
-    assert.equal((await call(env,terms.paid_endpoint,paidBody)).status,402);
+    assert.equal((await call(env,terms.paid_endpoint,paidBody)).status,routingToolForProfile(profile)?200:402);
     assert.equal((await call(env,trialPath(profile),terms.example_request)).status,200);
     const limit=profile==='agent_output_verification'?5:2;
     for(let i=2;i<limit;i++) assert.equal((await call(env,'/v1/trial',terms.example_request)).status,200);
@@ -147,8 +148,9 @@ test('evaluator refusal consumes its reservation and never records a successful 
   } finally {route.run=run;console.log=old;}
 });
 
-test('every free-first form uses the correct payload, explicit paid tool and price, and shared trace', async () => quiet(async () => {
+test('every trial form uses the correct payload, explicit paid tool and price, and shared trace', async () => quiet(async () => {
   for(const profile of Object.keys(TRIAL_PROFILES)) {
+    if(routingToolForProfile(profile)) continue; // Normal free-route forms are exercised in entry-pricing tests.
     const env=envFor(profile),terms=await termsFor(env);
     const html=await (await call(env,'/?owner_test=1',undefined,{accept:'text/html'})).text();
     assert.ok(html.includes('id="profile-console"'));

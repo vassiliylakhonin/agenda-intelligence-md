@@ -1,3 +1,4 @@
+import {routingToolForProfile, evaluationAmount} from '../src/pricing-policy.js';
 import test from "node:test";
 import assert from "node:assert/strict";
 import { wrapFetchWithPayment, x402Client } from "@x402/fetch";
@@ -312,7 +313,7 @@ test("official native MCP payment completes the published operation for all twel
         autoPayment: true,
         onPaymentRequested: ({ paymentRequired }) =>
           paymentRequired.accepts[0].amount ===
-          (profile === "m2m_escrow_arbiter" ? "500000" : "50000"),
+          String(evaluationAmount(profile,terms.tool)*1e6),
       });
       const result = await client.callTool(terms.tool, terms.example_request);
       assert.equal(
@@ -320,8 +321,8 @@ test("official native MCP payment completes the published operation for all twel
         false,
         profile + ": " + JSON.stringify(result),
       );
-      assert.equal(result.paymentMade, true, profile);
-      assert.equal(network.settles(), 1, profile);
+      assert.equal(Boolean(result.paymentMade), !routingToolForProfile(profile), profile);
+      assert.equal(network.settles(), routingToolForProfile(profile)?0:1, profile);
     } finally {
       globalThis.fetch = previous;
     }

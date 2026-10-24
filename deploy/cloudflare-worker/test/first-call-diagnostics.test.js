@@ -1,3 +1,4 @@
+import {routingToolForProfile} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -43,7 +44,7 @@ test('documented jq extraction produces an executable request from actual wire c
     const response=await handleRequest(new Request(card.supportedInterfaces[0].url,{
       method:'POST',headers:{'content-type':'application/json','a2a-version':'1.0'},body:JSON.stringify(body)
     }),configured);
-    assert.equal(response.status,402,profile+': '+await response.text());
+    assert.equal(response.status,routingToolForProfile(profile)?200:402,profile+': '+await response.text());
   }
 }));
 

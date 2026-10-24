@@ -17,7 +17,7 @@ test('worked example telemetry is fixed empty same-origin POST, never evaluated 
  for(const request of [new Request(origin+'/telemetry/worked-example',{method:'POST',headers:{origin:'https://foreign.test'}}),new Request(origin+'/telemetry/worked-example',{method:'POST',headers:{origin},body:'secret'})])assert.ok((await handleRequest(request,env)).status>=400);
 });
 test('unpaid attempt carries only validated example trace for aggregate linkage',async()=>{
- const body={jsonrpc:'2.0',id:1,method:'message/send',params:{message:{role:'user',parts:[{kind:'text',text:'Assess a synthetic file'}]}}};
- const {events}=await capture(()=>handleRequest(new Request(origin+'/message/send',{method:'POST',headers:{'x-example-trace-id':trace},body:JSON.stringify(body)}),env));
+ const body={};
+ const {events}=await capture(()=>handleRequest(new Request(origin+'/v1/agent-output/verification',{method:'POST',headers:{'x-example-trace-id':trace},body:JSON.stringify(body)}),{...env,AGENT_PROFILE:'agent_output_verification'}));
  const payment=events.filter(e=>e?.event==='agenda_intelligence_payment');assert.ok(payment.length);assert.ok(payment.every(e=>e.demo_trace_id===trace));
 });

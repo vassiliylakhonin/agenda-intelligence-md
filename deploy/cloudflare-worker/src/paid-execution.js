@@ -76,7 +76,7 @@ export async function boundedResponse(response) {
   return { status: response.status, headers, body: new TextDecoder().decode(buffer) };
 }
 
-export async function executePaidRequest(request, body, env, minimum, execute, emit = () => {}) {
+export async function executePaidRequest(request, body, env, minimum, execute, emit = () => {}, {replayOnly = false} = {}) {
   const fail = (status, code, extra = {}) => {
     emit(code === 'payer_signature_required' ? 'signature_required' : 'payment_rejected', code, status);
     return errorResponse(status, code, extra);
@@ -94,6 +94,7 @@ export async function executePaidRequest(request, body, env, minimum, execute, e
   try {
     db = paymentLedger(env);
     let details = await readPayment(env, tx);
+    if (replayOnly && details?.settled_via !== 'signed_call') return fail(400,'payment_not_applicable');
     if (details && !['signed_activation', 'signed_call'].includes(details.settled_via)) {
       return fail(409, 'already_claimed', { instruction: 'Contact support for legacy claims; do not pay again.' });
     }
@@ -119,9 +120,10 @@ export async function executePaidRequest(request, body, env, minimum, execute, e
     // Legacy claims without it remain unlinked rather than invented historical purchases.
     const executionId = details.telemetry_execution_id || null;
     emit('payment_verified', null, null, executionId);
-    await db.prepare("INSERT OR IGNORE INTO paid_executions(tx_hash, request_hash, payer, state, created_ms) VALUES (?1, ?2, ?3, 'ready', ?4)")
+    if (!replayOnly) await db.prepare("INSERT OR IGNORE INTO paid_executions(tx_hash, request_hash, payer, state, created_ms) VALUES (?1, ?2, ?3, 'ready', ?4)")
       .bind(tx, hash, proof.payer, Date.now()).run();
     let row = await db.prepare('SELECT * FROM paid_executions WHERE tx_hash = ?1').bind(tx).first();
+    if (!row) return fail(409,'paid_result_unavailable',{instruction:'Keep the original payment proof; do not pay again automatically.'});
     if (row.state === 'completed') {
       if (row.response_expires_ms <= Date.now()) {
         await db.prepare('UPDATE paid_executions SET response_ciphertext = NULL WHERE tx_hash = ?1 AND response_expires_ms <= ?2').bind(tx, Date.now()).run();
@@ -130,6 +132,7 @@ export async function executePaidRequest(request, body, env, minimum, execute, e
       try { const value = await unseal(row.response_ciphertext, signature); emit('execution_replayed', null, value.status, executionId); return restored(value, true); }
       catch { return fail(409, 'original_payment_signature_required'); }
     }
+    if (replayOnly) return fail(409,'paid_result_unavailable',{instruction:'Routing is now free. This prior payment remains claimed; do not pay again automatically.'});
     nonce = crypto.randomUUID();
     const started = await db.prepare("UPDATE paid_executions SET state = 'running', lease_nonce = ?1, lease_until_ms = ?2 WHERE tx_hash = ?3 AND (state = 'ready' OR (state = 'running' AND lease_until_ms < ?4))")
       .bind(nonce, Date.now() + LEASE, tx, Date.now()).run();

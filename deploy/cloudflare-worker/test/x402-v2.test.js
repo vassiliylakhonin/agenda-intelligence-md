@@ -23,6 +23,7 @@ const vector = JSON.parse(
     "utf8",
   ),
 );
+const entryVector = JSON.parse(readFileSync(new URL('./fixtures/x402-authorization-001.json',import.meta.url),'utf8'));
 const url = "https://example.test/v1/agent-output/verification",
   tx = "0x" + "ab".repeat(32);
 const input = {
@@ -42,12 +43,12 @@ const request = () =>
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input),
   });
-const payload = (req) => ({
+const payload = (req, amount = 0.05) => ({
   x402Version: 2,
-  accepted: x402Requirements(req, 0.05).accepts[0],
+  accepted: x402Requirements(req, amount).accepts[0],
   payload: {
-    signature: vector.signature,
-    authorization: structuredClone(vector.authorization),
+    signature: amount === 0.01 ? entryVector.signature : vector.signature,
+    authorization: structuredClone(amount === 0.01 ? entryVector.authorization : vector.authorization),
   },
 });
 const topic = (a) => "0x" + a.slice(2).toLowerCase().padStart(64, "0");
@@ -116,7 +117,7 @@ function network(options = {}) {
                   topic(vector.authorization.from),
                   topic(BASE_USDC_WALLET),
                 ],
-                data: "0xc350",
+                data: '0x'+BigInt(options.amount || '50000').toString(16),
               },
             ],
           }
@@ -163,6 +164,69 @@ test("EIP-712 signer matches the independent viem vector", () => {
     x402AuthorizationSigner(payload(request())),
     vector.authorization.from.toLowerCase(),
   );
+});
+
+test('a claimed old quote replays after a price cut, while a fresh old quote cannot settle',async()=>{
+  const env=environment(),mock=network(),previous=globalThis.fetch;
+  globalThis.fetch=mock.fetch;
+  try {
+    const proof=payload(request());
+    assert.equal((await executeX402(request(),input,env,0.05,proof,()=>Response.json({old_result:true}))).status,200);
+    const counts={...mock.counts};
+    globalThis.fetch=()=>{throw Error('Price-change replay must not access network');};
+    const replay=await executeX402(request(),input,env,0.01,proof,()=>{throw Error('Must not reexecute');});
+    assert.equal(replay.status,200);
+    assert.equal(replay.headers.get('x-payment-replayed'),'1');
+    assert.deepEqual(mock.counts,counts);
+    const stale=await executeX402(request(),input,environment(),0.01,proof,()=>{throw Error('Must not execute');});
+    assert.equal(stale.status,400);
+    assert.equal((await stale.json()).code,'payment_terms_changed');
+  } finally {globalThis.fetch=previous;}
+});
+
+test('an admitted old-price claim settles with its original terms after a price cut',async()=>{
+  const env=environment(),mock=network(),previous=globalThis.fetch,proof=payload(request());
+  let interrupted=false,seenAmount;
+  globalThis.fetch=async(url,init)=>{
+    if(String(url)===X402_FACILITATOR+'/settle') seenAmount=JSON.parse(init.body).paymentRequirements.amount;
+    return mock.fetch(url,init);
+  };
+  try {
+    const first=await executeX402(request(),input,env,0.05,proof,()=>Response.json({old_result:true}),stage=>{
+      if(stage==='execution_started'&&!interrupted){interrupted=true;throw Error('synthetic interruption');}
+    });
+    assert.equal(first.status,503);
+    const row=await env.PAYMENT_LEDGER.prepare('SELECT * FROM paid_executions').first();
+    await env.PAYMENT_LEDGER.prepare('UPDATE paid_executions SET lease_until_ms = 0 WHERE tx_hash = ?1').bind(row.tx_hash).run();
+    const result=await executeX402(request(),input,env,0.01,proof,()=>Response.json({old_result:true}));
+    assert.equal(result.status,200);
+    assert.equal(seenAmount,'50000');
+    assert.equal(mock.counts.verify,1);
+    assert.equal(mock.counts.settle,1);
+    const claim=await env.PAYMENT_LEDGER.prepare('SELECT details FROM payment_claims WHERE tx_hash = ?1').bind(tx).first();
+    assert.equal(JSON.parse(claim.details).amount_usdc,0.05);
+  } finally {globalThis.fetch=previous;}
+});
+
+test('previously paid x402 routing replays after becoming free, without settling or reevaluating',async()=>{
+  const env={...environment(),AGENT_PROFILE:'agenda'},mock=network(),previous=globalThis.fetch;
+  const body={jsonrpc:'2.0',id:'prior-route',method:'tools/call',params:{name:'strategic_risk_triage',arguments:{text:'Synthetic routing request'}}};
+  const req=()=>new Request('https://example.test/mcp',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  const proof=payload(req());
+  globalThis.fetch=mock.fetch;
+  try {
+    assert.equal((await executeX402(req(),body,env,0.05,proof,()=>Response.json({old_route:true}))).status,200);
+    globalThis.fetch=()=>{throw Error('Free routing recovery must not access network');};
+    const signed=req();signed.headers.set('payment-signature',encodeX402(proof));
+    const replay=await handleRequest(signed,env);
+    assert.equal(replay.status,200);
+    assert.equal(replay.headers.get('x-payment-replayed'),'1');
+    assert.deepEqual(await replay.json(),{old_route:true});
+    const fresh=req();fresh.headers.set('payment-signature',encodeX402(proof));
+    const refused=await handleRequest(fresh,{...environment(),AGENT_PROFILE:'agenda'});
+    assert.equal(refused.status,400);
+    assert.equal((await refused.json()).code,'payment_not_applicable');
+  } finally {globalThis.fetch=previous;}
 });
 test("successful standard payment returns a recoverable result exactly once", async () => {
   const env = environment(),
@@ -278,12 +342,12 @@ test("a refused authorization does not execute or settle", async () => {
 });
 test("actual HTTP handler accepts PAYMENT-SIGNATURE", async () => {
   const env = environment(),
-    mock = network(),
+    mock = network({amount:'10000'}),
     original = globalThis.fetch;
   globalThis.fetch = mock.fetch;
   try {
     const req = request();
-    req.headers.set("PAYMENT-SIGNATURE", encodeX402(payload(req)));
+    req.headers.set("PAYMENT-SIGNATURE", encodeX402(payload(req,0.01)));
     const res = await handleRequest(req, env);
     assert.equal(res.status, 200);
     assert.equal((await res.json()).authorization_granted, false);
@@ -294,13 +358,13 @@ test("actual HTTP handler accepts PAYMENT-SIGNATURE", async () => {
 });
 test("native MCP payment metadata is separated from input and returns settlement metadata", async () => {
   const env = environment(),
-    mock = network(),
+    mock = network({amount:'10000'}),
     original = globalThis.fetch;
   globalThis.fetch = mock.fetch;
   try {
     const target = "https://example.test/mcp/agent",
       req = new Request(target, { method: "POST" }),
-      proof = payload(req);
+      proof = payload(req,0.01);
     const body = {
       jsonrpc: "2.0",
       id: "native-pay",
@@ -449,12 +513,12 @@ test("evaluation failures do not settle, and a recovered identical request uses 
 });
 test("pending MCP settlement returns a tool error without a fresh payment challenge", async () => {
   const env = environment(),
-    mock = network({ pending: true }),
+    mock = network({ pending: true, amount:'10000' }),
     original = globalThis.fetch;
   globalThis.fetch = mock.fetch;
   try {
     const url = "https://example.test/mcp/agent",
-      proof = payload(new Request(url)),
+      proof = payload(new Request(url),0.01),
       body = {
         jsonrpc: "2.0",
         id: "pending-mcp",

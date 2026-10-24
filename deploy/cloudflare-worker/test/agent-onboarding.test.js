@@ -28,7 +28,7 @@ test('free directory has accurate billing metadata and is reachable without call
   const free = tools.find(t=>t.name==='fleet_directory');
   assert.equal(free._meta['com.agenda/readiness'].access.base_call_price, 'free');
   assert.doesNotMatch(free.description, /Calls require.*payment/);
-  assert.equal(tools.find(t=>t.name==='strategic_risk_triage')._meta['com.agenda/readiness'].access.base_call_price, 'paid');
+  assert.equal(tools.find(t=>t.name==='strategic_risk_triage')._meta['com.agenda/readiness'].access.base_call_price, 'free');
   const fleet = await get('/.well-known/fleet.json', env);
   assert.equal(fleet.total_gates, 12);
   assert.equal(new Set(fleet.gates.map(g=>g.mcp_endpoint)).size, 12);

@@ -316,6 +316,7 @@ export async function executeX402(
   payload,
   execute,
   emit = () => {},
+  {replayOnly = false} = {},
 ) {
   const fail = (status, code, extra = {}) => {
     emit("payment_rejected", code, status);
@@ -326,9 +327,15 @@ export async function executeX402(
   };
   let db, key, lease, details, row;
   const required = x402Requirements(request, minimum);
+  // Validate signed terms independently of today's price, then bind them to
+  // an existing claim. Only a new authorization must match the current quote.
+  // This preserves exact-request recovery after a price change without
+  // settling an unclaimed, stale quote.
+  const offered = {...required,accepts:[{...required.accepts[0],
+    amount:payload?.accepted?.amount ?? required.accepts[0].amount}]};
   let a;
   try {
-    a = validateX402Payload(payload, required);
+    a = validateX402Payload(payload, offered);
   } catch (error) {
     return fail(400, error.message);
   }
@@ -350,6 +357,9 @@ export async function executeX402(
     const proofHash = await tokenHash(jcs({ authorization: a, signature }));
     details = await readPayment(env, key);
     if (!details) {
+      if (replayOnly) return fail(400,'payment_not_applicable');
+      if (a.value !== required.accepts[0].amount) return fail(400,'payment_terms_changed',{
+        instruction:'Obtain the current challenge for this exact request before authorizing a payment.'});
       const now = BigInt(Math.floor(Date.now() / 1000));
       if (
         BigInt(a.validAfter) >= now ||
@@ -388,7 +398,7 @@ export async function executeX402(
       details.proof_hash !== proofHash
     )
       return fail(409, "payment_request_mismatch");
-    await db
+    if (!replayOnly) await db
       .prepare(
         "INSERT OR IGNORE INTO paid_executions(tx_hash, request_hash, payer, state, created_ms) VALUES (?1, ?2, ?3, 'ready', ?4)",
       )
@@ -398,6 +408,7 @@ export async function executeX402(
       .prepare("SELECT * FROM paid_executions WHERE tx_hash = ?1")
       .bind(key)
       .first();
+    if (!row) return fail(409,'paid_result_unavailable');
     if (row.response_expires_ms && row.response_expires_ms <= Date.now()) {
       await db
         .prepare(
@@ -414,6 +425,8 @@ export async function executeX402(
       emit("execution_replayed", null, 200, details.telemetry_execution_id);
       return await deliver(request, row, signature, details, true);
     }
+    if (replayOnly) return fail(409,'paid_result_unavailable',{
+      instruction:'Routing is now free. This prior payment remains claimed; do not pay again automatically.'});
     lease = crypto.randomUUID();
     const lock = await db
       .prepare(
@@ -445,7 +458,7 @@ export async function executeX402(
           request,
           {
             valid: true,
-            amount_usdc: minimum,
+            amount_usdc: details.amount_usdc,
             payer: details.payer,
             request_hash: requestHash,
             x402_authorized: true,
@@ -481,7 +494,7 @@ export async function executeX402(
       // Commit ambiguity BEFORE sending any state-changing facilitator request.
       await phase("settling");
       try {
-        const settled = await facilitator("/settle", payload, required);
+        const settled = await facilitator("/settle", payload, offered);
         if (txOK(settled.value.transaction))
           await phase("pending", {
             transaction: settled.value.transaction.toLowerCase(),
@@ -504,7 +517,7 @@ export async function executeX402(
       settled_via: "x402_call",
       reservation: key,
       payer: details.payer,
-      amount_usdc: minimum,
+      amount_usdc: details.amount_usdc,
       request_hash: requestHash,
     };
     await claimPayment(env, tx, txClaim);
