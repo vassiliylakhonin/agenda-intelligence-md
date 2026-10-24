@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Smithery publisher metadata — 2026-10-24
+
+- Align the local MCP publisher configuration with package 1.21.2, the current project homepage and deterministic supplied-evidence checks. Remove unsupported latency, retention, clearance and autonomous-arbitration claims from its description and keywords. Hosted registry descriptions and tool snapshots are maintained separately in Smithery.
+
 ## Pro volume pricing — 2026-10-24
 
 - Lower Pro to 49 USDC for 30 days and 10,000 checks: 0.0049 USDC/check at full use, 51% below ordinary 0.01 USDC checks. Derive current card, settlement, quota-response and browser prices from the same amount. Preserve quotas, expiry, funding-wallet signatures and replay protection.
