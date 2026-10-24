@@ -1237,7 +1237,7 @@ function agentCard(request, env = {}) {
           tier_micro_check_usdc: TIER_MICRO_CHECK_USDC_AMOUNT,
           tier_micro_dispute_usdc: TIER_MICRO_DISPUTE_USDC_AMOUNT,
           tier_bankability_dossier_usdc: 25.0,
-          tier_pro_monthly_usdc: 490.0
+          tier_pro_monthly_usdc: TIER_PRO_USDC_AMOUNT
         },
         pricing_tiers_scope: "Shared legacy optional catalog; offers describes this host's operations. No automatic subscription or purchase.",
         settle_endpoint: `${origin}/v1/settle`,
@@ -13567,12 +13567,12 @@ async function handleMcpPost(request, env, ctx) {
       const requiredUsdc = isDispute ? TIER_MICRO_DISPUTE_USDC_AMOUNT : TIER_MICRO_CHECK_USDC_AMOUNT;
       const authHeader = `X402 token="USDC", network="base", chain_id=8453, recipient="${BASE_USDC_WALLET}", amount="${requiredUsdc}", asset="USDC", contract="${BASE_USDC_CONTRACT}"`;
       return jsonResponse(
-        jsonRpcError(payload.id ?? null, -32002, "Rate limit exceeded: free Community Sandbox quota reached. Settle via x402 on Base with 'X-Payment-Tx' header, or upgrade to Dedicated Pro Tenant ($490/month).", {
+        jsonRpcError(payload.id ?? null, -32002, `Rate limit exceeded: free Community Sandbox quota reached. Settle via x402 on Base with 'X-Payment-Tx' header, or upgrade to Pro API Access (${TIER_PRO_USDC_AMOUNT} USDC for 30 days).`, {
           limit_per_hour: rate.limit,
           profile,
           tier: "tier_1_sandbox",
           upgrade_tier: "tier_2_pro",
-          monthly_price_usd: 490,
+          monthly_price_usd: TIER_PRO_USDC_AMOUNT,
           x402: {
             protocol: "x402",
             version: "1.0",
@@ -13585,7 +13585,7 @@ async function handleMcpPost(request, env, ctx) {
             header_instruction: "Include 'X-Payment-Tx: <base_tx_hash>' in headers"
           },
           contact: SUPPORT_CONTACT_EMAIL,
-          checkout_url: "https://paypal.me/vaskenzy/490USD",
+          checkout_url: `https://paypal.me/vaskenzy/${TIER_PRO_USDC_AMOUNT}USD`,
           usdc_base_wallet: BASE_USDC_WALLET
         }),
         429,
@@ -14018,13 +14018,13 @@ async function handlePost(request, env, ctx) {
       const error = jsonRpcError(
           payload.id ?? null,
           -32002,
-          "Rate limit exceeded: free Community Sandbox quota reached. Settle via x402 on Base with 'X-Payment-Tx' header, or upgrade to Dedicated Pro Tenant ($490/month).",
+          `Rate limit exceeded: free Community Sandbox quota reached. Settle via x402 on Base with 'X-Payment-Tx' header, or upgrade to Pro API Access (${TIER_PRO_USDC_AMOUNT} USDC for 30 days).`,
           {
             limit_per_hour: rate.limit,
             profile,
             tier: "tier_1_sandbox",
             upgrade_tier: "tier_2_pro",
-            monthly_price_usd: 490,
+            monthly_price_usd: TIER_PRO_USDC_AMOUNT,
             x402: {
               protocol: "x402",
               version: "1.0",
@@ -14037,7 +14037,7 @@ async function handlePost(request, env, ctx) {
               header_instruction: "Include 'X-Payment-Tx: <base_tx_hash>' in headers"
             },
             contact: SUPPORT_CONTACT_EMAIL,
-            checkout_url: "https://paypal.me/vaskenzy/490USD",
+            checkout_url: `https://paypal.me/vaskenzy/${TIER_PRO_USDC_AMOUNT}USD`,
             usdc_base_wallet: BASE_USDC_WALLET
           }
       );
@@ -16289,7 +16289,7 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
             },
             tier_2_pro: {
               name: "Dedicated Pro Tenant",
-              amount_usd: 490,
+              amount_usd: TIER_PRO_USDC_AMOUNT,
               benefit: "Dedicated 30-day Bearer token with 10,000 monthly checks."
             },
             tier_3_deal_dossier: {

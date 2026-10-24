@@ -6,7 +6,11 @@ Check `/.well-known/x402` and its `x_agenda_access` on the serving host. Deploye
 evaluation uses `pay_per_call`; discovery and text-only specialist routing are free.
 Normal evaluation is 0.01 USDC, escrow evidence evaluation is 0.05 USDC, and the
 bankability full dossier is 25
-USDC. Pro is a separate signed 490 USDC activation. Fees purchase evaluation, not
+USDC. Pro is a separate signed 49 USDC activation for 30 days and 10,000 checks
+(0.0049 USDC/check at full use, 51% below ordinary 0.01 USDC checks).
+Pass `tier: "tier_2_pro"` explicitly: the 49 USDC dossier is a different product.
+Existing tokens retain their original quota and expiry. Historical omitted-tier
+activation keeps its original amount routing; it is not a current price quote. Fees purchase evaluation, not
 a favourable verdict, factual guarantee, transaction authorization or payout.
 
 1. Validate your input and serving URL before transferring. Transfer the native
