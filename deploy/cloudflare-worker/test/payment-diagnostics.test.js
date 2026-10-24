@@ -93,7 +93,8 @@ test('Interaction Trust separates its saved preview from paid structured example
   const old = console.log; console.log = () => {};
   try {
     for (const text of card.skills.flatMap(skill => skill.examples)) {
-      if (text === card.x_agenda_intelligence.catalog_demo.prompt) {
+      const starter = card.x_agenda_intelligence.catalog_onboarding.commands.find(item=>item.prompt===text);
+      if (starter) {
         const response = await handleRequest(new Request(origin + '/message/send', {
           method: 'POST', headers: { 'content-type': 'application/json', 'a2a-version': '1.0' },
           body: JSON.stringify({jsonrpc:'2.0',id:'saved-preview',method:'SendMessage',params:{
@@ -102,7 +103,7 @@ test('Interaction Trust separates its saved preview from paid structured example
         }), configured);
         assert.equal(response.status, 200);
         const task = (await response.json()).result.task;
-        assert.equal(task.metadata.operation, 'worked_example');
+        assert.equal(task.metadata.operation, starter.operation);
         assert.equal(task.metadata.evaluation_performed, false);
         continue;
       }

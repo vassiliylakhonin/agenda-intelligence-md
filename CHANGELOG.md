@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Catalog setup commands — 2026-10-24
+
+- Make the first three catalog prompts executable text-only setup commands: a saved worked example, serving-profile input requirements and configured free-trial options. Preserve structured JSON evaluation examples and retain ordinary task descriptions separately as evaluation intents. Keep skill IDs, evaluation contracts and normal admission intact.
+- Return current published schemas, preflight, trial limits and explicit next steps without evaluating input, checking live allowance, consuming attempts, storing tasks or making upstream calls. Respect disabled campaigns, deployment authorization, protocol checks and payment-material refusal. Record setup views only as separate funnel steps; they do not establish useful results, users or revenue.
+
 ## Catalog first use — 2026-10-23
 
 - Publish an explicit text-only A2A saved-example command as the first catalog example on all twelve profiles. Return actual precomputed synthetic inputs, findings and saved follow-ups, with a deliberate link to the existing trial; never evaluate supplied cases, spend an attempt, charge payment or issue authorization. Preserve production authentication, protocol checks and paid admission; record only a worked-example funnel event.

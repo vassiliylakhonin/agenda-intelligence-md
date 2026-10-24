@@ -54,6 +54,40 @@ revenue.
 
 ### First result from a text-only catalog console
 
+The first three card examples are read-only setup commands. Send exactly one
+as a single text part, without case data, metadata or continuation:
+
+- **Show a free worked example** — inspect saved synthetic inputs and findings.
+- **Show input requirements** — get the serving entry tool's actual input schema,
+  machine contract and free preflight path.
+- **Show free trial options** — get this deployment's configured limits, shared
+  allowance scope, current-allowance link and optional post-trial feedback path.
+
+The last two responses are completed A2A display tasks with
+`metadata.operation` and JSON `kind` equal to `catalog_input_requirements` or
+`catalog_trial_options`. JSON has `schema_version: 1`, `product_profile`,
+`authentication`, `next`, `availability_checked: false`,
+`evaluation_performed: false`, `attempt_consumed: false`,
+`authorization_granted: false`, `human_review_required: true` and
+`not_advice_notice`.
+Requirements add `input` (the named entry tool, actual `input_schema`, schema
+and synthetic-example URLs), `contract` and `onboarding`. Trial options add
+`trial` (configured terms, or `null` when disabled), `onboarding`, `pricing_url`,
+`automatic_payment: false` and `automatic_evaluation_retry: false`. A disabled
+trial advertises no trial terms or allowance link. The task is not persisted;
+start a new request using the published contract instead of continuing its ID.
+
+These responses read configuration and published schemas only. They do not
+query allowance storage, fetch documents, evaluate a case or issue a receipt.
+Telemetry records `catalog_input_requirements` and `catalog_trial_options`
+as funnel views, never usage, trials or paid executions. Passing the linked
+preflight establishes input shape only.
+
+Ordinary evaluation intents live separately under the vendor extension's
+`catalog_onboarding.evaluation_intents`; they are not one-click text starters.
+Structured JSON examples remain available and retain normal evaluation
+admission. Existing skill IDs and input/output schemas are unchanged.
+
 Choose **Show a free worked example** in Agenstry's Try it console, or send that
 exact sentence alone as one A2A text part. This returns the serving product's
 saved synthetic input, findings, a saved correction where available, and a link

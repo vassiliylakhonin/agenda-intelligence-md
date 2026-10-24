@@ -4,7 +4,8 @@ import {x402Enabled, decodeX402, executeX402, x402RequiredResponse, x402Executio
 import {isA2ATrial, a2aTrialInput, a2aTrialDiscovery, A2A_TRIAL_URI} from "./a2a-trial.js";
 import { withEvaluationContract } from "./evaluation-contract.js";
 import { addSkillDiscovery } from './skill-discovery.js';
-import { addCatalogDemo, isCatalogDemo, catalogDemoContent } from './catalog-demo.js';
+import { addCatalogOnboarding, catalogOperation, catalogDemoContent } from './catalog-demo.js';
+import { catalogSetupContent } from './catalog-onboarding.js';
 import { agentOnboarding, PROFILE_TASKS, profileWorkflow } from './agent-onboarding.js';
 import { mcpTrialTools, mcpTrialResult } from './mcp-trial.js';
 import {mcpHttpRejection,mcpHttpStatus,isModernMcpHttp} from './mcp-http.js';
@@ -1319,7 +1320,7 @@ function agentCard(request, env = {}) {
     decision_boundary: "No legal, sanctions, financial or trading clearance. Human review before any commercial action.",
     price: env.BILLING_MODE === "pay_per_call" ? "Normal paid endpoints require signed payment or Pro entitlement. The separately advertised trial does not require payment. See /.well-known/x402." : "Free base triage. Optional paid paths vary by tool; check /.well-known/x402 before paying."
   };
-  return addCatalogDemo(addSkillDiscovery(shaped, profile), profile, origin);
+  return addCatalogOnboarding(addSkillDiscovery(shaped, profile), profile, origin);
 }
 
 // The card carries the same contract tools/list carries.
@@ -13849,8 +13850,9 @@ function a2aJsonResponse(body, status = 200, headers = {}) {
   return jsonResponse(body, status, { "A2A-Version": A2A_PROTOCOL_VERSION, ...headers });
 }
 
-async function handleCatalogDemo(payload, request, env) {
+async function handleCatalogReadCommand(payload, request, env) {
   const profile = agentProfile(request, env), version = requestedA2aVersion(request, payload);
+  const operation = catalogOperation(payload);
   const reply = (body, status = 200) => a2aJsonResponse(body, status,
     {'A2A-Version': version || A2A_PROTOCOL_VERSION, 'cache-control': 'no-store'});
   const fail = (code, message, status) => reply(jsonRpcError(payload.id, code, message), status);
@@ -13866,22 +13868,25 @@ async function handleCatalogDemo(payload, request, env) {
     return reply(invalidParamsError(payload.id, v1MessageViolations(payload.params)), 400);
   }
   if (['x-payment-tx', 'x-payment-signature', 'payment-signature', 'x-payment'].some(key => request.headers.has(key))) {
-    return fail(-32602, 'Do not send payment credentials to a saved example', 400);
+    return fail(-32602, 'Do not send payment credentials to a read-only catalogue command', 400);
   }
-  const content = catalogDemoContent(profile, new URL(request.url).origin, hostedAccess(profile, env).free_trial);
-  if (!content) return fail(-32601, 'Saved example is not available for this product', 404);
+  const origin = new URL(request.url).origin;
+  const content = operation === 'worked_example'
+    ? catalogDemoContent(profile, origin, hostedAccess(profile, env).free_trial)
+    : catalogSetupContent(operation, profile, origin, env, hostedMcpTools(profile, request, env), VERSION);
+  if (!content) return fail(-32601, 'Read-only catalogue command is not available for this product', 404);
   const task = {
     id: crypto.randomUUID(), contextId: crypto.randomUUID(),
     status: {state: 'TASK_STATE_COMPLETED'},
-    artifacts: [{artifactId: crypto.randomUUID(), name: 'Saved synthetic worked example', parts: [
+    artifacts: [{artifactId: crypto.randomUUID(), name: content.title || 'Saved synthetic worked example', parts: [
       {text: content.markdown, mediaType: 'text/markdown'},
       {data: content.data, mediaType: 'application/json'}
     ]}],
-    metadata: {operation: 'worked_example', product_profile: profile,
+    metadata: {operation, product_profile: profile,
       evaluation_performed: false, attempt_consumed: false, authorization_granted: false,
       human_review_required: true, task_persisted: false}
   };
-  await logFunnelEvent(request, 'worked_example', env);
+  await logFunnelEvent(request, operation, env);
   if (version === A2A_LEGACY_PROTOCOL_VERSION) {
     task.kind = 'task'; task.status.state = 'completed';
     return reply({jsonrpc: '2.0', id: payload.id, result: task});
@@ -13973,7 +13978,7 @@ async function handlePost(request, env, ctx) {
     return a2aJsonResponse(error, _error.status === 413 ? 413 : 200);
   }
   const method = payload && typeof payload === "object" ? payload.method : null;
-  if (isCatalogDemo(payload)) return handleCatalogDemo(payload, request, env);
+  if (catalogOperation(payload)) return handleCatalogReadCommand(payload, request, env);
   if (isA2ATrial(payload)) return handleA2ATrial(payload,request,env,ctx);
   if (MESSAGE_SEND_METHODS.has(method) || method === "GetTask" || method === "CancelTask") {
     const profile = agentProfile(request, env);
@@ -15565,7 +15570,7 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
     }
     return execute();
   }
-  if ((path === '/message/send' || path === '/') && isCatalogDemo(body)) return handleCatalogDemo(body, request, env);
+  if ((path === '/message/send' || path === '/') && catalogOperation(body)) return handleCatalogReadCommand(body, request, env);
   if ((path === '/message/send' || path === '/') && isA2ATrial(body)) return handleA2ATrial(body,request,env,ctx);
   const metaProof = path.startsWith('/mcp') && body?.method === 'tools/call' ? body.params?._meta?.['x402/payment'] : undefined;
   let standardProof;

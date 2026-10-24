@@ -2,34 +2,54 @@ import { WORKED_EXAMPLES } from './worked-examples.js';
 import { reviewSummary } from './product-workflows.js';
 
 export const CATALOG_DEMO_PROMPT = 'Show a free worked example';
+export const CATALOG_STARTERS = Object.freeze([
+  {prompt: CATALOG_DEMO_PROMPT, operation: 'worked_example'},
+  {prompt: 'Show input requirements', operation: 'catalog_input_requirements'},
+  {prompt: 'Show free trial options', operation: 'catalog_trial_options'}
+]);
 
-// A read-only view of a public fixture. Never reinterpret a case, context,
-// capability, attachment or task continuation as a request for this view.
-export function isCatalogDemo(body) {
+// Explicit read-only setup. Never reinterpret a case, context, capability,
+// attachment or task continuation as a request for setup.
+export function catalogOperation(body) {
   if (!body || body.jsonrpc !== '2.0' ||
       !['SendMessage', 'message/send', 'tasks/send'].includes(body.method) ||
       Object.keys(body).some(key => !['jsonrpc', 'id', 'method', 'params'].includes(key)) ||
       !['string', 'number'].includes(typeof body.id) ||
-      (typeof body.id === 'number' && !Number.isFinite(body.id))) return false;
+      (typeof body.id === 'number' && !Number.isFinite(body.id))) return null;
   const params = body.params;
-  if (!params || Object.keys(params).some(key => key !== 'message')) return false;
+  if (!params || Object.keys(params).some(key => key !== 'message')) return null;
   const message = params.message;
   if (!message || Object.keys(message).some(key => !['messageId', 'message_id', 'role', 'parts', 'kind'].includes(key)) ||
-      !['ROLE_USER', 'user'].includes(message.role) || !Array.isArray(message.parts) || message.parts.length !== 1) return false;
+      !['ROLE_USER', 'user'].includes(message.role) || !Array.isArray(message.parts) || message.parts.length !== 1) return null;
   const part = message.parts[0];
-  return Boolean(part && Object.keys(part).every(key => ['kind', 'text'].includes(key)) &&
-    (!part.kind || part.kind === 'text') && typeof part.text === 'string' &&
-    part.text.trim().toLowerCase() === CATALOG_DEMO_PROMPT.toLowerCase());
+  if (!part || Object.keys(part).some(key => !['kind', 'text'].includes(key)) ||
+      (part.kind && part.kind !== 'text') || typeof part.text !== 'string') return null;
+  return CATALOG_STARTERS.find(item => item.prompt.toLowerCase() === part.text.trim().toLowerCase())?.operation || null;
 }
 
-export function addCatalogDemo(card, profile, origin) {
+export function isCatalogDemo(body) {
+  return catalogOperation(body) === 'worked_example';
+}
+
+export function addCatalogOnboarding(card, profile, origin) {
   if (!WORKED_EXAMPLES[profile] || !card.skills.length) return card;
+  const isJsonExample = value => {
+    try {JSON.parse(value); return true;}
+    catch {return false;}
+  };
+  // Catalogue consoles send these strings as a single text part. Preserve
+  // valid JSON-as-text evaluation examples, but keep ordinary paid intent
+  // descriptions out of the clickable starter list.
+  const intents = card.skills.flatMap(skill => (skill.examples || [])
+    .filter(value => !isJsonExample(value) && !CATALOG_STARTERS.some(item => item.prompt === value))
+    .map(text => ({skill_id: skill.id, text})));
+  card.skills = card.skills.map(skill => ({...skill, examples: (skill.examples || []).filter(isJsonExample)}));
   card.skills[0] = {
     ...card.skills[0],
     description: card.skills[0].description +
-      ` Send "${CATALOG_DEMO_PROMPT}" alone to inspect a saved synthetic example without payment or a trial attempt; this does not evaluate your input.`,
+      ` Send "${CATALOG_DEMO_PROMPT}", "Show input requirements" or "Show free trial options" alone for read-only setup without payment or a trial attempt. These commands do not evaluate your input. Other evaluation examples use the published input contract and admission.`,
     inputModes: [...new Set([...(card.skills[0].inputModes || card.defaultInputModes || []), 'text/plain'])],
-    examples: [CATALOG_DEMO_PROMPT, ...(card.skills[0].examples || []).filter(value => value !== CATALOG_DEMO_PROMPT)]
+    examples: [...CATALOG_STARTERS.map(item => item.prompt), ...card.skills[0].examples]
   };
   card.x_agenda_intelligence.catalog_demo = {
     operation: 'worked_example', prompt: CATALOG_DEMO_PROMPT,
@@ -38,6 +58,14 @@ export function addCatalogDemo(card, profile, origin) {
     result: 'A saved synthetic input, findings and repair example where available, with a link to review your own input.',
     evaluation_performed: false, attempt_consumed: false, authorization_granted: false,
     authentication: 'The serving deployment authorization still applies.'
+  };
+  card.x_agenda_intelligence.catalog_onboarding = {
+    schema_version: 1, endpoint: `${origin}/message/send`, method: 'SendMessage',
+    commands: CATALOG_STARTERS,
+    input: 'Send one exact command as a single text part, without case data, metadata or continuation.',
+    evaluation_performed: false, attempt_consumed: false, authorization_granted: false,
+    evaluation_intents: intents,
+    evaluation_intents_note: 'Illustrative task descriptions, not text-only starters. Submit your own authorized input using the published contract and normal admission.'
   };
   return card;
 }
