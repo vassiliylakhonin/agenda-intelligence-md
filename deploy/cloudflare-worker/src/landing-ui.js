@@ -11,7 +11,7 @@ import { CITATION_REVIEW_SCRIPT, citationReviewHtml } from './citation-review.js
 import { serviceOffersHtml } from './service-offers.js';
 import { projectHandoffValue, prepareHandoff, handoffHtml, HANDOFF_CLIENT_SCRIPT } from './handoff.js';
 // Browser presentation only. Runtime decisions are supplied by the controller.
-import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL, TIER_MICRO_CHECK_USDC_AMOUNT, TIER_MICRO_DISPUTE_USDC_AMOUNT } from "./profiles.js";
+import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL, TIER_MICRO_CHECK_USDC_AMOUNT, TIER_MICRO_DISPUTE_USDC_AMOUNT, TIER_PRO_USDC_AMOUNT } from "./profiles.js";
 
 export function createLandingRenderer({ originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES, fleetDirectoryResponse, inputSchemaForProfile }) {
 function landingHtml(request, env) {
@@ -795,8 +795,8 @@ async function runFinancialGuardSimulation(e) {
       '</div>' +
       '<div style="margin-top:12px; padding-top:10px; border-top:1px solid ' + border + '; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">' +
       '<span style="font-size:12px; font-weight:600; color:var(--muted);">Pro Deployment:</span>' +
-      '<button type="button" onclick="payWithBaseWallet(490)" style="background:#0052FF; color:#fff; border:none; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:600; cursor:pointer;">Pay $490 Pro (Base USDC)</button>' +
-      '<a href="https://paypal.me/vaskenzy/490USD" target="_blank" style="background:#166534; color:#fff; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:600; text-decoration:none;">PayPal $490 Pro</a>' +
+      '<button type="button" onclick="payWithBaseWallet(${TIER_PRO_USDC_AMOUNT})" style="background:#0052FF; color:#fff; border:none; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:600; cursor:pointer;">Pay $${TIER_PRO_USDC_AMOUNT} Pro (Base USDC)</button>' +
+      '<a href="https://paypal.me/vaskenzy/${TIER_PRO_USDC_AMOUNT}USD" target="_blank" style="background:#166534; color:#fff; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:600; text-decoration:none;">PayPal $${TIER_PRO_USDC_AMOUNT} Pro</a>' +
       '</div>' +
       '</div>';
     resDiv.innerHTML += '<details><summary>Full structured response</summary><pre>' + safeHtml(JSON.stringify(data, null, 2)) + '</pre></details>';

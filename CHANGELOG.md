@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Pro volume pricing — 2026-10-24
+
+- Lower Pro to 49 USDC for 30 days and 10,000 checks: 0.0049 USDC/check at full use, 51% below ordinary 0.01 USDC checks. Derive current card, settlement, quota-response and browser prices from the same amount. Preserve quotas, expiry, funding-wallet signatures and replay protection.
+- Keep the separate 49 USDC dossier activation distinct via the explicit tier. Preserve historical omitted-tier routing and existing tokens; test actual signed activation and all twelve profiles offline without moving funds.
+
 ## Free-routing health expectations — 2026-10-24
 
 - Make the configured fleet proof select a published paid operation for unpaid admission checks, including Assistant HS screening; validate explicitly free routing results when no suitable paid operation exists. Preserve production authentication and reject tool errors, absent results or action authorization even with HTTP200.

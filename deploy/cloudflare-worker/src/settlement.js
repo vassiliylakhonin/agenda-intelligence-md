@@ -399,7 +399,10 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
     );
   }
 
-  const requestedTier = body?.tier || (verification.amount_usdc >= TIER_PRO_USDC_AMOUNT ? "tier_2_pro" : "tier_3_deal_dossier");
+  // Preserve legacy omitted-tier routing: 49 USDC meant a dossier, not Pro.
+  // New discounted Pro activation explicitly names tier_2_pro, as documented.
+  const legacyImplicitProThreshold = 490;
+  const requestedTier = body?.tier || (verification.amount_usdc >= legacyImplicitProThreshold ? "tier_2_pro" : "tier_3_deal_dossier");
 
   if (requestedTier !== "tier_2_pro") {
     const existing = await readPayment(env, verification.tx_hash);

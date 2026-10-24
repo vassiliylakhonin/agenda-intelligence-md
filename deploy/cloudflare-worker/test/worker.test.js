@@ -852,7 +852,7 @@ test("Agent economy manifests: security.txt, owners.json, x402, payment-manifest
   assert.equal(x402JsonRes.status, 200);
   const x402Data = await x402Res.json();
   assert.equal(x402Data.x402_version, "1.0");
-  assert.equal(x402Data.pricing_models.tier_2_pro.price, 490.0);
+  assert.equal(x402Data.pricing_models.tier_2_pro.price, 49.0);
   assert.equal(x402Data.pricing_models.tier_3_deal_dossier.pilot_price, 49.0);
   const usdcRail = x402Data.payment_rails.find((r) => r.method === "usdc_on_base");
   assert.equal(usdcRail.chain, "base");
@@ -864,7 +864,7 @@ test("Agent economy manifests: security.txt, owners.json, x402, payment-manifest
   const payData = await payRes.json();
   assert.equal(payData.protocol, "mpp/1.0");
   assert.equal(payData.monetization.receiving_wallet, "0x5b5296A3a7bAc0F5F096F93b60C1c121f2e5c663");
-  assert.equal(payData.monetization.tiers[1].amount, 490);
+  assert.equal(payData.monetization.tiers[1].amount, 49);
   assert.equal(payData.monetization.tiers.find(t => t.id === "tier-3-dossier").pilot_price, 49);
   assert.equal(x402Data.pricing_models.tier_bankability_dossier.price, 25.0);
   const bankabilityTier = payData.monetization.tiers.find((t) => t.id === "tier-bankability-dossier");
@@ -8312,7 +8312,7 @@ test("GET /v1/settle returns documentation and machine settlement instructions",
   assert.equal(data.endpoint, "/v1/settle");
   assert.equal(data.network, "Base (Chain ID 8453)");
   assert.equal(data.recipient_wallet, BASE_USDC_WALLET);
-  assert.equal(data.supported_tiers.tier_2_pro.amount_usd, 490);
+  assert.equal(data.supported_tiers.tier_2_pro.amount_usd, 49);
   assert.equal(data.supported_tiers.tier_3_deal_dossier.amount_usd, 49);
 });
 
@@ -9445,7 +9445,7 @@ test("A2A completed task metadata includes commercial_offer and sample_dossier_u
   assert.equal(offer.chain_id, 8453);
   assert.equal(offer.instant_pre_screen_usdc, "0.01");
   assert.equal(offer.financial_model_export_usdc, "25");
-  assert.equal(offer.pro_tenant_monthly_usdc, "490");
+  assert.equal(offer.pro_tenant_monthly_usdc, "49");
   assert.ok(offer.recipient_address);
   assert.ok(offer.settlement_endpoint.includes("/v1/settle"));
 });
