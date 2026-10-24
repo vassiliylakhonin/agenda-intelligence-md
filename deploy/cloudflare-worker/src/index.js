@@ -7,6 +7,7 @@ import { addSkillDiscovery } from './skill-discovery.js';
 import { addCatalogOnboarding, catalogOperation, catalogDemoContent } from './catalog-demo.js';
 import { catalogSetupContent } from './catalog-onboarding.js';
 import {routingToolForProfile,isFreeRoutingTool} from './pricing-policy.js';
+import {x402DiscoveryExtension,settlementDiscovery} from './payment-discovery.js';
 import { agentOnboarding, PROFILE_TASKS, profileWorkflow } from './agent-onboarding.js';
 import { mcpTrialTools, mcpTrialResult } from './mcp-trial.js';
 import {mcpHttpRejection,mcpHttpStatus,isModernMcpHttp} from './mcp-http.js';
@@ -1272,6 +1273,9 @@ function agentCard(request, env = {}) {
 
   };
   const shaped = applyAgentProfile(card, request, env);
+  const paymentDiscovery = x402DiscoveryExtension(origin,env);
+  if (paymentDiscovery) shaped.capabilities = {...shaped.capabilities,
+    extensions:[...(shaped.capabilities?.extensions || []),paymentDiscovery]};
   // Public discovery and fixtures do not make the evaluated skills free.
   if (env.BILLING_MODE === "pay_per_call") {
     shaped.skills = shaped.skills.map((skill) => ({
@@ -1299,8 +1303,8 @@ function agentCard(request, env = {}) {
     headers: { "Content-Type": "application/json", "A2A-Version": "1.0", "X-Trace-Id": "example-trace-001" },
     request: { jsonrpc: "2.0", id: "example-1", method: "SendMessage", params: { message: { messageId: "example-msg-1", role: "ROLE_USER", parts: [part] } } },
     expected: { task_state: "TASK_STATE_COMPLETED",
-      ...(env.BILLING_MODE === "pay_per_call" ? { http_status_without_payment: 402 } : {}),
-      note: "Task completion is the success shape after admission. On paid deployments, a valid unpaid request returns HTTP 402 without evaluation. Triage output only, not authorization or clearance." },
+      ...(env.BILLING_MODE === "pay_per_call" ? { http_status_without_payment: routingToolForProfile(profile) ? 200 : 402 } : {}),
+      note: routingToolForProfile(profile) ? "This text-routing example is free and consumes no trial attempt. Other named operations retain separate admission. No authorization or clearance." : "Task completion is the success shape after admission. On paid deployments, a valid unpaid request returns HTTP 402 without evaluation. Triage output only, not authorization or clearance." },
     trace: "Optional: send an X-Trace-Id header (8-80 chars of A-Za-z0-9._:-) or a top-level params.trace_id. " +
       "It is echoed in task metadata.trace_id and recorded in telemetry, so your call can be correlated end to end."
   };
@@ -13494,7 +13498,7 @@ function profileInstructions(profile, request, env, singleTool = false) {
 function paymentDocument(request,env,base) {
   const profile=agentProfile(request,env),origin=originFromRequest(request);
   const payment=profilePaymentManifest(X402_JSON,profile,origin,env,hostedMcpTools(profile,request,env));
-  return {...base,x402Version:payment.x402Version,x402_version:payment.x402_version,
+  return {...base,...settlementDiscovery(origin),x402Version:payment.x402Version,x402_version:payment.x402_version,
     integration_status:payment.integration_status,offers:payment.offers,
     machine_contract_url:payment.machine_contract_url,canonical_payment_manifest:origin+'/.well-known/x402',
     payment_quote_policy:payment.payment_quote_policy,
