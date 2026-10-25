@@ -19,6 +19,7 @@ export function serviceOffersHtml(escape, email, repository) {
   <div class="card"><h3>Supplier Evidence Desk</h3>
   <p>For procurement and onboarding teams: prepare one supplier's document pack, assign evidence requests and compare updates.</p>
   <p>The browser workspace includes source attachments, an editable checklist, owner request tracking, saved versions and review exports. Dossier contents stay on your device; complete JSON backups carry the files and history. A person reviews authenticity and decides whether to onboard.</p>
-  <a href="https://agendamcp.dpdns.org/supplier-desk">Open the free supplier workspace</a> · <a href="${escape(contact('Supplier Evidence Desk'))}">Scope a dossier preparation assignment</a></div>
+  <p>Indicative first-assignment price: 99 USD for one supplier, up to five files / 20 pages / ten claims, with one agreed revision. Scope, availability and final fee are confirmed in a written quote before payment.</p>
+  <a href="/supplier-review">See the finished-format sample and request a quote</a> · <a href="https://agendamcp.dpdns.org/supplier-desk">Open the free supplier workspace</a></div>
   <p>Source authenticity, factual judgment, legal decisions and final submission remain with the responsible person. Describe the task first; agree a permitted transfer channel before sharing confidential materials.</p></section>`;
 }

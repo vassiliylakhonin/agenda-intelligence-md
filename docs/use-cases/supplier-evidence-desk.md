@@ -1,5 +1,29 @@
 # Supplier Evidence Desk
 
+## Bounded preparation service
+
+`GET /supplier-review` serves a static HTML offer and a finished-format synthetic
+handover; `GET /supplier-review/sample.md` returns the same illustrative source,
+claim/gap and owner-request rows as UTF-8 Markdown. HEAD returns the matching
+content type with no body; other methods return 405 with `Allow: GET, HEAD`.
+Both routes are read-only, without scripts, uploads, checkout or document storage.
+The offer is linked from the existing fleet landings and sitemap.
+
+The indicative first-assignment price is **99 USD**: one supplier, at most five
+files / 20 total pages / ten claims or checklist questions, and one agreed
+revision. English or Russian output is agreed first. A written quote confirms
+scope, availability, delivery date, final fee, taxes, acceptance criteria and a
+permitted transfer channel before payment. OCR, translation and specialist
+legal/compliance review require separate scope. Existing API tariffs, credits,
+quotas and the separate Human Review Pilot are unchanged.
+
+The contact link opens an editable email draft with blank scope questions. It
+does not send, attach evidence or create an order. The sample retains a changed
+questionnaire expiry alongside an unchanged expired certificate and conflicting
+insurance limits; an apparent improvement cannot close the evidence gap. Its
+fictional names, excerpts and requests do not establish expert review, customer
+acceptance, demand, payments or verified supplier status.
+
 The free workspace at `/supplier-desk` prepares a supplier's document pack for a
 procurement/onboarding reviewer. It supports an editable checklist, source files
 or excerpts, owner request drafts and manual statuses, device-local saved
