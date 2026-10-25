@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## First-result follow-through and supplier offer — 2026-10-25
+
+- Add free input-format validation to trial-limit recovery, using the same raw trial fields on all ten campaign profiles. Distinguish network campaign and daily capacity, preserve the last result, reject stale preflight replies and keep retry/payment explicit. Show feedback as recorded only after acknowledgment for its completed attempt; offer an explicit revision step without submitting.
+- Publish read-only `/supplier-review` and `/supplier-review/sample.md`: a source-linked synthetic handover, open owner requests and an unresolved adverse update. Offer a bounded first assignment at an indicative 99 USD with written scope/price confirmation before payment. No upload, checkout, message delivery or customer outcome is created; API tariffs, quotas and human approval remain unchanged.
+
 ## Smithery publisher metadata — 2026-10-24
 
 - Align the local MCP publisher configuration with package 1.21.2, the current project homepage and deterministic supplied-evidence checks. Remove unsupported latency, retention, clearance and autonomous-arbitration claims from its description and keywords. Hosted registry descriptions and tool snapshots are maintained separately in Smithery.

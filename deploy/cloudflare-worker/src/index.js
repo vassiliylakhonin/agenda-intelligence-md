@@ -15,6 +15,7 @@ import {ANSWER_REVIEW_TOOL,ANSWER_REVIEW_OPEN_TOOL,ANSWER_REVIEW_URI,ANSWER_REVI
   answerReviewTools,isAnswerReviewTool,answerReviewErrors,reviewAnswer,answerReviewTerms} from './answer-review.js';
 import {ANSWER_REVIEW_HTML} from './answer-review-html.js';
 import {SUPPLIER_DESK_HTML} from './supplier-desk-page.js';
+import {supplierReviewOfferHtml, SUPPLIER_REVIEW_SAMPLE} from './supplier-review-offer.js';
 import {SUPPLIER_DESK_CLIENT} from './supplier-desk-bundle.js';
 import {SUPPLIER_DOCUMENT_WORKER} from './supplier-document-worker-bundle.js';
 import { handleTrialFeedback, recordTrialFeedback } from './trial-feedback.js';
@@ -14459,7 +14460,7 @@ function robotsTxt(request) {
 function sitemapXml(request) {
   const origin = originFromRequest(request);
   const paths = [
-    "/", "/trust", "/privacy", "/terms", "/sample-dossier", "/supplier-desk",
+    "/", "/trust", "/privacy", "/terms", "/sample-dossier", "/supplier-desk", "/supplier-review",
     "/profiles/confidential-project-room", "/.well-known/agent-card.json",
     "/.well-known/ai-catalog.json", "/.well-known/mcp/server-card.json",
     "/api/openapi.json", "/llms.txt"
@@ -15735,6 +15736,18 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
   }
   if (request.method === "GET" && PUBLIC_SCHEMAS[url.pathname.slice(1)]) {
     return jsonResponse(PUBLIC_SCHEMAS[url.pathname.slice(1)], 200, {"cache-control": "public, max-age=300"});
+  }
+  if (['/supplier-review','/supplier-review/sample.md'].includes(url.pathname)) {
+    const headers = {
+      'cache-control':'public, max-age=300','x-content-type-options':'nosniff','referrer-policy':'no-referrer',
+      'content-security-policy':"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      'permissions-policy':'camera=(), microphone=(), geolocation=()'
+    };
+    if (!['GET','HEAD'].includes(request.method)) return textResponse('Method not allowed',405,{...headers,allow:'GET, HEAD'});
+    const markdown = url.pathname.endsWith('.md');
+    return new Response(request.method==='HEAD'?null:markdown?SUPPLIER_REVIEW_SAMPLE:supplierReviewOfferHtml(),{
+      status:200,headers:{...headers,'content-type':markdown?'text/markdown; charset=utf-8':'text/html; charset=utf-8'}
+    });
   }
   if (['/supplier-desk','/supplier-desk.js','/supplier-document-worker.js'].includes(url.pathname)) {
     const headers = {

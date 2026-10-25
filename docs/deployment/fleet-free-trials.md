@@ -271,3 +271,27 @@ separate, and `insufficient_information` stays an evidence/input diagnostic.
 The 13 October Output experiment expands only that product's campaign allowance
 to five; existing reservations remain counted. Failed retries preserve the last
 completed result and its usefulness feedback. See [Output trial](output-verification-trial.md).
+
+## Continue after a limit or completed review (25 October 2026)
+
+Landing recovery distinguishes campaign network exhaustion (does not reset
+daily) from shared daily capacity and unknown admission. It keeps edited input,
+the last completed result and its feedback receipt. The free format button posts
+`{tool:"free_trial",input:...}` to the existing `/v1/validate-input`: the same raw
+fields work for every trial profile, including Financial Guard and Escrow. It
+requires the preflight response to confirm no evaluation, attempt, payment or
+authorization, and rejects stale replies after input edits. Authentication and
+campaign counters remain unchanged. No automatic retry or payment is started.
+
+Trial terms add `input_preflight` (REST endpoint, MCP tool, `target_tool`, raw
+input mode and scope flags) and `exhausted_next_steps` (saved example, false
+automatic retry/payment flags and guidance). These are optional additive
+metadata; the evaluation response and v1 request schemas do not change.
+
+After a completed result, an explicit revision button focuses the editable
+input without submission; another evaluation still needs normal admission.
+Feedback controls show pending until the server acknowledges the same attempt,
+then show recorded and the next step. Failed feedback permits an explicit retry;
+a late reply cannot rate a newer result. Payload and private input boundaries
+remain unchanged. Use `test/trial-next-steps.test.js` and the existing completion
+follow-through regressions to verify without consuming live allowances.

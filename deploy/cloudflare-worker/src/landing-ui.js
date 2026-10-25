@@ -1,3 +1,4 @@
+import { TRIAL_NEXT_STEPS_SCRIPT } from './trial-next-steps.js';
 import { MINERAL_WORKFLOW_CLIENT_SCRIPT } from './mineral-workflow-client.js';
 import { WORKED_EXAMPLES } from "./worked-examples.js";
 import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
@@ -106,9 +107,10 @@ function landingHtml(request, env) {
   const reviewPanel = `    <div id="profile-review" hidden><h3 id="profile-review-title">Last completed check</h3>
     ${profile === 'critical_minerals_due_diligence' ? '<div id="mineral-workflow" hidden></div>' : ''}
     <div id="profile-summary" aria-live="polite"></div>
+    ${freeTrial ? '<div id="profile-followthrough" hidden><h3>Choose your next step</h3><p>Use the result to collect one missing piece of evidence, then review a revision when ready. Each admitted rerun uses another attempt; changing input does not restore a spent allowance.</p><button type="button" onclick="agendaNextSteps.revise()">Review a revision — no submission</button> · <a href="#scoped-services">Scope a human review</a></div>' : ''}
     <div id="profile-progress" aria-live="polite"></div>
     <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
-    ${freeTrial ? `<div id="profile-feedback-panel" hidden><p>Did the last completed check give you a useful next step? <button id="profile-helpful" type="button" disabled onclick="submitTrialFeedback('useful_next_step')">Useful next step</button> · <button id="profile-blocked" type="button" disabled onclick="submitTrialFeedback('still_blocked')">Still blocked</button><br><small>Optional: sends only your choice linked to the completed free check, without its input or result. <a href="/privacy">Privacy</a>.</small><span id="profile-feedback-status" role="status"></span><br>
+    ${freeTrial ? `<div id="profile-feedback-panel" hidden><p>Did the last completed check give you a useful next step? <button id="profile-helpful" type="button" disabled onclick="submitTrialFeedback('useful_next_step')">Useful next step</button> · <button id="profile-blocked" type="button" disabled onclick="submitTrialFeedback('still_blocked')">Still blocked</button><br><small>Optional: sends only your choice linked to the completed free check, without its input or result. <a href="/privacy">Privacy</a>.</small><span id="profile-feedback-status" role="status" style="display:block;margin-top:8px"></span><br>
     <a id="profile-feedback" href="${escapeHtml(trialFeedbackMailto(profile, null, SUPPORT_CONTACT_EMAIL))}">Share what helped or blocked your task</a><br><small>Opens an optional email draft. Your request and result are not attached. Review and send it yourself.</small></p></div>` : ''}
     </div>`;
   const allowancePanel = freeTrial ? `<button id="profile-allowance-check" type="button" onclick="refreshTrialAvailability()">Check free allowance before preparing input</button>
@@ -388,7 +390,7 @@ function landingHtml(request, env) {
       <button id="profile-run" type="submit">${routingTool ? 'Route question free' : freeTrial ? 'Run free evidence check' : 'Evaluate evidence'}</button>
       ${freeTrial ? `<button id="profile-paid" type="button" hidden onclick="runProfileExample(event, true)">Choose paid evaluation — ${trialTerms.paid_price_usdc} USDC</button>` : ''}
       <p id="profile-status" role="status"></p>
-      ${freeTrial ? '<div id="profile-recovery" hidden><p>You can inspect the saved synthetic input and result without a wallet or another trial attempt. Your edited input stays here.</p><button type="button" onclick="showWorkedExample()">View saved example — no trial attempt</button></div>' : ''}
+      ${freeTrial ? '<div id="profile-recovery" hidden><h3>Continue without losing your work</h3><p id="profile-recovery-message">Your edited input stays here. You can inspect the saved synthetic example without another trial attempt.</p><button id="profile-validate-input" type="button" onclick="agendaNextSteps.validateInput()">Validate this input free — no trial attempt</button> · <button type="button" onclick="showWorkedExample()">View saved example — no trial attempt</button><p id="profile-input-status" role="status"></p><p><a href="#scoped-services">Need a finished review? Describe one assignment</a></p></div>' : ''}
     </form>
     ${freeTrial && profile === 'agent_output_verification' ? '' : reviewPanel}
   </div>` : ""}
@@ -509,6 +511,14 @@ var agendaHasCompletedResult = false;
 var agendaTrialBlocked = false;
 var agendaFeedbackAttempt = null;
 var agendaFeedbackSent = false;
+var agendaFeedbackPending = null;
+${freeTrial ? TRIAL_NEXT_STEPS_SCRIPT + `
+var agendaNextSteps = createTrialNextSteps({document:document,
+  fetch:function(url,init) { return fetch(url,init); },
+  headers:function() { return agendaTelemetryHeaders('/v1/validate-input',{'content-type':'application/json'}); },
+  readInput:function() { return document.getElementById('profile-request').value; },
+  tool:${JSON.stringify(trialTerms.mcp_tool)}, validationUrl:${JSON.stringify(origin+'/v1/validate-input')},
+  paidPrice:${JSON.stringify(trialTerms.paid_price_usdc)}});` : ''}
 ${freeTrial ? `function setTrialRecovery(visible) {
   var element = document.getElementById('profile-recovery');
   if (element) element.hidden = !visible;
@@ -537,11 +547,13 @@ async function refreshTrialAvailability() {
         ? 'This network has used this product’s ${trialTerms.attempts_per_network} campaign attempts. Shared networks share the allowance; it does not reset daily. The saved example is still free.'
         : 'Today’s shared free capacity is full. Retry after the next UTC midnight. The saved example is still free.';
       setTrialRecovery(true);
+      agendaNextSteps.showRecovery(availability.status, availability.reset_at);
       document.getElementById('profile-paid').hidden = false;
     } else throw new Error('unavailable');
   } catch {
     status.textContent = 'Free allowance could not be checked. No attempt was consumed. You can still view the saved example or submit for the authoritative admission check.';
     setTrialRecovery(true);
+    agendaNextSteps.showRecovery('unavailable');
   } finally { button.disabled = false; }
 }` : ''}
 ${freeTrial ? `function updateTrialFeedback(status) {
@@ -550,21 +562,28 @@ ${freeTrial ? `function updateTrialFeedback(status) {
 ${freeTrial ? `async function submitTrialFeedback(choice) {
   var status = document.getElementById('profile-feedback-status');
   if (!agendaFeedbackAttempt) { status.textContent = 'Complete a free check before rating it.'; return; }
-  if (agendaFeedbackSent) { status.textContent = 'Feedback already recorded for this check.'; return; }
+  if (agendaFeedbackPending === agendaFeedbackAttempt) { status.textContent = 'Feedback is being saved. No repeat submission is needed.'; return; }
+  if (agendaFeedbackSent) { status.textContent = 'Feedback already recorded for this check. You can review a revision when ready.'; return; }
   var attempt = agendaFeedbackAttempt;
-  agendaFeedbackSent = true;
+  agendaFeedbackPending = attempt;
+  agendaNextSteps.feedbackControls(true);
   try {
     var response = await fetch('/telemetry/trial-feedback', {method:'POST',
       headers:agendaTelemetryHeaders('/telemetry/trial-feedback', {'content-type':'application/json'}),
       body:JSON.stringify({attempt_id:attempt, response:choice})});
     if (!response.ok) throw new Error('unavailable');
-    if (agendaFeedbackAttempt === attempt) status.textContent = 'Thanks — your choice was recorded. No input or result was sent.';
+    if (agendaFeedbackAttempt === attempt) {
+      agendaFeedbackSent = true;
+      status.textContent = 'Thanks — your choice was recorded. No input or result was sent. Review a revision or describe what still blocks the task using the optional email draft.';
+      agendaNextSteps.completed();
+    }
   } catch {
     if (agendaFeedbackAttempt === attempt) {
       agendaFeedbackSent = false;
+      agendaNextSteps.feedbackControls(false);
       status.textContent = 'Feedback could not be recorded. You can retry or use the optional email draft.';
     }
-  }
+  } finally { if (agendaFeedbackPending === attempt) agendaFeedbackPending = null; }
 }` : ''}
 async function runProfileExample(event, paid, reviewFlow) {
   event.preventDefault();
@@ -609,6 +628,7 @@ async function runProfileExample(event, paid, reviewFlow) {
     ${freeTrial ? `if (!paid && completed && body.trial?.completion_recorded) {
       agendaFeedbackAttempt = response.headers.get('x-payment-attempt-id');
       agendaFeedbackSent = false;
+      agendaFeedbackPending = null;
       var feedbackPanel = document.getElementById('profile-feedback-panel');
       if (feedbackPanel) feedbackPanel.hidden = !agendaFeedbackAttempt;
       ['helpful','blocked'].forEach(function(kind) {
@@ -619,6 +639,7 @@ async function runProfileExample(event, paid, reviewFlow) {
       if (feedbackStatus) feedbackStatus.textContent = '';
     }` : ''}
     if (completed) {
+      ${freeTrial ? 'agendaNextSteps.completed();' : ''}
       agendaHasCompletedResult = true;
       var review = body.result?.structuredContent || body;
       ${profile === 'critical_minerals_due_diligence' ? 'renderMineralWorkflow(review, payload);' : ''}
@@ -638,6 +659,7 @@ async function runProfileExample(event, paid, reviewFlow) {
       agendaTrialBlocked = true;
       status.textContent = body.error + ' Your input is preserved. No payment was made.';
       setTrialRecovery(true);
+      agendaNextSteps.showRecovery(body.trial?.limit_reason, null);
       return;
     }` : ''}
     status.textContent = (completed ? 'Evaluation returned. Inspect evidence gaps and limitations before acting.' : (body.error || body.result?.isError ? 'Tool refused the request. See the response below.' : 'Request failed (HTTP ' + response.status + '). See the response below.')) + ' Trace: ' + traceId;

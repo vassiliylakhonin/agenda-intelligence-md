@@ -30,6 +30,11 @@ export function outputTrialTerms(profile = 'agent_output_verification') {
         ? 'Review dossier_review.owner_actions, obtain the missing authorized source excerpts and rerun with the updated dossier. Keep project, commodity and scope consistent. Do not retry unchanged input just to raise the score; illustrative evidence remains insufficient.'
         : 'Review the evidence gaps and rerun only after updating your supplied input. Each admitted rerun consumes another attempt; no automatic retry.'},
     a2a: {endpoint:'/message/send',method:'SendMessage',metadata_key:'com.agenda/free-trial',operations:['status','evaluate','feedback'],shared_allowance:true},
+    input_preflight:{endpoint:'/v1/validate-input',mcp_tool:'validate_input',target_tool:MCP_TRIAL_TOOL,
+      input_mode:'same_raw_fields_as_trial',evaluation_performed:false,attempt_consumed:false,
+      guidance:'Check {tool:free_trial,input:your_request} without evaluating or restoring allowance. Existing production authentication applies.'},
+    exhausted_next_steps:{saved_example:'/?example=1#worked-example',automatic_retry:false,automatic_payment:false,
+      guidance:'Keep your input and last completed result. Validate input free, inspect the saved example, or explicitly choose a separately priced evaluation. The network campaign allowance does not reset daily.'},
     availability_endpoint: trialPath(profile) + '?availability=1',
     worked_example_url: '/?example=1#worked-example',
     evaluation_kind: config.kind || 'evidence_review', attempts_per_network: trialAttemptLimit(profile),
