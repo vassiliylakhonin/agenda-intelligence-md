@@ -15,6 +15,9 @@ import {ANSWER_REVIEW_TOOL,ANSWER_REVIEW_OPEN_TOOL,ANSWER_REVIEW_URI,ANSWER_REVI
   answerReviewTools,isAnswerReviewTool,answerReviewErrors,reviewAnswer,answerReviewTerms} from './answer-review.js';
 import {ANSWER_REVIEW_HTML} from './answer-review-html.js';
 import {SUPPLIER_DESK_HTML} from './supplier-desk-page.js';
+import {DOCUMENT_ARCHIVE_HTML} from './document-archive-page.js';
+import {DOCUMENT_ARCHIVE_CLIENT} from './document-archive-bundle.js';
+import {taskStage,executionTaskStage,documentArchiveIntent,documentArchiveRoute} from './a2a-task-stage.js';
 import {supplierReviewOfferHtml, SUPPLIER_REVIEW_SAMPLE} from './supplier-review-offer.js';
 import {SUPPLIER_DESK_CLIENT} from './supplier-desk-bundle.js';
 import {SUPPLIER_DOCUMENT_WORKER} from './supplier-document-worker-bundle.js';
@@ -11748,6 +11751,7 @@ const {
   logFunnelEvent,
   logMcpDiscoveryEvent,
   logInputValidationEvent,
+  logA2aTaskStage,
   logPaymentEvent,
   callerHash,
   callOutcome,
@@ -12816,6 +12820,12 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
       if (prior.status.state !== "TASK_STATE_INPUT_REQUIRED") return unsupportedTaskOperation(id);
     }
     const { result, promptChars, structuredChars, modulesUsed } = await runProfileRequest(profile, params, request, env);
+    const stage=executionTaskStage(result,{routing:isFreeRoutingCall(profile,params),utility:['fleet_directory','decision_policies_list','decision_verify'].includes(params.capability)});
+    result.metadata={...(result.metadata||{}),task_progress:stage};
+    if(result.metadata.operation==='document_archive_route'){
+      await logA2aTaskStage(request,env,stage);
+      return {jsonrpc:'2.0',id,result:isV1SendMessage?v1SendMessageResponse(result,request,env):result};
+    }
     const probeReason = actionProbeReason(request, promptChars);
     // One id per call, from the caller's X-Trace-Id / params.trace_id when
     // sent, generated otherwise. Stamped on the task before logging so the
@@ -12842,6 +12852,7 @@ async function _handleJsonRpcInner(payload, request, env = {}, ctx = {}) {
         return jsonRpcError(id, -32603, "Task storage unavailable");
       }
     }
+    await logA2aTaskStage(request,env,stage);
     const event = await logUsageEvent(request, {
       jsonrpc_method: payload.method,
       jsonrpc_id_present: payload.id !== undefined,
@@ -13668,7 +13679,9 @@ async function runProfileRequest(profile, params, request, env = {}) {
     let result;
     let promptChars;
     let modulesUsed;
-    if (profile === "cis_secondary_sanctions") {
+    if(profile==='agenda'&&!params.message?.taskId&&!new URL(request.url).pathname.startsWith('/mcp')&&isFreeRoutingCall(profile,params)&&documentArchiveIntent(extractText(params))){
+      result=documentArchiveRoute(originFromRequest(request));promptChars=extractText(params).length;modulesUsed=['document_archive_route'];
+    } else if (profile === "cis_secondary_sanctions") {
       if (params.capability === "cis_secondary_sanctions_batch") {
         result = await a2aResultForCisSecondarySanctionsBatch(params, env);
         const batch = cisBatchRequestFromParams(params);
@@ -13768,7 +13781,7 @@ async function runProfileRequest(profile, params, request, env = {}) {
     // promptChars above is what this profile could parse. receivedChars is what
     // arrived. Both are reported, because the difference between them is the
     // signal that a caller sent something the gate could not read.
-    if (result?.status?.state === "TASK_STATE_COMPLETED" && !["decision_policies_list","decision_check","decision_verify","fleet_directory"].includes(params.capability)) {
+    if (result?.status?.state === "TASK_STATE_COMPLETED" && result.metadata?.operation!=='document_archive_route' && !["decision_policies_list","decision_check","decision_verify","fleet_directory"].includes(params.capability)) {
       if (result.metadata?.response) result.metadata.response = withEvaluationContract(result.metadata.response);
       for (const artifact of result.artifacts || []) for (const part of artifact.parts || []) {
         if (part.data && typeof part.data === "object" && !Array.isArray(part.data)) part.data = withEvaluationContract(part.data);
@@ -13894,10 +13907,11 @@ async function handleCatalogReadCommand(payload, request, env) {
       {data: content.data, mediaType: 'application/json'}
     ]}],
     metadata: {operation, product_profile: profile,
-      evaluation_performed: false, attempt_consumed: false, authorization_granted: false,
+      evaluation_performed: false, attempt_consumed: false, authorization_granted: false,task_progress:taskStage('setup'),
       human_review_required: true, task_persisted: false}
   };
   await logFunnelEvent(request, operation, env);
+  await logA2aTaskStage(request,env,task.metadata.task_progress);
   if (version === A2A_LEGACY_PROTOCOL_VERSION) {
     task.kind = 'task'; task.status.state = 'completed';
     return reply({jsonrpc: '2.0', id: payload.id, result: task});
@@ -13909,7 +13923,7 @@ async function handleA2ATrial(payload, request, env, ctx = {}) {
   const profile = agentProfile(request, env), version = requestedA2aVersion(request, payload);
   const trialHeaders = {};
   const reply = (value, status = 200, headers = {}) => a2aJsonResponse(value, status, {'cache-control':'no-store','A2A-Version':version || A2A_PROTOCOL_VERSION,...trialHeaders,...headers});
-  const fail = (code, message, status = 400, data = {}) => reply(jsonRpcError(payload?.id ?? null, code, message, data),status);
+  const fail = async(code, message, status = 400, data = {}) => {await logA2aTaskStage(request,env,taskStage('failed'),status);return reply(jsonRpcError(payload?.id ?? null, code, message, data),status);};
   if (!(request.headers.get('content-type') || '').toLowerCase().includes('application/json')) return fail(-32005,'Use application/json',415);
   if (!isProductionAuthorized(request,env,profile)) return fail(-32001,'Unauthorized',401);
   if (!outputTrialEnabled(profile,env)) return fail(-32601,'Free trial is not enabled for this product',404);
@@ -13947,9 +13961,11 @@ async function handleA2ATrial(payload, request, env, ctx = {}) {
       parts:[{data:feedback || trialStatus || data,mediaType:'application/json'}]}],
     metadata:{product_profile:profile,human_review_required:!trialStatus && !feedback,
       ...(feedback?{trial_feedback:feedback,evaluation_performed:false}:trialStatus?{trial_status:trialStatus,evaluation_performed:false}:{trial,response:data}),
+      task_progress:taskStage(trialStatus||feedback?'setup':trial?.completion_recorded?'evaluation_completed':'unmeasured'),
       trace_id:traceIdFromRequest(request,{})}};
   if (version === A2A_LEGACY_PROTOCOL_VERSION) {
     task.kind='task';task.status.state='completed';
+    await logA2aTaskStage(request,env,task.metadata.task_progress);
     return reply({jsonrpc:'2.0',id:payload.id,result:task});
   }
   const shaped=v1SendMessageResponse(task,request,env).task;
@@ -13959,6 +13975,7 @@ async function handleA2ATrial(payload, request, env, ctx = {}) {
     shaped.metadata={...shaped.metadata,continuation:{token,header:'X-Task-Token',instruction:'Keep this capability private; use it only to retrieve this completed task.'}};
   }
   if (!await saveTask(env,profile,shaped,await taskOwnerKey(request,env,token))) return fail(-32603,'Task storage unavailable',503,{attempt_consumed:Boolean(trial),code:'trial_task_storage_unavailable'});
+  await logA2aTaskStage(request,env,task.metadata.task_progress);
   return reply({jsonrpc:'2.0',id:payload.id,result:{task:shaped}});
 }
 
@@ -14460,7 +14477,7 @@ function robotsTxt(request) {
 function sitemapXml(request) {
   const origin = originFromRequest(request);
   const paths = [
-    "/", "/trust", "/privacy", "/terms", "/sample-dossier", "/supplier-desk", "/supplier-review",
+    "/", "/trust", "/privacy", "/terms", "/sample-dossier", "/supplier-desk", "/supplier-review", "/document-archive",
     "/profiles/confidential-project-room", "/.well-known/agent-card.json",
     "/.well-known/ai-catalog.json", "/.well-known/mcp/server-card.json",
     "/api/openapi.json", "/llms.txt"
@@ -15736,6 +15753,13 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
   }
   if (request.method === "GET" && PUBLIC_SCHEMAS[url.pathname.slice(1)]) {
     return jsonResponse(PUBLIC_SCHEMAS[url.pathname.slice(1)], 200, {"cache-control": "public, max-age=300"});
+  }
+  if(['/document-archive','/document-archive.js'].includes(url.pathname)){
+    const headers={'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer',
+      'content-security-policy':"default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      'permissions-policy':'camera=(), microphone=(), geolocation=()'};
+    if(!['GET','HEAD'].includes(request.method))return textResponse('Method not allowed',405,{...headers,allow:'GET, HEAD'});
+    return new Response(request.method==='HEAD'?null:url.pathname.endsWith('.js')?DOCUMENT_ARCHIVE_CLIENT:DOCUMENT_ARCHIVE_HTML,{status:200,headers:{...headers,'content-type':url.pathname.endsWith('.js')?'text/javascript; charset=utf-8':'text/html; charset=utf-8'}});
   }
   if (['/supplier-review','/supplier-review/sample.md'].includes(url.pathname)) {
     const headers = {

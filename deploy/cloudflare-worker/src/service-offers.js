@@ -20,6 +20,7 @@ export function serviceOffersHtml(escape, email, repository) {
   <p>For procurement and onboarding teams: prepare one supplier's document pack, assign evidence requests and compare updates.</p>
   <p>The browser workspace includes source attachments, an editable checklist, owner request tracking, saved versions and review exports. Dossier contents stay on your device; complete JSON backups carry the files and history. A person reviews authenticity and decides whether to onboard.</p>
   <p>Indicative first-assignment price: 99 USD for one supplier, up to five files / 20 pages / ten claims, with one agreed revision. Scope, availability and final fee are confirmed in a written quote before payment.</p>
-  <a href="/supplier-review">See the finished-format sample and request a quote</a> · <a href="https://agendamcp.dpdns.org/supplier-desk">Open the free supplier workspace</a></div>
+  <a href="/supplier-review">See the finished-format sample and request a quote</a> · <a href="https://agendamcp.dpdns.org/supplier-desk">Open the free supplier workspace</a>
+  <p>Reconciling a wider document archive? <a href="/document-archive">Build a local file register, check copies and prepare a reviewer packet</a>.</p></div>
   <p>Source authenticity, factual judgment, legal decisions and final submission remain with the responsible person. Describe the task first; agree a permitted transfer channel before sharing confidential materials.</p></section>`;
 }

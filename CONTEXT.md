@@ -4,6 +4,22 @@ Agenda Intelligence is the domain of structuring, validating, scoring, and audit
 
 ## Language
 
+**Document Archive**:
+A user-scoped collection of supplied file records and an explicit checklist, prepared for a responsible human reviewer.
+_Avoid_: Complete business archive, authenticated document repository
+
+**Exact File Duplicate**:
+Two supplied files whose bytes have been checked and have the same content digest; another copy is not another independent document.
+_Avoid_: Similar document, confirmed duplicate business record, authenticated original
+
+**Archive Checklist Gap**:
+An explicit checklist item without the requested number of distinct supplied file contents assigned to it. It does not establish that the document is absent elsewhere.
+_Avoid_: Missing document in the world, legal non-compliance
+
+**A2A Task Stage**:
+A server-derived observation of setup, routing, required input, completed evaluation or refusal, separate from HTTP success and from human acceptance of work.
+_Avoid_: Customer conversion, factual correctness, payment confirmation
+
 **Agenda Intelligence MD**:
 An evidence and evaluation layer for strategic-intelligence agents that defines reasoning protocols, schemas, scoring, and audit expectations.
 _Avoid_: Fact-checker, news crawler, autonomous news agent, agent framework

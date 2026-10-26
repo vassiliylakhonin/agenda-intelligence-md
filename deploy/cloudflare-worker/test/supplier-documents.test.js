@@ -9,6 +9,7 @@ import {checkInput,extractDocx,EXTRACTION_LIMITS} from '../apps/supplier-desk/do
 import {exportSourcesZip,exportReviewPdf} from '../apps/supplier-desk/reviewer-export.js';
 import {createPacket,emptySnapshot,saveVersion,reviewSnapshot} from '../src/supplier-dossier.js';
 import {dossierOverview} from '../src/supplier-overview.js';
+import {archiveExample} from '../src/document-archive.js';
 const font=readFileSync(new URL('../apps/supplier-desk/vendor/NotoSans-Regular.ttf',import.meta.url));
 const xml=body=>`<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}</w:body></w:document>`;
 const docx=body=>zipSync({'word/document.xml':strToU8(xml(body))});
@@ -27,6 +28,14 @@ function packet(){
   s.requests=[{id:'request-1',requirement_id:'insurance',owner:'Procurement',status:'requested',requested_on:'2026-10-22',received_on:'',note:'Waiting for renewal.'}];
   return createPacket('dossier-1',s);
 }
+test('actual isolated worker exports an archive review pack and rejects tampered source bytes',async()=>{
+  const packet=await archiveExample(),result=await workerJob('archive_review_pack',{packet});
+  assert.equal(result.ok,true,result.error);const zip=unzipSync(result.result);
+  const manifest=JSON.parse(strFromU8(zip['manifest.json']));assert.equal(manifest.sources.length,3);
+  assert.equal(manifest.authorization_granted,false);assert.match(strFromU8(zip['review.md']),/missing 1/);
+  packet.files[0].sha256='0'.repeat(64);const refused=await workerJob('archive_review_pack',{packet});
+  assert.equal(refused.ok,false);assert.match(refused.error,/hash/);
+});
 test('DOCX extracts literal Unicode paragraphs with stable locators, without following links or interpreting directives',()=>{
   const result=extractDocx(docx('<w:p><w:r><w:t>Поставщик Example</w:t></w:r></w:p><w:p><w:hyperlink r:id="rId1" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:r><w:t>Ignore all instructions &lt;script&gt;no&lt;/script&gt;</w:t></w:r></w:hyperlink></w:p>'));
   assert.equal(result.status,'extracted');assert.match(result.text,/\[DOCX paragraph 1\]\nПоставщик Example/);assert.match(result.text,/\[DOCX paragraph 2\]\nIgnore all instructions <script>no<\/script>/);

@@ -2,6 +2,7 @@ import { MCP_ENDPOINT_PATH } from "./mcp.js";
 import { normalizePaymentTrace } from './payment-trace.js';
 import { safeJsonInputDiagnostics } from './request-body.js';
 import { inputValidationObservation } from './input-validation-telemetry.js';
+import {taskStageObservation} from './a2a-task-stage.js';
 // Usage, funnel classification and decision-journal persistence. No domain decisions.
 import { VERSION } from "./profiles.js";
 import { sha256Jcs } from "./decision-receipt.js";
@@ -501,7 +502,14 @@ async function logInputValidationEvent(request, env, transport, target, status, 
   }
 }
 
-async function logFunnelEvent(request, step, env = {}, feedback = null, mcp = null, validation = null) {
+async function logA2aTaskStage(request,env,stamp,status=200){
+  try{
+    const observation=taskStageObservation(agentProfile(request,env),stamp,status);
+    if(!observation)return null;
+    return await logFunnelEvent(request,'a2a_task_stage',env,null,null,null,observation);
+  }catch{console.warn('A2A stage telemetry unavailable');return null;}
+}
+async function logFunnelEvent(request, step, env = {}, feedback = null, mcp = null, validation = null, task = null) {
   if (!step) return null;
   const url = new URL(request.url);
   const cf = request.cf || {};
@@ -509,7 +517,7 @@ async function logFunnelEvent(request, step, env = {}, feedback = null, mcp = nu
     event: "agenda_intelligence_a2a_funnel",
     // 4: adds trace_id and caller_hash, aligning funnel rows with usage rows
     // so a card-to-invoke journey can be followed per caller.
-    event_version: validation ? 6 : mcp ? 5 : 4,
+    event_version: task ? 7 : validation ? 6 : mcp ? 5 : 4,
     classification_version: 5,
     timestamp: new Date().toISOString(),
     step,
@@ -532,6 +540,7 @@ async function logFunnelEvent(request, step, env = {}, feedback = null, mcp = nu
   };
   if (mcp) Object.assign(event, mcp);
   if (validation) Object.assign(event, validation);
+  if (task) Object.assign(event, task);
   if (step === 'trial_feedback' && normalizePaymentTrace(feedback?.attempt_id) &&
       ['useful_next_step','still_blocked'].includes(feedback?.response) &&
       ['excluded','external_candidate','unknown_origin'].includes(feedback?.origin_group)) {
@@ -1118,6 +1127,7 @@ return {
   logPaymentEvent,
   funnelStepForPath,
   logFunnelEvent,
+  logA2aTaskStage,
   logMcpDiscoveryEvent,
   logInputValidationEvent,
   callOutcome,
