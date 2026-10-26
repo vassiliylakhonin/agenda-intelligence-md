@@ -17,6 +17,8 @@ import {ANSWER_REVIEW_HTML} from './answer-review-html.js';
 import {SUPPLIER_DESK_HTML} from './supplier-desk-page.js';
 import {DOCUMENT_ARCHIVE_HTML} from './document-archive-page.js';
 import {DOCUMENT_ARCHIVE_CLIENT} from './document-archive-bundle.js';
+import {handleArchiveFeedback} from './archive-feedback.js';
+import {ARCHIVE_REVIEW_OFFER_HTML,ARCHIVE_REVIEW_SAMPLE} from './archive-review-offer.js';
 import {taskStage,executionTaskStage,documentArchiveIntent,documentArchiveRoute} from './a2a-task-stage.js';
 import {supplierReviewOfferHtml, SUPPLIER_REVIEW_SAMPLE} from './supplier-review-offer.js';
 import {SUPPLIER_DESK_CLIENT} from './supplier-desk-bundle.js';
@@ -11752,6 +11754,7 @@ const {
   logMcpDiscoveryEvent,
   logInputValidationEvent,
   logA2aTaskStage,
+  logArchiveFeedback,
   logPaymentEvent,
   callerHash,
   callOutcome,
@@ -14477,7 +14480,7 @@ function robotsTxt(request) {
 function sitemapXml(request) {
   const origin = originFromRequest(request);
   const paths = [
-    "/", "/trust", "/privacy", "/terms", "/sample-dossier", "/supplier-desk", "/supplier-review", "/document-archive",
+    "/", "/trust", "/privacy", "/terms", "/sample-dossier", "/supplier-desk", "/supplier-review", "/document-archive", "/archive-review",
     "/profiles/confidential-project-room", "/.well-known/agent-card.json",
     "/.well-known/ai-catalog.json", "/.well-known/mcp/server-card.json",
     "/api/openapi.json", "/llms.txt"
@@ -15753,6 +15756,13 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
   }
   if (request.method === "GET" && PUBLIC_SCHEMAS[url.pathname.slice(1)]) {
     return jsonResponse(PUBLIC_SCHEMAS[url.pathname.slice(1)], 200, {"cache-control": "public, max-age=300"});
+  }
+  if(url.pathname==='/archive-feedback')return handleArchiveFeedback(request,observation=>logArchiveFeedback(request,env,observation));
+  if(['/archive-review','/archive-review/sample.md'].includes(url.pathname)){
+    const headers={'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer',
+      'content-security-policy':"default-src 'none'; style-src 'unsafe-inline'; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'"};
+    if(!['GET','HEAD'].includes(request.method))return textResponse('Method not allowed',405,{...headers,allow:'GET, HEAD'});
+    const markdown=url.pathname.endsWith('.md');return new Response(request.method==='HEAD'?null:markdown?ARCHIVE_REVIEW_SAMPLE:ARCHIVE_REVIEW_OFFER_HTML,{status:200,headers:{...headers,'content-type':markdown?'text/markdown; charset=utf-8':'text/html; charset=utf-8'}});
   }
   if(['/document-archive','/document-archive.js'].includes(url.pathname)){
     const headers={'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer',

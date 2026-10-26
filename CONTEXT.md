@@ -8,6 +8,14 @@ Agenda Intelligence is the domain of structuring, validating, scoring, and audit
 A user-scoped collection of supplied file records and an explicit checklist, prepared for a responsible human reviewer.
 _Avoid_: Complete business archive, authenticated document repository
 
+**Archive Draft**:
+An explicitly saved working copy for resuming a document archive on the same device, separate from a portable backup or reviewer acceptance.
+_Avoid_: Permanent storage, cloud repository, approved archive
+
+**Archive Feedback**:
+A voluntary self-report about preparing a packet or being blocked, with an explicitly declared example/own-file context. It does not verify a download, customer identity or reviewer acceptance.
+_Avoid_: Verified conversion, accepted deliverable, paid customer
+
 **Exact File Duplicate**:
 Two supplied files whose bytes have been checked and have the same content digest; another copy is not another independent document.
 _Avoid_: Similar document, confirmed duplicate business record, authenticated original

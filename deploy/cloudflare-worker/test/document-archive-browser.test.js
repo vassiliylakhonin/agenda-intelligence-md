@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {DOCUMENT_ARCHIVE_CLIENT} from '../src/document-archive-bundle.js';
+import {archiveIDB} from './helpers/archive-idb.js';
 
 class Element{
   constructor(tag='div'){this.tagName=tag.toUpperCase();this.children=[];this.value='';this.textContent='';this.files=[];}
@@ -9,15 +10,16 @@ class Element{
   all(){return [this,...this.children.flatMap(node=>node.all())];}find(text){return this.all().find(node=>node.textContent===text);}
   click(){return this.onclick?.();}
 }
-function browser(){
+function browser(indexedDB={open(){throw Error('Storage must be explicit');}},confirm=()=>true){
   const elements=new Map(),downloads=[];
   const get=id=>{if(!elements.has(id))elements.set(id,new Element());return elements.get(id);};
   const denied=()=>{throw Error('Archive UI must not use network or persistence');};
-  vm.runInNewContext(DOCUMENT_ARCHIVE_CLIENT,{crypto,TextEncoder,TextDecoder,Uint8Array,Blob,atob,btoa,setTimeout,clearTimeout,
-    fetch:denied,indexedDB:{open:denied},localStorage:{setItem:denied,getItem:denied},
-    window:{confirm:()=>true},URL:{createObjectURL:blob=>{downloads.push(blob);return 'blob:local';},revokeObjectURL(){}},
+  const listeners={};
+  vm.runInNewContext(DOCUMENT_ARCHIVE_CLIENT,{crypto,TextEncoder,TextDecoder,Uint8Array,Blob,atob,btoa,setTimeout,clearTimeout,structuredClone,
+    fetch:denied,indexedDB,localStorage:{setItem:denied,getItem:denied},
+    window:{confirm,addEventListener:(name,callback)=>{listeners[name]=callback;}},URL:{createObjectURL:blob=>{downloads.push(blob);return 'blob:local';},revokeObjectURL(){}},
     document:{getElementById:get,createElement:tag=>new Element(tag)}});
-  return {get,downloads,click:async id=>get(id).onclick(),async backup(){await get('download-json').onclick();return JSON.parse(await downloads.at(-1).text());}};
+  return {get,downloads,listeners,click:async id=>get(id).onclick(),async backup(){await get('download-json').onclick();return JSON.parse(await downloads.at(-1).text());}};
 }
 test('actual archive bundle retains the working packet after corrupt backup and oversize batch failure',async()=>{
   const b=browser();await b.click('example');const original=await b.backup();
@@ -43,4 +45,22 @@ test('actual archive bundle handles local uploads, explicit assignment, literal 
   await b.click('download-md');assert.match(await b.downloads.at(-1).text(),/Human review|human review/);
   await b.click('download-csv');assert.match(await b.downloads.at(-1).text(),/source.txt/);
   assert.equal(b.get('workspace').inert,false);
+});
+test('browser saves explicitly, warns on unsaved work, restores after restart and refuses stale replacement',async()=>{
+  const db=archiveIDB(),a=browser(db.indexedDB);await a.click('example');let warned=false;
+  a.listeners.beforeunload({preventDefault(){warned=true;}});assert.equal(warned,true);
+  await a.click('save-device');assert.match(a.get('save-state').textContent,/Saved on this device/);
+  warned=false;a.listeners.beforeunload({preventDefault(){warned=true;}});assert.equal(warned,false);
+  const b=browser(db.indexedDB);await b.click('load-device');assert.equal((await b.backup()).files.length,3);
+  a.get('title').value='Newer revision';a.get('title').oninput();await a.click('save-device');
+  b.get('title').value='Stale revision';b.get('title').oninput();await b.click('save-device');
+  assert.match(b.get('status').textContent,/another tab/);assert.equal((await b.backup()).title,'Stale revision');
+  assert.equal(db.rows.get('current').packet.title,'Newer revision');
+  db.control.fail=true;await a.click('save-device');assert.match(a.get('status').textContent,/save failed/);
+});
+test('starting a checklist requires deliberate replacement and leaves the existing saved copy intact',async()=>{
+  const db=archiveIDB(),b=browser(db.indexedDB);await b.click('example');await b.click('save-device');
+  b.get('archive-template').value='reporting';await b.click('apply-template');
+  const draft=await b.backup();assert.equal(draft.files.length,0);assert.equal(draft.title,'Reporting evidence pack');
+  assert.equal(db.rows.get('current').packet.files.length,3);
 });

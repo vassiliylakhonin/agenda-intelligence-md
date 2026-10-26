@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Archive follow-through — 2026-10-26
+
+- Add explicit device draft save/load/remove with checked original bytes, committed-transaction acknowledgments, unsaved-change warnings and stale-tab protection. Keep one working copy separate from portable archive v1 backups and supplier dossiers; storage errors retain working data.
+- Add editable company, supplier and reporting starters with no supplied evidence or automatic adequacy claims. Publish a bounded archive handover test offer and synthetic sample, with written scope, availability, final price/date and acceptance confirmed before payment.
+- Collect voluntary finite self-reports in a separate same-origin form while preserving the workspace's no-network CSP. Distinguish example/own-file contexts and owner checks; accepted feedback does not prove a download, reviewer acceptance, customer identity or revenue. API tariffs and admission remain unchanged.
+
 ## Document archive review and A2A response stages — 2026-10-26
 
 - Add a free browser-local archive workspace with an explicit checklist, owners, checked original bytes, exact duplicates and same-name/different-content warnings. Count distinct nonempty contents toward user-defined requirements; export a source-linked review, CSV register, checked JSON backup and reviewer ZIP. Reuse the bounded document worker for PDF/DOCX extraction and ZIP export. Preserve working data on invalid imports or failed file batches.
