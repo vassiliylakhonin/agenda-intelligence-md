@@ -1,12 +1,17 @@
 import {ARCHIVE_LIMITS,emptyArchive,archiveFile,reviewArchive,archiveMarkdown,archiveCsv,archiveExample} from '../../src/document-archive.js';
 import {documentJob} from '../supplier-desk/document-client.js';
+import {archiveDraftStore} from './draft-store.js';
+import {archiveTemplate} from '../../src/archive-templates.js';
 const $=id=>document.getElementById(id);
-let packet=emptyArchive(),busy=false;
+let packet=emptyArchive(),busy=false,dirty=false,revision=null,store;
+const localStore=()=>store||=(archiveDraftStore(typeof indexedDB==='undefined'?null:indexedDB));
+const hasWork=()=>Boolean(packet.title||packet.purpose||packet.files.length||packet.requirements.length);
 const node=(tag,text,properties={})=>{const item=document.createElement(tag);if(text!==undefined)item.textContent=text;Object.assign(item,properties);return item;};
 const status=(message,error=false)=>{$('status').textContent=message;$('status').className=error?'error':'';};
 const nextStep={define_scope:'Define the purpose and required checklist',collect_files:'Collect the missing distinct files',prepare_human_review:'Prepare the human review'};
 const assignmentStatus={assigned_for_review:'assigned; review the contents',needs_distinct_files:'more distinct contents needed',unassigned:'no files assigned'};
-function changed(){ $('review').replaceChildren(node('p','The archive changed. Refresh the review before handover.')); }
+function changed(){dirty=true;$('save-state').textContent='Unsaved changes — save on this device or download a JSON backup.';$('review').replaceChildren(node('p','The archive changed. Refresh the review before handover.'));}
+window.addEventListener('beforeunload',event=>{if(dirty&&hasWork()){event.preventDefault();event.returnValue='';}});
 async function run(action){
   if(busy)return;busy=true;$('workspace').inert=true;
   try{await action();}catch(error){status(error.message||'Action failed. The working archive is retained.',true);}
@@ -88,12 +93,16 @@ $('restore').onchange=()=>run(async()=>{
   const file=$('restore').files?.[0];if(!file)return;if(file.size>ARCHIVE_LIMITS.jsonBytes)throw Error('Backup exceeds 32 MiB. Working archive retained.');
   const next=JSON.parse(await file.text());await reviewArchive(next);
   if((packet.files.length||packet.requirements.length)&&!window.confirm('Open this checked backup and replace unsaved working data? Download a backup first if needed.'))return;
-  packet=next;$('restore').value='';render();await review();
+  packet=next;$('restore').value='';changed();render();await review();
 });
 $('review-run').onclick=()=>run(review);
 $('download-md').onclick=()=>run(async()=>download('archive-review.md',await archiveMarkdown(packet),'text/markdown;charset=utf-8'));
 $('download-csv').onclick=()=>run(async()=>download('archive-register.csv',await archiveCsv(packet),'text/csv;charset=utf-8'));
 $('download-json').onclick=()=>run(async()=>{await reviewArchive(packet);download('archive-backup.json',JSON.stringify(packet,null,2),'application/json');});
 $('download-zip').onclick=()=>run(async()=>download('archive-review-pack.zip',await documentJob('archive_review_pack',{packet}),'application/zip'));
-$('example').onclick=()=>run(async()=>{if((packet.files.length||packet.requirements.length)&&!window.confirm('Replace the working archive with a synthetic example? Download your backup first if needed.'))return;packet=await archiveExample();render();await review();});
+$('example').onclick=()=>run(async()=>{if(hasWork()&&!window.confirm('Replace the working archive with a synthetic example? Save or download your backup first if needed.'))return;packet=await archiveExample();changed();render();await review();});
+$('apply-template').onclick=()=>run(()=>{const next=archiveTemplate($('archive-template').value);if(hasWork()&&!window.confirm('Start a new checklist and replace the working archive, including its files? Save or download your backup first.'))return;packet=next;changed();render();status('Starting checklist applied. Edit the scope, required items and owners with your reviewer; no documents are assigned.');});
+$('save-device').onclick=()=>run(async()=>{const saved=await localStore().save(packet,revision);revision=saved.revision;dirty=false;$('save-state').textContent='Saved on this device at '+saved.saved_at+'. Browser storage can be cleared or evicted; keep a JSON backup.';status('The local transaction completed. Original bytes are stored on this device; nothing was uploaded.');});
+$('load-device').onclick=()=>run(async()=>{if(dirty&&hasWork()&&!window.confirm('Load the saved draft and replace unsaved changes? Download a backup first if needed.'))return;const saved=await localStore().load();if(!saved){status('No saved draft on this device. Your working archive is retained.');return;}packet=saved.packet;revision=saved.revision;dirty=false;render();await review();$('save-state').textContent='Loaded the checked local draft saved at '+saved.saved_at+'.';});
+$('remove-device').onclick=()=>run(async()=>{if(!window.confirm('Remove the saved copy from this device? Your current tab remains open and becomes unsaved. Keep a JSON backup if needed.'))return;await localStore().remove(revision);revision=null;changed();status('Saved device copy removed. The working archive remains in this tab.');});
 render();

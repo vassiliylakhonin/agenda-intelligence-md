@@ -155,7 +155,7 @@ separate call. A disabled trial is explicit. Payment and retry are never automat
 
 ## Prepare a supplier document handover
 
-For a wider document archive, use the free [Document Archive Review](https://agendamcp.dpdns.org/document-archive): define a checklist, register local files, find exact copies and changed same-name files, and export a source-linked reviewer ZIP. Files stay in the tab; download a JSON backup before closing. [Workflow and limits](docs/use-cases/document-archive-review.md). Assigned-file coverage still needs human content review.
+For a wider document archive, use the free [Document Archive Review](https://agendamcp.dpdns.org/document-archive): start with an editable company/supplier/reporting checklist, register local files, inspect copies and changed same-name files, and export a source-linked reviewer ZIP. Explicitly save a draft on your device and keep a portable JSON backup. [Workflow and limits](docs/use-cases/document-archive-review.md). Assigned-file coverage still needs human content review. For a prepared handover, inspect the separate [scoped service and sample](https://agendamcp.dpdns.org/archive-review).
 
 [Open Supplier Evidence Desk](https://output-verification.agendamcp.dpdns.org/supplier-desk)
 for the separate browser workspace; no Python installation is required. Prepare
