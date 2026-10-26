@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Document archive review and A2A response stages — 2026-10-26
+
+- Add a free browser-local archive workspace with an explicit checklist, owners, checked original bytes, exact duplicates and same-name/different-content warnings. Count distinct nonempty contents toward user-defined requirements; export a source-linked review, CSV register, checked JSON backup and reviewer ZIP. Reuse the bounded document worker for PDF/DOCX extraction and ZIP export. Preserve working data on invalid imports or failed file batches.
+- Route unstructured Agenda A2A archive-review intent to that workspace without a domain evaluation, trial reservation, task persistence or payment. Stamp known A2A setup, routing, input-required, evaluation, failed and unmeasured responses separately, with finite content-free stage telemetry. HTTP success is not evaluation, customer demand or approval. Existing schemas, admission, tariffs and limits remain intact.
+
 ## First-result follow-through and supplier offer — 2026-10-25
 
 - Add free input-format validation to trial-limit recovery, using the same raw trial fields on all ten campaign profiles. Distinguish network campaign and daily capacity, preserve the last result, reject stale preflight replies and keep retry/payment explicit. Show feedback as recorded only after acknowledgment for its completed attempt; offer an explicit revision step without submitting.

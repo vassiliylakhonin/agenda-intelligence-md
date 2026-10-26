@@ -1,5 +1,11 @@
 # Supplier Evidence Desk
 
+For a generic archive without supplier identity, use the separate
+[Document Archive Review](document-archive-review.md). It reuses the existing
+dedicated document processor through the additive `agenda.document.v1`
+`archive_review_pack` operation (`payload.packet` → checked reviewer ZIP bytes).
+Existing `extract`, `pdf` and `archive` operations and dossier v1 stay unchanged.
+
 ## Bounded preparation service
 
 `GET /supplier-review` serves a static HTML offer and a finished-format synthetic
