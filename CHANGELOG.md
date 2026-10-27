@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Research evidence selection — 2026-10-27
+
+- Build a bounded source-fragment ledger before synthesis. The model selects known fragment IDs in a source-keyed map; the server attaches unchanged quotations and enforces source ownership, one finding per selected source and existing quotation limits. Public findings retain their original contract.
+- Preserve finite validation codes across Workflow RPC error serialization. Add real-engine coverage of evidence selection and rejected references without repeating inference.
+
 ## Research output language — 2026-10-27
 
 - Repeat the requested output language at the final model contract and in structured input. Reject fully English narrative fields when Russian was requested; keep exact source quotations in their original language. Localize Russian Markdown section labels.

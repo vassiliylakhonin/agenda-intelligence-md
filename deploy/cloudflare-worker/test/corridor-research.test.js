@@ -5,8 +5,8 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
-import {createResearch,readResearch,executeResearch,researchPrompt,validateResearchAnalysis,RESEARCH_MODEL,MAX_PROMPT_BYTES} from '../src/corridor-research.js';
-import {collectSources,approvedUrl,htmlText,discoverLinks,parseDocument,SOURCE_CATALOG} from '../src/research-sources.js';
+import {createResearch,readResearch,executeResearch,researchPrompt,validateResearchAnalysis,normaliseResearchEvidence,modelAnalysisSchema,RESEARCH_MODEL,MAX_PROMPT_BYTES} from '../src/corridor-research.js';
+import {collectSources,approvedUrl,htmlText,discoverLinks,parseDocument,sourceEvidenceCandidates,SOURCE_CATALOG} from '../src/research-sources.js';
 import {handleResearch} from '../src/research-http.js';
 import responseSchema from '../../../schemas/v1/corridor-research-response.schema.json' with {type:'json'};
 import {RESEARCH_CLIENT} from '../src/research-page.js';
@@ -111,6 +111,35 @@ test('forged quotes, source IDs, excess quotation and extra model fields are rej
   for(const mutate of [a=>a.findings[0].quote='Invented evidence that is absent.',a=>a.findings[0].source_id='S9',a=>a.findings[0].quote='word '.repeat(26).trim(),a=>a.external_action='publish']) {
     const a=analysis();mutate(a);assert.throws(()=>validateResearchAnalysis(a,sources),e=>e.code==='model_evidence_validation_failed');
   }
+});
+test('source-keyed evidence selection attaches exact bounded quotes and rejects cross-source IDs',async()=>{
+  const records=await collectSources(input,{fetcher,now}),prompt=researchPrompt(input,records.sources,now);
+  for(const source of records.sources)for(const evidence of sourceEvidenceCandidates(source,input.question)){
+    assert.ok(source.text.includes(evidence.quote));assert.ok(evidence.quote.length<=240);assert.ok(evidence.quote.split(/\s+/u).length<=25);
+  }
+  const source=prompt.payload.sources[0],chosen=source.evidence_candidates[0];
+  const value={findings:{[source.id]:{claim:'The source discusses coordination.',evidence_id:chosen.evidence_id}},interpretations:[],open_questions:[]};
+  const normalized=normaliseResearchEvidence(value,prompt.payload);
+  assert.equal(normalized.findings[0].quote,chosen.quote);assert.equal(normalized.findings[0].source_id,source.id);
+  assert.equal(validateResearchAnalysis(normalized,records.sources),normalized);
+  const schema=modelAnalysisSchema(prompt.payload);assert.deepEqual(schema.properties.findings.properties[source.id].properties.evidence_id.enum,source.evidence_candidates.map(e=>e.evidence_id));
+  value.findings[source.id].evidence_id=prompt.payload.sources[1].evidence_candidates[0].evidence_id;
+  assert.throws(()=>normaliseResearchEvidence(value,prompt.payload),e=>e.code==='model_evidence_validation_failed');
+});
+test('complete pipeline resolves model-selected ledger IDs without asking the model to copy quotations',async()=>{
+  const f=fixture(),job=await create(f.env);let calls=0;
+  f.env.RESEARCH_AI.run=async(_model,params)=>{calls++;const payload=JSON.parse(params.messages.find(m=>m.role==='user').content),source=payload.sources[0];
+    return {response:{findings:{[source.id]:{claim:'The source discusses transport coordination.',evidence_id:source.evidence_candidates[0].evidence_id}},interpretations:[],open_questions:[]}};
+  };
+  assert.equal((await executeResearch(f.env,job.research_id,{fetcher,now:()=>now})).status,'completed');
+  const artifact=(await readResearch(f.env,job.research_id,token,now)).result;assert.ok(artifact.findings[0].quote);assert.equal(calls,1);f.sqlite.close();
+});
+test('finite evidence errors survive Workflow RPC error serialization without leaking arbitrary messages',async()=>{
+  const f=fixture(),job=await create(f.env);const value=analysis();value.findings[0].quote='An unsupported quotation that is not in any source.';
+  f.env.RESEARCH_AI.run=async()=>({response:value});
+  const step={async do(_name,_options,operation){try{return await operation();}catch(error){throw new Error(error.message);}}};
+  const result=await executeResearch(f.env,job.research_id,{fetcher,step,now:()=>now});
+  assert.equal(result.error_code,'model_evidence_validation_failed');f.sqlite.close();
 });
 test('requested Russian cannot silently return English text under a Russian result label',async()=>{
   const f=fixture(),job=await create(f.env,'russian-language-1',token,{...input,language:'ru'});
