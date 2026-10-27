@@ -5,6 +5,7 @@ import { claimPayment } from "../src/payment-ledger.js";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import {deployedEnvironments} from '../scripts/deploy-all.js';
 
 import {
   aiCatalog,
@@ -10150,7 +10151,7 @@ test("fleet discovery hosts map to configured Worker profiles and serve cards", 
     readFileSync(new URL("../../../FLEET_DIRECTORY.md", import.meta.url), "utf8")
   ];
   const toml = readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8");
-  const deployed = new Set([...toml.matchAll(/^name = "([a-z0-9-]+)"/gm)].map((match) => match[1]));
+  const deployed = new Set(deployedEnvironments(toml).map(({workerName}) => workerName));
   const hosts = new Set([...docs.join("\n").matchAll(/https:\/\/([a-z0-9-]+)\.vassiliy-lakhonin\.workers\.dev/g)].map((match) => match[1]));
   assert.deepEqual(hosts, deployed);
   for (const host of hosts) {

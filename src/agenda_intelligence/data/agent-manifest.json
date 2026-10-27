@@ -178,6 +178,14 @@
     "source_discovery_response": {
       "path": "schemas/v1/source-discovery-response.schema.json",
       "schema_version": "v1"
+    },
+    "corridor_research_request": {
+      "path": "schemas/v1/corridor-research-request.schema.json",
+      "schema_version": "v1"
+    },
+    "corridor_research_response": {
+      "path": "schemas/v1/corridor-research-response.schema.json",
+      "schema_version": "v1"
     }
   },
   "product": {
@@ -1903,6 +1911,13 @@
       "supply-chain-resilience": "source-requirements/supply-chain-resilience.json",
       "technology-ai": "source-requirements/technology-ai.json",
       "trade": "source-requirements/trade.json"
+    },
+    "server_research": {
+      "status": "activation_approved_pending_live_verification",
+      "discovery_url": "https://agendamcp.dpdns.org/.well-known/corridor-research.json",
+      "documentation": "docs/use-cases/corridor-research.md",
+      "catalog": "source-requirements/corridor-research.json",
+      "activation": "Owner approved the dedicated D1/Workflow resources and bounded Workers AI usage on 2026-10-27. Existing core and profile retrieval defaults remain unchanged."
     }
   }
 }

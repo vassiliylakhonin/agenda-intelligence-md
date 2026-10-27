@@ -20,7 +20,7 @@ Core package -> service functions -> MCP server | HTTP API shell -> A2A adapter 
 It is NOT:
 - a domain-reasoning skill — that method is Global Think Tank Analyst (separate repo). The product shell vendors a derived copy under `skills/agenda-intelligence/` for in-repo routing; the canonical source of the method lives in the GTTA repo.
 - a vertical specialist skill — those are Central Asia & Caspian and Gulf & Middle East (separate repos). The product shell vendors lighter regional references under `skills/agenda-intelligence/references/regional/` for `analyze` routing; the canonical depth lives in the specialist repos.
-- a live source retrieval engine — `evidence_mode` is one of `reasoning_only`, `user_provided`, `mixed`. No live retrieval, no RAG.
+- a general live source retrieval engine — the core `analyze` modes remain `reasoning_only`, `user_provided`, `mixed`. A separate opt-in server research interface is implemented under [ADR 0041](docs/adr/0041-bounded-server-research.md); its production resources and activation require owner approval. It does not change the existing core/profile defaults.
 - a factuality verifier — schemas enforce structure, not truth.
 - a compliance, legal, sanctions, financial, or insurance advice product.
 - a marketplace, billing, entitlement, or wallet runtime.

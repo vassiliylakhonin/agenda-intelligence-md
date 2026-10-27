@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Bounded server research — 2026-10-27
+
+- Implement a separate Middle Corridor/Caspian research interface: collect bounded official HTML sources, run one server-side Workers AI synthesis, check source IDs and verbatim quotations, and retain private job artifacts and source provenance. Preserve unknown publication/observation dates, access failures, interpretations and mandatory human review.
+- Add restartable Workflow execution, atomic D1 admission limits, caller-owned privacy capabilities and idempotency, a browser entry point and two stateless MCP tools. Journal inference before dispatch to prevent automatic repeat spending after an ambiguous provider outcome.
+- The owner approved one dedicated D1 database, one Workflow and bounded Workers AI usage. Configure the real database and reuse the existing Vizier-gated workflow with a root-only target for activation. Existing profile MCP tools, evidence checks, payment and authorization contracts are unchanged.
+
 ## First-check integration path — 2026-10-27
 
 - Publish a standalone Node client, canonical downloadable source and task/discovery links for connection inspection, exact raw trial examples, schema preflight, one explicitly chosen evaluation and optional completion-bound usefulness feedback. No SDK installation is required; invalid JSON stops locally and disabled/exhausted trials never fall back to a paid call.

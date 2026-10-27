@@ -27,6 +27,8 @@ export function workerTargetFor(env = DEFAULT_ENV) {
   return `worker:${found.workerName}`;
 }
 const WRANGLER_VERSION = "4.122.0";
+// Only the root researcher needs the newer Workflows retention configuration.
+const RESEARCH_WRANGLER_VERSION = "4.153.0";
 const VERIFY_TIMEOUT_MS = 10_000;
 const MAX_RESPONSE_BYTES = 256 * 1024;
 
@@ -347,7 +349,7 @@ function executeWranglerDeploy(receiptId, digest, env = DEFAULT_ENV, snapshotSha
       "npx",
       [
         "--yes",
-        `wrangler@${WRANGLER_VERSION}`,
+        `wrangler@${env === "" ? RESEARCH_WRANGLER_VERSION : WRANGLER_VERSION}`,
         "deploy",
         ...(env ? ["--env", env] : []),
         "--strict",

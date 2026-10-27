@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0",
+  "purpose": "Bounded public primary-source research for Middle Corridor and Caspian questions",
+  "sources": [
+    {
+      "id": "titr",
+      "name": "Trans-Caspian International Transport Route Association",
+      "host": "middlecorridor.com",
+      "seeds": [
+        "https://middlecorridor.com/en/for-clients/tariffs",
+        "https://middlecorridor.com/en/press-center/news"
+      ],
+      "attribution": "TITR Association; copyrighted public pages; short attributed quotations only"
+    },
+    {
+      "id": "world-bank",
+      "name": "World Bank",
+      "host": "www.worldbank.org",
+      "seeds": [
+        "https://www.worldbank.org/en/region/eca/publication/world-class-trade-logistics-along-trans-caspian-transport-corridor"
+      ],
+      "attribution": "World Bank; public institutional pages; document-specific reuse terms apply"
+    },
+    {
+      "id": "carec",
+      "name": "CAREC Institute",
+      "host": "www.carecinstitute.org",
+      "seeds": [
+        "https://www.carecinstitute.org/news/"
+      ],
+      "attribution": "CAREC Institute; copyrighted public pages; short attributed quotations only"
+    },
+    {
+      "id": "edb",
+      "name": "Eurasian Development Bank",
+      "host": "www.eabr.org",
+      "seeds": [
+        "https://www.eabr.org/en/analytics/all-publications/transport-corridors-infrastructure/"
+      ],
+      "attribution": "Eurasian Development Bank; public institutional material; document-specific reuse terms apply"
+    }
+  ],
+  "category": "corridor-research",
+  "must_check": [
+    "multilateral",
+    "official_government_source",
+    "trade_data"
+  ],
+  "supporting_sources": [
+    "company_behavior"
+  ],
+  "red_flags": [
+    "publication time confused with observation period",
+    "announcement treated as operational capacity"
+  ],
+  "do_not_claim_without": [
+    "current operational constraints without dated supporting material"
+  ],
+  "freshness_rules": [
+    "preserve publication, retrieval, effective and observation dates separately"
+  ],
+  "watch_indicators": [
+    "dated operator notices",
+    "project implementation evidence"
+  ]
+}

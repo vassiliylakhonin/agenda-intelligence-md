@@ -230,3 +230,7 @@ Machine-readable evaluation routing and its limits: [Evaluation action contract]
 
 Native agent access: [A2A free trials and standard x402 v2](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/agent-native-access.md).
 HTTP, MCP and A2A trials share one allowance. Hosted x402 supports exact Base native USDC with HTTP headers and native MCP payment metadata; official-client tests simulate settlement, and no maintainer live payment is claimed.
+
+## Server research
+
+An experimental Middle Corridor/Caspian research module collects named official sources and prepares a source-linked draft on the server. Its bounded production activation is approved; see the verification record for current status. See the [research interface, limits and verification](docs/use-cases/corridor-research.md). Existing evidence-checking tools remain available.

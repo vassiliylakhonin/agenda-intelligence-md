@@ -99,6 +99,15 @@ def test_all_configured_workers_plus_vizier():
     assert len(names) == 14
     assert names.count("vizier") == 1
     assert "m2m-escrow-arbiter-a2a" in names
+    assert "agenda-corridor-research" not in names  # Workflow, not a separately deployed Worker.
+
+
+def test_health_monitor_excludes_workflow_bindings():
+    from scripts.run_fleet_health_check import fleet_workers
+
+    names = [worker["name"] for worker in fleet_workers()]
+    assert "agenda-intelligence-a2a" in names
+    assert "agenda-corridor-research" not in names
 
 
 def test_missing_or_renamed_tool_is_a_regression():
