@@ -105,7 +105,7 @@ working text only while the job runs (24-hour logical expiry with hourly cleanup
 and completed briefs/metadata for seven days. Workflow checkpoints contain receipts only. PDFs, authenticated
 areas and arbitrary caller-supplied URLs are outside the initial collector. Missing pages,
 unknown publication dates and missing observation periods remain visible. Production activation
-is owner-approved and subject to live verification; the normal core and fleet profiles retain their existing behavior.
+is enabled as an owner-approved experimental pilot, with run-specific access failures reported; the normal core and fleet profiles retain their existing behavior.
 
 1. **Declare**: `live_retrieval: true` in agent card, `/status`, `/health`, and agent-manifest. Name the upstream(s) consulted. No opaque retrieval.
 2. **Cache**: Cache responses with TTL appropriate to the upstream's update cadence (daily for OpenSanctions). Honor `Cache-Control` headers when present.

@@ -106,3 +106,42 @@ A narrow allowlist preserves known non-sensitive failure codes after Workflow RP
 The real-engine smoke covers both languages and an intentionally invalid reference, with one
 fixture dispatch per job and cleanup. Failed jobs and their quota consumption are retained;
 no global or per-capability limit is raised and no owner exemption is added.
+
+## Final live technical acceptance — 14:57 UTC
+
+PR460 was merged as `2a3f39e42453c242627c134aba9f5e2003b7a667` and released through the root-only
+[Vizier workflow 40525726616](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/runs/40525726616).
+The signed ALLOW receipt is `vrf_85452568-c7a2-40f7-b339-25206c38894a`; Worker version is
+`aaee7a40-da5a-4c9d-bb50-da2ae218adfc`.
+
+The Russian client's second slot completed successfully at 14:57:51 UTC. Its actual Russian claims,
+interpretations and questions were read and checked; source quotations remained in English.
+Two sources were collected (TITR, World Bank); CAREC and EDB timed out. The response preserves
+those failures and partial-coverage limitations. This is technical acceptance, not acceptance of
+semantic support, professional research quality, customer demand or route availability.
+
+- Public JSON Schema validation, ordinary-urllib REST and canonical MCP private polling passed.
+- Missing capability 401, unrelated capability 404, HEAD 200 with no body; response cache is disabled.
+- One model dispatch: 3,768 input tokens, 309 output tokens (4,077 total). No automatic model retry.
+- Both quotations independently matched newly fetched official page text, exactly 25 words each;
+  both text hashes matched the collected snapshots.
+- Artifact hash recomputed successfully: `36665c1651f3ab3af3921231b59e5a77a1440121aa338c1592dd3c17c666f4fd`.
+- The published A2A capability extension and final ES256 AgentCard signature verified independently.
+- All three Workflow steps succeeded; checkpoints contain only receipts, not source/model text.
+- D1 aggregate: four maintainer jobs, two completed and two failed, three model dispatches; zero rows
+  retain working source text or raw model output. The first completed response failed language acceptance.
+- Global allowance remains five jobs/UTC day, two per capability, with no owner exemption or erased failures.
+  One global slot remained after these checks. Offline fixture tests are not production usage.
+
+Local final code checks passed: 1,118 Worker tests, 1,222 Python tests (one skipped), lint/types,
+CLI/schema checks, and the real local Workflow smoke with both languages and an invalid-reference refusal.
+All PR460 GitHub checks passed before merge.
+
+[Unchanged live draft with reviewer caveats](corridor-live-brief-2026-10-27.md).
+Its exhibition evidence does not establish improved operational coordination, and current route
+capacity or delays were not independently established. It is a starting draft for expert research.
+
+What would have prevented the rollout defects: exercise the actual deployment entry in the real
+engine, keep evidence quotations in a deterministic ledger, validate output-language acceptance,
+and test serialized failures. These checks now run in CI; no further framework or cloud resource
+was added. The stable public create/poll interface keeps those concerns inside the research module.

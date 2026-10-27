@@ -1,6 +1,6 @@
 # ADR 0041 — Bounded server research on the existing Agenda host
 
-Status: implemented and locally validated; owner approved the dedicated resources and activation on 2026-10-27; live verification pending.
+Status: active experimental pilot; owner-approved activation and live Russian acceptance completed on 2026-10-27.
 Date: 2026-10-27
 
 ## Decision workspace

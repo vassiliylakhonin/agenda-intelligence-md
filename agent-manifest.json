@@ -1913,11 +1913,14 @@
       "trade": "source-requirements/trade.json"
     },
     "server_research": {
-      "status": "activation_approved_pending_live_verification",
+      "status": "active_experimental",
       "discovery_url": "https://agendamcp.dpdns.org/.well-known/corridor-research.json",
       "documentation": "docs/use-cases/corridor-research.md",
       "catalog": "source-requirements/corridor-research.json",
-      "activation": "Owner approved the dedicated D1/Workflow resources and bounded Workers AI usage on 2026-10-27. Existing core and profile retrieval defaults remain unchanged."
+      "activation": "Owner-approved dedicated D1/Workflow and bounded Workers AI usage, deployed through Vizier. Live retrieval, one inference, Russian narrative and private REST/MCP were checked. Source coverage is partial and human review is required; existing core/profile defaults remain unchanged.",
+      "browser_url": "https://agendamcp.dpdns.org/research",
+      "mcp_url": "https://agendamcp.dpdns.org/v1/research/mcp",
+      "verified_at": "2026-10-27T14:57:52.208031+00:00"
     }
   }
 }
