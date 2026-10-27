@@ -70,6 +70,7 @@ test('per-capability allowance and validation stop work before model calls',asyn
 test('missing or invalid configuration, capabilities and oversized bodies fail closed',async()=>{
   const f=fixture();
   assert.equal((await handleResearch(request('/v1/research',{...input,request_id:'request-1'},{auth:'short'}),f.env)).status,401);
+  for(const request_id of [12345678,['request-1']])assert.equal((await handleResearch(request('/v1/research',{...input,request_id}),f.env)).status,400);
   assert.equal((await handleResearch(request('/v1/research',{...input,request_id:'request-1'}),{...f.env,RESEARCH_AI:null})).status,503);
   assert.equal((await handleResearch(request('/v1/research',{...input,question:'x'.repeat(17000),request_id:'request-1'}),f.env)).status,413);
   const cross=request('/v1/research',{...input,request_id:'request-1'});cross.headers.set('origin','https://foreign.invalid');assert.equal((await handleResearch(cross,f.env)).status,403);

@@ -42,7 +42,7 @@ function publicJob(row) {
 export async function createResearch(env,value,capability,key,{now=Date.now()}={}) {
   if(!researchAvailable(env))throw new ResearchError('research_not_configured',503);
   const input=validateResearchInput(value);
-  if(!/^[a-zA-Z0-9_-]{8,80}$/.test(key??''))throw new ResearchError('idempotency_key_required');
+  if(typeof key!=='string'||!/^[a-zA-Z0-9_-]{8,80}$/.test(key))throw new ResearchError('idempotency_key_required');
   const owner=await digest(capability),id=(await digest(owner+':'+key)).slice(0,40),requestHash=await digest(JSON.stringify(input));
   await cleanupResearch(env,now);
   // One atomic INSERT/SELECT enforces both limits across concurrent requests.
