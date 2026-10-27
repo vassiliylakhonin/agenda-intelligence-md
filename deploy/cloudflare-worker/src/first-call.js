@@ -11,6 +11,7 @@ function guidance(request,profile,env) {
   const terms=outputTrialEnabled(profile,env)?outputTrialTerms(profile):null;
   return {
     schema_version:1,automatic_retry:false,automatic_payment:false,
+    client_download:{url:origin+'/first-check.mjs',method:'GET',headers:{Accept:'text/javascript'}},
     authentication:productionAuthKey(profile,env)?'bearer_required':'none',
     contract_request:get('/.well-known/agent-contract.json'),
     input_preflight:{url:origin+INPUT_VALIDATION_PATH,method:'POST',

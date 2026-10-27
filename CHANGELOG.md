@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## First-check integration path — 2026-10-27
+
+- Publish a standalone Node client, canonical downloadable source and task/discovery links for connection inspection, exact raw trial examples, schema preflight, one explicitly chosen evaluation and optional completion-bound usefulness feedback. No SDK installation is required; invalid JSON stops locally and disabled/exhausted trials never fall back to a paid call.
+- Preserve prepared input snapshots, stop a second submission after an uncertain response, retain printed results on file-save failure and keep feedback explicit. Test the actual offline handlers across twelve profiles, including different paid/trial wrappers. Existing protocols, authentication, payment, quotas and result contracts remain intact; owner tests do not establish external adoption or usefulness.
+
 ## Archive follow-through — 2026-10-26
 
 - Add explicit device draft save/load/remove with checked original bytes, committed-transaction acknowledgments, unsaved-change warnings and stale-tab protection. Keep one working copy separate from portable archive v1 backups and supplier dossiers; storage errors retain working data.

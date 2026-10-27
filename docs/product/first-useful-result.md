@@ -53,6 +53,12 @@ trial is explicit. See the
 
 ## Connect one real workflow
 
+Start with the [first-check client](../../examples/hosted-mcp/FIRST_CHECK.md) for
+connection inspection, schema preflight, one explicit free evaluation and optional
+feedback tied to that completed attempt. `inspect`, `example` and `validate`
+reserve nothing; existing authentication and allowance still apply. Actual human
+usefulness remains unproven until a reviewer reports it.
+
 Use the existing [retained MCP client](../../examples/hosted-mcp/README.md).
 `HostedMcpError` preserves HTTP status, payment trace, HTTP attempt ID, admission
 details and `requestHint` for an explicit correction. Correcting input creates a

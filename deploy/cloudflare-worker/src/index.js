@@ -9,6 +9,7 @@ import { catalogSetupContent } from './catalog-onboarding.js';
 import {routingToolForProfile,isFreeRoutingTool} from './pricing-policy.js';
 import {x402DiscoveryExtension,settlementDiscovery} from './payment-discovery.js';
 import { agentOnboarding, PROFILE_TASKS, profileWorkflow } from './agent-onboarding.js';
+import { FIRST_CHECK_CLIENT_SOURCE } from './first-check-client.js';
 import { mcpTrialTools, mcpTrialResult } from './mcp-trial.js';
 import {mcpHttpRejection,mcpHttpStatus,isModernMcpHttp} from './mcp-http.js';
 import {ANSWER_REVIEW_TOOL,ANSWER_REVIEW_OPEN_TOOL,ANSWER_REVIEW_URI,ANSWER_REVIEW_MIME,
@@ -15708,6 +15709,12 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
 
 async function handleRequestInner(request, env = {}, ctx = {}) {
   const url = new URL(request.url);
+  if (url.pathname === '/first-check.mjs') {
+    if (!['GET','HEAD'].includes(request.method)) return new Response(null,{status:405,headers:{allow:'GET, HEAD'}});
+    return new Response(request.method === 'HEAD' ? null : FIRST_CHECK_CLIENT_SOURCE,{headers:{
+      'content-type':'text/javascript; charset=utf-8','content-disposition':'attachment; filename="first-check.mjs"',
+      'x-content-type-options':'nosniff','cache-control':'public, max-age=300'}});
+  }
   // All REST execution routes inherit the deployment gate, including aliases,
   // packet helpers and payment verification outside DIRECT_V1_ROUTES.
   const deploymentProfile = agentProfile(request, env);

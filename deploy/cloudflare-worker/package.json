@@ -13,7 +13,7 @@
     "intake": "node scripts/intake.js",
     "smoke:live": "node scripts/smoke-live-profile-contracts.js",
     "stats": "node scripts/stats.js",
-    "test": "npm run check:mcp-contracts && node scripts/generate-public-schemas.js --check && node scripts/generate-worked-examples.js --check && node scripts/generate-input-validators.js --check && node scripts/generate-answer-review-app.js --check && node scripts/generate-supplier-desk.js --check && node --test",
+    "test": "npm run check:mcp-contracts && node scripts/generate-public-schemas.js --check && node scripts/generate-first-check-client.js --check && node scripts/generate-worked-examples.js --check && node scripts/generate-input-validators.js --check && node scripts/generate-answer-review-app.js --check && node scripts/generate-supplier-desk.js --check && node --test",
     "test:a2a": "node --test test/worker.test.js",
     "verify:agent-card": "node scripts/verify-agent-card.js",
     "verify:decision-gate": "node scripts/verify-decision-gate.js",

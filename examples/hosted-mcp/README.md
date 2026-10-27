@@ -1,5 +1,10 @@
 # Retained hosted MCP call — all Agenda Workers
 
+For the first free result, start with the [first-check client](FIRST_CHECK.md):
+one dependency-free download connects, validates the exact free-tool arguments,
+explicitly evaluates once and optionally records actual usefulness. The retained
+paid client below serves the separate payment/recovery path.
+
 Node 20+, no package installation. This client submits a single request to any
 of the twelve published Agenda Workers. It does not transfer funds, open a
 wallet, sign, auto-retry or authorize an external action. Vizier is a separate

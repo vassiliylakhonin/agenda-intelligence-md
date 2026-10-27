@@ -1,5 +1,10 @@
 # Hosted MCP and A2A quickstart
 
+For a runnable connection → input preflight → explicit free check → optional
+feedback path, use the [dependency-free first-check client](../../examples/hosted-mcp/FIRST_CHECK.md).
+Download it from the serving origin's `/first-check.mjs`; inspection reserves
+nothing, and the existing trial allowance/authentication still applies.
+
 Each Worker serves one profile. This guide uses Critical Minerals; replace the
 host with another published Worker to discover that profile's tools. These
 connectivity checks are free and do not evaluate a case or transfer funds.
