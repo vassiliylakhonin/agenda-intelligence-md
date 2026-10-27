@@ -11,6 +11,10 @@ Public contract and commands: [first-check guide](../../examples/hosted-mcp/FIRS
 This is a transport/example surface. Existing schemas, allowances, tariffs,
 authentication, result contracts and telemetry classifications apply. The download
 is generated from the canonical example and checked by `npm test`.
+The download uses `/.well-known/first-check.mjs`, inside the existing fleet's
+machine-client edge exception. Owner-marked default urllib probes reached this
+prefix before release; a root-path download received Cloudflare error 1010.
+No security rule or User-Agent override is needed for the chosen path.
 
 Offline contracts exercise actual wire-discovered arguments on all twelve
 profiles, including Financial Guard/Escrow where paid wrappers differ, input

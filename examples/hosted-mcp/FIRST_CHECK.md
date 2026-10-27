@@ -9,7 +9,7 @@ evaluator, signs, funds, follows redirects or automatically retries an evaluatio
 
 ```bash
 curl --fail --show-error --silent \
-  https://output-verification.agendamcp.dpdns.org/first-check.mjs \
+  https://output-verification.agendamcp.dpdns.org/.well-known/first-check.mjs \
   --output first-check.mjs
 
 node first-check.mjs inspect \

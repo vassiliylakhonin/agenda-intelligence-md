@@ -2,7 +2,7 @@
 
 For a runnable connection → input preflight → explicit free check → optional
 feedback path, use the [dependency-free first-check client](../../examples/hosted-mcp/FIRST_CHECK.md).
-Download it from the serving origin's `/first-check.mjs`; inspection reserves
+Download it from the serving origin's `/.well-known/first-check.mjs`; inspection reserves
 nothing, and the existing trial allowance/authentication still applies.
 
 Each Worker serves one profile. This guide uses Critical Minerals; replace the

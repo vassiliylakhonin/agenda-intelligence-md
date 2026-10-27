@@ -30,7 +30,7 @@ export function machineContract(profile,origin,env,tools,version) {
   return {contract_version:'agent-call.v1',service_version:version,profile,
     when_to_call:PROFILE_TASKS[profile],authentication:hostedAccess(profile,env,origin).authentication,
     mcp_endpoint:origin+'/mcp/agent',a2a_endpoint:origin+'/message/send',
-    first_check:{client_url:origin+'/first-check.mjs',runtime:'Node.js 20+',dependencies:[],
+    first_check:{client_url:origin+'/.well-known/first-check.mjs',runtime:'Node.js 20+',dependencies:[],
       documentation:'https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/examples/hosted-mcp/FIRST_CHECK.md',
       steps:['inspect','example','validate','evaluate','feedback'],
       evaluation_requires_explicit_command:true,automatic_payment:false,automatic_evaluation_retry:false,

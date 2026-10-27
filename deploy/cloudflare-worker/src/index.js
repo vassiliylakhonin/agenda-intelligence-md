@@ -15709,7 +15709,7 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
 
 async function handleRequestInner(request, env = {}, ctx = {}) {
   const url = new URL(request.url);
-  if (url.pathname === '/first-check.mjs') {
+  if (url.pathname === '/.well-known/first-check.mjs') {
     if (!['GET','HEAD'].includes(request.method)) return new Response(null,{status:405,headers:{allow:'GET, HEAD'}});
     return new Response(request.method === 'HEAD' ? null : FIRST_CHECK_CLIENT_SOURCE,{headers:{
       'content-type':'text/javascript; charset=utf-8','content-disposition':'attachment; filename="first-check.mjs"',

@@ -162,17 +162,17 @@ test('CLI rejects malformed JSON before HTTP, preserves the result when file sav
 
 test('download is canonical, executable source and discoverable without submitting a check',async()=>quiet(async()=>{
   const env=configured('agent_output_verification');
-  const response=await handleRequest(new Request(origin+'/first-check.mjs'),env);
+  const response=await handleRequest(new Request(origin+'/.well-known/first-check.mjs'),env);
   assert.equal(response.status,200);
   assert.equal(await response.text(),readFileSync(new URL('../../../examples/hosted-mcp/first-check.mjs',import.meta.url),'utf8'));
   assert.match(response.headers.get('content-disposition'),/attachment/);
   assert.match(response.headers.get('content-type'),/^text\/javascript/);
-  const head=await handleRequest(new Request(origin+'/first-check.mjs',{method:'HEAD'}),env);
+  const head=await handleRequest(new Request(origin+'/.well-known/first-check.mjs',{method:'HEAD'}),env);
   assert.equal(head.status,200);
   assert.equal(await head.text(),'');
-  assert.equal((await handleRequest(new Request(origin+'/first-check.mjs',{method:'POST'}),env)).status,405);
+  assert.equal((await handleRequest(new Request(origin+'/.well-known/first-check.mjs',{method:'POST'}),env)).status,405);
   const contract=await (await handleRequest(new Request(origin+'/.well-known/agent-contract.json'),env)).json();
-  assert.equal(contract.first_check.client_url,origin+'/first-check.mjs');
+  assert.equal(contract.first_check.client_url,origin+'/.well-known/first-check.mjs');
   assert.equal(contract.first_check.automatic_payment,false);
   assert.equal((await env.PAYMENT_LEDGER.prepare('SELECT COUNT(*) AS n FROM output_verification_trials').first()).n,0);
 }));

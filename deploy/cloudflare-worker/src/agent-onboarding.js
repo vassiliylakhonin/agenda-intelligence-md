@@ -32,7 +32,7 @@ export function agentOnboarding(profile, env, origin) {
     use_when: PROFILE_TASKS[profile] || 'Review supplied evidence using the published input contract.',
     mcp_endpoint: `${origin}/mcp/agent`,
     input_contract: `${origin}/api/openapi.json`,
-    first_check_client:{url:`${origin}/first-check.mjs`,runtime:'Node.js 20+',
+    first_check_client:{url:`${origin}/.well-known/first-check.mjs`,runtime:'Node.js 20+',
       documentation:'https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/examples/hosted-mcp/FIRST_CHECK.md',
       inspection_consumes_attempt:false,automatic_payment:false,automatic_evaluation_retry:false},
     authentication: access.authentication,
