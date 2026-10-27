@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import re
+import tomllib
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -37,12 +38,8 @@ def deployed_endpoints() -> dict[str, str]:
 
 def declared_worker_names() -> set[str]:
     """Every Worker name wrangler.toml publishes, top-level and per environment."""
-    names: set[str] = set()
-    for line in WRANGLER.read_text(encoding="utf-8").splitlines():
-        match = re.match(r'^name\s*=\s*"([^"]+)"', line.strip())
-        if match:
-            names.add(match.group(1))
-    return names
+    config = tomllib.loads(WRANGLER.read_text(encoding="utf-8"))
+    return {target["name"] for target in [config, *config.get("env", {}).values()]}
 
 
 def remotes() -> list[dict]:

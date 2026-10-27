@@ -1,0 +1,479 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/corridor-research-response.schema.json",
+  "title": "Private server research job",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "research_id",
+    "status",
+    "created_at",
+    "expires_at",
+    "error_code",
+    "result",
+    "human_review_required",
+    "not_advice_notice",
+    "retrieval_failures"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "research_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "collecting",
+        "analysing",
+        "completed",
+        "failed"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "error_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "result": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/artifact"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "human_review_required": {
+      "const": true
+    },
+    "not_advice_notice": {
+      "type": "string",
+      "minLength": 1
+    },
+    "retrieval_failures": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "$ref": "#/$defs/failure"
+      }
+    }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim",
+        "source_id",
+        "quote"
+      ],
+      "properties": {
+        "claim": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 800
+        },
+        "source_id": {
+          "type": "string",
+          "pattern": "^S[1-4]$"
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 12,
+          "maxLength": 240
+        }
+      }
+    },
+    "interpretation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "source_ids"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 800
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^S[1-4]$"
+          },
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "url",
+        "provider",
+        "provider_id",
+        "attribution",
+        "published_at",
+        "retrieved_at",
+        "content_sha256",
+        "text_sha256",
+        "freshness",
+        "observation_period",
+        "effective_date",
+        "data_integrity_notes"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^S[1-4]$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "provider_id": {
+          "type": "string"
+        },
+        "attribution": {
+          "type": "string"
+        },
+        "published_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "retrieved_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "text_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "freshness": {
+          "enum": [
+            "in_requested_window",
+            "background",
+            "future_dated",
+            "publication_date_unknown"
+          ]
+        },
+        "observation_period": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "effective_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "data_integrity_notes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "quote"
+            ],
+            "properties": {
+              "code": {
+                "const": "instruction_like_source_text"
+              },
+              "quote": {
+                "type": "string"
+              }
+            }
+          },
+          "maxItems": 1
+        }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "url",
+        "code"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "code": {
+          "type": "string"
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "question",
+        "as_of",
+        "evidence_mode",
+        "language",
+        "findings",
+        "interpretations",
+        "open_questions",
+        "sources",
+        "retrieval_failures",
+        "limitations",
+        "methods",
+        "model",
+        "cost_controls",
+        "human_review_required",
+        "not_advice_notice",
+        "markdown",
+        "artifact_sha256"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evidence_mode": {
+          "const": "live_source_backed"
+        },
+        "language": {
+          "enum": [
+            "en",
+            "ru"
+          ]
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finding"
+          },
+          "minItems": 1,
+          "maxItems": 6
+        },
+        "interpretations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/interpretation"
+          },
+          "maxItems": 4
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 800
+          },
+          "maxItems": 6
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          },
+          "minItems": 1,
+          "maxItems": 4
+        },
+        "retrieval_failures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/failure"
+          },
+          "maxItems": 12
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "methods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "model": {
+          "const": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        },
+        "cost_controls": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "model_invocations",
+            "max_prompt_bytes",
+            "max_output_tokens",
+            "usage",
+            "hosting_cost_not_included"
+          ],
+          "properties": {
+            "model_invocations": {
+              "const": 1
+            },
+            "max_prompt_bytes": {
+              "const": 20000
+            },
+            "max_output_tokens": {
+              "const": 2048
+            },
+            "usage": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "prompt_tokens": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "completion_tokens": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "total_tokens": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            },
+            "hosting_cost_not_included": {
+              "const": true
+            }
+          }
+        },
+        "human_review_required": {
+          "const": true
+        },
+        "not_advice_notice": {
+          "type": "string",
+          "minLength": 1
+        },
+        "markdown": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "completed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "$ref": "#/$defs/artifact"
+          },
+          "error_code": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "result": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "failed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error_code": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

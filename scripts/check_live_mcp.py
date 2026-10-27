@@ -10,6 +10,7 @@ import re
 import socket
 import ssl
 import subprocess
+import tomllib
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -110,7 +111,8 @@ async def transport_retry(operation, label, events, delay=0.5):
 
 
 def fleet_names():
-    names = re.findall(r'^name\s*=\s*"([^"\n]+)"', (ROOT / "deploy/cloudflare-worker/wrangler.toml").read_text(), re.M)
+    config = tomllib.loads((ROOT / "deploy/cloudflare-worker/wrangler.toml").read_text())
+    names = [target["name"] for target in [config, *config.get("env", {}).values()]]
     return list(dict.fromkeys([*names, "vizier", CORRIDOR]))
 
 

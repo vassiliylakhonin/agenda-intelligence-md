@@ -1,0 +1,15 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/corridor-research-request.schema.json",
+  "title":"Bounded Middle Corridor / Caspian research request",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["question","request_id"],
+  "properties":{
+    "question":{"type":"string","minLength":1,"maxLength":2000},
+    "decision_context":{"type":"string","maxLength":1000},
+    "language":{"type":"string","enum":["en","ru"],"default":"en"},
+    "lookback_days":{"type":"integer","minimum":1,"maximum":365,"default":30},
+    "request_id":{"type":"string","pattern":"^[a-zA-Z0-9_-]{8,80}$","description":"Private caller idempotency key. Reuse it only for the identical request."}
+  }
+}

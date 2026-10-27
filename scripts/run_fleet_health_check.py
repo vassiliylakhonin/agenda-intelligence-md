@@ -18,10 +18,10 @@ Legacy specialized proofs:
 
 import argparse
 import os
-import re
 import subprocess
 import sys
 import time
+import tomllib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -111,7 +111,8 @@ LEGACY_PROOFS = [
 def fleet_workers() -> list[dict]:
     """Derive deployment coverage from Wrangler; preserve stable legacy proof IDs."""
     config = BASE_DIR.parents[1] / "deploy/cloudflare-worker/wrangler.toml"
-    names = re.findall(r'^name\s*=\s*"([^"\n]+)"', config.read_text(), re.MULTILINE)
+    settings = tomllib.loads(config.read_text())
+    names = [target["name"] for target in [settings, *settings.get("env", {}).values()]]
     proofs = {worker["name"]: worker for worker in LEGACY_PROOFS}
     paid_mode = 'BILLING_MODE = "pay_per_call"' in config.read_text()
     workers = [proofs["vizier"]]

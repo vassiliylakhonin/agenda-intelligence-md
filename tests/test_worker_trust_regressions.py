@@ -1,7 +1,6 @@
 """Trust-boundary regressions shared with the hosted Worker."""
 
 import json
-import re
 from pathlib import Path
 from unittest.mock import patch
 
@@ -72,11 +71,10 @@ def test_legacy_remote_allow_cannot_authorize_wallet():
 
 
 def test_fleet_covers_every_configured_worker():
-    names = set(
-        re.findall(
-            r'^name\s*=\s*"([^"\n]+)"', (ROOT / "deploy/cloudflare-worker/wrangler.toml").read_text(), re.MULTILINE
-        )
-    )
+    import tomllib
+
+    config = tomllib.loads((ROOT / "deploy/cloudflare-worker/wrangler.toml").read_text())
+    names = {target["name"] for target in [config, *config.get("env", {}).values()]}
     assert {w["name"] for w in WORKERS} == names | {"vizier"}
     assert len({w["id"] for w in WORKERS}) == len(WORKERS)
     for worker in WORKERS:

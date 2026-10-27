@@ -1,5 +1,5 @@
 name = "agenda-intelligence-a2a"
-main = "src/index.js"
+main = "src/research-entry.js"
 compatibility_date = "2026-05-22"
 workers_dev = true
 
@@ -10,6 +10,25 @@ database_name = "agenda-fleet-payments"
 database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
 migrations_dir = "migrations"
 
+
+# Pending owner approval: replace the zero ID with the created research database ID.
+[[d1_databases]]
+binding = "RESEARCH_DB"
+database_name = "agenda-corridor-research"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "research-migrations"
+
+[[workflows]]
+binding = "RESEARCH_WORKFLOW"
+name = "agenda-corridor-research"
+class_name = "CorridorResearchWorkflow"
+[workflows.default_retention]
+success_retention = "1 day"
+error_retention = "1 day"
+
+[ai]
+binding = "RESEARCH_AI"
+
 [version_metadata]
 binding = "CF_VERSION_METADATA"
 
@@ -18,6 +37,9 @@ enabled = true
 
 [vars]
 AGENT_PROFILE = "agenda"
+# Enable only after the owner approves the new research resources.
+RESEARCH_ENABLED = "0"
+RESEARCH_DAILY_JOB_LIMIT = "5"
 TASK_SCOPE_AUTH_REQUIRED = "1"
 BILLING_MODE = "pay_per_call"
 X402_STANDARD = "1"
@@ -43,6 +65,7 @@ id = "d2228183999246ccbec8aa2d5f130bfc"
 # agent/card discovery stays public regardless.
 [env.middle-corridor-deal-risk-gate]
 name = "middle-corridor-deal-risk-gate-a2a"
+main = "src/index.js"
 workers_dev = true
 
 [env.middle-corridor-deal-risk-gate.vars]
@@ -84,6 +107,7 @@ migrations_dir = "migrations"
 
 [env.cis-secondary-sanctions]
 name = "cis-secondary-sanctions-a2a"
+main = "src/index.js"
 workers_dev = true
 
 [env.cis-secondary-sanctions.vars]
@@ -144,6 +168,7 @@ migrations_dir = "migrations"
 
 [env.agentic-interaction-trust]
 name = "agentic-interaction-trust-a2a"
+main = "src/index.js"
 workers_dev = true
 
 [env.agentic-interaction-trust.vars]
@@ -179,6 +204,7 @@ migrations_dir = "migrations"
 
 [env.agent-output-verification]
 name = "agent-output-verification-a2a"
+main = "src/index.js"
 workers_dev = true
 
 [env.agent-output-verification.vars]
@@ -213,6 +239,7 @@ migrations_dir = "migrations"
 
 [env.gulf-maritime-exposure]
 name = "gulf-maritime-exposure-a2a"
+main = "src/index.js"
 workers_dev = true
 
 [env.gulf-maritime-exposure.vars]
@@ -248,6 +275,7 @@ migrations_dir = "migrations"
 
 [env.kazakhstan-market-entry-readiness]
 name = "kazakhstan-market-entry-readiness-a2a"
+main = "src/index.js"
 workers_dev = true
 
 [env.kazakhstan-market-entry-readiness.vars]
@@ -285,6 +313,7 @@ migrations_dir = "migrations"
 
 [env.corridor-sanctions-assistant]
 name = "corridor-sanctions-assistant-a2a"
+main = "src/index.js"
 workers_dev = true
 
 [env.corridor-sanctions-assistant.vars]
@@ -320,6 +349,7 @@ migrations_dir = "migrations"
 
 [env.critical-minerals-due-diligence]
 name = "critical-minerals-due-diligence-a2a"
+main = "src/index.js"
 workers_dev = true
 
 [env.critical-minerals-due-diligence.vars]
@@ -356,6 +386,7 @@ migrations_dir = "migrations"
 
 [env.dual-use-technology-export]
 name = "dual-use-technology-export-a2a"
+main = "src/index.js"
 workers_dev = true
 
 [env.dual-use-technology-export.vars]
@@ -392,6 +423,7 @@ migrations_dir = "migrations"
 
 [env.agent-financial-guard]
 name = "agent-financial-guard-a2a"
+main = "src/index.js"
 workers_dev = true
 
 [env.agent-financial-guard.vars]
@@ -428,6 +460,7 @@ migrations_dir = "migrations"
 
 [env.m2m-escrow-arbiter]
 name = "m2m-escrow-arbiter-a2a"
+main = "src/index.js"
 workers_dev = true
 
 [env.m2m-escrow-arbiter.vars]
