@@ -2,6 +2,7 @@ import {WorkflowEntrypoint} from 'cloudflare:workers';
 import legacy from './index.js';
 import {handleResearch} from './research-http.js';
 import {cleanupResearch,executeResearch,researchDiscovery} from './corridor-research.js';
+import {maybeSignCard} from './jws.js';
 
 export class CorridorResearchWorkflow extends WorkflowEntrypoint {
   async run(event,step) {
@@ -13,10 +14,14 @@ export default {
     const research=await handleResearch(request,env);if(research)return research;
     const response=await legacy.fetch(request,env,ctx);
     // Advertise an additive research interface without changing the existing MCP tool contracts.
-    if(env.RESEARCH_ENABLED==='1'&&new URL(request.url).pathname==='/.well-known/agent-card.json'&&response.ok) {
+    if(env.RESEARCH_ENABLED==='1'&&['/.well-known/agent-card.json','/.well-known/agent.json'].includes(new URL(request.url).pathname)&&response.ok) {
       const card=await response.json();
-      card.x_agenda_research={discovery:'/.well-known/corridor-research.json',...researchDiscovery(env)};
-      return Response.json(card,{status:response.status,headers:response.headers});
+      card.capabilities??={};card.capabilities.extensions??=[];
+      card.capabilities.extensions.push({uri:'https://agendamcp.dpdns.org/capabilities/corridor-research',required:false,
+        description:'Experimental bounded Middle Corridor/Caspian research; human review required.',
+        params:{discovery:'/.well-known/corridor-research.json',...researchDiscovery(env)}});
+      delete card.signatures;
+      return Response.json(await maybeSignCard(card,env),{status:response.status,headers:response.headers});
     }
     return response;
   },

@@ -14,7 +14,7 @@ Date: 2026-10-27
 
 ## Decision
 
-Add a separate research interface at `/v1/research` and `/mcp/research` on the existing top-level Worker. Existing profile endpoints and their supplied-evidence behavior remain intact. The two operations are `research_brief` and `get_research`; every completed artifact includes source dates, access failures, quotations, interpretations, limitations and method provenance.
+Add a separate research interface at `/v1/research` and canonical MCP `/v1/research/mcp` on the existing top-level Worker. `/mcp/research` remains an application alias; ordinary machine clients use the existing BIC-compatible `/v1/` namespace. Existing profile endpoints and their supplied-evidence behavior remain intact. The two operations are `research_brief` and `get_research`; every completed artifact includes source dates, access failures, quotations, interpretations, limitations and method provenance. Discovery is an A2A capability extension included before the final AgentCard signature.
 
 Use a dedicated D1 binding for private research records and atomic admission limits, and a Cloudflare Workflow for restartable execution. The deployment exports the Workflow only from the top-level entry; existing fleet environments keep their current entry. No new hosting provider or heavy dependency is introduced.
 

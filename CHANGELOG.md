@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Server research runtime corrections — 2026-10-27
+
+- Supply the required Workflow retry delay even with zero retries; a real engine smoke now covers the deployed entry, local D1, private polling and one fixture inference. The first live attempt failed before any model dispatch because its step configuration was rejected.
+- Advertise canonical MCP at `/v1/research/mcp` under the existing machine API exception, retaining the earlier application alias. Ordinary urllib access to the initial `/mcp/research` route was blocked by BIC.
+- Publish research discovery through a standard A2A capability extension and sign the final augmented card; check the actual served schema and signature in the runtime smoke.
+
 ## Bounded server research — 2026-10-27
 
 - Implement a separate Middle Corridor/Caspian research interface: collect bounded official HTML sources, run one server-side Workers AI synthesis, check source IDs and verbatim quotations, and retain private job artifacts and source provenance. Preserve unknown publication/observation dates, access failures, interpretations and mandatory human review.

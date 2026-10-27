@@ -11,7 +11,9 @@ legal, investment, operational or sanctions advice. Human review is required.
 
 - Browser: `/research` on the top-level Agenda host.
 - Discovery and source catalog: `/.well-known/corridor-research.json`.
-- Stateless Streamable HTTP MCP: `/mcp/research`, with `research_brief` and `get_research`.
+- Stateless Streamable HTTP MCP: `/v1/research/mcp`, with `research_brief` and `get_research`.
+  `/mcp/research` remains an application alias; use the canonical `/v1/` address for ordinary
+  machine clients because the existing zone's BIC exception covers that API namespace.
 - REST: `POST /v1/research`, then `GET /v1/research/{research_id}`.
 - Contracts: [request](../../schemas/v1/corridor-research-request.schema.json) and
   [response](../../schemas/v1/corridor-research-response.schema.json).
@@ -108,6 +110,7 @@ cd deploy/cloudflare-worker
 node scripts/generate-research-methods.js --check
 node --test test/corridor-research.test.js
 npm test
+npm run test:research-runtime
 npx wrangler deploy --dry-run --env ''
 ```
 
@@ -117,3 +120,9 @@ source failures, redirects, byte bounds, private access, idempotency, concurrent
 validation and model-outcome recovery. It does not establish live model quality or production
 Cloudflare integration. A separate live collector check can verify official page access without
 calling a model. See [ADR 0041](../adr/0041-bounded-server-research.md).
+
+The runtime check uses the pinned Wrangler's local Miniflare/Workerd engine, local D1 and a
+fixture RPC model with fixture outbound pages. It exercises the actual production entry and
+Workflow class, requires exactly one fixture inference, checks private REST/MCP access,
+verifies the augmented AgentCard signature, and checks working-text cleanup. It makes no live
+model call and creates no cloud resource. CI runs it alongside the faster Node regressions.

@@ -61,7 +61,7 @@ async function handleResearchRequest(request,env) {
   if(origin&&origin!==url.origin)return json({code:'cross_origin_research_not_allowed'},403);
   try {
     if(request.method==='OPTIONS')return new Response(null,{status:204,headers:{...security,allow:'GET, HEAD, POST, OPTIONS'}});
-    if(path==='/mcp/research')return await mcp(request,env);
+    if(path==='/mcp/research'||path==='/v1/research/mcp')return await mcp(request,env);
     if(path==='/.well-known/corridor-research.json') {
       if(!['GET','HEAD'].includes(request.method))return json({code:'method_not_allowed'},405);
       return json({...researchDiscovery(env),request_schema:requestSchema,response_schema:responseSchema});

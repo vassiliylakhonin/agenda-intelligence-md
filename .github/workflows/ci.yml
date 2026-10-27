@@ -215,6 +215,9 @@ jobs:
       - name: Test the Worker
         run: npm test
 
+      - name: Test the deployed research entry in the real local Workflow runtime
+        run: npm run test:research-runtime
+
   foundry:
     name: Foundry Smart Contract Tests & Invariants
     runs-on: ubuntu-latest

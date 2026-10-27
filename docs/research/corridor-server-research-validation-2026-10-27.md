@@ -71,3 +71,13 @@ The owner explicitly approved resource creation, bounded Workers AI usage, merge
 Activation validation: local CI passed again (1,222 Python tests passed, one skipped); Worker tests passed 1,111/1,111. The added production-selection regression executes the actual workflow selector, verifies root-only deployment, preserves all/signing-bootstrap modes, and rejects ambiguous or unknown selections. The existing gate pins Wrangler 4.153.0 only for the root researcher because 4.122.0 does not recognize `workflows.default_retention`; other deployment targets retain their existing pin.
 
 Production inference and the live end-to-end research artifact remain to be verified after the gated deployment. The original pre-approval observations above remain a historical validation record, not the present approval state.
+
+## First production attempt and correction
+
+PR457 was merged as `3e2848c7d85fb008bd54005f331e4140a334a2b4`. Root-only gated deployment [40512321236](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/runs/40512321236) succeeded with principal-signed Vizier ALLOW (`vrf_12912dc7-d90d-4477-8200-9c7e1b77ac00`) and Worker version `89299c5b-8444-46ae-96e9-b3a342f35431`.
+
+The first live job at 13:32 UTC failed as `research_execution_failed`. The Workflow recorded zero steps; the dedicated D1 row had no source snapshot or model dispatch timestamp. Thus no model call was made. A minimal local reproduction using the actual `executeResearch`, local D1 and the real Miniflare/Workerd Workflow engine reproduced the same failure in under one second. Cloudflare requires `retries.delay` whenever `retries` is supplied, even when `limit=0`. Adding an explicit delay with a constant backoff made the unchanged reproduction complete. Automatic model retries remain disabled.
+
+Independent ordinary-urllib MCP polling hit HTTP403/error1010 on `/mcp/research` (Ray `a51213fb48c96e1c-ALA`). Canonical MCP moves additively to `/v1/research/mcp`, within the existing machine API namespace; the original application alias remains. No broader zone security exception is introduced.
+
+The real-runtime regression now executes the actual deployment entry and Workflow, fixture source retrieval and an RPC fixture model. It also checks private REST/MCP, one model invocation, source cleanup, schema-compliant A2A capability metadata and the final AgentCard signature. Live Cloudflare re-verification remains pending this correction's gated release.
