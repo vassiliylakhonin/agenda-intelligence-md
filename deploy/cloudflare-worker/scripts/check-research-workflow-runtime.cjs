@@ -22,7 +22,8 @@ async function main() {
     let calls=0;export default class extends WorkerEntrypoint {
       async run(model,params){calls++;
         if(model!=='@cf/meta/llama-3.3-70b-instruct-fp8-fast'||params.max_tokens!==2048)throw new Error('Unexpected inference configuration');
-        return {response:{findings:[{claim:'The source discusses coordination.',source_id:'S1',quote:${JSON.stringify(quote)}}],interpretations:[],open_questions:[]},usage:{prompt_tokens:200,completion_tokens:20}};}
+        const ru=JSON.parse(params.messages.find(m=>m.role==='user').content).output_language==='ru';
+        return {response:{findings:[{claim:ru?'Источник описывает координацию перевозок.':'The source discusses coordination.',source_id:'S1',quote:${JSON.stringify(quote)}}],interpretations:[],open_questions:[]},usage:{prompt_tokens:200,completion_tokens:20}};}
       async fetch(){return Response.json({calls});}
     }`;
   const pair=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
@@ -74,10 +75,19 @@ async function main() {
     assert.ok(await webcrypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},pair.publicKey,Buffer.from(signature.signature,'base64url'),bytes));
     const {body:alias}=await call('/.well-known/agent.json');
     assert.deepEqual(alias.capabilities.extensions.find(x=>x.uri===extension.uri),extension);
+    let russian=(await call('/v1/research',{...input,language:'ru',request_id:'local-workflow-ru'})).body;
+    for(let attempt=0;attempt<150;attempt++){
+      await new Promise(resolve=>setTimeout(resolve,100));
+      russian=(await call('/v1/research/'+russian.research_id)).body;
+      if(['completed','failed'].includes(russian.status))break;
+    }
+    assert.equal(russian.status,'completed',russian.error_code);assert.ok(valid(russian),JSON.stringify(valid.errors));
+    assert.equal(russian.result.language,'ru');assert.match(russian.result.findings[0].claim,/[\u0400-\u04ff]/u);
+    assert.ok(russian.result.markdown.includes('## Открытые вопросы'));
     const aiWorker=await mf.getWorker('fixture-ai');
-    assert.equal((await (await aiWorker.fetch('https://fixture.test/')).json()).calls,1);
-    const row=await db.prepare('SELECT sources_json,model_output_json FROM research_jobs').first();assert.equal(row.sources_json,null);assert.equal(row.model_output_json,null);
-    console.log('PASS: deployed entry + real Workflow/D1, one fixture inference, private REST/MCP, signed A2A extension and source cleanup');
+    assert.equal((await (await aiWorker.fetch('https://fixture.test/')).json()).calls,2);
+    const row=await db.prepare('SELECT COUNT(*) AS count FROM research_jobs WHERE sources_json IS NOT NULL OR model_output_json IS NOT NULL').first();assert.equal(row.count,0);
+    console.log('PASS: deployed entry + real Workflow/D1, English/Russian jobs with one fixture inference each, private REST/MCP, signed A2A extension and source cleanup');
   }finally{await mf.dispose();}
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
