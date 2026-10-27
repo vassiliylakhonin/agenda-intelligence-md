@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Research output language — 2026-10-27
+
+- Repeat the requested output language at the final model contract and in structured input. Reject fully English narrative fields when Russian was requested; keep exact source quotations in their original language. Localize Russian Markdown section labels.
+- Exercise English and Russian jobs in the real local Workflow smoke, with one fixture inference per job. The first completed live response had a Russian metadata label but English narrative; it is recorded as a failed language acceptance case.
+
 ## Server research runtime corrections — 2026-10-27
 
 - Supply the required Workflow retry delay even with zero retries; a real engine smoke now covers the deployed entry, local D1, private polling and one fixture inference. The first live attempt failed before any model dispatch because its step configuration was rejected.

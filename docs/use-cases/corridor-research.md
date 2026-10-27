@@ -123,6 +123,12 @@ calling a model. See [ADR 0041](../adr/0041-bounded-server-research.md).
 
 The runtime check uses the pinned Wrangler's local Miniflare/Workerd engine, local D1 and a
 fixture RPC model with fixture outbound pages. It exercises the actual production entry and
-Workflow class, requires exactly one fixture inference, checks private REST/MCP access,
+Workflow class, covers English/Russian jobs with one fixture inference each, checks private REST/MCP access,
 verifies the augmented AgentCard signature, and checks working-text cleanup. It makes no live
 model call and creates no cloud resource. CI runs it alongside the faster Node regressions.
+
+Requested Russian output must contain Cyrillic in every narrative claim, interpretation and open
+question; source quotations remain in their original language. A fully English narrative is
+rejected as `model_output_language_mismatch`, rather than labeled Russian. This is a narrow
+script-presence check, not a certificate of translation quality or fluency. The requested
+language is supplied explicitly after the canonical methods and in the structured model input.

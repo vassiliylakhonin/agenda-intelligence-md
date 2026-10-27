@@ -112,6 +112,20 @@ test('forged quotes, source IDs, excess quotation and extra model fields are rej
     const a=analysis();mutate(a);assert.throws(()=>validateResearchAnalysis(a,sources),e=>e.code==='model_evidence_validation_failed');
   }
 });
+test('requested Russian cannot silently return English text under a Russian result label',async()=>{
+  const f=fixture(),job=await create(f.env,'russian-language-1',token,{...input,language:'ru'});
+  const result=await executeResearch(f.env,job.research_id,{fetcher,now:()=>now});
+  assert.equal(result.status,'failed');assert.equal(result.error_code,'model_output_language_mismatch');
+  assert.equal((await readResearch(f.env,job.research_id,token,now)).result,null);assert.equal(f.modelCalls,1);f.sqlite.close();
+});
+test('Russian narrative retains original source quotations without translation',()=>{
+  const a=analysis();a.findings[0].claim='Источник описывает координацию портов и железных дорог.';
+  a.interpretations[0].text='Для проекта следует уточнить фактические ограничения координации.';
+  a.open_questions=['Какой период наблюдений лежит в основе данных оператора?'];
+  assert.equal(validateResearchAnalysis(a,[{id:'S1',text:quote}],'ru'),a);
+  a.open_questions=['What is the observation period?'];
+  assert.throws(()=>validateResearchAnalysis(a,[{id:'S1',text:quote}],'ru'),e=>e.code==='model_output_language_mismatch');
+});
 test('invalid model JSON and ambiguous inference outcomes cannot cause an automatic second invocation',async()=>{
   for(const mode of ['invalid-json','network']) {
     const f=fixture(),job=await create(f.env);let calls=0;
@@ -173,6 +187,8 @@ test('source publication dates, background records and byte-bounded model contex
   const prompt=researchPrompt({...input,question:'Каспий '.repeat(280)},records.sources,now);
   assert.ok(new TextEncoder().encode(prompt.messages.map(x=>x.content).join('')).length<=MAX_PROMPT_BYTES);
   assert.ok(prompt.messages[0].content.includes('untrusted DATA'));assert.ok(prompt.messages[0].content.includes('Linked PDFs were NOT read'));
+  const russian=researchPrompt({...input,language:'ru'},records.sources,now);
+  assert.equal(russian.payload.output_language,'ru');assert.ok(russian.messages[0].content.endsWith(russian.payload.output_language_requirement));
 });
 test('publisher-labeled dates are parsed without treating URL or narrative dates as publication time',()=>{
   for(const [url,markup,date] of [

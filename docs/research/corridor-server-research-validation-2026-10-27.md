@@ -81,3 +81,9 @@ The first live job at 13:32 UTC failed as `research_execution_failed`. The Workf
 Independent ordinary-urllib MCP polling hit HTTP403/error1010 on `/mcp/research` (Ray `a51213fb48c96e1c-ALA`). Canonical MCP moves additively to `/v1/research/mcp`, within the existing machine API namespace; the original application alias remains. No broader zone security exception is introduced.
 
 The real-runtime regression now executes the actual deployment entry and Workflow, fixture source retrieval and an RPC fixture model. It also checks private REST/MCP, one model invocation, source cleanup, schema-compliant A2A capability metadata and the final AgentCard signature. Live Cloudflare re-verification remains pending this correction's gated release.
+
+## Completed inference exposed a language acceptance defect
+
+After PR458's corrected release, ordinary urllib received HTTP 200 for discovery and canonical `/v1/research/mcp`. The replacement job completed at 14:00:55 UTC with three sources and two findings. EDB timed out and that access limitation was preserved. Private checks passed: missing capability 401, unrelated capability 404, HEAD 200 and matching private MCP results. Usage was 3,714 input tokens and 247 output tokens, with one model dispatch.
+
+Reading the actual artifact revealed that narrative was English despite requested/recorded `language=ru`. This is not accepted as Russian output. The artifact remains an immutable historical test result. The correction repeats the language at the end of the trusted system contract and in the structured input, rejects narrative fields without Cyrillic for a Russian request, and localizes Russian Markdown headings. Source quotations stay unchanged. The script-presence heuristic does not certify translation quality. Regression tests reproduce the erroneous acceptance before the fix; the local engine now exercises both output-language paths.
