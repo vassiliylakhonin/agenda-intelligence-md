@@ -3,6 +3,13 @@ name: Deploy existing Worker fleet through Vizier
 on:
   workflow_dispatch:
     inputs:
+      target:
+        description: Deploy all existing Workers or only the Agenda root researcher
+        type: choice
+        options:
+          - all
+          - agenda-root
+        default: all
       initialize_card_signing:
         description: Initialize missing card keys for Financial Guard and Escrow only (never rotate)
         type: boolean
@@ -52,14 +59,22 @@ jobs:
         id: fleet
         env:
           INITIALIZE_AGENT_CARD_SIGNING: ${{ inputs.initialize_card_signing }}
+          DEPLOY_TARGET: ${{ inputs.target }}
         run: |
           node --input-type=module <<'JS'
           import { readFileSync, appendFileSync } from 'node:fs';
           import { deployedEnvironments } from './scripts/deploy-all.js';
           import { signingBootstrapEnvironments } from './scripts/card-signing-bootstrap.js';
           const all = deployedEnvironments(readFileSync('wrangler.toml', 'utf8'));
-          const fleet = process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true'
+          let fleet = process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true'
             ? all.filter(({env}) => signingBootstrapEnvironments.includes(env)) : all;
+          const target = process.env.DEPLOY_TARGET || 'all';
+          if (!['all', 'agenda-root'].includes(target)) throw new Error('Unknown deploy target');
+          if (target === 'agenda-root') {
+            if (process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true') throw new Error('Signing bootstrap requires all target');
+            fleet = all.filter(({env}) => env === '');
+            if (fleet.length !== 1) throw new Error('Expected exactly one Agenda root Worker');
+          }
           if (process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true' && fleet.length !== 2) {
             throw new Error('Signing bootstrap requires exactly the two existing targets');
           }

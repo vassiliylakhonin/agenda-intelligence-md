@@ -1913,11 +1913,11 @@
       "trade": "source-requirements/trade.json"
     },
     "server_research": {
-      "status": "implemented_not_activated",
+      "status": "activation_approved_pending_live_verification",
       "discovery_url": "https://agendamcp.dpdns.org/.well-known/corridor-research.json",
       "documentation": "docs/use-cases/corridor-research.md",
       "catalog": "source-requirements/corridor-research.json",
-      "activation": "Owner approval required for the dedicated D1/Workflow resources. Existing core and profile retrieval defaults remain unchanged."
+      "activation": "Owner approved the dedicated D1/Workflow resources and bounded Workers AI usage on 2026-10-27. Existing core and profile retrieval defaults remain unchanged."
     }
   }
 }

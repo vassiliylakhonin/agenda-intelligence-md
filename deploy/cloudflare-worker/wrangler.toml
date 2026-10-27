@@ -11,11 +11,11 @@ database_id = "fb2d998c-007e-4c16-abb0-207727da1589"
 migrations_dir = "migrations"
 
 
-# Pending owner approval: replace the zero ID with the created research database ID.
+# Dedicated research state; owner approved resource creation on 2026-10-27.
 [[d1_databases]]
 binding = "RESEARCH_DB"
 database_name = "agenda-corridor-research"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "5eef3ead-af38-4e12-a572-94d6a085a8fa"
 migrations_dir = "research-migrations"
 
 [[workflows]]
@@ -37,8 +37,8 @@ enabled = true
 
 [vars]
 AGENT_PROFILE = "agenda"
-# Enable only after the owner approves the new research resources.
-RESEARCH_ENABLED = "0"
+# Owner-approved evaluation allowance; no request can raise these limits.
+RESEARCH_ENABLED = "1"
 RESEARCH_DAILY_JOB_LIMIT = "5"
 TASK_SCOPE_AUTH_REQUIRED = "1"
 BILLING_MODE = "pay_per_call"

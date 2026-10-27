@@ -80,10 +80,10 @@ The product runtime defaults to `live_retrieval: false`. Specific vertical-worke
 | Watchman (`moov-io/watchman`, self-host) | Apache-2.0 | `cis_secondary_sanctions` (self-host option) | **Deferred** until operator sets `WATCHMAN_URL` (self-host on free-tier container) | Counterparty name → matched OFAC SDN / EU consolidated / UK OFSI / UN entries with `match` score |
 | OpenSanctions consolidated dataset (`api.opensanctions.org`) | CC-BY 4.0 (data); hosted API is paid €0.10/call | `cis_secondary_sanctions` (paid fallback) | **Deferred** until operator sets `OPENSANCTIONS_API_KEY` | Counterparty name → matched SDN / EU consolidated / UK OFSI / UN entries with Yente fuzzy match scoring |
 | GLEIF LEI relationship pool (`api.gleif.org`) | CC0-1.0 (public domain, no key) | `cis_secondary_sanctions` (ownership enrichment, $0) | **Deferred** until operator sets `GLEIF_ENABLED` (no key, no host) | Counterparty name → resolved LEI + disclosed direct/ultimate parent as `ownership_chain_evidence` / `beneficial_ownership_source`; disclosed relationships only, not hidden or multi-layer beneficial ownership |
-| TITR Association (`middlecorridor.com`) | Copyrighted public pages; ADR 0041 short-quotation exception | Separate `server_research` interface | **Disabled**, resource approval pending | Dated operator notices and tariff index; linked PDFs are not read |
-| World Bank (`www.worldbank.org`) | Public institutional material; document-specific reuse terms | Separate `server_research` interface | **Disabled**, resource approval pending | Corridor report overview; preserve unknown publication/observation dates |
-| CAREC Institute (`www.carecinstitute.org`) | Copyrighted public pages; ADR 0041 short-quotation exception | Separate `server_research` interface | **Disabled**, resource approval pending | Relevant same-host transport/policy article from the news index |
-| Eurasian Development Bank (`www.eabr.org`) | Public institutional material; document-specific reuse terms | Separate `server_research` interface | **Disabled**, resource approval pending | Transport-infrastructure observatory overview; distinguish current retrieval from the observed period |
+| TITR Association (`middlecorridor.com`) | Copyrighted public pages; ADR 0041 short-quotation exception | Separate `server_research` interface | **Configured**, owner-approved bounded activation | Dated operator notices and tariff index; linked PDFs are not read |
+| World Bank (`www.worldbank.org`) | Public institutional material; document-specific reuse terms | Separate `server_research` interface | **Configured**, owner-approved bounded activation | Corridor report overview; preserve unknown publication/observation dates |
+| CAREC Institute (`www.carecinstitute.org`) | Copyrighted public pages; ADR 0041 short-quotation exception | Separate `server_research` interface | **Configured**, owner-approved bounded activation | Relevant same-host transport/policy article from the news index |
+| Eurasian Development Bank (`www.eabr.org`) | Public institutional material; document-specific reuse terms | Separate `server_research` interface | **Configured**, owner-approved bounded activation | Transport-infrastructure observatory overview; distinguish current retrieval from the observed period |
 
 Adding a new upstream requires a CHANGELOG entry and a row in this table. A new ADR is required only when the new upstream changes the license model, attribution model, or rate-limit shape materially.
 
@@ -105,7 +105,7 @@ working text only while the job runs (24-hour logical expiry with hourly cleanup
 and completed briefs/metadata for seven days. Workflow checkpoints contain receipts only. PDFs, authenticated
 areas and arbitrary caller-supplied URLs are outside the initial collector. Missing pages,
 unknown publication dates and missing observation periods remain visible. Production activation
-is pending owner approval; the normal core and fleet profiles retain their existing behavior.
+is owner-approved and subject to live verification; the normal core and fleet profiles retain their existing behavior.
 
 1. **Declare**: `live_retrieval: true` in agent card, `/status`, `/health`, and agent-manifest. Name the upstream(s) consulted. No opaque retrieval.
 2. **Cache**: Cache responses with TTL appropriate to the upstream's update cadence (daily for OpenSanctions). Honor `Cache-Control` headers when present.

@@ -1,6 +1,6 @@
 # ADR 0041 — Bounded server research on the existing Agenda host
 
-Status: implemented and locally validated; production resource creation requires owner approval.
+Status: implemented and locally validated; owner approved the dedicated resources and activation on 2026-10-27; live verification pending.
 Date: 2026-10-27
 
 ## Decision workspace
@@ -9,8 +9,8 @@ Date: 2026-10-27
 - Trusted evidence: the existing deterministic evidence contract, canonical vendored methods, and named official source websites.
 - Suspected unreliable evidence: retrieved directives, inaccessible/stale pages, announcements treated as completed projects, and unsupported model statements.
 - Hidden assumptions: Workers AI and Workflows can be enabled in the existing account; the small initial allowance is sufficient for evaluation.
-- Intended next action: implement and test the research module, then request approval for one D1 database and one Workflow before production activation.
-- Stop or escalate if: the owner has not approved new resources, no sources can be read, evidence validation fails, or a model invocation has an ambiguous outcome.
+- Intended next action: implement and test the research module, activate the owner-approved D1 database, Workflow and Workers AI binding through Vizier, then verify a real job.
+- Stop or escalate if: new resources exceed the owner-approved scope, no sources can be read, evidence validation fails, or a model invocation has an ambiguous outcome.
 
 ## Decision
 
@@ -20,7 +20,7 @@ Use a dedicated D1 binding for private research records and atomic admission lim
 
 An initial public evaluation is limited to five jobs per UTC day globally and two per caller capability. A caller generates a private random bearer capability and an idempotency key; neither is a provider credential. Only its digest is stored. Repeated submissions with the same key reuse the same job; a changed request conflicts. Model execution is journaled before dispatch and is never automatically repeated after an ambiguous outcome. Discovery and polling never invoke a model.
 
-The fixed Workers AI model is `@cf/meta/llama-3.3-70b-instruct-fp8-fast`, with bounded prompt bytes and output tokens. Limits are server-controlled, not caller-supplied. Model and hosting costs are not represented as an unlimited free-service promise. New resource creation was refused by automatic approval review; do not work around that refusal. Prepare the exact deployment and ask the owner after local verification.
+The fixed Workers AI model is `@cf/meta/llama-3.3-70b-instruct-fp8-fast`, with bounded prompt bytes and output tokens. Limits are server-controlled, not caller-supplied. Model and hosting costs are not represented as an unlimited free-service promise. Automatic approval review initially refused the new persistent resource. After local validation and PR457 were prepared, the owner explicitly approved one D1 database, one Workflow, Workers AI usage under the stated limits, merge/deployment through Vizier and one live test. No plan upgrade was approved.
 
 ## Source policy extension
 

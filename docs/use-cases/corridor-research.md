@@ -1,6 +1,6 @@
 # Middle Corridor & Caspian Research Desk
 
-Status: implemented and locally tested; production activation pending owner approval.
+Status: implemented and locally tested; production activation approved by the owner on 2026-10-27; live verification pending.
 
 The server collects named primary-source pages and produces a dated research draft. The client
 supplies a question, not the source packet or a completed analysis. Existing evidence-verification
@@ -81,22 +81,24 @@ an apparent success. Interpretations are labeled separately from source-backed f
 
 ## Deployment approval and activation
 
-Automatic approval review rejected the request to create `agenda-corridor-research` D1 because a
-new persistent resource and its possible costs require explicit owner consent. It was not created.
-Do not retry through another interface or reuse the payment database to avoid that decision.
+The owner explicitly approved PR457 resource creation and activation on 2026-10-27 after reviewing
+its limits and possible costs. The dedicated D1 database `agenda-corridor-research` was created;
+its UUID is configured in Wrangler. The approved scope is one D1 database, one Workflow of the
+same name, the Workers AI binding and a Vizier-gated release of the existing Agenda root Worker.
+There is no additional domain, account, plan upgrade or paid third-party search API.
 
-The prepared change requests exactly one D1 database (`agenda-corridor-research`), one Workflow
-of the same name, the Workers AI binding and a top-level Worker release through the existing
-Vizier gate. There is no additional domain, account, plan upgrade or paid third-party search API.
+Automatic approval review initially refused the persistent resource. It was created only after
+explicit owner consent; the refusal was not bypassed and research state does not use the payment ledger.
 
-After owner approval:
-1. Create the database and replace its intentional zero UUID placeholder in `wrangler.toml`.
-2. Apply only `research-migrations/0001_research.sql` through the dedicated binding.
-3. Enable `RESEARCH_ENABLED=1`, verify the configured allowance and short Workflow retention.
-4. Merge the tested commit and deploy the top-level Worker through the existing Vizier gate.
-5. Verify public discovery without a model call, then make one owner-marked real research run.
+Activation procedure:
+1. Apply only `research-migrations/0001_research.sql` through the dedicated `RESEARCH_DB` binding.
+2. Verify `RESEARCH_ENABLED=1`, the five-job global allowance and short Workflow retention.
+3. Merge the tested commit. Dispatch the existing **Deploy existing Worker fleet through Vizier**
+   workflow from immutable main with `target=agenda-root`; signing bootstrap remains false.
+   It mints the usual separate owner grant and requires Vizier ALLOW before deploying only the root Worker.
+4. Verify discovery without a model call, then make one owner-marked real research run.
    Send `X-Client-Id: agenda-owner-corridor-research-smoke`; keep the client's normal User-Agent.
-6. Check real source access, inference, quotations, private polling, the served draft and global
+5. Check real source access, inference, quotations, private polling, the served draft and global
    allowance. Do not claim a deployed researcher before that succeeds.
 
 ## Local verification

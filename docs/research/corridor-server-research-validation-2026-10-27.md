@@ -1,7 +1,7 @@
 # Server research validation — 2026-10-27
 
-Status: local implementation validated; production resources and activation are pending owner approval.
-No production research job or real model invocation has been performed.
+Initial checkpoint: local implementation validated before the owner approved activation.
+No production research job or real model invocation had been performed at that checkpoint.
 
 ## Checks
 
@@ -63,3 +63,11 @@ The fixture model does not establish live model quality. Quote matching does not
 Automatic approval review rejected creation of `agenda-corridor-research` D1 because it is a persistent resource with possible costs and maintenance. No database was created and the rejection was not bypassed. The prepared activation requests one dedicated D1 database, one Workflow, a Workers AI binding and a Vizier-gated release of the existing root Worker; no plan upgrade or new domain. Initial admission is five jobs per UTC day globally, two per caller capability, one model dispatch per job, 20,000 prompt bytes and 2,048 output tokens.
 
 After owner approval, configure/migrate the dedicated database, enable research, deploy through Vizier and run one owner-marked end-to-end live job. Source access, model output validation, private polling, allowance and visible output must all pass before claiming the server researcher is live.
+
+## Owner-approved activation checkpoint
+
+The owner explicitly approved resource creation, bounded Workers AI usage, merge/deployment through Vizier and one live test on 2026-10-27. Dedicated D1 `agenda-corridor-research` was created and `0001_research.sql` applied successfully. The root configuration now enables research with the same five-job daily global limit.
+
+Activation validation: local CI passed again (1,222 Python tests passed, one skipped); Worker tests passed 1,111/1,111. The added production-selection regression executes the actual workflow selector, verifies root-only deployment, preserves all/signing-bootstrap modes, and rejects ambiguous or unknown selections. The existing gate pins Wrangler 4.153.0 only for the root researcher because 4.122.0 does not recognize `workflows.default_retention`; other deployment targets retain their existing pin.
+
+Production inference and the live end-to-end research artifact remain to be verified after the gated deployment. The original pre-approval observations above remain a historical validation record, not the present approval state.
