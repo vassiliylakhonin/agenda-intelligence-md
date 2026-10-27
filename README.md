@@ -233,4 +233,4 @@ HTTP, MCP and A2A trials share one allowance. Hosted x402 supports exact Base na
 
 ## Server research
 
-An experimental Middle Corridor/Caspian research module collects named official sources and prepares a source-linked draft on the server. Its bounded production activation is approved; see the verification record for current status. See the [research interface, limits and verification](docs/use-cases/corridor-research.md). Existing evidence-checking tools remain available.
+[Middle Corridor & Caspian Research Desk](https://agendamcp.dpdns.org/research) collects named official sources and prepares a source-linked draft on the server. The experimental pilot supports browser, REST and [MCP](https://agendamcp.dpdns.org/v1/research/mcp), with five shared jobs per UTC day and human review required. See the [live example](docs/research/corridor-live-brief-2026-10-27.md) and [interface, limits and verification](docs/use-cases/corridor-research.md). Existing evidence-checking tools remain available.

@@ -1,6 +1,10 @@
 # Middle Corridor & Caspian Research Desk
 
-Status: implemented and locally tested; production activation approved by the owner on 2026-10-27; live verification pending.
+Status: live experimental pilot; end-to-end Russian acceptance verified on 2026-10-27.
+
+Open [the research desk](https://agendamcp.dpdns.org/research) or connect to
+[MCP](https://agendamcp.dpdns.org/v1/research/mcp). See the
+[checked live draft and its limitations](../research/corridor-live-brief-2026-10-27.md).
 
 The server collects named primary-source pages and produces a dated research draft. The client
 supplies a question, not the source packet or a completed analysis. Existing evidence-verification
