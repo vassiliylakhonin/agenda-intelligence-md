@@ -21,7 +21,8 @@
     "verify:public-agents": "node scripts/verify-public-agents.js",
     "verify:refusals": "node scripts/verify-refusals.js",
     "generate:input-validators": "node scripts/generate-input-validators.js",
-    "generate:answer-review-app": "node scripts/generate-answer-review-app.js"
+    "generate:answer-review-app": "node scripts/generate-answer-review-app.js",
+    "test:research-runtime": "npx --yes --package=wrangler@4.153.0 -- node scripts/check-research-workflow-runtime.cjs"
   },
   "devDependencies": {
     "@modelcontextprotocol/ext-apps": "2.0.3",

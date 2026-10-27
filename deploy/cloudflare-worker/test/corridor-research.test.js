@@ -77,7 +77,7 @@ test('missing or invalid configuration, capabilities and oversized bodies fail c
   assert.equal(f.modelCalls,0);f.sqlite.close();
 });
 test('MCP stateless discovery, create and private polling share the REST execution contract',async()=>{
-  const f=fixture();let id=0;const rpc=(method,params)=>handleResearch(request('/mcp/research',{jsonrpc:'2.0',id:++id,method,params}),f.env);
+  const f=fixture();let id=0;const rpc=(method,params)=>handleResearch(request('/v1/research/mcp',{jsonrpc:'2.0',id:++id,method,params}),f.env);
   assert.equal((await (await rpc('initialize',{protocolVersion:'2025-11-25'})).json()).result.protocolVersion,'2025-11-25');
   assert.equal((await (await rpc('tools/list',{})).json()).result.tools.length,2);assert.equal(f.modelCalls,0);
   assert.equal((await (await rpc('initialize',{protocolVersion:'invalid'})).json()).error.code,-32602);
@@ -86,6 +86,12 @@ test('MCP stateless discovery, create and private polling share the REST executi
   await executeResearch(f.env,job.research_id,{fetcher});
   const polled=await (await rpc('tools/call',{name:'get_research',arguments:{research_id:job.research_id}})).json();assert.equal(polled.result.structuredContent.status,'completed');
   assert.equal((await (await rpc('tools/call',{name:'invented',arguments:{}})).json()).error.code,-32602);f.sqlite.close();
+});
+test('original MCP research URL remains an additive alias of the machine API endpoint',async()=>{
+  const f=fixture(),body={jsonrpc:'2.0',id:1,method:'tools/list'};
+  const canonical=await (await handleResearch(request('/v1/research/mcp',body),f.env)).json();
+  const alias=await (await handleResearch(request('/mcp/research',body),f.env)).json();
+  assert.deepEqual(alias,canonical);assert.equal(f.modelCalls,0);f.sqlite.close();
 });
 test('inaccessible sources are retained as failures and do not trigger an unsupported model answer',async()=>{
   const f=fixture(),job=await create(f.env);
@@ -125,6 +131,17 @@ test('Workflow replay after persisted model output reuses it and completes the a
   const receipts=[];const step={async do(_name,_options,fn){const receipt=await fn();receipts.push(receipt);return receipt;}};
   const replay=await executeResearch(f.env,job.research_id,{fetcher,step,now:()=>now});assert.equal(replay.status,'completed');assert.equal(f.modelCalls,0);
   assert.ok(receipts.every(x=>!JSON.stringify(x).includes(quote)));f.sqlite.close();
+});
+test('research steps satisfy the runtime contract even when automatic retries are disabled',async()=>{
+  const f=fixture(),job=await create(f.env),names=[];
+  const step={async do(name,config,operation){
+    // Cloudflare requires delay whenever retries is supplied, including limit=0.
+    assert.equal(config.retries.limit,0);
+    assert.ok(typeof config.retries.delay==='number'||typeof config.retries.delay==='string');
+    names.push(name);return operation();
+  }};
+  const result=await executeResearch(f.env,job.research_id,{step,fetcher,now:()=>now});
+  assert.equal(result.status,'completed');assert.equal(names.length,3);assert.equal(f.modelCalls,1);f.sqlite.close();
 });
 test('expired working text is scrubbed without expiring the completed private artifact',async()=>{
   const f=fixture(),job=await create(f.env);await executeResearch(f.env,job.research_id,{fetcher,now:()=>now});

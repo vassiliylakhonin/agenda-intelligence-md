@@ -123,7 +123,7 @@ function renderBrief(input,analysis,sources,asOf) {
 }
 export async function executeResearch(env,id,{step,fetcher=globalThis.fetch,now=()=>Date.now()}={}) {
   const db=env.RESEARCH_DB;
-  const run=async(name,operation)=>step?step.do(name,{retries:{limit:0},timeout:'5 minutes'},operation):operation();
+  const run=async(name,operation)=>step?step.do(name,{retries:{limit:0,delay:'1 second',backoff:'constant'},timeout:'5 minutes'},operation):operation();
   let row=await db.prepare('SELECT * FROM research_jobs WHERE id = ?').bind(id).first();
   if(!row||row.expires_ms<=now())return {research_id:id,status:'expired'};
   if(['completed','failed'].includes(row.status))return {research_id:id,status:row.status};
@@ -191,7 +191,7 @@ export async function executeResearch(env,id,{step,fetcher=globalThis.fetch,now=
 }
 export function researchDiscovery(env) {
   return {schema_version:'1.0',experimental:true,available:researchAvailable(env),operations:['research_brief','get_research'],
-    rest_endpoint:'/v1/research',mcp_endpoint:'/mcp/research',sources:SOURCE_CATALOG,model:RESEARCH_MODEL,
+    rest_endpoint:'/v1/research',mcp_endpoint:'/v1/research/mcp',sources:SOURCE_CATALOG,model:RESEARCH_MODEL,
     limits:{global_jobs_per_utc_day:Math.max(1,Math.min(5,Number(env.RESEARCH_DAILY_JOB_LIMIT)||5)),jobs_per_capability_per_day:2,max_prompt_bytes:MAX_PROMPT_BYTES,max_output_tokens:MAX_OUTPUT_TOKENS},
     privacy:{capability:'Client-generated private random bearer token, 32–128 base64url characters; it is not a provider API key. Keep it to read your jobs.',working_source_text_hours:24,job_retention_days:7},
     human_review_required:true,not_advice_notice:RESEARCH_NOTICE};
