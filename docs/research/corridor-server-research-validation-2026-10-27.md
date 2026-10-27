@@ -87,3 +87,22 @@ The real-runtime regression now executes the actual deployment entry and Workflo
 After PR458's corrected release, ordinary urllib received HTTP 200 for discovery and canonical `/v1/research/mcp`. The replacement job completed at 14:00:55 UTC with three sources and two findings. EDB timed out and that access limitation was preserved. Private checks passed: missing capability 401, unrelated capability 404, HEAD 200 and matching private MCP results. Usage was 3,714 input tokens and 247 output tokens, with one model dispatch.
 
 Reading the actual artifact revealed that narrative was English despite requested/recorded `language=ru`. This is not accepted as Russian output. The artifact remains an immutable historical test result. The correction repeats the language at the end of the trusted system contract and in the structured input, rejects narrative fields without Cyrillic for a Russian request, and localizes Russian Markdown headings. Source quotations stay unchanged. The script-presence heuristic does not certify translation quality. Regression tests reproduce the erroneous acceptance before the fix; the local engine now exercises both output-language paths.
+
+## Reference selection hardening after Russian acceptance refusal
+
+The separate Russian acceptance job failed after inference. The actual Workflow trace recorded
+`model_evidence_validation_failed` in the validation step, but error prototype serialization
+made the outer response generic. No artifact was accepted. Raw working model/source text was
+removed as specified, so the exact quotation/ID/budget mismatch is not recoverable from stored
+content. The validation guard was preserved.
+
+The correction uses a bounded immutable fragment ledger: at most two known short quote candidates
+per source, each already within that source's quotation allowance. The model returns a source-keyed
+map selecting a candidate ID; deterministic normalization attaches the unchanged quote. One finding
+per selected source prevents cumulative quote overflow. Unknown and cross-source IDs are refused.
+This changes the private synthesis contract only; the public finding shape remains unchanged.
+
+A narrow allowlist preserves known non-sensitive failure codes after Workflow RPC serialization.
+The real-engine smoke covers both languages and an intentionally invalid reference, with one
+fixture dispatch per job and cleanup. Failed jobs and their quota consumption are retained;
+no global or per-capability limit is raised and no owner exemption is added.

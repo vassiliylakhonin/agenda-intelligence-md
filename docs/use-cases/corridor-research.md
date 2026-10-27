@@ -132,3 +132,10 @@ question; source quotations remain in their original language. A fully English n
 rejected as `model_output_language_mismatch`, rather than labeled Russian. This is a narrow
 script-presence check, not a certificate of translation quality or fluency. The requested
 language is supplied explicitly after the canonical methods and in the structured model input.
+
+The model chooses a known evidence-fragment ID in a source-keyed findings object. The server
+attaches the original bounded quote from its ledger, one finding per selected source, and then
+checks the normal public response contract. The model does not reconstruct quotation text.
+Unknown or cross-source IDs fail closed; this normalizes references per ADR0021 and does not
+establish semantic support. Already-journaled responses in the initial quote format remain
+subject to their original strict quote/source checks.

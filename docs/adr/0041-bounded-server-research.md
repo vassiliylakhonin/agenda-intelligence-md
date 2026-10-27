@@ -28,7 +28,7 @@ The source catalog lists official public institutional/operator pages. Fetch onl
 
 This extends ADR 0014 beyond openly licensed bulk datasets: some operator web pages are copyrighted public documents. Access does not grant redistribution rights. Preserve attribution, provide short quotations with a cumulative 25-word-per-source output limit, discard private working text after a terminal outcome, enforce a 24-hour logical expiry and scrub expired text hourly, and retain the resulting brief and metadata for seven days. Do not crawl authenticated areas or bypass access controls. Source publication dates remain separate from retrieval and observation dates.
 
-Exact normalized quote matches and source-ID validation establish reference integrity, not semantic entailment, factual truth, route availability or financial/legal advice. Unsupported model output fails closed. Missing access produces a visible failed/partial research result, not fabricated current findings. Human review is required.
+The model selects identifiers from a bounded source-fragment ledger; deterministic code attaches the original quote and normalizes references per ADR0021. At most one selected finding per source prevents cumulative quotation overflow. Exact normalized quote matches and source-ID validation establish reference integrity, not semantic entailment, factual truth, route availability or financial/legal advice. Unsupported model output fails closed. Missing access produces a visible failed/partial research result, not fabricated current findings. Human review is required.
 
 ## References
 

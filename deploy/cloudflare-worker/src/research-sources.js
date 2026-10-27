@@ -191,3 +191,18 @@ export function relevantExcerpt(source,question,bytes=1800) {
   }
   return clipUtf8(text.slice(best,best+2400),bytes);
 }
+export function sourceEvidenceCandidates(source,question) {
+  const terms=queryTerms(question),seen=new Set(),quotes=[];
+  const allowance=25-(source.data_integrity_notes??[]).reduce((n,note)=>n+normalise(note.quote).split(/\s+/u).length,0);
+  const sentences=(source.text.match(/[^.!?]+(?:[.!?]+|$)/gu)??[])
+    .map((text,index)=>({text:normalise(text),index,rank:score(text,terms)}))
+    .sort((a,b)=>b.rank-a.rank||a.index-b.index);
+  for(const text of [...sentences.map(s=>s.text),source.title]) {
+    let quote=normalise(text).split(/\s+/u).slice(0,allowance).join(' ');
+    while(quote.length>240) {const end=quote.lastIndexOf(' ');quote=end>12?quote.slice(0,end):clipUtf8(quote,240);}
+    if(quote.length<12||seen.has(quote)||!normalise(source.text).includes(quote))continue;
+    seen.add(quote);quotes.push({evidence_id:source.id+'-Q'+(quotes.length+1),source_id:source.id,quote});
+    if(quotes.length===2)break;
+  }
+  return quotes;
+}

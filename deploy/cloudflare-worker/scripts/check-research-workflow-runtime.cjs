@@ -22,8 +22,10 @@ async function main() {
     let calls=0;export default class extends WorkerEntrypoint {
       async run(model,params){calls++;
         if(model!=='@cf/meta/llama-3.3-70b-instruct-fp8-fast'||params.max_tokens!==2048)throw new Error('Unexpected inference configuration');
-        const ru=JSON.parse(params.messages.find(m=>m.role==='user').content).output_language==='ru';
-        return {response:{findings:[{claim:ru?'Источник описывает координацию перевозок.':'The source discusses coordination.',source_id:'S1',quote:${JSON.stringify(quote)}}],interpretations:[],open_questions:[]},usage:{prompt_tokens:200,completion_tokens:20}};}
+        const payload=JSON.parse(params.messages.find(m=>m.role==='user').content),ru=payload.output_language==='ru',source=payload.sources[0];
+        const evidence=source.evidence_candidates[0];
+        if(!params.response_format.json_schema.properties.findings.properties[source.id].properties.evidence_id.enum.includes(evidence.evidence_id))throw new Error('Evidence selection schema missing');
+        return {response:{findings:{[source.id]:{claim:ru?'Источник описывает координацию перевозок.':'The source discusses coordination.',evidence_id:payload.decision_context==='fixture-invalid-evidence'?'unknown-evidence':evidence.evidence_id}},interpretations:[],open_questions:[]},usage:{prompt_tokens:200,completion_tokens:20}};}
       async fetch(){return Response.json({calls});}
     }`;
   const pair=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
@@ -84,10 +86,18 @@ async function main() {
     assert.equal(russian.status,'completed',russian.error_code);assert.ok(valid(russian),JSON.stringify(valid.errors));
     assert.equal(russian.result.language,'ru');assert.match(russian.result.findings[0].claim,/[\u0400-\u04ff]/u);
     assert.ok(russian.result.markdown.includes('## Открытые вопросы'));
+    const otherCapability='separate-local-qa-capability-1234567890';
+    let rejected=(await call('/v1/research',{...input,decision_context:'fixture-invalid-evidence',request_id:'local-workflow-bad-reference'},otherCapability)).body;
+    for(let attempt=0;attempt<150;attempt++){
+      await new Promise(resolve=>setTimeout(resolve,100));
+      rejected=(await call('/v1/research/'+rejected.research_id,undefined,otherCapability)).body;
+      if(['completed','failed'].includes(rejected.status))break;
+    }
+    assert.equal(rejected.status,'failed');assert.equal(rejected.error_code,'model_evidence_validation_failed');assert.equal(rejected.result,null);
     const aiWorker=await mf.getWorker('fixture-ai');
-    assert.equal((await (await aiWorker.fetch('https://fixture.test/')).json()).calls,2);
+    assert.equal((await (await aiWorker.fetch('https://fixture.test/')).json()).calls,3);
     const row=await db.prepare('SELECT COUNT(*) AS count FROM research_jobs WHERE sources_json IS NOT NULL OR model_output_json IS NOT NULL').first();assert.equal(row.count,0);
-    console.log('PASS: deployed entry + real Workflow/D1, English/Russian jobs with one fixture inference each, private REST/MCP, signed A2A extension and source cleanup');
+    console.log('PASS: deployed entry + real Workflow/D1, English/Russian evidence selection, serialized refusal, one fixture inference per job, private REST/MCP, signed A2A extension and source cleanup');
   }finally{await mf.dispose();}
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
