@@ -27,6 +27,7 @@ test('App opens without tool calls, validates locally and preserves a completed 
   await submit();assert.equal(f.calls.length,1);assert.equal(f.elements.result.hidden,false);
   assert.match(f.elements.result.textContent,/human/i);
   const previous=f.elements.result.textContent,raw=f.elements['raw-result'].textContent;
+  f.elements.answer.value='Changed answer "three warehouses" [s1]';
   f.setHandler(async()=>({isError:true,content:[{type:'text',text:JSON.stringify({code:'trial_exhausted',http_status:429})}]}));
   await submit();assert.equal(f.calls.length,2);assert.equal(f.elements.result.textContent,previous);
   assert.equal(f.elements['raw-result'].textContent,raw);assert.match(f.elements.status.textContent,/previous result.*unchanged/);
@@ -86,4 +87,50 @@ test('known exhausted allowance blocks redundant review and a deliberate status 
   f.setHandler(async()=>({isError:true,structuredContent:{code:'trial_exhausted',trial:{limit_reason:'network_allowance_exhausted'}}}));
   await f.elements.review.onclick({preventDefault(){}});assert.equal(f.elements.review.disabled,true);
   assert.match(f.elements.status.textContent,/previous result.*unchanged/);
+});
+
+test('a completed unchanged input never consumes another hosted attempt; an edit can be rechecked',async()=>{
+  const f=fixture();await mountAnswerReview(f.app,f.document);f.app.ontoolinput({arguments:input});
+  f.setHandler(async params=>({structuredContent:{evaluation:reviewAnswer(params.arguments),trial:{attempt_consumed:true}}}));
+  const submit=()=>f.elements.review.onclick({preventDefault(){}});
+  await submit();const previous=f.elements['raw-result'].textContent;
+  await submit();
+  assert.equal(f.calls.length,1,'unchanged completed input must not consume another campaign attempt');
+  assert.match(f.elements.status.textContent,/unchanged.*no.*attempt/i);
+  assert.equal(f.elements['raw-result'].textContent,previous);
+  f.elements.answer.value='A revised statement "three warehouses" [s1]';
+  await submit();assert.equal(f.calls.length,2);
+  assert.match(f.elements.result.textContent,/previous review/i);
+});
+
+test('edits while a review is pending are compared with the input actually sent',async()=>{
+  const f=fixture();await mountAnswerReview(f.app,f.document);f.app.ontoolinput({arguments:input});
+  let complete;f.setHandler(()=>new Promise(resolve=>{complete=resolve;}));
+  const first=f.elements.review.onclick({preventDefault(){}});
+  f.elements.answer.value='Changed while pending "three warehouses" [s1]';
+  complete({structuredContent:{evaluation:reviewAnswer(input),trial:{attempt_consumed:true}}});await first;
+  f.setHandler(async params=>({structuredContent:{evaluation:reviewAnswer(params.arguments),trial:{attempt_consumed:true}}}));
+  await f.elements.review.onclick({preventDefault(){}});
+  assert.equal(f.calls.length,2,'newly edited text was not evaluated by the first request');
+  assert.match(f.elements.result.textContent,/answer changed/i);
+});
+
+test('a missing or refused result is never cached as a completed review',async()=>{
+  const f=fixture();await mountAnswerReview(f.app,f.document);f.app.ontoolinput({arguments:input});
+  const submit=()=>f.elements.review.onclick({preventDefault(){}});
+  f.setHandler(async()=>{throw Error('network');});await submit();
+  f.setHandler(async()=>({structuredContent:{evaluation:{findings:[]}}}));await submit();
+  assert.equal(f.elements.result.hidden,true);
+  f.setHandler(async params=>({structuredContent:{evaluation:reviewAnswer(params.arguments),trial:{attempt_consumed:true}}}));
+  await submit();assert.equal(f.calls.length,3);
+  await submit();assert.equal(f.calls.length,3,'only the completed third attempt can suppress a fourth request');
+});
+
+test('a result pushed by the host is not bound to whichever text happens to be in the form',async()=>{
+  const f=fixture();await mountAnswerReview(f.app,f.document);f.app.ontoolinput({arguments:input});
+  f.setHandler(async params=>({structuredContent:{evaluation:reviewAnswer(params.arguments),trial:{attempt_consumed:true}}}));
+  await f.elements.review.onclick({preventDefault(){}});
+  f.app.ontoolresult({structuredContent:{evaluation:reviewAnswer({...input,answer:'Uncited host answer'})}});
+  await f.elements.review.onclick({preventDefault(){}});
+  assert.equal(f.calls.length,2,'unbound host output must not be used to label the form as already checked');
 });

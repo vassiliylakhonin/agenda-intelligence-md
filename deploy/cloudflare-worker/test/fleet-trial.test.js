@@ -159,7 +159,7 @@ test('every trial form uses the correct payload, explicit paid tool and price, a
     assert.deepEqual(JSON.parse(input),terms.example_request);
     const elements=Object.fromEntries(['profile-run','profile-paid','profile-status','profile-result','profile-summary','profile-response','profile-request','profile-feedback']
       .map(id=>[id,{value:input,innerHTML:'',textContent:'',hidden:id==='profile-paid'}]));
-    let paid=0;const traces=[];
+    let paid=0;const traces=[];let currentRequest=terms.example_request;
     const context={URL,window:{location:{href:origin+'/?owner_test=1',origin},crypto:globalThis.crypto},crypto:globalThis.crypto,
       document:{getElementById:id=>elements[id],createElement:()=>({set textContent(value){this.innerHTML=String(value);}})},
       fetch:async(url,init)=>{traces.push(init.headers['x-payment-trace-id']);
@@ -173,15 +173,22 @@ test('every trial form uses the correct payload, explicit paid tool and price, a
       const payload=JSON.parse(init.body);
       if(terms.paid_transport==='mcp') {
         assert.equal(payload.params.name,terms.tool);
-        assert.deepEqual(payload.params.arguments,terms.example_request);
-      } else assert.deepEqual(payload,terms.example_request);
+        assert.deepEqual(payload.params.arguments,currentRequest);
+      } else assert.deepEqual(payload,currentRequest);
       return Response.json({code:'payment_required'},{status:402});
     };
-    for(let i=0;i<(profile==='agent_output_verification'?6:3);i++) await context.runProfileExample({preventDefault(){}});
+    for(let i=0;i<(profile==='agent_output_verification'?6:3);i++) {
+      if(profile==='agent_output_verification' && i>0) {
+        currentRequest=structuredClone(terms.example_request);
+        currentRequest.claims[0].claim+=' Review draft '+i+'.';
+        elements['profile-request'].value=JSON.stringify(currentRequest);
+      }
+      await context.runProfileExample({preventDefault(){}});
+    }
     assert.equal(paid,0);
     assert.equal(elements['profile-paid'].hidden,false);
     assert.ok(elements['profile-status'].textContent.includes('No payment was made'),profile);
-    assert.equal(elements['profile-request'].value,input);
+    assert.deepEqual(JSON.parse(elements['profile-request'].value),currentRequest);
     const feedback = new URL(elements['profile-feedback'].href);
     assert.equal(feedback.protocol, 'mailto:');
     assert.match(feedback.searchParams.get('body'), /Allowance reached/);

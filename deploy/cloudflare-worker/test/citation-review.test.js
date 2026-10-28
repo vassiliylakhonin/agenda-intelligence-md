@@ -73,6 +73,9 @@ test('literal source data, absent quotes and unknown support never become fabric
   assert.equal(ui.requests[0].init.headers['x-agenda-client-surface'],'web-console-v1');
   assert.equal(ui.requests[0].init.headers['x-agenda-review-flow'],'one-claim-v1');
   // The following advanced-editor submission must not inherit the short-form claim.
+  const advanced=JSON.parse(ui.elements['profile-request'].value);
+  advanced.claims[0].support_level='weak';
+  ui.elements['profile-request'].value=JSON.stringify(advanced);
   await ui.context.runProfileExample({preventDefault(){}});
   assert.equal(ui.requests[1].init.headers['x-agenda-review-flow'],undefined);
 }));
@@ -138,8 +141,12 @@ test('one-claim retries retain quota admission, last result and owner-bound opti
   ui.elements['citation-source'].value='The allowance is five attempts.';
   ui.elements['citation-quote'].value='five attempts';
   ui.elements['citation-support'].value='direct';
-  for(let i=0;i<5;i++) await run(ui);
+  for(let i=0;i<5;i++) {
+    ui.elements['citation-claim'].value='Review draft '+(i+1)+': The document says five attempts.';
+    await run(ui);
+  }
   const last=ui.elements['profile-result'].textContent;
+  ui.elements['citation-claim'].value='Review draft 6: The document says five attempts.';
   await run(ui);
   assert.equal(ui.responses.at(-1).code,'trial_exhausted');
   assert.equal(ui.elements['profile-result'].textContent,last);
