@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 1.22.0 — prepared, unreleased
+## 1.22.0 — 2026-10-28
 
 - Add `worker-remediation.v1` to all twelve primary evaluations: exact input paths and source keys, rejection reasons, blank repair templates, requirement authority and independent human checks. Preserve all existing scores/verdicts and mandatory review; service checklists are not laws.
 - Reject unknown closed-object fields before fallback, evaluation and attempt/payment reservation. Preserve explicit compatibility wrappers and supported metadata; close the optional text-routing input per ADR 0043.
