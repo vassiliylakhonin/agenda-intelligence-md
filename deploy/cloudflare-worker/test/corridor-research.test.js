@@ -291,3 +291,11 @@ test('bullet boundaries keep project evidence from being buried behind unrelated
   assert.ok(candidates[0].quote.startsWith('Completion of Phase 1'));
   assert.ok(candidates[0].quote.includes('140k TEU'));
 });
+
+test('long PDF paragraphs select the relevant numeric passage instead of a table heading',()=>{
+  const text='[PDF page 37] '+('Annual report introductory material without transport figures '.repeat(30))+'Container transshipment amounted to 22780 TEU in 2023, compared with 30708 TEU in 2022. Additional details need review.';
+  const candidates=sourceEvidenceCandidates({id:'S1',text},'container 2023 2022 TEU');
+  assert.ok(candidates[0].quote.includes('22780'));
+  assert.ok(!candidates[0].quote.startsWith('[PDF page'));
+  assert.ok(candidates.every(c=>c.quote.split(/\s+/u).length<=25));
+});

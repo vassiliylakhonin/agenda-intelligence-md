@@ -217,19 +217,29 @@ export function relevantExcerpt(source,question,bytes=1800) {
   return clipUtf8(text.slice(best,best+2400),bytes);
 }
 export function sourceEvidenceCandidates(source,question) {
-  const terms=queryTerms(question),seen=new Set(),quotes=[];
+  const terms=queryTerms(question),seen=new Set(),quotes=[],sourceText=normalise(source.text);
   const allowance=25-(source.data_integrity_notes??[]).reduce((n,note)=>n+normalise(note.quote).split(/\s+/u).length,0);
-  // A sentence boundary needs whitespace; decimal numbers remain intact.
-  const sentences=(source.segments?.length?source.segments:[source.text]).flatMap(text=>text.split(/(?<=[.!?])\s+(?=[\p{Lu}\p{N}])/u))
-    .map((text,index)=>({text:normalise(text),index,rank:score(text,terms)}))
-    .sort((a,b)=>b.rank-a.rank||a.index-b.index);
-  for(const sentence of sentences) {
-    const clauses=sentence.text.split(/(?<=[;:])\s+/u).sort((a,b)=>score(b,terms)-score(a,terms));
-    const fit=clauses.find(text=>text.length<=240&&text.split(/\s+/u).length<=allowance);
-    let quote=fit??sentence.text.split(/\s+/u).slice(0,allowance).join(' ');
-    while(quote.length>240){const end=quote.lastIndexOf(' ');quote=end>12?quote.slice(0,end):clipUtf8(quote,240);}
-    if(quote.length<12||seen.has(quote)||!normalise(source.text).includes(quote))continue;
-    seen.add(quote);quotes.push({evidence_id:source.id+'-Q'+(quotes.length+1),source_id:source.id,quote,fragment:quote!==sentence.text});
+  if(allowance<1)return quotes;
+  // Whitespace after sentence punctuation keeps decimal numbers intact.
+  const sentences=(source.segments?.length?source.segments:[source.text]).flatMap(text=>text.split(/(?<=[.!?])\s+(?=[\p{Lu}\p{N}])/u));
+  const candidates=[];
+  for(const [index,sentence] of sentences.entries()) {
+    const full=normalise(sentence),words=full.split(/\s+/u);
+    // Long paragraphs/tables need query-relevant windows, not their first 25 words.
+    for(let start=0;start<words.length;start+=10) {
+      let quote=words.slice(start,start+allowance).join(' ');
+      while(quote.length>240){const end=quote.lastIndexOf(' ');quote=end>12?quote.slice(0,end):clipUtf8(quote,240);}
+      if(quote.length<12||!sourceText.includes(quote))continue;
+      candidates.push({quote,index,start,rank:score(quote,terms),fragment:quote!==full});
+      if(!start&&!candidates.at(-1).fragment)break;
+    }
+  }
+  candidates.sort((a,b)=>b.rank-a.rank||Number(a.fragment)-Number(b.fragment)||a.index-b.index||a.start-b.start);
+  const selected=new Set();
+  for(const candidate of candidates) {
+    if(seen.has(candidate.quote)||selected.has(candidate.index))continue;
+    seen.add(candidate.quote);selected.add(candidate.index);
+    quotes.push({evidence_id:source.id+'-Q'+(quotes.length+1),source_id:source.id,quote:candidate.quote,fragment:candidate.fragment});
     if(quotes.length===2)break;
   }
   return quotes;
