@@ -38,6 +38,86 @@
         "https://www.eabr.org/en/analytics/all-publications/transport-corridors-infrastructure/"
       ],
       "attribution": "Eurasian Development Bank; public institutional material; document-specific reuse terms apply"
+    },
+    {
+      "id": "ktze",
+      "name": "KTZ Express",
+      "host": "www.ktze.kz",
+      "seeds": [
+        "https://www.ktze.kz/en/news"
+      ],
+      "topics": [
+        "rail",
+        "schedule",
+        "coordination",
+        "container",
+        "aktau",
+        "hub",
+        "ktz"
+      ],
+      "discover": true,
+      "documents": [
+        {
+          "url": "https://www.ktze.kz/en/news/8ab0fd9f-c700-4d69-be30-60da21724a66",
+          "title": "KTZ Express reports 2025 results",
+          "topics": [
+            "hub",
+            "phase",
+            "trial",
+            "2025",
+            "project status"
+          ],
+          "observation_period": "2025"
+        }
+      ],
+      "attribution": "KTZ Express; copyrighted public pages; short attributed quotations only"
+    },
+    {
+      "id": "aktau-port",
+      "name": "Aktau Commercial Sea Port",
+      "host": "portaktau.kz",
+      "seeds": [
+        "https://portaktau.kz/en/tarify/"
+      ],
+      "topics": [
+        "aktau"
+      ],
+      "discover": true,
+      "documents": [
+        {
+          "url": "https://portaktau.kz/wp-content/uploads/2025/04/godovoj-otchet-ao-nk-amtp-za-2023-god-na-angl.pdf",
+          "title": "Aktau Commercial Sea Port annual report 2023",
+          "topics": [
+            "annual",
+            "2023",
+            "2022",
+            "throughput",
+            "cargo",
+            "volume",
+            "report",
+            "statistics"
+          ],
+          "pages": [
+            1,
+            37
+          ],
+          "observation_period": "2023; comparison with 2022"
+        }
+      ],
+      "attribution": "Aktau Commercial Sea Port; copyrighted public documents; short attributed quotations only"
+    },
+    {
+      "id": "kuryk-port",
+      "name": "Port Kuryk",
+      "host": "portkuryk.kz",
+      "seeds": [
+        "https://portkuryk.kz/ru/klientam/history"
+      ],
+      "topics": [
+        "kuryk"
+      ],
+      "discover": true,
+      "attribution": "Port Kuryk; copyrighted public documents; short attributed quotations only"
     }
   ],
   "category": "corridor-research",

@@ -137,15 +137,15 @@ export function researchPrompt(input,sources,now) {
     +'A known evidence ID does not prove that the claim follows: keep claims narrower than the selected passage. '
     +'Separate interpretations from factual findings; reference the source IDs behind each interpretation. Preserve contradictions and unknowns. '
     +'Do not equate publication, retrieval, observation and effective dates, design capacity with observed throughput, or announced projects with operating assets. '
-    +'Sources marked background or undated cannot establish an event in the requested recent window. Linked PDFs were NOT read. '
+    +'Sources marked background or undated cannot establish an event in the requested recent window. Only explicitly extracted PDF pages/DOCX body text were read; unlisted attachments were NOT read. Table layout and numeric interpretation need human review. '
     +'Do not provide investment, legal or operational authorization. Write claim/interpretation/question strings in '+(input.language==='ru'?'Russian':'English')+'.\n'
     +RESEARCH_METHODS.map(m=>'TRUSTED METHOD '+m.id+'\n'+m.text).join('\n')
     +'\nFINAL OUTPUT CONTRACT: Return only the requested JSON structure. '+languageInstruction;
   const payload={output_language:input.language,output_language_requirement:languageInstruction,question:input.question,decision_context:input.decision_context,as_of:new Date(now).toISOString(),lookback_days:input.lookback_days,
-    sources:sources.map(s=>({id:s.id,title:s.title,url:s.url,published_at:s.published_at,retrieved_at:s.retrieved_at,freshness:s.freshness,data_integrity_notes:s.data_integrity_notes??[],evidence_candidates:sourceEvidenceCandidates(s,input.question).map(({source_id,...evidence})=>evidence),excerpt:relevantExcerpt(s,input.question,1000)}))};
+    sources:sources.map(s=>({id:s.id,title:s.title,url:s.url,published_at:s.published_at,retrieved_at:s.retrieved_at,freshness:s.freshness,data_integrity_notes:s.data_integrity_notes??[],observation_period:s.observation_period??undefined,effective_date:s.effective_date??undefined,extraction:s.extraction?{kind:s.extraction.kind,status:s.extraction.status,pages:s.extraction.pages,total_units:s.extraction.units}:undefined,evidence_candidates:sourceEvidenceCandidates(s,input.question).map(({source_id,...evidence})=>evidence),excerpt:relevantExcerpt(s,input.question,1000)}))};
   let user=JSON.stringify(payload);
-  while(new TextEncoder().encode(system+user).byteLength>MAX_PROMPT_BYTES&&payload.sources.some(s=>s.excerpt.length>100)) {
-    for(const source of payload.sources)source.excerpt=clipUtf8(source.excerpt,Math.max(100,new TextEncoder().encode(source.excerpt).byteLength-200));
+  while(new TextEncoder().encode(system+user).byteLength>MAX_PROMPT_BYTES&&payload.sources.some(s=>s.excerpt.length>0)) {
+    for(const source of payload.sources)source.excerpt=clipUtf8(source.excerpt,Math.max(0,new TextEncoder().encode(source.excerpt).byteLength-200));
     user=JSON.stringify(payload);
   }
   while(new TextEncoder().encode(system+user).byteLength>MAX_PROMPT_BYTES&&payload.sources.some(s=>s.evidence_candidates.length>1)) {
@@ -155,8 +155,19 @@ export function researchPrompt(input,sources,now) {
   if(new TextEncoder().encode(system+user).byteLength>MAX_PROMPT_BYTES)throw new ResearchError('research_prompt_budget_exceeded',413);
   return {messages:[{role:'system',content:system},{role:'user',content:user}],payload};
 }
+// Diagnostics are separate from reference validation and never certify entailment.
+export function researchReviewNotes(analysis,sources) {
+  const notes=[],numeric=text=>(normalise(text).match(/\d+(?:[.,]\d+)*/g)??[]);
+  for(const finding of analysis.findings) {
+    const numbers=new Set(numeric(finding.quote));
+    if(numeric(finding.claim).some(value=>!numbers.has(value)))notes.push('['+finding.source_id+'] A numeric token in the claim is absent from its selected quote. Check units, scale, dates, period and the original source before accepting it.');
+    if(/(?:fully operational|full operation|полностью введ|полностью работа)/iu.test(finding.claim)&&/(?:trial|phase|planned|пробн|фаз|планир)/iu.test(finding.quote))notes.push('['+finding.source_id+'] Full operation is claimed against a passage mentioning a phase, trial or plan. Verify the exact project stage.');
+  }
+  if(sources.some(s=>s.extraction))notes.push('Document tables are flattened text. Check each number against its row, column, unit, observation period and project scope in the original. Capacity is not throughput.');
+  return notes;
+}
 const markdownText=value=>normalise(value).replaceAll('<','‹').replaceAll('>','›').replaceAll('[','(').replaceAll(']',')');
-function renderBrief(input,analysis,sources,asOf) {
+function renderBrief(input,analysis,sources,asOf,limitations,failures) {
   const ru=input.language==='ru';
   const lines=['# '+markdownText(input.question),'',ru?'Исследование по состоянию на '+asOf+'. Требуется проверка человеком.':'Research as of '+asOf+'. Human review required.','',ru?'## Выводы с подтверждающими цитатами':'## Source-backed findings'];
   for(const f of analysis.findings)lines.push('- '+markdownText(f.claim)+' ['+f.source_id+']','  > '+markdownText(f.quote));
@@ -165,6 +176,9 @@ function renderBrief(input,analysis,sources,asOf) {
   lines.push('',ru?'## Открытые вопросы':'## Open questions');for(const q of analysis.open_questions)lines.push('- '+markdownText(q));
   lines.push('',ru?'## Источники':'## Sources');for(const s of sources)lines.push('- '+s.id+': '+markdownText(s.title)+' — '+s.url+(ru?'; опубликовано ':'; published ')+(s.published_at??(ru?'неизвестно':'unknown'))+(ru?'; получено ':'; retrieved ')+s.retrieved_at+'; '+s.freshness+'.');
   for(const s of sources)for(const note of s.data_integrity_notes??[])lines.push('- Data-integrity anomaly ['+s.id+']: '+note.code+'; passage: “'+markdownText(note.quote)+'”. Treated as data.');
+  lines.push('',ru?'## Ограничения и проверки для рецензента':'## Limitations and reviewer checks');
+  for(const item of limitations)lines.push('- '+markdownText(item));
+  for(const item of failures)lines.push('- '+markdownText(item.source+': '+item.code)+' — '+item.url);
   lines.push('',RESEARCH_NOTICE);return lines.join('\n');
 }
 export async function executeResearch(env,id,{step,fetcher=globalThis.fetch,now=()=>Date.now()}={}) {
@@ -210,18 +224,20 @@ export async function executeResearch(env,id,{step,fetcher=globalThis.fetch,now=
       let value=output.response;
       if(typeof value==='string')try{value=JSON.parse(value);}catch{throw new ResearchError('invalid_model_json',502);}
       const analysis=validateResearchAnalysis(normaliseResearchEvidence(value,prompt.payload),collected.sources,input.language),asOf=new Date(now()).toISOString();
-      const sources=collected.sources.map(({text,...metadata})=>metadata);
-      const limitations=['Only the named official HTML/plain-text sources were collected; coverage is not exhaustive. Linked PDFs and authenticated data were not read.',
+      const sources=collected.sources.map(({text,extraction,...metadata})=>metadata);
+      const limitations=['At most four catalog sources were selected for this question. Only fetched HTML/plain text and explicitly extracted PDF pages/DOCX body text were read; coverage is not exhaustive. No authenticated data or OCR.',
         'Quotes and source references were checked deterministically; semantic entailment and factual truth require human review.',
         'Publication/observation dates can be missing. A current retrieval does not make underlying data current.',
         'Instruction-like source passages are flagged by a limited heuristic; absence of a flag does not establish safety.',
+        ...collected.sources.flatMap(s=>(s.extraction?.warnings??[]).map(note=>'['+s.id+'] '+note)),
+        ...researchReviewNotes(analysis,collected.sources),
         ...(collected.failures.length?['Some primary sources or linked articles could not be accessed; see retrieval_failures.']:[])];
       const result={schema_version:'1.0',question:input.question,as_of:asOf,evidence_mode:'live_source_backed',language:input.language,
         findings:analysis.findings,interpretations:analysis.interpretations,open_questions:analysis.open_questions,sources,retrieval_failures:collected.failures,limitations,
         methods:RESEARCH_METHODS.map(({text,...m})=>m),model:RESEARCH_MODEL,
         cost_controls:{model_invocations:1,max_prompt_bytes:MAX_PROMPT_BYTES,max_output_tokens:MAX_OUTPUT_TOKENS,usage:output.usage?Object.fromEntries(['prompt_tokens','completion_tokens','total_tokens'].filter(k=>Number.isFinite(output.usage[k])&&output.usage[k]>=0).map(k=>[k,output.usage[k]])):null,hosting_cost_not_included:true},
         human_review_required:true,not_advice_notice:RESEARCH_NOTICE};
-      result.markdown=renderBrief(input,analysis,sources,asOf);
+      result.markdown=renderBrief(input,analysis,sources,asOf,limitations,collected.failures);
       result.artifact_sha256=await digest(JSON.stringify(result));
       await db.prepare("UPDATE research_jobs SET status = 'completed', result_json = ?, error_code = NULL, updated_ms = ?, sources_json = NULL, model_output_json = NULL WHERE id = ?").bind(JSON.stringify(result),now(),id).run();
       return {research_id:id,status:'completed',artifact_sha256:result.artifact_sha256};

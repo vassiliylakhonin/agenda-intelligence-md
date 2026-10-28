@@ -5,8 +5,8 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
-import {createResearch,readResearch,executeResearch,researchPrompt,validateResearchAnalysis,normaliseResearchEvidence,modelAnalysisSchema,RESEARCH_MODEL,MAX_PROMPT_BYTES} from '../src/corridor-research.js';
-import {collectSources,approvedUrl,htmlText,discoverLinks,parseDocument,sourceEvidenceCandidates,SOURCE_CATALOG} from '../src/research-sources.js';
+import {createResearch,readResearch,executeResearch,researchPrompt,validateResearchAnalysis,normaliseResearchEvidence,modelAnalysisSchema,RESEARCH_MODEL,MAX_PROMPT_BYTES,researchReviewNotes} from '../src/corridor-research.js';
+import {collectSources,approvedUrl,htmlText,discoverLinks,parseDocument,sourceEvidenceCandidates,selectSourcePlan,digest,SOURCE_CATALOG} from '../src/research-sources.js';
 import {handleResearch} from '../src/research-http.js';
 import responseSchema from '../../../schemas/v1/corridor-research-response.schema.json' with {type:'json'};
 import {RESEARCH_CLIENT} from '../src/research-page.js';
@@ -215,7 +215,7 @@ test('source publication dates, background records and byte-bounded model contex
   assert.ok(records.sources.every(s=>s.freshness==='background'&&s.retrieved_at.startsWith('2026-10-27')));
   const prompt=researchPrompt({...input,question:'Каспий '.repeat(280)},records.sources,now);
   assert.ok(new TextEncoder().encode(prompt.messages.map(x=>x.content).join('')).length<=MAX_PROMPT_BYTES);
-  assert.ok(prompt.messages[0].content.includes('untrusted DATA'));assert.ok(prompt.messages[0].content.includes('Linked PDFs were NOT read'));
+  assert.ok(prompt.messages[0].content.includes('untrusted DATA'));assert.ok(prompt.messages[0].content.includes('unlisted attachments were NOT read'));
   const russian=researchPrompt({...input,language:'ru'},records.sources,now);
   assert.equal(russian.payload.output_language,'ru');assert.ok(russian.messages[0].content.endsWith(russian.payload.output_language_requirement));
 });
@@ -255,4 +255,31 @@ test('actual browser client keeps private identity and retry key after a lost re
   assert.equal(elements.get('#output').textContent.startsWith('<img'),true);assert.equal(elements.get('#output').innerHTML,undefined);
   elements.get('#new-run').listeners.click();await submitted;
   assert.notEqual(JSON.parse(posts()[1].body).request_id,JSON.parse(posts()[2].body).request_id);
+});
+
+test('query planning bounds seven providers to four and selects operator documents without accepting a user URL',()=>{
+  const annual=selectSourcePlan({question:'Актау годовой отчет 2023 объем грузов'});
+  assert.equal(SOURCE_CATALOG.length,7);assert.equal(annual.length,4);
+  assert.equal(annual[0].source.id,'aktau-port');assert.deepEqual(annual[0].document.pages,[1,37]);
+  const project=selectSourcePlan({question:'Aktau hub phase trial project status'});
+  assert.equal(project[0].source.id,'ktze');assert.ok(project[0].seed.includes('8ab0fd9f'));
+  const tariff=selectSourcePlan({question:'Курык тариф'});assert.equal(tariff[0].source.id,'kuryk-port');
+  assert.equal(approvedUrl('https://cdn.portkuryk.kz/a.pdf',tariff[0].source),null);
+});
+test('operator dates and article bodies exclude unrelated latest news and preserve unknown report publication',()=>{
+  const parsed=parseDocument('<nav>KTZ</nav><h1>Results 2025</h1><time>February 18, 2026</time><p>Trial operation in December.</p><h2>Latest news</h2><time>October 16, 2026</time>','https://www.ktze.kz/en/news/test');
+  assert.equal(parsed.published_at,'2026-02-18T00:00:00.000Z');assert.ok(!parsed.text.includes('October'));
+  assert.equal(parseDocument('<p>Uploaded 2025 report for 2023</p>','https://portaktau.kz/2025/report').published_at,null);
+});
+test('binary hashes cover original bytes rather than decoded text and attachment discovery keeps origin boundaries',async()=>{
+  assert.equal(await digest(new Uint8Array([97,98,99])),await digest('abc'));
+  const source=SOURCE_CATALOG.find(s=>s.id==='kuryk-port');
+  const links=discoverLinks('<a href="/storage/tariff.docx">Kuryk tariff</a><a href="https://other.invalid/tariff.pdf">tariff</a>','https://portkuryk.kz/ru/klientam/history',source,['tariff']);
+  assert.equal(links.length,1);assert.equal(links[0].kind,'docx');
+});
+test('numeric and project-stage diagnostics do not silently promote a matching quote to semantic acceptance',()=>{
+  const notes=researchReviewNotes({findings:[{source_id:'S1',claim:'The hub is fully operational at 500000 TEU.',quote:'Phase 1 trial operation has capacity 140000 TEU.'}]},[{extraction:{kind:'pdf'}}]);
+  assert.equal(notes.length,3);assert.ok(notes.some(n=>n.includes('numeric token')));assert.ok(notes.some(n=>n.includes('project stage')));
+  const candidates=sourceEvidenceCandidates({id:'S1',text:'Cargo rose 17.4 percent. Containers declined 25.8 percent.',data_integrity_notes:[]},'cargo containers');
+  assert.ok(candidates.some(c=>c.quote.includes('17.4')));assert.ok(candidates.some(c=>c.quote.endsWith('percent.')));
 });
