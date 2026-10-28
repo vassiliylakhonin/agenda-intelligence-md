@@ -40,14 +40,21 @@ try{
  await view.getByLabel('Source ID (for example s1)').fill('s1');await view.getByLabel('Actual source text').fill('The report lists three warehouses. <img src=x onerror=alert(1)>');
  await view.getByRole('button',{name:'Review · uses 1 attempt',exact:true}).click();await view.getByRole('status').filter({hasText:'1 citation/quote issues.'}).waitFor();assert.equal(await count(),1);
  await view.getByLabel('AI answer',{exact:true}).fill('The report says "three warehouses" [s1]');
- for(let i=0;i<4;i++){
+ await view.getByRole('button',{name:'Review · uses 1 attempt',exact:true}).click();await view.getByRole('status').filter({hasText:'0 citation/quote issues.'}).waitFor();
+ assert.equal(await count(),2);assert.match(await view.locator('#result').textContent(),/Previous review: 1 issues; current: 0/);
+ await view.getByRole('button',{name:'Review · uses 1 attempt',exact:true}).click();await view.getByRole('status').filter({hasText:'unchanged from the completed review'}).waitFor();
+ assert.equal(await count(),2,'unchanged input must not reserve another attempt');
+ const revisions=['The excerpt lists "three warehouses" [s1]','The supplied source mentions "three warehouses" [s1]','The source contains the quotation "three warehouses" [s1]'];
+ for(let i=0;i<revisions.length;i++){
+  await view.getByLabel('AI answer',{exact:true}).fill(revisions[i]);
   await view.getByRole('button',{name:'Review · uses 1 attempt',exact:true}).click();await view.getByRole('status').filter({hasText:'0 citation/quote issues.'}).waitFor();
-  assert.equal(await count(),i+2);
+  assert.equal(await count(),i+3);
  }
  const previous=await view.locator('#result').textContent();
+ await view.getByLabel('AI answer',{exact:true}).fill('This is a changed sixth review request: "three warehouses" [s1]');
  await view.getByRole('button',{name:'Review · uses 1 attempt',exact:true}).click();await view.getByRole('status').filter({hasText:'Review did not complete'}).waitFor();
  assert.equal(await view.locator('#result').textContent(),previous);assert.equal(await count(),5);
  assert.deepEqual(errors,[]);assert.equal(await view.locator('img').count(),0);
  if(process.env.AGENDA_BROWSER_SCREENSHOT)await page.screenshot({path:process.env.AGENDA_BROWSER_SCREENSHOT,fullPage:true});
- console.info(JSON.stringify({passed:true,officialSDK:true,realBrowser:true,host:'local fixture',reservations:await count(),preservesPrevious:true,scriptErrors:errors}));
+ console.info(JSON.stringify({passed:true,officialSDK:true,realBrowser:true,host:'local fixture',reservations:await count(),unchangedRequestSuppressed:true,preservesPrevious:true,scriptErrors:errors}));
 }catch(error){console.info('FAILURE STATE',await page.frameLocator('iframe').locator('body').innerText(),await page.evaluate(()=>window.toolCalls));if(process.env.AGENDA_BROWSER_SCREENSHOT)await page.screenshot({path:process.env.AGENDA_BROWSER_SCREENSHOT,fullPage:true});throw error;}finally{await browser.close();}

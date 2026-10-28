@@ -5,6 +5,7 @@ export function mountAnswerReview(app, document) {
   const answer=byId('answer'), rows=byId('sources');
   const status=byId('status'), result=byId('result'), review=byId('review'), allowance=byId('allowance');
   let busy=false, connected=false, quotaBlocked=false;
+  let lastCompleted=null;
   let sourceSequence=1;
   const reservedSourceIds=new Set();
   const buttons=()=>{review.disabled=busy||!connected||quotaBlocked;allowance.disabled=busy||!connected;};
@@ -33,7 +34,7 @@ export function mountAnswerReview(app, document) {
     row.append(idLabel,reference,textLabel,remove);rows.append(row);
   }
   const parse=value=>value.structuredContent || JSON.parse(value.content?.find(item=>item.type==='text')?.text || '{}');
-  function show(value) {
+  function show(value, submittedInput=null) {
     const body=parse(value);
     if (value.isError) {
       if(body.code==='trial_exhausted'){quotaBlocked=true;buttons();}
@@ -41,15 +42,31 @@ export function mountAnswerReview(app, document) {
       status.textContent=`Review did not complete: ${body.code || body.error || 'admission refused'}. ${hint} No automatic retry. The previous result below is unchanged.`;
       return false;
     }
-    if (body.evaluation) {
+    const evaluation=body.evaluation;
+    if (evaluation?.schema_version==='answer-citation-review.v1' && Array.isArray(evaluation.findings)
+        && ['revise','human_review'].includes(evaluation.route) && evaluation.human_review_required===true
+        && evaluation.authorization_granted===false) {
+      let comparison='';
+      if(submittedInput && lastCompleted) {
+        const previous=lastCompleted.input, current=submittedInput;
+        const beforeSources=new Map(previous.sources.map(source=>[source.source_id,source.text]));
+        const afterSources=new Map(current.sources.map(source=>[source.source_id,source.text]));
+        const changed=[...new Set([...beforeSources.keys(),...afterSources.keys()])]
+          .filter(id=>beforeSources.get(id)!==afterSources.get(id));
+        comparison=`Previous review: ${lastCompleted.findingCount} issues; current: ${evaluation.findings.length}. `+
+          `${previous.answer===current.answer?'Answer unchanged':'Answer changed'}. `+
+          (changed.length?`Source excerpts added, removed or changed: ${changed.join(', ')}. Review these source changes.`:'Source excerpts unchanged.')+'\n\n';
+      }
       result.hidden=false;
-      result.textContent=body.evaluation.findings.length
-        ? body.evaluation.findings.map(item=>`Line ${item.line}${item.source_id ? ' ['+item.source_id+']' : ''}: ${item.next_action}`).join('\n\n')
-        : 'No issues found in the supported citation and quote structure. A human still needs to check whether each statement is supported by authentic, current sources.';
+      result.textContent=comparison+(evaluation.findings.length
+        ? evaluation.findings.map(item=>`Line ${item.line}${item.source_id ? ' ['+item.source_id+']' : ''}: ${item.next_action}`).join('\n\n')
+        : 'No issues found in the supported citation and quote structure. A human still needs to check whether each statement is supported by authentic, current sources.');
       byId('raw-result').textContent=JSON.stringify(body,null,2);
-      status.textContent=`${body.evaluation.findings?.length || 0} citation/quote issues. Human review is required; semantic support and truth were not assessed. This review consumed one shared campaign attempt.`;
+      status.textContent=`${evaluation.findings.length} citation/quote issues. Human review is required; semantic support and truth were not assessed. This review consumed one shared campaign attempt.`;
+      lastCompleted=submittedInput?{input:structuredClone(submittedInput),findingCount:evaluation.findings.length}:null;
+      return true;
     }
-    return true;
+    throw Error('Incomplete review result');
   }
   app.ontoolresult=value=>{try{show(value);}catch{status.textContent='Could not read this result. No automatic retry.';}};
   app.ontoolinput=value=>{
@@ -78,8 +95,13 @@ export function mountAnswerReview(app, document) {
     const input={answer:answer.value,sources:[...rows.children].map(row=>({source_id:row.querySelector('input').value,text:row.querySelector('textarea').value}))};
     const errors=answerReviewErrors(input);
     if(errors.length){status.textContent=errors.join(' ');return;}
+    if(lastCompleted && JSON.stringify(input)===JSON.stringify(lastCompleted.input)) {
+      status.textContent='The answer and source excerpts are unchanged from the completed review. No request was sent and no attempt was consumed. Edit the material before rechecking; the previous result remains below.';
+      return;
+    }
     busy=true;buttons();status.textContent='Reviewing supplied citations and quotes…';
-    try{show(await app.callServerTool({name:'review_answer',arguments:input}));}
+    const submittedInput=structuredClone(input);
+    try{show(await app.callServerTool({name:'review_answer',arguments:input}),submittedInput);}
     catch{status.textContent='The result could not be received. The attempt may have been consumed. No automatic retry; the previous result below is unchanged.';}
     finally{busy=false;buttons();}
   };

@@ -513,6 +513,7 @@ var agendaTrialBlocked = false;
 var agendaFeedbackAttempt = null;
 var agendaFeedbackSent = false;
 var agendaFeedbackPending = null;
+${profile === 'agent_output_verification' ? 'var agendaLastCompletedTrialInput = null; var agendaOutputReviewPending = false;' : ''}
 ${freeTrial ? TRIAL_NEXT_STEPS_SCRIPT + `
 var agendaNextSteps = createTrialNextSteps({document:document,
   fetch:function(url,init) { return fetch(url,init); },
@@ -588,6 +589,7 @@ ${freeTrial ? `async function submitTrialFeedback(choice) {
 }` : ''}
 async function runProfileExample(event, paid, reviewFlow) {
   event.preventDefault();
+  ${profile === 'agent_output_verification' ? 'if (agendaOutputReviewPending) return;' : ''}
   var button = document.getElementById('profile-run');
   var status = document.getElementById('profile-status');
   var result = document.getElementById('profile-result');
@@ -596,11 +598,16 @@ async function runProfileExample(event, paid, reviewFlow) {
     setTrialRecovery(true);
     return;
   }` : ''}
+  ${profile === 'agent_output_verification' ? 'agendaOutputReviewPending = true;' : ''}
   button.disabled = true;
   ${freeTrial ? "document.getElementById('profile-paid').disabled = true;" : ''}
   status.textContent = 'Evaluating supplied evidence…';
   try {
     var payload = JSON.parse(document.getElementById('profile-request').value);
+    ${freeTrial && profile === 'agent_output_verification' ? `if (!paid && JSON.stringify(payload) === agendaLastCompletedTrialInput) {
+      status.textContent = 'The supplied report and evidence are unchanged from the completed review. No request was sent and no attempt was consumed. Edit the material before rechecking; the previous result remains below.';
+      return;
+    }` : ''}
     var traceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now();
     ${routingTool ? `var response = await fetch('${origin}/mcp/agent', {
       method:'POST',headers:agendaTelemetryHeaders('${origin}/mcp/agent',{'content-type':'application/json','MCP-Protocol-Version':'2025-11-25','x-trace-id':traceId}),
@@ -640,6 +647,9 @@ async function runProfileExample(event, paid, reviewFlow) {
       if (feedbackStatus) feedbackStatus.textContent = '';
     }` : ''}
     if (completed) {
+      ${freeTrial && profile === 'agent_output_verification' ? `if (!paid && body.trial?.completion_recorded === true && body.trial?.attempt_consumed === true) {
+        agendaLastCompletedTrialInput = JSON.stringify(payload);
+      }` : ''}
       ${freeTrial ? 'agendaNextSteps.completed();' : ''}
       agendaHasCompletedResult = true;
       var review = body.result?.structuredContent || body;
@@ -666,7 +676,7 @@ async function runProfileExample(event, paid, reviewFlow) {
     status.textContent = (completed ? 'Evaluation returned. Inspect evidence gaps and limitations before acting.' : (body.error || body.result?.isError ? 'Tool refused the request. See the response below.' : 'Request failed (HTTP ' + response.status + '). See the response below.')) + ' Trace: ' + traceId;
   } catch (error) {
     status.textContent = 'Evaluation failed: ' + error.message;
-  } finally { button.disabled = ${freeTrial ? 'agendaTrialBlocked' : 'false'}; ${freeTrial ? "document.getElementById('profile-paid').disabled = false;" : ''} }
+  } finally { button.disabled = ${freeTrial ? 'agendaTrialBlocked' : 'false'}; ${freeTrial ? "document.getElementById('profile-paid').disabled = false;" : ''} ${profile === 'agent_output_verification' ? 'agendaOutputReviewPending = false;' : ''} }
 }
 if (typeof window !== 'undefined' && window.location?.href && new URL(window.location.href).searchParams.get('example') === '1') showWorkedExample();
 var FIN_SCENARIOS = {

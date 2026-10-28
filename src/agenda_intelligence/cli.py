@@ -225,6 +225,43 @@ def cmd_review_answer(args):
         raise SystemExit(1)
 
 
+def cmd_review_revision(args):
+    """Compare two caller-authored packets locally and prepare a human handoff."""
+    from agenda_intelligence.report_review import (
+        render_report_revision_markdown,
+        review_report_revision,
+    )
+
+    try:
+        inputs = []
+        for name in (args.original, args.revised):
+            path = Path(name)
+            if path.stat().st_size > 16 * 1024 * 1024:
+                raise ValueError("Input JSON exceeds 16 MiB")
+            inputs.append(json.loads(path.read_text(encoding="utf-8")))
+        result = review_report_revision(*inputs)
+        rendered = (
+            json.dumps(result, indent=2, ensure_ascii=False) + "\n"
+            if args.format == "json"
+            else render_report_revision_markdown(result)
+        )
+        if args.out:
+            output = Path(args.out)
+            input_paths = [Path(name) for name in (args.original, args.revised)]
+            if output.resolve() in {path.resolve() for path in input_paths} or (
+                output.exists() and any(output.samefile(path) for path in input_paths)
+            ):
+                raise ValueError("Output must not overwrite an original or revised input")
+            output.write_text(rendered, encoding="utf-8")
+            print(f"Wrote {args.out}")
+        else:
+            print(rendered, end="")
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise SystemExit(f"Report revision failed: {exc}") from exc
+    if args.strict and result["handoff"] != "human_review_required":
+        raise SystemExit(1)
+
+
 def cmd_repair_prompt(args):
     """Generate self-correction instructions for an LLM agent from an evidence packet."""
     from agenda_intelligence import services
@@ -1510,6 +1547,13 @@ def main():
         "--strict", action="store_true", help="Exit 1 if revision is required; human review remains necessary"
     )
     p.set_defaults(func=cmd_review_answer)
+    p = sub.add_parser("review-revision", help="Compare original and revised evidence packets for human review")
+    p.add_argument("original", help="Original evidence-audit packet JSON")
+    p.add_argument("revised", help="Caller-authored revised evidence-audit packet JSON")
+    p.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    p.add_argument("--out", help="Write a private reviewer handoff without changing either input")
+    p.add_argument("--strict", action="store_true", help="Exit 1 for remaining findings or changed claim/source scope")
+    p.set_defaults(func=cmd_review_revision)
     # repair-prompt: generate agent self-correction instructions from an evidence packet
     p = sub.add_parser(
         "repair-prompt",

@@ -125,3 +125,33 @@ test('a delayed feedback reply never marks the next completed check as rated',as
   await context.submitTrialFeedback('still_blocked');
   assert.match(elements['profile-feedback-status'].textContent,/choice was recorded/);
 }));
+
+test('Output web review preserves a completed result without spending a second unchanged attempt',async()=>quiet(async()=>{
+  const {env,context,elements,requests}=await browser('agent_output_verification');
+  const run=()=>context.runProfileExample({preventDefault(){}},false,'one-claim-v1');
+  await run();
+  const previous=elements['profile-result'].textContent,attempt=context.agendaFeedbackAttempt,n=requests.length;
+  await run();
+  assert.equal(requests.length,n,'unchanged completed review must not send another request');
+  assert.match(elements['profile-status'].textContent,/unchanged.*no.*attempt/i);
+  assert.equal(elements['profile-result'].textContent,previous);
+  assert.equal(context.agendaFeedbackAttempt,attempt);
+  const revised=JSON.parse(elements['profile-request'].value);revised.claims[0].claim+=' Additional context for review.';
+  elements['profile-request'].value=JSON.stringify(revised);
+  await run();assert.equal(requests.length,n+1);
+  assert.equal((await env.PAYMENT_LEDGER.prepare('SELECT COUNT(*) AS n FROM output_verification_trials').first()).n,2);
+}));
+
+test('Output web review checks the submitted version and suppresses a concurrent second request',async()=>quiet(async()=>{
+  const {context,elements,requests}=await browser('agent_output_verification'),actual=context.fetch;
+  let release;
+  context.fetch=(url,init)=>new Promise(resolve=>{release=async()=>resolve(await actual(url,init));});
+  const run=()=>context.runProfileExample({preventDefault(){}});
+  const first=run();await run();
+  assert.equal(requests.length,0,'the first fetch is still waiting; no second fetch was started');
+  const revised=JSON.parse(elements['profile-request'].value);revised.claims[0].claim+=' Changed while waiting.';
+  elements['profile-request'].value=JSON.stringify(revised);
+  await release();await first;
+  context.fetch=actual;await run();
+  assert.equal(requests.length,2,'the edited current input was not checked by the first request');
+}));

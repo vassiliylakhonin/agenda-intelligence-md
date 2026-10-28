@@ -51,6 +51,28 @@ citation. Additional excerpts get distinct labels automatically; removed labels
 are not silently recycled for replacement documents. Supplied labels remain
 editable and are preserved when the host pre-fills an existing request.
 
+After a completed review, submitting the identical answer and source excerpts
+in that open form sends no request and consumes no additional attempt. Change
+the actual material before rechecking. This page-memory check is not server
+idempotency, a quota exemption or persistence across clients/reloads. Failed or
+unreceived results are not cached as completed. Inputs edited during a pending
+request are compared with the version actually sent. Results pushed by a host
+without a bound input cannot establish that the current form was checked.
+
+A deliberate changed-input rerun shows previous/current finding counts and
+whether the answer or source IDs/texts changed. A lower count, removed source
+or matching quotation does not establish a correct answer. Review the actual
+changes and semantic support. Completed inputs stay only in page memory;
+no storage, export, automatic retry or additional network call is introduced.
+
+The ordinary Output Verification web form has the same page-local protection
+for completed free evaluations, including its one-claim and advanced editors.
+Only a response with a recorded trial completion establishes the cached input;
+the exact submitted version is retained while a request is pending. A second
+concurrent submission is ignored. Explicit paid evaluation remains a separate
+user action and other profiles, which can depend on changing external state,
+retain their existing admission behavior.
+
 When an explicit allowance check or an authoritative refusal reports exhaustion,
 the form explains whether the network campaign or shared daily capacity is full
 and disables another review. The allowance button remains available for a

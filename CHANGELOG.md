@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased
+
+- Add the local `review-revision` command with readable before/after claims, evidence-version changes, stable finding comparison and explicit human handoffs. Surface deleted claims and replaced sources; refuse ambiguous duplicate IDs and preserve both input files. No rewriting, network calls or action authority.
+- Prevent unchanged completed Output web and MCP Apps reviews from consuming another attempt in the same open form. Suppress concurrent submissions, compare edits with the submitted version, disclose changed sources and retain prior results on failed reruns. Hosted admission, other profiles and quotas are unchanged.
+
 ## 1.22.0 — 2026-10-28
 
 - Add `worker-remediation.v1` to all twelve primary evaluations: exact input paths and source keys, rejection reasons, blank repair templates, requirement authority and independent human checks. Preserve all existing scores/verdicts and mandatory review; service checklists are not laws.

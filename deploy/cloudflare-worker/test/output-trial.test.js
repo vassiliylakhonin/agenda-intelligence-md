@@ -142,11 +142,16 @@ test('browser free form never invokes checkout, preserves exhausted input, and o
   const script=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1];
   vm.runInNewContext(script,context);
   context.agendaPaidFetch=async(url,init)=>{paid++;traces.push(init.headers['x-payment-trace-id']);return Response.json({code:'payment_required'},{status:402});};
-  for (let i=0;i<6;i++) await context.runProfileExample({preventDefault(){}});
+  for (let i=0;i<6;i++) {
+    const revision=structuredClone(evidence);
+    revision.claims[0].claim+=' Review draft '+i+'.';
+    elements['profile-request'].value=JSON.stringify(revision);
+    await context.runProfileExample({preventDefault(){}});
+  }
   assert.equal(paid,0);
   assert.equal(elements['profile-paid'].hidden,false);
   assert.ok(elements['profile-status'].textContent.includes('No payment was made'));
-  assert.equal(elements['profile-request'].value,JSON.stringify(evidence));
+  assert.equal(JSON.parse(elements['profile-request'].value).claims[0].claim,evidence.claims[0].claim+' Review draft 5.');
   await context.runProfileExample({preventDefault(){}},true);
   assert.equal(paid,1);
   assert.equal(new Set(traces).size,1);
