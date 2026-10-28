@@ -27,14 +27,15 @@ async function main() {
   let pdfRequests=0,docxRequests=0,pdfFailure=null;
   const quote='The source describes port and rail coordination.';
   const ai=`import {WorkerEntrypoint} from 'cloudflare:workers';
-    let calls=0;export default class extends WorkerEntrypoint {
+    let calls=0;const snapshots=[];export default class extends WorkerEntrypoint {
       async run(model,params){calls++;
         if(model!=='@cf/meta/llama-3.3-70b-instruct-fp8-fast'||params.max_tokens!==2048)throw new Error('Unexpected inference configuration');
         const payload=JSON.parse(params.messages.find(m=>m.role==='user').content),ru=payload.output_language==='ru',source=payload.sources.find(s=>s.extraction?.kind==='pdf'||s.extraction?.kind==='docx')??payload.sources[0];
+        snapshots.push({question_parts:payload.question_parts,sources:payload.sources.map(s=>({id:s.id,title:s.title,candidates:s.evidence_candidates}))});
         const evidence=source.evidence_candidates[0];
         if(!params.response_format.json_schema.properties.findings.properties[source.id].properties.evidence_id.enum.includes(evidence.evidence_id))throw new Error('Evidence selection schema missing');
-        return {response:{findings:{[source.id]:{claim:ru?'Источник описывает координацию перевозок.':'The source discusses coordination.',evidence_id:payload.decision_context==='fixture-invalid-evidence'?'unknown-evidence':evidence.evidence_id}},interpretations:[],open_questions:[]},usage:{prompt_tokens:200,completion_tokens:20}};}
-      async fetch(){return Response.json({calls});}
+        return {response:{findings:{[source.id]:{claim:ru?'Источник описывает координацию перевозок.':'The source discusses coordination.',evidence_id:payload.decision_context==='fixture-invalid-evidence'?'unknown-evidence':evidence.evidence_id,measurements:[]}},interpretations:[],open_questions:[],coverage:Object.fromEntries(payload.question_parts.map(q=>[q.id,{status:'answered',source_ids:[source.id],explanation:ru?'Источник связывает этот пункт с выбранным фрагментом.':'The selected source passage addresses this requested part.'}]))},usage:{prompt_tokens:200,completion_tokens:20}};}
+      async fetch(){return Response.json({calls,snapshots});}
     }`;
   const pair=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
   const privateJwk=await webcrypto.subtle.exportKey('jwk',pair.privateKey);privateJwk.kid='runtime-fixture-only';
@@ -124,7 +125,10 @@ async function main() {
       assert.ok(failed.retrieval_failures.some(f=>f.code===expected),JSON.stringify(failed.retrieval_failures));
     }
     const aiWorker=await mf.getWorker('fixture-ai');
-    assert.equal((await (await aiWorker.fetch('https://fixture.test/')).json()).calls,3);
+    const fixtureStats=await (await aiWorker.fetch('https://fixture.test/')).json();assert.equal(fixtureStats.calls,3);
+    if(process.env.RESEARCH_RUNTIME_CANDIDATES)fs.writeFileSync(process.env.RESEARCH_RUNTIME_CANDIDATES,JSON.stringify(fixtureStats.snapshots,null,2));
+    assert.equal(job.result.schema_version,'1.1');assert.ok(job.result.quality);
+    assert.equal(job.result.quality.coverage.length,1);
     const row=await db.prepare('SELECT COUNT(*) AS count FROM research_jobs WHERE sources_json IS NOT NULL OR model_output_json IS NOT NULL').first();assert.equal(row.count,0);
     console.log('PASS: deployed entry + real Workflow/D1, PDF/DOCX extraction, English/Russian evidence selection, serialized refusal, one fixture inference per job, private REST/MCP, signed A2A extension, scanned/corrupt PDF refusal before inference and source cleanup');
   }finally{await mf.dispose();}

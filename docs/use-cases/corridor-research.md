@@ -153,3 +153,13 @@ These are inspected source-based examples, not three hosted-model runs, customer
 - [Aktau indicators: tonnes, TEU, subset and comparison period](../research/corridor-demo-indicators.md).
 
 [Primary-source review and acquisition limits](../research/corridor-operator-primary-sources-2026-10-28.md). For a reproducible local run with a downloaded public PDF, set `RESEARCH_FIXTURE_PDF` to its local path when running the native runtime check. All model calls in that check are fixtures.
+
+## Numeric and completeness checks (artifact 1.1)
+
+New drafts expose `quality` separately from job completion. `checks_passed` means the named bounded checks passed; it does not establish factual truth or human acceptance. `incomplete` retains supported findings and explicit gaps. `blocked` can contain zero findings when every proposal is withheld. A completed job is not automatically an acceptable research deliverable.
+
+For quantities, the model selects source-owned value/unit/year/scope labels. The server checks the selected quote and constructs numeric findings from retained records. It calculates percentage changes only for compatible annual observed pairs, with a positive baseline, and returns the source records and formula separately. The initial check does not infer table columns, convert units, interpret shorthand scales or certify source authenticity. Qualitative/date/stage checks and language heuristics remain limited; human review is mandatory.
+
+Put separate requested parts on separate lines or separate them with question marks/semicolons. Every one of the bounded checklist parts needs a retained finding or a source-specific explanation of missing evidence. Missing years, absent requested units and unsupported calculated comparisons cannot be silently labelled answered. Semantic completeness is not guaranteed by this punctuation-based checklist.
+
+The response schema accepts historical artifact 1.0 and new 1.1; the private job envelope stays 1.0. MCP research protocol is 0.2.0. Core package versions and the existing non-research profile contracts are unchanged. See [ADR0042](../adr/0042-research-numeric-and-coverage-checks.md) and [the acceptance cases](../research/corridor-quality-acceptance-2026-10-28.md).
