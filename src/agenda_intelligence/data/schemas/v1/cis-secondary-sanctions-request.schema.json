@@ -73,6 +73,27 @@
         "both"
       ],
       "default": "structured_json"
+    },
+    "shareholders": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "percentage": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "name",
+          "percentage"
+        ]
+      }
     }
   },
   "$defs": {

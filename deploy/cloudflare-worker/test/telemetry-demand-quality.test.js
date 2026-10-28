@@ -20,7 +20,7 @@ test('invalid paid request has bounded diagnostics and a usable REST example', a
   const {response, events} = await captured('/v1/agent-output/verification', JSON.stringify({secret:'do-not-log'}));
   assert.equal(response.status, 400);
   const data = await response.json();
-  assert.equal(data.validation.category, 'missing_structured_request');
+  assert.equal(data.validation.category, 'schema_validation_failed');
   assert.deepEqual(data.request_hint.example_request, GATE_REQUEST_GUIDES.agent_output_verification.example);
   const good = await captured('/v1/agent-output/verification', JSON.stringify(data.request_hint.example_request));
   assert.equal(good.response.status, 402);

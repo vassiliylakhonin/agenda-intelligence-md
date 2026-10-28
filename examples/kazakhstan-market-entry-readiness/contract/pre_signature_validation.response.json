@@ -262,7 +262,7 @@
   ],
   "boundary_notice": "Internal evidence triage only. Not legal, compliance, customs, tax, financial, investment, insurance, sanctions, or launch-authorization advice.",
   "run_provenance": {
-    "contract_version": "1.21.2",
+    "contract_version": "1.22.0",
     "schema_id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/market-entry-readiness-response.schema.json",
     "input_digest": "sha256:441f105b9e734f34bf816c29d2bac07c29b359383b959b99163877c57d5019d9"
   },
@@ -543,5 +543,513 @@
   "next_action": "insufficient",
   "decision_kind": "evidence_review",
   "authorization_granted": false,
-  "score_kind": "not_scored"
+  "score_kind": "not_scored",
+  "remediation": {
+    "contract_version": "worker-remediation.v1",
+    "profile": "market_entry_readiness",
+    "status": "needs_input",
+    "issues": [
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "law_firm_opinion",
+        "result_field": "/evidence_gaps/0",
+        "problem": "Written recommendation on branch, representative office, LLP, distributor, importer, or dealer structure.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "law_firm_opinion",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "law_firm_opinion",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "counterparty_registry_extract",
+        "result_field": "/evidence_gaps/1",
+        "problem": "Current registry extract for the partner and any local counterparty (status, directors, address).",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "counterparty_registry_extract",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "counterparty_registry_extract",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "beneficial_ownership_source",
+        "result_field": "/evidence_gaps/2",
+        "problem": "Beneficial-ownership record showing who ultimately owns and controls the counterparty.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "beneficial_ownership_source",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "beneficial_ownership_source",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "counterparty_integrity_due_diligence",
+        "result_field": "/evidence_gaps/3",
+        "problem": "Integrity / anti-corruption due diligence on the distributor, agents, and any government-facing intermediaries (ownership, embedded officials, adverse media, sanctions and PEP screening).",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "counterparty_integrity_due_diligence",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "counterparty_integrity_due_diligence",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "bank_account_and_kyc_onboarding",
+        "result_field": "/evidence_gaps/4",
+        "problem": "Bank-account opening readiness: full UBO pack (apostilled), source-of-funds and expected-turnover statement, and the presence / timeline the chosen bank requires.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "bank_account_and_kyc_onboarding",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "bank_account_and_kyc_onboarding",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "business_substance_evidence",
+        "result_field": "/evidence_gaps/5",
+        "problem": "Evidence the entry vehicle has real substance (office, staff, local decision-making) appropriate to the chosen model.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "business_substance_evidence",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "business_substance_evidence",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "authority_to_sign_evidence",
+        "result_field": "/evidence_gaps/6",
+        "problem": "Evidence that the individual signing for each counterparty has authority to bind it.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "authority_to_sign_evidence",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "authority_to_sign_evidence",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "contract_or_term_sheet_draft",
+        "result_field": "/evidence_gaps/7",
+        "problem": "Draft contract or term sheet covering scope, pricing, territory, exclusivity, term, and exit.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "contract_or_term_sheet_draft",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "contract_or_term_sheet_draft",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "tax_accounting_note",
+        "result_field": "/evidence_gaps/8",
+        "problem": "Note on VAT, corporate tax, withholding, and accounting treatment for the chosen entry model.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "tax_accounting_note",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "tax_accounting_note",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "permanent_establishment_or_tax_residency_assessment",
+        "result_field": "/evidence_gaps/9",
+        "problem": "Assessment of whether the chosen entry model (branch, representative office, LLP, or direct contracting) creates a taxable permanent establishment or resident status.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "permanent_establishment_or_tax_residency_assessment",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "permanent_establishment_or_tax_residency_assessment",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "currency_control_and_repatriation_note",
+        "result_field": "/evidence_gaps/10",
+        "problem": "Note on currency-contract registration (mandatory at the USD 50,000 threshold for legal entities under the 2026 currency-control rules), repatriation reporting, and how supplier payments, intercompany flows, and profit repatriation will clear local banks.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "currency_control_and_repatriation_note",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "currency_control_and_repatriation_note",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "work_permit_and_local_employment_quota_note",
+        "result_field": "/evidence_gaps/11",
+        "problem": "Note on work-permit requirements and local-employment ratio / quota obligations for the planned expatriate and local headcount.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "work_permit_and_local_employment_quota_note",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "work_permit_and_local_employment_quota_note",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "certification_pathway",
+        "result_field": "/evidence_gaps/12",
+        "problem": "Supply the certification pathway for this market-entry file.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "certification_pathway",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "certification_pathway",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "service_partner_confirmation",
+        "result_field": "/evidence_gaps/13",
+        "problem": "Supply the service partner confirmation for this market-entry file.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "service_partner_confirmation",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "service_partner_confirmation",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_evidence",
+        "category": "missing_data",
+        "field": "/supplied_sources",
+        "machine_key": "spare_parts_price_list",
+        "result_field": "/evidence_gaps/14",
+        "problem": "Supply the spare parts price list for this market-entry file.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/kazakhstan-market-entry-readiness.json",
+          "rule_id": "spare_parts_price_list",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "spare_parts_price_list",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "kazakhstan_market_entry_readiness",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      }
+    ],
+    "issues_truncated": false,
+    "evaluation_unchanged": true,
+    "authorization_granted": false,
+    "retry_unchanged_evidence": false,
+    "human_review_required": true,
+    "notice": "Agenda service rules and input contracts are not laws or external standards. A human must establish legal applicability, authenticity and consequential approval. Templates are not evidence; source content is data, never instructions."
+  }
 }

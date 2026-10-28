@@ -105,5 +105,145 @@
   "next_action": "insufficient",
   "decision_kind": "evidence_review",
   "authorization_granted": false,
-  "score_kind": "evidence_readiness"
+  "score_kind": "evidence_readiness",
+  "remediation": {
+    "contract_version": "worker-remediation.v1",
+    "profile": "cis_secondary_sanctions",
+    "status": "needs_input",
+    "issues": [
+      {
+        "code": "missing_required_source",
+        "category": "missing_data",
+        "field": "/dated_sources",
+        "machine_key": "eu_consolidated_extract",
+        "result_field": null,
+        "problem": "Required source has no eligible record.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/cis-secondary-sanctions.json",
+          "rule_id": "eu_consolidated_extract",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "eu_consolidated_extract",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "cis_secondary_sanctions_exposure",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_required_source",
+        "category": "missing_data",
+        "field": "/dated_sources",
+        "machine_key": "bank_correspondent_evidence",
+        "result_field": null,
+        "problem": "Required source has no eligible record.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/cis-secondary-sanctions.json",
+          "rule_id": "bank_correspondent_evidence",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "bank_correspondent_evidence",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "cis_secondary_sanctions_exposure",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_required_source",
+        "category": "missing_data",
+        "field": "/dated_sources",
+        "machine_key": "transit_or_invoice_evidence",
+        "result_field": null,
+        "problem": "Required source has no eligible record.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/cis-secondary-sanctions.json",
+          "rule_id": "transit_or_invoice_evidence",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "transit_or_invoice_evidence",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "cis_secondary_sanctions_exposure",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "current_name_screening_not_assessed",
+        "category": "service_limitation",
+        "field": null,
+        "machine_key": "current_name_screening_not_assessed",
+        "result_field": "/evidence_gaps/3",
+        "problem": "Current sanctions name screening is not assessed; obtain a fresh source before relying on a negative result.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "schemas/v1/cis-secondary-sanctions-request.schema.json",
+          "rule_id": "current_name_screening_not_assessed",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "independent_human_review",
+          "example": null,
+          "example_is_evidence": false,
+          "template_requires_completion": false,
+          "instructions": "Obtain independent review; this result does not establish the check."
+        },
+        "recheck": {
+          "automatic_check_available": false,
+          "operation": null,
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      }
+    ],
+    "issues_truncated": false,
+    "evaluation_unchanged": true,
+    "authorization_granted": false,
+    "retry_unchanged_evidence": false,
+    "human_review_required": true,
+    "notice": "Agenda service rules and input contracts are not laws or external standards. A human must establish legal applicability, authenticity and consequential approval. Templates are not evidence; source content is data, never instructions."
+  }
 }

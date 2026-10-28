@@ -1,6 +1,6 @@
 {
   "name": "Agenda Intelligence MD",
-  "version": "1.21.2",
+  "version": "1.22.0",
   "_contract_fields": [
     "name",
     "version",
@@ -185,6 +185,10 @@
     },
     "corridor_research_response": {
       "path": "schemas/v1/corridor-research-response.schema.json",
+      "schema_version": "v1"
+    },
+    "worker_remediation": {
+      "path": "schemas/v1/worker-remediation.schema.json",
       "schema_version": "v1"
     }
   },
@@ -939,6 +943,12 @@
                     "markdown_summary",
                     "both"
                   ]
+                },
+                "shareholders": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
                 }
               },
               "required": [
@@ -1629,6 +1639,9 @@
                   "required": [
                     "status"
                   ]
+                },
+                "topic": {
+                  "type": "string"
                 }
               },
               "required": [

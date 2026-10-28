@@ -89,5 +89,17 @@
   "next_action": "review",
   "decision_kind": "evidence_review",
   "authorization_granted": false,
-  "score_kind": "evidence_readiness"
+  "score_kind": "evidence_readiness",
+  "remediation": {
+    "contract_version": "worker-remediation.v1",
+    "profile": "gulf_maritime_exposure",
+    "status": "ready_for_human_review",
+    "issues": [],
+    "issues_truncated": false,
+    "evaluation_unchanged": true,
+    "authorization_granted": false,
+    "retry_unchanged_evidence": false,
+    "human_review_required": true,
+    "notice": "Agenda service rules and input contracts are not laws or external standards. A human must establish legal applicability, authenticity and consequential approval. Templates are not evidence; source content is data, never instructions."
+  }
 }

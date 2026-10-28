@@ -1,3 +1,4 @@
+import {REMEDIATION_PROFILES} from './remediation.js';
 // Machine discovery describes existing operations. It never grants permission,
 // chooses another provider or creates a payment authorization.
 import {PROFILE_TASKS} from './agent-onboarding.js';
@@ -8,7 +9,7 @@ import {evaluationAmount,isFreeRoutingTool} from './pricing-policy.js';
 import {settlementDiscovery} from './payment-discovery.js';
 export {evaluationAmount} from './pricing-policy.js';
 export const FREE_MACHINE_TOOLS=new Set(['fleet_directory','decision_policies_list','free_trial_status','free_trial','free_trial_feedback','review_answer','open_answer_review',INPUT_VALIDATION_TOOL]);
-export const toolSchemaUrl=(origin,name,kind='input')=>`${origin}/schemas/tools/${name}/${kind}.schema.json`;
+export const toolSchemaUrl=(origin,name,kind='input')=>`${origin}/.well-known/schemas/tools/${name}/${kind}.schema.json`;
 export function publicToolSchema(origin,tool,kind) {
   const schema=kind==='input'?tool.inputSchema:tool.outputSchema;
   return schema?{...structuredClone(schema),$schema:'https://json-schema.org/draft/2020-12/schema',$id:toolSchemaUrl(origin,tool.name,kind)}:null;
@@ -21,13 +22,20 @@ export function machineOffers(profile,origin,env,tools) {
       price_scope:tool.name==='corridor_bankability_screen'?'Explicit full model export; the preview remains free.':'One admitted evaluation; payment is separate from authorization.',
       input_schema_url:toolSchemaUrl(origin,tool.name),
       output_schema_url:tool.outputSchema?toolSchemaUrl(origin,tool.name,'output'):null,
-      example_url:`${origin}/examples/tools/${tool.name}.json`,
+      example_url:`${origin}/.well-known/examples/tools/${tool.name}.json`,
       ...(required&&x402Enabled(env)?{payment_requirements:x402Requirements(new Request(origin+'/mcp/agent'),amount).accepts}:{}),
       ...(tool.name==='free_trial'?{allowance:'Consult free_trial_status on this host; no automatic retry or paid fallback.'}:{})};
   });
 }
 export function machineContract(profile,origin,env,tools,version) {
   return {contract_version:'agent-call.v1',service_version:version,profile,
+    diagnostics:{contract_version:'worker-remediation.v1',field:'remediation',schema_url:origin+'/.well-known/schemas/v1/worker-remediation.schema.json',
+      unknown_fields:'Rejected before extraction; open schema-defined maps remain open.',requirements_basis:'Agenda service rules, not a legal determination.',
+      source_types:REMEDIATION_PROFILES[profile]?.source_types||[],source_record_requirements:REMEDIATION_PROFILES[profile]?.source_record_requirements||[],
+      retry:'Run validate_input for shape free; reevaluation is a separate explicit admitted request after actual corrections. No unchanged-input retry.'},
+    service_limits:REMEDIATION_PROFILES[profile]?.service_limits||[],
+    free_trial_policy:{status_tool:'free_trial_status',network_reset_policy:'campaign_no_scheduled_reset',daily_capacity_reset_policy:'next_utc_midnight',
+      no_automatic_payment:true,check_before_evaluation:true},
     when_to_call:PROFILE_TASKS[profile],authentication:hostedAccess(profile,env,origin).authentication,
     mcp_endpoint:origin+'/mcp/agent',a2a_endpoint:origin+'/message/send',
     first_check:{client_url:origin+'/.well-known/first-check.mjs',runtime:'Node.js 20+',dependencies:[],

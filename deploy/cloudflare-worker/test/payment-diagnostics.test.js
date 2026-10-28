@@ -45,7 +45,7 @@ test('invalid structured input has diagnostics without body, validator messages 
   const { response, events } = await capture('/v1/agent-output/verification?secret=query', { private_text: 'do-not-log' });
   assert.equal(response.status, 400);
   const rejected = events.find(e => e.stage === 'payment_rejected');
-  assert.equal(rejected.validation.category, 'missing_structured_request');
+  assert.equal(rejected.validation.category, 'schema_validation_failed');
   assert.ok(rejected.validation.error_count > 0);
   assert.ok(!JSON.stringify(events).includes('do-not-log'));
   assert.ok(!JSON.stringify(events).includes('secret'));

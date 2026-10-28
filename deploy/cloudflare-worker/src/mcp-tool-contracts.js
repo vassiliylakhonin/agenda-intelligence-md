@@ -150,6 +150,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "evidence_readiness",
               "not_scored"
             ]
+          },
+          "remediation": {
+            "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contract_version",
+              "profile",
+              "status",
+              "issues",
+              "issues_truncated",
+              "evaluation_unchanged",
+              "authorization_granted",
+              "retry_unchanged_evidence",
+              "human_review_required",
+              "notice"
+            ],
+            "properties": {
+              "contract_version": {
+                "const": "worker-remediation.v1"
+              },
+              "profile": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "invalid_input",
+                  "technical_error",
+                  "needs_input",
+                  "service_limited",
+                  "ready_for_human_review",
+                  "input_valid"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "category",
+                    "field",
+                    "machine_key",
+                    "result_field",
+                    "problem",
+                    "allowed_values",
+                    "basis",
+                    "repair",
+                    "recheck"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "enum": [
+                        "missing_data",
+                        "rejected_data",
+                        "service_limitation",
+                        "technical_error"
+                      ]
+                    },
+                    "field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "machine_key": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "result_field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "problem": {
+                      "type": "string"
+                    },
+                    "allowed_values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "basis": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "authority",
+                        "rule_id",
+                        "notice"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "protocol_requirement",
+                            "service_rule",
+                            "legal_requirement"
+                          ]
+                        },
+                        "authority": {
+                          "type": "string"
+                        },
+                        "rule_id": {
+                          "type": "string"
+                        },
+                        "notice": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "repair": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "example",
+                        "example_is_evidence",
+                        "template_requires_completion",
+                        "instructions"
+                      ],
+                      "properties": {
+                        "action": {
+                          "type": "string"
+                        },
+                        "example": {},
+                        "example_is_evidence": {
+                          "const": false
+                        },
+                        "template_requires_completion": {
+                          "type": "boolean"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "recheck": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "automatic_check_available",
+                        "operation",
+                        "requires_changed_evidence_or_authoritative_state",
+                        "human_check"
+                      ],
+                      "properties": {
+                        "automatic_check_available": {
+                          "type": "boolean"
+                        },
+                        "operation": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "requires_changed_evidence_or_authoritative_state": {
+                          "const": true
+                        },
+                        "human_check": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "issues_truncated": {
+                "type": "boolean"
+              },
+              "evaluation_unchanged": {
+                "const": true
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "retry_unchanged_evidence": {
+                "const": false
+              },
+              "human_review_required": {
+                "const": true
+              },
+              "notice": {
+                "type": "string"
+              }
+            }
           }
         },
         "required": [
@@ -470,6 +664,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "evidence_readiness",
               "not_scored"
             ]
+          },
+          "remediation": {
+            "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contract_version",
+              "profile",
+              "status",
+              "issues",
+              "issues_truncated",
+              "evaluation_unchanged",
+              "authorization_granted",
+              "retry_unchanged_evidence",
+              "human_review_required",
+              "notice"
+            ],
+            "properties": {
+              "contract_version": {
+                "const": "worker-remediation.v1"
+              },
+              "profile": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "invalid_input",
+                  "technical_error",
+                  "needs_input",
+                  "service_limited",
+                  "ready_for_human_review",
+                  "input_valid"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "category",
+                    "field",
+                    "machine_key",
+                    "result_field",
+                    "problem",
+                    "allowed_values",
+                    "basis",
+                    "repair",
+                    "recheck"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "enum": [
+                        "missing_data",
+                        "rejected_data",
+                        "service_limitation",
+                        "technical_error"
+                      ]
+                    },
+                    "field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "machine_key": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "result_field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "problem": {
+                      "type": "string"
+                    },
+                    "allowed_values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "basis": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "authority",
+                        "rule_id",
+                        "notice"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "protocol_requirement",
+                            "service_rule",
+                            "legal_requirement"
+                          ]
+                        },
+                        "authority": {
+                          "type": "string"
+                        },
+                        "rule_id": {
+                          "type": "string"
+                        },
+                        "notice": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "repair": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "example",
+                        "example_is_evidence",
+                        "template_requires_completion",
+                        "instructions"
+                      ],
+                      "properties": {
+                        "action": {
+                          "type": "string"
+                        },
+                        "example": {},
+                        "example_is_evidence": {
+                          "const": false
+                        },
+                        "template_requires_completion": {
+                          "type": "boolean"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "recheck": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "automatic_check_available",
+                        "operation",
+                        "requires_changed_evidence_or_authoritative_state",
+                        "human_check"
+                      ],
+                      "properties": {
+                        "automatic_check_available": {
+                          "type": "boolean"
+                        },
+                        "operation": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "requires_changed_evidence_or_authoritative_state": {
+                          "const": true
+                        },
+                        "human_check": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "issues_truncated": {
+                "type": "boolean"
+              },
+              "evaluation_unchanged": {
+                "const": true
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "retry_unchanged_evidence": {
+                "const": false
+              },
+              "human_review_required": {
+                "const": true
+              },
+              "notice": {
+                "type": "string"
+              }
+            }
           }
         },
         "required": [
@@ -935,6 +1323,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                   "evidence_readiness",
                   "not_scored"
                 ]
+              },
+              "remediation": {
+                "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "contract_version",
+                  "profile",
+                  "status",
+                  "issues",
+                  "issues_truncated",
+                  "evaluation_unchanged",
+                  "authorization_granted",
+                  "retry_unchanged_evidence",
+                  "human_review_required",
+                  "notice"
+                ],
+                "properties": {
+                  "contract_version": {
+                    "const": "worker-remediation.v1"
+                  },
+                  "profile": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "enum": [
+                      "invalid_input",
+                      "technical_error",
+                      "needs_input",
+                      "service_limited",
+                      "ready_for_human_review",
+                      "input_valid"
+                    ]
+                  },
+                  "issues": {
+                    "type": "array",
+                    "maxItems": 64,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code",
+                        "category",
+                        "field",
+                        "machine_key",
+                        "result_field",
+                        "problem",
+                        "allowed_values",
+                        "basis",
+                        "repair",
+                        "recheck"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "category": {
+                          "enum": [
+                            "missing_data",
+                            "rejected_data",
+                            "service_limitation",
+                            "technical_error"
+                          ]
+                        },
+                        "field": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "machine_key": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "result_field": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "problem": {
+                          "type": "string"
+                        },
+                        "allowed_values": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "basis": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "kind",
+                            "authority",
+                            "rule_id",
+                            "notice"
+                          ],
+                          "properties": {
+                            "kind": {
+                              "enum": [
+                                "protocol_requirement",
+                                "service_rule",
+                                "legal_requirement"
+                              ]
+                            },
+                            "authority": {
+                              "type": "string"
+                            },
+                            "rule_id": {
+                              "type": "string"
+                            },
+                            "notice": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "repair": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "action",
+                            "example",
+                            "example_is_evidence",
+                            "template_requires_completion",
+                            "instructions"
+                          ],
+                          "properties": {
+                            "action": {
+                              "type": "string"
+                            },
+                            "example": {},
+                            "example_is_evidence": {
+                              "const": false
+                            },
+                            "template_requires_completion": {
+                              "type": "boolean"
+                            },
+                            "instructions": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "recheck": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "automatic_check_available",
+                            "operation",
+                            "requires_changed_evidence_or_authoritative_state",
+                            "human_check"
+                          ],
+                          "properties": {
+                            "automatic_check_available": {
+                              "type": "boolean"
+                            },
+                            "operation": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "requires_changed_evidence_or_authoritative_state": {
+                              "const": true
+                            },
+                            "human_check": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "issues_truncated": {
+                    "type": "boolean"
+                  },
+                  "evaluation_unchanged": {
+                    "const": true
+                  },
+                  "authorization_granted": {
+                    "const": false
+                  },
+                  "retry_unchanged_evidence": {
+                    "const": false
+                  },
+                  "human_review_required": {
+                    "const": true
+                  },
+                  "notice": {
+                    "type": "string"
+                  }
+                }
               }
             }
           },
@@ -1127,6 +1709,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                           "evidence_readiness",
                           "not_scored"
                         ]
+                      },
+                      "remediation": {
+                        "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "contract_version",
+                          "profile",
+                          "status",
+                          "issues",
+                          "issues_truncated",
+                          "evaluation_unchanged",
+                          "authorization_granted",
+                          "retry_unchanged_evidence",
+                          "human_review_required",
+                          "notice"
+                        ],
+                        "properties": {
+                          "contract_version": {
+                            "const": "worker-remediation.v1"
+                          },
+                          "profile": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "enum": [
+                              "invalid_input",
+                              "technical_error",
+                              "needs_input",
+                              "service_limited",
+                              "ready_for_human_review",
+                              "input_valid"
+                            ]
+                          },
+                          "issues": {
+                            "type": "array",
+                            "maxItems": 64,
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "code",
+                                "category",
+                                "field",
+                                "machine_key",
+                                "result_field",
+                                "problem",
+                                "allowed_values",
+                                "basis",
+                                "repair",
+                                "recheck"
+                              ],
+                              "properties": {
+                                "code": {
+                                  "type": "string"
+                                },
+                                "category": {
+                                  "enum": [
+                                    "missing_data",
+                                    "rejected_data",
+                                    "service_limitation",
+                                    "technical_error"
+                                  ]
+                                },
+                                "field": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "machine_key": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "result_field": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "problem": {
+                                  "type": "string"
+                                },
+                                "allowed_values": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "basis": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "kind",
+                                    "authority",
+                                    "rule_id",
+                                    "notice"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "enum": [
+                                        "protocol_requirement",
+                                        "service_rule",
+                                        "legal_requirement"
+                                      ]
+                                    },
+                                    "authority": {
+                                      "type": "string"
+                                    },
+                                    "rule_id": {
+                                      "type": "string"
+                                    },
+                                    "notice": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "repair": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "action",
+                                    "example",
+                                    "example_is_evidence",
+                                    "template_requires_completion",
+                                    "instructions"
+                                  ],
+                                  "properties": {
+                                    "action": {
+                                      "type": "string"
+                                    },
+                                    "example": {},
+                                    "example_is_evidence": {
+                                      "const": false
+                                    },
+                                    "template_requires_completion": {
+                                      "type": "boolean"
+                                    },
+                                    "instructions": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "recheck": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "automatic_check_available",
+                                    "operation",
+                                    "requires_changed_evidence_or_authoritative_state",
+                                    "human_check"
+                                  ],
+                                  "properties": {
+                                    "automatic_check_available": {
+                                      "type": "boolean"
+                                    },
+                                    "operation": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "requires_changed_evidence_or_authoritative_state": {
+                                      "const": true
+                                    },
+                                    "human_check": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "issues_truncated": {
+                            "type": "boolean"
+                          },
+                          "evaluation_unchanged": {
+                            "const": true
+                          },
+                          "authorization_granted": {
+                            "const": false
+                          },
+                          "retry_unchanged_evidence": {
+                            "const": false
+                          },
+                          "human_review_required": {
+                            "const": true
+                          },
+                          "notice": {
+                            "type": "string"
+                          }
+                        }
                       }
                     }
                   },
@@ -1529,6 +2305,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                   "evidence_readiness",
                   "not_scored"
                 ]
+              },
+              "remediation": {
+                "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "contract_version",
+                  "profile",
+                  "status",
+                  "issues",
+                  "issues_truncated",
+                  "evaluation_unchanged",
+                  "authorization_granted",
+                  "retry_unchanged_evidence",
+                  "human_review_required",
+                  "notice"
+                ],
+                "properties": {
+                  "contract_version": {
+                    "const": "worker-remediation.v1"
+                  },
+                  "profile": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "enum": [
+                      "invalid_input",
+                      "technical_error",
+                      "needs_input",
+                      "service_limited",
+                      "ready_for_human_review",
+                      "input_valid"
+                    ]
+                  },
+                  "issues": {
+                    "type": "array",
+                    "maxItems": 64,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code",
+                        "category",
+                        "field",
+                        "machine_key",
+                        "result_field",
+                        "problem",
+                        "allowed_values",
+                        "basis",
+                        "repair",
+                        "recheck"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "category": {
+                          "enum": [
+                            "missing_data",
+                            "rejected_data",
+                            "service_limitation",
+                            "technical_error"
+                          ]
+                        },
+                        "field": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "machine_key": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "result_field": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "problem": {
+                          "type": "string"
+                        },
+                        "allowed_values": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "basis": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "kind",
+                            "authority",
+                            "rule_id",
+                            "notice"
+                          ],
+                          "properties": {
+                            "kind": {
+                              "enum": [
+                                "protocol_requirement",
+                                "service_rule",
+                                "legal_requirement"
+                              ]
+                            },
+                            "authority": {
+                              "type": "string"
+                            },
+                            "rule_id": {
+                              "type": "string"
+                            },
+                            "notice": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "repair": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "action",
+                            "example",
+                            "example_is_evidence",
+                            "template_requires_completion",
+                            "instructions"
+                          ],
+                          "properties": {
+                            "action": {
+                              "type": "string"
+                            },
+                            "example": {},
+                            "example_is_evidence": {
+                              "const": false
+                            },
+                            "template_requires_completion": {
+                              "type": "boolean"
+                            },
+                            "instructions": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "recheck": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "automatic_check_available",
+                            "operation",
+                            "requires_changed_evidence_or_authoritative_state",
+                            "human_check"
+                          ],
+                          "properties": {
+                            "automatic_check_available": {
+                              "type": "boolean"
+                            },
+                            "operation": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "requires_changed_evidence_or_authoritative_state": {
+                              "const": true
+                            },
+                            "human_check": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "issues_truncated": {
+                    "type": "boolean"
+                  },
+                  "evaluation_unchanged": {
+                    "const": true
+                  },
+                  "authorization_granted": {
+                    "const": false
+                  },
+                  "retry_unchanged_evidence": {
+                    "const": false
+                  },
+                  "human_review_required": {
+                    "const": true
+                  },
+                  "notice": {
+                    "type": "string"
+                  }
+                }
               }
             }
           },
@@ -1757,6 +2727,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                           "evidence_readiness",
                           "not_scored"
                         ]
+                      },
+                      "remediation": {
+                        "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "contract_version",
+                          "profile",
+                          "status",
+                          "issues",
+                          "issues_truncated",
+                          "evaluation_unchanged",
+                          "authorization_granted",
+                          "retry_unchanged_evidence",
+                          "human_review_required",
+                          "notice"
+                        ],
+                        "properties": {
+                          "contract_version": {
+                            "const": "worker-remediation.v1"
+                          },
+                          "profile": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "enum": [
+                              "invalid_input",
+                              "technical_error",
+                              "needs_input",
+                              "service_limited",
+                              "ready_for_human_review",
+                              "input_valid"
+                            ]
+                          },
+                          "issues": {
+                            "type": "array",
+                            "maxItems": 64,
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "code",
+                                "category",
+                                "field",
+                                "machine_key",
+                                "result_field",
+                                "problem",
+                                "allowed_values",
+                                "basis",
+                                "repair",
+                                "recheck"
+                              ],
+                              "properties": {
+                                "code": {
+                                  "type": "string"
+                                },
+                                "category": {
+                                  "enum": [
+                                    "missing_data",
+                                    "rejected_data",
+                                    "service_limitation",
+                                    "technical_error"
+                                  ]
+                                },
+                                "field": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "machine_key": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "result_field": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "problem": {
+                                  "type": "string"
+                                },
+                                "allowed_values": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "basis": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "kind",
+                                    "authority",
+                                    "rule_id",
+                                    "notice"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "enum": [
+                                        "protocol_requirement",
+                                        "service_rule",
+                                        "legal_requirement"
+                                      ]
+                                    },
+                                    "authority": {
+                                      "type": "string"
+                                    },
+                                    "rule_id": {
+                                      "type": "string"
+                                    },
+                                    "notice": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "repair": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "action",
+                                    "example",
+                                    "example_is_evidence",
+                                    "template_requires_completion",
+                                    "instructions"
+                                  ],
+                                  "properties": {
+                                    "action": {
+                                      "type": "string"
+                                    },
+                                    "example": {},
+                                    "example_is_evidence": {
+                                      "const": false
+                                    },
+                                    "template_requires_completion": {
+                                      "type": "boolean"
+                                    },
+                                    "instructions": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "recheck": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "automatic_check_available",
+                                    "operation",
+                                    "requires_changed_evidence_or_authoritative_state",
+                                    "human_check"
+                                  ],
+                                  "properties": {
+                                    "automatic_check_available": {
+                                      "type": "boolean"
+                                    },
+                                    "operation": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "requires_changed_evidence_or_authoritative_state": {
+                                      "const": true
+                                    },
+                                    "human_check": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "issues_truncated": {
+                            "type": "boolean"
+                          },
+                          "evaluation_unchanged": {
+                            "const": true
+                          },
+                          "authorization_granted": {
+                            "const": false
+                          },
+                          "retry_unchanged_evidence": {
+                            "const": false
+                          },
+                          "human_review_required": {
+                            "const": true
+                          },
+                          "notice": {
+                            "type": "string"
+                          }
+                        }
                       }
                     }
                   },
@@ -2506,6 +3670,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "evidence_readiness",
               "not_scored"
             ]
+          },
+          "remediation": {
+            "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contract_version",
+              "profile",
+              "status",
+              "issues",
+              "issues_truncated",
+              "evaluation_unchanged",
+              "authorization_granted",
+              "retry_unchanged_evidence",
+              "human_review_required",
+              "notice"
+            ],
+            "properties": {
+              "contract_version": {
+                "const": "worker-remediation.v1"
+              },
+              "profile": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "invalid_input",
+                  "technical_error",
+                  "needs_input",
+                  "service_limited",
+                  "ready_for_human_review",
+                  "input_valid"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "category",
+                    "field",
+                    "machine_key",
+                    "result_field",
+                    "problem",
+                    "allowed_values",
+                    "basis",
+                    "repair",
+                    "recheck"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "enum": [
+                        "missing_data",
+                        "rejected_data",
+                        "service_limitation",
+                        "technical_error"
+                      ]
+                    },
+                    "field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "machine_key": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "result_field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "problem": {
+                      "type": "string"
+                    },
+                    "allowed_values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "basis": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "authority",
+                        "rule_id",
+                        "notice"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "protocol_requirement",
+                            "service_rule",
+                            "legal_requirement"
+                          ]
+                        },
+                        "authority": {
+                          "type": "string"
+                        },
+                        "rule_id": {
+                          "type": "string"
+                        },
+                        "notice": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "repair": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "example",
+                        "example_is_evidence",
+                        "template_requires_completion",
+                        "instructions"
+                      ],
+                      "properties": {
+                        "action": {
+                          "type": "string"
+                        },
+                        "example": {},
+                        "example_is_evidence": {
+                          "const": false
+                        },
+                        "template_requires_completion": {
+                          "type": "boolean"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "recheck": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "automatic_check_available",
+                        "operation",
+                        "requires_changed_evidence_or_authoritative_state",
+                        "human_check"
+                      ],
+                      "properties": {
+                        "automatic_check_available": {
+                          "type": "boolean"
+                        },
+                        "operation": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "requires_changed_evidence_or_authoritative_state": {
+                          "const": true
+                        },
+                        "human_check": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "issues_truncated": {
+                "type": "boolean"
+              },
+              "evaluation_unchanged": {
+                "const": true
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "retry_unchanged_evidence": {
+                "const": false
+              },
+              "human_review_required": {
+                "const": true
+              },
+              "notice": {
+                "type": "string"
+              }
+            }
           }
         },
         "$defs": {
@@ -2831,6 +4189,27 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "both"
             ],
             "default": "structured_json"
+          },
+          "shareholders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "percentage": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "name",
+                "percentage"
+              ]
+            }
           }
         },
         "$defs": {
@@ -3408,6 +4787,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               },
               "authorization_granted": {
                 "const": false
+              }
+            }
+          },
+          "remediation": {
+            "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contract_version",
+              "profile",
+              "status",
+              "issues",
+              "issues_truncated",
+              "evaluation_unchanged",
+              "authorization_granted",
+              "retry_unchanged_evidence",
+              "human_review_required",
+              "notice"
+            ],
+            "properties": {
+              "contract_version": {
+                "const": "worker-remediation.v1"
+              },
+              "profile": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "invalid_input",
+                  "technical_error",
+                  "needs_input",
+                  "service_limited",
+                  "ready_for_human_review",
+                  "input_valid"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "category",
+                    "field",
+                    "machine_key",
+                    "result_field",
+                    "problem",
+                    "allowed_values",
+                    "basis",
+                    "repair",
+                    "recheck"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "enum": [
+                        "missing_data",
+                        "rejected_data",
+                        "service_limitation",
+                        "technical_error"
+                      ]
+                    },
+                    "field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "machine_key": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "result_field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "problem": {
+                      "type": "string"
+                    },
+                    "allowed_values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "basis": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "authority",
+                        "rule_id",
+                        "notice"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "protocol_requirement",
+                            "service_rule",
+                            "legal_requirement"
+                          ]
+                        },
+                        "authority": {
+                          "type": "string"
+                        },
+                        "rule_id": {
+                          "type": "string"
+                        },
+                        "notice": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "repair": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "example",
+                        "example_is_evidence",
+                        "template_requires_completion",
+                        "instructions"
+                      ],
+                      "properties": {
+                        "action": {
+                          "type": "string"
+                        },
+                        "example": {},
+                        "example_is_evidence": {
+                          "const": false
+                        },
+                        "template_requires_completion": {
+                          "type": "boolean"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "recheck": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "automatic_check_available",
+                        "operation",
+                        "requires_changed_evidence_or_authoritative_state",
+                        "human_check"
+                      ],
+                      "properties": {
+                        "automatic_check_available": {
+                          "type": "boolean"
+                        },
+                        "operation": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "requires_changed_evidence_or_authoritative_state": {
+                          "const": true
+                        },
+                        "human_check": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "issues_truncated": {
+                "type": "boolean"
+              },
+              "evaluation_unchanged": {
+                "const": true
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "retry_unchanged_evidence": {
+                "const": false
+              },
+              "human_review_required": {
+                "const": true
+              },
+              "notice": {
+                "type": "string"
               }
             }
           }
@@ -4286,6 +5859,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "evidence_readiness",
               "not_scored"
             ]
+          },
+          "remediation": {
+            "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contract_version",
+              "profile",
+              "status",
+              "issues",
+              "issues_truncated",
+              "evaluation_unchanged",
+              "authorization_granted",
+              "retry_unchanged_evidence",
+              "human_review_required",
+              "notice"
+            ],
+            "properties": {
+              "contract_version": {
+                "const": "worker-remediation.v1"
+              },
+              "profile": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "invalid_input",
+                  "technical_error",
+                  "needs_input",
+                  "service_limited",
+                  "ready_for_human_review",
+                  "input_valid"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "category",
+                    "field",
+                    "machine_key",
+                    "result_field",
+                    "problem",
+                    "allowed_values",
+                    "basis",
+                    "repair",
+                    "recheck"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "enum": [
+                        "missing_data",
+                        "rejected_data",
+                        "service_limitation",
+                        "technical_error"
+                      ]
+                    },
+                    "field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "machine_key": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "result_field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "problem": {
+                      "type": "string"
+                    },
+                    "allowed_values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "basis": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "authority",
+                        "rule_id",
+                        "notice"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "protocol_requirement",
+                            "service_rule",
+                            "legal_requirement"
+                          ]
+                        },
+                        "authority": {
+                          "type": "string"
+                        },
+                        "rule_id": {
+                          "type": "string"
+                        },
+                        "notice": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "repair": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "example",
+                        "example_is_evidence",
+                        "template_requires_completion",
+                        "instructions"
+                      ],
+                      "properties": {
+                        "action": {
+                          "type": "string"
+                        },
+                        "example": {},
+                        "example_is_evidence": {
+                          "const": false
+                        },
+                        "template_requires_completion": {
+                          "type": "boolean"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "recheck": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "automatic_check_available",
+                        "operation",
+                        "requires_changed_evidence_or_authoritative_state",
+                        "human_check"
+                      ],
+                      "properties": {
+                        "automatic_check_available": {
+                          "type": "boolean"
+                        },
+                        "operation": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "requires_changed_evidence_or_authoritative_state": {
+                          "const": true
+                        },
+                        "human_check": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "issues_truncated": {
+                "type": "boolean"
+              },
+              "evaluation_unchanged": {
+                "const": true
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "retry_unchanged_evidence": {
+                "const": false
+              },
+              "human_review_required": {
+                "const": true
+              },
+              "notice": {
+                "type": "string"
+              }
+            }
           }
         },
         "$defs": {
@@ -4663,6 +6430,10 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "full_text": {
                 "type": "string",
                 "description": "Alias content field; treated like 'content' for quote corroboration."
+              },
+              "source_id": {
+                "type": "string",
+                "description": "Legacy caller source identifier; reference metadata only, not resolved or authenticated and not a substitute for evidence_id."
               }
             }
           }
@@ -4933,6 +6704,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "format": "date-time"
               }
             }
+          },
+          "remediation": {
+            "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contract_version",
+              "profile",
+              "status",
+              "issues",
+              "issues_truncated",
+              "evaluation_unchanged",
+              "authorization_granted",
+              "retry_unchanged_evidence",
+              "human_review_required",
+              "notice"
+            ],
+            "properties": {
+              "contract_version": {
+                "const": "worker-remediation.v1"
+              },
+              "profile": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "invalid_input",
+                  "technical_error",
+                  "needs_input",
+                  "service_limited",
+                  "ready_for_human_review",
+                  "input_valid"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "category",
+                    "field",
+                    "machine_key",
+                    "result_field",
+                    "problem",
+                    "allowed_values",
+                    "basis",
+                    "repair",
+                    "recheck"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "enum": [
+                        "missing_data",
+                        "rejected_data",
+                        "service_limitation",
+                        "technical_error"
+                      ]
+                    },
+                    "field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "machine_key": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "result_field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "problem": {
+                      "type": "string"
+                    },
+                    "allowed_values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "basis": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "authority",
+                        "rule_id",
+                        "notice"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "protocol_requirement",
+                            "service_rule",
+                            "legal_requirement"
+                          ]
+                        },
+                        "authority": {
+                          "type": "string"
+                        },
+                        "rule_id": {
+                          "type": "string"
+                        },
+                        "notice": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "repair": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "example",
+                        "example_is_evidence",
+                        "template_requires_completion",
+                        "instructions"
+                      ],
+                      "properties": {
+                        "action": {
+                          "type": "string"
+                        },
+                        "example": {},
+                        "example_is_evidence": {
+                          "const": false
+                        },
+                        "template_requires_completion": {
+                          "type": "boolean"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "recheck": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "automatic_check_available",
+                        "operation",
+                        "requires_changed_evidence_or_authoritative_state",
+                        "human_check"
+                      ],
+                      "properties": {
+                        "automatic_check_available": {
+                          "type": "boolean"
+                        },
+                        "operation": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "requires_changed_evidence_or_authoritative_state": {
+                          "const": true
+                        },
+                        "human_check": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "issues_truncated": {
+                "type": "boolean"
+              },
+              "evaluation_unchanged": {
+                "const": true
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "retry_unchanged_evidence": {
+                "const": false
+              },
+              "human_review_required": {
+                "const": true
+              },
+              "notice": {
+                "type": "string"
+              }
+            }
           }
         }
       }
@@ -5004,6 +6969,10 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           },
           "approval": {
             "$ref": "#/$defs/approval"
+          },
+          "topic": {
+            "type": "string",
+            "description": "Optional caller context; does not establish support or authority."
           }
         },
         "$defs": {
@@ -5712,6 +7681,10 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           },
           "approval": {
             "$ref": "#/$defs/approval"
+          },
+          "topic": {
+            "type": "string",
+            "description": "Optional caller context; does not establish support or authority."
           }
         },
         "$defs": {
@@ -6852,6 +8825,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "evidence_readiness",
               "not_scored"
             ]
+          },
+          "remediation": {
+            "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contract_version",
+              "profile",
+              "status",
+              "issues",
+              "issues_truncated",
+              "evaluation_unchanged",
+              "authorization_granted",
+              "retry_unchanged_evidence",
+              "human_review_required",
+              "notice"
+            ],
+            "properties": {
+              "contract_version": {
+                "const": "worker-remediation.v1"
+              },
+              "profile": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "invalid_input",
+                  "technical_error",
+                  "needs_input",
+                  "service_limited",
+                  "ready_for_human_review",
+                  "input_valid"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "category",
+                    "field",
+                    "machine_key",
+                    "result_field",
+                    "problem",
+                    "allowed_values",
+                    "basis",
+                    "repair",
+                    "recheck"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "enum": [
+                        "missing_data",
+                        "rejected_data",
+                        "service_limitation",
+                        "technical_error"
+                      ]
+                    },
+                    "field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "machine_key": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "result_field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "problem": {
+                      "type": "string"
+                    },
+                    "allowed_values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "basis": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "authority",
+                        "rule_id",
+                        "notice"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "protocol_requirement",
+                            "service_rule",
+                            "legal_requirement"
+                          ]
+                        },
+                        "authority": {
+                          "type": "string"
+                        },
+                        "rule_id": {
+                          "type": "string"
+                        },
+                        "notice": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "repair": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "example",
+                        "example_is_evidence",
+                        "template_requires_completion",
+                        "instructions"
+                      ],
+                      "properties": {
+                        "action": {
+                          "type": "string"
+                        },
+                        "example": {},
+                        "example_is_evidence": {
+                          "const": false
+                        },
+                        "template_requires_completion": {
+                          "type": "boolean"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "recheck": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "automatic_check_available",
+                        "operation",
+                        "requires_changed_evidence_or_authoritative_state",
+                        "human_check"
+                      ],
+                      "properties": {
+                        "automatic_check_available": {
+                          "type": "boolean"
+                        },
+                        "operation": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "requires_changed_evidence_or_authoritative_state": {
+                          "const": true
+                        },
+                        "human_check": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "issues_truncated": {
+                "type": "boolean"
+              },
+              "evaluation_unchanged": {
+                "const": true
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "retry_unchanged_evidence": {
+                "const": false
+              },
+              "human_review_required": {
+                "const": true
+              },
+              "notice": {
+                "type": "string"
+              }
+            }
           }
         },
         "$defs": {
@@ -7426,6 +9593,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "evidence_readiness",
               "not_scored"
             ]
+          },
+          "remediation": {
+            "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contract_version",
+              "profile",
+              "status",
+              "issues",
+              "issues_truncated",
+              "evaluation_unchanged",
+              "authorization_granted",
+              "retry_unchanged_evidence",
+              "human_review_required",
+              "notice"
+            ],
+            "properties": {
+              "contract_version": {
+                "const": "worker-remediation.v1"
+              },
+              "profile": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "invalid_input",
+                  "technical_error",
+                  "needs_input",
+                  "service_limited",
+                  "ready_for_human_review",
+                  "input_valid"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "category",
+                    "field",
+                    "machine_key",
+                    "result_field",
+                    "problem",
+                    "allowed_values",
+                    "basis",
+                    "repair",
+                    "recheck"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "enum": [
+                        "missing_data",
+                        "rejected_data",
+                        "service_limitation",
+                        "technical_error"
+                      ]
+                    },
+                    "field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "machine_key": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "result_field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "problem": {
+                      "type": "string"
+                    },
+                    "allowed_values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "basis": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "authority",
+                        "rule_id",
+                        "notice"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "protocol_requirement",
+                            "service_rule",
+                            "legal_requirement"
+                          ]
+                        },
+                        "authority": {
+                          "type": "string"
+                        },
+                        "rule_id": {
+                          "type": "string"
+                        },
+                        "notice": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "repair": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "example",
+                        "example_is_evidence",
+                        "template_requires_completion",
+                        "instructions"
+                      ],
+                      "properties": {
+                        "action": {
+                          "type": "string"
+                        },
+                        "example": {},
+                        "example_is_evidence": {
+                          "const": false
+                        },
+                        "template_requires_completion": {
+                          "type": "boolean"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "recheck": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "automatic_check_available",
+                        "operation",
+                        "requires_changed_evidence_or_authoritative_state",
+                        "human_check"
+                      ],
+                      "properties": {
+                        "automatic_check_available": {
+                          "type": "boolean"
+                        },
+                        "operation": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "requires_changed_evidence_or_authoritative_state": {
+                          "const": true
+                        },
+                        "human_check": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "issues_truncated": {
+                "type": "boolean"
+              },
+              "evaluation_unchanged": {
+                "const": true
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "retry_unchanged_evidence": {
+                "const": false
+              },
+              "human_review_required": {
+                "const": true
+              },
+              "notice": {
+                "type": "string"
+              }
+            }
           }
         },
         "$defs": {
@@ -8756,6 +11117,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "evidence_readiness",
               "not_scored"
             ]
+          },
+          "remediation": {
+            "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contract_version",
+              "profile",
+              "status",
+              "issues",
+              "issues_truncated",
+              "evaluation_unchanged",
+              "authorization_granted",
+              "retry_unchanged_evidence",
+              "human_review_required",
+              "notice"
+            ],
+            "properties": {
+              "contract_version": {
+                "const": "worker-remediation.v1"
+              },
+              "profile": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "invalid_input",
+                  "technical_error",
+                  "needs_input",
+                  "service_limited",
+                  "ready_for_human_review",
+                  "input_valid"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "category",
+                    "field",
+                    "machine_key",
+                    "result_field",
+                    "problem",
+                    "allowed_values",
+                    "basis",
+                    "repair",
+                    "recheck"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "enum": [
+                        "missing_data",
+                        "rejected_data",
+                        "service_limitation",
+                        "technical_error"
+                      ]
+                    },
+                    "field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "machine_key": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "result_field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "problem": {
+                      "type": "string"
+                    },
+                    "allowed_values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "basis": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "authority",
+                        "rule_id",
+                        "notice"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "protocol_requirement",
+                            "service_rule",
+                            "legal_requirement"
+                          ]
+                        },
+                        "authority": {
+                          "type": "string"
+                        },
+                        "rule_id": {
+                          "type": "string"
+                        },
+                        "notice": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "repair": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "example",
+                        "example_is_evidence",
+                        "template_requires_completion",
+                        "instructions"
+                      ],
+                      "properties": {
+                        "action": {
+                          "type": "string"
+                        },
+                        "example": {},
+                        "example_is_evidence": {
+                          "const": false
+                        },
+                        "template_requires_completion": {
+                          "type": "boolean"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "recheck": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "automatic_check_available",
+                        "operation",
+                        "requires_changed_evidence_or_authoritative_state",
+                        "human_check"
+                      ],
+                      "properties": {
+                        "automatic_check_available": {
+                          "type": "boolean"
+                        },
+                        "operation": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "requires_changed_evidence_or_authoritative_state": {
+                          "const": true
+                        },
+                        "human_check": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "issues_truncated": {
+                "type": "boolean"
+              },
+              "evaluation_unchanged": {
+                "const": true
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "retry_unchanged_evidence": {
+                "const": false
+              },
+              "human_review_required": {
+                "const": true
+              },
+              "notice": {
+                "type": "string"
+              }
+            }
           }
         },
         "$defs": {
@@ -8955,6 +11510,27 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
           },
           "risk_question": {
             "type": "string"
+          },
+          "counterparties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "role": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "jurisdiction": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
           }
         }
       },
@@ -9139,6 +11715,200 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "evidence_readiness",
               "not_scored"
             ]
+          },
+          "remediation": {
+            "description": "Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contract_version",
+              "profile",
+              "status",
+              "issues",
+              "issues_truncated",
+              "evaluation_unchanged",
+              "authorization_granted",
+              "retry_unchanged_evidence",
+              "human_review_required",
+              "notice"
+            ],
+            "properties": {
+              "contract_version": {
+                "const": "worker-remediation.v1"
+              },
+              "profile": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "invalid_input",
+                  "technical_error",
+                  "needs_input",
+                  "service_limited",
+                  "ready_for_human_review",
+                  "input_valid"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "maxItems": 64,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "category",
+                    "field",
+                    "machine_key",
+                    "result_field",
+                    "problem",
+                    "allowed_values",
+                    "basis",
+                    "repair",
+                    "recheck"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "enum": [
+                        "missing_data",
+                        "rejected_data",
+                        "service_limitation",
+                        "technical_error"
+                      ]
+                    },
+                    "field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "machine_key": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "result_field": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "problem": {
+                      "type": "string"
+                    },
+                    "allowed_values": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "basis": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "authority",
+                        "rule_id",
+                        "notice"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "protocol_requirement",
+                            "service_rule",
+                            "legal_requirement"
+                          ]
+                        },
+                        "authority": {
+                          "type": "string"
+                        },
+                        "rule_id": {
+                          "type": "string"
+                        },
+                        "notice": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "repair": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "example",
+                        "example_is_evidence",
+                        "template_requires_completion",
+                        "instructions"
+                      ],
+                      "properties": {
+                        "action": {
+                          "type": "string"
+                        },
+                        "example": {},
+                        "example_is_evidence": {
+                          "const": false
+                        },
+                        "template_requires_completion": {
+                          "type": "boolean"
+                        },
+                        "instructions": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "recheck": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "automatic_check_available",
+                        "operation",
+                        "requires_changed_evidence_or_authoritative_state",
+                        "human_check"
+                      ],
+                      "properties": {
+                        "automatic_check_available": {
+                          "type": "boolean"
+                        },
+                        "operation": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "requires_changed_evidence_or_authoritative_state": {
+                          "const": true
+                        },
+                        "human_check": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "issues_truncated": {
+                "type": "boolean"
+              },
+              "evaluation_unchanged": {
+                "const": true
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "retry_unchanged_evidence": {
+                "const": false
+              },
+              "human_review_required": {
+                "const": true
+              },
+              "notice": {
+                "type": "string"
+              }
+            }
           }
         }
       }

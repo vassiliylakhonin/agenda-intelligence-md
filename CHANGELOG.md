@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.22.0 — prepared, unreleased
+
+- Add `worker-remediation.v1` to all twelve primary evaluations: exact input paths and source keys, rejection reasons, blank repair templates, requirement authority and independent human checks. Preserve all existing scores/verdicts and mandatory review; service checklists are not laws.
+- Reject unknown closed-object fields before fallback, evaluation and attempt/payment reservation. Preserve explicit compatibility wrappers and supported metadata; close the optional text-routing input per ADR 0043.
+- Disclose unavailable Financial Guard sanctions/AML and wallet-history checks, Escrow SLO limits, exact CM source keys and campaign reset semantics in discovery and trial terms. Distinguish technical failures from evidence omissions.
+- Add public schema/example aliases under `/.well-known/` while retaining original routes; correct static serving URLs and execute every published primary example locally. Keep the persistent legacy extension identifier.
+- Add a local report-with-sources → OV → caller revision adapter and synthetic before/after case that catches a quote mismatch and missing reference without deleting claims or claiming factual verification. No hosted calls, payments, new workers or cloud resources are introduced.
+
 ## Research numeric and coverage checks — 2026-10-28
 
 - Add artifact 1.1 and hosted research protocol 0.2.0 with explicit quality status, retained/withheld findings, measurement records, deterministic percentage calculations and per-part question coverage. Stored 1.0 artifacts remain valid.

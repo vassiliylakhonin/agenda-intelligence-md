@@ -1,3 +1,4 @@
+import {technicalRemediation,REMEDIATION_PROFILES} from './remediation.js';
 import { readBoundedJson } from './request-body.js';
 import { paymentTraceId, paymentTraceResponse } from './payment-trace.js';
 import { tokenHash } from './payment-ledger.js';
@@ -22,6 +23,9 @@ export function outputTrialTerms(profile = 'agent_output_verification') {
   const config = trialProfile(profile);
   return { endpoint: trialPath(profile), agent_profile: profile, tool: config.tool,
     mcp_tool: MCP_TRIAL_TOOL, mcp_status_tool: MCP_TRIAL_STATUS_TOOL,
+    service_limits:REMEDIATION_PROFILES[profile]?.service_limits||[],
+    source_type_keys:REMEDIATION_PROFILES[profile]?.source_types||[],
+    source_record_requirements:REMEDIATION_PROFILES[profile]?.source_record_requirements||[],
     feedback:{mcp_tool:MCP_TRIAL_FEEDBACK_TOOL,endpoint:'/telemetry/trial-feedback',
       responses:['useful_next_step','still_blocked'],optional:true,requires_recent_completion:true,
       scope:'Same network and product as trial.attempt_id; no evaluation or allowance consumption. Do not send input or result text.'},
@@ -39,6 +43,7 @@ export function outputTrialTerms(profile = 'agent_output_verification') {
     worked_example_url: '/?example=1#worked-example',
     evaluation_kind: config.kind || 'evidence_review', attempts_per_network: trialAttemptLimit(profile),
     daily_service_limit: OUTPUT_TRIAL_DAILY_LIMIT, payment_required: false,
+    network_reset_policy:"campaign_no_scheduled_reset",daily_capacity_reset_policy:"next_utc_midnight",
     scope: `${trialAttemptLimit(profile)} attempts per network address per product for this trial campaign; shared networks share the allowance. Daily capacity is shared across all products.`,
     paid_endpoint: config.route || '/mcp', paid_transport: config.route ? 'rest' : 'mcp',
     paid_price_usdc: evaluationAmount(profile,config.tool) };
@@ -131,14 +136,14 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
   }
   if (checked.errors.length) {
     log('payment_rejected', 'invalid_paid_request', 400, { category: 'schema_validation_failed', error_count: checked.errors.length });
-    return reply({ code: 'invalid_trial_request', errors: checked.errors, trial: terms }, 400);
+    return reply({ code: 'invalid_trial_request', errors: checked.errors, ...(checked.remediation?{remediation:checked.remediation}:{}), trial: terms }, 400);
   }
   log('request_validated', 'free_trial', null);
   let admission;
   try { admission = await reserveOutputTrial(request, env, attempt, profile); }
   catch {
     log('preview_failed', 'trial_unavailable', 503);
-    return reply({ code: 'trial_unavailable', error: 'Free trial is temporarily unavailable. No payment was requested.', trial: terms }, 503);
+    return reply({ code: 'trial_unavailable', remediation:technicalRemediation(profile,'trial_store_unavailable'), attempt_consumed:false, error: 'Free trial is temporarily unavailable. No payment was requested.', trial: terms }, 503);
   }
   if (!admission.reserved) {
     const daily = admission.limit_reason === 'daily_capacity_exhausted';
@@ -155,12 +160,12 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
     result = await evaluate(checked.value);
   } catch {
     log('preview_failed', 'trial_evaluation_failed', 503);
-    return reply({ code: 'trial_evaluation_failed', error: 'Evaluation could not complete. This reserved trial attempt was consumed; no payment was requested.', trial: terms }, 503);
+    return reply({ code: 'trial_evaluation_failed', remediation:technicalRemediation(profile,'trial_evaluation_failed'), attempt_consumed:true, error: 'Evaluation could not complete. This reserved trial attempt was consumed; no payment was requested.', trial: {...terms,attempt_consumed:true} }, 503);
   }
   try { await recordTrialCompletion(env, attempt, profile, originGroup(checked.value)); }
   catch {
     log('preview_failed', 'trial_recording_unavailable', 503);
-    return reply({ code: 'trial_recording_unavailable', error: 'The result could not be recorded reliably. This reserved attempt was consumed; no payment was requested.',
+    return reply({ code: 'trial_recording_unavailable', remediation:technicalRemediation(profile,'trial_recording_unavailable'), attempt_consumed:true, error: 'The result could not be recorded reliably. This reserved attempt was consumed; no payment was requested.',
       trial: { ...terms, attempt_consumed: true } }, 503);
   }
   log('preview_completed', 'free_trial', 200);

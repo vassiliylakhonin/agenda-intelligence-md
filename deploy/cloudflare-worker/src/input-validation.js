@@ -1,3 +1,4 @@
+import {inputRemediation,pointer} from './remediation.js';
 import {hostedAccessNote} from './hosted-access.js';
 import validators from './input-validators.js';
 import {validationCatalog,validatorKey} from './validation-catalog.js';
@@ -7,7 +8,6 @@ import {PUBLIC_SCHEMAS} from './public-schemas.js';
 export const INPUT_VALIDATION_TOOL='validate_input';
 export const INPUT_VALIDATION_PATH='/v1/validate-input';
 export const INPUT_VALIDATION_MAX_BYTES=262144;
-const pointer=value=>String(value).replaceAll('~','~0').replaceAll('/','~1');
 export function validationTool(profile,trialEnabled,access=null) {
   const schema=structuredClone(PUBLIC_SCHEMAS['schemas/v1/input-validation-request.schema.json']);
   const available=validationCatalog(profile).map(row=>row.name).filter(name=>trialEnabled||!(isMcpTrialTool(name)||isAnswerReviewTool(name)));
@@ -36,8 +36,13 @@ export function validatePublishedInput(profile,body,trialEnabled) {
   const valid=validate(body.input),errors=validate.errors||[];
   const findings=errors.slice(0,64).map(error=>({code:error.keyword,instance_path:error.instancePath,
     schema_path:error.schemaPath,message:error.message||'Input does not match the published schema.'}));
+  const remediation=inputRemediation(errors.map(error=>({code:error.keyword,
+    field:error.instancePath+(['required','additionalProperties'].includes(error.keyword)?'/'+pointer(error.params.missingProperty??error.params.additionalProperty):''),
+    machine_key:error.params.missingProperty??error.params.additionalProperty??null,
+    allowed_values:error.params.allowedValues||[],message:error.keyword==='additionalProperties'?'Unknown field; remove it or use an exact published field name.':error.message||'Input does not match the published schema.'})), 'schemas/tools/'+body.tool+'/input.schema.json',{profile});
+  if(valid)remediation.status='input_valid';
   const missing=errors.filter(error=>error.keyword==='required').slice(0,64)
     .map(error=>error.instancePath+'/'+pointer(error.params.missingProperty));
   return {status:200,body:{valid,tool:body.tool,validation_scope:'published_input_schema_only',evaluation_performed:false,
-    payment_required:false,attempt_consumed:false,authorization_granted:false,findings,missing_fields:[...new Set(missing)],findings_truncated:errors.length>64}};
+    payment_required:false,attempt_consumed:false,authorization_granted:false,remediation,findings,missing_fields:[...new Set(missing)],findings_truncated:errors.length>64}};
 }

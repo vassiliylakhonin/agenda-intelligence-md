@@ -57,6 +57,46 @@ export interface AgentOutputVerificationResponse {
     issued_at: string;
     expires_at: string;
   };
+  /** Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority. */
+  remediation?: {
+    contract_version: "worker-remediation.v1";
+    profile: string;
+    status: "invalid_input" | "technical_error" | "needs_input" | "service_limited" | "ready_for_human_review" | "input_valid";
+    issues: Array<{
+      code: string;
+      category: "missing_data" | "rejected_data" | "service_limitation" | "technical_error";
+      field: string | null;
+      machine_key: string | null;
+      result_field: string | null;
+      problem: string;
+      allowed_values: string[];
+      basis: {
+        kind: "protocol_requirement" | "service_rule" | "legal_requirement";
+        authority: string;
+        rule_id: string;
+        notice: string;
+      };
+      repair: {
+        action: string;
+        example: unknown;
+        example_is_evidence: false;
+        template_requires_completion: boolean;
+        instructions: string;
+      };
+      recheck: {
+        automatic_check_available: boolean;
+        operation: string | null;
+        requires_changed_evidence_or_authoritative_state: true;
+        human_check: string;
+      };
+    }>;
+    issues_truncated: boolean;
+    evaluation_unchanged: true;
+    authorization_granted: false;
+    retry_unchanged_evidence: false;
+    human_review_required: true;
+    notice: string;
+  };
 }
 
 export interface AgenticInteractionTrustRequestActor {
@@ -161,6 +201,46 @@ export interface AgenticInteractionTrustResponse {
   decision_kind?: "evidence_review";
   authorization_granted?: false;
   score_kind?: "risk" | "evidence_readiness" | "not_scored";
+  /** Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority. */
+  remediation?: {
+    contract_version: "worker-remediation.v1";
+    profile: string;
+    status: "invalid_input" | "technical_error" | "needs_input" | "service_limited" | "ready_for_human_review" | "input_valid";
+    issues: Array<{
+      code: string;
+      category: "missing_data" | "rejected_data" | "service_limitation" | "technical_error";
+      field: string | null;
+      machine_key: string | null;
+      result_field: string | null;
+      problem: string;
+      allowed_values: string[];
+      basis: {
+        kind: "protocol_requirement" | "service_rule" | "legal_requirement";
+        authority: string;
+        rule_id: string;
+        notice: string;
+      };
+      repair: {
+        action: string;
+        example: unknown;
+        example_is_evidence: false;
+        template_requires_completion: boolean;
+        instructions: string;
+      };
+      recheck: {
+        automatic_check_available: boolean;
+        operation: string | null;
+        requires_changed_evidence_or_authoritative_state: true;
+        human_check: string;
+      };
+    }>;
+    issues_truncated: boolean;
+    evaluation_unchanged: true;
+    authorization_granted: false;
+    retry_unchanged_evidence: false;
+    human_review_required: true;
+    notice: string;
+  };
 }
 
 export interface CISSecondarySanctionsExposureRequestCounterparty {
@@ -200,6 +280,10 @@ export interface CISSecondarySanctionsExposureRequest {
   decision_stage: "onboarding" | "periodic_review" | "pre_transaction" | "post_alert" | "committee_review" | "other";
   notes?: string;
   requested_output?: "structured_json" | "markdown_summary" | "both";
+  shareholders?: Array<{
+    name: string;
+    percentage: number;
+  }>;
 }
 
 export type CISSecondarySanctionsExposureResponseSourceType = "ofac_sdn_extract" | "eu_consolidated_extract" | "uk_ofsi_extract" | "un_security_council_extract" | "ownership_chain_evidence" | "beneficial_ownership_source" | "bank_correspondent_evidence" | "transit_or_invoice_evidence" | "dual_use_export_evidence" | "customs_data_evidence" | "adverse_media_evidence" | "typology_reference" | "national_regulator_filing" | "user_provided_note" | "other";
@@ -306,6 +390,46 @@ export interface CISSecondarySanctionsExposureResponse {
     identity_verified?: false;
     ownership_verified?: false;
     authorization_granted?: false;
+  };
+  /** Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority. */
+  remediation?: {
+    contract_version: "worker-remediation.v1";
+    profile: string;
+    status: "invalid_input" | "technical_error" | "needs_input" | "service_limited" | "ready_for_human_review" | "input_valid";
+    issues: Array<{
+      code: string;
+      category: "missing_data" | "rejected_data" | "service_limitation" | "technical_error";
+      field: string | null;
+      machine_key: string | null;
+      result_field: string | null;
+      problem: string;
+      allowed_values: string[];
+      basis: {
+        kind: "protocol_requirement" | "service_rule" | "legal_requirement";
+        authority: string;
+        rule_id: string;
+        notice: string;
+      };
+      repair: {
+        action: string;
+        example: unknown;
+        example_is_evidence: false;
+        template_requires_completion: boolean;
+        instructions: string;
+      };
+      recheck: {
+        automatic_check_available: boolean;
+        operation: string | null;
+        requires_changed_evidence_or_authoritative_state: true;
+        human_check: string;
+      };
+    }>;
+    issues_truncated: boolean;
+    evaluation_unchanged: true;
+    authorization_granted: false;
+    retry_unchanged_evidence: false;
+    human_review_required: true;
+    notice: string;
   };
 }
 
@@ -563,6 +687,46 @@ export interface CriticalMineralsDueDiligenceResponse {
   decision_kind?: "evidence_review";
   authorization_granted?: false;
   score_kind?: "risk" | "evidence_readiness" | "not_scored";
+  /** Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority. */
+  remediation?: {
+    contract_version: "worker-remediation.v1";
+    profile: string;
+    status: "invalid_input" | "technical_error" | "needs_input" | "service_limited" | "ready_for_human_review" | "input_valid";
+    issues: Array<{
+      code: string;
+      category: "missing_data" | "rejected_data" | "service_limitation" | "technical_error";
+      field: string | null;
+      machine_key: string | null;
+      result_field: string | null;
+      problem: string;
+      allowed_values: string[];
+      basis: {
+        kind: "protocol_requirement" | "service_rule" | "legal_requirement";
+        authority: string;
+        rule_id: string;
+        notice: string;
+      };
+      repair: {
+        action: string;
+        example: unknown;
+        example_is_evidence: false;
+        template_requires_completion: boolean;
+        instructions: string;
+      };
+      recheck: {
+        automatic_check_available: boolean;
+        operation: string | null;
+        requires_changed_evidence_or_authoritative_state: true;
+        human_check: string;
+      };
+    }>;
+    issues_truncated: boolean;
+    evaluation_unchanged: true;
+    authorization_granted: false;
+    retry_unchanged_evidence: false;
+    human_review_required: true;
+    notice: string;
+  };
 }
 
 export interface GulfMaritimeExposureRequestVessel {
@@ -677,6 +841,46 @@ export interface GulfMaritimeExposureResponse {
   decision_kind?: "evidence_review";
   authorization_granted?: false;
   score_kind?: "risk" | "evidence_readiness" | "not_scored";
+  /** Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority. */
+  remediation?: {
+    contract_version: "worker-remediation.v1";
+    profile: string;
+    status: "invalid_input" | "technical_error" | "needs_input" | "service_limited" | "ready_for_human_review" | "input_valid";
+    issues: Array<{
+      code: string;
+      category: "missing_data" | "rejected_data" | "service_limitation" | "technical_error";
+      field: string | null;
+      machine_key: string | null;
+      result_field: string | null;
+      problem: string;
+      allowed_values: string[];
+      basis: {
+        kind: "protocol_requirement" | "service_rule" | "legal_requirement";
+        authority: string;
+        rule_id: string;
+        notice: string;
+      };
+      repair: {
+        action: string;
+        example: unknown;
+        example_is_evidence: false;
+        template_requires_completion: boolean;
+        instructions: string;
+      };
+      recheck: {
+        automatic_check_available: boolean;
+        operation: string | null;
+        requires_changed_evidence_or_authoritative_state: true;
+        human_check: string;
+      };
+    }>;
+    issues_truncated: boolean;
+    evaluation_unchanged: true;
+    authorization_granted: false;
+    retry_unchanged_evidence: false;
+    human_review_required: true;
+    notice: string;
+  };
 }
 
 export interface MarketEntryReadinessRequestCounterparty {
@@ -796,6 +1000,46 @@ export interface MarketEntryReadinessResponse {
   decision_kind?: "evidence_review";
   authorization_granted?: false;
   score_kind?: "risk" | "evidence_readiness" | "not_scored";
+  /** Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority. */
+  remediation?: {
+    contract_version: "worker-remediation.v1";
+    profile: string;
+    status: "invalid_input" | "technical_error" | "needs_input" | "service_limited" | "ready_for_human_review" | "input_valid";
+    issues: Array<{
+      code: string;
+      category: "missing_data" | "rejected_data" | "service_limitation" | "technical_error";
+      field: string | null;
+      machine_key: string | null;
+      result_field: string | null;
+      problem: string;
+      allowed_values: string[];
+      basis: {
+        kind: "protocol_requirement" | "service_rule" | "legal_requirement";
+        authority: string;
+        rule_id: string;
+        notice: string;
+      };
+      repair: {
+        action: string;
+        example: unknown;
+        example_is_evidence: false;
+        template_requires_completion: boolean;
+        instructions: string;
+      };
+      recheck: {
+        automatic_check_available: boolean;
+        operation: string | null;
+        requires_changed_evidence_or_authoritative_state: true;
+        human_check: string;
+      };
+    }>;
+    issues_truncated: boolean;
+    evaluation_unchanged: true;
+    authorization_granted: false;
+    retry_unchanged_evidence: false;
+    human_review_required: true;
+    notice: string;
+  };
 }
 
 export interface MiddleCorridorDealRiskRequestCounterparty {
@@ -975,6 +1219,46 @@ export interface MiddleCorridorDealRiskResponse {
   decision_kind?: "evidence_review";
   authorization_granted?: false;
   score_kind?: "risk" | "evidence_readiness" | "not_scored";
+  /** Diagnostic metadata only. Does not alter score, verdict, admission, payment or authority. */
+  remediation?: {
+    contract_version: "worker-remediation.v1";
+    profile: string;
+    status: "invalid_input" | "technical_error" | "needs_input" | "service_limited" | "ready_for_human_review" | "input_valid";
+    issues: Array<{
+      code: string;
+      category: "missing_data" | "rejected_data" | "service_limitation" | "technical_error";
+      field: string | null;
+      machine_key: string | null;
+      result_field: string | null;
+      problem: string;
+      allowed_values: string[];
+      basis: {
+        kind: "protocol_requirement" | "service_rule" | "legal_requirement";
+        authority: string;
+        rule_id: string;
+        notice: string;
+      };
+      repair: {
+        action: string;
+        example: unknown;
+        example_is_evidence: false;
+        template_requires_completion: boolean;
+        instructions: string;
+      };
+      recheck: {
+        automatic_check_available: boolean;
+        operation: string | null;
+        requires_changed_evidence_or_authoritative_state: true;
+        human_check: string;
+      };
+    }>;
+    issues_truncated: boolean;
+    evaluation_unchanged: true;
+    authorization_granted: false;
+    retry_unchanged_evidence: false;
+    human_review_required: true;
+    notice: string;
+  };
 }
 
 export interface PreActionCheckRequestActor {
@@ -1056,6 +1340,8 @@ export interface PreActionCheckRequest {
   unsupported_claims?: string[];
   policy_context?: PreActionCheckRequestPolicyContext;
   approval?: PreActionCheckRequestApproval;
+  /** Optional caller context; does not establish support or authority. */
+  topic?: string;
 }
 
 /** Deterministic routing result for a caller-controlled action boundary. The response reports readiness; the caller remains responsible for enforcement, authentication, authorization, approval storage, and the action itself. */
