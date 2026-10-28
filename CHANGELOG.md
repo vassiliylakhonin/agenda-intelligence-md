@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Unreleased
+## 1.23.0 — 2026-10-28
 
 - Add the local `review-revision` command with readable before/after claims, evidence-version changes, stable finding comparison and explicit human handoffs. Surface deleted claims and replaced sources; refuse ambiguous duplicate IDs and preserve both input files. No rewriting, network calls or action authority.
 - Prevent unchanged completed Output web and MCP Apps reviews from consuming another attempt in the same open form. Suppress concurrent submissions, compare edits with the submitted version, disclose changed sources and retain prior results on failed reruns. Hosted admission, other profiles and quotas are unchanged.

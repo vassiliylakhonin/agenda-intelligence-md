@@ -7,9 +7,9 @@ agenda-intelligence review-revision examples/report-review/before.json examples/
 agenda-intelligence review-revision examples/report-review/before.json examples/report-review/revised.json --format json
 ```
 
-The `review-revision` command is available from the current source checkout
-(`python -m pip install -e .`); it requires the next package release for an
-installation from PyPI. The older `review.py` example remains supported.
+The `review-revision` command is included in `agenda-intelligence-md==1.23.0`.
+It also runs from an editable source checkout (`python -m pip install -e .`).
+The older `review.py` example remains supported.
 
 Both files are synthetic fixtures. The first packet cites a missing evidence ID and quotes “1 June” while the supplied source says “1 May”. The caller-authored revision corrects the date and evidence reference, keeping both claims. The result includes exact input digests, both evaluations and a list of removed/added claim IDs. Identical input is refused. The adapter does not write or invent a revision, delete unsupported claims to increase a score, retrieve documents or perform an action.
 
