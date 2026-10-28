@@ -235,4 +235,4 @@ HTTP, MCP and A2A trials share one allowance. Hosted x402 supports exact Base na
 
 [Middle Corridor & Caspian Research Desk](https://agendamcp.dpdns.org/research) collects named official sources and prepares a source-linked draft on the server. The experimental pilot supports browser, REST and [MCP](https://agendamcp.dpdns.org/v1/research/mcp), with five shared jobs per UTC day and human review required. See the [live example](docs/research/corridor-live-brief-2026-10-27.md) and [interface, limits and verification](docs/use-cases/corridor-research.md). Existing evidence-checking tools remain available.
 
-Development version **1.22.0** is prepared for release; package installation pins in this checkout apply after publication. For this branch use the editable install above. The [report revision workflow](examples/report-review/README.md) runs locally without paid calls. See [worker diagnostics](docs/worker-remediation.md) for repair fields and service limits.
+The [report revision workflow](examples/report-review/README.md) runs locally without paid calls. See [worker diagnostics](docs/worker-remediation.md) for repair fields and service limits.
