@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+
+- Make the existing A2A free-trial status and evaluation examples directly discoverable in the trial extension, retaining the legacy metadata and existing quotas. Point Output Verification's agent card to a task-focused MCP/A2A quickstart and clarify the structural review boundary.
+
 ## 1.23.0 — 2026-10-28
 
 - Add the local `review-revision` command with readable before/after claims, evidence-version changes, stable finding comparison and explicit human handoffs. Surface deleted claims and replaced sources; refuse ambiguous duplicate IDs and preserve both input files. No rewriting, network calls or action authority.
