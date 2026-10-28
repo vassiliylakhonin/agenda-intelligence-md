@@ -51,11 +51,11 @@ shipment, publish a document, contact an operator or initiate a financial action
 
 ## What is collected
 
-The catalog contains TITR Association, World Bank, CAREC Institute and EDB institutional/operator
-pages. The collector reads a fixed index/report per institution and may follow a relevant same-host
-article. HTTPS hosts and redirects are checked. Responses have byte/time/type bounds. Current
-support is HTML/plain text only; PDFs and authenticated data are not read. The service records
-source URLs, retrieval/publication dates, text/content hashes, access failures and freshness labels.
+The catalog contains TITR Association, World Bank, CAREC Institute, EDB, KTZ Express, Aktau port and Kuryk port. Deterministic query matching selects at most four providers, then a seed and at most one relevant same-host article or attachment. HTTPS hosts and every redirect are checked; no wildcard asset hosts or caller URLs are accepted.
+
+HTML/plain text is limited to 512,000 bytes. PDF/DOCX is limited to 5 MiB. The existing PDF.js dependency runs with bytes only, no rendering, document scripting or external resources; at most 12 pages from documents up to 500 pages and 18,000 text characters are read. The historical Aktau report selects pages 1 and 37 of 125. DOCX reuses the bounded body-text extractor; headers, images, signatures and rendered pagination are not extracted. No OCR is performed.
+
+Source URLs, original-byte/extracted-text hashes, publication/retrieval dates, access failures and freshness remain visible. Extraction warnings and pages omitted appear in limitations and Markdown. A successful parser is not a table-layout or authenticity check. Numeric-token and obvious project-stage mismatches produce reviewer notes; these heuristics do not establish semantic support.
 
 Publication and retrieval dates do not establish the observation period or effective date of a
 figure. Those fields remain unknown until supported explicitly. A background document is not a
@@ -143,3 +143,13 @@ checks the normal public response contract. The model does not reconstruct quota
 Unknown or cross-source IDs fail closed; this normalizes references per ADR0021 and does not
 establish semantic support. Already-journaled responses in the initial quote format remain
 subject to their original strict quote/source checks.
+
+## Three reviewer-authored demonstrations
+
+These are inspected source-based examples, not three hosted-model runs, customer work or demand evidence:
+
+- [Route coordination: mechanism versus measured impact](../research/corridor-demo-route.md).
+- [Aktau hub: opening, phase and trial operation](../research/corridor-demo-project-stage.md).
+- [Aktau indicators: tonnes, TEU, subset and comparison period](../research/corridor-demo-indicators.md).
+
+[Primary-source review and acquisition limits](../research/corridor-operator-primary-sources-2026-10-28.md). For a reproducible local run with a downloaded public PDF, set `RESEARCH_FIXTURE_PDF` to its local path when running the native runtime check. All model calls in that check are fixtures.

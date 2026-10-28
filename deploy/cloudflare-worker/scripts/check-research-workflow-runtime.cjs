@@ -17,12 +17,20 @@ async function main() {
   const toolRequire=createRequire(path.join(root,'package.json'));
   const {Miniflare,convertV4MiniflareOptions}=toolRequire('miniflare');
   const built=await build({entryPoints:[path.join(base,'src/research-entry.js')],bundle:true,format:'esm',platform:'browser',external:['cloudflare:workers'],write:false});
+  const {PDFDocument,StandardFonts}=require('pdf-lib');
+  const pdf=await PDFDocument.create(),font=await pdf.embedFont(StandardFonts.Helvetica);
+  for(let n=1;n<=37;n++){const page=pdf.addPage();if(n===1||n===37)page.drawText('Aktau cargo report 2023: container throughput decreased. '+('This operator document preserves units and periods for reviewer checks. '),{x:30,y:700,font,size:11});}
+  const pdfBytes=process.env.RESEARCH_FIXTURE_PDF?fs.readFileSync(process.env.RESEARCH_FIXTURE_PDF):await pdf.save();
+  const {zipSync,strToU8}=require('fflate');
+  const docxBytes=zipSync({'word/document.xml':strToU8('<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Port Kuryk tariff body text. This official fixture preserves the original tariff conditions for reviewer checks. No current price or availability is guaranteed by this test.</w:t></w:r></w:p></w:body></w:document>')});
+  const blank=await PDFDocument.create();blank.addPage();const blankPdf=await blank.save();
+  let pdfRequests=0,docxRequests=0,pdfFailure=null;
   const quote='The source describes port and rail coordination.';
   const ai=`import {WorkerEntrypoint} from 'cloudflare:workers';
     let calls=0;export default class extends WorkerEntrypoint {
       async run(model,params){calls++;
         if(model!=='@cf/meta/llama-3.3-70b-instruct-fp8-fast'||params.max_tokens!==2048)throw new Error('Unexpected inference configuration');
-        const payload=JSON.parse(params.messages.find(m=>m.role==='user').content),ru=payload.output_language==='ru',source=payload.sources[0];
+        const payload=JSON.parse(params.messages.find(m=>m.role==='user').content),ru=payload.output_language==='ru',source=payload.sources.find(s=>s.extraction?.kind==='pdf'||s.extraction?.kind==='docx')??payload.sources[0];
         const evidence=source.evidence_candidates[0];
         if(!params.response_format.json_schema.properties.findings.properties[source.id].properties.evidence_id.enum.includes(evidence.evidence_id))throw new Error('Evidence selection schema missing');
         return {response:{findings:{[source.id]:{claim:ru?'Источник описывает координацию перевозок.':'The source discusses coordination.',evidence_id:payload.decision_context==='fixture-invalid-evidence'?'unknown-evidence':evidence.evidence_id}},interpretations:[],open_questions:[]},usage:{prompt_tokens:200,completion_tokens:20}};}
@@ -37,7 +45,11 @@ async function main() {
     workflows:{RESEARCH_WORKFLOW:{name:'local-research',className:'CorridorResearchWorkflow'}},
     serviceBindings:{RESEARCH_AI:'fixture-ai'},
     outboundService:async request=>{
-      assert.ok(['middlecorridor.com','www.worldbank.org','www.carecinstitute.org','www.eabr.org'].includes(new URL(request.url).hostname));
+      assert.ok(['middlecorridor.com','www.worldbank.org','www.carecinstitute.org','www.eabr.org','www.ktze.kz','portaktau.kz','portkuryk.kz'].includes(new URL(request.url).hostname));
+      if(pdfFailure&& !request.url.endsWith('.pdf'))return new Response('fixture access failure',{status:403});
+      if(request.url.endsWith('.pdf')){pdfRequests++;return new Response(pdfFailure==='empty'?blankPdf:pdfFailure==='invalid'?Buffer.from('%PDF-not-readable'):pdfBytes,{headers:{'content-type':'application/pdf'}});}
+      if(request.url.endsWith('.docx')){docxRequests++;return new Response(docxBytes,{headers:{'content-type':'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}});}
+      if(new URL(request.url).hostname==='portkuryk.kz')return new Response('<h1>Kuryk tariffs</h1><a href="/storage/tariff.docx">Kuryk tariff document</a>',{headers:{'content-type':'text/html'}});
       return new Response('<h1>Coordination</h1><p>'+quote+' This official fixture describes the route and coordination of transport between ports and railways.</p>',{headers:{'content-type':'text/html'}});
     }
   },{name:'fixture-ai',modules:true,script:ai,compatibilityDate:'2026-05-22'}]}));
@@ -49,7 +61,7 @@ async function main() {
       const response=await mf.dispatchFetch('https://agendamcp.dpdns.org'+route,{headers:{authorization:'Bearer '+cap,'content-type':'application/json','x-client-id':'agenda-owner-local-research-runtime'},...(body?{method:'POST',body:JSON.stringify(body)}:{})});
       return {status:response.status,body:await response.json()};
     };
-    const input={question:'What changed in Aktau transport?',request_id:'local-workflow-1'};
+    const input={question:'Aktau annual report cargo throughput 2023',request_id:'local-workflow-1'};
     let {body:job,status}=await call('/v1/research',input);assert.equal(status,202);
     for(let attempt=0;attempt<150;attempt++){
       await new Promise(resolve=>setTimeout(resolve,100));
@@ -60,6 +72,10 @@ async function main() {
     const Ajv=require('ajv/dist/2020'),addFormats=require('ajv-formats');
     const schema=JSON.parse(fs.readFileSync(path.join(base,'../../schemas/v1/corridor-research-response.schema.json'),'utf8'));
     const valid=addFormats(new Ajv({strict:false})).compile(schema);assert.ok(valid(job),JSON.stringify(valid.errors));
+    assert.ok(pdfRequests>0,'PDF was not actually fetched');
+    assert.ok(job.result.sources.some(s=>s.url.endsWith('.pdf')&&!s.extraction));
+    assert.ok(job.result.limitations.some(s=>s.includes('Read PDF pages 1, 37 of')));
+    assert.ok(job.result.markdown.includes('Table')||job.result.markdown.includes('table'));
     const retry=await call('/v1/research',input);assert.equal(retry.body.research_id,job.research_id);
     const mcp=await call('/v1/research/mcp',{jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'get_research',arguments:{research_id:job.research_id}}});
     assert.equal(mcp.status,200);assert.deepEqual(mcp.body.result.structuredContent,job);
@@ -77,13 +93,15 @@ async function main() {
     assert.ok(await webcrypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},pair.publicKey,Buffer.from(signature.signature,'base64url'),bytes));
     const {body:alias}=await call('/.well-known/agent.json');
     assert.deepEqual(alias.capabilities.extensions.find(x=>x.uri===extension.uri),extension);
-    let russian=(await call('/v1/research',{...input,language:'ru',request_id:'local-workflow-ru'})).body;
+    let russian=(await call('/v1/research',{question:'Курык тарифы',language:'ru',request_id:'local-workflow-ru'})).body;
     for(let attempt=0;attempt<150;attempt++){
       await new Promise(resolve=>setTimeout(resolve,100));
       russian=(await call('/v1/research/'+russian.research_id)).body;
       if(['completed','failed'].includes(russian.status))break;
     }
     assert.equal(russian.status,'completed',russian.error_code);assert.ok(valid(russian),JSON.stringify(valid.errors));
+    assert.ok(docxRequests>0,'DOCX was not actually fetched');
+    assert.ok(russian.result.sources.some(s=>s.url.endsWith('.docx')));
     assert.equal(russian.result.language,'ru');assert.match(russian.result.findings[0].claim,/[\u0400-\u04ff]/u);
     assert.ok(russian.result.markdown.includes('## Открытые вопросы'));
     const otherCapability='separate-local-qa-capability-1234567890';
@@ -94,10 +112,21 @@ async function main() {
       if(['completed','failed'].includes(rejected.status))break;
     }
     assert.equal(rejected.status,'failed');assert.equal(rejected.error_code,'model_evidence_validation_failed');assert.equal(rejected.result,null);
+    for(const [mode,expected] of [['empty','document_needs_ocr'],['invalid','document_parse_failed']]) {
+      pdfFailure=mode;
+      let failed=(await call('/v1/research',{...input,request_id:'local-pdf-'+mode},otherCapability+'-'+mode)).body;
+      for(let attempt=0;attempt<150;attempt++){
+        await new Promise(resolve=>setTimeout(resolve,100));
+        failed=(await call('/v1/research/'+failed.research_id,undefined,otherCapability+'-'+mode)).body;
+        if(['completed','failed'].includes(failed.status))break;
+      }
+      assert.equal(failed.status,'failed');assert.equal(failed.error_code,'no_readable_primary_sources');
+      assert.ok(failed.retrieval_failures.some(f=>f.code===expected),JSON.stringify(failed.retrieval_failures));
+    }
     const aiWorker=await mf.getWorker('fixture-ai');
     assert.equal((await (await aiWorker.fetch('https://fixture.test/')).json()).calls,3);
     const row=await db.prepare('SELECT COUNT(*) AS count FROM research_jobs WHERE sources_json IS NOT NULL OR model_output_json IS NOT NULL').first();assert.equal(row.count,0);
-    console.log('PASS: deployed entry + real Workflow/D1, English/Russian evidence selection, serialized refusal, one fixture inference per job, private REST/MCP, signed A2A extension and source cleanup');
+    console.log('PASS: deployed entry + real Workflow/D1, PDF/DOCX extraction, English/Russian evidence selection, serialized refusal, one fixture inference per job, private REST/MCP, signed A2A extension, scanned/corrupt PDF refusal before inference and source cleanup');
   }finally{await mf.dispose();}
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

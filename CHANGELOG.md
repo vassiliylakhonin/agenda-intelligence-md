@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Operator documents for bounded research — 2026-10-28
+
+- Select up to four sources from seven official providers, adding KTZ Express, Aktau and Kuryk operator material. Read bounded PDF pages and DOCX body text with existing parsers; preserve partial extraction and access failures.
+- Keep original-byte hashes, UTC publication dates, observation periods and project phases distinct. Surface numeric-token/stage review notes and extraction warnings in the brief without changing the public v1 schema or certifying factual truth.
+- Add three reviewer-authored demonstrations and exercise real local Workflow/D1 with PDF/DOCX fixtures, including the real 125-page Aktau PDF as an additional local check. Keep quotas, cloud resources, payment and other profile behavior unchanged.
+
 ## Research evidence selection — 2026-10-27
 
 - Build a bounded source-fragment ledger before synthesis. The model selects known fragment IDs in a source-keyed map; the server attaches unchanged quotations and enforces source ownership, one finding per selected source and existing quotation limits. Public findings retain their original contract.
