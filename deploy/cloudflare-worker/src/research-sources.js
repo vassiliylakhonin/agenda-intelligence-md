@@ -100,7 +100,8 @@ export function parseDocument(html,url) {
   const ktzArticle=new URL(url).hostname.replace(/^www\./,'')==='ktze.kz'&&h1;
   const end=ktzArticle?html.indexOf('Latest news',h1.index):-1;
   const body=ktzArticle?html.slice(h1.index,end>=0?end:undefined):html;
-  return {title:title||new URL(url).pathname,text:htmlText(body).slice(0,18000),published_at:published};
+  const segments=[...body.matchAll(/<(p|li|h[1-6])\b[^>]{0,1000}>([\s\S]{0,4000}?)<\/\1\s*>/gi)].map(m=>htmlText(m[2])).filter(Boolean);
+  return {title:title||new URL(url).pathname,text:htmlText(body).slice(0,18000),segments,published_at:published};
 }
 const stop=new Set(['what','which','about','with','from','this','that','have','been','into','past','days','changed','changes','что','какие','этого','этот','после','последние','дней','для','как']);
 export function queryTerms(question) {
@@ -188,6 +189,8 @@ export async function collectSources(input,{fetcher=globalThis.fetch,now=Date.no
       const extracted=normalise(document.text);
       if(document.extraction&&extracted.length>18000){document.extraction.status='partial';document.extraction.warnings.push('Collector text limit reached; later body text was omitted.');}
       document.text=extracted.slice(0,18000);
+      let segmentBytes=0;
+      document.segments=(document.segments??extracted.split(/(?=\[PDF page |\[DOCX paragraph )/u)).map(normalise).filter(segment=>{segmentBytes+=segment.length;return segment.length>=12&&segmentBytes<=18000;}).slice(0,128);
       if(document.text.length<120)throw new Error('insufficient_source_text');
       const cutoff=now-input.lookback_days*86400000;
       return {...document,url:page.url,provider:source.name,provider_id:source.id,attribution:source.attribution,data_integrity_notes:sourceIntegrityNotes(document.text),
@@ -217,7 +220,7 @@ export function sourceEvidenceCandidates(source,question) {
   const terms=queryTerms(question),seen=new Set(),quotes=[];
   const allowance=25-(source.data_integrity_notes??[]).reduce((n,note)=>n+normalise(note.quote).split(/\s+/u).length,0);
   // A sentence boundary needs whitespace; decimal numbers remain intact.
-  const sentences=source.text.split(/(?<=[.!?])\s+(?=[\p{Lu}\p{N}])/u)
+  const sentences=(source.segments?.length?source.segments:[source.text]).flatMap(text=>text.split(/(?<=[.!?])\s+(?=[\p{Lu}\p{N}])/u))
     .map((text,index)=>({text:normalise(text),index,rank:score(text,terms)}))
     .sort((a,b)=>b.rank-a.rank||a.index-b.index);
   for(const sentence of sentences) {

@@ -283,3 +283,11 @@ test('numeric and project-stage diagnostics do not silently promote a matching q
   const candidates=sourceEvidenceCandidates({id:'S1',text:'Cargo rose 17.4 percent. Containers declined 25.8 percent.',data_integrity_notes:[]},'cargo containers');
   assert.ok(candidates.some(c=>c.quote.includes('17.4')));assert.ok(candidates.some(c=>c.quote.endsWith('percent.')));
 });
+
+test('bullet boundaries keep project evidence from being buried behind unrelated service lists',()=>{
+  const html='<h1>2025 results</h1><p>KTZ Express launched new services.</p><ul><li>Expanded export geography with insurance and container services.</li><li>Completion of Phase 1 of Container Hub at Aktau port, trial operation launched on Dec 25, 2025 (capacity 140k TEU).</li><li>Around 20 cooperation agreements were signed.</li></ul>';
+  const source={...parseDocument(html,'https://www.ktze.kz/en/news/results'),id:'S1'};
+  const candidates=sourceEvidenceCandidates(source,'Aktau hub phase trial operation');
+  assert.ok(candidates[0].quote.startsWith('Completion of Phase 1'));
+  assert.ok(candidates[0].quote.includes('140k TEU'));
+});
