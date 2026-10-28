@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Self-contained document deployment — 2026-10-28
+
+- Prebundle the existing DOCX extractor dependencies, matching the PDF parser. The clean deployment job needs no project npm installation; native Workflow checks treat package imports as external to detect accidental runtime dependency leaks.
+
 ## Operator documents for bounded research — 2026-10-28
 
 - Select up to four sources from seven official providers, adding KTZ Express, Aktau and Kuryk operator material. Read bounded PDF pages and DOCX body text with existing parsers; preserve partial extraction and access failures.
