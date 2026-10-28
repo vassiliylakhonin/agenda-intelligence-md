@@ -1,0 +1,18 @@
+{
+  "label": "Owner-marked live acceptance replay; original draft failed numeric analytical acceptance, not customer data.",
+  "question": "Актау: что показывает годовой отчет порта за 2023 год о грузообороте и контейнерах по сравнению с 2022 годом? Раздели тонны и TEU, общий поток и Middle Corridor; не переноси исторические данные на 2026 год.",
+  "analysis": {
+    "findings": [
+      {
+        "claim": "В 2023 году порт Актау обработал 4,483 тыс. тонн грузов, включая 3,614 тыс. тонн нефти и 177 тыс. тонн зерна, а также 22,780 TEU контейнеров, из которых 16,387 TEU прошли по маршруту Middle Corridor.",
+        "source_id": "S1",
+        "quote": "177,447,635 635 Other cargo, including: ths. tons 693 693,909,675 675 containers, including: TEU 22,780 30,708 27,624 MIDDLE CORRIDOR route TEU 16,387 27,094 17,741 China- Kazakhstan"
+      }
+    ],
+    "interpretations": [],
+    "open_questions": [
+      "Каковы перспективы развития порта Актау в контексте Middle Corridor?",
+      "В какой степени рост грузооборота порта Актау в 2023 году связан с развитием маршрута Middle Corridor?"
+    ]
+  }
+}

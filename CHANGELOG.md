@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Research numeric and coverage checks — 2026-10-28
+
+- Add artifact 1.1 and hosted research protocol 0.2.0 with explicit quality status, retained/withheld findings, measurement records, deterministic percentage calculations and per-part question coverage. Stored 1.0 artifacts remain valid.
+- Bind quantities to source-owned values, units, annual periods and scope; withhold ambiguous table bindings, wrong scales/years, capacity-as-flow and unbound numeric prose. Keep completion separate from analytical acceptance and retain mandatory human review.
+- Add route/project/indicator regressions, a replay of the actual failed live draft, and full-execution checks for retained and blocked results. Keep resources, quotas, one-call execution and core package/profile behavior unchanged.
+
 ## Self-contained document deployment — 2026-10-28
 
 - Prebundle the existing DOCX extractor dependencies, matching the PDF parser. The clean deployment job needs no project npm installation; native Workflow checks treat package imports as external to detect accidental runtime dependency leaks.

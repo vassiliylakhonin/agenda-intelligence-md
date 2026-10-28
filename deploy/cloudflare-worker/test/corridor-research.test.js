@@ -299,3 +299,31 @@ test('long PDF paragraphs select the relevant numeric passage instead of a table
   assert.ok(!candidates[0].quote.startsWith('[PDF page'));
   assert.ok(candidates.every(c=>c.quote.split(/\s+/u).length<=25));
 });
+
+test('complete execution separates job completion from numeric quality, calculates supported pairs and withholds wrong units',async()=>{
+  const cargo='Total cargo in 2022: 3,818 thousand tonnes; in 2023: 4,483 thousand tonnes.';
+  const numericInput={question:'Сравни грузооборот в тоннах за 2022 и 2023 годы',language:'ru',lookback_days:30};
+  for(const invalid of [false,true]) {
+    const f=fixture(),job=await create(f.env,'quality-run-1',token,numericInput);
+    f.env.RESEARCH_AI.run=async(_model,params)=>{
+      const payload=JSON.parse(params.messages.find(m=>m.role==='user').content),source=payload.sources.find(s=>s.evidence_candidates.some(c=>c.quote.includes('3,818')&&c.quote.includes('4,483')));
+      const chosen=source.evidence_candidates.find(c=>c.quote.includes('3,818')&&c.quote.includes('4,483'));
+      return {response:{findings:{[source.id]:{claim:'Черновик модели содержит неподтверждённый рост на 117 процентов.',evidence_id:chosen.evidence_id,measurements:[
+        {value_raw:'3,818',unit:invalid?'TEU':'thousand tonnes',period:'2022',scope:'Total cargo',kind:'observed'},
+        {value_raw:'4,483',unit:invalid?'TEU':'thousand tonnes',period:'2023',scope:'Total cargo',kind:'observed'}
+      ]}},interpretations:[],open_questions:[],coverage:{Q1:{status:'answered',source_ids:[source.id],explanation:'Источник содержит оба года и значения общего грузооборота.'}}}};
+    };
+    const result=await executeResearch(f.env,job.research_id,{now:()=>now,fetcher:async url=>new Response('<h1>Port annual observations</h1><p>'+cargo+'</p><p>Original unit and reporting scope require review. '+url+'</p>',{headers:{'content-type':'text/html'}})});
+    assert.equal(result.status,'completed');
+    const completed=await readResearch(f.env,job.research_id,token,now),artifact=completed.result;
+    const valid=addFormats(new Ajv({strict:false})).compile(responseSchema);assert.ok(valid(completed),JSON.stringify(valid.errors));
+    assert.equal(artifact.schema_version,'1.1');assert.equal(artifact.quality.status,invalid?'blocked':'checks_passed');
+    assert.equal(artifact.findings.length,invalid?0:1);assert.ok(!artifact.markdown.includes('рост на 117'));
+    if(!invalid){
+      assert.equal(artifact.quality.calculations[0].value_percent,17.4);assert.ok(artifact.markdown.includes('3818 → 4483'));
+      const legacy=structuredClone(completed);delete legacy.result.quality;legacy.result.schema_version='1.0';assert.ok(valid(legacy));
+      const missingQuality=structuredClone(completed);delete missingQuality.result.quality;assert.equal(valid(missingQuality),false);
+    }else assert.equal(artifact.quality.coverage[0].status,'unresolved');
+    const stored=f.sqlite.prepare('SELECT sources_json,model_output_json FROM research_jobs').get();assert.equal(stored.sources_json,null);assert.equal(stored.model_output_json,null);f.sqlite.close();
+  }
+});

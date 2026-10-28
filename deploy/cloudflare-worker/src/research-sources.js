@@ -1,3 +1,4 @@
+import {numericContextScore} from './research-quality.js';
 import {extractResearchDocument,DOCUMENT_BYTE_LIMIT} from './research-documents.js';
 import catalog from '../../../source-requirements/corridor-research.json' with {type:'json'};
 
@@ -186,11 +187,13 @@ export async function collectSources(input,{fetcher=globalThis.fetch,now=Date.no
       }
       const document=page.kind?{...await extractResearchDocument(page.bytes,page.kind,{pages:configured?.pages}),title:configured?.title??linkedTitle??new URL(page.url).pathname,published_at:null}:parseDocument(page.html,page.url);
       document.title=normalise(document.title).slice(0,240);
-      const extracted=normalise(document.text);
+      const rawText=document.text,extracted=normalise(rawText);
       if(document.extraction&&extracted.length>18000){document.extraction.status='partial';document.extraction.warnings.push('Collector text limit reached; later body text was omitted.');}
       document.text=extracted.slice(0,18000);
       let segmentBytes=0;
-      document.segments=(document.segments??extracted.split(/(?=\[PDF page |\[DOCX paragraph )/u)).map(normalise).filter(segment=>{segmentBytes+=segment.length;return segment.length>=12&&segmentBytes<=18000;}).slice(0,128);
+      const lines=rawText.split(/\n+/u).map(normalise).filter(Boolean);
+      const passages=document.segments??lines.map((_,index)=>lines.slice(index,index+3).join(' '));
+      document.segments=passages.map(normalise).filter(segment=>{segmentBytes+=segment.length;return segment.length>=12&&segmentBytes<=54000;}).slice(0,256);
       if(document.text.length<120)throw new Error('insufficient_source_text');
       const cutoff=now-input.lookback_days*86400000;
       return {...document,url:page.url,provider:source.name,provider_id:source.id,attribution:source.attribution,data_integrity_notes:sourceIntegrityNotes(document.text),
@@ -230,14 +233,15 @@ export function sourceEvidenceCandidates(source,question) {
       let quote=words.slice(start,start+allowance).join(' ');
       while(quote.length>240){const end=quote.lastIndexOf(' ');quote=end>12?quote.slice(0,end):clipUtf8(quote,240);}
       if(quote.length<12||!sourceText.includes(quote))continue;
-      candidates.push({quote,index,start,rank:score(quote,terms),fragment:quote!==full});
+      const denseNumericRow=(quote.match(/\d+(?:[.,]\d+)*/gu)??[]).length>8;
+      candidates.push({quote,index,start,rank:score(quote,terms)+numericContextScore(quote)-(denseNumericRow?4:0),fragment:quote!==full});
       if(!start&&!candidates.at(-1).fragment)break;
     }
   }
   candidates.sort((a,b)=>b.rank-a.rank||Number(a.fragment)-Number(b.fragment)||a.index-b.index||a.start-b.start);
   const selected=new Set();
   for(const candidate of candidates) {
-    if(seen.has(candidate.quote)||selected.has(candidate.index))continue;
+    if(seen.has(candidate.quote)||selected.has(candidate.index)||quotes.some(q=>q.quote.includes(candidate.quote)||candidate.quote.includes(q.quote)))continue;
     seen.add(candidate.quote);selected.add(candidate.index);
     quotes.push({evidence_id:source.id+'-Q'+(quotes.length+1),source_id:source.id,quote:candidate.quote,fragment:candidate.fragment});
     if(quotes.length===2)break;

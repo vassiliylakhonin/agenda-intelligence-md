@@ -52,3 +52,44 @@ def test_server_research_admits_valid_request_and_rejects_invalid_input_without_
     assert result["invalid_status"] == 400
     assert result["invalid"]["code"] == "unsupported_language"
     assert result["dispatched"] == 1
+
+
+def test_research_quality_retains_supported_pairs_and_withholds_wrong_units_without_npm():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Worker quality contracts need Node.js")
+    root = Path(__file__).resolve().parents[1]
+    program = """
+      import {assessResearchQuality} from './deploy/cloudflare-worker/src/research-quality.js';
+      const quote='Total cargo in 2022: 3,818 thousand tonnes; in 2023: 4,483 thousand tonnes.';
+      const input={question:'Сравни тонны за 2022 и 2023 годы',language:'ru'};
+      const analysis={findings:[{claim:'Непроверенный черновик модели.',source_id:'S1',quote}],
+        interpretations:[],open_questions:[]};
+      const payload={sources:[{id:'S1'}]};
+      const run=unit=>assessResearchQuality({input,analysis,payload,proposal:{
+        findings:{S1:{measurements:[
+          {value_raw:'3,818',unit,period:'2022',scope:'Total cargo',kind:'observed'},
+          {value_raw:'4,483',unit,period:'2023',scope:'Total cargo',kind:'observed'}
+        ]}},coverage:{Q1:{status:'answered',source_ids:['S1'],
+          explanation:'Источник содержит оба года и сопоставимые единицы.'}}
+      }});
+      console.log(JSON.stringify({golden:run('thousand tonnes'),bad:run('TEU')}));
+    """
+    run = subprocess.run(
+        [node, "--input-type=module", "-e", program],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    result = json.loads(run.stdout)
+    schema = json.loads((root / "schemas/v1/corridor-research-response.schema.json").read_text())
+    validator = Draft202012Validator(schema["$defs"]["quality"])
+    for case in result.values():
+        validator.validate(case["quality"])
+    assert result["golden"]["quality"]["status"] == "checks_passed"
+    assert result["golden"]["quality"]["calculations"][0]["value_percent"] == 17.4
+    assert result["bad"]["quality"]["status"] == "blocked"
+    assert result["bad"]["analysis"]["findings"] == []
+    assert result["bad"]["quality"]["coverage"][0]["status"] == "unresolved"
