@@ -1323,7 +1323,8 @@ function agentCard(request, env = {}) {
   if (trial) {
     shaped.x_agenda_intelligence.a2a_free_trial = a2aTrialDiscovery(workerTrialAdapter(profile).example);
     shaped.capabilities = {...shaped.capabilities,extensions:[...(shaped.capabilities?.extensions || []),
-      {uri:A2A_TRIAL_URI,description:'Opt-in free evaluation or allowance status through message metadata; HTTP/MCP/A2A share one allowance.',required:false}]};
+      {uri:A2A_TRIAL_URI,description:'Opt-in free evaluation or allowance status through message metadata; HTTP/MCP/A2A share one allowance.',required:false,
+        params:shaped.x_agenda_intelligence.a2a_free_trial}]};
   }
   const accessSummary = access.free_routing ? `Routing through ${access.free_routing.tool} is free and consumes no trial attempt. Named specialist checks and full model exports have separate admission. Discovery, saved examples and heartbeat are free.` : env.BILLING_MODE === 'pay_per_call'
     ? `${trial ? `${trial.attempts_per_network} free live attempts on your own input at ${trial.endpoint}, subject to shared-network and fleet daily limits. ` : ''}Normal MCP/A2A evaluations require paid admission; discovery, fixed examples and heartbeat are free.`

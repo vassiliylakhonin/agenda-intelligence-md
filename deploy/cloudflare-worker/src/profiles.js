@@ -330,7 +330,7 @@ const agentOutputVerificationProfile = Object.freeze({
   profile_key: "agent_output_verification",
   product_profile: "agent_output_verification",
   canonical_product_name: "Agent Output Verification",
-  documentation_url: SCHEMAS_URL,
+  documentation_url: `${REPOSITORY_URL}/blob/main/docs/deployment/output-verification-first-check.md`,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
     "A2A/JSON-RPC discovery, claim-level relay-readiness checks, pre-action routing, and response assembly only",

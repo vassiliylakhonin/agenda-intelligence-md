@@ -7,7 +7,7 @@ export const PROFILE_TASKS = Object.freeze({
   kazakhstan: 'Find missing documents in a Kazakhstan / Middle Corridor trade-deal file before signature, shipment or committee review.',
   cis_secondary_sanctions: 'Review a CIS counterparty evidence pack for secondary-sanctions exposure questions and missing due-diligence records.',
   agentic_interaction_trust: 'Find missing identity, authorization and scope evidence before accepting an agent-mediated action.',
-  agent_output_verification: 'Check an AI answer against supplied source text before human review: find broken evidence references, quote mismatches and unsupported claims.',
+  agent_output_verification: 'Check an AI answer and supplied sources for missing references and quote mismatches before human review. The audit also flags caller-declared unsupported claims.',
   gulf_maritime_exposure: 'Review voyage evidence for Gulf / Red Sea chokepoint exposure and missing vessel, ownership or insurance documents.',
   market_entry_readiness: 'Find missing evidence and owner tasks in a Kazakhstan market-entry file before a launch or partner commitment.',
   critical_minerals_due_diligence: 'Find missing evidence before a mineral offtake or other named decision, prepare supplier/counsel document requests and blank source templates, then recheck an updated dossier with optional previous_submission for coverage comparison.',

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { handleRequest } from "../src/index.js";
 import { memoryD1 } from "./helpers/d1.js";
 import { TRIAL_PROFILES } from "../src/trial-profiles.js";
+import { A2A_TRIAL_URI } from "../src/a2a-trial.js";
 const key = "com.agenda/free-trial";
 const envFor = (profile) => ({
   AGENT_PROFILE: profile,
@@ -52,6 +53,28 @@ async function example(env) {
   const res = await handleRequest(new Request(origin + "/v1/trial"), env);
   return (await res.json()).example_request;
 }
+test("served A2A extension directly supplies actionable status and evaluation messages", async () => {
+  const env = envFor("agent_output_verification");
+  const card = await (await handleRequest(new Request(origin + "/.well-known/agent-card.json"), env)).json();
+  const extension = card.capabilities.extensions.find((item) => item.uri === A2A_TRIAL_URI);
+  assert.equal(extension.required, false);
+  assert.equal(extension.params.metadata_key, key);
+  assert.equal(extension.params.endpoint, "/message/send");
+  const callMessage = async (message) => call(env, {
+    jsonrpc: "2.0", id: "discovered-trial", method: extension.params.method,
+    params: { message: { ...message, messageId: crypto.randomUUID() } },
+  });
+  const status = await callMessage(extension.params.status_message);
+  assert.equal(status.res.status, 200);
+  assert.equal(status.body.result.task.metadata.trial_status.availability.attempt_consumed, false);
+  const result = await callMessage(extension.params.evaluation_message);
+  assert.equal(result.res.status, 200);
+  assert.equal(result.body.result.task.metadata.trial.completion_recorded, true);
+  assert.equal(result.body.result.task.artifacts[0].parts[0].data.authorization_granted, false);
+  const disabled = await (await handleRequest(new Request(origin + "/.well-known/agent-card.json"),
+    { ...env, WORKER_FREE_TRIAL: "0" })).json();
+  assert.equal(disabled.capabilities.extensions.some((item) => item.uri === A2A_TRIAL_URI), false);
+});
 test("A2A status and evaluation share the existing allowance for every fleet profile", async () => {
   for (const profile of Object.keys(TRIAL_PROFILES)) {
     const env = envFor(profile);
