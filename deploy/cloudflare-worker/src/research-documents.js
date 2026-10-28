@@ -1,10 +1,9 @@
-import {extractDocx} from '../apps/supplier-desk/document-extract.js';
-
 export const DOCUMENT_BYTE_LIMIT=5*1024*1024;
 // Bounded text extraction, not OCR, table reconstruction or document validation.
 export async function extractResearchDocument(bytes,kind,{pages=[]}={}) {
   if(!bytes.length||bytes.length>DOCUMENT_BYTE_LIMIT)throw Error('source_too_large');
   if(kind==='docx') {
+    const {extractDocx}=await import('../apps/supplier-desk/document-extract.js');
     if(bytes[0]!==0x50||bytes[1]!==0x4b)throw Error('invalid_document_signature');
     const doc=extractDocx(bytes);
     if(doc.text.length<120)throw Error('document_needs_ocr');
