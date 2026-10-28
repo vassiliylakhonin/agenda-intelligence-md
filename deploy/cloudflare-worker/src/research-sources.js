@@ -246,5 +246,6 @@ export function sourceEvidenceCandidates(source,question) {
     quotes.push({evidence_id:source.id+'-Q'+(quotes.length+1),source_id:source.id,quote:candidate.quote,fragment:candidate.fragment});
     if(quotes.length===2)break;
   }
-  return quotes;
+  const annualPairs=quotes.filter(item=>numericContextScore(item.quote)>=4);
+  return annualPairs.length?annualPairs:quotes;
 }
