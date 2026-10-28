@@ -132,7 +132,7 @@ export function newestReceipt(output) {
 
 // The files that end up in the bundle. A README or a test change must not read
 // as a stale deployment, so the digest covers these and nothing else.
-const BUNDLED_PATHS = ["src", "wrangler.toml", "package.json", "../../source-requirements/corridor-research.json", "apps/supplier-desk/document-extract.js"];
+const BUNDLED_PATHS = ["src", "wrangler.toml", "package.json", "../../source-requirements/corridor-research.json", "../../source-requirements/worker-remediation.json", "apps/supplier-desk/document-extract.js"];
 
 // Marks the deployed content in the deployment message, e.g. `src 4f2a91c0d3e8`.
 export const DIGEST_PREFIX = "src";

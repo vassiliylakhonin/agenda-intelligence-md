@@ -25,7 +25,7 @@ test('a client uses only fleet links and published contracts to preflight all tw
     assert.equal(fleet.gates.length,12);
     for(const gate of fleet.gates){
       assert.ok(gate.when_to_call);
-      assert.ok(gate.schema_url.startsWith(gate.canonical_endpoint+'/schemas/tools/'));
+      assert.ok(gate.schema_url.startsWith(gate.canonical_endpoint+'/.well-known/schemas/tools/'));
       assert.deepEqual(gate.decision_contract.enum,['block','review','insufficient']);
       const environment={...env,AGENT_PROFILE:gate.profile,WORKER_FREE_TRIAL:'1',PAYMENT_LEDGER:memoryD1()};
       const paths=[],fetcher=async(url,options)=>{paths.push(new URL(url).pathname);return handleRequest(new Request(url,options),environment);};

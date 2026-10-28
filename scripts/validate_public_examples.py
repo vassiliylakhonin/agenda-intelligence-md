@@ -120,6 +120,8 @@ def validate_examples() -> None:
             from agenda_intelligence.mcp_check import validate_config
 
             validate_config(data)
+        elif path.is_relative_to(ROOT / "examples" / "report-review"):
+            validate_with_schema(path, audit_schema, "report-review evidence-audit")
         elif path.name == "package.json":
             if not isinstance(data, dict) or data.get("private") is not True:
                 raise SystemExit(f"Example package manifest must be private: {path.relative_to(ROOT)}")

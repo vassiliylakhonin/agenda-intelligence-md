@@ -6232,7 +6232,7 @@ test("the front door declares that it answers without a question", async () => {
   const [door] = mcpToolsForProfile("corridor_sanctions_assistant");
   assert.equal(door.name, "corridor_sanctions_assistant");
   assert.ok(!door.inputSchema.required);
-  assert.equal(door.inputSchema.additionalProperties, true);
+  assert.equal(door.inputSchema.additionalProperties, false);
   assert.ok(door.inputSchema.properties.text.description.includes("Optional"));
 
   // Its sibling takes the same single string and does enforce it. That contrast

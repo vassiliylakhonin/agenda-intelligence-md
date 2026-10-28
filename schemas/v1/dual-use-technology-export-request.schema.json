@@ -14,20 +14,43 @@
   "properties": {
     "shipment": {
       "type": "object",
-      "required": ["hs_code", "description", "origin", "destination"],
+      "required": [
+        "hs_code",
+        "description",
+        "origin",
+        "destination"
+      ],
       "properties": {
-        "hs_code": { "type": "string" },
-        "eccn": { "type": "string" },
-        "description": { "type": "string" },
-        "origin": { "type": "string" },
-        "destination": { "type": "string" },
+        "hs_code": {
+          "type": "string"
+        },
+        "eccn": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "origin": {
+          "type": "string"
+        },
+        "destination": {
+          "type": "string"
+        },
         "transit_countries": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "end_user_sector": {
           "type": "string",
-          "enum": ["military", "civilian", "aerospace", "semiconductor", "unknown"]
+          "enum": [
+            "military",
+            "civilian",
+            "aerospace",
+            "semiconductor",
+            "unknown"
+          ]
         }
       }
     },
@@ -35,15 +58,52 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "source_type", "title", "date"],
+        "required": [
+          "id",
+          "source_type",
+          "title",
+          "date"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "source_type": { "type": "string" },
-          "title": { "type": "string" },
-          "date": { "type": "string", "format": "date" }
+          "id": {
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          }
         }
       }
     },
-    "risk_question": { "type": "string" }
+    "risk_question": {
+      "type": "string"
+    },
+    "counterparties": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "jurisdiction": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    }
   }
 }

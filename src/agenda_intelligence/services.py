@@ -27,6 +27,7 @@ from agenda_intelligence.grounding import GroundingIndex, _quote_check
 
 from .critical_minerals import STAGE_TIERS, review_mineral_dossier
 from .evaluation_contract import evaluation_contract
+from .remediation import build_remediation, input_remediation, pointer
 from .source_records import review_source_records
 
 PACKAGE_NAME = "agenda_intelligence"
@@ -230,7 +231,43 @@ def _validate_json(data: dict, schema_name: str) -> dict:
         validator = validator_for(schema)(schema)
         errors = sorted(validator.iter_errors(data), key=lambda e: ([str(p) for p in e.path], e.message))
         if errors:
-            return {"implemented": True, "valid": False, "errors": [e.message for e in errors]}
+            findings = []
+            for error in errors:
+                path = "/" + "/".join(pointer(part) for part in error.absolute_path) if error.absolute_path else ""
+                keys = (
+                    [key for key in error.instance if key not in error.schema.get("properties", {})]
+                    if error.validator == "additionalProperties" and isinstance(error.instance, dict)
+                    else (
+                        [key for key in error.validator_value if key not in error.instance]
+                        if error.validator == "required" and isinstance(error.instance, dict)
+                        else [None]
+                    )
+                )
+                for key in keys:
+                    findings.append(
+                        {
+                            "code": error.validator,
+                            "field": path + "/" + pointer(key) if key is not None else path,
+                            "machine_key": str(key) if key is not None else None,
+                            "allowed_values": error.validator_value if error.validator == "enum" else [],
+                            "message": (
+                                "Unknown field; remove it or use an exact published field name."
+                                if error.validator == "additionalProperties"
+                                else (
+                                    "Required field is missing."
+                                    if error.validator == "required"
+                                    else "Field does not match the published input contract."
+                                )
+                            ),
+                        }
+                    )
+            return {
+                "implemented": True,
+                "valid": False,
+                "errors": [e.message for e in errors],
+                "remediation": input_remediation(findings, schema_name),
+                "unknown_fields_present": any(error.validator == "additionalProperties" for error in errors),
+            }
         return {"implemented": True, "valid": True, "errors": []}
     except Exception as e:
         return {"implemented": True, "valid": None, "errors": [str(e)]}
@@ -254,6 +291,7 @@ def _validation_failure(validation: dict) -> dict | None:
         "valid": validation.get("valid"),
         "errors": validation.get("errors", []),
         "response": None,
+        **({"remediation": validation["remediation"]} if "remediation" in validation else {}),
     }
 
 
@@ -637,6 +675,7 @@ def agent_output_verification(request_json: dict) -> dict:
     }
 
     response.update(evaluation_contract(response))
+    response["remediation"] = build_remediation(response, profile="agent_output_verification", request=request_json)
     response_validation = _validate_json(response, "agent-output-verification-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -2889,6 +2928,7 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
     )
 
     response.update(evaluation_contract(response))
+    response["remediation"] = build_remediation(response, profile="kazakhstan", request=request_json)
     response_validation = _validate_json(response, "middle-corridor-deal-risk-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -3057,6 +3097,7 @@ def agentic_interaction_trust(request_json: dict) -> dict:
     )
 
     response.update(evaluation_contract(response))
+    response["remediation"] = build_remediation(response, profile="agentic_interaction_trust", request=request_json)
     response_validation = _validate_json(response, "agentic-interaction-trust-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -3635,6 +3676,14 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
     inferred = bool(request_json.get("inferred_parameters", False))
     clean_request = {k: v for k, v in request_json.items() if k != "inferred_parameters"}
 
+    shape = _validate_json(
+        {k: v for k, v in clean_request.items() if k not in ("prompt", "query", "text", "auto_complete")},
+        "cis-secondary-sanctions-request.schema.json",
+    )
+    if shape.get("unknown_fields_present"):
+        failure = _validation_failure(shape)
+        assert failure is not None
+        return failure
     validation = _validate_json(clean_request, "cis-secondary-sanctions-request.schema.json")
     if not validation.get("valid"):
         has_fallback_hint = bool(
@@ -3806,6 +3855,7 @@ def cis_secondary_sanctions_exposure(request_json: dict, *, allow_live_retrieval
     )
 
     response.update(evaluation_contract(response))
+    response["remediation"] = build_remediation(response, profile="cis_secondary_sanctions", request=request_json)
     response_validation = _validate_json(response, "cis-secondary-sanctions-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -3954,6 +4004,14 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
     inferred = bool(request_json.get("inferred_parameters", False))
     clean_request = {k: v for k, v in request_json.items() if k != "inferred_parameters"}
 
+    shape = _validate_json(
+        {k: v for k, v in clean_request.items() if k not in ("prompt", "query", "text", "auto_complete")},
+        "gulf-maritime-exposure-request.schema.json",
+    )
+    if shape.get("unknown_fields_present"):
+        failure = _validation_failure(shape)
+        assert failure is not None
+        return failure
     validation = _validate_json(clean_request, "gulf-maritime-exposure-request.schema.json")
     if not validation.get("valid"):
         has_fallback_hint = bool(
@@ -4035,6 +4093,7 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
     )
 
     response.update(evaluation_contract(response))
+    response["remediation"] = build_remediation(response, profile="gulf_maritime_exposure", request=request_json)
     response_validation = _validate_json(response, "gulf-maritime-exposure-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -4557,6 +4616,7 @@ def kazakhstan_market_entry_readiness(request_json: dict) -> dict:
     )
 
     response.update(evaluation_contract(response))
+    response["remediation"] = build_remediation(response, profile="market_entry_readiness", request=request_json)
     response_validation = _validate_json(response, "market-entry-readiness-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),
@@ -5013,6 +5073,14 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
     inferred = bool(request_json.get("inferred_parameters", False))
     clean_request = {k: v for k, v in request_json.items() if k != "inferred_parameters"}
 
+    shape = _validate_json(
+        {k: v for k, v in clean_request.items() if k not in ("prompt", "query", "text", "auto_complete")},
+        "critical-minerals-due-diligence-request.schema.json",
+    )
+    if shape.get("unknown_fields_present"):
+        failure = _validation_failure(shape)
+        assert failure is not None
+        return failure
     validation = _validate_json(clean_request, "critical-minerals-due-diligence-request.schema.json")
     if not validation.get("valid"):
         has_fallback_hint = bool(
@@ -5124,6 +5192,9 @@ def critical_minerals_due_diligence(request_json: dict) -> dict:
     response["readiness_contract"]["owner_actions"] = dossier["owner_actions"]
 
     response.update(evaluation_contract(response))
+    response["remediation"] = build_remediation(
+        response, profile="critical_minerals_due_diligence", request=request_json
+    )
     validation = _validate_json(response, "critical-minerals-due-diligence-response.schema.json")
     if not validation.get("valid"):
         return {

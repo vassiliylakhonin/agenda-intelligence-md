@@ -92,7 +92,7 @@
         },
         "supporting_quotes": {
           "type": "array",
-          "description": "Optional span-level grounding: the specific quote(s) in cited evidence that back this claim. Records which span supports the claim, not just which document. Each entry's evidence_id should be one of this claim's evidence_ids. audit-claims checks the structural link only (flags span_orphans where it is not); it does NOT verify the quote text appears in the source — that is verify-quotes' job. Neither verifies factual truth.",
+          "description": "Optional span-level grounding: the specific quote(s) in cited evidence that back this claim. Records which span supports the claim, not just which document. Each entry's evidence_id should be one of this claim's evidence_ids. audit-claims checks the structural link only (flags span_orphans where it is not); it does NOT verify the quote text appears in the source \u2014 that is verify-quotes' job. Neither verifies factual truth.",
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -182,6 +182,10 @@
         "full_text": {
           "type": "string",
           "description": "Alias content field; treated like 'content' for quote corroboration."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "Legacy caller source identifier; reference metadata only, not resolved or authenticated and not a substitute for evidence_id."
         }
       }
     }

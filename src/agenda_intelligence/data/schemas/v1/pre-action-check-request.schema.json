@@ -64,6 +64,10 @@
     },
     "approval": {
       "$ref": "#/$defs/approval"
+    },
+    "topic": {
+      "type": "string",
+      "description": "Optional caller context; does not establish support or authority."
     }
   },
   "$defs": {

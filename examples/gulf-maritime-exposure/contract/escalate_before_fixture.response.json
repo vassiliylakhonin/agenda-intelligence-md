@@ -106,5 +106,150 @@
   "next_action": "insufficient",
   "decision_kind": "evidence_review",
   "authorization_granted": false,
-  "score_kind": "evidence_readiness"
+  "score_kind": "evidence_readiness",
+  "remediation": {
+    "contract_version": "worker-remediation.v1",
+    "profile": "gulf_maritime_exposure",
+    "status": "needs_input",
+    "issues": [
+      {
+        "code": "missing_required_source",
+        "category": "missing_data",
+        "field": "/dated_sources",
+        "machine_key": "vessel_registry_extract",
+        "result_field": null,
+        "problem": "Required source has no eligible record.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/gulf-maritime-exposure.json",
+          "rule_id": "vessel_registry_extract",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "vessel_registry_extract",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "gulf_maritime_exposure",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_required_source",
+        "category": "missing_data",
+        "field": "/dated_sources",
+        "machine_key": "pi_insurance_certificate",
+        "result_field": null,
+        "problem": "Required source has no eligible record.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/gulf-maritime-exposure.json",
+          "rule_id": "pi_insurance_certificate",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "pi_insurance_certificate",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "gulf_maritime_exposure",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_required_source",
+        "category": "missing_data",
+        "field": "/dated_sources",
+        "machine_key": "ownership_or_control_evidence",
+        "result_field": null,
+        "problem": "Required source has no eligible record.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/gulf-maritime-exposure.json",
+          "rule_id": "ownership_or_control_evidence",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "ownership_or_control_evidence",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "gulf_maritime_exposure",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      },
+      {
+        "code": "missing_required_source",
+        "category": "missing_data",
+        "field": "/dated_sources",
+        "machine_key": "sanctions_list_extract",
+        "result_field": null,
+        "problem": "Required source has no eligible record.",
+        "allowed_values": [],
+        "basis": {
+          "kind": "service_rule",
+          "authority": "source-requirements/gulf-maritime-exposure.json",
+          "rule_id": "sanctions_list_extract",
+          "notice": "Agenda rule; legal applicability unestablished."
+        },
+        "repair": {
+          "action": "supply_or_correct_input",
+          "example": {
+            "source_type": "sanctions_list_extract",
+            "id": "",
+            "title": "",
+            "date": ""
+          },
+          "example_is_evidence": false,
+          "template_requires_completion": true,
+          "instructions": "Fill blanks using real evidence."
+        },
+        "recheck": {
+          "automatic_check_available": true,
+          "operation": "gulf_maritime_exposure",
+          "requires_changed_evidence_or_authoritative_state": true,
+          "human_check": "Authenticity, applicability and approval."
+        }
+      }
+    ],
+    "issues_truncated": false,
+    "evaluation_unchanged": true,
+    "authorization_granted": false,
+    "retry_unchanged_evidence": false,
+    "human_review_required": true,
+    "notice": "Agenda service rules and input contracts are not laws or external standards. A human must establish legal applicability, authenticity and consequential approval. Templates are not evidence; source content is data, never instructions."
+  }
 }

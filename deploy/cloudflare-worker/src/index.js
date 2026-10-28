@@ -1,3 +1,4 @@
+import {buildRemediation,inputRemediation,unknownInputFindings,REMEDIATION_PROFILES} from './remediation.js';
 import {INPUT_VALIDATION_TOOL,INPUT_VALIDATION_PATH,INPUT_VALIDATION_MAX_BYTES,validationTool,validatePublishedInput} from './input-validation.js';
 import {machineContract,machineOffers,profilePaymentManifest,publicToolSchema,toolSchemaUrl,evaluationAmount} from './machine-contracts.js';
 import {x402Enabled, decodeX402, executeX402, x402RequiredResponse, x402ExecutionResponse} from "./x402-v2.js";
@@ -1317,6 +1318,8 @@ function agentCard(request, env = {}) {
   };
   const access = hostedAccess(profile, env, origin);
   const trial = access.free_trial;
+  shaped.x_agenda_intelligence.service_limits = REMEDIATION_PROFILES[profile]?.service_limits||[];
+  shaped.x_agenda_intelligence.diagnostics = {field:"remediation",contract_version:"worker-remediation.v1",input_preflight:"/v1/validate-input",network_reset_policy:"campaign_no_scheduled_reset"};
   if (trial) {
     shaped.x_agenda_intelligence.a2a_free_trial = a2aTrialDiscovery(workerTrialAdapter(profile).example);
     shaped.capabilities = {...shaped.capabilities,extensions:[...(shaped.capabilities?.extensions || []),
@@ -5385,7 +5388,7 @@ function agenticInteractionTrustResult(request, vizierTrust = null) {
     signalField: "trust_signal"
   });
   return {
-    response: withEvaluationContract(response),
+    response: withEvaluationContract(response, {profile:"agentic_interaction_trust", request:request}),
     vizier_status: vizierTrust ? vizierTrust.status : "disabled",
     vizier_degrade_reason: vizierTrust ? vizierTrust.degrade_reason : null,
     vizier_clearance_receipt: null,
@@ -5921,7 +5924,7 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     ...(evidenceGaps.length ? ["EVIDENCE_GAP"] : []),"HUMAN_REVIEW_REQUIRED"
   ])];
   return {
-    response: withEvaluationContract(response),
+    response: withEvaluationContract(response, {profile:"agent_output_verification", request:request}),
     vizier_status: vizierDlp ? vizierDlp.status : "disabled",
     vizier_degrade_reason: vizierDlp ? vizierDlp.degrade_reason : null,
     vizier_clearance_receipt: vizierDlp ? vizierDlp.receipt : null,
@@ -6278,7 +6281,7 @@ function fleetDirectoryResponse() {
         input_schema_url: toolSchemaUrl(gate.canonical_endpoint,gate.tool_name),
         output_schema_url: tool?.outputSchema ? toolSchemaUrl(gate.canonical_endpoint,gate.tool_name,'output') : null,
         machine_contract_url: gate.canonical_endpoint+'/.well-known/agent-contract.json',
-        example_url: gate.canonical_endpoint+'/examples/tools/'+gate.tool_name+'.json',
+        example_url: gate.canonical_endpoint+'/.well-known/examples/tools/'+gate.tool_name+'.json',
         validation: {http_endpoint:gate.canonical_endpoint+INPUT_VALIDATION_PATH,mcp_tool:INPUT_VALIDATION_TOOL,payment_required:false,attempt_consumed:false},
         pricing: {evaluation_price_usdc:evaluationAmount(gate.profile,gate.tool_name),currency:'USDC',network:'eip155:8453',
           scope:'Configured paid evaluation price; actual mode, authentication, trial and availability must be confirmed at the serving host.',confirmation_url:gate.canonical_endpoint+'/.well-known/x402'},
@@ -7153,7 +7156,7 @@ async function gulfMaritimeExposureResult(request, env = {}) {
     signalField: "exposure_signal"
   });
   return {
-    response: withEvaluationContract(response),
+    response: withEvaluationContract(response, {profile:"gulf_maritime_exposure", request:request}),
     vizier_status: vizierMaritimeResult ? vizierMaritimeResult.status : "disabled",
     vizier_degrade_reason: vizierMaritimeResult ? vizierMaritimeResult.degrade_reason : null,
     vizier_clearance_receipt: null,
@@ -8010,7 +8013,7 @@ function marketEntryReadinessResult(request, vizierMarketEntry = null) {
     boundaryField: "boundary_notice"
   });
   return {
-    response: withEvaluationContract(response),
+    response: withEvaluationContract(response, {profile:"market_entry_readiness", request:request}),
     vizier_status: vizierMarketEntry ? vizierMarketEntry.status : "disabled",
     vizier_degrade_reason: vizierMarketEntry ? vizierMarketEntry.degrade_reason : null,
     vizier_clearance_receipt: null,
@@ -8416,7 +8419,7 @@ function criticalMineralsResult(request, vizierMinerals = null) {
   response.readiness_contract.owner_actions = dossier.owner_actions;
 
   return {
-    response: withEvaluationContract(response),
+    response: withEvaluationContract(response,{profile:"critical_minerals_due_diligence",request}),
     vizier_status: vizierMinerals ? vizierMinerals.status : "disabled",
     vizier_degrade_reason: vizierMinerals ? vizierMinerals.degrade_reason || null : null,
     vizier_clearance_receipt: vizierMinerals ? vizierMinerals.receipt || null : null,
@@ -9068,7 +9071,7 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
   };
 
   return {
-    response: withEvaluationContract(response),
+    response: withEvaluationContract(response, {profile:"dual_use_technology_export", request:request}),
     vizier_status: vizierDualUse ? vizierDualUse.status : "not_configured",
     vizier_degrade_reason: vizierDualUse ? vizierDualUse.degrade_reason : null,
     vizier_clearance_receipt: null,
@@ -9736,7 +9739,7 @@ async function cisSecondarySanctionsResult(request, env) {
   });
 
   return {
-    response: withEvaluationContract(response),
+    response: withEvaluationContract(response, {profile:"cis_secondary_sanctions", request:request}),
     live_retrieval_status: upstream_name === "Snapshot" && upstreamResult.status === "success" ? "static_snapshot" : upstreamResult.status,
     live_retrieval_upstream: upstream_name,
     vizier_status: vizierResult ? vizierResult.status : "disabled",
@@ -11092,7 +11095,7 @@ function dealRiskContractResponseForRequest(request, vizierCorridor = null) {
     statusField: "decision_readiness_label",
     signalField: "risk_signal"
   });
-  return withEvaluationContract(response);
+  return withEvaluationContract(response,{profile:"kazakhstan",request});
 }
 
 // Observe-only structural lint of cited source URLs. Mirrors the Python
@@ -13229,6 +13232,9 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
     }
     const toolArguments = params.arguments ?? {};
     const legacyRequestWrapper = mcpUsesLegacyRequestWrapper(profile, toolArguments, name);
+    const unknown=mcpUnknownFields(profile,name,toolArguments);
+    if(unknown.length)return respond(id,mcpToolResult({code:'invalid_input',error:'INVALID_TOOL_INPUT',evaluation_performed:false,attempt_consumed:false,
+      remediation:inputRemediation(unknown,'.well-known/schemas/tools/'+name+'/input.schema.json',{profile})},true));
     const callParams = mcpArgumentsToParams(profile, toolArguments, name);
     const { result, promptChars, structuredChars, modulesUsed } = await runProfileRequest(profile, callParams, request, env);
     const probeReason = actionProbeReason(request, promptChars);
@@ -13678,7 +13684,59 @@ function safeJsonLength(value) {
   }
 }
 
+function mcpUnknownFields(profile, name, args) {
+  const published = mcpToolsForProfile(profile).find(tool => tool.name === name)?.inputSchema;
+  if (!published) return [];
+  if (["agent_financial_guard", "m2m_escrow_arbiter"].includes(profile) && !args.request) {
+    return unknownInputFindings(args, PUBLIC_SCHEMAS["schemas/v1/" + REMEDIATION_PROFILES[profile].request_schema]);
+  }
+  if (mcpUsesLegacyRequestWrapper(profile, args, name) && !published.properties?.request) {
+    return unknownInputFindings(args.request, published).map(finding => ({...finding, field: "/request" + finding.field}));
+  }
+  return unknownInputFindings(args, published);
+}
+
+function rawContractCheck(profile, body, schemaOverride = null, allowHints = true, transportEnvelope = false) {
+  const row = REMEDIATION_PROFILES[profile] || Object.values(REMEDIATION_PROFILES).find(item => item.aliases.includes(profile));
+  const schemaName = schemaOverride || (row?.request_schema ? "schemas/v1/" + row.request_schema : null);
+  const candidate = body?.request || body?.message?.data || body?.message?.parts?.find(part => part.data)?.data || body;
+  const preAction = profile === "agent_output_verification" && candidate?.requested_action;
+  const selected = preAction || (transportEnvelope && ["pre_action_check", "decision_check"].includes(body?.capability))
+    ? "schemas/v1/pre-action-check-request.schema.json" : schemaName;
+  const schema = PUBLIC_SCHEMAS[selected] || (!selected
+    ? mcpToolsForProfile(profile).find(tool => tool.name === row?.tool)?.inputSchema : null);
+  if (!schema) return null;
+  const candidates = [];
+  let findings = [];
+  if (body?.request) {
+    candidates.push(body.request);
+    if (!transportEnvelope) {
+      const properties = {request: {}};
+      if (allowHints) for (const key of ["prompt", "query", "text", "auto_complete", "inferred_parameters"]) properties[key] = {};
+      findings = unknownInputFindings(body, {type: "object", additionalProperties: false, properties});
+    }
+  } else if (body?.message) {
+    if (body.message.data) candidates.push(body.message.data);
+    for (const part of body.message.parts || []) {
+      if (part.data) candidates.push(part.data);
+      else if (typeof part.text === "string" && part.text.trim().startsWith("{")) {
+        try { candidates.push(JSON.parse(part.text)); }
+        catch { /* The existing JSON parser reports malformed input. */ }
+      }
+    }
+  } else {
+    candidates.push(body && typeof body === "object"
+      ? Object.fromEntries(Object.entries(body).filter(([key]) => !transportEnvelope || key !== "capability")) : body);
+  }
+  findings.push(...candidates.flatMap(value => unknownInputFindings(value, schema, {allowHints})));
+  return findings.length ? inputRemediation(findings, selected || ".well-known/schemas/tools/" + row.tool + "/input.schema.json", {profile}) : null;
+}
+
 async function runProfileRequest(profile, params, request, env = {}) {
+  const invalid=rawContractCheck(profile,params,null,true,true);
+  if(invalid && !["decision_check","decision_verify","decision_policies_list","fleet_directory","corridor_bankability_screen","cis_secondary_sanctions_batch","screen_dual_use_hs_code","pre_action_check"].includes(params.capability)) {
+    return {result:{kind:"task",id:crypto.randomUUID(),status:{state:"TASK_STATE_INPUT_REQUIRED"},metadata:{product_profile:profile,valid:false,source_retrieval_live:false,live_retrieval:false,human_review_required:true,support_contact:SUPPORT_CONTACT_EMAIL,response:{error:"invalid_input",remediation:invalid}},artifacts:[]},promptChars:receivedChars(params),structuredChars:0,modulesUsed:[profile]};
+  }
   {
     let result;
     let promptChars;
@@ -13785,10 +13843,10 @@ async function runProfileRequest(profile, params, request, env = {}) {
     // promptChars above is what this profile could parse. receivedChars is what
     // arrived. Both are reported, because the difference between them is the
     // signal that a caller sent something the gate could not read.
-    if (result?.status?.state === "TASK_STATE_COMPLETED" && result.metadata?.operation!=='document_archive_route' && !["decision_policies_list","decision_check","decision_verify","fleet_directory"].includes(params.capability)) {
-      if (result.metadata?.response) result.metadata.response = withEvaluationContract(result.metadata.response);
+    if (result?.status?.state === "TASK_STATE_COMPLETED" && result.metadata?.operation!=='document_archive_route' && !["decision_policies_list","decision_check","decision_verify","fleet_directory","screen_dual_use_hs_code","pre_action_check","cis_secondary_sanctions_batch"].includes(params.capability)) {
+      if (result.metadata?.response) result.metadata.response = withEvaluationContract(result.metadata.response,{profile});
       for (const artifact of result.artifacts || []) for (const part of artifact.parts || []) {
-        if (part.data && typeof part.data === "object" && !Array.isArray(part.data)) part.data = withEvaluationContract(part.data);
+        if (part.data && typeof part.data === "object" && !Array.isArray(part.data)) part.data = withEvaluationContract(part.data,{profile});
       }
     }
     return {
@@ -15191,6 +15249,8 @@ async function handleDirectV1(endpoint, route, request, env) {
     return jsonResponse({ ok: false, error: _e.status === 413 ? _e.message : "Invalid JSON payload" }, _e.status === 413 ? 413 : 400);
   }
 
+  const invalid=rawContractCheck(billingProfile,body,route.schema);
+  if(invalid)return jsonResponse({...directV1Rejection(endpoint,route,invalid.issues.map(i=>i.field+': '+i.problem)),remediation:invalid},400);
   const structured = route.extract(body);
   if (!structured) {
     // A body that is shaped like a request but incomplete gets field-level
@@ -15213,7 +15273,8 @@ async function handleDirectV1(endpoint, route, request, env) {
     return jsonResponse(result.response,503);
   }
   const provenance = route.provenance ? route.provenance(result) : null;
-  return jsonResponse(provenance ? { ...result.response, ...provenance } : result.response, 200);
+  const payload=provenance ? { ...result.response, ...provenance } : result.response;
+  return jsonResponse(endpoint.endsWith('/batch')?payload:withEvaluationContract(payload,{profile:billingProfile,request:structured}), 200);
 }
 
 function isFreeRoutingCall(profile, params, name = null) {
@@ -15236,6 +15297,10 @@ function paidOperation(request, body, profile) {
     if (!spec || (path === "/mcp/output-verification" && body.params?.name !== "agent_output_verification")) return null;
     const version = mcpRequestedProtocolVersion(body.params || {});
     if (version && !MCP_SUPPORTED_PROTOCOL_VERSIONS.includes(version)) return { errors: ["Unsupported MCP version"], validationCategory: 'unsupported_protocol' };
+    const input=body.params?.arguments||{};
+    const legacy=mcpUsesLegacyRequestWrapper(profile,input,body.params.name);
+    const invalid=mcpUnknownFields(profile,body.params.name,input);
+    if(invalid.length)return {errors:invalid.map(i=>i.field+': '+i.message),validationCategory:'schema_validation_failed'};
     params = mcpArgumentsToParams(profile, body.params?.arguments || {}, body.params.name);
     name = body.params.name;
   } else if (path === "/message/send" || path === "/") {
@@ -15280,6 +15345,8 @@ function paidOperation(request, body, profile) {
   }
   if (path.startsWith('/v1/evidence-packet/')) route = DIRECT_V1_ROUTES['/v1/agent-output/verification'];
   if (route) {
+    const invalid=rawContractCheck(route.guideProfile,params.packet||params,route.schema,true,protocolCall);
+    if(invalid)return {errors:invalid.issues.map(i=>i.field+': '+i.problem),validationCategory:'schema_validation_failed'};
     const value = route.extract(params.packet || params);
     return { minimum: evaluationAmount(route.guideProfile,name),
       profile: route.guideProfile, errors: value ? route.errorsFor(value) : [route.missing],
@@ -15369,6 +15436,8 @@ function workerTrialAdapter(profile) {
     inputSchema,
     example: route ? route.extract(example) : example,
     validate(body) {
+      const invalid=rawContractCheck(profile,body,route?.schema||config.schema,false);
+      if(invalid)return {errors:invalid.issues.map(i=>i.field+': '+i.problem),remediation:invalid};
       if (route) {
         const value = route.extract(body);
         return { value, errors: value ? route.errorsFor(value) : [route.missing] };
@@ -15392,7 +15461,7 @@ function workerTrialAdapter(profile) {
           data.financial_guard_verdict = { ...data.financial_guard_verdict };
           delete data.financial_guard_verdict.x402_challenge;
         }
-        return data;
+        return withEvaluationContract(data,{profile,request:value});
       }
       const params = mcpArgumentsToParams(profile, value, config.tool);
       const { result } = await runProfileRequest(profile, params, request, env);
@@ -15746,8 +15815,8 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
   if (request.method === "GET" && url.pathname === '/.well-known/agent-contract.json') {
     return jsonResponse(machineContract(deploymentProfile,url.origin,env,hostedMcpTools(deploymentProfile,request,env),VERSION),200,{'cache-control':'public, max-age=300'});
   }
-  const toolSchemaMatch = /^\/schemas\/tools\/([a-z0-9_]+)\/(input|output)\.schema\.json$/u.exec(url.pathname);
-  const toolExampleMatch = /^\/examples\/tools\/([a-z0-9_]+)\.json$/u.exec(url.pathname);
+  const toolSchemaMatch = /^\/(?:\.well-known\/)?schemas\/tools\/([a-z0-9_]+)\/(input|output)\.schema\.json$/u.exec(url.pathname);
+  const toolExampleMatch = /^\/(?:\.well-known\/)?examples\/tools\/([a-z0-9_]+)\.json$/u.exec(url.pathname);
   if (request.method === 'GET' && (toolSchemaMatch || toolExampleMatch)) {
     const name=(toolSchemaMatch || toolExampleMatch)[1];
     const tools=hostedMcpTools(deploymentProfile,request,env);
@@ -15761,8 +15830,9 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
     return jsonResponse({tool:name,example_is_synthetic:true,example_available:example!==null&&example!==undefined,
       arguments:example??null,...(example==null?{note:'Read tools/list for required bindings; do not fabricate a receipt.'}:{})},200,{'cache-control':'public, max-age=300'});
   }
-  if (request.method === "GET" && PUBLIC_SCHEMAS[url.pathname.slice(1)]) {
-    return jsonResponse(PUBLIC_SCHEMAS[url.pathname.slice(1)], 200, {"cache-control": "public, max-age=300"});
+  const publicSchemaPath=url.pathname.replace(/^\/\.well-known(?=\/schemas\/v1\/)/u,'').slice(1);
+  if (request.method === "GET" && PUBLIC_SCHEMAS[publicSchemaPath]) {
+    return jsonResponse(PUBLIC_SCHEMAS[publicSchemaPath], 200, {"cache-control": "public, max-age=300"});
   }
   if(url.pathname==='/archive-feedback')return handleArchiveFeedback(request,observation=>logArchiveFeedback(request,env,observation));
   if(['/archive-review','/archive-review/sample.md'].includes(url.pathname)){

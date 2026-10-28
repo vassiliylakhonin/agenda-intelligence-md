@@ -1,7 +1,7 @@
 {
   "serverInfo": {
     "name": "Agenda Intelligence MD MCP Server",
-    "version": "1.21.2"
+    "version": "1.22.0"
   },
   "description": "Installable stdio MCP server for evidence-readiness workflows: schema validation, claim audit, source coverage, quote-presence checks, and analysis prompt assembly. It routes evidence to human review; it does not provide legal, compliance, sanctions, financial, procurement, or factual-truth determinations.",
   "transport": {
@@ -13,17 +13,17 @@
   "package": "https://pypi.org/project/agenda-intelligence-md/",
   "repository": "https://github.com/vassiliylakhonin/agenda-intelligence-md",
   "related": {
-    "ai_catalog": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/ai-catalog.json",
-    "api_catalog": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/api-catalog",
-    "openapi": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/api/openapi.json",
-    "agent_card": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json",
+    "ai_catalog": "https://agendamcp.dpdns.org/.well-known/ai-catalog.json",
+    "api_catalog": "https://agendamcp.dpdns.org/.well-known/api-catalog",
+    "openapi": "https://agendamcp.dpdns.org/api/openapi.json",
+    "agent_card": "https://agendamcp.dpdns.org/.well-known/agent-card.json",
     "did": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/.well-known/did.json",
-    "entitymap": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/entitymap.json",
+    "entitymap": "https://agendamcp.dpdns.org/entitymap.json",
     "source_policy": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/SOURCE_POLICY.md",
-    "okf_bundle": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/okf/index.md",
+    "okf_bundle": "https://agendamcp.dpdns.org/okf/index.md",
     "okf_repository_copy": "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/okf/index.md",
-    "confidential_project_room_profile": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room",
-    "confidential_project_room_example": "https://agenda-intelligence-a2a.vassiliy-lakhonin.workers.dev/profiles/confidential-project-room/redacted-example.json"
+    "confidential_project_room_profile": "https://agendamcp.dpdns.org/profiles/confidential-project-room",
+    "confidential_project_room_example": "https://agendamcp.dpdns.org/profiles/confidential-project-room/redacted-example.json"
   },
   "capabilities": {
     "tools": true,

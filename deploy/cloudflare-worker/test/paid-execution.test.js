@@ -1,3 +1,4 @@
+import {VERSION} from '../src/profiles.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker, { handleRequest } from '../src/index.js';
@@ -40,8 +41,9 @@ test('activation preserves one signed call; lost response recovers identical enc
   assert.ok(!stored.response_ciphertext.includes('Example supplied text'));
   assert.ok(!stored.response_ciphertext.includes(request.headers.get('x-payment-signature')));
   const changed = await handleRequest(await signedRequest(endpoint, { ...fixture, note: 'other operation' }, tx), env);
-  assert.equal(changed.status, 409);
-  assert.equal((await changed.json()).code, 'payment_request_mismatch');
+  // Unknown fields fail before replay/payment lookup; they cannot reuse an authorization.
+  assert.equal(changed.status, 400);
+  assert.equal((await changed.json()).code, 'invalid_paid_request');
 }));
 
 test('public hashes and stranger signatures grant no entitlement, including body aliases', async () => mocked(0.05, async () => {
@@ -116,7 +118,7 @@ test('paid MCP and A2A retries preserve their JSON-RPC IDs and original result',
 test('caller capability fields cannot exempt REST or discount another deployed profile', async () => mocked(0.01, async () => {
   for (const capability of ['fleet_directory', 'decision_policies_list']) {
     const response = await handleRequest(new Request(endpoint, { method: 'POST', body: JSON.stringify({ ...fixture, capability }) }), environment());
-    assert.equal(response.status, 402);
+    assert.equal(response.status, 400); // Transport-only fields are not raw REST inputs.
   }
   const body = { jsonrpc: '2.0', id: 1, method: 'message/send', params: {
     capability: 'decision_verify', request: { receipt: 'a.b.c', expected_request_hash: 'sha256:' + 'a'.repeat(64), expected_action_hash: 'sha256:' + 'a'.repeat(64) },
@@ -125,7 +127,7 @@ test('caller capability fields cannot exempt REST or discount another deployed p
       delivery_submission: { submitted_at: '2026-09-19T00:00:00Z', artifact_data: { name: 'example' } } }
   } };
   const env = { ...environment(), AGENT_PROFILE: 'm2m_escrow_arbiter' };
-  assert.equal((await handleRequest(await signedRequest(origin + '/message/send', body, tx), env)).status, 402);
+  assert.equal((await handleRequest(await signedRequest(origin + '/message/send', body, tx), env)).status, 400);
   assert.equal(await readPayment(env, tx), null);
 }));
 
@@ -206,6 +208,6 @@ test('payment stages expose refusals, verification and replay without retaining 
     assert.equal(events.find(e => e.stage === 'payment_required').execution_id, null);
     const serialized = JSON.stringify(events);
     for (const secret of [tx, signed.headers.get('x-payment-signature'), payer, 'Example supplied text', 'secret-query']) assert.ok(!serialized.includes(secret), secret);
-    assert.ok(events.every(e => e.attempt_id && e.code_version === '1.21.2' && e.engine_version));
+    assert.ok(events.every(e => e.attempt_id && e.code_version === VERSION && e.engine_version));
   } finally { console.log = originalLog; }
 }));

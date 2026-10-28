@@ -1,0 +1,403 @@
+{
+  "category": "worker-remediation",
+  "registry_version": "1.0",
+  "purpose": "Input-contract and diagnostic metadata; not a law, external standard, scoring rule or authorization.",
+  "profiles": {
+    "agenda": {
+      "tool": "strategic_risk_triage",
+      "request_schema": null,
+      "response_schema": "strategic-risk-triage-response.schema.json",
+      "taxonomy": null,
+      "source_field": null,
+      "aliases": [],
+      "source_types": [],
+      "source_fields": [],
+      "service_limits": [
+        "Routing/orientation only; no independent domain clearance or execution authority."
+      ]
+    },
+    "kazakhstan": {
+      "tool": "middle_corridor_deal_risk",
+      "request_schema": "middle-corridor-deal-risk-request.schema.json",
+      "response_schema": "middle-corridor-deal-risk-response.schema.json",
+      "taxonomy": "middle-corridor-deal-risk.json",
+      "source_field": "dated_sources",
+      "aliases": [
+        "middle_corridor_deal_risk"
+      ],
+      "source_types": [
+        "beneficial_ownership_source",
+        "business_substance_evidence",
+        "carrier_note",
+        "contract_or_invoice_extract",
+        "counterparty_registry_extract",
+        "customs_or_regulatory_source",
+        "end_user_or_reexport_evidence",
+        "insurance_clause_or_underwriter_note",
+        "other",
+        "pep_screening_evidence",
+        "port_operator_notice",
+        "rail_capacity_or_border_wait_source",
+        "sanctions_list_extract",
+        "source_of_funds_or_wealth_evidence",
+        "user_provided_note",
+        "vessel_or_carrier_history"
+      ],
+      "source_fields": [
+        "id",
+        "source_type",
+        "title",
+        "date",
+        "url",
+        "notes"
+      ],
+      "service_limits": [
+        "Supplied material is not independently authenticated; human review and legal applicability assessment remain required."
+      ]
+    },
+    "cis_secondary_sanctions": {
+      "tool": "cis_secondary_sanctions_exposure",
+      "request_schema": "cis-secondary-sanctions-request.schema.json",
+      "response_schema": "cis-secondary-sanctions-response.schema.json",
+      "taxonomy": "cis-secondary-sanctions.json",
+      "source_field": "dated_sources",
+      "aliases": [],
+      "source_types": [
+        "adverse_media_evidence",
+        "bank_correspondent_evidence",
+        "beneficial_ownership_source",
+        "customs_data_evidence",
+        "dual_use_export_evidence",
+        "eu_consolidated_extract",
+        "national_regulator_filing",
+        "ofac_sdn_extract",
+        "other",
+        "ownership_chain_evidence",
+        "transit_or_invoice_evidence",
+        "typology_reference",
+        "uk_ofsi_extract",
+        "un_security_council_extract",
+        "user_provided_note"
+      ],
+      "source_fields": [
+        "id",
+        "source_type",
+        "title",
+        "date",
+        "url",
+        "notes"
+      ],
+      "service_limits": [
+        "Supplied material is not independently authenticated; human review and legal applicability assessment remain required."
+      ]
+    },
+    "agentic_interaction_trust": {
+      "tool": "agentic_interaction_trust",
+      "request_schema": "agentic-interaction-trust-request.schema.json",
+      "response_schema": "agentic-interaction-trust-response.schema.json",
+      "taxonomy": "agentic-interaction-trust.json",
+      "source_field": "dated_sources",
+      "aliases": [],
+      "source_types": [
+        "action_intent_evidence",
+        "agent_card_or_manifest",
+        "agent_identity_claim",
+        "device_or_infrastructure_evidence",
+        "fraud_or_account_takeover_signal",
+        "human_review_note",
+        "incident_report_or_threat_intel",
+        "mcp_or_a2a_endpoint_metadata",
+        "operator_or_principal_authorization",
+        "other",
+        "prior_interaction_history",
+        "provider_policy_or_allowlist",
+        "rate_limit_or_abuse_signal",
+        "session_authentication_evidence",
+        "tool_scope_or_permission_evidence",
+        "transaction_or_target_action_evidence",
+        "user_provided_note"
+      ],
+      "source_fields": [
+        "id",
+        "source_type",
+        "title",
+        "date",
+        "url",
+        "notes"
+      ],
+      "service_limits": [
+        "Supplied material is not independently authenticated; human review and legal applicability assessment remain required."
+      ]
+    },
+    "agent_output_verification": {
+      "tool": "agent_output_verification",
+      "request_schema": "evidence-audit.schema.json",
+      "response_schema": "agent-output-verification-response.schema.json",
+      "taxonomy": null,
+      "source_field": "evidence",
+      "aliases": [],
+      "source_types": [],
+      "source_fields": [
+        "evidence_id",
+        "name",
+        "url",
+        "source_type",
+        "freshness",
+        "supports",
+        "limits",
+        "content",
+        "text",
+        "body",
+        "excerpt",
+        "quote",
+        "snippet",
+        "summary",
+        "full_text",
+        "source_id"
+      ],
+      "service_limits": [
+        "Checks reference integrity and quote occurrence in supplied text; does not establish semantic entailment, factual truth or source authenticity.",
+        "No automatic document rewriting or action authorization."
+      ]
+    },
+    "gulf_maritime_exposure": {
+      "tool": "gulf_maritime_exposure",
+      "request_schema": "gulf-maritime-exposure-request.schema.json",
+      "response_schema": "gulf-maritime-exposure-response.schema.json",
+      "taxonomy": "gulf-maritime-exposure.json",
+      "source_field": "dated_sources",
+      "aliases": [],
+      "source_types": [
+        "adverse_media_evidence",
+        "ais_track_record",
+        "cargo_or_bl_evidence",
+        "charterer_kyc_evidence",
+        "classification_society_record",
+        "flag_registry_record",
+        "human_review_note",
+        "other",
+        "ownership_or_control_evidence",
+        "pi_insurance_certificate",
+        "port_state_control_record",
+        "price_cap_attestation_or_recordkeeping",
+        "prior_incident_or_detention",
+        "sanctions_list_extract",
+        "sts_transfer_evidence",
+        "user_provided_note",
+        "vessel_registry_extract"
+      ],
+      "source_fields": [
+        "id",
+        "source_type",
+        "title",
+        "date",
+        "url",
+        "notes"
+      ],
+      "service_limits": [
+        "Supplied material is not independently authenticated; human review and legal applicability assessment remain required."
+      ]
+    },
+    "market_entry_readiness": {
+      "tool": "kazakhstan_market_entry_readiness",
+      "request_schema": "market-entry-readiness-request.schema.json",
+      "response_schema": "market-entry-readiness-response.schema.json",
+      "taxonomy": "kazakhstan-market-entry-readiness.json",
+      "source_field": "supplied_sources",
+      "aliases": [
+        "kazakhstan_market_entry_readiness"
+      ],
+      "source_types": [
+        "authority_to_sign_evidence",
+        "bank_account_and_kyc_onboarding",
+        "bankability_note",
+        "battery_safety_documents",
+        "beneficial_ownership_source",
+        "business_substance_evidence",
+        "certification_pathway",
+        "commercial_objective",
+        "competitor_scan",
+        "contract_or_term_sheet_draft",
+        "counterparty_integrity_due_diligence",
+        "counterparty_registry_extract",
+        "currency_control_and_repatriation_note",
+        "customer_interview_notes",
+        "customs_broker_memo",
+        "data_localization_and_privacy_note",
+        "dealer_interview_notes",
+        "dealer_margin_model",
+        "decision_log",
+        "demo_unit_plan",
+        "export_control_classification_note",
+        "financing_or_leasing_partner_note",
+        "fleet_customer_validation",
+        "fleet_tco_model",
+        "freight_forwarder_quote",
+        "government_or_akimat_note",
+        "grid_connection_and_offtake_evidence",
+        "hs_code_classification",
+        "initial_source_links_or_documents",
+        "insurance_or_cargo_handling_note",
+        "ip_ownership_and_licensing_evidence",
+        "kazakhstan_use_case",
+        "land_or_site_control_evidence",
+        "landed_cost_model",
+        "law_firm_opinion",
+        "local_content_or_procurement_localization_note",
+        "localized_customer_materials",
+        "market_size_source",
+        "other",
+        "outdoor_advertising_quote",
+        "packing_list_and_incoterms",
+        "partner_company_profile",
+        "permanent_establishment_or_tax_residency_assessment",
+        "pricing_benchmark",
+        "product_or_project_description",
+        "project_timeline",
+        "regional_expansion_assumption_register",
+        "risk_register",
+        "sdg_or_sustainability_mapping",
+        "service_partner_confirmation",
+        "service_sla_draft",
+        "showroom_lease_offer",
+        "showroom_opex_model",
+        "spare_parts_price_list",
+        "special_economic_zone_eligibility_note",
+        "supplier_moq_payment_terms",
+        "tax_accounting_note",
+        "test_ride_or_pilot_safety_process",
+        "trademark_or_brand_protection_filing",
+        "user_provided_note",
+        "warranty_policy",
+        "work_permit_and_local_employment_quota_note"
+      ],
+      "source_fields": [
+        "id",
+        "source_type",
+        "title",
+        "date",
+        "url",
+        "notes"
+      ],
+      "service_limits": [
+        "Supplied material is not independently authenticated; human review and legal applicability assessment remain required."
+      ]
+    },
+    "critical_minerals_due_diligence": {
+      "tool": "critical_minerals_due_diligence",
+      "request_schema": "critical-minerals-due-diligence-request.schema.json",
+      "response_schema": "critical-minerals-due-diligence-response.schema.json",
+      "taxonomy": "critical-minerals-due-diligence.json",
+      "source_field": "supplied_sources",
+      "aliases": [],
+      "source_types": [
+        "bankable_feasibility_study",
+        "beneficial_ownership_due_diligence",
+        "certificate_of_origin",
+        "certified_ore_assay_report",
+        "chain_of_custody_records",
+        "export_customs_declaration",
+        "export_quota_and_permit_clearance",
+        "global_market_pricing_benchmark",
+        "local_content_and_employment_quota_filing",
+        "marine_and_transit_cargo_insurance",
+        "mining_concession_or_license_extract",
+        "port_of_loading_assay_verification",
+        "processing_and_refining_tolling_agreement",
+        "refinery_smelter_capacity_analysis",
+        "regulatory_applicability_memo",
+        "responsible_sourcing_due_diligence",
+        "sanctions_and_export_control_license",
+        "sovereign_royalty_and_tax_stability_memo",
+        "substitute_chemistry_risk_assessment",
+        "tailings_and_environmental_permits",
+        "csddd_human_rights_and_esg_audit"
+      ],
+      "source_fields": [
+        "source_type",
+        "title",
+        "url",
+        "date",
+        "issuing_authority",
+        "verified_by_counsel",
+        "summary",
+        "document_id",
+        "excerpt",
+        "valid_until",
+        "scope"
+      ],
+      "service_limits": [
+        "Supplied material is not independently authenticated; human review and legal applicability assessment remain required."
+      ],
+      "source_record_requirements": [
+        "title",
+        "issuing_authority",
+        "date",
+        "excerpt",
+        "scope.project_name",
+        "scope.commodity",
+        "scope.origin_jurisdiction"
+      ]
+    },
+    "dual_use_technology_export": {
+      "tool": "dual_use_technology_export",
+      "request_schema": "dual-use-technology-export-request.schema.json",
+      "response_schema": "dual-use-technology-export-response.schema.json",
+      "taxonomy": null,
+      "source_field": "dated_sources",
+      "aliases": [],
+      "source_types": [],
+      "source_fields": [
+        "id",
+        "source_type",
+        "title",
+        "date"
+      ],
+      "service_limits": [
+        "Supplied material is not independently authenticated; human review and legal applicability assessment remain required."
+      ]
+    },
+    "agent_financial_guard": {
+      "tool": "agent_financial_pre_sign_check",
+      "request_schema": "agent-financial-guard-request.schema.json",
+      "response_schema": "agent-financial-guard-response.schema.json",
+      "taxonomy": null,
+      "source_field": null,
+      "aliases": [],
+      "source_types": [],
+      "source_fields": [],
+      "service_limits": [
+        "Live network-specific sanctions/AML screening is unavailable; a local risk denylist is not clearance.",
+        "Authoritative wallet spending history and enforced policy are unavailable; caller-provided history is unverified.",
+        "No transaction signing, submission or execution authorization."
+      ]
+    },
+    "m2m_escrow_arbiter": {
+      "tool": "m2m_escrow_arbitration_ruling",
+      "request_schema": "m2m-escrow-arbiter-request.schema.json",
+      "response_schema": "m2m-escrow-arbiter-response.schema.json",
+      "taxonomy": null,
+      "source_field": null,
+      "aliases": [],
+      "source_types": [],
+      "source_fields": [],
+      "service_limits": [
+        "Independent SLO performance verification is unavailable; checks supplied deadline/hash/schema only.",
+        "No settlement authorization or funds movement."
+      ]
+    },
+    "corridor_sanctions_assistant": {
+      "tool": "corridor_sanctions_assistant",
+      "request_schema": null,
+      "response_schema": "corridor-orientation-response.schema.json",
+      "taxonomy": null,
+      "source_field": null,
+      "aliases": [],
+      "source_types": [],
+      "source_fields": [],
+      "service_limits": [
+        "Routing/orientation only; no independent domain clearance or execution authority."
+      ]
+    }
+  }
+}

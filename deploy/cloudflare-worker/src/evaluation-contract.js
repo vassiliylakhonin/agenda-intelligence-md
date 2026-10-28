@@ -1,3 +1,4 @@
+import {buildRemediation} from './remediation.js';
 // Advisory routing metadata. Domain verdicts remain unchanged; no authority is granted.
 const BLOCK = new Set(['block', 'reject', 'stop', 'no_go', 'block_until_verified', 'block_unsafe_claims', 'REFUND_TO_BUYER']);
 const INSUFFICIENT = new Set(['insufficient_information', 'not_decision_ready', 'pause_for_evidence', 'request_evidence']);
@@ -22,6 +23,7 @@ export function evaluationContract(response) {
   };
 }
 
-export function withEvaluationContract(response) {
-  return {...response, ...evaluationContract(response)};
+export function withEvaluationContract(response, options={}) {
+  const remediation=response.remediation||buildRemediation(response,options);
+  return {...response, ...evaluationContract(response), ...(remediation?{remediation}:{})};
 }

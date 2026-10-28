@@ -1,0 +1,8 @@
+{
+  "topic": "Synthetic transport memo; caller revision, fixture only",
+  "claims": [
+    {"claim_id": "effective-date", "claim": "The notice takes effect on 1 May 2026.", "support_level": "direct", "evidence_ids": ["notice"], "supporting_quotes": [{"evidence_id": "notice", "quote": "takes effect on 1 May 2026"}]},
+    {"claim_id": "inspection", "claim": "The inspection remains pending.", "support_level": "direct", "evidence_ids": ["notice"], "supporting_quotes": [{"evidence_id": "notice", "quote": "Inspection remains pending"}]}
+  ],
+  "evidence": [{"evidence_id": "notice", "source_type": "official_document", "name": "Synthetic notice; not a real authority", "content": "The notice takes effect on 1 May 2026. Inspection remains pending."}]
+}

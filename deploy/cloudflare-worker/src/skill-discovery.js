@@ -100,7 +100,7 @@ function focusedExample(base, profile, id, question) {
   if (profile === 'corridor_sanctions_assistant') part.text = question;
   else if (profile === 'agent_financial_guard') part.data.intent.prompt = question;
   else if (profile === 'm2m_escrow_arbiter') part.data.dispute_claim.reason = question;
-  else if (profile === 'critical_minerals_due_diligence') part.data.decision_question = question;
+  else if (['critical_minerals_due_diligence','market_entry_readiness'].includes(profile)) part.data.decision_question = question;
   else part.data.risk_question = question;
   if (id === 'financial-approval-pattern-review') {
     part.data.transaction.method = 'approve';
