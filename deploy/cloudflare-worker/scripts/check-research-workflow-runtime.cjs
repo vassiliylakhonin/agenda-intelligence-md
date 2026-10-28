@@ -16,7 +16,7 @@ async function main() {
   assert.equal(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version,'4.153.0');
   const toolRequire=createRequire(path.join(root,'package.json'));
   const {Miniflare,convertV4MiniflareOptions}=toolRequire('miniflare');
-  const built=await build({entryPoints:[path.join(base,'src/research-entry.js')],bundle:true,format:'esm',platform:'browser',external:['cloudflare:workers'],write:false});
+  const built=await build({entryPoints:[path.join(base,'src/research-entry.js')],bundle:true,format:'esm',platform:'browser',packages:'external',external:['cloudflare:workers'],write:false});
   const {PDFDocument,StandardFonts}=require('pdf-lib');
   const pdf=await PDFDocument.create(),font=await pdf.embedFont(StandardFonts.Helvetica);
   for(let n=1;n<=37;n++){const page=pdf.addPage();if(n===1||n===37)page.drawText('Aktau cargo report 2023: container throughput decreased. '+('This operator document preserves units and periods for reviewer checks. '),{x:30,y:700,font,size:11});}

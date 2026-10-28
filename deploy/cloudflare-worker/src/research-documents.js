@@ -3,8 +3,8 @@ export const DOCUMENT_BYTE_LIMIT=5*1024*1024;
 export async function extractResearchDocument(bytes,kind,{pages=[]}={}) {
   if(!bytes.length||bytes.length>DOCUMENT_BYTE_LIMIT)throw Error('source_too_large');
   if(kind==='docx') {
-    const {extractDocx}=await import('../apps/supplier-desk/document-extract.js');
     if(bytes[0]!==0x50||bytes[1]!==0x4b)throw Error('invalid_document_signature');
+    const {extractDocx}=await import('./research-docx-engine-bundle.js');
     const doc=extractDocx(bytes);
     if(doc.text.length<120)throw Error('document_needs_ocr');
     return {text:doc.text,extraction:{kind,status:doc.status,units:doc.units,warnings:doc.warnings}};
