@@ -2907,7 +2907,7 @@ function applyAgenticInteractionTrustProfile(card, request) {
       id: "agentic-interaction-trust-gate",
       name: "Counterparty-agent trust gate",
       description:
-        "Turns an unknown counterparty agent's requested action, target surface, identity claim, and dated evidence into a structured trust-routing recommendation — allow, step up, escalate to human review, or block until verified — with the evidence that is still missing, a decision-readiness score, and mandatory human-review routing. Evidence-readiness triage, not identity verification.",
+        "Before accepting an external agent action, review its declared identity, target, action and dated source records. Returns missing evidence and a recommendation to request evidence, step up, escalate to human review or block until verified. Never grants allow: identity verification and action authorization require an independent control.",
       tags: [
         "agentic-ai",
         "a2a",

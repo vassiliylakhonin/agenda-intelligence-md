@@ -2,6 +2,8 @@
 
 Status: shipped 2026-05-29. Vertical worker service function `agentic_interaction_trust`. Schema family v1, additive (non-breaking under [ADR 0003](../adr/0003-v1-compatibility-policy.md)). No live retrieval.
 
+For a minimal-input A2A integration, fail-closed hold and staged fleet example, see the [interaction review guide](../../examples/agentic-interaction-trust/README.md). The helper does not authenticate, authorize or execute actions.
+
 ## Proposition
 
 Before you let a counterparty agent transact or invoke a capability, check whether the evidence to trust that interaction is present. Bring the actor's identity claim, its target surface, the requested action, and dated evidence. Get an auditable trust-routing triage with the missing evidence, source coverage, watch-next indicators, and human-review escalation.
