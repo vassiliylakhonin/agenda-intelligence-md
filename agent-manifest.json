@@ -1184,6 +1184,10 @@
                     "vessel_type": {
                       "type": "string",
                       "minLength": 1
+                    },
+                    "mmsi": {
+                      "type": "string",
+                      "minLength": 1
                     }
                   }
                 },

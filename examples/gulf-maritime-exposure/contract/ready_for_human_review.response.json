@@ -1,5 +1,12 @@
 {
   "triage_recommendation": "ready_for_human_review",
+  "voyage_gate": {
+    "verdict": "HUMAN_REVIEW_REQUIRED",
+    "readiness_level": "human_review_candidate",
+    "blocking_reasons": [],
+    "ais_quality": "not_assessed",
+    "notice": "Document references and caller-declared identifiers only; no identity, cover, AIS quality or sanctions clearance is verified. Human review is always required."
+  },
   "exposure_signal": "unknown",
   "decision_readiness_score": 90,
   "decision_readiness_label": "review_ready",
@@ -42,6 +49,10 @@
     "Triage is based on caller-supplied evidence only; this service does not retrieve sources, resolve vessel ownership, or verify vessel identity.",
     "A name match against a sanctions list is not legal-entity or vessel-identity verification. Human review is required."
   ],
+  "vessel": {
+    "name": "Review Vessel",
+    "flag": "Panama"
+  },
   "source_record_review": {
     "policy_version": "source-records.v1",
     "scope": "reference_metadata_only",

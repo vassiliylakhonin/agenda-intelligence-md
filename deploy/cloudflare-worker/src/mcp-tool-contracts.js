@@ -8485,6 +8485,11 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "vessel_type": {
                 "type": "string",
                 "minLength": 1
+              },
+              "mmsi": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Caller-supplied MMSI, if known; not verified by this service."
               }
             }
           },
@@ -9071,6 +9076,57 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               },
               "human_review_required": {
                 "const": true
+              },
+              "notice": {
+                "type": "string"
+              }
+            }
+          },
+          "voyage_gate": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "verdict",
+              "readiness_level",
+              "blocking_reasons",
+              "ais_quality",
+              "notice"
+            ],
+            "properties": {
+              "verdict": {
+                "enum": [
+                  "BLOCK_PRE_FIXTURE",
+                  "EVIDENCE_BLOCKED",
+                  "HUMAN_REVIEW_REQUIRED"
+                ]
+              },
+              "readiness_level": {
+                "enum": [
+                  "screening_only",
+                  "internal_review",
+                  "pre_fixture_committee",
+                  "human_review_candidate"
+                ]
+              },
+              "blocking_reasons": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "P_AND_I_UNKNOWN",
+                    "OWNERSHIP_OPAQUE",
+                    "STS_WITHOUT_HISTORY",
+                    "SANCTIONS_SCREEN_MISSING",
+                    "AIS_ONLY_FILE",
+                    "VESSEL_IDENTITY_MISSING",
+                    "REQUIRED_SOURCE_MISSING",
+                    "UPSTREAM_SCREEN_UNAVAILABLE",
+                    "UPSTREAM_SCREEN_MATCH"
+                  ]
+                }
+              },
+              "ais_quality": {
+                "const": "not_assessed"
               },
               "notice": {
                 "type": "string"

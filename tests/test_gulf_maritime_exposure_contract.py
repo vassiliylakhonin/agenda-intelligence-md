@@ -64,6 +64,8 @@ _READY_SOURCE_TYPES = sorted(REQUIRED_BEFORE_REVIEW) + [
     "cargo_or_bl_evidence",
 ]
 READY_REQUEST = {
+    "vessel": {"name": "Review Vessel", "flag": "Panama"},
+    "counterparties": [{"role": "insurer_or_pi_club", "name": "Declared Club"}],
     "voyage": {"chokepoint": "strait_of_hormuz"},
     "exposure_facets": ["ownership_or_control"],
     "decision_stage": "committee_review",
@@ -207,3 +209,51 @@ def test_a2a_gulf_maritime_smart_fallback():
     assert task["metadata"]["inferred_parameters"] is True
     assert task["metadata"]["product_profile"] == "gulf_maritime_exposure"
     assert len(task["artifacts"]) > 0
+
+
+def test_voyage_gate_blocks_unknown_insurance_even_with_all_baseline_references():
+    request = json.loads(json.dumps(READY_REQUEST))
+    request["decision_stage"] = "pre_fixture"
+    request["counterparties"][0]["name"] = "Unknown"
+    result = services.gulf_maritime_exposure(request)
+    assert result["valid"], result["errors"]
+    response = result["response"]
+    assert response["voyage_gate"]["verdict"] == "BLOCK_PRE_FIXTURE"
+    assert response["voyage_gate"]["blocking_reasons"][0] == "P_AND_I_UNKNOWN"
+    assert response["decision_readiness_score"] <= 49
+    assert response["triage_recommendation"] == "escalate_before_fixture"
+    assert "unknown" in response["evidence_gaps"][0].lower()
+    assert response["authorization_granted"] is False
+
+
+def test_voyage_gate_requires_identity_and_sts_history_and_never_verifies_ais():
+    request = json.loads(json.dumps(READY_REQUEST))
+    request["vessel"] = {"mmsi": "123456789"}
+    request["exposure_facets"] = ["sts_transfer"]
+    request["dated_sources"] = [s for s in request["dated_sources"] if s["source_type"] != "sts_transfer_evidence"]
+    response = services.gulf_maritime_exposure(request)["response"]
+    assert {"VESSEL_IDENTITY_MISSING", "STS_WITHOUT_HISTORY"} <= set(response["voyage_gate"]["blocking_reasons"])
+    assert response["voyage_gate"]["ais_quality"] == "not_assessed"
+    assert response["triage_recommendation"] != "ready_for_human_review"
+    request["vessel"]["imo"] = "1234567"
+    request["dated_sources"].append(
+        {"id": "sts", "source_type": "sts_transfer_evidence", "title": "Transfer record", "date": "2026-05-28"}
+    )
+    result = services.gulf_maritime_exposure(request)
+    assert result["valid"], result["errors"]
+    assert result["response"]["voyage_gate"]["verdict"] == "HUMAN_REVIEW_REQUIRED"
+    assert result["response"]["human_review_required"] is True
+    assert result["response"]["authorization_granted"] is False
+
+
+def test_ais_only_file_is_explicit_and_synthetic_records_do_not_close_gaps():
+    response = services.gulf_maritime_exposure(GOLDEN_REQUEST)["response"]
+    assert {"AIS_ONLY_FILE", "SANCTIONS_SCREEN_MISSING", "OWNERSHIP_OPAQUE", "STS_WITHOUT_HISTORY"} <= set(
+        response["voyage_gate"]["blocking_reasons"]
+    )
+    request = json.loads(json.dumps(READY_REQUEST))
+    request["dated_sources"] = [dict(source, title="Synthetic demo evidence") for source in request["dated_sources"]]
+    response = services.gulf_maritime_exposure(request)["response"]
+    assert response["minimum_sources_before_review"]
+    assert response["voyage_gate"]["verdict"] == "EVIDENCE_BLOCKED"
+    assert response["authorization_granted"] is False

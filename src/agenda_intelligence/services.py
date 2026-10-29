@@ -3993,6 +3993,71 @@ def _gulf_chokepoint_disruption_watch(request_json: dict) -> list[str]:
     return watch
 
 
+def _gulf_voyage_gate(request: dict, supplied: list[str], missing: list[str], triage: str) -> dict:
+    def known(value: object) -> bool:
+        return (
+            isinstance(value, str)
+            and bool(value.strip())
+            and value.strip().lower()
+            not in {
+                "unknown",
+                "unknown insurer",
+                "unk",
+                "n/a",
+                "na",
+                "none",
+                "not known",
+                "not provided",
+                "not available",
+                "not disclosed",
+                "unconfirmed",
+                "?",
+                "tbd",
+                "pending",
+                "unspecified",
+                "-",
+            }
+        )
+
+    insurer = [row for row in request.get("counterparties", []) if row.get("role") == "insurer_or_pi_club"]
+    vessel = request.get("vessel") or {}
+    facets = request.get("exposure_facets", [])
+    reasons = []
+    if not insurer or any(not known(row.get("name")) for row in insurer):
+        reasons.append("P_AND_I_UNKNOWN")
+    if "ownership_or_control_evidence" not in supplied:
+        reasons.append("OWNERSHIP_OPAQUE")
+    if "sts_transfer" in facets and "sts_transfer_evidence" not in supplied:
+        reasons.append("STS_WITHOUT_HISTORY")
+    if "sanctions_list_extract" not in supplied:
+        reasons.append("SANCTIONS_SCREEN_MISSING")
+    if supplied == ["ais_track_record"]:
+        reasons.append("AIS_ONLY_FILE")
+    if not known(vessel.get("imo")) and not (known(vessel.get("name")) and known(vessel.get("flag"))):
+        reasons.append("VESSEL_IDENTITY_MISSING")
+    if missing:
+        reasons.append("REQUIRED_SOURCE_MISSING")
+    blocked = bool(reasons) or triage != "ready_for_human_review"
+    return {
+        "verdict": (
+            ("BLOCK_PRE_FIXTURE" if request.get("decision_stage") == "pre_fixture" else "EVIDENCE_BLOCKED")
+            if blocked
+            else "HUMAN_REVIEW_REQUIRED"
+        ),
+        "readiness_level": (
+            "screening_only"
+            if not supplied
+            else "internal_review" if missing else "pre_fixture_committee" if blocked else "human_review_candidate"
+        ),
+        "blocking_reasons": reasons,
+        "ais_quality": "not_assessed",
+        "notice": (
+            "Document references and caller-declared identifiers only; no identity, cover, AIS quality or "
+            "sanctions clearance is verified. Human review is always required."
+        ),
+    }
+
+
 def gulf_maritime_exposure(request_json: dict) -> dict:
     """Build a structured Gulf maritime sanctions and chokepoint-disruption exposure response.
 
@@ -4046,6 +4111,17 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
     exposure_signal = _gulf_exposure_signal(request_json, missing_sources)
     triage = _gulf_triage_recommendation(request_json, missing_sources, exposure_signal)
     facets = list(request_json.get("exposure_facets", []))
+    voyage_gate = _gulf_voyage_gate(request_json, supplied_sources, missing_sources, triage)
+    if voyage_gate["blocking_reasons"]:
+        readiness_score = min(readiness_score, 49)
+        if readiness_label != "insufficient_information":
+            readiness_label = "not_decision_ready"
+        if triage == "ready_for_human_review":
+            triage = (
+                "escalate_before_fixture"
+                if request_json.get("decision_stage") == "pre_fixture"
+                else "not_decision_ready"
+            )
 
     limitations = [
         "Triage is based on caller-supplied evidence only; this service does not retrieve sources, "
@@ -4066,6 +4142,7 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
 
     response = {
         "triage_recommendation": triage,
+        "voyage_gate": voyage_gate,
         "exposure_signal": exposure_signal,
         "decision_readiness_score": readiness_score,
         "decision_readiness_label": readiness_label,
@@ -4073,7 +4150,24 @@ def gulf_maritime_exposure(request_json: dict) -> dict:
         "exposure_facets": facets,
         "supplied_sources": list(dict.fromkeys(supplied_sources)),
         "minimum_sources_before_review": missing_sources,
-        "evidence_gaps": [_gulf_evidence_gap_for_source(s) for s in missing_sources],
+        "evidence_gaps": (
+            (
+                ["P&I club or insurer is unknown; obtain and review cover details."]
+                if "P_AND_I_UNKNOWN" in voyage_gate["blocking_reasons"]
+                else []
+            )
+            + (
+                ["No ship-to-ship transfer history reference supplied."]
+                if "STS_WITHOUT_HISTORY" in voyage_gate["blocking_reasons"]
+                else []
+            )
+            + (
+                ["Supply IMO or both vessel name and flag for identity review."]
+                if "VESSEL_IDENTITY_MISSING" in voyage_gate["blocking_reasons"]
+                else []
+            )
+            + [_gulf_evidence_gap_for_source(s) for s in missing_sources]
+        ),
         "top_exposure_dimensions": _gulf_top_exposure_dimensions(facets, missing_sources, supplied_sources),
         "chokepoint_disruption_watch": _gulf_chokepoint_disruption_watch(request_json),
         "watch_next": watch_next,

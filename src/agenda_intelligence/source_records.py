@@ -22,7 +22,7 @@ def review_source_records(sources: list, *, date_required: bool = True) -> dict:
         )
         if re.search(
             (
-                r"\b(?:illustrative\s+only|synthetic\s+(?:test|example|fixture|only)|placeholder)\b"
+                r"\b(?:illustrative\s+only|synthetic\s+(?:test|example|fixture|only|demo|evidence)|placeholder)\b"
                 r"|https?://(?:www\.)?example\.(?:com|invalid)\b"
             ),
             content,
