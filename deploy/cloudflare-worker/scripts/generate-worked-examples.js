@@ -26,6 +26,14 @@ for(const profile of profiles){
   if(repair.error||repair.result?.isError)throw Error('invalid corrected fixture '+profile);
   examples[profile].follow_up={kind:'precomputed_synthetic_correction',request:corrected,response:repair.result.structuredContent};
  }
+ if(profile==='agentic_interaction_trust') {
+  const filled=structuredClone(args), request=filled.request || filled;
+  const missing=examples[profile].response.minimum_sources_before_action;
+  request.dated_sources.push(...missing.map((source_type,i)=>({id:'fixture-'+i,source_type,title:'Synthetic fixture '+source_type,date:'2026-01-01'})));
+  const checked=await(await call({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:tool.name,arguments:filled}})).json();
+  if(checked.error||checked.result?.isError)throw Error('invalid placeholder fixture '+profile);
+  examples[profile].follow_up={kind:'precomputed_synthetic_placeholders',label:'Adding fake records: gaps remain',request:filled,response:checked.result.structuredContent?.metadata?.response || checked.result.structuredContent};
+ }
 }
 console.log=log;
 const target=fileURLToPath(new URL('../src/worked-examples.js',import.meta.url));

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a minimal-input Interaction Trust client, fail-closed handoff and explicit three-stage review integration. Show a no-quota synthetic placeholder demo and clarify that the gate cannot grant action authorization.
+
 - Let hosted citation review check raw answers without source excerpts, with explicit unresolved references, a concise route and first step. Add an answer-first web form, a no-quota synthetic demo, an opt-in literal numeric smoke check, and a fail-closed trial client for agent handoffs; truth and semantic support remain unassessed.
 
 - Add an unassessed-evidence orientation and suggested gate to free-text strategic triage, with fail-closed `insufficient` routing. Include a local synthetic walkthrough and human-review integration recipe; existing detailed fields remain available.

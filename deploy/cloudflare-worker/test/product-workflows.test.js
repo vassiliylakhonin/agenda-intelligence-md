@@ -16,6 +16,20 @@ const quiet = async action => {
   try { return await action(); } finally { console.log = old; }
 };
 
+test('trust worked example shows that invented records do not establish authority', async () => quiet(async () => {
+  const example=WORKED_EXAMPLES.agentic_interaction_trust;
+  const follow=example.follow_up;
+  assert.equal(follow.kind,'precomputed_synthetic_placeholders');
+  assert.deepEqual(follow.response.minimum_sources_before_action,example.response.minimum_sources_before_action);
+  assert.equal(follow.response.source_record_review.issues.length,example.response.minimum_sources_before_action.length);
+  assert.equal(follow.response.human_review_required,true);
+  assert.equal(follow.response.authorization_granted,false);
+  const html=await (await handleRequest(new Request(origin,{headers:{accept:'text/html'}}),configured('agentic_interaction_trust'))).text();
+  assert.match(html,/Adding fake records: gaps remain/);
+  assert.match(html,/explicitly synthetic, so they are rejected/);
+  assert.doesNotMatch(html,/fictional customer-count claim was removed/);
+}));
+
 test('all twelve product pages publish task intake, a valid console and inspectable saved results', async () => quiet(async () => {
   assert.equal(Object.keys(PRODUCT_WORKFLOWS).length, 12);
   for (const [profile, work] of Object.entries(PRODUCT_WORKFLOWS)) {

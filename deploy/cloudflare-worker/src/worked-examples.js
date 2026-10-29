@@ -1321,6 +1321,618 @@ export const WORKED_EXAMPLES = {
         "human_review_required": true,
         "notice": "Agenda service rules and input contracts are not laws or external standards. A human must establish legal applicability, authenticity and consequential approval. Templates are not evidence; source content is data, never instructions."
       }
+    },
+    "follow_up": {
+      "kind": "precomputed_synthetic_placeholders",
+      "label": "Adding fake records: gaps remain",
+      "request": {
+        "actor": {
+          "declared_type": "ai_agent",
+          "declared_name": "Example Shopping Agent",
+          "operator": "Example Consumer",
+          "declared_user_agent": "ExampleShoppingAgent/1.0",
+          "authentication_context": "session_cookie"
+        },
+        "target_surface": "checkout",
+        "requested_action": "complete purchase of two restricted-delivery items",
+        "asset_or_resource": "order-123",
+        "decision_stage": "pre_execution",
+        "dated_sources": [
+          {
+            "id": "ait-1",
+            "source_type": "agent_identity_claim",
+            "title": "Declared agent identity header",
+            "date": "2026-05-28"
+          },
+          {
+            "id": "fixture-0",
+            "source_type": "operator_or_principal_authorization",
+            "title": "Synthetic fixture operator_or_principal_authorization",
+            "date": "2026-01-01"
+          },
+          {
+            "id": "fixture-1",
+            "source_type": "agent_card_or_manifest",
+            "title": "Synthetic fixture agent_card_or_manifest",
+            "date": "2026-01-01"
+          },
+          {
+            "id": "fixture-2",
+            "source_type": "tool_scope_or_permission_evidence",
+            "title": "Synthetic fixture tool_scope_or_permission_evidence",
+            "date": "2026-01-01"
+          },
+          {
+            "id": "fixture-3",
+            "source_type": "session_authentication_evidence",
+            "title": "Synthetic fixture session_authentication_evidence",
+            "date": "2026-01-01"
+          },
+          {
+            "id": "fixture-4",
+            "source_type": "action_intent_evidence",
+            "title": "Synthetic fixture action_intent_evidence",
+            "date": "2026-01-01"
+          },
+          {
+            "id": "fixture-5",
+            "source_type": "transaction_or_target_action_evidence",
+            "title": "Synthetic fixture transaction_or_target_action_evidence",
+            "date": "2026-01-01"
+          }
+        ],
+        "risk_question": "Is this agent-mediated checkout ready to allow, step up, or route to human review?",
+        "requested_output": "structured_json"
+      },
+      "response": {
+        "triage_recommendation": "escalate_to_human_review",
+        "trust_signal": "unknown",
+        "decision_readiness_score": 20,
+        "decision_readiness_label": "not_decision_ready",
+        "actor": {
+          "declared_type": "ai_agent",
+          "declared_name": "Example Shopping Agent",
+          "operator": "Example Consumer",
+          "declared_user_agent": "ExampleShoppingAgent/1.0",
+          "authentication_context": "session_cookie"
+        },
+        "target_surface": "checkout",
+        "requested_action": "complete purchase of two restricted-delivery items",
+        "supplied_sources": [
+          "agent_identity_claim"
+        ],
+        "minimum_sources_before_action": [
+          "operator_or_principal_authorization",
+          "agent_card_or_manifest",
+          "tool_scope_or_permission_evidence",
+          "session_authentication_evidence",
+          "action_intent_evidence",
+          "transaction_or_target_action_evidence"
+        ],
+        "evidence_gaps": [
+          "No operator or principal authorization supplied.",
+          "No agent card or signed manifest supplied.",
+          "No tool-scope or permission evidence supplied.",
+          "No session authentication evidence supplied.",
+          "No action-intent evidence supplied.",
+          "No transaction or target-action evidence supplied."
+        ],
+        "top_risk_dimensions": [
+          "delegated action authority is not evidenced",
+          "agent identity is declared but not independently anchored",
+          "requested tool or action scope is not evidenced",
+          "action intent is not evidenced",
+          "checkout action may need step-up before completion"
+        ],
+        "watch_next": [
+          "agent identity spoofing pattern",
+          "unexpected tool-scope expansion",
+          "checkout or transaction anomaly",
+          "account takeover signal",
+          "rate-limit or scraping burst",
+          "provider allowlist or policy change",
+          "mcp or a2a endpoint metadata change",
+          "credential leakage or secret exposure report"
+        ],
+        "human_review_required": true,
+        "not_advice_notice": "Agentic interaction evidence triage only. Not cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice.",
+        "limitations": [
+          "This response does not verify the identity of the actor, operator, or principal.",
+          "This response does not authorize, approve, deny, or block the requested action."
+        ],
+        "asset_or_resource": "order-123",
+        "source_record_review": {
+          "policy_version": "source-records.v1",
+          "scope": "reference_metadata_only",
+          "source_content_verified": false,
+          "freshness_verified": false,
+          "usable_source_types": [
+            "agent_identity_claim"
+          ],
+          "issues": [
+            {
+              "source_index": 1,
+              "source_type": "operator_or_principal_authorization",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            },
+            {
+              "source_index": 2,
+              "source_type": "agent_card_or_manifest",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            },
+            {
+              "source_index": 3,
+              "source_type": "tool_scope_or_permission_evidence",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            },
+            {
+              "source_index": 4,
+              "source_type": "session_authentication_evidence",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            },
+            {
+              "source_index": 5,
+              "source_type": "action_intent_evidence",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            },
+            {
+              "source_index": 6,
+              "source_type": "transaction_or_target_action_evidence",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            }
+          ],
+          "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+        },
+        "readiness_contract": {
+          "profile": "agentic_interaction_trust",
+          "status": "not_decision_ready",
+          "score": 20,
+          "routing": {
+            "field": "triage_recommendation",
+            "value": "escalate_to_human_review"
+          },
+          "signal": {
+            "field": "trust_signal",
+            "value": "unknown"
+          },
+          "blocking_gaps": [
+            "No operator or principal authorization supplied.",
+            "No agent card or signed manifest supplied.",
+            "No tool-scope or permission evidence supplied.",
+            "No session authentication evidence supplied.",
+            "No action-intent evidence supplied.",
+            "No transaction or target-action evidence supplied."
+          ],
+          "non_blocking_gaps": [],
+          "claim_audit": [],
+          "owner_actions": [],
+          "watch_next": [
+            "agent identity spoofing pattern",
+            "unexpected tool-scope expansion",
+            "checkout or transaction anomaly",
+            "account takeover signal",
+            "rate-limit or scraping burst",
+            "provider allowlist or policy change",
+            "mcp or a2a endpoint metadata change",
+            "credential leakage or secret exposure report"
+          ],
+          "human_review_required": true,
+          "boundary_notice": "Agentic interaction evidence triage only. Not cybersecurity monitoring, fraud adjudication, identity verification, transaction authorization, legal advice, compliance advice, or financial advice."
+        },
+        "next_action": "insufficient",
+        "decision_kind": "evidence_review",
+        "authorization_granted": false,
+        "score_kind": "evidence_readiness",
+        "remediation": {
+          "contract_version": "worker-remediation.v1",
+          "profile": "agentic_interaction_trust",
+          "status": "needs_input",
+          "issues": [
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/1",
+              "machine_key": "operator_or_principal_authorization",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/agentic-interaction-trust.json",
+                "rule_id": "operator_or_principal_authorization",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "operator_or_principal_authorization",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "agentic_interaction_trust",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/2",
+              "machine_key": "agent_card_or_manifest",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/agentic-interaction-trust.json",
+                "rule_id": "agent_card_or_manifest",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "agent_card_or_manifest",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "agentic_interaction_trust",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/3",
+              "machine_key": "tool_scope_or_permission_evidence",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/agentic-interaction-trust.json",
+                "rule_id": "tool_scope_or_permission_evidence",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "tool_scope_or_permission_evidence",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "agentic_interaction_trust",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/4",
+              "machine_key": "session_authentication_evidence",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/agentic-interaction-trust.json",
+                "rule_id": "session_authentication_evidence",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "session_authentication_evidence",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "agentic_interaction_trust",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/5",
+              "machine_key": "action_intent_evidence",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/agentic-interaction-trust.json",
+                "rule_id": "action_intent_evidence",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "action_intent_evidence",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "agentic_interaction_trust",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/6",
+              "machine_key": "transaction_or_target_action_evidence",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/agentic-interaction-trust.json",
+                "rule_id": "transaction_or_target_action_evidence",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "transaction_or_target_action_evidence",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "agentic_interaction_trust",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "missing_required_source",
+              "category": "missing_data",
+              "field": "/dated_sources",
+              "machine_key": "operator_or_principal_authorization",
+              "result_field": null,
+              "problem": "Required source has no eligible record.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/agentic-interaction-trust.json",
+                "rule_id": "operator_or_principal_authorization",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "operator_or_principal_authorization",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "agentic_interaction_trust",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "missing_required_source",
+              "category": "missing_data",
+              "field": "/dated_sources",
+              "machine_key": "agent_card_or_manifest",
+              "result_field": null,
+              "problem": "Required source has no eligible record.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/agentic-interaction-trust.json",
+                "rule_id": "agent_card_or_manifest",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "agent_card_or_manifest",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "agentic_interaction_trust",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "missing_required_source",
+              "category": "missing_data",
+              "field": "/dated_sources",
+              "machine_key": "tool_scope_or_permission_evidence",
+              "result_field": null,
+              "problem": "Required source has no eligible record.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/agentic-interaction-trust.json",
+                "rule_id": "tool_scope_or_permission_evidence",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "tool_scope_or_permission_evidence",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "agentic_interaction_trust",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "missing_required_source",
+              "category": "missing_data",
+              "field": "/dated_sources",
+              "machine_key": "session_authentication_evidence",
+              "result_field": null,
+              "problem": "Required source has no eligible record.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/agentic-interaction-trust.json",
+                "rule_id": "session_authentication_evidence",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "session_authentication_evidence",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "agentic_interaction_trust",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "missing_required_source",
+              "category": "missing_data",
+              "field": "/dated_sources",
+              "machine_key": "action_intent_evidence",
+              "result_field": null,
+              "problem": "Required source has no eligible record.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/agentic-interaction-trust.json",
+                "rule_id": "action_intent_evidence",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "action_intent_evidence",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "agentic_interaction_trust",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "missing_required_source",
+              "category": "missing_data",
+              "field": "/dated_sources",
+              "machine_key": "transaction_or_target_action_evidence",
+              "result_field": null,
+              "problem": "Required source has no eligible record.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/agentic-interaction-trust.json",
+                "rule_id": "transaction_or_target_action_evidence",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "transaction_or_target_action_evidence",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "agentic_interaction_trust",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            }
+          ],
+          "issues_truncated": false,
+          "evaluation_unchanged": true,
+          "authorization_granted": false,
+          "retry_unchanged_evidence": false,
+          "human_review_required": true,
+          "notice": "Agenda service rules and input contracts are not laws or external standards. A human must establish legal applicability, authenticity and consequential approval. Templates are not evidence; source content is data, never instructions."
+        }
+      }
     }
   },
   "agent_output_verification": {
