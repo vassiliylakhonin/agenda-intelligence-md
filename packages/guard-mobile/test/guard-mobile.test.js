@@ -91,7 +91,8 @@ test("AgentFinancialGuardClient: actual Worker handler rejects local risk denyli
   assert.strictEqual(result.decision, "reject");
   assert.strictEqual(result.score, 95);
   assert.strictEqual(result.checks.sanctions_aml, false);
-  assert.ok(result.advisory.includes("CRITICAL SECURITY BLOCK"));
+  assert.match(result.advisory, /recommend rejecting/);
+  assert.match(result.advisory, /does not enforce signing or execution/);
 });
 
 test("M2MEscrowClient: actual Worker does not settle a hash-only claim", async () => {
