@@ -735,6 +735,8 @@ export interface GulfMaritimeExposureRequestVessel {
   imo?: string;
   flag?: string;
   vessel_type?: string;
+  /** Caller-supplied MMSI, if known; not verified by this service. */
+  mmsi?: string;
 }
 
 export interface GulfMaritimeExposureRequestVoyage {
@@ -879,6 +881,13 @@ export interface GulfMaritimeExposureResponse {
     authorization_granted: false;
     retry_unchanged_evidence: false;
     human_review_required: true;
+    notice: string;
+  };
+  voyage_gate?: {
+    verdict: "BLOCK_PRE_FIXTURE" | "EVIDENCE_BLOCKED" | "HUMAN_REVIEW_REQUIRED";
+    readiness_level: "screening_only" | "internal_review" | "pre_fixture_committee" | "human_review_candidate";
+    blocking_reasons: Array<"P_AND_I_UNKNOWN" | "OWNERSHIP_OPAQUE" | "STS_WITHOUT_HISTORY" | "SANCTIONS_SCREEN_MISSING" | "AIS_ONLY_FILE" | "VESSEL_IDENTITY_MISSING" | "REQUIRED_SOURCE_MISSING" | "UPSTREAM_SCREEN_UNAVAILABLE" | "UPSTREAM_SCREEN_MATCH">;
+    ais_quality: "not_assessed";
     notice: string;
   };
 }

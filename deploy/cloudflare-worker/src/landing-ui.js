@@ -12,6 +12,7 @@ import { CITATION_REVIEW_SCRIPT, citationReviewHtml } from './citation-review.js
 import { CORRIDOR_WIZARD_SCRIPT, corridorWizardHtml } from './corridor-wizard.js';
 import { corridorOwnerActions, corridorOwnerActionsHtml } from './corridor-owner-actions.js';
 import { CIS_WIZARD_SCRIPT, cisWizardHtml } from './cis-wizard.js';
+import { GULF_WIZARD_SCRIPT, gulfWizardHtml, gulfGateHtml } from './gulf-wizard.js';
 import { cisReviewView, cisReviewViewHtml } from './cis-review-view.js';
 import { parseCounterpartyCsv, prepareBatch } from './cis-batch.js';
 import { serviceOffersHtml } from './service-offers.js';
@@ -100,7 +101,7 @@ function landingHtml(request, env) {
     critical_minerals_due_diligence: "Mineral supply chain → origin and ownership evidence gaps",
     dual_use_technology_export: "Electronics shipment → HS/ECCN and end-user evidence gaps"
   }[profile] || "Supplied case → evidence gaps + next human-review step";
-  const consoleId = freeTrial ? (profile === 'agent_output_verification' ? 'one-claim-review' : isKazakhstan ? 'corridor-wizard' : profile === 'cis_secondary_sanctions' ? 'cis-wizard' : 'profile-console') : isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
+  const consoleId = freeTrial ? (profile === 'agent_output_verification' ? 'one-claim-review' : isKazakhstan ? 'corridor-wizard' : profile === 'cis_secondary_sanctions' ? 'cis-wizard' : profile === 'gulf_maritime_exposure' ? 'gulf-wizard' : 'profile-console') : isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
   const exampleAction = "showWorkedExample()";
   const workedExample = WORKED_EXAMPLES[profile];
   const workflow = PRODUCT_WORKFLOWS[profile];
@@ -114,6 +115,7 @@ function landingHtml(request, env) {
     <div id="profile-summary" aria-live="polite"></div>
     ${isKazakhstan ? '<div id="corridor-owner-actions" aria-live="polite"></div>' : ''}
     ${profile === 'cis_secondary_sanctions' ? '<div id="cis-review-view" aria-live="polite"></div>' : ''}
+    ${profile === 'gulf_maritime_exposure' ? '<div id="gulf-review-view" aria-live="polite"></div>' : ''}
     ${freeTrial ? '<div id="profile-followthrough" hidden><h3>Choose your next step</h3><p>Use the result to collect one missing piece of evidence, then review a revision when ready. Each admitted rerun uses another attempt; changing input does not restore a spent allowance.</p><button type="button" onclick="agendaNextSteps.revise()">Review a revision — no submission</button> · <a href="#scoped-services">Scope a human review</a></div>' : ''}
     <div id="profile-progress" aria-live="polite"></div>
     <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
@@ -385,6 +387,7 @@ function landingHtml(request, env) {
   </div>` : consoleExample ? `
   ${freeTrial && isKazakhstan ? corridorWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_go) : ''}
   ${freeTrial && profile === 'cis_secondary_sanctions' ? cisWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_review) : ''}
+  ${freeTrial && profile === 'gulf_maritime_exposure' ? gulfWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_review) : ''}
   ${freeTrial && profile === 'agent_output_verification' ? citationReviewHtml(trialTerms.attempts_per_network, allowancePanel) : ''}
   ${freeTrial && profile === 'agent_output_verification' ? reviewPanel : ''}
   <h2>${freeTrial ? 'Check your own evidence free' : 'Live paid evaluation'}</h2>
@@ -489,6 +492,7 @@ ${freeTrial ? INTAKE_CLIENT_SCRIPT : ''}
 ${handoffTargets.length ? projectHandoffValue.toString() + '\n' + prepareHandoff.toString() + '\nvar agendaHandoffTargets = ' + JSON.stringify(handoffTargets).replaceAll('<','\\u003c') + ';\n' + HANDOFF_CLIENT_SCRIPT : ''}
 ${profile === 'critical_minerals_due_diligence' ? MINERAL_WORKFLOW_CLIENT_SCRIPT : ''}
 ${freeTrial && profile === 'agent_output_verification' ? CITATION_REVIEW_SCRIPT : ''}
+${freeTrial && profile === 'gulf_maritime_exposure' ? GULF_WIZARD_SCRIPT + '\n' + gulfGateHtml.toString() : ''}
 ${freeTrial && isKazakhstan ? CORRIDOR_WIZARD_SCRIPT : ''}
 ${freeTrial && isKazakhstan ? corridorOwnerActions.toString() + '\n' + corridorOwnerActionsHtml.toString() : ''}
 ${freeTrial && profile === 'cis_secondary_sanctions' ? CIS_WIZARD_SCRIPT + '\n' + cisReviewView.toString() + '\n' + cisReviewViewHtml.toString() + '\n' +
@@ -502,6 +506,7 @@ ${freeTrial ? `mountIntakeEditor(document.getElementById('profile-intake'), docu
   ] : []})});` : ''}
 ${freeTrial && isKazakhstan ? `mountCorridorWizard(${JSON.stringify(inputSchemaForProfile(profile)).replaceAll('<','\\u003c')});` : ''}
 ${freeTrial && profile === 'cis_secondary_sanctions' ? `mountCisWizard(${JSON.stringify(inputSchemaForProfile(profile)).replaceAll('<','\\u003c')});` : ''}
+${freeTrial && profile === 'gulf_maritime_exposure' ? `mountGulfWizard(${JSON.stringify(inputSchemaForProfile(profile)).replaceAll('<','\\u003c')});` : ''}
 function safeHtml(value) {
   var element = document.createElement('span');
   element.textContent = String(value == null ? '' : value);
@@ -674,6 +679,7 @@ async function runProfileExample(event, paid, reviewFlow) {
       document.getElementById('profile-summary').innerHTML = reviewSummaryHtml(review, safeHtml, ${JSON.stringify(workflow)});
       ${freeTrial && isKazakhstan ? "var corridorActions=document.getElementById('corridor-owner-actions'); if(corridorActions) corridorActions.innerHTML = corridorOwnerActionsHtml(payload.request || payload, review, safeHtml);" : ''}
       ${freeTrial && profile === 'cis_secondary_sanctions' ? "var cisView=document.getElementById('cis-review-view'); if(cisView) cisView.innerHTML = cisReviewViewHtml(payload.request || payload, review, safeHtml);" : ''}
+      ${freeTrial && profile === 'gulf_maritime_exposure' ? "var gulfView=document.getElementById('gulf-review-view'); if(gulfView) gulfView.innerHTML = gulfGateHtml(review.evaluation || review, safeHtml);" : ''}
       var progress = document.getElementById('profile-progress');
       if (progress) progress.innerHTML = ${profile === 'critical_minerals_due_diligence' ? "''" : "agendaLastReview ? reviewDeltaHtml(agendaLastReview, review, safeHtml) : ''"};
       ${freeTrial ? `if (paid) {

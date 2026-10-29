@@ -56,5 +56,15 @@
       "date": "2026-05-28"
     }
   ],
-  "risk_question": "Is the file ready for human review?"
+  "risk_question": "Is the file ready for human review?",
+  "vessel": {
+    "name": "Review Vessel",
+    "flag": "Panama"
+  },
+  "counterparties": [
+    {
+      "role": "insurer_or_pi_club",
+      "name": "Declared Club"
+    }
+  ]
 }

@@ -12,7 +12,7 @@ export function reviewSourceRecords(sources = [], {dateRequired = true} = {}) {
     if (!s || typeof s !== 'object') continue;
     const reasons=[];
     const content=['title','excerpt','content','text','summary','url'].map(k=>typeof s[k]==='string'?s[k]:'').join(' ');
-    if (/\b(?:illustrative\s+only|synthetic\s+(?:test|example|fixture|only)|placeholder)\b|https?:\/\/(?:www\.)?example\.(?:com|invalid)\b/iu.test(content)) reasons.push('Illustrative or placeholder material cannot establish source coverage.');
+    if (/\b(?:illustrative\s+only|synthetic\s+(?:test|example|fixture|only|demo|evidence)|placeholder)\b|https?:\/\/(?:www\.)?example\.(?:com|invalid)\b/iu.test(content)) reasons.push('Illustrative or placeholder material cannot establish source coverage.');
     if (!String(s.id || '').trim() || !String(s.title || '').trim()) reasons.push('Supply a nonblank source ID and title.');
     if (ids.get(String(s.id || '').trim()).size > 1) reasons.push('Source ID has conflicting document types; assign distinct records or resolve the conflict.');
     if (dateRequired || s.date !== undefined) {

@@ -7071,6 +7071,30 @@ function gulfChokepointDisruptionWatch(request) {
   return watch;
 }
 
+function gulfVoyageGate(request, supplied, missing, triage) {
+  const known = value => typeof value === "string" && value.trim() &&
+    !/^(unknown|unknown insurer|unk|n\/?a|none|not known|not provided|not available|not disclosed|unconfirmed|tbd|pending|unspecified|\?|-)$/i.test(value.trim());
+  const insurer = (request.counterparties || []).filter(row => row.role === "insurer_or_pi_club");
+  const vessel = request.vessel || {};
+  const facets = request.exposure_facets || [];
+  const reasons = [];
+  if (!insurer.length || insurer.some(row => !known(row.name))) reasons.push("P_AND_I_UNKNOWN");
+  if (!supplied.includes("ownership_or_control_evidence")) reasons.push("OWNERSHIP_OPAQUE");
+  if (facets.includes("sts_transfer") && !supplied.includes("sts_transfer_evidence")) reasons.push("STS_WITHOUT_HISTORY");
+  if (!supplied.includes("sanctions_list_extract")) reasons.push("SANCTIONS_SCREEN_MISSING");
+  if (supplied.length === 1 && supplied[0] === "ais_track_record") reasons.push("AIS_ONLY_FILE");
+  if (!known(vessel.imo) && !(known(vessel.name) && known(vessel.flag))) reasons.push("VESSEL_IDENTITY_MISSING");
+  if (missing.length) reasons.push("REQUIRED_SOURCE_MISSING");
+  const blocked = reasons.length > 0 || triage !== "ready_for_human_review";
+  return {
+    verdict: blocked ? (request.decision_stage === "pre_fixture" ? "BLOCK_PRE_FIXTURE" : "EVIDENCE_BLOCKED") : "HUMAN_REVIEW_REQUIRED",
+    readiness_level: !supplied.length ? "screening_only" : missing.length ? "internal_review" : blocked ? "pre_fixture_committee" : "human_review_candidate",
+    blocking_reasons: reasons,
+    ais_quality: "not_assessed",
+    notice: "Document references and caller-declared identifiers only; no identity, cover, AIS quality or sanctions clearance is verified. Human review is always required."
+  };
+}
+
 async function gulfMaritimeExposureResult(request, env = {}) {
   const supplied = suppliedSourceTypes(request);
   const missing = GULF_MARITIME_REQUIRED_BEFORE_REVIEW.filter((s) => !supplied.includes(s));
@@ -7126,6 +7150,14 @@ async function gulfMaritimeExposureResult(request, env = {}) {
     score = Math.min(score,49);
     label = "not_decision_ready";
   }
+  const voyageGate = gulfVoyageGate(request, supplied, missing, triage);
+  if (vizierMaritimeResult?.violation) voyageGate.blocking_reasons.push("UPSTREAM_SCREEN_MATCH");
+  if (vizierMaritimeResult?.status === "degraded") voyageGate.blocking_reasons.push("UPSTREAM_SCREEN_UNAVAILABLE");
+  if (voyageGate.blocking_reasons.length) {
+    score = Math.min(score, 49);
+    if (label !== "insufficient_information") label = "not_decision_ready";
+    if (triage === "ready_for_human_review") triage = request.decision_stage === "pre_fixture" ? "escalate_before_fixture" : "not_decision_ready";
+  }
   const limitations = [
     "Triage is based on caller-supplied references and configured upstream screening when available; this service does not resolve physical vessel ownership or verify identity.",
     "A name match against a sanctions list is not legal-entity or vessel-identity verification. Human review is required."
@@ -7136,6 +7168,7 @@ async function gulfMaritimeExposureResult(request, env = {}) {
 
   const response = {
     triage_recommendation: triage,
+    voyage_gate: voyageGate,
     exposure_signal: exposureSignal,
     decision_readiness_score: score,
     decision_readiness_label: label,
@@ -7143,7 +7176,12 @@ async function gulfMaritimeExposureResult(request, env = {}) {
     exposure_facets: facets,
     supplied_sources: supplied,
     minimum_sources_before_review: missing,
-    evidence_gaps: missing.map(gulfEvidenceGapForSource),
+    evidence_gaps: [
+      ...(voyageGate.blocking_reasons.includes("P_AND_I_UNKNOWN") ? ["P&I club or insurer is unknown; obtain and review cover details."] : []),
+      ...(voyageGate.blocking_reasons.includes("STS_WITHOUT_HISTORY") ? ["No ship-to-ship transfer history reference supplied."] : []),
+      ...(voyageGate.blocking_reasons.includes("VESSEL_IDENTITY_MISSING") ? ["Supply IMO or both vessel name and flag for identity review."] : []),
+      ...missing.map(gulfEvidenceGapForSource)
+    ],
     top_exposure_dimensions: topDims,
     chokepoint_disruption_watch: gulfChokepointDisruptionWatch(request),
     watch_next: watchNext,
