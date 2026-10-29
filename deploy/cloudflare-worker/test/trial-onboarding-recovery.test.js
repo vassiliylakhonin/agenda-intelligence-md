@@ -16,6 +16,16 @@ const count = async env => (await env.PAYMENT_LEDGER.prepare('SELECT COUNT(*) AS
 const capture = async action => {const old=console.log, events=[];console.log=e=>events.push(e);
   try {await action(events);} finally {console.log=old;}};
 
+test('offline answer review is offered only on the matching Output Verification recovery surface', async () => capture(async () => {
+  for (const [profile, expected] of [['agent_output_verification', true], ['m2m_escrow_arbiter', false]]) {
+    const env = {...envFor(), AGENT_PROFILE:profile};
+    const html = await (await handleRequest(new Request(origin+'/', {headers:{accept:'text/html',...headers}}), env)).text();
+    assert.equal(html.includes('Use the local Python answer review'), expected);
+    if (expected) assert.match(html, /different input and result contract and does not reset this hosted allowance/);
+    assert.equal(await count(env), 0);
+  }
+}));
+
 test('availability is a read-only network/product snapshot and POST remains authoritative', async () => capture(async events => {
   const env=envFor();
   let response=await get(env),body=await response.json();
