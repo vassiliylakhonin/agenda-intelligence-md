@@ -29,7 +29,10 @@
       ]
     },
     "validation_scope": {
-      "const": "citation_and_quote_structure_only"
+      "enum": [
+        "citation_and_quote_structure_only",
+        "citation_quote_and_numeric_smoke"
+      ]
     },
     "factuality": {
       "const": "not_assessed"
@@ -65,7 +68,8 @@
               "unsupported_citation_syntax",
               "unbalanced_quote",
               "unattributed_quote",
-              "quote_not_found"
+              "quote_not_found",
+              "number_absent_from_cited_sources"
             ]
           },
           "source_id": {

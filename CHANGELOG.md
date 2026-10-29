@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Let hosted citation review check raw answers without source excerpts, with explicit unresolved references, a concise route and first step. Add an answer-first web form, a no-quota synthetic demo, an opt-in literal numeric smoke check, and a fail-closed trial client for agent handoffs; truth and semantic support remain unassessed.
+
 - Add an unassessed-evidence orientation and suggested gate to free-text strategic triage, with fail-closed `insufficient` routing. Include a local synthetic walkthrough and human-review integration recipe; existing detailed fields remain available.
 
 - When an Output Verification trial allowance is exhausted, point browser and first-check MCP clients to the separate local answer/source adapter, without implying identical contracts or another hosted allowance.

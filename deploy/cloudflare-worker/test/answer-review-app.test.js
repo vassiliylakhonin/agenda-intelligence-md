@@ -11,7 +11,7 @@ class Element {
   querySelector(tag){for(const child of this.children){if(child.tag===tag)return child;const nested=child.querySelector(tag);if(nested)return nested;}return null;}
 }
 const fixture=()=>{
-  const elements=Object.fromEntries(['review-form','answer','sources','status','result','raw-result','review','allowance','add-source'].map(id=>[id,new Element(id)]));
+  const elements=Object.fromEntries(['review-form','answer','sources','status','result','raw-result','review','allowance','add-source','demo-before','demo-after','demo-result','numeric-smoke'].map(id=>[id,new Element(id)]));
   const document={getElementById:id=>elements[id],createElement:tag=>new Element(tag)};
   const calls=[];let handler=async()=>({});
   const app={connect:async()=>{},callServerTool:params=>{calls.push(params);return handler(params);}};
@@ -54,6 +54,7 @@ test('App prevents duplicate submissions and status consumes no evaluation; sour
 test('first-use source labels need no technical ID entry and are never recycled after removal',async()=>{
   const f=fixture();await mountAnswerReview(f.app,f.document);
   f.elements.answer.value='The report says "three warehouses" [s1]';
+  f.elements['add-source'].onclick();
   f.elements.sources.children[0].querySelector('textarea').value='The report lists three warehouses.';
   f.setHandler(async params=>({structuredContent:{evaluation:reviewAnswer(params.arguments),trial:{attempt_consumed:true}}}));
   await f.elements.review.onclick({preventDefault(){}});
@@ -68,6 +69,19 @@ test('first-use source labels need no technical ID entry and are never recycled 
   f.elements['add-source'].onclick();
   assert.notEqual(f.elements.sources.children[1].querySelector('input').value,'s4');
   assert.equal(f.elements.sources.children[0].querySelector('input').value,'s4','preserve supplied source IDs');
+});
+
+test('raw text can be checked without sources and synthetic demo makes no tool calls',async()=>{
+  const f=fixture();await mountAnswerReview(f.app,f.document);
+  f.elements['demo-before'].onclick();assert.match(f.elements['demo-result'].textContent,/2 citation\/quote issues/);
+  f.elements['demo-after'].onclick();assert.match(f.elements['demo-result'].textContent,/0 citation\/quote issues.*human_review/);
+  assert.equal(f.calls.length,0);assert.equal(f.elements.answer.value,'');
+  f.elements.answer.value='Uncited claim.';
+  f.setHandler(async params=>({structuredContent:{evaluation:reviewAnswer(params.arguments),trial:{attempt_consumed:true}}}));
+  await f.elements.review.onclick({preventDefault(){}});
+  assert.deepEqual(f.calls[0].arguments,{answer:'Uncited claim.',sources:[]});
+  assert.match(f.elements.result.textContent,/REVISE/);
+  assert.match(f.elements.result.textContent,/no permission/i);
 });
 
 test('known exhausted allowance blocks redundant review and a deliberate status refresh can reopen it',async()=>{

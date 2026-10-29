@@ -1,4 +1,4 @@
-import {answerReviewErrors} from '../../src/answer-review.js';
+import {answerReviewErrors, reviewAnswer} from '../../src/answer-review.js';
 
 export function mountAnswerReview(app, document) {
   const byId = id => document.getElementById(id);
@@ -58,7 +58,8 @@ export function mountAnswerReview(app, document) {
           (changed.length?`Source excerpts added, removed or changed: ${changed.join(', ')}. Review these source changes.`:'Source excerpts unchanged.')+'\n\n';
       }
       result.hidden=false;
-      result.textContent=comparison+(evaluation.findings.length
+      result.textContent=`${evaluation.findings.length ? 'REVISE' : 'HUMAN REVIEW'} — no permission to relay or act.\n`+
+        `Next: ${evaluation.findings.length ? 'Line '+evaluation.findings[0].line+': '+evaluation.findings[0].next_action : evaluation.next_action}\n\n`+comparison+(evaluation.findings.length
         ? evaluation.findings.map(item=>`Line ${item.line}${item.source_id ? ' ['+item.source_id+']' : ''}: ${item.next_action}`).join('\n\n')
         : 'No issues found in the supported citation and quote structure. A human still needs to check whether each statement is supported by authentic, current sources.');
       byId('raw-result').textContent=JSON.stringify(body,null,2);
@@ -72,9 +73,18 @@ export function mountAnswerReview(app, document) {
   app.ontoolinput=value=>{
     const input=value.arguments;
     if (answerReviewErrors(input).length) return;
-    answer.value=input.answer;rows.replaceChildren();input.sources.forEach(addSource);
+    answer.value=input.answer;rows.replaceChildren();input.sources.forEach(addSource);byId('numeric-smoke').checked=input.numeric_smoke_check===true;
   };
   byId('add-source').onclick=()=>{if(rows.children.length<20)addSource();};
+  const demoBefore={answer:'The report says "five warehouses" [s1]\nAnother claim [s2]',sources:[{source_id:'s1',text:'The report lists three warehouses.'}]};
+  const demoAfter={answer:'The report says "three warehouses" [s1]\nAnother claim [s2]',sources:[{source_id:'s1',text:'The report lists three warehouses.'},{source_id:'s2',text:'Another claim.'}]};
+  function showDemo(input, label) {
+    const output=reviewAnswer(input);
+    byId('demo-result').textContent=`${label}: ${output.findings.length} citation/quote issues — ${output.route}. `+
+      'Synthetic local example; no attempt used. Human review remains required; factuality and semantic support are not assessed.';
+  }
+  byId('demo-before').onclick=()=>showDemo(demoBefore,'Before');
+  byId('demo-after').onclick=()=>showDemo(demoAfter,'After');
   allowance.onclick=async()=>{
     if(busy||!connected)return;busy=true;buttons();
     try {
@@ -93,6 +103,7 @@ export function mountAnswerReview(app, document) {
   review.onclick=async event=>{
     event.preventDefault();if(busy||!connected||quotaBlocked)return;
     const input={answer:answer.value,sources:[...rows.children].map(row=>({source_id:row.querySelector('input').value,text:row.querySelector('textarea').value}))};
+    if (byId('numeric-smoke').checked) input.numeric_smoke_check=true;
     const errors=answerReviewErrors(input);
     if(errors.length){status.textContent=errors.join(' ');return;}
     if(lastCompleted && JSON.stringify(input)===JSON.stringify(lastCompleted.input)) {
@@ -105,7 +116,7 @@ export function mountAnswerReview(app, document) {
     catch{status.textContent='The result could not be received. The attempt may have been consumed. No automatic retry; the previous result below is unchanged.';}
     finally{busy=false;buttons();}
   };
-  addSource();buttons();
+  buttons();
   return app.connect().then(()=>{connected=true;buttons();if(result.hidden)status.textContent='Ready. Check your allowance, then choose Review. Opening this form performed no evaluation.';})
     .catch(()=>{status.textContent='This view needs an MCP Apps host. Use the ordinary review_answer tool with answer and sources instead. No evaluation was requested.';});
 }

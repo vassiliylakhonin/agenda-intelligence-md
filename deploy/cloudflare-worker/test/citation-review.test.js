@@ -16,6 +16,7 @@ const envFor=()=>({AGENT_PROFILE:'agent_output_verification',WORKER_FREE_TRIAL:'
 async function browser(env=envFor()) {
   const html=await(await handleRequest(new Request(origin+'/?owner_test=1',{headers:{accept:'text/html'}}),env)).text();
   const elements=Object.fromEntries(['citation-claim','citation-source','citation-quote','citation-support','citation-status','citation-run',
+    'raw-answer','raw-source','raw-status','raw-result','raw-run','raw-numeric','citation-demo-before','citation-demo-after',
     'profile-run','profile-paid','profile-status','profile-result','profile-summary','profile-progress','profile-response','profile-request',
     'profile-feedback','profile-feedback-status','profile-helpful','profile-blocked','profile-feedback-panel','profile-intake','profile-recovery']
     .map(id=>[id,{value:'',textContent:'',innerHTML:'',hidden:true,disabled:false}]));
@@ -35,6 +36,45 @@ async function browser(env=envFor()) {
 }
 const quiet=async action=>{const old=console.log;console.log=()=>{};try{return await action();}finally{console.log=old;}};
 const run=ui=>ui.context.runCitationReview({preventDefault(){}});
+
+test('web raw answer, synthetic demo and correction use the real trial without fabricating sources',async()=>quiet(async()=>{
+  const ui=await browser();
+  assert.match(ui.html,/Before: 2 citation\/quote issues/);
+  assert.match(ui.html,/After: 0 citation\/quote issues/);
+  ui.context.showCitationDemo('before');assert.equal(ui.elements['citation-demo-before'].hidden,false);
+  ui.context.showCitationDemo('after');assert.equal(ui.elements['citation-demo-before'].hidden,true);
+  assert.equal(ui.requests.length,0);
+  const submit=()=>ui.context.runRawReview({preventDefault(){}});
+  ui.elements['raw-answer'].value='A claim [s1]\nUncited claim.';
+  ui.elements['raw-source'].value='https://example.test/source';
+  await submit();assert.equal(ui.requests.length,0);assert.match(ui.elements['raw-status'].textContent,/URL alone/);
+  ui.elements['raw-source'].value='';
+  await submit();
+  const input=JSON.parse(ui.requests[0].init.body).params.arguments;
+  assert.equal(input.answer,ui.elements['raw-answer'].value);assert.equal(input.sources.length,0);
+  assert.match(ui.elements['raw-result'].textContent,/unknown_source/);
+  assert.match(ui.elements['raw-result'].textContent,/missing_citation/);
+  assert.match(ui.elements['raw-result'].textContent,/REVISE/);
+  await submit();assert.equal(ui.requests.length,1,'unchanged review must not consume another attempt');
+  ui.elements['raw-answer'].value='A claim [s1]';
+  ui.elements['raw-source'].value='A claim';
+  await submit();assert.equal(ui.requests.length,2);
+  assert.match(ui.elements['raw-result'].textContent,/Previous: 2 issues; current: 0/);
+  assert.match(ui.elements['raw-result'].textContent,/HUMAN REVIEW.*no permission/);
+  assert.match(ui.elements['raw-status'].textContent,/semantic support were not assessed/);
+  assert.equal(ui.requests[0].init.headers['x-client-id'],'agenda-owner-manual');
+  ui.elements['raw-answer'].value='Capacity is 900 [s1]';
+  ui.elements['raw-source'].value='Capacity is 120.';
+  ui.elements['raw-numeric'].checked=true;
+  await submit();assert.match(ui.elements['raw-result'].textContent,/number_absent_from_cited_sources/);
+  assert.equal(JSON.parse(ui.requests[2].init.body).params.arguments.numeric_smoke_check,true);
+  const previous=ui.elements['raw-result'].textContent;
+  ui.elements['raw-answer'].value='Edited again [s1]';
+  ui.context.fetch=async()=>{throw Error('network');};
+  await submit();
+  assert.equal(ui.elements['raw-result'].textContent,previous);
+  assert.match(ui.elements['raw-status'].textContent,/attempt may have been consumed/);
+}));
 
 test('one-claim form is opt-in to the existing Output trial and begins without evidence or inferred support',async()=>quiet(async()=>{
   const ui=await browser();

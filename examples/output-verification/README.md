@@ -125,3 +125,21 @@ well-formed, fully linked packet requires source validation and human review.
 # Signed agent loop
 
 Use the [signed Output guide](../../docs/deployment/output-evaluation-receipts.md) for native MCP trials, explicitly budgeted official x402 clients and independent request/result receipt verification. Run `node examples/output-verification/replay.mjs` for three entirely local synthetic replays and a scoped latency measurement. No wallet is needed for those replays.
+
+## Raw answer before relay (hosted citation review)
+
+The hosted `review_answer` tool also accepts an empty `sources` array. This can identify missing or unresolved references in plain text without guessing which source supports which claim. Add actual excerpts as `{source_id,text}` to resolve `[source-id]`; URLs are labels and are never fetched. Every nonempty line is still a review unit, so headings or unsupported citation formats can require manual correction.
+
+```js
+import { reviewAnswerBeforeRelay } from './examples/output-verification/review-answer-client.mjs';
+// This is an explicit free-trial evaluation; it consumes one shared network attempt.
+const result = await reviewAnswerBeforeRelay(answer, sources);
+if (result.evaluation.route === 'revise') {
+  // Stop: repair the identified references using real evidence, then explicitly recheck.
+} else {
+  // Stop and send the reviewed answer and sources to a human reviewer.
+}
+// result.relay_allowed is always false; separately record human approval before relay.
+```
+
+The helper throws on network, admission, quota, protocol, and incomplete-result failures. Catch failures only to hold the workflow for investigation, not to continue. It does not retry, fetch URLs, approve, sign, pay, or send the answer onward. The helper’s `summary.verdict` and `summary.next_one_thing` present the existing route and first repair; they do not change its meaning. No numerical quality or truth score is inferred. For an optional literal numeric smoke check, pass `{numericSmokeCheck: true}` as the third argument, or set `numeric_smoke_check: true` in `review_answer`. A number absent from all resolved cited excerpts flags the line for revision. Matching numbers do not prove a claim, units or context; different formatting can cause false flags, and lines with unresolved citations are not numerically checked. The [local RAG adapter](../../docs/integrations/rag-output.md) has different numeric and lexical diagnostics and a separate contract.
