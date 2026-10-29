@@ -3,7 +3,7 @@ export async function beforeSign(request,evaluate){
  if(!request||typeof request!=='object'||Array.isArray(request)||typeof evaluate!=='function')throw Error('A transaction request and caller-supplied evaluator are required.');
  const response=await evaluate(request);
  const verdict=response?.financial_guard_verdict;
- if(response?.profile!=='agent_financial_guard'||response?.authorization_granted!==false||!verdict||verdict.human_review_required!==true||verdict.can_auto_sign!==false||!['REJECT','HUMAN_REVIEW'].includes(verdict.pre_sign_verdict)||!Array.isArray(verdict.blocking_reasons)||verdict.blocking_reasons.some(x=>typeof x!=='string')||typeof verdict.next_one_thing!=='string')throw Error('Unconfirmed review result: do not sign.');
+ if(response?.profile!=='agent_financial_guard'||response?.authorization_granted!==false||!verdict||verdict.human_review_required!==true||verdict.can_auto_sign!==false||!['REJECT','HUMAN_REVIEW'].includes(verdict.pre_sign_verdict)||(verdict.decision==='reject'&&verdict.pre_sign_verdict!=='REJECT')||(verdict.pre_sign_verdict==='HUMAN_REVIEW'&&verdict.decision!=='step_up_human_required')||!Array.isArray(verdict.blocking_reasons)||verdict.blocking_reasons.some(x=>typeof x!=='string')||typeof verdict.next_one_thing!=='string')throw Error('Unconfirmed review result: do not sign.');
  return {pre_sign_verdict:verdict.pre_sign_verdict,can_auto_sign:false,transaction_binding:'not_verified',blocking_reasons:[...verdict.blocking_reasons],next_one_thing:verdict.next_one_thing};
 }
 

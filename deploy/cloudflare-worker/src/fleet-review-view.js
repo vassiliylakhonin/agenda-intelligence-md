@@ -1,15 +1,15 @@
 // Presentation only; never mutate a decision or turn absent screening into a pass.
 export function financialGuardViewHtml(response,escape){
- const v=response?.financial_guard_verdict;if(!v||!['REJECT','HUMAN_REVIEW'].includes(v.pre_sign_verdict)||v.can_auto_sign!==false||!Array.isArray(v.blocking_reasons))return '';
+ const v=response?.financial_guard_verdict;if(response?.authorization_granted!==false||!v||v.human_review_required!==true||!['REJECT','HUMAN_REVIEW'].includes(v.pre_sign_verdict)||v.can_auto_sign!==false||(v.decision==='reject'&&v.pre_sign_verdict!=='REJECT')||(v.pre_sign_verdict==='HUMAN_REVIEW'&&v.decision!=='step_up_human_required')||!Array.isArray(v.blocking_reasons))return '';
  return '<section aria-label="Pre-sign review"><h3>Pre-sign review: '+escape(v.pre_sign_verdict)+'</h3><p>Automatic signing: not permitted by this review. Local denylist match: '+escape(String(v.local_denylist_hit))+'.</p><p><strong>Next:</strong> '+escape(v.next_one_thing)+'</p><ul>'+v.blocking_reasons.map(reason=>'<li>'+escape(reason)+'</li>').join('')+'</ul><p>Current sanctions, policy authority and spending history remain unverified. This service does not enforce signer behavior.</p></section>';
 }
 export function dualUseViewHtml(response,escape){
- const r=response?.export_risk_triage?.export_review;if(!r||!['NOT_READY','READY_FOR_EXPORT_CONTROL_REVIEW'].includes(r.verdict)||!Array.isArray(r.blocking_gaps)||!Array.isArray(r.review_leads))return '';
+ const triage=response?.export_risk_triage,r=triage?.export_review;if(response?.authorization_granted!==false||triage?.human_review_required!==true||triage.factual_verification_performed!==false||!r||!['NOT_READY','READY_FOR_EXPORT_CONTROL_REVIEW'].includes(r.verdict)||(r.verdict==='READY_FOR_EXPORT_CONTROL_REVIEW'&&triage.status!=='ready_for_human_review')||!Array.isArray(r.blocking_gaps)||!Array.isArray(r.review_leads))return '';
  return '<section aria-label="Export dossier review"><h3>Export dossier: '+escape(r.verdict)+'</h3><p>Stage: '+escape(r.stage)+'; classification: '+escape(r.classification_status)+'.</p><p><strong>Next:</strong> '+escape(r.next_one_thing)+'</p>'+(r.blocking_gaps.length?'<p>Missing review references:</p><ul>'+r.blocking_gaps.map(g=>'<li>'+escape(g)+'</li>').join('')+'</ul>':'<p>No missing reference categories reported; independent review remains required.</p>')+(r.review_leads.length?'<p>Review leads:</p><ul>'+r.review_leads.map(x=>'<li>'+escape(x)+'</li>').join('')+'</ul>':'')+'<p>'+escape(r.notice)+'</p><p>Related reviews: <a href="https://corridor-sanctions-assistant.agendamcp.dpdns.org/">Corridor Assistant</a>, <a href="https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/">Middle Corridor</a>, <a href="https://cis-secondary-sanctions.agendamcp.dpdns.org/">CIS Secondary Sanctions</a>. No case data is transferred by opening a link; each service has separate admission.</p></section>';
 }
 
 export function corridorPlanHtml(response,escape){
- if(response?.role!=='orientation_only'||response.not_a_clearance!==true||!Array.isArray(response.route_plan)||!response.desk_checklist)return '';
+ if(response?.authorization_granted!==false||response?.role!=='orientation_only'||response.not_a_clearance!==true||!Array.isArray(response.route_plan)||!response.desk_checklist)return '';
  const bank=Array.isArray(response.desk_checklist.bank_compliance)?response.desk_checklist.bank_compliance:[];
  const insurer=Array.isArray(response.desk_checklist.insurer)?response.desk_checklist.insurer:[];
  const route=response.route_plan.filter(x=>x&&typeof x.name==='string'&&typeof x.why==='string');
