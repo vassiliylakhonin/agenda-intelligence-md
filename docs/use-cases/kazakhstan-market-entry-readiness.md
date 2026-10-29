@@ -2,6 +2,18 @@
 
 Use-case contract for Agenda Intelligence MD.
 
+## Local preparation and owner plan
+
+On the hosted free-trial page, the entry-model selector offers optional prompts for distributor agreements, LLPs, branches or representative offices, JVs and EPC/project companies. It does not assert a legal minimum, select sources, infer sector, or affect the existing gate: choose the relevant records and sector explicitly. The form prepares the existing structured request locally and does not upload documents or consume an attempt until the user submits an evaluation.
+
+After a successful evaluation the owner plan groups the returned gaps under signature and partner review, finance and tax, operations, and other gaps. Grouping and suggested owners are a navigation aid, not confirmed assignments, a RACI, or a determination of legal applicability. A stop or caller-declared blocker takes precedence in the suggested next step. The committee memo copies the returned route, actions, source-reference categories and assumptions; the user must review and redact it before sharing. References do not establish source authenticity, currency or legal compliance.
+
+The page compares successive successful results only for the same project, partner, market, stage, decision question, sector, commercial objective and counterparties. Changes in assumptions, blockers, evidence and upstream conditions can still affect the result; a smaller gap count is not confirmation that an issue was resolved. The saved synthetic follow-up shows why fabricated placeholder records do not close real gaps.
+
+Agents can project their own previously completed responses offline using `examples/kazakhstan-market-entry-readiness/review-helper.mjs`. For `view`, save a JSON object `{ "request": ..., "response": ... }` and run `node examples/kazakhstan-market-entry-readiness/review-helper.mjs view input.json`. For `compare`, supply `{ "previous": { "request": ..., "response": ... }, "current": { "request": ..., "response": ... } }`; the helper refuses mismatched case scope. It never calls a service, retries, pays or transfers the file. Its output is a presentation of an existing result, not a new gate decision.
+
+CIS Secondary Sanctions, Middle Corridor and Dual-Use are separate reviews with their own admission and input requirements; links do not send case data. No readiness percentage is invented for a service that does not supply one. A qualified human must decide applicability, review actual evidence and authorize any commitment.
+
 ## Proposition
 
 Bring a company, product or project concept, Kazakhstan commercial objective, counterparties, and dated sources. Get a market-entry readiness triage with evidence gaps, claim status, owner actions, watch-next indicators, and human-review routing.

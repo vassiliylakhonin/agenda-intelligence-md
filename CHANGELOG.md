@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an optional Kazakhstan entry-model intake, grouped owner plan, scope-checked progress view and locally copyable committee memo. Add an offline agent projection helper and a labeled synthetic follow-up; none changes the gate decision or verifies evidence.
+
 - Add a Gulf voyage intake, explicit IMO/MMSI fields and pre-fixture reason codes for unknown cover, missing ownership, STS history, sanctions and identity. Block metadata readiness on those gaps, keep human review mandatory, and show AIS quality as unassessed. Add a labeled synthetic follow-up and maritime playbook prompts; document references do not establish authenticity or clearance.
 
 - Add CIS counterparty intake, local CSV/JSON batch preparation and fail-safe per-item summaries. Surface reported screening/enrichment status and a requested-scope matrix that explicitly does not assess legal applicability; keep source and trial contracts unchanged.
