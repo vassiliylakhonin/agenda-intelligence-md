@@ -13,6 +13,8 @@ import { CORRIDOR_WIZARD_SCRIPT, corridorWizardHtml } from './corridor-wizard.js
 import { corridorOwnerActions, corridorOwnerActionsHtml } from './corridor-owner-actions.js';
 import { CIS_WIZARD_SCRIPT, cisWizardHtml } from './cis-wizard.js';
 import { GULF_WIZARD_SCRIPT, gulfWizardHtml, gulfGateHtml } from './gulf-wizard.js';
+import { MARKET_ENTRY_WIZARD_SCRIPT, marketEntryWizardHtml } from './market-entry-wizard.js';
+import { marketEntryView, marketEntryViewHtml, marketEntryProgress, marketEntryProgressHtml } from './market-entry-workflow.js';
 import { cisReviewView, cisReviewViewHtml } from './cis-review-view.js';
 import { parseCounterpartyCsv, prepareBatch } from './cis-batch.js';
 import { serviceOffersHtml } from './service-offers.js';
@@ -101,7 +103,7 @@ function landingHtml(request, env) {
     critical_minerals_due_diligence: "Mineral supply chain → origin and ownership evidence gaps",
     dual_use_technology_export: "Electronics shipment → HS/ECCN and end-user evidence gaps"
   }[profile] || "Supplied case → evidence gaps + next human-review step";
-  const consoleId = freeTrial ? (profile === 'agent_output_verification' ? 'one-claim-review' : isKazakhstan ? 'corridor-wizard' : profile === 'cis_secondary_sanctions' ? 'cis-wizard' : profile === 'gulf_maritime_exposure' ? 'gulf-wizard' : 'profile-console') : isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
+  const consoleId = freeTrial ? (profile === 'agent_output_verification' ? 'one-claim-review' : isKazakhstan ? 'corridor-wizard' : profile === 'cis_secondary_sanctions' ? 'cis-wizard' : profile === 'gulf_maritime_exposure' ? 'gulf-wizard' : profile === 'market_entry_readiness' ? 'market-entry-wizard' : 'profile-console') : isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
   const exampleAction = "showWorkedExample()";
   const workedExample = WORKED_EXAMPLES[profile];
   const workflow = PRODUCT_WORKFLOWS[profile];
@@ -116,6 +118,7 @@ function landingHtml(request, env) {
     ${isKazakhstan ? '<div id="corridor-owner-actions" aria-live="polite"></div>' : ''}
     ${profile === 'cis_secondary_sanctions' ? '<div id="cis-review-view" aria-live="polite"></div>' : ''}
     ${profile === 'gulf_maritime_exposure' ? '<div id="gulf-review-view" aria-live="polite"></div>' : ''}
+    ${profile === 'market_entry_readiness' ? '<div id="market-entry-review-view" aria-live="polite"></div>' : ''}
     ${freeTrial ? '<div id="profile-followthrough" hidden><h3>Choose your next step</h3><p>Use the result to collect one missing piece of evidence, then review a revision when ready. Each admitted rerun uses another attempt; changing input does not restore a spent allowance.</p><button type="button" onclick="agendaNextSteps.revise()">Review a revision — no submission</button> · <a href="#scoped-services">Scope a human review</a></div>' : ''}
     <div id="profile-progress" aria-live="polite"></div>
     <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
@@ -388,6 +391,7 @@ function landingHtml(request, env) {
   ${freeTrial && isKazakhstan ? corridorWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_go) : ''}
   ${freeTrial && profile === 'cis_secondary_sanctions' ? cisWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_review) : ''}
   ${freeTrial && profile === 'gulf_maritime_exposure' ? gulfWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_review) : ''}
+  ${freeTrial && profile === 'market_entry_readiness' ? marketEntryWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_signature) : ''}
   ${freeTrial && profile === 'agent_output_verification' ? citationReviewHtml(trialTerms.attempts_per_network, allowancePanel) : ''}
   ${freeTrial && profile === 'agent_output_verification' ? reviewPanel : ''}
   <h2>${freeTrial ? 'Check your own evidence free' : 'Live paid evaluation'}</h2>
@@ -493,6 +497,7 @@ ${handoffTargets.length ? projectHandoffValue.toString() + '\n' + prepareHandoff
 ${profile === 'critical_minerals_due_diligence' ? MINERAL_WORKFLOW_CLIENT_SCRIPT : ''}
 ${freeTrial && profile === 'agent_output_verification' ? CITATION_REVIEW_SCRIPT : ''}
 ${freeTrial && profile === 'gulf_maritime_exposure' ? GULF_WIZARD_SCRIPT + '\n' + gulfGateHtml.toString() : ''}
+${freeTrial && profile === 'market_entry_readiness' ? MARKET_ENTRY_WIZARD_SCRIPT + '\n' + marketEntryView.toString() + '\n' + marketEntryViewHtml.toString() + '\n' + marketEntryProgress.toString() + '\n' + marketEntryProgressHtml.toString() : ''}
 ${freeTrial && isKazakhstan ? CORRIDOR_WIZARD_SCRIPT : ''}
 ${freeTrial && isKazakhstan ? corridorOwnerActions.toString() + '\n' + corridorOwnerActionsHtml.toString() : ''}
 ${freeTrial && profile === 'cis_secondary_sanctions' ? CIS_WIZARD_SCRIPT + '\n' + cisReviewView.toString() + '\n' + cisReviewViewHtml.toString() + '\n' +
@@ -507,6 +512,7 @@ ${freeTrial ? `mountIntakeEditor(document.getElementById('profile-intake'), docu
 ${freeTrial && isKazakhstan ? `mountCorridorWizard(${JSON.stringify(inputSchemaForProfile(profile)).replaceAll('<','\\u003c')});` : ''}
 ${freeTrial && profile === 'cis_secondary_sanctions' ? `mountCisWizard(${JSON.stringify(inputSchemaForProfile(profile)).replaceAll('<','\\u003c')});` : ''}
 ${freeTrial && profile === 'gulf_maritime_exposure' ? `mountGulfWizard(${JSON.stringify(inputSchemaForProfile(profile)).replaceAll('<','\\u003c')});` : ''}
+${freeTrial && profile === 'market_entry_readiness' ? `mountMarketEntryWizard(${JSON.stringify(inputSchemaForProfile(profile)).replaceAll('<','\\u003c')});` : ''}
 function safeHtml(value) {
   var element = document.createElement('span');
   element.textContent = String(value == null ? '' : value);
@@ -530,6 +536,7 @@ function showWorkedExample() {
 }
 var agendaTrialTraceId = null;
 var agendaLastReview = null;
+var agendaLastMarketInput = null;
 var agendaHasCompletedResult = false;
 var agendaTrialBlocked = false;
 var agendaFeedbackAttempt = null;
@@ -680,14 +687,17 @@ async function runProfileExample(event, paid, reviewFlow) {
       ${freeTrial && isKazakhstan ? "var corridorActions=document.getElementById('corridor-owner-actions'); if(corridorActions) corridorActions.innerHTML = corridorOwnerActionsHtml(payload.request || payload, review, safeHtml);" : ''}
       ${freeTrial && profile === 'cis_secondary_sanctions' ? "var cisView=document.getElementById('cis-review-view'); if(cisView) cisView.innerHTML = cisReviewViewHtml(payload.request || payload, review, safeHtml);" : ''}
       ${freeTrial && profile === 'gulf_maritime_exposure' ? "var gulfView=document.getElementById('gulf-review-view'); if(gulfView) gulfView.innerHTML = gulfGateHtml(review.evaluation || review, safeHtml);" : ''}
+      ${freeTrial && profile === 'market_entry_readiness' ? `var marketView=document.getElementById('market-entry-review-view');
+        if(marketView) { marketView.innerHTML=marketEntryViewHtml(payload, review.evaluation || review, safeHtml);
+          var copy=document.getElementById('market-entry-copy'); if(copy) copy.onclick=async function(){var memo=document.getElementById('market-entry-memo'), status=document.getElementById('market-entry-copy-status');try {await navigator.clipboard.writeText(memo.value);status.textContent='Copied locally.';}catch {memo.focus();memo.select();status.textContent='Select and copy the memo manually.';}}; }` : ''}
       var progress = document.getElementById('profile-progress');
-      if (progress) progress.innerHTML = ${profile === 'critical_minerals_due_diligence' ? "''" : "agendaLastReview ? reviewDeltaHtml(agendaLastReview, review, safeHtml) : ''"};
+      if (progress) progress.innerHTML = ${profile === 'critical_minerals_due_diligence' ? "''" : freeTrial && profile === 'market_entry_readiness' ? "marketEntryProgressHtml(agendaLastMarketInput, agendaLastReview, payload, review.evaluation || review, safeHtml)" : "agendaLastReview ? reviewDeltaHtml(agendaLastReview, review, safeHtml) : ''"};
       ${freeTrial ? `if (paid) {
         agendaFeedbackAttempt = null;
         var feedbackPanel = document.getElementById('profile-feedback-panel');
         if (feedbackPanel) feedbackPanel.hidden = true;
       }` : ''}
-      if (reviewSummary(review)) agendaLastReview = review;
+      ${freeTrial && profile === 'market_entry_readiness' ? `if(marketEntryView(payload,review.evaluation || review)) {agendaLastMarketInput=payload;agendaLastReview=review.evaluation || review;}` : 'if (reviewSummary(review)) agendaLastReview = review;'}
     }
     ${freeTrial ? 'updateTrialFeedback(response.status);' : ''}
     ${freeTrial ? `if (completed || response.status === 429) document.getElementById('profile-paid').hidden = false;
