@@ -11,6 +11,9 @@ import { INTAKE_CLIENT_SCRIPT } from './intake-editor.js';
 import { CITATION_REVIEW_SCRIPT, citationReviewHtml } from './citation-review.js';
 import { CORRIDOR_WIZARD_SCRIPT, corridorWizardHtml } from './corridor-wizard.js';
 import { corridorOwnerActions, corridorOwnerActionsHtml } from './corridor-owner-actions.js';
+import { CIS_WIZARD_SCRIPT, cisWizardHtml } from './cis-wizard.js';
+import { cisReviewView, cisReviewViewHtml } from './cis-review-view.js';
+import { parseCounterpartyCsv, prepareBatch } from './cis-batch.js';
 import { serviceOffersHtml } from './service-offers.js';
 import { projectHandoffValue, prepareHandoff, handoffHtml, HANDOFF_CLIENT_SCRIPT } from './handoff.js';
 // Browser presentation only. Runtime decisions are supplied by the controller.
@@ -97,7 +100,7 @@ function landingHtml(request, env) {
     critical_minerals_due_diligence: "Mineral supply chain → origin and ownership evidence gaps",
     dual_use_technology_export: "Electronics shipment → HS/ECCN and end-user evidence gaps"
   }[profile] || "Supplied case → evidence gaps + next human-review step";
-  const consoleId = freeTrial ? (profile === 'agent_output_verification' ? 'one-claim-review' : isKazakhstan ? 'corridor-wizard' : 'profile-console') : isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
+  const consoleId = freeTrial ? (profile === 'agent_output_verification' ? 'one-claim-review' : isKazakhstan ? 'corridor-wizard' : profile === 'cis_secondary_sanctions' ? 'cis-wizard' : 'profile-console') : isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
   const exampleAction = "showWorkedExample()";
   const workedExample = WORKED_EXAMPLES[profile];
   const workflow = PRODUCT_WORKFLOWS[profile];
@@ -110,6 +113,7 @@ function landingHtml(request, env) {
     ${profile === 'critical_minerals_due_diligence' ? '<div id="mineral-workflow" hidden></div>' : ''}
     <div id="profile-summary" aria-live="polite"></div>
     ${isKazakhstan ? '<div id="corridor-owner-actions" aria-live="polite"></div>' : ''}
+    ${profile === 'cis_secondary_sanctions' ? '<div id="cis-review-view" aria-live="polite"></div>' : ''}
     ${freeTrial ? '<div id="profile-followthrough" hidden><h3>Choose your next step</h3><p>Use the result to collect one missing piece of evidence, then review a revision when ready. Each admitted rerun uses another attempt; changing input does not restore a spent allowance.</p><button type="button" onclick="agendaNextSteps.revise()">Review a revision — no submission</button> · <a href="#scoped-services">Scope a human review</a></div>' : ''}
     <div id="profile-progress" aria-live="polite"></div>
     <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
@@ -211,7 +215,7 @@ function landingHtml(request, env) {
     <details open><summary>Example request</summary><pre>${escapeHtml(JSON.stringify(workedExample?.request || {}, null, 2))}</pre></details>
     <details open><summary>Saved example result</summary><pre>${escapeHtml(JSON.stringify(workedExample?.response || {}, null, 2))}</pre></details>
     ${workedExample?.follow_up ? `<details><summary>${escapeHtml(workedExample.follow_up.label || 'After removing the unsupported illustrative claim')}</summary>
-      <p>${profile === 'agentic_interaction_trust' || isKazakhstan ? 'The added records are explicitly synthetic, so they are rejected for evidence coverage. An apparently complete set of placeholder titles is not evidence. Human review remains required.' : profile === 'agent_output_verification' ? 'The fictional customer-count claim was removed. The remaining claim still requires human review; no factual verification or publication permission is granted.' : 'This is a synthetic follow-up. Human review is still required; no action is authorized.'}</p>
+      <p>${profile === 'agentic_interaction_trust' || profile === 'cis_secondary_sanctions' || isKazakhstan ? 'The added records are explicitly synthetic, so they are rejected for evidence coverage. An apparently complete set of placeholder titles is not evidence. Human review remains required.' : profile === 'agent_output_verification' ? 'The fictional customer-count claim was removed. The remaining claim still requires human review; no factual verification or publication permission is granted.' : 'This is a synthetic follow-up. Human review is still required; no action is authorized.'}</p>
       ${reviewDeltaHtml(workedExample.response, workedExample.follow_up.response, escapeHtml)}
       ${reviewSummaryHtml(workedExample.follow_up.response, escapeHtml)}
       <details><summary>Corrected request and full result</summary><pre>${escapeHtml(JSON.stringify(workedExample.follow_up, null, 2))}</pre></details>
@@ -380,6 +384,7 @@ function landingHtml(request, env) {
     <div id="escrow-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
   </div>` : consoleExample ? `
   ${freeTrial && isKazakhstan ? corridorWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_go) : ''}
+  ${freeTrial && profile === 'cis_secondary_sanctions' ? cisWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_review) : ''}
   ${freeTrial && profile === 'agent_output_verification' ? citationReviewHtml(trialTerms.attempts_per_network, allowancePanel) : ''}
   ${freeTrial && profile === 'agent_output_verification' ? reviewPanel : ''}
   <h2>${freeTrial ? 'Check your own evidence free' : 'Live paid evaluation'}</h2>
@@ -486,6 +491,8 @@ ${profile === 'critical_minerals_due_diligence' ? MINERAL_WORKFLOW_CLIENT_SCRIPT
 ${freeTrial && profile === 'agent_output_verification' ? CITATION_REVIEW_SCRIPT : ''}
 ${freeTrial && isKazakhstan ? CORRIDOR_WIZARD_SCRIPT : ''}
 ${freeTrial && isKazakhstan ? corridorOwnerActions.toString() + '\n' + corridorOwnerActionsHtml.toString() : ''}
+${freeTrial && profile === 'cis_secondary_sanctions' ? CIS_WIZARD_SCRIPT + '\n' + cisReviewView.toString() + '\n' + cisReviewViewHtml.toString() + '\n' +
+  parseCounterpartyCsv.toString() + '\n' + prepareBatch.toString() : ''}
 ${freeTrial ? `mountIntakeEditor(document.getElementById('profile-intake'), document.getElementById('profile-request'), ${JSON.stringify(consoleExample).replaceAll('<', '\\u003c')}, ${JSON.stringify({schema:inputSchemaForProfile(profile),readOnlyPaths:profile === 'critical_minerals_due_diligence' ? ['previous_submission'] : [],optional: profile === 'dual_use_technology_export'
   ? [{path:'shipment.eccn', label:'Caller-supplied ECCN — leave unknown if unclassified'}]
   : profile === 'm2m_escrow_arbiter' ? [
@@ -494,6 +501,7 @@ ${freeTrial ? `mountIntakeEditor(document.getElementById('profile-intake'), docu
     {path:'delivery_submission.artifact_data', label:'Delivered artifact (JSON value)',json:true}
   ] : []})});` : ''}
 ${freeTrial && isKazakhstan ? `mountCorridorWizard(${JSON.stringify(inputSchemaForProfile(profile)).replaceAll('<','\\u003c')});` : ''}
+${freeTrial && profile === 'cis_secondary_sanctions' ? `mountCisWizard(${JSON.stringify(inputSchemaForProfile(profile)).replaceAll('<','\\u003c')});` : ''}
 function safeHtml(value) {
   var element = document.createElement('span');
   element.textContent = String(value == null ? '' : value);
@@ -665,6 +673,7 @@ async function runProfileExample(event, paid, reviewFlow) {
       ${profile === 'critical_minerals_due_diligence' ? 'renderMineralWorkflow(review, payload);' : ''}
       document.getElementById('profile-summary').innerHTML = reviewSummaryHtml(review, safeHtml, ${JSON.stringify(workflow)});
       ${freeTrial && isKazakhstan ? "var corridorActions=document.getElementById('corridor-owner-actions'); if(corridorActions) corridorActions.innerHTML = corridorOwnerActionsHtml(payload.request || payload, review, safeHtml);" : ''}
+      ${freeTrial && profile === 'cis_secondary_sanctions' ? "var cisView=document.getElementById('cis-review-view'); if(cisView) cisView.innerHTML = cisReviewViewHtml(payload.request || payload, review, safeHtml);" : ''}
       var progress = document.getElementById('profile-progress');
       if (progress) progress.innerHTML = ${profile === 'critical_minerals_due_diligence' ? "''" : "agendaLastReview ? reviewDeltaHtml(agendaLastReview, review, safeHtml) : ''"};
       ${freeTrial ? `if (paid) {
