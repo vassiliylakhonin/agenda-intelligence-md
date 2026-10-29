@@ -367,9 +367,38 @@ class AgentFinancialGuard:
             "Current network-specific sanctions/AML screening is unavailable; only a local risk denylist was checked.",
         ]
         advisory = (
-            "Transaction rejected by local risk rules. Execution forbidden."
+            "Local checks recommend rejecting this transaction; this review does not enforce signing or execution."
             if has_violations
             else "Human review required before signing: spending history, policy and sanctions are unverified."
+        )
+
+        blocking_reasons = []
+        if recipient in DEFAULT_SANCTIONED_ADDRESSES:
+            blocking_reasons.append("LOCAL_DENYLIST_MATCH")
+        if not checks["contract_security"]:
+            blocking_reasons.append("CONTRACT_SECURITY_FLAG")
+        if not checks["prompt_injection"]:
+            blocking_reasons.append("INTENT_PATTERN_FLAG")
+        if amount_usd > max_single:
+            blocking_reasons.append("REPORTED_SINGLE_LIMIT_EXCEEDED")
+        if method == "approve" or encoded_approve:
+            blocking_reasons.append("APPROVAL_TERMS_UNVERIFIED")
+        if method == "swap":
+            blocking_reasons.append("SWAP_TERMS_UNVERIFIED")
+        if method == "contract_call":
+            blocking_reasons.append("CONTRACT_CALL_UNDECODED")
+        if not method or method == "unknown":
+            blocking_reasons.append("METHOD_UNSPECIFIED")
+        blocking_reasons.extend(
+            ["SANCTIONS_AML_UNAVAILABLE", "SPENDING_HISTORY_UNVERIFIED", "POLICY_AUTHORITY_UNVERIFIED"]
+        )
+        next_one_thing = (
+            "Do not sign; have a security or compliance reviewer resolve the reported local flags."
+            if has_violations
+            else (
+                "Obtain independent current screening, verified spending history and authorized policy review "
+                "before signing."
+            )
         )
 
         return FinancialGuardVerdict(
@@ -384,6 +413,11 @@ class AgentFinancialGuard:
                 "decision": decision,
                 "status": status,
                 "score": score,
+                "pre_sign_verdict": "REJECT" if has_violations else "HUMAN_REVIEW",
+                "can_auto_sign": False,
+                "blocking_reasons": blocking_reasons,
+                "local_denylist_hit": recipient in DEFAULT_SANCTIONED_ADDRESSES,
+                "next_one_thing": next_one_thing,
                 **evaluation_contract(
                     {
                         "financial_guard_verdict": {

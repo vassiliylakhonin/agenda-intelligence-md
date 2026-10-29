@@ -29,6 +29,7 @@ import { handleTrialFeedback, recordTrialFeedback } from './trial-feedback.js';
 import { mcpAgentAdmissionResponse } from './mcp-admission.js';
 import { firstCallResponse } from './first-call.js';
 import { lookupChplTier } from "./chpl.js";
+import { prepareHandoff } from "./handoff.js";
 import { reviewSourceRecords } from "./source-records.js";
 import { reviewMineralDossier, mineralReadiness, mineralBaselineErrors } from "./critical_minerals_dossier.js";
 import { executePaidRequest, paidContext } from "./paid-execution.js";
@@ -3138,7 +3139,11 @@ function corridorAssistantMessageText(response = null, vizierAssistant = null) {
   const parts = [
     "# Corridor & Sanctions Risk Assistant",
     "",
-    "Front door to the corridor and sanctions evidence-readiness gates. Orientation prepares dossier requests; configured screening remains subject to identity and evidence review.",
+    "Orientation only — not a clearance or transaction decision. Specialist review and human judgment are required.",
+    "",
+    "## Desk checklist",
+    "- Banking / compliance: identify counterparties and ownership, transaction purpose, source of funds and current screening evidence.",
+    "- Insurance: review cargo, route, carrier and cover information with the relevant underwriter.",
     "",
     "## Selected route",
     selected ? `- **${selected.name}**: ${selected.a2a}` : "- No confident single route; specify the decision and subject.",
@@ -3232,8 +3237,34 @@ async function a2aResultForCorridorSanctionsAssistant(params, request, env = {})
   }
 
   const selectedRoute = corridorAssistantSelectRoute(text);
+  const planRules = [
+    [/sanction|ofac|ownership|counterpart|банк|bank|торгов|trading|контрагент|санкц|бенефициар/iu, "cis_secondary_sanctions", "Counterparty or banking review may be relevant."],
+    [/dual[- ]use|microelectronics|semiconductor|export control|\bhs\s*(?:code\s*)?\d|электрон|экспортн|двойн/iu, "dual_use_technology_export", "The question mentions export-control or goods classification."],
+    [/corridor|route|shipment|cargo|freight|aktau|poti|baku|caspian|коридор|маршрут|груз|логист|актау|поти|баку/iu, "middle_corridor_deal_risk", "The question mentions a trade route or shipment."],
+    [/hormuz|red sea|bab[- ]el[- ]mandeb|vessel|tanker|ship\b|ормуз|красное море|судно|танкер/iu, "gulf_maritime_exposure", "The question mentions a maritime voyage or chokepoint."],
+    [/market.entry|entry into kazakhstan|kazakhstan market|distribution in kazakhstan|выход на рынок|дистрибуц/iu, "kazakhstan_market_entry_readiness", "The question mentions market entry."],
+    [/(?:agent|wallet|агент|кошел)[\s\S]{0,100}(?:pay|payment|transfer|плат|перевод)|(?:pay|payment|transfer|плат|перевод)[\s\S]{0,100}(?:agent|wallet|агент|кошел)/iu, "agent_financial_guard", "The question mentions an agent or wallet payment."]
+  ];
+  const routePlan = planRules.filter(([pattern]) => pattern.test(text)).map(([,profile,why]) => {
+    const gate = CORRIDOR_ASSISTANT_GATES.find(item => item.profile === profile) || fleetDirectoryResponse().gates.find(item => item.profile === profile);
+    return gate ? {profile, name:gate.name || gate.tool_name, a2a:gate.a2a || gate.canonical_endpoint, why} : null;
+  }).filter(Boolean);
+  const dlpFlagged = vizierAssistant?.dlp_screening?.clean === false && (vizierAssistant.dlp_screening.findings || []).length > 0;
+  const adapterProfile = selectedRoute?.profile === "middle_corridor_deal_risk" ? "kazakhstan" : selectedRoute?.profile === "kazakhstan_market_entry_readiness" ? "market_entry_readiness" : selectedRoute?.profile;
+  const draft = selectedRoute && !dlpFlagged ? prepareHandoff({text:sanitizedText.slice(0,500)}, workerTrialAdapter(adapterProfile).inputSchema) : null;
+  const hsMatch = !dlpFlagged && sanitizedText.match(/\bhs(?:\s*code)?\s*[:#-]?\s*(\d{4}(?:\.\d{2}|\d{2})(?:\d{0,4})?)\b/i);
+  const hsInfo = hsMatch ? lookupChplTier(hsMatch[1]) : null;
   const response = {
     kind: "orientation_and_routing",
+    role: "orientation_only",
+    not_a_clearance: true,
+    decision_requires: selectedRoute ? ["specialist_review", "human_review"] : ["human_review"],
+    route_plan: routePlan,
+    desk_checklist: {bank_compliance:["Counterparty and ownership evidence", "Transaction purpose and current screening"], insurer:["Route, cargo, carrier and cover details"]},
+    handoff_draft: draft ? {...draft, target_profile:selectedRoute.profile, complete:false} : null,
+    handoff_notice: dlpFlagged ? "Sensitive material was flagged; review and redact before preparing a handoff." : "Draft only: complete and validate target fields before a separate submission; no data is sent automatically.",
+    next_one_thing: dlpFlagged ? "Review and redact the flagged material before preparing a handoff." : draft?.required_fields_to_complete?.length ? `Complete ${draft.required_fields_to_complete[0]}, then validate the specialist request.` : selectedRoute ? "Review the draft and validate the specialist request before any submission." : "Clarify the subject and decision before selecting a specialist.",
+    hs_hint: hsInfo ? {hs6:hsInfo.hs6,match_in_snapshot:hsInfo.isHighPriority,snapshot_date:hsInfo.snapshot_date,source_url:hsInfo.source_url,notice:"A reference match is a review lead, not classification or clearance. The separate full HS screen has its own admission and price."} : null,
     selected_route: selectedRoute,
     next_gate_input: selectedRoute ? corridorAssistantNextInput(selectedRoute) : "Clarify the route, counterparty or vessel and the decision pending.",
     message:
@@ -6194,7 +6225,7 @@ function fleetDirectoryResponse() {
         tool_name: "cis_secondary_sanctions_exposure",
         canonical_endpoint: "https://cis-secondary-sanctions.agendamcp.dpdns.org",
         description: "Triage secondary-sanctions exposure for a CIS-domiciled counterparty against OFAC EO 14114, EU packages, UK OFSI, and FATF typologies.",
-        required_fields: ["counterparty", "risk_question", "decision_stage", "dated_sources"],
+        required_fields: ["counterparty", "exposure_facets", "dated_sources", "risk_question", "decision_stage"],
         schema_url: CIS_SECONDARY_SANCTIONS_REQUEST_SCHEMA_URL
       },
       {
@@ -6218,7 +6249,7 @@ function fleetDirectoryResponse() {
         tool_name: "gulf_maritime_exposure",
         canonical_endpoint: "https://gulf-maritime-exposure.agendamcp.dpdns.org",
         description: "Triage maritime sanctions and chokepoint-disruption exposure for a vessel/voyage in the Gulf or Red Sea.",
-        required_fields: ["vessel_name", "imo_number", "flag", "voyage_path", "cargo", "risk_question", "decision_stage", "dated_sources"],
+        required_fields: ["voyage", "exposure_facets", "decision_stage", "dated_sources", "risk_question"],
         schema_url: GULF_MARITIME_REQUEST_SCHEMA_URL
       },
       {
@@ -6226,7 +6257,7 @@ function fleetDirectoryResponse() {
         tool_name: "kazakhstan_market_entry_readiness",
         canonical_endpoint: "https://kazakhstan-market-entry-readiness.agendamcp.dpdns.org",
         description: "Grade a Kazakhstan market-entry file against staged source requirements before commitment.",
-        required_fields: ["market", "sector", "entry_mode", "decision_question", "decision_stage", "dated_sources"],
+        required_fields: ["project_name", "partner_or_company", "market", "decision_question", "decision_stage", "supplied_sources"],
         schema_url: MARKET_ENTRY_REQUEST_SCHEMA_URL
       },
       {
@@ -6242,14 +6273,14 @@ function fleetDirectoryResponse() {
         tool_name: "dual_use_technology_export",
         canonical_endpoint: "https://dual-use-technology-export.agendamcp.dpdns.org",
         description: "Triage dual-use technology export controls, ECCN/HS Codes, and transit route risks for unauthorized diversion.",
-        required_fields: ["item_description", "destination_country", "parties", "transit_countries", "risk_question", "decision_stage", "dated_sources"],
+        required_fields: ["shipment", "dated_sources", "risk_question"],
         schema_url: `${REPOSITORY_URL}/blob/main/schemas/v1/dual-use-technology-export-request.schema.json`
       },
       {
         profile: "agent_financial_guard",
         tool_name: "agent_financial_pre_sign_check",
         canonical_endpoint: "https://agent-financial-guard.agendamcp.dpdns.org",
-        description: "Deterministic pre-sign financial transaction firewall for autonomous agents: OFAC/AML screening, drainer prevention, and velocity enforcement.",
+        description: "Pre-sign review of local risk flags and caller-reported limits; current sanctions and spending history are unverified, and signing is not enforced.",
         required_fields: ["run_id", "transaction", "intent"],
         schema_url: `${REPOSITORY_URL}/blob/main/schemas/v1/agent-financial-guard-request.schema.json`
       },
@@ -9077,15 +9108,47 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
     score = Math.min(score, 49);
     riskVectors.unshift("Configured upstream screening is unavailable or incomplete; no clearance or leak finding can be inferred from an outage.");
   }
+  // This is an internal reference-completeness rule, not a determination of legal applicability.
+  const sourceTypes = new Set(sources.map(source => source?.source_type).filter(Boolean));
+  const missingReview = [];
+  if (!(typeof shipment.eccn === "string" && shipment.eccn.trim())) missingReview.push("caller_classification_missing");
+  if (!shipment.end_user_sector || shipment.end_user_sector === "unknown") missingReview.push("end_user_sector_unknown");
+  if (!sourceTypes.has("classification_note")) missingReview.push("classification_note");
+  if (!sourceTypes.has("end_user_statement") && !sourceTypes.has("end_user_certificate")) missingReview.push("end_user_statement_or_certificate");
+  if (typeof shipment.eccn === "string" && shipment.eccn.trim() && !sourceTypes.has("licence_pathway_evidence")) missingReview.push("licence_pathway_evidence");
+  const routeText = [shipment.destination, ...(Array.isArray(shipment.transit_countries) ? shipment.transit_countries : [])].join(" ");
+  const regionalRoute = /\b(?:kazakhstan|kz|kyrgyzstan|kyrgyz|uzbekistan|tajikistan|turkmenistan|azerbaijan|georgia|armenia|cis|central asia|caspian)\b|казахстан|кыргыз|узбекистан|таджикистан|туркменистан|азербайджан|грузия/iu.test(routeText);
+  const sensitiveRoute = Boolean(chplInfo?.isHighPriority && regionalRoute);
+  if (sensitiveRoute) {
+    if (!sourceTypes.has("intermediate_consignee_chain")) missingReview.push("intermediate_consignee_chain");
+    if (!sourceTypes.has("reexport_assurance")) missingReview.push("reexport_assurance");
+    if (!sourceTypes.has("sanctions_screen_extract")) missingReview.push("sanctions_screen_extract");
+  }
   const hasMissingEvidence = riskVectors.some(
     (item) => item.startsWith("No ") || item.startsWith("End-user") || item.startsWith("Missing ")
-  );
+  ) || missingReview.length > 0;
+  if (shipment.end_user_sector === "military") missingReview.push("military_end_user_review");
+  if (vizierEscalation) missingReview.push("upstream_screening_requires_review");
   const status =
     shipment.end_user_sector === "military" || vizierEscalation
       ? "escalate"
       : hasMissingEvidence
         ? "not_decision_ready"
         : "ready_for_human_review";
+  if (missingReview.length) score = Math.min(score, 49);
+  const reviewLeads = [];
+  if (chplInfo?.isHighPriority) reviewLeads.push("HS6 matches the bundled CHPL snapshot; assess current classification, route and end use with a qualified reviewer.");
+  if (sensitiveRoute) reviewLeads.push("Caller-declared route and the HS snapshot suggest enhanced diversion review; legal applicability is not determined.");
+  if (["unknown", "military", "semiconductor"].includes(shipment.end_user_sector)) reviewLeads.push("Caller-declared end-user sector warrants closer end-use review.");
+  const exportReview = {
+    verdict: status === "ready_for_human_review" ? "READY_FOR_EXPORT_CONTROL_REVIEW" : "NOT_READY",
+    classification_status: (typeof shipment.eccn === "string" && shipment.eccn.trim()) || (typeof shipment.hs_code === "string" && shipment.hs_code.trim()) ? "caller_declared_only" : "not_provided",
+    stage: status === "ready_for_human_review" ? "ready_for_classifier_review" : "file_intake",
+    blocking_gaps: missingReview,
+    review_leads: reviewLeads,
+    next_one_thing: vizierEscalation ? "Resolve the reported screening flag or outage with the responsible reviewer." : missingReview.length ? `Obtain or independently resolve the missing ${missingReview[0].replaceAll("_", " ")} reference.` : hasMissingEvidence ? "Complete the missing classification, end-user and source information." : "Have a qualified reviewer examine the records, classification and applicable requirements.",
+    notice: "Reference metadata and caller declarations only; no classification, factual verification, licence decision or export authorization."
+  };
 
   const evidenceLedger = sources.map(
     (source) =>
@@ -9105,7 +9168,8 @@ function dualUseTechnologyExportResult(request, vizierDualUse = null) {
       factual_verification_performed: false,
       human_review_required: true,
       not_advice_notice: NOT_ADVICE_NOTICE,
-      evidence_gaps: ["Source content, classification, licensing requirements and end-use have not been independently verified."],
+      evidence_gaps: [...missingReview.map(source => `Missing review reference: ${source}.`), "Source content, classification, licensing requirements and end-use have not been independently verified."],
+      export_review: exportReview,
       primary_risk_vectors: riskVectors,
       evidence_ledger: evidenceLedger,
       source_record_review: sourceReview
@@ -13751,7 +13815,12 @@ function safeJsonLength(value) {
 function mcpUnknownFields(profile, name, args) {
   const published = mcpToolsForProfile(profile).find(tool => tool.name === name)?.inputSchema;
   if (!published) return [];
-  if (["agent_financial_guard", "m2m_escrow_arbiter"].includes(profile) && !args.request) {
+  if (profile === "agent_financial_guard") {
+    const schema=PUBLIC_SCHEMAS["schemas/v1/agent-financial-guard-request.schema.json"];
+    if (mcpUsesLegacyRequestWrapper(profile,args,name)) return unknownInputFindings(args.request,schema).map(finding=>({...finding,field:"/request"+finding.field}));
+    return unknownInputFindings(args,schema);
+  }
+  if (profile === "m2m_escrow_arbiter" && !args.request) {
     return unknownInputFindings(args, PUBLIC_SCHEMAS["schemas/v1/" + REMEDIATION_PROFILES[profile].request_schema]);
   }
   if (mcpUsesLegacyRequestWrapper(profile, args, name) && !published.properties?.request) {

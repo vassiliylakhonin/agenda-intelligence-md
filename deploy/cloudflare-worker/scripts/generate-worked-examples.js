@@ -14,6 +14,25 @@ for(const profile of profiles){
  const response=await(await call({jsonrpc:'2.0',id:2,method:'tools/call',params:{name:tool.name,arguments:args}})).json();
  if(response.error||response.result?.isError)throw Error('invalid fixture '+profile);
  examples[profile]={kind:'precomputed_synthetic_fixture',tool:tool.name,request:args,response:response.result.structuredContent?.metadata?.response || response.result.structuredContent};
+ if(profile==='agent_financial_guard') {
+  const scenarios=[['Small transfer: human review',150,'transfer',''],['Over-limit transfer: review or reject',25000,'transfer',''],['Unlimited approval: reject',0,'approve','0x095ea7b3'+'0'.repeat(64)+'f'.repeat(64)]];
+  examples[profile].scenarios=[];
+  for(const [label,amount,method,calldata] of scenarios){
+   const filled=structuredClone(args),request=filled.request||filled;request.transaction.amount_usd=amount;request.transaction.method=method;if(calldata)request.transaction.calldata=calldata;
+   const checked=await(await call({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:tool.name,arguments:filled}})).json();
+   if(checked.error||checked.result?.isError)throw Error('invalid financial scenario');
+   const result=checked.result.structuredContent?.metadata?.response||checked.result.structuredContent;
+   examples[profile].scenarios.push({label,method,amount_usd:amount,verdict:result.financial_guard_verdict.pre_sign_verdict,blocking_reasons:result.financial_guard_verdict.blocking_reasons});
+  }
+ }
+ if(profile==='dual_use_technology_export') {
+  const filled=structuredClone(args),request=filled.request||filled;
+  const missing=examples[profile].response.export_risk_triage.export_review.blocking_gaps;
+  request.dated_sources.push(...missing.map((source_type,i)=>({id:'fixture-'+i,source_type,title:'Synthetic fixture '+source_type,date:'2026-01-01'})));
+  const checked=await(await call({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:tool.name,arguments:filled}})).json();
+  if(checked.error||checked.result?.isError)throw Error('invalid dual-use placeholder fixture');
+  examples[profile].follow_up={kind:'precomputed_synthetic_placeholders',label:'Adding fake records: gaps remain',request:filled,response:checked.result.structuredContent?.metadata?.response||checked.result.structuredContent};
+ }
  if(profile==='m2m_escrow_arbiter') {
   const tampered=structuredClone(args);(tampered.request || tampered).delivery_submission.artifact_data.records=2;
   const changed=await(await call({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:tool.name,arguments:tampered}})).json();

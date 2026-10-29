@@ -11,7 +11,7 @@ test('actual production workflow selects a single requested Worker and rejects a
   assert.ok(script,'Workflow selection script must be present');
   const folder=mkdtempSync(join(tmpdir(),'agenda-deploy-selection-'));
   try {
-    for(const [target,signing,count] of [['agenda-root','false',1],['interaction-trust','false',1],['middle-corridor','false',1],['cis-secondary','false',1],['gulf-maritime','false',1],['market-entry','false',1],['all','false',12],['all','true',2],['agenda-root','true',null],['interaction-trust','true',null],['middle-corridor','true',null],['cis-secondary','true',null],['gulf-maritime','true',null],['market-entry','true',null],['unknown','false',null]]) {
+    for(const [target,signing,count] of [['agenda-root','false',1],['interaction-trust','false',1],['middle-corridor','false',1],['cis-secondary','false',1],['gulf-maritime','false',1],['market-entry','false',1],['corridor-assistant','false',1],['dual-use','false',1],['financial-guard','false',1],['all','false',12],['all','true',2],['agenda-root','true',null],['interaction-trust','true',null],['middle-corridor','true',null],['cis-secondary','true',null],['gulf-maritime','true',null],['market-entry','true',null],['corridor-assistant','true',null],['dual-use','true',null],['financial-guard','true',null],['unknown','false',null]]) {
       const output=join(folder,target+'-'+signing);
       const run=spawnSync(process.execPath,['--input-type=module','-e',script],{cwd:new URL('../',import.meta.url),encoding:'utf8',env:{...process.env,DEPLOY_TARGET:target,INITIALIZE_AGENT_CARD_SIGNING:signing,GITHUB_OUTPUT:output}});
       if(count===null){assert.notEqual(run.status,0);continue;}
@@ -24,6 +24,9 @@ test('actual production workflow selects a single requested Worker and rejects a
       if(target==='cis-secondary')assert.deepEqual(matrix.include,[{env:'cis-secondary-sanctions',workerName:'cis-secondary-sanctions-a2a'}]);
       if(target==='gulf-maritime')assert.deepEqual(matrix.include,[{env:'gulf-maritime-exposure',workerName:'gulf-maritime-exposure-a2a'}]);
       if(target==='market-entry')assert.deepEqual(matrix.include,[{env:'kazakhstan-market-entry-readiness',workerName:'kazakhstan-market-entry-readiness-a2a'}]);
+      if(target==='corridor-assistant')assert.deepEqual(matrix.include,[{env:'corridor-sanctions-assistant',workerName:'corridor-sanctions-assistant-a2a'}]);
+      if(target==='dual-use')assert.deepEqual(matrix.include,[{env:'dual-use-technology-export',workerName:'dual-use-technology-export-a2a'}]);
+      if(target==='financial-guard')assert.deepEqual(matrix.include,[{env:'agent-financial-guard',workerName:'agent-financial-guard-a2a'}]);
       assert.ok(matrix.include.every(x=>x.workerName!=='agenda-corridor-research'));
     }
   }finally{rmSync(folder,{recursive:true,force:true});}

@@ -128,6 +128,29 @@
               "not_assessed"
             ]
           }
+        },
+        "pre_sign_verdict": {
+          "enum": [
+            "REJECT",
+            "HUMAN_REVIEW"
+          ],
+          "description": "Local evidence-review route; not authorization or signer enforcement."
+        },
+        "can_auto_sign": {
+          "const": false
+        },
+        "blocking_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "local_denylist_hit": {
+          "type": "boolean",
+          "description": "Local static risk list only; not current sanctions screening."
+        },
+        "next_one_thing": {
+          "type": "string"
         }
       }
     },

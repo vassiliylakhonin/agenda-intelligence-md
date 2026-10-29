@@ -1,6 +1,6 @@
 # Corridor & Sanctions Risk Assistant
 
-Status: shipped 2026-07-08. Lightweight discovery **front** profile `corridor_sanctions_assistant`. Not a vertical worker: no schema, no service function, no triage, scoring, screening, or retrieval of its own. It orients a human, routes to the structured gates, and supplies a path to person-led work after fit, scope, fee, and timing are confirmed.
+Status: shipped 2026-07-08. Lightweight discovery **front** profile `corridor_sanctions_assistant`. The free-text orientation has a published response schema and is not itself a structured deal-triage gate. Configured upstream screening may report leads or availability limitations. It orients a human, routes to the structured gates, and supplies a path to person-led work after fit, scope, fee, and timing are confirmed.
 
 ## Why a front, not another gate
 
@@ -23,6 +23,14 @@ This is the "Zee pattern": an agent whose job is orientation and a clear next st
 - a short "which gate fits" map to the four structured gates, each with its live A2A endpoint and when to use it;
 - an `engagement` block: the person-led review route, the contact email, support hours, and the exact next step;
 - `human_review_required: true` and a `not_advice_notice`.
+
+## Orientation and handoff
+
+The free router returns `role: orientation_only`, `not_a_clearance: true`, an ordered `route_plan` of keyword-based review leads, and short bank/compliance and insurance checklists. A selected specialist still has its own input, price, admission and human-review requirements. Multiple suggestions are not assessed findings, legal applicability, or a mandatory sequence.
+
+The selected `handoff_draft` is deliberately incomplete: it carries the caller's question into a compatible question field and lists required fields that still need to be supplied. It does not infer identities, routes, source records or permission from prose, and it does not submit the draft. The page can prepare the recommended gate locally; if the input changes, rerun orientation first. A DLP finding suppresses the new draft and HS hint until the caller reviews and redacts the input. Do not place confidential information in a URL.
+
+When an explicitly labeled six-digit HS code is supplied, `hs_hint` reports whether it appears in the bundled dated CHPL reference snapshot. A match is a lead, and absence is not clearance or proof that goods are uncontrolled. The full `screen_dual_use_hs_code` is a separate paid tool; do not pay automatically. Check the serving price and terms before use. The snapshot does not classify a product or settle licensing.
 
 ## Routes to
 
@@ -50,6 +58,5 @@ Going live is a public-positioning step (a new indexed buyer-facing agent). Depl
 
 ## Hosted connection
 
-For remote MCP initialization, free discovery and A2A heartbeat, see the
-[hosted quickstart](../deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
-the signed payment flow; the saved worked example on the site is free.
+For remote MCP initialization, discovery and A2A heartbeat, see the
+[hosted quickstart](../deployment/hosted-quickstart.md). The orientation tool is free; the separate HS screen and specialist evaluations have their own admission and pricing.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add multi-gate corridor orientation, a local incomplete handoff and a dated HS snapshot hint. Add a conservative dual-use reference-readiness view and Financial Guard pre-sign reason codes with a fail-closed integration example. These are evidence-review aids and never grant export or signing authority.
+
 - Add an optional Kazakhstan entry-model intake, grouped owner plan, scope-checked progress view and locally copyable committee memo. Add an offline agent projection helper and a labeled synthetic follow-up; none changes the gate decision or verifies evidence.
 
 - Add a Gulf voyage intake, explicit IMO/MMSI fields and pre-fixture reason codes for unknown cover, missing ownership, STS history, sanctions and identity. Block metadata readiness on those gaps, keep human review mandatory, and show AIS quality as unassessed. Add a labeled synthetic follow-up and maritime playbook prompts; document references do not establish authenticity or clearance.

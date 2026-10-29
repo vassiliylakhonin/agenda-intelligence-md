@@ -220,7 +220,7 @@ test("upstream_vizier_dual_use: gracefully degrades on upstream error", async ()
   assert.ok(res.degrade_reason.includes("504"));
 });
 
-test("e2e: dual-use-technology-export allows clean file and attaches Vizier receipt in metadata", async () => {
+test("e2e: dual-use preserves missing dossier gaps alongside clean upstream metadata", async () => {
   const fakeJws = "eyJhbGciOiJFUzI1NiIsImtpZCI6InRlc3QifQ.test.sig";
   const mockEnv = {
     AGENT_PROFILE: "dual_use_technology_export",
@@ -288,8 +288,9 @@ test("e2e: dual-use-technology-export allows clean file and attaches Vizier rece
 
   const contractResponse = metadata.response;
   assert.equal(contractResponse.profile, "dual_use_technology_export");
-  assert.equal(contractResponse.export_risk_triage.status, "ready_for_human_review");
-  assert.equal(contractResponse.export_risk_triage.score, 69);
+  assert.equal(contractResponse.export_risk_triage.status, "not_decision_ready");
+  assert.equal(contractResponse.export_risk_triage.export_review.verdict, "NOT_READY");
+  assert.ok(contractResponse.export_risk_triage.export_review.blocking_gaps.includes("licence_pathway_evidence"));
 });
 
 test("e2e: dual-use-technology-export escalates file when sanctioned counterparty is identified", async () => {
