@@ -31,6 +31,38 @@ test('Russian Kazakhstan inflections retain geography and the market-entry next 
   }
 });
 
+test('strategic orientation never treats free text as assessed evidence or permission', async () => {
+  const selected = await call('Secondary sanctions risk for a Kazakhstan bank handling dual-use electronics via Middle Corridor');
+  assert.equal(selected.orientation.status, 'EVIDENCE_NOT_ASSESSED');
+  assert.equal(selected.orientation.selected_gate.profile, 'dual_use_technology_export');
+  assert.match(selected.orientation.next_one_thing, /structured request/);
+  assert.equal(selected.orientation.human_review_required, true);
+  assert.equal(selected.orientation.authorization_granted, false);
+  assert.equal(selected.next_action, 'insufficient');
+  assert.equal(selected.score_kind, 'not_scored');
+  assert.ok(selected.signal_screen && selected.source_plan.length);
+  const unknown = await call('Should we proceed?');
+  assert.equal(unknown.orientation.selected_gate, null);
+  assert.match(unknown.orientation.next_one_thing, /fleet_directory/);
+  assert.equal(unknown.next_action, 'insufficient');
+});
+
+test('A2A puts the orientation before details and empty input remains a refusal', async () => {
+  const send = async text => {
+    const response = await handleRequest(new Request('https://example.test/message/send', {
+      method:'POST', headers:{'content-type':'application/json'},
+      body:JSON.stringify({jsonrpc:'2.0',id:1,method:'message/send',params:{message:{role:'user',parts:[{text}]}}})
+    }), {AGENT_PROFILE:'agenda',BILLING_MODE:'freemium',VIZIER_DISABLED:'1'});
+    return (await response.json()).result;
+  };
+  const result = await send('Secondary sanctions risk for Kazakhstan bank');
+  assert.equal(result.metadata.response.orientation.status, 'EVIDENCE_NOT_ASSESSED');
+  assert.equal(result.metadata.response.next_action, 'insufficient');
+  const text = result.artifacts[0].parts[0].text;
+  assert.ok(text.indexOf('EVIDENCE_NOT_ASSESSED') < text.indexOf('Signal screen:'));
+  assert.notEqual((await send('')).status.state, 'TASK_STATE_COMPLETED');
+});
+
 test('subject vocabulary respects Unicode word boundaries and does not reroute another market', async () => {
   const embedded = await call('Before onboarding: nonkazakhstanica. Безказахстана.');
   assert.deepEqual(embedded.signal_screen.subject.jurisdictions, []);

@@ -11,6 +11,63 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
         "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/strategic-risk-triage-response.schema.json",
         "title": "StrategicRiskTriageResponse",
         "properties": {
+          "orientation": {
+            "description": "Free-text routing only; evidence has not been assessed. Gate selection is a keyword-based suggestion.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "selected_gate",
+              "next_one_thing",
+              "human_review_required",
+              "authorization_granted",
+              "limitations"
+            ],
+            "properties": {
+              "status": {
+                "const": "EVIDENCE_NOT_ASSESSED"
+              },
+              "selected_gate": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "profile",
+                      "a2a"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "profile": {
+                        "type": "string"
+                      },
+                      "a2a": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              },
+              "next_one_thing": {
+                "type": "string"
+              },
+              "human_review_required": {
+                "const": true
+              },
+              "authorization_granted": {
+                "const": false
+              },
+              "limitations": {
+                "type": "string"
+              }
+            }
+          },
           "intent": {
             "type": "string"
           },

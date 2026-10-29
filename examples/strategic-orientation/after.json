@@ -1,0 +1,7 @@
+{
+  "answer": "The fictional file contains a consignee ownership record. [ownership]\nThe fictional file contains a classification note for the electronics. [classification]",
+  "sources": [
+    {"source_id":"ownership","title":"Fictional ownership record — illustrative only","text":"The fictional file contains a consignee ownership record."},
+    {"source_id":"classification","title":"Fictional classification note — illustrative only","text":"The fictional file contains a classification note for the electronics."}
+  ]
+}

@@ -11726,6 +11726,7 @@ function triageForText(text, modules, profile = "agenda", structuredRequest = nu
       ? "middle_corridor_deal_risk_contract"
       : classifyIntentForProfile(text, profile);
   return {
+    ...(profile === "agenda" ? {orientation: strategicOrientation(text)} : {}),
     intent,
     modules,
     signal_screen: signalScreenForText(text, modules, intent),
@@ -11744,6 +11745,20 @@ function triageForText(text, modules, profile = "agenda", structuredRequest = nu
       command: "pip install agenda-intelligence-md",
       mcp_server_command: "agenda-intelligence-mcp"
     }
+  };
+}
+
+// Routing is a suggestion based on words in the question, not an evidence review.
+function strategicOrientation(text) {
+  const route = corridorAssistantSelectRoute(text);
+  return {
+    status: "EVIDENCE_NOT_ASSESSED",
+    selected_gate: route ? {name: route.name, profile: route.profile, a2a: route.a2a} : null,
+    next_one_thing: route ? corridorAssistantNextInput(route)
+      : "Specify the decision and subject, then choose a gate from fleet_directory.",
+    human_review_required: true,
+    authorization_granted: false,
+    limitations: "Keyword-based routing only; no evidence completeness, source authenticity, factual truth or clearance assessed."
   };
 }
 
@@ -11902,6 +11917,13 @@ function routingMarkdown(text, modules, profile = "agenda", triageOverride = nul
 
   return [
     ...securityNotices,
+    ...(triage.orientation ? [
+      "## At a glance",
+      `Status: ${triage.orientation.status}.`,
+      triage.orientation.selected_gate ? `Suggested gate: ${triage.orientation.selected_gate.name} — ${triage.orientation.selected_gate.a2a}` : "Suggested gate: none; clarify the subject.",
+      `Next: ${triage.orientation.next_one_thing}`,
+      "Human review required; no authorization granted. Routing does not assess evidence."
+    ] : []),
     subjectHeading,
     "",
     dealGateBlock,
