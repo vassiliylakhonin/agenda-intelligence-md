@@ -489,13 +489,16 @@ const MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_ROUTE_TERMS = [
 ];
 
 // Substring triggers that presence-flag a potential dual-use / export-controlled
-// item named in the free-text cargo. Terms follow the BIS/EU Common High Priority
-// List (CHPL) pattern of goods most diverted to sanctioned end-users. Match on the
+// item named in the free-text cargo. The list includes caller-declared dual use
+// and generic electronics as review leads; it does not establish CHPL membership. Match on the
 // declared cargo string only — presence-flagging routed to human review, NOT an
 // export-control classification, licensing determination, or live screening. This
 // is the cargo-string dual-use flag deferred in ADR 0015, on the allowed side of
 // its boundary.
 const MIDDLE_CORRIDOR_DUAL_USE_CARGO_TERMS = [
+  ["dual-use", "declared dual-use goods"],
+  ["dual use", "declared dual-use goods"],
+  ["electronics", "declared electronics"],
   ["microcontroller", "microcontrollers"],
   ["microprocessor", "microprocessors"],
   ["integrated circuit", "integrated circuits"],
@@ -11060,7 +11063,7 @@ function dealRiskContractResponseForRequest(request, vizierCorridor = null) {
   if (matchedDualUse.length > 0) {
     const namedDu = matchedDualUse.join(", ");
     limitations.push(
-      `The declared cargo references one or more potential dual-use / export-controlled items (${namedDu}); under the BIS/EU Common High Priority List pattern this is an export-control escalation flag for human review, not a classification or licensing determination. Obtain an end-use / end-user statement and confirm export-control classification before any commercial action.`
+      `The declared cargo references one or more potential dual-use / export-controlled items (${namedDu}); this keyword-based review lead does not establish Common High Priority List membership and is not a classification or licensing determination. Obtain an end-use / end-user statement and confirm export-control classification before any commercial action.`
     );
   }
   if (matchedDualUse.length > 0 && !suppliedSources.includes("end_user_or_reexport_evidence")) {

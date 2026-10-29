@@ -2416,13 +2416,16 @@ MIDDLE_CORRIDOR_SANCTIONS_EXPOSED_ROUTE_TERMS = [
 ]
 
 # Substring triggers that presence-flag a potential dual-use / export-controlled
-# item named in the free-text cargo. Terms follow the BIS/EU Common High Priority
-# List (CHPL) pattern of goods most diverted to sanctioned end-users. Match on the
-# declared cargo string only — presence-flagging routed to human review, NOT an
+# item named in the free-text cargo. Match on the
+# declared cargo string only, including generic electronics as a review lead,
+# not a CHPL membership finding — presence-flagging routed to human review, NOT an
 # export-control classification, licensing determination, or live screening. This
 # is the cargo-string dual-use flag deferred in ADR 0015, on the allowed side of
 # its boundary.
 MIDDLE_CORRIDOR_DUAL_USE_CARGO_TERMS = [
+    ("dual-use", "declared dual-use goods"),
+    ("dual use", "declared dual-use goods"),
+    ("electronics", "declared electronics"),
     ("microcontroller", "microcontrollers"),
     ("microprocessor", "microprocessors"),
     ("integrated circuit", "integrated circuits"),
@@ -2887,8 +2890,8 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         named_du = ", ".join(matched_dual_use)
         limitations.append(
             "The declared cargo references one or more potential dual-use / export-controlled items "
-            f"({named_du}); under the BIS/EU Common High Priority List pattern this is an export-control "
-            "escalation flag for human review, not a classification or licensing determination. Obtain an "
+            f"({named_du}); this keyword-based review lead does not establish Common High Priority List "
+            "membership and is not a classification or licensing determination. Obtain an "
             "end-use / end-user statement and confirm export-control classification before any commercial "
             "action."
         )

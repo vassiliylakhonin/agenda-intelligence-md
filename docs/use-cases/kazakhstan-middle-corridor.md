@@ -4,6 +4,8 @@ Live portfolio/demo profile for Agenda Intelligence MD. It is not the default co
 
 For a local question → gate → synthetic memo walkthrough, see the [strategic orientation demo](../../examples/strategic-orientation/README.md).
 
+For the three-step intake, suggested document owners and pre-signature handoff, see the [deal-file guide](../../examples/kazakhstan-middle-corridor/README.md#prepare-a-deal-file-and-hand-it-to-a-reviewer).
+
 ## Proposition
 
 Bring route, cargo, counterparties, and dated sources. Get an auditable corridor-risk triage with evidence gaps, source coverage, watch-next indicators, and human-review escalation.

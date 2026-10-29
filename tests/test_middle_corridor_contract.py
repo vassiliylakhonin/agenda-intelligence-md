@@ -223,6 +223,17 @@ def test_middle_corridor_flags_dual_use_cargo():
     assert "reexport_control_indicators" in resp
 
 
+def test_middle_corridor_declared_dual_use_and_electronics_are_review_leads_only():
+    from agenda_intelligence import services
+
+    for cargo in ("dual-use electronics", "consumer electronics", "dual use components"):
+        resp = services.middle_corridor_deal_risk(_dual_use_base_request(cargo))["response"]
+        assert "cargo includes a potential dual-use / export-controlled item" in resp["top_risks"]
+        assert "does not establish Common High Priority List membership" in " ".join(resp["limitations"])
+        assert resp["human_review_required"] is True
+        assert resp["authorization_granted"] is False
+
+
 def test_middle_corridor_dual_use_does_not_move_structural_score():
     """ADR 0015 boundary: cargo content is presence-flagged but must NOT move the
     structural (evidence-completeness) score or risk signal."""
