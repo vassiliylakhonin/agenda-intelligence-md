@@ -12,6 +12,7 @@ on:
           - interaction-trust
           - middle-corridor
           - cis-secondary
+          - gulf-maritime
         default: all
       initialize_card_signing:
         description: Initialize missing card keys for Financial Guard and Escrow only (never rotate)
@@ -72,7 +73,7 @@ jobs:
           let fleet = process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true'
             ? all.filter(({env}) => signingBootstrapEnvironments.includes(env)) : all;
           const target = process.env.DEPLOY_TARGET || 'all';
-          if (!['all', 'agenda-root', 'interaction-trust', 'middle-corridor', 'cis-secondary'].includes(target)) throw new Error('Unknown deploy target');
+          if (!['all', 'agenda-root', 'interaction-trust', 'middle-corridor', 'cis-secondary', 'gulf-maritime'].includes(target)) throw new Error('Unknown deploy target');
           if (target === 'agenda-root') {
             if (process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true') throw new Error('Signing bootstrap requires all target');
             fleet = all.filter(({env}) => env === '');
@@ -92,6 +93,11 @@ jobs:
             if (process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true') throw new Error('Signing bootstrap requires all target');
             fleet = all.filter(({env, workerName}) => env === 'cis-secondary-sanctions' && workerName === 'cis-secondary-sanctions-a2a');
             if (fleet.length !== 1) throw new Error('Expected exactly one CIS Secondary Sanctions Worker');
+          }
+          if (target === 'gulf-maritime') {
+            if (process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true') throw new Error('Signing bootstrap requires all target');
+            fleet = all.filter(({env, workerName}) => env === 'gulf-maritime-exposure' && workerName === 'gulf-maritime-exposure-a2a');
+            if (fleet.length !== 1) throw new Error('Expected exactly one Gulf Maritime Worker');
           }
           if (process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true' && fleet.length !== 2) {
             throw new Error('Signing bootstrap requires exactly the two existing targets');
