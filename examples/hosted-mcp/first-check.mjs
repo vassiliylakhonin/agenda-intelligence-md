@@ -176,7 +176,11 @@ export function createFirstCheckClient({endpoint, headers = {}, fetchImpl = fetc
       if (ready) prepared = saved;
       return {prepared:ready, valid:true, availability:clone(availability), evaluation_performed:false, attempt_consumed:false,
         next_step:ready ? 'Explicitly call evaluate() once; availability is advisory and another request can consume the allowance.'
-          : 'Keep the input and any prior result. No automatic retry, quota reset or paid fallback.'};
+          : 'Keep the input and any prior result. No automatic retry, quota reset or paid fallback.',
+        ...(!ready && has('review_answer') ? {local_alternative:{
+          documentation:'https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/integrations/rag-output.md',
+          scope:'Separately installed offline answer/source adapter with a different input and result contract; it does not reset the hosted allowance.'
+        }} : {})};
     }); },
     async evaluate() { return exclusive(async () => {
       if (!prepared || attempted) throw fail('not_prepared', 'Prepare valid input with available allowance before explicitly evaluating once.', 'evaluate');

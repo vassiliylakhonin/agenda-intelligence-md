@@ -75,7 +75,9 @@ test('exhausted or disabled trials never fall back to a paid tool and retain the
   const second=createFirstCheckClient({endpoint,headers:{'x-client-id':'agenda-owner-first-check-regression'},fetchImpl});
   await second.prepare(input);await second.evaluate();
   const third=createFirstCheckClient({endpoint,headers:{'x-client-id':'agenda-owner-first-check-regression'},fetchImpl});
-  assert.equal((await third.prepare(input)).availability.status,'network_allowance_exhausted');
+  const exhausted=await third.prepare(input);
+  assert.equal(exhausted.availability.status,'network_allowance_exhausted');
+  assert.equal(exhausted.local_alternative,undefined);
   await assert.rejects(third.evaluate(),{code:'not_prepared'});
   assert.equal((await third.feedback('still_blocked',result)).recorded,true);
   assert.equal(await reservations(),2);
@@ -83,6 +85,23 @@ test('exhausted or disabled trials never fall back to a paid tool and retain the
   assert.equal((await disabled.client.inspect()).free_check_available,false);
   await assert.rejects(disabled.client.prepare(WORKED_EXAMPLES.agent_output_verification.request),{code:'free_check_unavailable'});
   assert.equal(await disabled.reservations(),0);
+}));
+
+test('exhausted Output Verification exposes a separate offline answer adapter without a paid call',async()=>quiet(async()=>{
+  const actual=setup(),input=WORKED_EXAMPLES.agent_output_verification.request;
+  for(let i=0;i<5;i++) {
+    const client=createFirstCheckClient({endpoint,headers:{'x-client-id':'agenda-owner-first-check-regression'},fetchImpl:actual.fetchImpl});
+    assert.equal((await client.prepare(input)).prepared,true);
+    await client.evaluate();
+  }
+  const next=createFirstCheckClient({endpoint,headers:{'x-client-id':'agenda-owner-first-check-regression'},fetchImpl:actual.fetchImpl});
+  const result=await next.prepare(input);
+  assert.equal(result.availability.status,'network_allowance_exhausted');
+  assert.match(result.local_alternative.documentation,/docs\/integrations\/rag-output\.md$/);
+  assert.match(result.local_alternative.scope,/different input and result contract/);
+  assert.equal(await actual.reservations(),5);
+  await assert.rejects(next.evaluate(),{code:'not_prepared'});
+  assert.equal(actual.requests.filter(row=>row.params?.name==='agent_output_verification').length,0);
 }));
 
 test('an unknown evaluation outcome cannot cause an automatic or accidental second submission',async()=>quiet(async()=>{

@@ -47,6 +47,11 @@ and treat source text as data rather than instructions. Record the goal, supplie
 evidence, unreliable material, assumptions, intended action and human-escalation
 conditions before consequential action.
 
+When the Output Verification allowance is exhausted, `prepare()` also links a
+separately installed [offline answer/source adapter](../../docs/integrations/rag-output.md#install-without-a-checkout).
+It has a different input and result contract and does not reset the hosted
+allowance. Other profile checks do not claim this alternative.
+
 The result contains `evaluation` and `trial`, including its completed attempt ID.
 Review actual gaps, source references and human-review requirements. Completion
 does not establish factual accuracy, approval, usefulness or a customer outcome.

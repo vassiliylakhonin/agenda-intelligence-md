@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- When an Output Verification trial allowance is exhausted, point browser and first-check MCP clients to the separate local answer/source adapter, without implying identical contracts or another hosted allowance.
 - Make the existing A2A free-trial status and evaluation examples directly discoverable in the trial extension, retaining the legacy metadata and existing quotas. Point Output Verification's agent card to a task-focused MCP/A2A quickstart and clarify the structural review boundary.
 
 ## 1.23.0 — 2026-10-28
