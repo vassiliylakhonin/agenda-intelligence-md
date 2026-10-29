@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {reviewAnswer,answerReviewErrors,ANSWER_REVIEW_URI} from '../src/answer-review.js';
 import {handleRequest} from '../src/index.js';
 import {memoryD1} from './helpers/d1.js';
+import {reviewAnswerBeforeRelay} from '../../../examples/output-verification/review-answer-client.mjs';
+import Ajv2020 from 'ajv/dist/2020.js';
+import {readFileSync} from 'node:fs';
 const input={answer:'The report says "three warehouses" [s1]',sources:[{source_id:'s1',text:'The report lists three warehouses.'}]};
 const environment=()=>({AGENT_PROFILE:'agent_output_verification',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call',VIZIER_DISABLED:'1',PAYMENT_LEDGER:memoryD1()});
 const post=(env,method,params={},extra={})=>handleRequest(new Request('https://example.test/mcp/output-verification',{method:'POST',
@@ -10,6 +13,51 @@ const post=(env,method,params={},extra={})=>handleRequest(new Request('https://e
   body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})}),env);
 const tool=(env,name,args={},extra={})=>post(env,'tools/call',{name,arguments:args},extra);
 const count=async env=>(await env.PAYMENT_LEDGER.prepare('SELECT COUNT(*) AS count FROM output_verification_trials').first()).count;
+
+test('optional numeric smoke check flags absent tokens without claiming semantic verification',()=>{
+  const base={answer:'Capacity is 900 [s1]',sources:[{source_id:'s1',text:'Capacity is 120.'}]};
+  assert.equal(reviewAnswer(base).route,'human_review');
+  const flagged=reviewAnswer({...base,numeric_smoke_check:true});
+  assert.equal(flagged.route,'revise');
+  assert.equal(flagged.validation_scope,'citation_quote_and_numeric_smoke');
+  assert.deepEqual(flagged.findings.map(f=>f.code),['number_absent_from_cited_sources']);
+  assert.equal(flagged.semantic_support,'not_assessed');assert.equal(flagged.authorization_granted,false);
+  const schema=JSON.parse(readFileSync(new URL('../../../schemas/v1/answer-citation-review-response.schema.json',import.meta.url),'utf8'));
+  const validate=new Ajv2020({strict:false}).compile(schema);
+  assert.ok(validate(flagged),JSON.stringify(validate.errors));
+  const unrelated=reviewAnswer({...base,numeric_smoke_check:true,sources:[{source_id:'s1',text:'The unrelated building is 900 meters tall.'}]});
+  assert.equal(unrelated.route,'human_review');assert.equal(unrelated.factuality,'not_assessed');
+  const unresolved=reviewAnswer({answer:'Capacity is 900 [missing]',sources:[],numeric_smoke_check:true});
+  assert.deepEqual(unresolved.findings.map(f=>f.code),['unknown_source']);
+  assert.ok(answerReviewErrors({...base,numeric_smoke_check:'yes'}).length);
+});
+
+test('raw text without sources reports missing and unresolved citations, never clearance',async()=>{
+  const input={answer:'Uncited assertion.\nAnother assertion [1]',sources:[]};
+  assert.deepEqual(answerReviewErrors(input),[]);
+  const result=reviewAnswer(input);
+  assert.deepEqual(result.findings.map(f=>f.code),['missing_citation','unknown_source']);
+  assert.equal(result.route,'revise');assert.equal(result.findings[0].line,1);
+  assert.equal(result.authorization_granted,false);
+  const env=environment();const body=await (await tool(env,'review_answer',input)).json();
+  assert.equal(body.result.isError,false);assert.equal(body.result.structuredContent.evaluation.route,'revise');
+  assert.equal(await count(env),1);
+  assert.ok(answerReviewErrors({answer:'Text',sources:[{source_id:'s1',text:''}]}).length);
+});
+
+test('agent helper holds the workflow for success, refusal, or malformed replies',async()=>{
+  const env=environment();
+  const fetchImpl=(url,init)=>handleRequest(new Request(url,{...init,headers:{...init.headers,'cf-connecting-ip':'192.0.2.10','x-client-id':'agenda-owner-helper-test'}}),env);
+  const result=await reviewAnswerBeforeRelay('An unsupported claim.',[],{endpoint:'https://example.test/mcp/output-verification',fetchImpl});
+  assert.equal(result.summary.verdict,'REVISE');assert.match(result.summary.next_one_thing,/Line 1/);assert.equal(result.relay_allowed,false);
+  const clean=await reviewAnswerBeforeRelay('Quoted "three warehouses" [s1]',[{source_id:'s1',text:'three warehouses'}],{endpoint:'https://example.test/mcp/output-verification',fetchImpl});
+  assert.equal(clean.evaluation.route,'human_review');assert.equal(clean.relay_allowed,false);
+  for (const fake of [async()=>Response.json({jsonrpc:'2.0',id:'wrong',result:{structuredContent:{}}}),
+    async()=>Response.json({error:'quota'}, {status:429}),async()=>{throw Error('network');}]) {
+    await assert.rejects(reviewAnswerBeforeRelay('Claim',[],{endpoint:'https://example.test/mcp/output-verification',fetchImpl:fake}));
+  }
+  assert.equal(await count(env),2);
+});
 
 test('a corrected rerun fixes citation findings without asserting semantic support',()=>{
   const broken=reviewAnswer({...input,answer:'The report says "five warehouses" [missing]\nA second unsupported sentence.'});

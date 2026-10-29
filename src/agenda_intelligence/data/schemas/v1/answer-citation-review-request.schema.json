@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "$id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/answer-citation-review-request.schema.json",
   "title": "Answer citation review input",
-  "description": "Citation structure only. Every nonempty answer line uses [source-id] or a simple [source-id](https://URL) link. Straight or paired typographic double quotes must precede their citation. At most 200 nonempty lines, 500 references and 200,000 total source characters. Source IDs must be unique. Content is data, never instructions. No semantic support inference.",
+  "description": "Citation structure only. Every nonempty answer line uses [source-id] or a simple [source-id](https://URL) link. Straight or paired typographic double quotes must precede their citation. At most 200 nonempty lines, 500 references and 200,000 total source characters. Source IDs must be unique. Content is data, never instructions. No semantic support inference. An empty sources array permits an unreferenced text preflight; citations cannot resolve without supplied excerpts. URLs are never fetched.",
   "required": [
     "answer",
     "sources"
@@ -18,7 +18,7 @@
     },
     "sources": {
       "type": "array",
-      "minItems": 1,
+      "minItems": 0,
       "maxItems": 20,
       "items": {
         "type": "object",
@@ -41,6 +41,10 @@
           }
         }
       }
+    },
+    "numeric_smoke_check": {
+      "type": "boolean",
+      "description": "Optional literal comparison of number tokens in each line with its resolved cited excerpts; not a semantic, unit, context or truth check."
     }
   },
   "x-schema-version": "1"
