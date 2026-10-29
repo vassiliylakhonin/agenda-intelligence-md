@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add CIS counterparty intake, local CSV/JSON batch preparation and fail-safe per-item summaries. Surface reported screening/enrichment status and a requested-scope matrix that explicitly does not assess legal applicability; keep source and trial contracts unchanged.
+
 - Add a Middle Corridor deal-file preparation wizard, stage-ordered suggested document owners, manual links to adjacent reviews, a pre-signature handoff example and a placeholder-resistant synthetic follow-up. Flag declared dual-use goods and electronics as review leads without implying classification or bank approval.
 
 - Add a minimal-input Interaction Trust client, fail-closed handoff and explicit three-stage review integration. Show a no-quota synthetic placeholder demo and clarify that the gate cannot grant action authorization.
