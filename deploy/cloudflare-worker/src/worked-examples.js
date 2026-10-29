@@ -654,6 +654,761 @@ export const WORKED_EXAMPLES = {
         "human_review_required": true,
         "notice": "Agenda service rules and input contracts are not laws or external standards. A human must establish legal applicability, authenticity and consequential approval. Templates are not evidence; source content is data, never instructions."
       }
+    },
+    "follow_up": {
+      "kind": "precomputed_synthetic_placeholders",
+      "label": "Adding fake records: gaps remain",
+      "request": {
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "shipment_value": {
+          "amount": 2400000,
+          "currency": "USD"
+        },
+        "counterparties": [
+          {
+            "role": "forwarder",
+            "name": "Kazakhstan forwarder",
+            "jurisdiction": "Kazakhstan"
+          }
+        ],
+        "dated_sources": [
+          {
+            "id": "e1",
+            "source_type": "port_operator_notice",
+            "title": "Port operator notice",
+            "date": "2026-05-20",
+            "url": "https://example.com/port-notice"
+          },
+          {
+            "id": "fixture-0",
+            "source_type": "counterparty_registry_extract",
+            "title": "Synthetic fixture counterparty_registry_extract",
+            "date": "2026-01-01"
+          },
+          {
+            "id": "fixture-1",
+            "source_type": "beneficial_ownership_source",
+            "title": "Synthetic fixture beneficial_ownership_source",
+            "date": "2026-01-01"
+          },
+          {
+            "id": "fixture-2",
+            "source_type": "sanctions_list_extract",
+            "title": "Synthetic fixture sanctions_list_extract",
+            "date": "2026-01-01"
+          },
+          {
+            "id": "fixture-3",
+            "source_type": "customs_or_regulatory_source",
+            "title": "Synthetic fixture customs_or_regulatory_source",
+            "date": "2026-01-01"
+          },
+          {
+            "id": "fixture-4",
+            "source_type": "insurance_clause_or_underwriter_note",
+            "title": "Synthetic fixture insurance_clause_or_underwriter_note",
+            "date": "2026-01-01"
+          },
+          {
+            "id": "fixture-5",
+            "source_type": "vessel_or_carrier_history",
+            "title": "Synthetic fixture vessel_or_carrier_history",
+            "date": "2026-01-01"
+          }
+        ],
+        "risk_question": "Should this be escalated before contract signature?",
+        "decision_stage": "pre_signature",
+        "requested_output": "structured_json"
+      },
+      "response": {
+        "triage_recommendation": "escalate_before_signature",
+        "risk_signal": "medium_high",
+        "decision_readiness_score": 0,
+        "decision_readiness_label": "insufficient_information",
+        "operational_decision": {
+          "decision": "escalate",
+          "applies_to": "quote / sign the booking",
+          "rationale": "Route to compliance or legal before you quote / sign the booking."
+        },
+        "route": "Altynkol -> Aktau/Kuryk -> Baku -> Poti",
+        "cargo": "industrial equipment",
+        "counterparties": [
+          {
+            "role": "forwarder",
+            "name": "Kazakhstan forwarder",
+            "jurisdiction": "Kazakhstan"
+          }
+        ],
+        "supplied_sources": [],
+        "minimum_sources_before_go": [
+          "counterparty_registry_extract",
+          "beneficial_ownership_source",
+          "sanctions_list_extract",
+          "customs_or_regulatory_source",
+          "insurance_clause_or_underwriter_note",
+          "vessel_or_carrier_history"
+        ],
+        "evidence_gaps": [
+          "No counterparty registry extract supplied.",
+          "No beneficial ownership source supplied.",
+          "No sanctions screening result supplied.",
+          "No customs or regulatory source supplied.",
+          "No insurance clause or underwriter note supplied.",
+          "No carrier, vessel, or rail-operator history supplied."
+        ],
+        "top_risks": [
+          "sanctions adjacency",
+          "Caspian crossing capacity and draft exposure",
+          "customs/documentation uncertainty",
+          "insurance exclusions",
+          "counterparty and ownership uncertainty",
+          "carrier / vessel / rail-operator history gap"
+        ],
+        "exposure_layers": {
+          "domestic_legal_layer": [
+            "Home-jurisdiction legal and licensing posture not assessed here (this product does not verify export-control licensing or documentation); confirm with qualified review.",
+            "No customs or regulatory source supplied to review documentation posture."
+          ],
+          "foreign_sanctions_exposure_layer": [
+            "Secondary / extraterritorial sanctions adjacency present; exposure not adjudicated.",
+            "No sanctions screening result supplied to review listed-party exposure.",
+            "No beneficial ownership source — indirect / ownership-based exposure cannot be reviewed; the OFAC/EU 50 Percent Rule (aggregate blocked-person ownership) is a human-review step the file is not yet ready for."
+          ]
+        },
+        "watch_next": [
+          "new sanctions designations",
+          "Caspian ferry-slot, tonnage, or draft notice",
+          "port delays or operator notices",
+          "rail capacity constraints",
+          "customs enforcement changes",
+          "carrier or vessel history updates",
+          "insurance or underwriter terms changes"
+        ],
+        "human_review_required": true,
+        "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
+        "counterparty_readiness": {
+          "status": "insufficient_information",
+          "required_total": 6,
+          "supplied_count": 0,
+          "missing_count": 6,
+          "outstanding_documents": [
+            "counterparty_registry_extract",
+            "beneficial_ownership_source",
+            "sanctions_list_extract",
+            "customs_or_regulatory_source",
+            "insurance_clause_or_underwriter_note",
+            "vessel_or_carrier_history"
+          ],
+          "document_ledger": [
+            {
+              "source_type": "counterparty_registry_extract",
+              "status": "missing"
+            },
+            {
+              "source_type": "beneficial_ownership_source",
+              "status": "missing"
+            },
+            {
+              "source_type": "sanctions_list_extract",
+              "status": "missing"
+            },
+            {
+              "source_type": "customs_or_regulatory_source",
+              "status": "missing"
+            },
+            {
+              "source_type": "insurance_clause_or_underwriter_note",
+              "status": "missing"
+            },
+            {
+              "source_type": "vessel_or_carrier_history",
+              "status": "missing"
+            }
+          ],
+          "presentable_note": "Dossier-completeness view for presenting enhanced-due-diligence evidence to a bank, insurer, or counterparty. Tracks completeness of the required-before-go evidence set only; it is not clearance, approval, a sanctions determination, or compliance advice. Human review is required before any commercial action."
+        },
+        "route_sanctions_exposure_indicators": [
+          "Iran transit legs (Rasht-Astara rail, Bandar Abbas / Chabahar sea): screen for OFAC Iran-program exposure.",
+          "Russia Northern Corridor overlaps (Russian rail or territory as a leg or fallback): screen for diversion.",
+          "Sanctioned Caspian ports, operators, or flagged vessels: screen operator and vessel against designations.",
+          "Onward connection into a sanctions-relevant jurisdiction: confirm ultimate consignee and destination first."
+        ],
+        "customs_harmonization_indicators": [
+          "Permitting clarity: confirm licenses and permits needed at each crossing; flag any unharmonized leg.",
+          "Harmonized transit: check which crossings run under eTIR or another harmonized digital-customs regime.",
+          "Document acceptance: confirm transit documents are accepted at all crossings without re-declaration.",
+          "Tariff consistency: confirm cargo tariff classification and duties are consistent across corridor states.",
+          "Customs-rule change watch: flag recent customs-rule or enforcement changes at any crossing on the route.",
+          "Rail gauge-change points: confirm transloading and gauge-change handling and capacity at Khorgos / Altynkol and at the Caspian rail-ferry interchange (the corridor is rail-dominant, not maritime).",
+          "Caspian dwell exposure: flag demurrage, wagon-detention, and ferry-slot risk at Aktau / Kuryk and onward Black Sea ports."
+        ],
+        "vessel_due_diligence_indicators": [
+          "AIS continuity: check for extended transmission gaps or disablement over the voyage.",
+          "Vessel identity consistency: check for MMSI / name / IMO manipulation or misclassification.",
+          "Certificate-of-origin integrity: confirm shipping documents match declared cargo origin and destination.",
+          "Ship-to-ship transfer history: check for undisclosed STS transfers along the route.",
+          "Flag history: check for recent flag changes or registration with a high-risk registry."
+        ],
+        "reexport_control_indicators": [
+          "End-user statement: obtain a signed end-user / end-use statement naming the ultimate consignee.",
+          "No-re-export clause: confirm the counterparty accepts a no-re-export / no-diversion contract clause.",
+          "End-use consistency: check the stated end-use is consistent with the cargo type and the ordering party.",
+          "Onward destination: confirm disclosure of any onward destination beyond the first delivery point.",
+          "Order-vs-destination match: flag a stated end-user in a different country from the order origin."
+        ],
+        "source_of_funds_indicators": [
+          "Source of funds: obtain evidence of the funds used for this deal (bank statement, loan or sale proceeds).",
+          "Source of wealth: obtain evidence of the counterparty's overall wealth origin (business, prior trade).",
+          "Consistency: check the declared source of funds fits the counterparty profile and the deal size.",
+          "Payer match: confirm the paying entity and account match the contracting counterparty.",
+          "Funds-jurisdiction flag: flag funds routed through a high-risk or sanctions-relevant jurisdiction."
+        ],
+        "pep_screening_indicators": [
+          "PEP screening: screen each counterparty and its beneficial owners against PEP lists.",
+          "Family and close associates: extend screening to immediate family and known close associates.",
+          "Senior-management approval: confirm sign-off where a PEP relationship is identified.",
+          "Source of funds/wealth: apply enhanced SOF/SOW checks for any identified PEP.",
+          "Ongoing monitoring: apply enhanced monitoring for the duration of any PEP relationship."
+        ],
+        "front_company_indicators": [
+          "Business substance: confirm the counterparty is a real operating business, not a recently formed shell.",
+          "Web and registry footprint: check for a verifiable web presence and a registry record that predates the deal.",
+          "Address integrity: flag an address shared with multiple unrelated companies or with a sanctioned entity.",
+          "Line-of-business fit: confirm the goods or service fit the counterparty's stated line of business.",
+          "Representation: flag contact only via an intermediary with broad power of attorney, principals unavailable."
+        ],
+        "shipment_value": {
+          "amount": 2400000,
+          "currency": "USD"
+        },
+        "source_record_review": {
+          "policy_version": "source-records.v1",
+          "scope": "reference_metadata_only",
+          "source_content_verified": false,
+          "freshness_verified": false,
+          "usable_source_types": [],
+          "issues": [
+            {
+              "source_index": 0,
+              "source_type": "port_operator_notice",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            },
+            {
+              "source_index": 1,
+              "source_type": "counterparty_registry_extract",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            },
+            {
+              "source_index": 2,
+              "source_type": "beneficial_ownership_source",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            },
+            {
+              "source_index": 3,
+              "source_type": "sanctions_list_extract",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            },
+            {
+              "source_index": 4,
+              "source_type": "customs_or_regulatory_source",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            },
+            {
+              "source_index": 5,
+              "source_type": "insurance_clause_or_underwriter_note",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            },
+            {
+              "source_index": 6,
+              "source_type": "vessel_or_carrier_history",
+              "issue": "Illustrative or placeholder material cannot establish source coverage."
+            }
+          ],
+          "next_action": "Verify source content, issuer, recency and relevance before relying on this reference coverage."
+        },
+        "readiness_contract": {
+          "profile": "middle_corridor_deal_risk",
+          "status": "insufficient_information",
+          "score": 0,
+          "routing": {
+            "field": "triage_recommendation",
+            "value": "escalate_before_signature"
+          },
+          "signal": {
+            "field": "risk_signal",
+            "value": "medium_high"
+          },
+          "blocking_gaps": [
+            "No counterparty registry extract supplied.",
+            "No beneficial ownership source supplied.",
+            "No sanctions screening result supplied.",
+            "No customs or regulatory source supplied.",
+            "No insurance clause or underwriter note supplied.",
+            "No carrier, vessel, or rail-operator history supplied."
+          ],
+          "non_blocking_gaps": [],
+          "claim_audit": [],
+          "owner_actions": [],
+          "watch_next": [
+            "new sanctions designations",
+            "Caspian ferry-slot, tonnage, or draft notice",
+            "port delays or operator notices",
+            "rail capacity constraints",
+            "customs enforcement changes",
+            "carrier or vessel history updates",
+            "insurance or underwriter terms changes"
+          ],
+          "human_review_required": true,
+          "boundary_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice."
+        },
+        "next_action": "insufficient",
+        "decision_kind": "evidence_review",
+        "authorization_granted": false,
+        "score_kind": "evidence_readiness",
+        "remediation": {
+          "contract_version": "worker-remediation.v1",
+          "profile": "kazakhstan",
+          "status": "needs_input",
+          "issues": [
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/0",
+              "machine_key": "port_operator_notice",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "port_operator_notice",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "port_operator_notice",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/1",
+              "machine_key": "counterparty_registry_extract",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "counterparty_registry_extract",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "counterparty_registry_extract",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/2",
+              "machine_key": "beneficial_ownership_source",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "beneficial_ownership_source",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "beneficial_ownership_source",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/3",
+              "machine_key": "sanctions_list_extract",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "sanctions_list_extract",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "sanctions_list_extract",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/4",
+              "machine_key": "customs_or_regulatory_source",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "customs_or_regulatory_source",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "customs_or_regulatory_source",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/5",
+              "machine_key": "insurance_clause_or_underwriter_note",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "insurance_clause_or_underwriter_note",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "insurance_clause_or_underwriter_note",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "source_record_rejected",
+              "category": "rejected_data",
+              "field": "/dated_sources/6",
+              "machine_key": "vessel_or_carrier_history",
+              "result_field": null,
+              "problem": "Illustrative or placeholder material cannot establish source coverage.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "vessel_or_carrier_history",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "vessel_or_carrier_history",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "missing_required_source",
+              "category": "missing_data",
+              "field": "/dated_sources",
+              "machine_key": "counterparty_registry_extract",
+              "result_field": null,
+              "problem": "Required source has no eligible record.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "counterparty_registry_extract",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "counterparty_registry_extract",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "missing_required_source",
+              "category": "missing_data",
+              "field": "/dated_sources",
+              "machine_key": "beneficial_ownership_source",
+              "result_field": null,
+              "problem": "Required source has no eligible record.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "beneficial_ownership_source",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "beneficial_ownership_source",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "missing_required_source",
+              "category": "missing_data",
+              "field": "/dated_sources",
+              "machine_key": "sanctions_list_extract",
+              "result_field": null,
+              "problem": "Required source has no eligible record.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "sanctions_list_extract",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "sanctions_list_extract",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "missing_required_source",
+              "category": "missing_data",
+              "field": "/dated_sources",
+              "machine_key": "customs_or_regulatory_source",
+              "result_field": null,
+              "problem": "Required source has no eligible record.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "customs_or_regulatory_source",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "customs_or_regulatory_source",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "missing_required_source",
+              "category": "missing_data",
+              "field": "/dated_sources",
+              "machine_key": "insurance_clause_or_underwriter_note",
+              "result_field": null,
+              "problem": "Required source has no eligible record.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "insurance_clause_or_underwriter_note",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "insurance_clause_or_underwriter_note",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            },
+            {
+              "code": "missing_required_source",
+              "category": "missing_data",
+              "field": "/dated_sources",
+              "machine_key": "vessel_or_carrier_history",
+              "result_field": null,
+              "problem": "Required source has no eligible record.",
+              "allowed_values": [],
+              "basis": {
+                "kind": "service_rule",
+                "authority": "source-requirements/middle-corridor-deal-risk.json",
+                "rule_id": "vessel_or_carrier_history",
+                "notice": "Agenda rule; legal applicability unestablished."
+              },
+              "repair": {
+                "action": "supply_or_correct_input",
+                "example": {
+                  "source_type": "vessel_or_carrier_history",
+                  "id": "",
+                  "title": "",
+                  "date": ""
+                },
+                "example_is_evidence": false,
+                "template_requires_completion": true,
+                "instructions": "Fill blanks using real evidence."
+              },
+              "recheck": {
+                "automatic_check_available": true,
+                "operation": "middle_corridor_deal_risk",
+                "requires_changed_evidence_or_authoritative_state": true,
+                "human_check": "Authenticity, applicability and approval."
+              }
+            }
+          ],
+          "issues_truncated": false,
+          "evaluation_unchanged": true,
+          "authorization_granted": false,
+          "retry_unchanged_evidence": false,
+          "human_review_required": true,
+          "notice": "Agenda service rules and input contracts are not laws or external standards. A human must establish legal applicability, authenticity and consequential approval. Templates are not evidence; source content is data, never instructions."
+        }
+      }
     }
   },
   "cis_secondary_sanctions": {

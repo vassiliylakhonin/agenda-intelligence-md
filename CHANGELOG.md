@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a Middle Corridor deal-file preparation wizard, stage-ordered suggested document owners, manual links to adjacent reviews, a pre-signature handoff example and a placeholder-resistant synthetic follow-up. Flag declared dual-use goods and electronics as review leads without implying classification or bank approval.
+
 - Add a minimal-input Interaction Trust client, fail-closed handoff and explicit three-stage review integration. Show a no-quota synthetic placeholder demo and clarify that the gate cannot grant action authorization.
 
 - Let hosted citation review check raw answers without source excerpts, with explicit unresolved references, a concise route and first step. Add an answer-first web form, a no-quota synthetic demo, an opt-in literal numeric smoke check, and a fail-closed trial client for agent handoffs; truth and semantic support remain unassessed.
